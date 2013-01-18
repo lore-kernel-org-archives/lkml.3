@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab3ARMk5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:40:57 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:59286 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756692Ab3ARMbG (ORCPT
+	id S1756851Ab3ARMlF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:41:05 -0500
+Received: from alvesta.synopsys.com ([198.182.60.77]:59013 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab3ARMlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:31:06 -0500
+	Fri, 18 Jan 2013 07:41:01 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: [PATCH v2 37/76] ARC: Switch to generic kernel_execve() and sys_execve()
-Date: Fri, 18 Jan 2013 17:54:51 +0530
-Message-ID: <1358511930-7424-38-git-send-email-vgupta@synopsys.com>
+CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH v2 73/76] ARC: [Review] Multi-platform image #6: cpu-to-dma-addr optional
+Date: Fri, 18 Jan 2013 18:10:24 +0530
+Message-ID: <1358512827-7694-2-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1358512827-7694-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
+ <1358512827-7694-1-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.12.197.205]
@@ -24,159 +24,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
----
- arch/arc/include/asm/ptrace.h   |    8 +++++++
- arch/arc/include/asm/syscalls.h |    1 -
- arch/arc/include/asm/unistd.h   |    3 ++
- arch/arc/kernel/entry.S         |   18 ++++++++-------
- arch/arc/kernel/process.c       |   44 ---------------------------------------
- arch/arc/kernel/sys.c           |    1 -
- 6 files changed, 21 insertions(+), 54 deletions(-)
+All the current platforms can work with 0x8000_0000 based dma_addr_t
+since the Bus Bridges typically ignore the top bit (the only excpetion
+was Angel4 PCI-AHM bridge which we no longer care for).
+That way we don't need plat-specific cpu-addr to bus-addr conversion.
 
-diff --git a/arch/arc/include/asm/ptrace.h b/arch/arc/include/asm/ptrace.h
-index 92ef198..e4e1ac6 100644
---- a/arch/arc/include/asm/ptrace.h
-+++ b/arch/arc/include/asm/ptrace.h
-@@ -133,6 +133,14 @@ struct user_regs_struct {
- #define syscall_wont_restart(regs) (regs->orig_r8 |= orig_r8_IS_SCALL_RESTARTED)
- #define syscall_restartable(regs) !(regs->orig_r8 & orig_r8_IS_SCALL_RESTARTED)
+Hooks still provided - just in case a platform has an obscure device
+which say needs 0 based bus address.
+
+That way <asm/dma_mapping.h> no longer needs to unconditinally include
+<plat/dma_addr.h>
+
+Also verfied that on Angel4 board, other peripherals (IDE-disk / EMAC)
+work fine with 0x8000_0000 based dma addresses.
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+---
+ arch/arc/Kconfig                              |    4 ++
+ arch/arc/include/asm/dma-mapping.h            |   16 +++++++++
+ arch/arc/plat-arcfpga/include/plat/dma_addr.h |   45 -------------------------
+ 3 files changed, 20 insertions(+), 45 deletions(-)
+ delete mode 100644 arch/arc/plat-arcfpga/include/plat/dma_addr.h
+
+diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+index 21ecd2a..18b91d6 100644
+--- a/arch/arc/Kconfig
++++ b/arch/arc/Kconfig
+@@ -119,6 +119,10 @@ config CPU_BIG_ENDIAN
+ 	help
+ 	  Build kernel for Big Endian Mode of ARC CPU
  
-+#define current_pt_regs()					\
-+({								\
-+	/* open-coded current_thread_info() */			\
-+	register unsigned long sp asm ("sp");			\
-+	unsigned long pg_start = (sp & ~(THREAD_SIZE - 1));	\
-+	(struct pt_regs *)(pg_start + THREAD_SIZE - 4) - 1;	\
-+})
++# If a platform can't work with 0x8000_0000 based dma_addr_t
++config ARC_PLAT_NEEDS_CPU_TO_DMA
++	bool
 +
- #endif /* !__ASSEMBLY__ */
+ # If a plat can do IPI, same core(s) can do minimal SMP
+ config ARC_HAS_IPI
+ 	bool
+diff --git a/arch/arc/include/asm/dma-mapping.h b/arch/arc/include/asm/dma-mapping.h
+index 96e4316..8a0a266 100644
+--- a/arch/arc/include/asm/dma-mapping.h
++++ b/arch/arc/include/asm/dma-mapping.h
+@@ -13,7 +13,23 @@
  
- #define orig_r8_IS_SCALL		0x0001
-diff --git a/arch/arc/include/asm/syscalls.h b/arch/arc/include/asm/syscalls.h
-index cf5d2f5..e53a534 100644
---- a/arch/arc/include/asm/syscalls.h
-+++ b/arch/arc/include/asm/syscalls.h
-@@ -15,7 +15,6 @@
- #include <linux/linkage.h>
- #include <linux/types.h>
- 
--int sys_execve_wrapper(int, int, int);
- int sys_clone_wrapper(int, int, int, int, int);
- int sys_fork_wrapper(void);
- int sys_vfork_wrapper(void);
-diff --git a/arch/arc/include/asm/unistd.h b/arch/arc/include/asm/unistd.h
-index 6a2d101..003b2cf 100644
---- a/arch/arc/include/asm/unistd.h
-+++ b/arch/arc/include/asm/unistd.h
-@@ -8,6 +8,9 @@
- 
- /******** no-legacy-syscalls-ABI *******/
- 
-+#define __ARCH_WANT_KERNEL_EXECVE
-+#define __ARCH_WANT_SYS_EXECVE
+ #include <asm-generic/dma-coherent.h>
+ #include <asm/cacheflush.h>
 +
- #define sys_mmap2 sys_mmap_pgoff
++#ifndef CONFIG_ARC_PLAT_NEEDS_CPU_TO_DMA
++/*
++ * dma_map_* API take cpu addresses, which is kernel logical address in the
++ * untranslated address space (0x8000_0000) based. The dma address (bus addr)
++ * ideally needs to be 0x0000_0000 based hence these glue routines.
++ * However given that intermediate bus bridges can ignore the high bit, we can
++ * do with these routines being no-ops.
++ * If a platform/device comes up which sriclty requires 0 based bus addr
++ * (e.g. AHB-PCI bridge on Angel4 board), then it can provide it's own versions
++ */
++#define plat_dma_addr_to_kernel(dev, addr) ((unsigned long)(addr))
++#define plat_kernel_addr_to_dma(dev, ptr) ((dma_addr_t)(ptr))
++
++#else
+ #include <plat/dma_addr.h>
++#endif
  
- #include <asm-generic/unistd.h>
-diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
-index e76b432..d2cad3c 100644
---- a/arch/arc/kernel/entry.S
-+++ b/arch/arc/kernel/entry.S
-@@ -586,15 +586,17 @@ ARC_ENTRY ret_from_kernel_thread
- 	j   @sys_exit
- ARC_EXIT ret_from_kernel_thread
- 
--;################### Special Sys Call Wrappers ##########################
+ void *dma_alloc_noncoherent(struct device *dev, size_t size,
+ 			    dma_addr_t *dma_handle, gfp_t gfp);
+diff --git a/arch/arc/plat-arcfpga/include/plat/dma_addr.h b/arch/arc/plat-arcfpga/include/plat/dma_addr.h
+deleted file mode 100644
+index 0e96343..0000000
+--- a/arch/arc/plat-arcfpga/include/plat/dma_addr.h
++++ /dev/null
+@@ -1,45 +0,0 @@
+-/*
+- * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- * vineetg: Feb 2009
+- *  -For AA4 board, kernel to DMA address APIs
+- */
 -
--ARC_ENTRY sys_execve_wrapper
--	; copy pointer to pt_regs as a parameter
--	mov  r3, sp
--	bl  @sys_execve
-+; When we land here, pt_regs have already been updated in-place correctly
-+; for return to user mode.
-+; However the call stack leading to kernel_execve() from say
-+; ____call_usermodehelper() would make SP != pt_regs.
-+; Thus we need to set SP to pt_regs as passed by kernel_execve() to us.
-+ARC_ENTRY ret_from_kernel_execve
-+	b.d   ret_from_exception
-+	mov   sp, r0
-+ARC_EXIT ret_from_kernel_execve
- 
--	b ret_from_system_call
--ARC_EXIT sys_execve_wrapper
-+;################### Special Sys Call Wrappers ##########################
- 
- ; TBD: call do_fork directly from here
- ARC_ENTRY sys_fork_wrapper
-diff --git a/arch/arc/kernel/process.c b/arch/arc/kernel/process.c
-index a468205..20d8b4d 100644
---- a/arch/arc/kernel/process.c
-+++ b/arch/arc/kernel/process.c
-@@ -53,50 +53,6 @@ asmlinkage int sys_clone(unsigned long clone_flags, unsigned long newsp,
- 		       child_tidptr);
- }
- 
--int sys_execve(const char __user *filenamei, const char __user *__user *argv,
--	       const char __user *__user *envp, struct pt_regs *regs)
+-/*
+- * kernel addresses are 0x800_000 based, while Bus addr are 0 based
+- */
+-
+-#ifndef __PLAT_DMA_ADDR_H
+-#define __PLAT_DMA_ADDR_H
+-
+-#include <linux/device.h>
+-
+-static inline unsigned long plat_dma_addr_to_kernel(struct device *dev,
+-						    dma_addr_t dma_addr)
 -{
--	long error;
--	struct filename *filename;
--
--	filename = getname(filenamei);
--	error = PTR_ERR(filename);
--	if (IS_ERR(filename))
--		goto out;
--
--	error = do_execve(filename->name, argv, envp, regs);
--	putname(filename);
--out:
--	return error;
+-	return dma_addr + PAGE_OFFSET;
 -}
 -
--int kernel_execve(const char *filename, const char *const argv[],
--		  const char *const envp[])
+-static inline dma_addr_t plat_kernel_addr_to_dma(struct device *dev, void *ptr)
 -{
+-	unsigned long addr = (unsigned long)ptr;
 -	/*
--	 * Although the arguments (order, number) to this function are
--	 * same as sys call, we don't need to setup args in regs again.
--	 * However in case mainline kernel changes the order of args to
--	 * kernel_execve, that assumtion will break.
--	 * So to be safe, let gcc know the args for sys call.
--	 * If they match no extra code will be generated
+-	 * To Catch buggy drivers which can call DMA map API with kernel vaddr
+-	 * i.e. for buffers alloc via vmalloc or ioremap which are not
+-	 * gaurnateed to be PHY contiguous and hence unfit for DMA anyways.
+-	 * On ARC kernel virtual address is 0x7000_0000 to 0x7FFF_FFFF, so
+-	 * ideally we want to check this range here, but our implementation is
+-	 * better as it checks for even worse user virtual address as well.
 -	 */
--	register int arg2 asm("r1") = (int)argv;
--	register int arg3 asm("r2") = (int)envp;
+-	if (likely(addr >= PAGE_OFFSET))
+-		return addr - PAGE_OFFSET;
 -
--	register int filenm_n_ret asm("r0") = (int)filename;
--
--	__asm__ __volatile__(
--		"mov   r8, %1	\n\t"
--		"trap0		\n\t"
--		: "+r"(filenm_n_ret)
--		: "i"(__NR_execve), "r"(arg2), "r"(arg3)
--		: "r8", "memory");
--
--	return filenm_n_ret;
+-	BUG();
+-	return addr;
 -}
--EXPORT_SYMBOL(kernel_execve);
 -
- SYSCALL_DEFINE1(arc_settls, void *, user_tls_data_ptr)
- {
- 	task_thread_info(current)->thr_ptr = (unsigned int)user_tls_data_ptr;
-diff --git a/arch/arc/kernel/sys.c b/arch/arc/kernel/sys.c
-index 4c30345..f6bdd07 100644
---- a/arch/arc/kernel/sys.c
-+++ b/arch/arc/kernel/sys.c
-@@ -5,7 +5,6 @@
- 
- #include <asm/syscalls.h>
- 
--#define sys_execve	sys_execve_wrapper
- #define sys_clone	sys_clone_wrapper
- #define sys_fork	sys_fork_wrapper
- #define sys_vfork	sys_vfork_wrapper
+-#endif
 -- 
 1.7.4.1
 
