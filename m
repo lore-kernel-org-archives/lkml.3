@@ -1,96 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471Ab3ARJ00 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 04:26:26 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:46171 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751011Ab3ARJ0Y convert rfc822-to-8bit (ORCPT
+	id S1751187Ab3ARJbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 04:31:49 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:16167 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759Ab3ARJbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 04:26:24 -0500
-X-IronPort-AV: E=Sophos;i="4.84,491,1355068800"; 
-   d="scan'208";a="6611653"
-Subject: Re: [PATCH v5 0/5] Add movablecore_map boot option
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, tony.luck@intel.com,
-        akpm@linux-foundation.org, jiang.liu@huawei.com, wujianguo@huawei.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
-        yinghai@kernel.org, rob@landley.net, minchan.kim@gmail.com,
-        mgorman@suse.de, rientjes@google.com, guz.fnst@cn.fujitsu.com,
-        rusty@rustcorp.com.au, lliubbo@gmail.com, jaegeuk.hanse@gmail.com,
-        glommer@parallels.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-In-Reply-To: <50F902F6.5010605@cn.fujitsu.com>
-References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <50F440F5.3030006@zytor.com>
-	 <20130114143456.3962f3bd.akpm@linux-foundation.org>
-	 <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com>
-	 <20130114144601.1c40dc7e.akpm@linux-foundation.org>
-	 <50F647E8.509@jp.fujitsu.com>
-	 <20130116132953.6159b673.akpm@linux-foundation.org>
-	 <50F72F17.9030805@zytor.com> <50F78750.8070403@jp.fujitsu.com>
-	 <50F79422.6090405@zytor.com>
-	 <3908561D78D1C84285E8C5FCA982C28F1C986D98@ORSMSX108.amr.corp.intel.com>
-	 <50F85ED5.3010003@jp.fujitsu.com> <50F8E63F.5040401@jp.fujitsu.com>
-	 <818a2b0a-f471-413f-9231-6167eb2d9607@email.android.com>
-	 <50F8FBE9.6040501@jp.fujitsu.com>  <50F902F6.5010605@cn.fujitsu.com>
-Date: Fri, 18 Jan 2013 17:23:51 +0800
-Message-ID: <1358501031.22331.10.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/18 17:25:15,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/18 17:25:17,
-	Serialize complete at 2013/01/18 17:25:17
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 18 Jan 2013 04:31:47 -0500
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Richard Genoud <richard.genoud@gmail.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "Lin, JM" <JM.Lin@atmel.com>
+Subject: RE: [v4 PATCH 00/12] atmel spi controller with dmaengine and device
+ tree support
+Thread-Topic: [v4 PATCH 00/12] atmel spi controller with dmaengine and
+ device tree support
+Thread-Index: AQHN8ip3XU+oqYrulUus6q2TYGhEYphORhGAgACSq+A=
+Date: Fri, 18 Jan 2013 09:31:29 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A2436413A05E91C@penmbx02>
+References: <1358148877-18679-1-git-send-email-wenyou.yang@atmel.com>
+ <CACQ1gAit5KvhNqQsw4MznW4zyGPq5WD9BKHm5KhmcXjOmVjEcg@mail.gmail.com>
+In-Reply-To: <CACQ1gAit5KvhNqQsw4MznW4zyGPq5WD9BKHm5KhmcXjOmVjEcg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0I9VpJu003314
 
-åœ¨ 2013-01-18äº”çš„ 16:08 +0800ï¼ŒTang Chenå†™é“ï¼š
-> On 01/18/2013 03:38 PM, Yasuaki Ishimatsu wrote:
-> > 2013/01/18 15:25, H. Peter Anvin wrote:
-> >> We already do DMI parsing in the kernel...
-> >
-> > Thank you for giving the infomation.
-> >
-> > Is your mention /sys/firmware/dmi/entries?
-> >
-> > If so, my box does not have memory information.
-> > My box has only type 0, 1, 2, 3, 4, 7, 8, 9, 38, 127 in DMI.
-> > At least, my box cannot use the information...
-> >
-> > If users use the boot parameter for investigating firmware bugs
-> > or debugging, users cannot use DMI information on like my box.
-> 
-> And seeing from Documentation/ABI/testing/sysfs-firmware-dmi,
-> 
-> 	The kernel itself does not rely on the majority of the
-> 	information in these tables being correct.  It equally
-> 	cannot ensure that the data as exported to userland is
-> 	without error either.
-> 
-> So when users are doing debug, they should not rely on this info.
 
-kernel absolutely should not care much about SMBIOS(DMI info),
-AFAIK, every BIOS vendor did not fill accurate info in SMBIOS,
-mostly only on demand when OEMs required SMBIOS to report some
-specific info.
-furthermore, SMBIOS is so old and benifit nobody(in my personal
-opinion), so maybe let's forget it.
 
+> -----Original Message-----
+> From: Richard Genoud [mailto:richard.genoud@gmail.com]
+> Sent: 2013å¹´1æœˆ18æ—¥ 16:46
+> To: Yang, Wenyou
+> Cc: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Ferre,
+> Nicolas; plagnioj@jcrosoft.com; Lin, JM
+> Subject: Re: [v4 PATCH 00/12] atmel spi controller with dmaengine and device
+> tree support
+> 
+> 2013/1/14 Wenyou Yang <wenyou.yang@atmel.com>:
+> > Hi All,
+> >
+> > This set of patches is to add dmaengine and device tree support for atmel spi.
+> > The work is based on Nicolas and Richard's work.
+> > It is tested on at91sam9x5ek, at91sam9m10g45ek, at91sam9263ek and
+> at91sam9g20ek.
+> >
+> > It is based on v3.8-rc3.
+> Hi,
+> You should rebase it on rc4 because __devinit macros are gone in rc4.
+> (cf 54b956b903607f8f8878754dd4352da6a54a1da2 )
+> So the patches 05 and 06 will break compilation.
+thanks
+> 
+> >
+> > Changelog:
+> > v4:
+> >         1./ Take Joe Perches's advance, rewrite atmel_spi_is_v2(struct
+> atmel_spi *as)
+> >              and atmel_spi_use_dma(struct atmel_spi *as),
+> >              and remove atmel_spi_use_pdc(struct atmel_spi *as).
+> >
+> >         2./ Rebase on v3.8-rc3.
+> >
+> > V3:
+> >         1./ Rebase on v3.8-rc2.
+> >
+> >         2./ Remove some Jean-Christophe's patches which has been
+> >             applied on v3.8-rc2.
+> >
+> >         3./ Remove spi property "cs-gpios" from the SoC dtsi files
+> >             to the board dts files to avoid some useless pin conflicts.
+> >
+> > v2:
+> >         1./ Remove the patch :PATCH]mtd: m25p80: change the
+> m25p80_read to reading page to page
+> >             which purpose to fix the BUG: when run "flashcp /bin/busybox
+> /dev/mtdX" in
+> >             the at91sam9g25ek with DMA mode, it arises a OOPS.
+> >             Now fix it in this patch:
+> >             [PATHC] spi/atmel_spi: add dmaengine support changing to fix
+> the [BUG].
+> >
+> >         2./ Remove two patches:
+> >             which purpose to read dts property to select SPI IP version
+> and DMA mode
+> >             Now they will be gat from device tree different compatile.
+> >
+> >         3./ Fix DMA: when enable both spi0 AND spi1, the spi0 doesn't
+> work BUG.
+> >
+> >         4./ Rebase v3.7-rc8.
+> >
+> > Best Regards,
+> > Wenyou Yang.
+> >
+> > Nicolas Ferre (5):
+> >   spi/atmel_spi: add physical base address
+> >   spi/atmel_spi: call unmapping on transfers buffers
+> >   spi/atmel_spi: status information passed through controller data
+> >   spi/atmel_spi: add flag to controller data for lock operations
+> >   spi/atmel_spi: add dmaengine support
+> >
+> > Richard Genoud (6):
+> >   spi/atmel_spi: fix spi-atmel driver to adapt to slave_config changes
+> >   spi/atmel_spi: correct 16 bits transfers using PIO
+> >   spi/atmel_spi: correct 16 bits transfer with DMA
+> >   ARM: at91: add clocks for spi dt entries
+> >   ARM: dts: add spi nodes for atmel SoC
+> >   ARM: dts: add spi nodes for the atmel boards
+> >
+> > Wenyou Yang (1):
+> >   spi/atmel_spi: update the dt support
+> >
+> >  arch/arm/boot/dts/at91sam9260.dtsi          |   18 +
+> >  arch/arm/boot/dts/at91sam9263.dtsi          |   18 +
+> >  arch/arm/boot/dts/at91sam9263ek.dts         |   14 +
+> >  arch/arm/boot/dts/at91sam9g20ek_common.dtsi |   14 +
+> >  arch/arm/boot/dts/at91sam9g45.dtsi          |   18 +
+> >  arch/arm/boot/dts/at91sam9m10g45ek.dts      |   14 +
+> >  arch/arm/boot/dts/at91sam9n12.dtsi          |   18 +
+> >  arch/arm/boot/dts/at91sam9n12ek.dts         |   14 +
+> >  arch/arm/boot/dts/at91sam9x5.dtsi           |   18 +
+> >  arch/arm/boot/dts/at91sam9x5ek.dtsi         |   14 +
+> >  arch/arm/mach-at91/at91sam9260.c            |    2 +
+> >  arch/arm/mach-at91/at91sam9g45.c            |    2 +
+> >  arch/arm/mach-at91/at91sam9n12.c            |    2 +
+> >  arch/arm/mach-at91/at91sam9x5.c             |    2 +
+> >  drivers/spi/spi-atmel.c                     |  809
+> ++++++++++++++++++++++++---
+> >  15 files changed, 908 insertions(+), 69 deletions(-)
+> >
+> > --
+> > 1.7.9.5
+> >
+> 
+> 
 > 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-regards!
-li guang
-
+> for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
