@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab3AREQr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 23:16:47 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:44397 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752798Ab3AREQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 23:16:46 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: David Miller <davem@davemloft.net>
-Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
-Date: Thu, 17 Jan 2013 23:20:17 -0500
-User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
-Cc: carlos@systemhalted.org, libc-alpha@sourceware.org,
-        bhutchings@solarflare.com, yoshfuji@linux-ipv6.org, amwang@redhat.com,
-        tmb@mageia.org, eblake@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
-        schwab@suse.de
-References: <201301161205.04502.vapier@gentoo.org> <50F75EA7.4060309@systemhalted.org> <20130116.221538.1756411165313441486.davem@davemloft.net>
-In-Reply-To: <20130116.221538.1756411165313441486.davem@davemloft.net>
+	id S1754685Ab3ARETg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 23:19:36 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:35693 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab3ARETf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 23:19:35 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Subject: RE: [PATCH v2] pwm: pwm-tiehrpwm: Update the clock handling of
+ pwm-tiehrpwm driver
+Thread-Topic: [PATCH v2] pwm: pwm-tiehrpwm: Update the clock handling of
+ pwm-tiehrpwm driver
+Thread-Index: AQHN7zMUDYV34A58i0S9SWF5CQhqQJhNWqcAgAEqcFA=
+Date: Fri, 18 Jan 2013 04:18:27 +0000
+Deferred-Delivery: Fri, 18 Jan 2013 04:18:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3EA5F43D@DBDE01.ent.ti.com>
+References: <1357823126-19333-1-git-send-email-avinashphilip@ti.com>
+ <20130117155218.GA23117@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20130117155218.GA23117@avionic-0098.adnet.avionic-design.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1496406.g15FtnhD6U";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301172320.19905.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1496406.g15FtnhD6U
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 17, 2013 at 21:22:18, Thierry Reding wrote:
+> On Thu, Jan 10, 2013 at 06:35:26PM +0530, Philip Avinash wrote:
+> > From: "Philip, Avinash" <avinashphilip@ti.com>
+> > 
+> > The clock framework has changed and it's now better to invoke
+> > clock_prepare_enable() and clk_disable_unprepare() rather than the
+> > legacy clk_enable() and clk_disable() calls. This patch converts the
+> > pwm-tiehrpwm driver to the new framework.
+> > 
+> > Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+> > ---
+> > Changes Since v1:
+> > 	- Check the return value of TBCLK enable in .pwm_enable()
+> > 
+> > In 3.8-rc1, common clock frame work support added to AM335x.
+> > 
+> >  drivers/pwm/pwm-tiehrpwm.c |   10 ++++++++--
+> >  1 file changed, 8 insertions(+), 2 deletions(-)
+> 
+> I had applied this to my for-next branch, but reading the commit message
+> again it would seem that this should actually go into 3.8, right?
 
-On Wednesday 16 January 2013 22:15:38 David Miller wrote:
-> From: Carlos O'Donell <carlos@systemhalted.org>
-> Date: Wed, 16 Jan 2013 21:15:03 -0500
->=20
-> > +/* If a glibc-based userspace has already included in.h, then we will
-> > not + * define in6_addr (nor the defines), sockaddr_in6, or ipv6_mreq.
-> > The + * ABI used by the kernel and by glibc match exactly. Neither the
-> > kernel + * nor glibc should break this ABI without coordination.
-> > + */
-> > +#ifndef _NETINET_IN_H
-> > +
->=20
-> I think we should shoot for a non-glibc-centric solution.
->=20
-> I can't imagine that other libc's won't have the same exact problem
-> with their netinet/in.h conflicting with the kernel's, redefining
-> structures like in6_addr, that we'd want to provide a protection
-> scheme for here as well.
+Common clock framework support added for am335x in 3.8 only, still EHRPWM
+tbclk not present in clock tree. I expect this to be in 3.9. So this patch
+also requires to be in 3.9 only.
 
-yes, the kernel's use of __GLIBC__ in exported headers has already caused=20
-problems in the past.  fortunately, it's been reduced down to just one case=
-=20
-now (stat.h).  let's not balloon it back up.
-=2Dmike
+Thanks
+Avinash
 
---nextPart1496406.g15FtnhD6U
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+> 
+> Thierry
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ+M2DAAoJEEFjO5/oN/WBvl4P/iv9RM0G+SXCqbiaAyLNhX4a
-FEE+N2ts5zsxMyc+i4l+YmTJJfbxSBk874uc+Xp8UB3lU68JtvGIcYmw2axQWrbQ
-0DUVsvrwDJT/PQffEPsK1LEE4pscmroKnpZ99YrueVD9a8tZLlVsRu7kj/PUlwob
-l+JIY6WZmJiABtoPnr0XC3V1AI0GZKnCZAkeq3hcT4B8tosOUr2nO1Z/MN/JNqum
-A//LfSKb9q2RcQyJ9n6IO7MG8Rdq/LjFBKUZnUCShejgCSLkpGIIdpZpHMDCoSXC
-ug0KtQRjwkRx+RJNpeudk2N7CxsN3jXI9FWsYgZK2EXef+Z+RGg3IVfKOSJGdqMj
-GvbydkUXfCq8rTCy1TN0vyaKwG+RwR2MZuhnmJuQEYSKdC1JsMY6tw8HhxymhN5q
-c2mqQ2eMDubrG8yk9JJQvr9NzfEi8zEeItU1n5EPVm2x1JVaVJgMXnkyKRt/BxEr
-PTyzFk+SLCHYweftXjCILG+MMHiqNCGx6QYCi/S85mq3744Sr98kCU+7RHDY7THU
-lZfXOV4ClF8SJCVW5DpT3a/XWW2mJkejvy6kpkYk289/ORvut8MPzrUXcZgRCHLi
-Dbsm4r1xuBDvLUbGeJQxvsjWWo/qfipCXN9/nZH5x2Uf4f/IVnQOwDaNHFOdk+DY
-jziPKOX2YygidtKfru+6
-=p4sn
------END PGP SIGNATURE-----
-
---nextPart1496406.g15FtnhD6U--
