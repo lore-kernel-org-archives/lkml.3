@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab3ARNKM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 08:10:12 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:44420 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab3ARNKK (ORCPT
+	id S1755169Ab3ARNKP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 08:10:15 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:33945 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab3ARNKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 08:10:10 -0500
+	Fri, 18 Jan 2013 08:10:13 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v2 0/2] perf stat: add interval counter printing
-Date: Fri, 18 Jan 2013 14:06:26 +0100
-Message-Id: <1358514388-4344-1-git-send-email-eranian@google.com>
+Subject: [PATCH v2 1/2] perf tools: add evsel prev_raw_count field
+Date: Fri, 18 Jan 2013 14:06:27 +0100
+Message-Id: <1358514388-4344-2-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358514388-4344-1-git-send-email-eranian@google.com>
+References: <1358514388-4344-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This small patchset extends perf stat with the -I option.
-
-The -I option enables interval printing. It expects
-an interval duration in milliseconds. Minimum is
-100ms. Once, activated perf stat prints events deltas
-since last printout. All modes are supported.
-
-$ perf stat -I 1000 -e cycles noploop 10
-noploop for 10 seconds
-1.000086918         2385155642 cycles                    #    0.000 GHz
-2.000267937         2392279774 cycles                    #    0.000 GHz
-3.000385400         2390971450 cycles                    #    0.000 GHz
-4.000504408         2390996752 cycles                    #    0.000 GHz
-5.000626878         2390853097 cycles                    #    0.000 GHz
-
-The output format makes it easy to feed into a plotting program
-such as gnuplot when the -I option is used in combination with the -x
-option:
-
-$ perf stat -x, -I 1000 -e cycles noploop 10
-noploop for 10 seconds
-1.000084113,2378775498,cycles
-2.000245798,2391056897,cycles
-3.000354445,2392089414,cycles
-4.000459115,2390936603,cycles
-5.000565341,2392108173,cycles
-
-The first patch adds the code to keep previous counts. The second
-is the actual extension of perf stat.
-
-In v2, we changed the option from -T to -I based on feedback
-from Andi Kleen (who is using -T in an upcoming patch).
+This field will be used by commands which print
+counter deltas on regular timer intervals,
+such as perf stat -I.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/util/evsel.c |   21 +++++++++++++++++++++
+ tools/perf/util/evsel.h |    1 +
+ 2 files changed, 22 insertions(+)
 
-Stephane Eranian (2):
-  perf tools: add evsel prev_raw_count field
-  perf stat: add interval printing
-
- tools/perf/Documentation/perf-stat.txt |    4 +
- tools/perf/builtin-stat.c              |  157 ++++++++++++++++++++++++++++----
- tools/perf/util/evsel.c                |   21 +++++
- tools/perf/util/evsel.h                |    1 +
- 4 files changed, 167 insertions(+), 16 deletions(-)
-
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 1b16dd1..132da7c 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -646,6 +646,17 @@ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
+ 	if (readn(FD(evsel, cpu, thread), &count, nv * sizeof(u64)) < 0)
+ 		return -errno;
+ 
++	if (evsel->prev_raw_counts) {
++		struct perf_counts_values tmp;
++
++		tmp = evsel->prev_raw_counts->cpu[cpu];
++		evsel->prev_raw_counts->cpu[cpu] = count;
++
++		count.val = count.val - tmp.val;
++		count.ena = count.ena - tmp.ena;
++		count.run = count.run - tmp.run;
++	}
++
+ 	if (scale) {
+ 		if (count.run == 0)
+ 			count.val = 0;
+@@ -684,6 +695,16 @@ int __perf_evsel__read(struct perf_evsel *evsel,
+ 		}
+ 	}
+ 
++	if (evsel->prev_raw_counts) {
++		struct perf_counts_values tmp = evsel->prev_raw_counts->aggr;
++
++		evsel->prev_raw_counts->aggr = *aggr;
++
++		aggr->val = aggr->val - tmp.val;
++		aggr->ena = aggr->ena - tmp.ena;
++		aggr->run = aggr->run - tmp.run;
++	}
++
+ 	evsel->counts->scaled = 0;
+ 	if (scale) {
+ 		if (aggr->run == 0) {
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 3d2b801..63ea570 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -53,6 +53,7 @@ struct perf_evsel {
+ 	struct xyarray		*sample_id;
+ 	u64			*id;
+ 	struct perf_counts	*counts;
++	struct perf_counts	*prev_raw_counts;
+ 	int			idx;
+ 	u32			ids;
+ 	struct hists		hists;
 -- 
 1.7.9.5
 
