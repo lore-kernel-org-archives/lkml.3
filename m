@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab3ARVvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 16:51:23 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:38867 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab3ARVvV (ORCPT
+	id S1754929Ab3ARVwx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 16:52:53 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:40433 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab3ARVww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 16:51:21 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUV+ewSfwdGv+XjzVMF+V5d1t3r6MWGvoBgf08CN=KpBgQ@mail.gmail.com>
-References: <CA+icZUV+ewSfwdGv+XjzVMF+V5d1t3r6MWGvoBgf08CN=KpBgQ@mail.gmail.com>
-Date: Fri, 18 Jan 2013 22:51:20 +0100
-Message-ID: <CA+icZUXNbhX4a0ZG039O5dWiZHpuVM-mwOSD_4g+f==xWD=4Zw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jan 18 [MODSIGN: KEYS:]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 18 Jan 2013 16:52:52 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] fs: timerfd.c: fix build error
+Date: Fri, 18 Jan 2013 22:52:52 +0100
+Message-Id: <1358545972-20947-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 10:43 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Fri, Jan 18, 2013 at 5:37 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Hi all,
->>
->> Changes since 20130117:
->>
->> Undropped tree: samung
->>
->> The powerpc tree still had a build failure.
->>
->> The driver-core tree gained a build failure for which I applied a merge
->> fix patch.
->>
->> The gpio-lw tree gained a build failure so I used the version from
->> next-20130117.
->>
->> The samsung tree lost the majority of its conflicts but gained more
->> against the arm-soc and slave-dma tree.
->>
->> ----------------------------------------------------------------------------
->>
->
-> I pulled Linux v3.8-rc4 (one commit) into next-20130118.
->
-> When CONFIG_SYSTEM_TRUSTED_KEYRING=n I see these error-messages on AMD64:
->
->   CC      security/keys/keyring.o
->   CC      kernel/module_signing.o
->   CC [M]  arch/x86/kvm/i8259.o
-> kernel/module_signing.c: In function 'request_asymmetric_key':
-> kernel/module_signing.c:161:36: error: 'system_trusted_keyring'
-> undeclared (first use in this function)
-> kernel/module_signing.c:161:36: note: each undeclared identifier is
-> reported only once for each function it appears in
-> make[3]: *** [kernel/module_signing.o] Error 1
-> make[2]: *** [kernel] Error 2
-> make[2]: *** Waiting for unfinished jobs....
->
+Invalid number of parentheses if macro COMPAT is defined
 
-Culprit seems to be...
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ fs/timerfd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-commit d6941c0c6bd42c725e45240a86c4add92e9bfb3e
-"KEYS: Separate the kernel signature checking keyring from module signing"
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index 14ad4f3..0e606b1 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -396,7 +396,7 @@ COMPAT_SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
+ 	ret = do_timerfd_settime(ufd, flags, &new, &old);
+ 	if (ret)
+ 		return ret;
+-	if (otmr && put_compat_itimerspec(otmr, &old)
++	if (otmr && put_compat_itimerspec(otmr, &old))
+ 		return -EFAULT;
+ 	return ret;
+ }
+-- 
+1.7.10.4
 
-- Sedat -
-
-[1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=d6941c0c6bd42c725e45240a86c4add92e9bfb3e
