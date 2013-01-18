@@ -1,99 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab3ARWMe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 17:12:34 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:53815 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512Ab3ARWMc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 17:12:32 -0500
-Date: Fri, 18 Jan 2013 14:12:27 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 5/5] async, kmod: warn on synchronous request_module() from
- async workers
-Message-ID: <20130118221227.GG24579@htj.dyndns.org>
-References: <20130116164832.GP2668@htj.dyndns.org>
- <50F6DD4D.3070808@linux.intel.com>
- <CA+55aFyjrXzKMqmOuMo9z24OZj3kD4O4M4y_O-h=r6udCz2MyA@mail.gmail.com>
- <20130116213032.GS2668@htj.dyndns.org>
- <CA+55aFzdf44QOZn4KS6tT09COFsmCg80sTah1XpeoErJxAzbRQ@mail.gmail.com>
- <20130118012503.GH16568@mtj.dyndns.org>
- <CA+55aFyCihvZqOo=83UwWq3AgJEfVqpNjsY2iCFOEm8o6Un-YA@mail.gmail.com>
- <20130118025936.GJ16568@mtj.dyndns.org>
- <20130118030407.GK16568@mtj.dyndns.org>
- <CA+55aFwAwX_o6ocGhd1WwUwxfOnh+S6aKeZdEpeeHVAnBm4uVQ@mail.gmail.com>
+	id S1755636Ab3ARWOg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 17:14:36 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:45893 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751574Ab3ARWOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 17:14:33 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: sedat.dilek@gmail.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>
+Subject: Re: linux-next: Tree for Jan 18 [ BROKEN suspend: jbd2|acpi|pm? ]
+Date: Fri, 18 Jan 2013 23:20:28 +0100
+Message-ID: <6973144.kJtd4z8pn4@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CA+icZUW-mfMtNSY-d-=0WpX=fRBqoNx5jcX3S8x4tvGdvUc+8g@mail.gmail.com>
+References: <CA+icZUW-mfMtNSY-d-=0WpX=fRBqoNx5jcX3S8x4tvGdvUc+8g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwAwX_o6ocGhd1WwUwxfOnh+S6aKeZdEpeeHVAnBm4uVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 4983f3b51e18d008956dd113e0ea2f252774cefc Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Fri, 18 Jan 2013 14:05:57 -0800
+On Friday, January 18, 2013 11:11:07 PM Sedat Dilek wrote:
+> On Fri, Jan 18, 2013 at 5:37 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > Hi all,
+> >
+> > Changes since 20130117:
+> >
+> > Undropped tree: samung
+> >
+> > The powerpc tree still had a build failure.
+> >
+> > The driver-core tree gained a build failure for which I applied a merge
+> > fix patch.
+> >
+> > The gpio-lw tree gained a build failure so I used the version from
+> > next-20130117.
+> >
+> > The samsung tree lost the majority of its conflicts but gained more
+> > against the arm-soc and slave-dma tree.
+> >
+> > ----------------------------------------------------------------------------
+> >
+> 
+> From my dmesg diff-file:
+> 
+> +[  288.730849] PM: Syncing filesystems ... done.
+> +[  294.050498] Freezing user space processes ... (elapsed 0.04 seconds) done.
+> +[  294.097024] Freezing remaining freezable tasks ...
+> +[  314.098849] Freezing of tasks failed after 20.01 seconds (1 tasks
+> refusing to freeze, wq_busy=0):
+> +[  314.098862] jbd2/loop0-8    D ffffffff8180d780     0   297      2 0x00000000
+> +[  314.098865]  ffff880117ec5b68 0000000000000046 ffff880117ec5b08
+> ffffffff81044c29
+> +[  314.098868]  ffff88011829dc80 ffff880117ec5fd8 ffff880117ec5fd8
+> ffff880117ec5fd8
+> +[  314.098871]  ffff880119b34560 ffff88011829dc80 ffff880117ec5b68
+> ffff88011fad4738
+> +[  314.098873] Call Trace:
+> +[  314.098881]  [<ffffffff81044c29>] ? default_spin_lock_flags+0x9/0x10
+> +[  314.098885]  [<ffffffff811c63e0>] ? __wait_on_buffer+0x30/0x30
+> +[  314.098888]  [<ffffffff816b4b59>] schedule+0x29/0x70
+> +[  314.098890]  [<ffffffff816b4c2f>] io_schedule+0x8f/0xd0
+> +[  314.098892]  [<ffffffff811c63ee>] sleep_on_buffer+0xe/0x20
+> +[  314.098896]  [<ffffffff816b342f>] __wait_on_bit+0x5f/0x90
+> +[  314.098898]  [<ffffffff811c5aa1>] ? submit_bh+0x121/0x1e0
+> +[  314.098900]  [<ffffffff811c63e0>] ? __wait_on_buffer+0x30/0x30
+> +[  314.098903]  [<ffffffff816b34dc>] out_of_line_wait_on_bit+0x7c/0x90
+> +[  314.098906]  [<ffffffff8107eb00>] ? autoremove_wake_function+0x40/0x40
+> +[  314.098909]  [<ffffffff811c63de>] __wait_on_buffer+0x2e/0x30
+> +[  314.098913]  [<ffffffff8128a6a1>]
+> jbd2_journal_commit_transaction+0x1791/0x1960
+> +[  314.098917]  [<ffffffff8109269d>] ? sched_clock_cpu+0xbd/0x110
+> +[  314.098920]  [<ffffffff8107eac0>] ? add_wait_queue+0x60/0x60
+> +[  314.098923]  [<ffffffff81069fbf>] ? try_to_del_timer_sync+0x4f/0x70
+> +[  314.098925]  [<ffffffff8128e4e8>] kjournald2+0xb8/0x240
+> +[  314.098927]  [<ffffffff8107eac0>] ? add_wait_queue+0x60/0x60
+> +[  314.098929]  [<ffffffff8128e430>] ? commit_timeout+0x10/0x10
+> +[  314.098931]  [<ffffffff8107ded0>] kthread+0xc0/0xd0
+> +[  314.098933]  [<ffffffff8107de10>] ? flush_kthread_worker+0xb0/0xb0
+> +[  314.098936]  [<ffffffff816be52c>] ret_from_fork+0x7c/0xb0
+> +[  314.098938]  [<ffffffff8107de10>] ? flush_kthread_worker+0xb0/0xb0
+> +[  314.098969]
+> +[  314.098970] Restarting kernel threads ... done.
+> +[  314.099052] Restarting tasks ... done.
+> 
+> Please, have a lot at it.
 
-Synchronous requet_module() from an async worker can lead to deadlock
-because module init path may invoke async_synchronize_full().  The
-async worker waits for request_module() to complete and the module
-loading waits for the async task to finish.  This bug happened in the
-block layer because of default elevator auto-loading.
+This is a freezer failure while freezing kernel threads, so I don't think it's
+related to ACPI or PM directly.
 
-Block layer has been updated not to do default elevator auto-loading
-and it has been decided to disallow synchronous request_module() from
-async workers.
+Does it happen on every suspend?
 
-Trigger WARN_ON_ONCE() on synchronous request_module() from async
-workers.
+Rafael
 
-For more details, please refer to the following thread.
 
-  http://thread.gmane.org/gmane.linux.kernel/1420814
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Alex Riesen <raa.lkml@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
----
- kernel/kmod.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index 1c317e3..ecd42b4 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -38,6 +38,7 @@
- #include <linux/suspend.h>
- #include <linux/rwsem.h>
- #include <linux/ptrace.h>
-+#include <linux/async.h>
- #include <asm/uaccess.h>
- 
- #include <trace/events/module.h>
-@@ -130,6 +131,14 @@ int __request_module(bool wait, const char *fmt, ...)
- #define MAX_KMOD_CONCURRENT 50	/* Completely arbitrary value - KAO */
- 	static int kmod_loop_msg;
- 
-+	/*
-+	 * We don't allow synchronous module loading from async.  Module
-+	 * init may invoke async_synchronize_full() which will end up
-+	 * waiting for this task which already is waiting for the module
-+	 * loading to complete, leading to a deadlock.
-+	 */
-+	WARN_ON_ONCE(wait && current_is_async());
-+
- 	va_start(args, fmt);
- 	ret = vsnprintf(module_name, MODULE_NAME_LEN, fmt, args);
- 	va_end(args);
 -- 
-1.8.0.2
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
