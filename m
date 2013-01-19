@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab3ASBTp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:19:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56739 "EHLO mail.kernel.org"
+	id S1756305Ab3ASBaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:30:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56553 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756314Ab3ASBTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:19:43 -0500
+	id S1756253Ab3ASBSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:18:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Schwinge <thomas@codesourcery.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [ 01/21] sh: Fix FDPIC binary loader
-Date: Fri, 18 Jan 2013 17:19:19 -0800
-Message-Id: <20130119010711.210331066@linuxfoundation.org>
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [ 28/33] tty: 8250_dw: Fix inverted arguments to serial_out in IRQ handler
+Date: Fri, 18 Jan 2013 17:16:53 -0800
+Message-Id: <20130119010355.938642513@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130119010710.897187774@linuxfoundation.org>
-References: <20130119010710.897187774@linuxfoundation.org>
+In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
+References: <20130119010345.885772698@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Schwinge <thomas@codesourcery.com>
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-commit 4a71997a3279a339e7336ea5d0cd27282e2dea44 upstream.
+commit 68e56cb3a068f9c30971c6117fbbd1e32918e49e upstream.
 
-Ensure that the aux table is properly initialized, even when optional features
-are missing.  Without this, the FDPIC loader did not work.  This was meant to
-be included in commit d5ab780305bb6d60a7b5a74f18cf84eb6ad153b1.
-
-Signed-off-by: Thomas Schwinge <thomas@codesourcery.com>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sh/include/asm/elf.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/tty/serial/8250/8250_dw.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sh/include/asm/elf.h
-+++ b/arch/sh/include/asm/elf.h
-@@ -202,9 +202,9 @@ extern void __kernel_vsyscall;
- 	if (vdso_enabled)					\
- 		NEW_AUX_ENT(AT_SYSINFO_EHDR, VDSO_BASE);	\
- 	else							\
--		NEW_AUX_ENT(AT_IGNORE, 0);
-+		NEW_AUX_ENT(AT_IGNORE, 0)
- #else
--#define VSYSCALL_AUX_ENT
-+#define VSYSCALL_AUX_ENT	NEW_AUX_ENT(AT_IGNORE, 0)
- #endif /* CONFIG_VSYSCALL */
+--- a/drivers/tty/serial/8250/8250_dw.c
++++ b/drivers/tty/serial/8250/8250_dw.c
+@@ -79,7 +79,7 @@ static int dw8250_handle_irq(struct uart
+ 	} else if ((iir & UART_IIR_BUSY) == UART_IIR_BUSY) {
+ 		/* Clear the USR and write the LCR again. */
+ 		(void)p->serial_in(p, UART_USR);
+-		p->serial_out(p, d->last_lcr, UART_LCR);
++		p->serial_out(p, UART_LCR, d->last_lcr);
  
- #ifdef CONFIG_SH_FPU
+ 		return 1;
+ 	}
 
 
