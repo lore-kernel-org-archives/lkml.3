@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab3ASB3G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:29:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56831 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756515Ab3ASBTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756519Ab3ASBTy (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 18 Jan 2013 20:19:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56801 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756131Ab3ASBTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:19:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [ 05/21] s390/time: fix sched_clock() overflow
-Date: Fri, 18 Jan 2013 17:19:23 -0800
-Message-Id: <20130119010712.231782774@linuxfoundation.org>
+        Mark Rustad <mark.d.rustad@intel.com>,
+        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 03/21] tcm_fc: Do not report target role when target is not defined
+Date: Fri, 18 Jan 2013 17:19:21 -0800
+Message-Id: <20130119010711.766475382@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010710.897187774@linuxfoundation.org>
 References: <20130119010710.897187774@linuxfoundation.org>
@@ -26,89 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-commit ed4f20943cd4c7b55105c04daedf8d63ab6d499c upstream.
+commit edec8dfefa1f372b2dd8197da555352e76a10c03 upstream.
 
-Converting a 64 Bit TOD format value to nanoseconds means that the value
-must be divided by 4.096. In order to achieve that we multiply with 125
-and divide by 512.
-When used within sched_clock() this triggers an overflow after appr.
-417 days. Resulting in a sched_clock() return value that is much smaller
-than previously and therefore may cause all sort of weird things in
-subsystems that rely on a monotonic sched_clock() behaviour.
+Clear the target role when no target is provided for
+the node performing a PRLI.
 
-To fix this implement a tod_to_ns() helper function which converts TOD
-values without overflow and call this function from both places that
-open coded the conversion: sched_clock() and kvm_s390_handle_wait().
-
-Reviewed-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Reviewed-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+Acked by Robert Love <robert.w.love@intel.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/timex.h |   28 ++++++++++++++++++++++++++++
- arch/s390/kernel/time.c       |    2 +-
- arch/s390/kvm/interrupt.c     |    2 +-
- 3 files changed, 30 insertions(+), 2 deletions(-)
+ drivers/target/tcm_fc/tfc_sess.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/arch/s390/include/asm/timex.h
-+++ b/arch/s390/include/asm/timex.h
-@@ -137,4 +137,32 @@ static inline unsigned long long get_clo
- 	return get_clock_xt() - sched_clock_base_cc;
+--- a/drivers/target/tcm_fc/tfc_sess.c
++++ b/drivers/target/tcm_fc/tfc_sess.c
+@@ -356,11 +356,11 @@ static int ft_prli_locked(struct fc_rpor
+ 
+ 	tport = ft_tport_create(rdata->local_port);
+ 	if (!tport)
+-		return 0;	/* not a target for this local port */
++		goto not_target;	/* not a target for this local port */
+ 
+ 	acl = ft_acl_get(tport->tpg, rdata);
+ 	if (!acl)
+-		return 0;
++		goto not_target;	/* no target for this remote */
+ 
+ 	if (!rspp)
+ 		goto fill;
+@@ -403,6 +403,12 @@ fill:
+ 	fcp_parm &= ~FCP_SPPF_RETRY;
+ 	spp->spp_params = htonl(fcp_parm | FCP_SPPF_TARG_FCN);
+ 	return FC_SPP_RESP_ACK;
++
++not_target:
++	fcp_parm = ntohl(spp->spp_params);
++	fcp_parm &= ~FCP_SPPF_TARG_FCN;
++	spp->spp_params = htonl(fcp_parm);
++	return 0;
  }
  
-+/**
-+ * tod_to_ns - convert a TOD format value to nanoseconds
-+ * @todval: to be converted TOD format value
-+ * Returns: number of nanoseconds that correspond to the TOD format value
-+ *
-+ * Converting a 64 Bit TOD format value to nanoseconds means that the value
-+ * must be divided by 4.096. In order to achieve that we multiply with 125
-+ * and divide by 512:
-+ *
-+ *    ns = (todval * 125) >> 9;
-+ *
-+ * In order to avoid an overflow with the multiplication we can rewrite this.
-+ * With a split todval == 2^32 * th + tl (th upper 32 bits, tl lower 32 bits)
-+ * we end up with
-+ *
-+ *    ns = ((2^32 * th + tl) * 125 ) >> 9;
-+ * -> ns = (2^23 * th * 125) + ((tl * 125) >> 9);
-+ *
-+ */
-+static inline unsigned long long tod_to_ns(unsigned long long todval)
-+{
-+	unsigned long long ns;
-+
-+	ns = ((todval >> 32) << 23) * 125;
-+	ns += ((todval & 0xffffffff) * 125) >> 9;
-+	return ns;
-+}
-+
- #endif
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -64,7 +64,7 @@ static DEFINE_PER_CPU(struct clock_event
-  */
- unsigned long long notrace __kprobes sched_clock(void)
- {
--	return (get_clock_monotonic() * 125) >> 9;
-+	return tod_to_ns(get_clock_monotonic());
- }
- 
- /*
---- a/arch/s390/kvm/interrupt.c
-+++ b/arch/s390/kvm/interrupt.c
-@@ -390,7 +390,7 @@ int kvm_s390_handle_wait(struct kvm_vcpu
- 		return 0;
- 	}
- 
--	sltime = ((vcpu->arch.sie_block->ckc - now)*125)>>9;
-+	sltime = tod_to_ns(vcpu->arch.sie_block->ckc - now);
- 
- 	hrtimer_start(&vcpu->arch.ckc_timer, ktime_set (0, sltime) , HRTIMER_MODE_REL);
- 	VCPU_EVENT(vcpu, 5, "enabled wait via clock comparator: %llx ns", sltime);
+ /**
 
 
