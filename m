@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089Ab3ASQf4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 11:35:56 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40373 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751939Ab3ASQfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 11:35:54 -0500
-Date: Sat, 19 Jan 2013 17:35:46 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: dAgeCKo <dagecko@free.fr>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        Shane Huang <Shane.Huang@amd.com>,
-        =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
-Subject: Re: Fwd: Linux - AMD SB950 USB Regression
-Message-ID: <20130119163546.GB4026@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, dAgeCKo <dagecko@free.fr>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	linux-kernel@vger.kernel.org,
-	Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-	Shane Huang <Shane.Huang@amd.com>,
-	=?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
-References: <50C9FCD6.6050809@free.fr>
- <50E6AD77.1000707@free.fr>
- <50F036CF.7010109@free.fr>
- <20130117213602.GA5998@pd.tnic>
- <50FAB219.5020108@free.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50FAB219.5020108@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752025Ab3ASQhK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 11:37:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51791 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807Ab3ASQhJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jan 2013 11:37:09 -0500
+From: Colin King <colin.king@canonical.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] perf evsel: fix NULL pointer deference when evsel->counts is NULL
+Date: Sat, 19 Jan 2013 16:36:54 +0000
+Message-Id: <1358613414-13005-1-git-send-email-colin.king@canonical.com>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 19, 2013 at 03:47:53PM +0100, dAgeCKo wrote:
-> I can't try the solution you are giving since I can't (and don't want
-> to try to) downgrade my BIOS.
+From: Colin Ian King <colin.king@canonical.com>
 
-I don't think I said that. Here's what I actually said:
+__perf_evsel__read_on_cpu() only bails out with -ENOMEM if
+evsel->counts is NULL and perf_evsel__alloc_counts() has returned
+an error.  If perf_evsel__alloc_counts() does not return an error
+we get an NULL pointer deference on evsel->counts->cpu[cpu]
+if evsel->counts is NULL.
 
->> So dAgeCKo, that would be another thing you could do: try enabling
->> the IOMMU in the BIOS and the above CONFIG option and the issue would
->> be fixed too.
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+---
+ tools/perf/util/evsel.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-IOW, you enter the BIOS, go to "NB settings" or similar and set IOMMU
-to Auto/Enabled. Provided you have an IOMMU but you should have that on
-this chipset.
-
-Then, you enable CONFIG_AMD_IOMMU in your kernel and done: the kernel
-uses the IOMMU hardware instead of the GART.
-
-That's it, no need for any BIOS up-/downgrading.
-
-> Another important thing you might be interested in is that not only
-> my USB 2 weren't working. My mainboard ethernet wasn't working to
-> (and was resolved with the BIOS upgrade too). The ethernet chip is:
-> 
-> 03:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
-> RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 06)
-> 
-> I don't know if that can be related to what you are saying.
-
-It could be, my nic kept resetting and once got an xmit queue timeout so
-it could very well be related.
-
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 1b16dd1..93acd06 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -640,7 +640,7 @@ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
+ 	if (FD(evsel, cpu, thread) < 0)
+ 		return -EINVAL;
+ 
+-	if (evsel->counts == NULL && perf_evsel__alloc_counts(evsel, cpu + 1) < 0)
++	if (evsel->counts == NULL || perf_evsel__alloc_counts(evsel, cpu + 1) < 0)
+ 		return -ENOMEM;
+ 
+ 	if (readn(FD(evsel, cpu, thread), &count, nv * sizeof(u64)) < 0)
 -- 
-Regards/Gruss,
-    Boris.
+1.8.0
 
-Sent from a fat crate under my desk. Formatting is fine.
---
