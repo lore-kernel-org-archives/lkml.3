@@ -1,129 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab3ASAuE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 19:50:04 -0500
-Received: from lunge.queued.net ([173.255.254.236]:42968 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754342Ab3ASAuC (ORCPT
+	id S1755637Ab3ASAxe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 19:53:34 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:38097 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835Ab3ASAxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 19:50:02 -0500
-X-Greylist: delayed 547 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jan 2013 19:50:02 EST
-Date: Fri, 18 Jan 2013 16:40:43 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Woodhouse <dwmw2@infradead.org>, Vivek Goyal <vgoyal@in.ibm.com>,
-        Yinghai Lu <yhlu.kernel@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        techteam@lists.laptop.org
-Subject: Re: [RFC PATCH] x86-32: Start out eflags and cr4 clean
-Message-ID: <20130118164043.29674d75@dev.queued.net>
-In-Reply-To: <20121010125927.0968dd8b@dev.queued.net>
-References: <87sjaaj3cx.fsf@xmission.com>
-	<1348529239-17943-1-git-send-email-hpa@linux.intel.com>
-	<20121010125927.0968dd8b@dev.queued.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Jan 2013 19:53:33 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: David Howells <dhowells@redhat.com>, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] include/keys/system_keyring.h: fix building error
+Date: Sat, 19 Jan 2013 01:53:33 +0100
+Message-Id: <1358556813-12518-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bad news on this patch; I've been told that it breaks booting on an
-XO-1.5.  Does anyone from OLPC know why yet?
+When I am doing "make randconfig", it causes the following building error if
+CONFIG_SYSTEM_TRUSTED_KEYRING is not defined and CONFIG_MODULE_SIG is defined.
 
+kernel/module_signing.c: In function ‘request_asymmetric_key’:
+kernel/module_signing.c:161:36: error: ‘system_trusted_keyring’ undeclared
+(first use in this function)
+kernel/module_signing.c:161:36: note: each undeclared identifier is reported
+only once for each function it appears in
 
-On Wed, 10 Oct 2012 12:59:27 -0700
-Andres Salomon <dilinger@queued.net> wrote:
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ include/keys/system_keyring.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Thanks for Cc'ing me.  I just tested this on an XO-1, and it doesn't
-> appear to break anything.  So, looks fine to me.
-> 
-> Acked-by: Andres Salomon <dilinger@queued.net>
-> 
-> 
-> On Mon, 24 Sep 2012 16:27:19 -0700 "H. Peter
-> Anvin" <hpa@linux.intel.com> wrote:
-> 
-> > From: "H. Peter Anvin" <hpa@linux.intel.com>
-> > 
-> > %cr4 is supposed to reflect a set of features into which the
-> > operating system is opting in.  If the BIOS or bootloader leaks
-> > bits here, this is not desirable.  Consider a bootloader passing in
-> > %cr4.pae set to a legacy paging kernel, for example -- it will not
-> > have any immediate effect, but the kernel would crash when turning
-> > paging on.
-> > 
-> > A similar argument applies to %eflags, and since we have to look for
-> > %eflags.id being settable we can use a sequence which clears %eflags
-> > as a side effect.
-> > 
-> > Note that we already do this for x86-64.
-> > 
-> > I would like opinions on this especially from the PV crowd and
-> > nonstandard platforms (e.g. OLPC) to make sure we don't screw them
-> > up.
-> > 
-> > Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> > ---
-> >  arch/x86/kernel/head_32.S |   31 ++++++++++++++++---------------
-> >  1 files changed, 16 insertions(+), 15 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-> > index d42ab17..957a47a 100644
-> > --- a/arch/x86/kernel/head_32.S
-> > +++ b/arch/x86/kernel/head_32.S
-> > @@ -287,27 +287,28 @@ ENTRY(startup_32_smp)
-> >  	leal -__PAGE_OFFSET(%ecx),%esp
-> >  
-> >  default_entry:
-> > -
-> >  /*
-> >   *	New page tables may be in 4Mbyte page mode and may
-> >   *	be using the global pages. 
-> >   *
-> >   *	NOTE! If we are on a 486 we may have no cr4 at all!
-> > - *	So we do not try to touch it unless we really have
-> > - *	some bits in it to set.  This won't work if the BSP
-> > - *	implements cr4 but this AP does not -- very unlikely
-> > - *	but be warned!  The same applies to the pse feature
-> > - *	if not equally supported. --macro
-> > - *
-> > - *	NOTE! We have to correct for the fact that we're
-> > - *	not yet offset PAGE_OFFSET..
-> > + *	Specifically, cr4 exists if and only if CPUID exists,
-> > + *	which in turn exists if and only if EFLAGS.ID exists.
-> >   */
-> > -#define cr4_bits pa(mmu_cr4_features)
-> > -	movl cr4_bits,%edx
-> > -	andl %edx,%edx
-> > -	jz 6f
-> > -	movl %cr4,%eax		# Turn on paging options
-> > (PSE,PAE,..)
-> > -	orl %edx,%eax
-> > +	movl $X86_EFLAGS_ID,%ecx
-> > +	pushl %ecx
-> > +	popfl
-> > +	pushfl
-> > +	popl %eax
-> > +	pushl $0
-> > +	popfl
-> > +	pushfl
-> > +	popl %edx
-> > +	xorl %edx,%eax
-> > +	testl %ecx,%eax
-> > +	jz 6f			# No ID flag = no CPUID = no
-> > CR4 +
-> > +	movl pa(mmu_cr4_features),%eax
-> >  	movl %eax,%cr4
-> >  
-> >  	testb $X86_CR4_PAE, %al		# check if PAE is
-> > enabled
+diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
+index 8dabc39..d66c92d 100644
+--- a/include/keys/system_keyring.h
++++ b/include/keys/system_keyring.h
+@@ -12,7 +12,7 @@
+ #ifndef _KEYS_SYSTEM_KEYRING_H
+ #define _KEYS_SYSTEM_KEYRING_H
+ 
+-#ifdef CONFIG_SYSTEM_TRUSTED_KEYRING
++#if defined(CONFIG_SYSTEM_TRUSTED_KEYRING) || defined(CONFIG_MODULE_SIG)
+ 
+ #include <linux/key.h>
+ 
+-- 
+1.7.10.4
+
