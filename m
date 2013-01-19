@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556Ab3ASB3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:29:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56816 "EHLO mail.kernel.org"
+	id S1756444Ab3ASBTp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:19:45 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56739 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756264Ab3ASBTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:19:53 -0500
+	id S1756314Ab3ASBTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:19:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 04/21] target: Release se_cmd when LUN lookup fails for TMR
-Date: Fri, 18 Jan 2013 17:19:22 -0800
-Message-Id: <20130119010712.002916500@linuxfoundation.org>
+        Thomas Schwinge <thomas@codesourcery.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [ 01/21] sh: Fix FDPIC binary loader
+Date: Fri, 18 Jan 2013 17:19:19 -0800
+Message-Id: <20130119010711.210331066@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010710.897187774@linuxfoundation.org>
 References: <20130119010710.897187774@linuxfoundation.org>
@@ -26,37 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Thomas Schwinge <thomas@codesourcery.com>
 
-commit 5a3b6fc0092c5f8dee7820064ee54d2631d48573 upstream.
+commit 4a71997a3279a339e7336ea5d0cd27282e2dea44 upstream.
 
-When transport_lookup_tmr_lun() fails and we return a task management
-response from target_complete_tmr_failure(), we need to call
-transport_cmd_check_stop_to_fabric() to release the last ref to the
-cmd after calling se_tfo->queue_tm_rsp(), or else we will never remove
-the failed TMR from the session command list (and we'll end up waiting
-forever when trying to tear down the session).
+Ensure that the aux table is properly initialized, even when optional features
+are missing.  Without this, the FDPIC loader did not work.  This was meant to
+be included in commit d5ab780305bb6d60a7b5a74f18cf84eb6ad153b1.
 
-(nab: Fix minor compile breakage)
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Thomas Schwinge <thomas@codesourcery.com>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/sh/include/asm/elf.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1748,6 +1748,8 @@ static void target_complete_tmr_failure(
+--- a/arch/sh/include/asm/elf.h
++++ b/arch/sh/include/asm/elf.h
+@@ -202,9 +202,9 @@ extern void __kernel_vsyscall;
+ 	if (vdso_enabled)					\
+ 		NEW_AUX_ENT(AT_SYSINFO_EHDR, VDSO_BASE);	\
+ 	else							\
+-		NEW_AUX_ENT(AT_IGNORE, 0);
++		NEW_AUX_ENT(AT_IGNORE, 0)
+ #else
+-#define VSYSCALL_AUX_ENT
++#define VSYSCALL_AUX_ENT	NEW_AUX_ENT(AT_IGNORE, 0)
+ #endif /* CONFIG_VSYSCALL */
  
- 	se_cmd->se_tmr_req->response = TMR_LUN_DOES_NOT_EXIST;
- 	se_cmd->se_tfo->queue_tm_rsp(se_cmd);
-+
-+	transport_cmd_check_stop_to_fabric(se_cmd);
- }
- 
- /**
+ #ifdef CONFIG_SH_FPU
 
 
