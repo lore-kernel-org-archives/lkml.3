@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab3ASBPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:15:04 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:37242 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318Ab3ASBO7 (ORCPT
+	id S1756110Ab3ASBPZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:15:25 -0500
+Received: from solarsail.media.mit.edu ([18.85.2.155]:54251 "EHLO
+	solarsail.media.mit.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756164Ab3ASBPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:14:59 -0500
-Subject: [PATCH 6/6] ubifs: Wait for page writeback to provide stable pages
-To: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, darrick.wong@oracle.com,
-        ericvh@gmail.com, viro@zeniv.linux.org.uk, rminnich@sandia.gov,
-        tytso@mit.edu
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: martin.petersen@oracle.com, Artem Bityutskiy <dedekind1@gmail.com>,
-        neilb@suse.de, Adrian Hunter <adrian.hunter@intel.com>,
-        david@fromorbit.com, gnehzuil.liu@gmail.com,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
-        bharrosh@panasas.com, jlayton@samba.org, linux-mtd@lists.infradead.org,
-        akpm@linux-foundation.org, linux-ext4@vger.kernel.org,
-        hirofumi@mail.parknet.co.jp
-Date: Fri, 18 Jan 2013 17:13:16 -0800
-Message-ID: <20130119011316.20902.56721.stgit@blackbox.djwong.org>
-In-Reply-To: <20130119011231.20902.55954.stgit@blackbox.djwong.org>
-References: <20130119011231.20902.55954.stgit@blackbox.djwong.org>
-User-Agent: StGit/0.15
+	Fri, 18 Jan 2013 20:15:03 -0500
+X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jan 2013 20:15:03 EST
+Message-ID: <50F9F152.1000907@laptop.org>
+Date: Fri, 18 Jan 2013 15:05:22 -1000
+From: Mitch Bradley <wmb@laptop.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Andres Salomon <dilinger@queued.net>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@in.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, techteam@lists.laptop.org,
+        Yinghai Lu <yhlu.kernel@gmail.com>
+Subject: Re: [Techteam] [RFC PATCH] x86-32: Start out eflags and cr4 clean
+References: <87sjaaj3cx.fsf@xmission.com> <1348529239-17943-1-git-send-email-hpa@linux.intel.com> <20121010125927.0968dd8b@dev.queued.net> <20130118164043.29674d75@dev.queued.net> <50F9EBEA.9020805@linux.intel.com>
+In-Reply-To: <50F9EBEA.9020805@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When stable pages are required, we have to wait if the page is just
-going to disk and we want to modify it. Add proper callback to
-ubifs_vm_page_mkwrite().
-
-CC: Artem Bityutskiy <dedekind1@gmail.com>
-CC: Adrian Hunter <adrian.hunter@intel.com>
-CC: linux-mtd@lists.infradead.org
-From: Jan Kara <jack@suse.cz>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
----
- fs/ubifs/file.c |    1 +
- 1 file changed, 1 insertion(+)
 
 
-diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
-index 5bc7781..4f6493c 100644
---- a/fs/ubifs/file.c
-+++ b/fs/ubifs/file.c
-@@ -1522,6 +1522,7 @@ static int ubifs_vm_page_mkwrite(struct vm_area_struct *vma,
- 			ubifs_release_dirty_inode_budget(c, ui);
- 	}
- 
-+	wait_for_stable_page(page);
- 	unlock_page(page);
- 	return 0;
- 
+On 1/18/2013 2:42 PM, H. Peter Anvin wrote:
+> On 01/18/2013 04:40 PM, Andres Salomon wrote:
+>> Bad news on this patch; I've been told that it breaks booting on an
+>> XO-1.5.  Does anyone from OLPC know why yet?
+> 
+> What are the settings of CR0 and CR4 on kernel entry on XO-1.5?
 
+
+CR0 is 0x80000011
+CR4 is 0x10
+
+> 
+> 	-hpa
+> 
+> 
+> _______________________________________________
+> Techteam mailing list
+> Techteam@lists.laptop.org
+> http://lists.laptop.org/listinfo/techteam
+> 
