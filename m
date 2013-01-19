@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab3ASM5O (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 07:57:14 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:54706 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab3ASM5K (ORCPT
+	id S1751398Ab3ASNGw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 08:06:52 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:42086 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab3ASNGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 07:57:10 -0500
+	Sat, 19 Jan 2013 08:06:51 -0500
 From: Cong Ding <dinggnu@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Johannes Berg <johannes.berg@intel.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
 Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] net: wireless/rtlwifi: fix uninitialized variable issue
-Date: Sat, 19 Jan 2013 13:56:36 +0100
-Message-Id: <1358600210-15942-1-git-send-email-dinggnu@gmail.com>
+Subject: [PATCH] of: dma.c: fix memory leakage
+Date: Sat, 19 Jan 2013 14:06:44 +0100
+Message-Id: <1358600805-20193-1-git-send-email-dinggnu@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of variable packet_beacon might be uninitialized in the three files.
+The memory allocated to ofdma might be a leakage when error occurs.
 
 Signed-off-by: Cong Ding <dinggnu@gmail.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192de/trx.c |    2 +-
- drivers/net/wireless/rtlwifi/rtl8192se/trx.c |    2 +-
- drivers/net/wireless/rtlwifi/rtl8723ae/trx.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/of/dma.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/trx.c b/drivers/net/wireless/rtlwifi/rtl8192de/trx.c
-index a0fbf28..cdb570f 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192de/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/trx.c
-@@ -452,7 +452,7 @@ static void _rtl92de_translate_rx_signal_stuff(struct ieee80211_hw *hw,
- 	u8 *praddr;
- 	u16 type, cfc;
- 	__le16 fc;
--	bool packet_matchbssid, packet_toself, packet_beacon;
-+	bool packet_matchbssid, packet_toself, packet_beacon = false;
- 
- 	tmp_buf = skb->data + pstats->rx_drvinfo_size + pstats->rx_bufshift;
- 	hdr = (struct ieee80211_hdr *)tmp_buf;
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-index 206561d..f8431a3 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-@@ -480,7 +480,7 @@ static void _rtl92se_translate_rx_signal_stuff(struct ieee80211_hw *hw,
- 	u8 *praddr;
- 	__le16 fc;
- 	u16 type, cfc;
--	bool packet_matchbssid, packet_toself, packet_beacon;
-+	bool packet_matchbssid, packet_toself, packet_beacon = false;
- 
- 	tmp_buf = skb->data + pstats->rx_drvinfo_size + pstats->rx_bufshift;
- 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/trx.c b/drivers/net/wireless/rtlwifi/rtl8723ae/trx.c
-index a313be8..ce8ad12 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/trx.c
-@@ -247,7 +247,7 @@ static void _rtl8723ae_translate_rx_signal_stuff(struct ieee80211_hw *hw,
- 	u8 *psaddr;
- 	__le16 fc;
- 	u16 type;
--	bool packet_matchbssid, packet_toself, packet_beacon;
-+	bool packet_matchbssid, packet_toself, packet_beacon = false;
- 
- 	tmp_buf = skb->data + pstatus->rx_drvinfo_size + pstatus->rx_bufshift;
+diff --git a/drivers/of/dma.c b/drivers/of/dma.c
+index 59631b2..583e50e3 100644
+--- a/drivers/of/dma.c
++++ b/drivers/of/dma.c
+@@ -107,6 +107,7 @@ int of_dma_controller_register(struct device_node *np,
+ 	if (!nbcells) {
+ 		pr_err("%s: #dma-cells property is missing or invalid\n",
+ 		       __func__);
++		kfree(ofdma);
+ 		return -EINVAL;
+ 	}
  
 -- 
 1.7.10.4
