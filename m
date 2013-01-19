@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756364Ab3ASBSX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:18:23 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56605 "EHLO mail.kernel.org"
+	id S1756324Ab3ASBSU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:18:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56595 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756292Ab3ASBSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:18:18 -0500
+	id S1756285Ab3ASBSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:18:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>, Florian Westphal <fw@strlen.de>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [ 33/33] pty: return EINVAL for TIOCGPTN for BSD ptys
-Date: Fri, 18 Jan 2013 17:16:58 -0800
-Message-Id: <20130119010357.422492346@linuxfoundation.org>
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Huang Shijie <b32955@freescale.com>
+Subject: [ 32/33] mxs: uart: fix setting RTS from software
+Date: Fri, 18 Jan 2013 17:16:57 -0800
+Message-Id: <20130119010356.983356057@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
 References: <20130119010345.885772698@linuxfoundation.org>
@@ -26,39 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
 
-commit ded2f295a36d17838fe97e80d7b6ea83381474f8 upstream.
+commit a6833214cfc6fa8a7c59426af77794cc190c6cfc upstream.
 
-Commit bbb63c514a3464342967237a51a21ea8f61ab951 (drivers:tty:fix up
-ENOIOCTLCMD error handling) changed the default return value from tty
-ioctl to be ENOTTY and not EINVAL. This is appropriate.
+With the patch "serial: mxs-auart: fix the wrong RTS hardware flow control" the
+mainline mxs-uart driver now sets RTSEN only when hardware flow control is
+enabled via software. It is not possible any longer to set RTS manually via
+software. However, the manual modification is a valid operation.
+Regain the possibility to set RTS via software and only set RTSEN when hardware
+flow control is explicitly enabled via settermios cflag CRTSCTS.
 
-But in case of TIOCGPTN for the old BSD ptys glibc started failing
-because it expects EINVAL to be returned. Only then it continues to
-obtain the pts name the other way around.
-
-So fix this case by explicit return of EINVAL in this case.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Reported-by: Florian Westphal <fw@strlen.de>
-Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Reviewed-by: Huang Shijie <b32955@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/pty.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/tty/serial/mxs-auart.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -395,6 +395,8 @@ static int pty_bsd_ioctl(struct tty_stru
- 		return pty_set_lock(tty, (int __user *) arg);
- 	case TIOCSIG:    /* Send signal to other side of pty */
- 		return pty_signal(tty, (int) arg);
-+	case TIOCGPTN: /* TTY returns ENOTTY, but glibc expects EINVAL here */
-+		return -EINVAL;
+--- a/drivers/tty/serial/mxs-auart.c
++++ b/drivers/tty/serial/mxs-auart.c
+@@ -260,10 +260,12 @@ static void mxs_auart_set_mctrl(struct u
+ 
+ 	u32 ctrl = readl(u->membase + AUART_CTRL2);
+ 
+-	ctrl &= ~AUART_CTRL2_RTSEN;
++	ctrl &= ~(AUART_CTRL2_RTSEN | AUART_CTRL2_RTS);
+ 	if (mctrl & TIOCM_RTS) {
+ 		if (tty_port_cts_enabled(&u->state->port))
+ 			ctrl |= AUART_CTRL2_RTSEN;
++		else
++			ctrl |= AUART_CTRL2_RTS;
  	}
- 	return -ENOIOCTLCMD;
- }
+ 
+ 	s->ctrl = mctrl;
 
 
