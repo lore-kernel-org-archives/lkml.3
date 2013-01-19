@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab3ASAmU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 19:42:20 -0500
-Received: from mga11.intel.com ([192.55.52.93]:48039 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753253Ab3ASAmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 19:42:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,495,1355126400"; 
-   d="scan'208";a="278868086"
-Message-ID: <50F9EBEA.9020805@linux.intel.com>
-Date: Fri, 18 Jan 2013 16:42:18 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754560Ab3ASArh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 19:47:37 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:45565 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835Ab3ASArg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 19:47:36 -0500
+Date: Fri, 18 Jan 2013 16:47:32 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>, Peter Korsgaard <jacmet@sunsite.dk>,
+        Alan Cox <alan@linux.intel.com>,
+        Preston Fick <preston.fick@silabs.com>
+Subject: Re: 3.7.3, ttyUSB0 serial problem - devices stop working and only
+ reboot helps (Inappropriate ioctl for device)
+Message-ID: <20130119004732.GA32311@kroah.com>
+References: <201301182328.43455.a.miskiewicz@gmail.com>
 MIME-Version: 1.0
-To: Andres Salomon <dilinger@queued.net>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Woodhouse <dwmw2@infradead.org>, Vivek Goyal <vgoyal@in.ibm.com>,
-        Yinghai Lu <yhlu.kernel@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        techteam@lists.laptop.org
-Subject: Re: [RFC PATCH] x86-32: Start out eflags and cr4 clean
-References: <87sjaaj3cx.fsf@xmission.com> <1348529239-17943-1-git-send-email-hpa@linux.intel.com> <20121010125927.0968dd8b@dev.queued.net> <20130118164043.29674d75@dev.queued.net>
-In-Reply-To: <20130118164043.29674d75@dev.queued.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201301182328.43455.a.miskiewicz@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2013 04:40 PM, Andres Salomon wrote:
-> Bad news on this patch; I've been told that it breaks booting on an
-> XO-1.5.  Does anyone from OLPC know why yet?
+On Fri, Jan 18, 2013 at 11:28:43PM +0100, Arkadiusz Miskiewicz wrote:
+> Hi.
+> 
+> Using 3.7.3 kernel and connecting two rs232 usb adapters, CP2102 and FT232RL, 
+> one after disconnecting another.
+> 
+> After few cycles of reconnecting and using socat (below) I'm getting problems 
+> accessing ttyUSB0:
+> ioctl(3, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or TCGETS, 
+> 0x7fffb70c6ae0) = -1 ENOTTY (Inappropriate ioctl for device)
+> 
+> Unloading and reloading (by udev) modules ftdio_sio, cp210x, usbserial doesn't 
+> help. I have to reboot to get ttyUSB0 working (regardless of which driver, 
+> ftdio_sio or cp210x is handling ttyUSB0 - both stop working).
+> 
+> Any clues?
 
-What are the settings of CR0 and CR4 on kernel entry on XO-1.5?
+The kernel log shows the device getting removed a bunch and then coming
+back, which implies electrical issues (flaky connection, low power,
+etc.)  Are you really removing it and plugging it back in?  Or is it
+doing it all by itself?
 
-	-hpa
+Can you try better cables?
 
+thanks,
 
+greg k-h
