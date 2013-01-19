@@ -1,133 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab3ASLsq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 06:48:46 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:59108 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751909Ab3ASLso (ORCPT
+	id S1752010Ab3ASL5u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 06:57:50 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:47982 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab3ASL5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 06:48:44 -0500
-From: Mark Einon <mark.einon@gmail.com>
-To: gregkh@linuxfoundation.org, dan.carpenter@oracle.com
-Cc: davem@davemloft.net, sfr@canb.auug.org.au, netdev@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH] staging: et131x: Fix all sparse warnings
-Date: Sat, 19 Jan 2013 11:48:29 +0000
-Message-Id: <1358596109-30106-1-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20130119110328.GO4584@mwanda>
-References: <20130119110328.GO4584@mwanda>
+	Sat, 19 Jan 2013 06:57:48 -0500
+Message-ID: <50FA89F4.9090203@synopsys.com>
+Date: Sat, 19 Jan 2013 17:26:36 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 48/76] ARC: Module support
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-49-git-send-email-vgupta@synopsys.com> <201301181450.33444.arnd@arndb.de>
+In-Reply-To: <201301181450.33444.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Carpenter has pointed out that there are several sparse warnings
-from et131x.c, listed below. This patch fixes all these errors.
+On Friday 18 January 2013 08:20 PM, Arnd Bergmann wrote:
+> On Friday 18 January 2013, Vineet Gupta wrote:
+>
+>> +int module_frob_arch_sections(Elf_Ehdr *hdr, Elf_Shdr *sechdrs,
+>> +			      char *secstr, struct module *mod)
+>> +{
+>> +    return 0;
+>> +}
+>> +
+>> +void module_arch_cleanup(struct module *mod)
+>> +{
+>> +}
+>> +
+>> +int module_finalize(const Elf32_Ehdr *hdr, const Elf_Shdr *sechdrs,
+>> +		    struct module *mod)
+>> +{
+>> +    return 0;
+>> +}
+> These three empty functions are already defined __weak in kernel/module.c
+> so you can simply omit them here.
+>
+> 	Arnd
 
-drivers/staging/et131x/et131x.c:1870:33: warning: incorrect type in assignment (different address spaces)
-drivers/staging/et131x/et131x.c:1870:33:    expected unsigned int [usertype] *num_des
-drivers/staging/et131x/et131x.c:1870:33:    got unsigned int [noderef] <asn:2>*<noident>
-drivers/staging/et131x/et131x.c:1871:37: warning: incorrect type in assignment (different address spaces)
-drivers/staging/et131x/et131x.c:1871:37:    expected unsigned int [usertype] *full_offset
-drivers/staging/et131x/et131x.c:1871:37:    got unsigned int [noderef] <asn:2>*<noident>
-drivers/staging/et131x/et131x.c:1872:33: warning: incorrect type in assignment (different address spaces)
-drivers/staging/et131x/et131x.c:1872:33:    expected unsigned int [usertype] *min_des
-drivers/staging/et131x/et131x.c:1872:33:    got unsigned int [noderef] <asn:2>*<noident>
-drivers/staging/et131x/et131x.c:1873:33: warning: incorrect type in assignment (different address spaces)
-drivers/staging/et131x/et131x.c:1873:33:    expected unsigned int [usertype] *base_hi
-drivers/staging/et131x/et131x.c:1873:33:    got unsigned int [noderef] <asn:2>*<noident>
-drivers/staging/et131x/et131x.c:1874:33: warning: incorrect type in assignment (different address spaces)
-drivers/staging/et131x/et131x.c:1874:33:    expected unsigned int [usertype] *base_lo
-drivers/staging/et131x/et131x.c:1874:33:    got unsigned int [noderef] <asn:2>*<noident>
-drivers/staging/et131x/et131x.c:1876:33: warning: incorrect type in assignment (different address spaces)
-drivers/staging/et131x/et131x.c:1876:33:    expected unsigned int [usertype] *num_des
-drivers/staging/et131x/et131x.c:1876:33:    got unsigned int [noderef] <asn:2>*<noident>
-drivers/staging/et131x/et131x.c:1877:37: warning: incorrect type in assignment (different address spaces)
-drivers/staging/et131x/et131x.c:1877:37:    expected unsigned int [usertype] *full_offset
-drivers/staging/et131x/et131x.c:1877:37:    got unsigned int [noderef] <asn:2>*<noident>
-drivers/staging/et131x/et131x.c:1878:33: warning: incorrect type in assignment (different address spaces)
-drivers/staging/et131x/et131x.c:1878:33:    expected unsigned int [usertype] *min_des
-drivers/staging/et131x/et131x.c:1878:33:    got unsigned int [noderef] <asn:2>*<noident>
-drivers/staging/et131x/et131x.c:1879:33: warning: incorrect type in assignment (different address spaces)
-drivers/staging/et131x/et131x.c:1879:33:    expected unsigned int [usertype] *base_hi
-drivers/staging/et131x/et131x.c:1879:33:    got unsigned int [noderef] <asn:2>*<noident>
-drivers/staging/et131x/et131x.c:1880:33: warning: incorrect type in assignment (different address spaces)
-drivers/staging/et131x/et131x.c:1880:33:    expected unsigned int [usertype] *base_lo
-drivers/staging/et131x/et131x.c:1880:33:    got unsigned int [noderef] <asn:2>*<noident>
-drivers/staging/et131x/et131x.c:1898:24: warning: incorrect type in argument 2 (different address spaces)
-drivers/staging/et131x/et131x.c:1898:24:    expected void volatile [noderef] <asn:2>*addr
-drivers/staging/et131x/et131x.c:1898:24:    got unsigned int [usertype] *base_hi
-drivers/staging/et131x/et131x.c:1900:24: warning: incorrect type in argument 2 (different address spaces)
-drivers/staging/et131x/et131x.c:1900:24:    expected void volatile [noderef] <asn:2>*addr
-drivers/staging/et131x/et131x.c:1900:24:    got unsigned int [usertype] *base_lo
-drivers/staging/et131x/et131x.c:1901:60: warning: incorrect type in argument 2 (different address spaces)
-drivers/staging/et131x/et131x.c:1901:60:    expected void volatile [noderef] <asn:2>*addr
-drivers/staging/et131x/et131x.c:1901:60:    got unsigned int [usertype] *num_des
-drivers/staging/et131x/et131x.c:1902:39: warning: incorrect type in argument 2 (different address spaces)
-drivers/staging/et131x/et131x.c:1902:39:    expected void volatile [noderef] <asn:2>*addr
-drivers/staging/et131x/et131x.c:1902:39:    got unsigned int [usertype] *full_offset
-drivers/staging/et131x/et131x.c:1910:24: warning: incorrect type in argument 2 (different address spaces)
-drivers/staging/et131x/et131x.c:1910:24:    expected void volatile [noderef] <asn:2>*addr
-drivers/staging/et131x/et131x.c:1910:24:    got unsigned int [usertype] *min_des
-drivers/staging/et131x/et131x.c:2583:32: warning: incorrect type in assignment (different address spaces)
-drivers/staging/et131x/et131x.c:2583:32:    expected unsigned int [usertype] *offset
-drivers/staging/et131x/et131x.c:2583:32:    got unsigned int [noderef] <asn:2>*<noident>
-drivers/staging/et131x/et131x.c:2585:32: warning: incorrect type in assignment (different address spaces)
-drivers/staging/et131x/et131x.c:2585:32:    expected unsigned int [usertype] *offset
-drivers/staging/et131x/et131x.c:2585:32:    got unsigned int [noderef] <asn:2>*<noident>
-drivers/staging/et131x/et131x.c:2602:24: warning: incorrect type in argument 2 (different address spaces)
-drivers/staging/et131x/et131x.c:2602:24:    expected void volatile [noderef] <asn:2>*addr
-drivers/staging/et131x/et131x.c:2602:24:    got unsigned int [usertype] *offset
-drivers/staging/et131x/et131x.c:4093:13: warning: symbol 'et131x_isr' was not declared. Should it be static?
+Actually a subsequent patch to do dwarf unwinding out of modules has valid code in
+those. But yes I can take them out from this patch and introduce in the the one
+which really needs it.
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/staging/et131x/et131x.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 82508fb..f0bc7ba 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -1860,11 +1860,11 @@ static void et131x_config_rx_dma_regs(struct et131x_adapter *adapter)
- 	rx_local->local_psr_full = 0;
- 
- 	for (id = 0; id < NUM_FBRS; id++) {
--		u32 *num_des;
--		u32 *full_offset;
--		u32 *min_des;
--		u32 *base_hi;
--		u32 *base_lo;
-+		u32 __iomem *num_des;
-+		u32 __iomem *full_offset;
-+		u32 __iomem *min_des;
-+		u32 __iomem *base_hi;
-+		u32 __iomem *base_lo;
- 
- 		if (id == 0) {
- 			num_des = &rx_dma->fbr0_num_des;
-@@ -2574,7 +2574,7 @@ static void nic_return_rfd(struct et131x_adapter *adapter, struct rfd *rfd)
- 	 * need to clean up OOB data
- 	 */
- 	if (buff_index < rx_local->fbr[ring_index]->num_entries) {
--		u32 *offset;
-+		u32 __iomem *offset;
- 		struct fbr_desc *next;
- 
- 		spin_lock_irqsave(&adapter->fbr_lock, flags);
-@@ -4090,7 +4090,7 @@ static SIMPLE_DEV_PM_OPS(et131x_pm_ops, et131x_suspend, et131x_resume);
-  *
-  * Returns a value indicating if the interrupt was handled.
-  */
--irqreturn_t et131x_isr(int irq, void *dev_id)
-+static irqreturn_t et131x_isr(int irq, void *dev_id)
- {
- 	bool handled = true;
- 	struct net_device *netdev = (struct net_device *)dev_id;
--- 
-1.7.9.5
-
+Thx,
+-Vineet
