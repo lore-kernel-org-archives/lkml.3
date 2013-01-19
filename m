@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab3ASBYY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:24:24 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57239 "EHLO mail.kernel.org"
+	id S1756801Ab3ASBYk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:24:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57224 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756725Ab3ASBWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756719Ab3ASBWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Jan 2013 20:22:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Mingarelli <thomas.mingarelli@hp.com>,
-        Shuah Khan <shuah.khan@hp.com>, Donald Dutile <ddutile@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Joerg Roedel <joro@8bytes.org>, CAI Qian <caiqian@redhat.com>
-Subject: [ 09/16] intel-iommu: Prevent devices with RMRRs from being placed into SI Domain
-Date: Fri, 18 Jan 2013 17:21:47 -0800
-Message-Id: <20130119012139.772378430@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        CAI Qian <caiqian@redhat.com>
+Subject: [ 08/16] USB: fix endpoint-disabling for failed config changes
+Date: Fri, 18 Jan 2013 17:21:46 -0800
+Message-Id: <20130119012139.674584761@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119012138.680057206@linuxfoundation.org>
 References: <20130119012138.680057206@linuxfoundation.org>
@@ -28,67 +27,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Mingarelli <thomas.mingarelli@hp.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit ea2447f700cab264019b52e2b417d689e052dcfd upstream.
+commit 36caff5d795429c572443894e8789c2150dd796b upstream.
 
-This patch is to prevent non-USB devices that have RMRRs associated with them from
-being placed into the SI Domain during init. This fixes the issue where the RMRR info
-for devices being placed in and out of the SI Domain gets lost.
+This patch (as1631) fixes a bug that shows up when a config change
+fails for a device under an xHCI controller.  The controller needs to
+be told to disable the endpoints that have been enabled for the new
+config.  The existing code does this, but before storing the
+information about which endpoints were enabled!  As a result, any
+second attempt to install the new config is doomed to fail because
+xhci-hcd will refuse to enable an endpoint that is already enabled.
 
-Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
-Tested-by: Shuah Khan <shuah.khan@hp.com>
-Reviewed-by: Donald Dutile <ddutile@redhat.com>
-Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+The patch optimistically initializes the new endpoints' device
+structures before asking the device to switch to the new config.  If
+the request fails then the endpoint information is already stored, so
+we can use usb_hcd_alloc_bandwidth() to disable the endpoints with no
+trouble.  The rest of the error path is slightly more complex now; we
+have to disable the new interfaces and call put_device() rather than
+simply deallocating them.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Matthias Schniedermeyer <ms@citd.de>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 
 ---
- drivers/pci/intel-iommu.c |   31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+ drivers/usb/core/message.c |   53 ++++++++++++++++++++++++++-------------------
+ 1 file changed, 31 insertions(+), 22 deletions(-)
 
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -2289,8 +2289,39 @@ static int domain_add_dev_info(struct dm
- 	return 0;
- }
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -1770,28 +1770,8 @@ free_interfaces:
+ 		goto free_interfaces;
+ 	}
  
-+static bool device_has_rmrr(struct pci_dev *dev)
-+{
-+	struct dmar_rmrr_unit *rmrr;
-+	int i;
-+
-+	for_each_rmrr_units(rmrr) {
-+		for (i = 0; i < rmrr->devices_cnt; i++) {
-+			/*
-+			 * Return TRUE if this RMRR contains the device that
-+			 * is passed in.
-+			 */
-+			if (rmrr->devices[i] == dev)
-+				return true;
-+		}
-+	}
-+	return false;
-+}
-+
- static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
- {
-+
+-	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+-			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
+-			      NULL, 0, USB_CTRL_SET_TIMEOUT);
+-	if (ret < 0) {
+-		/* All the old state is gone, so what else can we do?
+-		 * The device is probably useless now anyway.
+-		 */
+-		cp = NULL;
+-	}
+-
+-	dev->actconfig = cp;
+-	if (!cp) {
+-		usb_set_device_state(dev, USB_STATE_ADDRESS);
+-		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
+-		mutex_unlock(hcd->bandwidth_mutex);
+-		usb_autosuspend_device(dev);
+-		goto free_interfaces;
+-	}
+-	mutex_unlock(hcd->bandwidth_mutex);
+-	usb_set_device_state(dev, USB_STATE_CONFIGURED);
+-
+-	/* Initialize the new interface structures and the
 +	/*
-+	 * We want to prevent any device associated with an RMRR from
-+	 * getting placed into the SI Domain. This is done because
-+	 * problems exist when devices are moved in and out of domains
-+	 * and their respective RMRR info is lost. We exempt USB devices
-+	 * from this process due to their usage of RMRRs that are known
-+	 * to not be needed after BIOS hand-off to OS.
-+	 */
-+	if (device_has_rmrr(pdev) &&
-+	    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
-+		return 0;
-+
- 	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
- 		return 1;
++	 * Initialize the new interface structures and the
+ 	 * hc/hcd/usbcore interface/endpoint state.
+ 	 */
+ 	for (i = 0; i < nintf; ++i) {
+@@ -1835,6 +1815,35 @@ free_interfaces:
+ 	}
+ 	kfree(new_interfaces);
  
++	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
++			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
++			      NULL, 0, USB_CTRL_SET_TIMEOUT);
++	if (ret < 0 && cp) {
++		/*
++		 * All the old state is gone, so what else can we do?
++		 * The device is probably useless now anyway.
++		 */
++		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
++		for (i = 0; i < nintf; ++i) {
++			usb_disable_interface(dev, cp->interface[i], true);
++			put_device(&cp->interface[i]->dev);
++			cp->interface[i] = NULL;
++		}
++		cp = NULL;
++	}
++
++	dev->actconfig = cp;
++	mutex_unlock(hcd->bandwidth_mutex);
++
++	if (!cp) {
++		usb_set_device_state(dev, USB_STATE_ADDRESS);
++
++		/* Leave LPM disabled while the device is unconfigured. */
++		usb_autosuspend_device(dev);
++		return ret;
++	}
++	usb_set_device_state(dev, USB_STATE_CONFIGURED);
++
+ 	if (cp->string == NULL &&
+ 			!(dev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
+ 		cp->string = usb_cache_string(dev, cp->desc.iConfiguration);
 
 
