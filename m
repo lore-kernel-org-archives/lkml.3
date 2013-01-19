@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab3ASBSG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:18:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56420 "EHLO mail.kernel.org"
+	id S1756327Ab3ASBdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:33:10 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56452 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754150Ab3ASBSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:18:00 -0500
+	id S1756138Ab3ASBSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:18:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [ 18/33] target: Add link_magic for fabric allow_link destination target_items
-Date: Fri, 18 Jan 2013 17:16:43 -0800
-Message-Id: <20130119010352.147222513@linuxfoundation.org>
+        Stefan Assmann <sassmann@kpanic.de>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Abdallah Chatila <abdallah.chatila@ericsson.com>
+Subject: [ 20/33] igb: release already assigned MSI-X interrupts if setup fails
+Date: Fri, 18 Jan 2013 17:16:45 -0800
+Message-Id: <20130119010353.099359883@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
 References: <20130119010345.885772698@linuxfoundation.org>
@@ -27,107 +28,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Stefan Assmann <sassmann@kpanic.de>
 
-commit 0ff8754981261a80f4b77db2536dfea92c2d4539 upstream.
+commit 52285b762b3681669215bf1d17ca6143448ab7d3 upstream.
 
-This patch adds [dev,lun]_link_magic value assignment + checks within generic
-target_fabric_port_link() and target_fabric_mappedlun_link() code to ensure
-destination config_item *target_item sent from configfs_symlink() ->
-config_item_operations->allow_link() is the underlying se_device->dev_group
-and se_lun->lun_group that we expect to symlink.
+During MSI-X setup the system might run out of vectors. If this happens the
+already assigned vectors for this NIC should be freed before trying the
+disable MSI-X. Failing to do so results in the following oops.
 
-Reported-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+kernel BUG at drivers/pci/msi.c:341!
+[...]
+Call Trace:
+ [<ffffffff8128f39d>] pci_disable_msix+0x3d/0x60
+ [<ffffffffa037d1ce>] igb_reset_interrupt_capability+0x27/0x5c [igb]
+ [<ffffffffa037d229>] igb_clear_interrupt_scheme+0x26/0x2d [igb]
+ [<ffffffffa0384268>] igb_request_irq+0x73/0x297 [igb]
+ [<ffffffffa0384554>] __igb_open+0xc8/0x223 [igb]
+ [<ffffffffa0384815>] igb_open+0x13/0x15 [igb]
+ [<ffffffff8144592f>] __dev_open+0xbf/0x120
+ [<ffffffff81443e51>] __dev_change_flags+0xa1/0x180
+ [<ffffffff81445828>] dev_change_flags+0x28/0x70
+ [<ffffffff814af537>] devinet_ioctl+0x5b7/0x620
+ [<ffffffff814b01c8>] inet_ioctl+0x88/0xa0
+ [<ffffffff8142e8a0>] sock_do_ioctl+0x30/0x70
+ [<ffffffff8142ecf2>] sock_ioctl+0x72/0x270
+ [<ffffffff8118062c>] do_vfs_ioctl+0x8c/0x340
+ [<ffffffff81180981>] sys_ioctl+0xa1/0xb0
+ [<ffffffff815161a9>] system_call_fastpath+0x16/0x1b
+Code: 48 89 df e8 1f 40 ed ff 4d 39 e6 49 8b 45 10 75 b6 48 83 c4 18 5b 41 5c 41 5d 41 5e 41 5f c9 c3 48 8b 7b 20 e8 3e 91 db ff eb ae <0f> 0b eb fe 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
+RIP  [<ffffffff8128e144>] free_msi_irqs+0x124/0x130
+ RSP <ffff880037503bd8>
+
+Signed-off-by: Stefan Assmann <sassmann@kpanic.de>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Abdallah Chatila <abdallah.chatila@ericsson.com>
 
 ---
- drivers/target/target_core_device.c          |    1 +
- drivers/target/target_core_fabric_configfs.c |   12 ++++++++++++
- drivers/target/target_core_tpg.c             |    1 +
- drivers/target/target_core_transport.c       |    1 +
- include/target/target_core_base.h            |    4 ++++
- 5 files changed, 19 insertions(+)
+ drivers/net/ethernet/intel/igb/igb_main.c |   22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1624,6 +1624,7 @@ int core_dev_setup_virtual_lun0(void)
- 		ret = PTR_ERR(dev);
- 		goto out;
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -909,17 +909,18 @@ static int igb_request_msix(struct igb_a
+ {
+ 	struct net_device *netdev = adapter->netdev;
+ 	struct e1000_hw *hw = &adapter->hw;
+-	int i, err = 0, vector = 0;
++	int i, err = 0, vector = 0, free_vector = 0;
+ 
+ 	err = request_irq(adapter->msix_entries[vector].vector,
+ 	                  igb_msix_other, 0, netdev->name, adapter);
+ 	if (err)
+-		goto out;
+-	vector++;
++		goto err_out;
+ 
+ 	for (i = 0; i < adapter->num_q_vectors; i++) {
+ 		struct igb_q_vector *q_vector = adapter->q_vector[i];
+ 
++		vector++;
++
+ 		q_vector->itr_register = hw->hw_addr + E1000_EITR(vector);
+ 
+ 		if (q_vector->rx.ring && q_vector->tx.ring)
+@@ -938,13 +939,22 @@ static int igb_request_msix(struct igb_a
+ 		                  igb_msix_ring, 0, q_vector->name,
+ 		                  q_vector);
+ 		if (err)
+-			goto out;
+-		vector++;
++			goto err_free;
  	}
-+	dev->dev_link_magic = SE_DEV_LINK_MAGIC;
- 	se_dev->se_dev_ptr = dev;
- 	g_lun0_dev = dev;
  
---- a/drivers/target/target_core_fabric_configfs.c
-+++ b/drivers/target/target_core_fabric_configfs.c
-@@ -71,6 +71,12 @@ static int target_fabric_mappedlun_link(
- 	struct se_portal_group *se_tpg;
- 	struct config_item *nacl_ci, *tpg_ci, *tpg_ci_s, *wwn_ci, *wwn_ci_s;
- 	int ret = 0, lun_access;
+ 	igb_configure_msix(adapter);
+ 	return 0;
+-out:
 +
-+	if (lun->lun_link_magic != SE_LUN_LINK_MAGIC) {
-+		pr_err("Bad lun->lun_link_magic, not a valid lun_ci pointer:"
-+			" %p to struct lun: %p\n", lun_ci, lun);
-+		return -EFAULT;
-+	}
- 	/*
- 	 * Ensure that the source port exists
- 	 */
-@@ -745,6 +751,12 @@ static int target_fabric_port_link(
- 	struct target_fabric_configfs *tf;
- 	int ret;
- 
-+	if (dev->dev_link_magic != SE_DEV_LINK_MAGIC) {
-+		pr_err("Bad dev->dev_link_magic, not a valid se_dev_ci pointer:"
-+			" %p to struct se_device: %p\n", se_dev_ci, dev);
-+		return -EFAULT;
-+	}
++err_free:
++	/* free already assigned IRQs */
++	free_irq(adapter->msix_entries[free_vector++].vector, adapter);
 +
- 	tpg_ci = &lun_ci->ci_parent->ci_group->cg_item;
- 	se_tpg = container_of(to_config_group(tpg_ci),
- 				struct se_portal_group, tpg_group);
---- a/drivers/target/target_core_tpg.c
-+++ b/drivers/target/target_core_tpg.c
-@@ -672,6 +672,7 @@ int core_tpg_register(
- 	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
- 		lun = se_tpg->tpg_lun_list[i];
- 		lun->unpacked_lun = i;
-+		lun->lun_link_magic = SE_LUN_LINK_MAGIC;
- 		lun->lun_status = TRANSPORT_LUN_STATUS_FREE;
- 		atomic_set(&lun->lun_acl_count, 0);
- 		init_completion(&lun->lun_shutdown_comp);
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1071,6 +1071,7 @@ struct se_device *transport_add_device_t
- 	dev->se_hba		= hba;
- 	dev->se_sub_dev		= se_dev;
- 	dev->transport		= transport;
-+	dev->dev_link_magic	= SE_DEV_LINK_MAGIC;
- 	INIT_LIST_HEAD(&dev->dev_list);
- 	INIT_LIST_HEAD(&dev->dev_sep_list);
- 	INIT_LIST_HEAD(&dev->dev_tmr_list);
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -734,6 +734,8 @@ struct se_subsystem_dev {
- };
++	vector--;
++	for (i = 0; i < vector; i++) {
++		free_irq(adapter->msix_entries[free_vector++].vector,
++			 adapter->q_vector[i]);
++	}
++err_out:
+ 	return err;
+ }
  
- struct se_device {
-+#define SE_DEV_LINK_MAGIC			0xfeeddeef
-+	u32			dev_link_magic;
- 	/* RELATIVE TARGET PORT IDENTIFER Counter */
- 	u16			dev_rpti_counter;
- 	/* Used for SAM Task Attribute ordering */
-@@ -820,6 +822,8 @@ struct se_port_stat_grps {
- };
- 
- struct se_lun {
-+#define SE_LUN_LINK_MAGIC			0xffff7771
-+	u32			lun_link_magic;
- 	/* See transport_lun_status_table */
- 	enum transport_lun_status_table lun_status;
- 	u32			lun_access;
 
 
