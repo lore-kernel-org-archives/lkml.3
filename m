@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab3ASBT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:19:56 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56786 "EHLO mail.kernel.org"
+	id S1756400Ab3ASB23 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:28:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56875 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755848Ab3ASBTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:19:51 -0500
+	id S1756114Ab3ASBT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:19:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mark Rustad <mark.d.rustad@intel.com>,
-        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 02/21] tcm_fc: Do not indicate retry capability to initiators
-Date: Fri, 18 Jan 2013 17:19:20 -0800
-Message-Id: <20130119010711.474387118@linuxfoundation.org>
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [ 19/21] tty: 8250_dw: Fix inverted arguments to serial_out in IRQ handler
+Date: Fri, 18 Jan 2013 17:19:37 -0800
+Message-Id: <20130119010714.537381066@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010710.897187774@linuxfoundation.org>
 References: <20130119010710.897187774@linuxfoundation.org>
@@ -27,36 +25,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-commit f2eeba214bcd0215b7f558cab6420e5fd153042b upstream.
+commit 68e56cb3a068f9c30971c6117fbbd1e32918e49e upstream.
 
-When generating a PRLI response to an initiator, clear the
-FCP_SPPF_RETRY bit in the response.
-
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Reviewed-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
-Acked by Robert Love <robert.w.love@intel.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/tcm_fc/tfc_sess.c |    2 +-
+ drivers/tty/serial/8250/8250_dw.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/target/tcm_fc/tfc_sess.c
-+++ b/drivers/target/tcm_fc/tfc_sess.c
-@@ -397,10 +397,10 @@ static int ft_prli_locked(struct fc_rpor
+--- a/drivers/tty/serial/8250/8250_dw.c
++++ b/drivers/tty/serial/8250/8250_dw.c
+@@ -79,7 +79,7 @@ static int dw8250_handle_irq(struct uart
+ 	} else if ((iir & UART_IIR_BUSY) == UART_IIR_BUSY) {
+ 		/* Clear the USR and write the LCR again. */
+ 		(void)p->serial_in(p, UART_USR);
+-		p->serial_out(p, d->last_lcr, UART_LCR);
++		p->serial_out(p, UART_LCR, d->last_lcr);
  
- 	/*
- 	 * OR in our service parameters with other provider (initiator), if any.
--	 * TBD XXX - indicate RETRY capability?
- 	 */
- fill:
- 	fcp_parm = ntohl(spp->spp_params);
-+	fcp_parm &= ~FCP_SPPF_RETRY;
- 	spp->spp_params = htonl(fcp_parm | FCP_SPPF_TARG_FCN);
- 	return FC_SPP_RESP_ACK;
- }
+ 		return 1;
+ 	}
 
 
