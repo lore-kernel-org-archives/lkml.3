@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab3ASTiL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 14:38:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:50282 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab3ASTiJ (ORCPT
+	id S1752232Ab3AST5k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 14:57:40 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:50155 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417Ab3AST5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 14:38:09 -0500
-Message-ID: <50FAF661.4070801@infradead.org>
-Date: Sat, 19 Jan 2013 11:39:13 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	Sat, 19 Jan 2013 14:57:39 -0500
+Date: Sat, 19 Jan 2013 22:57:20 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
+        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
+        minchan@kernel.org
+Subject: Re: [PATCH 2/5] staging: zcache: rename ramster to zcache
+Message-ID: <20130119195720.GP4584@mwanda>
+References: <1358544267-9104-1-git-send-email-dan.magenheimer@oracle.com>
+ <1358544267-9104-3-git-send-email-dan.magenheimer@oracle.com>
 MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, Nathan Zimmer <nzimmer@sgi.com>
-Subject: Re: mmotm 2013-01-18-15-48 uploaded (sched/stats.c)
-References: <20130118234944.5C99C31C240@corp2gmr1-1.hot.corp.google.com>
-In-Reply-To: <20130118234944.5C99C31C240@corp2gmr1-1.hot.corp.google.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358544267-9104-3-git-send-email-dan.magenheimer@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/13 15:49, akpm@linux-foundation.org wrote:
-> The mm-of-the-moment snapshot 2013-01-18-15-48 has been uploaded to
-> 
->    http://www.ozlabs.org/~akpm/mmotm/
-> 
-> mmotm-readme.txt says
-> 
-> README for mm-of-the-moment:
-> 
-> http://www.ozlabs.org/~akpm/mmotm/
-> 
-> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> more than once a week.
-> 
+On Fri, Jan 18, 2013 at 01:24:24PM -0800, Dan Magenheimer wrote:
+> [V2: no code changes, patchset now generated via git format-patch -M]
 
-on i386 or x86_64:
+If you put these comments below the --- cut off line (together with
+the diffstat) then "git am" won't add them to the commit log.
 
-kernel/sched/stats.c:31:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+regards,
+dan carpenter
 
 
-
--- 
-~Randy
