@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab3ASBVJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:21:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56987 "EHLO mail.kernel.org"
+	id S1756664Ab3ASBVd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:21:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56963 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756653Ab3ASBUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:20:11 -0500
+	id S1756616Ab3ASBUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:20:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 16/21] USB: option: add TP-LINK HSUPA Modem MA180
-Date: Fri, 18 Jan 2013 17:19:34 -0800
-Message-Id: <20130119010713.974246077@linuxfoundation.org>
+        Matt Wilson <msw@amazon.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Annie Li <annie.li@oracle.com>, xen-devel@lists.xen.org
+Subject: [ 14/21] xen/grant-table: correctly initialize grant table version 1
+Date: Fri, 18 Jan 2013 17:19:32 -0800
+Message-Id: <20130119010713.667133748@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010710.897187774@linuxfoundation.org>
 References: <20130119010710.897187774@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,47 +27,214 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Matt Wilson <msw@amazon.com>
 
-commit 99beb2e9687ffd61c92a9875141eabe6f57a71b9 upstream.
+commit d0b4d64aadb9f4a90669848de9ef3819050a98cd upstream.
 
-The driver description files gives these names to the vendor specific
-functions on this modem:
+Commit 85ff6acb075a484780b3d763fdf41596d8fc0970 (xen/granttable: Grant
+tables V2 implementation) changed the GREFS_PER_GRANT_FRAME macro from
+a constant to a conditional expression. The expression depends on
+grant_table_version being appropriately set. Unfortunately, at init
+time grant_table_version will be 0. The GREFS_PER_GRANT_FRAME
+conditional expression checks for "grant_table_version == 1", and
+therefore returns the number of grant references per frame for v2.
 
- Diagnostics VID_2357&PID_0201&MI_00
- NMEA        VID_2357&PID_0201&MI_01
- Modem       VID_2357&PID_0201&MI_03
- Networkcard VID_2357&PID_0201&MI_04
+This causes gnttab_init() to allocate fewer pages for gnttab_list, as
+a frame can old half the number of v2 entries than v1 entries. After
+gnttab_resume() is called, grant_table_version is appropriately
+set. nr_init_grefs will then be miscalculated and gnttab_free_count
+will hold a value larger than the actual number of free gref entries.
 
-Reported-by: Thomas Schäfer <tschaefer@t-online.de>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+If a guest is heavily utilizing improperly initialized v1 grant
+tables, memory corruption can occur. One common manifestation is
+corruption of the vmalloc list, resulting in a poisoned pointer
+derefrence when accessing /proc/meminfo or /proc/vmallocinfo:
+
+[   40.770064] BUG: unable to handle kernel paging request at 0000200200001407
+[   40.770083] IP: [<ffffffff811a6fb0>] get_vmalloc_info+0x70/0x110
+[   40.770102] PGD 0
+[   40.770107] Oops: 0000 [#1] SMP
+[   40.770114] CPU 10
+
+This patch introduces a static variable, grefs_per_grant_frame, to
+cache the calculated value. gnttab_init() now calls
+gnttab_request_version() early so that grant_table_version and
+grefs_per_grant_frame can be appropriately set. A few BUG_ON()s have
+been added to prevent this type of bug from reoccurring in the future.
+
+Signed-off-by: Matt Wilson <msw@amazon.com>
+Reviewed-and-Tested-by: Steven Noonan <snoonan@amazon.com>
+Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Annie Li <annie.li@oracle.com>
+Cc: xen-devel@lists.xen.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/xen/grant-table.c |   48 +++++++++++++++++++++++++++-------------------
+ 1 file changed, 29 insertions(+), 19 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -449,6 +449,10 @@ static void option_instat_callback(struc
- #define PETATEL_VENDOR_ID			0x1ff4
- #define PETATEL_PRODUCT_NP10T			0x600e
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -53,10 +53,6 @@
+ /* External tools reserve first few grant table entries. */
+ #define NR_RESERVED_ENTRIES 8
+ #define GNTTAB_LIST_END 0xffffffff
+-#define GREFS_PER_GRANT_FRAME \
+-(grant_table_version == 1 ?                      \
+-(PAGE_SIZE / sizeof(struct grant_entry_v1)) :   \
+-(PAGE_SIZE / sizeof(union grant_entry_v2)))
  
-+/* TP-LINK Incorporated products */
-+#define TPLINK_VENDOR_ID			0x2357
-+#define TPLINK_PRODUCT_MA180			0x0201
+ static grant_ref_t **gnttab_list;
+ static unsigned int nr_grant_frames;
+@@ -151,6 +147,7 @@ static struct gnttab_ops *gnttab_interfa
+ static grant_status_t *grstatus;
+ 
+ static int grant_table_version;
++static int grefs_per_grant_frame;
+ 
+ static struct gnttab_free_callback *gnttab_free_callback_list;
+ 
+@@ -679,12 +676,14 @@ static int grow_gnttab_list(unsigned int
+ 	unsigned int new_nr_grant_frames, extra_entries, i;
+ 	unsigned int nr_glist_frames, new_nr_glist_frames;
+ 
++	BUG_ON(grefs_per_grant_frame == 0);
 +
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -1311,6 +1315,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x00, 0x00) },
- 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
- 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
-+	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+ 	new_nr_grant_frames = nr_grant_frames + more_frames;
+-	extra_entries       = more_frames * GREFS_PER_GRANT_FRAME;
++	extra_entries       = more_frames * grefs_per_grant_frame;
+ 
+-	nr_glist_frames = (nr_grant_frames * GREFS_PER_GRANT_FRAME + RPP - 1) / RPP;
++	nr_glist_frames = (nr_grant_frames * grefs_per_grant_frame + RPP - 1) / RPP;
+ 	new_nr_glist_frames =
+-		(new_nr_grant_frames * GREFS_PER_GRANT_FRAME + RPP - 1) / RPP;
++		(new_nr_grant_frames * grefs_per_grant_frame + RPP - 1) / RPP;
+ 	for (i = nr_glist_frames; i < new_nr_glist_frames; i++) {
+ 		gnttab_list[i] = (grant_ref_t *)__get_free_page(GFP_ATOMIC);
+ 		if (!gnttab_list[i])
+@@ -692,12 +691,12 @@ static int grow_gnttab_list(unsigned int
+ 	}
+ 
+ 
+-	for (i = GREFS_PER_GRANT_FRAME * nr_grant_frames;
+-	     i < GREFS_PER_GRANT_FRAME * new_nr_grant_frames - 1; i++)
++	for (i = grefs_per_grant_frame * nr_grant_frames;
++	     i < grefs_per_grant_frame * new_nr_grant_frames - 1; i++)
+ 		gnttab_entry(i) = i + 1;
+ 
+ 	gnttab_entry(i) = gnttab_free_head;
+-	gnttab_free_head = GREFS_PER_GRANT_FRAME * nr_grant_frames;
++	gnttab_free_head = grefs_per_grant_frame * nr_grant_frames;
+ 	gnttab_free_count += extra_entries;
+ 
+ 	nr_grant_frames = new_nr_grant_frames;
+@@ -799,7 +798,8 @@ EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
+ 
+ static unsigned nr_status_frames(unsigned nr_grant_frames)
+ {
+-	return (nr_grant_frames * GREFS_PER_GRANT_FRAME + SPP - 1) / SPP;
++	BUG_ON(grefs_per_grant_frame == 0);
++	return (nr_grant_frames * grefs_per_grant_frame + SPP - 1) / SPP;
+ }
+ 
+ static int gnttab_map_frames_v1(unsigned long *frames, unsigned int nr_gframes)
+@@ -957,6 +957,7 @@ static void gnttab_request_version(void)
+ 	rc = HYPERVISOR_grant_table_op(GNTTABOP_set_version, &gsv, 1);
+ 	if (rc == 0 && gsv.version == 2) {
+ 		grant_table_version = 2;
++		grefs_per_grant_frame = PAGE_SIZE / sizeof(union grant_entry_v2);
+ 		gnttab_interface = &gnttab_v2_ops;
+ 	} else if (grant_table_version == 2) {
+ 		/*
+@@ -969,17 +970,17 @@ static void gnttab_request_version(void)
+ 		panic("we need grant tables version 2, but only version 1 is available");
+ 	} else {
+ 		grant_table_version = 1;
++		grefs_per_grant_frame = PAGE_SIZE / sizeof(struct grant_entry_v1);
+ 		gnttab_interface = &gnttab_v1_ops;
+ 	}
+ 	printk(KERN_INFO "Grant tables using version %d layout.\n",
+ 		grant_table_version);
+ }
+ 
+-int gnttab_resume(void)
++static int gnttab_setup(void)
+ {
+ 	unsigned int max_nr_gframes;
+ 
+-	gnttab_request_version();
+ 	max_nr_gframes = gnttab_max_grant_frames();
+ 	if (max_nr_gframes < nr_grant_frames)
+ 		return -ENOSYS;
+@@ -1002,6 +1003,12 @@ int gnttab_resume(void)
+ 	return 0;
+ }
+ 
++int gnttab_resume(void)
++{
++	gnttab_request_version();
++	return gnttab_setup();
++}
++
+ int gnttab_suspend(void)
+ {
+ 	gnttab_interface->unmap_frames();
+@@ -1013,9 +1020,10 @@ static int gnttab_expand(unsigned int re
+ 	int rc;
+ 	unsigned int cur, extra;
+ 
++	BUG_ON(grefs_per_grant_frame == 0);
+ 	cur = nr_grant_frames;
+-	extra = ((req_entries + (GREFS_PER_GRANT_FRAME-1)) /
+-		 GREFS_PER_GRANT_FRAME);
++	extra = ((req_entries + (grefs_per_grant_frame-1)) /
++		 grefs_per_grant_frame);
+ 	if (cur + extra > gnttab_max_grant_frames())
+ 		return -ENOSPC;
+ 
+@@ -1033,21 +1041,23 @@ int gnttab_init(void)
+ 	unsigned int nr_init_grefs;
+ 	int ret;
+ 
++	gnttab_request_version();
+ 	nr_grant_frames = 1;
+ 	boot_max_nr_grant_frames = __max_nr_grant_frames();
+ 
+ 	/* Determine the maximum number of frames required for the
+ 	 * grant reference free list on the current hypervisor.
+ 	 */
++	BUG_ON(grefs_per_grant_frame == 0);
+ 	max_nr_glist_frames = (boot_max_nr_grant_frames *
+-			       GREFS_PER_GRANT_FRAME / RPP);
++			       grefs_per_grant_frame / RPP);
+ 
+ 	gnttab_list = kmalloc(max_nr_glist_frames * sizeof(grant_ref_t *),
+ 			      GFP_KERNEL);
+ 	if (gnttab_list == NULL)
+ 		return -ENOMEM;
+ 
+-	nr_glist_frames = (nr_grant_frames * GREFS_PER_GRANT_FRAME + RPP - 1) / RPP;
++	nr_glist_frames = (nr_grant_frames * grefs_per_grant_frame + RPP - 1) / RPP;
+ 	for (i = 0; i < nr_glist_frames; i++) {
+ 		gnttab_list[i] = (grant_ref_t *)__get_free_page(GFP_KERNEL);
+ 		if (gnttab_list[i] == NULL) {
+@@ -1056,12 +1066,12 @@ int gnttab_init(void)
+ 		}
+ 	}
+ 
+-	if (gnttab_resume() < 0) {
++	if (gnttab_setup() < 0) {
+ 		ret = -ENODEV;
+ 		goto ini_nomem;
+ 	}
+ 
+-	nr_init_grefs = nr_grant_frames * GREFS_PER_GRANT_FRAME;
++	nr_init_grefs = nr_grant_frames * grefs_per_grant_frame;
+ 
+ 	for (i = NR_RESERVED_ENTRIES; i < nr_init_grefs - 1; i++)
+ 		gnttab_entry(i) = i + 1;
 
 
