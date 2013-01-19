@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305Ab3ASTBa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 14:01:30 -0500
-Received: from norkia.v3.sk ([91.210.183.14]:39238 "EHLO norkia.v3.sk"
+	id S1752231Ab3ASTBP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 14:01:15 -0500
+Received: from londo.lunn.ch ([80.238.139.98]:56044 "EHLO londo.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752242Ab3ASTBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 14:01:18 -0500
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Lubomir Rintel <lkundrak@v3.sk>, Bing Zhao <bzhao@marvell.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        libertas-dev@lists.infradead.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] bluetooth: btmrvl_sdio: look for sd8688 firmware in proper location
-Date: Sat, 19 Jan 2013 20:01:04 +0100
-Message-Id: <1358622064-782-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1358495893.5510.0.camel@aeonflux>
-References: <1358495893.5510.0.camel@aeonflux>
+	id S1751554Ab3ASTBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jan 2013 14:01:14 -0500
+Date: Sat, 19 Jan 2013 19:59:07 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Soeren Moch <smoch@web.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
+ dma_alloc_coherent() calls
+Message-ID: <20130119185907.GA20719@lunn.ch>
+References: <20121119144826.f59667b2.akpm@linux-foundation.org>
+ <201301171049.30415.arnd@arndb.de>
+ <50F800EB.6040104@web.de>
+ <201301172026.45514.arnd@arndb.de>
+ <50FABBED.1020905@web.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FABBED.1020905@web.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The firmware images are shared with libertas_sdio WiFi chip and used to be in
-libertas/ subtree in linux-firmware. As btmrvl_sdio used to look into the
-linux-firmware root, it ended up being unsuccessful. Since the firmware files
-are not specific to the libertas hardware, they're being moved into mrvl/ now.
+> Please find attached a debug log generated with your patch.
+> 
+> I used the sata disk and two em28xx dvb sticks, no other usb devices,
+> no ethernet cable connected, tuners on saa716x-based card not used.
+> 
+> What I can see in the log: a lot of coherent mappings from sata_mv
+> and orion_ehci, a few from mv643xx_eth, no other coherent mappings.
+> All coherent mappings are page aligned, some of them (from orion_ehci)
+> are not really small (as claimed in __alloc_from_pool).
+> 
+> I don't believe in a memory leak. When I restart vdr (the application
+> utilizing the dvb sticks) then there is enough dma memory available
+> again.
 
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
----
- drivers/bluetooth/btmrvl_sdio.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Hi Soeren
 
-diff --git a/drivers/bluetooth/btmrvl_sdio.c b/drivers/bluetooth/btmrvl_sdio.c
-index 9959d4c..1cb5183 100644
---- a/drivers/bluetooth/btmrvl_sdio.c
-+++ b/drivers/bluetooth/btmrvl_sdio.c
-@@ -83,8 +83,8 @@ static const struct btmrvl_sdio_card_reg btmrvl_reg_87xx = {
- };
- 
- static const struct btmrvl_sdio_device btmrvl_sdio_sd8688 = {
--	.helper		= "sd8688_helper.bin",
--	.firmware	= "sd8688.bin",
-+	.helper		= "mrvl/sd8688_helper.bin",
-+	.firmware	= "mrvl/sd8688.bin",
- 	.reg		= &btmrvl_reg_8688,
- 	.sd_blksz_fw_dl	= 64,
- };
-@@ -1185,7 +1185,7 @@ MODULE_AUTHOR("Marvell International Ltd.");
- MODULE_DESCRIPTION("Marvell BT-over-SDIO driver ver " VERSION);
- MODULE_VERSION(VERSION);
- MODULE_LICENSE("GPL v2");
--MODULE_FIRMWARE("sd8688_helper.bin");
--MODULE_FIRMWARE("sd8688.bin");
-+MODULE_FIRMWARE("mrvl/sd8688_helper.bin");
-+MODULE_FIRMWARE("mrvl/sd8688.bin");
- MODULE_FIRMWARE("mrvl/sd8787_uapsta.bin");
- MODULE_FIRMWARE("mrvl/sd8797_uapsta.bin");
--- 
-1.7.1
+We should be able to rule out a leak. Mount debugfg and then:
 
+while [ /bin/true ] ; do cat /debug/dma-api/num_free_entries ; sleep 60 ; done
+
+while you are capturing. See if the number goes down.
+
+      Andrew
