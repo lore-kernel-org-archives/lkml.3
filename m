@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab3ASBWO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:22:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57290 "EHLO mail.kernel.org"
+	id S1756792Ab3ASBYF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:24:05 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57255 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756609Ab3ASBWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:22:10 -0500
+	id S1756737Ab3ASBWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:22:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [ 04/16] s390/time: fix sched_clock() overflow
-Date: Fri, 18 Jan 2013 17:21:42 -0800
-Message-Id: <20130119012139.208036935@linuxfoundation.org>
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Raoul Bhatia <raoul@bhatia.at>
+Subject: [ 10/16] drbd: add missing part_round_stats to _drbd_start_io_acct
+Date: Fri, 18 Jan 2013 17:21:48 -0800
+Message-Id: <20130119012139.891644530@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119012138.680057206@linuxfoundation.org>
 References: <20130119012138.680057206@linuxfoundation.org>
@@ -26,89 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Philipp Reisner <philipp.reisner@linbit.com>
 
-commit ed4f20943cd4c7b55105c04daedf8d63ab6d499c upstream.
+commit 72585d2428fa3a0daab02ebad1f41e5ef517dbaa upstream.
 
-Converting a 64 Bit TOD format value to nanoseconds means that the value
-must be divided by 4.096. In order to achieve that we multiply with 125
-and divide by 512.
-When used within sched_clock() this triggers an overflow after appr.
-417 days. Resulting in a sched_clock() return value that is much smaller
-than previously and therefore may cause all sort of weird things in
-subsystems that rely on a monotonic sched_clock() behaviour.
+Without this, iostat frequently sees bogus svctime and >= 100% "utilization".
 
-To fix this implement a tod_to_ns() helper function which converts TOD
-values without overflow and call this function from both places that
-open coded the conversion: sched_clock() and kvm_s390_handle_wait().
-
-Reviewed-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+Cc: Raoul Bhatia <raoul@bhatia.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/timex.h |   28 ++++++++++++++++++++++++++++
- arch/s390/kernel/time.c       |    2 +-
- arch/s390/kvm/interrupt.c     |    2 +-
- 3 files changed, 30 insertions(+), 2 deletions(-)
+ drivers/block/drbd/drbd_req.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/s390/include/asm/timex.h
-+++ b/arch/s390/include/asm/timex.h
-@@ -126,4 +126,32 @@ static inline unsigned long long get_clo
- 	return get_clock_xt() - sched_clock_base_cc;
- }
- 
-+/**
-+ * tod_to_ns - convert a TOD format value to nanoseconds
-+ * @todval: to be converted TOD format value
-+ * Returns: number of nanoseconds that correspond to the TOD format value
-+ *
-+ * Converting a 64 Bit TOD format value to nanoseconds means that the value
-+ * must be divided by 4.096. In order to achieve that we multiply with 125
-+ * and divide by 512:
-+ *
-+ *    ns = (todval * 125) >> 9;
-+ *
-+ * In order to avoid an overflow with the multiplication we can rewrite this.
-+ * With a split todval == 2^32 * th + tl (th upper 32 bits, tl lower 32 bits)
-+ * we end up with
-+ *
-+ *    ns = ((2^32 * th + tl) * 125 ) >> 9;
-+ * -> ns = (2^23 * th * 125) + ((tl * 125) >> 9);
-+ *
-+ */
-+static inline unsigned long long tod_to_ns(unsigned long long todval)
-+{
-+	unsigned long long ns;
-+
-+	ns = ((todval >> 32) << 23) * 125;
-+	ns += ((todval & 0xffffffff) * 125) >> 9;
-+	return ns;
-+}
-+
- #endif
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -63,7 +63,7 @@ static DEFINE_PER_CPU(struct clock_event
-  */
- unsigned long long notrace __kprobes sched_clock(void)
- {
--	return (get_clock_monotonic() * 125) >> 9;
-+	return tod_to_ns(get_clock_monotonic());
- }
- 
- /*
---- a/arch/s390/kvm/interrupt.c
-+++ b/arch/s390/kvm/interrupt.c
-@@ -358,7 +358,7 @@ int kvm_s390_handle_wait(struct kvm_vcpu
- 		return 0;
- 	}
- 
--	sltime = ((vcpu->arch.sie_block->ckc - now)*125)>>9;
-+	sltime = tod_to_ns(vcpu->arch.sie_block->ckc - now);
- 
- 	hrtimer_start(&vcpu->arch.ckc_timer, ktime_set (0, sltime) , HRTIMER_MODE_REL);
- 	VCPU_EVENT(vcpu, 5, "enabled wait via clock comparator: %llx ns", sltime);
+--- a/drivers/block/drbd/drbd_req.c
++++ b/drivers/block/drbd/drbd_req.c
+@@ -37,6 +37,7 @@ static void _drbd_start_io_acct(struct d
+ 	const int rw = bio_data_dir(bio);
+ 	int cpu;
+ 	cpu = part_stat_lock();
++	part_round_stats(cpu, &mdev->vdisk->part0);
+ 	part_stat_inc(cpu, &mdev->vdisk->part0, ios[rw]);
+ 	part_stat_add(cpu, &mdev->vdisk->part0, sectors[rw], bio_sectors(bio));
+ 	part_inc_in_flight(&mdev->vdisk->part0, rw);
 
 
