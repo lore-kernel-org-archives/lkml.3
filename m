@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab3ASBYk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:24:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57224 "EHLO mail.kernel.org"
+	id S1756717Ab3ASBWG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:22:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57193 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756719Ab3ASBWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:22:07 -0500
+	id S1756602Ab3ASBWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:22:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [ 08/16] USB: fix endpoint-disabling for failed config changes
-Date: Fri, 18 Jan 2013 17:21:46 -0800
-Message-Id: <20130119012139.674584761@linuxfoundation.org>
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, CAI Qian <caiqian@redhat.com>
+Subject: [ 05/16] x86/Sandy Bridge: reserve pages when integrated graphics is present
+Date: Fri, 18 Jan 2013 17:21:43 -0800
+Message-Id: <20130119012139.322649608@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119012138.680057206@linuxfoundation.org>
 References: <20130119012138.680057206@linuxfoundation.org>
@@ -27,104 +26,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-commit 36caff5d795429c572443894e8789c2150dd796b upstream.
+commit a9acc5365dbda29f7be2884efb63771dc24bd815 upstream.
 
-This patch (as1631) fixes a bug that shows up when a config change
-fails for a device under an xHCI controller.  The controller needs to
-be told to disable the endpoints that have been enabled for the new
-config.  The existing code does this, but before storing the
-information about which endpoints were enabled!  As a result, any
-second attempt to install the new config is doomed to fail because
-xhci-hcd will refuse to enable an endpoint that is already enabled.
+SNB graphics devices have a bug that prevent them from accessing certain
+memory ranges, namely anything below 1M and in the pages listed in the
+table.  So reserve those at boot if set detect a SNB gfx device on the
+CPU to avoid GPU hangs.
 
-The patch optimistically initializes the new endpoints' device
-structures before asking the device to switch to the new config.  If
-the request fails then the endpoint information is already stored, so
-we can use usb_hcd_alloc_bandwidth() to disable the endpoints with no
-trouble.  The rest of the error path is slightly more complex now; we
-have to disable the new interfaces and call put_device() rather than
-simply deallocating them.
+Stephane Marchesin had a similar patch to the page allocator awhile
+back, but rather than reserving pages up front, it leaked them at
+allocation time.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Matthias Schniedermeyer <ms@citd.de>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+[ hpa: made a number of stylistic changes, marked arrays as static
+  const, and made less verbose; use "memblock=debug" for full
+  verbosity. ]
+
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
 
 ---
- drivers/usb/core/message.c |   53 ++++++++++++++++++++++++++-------------------
- 1 file changed, 31 insertions(+), 22 deletions(-)
+ arch/x86/kernel/setup.c |   78 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 78 insertions(+)
 
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -1770,28 +1770,8 @@ free_interfaces:
- 		goto free_interfaces;
- 	}
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -631,6 +631,81 @@ static __init void reserve_ibft_region(v
  
--	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
--			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
--			      NULL, 0, USB_CTRL_SET_TIMEOUT);
--	if (ret < 0) {
--		/* All the old state is gone, so what else can we do?
--		 * The device is probably useless now anyway.
--		 */
--		cp = NULL;
--	}
--
--	dev->actconfig = cp;
--	if (!cp) {
--		usb_set_device_state(dev, USB_STATE_ADDRESS);
--		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
--		mutex_unlock(hcd->bandwidth_mutex);
--		usb_autosuspend_device(dev);
--		goto free_interfaces;
--	}
--	mutex_unlock(hcd->bandwidth_mutex);
--	usb_set_device_state(dev, USB_STATE_CONFIGURED);
--
--	/* Initialize the new interface structures and the
+ static unsigned reserve_low = CONFIG_X86_RESERVE_LOW << 10;
+ 
++static bool __init snb_gfx_workaround_needed(void)
++{
++	int i;
++	u16 vendor, devid;
++	static const u16 snb_ids[] = {
++		0x0102,
++		0x0112,
++		0x0122,
++		0x0106,
++		0x0116,
++		0x0126,
++		0x010a,
++	};
++
++	/* Assume no if something weird is going on with PCI */
++	if (!early_pci_allowed())
++		return false;
++
++	vendor = read_pci_config_16(0, 2, 0, PCI_VENDOR_ID);
++	if (vendor != 0x8086)
++		return false;
++
++	devid = read_pci_config_16(0, 2, 0, PCI_DEVICE_ID);
++	for (i = 0; i < ARRAY_SIZE(snb_ids); i++)
++		if (devid == snb_ids[i])
++			return true;
++
++	return false;
++}
++
++/*
++ * Sandy Bridge graphics has trouble with certain ranges, exclude
++ * them from allocation.
++ */
++static void __init trim_snb_memory(void)
++{
++	static const unsigned long bad_pages[] = {
++		0x20050000,
++		0x20110000,
++		0x20130000,
++		0x20138000,
++		0x40004000,
++	};
++	int i;
++
++	if (!snb_gfx_workaround_needed())
++		return;
++
++	printk(KERN_DEBUG "reserving inaccessible SNB gfx pages\n");
++
 +	/*
-+	 * Initialize the new interface structures and the
- 	 * hc/hcd/usbcore interface/endpoint state.
++	 * Reserve all memory below the 1 MB mark that has not
++	 * already been reserved.
++	 */
++	memblock_reserve(0, 1<<20);
++
++	for (i = 0; i < ARRAY_SIZE(bad_pages); i++) {
++		if (memblock_reserve(bad_pages[i], PAGE_SIZE))
++			printk(KERN_WARNING "failed to reserve 0x%08lx\n",
++			       bad_pages[i]);
++	}
++}
++
++/*
++ * Here we put platform-specific memory range workarounds, i.e.
++ * memory known to be corrupt or otherwise in need to be reserved on
++ * specific platforms.
++ *
++ * If this gets used more widely it could use a real dispatch mechanism.
++ */
++static void __init trim_platform_memory_ranges(void)
++{
++	trim_snb_memory();
++}
++
+ static void __init trim_bios_range(void)
+ {
+ 	/*
+@@ -651,6 +726,7 @@ static void __init trim_bios_range(void)
+ 	 * take them out.
  	 */
- 	for (i = 0; i < nintf; ++i) {
-@@ -1835,6 +1815,35 @@ free_interfaces:
- 	}
- 	kfree(new_interfaces);
+ 	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
++
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+ }
  
-+	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
-+			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
-+			      NULL, 0, USB_CTRL_SET_TIMEOUT);
-+	if (ret < 0 && cp) {
-+		/*
-+		 * All the old state is gone, so what else can we do?
-+		 * The device is probably useless now anyway.
-+		 */
-+		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
-+		for (i = 0; i < nintf; ++i) {
-+			usb_disable_interface(dev, cp->interface[i], true);
-+			put_device(&cp->interface[i]->dev);
-+			cp->interface[i] = NULL;
-+		}
-+		cp = NULL;
-+	}
+@@ -929,6 +1005,8 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	setup_trampolines();
+ 
++	trim_platform_memory_ranges();
 +
-+	dev->actconfig = cp;
-+	mutex_unlock(hcd->bandwidth_mutex);
-+
-+	if (!cp) {
-+		usb_set_device_state(dev, USB_STATE_ADDRESS);
-+
-+		/* Leave LPM disabled while the device is unconfigured. */
-+		usb_autosuspend_device(dev);
-+		return ret;
-+	}
-+	usb_set_device_state(dev, USB_STATE_CONFIGURED);
-+
- 	if (cp->string == NULL &&
- 			!(dev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
- 		cp->string = usb_cache_string(dev, cp->desc.iConfiguration);
+ 	init_gbpages();
+ 
+ 	/* max_pfn_mapped is updated here */
 
 
