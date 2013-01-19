@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab3ASAyx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 19:54:53 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:64441 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755728Ab3ASAyv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 19:54:51 -0500
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: David Howells <dhowells@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Subject: [PATCH next-20130118 2/2] KEYS: MODSIGN: Fix wrong select in MODULE_SIG Kconfig
-Date: Sat, 19 Jan 2013 01:54:31 +0100
-Message-Id: <1358556871-6651-2-git-send-email-sedat.dilek@gmail.com>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1358556871-6651-1-git-send-email-sedat.dilek@gmail.com>
-References: <1358556871-6651-1-git-send-email-sedat.dilek@gmail.com>
+	id S1754945Ab3ASBCx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:02:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1758 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752570Ab3ASBCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:02:52 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1358556813-12518-1-git-send-email-dinggnu@gmail.com>
+References: <1358556813-12518-1-git-send-email-dinggnu@gmail.com>
+To: Cong Ding <dinggnu@gmail.com>
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] include/keys/system_keyring.h: fix building error
+Date: Sat, 19 Jan 2013 01:02:46 +0000
+Message-ID: <8083.1358557366@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There exists no SYSTEM_TRUSTED_KEYS Kconfig option but
-SYSTEM_TRUSTED_KEYRING.
+Cong Ding <dinggnu@gmail.com> wrote:
 
-Tested against Linux-Next (next-20130118).
+> When I am doing "make randconfig", it causes the following building error if
+> CONFIG_SYSTEM_TRUSTED_KEYRING is not defined and CONFIG_MODULE_SIG is defined.
 
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
----
- init/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Can you tell me what you're doing your build upon?
 
-diff --git a/init/Kconfig b/init/Kconfig
-index f7e1b32..7191ccf 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1689,7 +1689,7 @@ config MODULE_SRCVERSION_ALL
- config MODULE_SIG
- 	bool "Module signature verification"
- 	depends on MODULES
--	select SYSTEM_TRUSTED_KEYS
-+	select SYSTEM_TRUSTED_KEYRING
- 	select KEYS
- 	select CRYPTO
- 	select ASYMMETRIC_KEY_TYPE
--- 
-1.8.1.1
+> -#ifdef CONFIG_SYSTEM_TRUSTED_KEYRING
+> +#if defined(CONFIG_SYSTEM_TRUSTED_KEYRING) || defined(CONFIG_MODULE_SIG)
 
+This isn't the right way to do it: CONFIG_MODULE_SIG should require
+CONFIG_SYSTEM_TRUSTED_KEYRING to be "=y" otherwise you don't get the .c file
+either.  Can you check that it isn't "=m"?
+
+David
