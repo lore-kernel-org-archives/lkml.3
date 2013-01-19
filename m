@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633Ab3ASB1I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:27:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56916 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756553Ab3ASBUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756371Ab3ASBUD (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 18 Jan 2013 20:20:03 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56865 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756553Ab3ASBT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:19:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [ 10/21] target: Add link_magic for fabric allow_link destination target_items
-Date: Fri, 18 Jan 2013 17:19:28 -0800
-Message-Id: <20130119010713.123101960@linuxfoundation.org>
+        Chen Jun <jun.d.chen@intel.com>, channing <chao.bi@intel.com>
+Subject: [ 18/21] serial:ifx6x60:Delete SPI timer when shut down port
+Date: Fri, 18 Jan 2013 17:19:36 -0800
+Message-Id: <20130119010714.384278346@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010710.897187774@linuxfoundation.org>
 References: <20130119010710.897187774@linuxfoundation.org>
@@ -27,107 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: chao bi <chao.bi@intel.com>
 
-commit 0ff8754981261a80f4b77db2536dfea92c2d4539 upstream.
+commit 014b9b4ce84281ccb3d723c792bed19815f3571a upstream.
 
-This patch adds [dev,lun]_link_magic value assignment + checks within generic
-target_fabric_port_link() and target_fabric_mappedlun_link() code to ensure
-destination config_item *target_item sent from configfs_symlink() ->
-config_item_operations->allow_link() is the underlying se_device->dev_group
-and se_lun->lun_group that we expect to symlink.
+When shut down SPI port, it's possible that MRDY has been asserted and a SPI
+timer was activated waiting for SRDY assert, in the case, it needs to delete
+this timer.
 
-Reported-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Chen Jun <jun.d.chen@intel.com>
+Signed-off-by: channing <chao.bi@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_device.c          |    1 +
- drivers/target/target_core_fabric_configfs.c |   12 ++++++++++++
- drivers/target/target_core_tpg.c             |    1 +
- drivers/target/target_core_transport.c       |    1 +
- include/target/target_core_base.h            |    4 ++++
- 5 files changed, 19 insertions(+)
+ drivers/tty/serial/ifx6x60.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1665,6 +1665,7 @@ int core_dev_setup_virtual_lun0(void)
- 		ret = PTR_ERR(dev);
- 		goto out;
- 	}
-+	dev->dev_link_magic = SE_DEV_LINK_MAGIC;
- 	se_dev->se_dev_ptr = dev;
- 	g_lun0_dev = dev;
+--- a/drivers/tty/serial/ifx6x60.c
++++ b/drivers/tty/serial/ifx6x60.c
+@@ -552,6 +552,7 @@ static void ifx_port_shutdown(struct tty
+ 		container_of(port, struct ifx_spi_device, tty_port);
  
---- a/drivers/target/target_core_fabric_configfs.c
-+++ b/drivers/target/target_core_fabric_configfs.c
-@@ -72,6 +72,12 @@ static int target_fabric_mappedlun_link(
- 	struct se_portal_group *se_tpg;
- 	struct config_item *nacl_ci, *tpg_ci, *tpg_ci_s, *wwn_ci, *wwn_ci_s;
- 	int ret = 0, lun_access;
-+
-+	if (lun->lun_link_magic != SE_LUN_LINK_MAGIC) {
-+		pr_err("Bad lun->lun_link_magic, not a valid lun_ci pointer:"
-+			" %p to struct lun: %p\n", lun_ci, lun);
-+		return -EFAULT;
-+	}
- 	/*
- 	 * Ensure that the source port exists
- 	 */
-@@ -746,6 +752,12 @@ static int target_fabric_port_link(
- 	struct target_fabric_configfs *tf;
- 	int ret;
- 
-+	if (dev->dev_link_magic != SE_DEV_LINK_MAGIC) {
-+		pr_err("Bad dev->dev_link_magic, not a valid se_dev_ci pointer:"
-+			" %p to struct se_device: %p\n", se_dev_ci, dev);
-+		return -EFAULT;
-+	}
-+
- 	tpg_ci = &lun_ci->ci_parent->ci_group->cg_item;
- 	se_tpg = container_of(to_config_group(tpg_ci),
- 				struct se_portal_group, tpg_group);
---- a/drivers/target/target_core_tpg.c
-+++ b/drivers/target/target_core_tpg.c
-@@ -677,6 +677,7 @@ int core_tpg_register(
- 	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
- 		lun = se_tpg->tpg_lun_list[i];
- 		lun->unpacked_lun = i;
-+		lun->lun_link_magic = SE_LUN_LINK_MAGIC;
- 		lun->lun_status = TRANSPORT_LUN_STATUS_FREE;
- 		atomic_set(&lun->lun_acl_count, 0);
- 		init_completion(&lun->lun_shutdown_comp);
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1341,6 +1341,7 @@ struct se_device *transport_add_device_t
- 	dev->se_hba		= hba;
- 	dev->se_sub_dev		= se_dev;
- 	dev->transport		= transport;
-+	dev->dev_link_magic	= SE_DEV_LINK_MAGIC;
- 	INIT_LIST_HEAD(&dev->dev_list);
- 	INIT_LIST_HEAD(&dev->dev_sep_list);
- 	INIT_LIST_HEAD(&dev->dev_tmr_list);
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -779,6 +779,8 @@ struct se_subsystem_dev {
- };
- 
- struct se_device {
-+#define SE_DEV_LINK_MAGIC			0xfeeddeef
-+	u32			dev_link_magic;
- 	/* RELATIVE TARGET PORT IDENTIFER Counter */
- 	u16			dev_rpti_counter;
- 	/* Used for SAM Task Attribute ordering */
-@@ -869,6 +871,8 @@ struct se_port_stat_grps {
- };
- 
- struct se_lun {
-+#define SE_LUN_LINK_MAGIC			0xffff7771
-+	u32			lun_link_magic;
- 	/* See transport_lun_status_table */
- 	enum transport_lun_status_table lun_status;
- 	u32			lun_access;
+ 	mrdy_set_low(ifx_dev);
++	del_timer(&ifx_dev->spi_timer);
+ 	clear_bit(IFX_SPI_STATE_TIMER_PENDING, &ifx_dev->flags);
+ 	tasklet_kill(&ifx_dev->io_work_tasklet);
+ }
 
 
