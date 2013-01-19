@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153Ab3ASJEc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 04:04:32 -0500
-Received: from mga09.intel.com ([134.134.136.24]:20759 "EHLO mga09.intel.com"
+	id S1752144Ab3ASJFw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 04:05:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:64203 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752101Ab3ASJDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 04:03:23 -0500
+	id S1752089Ab3ASJDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jan 2013 04:03:22 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,498,1355126400"; 
-   d="scan'208";a="274089858"
+   d="scan'208";a="275794026"
 From: Jon Mason <jon.mason@intel.com>
 To: Greg KH <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Dave Jiang <dave.jiang@intel.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 20/21] ntb_netdev: improve logging
-Date: Sat, 19 Jan 2013 02:02:34 -0700
-Message-Id: <1358586155-23322-21-git-send-email-jon.mason@intel.com>
+Subject: [PATCH 07/21] NTB: zero PCI driver data
+Date: Sat, 19 Jan 2013 02:02:21 -0700
+Message-Id: <1358586155-23322-8-git-send-email-jon.mason@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
 References: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
@@ -24,42 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Improve driver logging to be more helpful
+Zero pci_device_id driver_data variable.  Unused, but 'EXTRA_CFLAGS=-W'
+complained of uninitialized variables.
 
 Signed-off-by: Jon Mason <jon.mason@intel.com>
 ---
- drivers/net/ntb_netdev.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/ntb/ntb_hw.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/ntb_netdev.c b/drivers/net/ntb_netdev.c
-index 37173ce..02213a8 100644
---- a/drivers/net/ntb_netdev.c
-+++ b/drivers/net/ntb_netdev.c
-@@ -153,7 +153,7 @@ static netdev_tx_t ntb_netdev_start_xmit(struct sk_buff *skb,
- 	struct ntb_netdev *dev = netdev_priv(ndev);
- 	int rc;
+diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
+index 0b46fef..867ccaa 100644
+--- a/drivers/ntb/ntb_hw.c
++++ b/drivers/ntb/ntb_hw.c
+@@ -83,14 +83,14 @@ enum {
+ #define MW_TO_BAR(mw)	(mw * 2 + 2)
  
--	netdev_dbg(ndev, "ntb_transport_tx_enqueue\n");
-+	netdev_dbg(ndev, "%s: skb len %d\n", __func__, skb->len);
+ static DEFINE_PCI_DEVICE_TABLE(ntb_pci_tbl) = {
+-	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_B2B_BWD)},
+-	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_B2B_JSF)},
+-	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_CLASSIC_JSF)},
+-	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_RP_JSF)},
+-	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_RP_SNB)},
+-	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_B2B_SNB)},
+-	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_CLASSIC_SNB)},
+-	{0}
++	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_B2B_BWD),		0},
++	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_B2B_JSF),		0},
++	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_CLASSIC_JSF),	0},
++	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_RP_JSF),		0},
++	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_RP_SNB),		0},
++	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_B2B_SNB),		0},
++	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_CLASSIC_SNB),	0},
++	{0, 0, 0, 0, 0, 0, 0}
+ };
+ MODULE_DEVICE_TABLE(pci, ntb_pci_tbl);
  
- 	rc = ntb_transport_tx_enqueue(dev->qp, skb, skb->data, skb->len);
- 	if (rc)
-@@ -355,7 +355,7 @@ static int ntb_netdev_probe(struct pci_dev *pdev)
- 		goto err1;
- 
- 	list_add(&dev->list, &dev_list);
--	pr_info("%s: %s created\n", KBUILD_MODNAME, ndev->name);
-+	dev_info(&pdev->dev, "%s created\n", ndev->name);
- 	return 0;
- 
- err1:
-@@ -408,6 +408,5 @@ static void __exit ntb_netdev_exit_module(void)
- {
- 	ntb_unregister_client(&ntb_netdev_client);
- 	ntb_unregister_client_dev(KBUILD_MODNAME);
--	pr_info("%s: Driver removed\n", KBUILD_MODNAME);
- }
- module_exit(ntb_netdev_exit_module);
 -- 
 1.7.9.5
 
