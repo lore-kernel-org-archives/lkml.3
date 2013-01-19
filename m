@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab3ASBbB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:31:01 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56544 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756204Ab3ASBSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:18:12 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [ 27/33] tty: serial: vt8500: fix return value check in vt8500_serial_probe()
-Date: Fri, 18 Jan 2013 17:16:52 -0800
-Message-Id: <20130119010355.658816062@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
-References: <20130119010345.885772698@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1756281Ab3ASBbR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:31:17 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:32790 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756001Ab3ASBbP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:31:15 -0500
+Date: Fri, 18 Jan 2013 20:23:36 -0500
+From: Jake Champlin <jake.champlin.27@gmail.com>
+To: abbotti@mev.co.uk
+Cc: fmhess@users.sourceforge.net, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        jake.champlin.27@gmail.com, hsweeten@visionengravers.com,
+        wfp5p@virginia.edu
+Subject: [PATCH] Staging: Comedi: amplc_dio200: Fixed bracing issue
+Message-ID: <20130119012332.GA1256@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+Fixed coding style error
 
-------------------
-
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-
-commit a6dd114e16cbc4410049a90a8a67b967333d108d upstream.
-
-In case of error, function of_clk_get() returns ERR_PTR()
-and never returns NULL. The NULL test in the return value
-check should be replaced with IS_ERR().
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Acked-by: Tony Prisk <linux@prisktech.co.nz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Jake Champlin <jake.champlin.27@gmail.com>
 ---
- drivers/tty/serial/vt8500_serial.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/amplc_dio200.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/tty/serial/vt8500_serial.c
-+++ b/drivers/tty/serial/vt8500_serial.c
-@@ -604,7 +604,7 @@ static int __devinit vt8500_serial_probe
- 	vt8500_port->uart.flags = UPF_IOREMAP | UPF_BOOT_AUTOCONF;
- 
- 	vt8500_port->clk = of_clk_get(pdev->dev.of_node, 0);
--	if (vt8500_port->clk) {
-+	if (!IS_ERR(vt8500_port->clk)) {
- 		vt8500_port->uart.uartclk = clk_get_rate(vt8500_port->clk);
- 	} else {
- 		/* use the default of 24Mhz if not specified and warn */
+diff --git a/drivers/staging/comedi/drivers/amplc_dio200.c b/drivers/staging/comedi/drivers/amplc_dio200.c
+index 5f309ba..b09269d 100644
+--- a/drivers/staging/comedi/drivers/amplc_dio200.c
++++ b/drivers/staging/comedi/drivers/amplc_dio200.c
+@@ -1977,8 +1977,7 @@ static int dio200_auto_attach(struct comedi_device *dev,
+ 		devpriv->io.u.iobase = (unsigned long)base;
+ 		devpriv->io.regtype = io_regtype;
+ 	}
+-	switch (thisboard->model)
+-	{
++	switch (thisboard->model) {
+ 	case pcie215_model:
+ 	case pcie236_model:
+ 	case pcie296_model:
+-- 
+1.8.1.1
 
 
+-- 
+Jake Champlin
+jake.champlin.27@gmail.com
+8123742937
+<MuttClient>
