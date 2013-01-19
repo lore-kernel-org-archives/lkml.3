@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab3ASBag (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:30:36 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:52490 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755877Ab3ASBad (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:30:33 -0500
-Date: Fri, 18 Jan 2013 17:30:52 -0800
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: acme@ghostprotocols.net, Anton Blanchard <anton@au1.ibm.com>,
-        paulus@samba.org
-Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: [PATCH] perf: Fix compile warnings in tests/attr.c
-Message-ID: <20130119013052.GA24693@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011901-4834-0000-0000-000002C037D1
+	id S1756503Ab3ASBbB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:31:01 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56544 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756204Ab3ASBSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:18:12 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [ 27/33] tty: serial: vt8500: fix return value check in vt8500_serial_probe()
+Date: Fri, 18 Jan 2013 17:16:52 -0800
+Message-Id: <20130119010355.658816062@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
+References: <20130119010345.885772698@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 4d266e5040c33103f5d226b0d16b89f8ef79e3ad Mon Sep 17 00:00:00 2001
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Date: Fri, 18 Jan 2013 11:14:28 -0800
-Subject: [PATCH] perf: Fix compile warnings in tests/attr.c
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-Replace '%llu' in printf()s with 'PRIu64' in 'tools/perf/tests/attr.c'
-to fix compile warnings (which become errors due to -Werror).
+------------------
 
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+
+commit a6dd114e16cbc4410049a90a8a67b967333d108d upstream.
+
+In case of error, function of_clk_get() returns ERR_PTR()
+and never returns NULL. The NULL test in the return value
+check should be replaced with IS_ERR().
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Acked-by: Tony Prisk <linux@prisktech.co.nz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- tools/perf/tests/attr.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+ drivers/tty/serial/vt8500_serial.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
-index f61dd3f..5cbb2b3 100644
---- a/tools/perf/tests/attr.c
-+++ b/tools/perf/tests/attr.c
-@@ -65,7 +65,7 @@ static int store_event(struct perf_event_attr *attr, pid_t pid, int cpu,
- 	FILE *file;
- 	char path[PATH_MAX];
+--- a/drivers/tty/serial/vt8500_serial.c
++++ b/drivers/tty/serial/vt8500_serial.c
+@@ -604,7 +604,7 @@ static int __devinit vt8500_serial_probe
+ 	vt8500_port->uart.flags = UPF_IOREMAP | UPF_BOOT_AUTOCONF;
  
--	snprintf(path, PATH_MAX, "%s/event-%d-%llu-%d", dir,
-+	snprintf(path, PATH_MAX, "%s/event-%d-%" PRIu64 "-%d", dir,
- 		 attr->type, attr->config, fd);
- 
- 	file = fopen(path, "w+");
-@@ -74,7 +74,7 @@ static int store_event(struct perf_event_attr *attr, pid_t pid, int cpu,
- 		return -1;
- 	}
- 
--	if (fprintf(file, "[event-%d-%llu-%d]\n",
-+	if (fprintf(file, "[event-%d-%" PRIu64 "-%d]\n",
- 		    attr->type, attr->config, fd) < 0) {
- 		perror("test attr - failed to write event file");
- 		fclose(file);
-@@ -91,10 +91,10 @@ static int store_event(struct perf_event_attr *attr, pid_t pid, int cpu,
- 	/* struct perf_event_attr */
- 	WRITE_ASS(type,   PRIu32);
- 	WRITE_ASS(size,   PRIu32);
--	WRITE_ASS(config,  "llu");
--	WRITE_ASS(sample_period, "llu");
--	WRITE_ASS(sample_type,   "llu");
--	WRITE_ASS(read_format,   "llu");
-+	WRITE_ASS(config,  PRIu64);
-+	WRITE_ASS(sample_period, PRIu64);
-+	WRITE_ASS(sample_type,   PRIu64);
-+	WRITE_ASS(read_format,   PRIu64);
- 	WRITE_ASS(disabled,       "d");
- 	WRITE_ASS(inherit,        "d");
- 	WRITE_ASS(pinned,         "d");
-@@ -119,10 +119,10 @@ static int store_event(struct perf_event_attr *attr, pid_t pid, int cpu,
- 	WRITE_ASS(exclude_callchain_user, "d");
- 	WRITE_ASS(wakeup_events, PRIu32);
- 	WRITE_ASS(bp_type, PRIu32);
--	WRITE_ASS(config1, "llu");
--	WRITE_ASS(config2, "llu");
--	WRITE_ASS(branch_sample_type, "llu");
--	WRITE_ASS(sample_regs_user,   "llu");
-+	WRITE_ASS(config1, PRIu64);
-+	WRITE_ASS(config2, PRIu64);
-+	WRITE_ASS(branch_sample_type, PRIu64);
-+	WRITE_ASS(sample_regs_user,   PRIu64);
- 	WRITE_ASS(sample_stack_user,  PRIu32);
- 
- 	fclose(file);
--- 
-1.7.1
+ 	vt8500_port->clk = of_clk_get(pdev->dev.of_node, 0);
+-	if (vt8500_port->clk) {
++	if (!IS_ERR(vt8500_port->clk)) {
+ 		vt8500_port->uart.uartclk = clk_get_rate(vt8500_port->clk);
+ 	} else {
+ 		/* use the default of 24Mhz if not specified and warn */
+
 
