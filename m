@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025Ab3ASKS6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 05:18:58 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:36823 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab3ASKSz (ORCPT
+	id S1751952Ab3ASK12 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 05:27:28 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:55911 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab3ASK10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 05:18:55 -0500
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Markus Grabner <grabner@icg.tugraz.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
-        Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 2/2] staging: line6: clean up line6_variax_process_message()
-Date: Sat, 19 Jan 2013 11:18:44 +0100
-Message-Id: <1358590724-30961-3-git-send-email-stefanha@gmail.com>
-X-Mailer: git-send-email 1.8.0.2
-In-Reply-To: <1358590724-30961-1-git-send-email-stefanha@gmail.com>
-References: <1358590724-30961-1-git-send-email-stefanha@gmail.com>
+	Sat, 19 Jan 2013 05:27:26 -0500
+Date: Sat, 19 Jan 2013 11:27:21 +0100
+From: Cong Ding <dinggnu@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Gleb Natapov <gleb@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Asias He <asias.hejun@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] kvm tools: remove redundant "if" condition
+Message-ID: <20130119102719.GA12013@gmail.com>
+References: <1358298456-18377-1-git-send-email-dinggnu@gmail.com>
+ <20130116113522.GR11529@redhat.com>
+ <20130116165239.GB18593@gmail.com>
+ <CAOJsxLFHhKLxNcjwUO-tFrjZ5MYFhWdgBX-LHSkh28-SX1cE4Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOJsxLFHhKLxNcjwUO-tFrjZ5MYFhWdgBX-LHSkh28-SX1cE4Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previous versions of the line6 driver snooped MIDI traffic in order to
-make device state accessible via sysfs attributes.  This involved a lot
-of logic in line6_variax_process_message() that has since been removed.
+On Sat, Jan 19, 2013 at 10:58:33AM +0200, Pekka Enberg wrote:
+> On Wed, Jan 16, 2013 at 6:52 PM, Cong Ding <dinggnu@gmail.com> wrote:
+> > After we check (state.kcount != 0), state.kcount has to be 0 in all the "else"
+> > branchs.
+> >
+> > Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> > ---
+> >  tools/kvm/hw/i8042.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/tools/kvm/hw/i8042.c b/tools/kvm/hw/i8042.c
+> > index 9f8be6a..9035732 100644
+> > --- a/tools/kvm/hw/i8042.c
+> > +++ b/tools/kvm/hw/i8042.c
+> > @@ -189,7 +189,7 @@ static u32 kbd_read_data(void)
+> >                 state.mcount--;
+> >                 kvm__irq_line(state.kvm, AUX_IRQ, 0);
+> >                 kbd_update_irq();
+> > -       } else if (state.kcount == 0) {
+> > +       } else {
+> >                 i = state.kread - 1;
+> >                 if (i < 0)
+> >                         i = QUEUE_SIZE;
+> 
+> This doesn't look right. The 'kcount' field is an int so the value can
+> be negative.
+But the former check is "state.kcount != 0" as I described in the commit
+message. Notice the difference between variable names in the "if" condition: the
+first one is kcount, the second one is mcount, and the third one is same as the
+first one kcount.
 
-Drop unused conditionals in line6_variax_process_message().
+Ok, the original code is
+	if (state.kcount != 0) {
+		/* do something when (state.kcount != 0) */
+	} else if (state.mcount > 0) {
+		/* do something when (state.kcount == 0 && state.mount > 0) */
+	} else if (state.kcount == 0) {
+		/* do something when (state.kcount == 0 && state.mount <= 0) */
+	}
+For the third branch, it runs when state.kcount == 0 and state.mount <= 0,
+it's not necessary to ensure state.kcount == 0 again.
 
-Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
----
- drivers/staging/line6/variax.c | 14 --------------
- 1 file changed, 14 deletions(-)
-
-diff --git a/drivers/staging/line6/variax.c b/drivers/staging/line6/variax.c
-index 4fca58f..bd0f694 100644
---- a/drivers/staging/line6/variax.c
-+++ b/drivers/staging/line6/variax.c
-@@ -133,13 +133,6 @@ void line6_variax_process_message(struct usb_line6_variax *variax)
- 	const unsigned char *buf = variax->line6.buffer_message;
- 
- 	switch (buf[0]) {
--	case LINE6_PARAM_CHANGE | LINE6_CHANNEL_HOST:
--		break;
--
--	case LINE6_PROGRAM_CHANGE | LINE6_CHANNEL_DEVICE:
--	case LINE6_PROGRAM_CHANGE | LINE6_CHANNEL_HOST:
--		break;
--
- 	case LINE6_RESET:
- 		dev_info(variax->line6.ifcdev, "VARIAX reset\n");
- 		break;
-@@ -154,13 +147,6 @@ void line6_variax_process_message(struct usb_line6_variax *variax)
- 			variax_startup4((unsigned long)variax);
- 		}
- 		break;
--
--	case LINE6_SYSEX_END:
--		break;
--
--	default:
--		dev_dbg(variax->line6.ifcdev,
--			"Variax: unknown message %02X\n", buf[0]);
- 	}
- }
- 
--- 
-1.8.0.2
+- cong
 
