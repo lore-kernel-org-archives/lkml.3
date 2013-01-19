@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab3ASB1s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:27:48 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56892 "EHLO mail.kernel.org"
+	id S1756282Ab3ASBUA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:20:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56857 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756580Ab3ASBUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:20:01 -0500
+	id S1755848Ab3ASBT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:19:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 21/21] staging: vt6656: Fix inconsistent structure packing
-Date: Fri, 18 Jan 2013 17:19:39 -0800
-Message-Id: <20130119010714.855379869@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>, CAI Qian <caiqian@redhat.com>
+Subject: [ 07/21] ALSA: usb - fix race in creation of M-Audio Fast track pro driver
+Date: Fri, 18 Jan 2013 17:19:25 -0800
+Message-Id: <20130119010712.611108425@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010710.897187774@linuxfoundation.org>
 References: <20130119010710.897187774@linuxfoundation.org>
@@ -25,238 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 1ee4c55fc9620451b2a825d793042a7e0775391b upstream.
+commit b98ae2729dea161edc96c9d177459b6c28bcbba5 upstream.
 
-vt6656 has several headers that use the #pragma pack(1) directive to
-enable structure packing, but never disable it.  The layout of
-structures defined in other headers can then depend on which order the
-various headers are included in, breaking the One Definition Rule.
+A patch in the 3.2 kernel caused regression with hotplugging the
+M-Audio Fast track pro, or sound after suspend. I don't have the
+device so I haven't done a full analysis, but it seems userspace
+(both udev and pulseaudio) got confused when a card was created,
+immediately destroyed, and then created again.
 
-In practice this resulted in crashes on x86_64 until the order of header
-inclusion was changed for some files in commit 11d404cb56ecd ('staging:
-vt6656: fix headers and add cfg80211.').  But we need a proper fix that
-won't be affected by future changes to the order of inclusion.
+However, at least one person in the bug report (martin djfun)
+reports that this patch resolves the issue for him. It also leaves
+a message in the log:
+"snd-usb-audio: probe of 1-1.1:1.1 failed with error -5" which is
+a bit misleading. It is better than non-working audio, but maybe
+there's a more elegant solution?
 
-This removes the #pragma pack(1) directives and adds __packed to the
-structure definitions for which packing appears to have been intended.
-
-Reported-and-tested-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+BugLink: https://bugs.launchpad.net/bugs/1095315
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Cc: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/bssdb.h |    1 -
- drivers/staging/vt6656/int.h   |    1 -
- drivers/staging/vt6656/iocmd.h |   33 ++++++++++++++++-----------------
- drivers/staging/vt6656/iowpa.h |    8 +++-----
- 4 files changed, 19 insertions(+), 24 deletions(-)
+ sound/usb/quirks.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/vt6656/bssdb.h
-+++ b/drivers/staging/vt6656/bssdb.h
-@@ -92,7 +92,6 @@ typedef struct tagSRSNCapObject {
- } SRSNCapObject, *PSRSNCapObject;
- 
- // BSS info(AP)
--#pragma pack(1)
- typedef struct tagKnownBSS {
-     // BSS info
-     BOOL            bActive;
---- a/drivers/staging/vt6656/int.h
-+++ b/drivers/staging/vt6656/int.h
-@@ -34,7 +34,6 @@
- #include "device.h"
- 
- /*---------------------  Export Definitions -------------------------*/
--#pragma pack(1)
- typedef struct tagSINTData {
-     BYTE    byTSR0;
-     BYTE    byPkt0;
---- a/drivers/staging/vt6656/iocmd.h
-+++ b/drivers/staging/vt6656/iocmd.h
-@@ -95,13 +95,12 @@ typedef enum tagWZONETYPE {
- // Ioctl interface structure
- // Command structure
- //
--#pragma pack(1)
- typedef struct tagSCmdRequest {
- 	u8 name[16];
- 	void	*data;
- 	u16	    wResult;
- 	u16     wCmdCode;
--} SCmdRequest, *PSCmdRequest;
-+} __packed SCmdRequest, *PSCmdRequest;
- 
- //
- // Scan
-@@ -111,7 +110,7 @@ typedef struct tagSCmdScan {
- 
-     u8	    ssid[SSID_MAXLEN + 2];
- 
--} SCmdScan, *PSCmdScan;
-+} __packed SCmdScan, *PSCmdScan;
- 
- //
- // BSS Join
-@@ -126,7 +125,7 @@ typedef struct tagSCmdBSSJoin {
-     BOOL    bPSEnable;
-     BOOL    bShareKeyAuth;
- 
--} SCmdBSSJoin, *PSCmdBSSJoin;
-+} __packed SCmdBSSJoin, *PSCmdBSSJoin;
- 
- //
- // Zonetype Setting
-@@ -137,7 +136,7 @@ typedef struct tagSCmdZoneTypeSet {
-  BOOL       bWrite;
-  WZONETYPE  ZoneType;
- 
--} SCmdZoneTypeSet, *PSCmdZoneTypeSet;
-+} __packed SCmdZoneTypeSet, *PSCmdZoneTypeSet;
- 
- typedef struct tagSWPAResult {
-          char	ifname[100];
-@@ -145,7 +144,7 @@ typedef struct tagSWPAResult {
- 	u8 key_mgmt;
- 	u8 eap_type;
-          BOOL authenticated;
--} SWPAResult, *PSWPAResult;
-+} __packed SWPAResult, *PSWPAResult;
- 
- typedef struct tagSCmdStartAP {
- 
-@@ -157,7 +156,7 @@ typedef struct tagSCmdStartAP {
-     BOOL    bShareKeyAuth;
-     u8      byBasicRate;
- 
--} SCmdStartAP, *PSCmdStartAP;
-+} __packed SCmdStartAP, *PSCmdStartAP;
- 
- typedef struct tagSCmdSetWEP {
- 
-@@ -167,7 +166,7 @@ typedef struct tagSCmdSetWEP {
-     BOOL    bWepKeyAvailable[WEP_NKEYS];
-     u32     auWepKeyLength[WEP_NKEYS];
- 
--} SCmdSetWEP, *PSCmdSetWEP;
-+} __packed SCmdSetWEP, *PSCmdSetWEP;
- 
- typedef struct tagSBSSIDItem {
- 
-@@ -180,14 +179,14 @@ typedef struct tagSBSSIDItem {
-     BOOL    bWEPOn;
-     u32     uRSSI;
- 
--} SBSSIDItem;
-+} __packed SBSSIDItem;
- 
- 
- typedef struct tagSBSSIDList {
- 
- 	u32		    uItem;
- 	SBSSIDItem	sBSSIDList[0];
--} SBSSIDList, *PSBSSIDList;
-+} __packed SBSSIDList, *PSBSSIDList;
- 
- 
- typedef struct tagSNodeItem {
-@@ -208,7 +207,7 @@ typedef struct tagSNodeItem {
-     u32            uTxAttempts;
-     u16            wFailureRatio;
- 
--} SNodeItem;
-+} __packed SNodeItem;
- 
- 
- typedef struct tagSNodeList {
-@@ -216,7 +215,7 @@ typedef struct tagSNodeList {
- 	u32		    uItem;
- 	SNodeItem	sNodeList[0];
- 
--} SNodeList, *PSNodeList;
-+} __packed SNodeList, *PSNodeList;
- 
- 
- typedef struct tagSCmdLinkStatus {
-@@ -229,7 +228,7 @@ typedef struct tagSCmdLinkStatus {
-     u32     uChannel;
-     u32     uLinkRate;
- 
--} SCmdLinkStatus, *PSCmdLinkStatus;
-+} __packed SCmdLinkStatus, *PSCmdLinkStatus;
- 
- //
- // 802.11 counter
-@@ -247,7 +246,7 @@ typedef struct tagSDot11MIBCount {
-     u32 ReceivedFragmentCount;
-     u32 MulticastReceivedFrameCount;
-     u32 FCSErrorCount;
--} SDot11MIBCount, *PSDot11MIBCount;
-+} __packed SDot11MIBCount, *PSDot11MIBCount;
- 
- 
- 
-@@ -355,13 +354,13 @@ typedef struct tagSStatMIBCount {
-     u32   ullTxBroadcastBytes[2];
-     u32   ullTxMulticastBytes[2];
-     u32   ullTxDirectedBytes[2];
--} SStatMIBCount, *PSStatMIBCount;
-+} __packed SStatMIBCount, *PSStatMIBCount;
- 
- typedef struct tagSCmdValue {
- 
-     u32     dwValue;
- 
--} SCmdValue,  *PSCmdValue;
-+} __packed SCmdValue,  *PSCmdValue;
- 
- //
- // hostapd & viawget ioctl related
-@@ -431,7 +430,7 @@ struct viawget_hostapd_param {
- 			u8 ssid[32];
- 		} scan_req;
- 	} u;
--};
-+} __packed;
- 
- /*---------------------  Export Classes  ----------------------------*/
- 
---- a/drivers/staging/vt6656/iowpa.h
-+++ b/drivers/staging/vt6656/iowpa.h
-@@ -67,12 +67,11 @@ enum {
- 
- 
- 
--#pragma pack(1)
- typedef struct viawget_wpa_header {
- 	u8 type;
- 	u16 req_ie_len;
- 	u16 resp_ie_len;
--} viawget_wpa_header;
-+} __packed viawget_wpa_header;
- 
- struct viawget_wpa_param {
- 	u32 cmd;
-@@ -113,9 +112,8 @@ struct viawget_wpa_param {
- 			u8 *buf;
- 		} scan_results;
- 	} u;
--};
-+} __packed;
- 
--#pragma pack(1)
- struct viawget_scan_result {
- 	u8 bssid[6];
- 	u8 ssid[32];
-@@ -130,7 +128,7 @@ struct viawget_scan_result {
- 	int noise;
- 	int level;
- 	int maxrate;
--};
-+} __packed;
- 
- /*---------------------  Export Classes  ----------------------------*/
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -387,11 +387,13 @@ static int snd_usb_fasttrackpro_boot_qui
+ 		 * rules
+ 		 */
+ 		err = usb_driver_set_configuration(dev, 2);
+-		if (err < 0) {
++		if (err < 0)
+ 			snd_printdd("error usb_driver_set_configuration: %d\n",
+ 				    err);
+-			return -ENODEV;
+-		}
++		/* Always return an error, so that we stop creating a device
++		   that will just be destroyed and recreated with a new
++		   configuration */
++		return -ENODEV;
+ 	} else
+ 		snd_printk(KERN_INFO "usb-audio: Fast Track Pro config OK\n");
  
 
 
