@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab3ASBVh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:21:37 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:41044 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756616Ab3ASBVf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:21:35 -0500
-Date: Fri, 18 Jan 2013 20:21:45 -0500
-From: Jake Champlin <jake.champlin.27@gmail.com>
-To: abbotti@mev.co.uk
-Cc: fmhess@users.sourceforge.net, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        hsweeten@visiongravers.com, wfp5@virginia.edu,
-        jake.champlin.27@gmail.com
-Subject: [PATCH] Staging: Comedi: amplc_dio200: Fixed bracing issue
-Message-ID: <20130119012140.GA1236@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756238Ab3ASBUG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:20:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56883 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755848Ab3ASBUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:20:00 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Tormod Volden <debian.tormod@gmail.com>
+Subject: [ 20/21] staging: wlan-ng: Fix clamping of returned SSID length
+Date: Fri, 18 Jan 2013 17:19:38 -0800
+Message-Id: <20130119010714.716690078@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130119010710.897187774@linuxfoundation.org>
+References: <20130119010710.897187774@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style error
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Jake Champlin <jake.champlin.27@gmail.com>
+------------------
+
+From: Tormod Volden <debian.tormod@gmail.com>
+
+commit 811a37effdb11e54e1ff1ddaa944286c88f58487 upstream.
+
+Commit 2e254212 broke listing of available network names, since it
+clamped the length of the returned SSID to WLAN_BSSID_LEN (6) instead of
+WLAN_SSID_MAXLEN (32).
+
+https://bugzilla.kernel.org/show_bug.cgi?id=52501
+
+Signed-off-by: Tormod Volden <debian.tormod@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/staging/comedi/drivers/amplc_dio200.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/staging/wlan-ng/prism2mgmt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/drivers/amplc_dio200.c b/drivers/staging/comedi/drivers/amplc_dio200.c
-index 5f309ba..b09269d 100644
---- a/drivers/staging/comedi/drivers/amplc_dio200.c
-+++ b/drivers/staging/comedi/drivers/amplc_dio200.c
-@@ -1977,8 +1977,7 @@ static int dio200_auto_attach(struct comedi_device *dev,
- 		devpriv->io.u.iobase = (unsigned long)base;
- 		devpriv->io.regtype = io_regtype;
- 	}
--	switch (thisboard->model)
--	{
-+	switch (thisboard->model) {
- 	case pcie215_model:
- 	case pcie236_model:
- 	case pcie296_model:
--- 
-1.8.1.1
+--- a/drivers/staging/wlan-ng/prism2mgmt.c
++++ b/drivers/staging/wlan-ng/prism2mgmt.c
+@@ -406,7 +406,7 @@ int prism2mgmt_scan_results(wlandevice_t
+ 	/* SSID */
+ 	req->ssid.status = P80211ENUM_msgitem_status_data_ok;
+ 	req->ssid.data.len = le16_to_cpu(item->ssid.len);
+-	req->ssid.data.len = min_t(u16, req->ssid.data.len, WLAN_BSSID_LEN);
++	req->ssid.data.len = min_t(u16, req->ssid.data.len, WLAN_SSID_MAXLEN);
+ 	memcpy(req->ssid.data.data, item->ssid.data, req->ssid.data.len);
+ 
+ 	/* supported rates */
 
 
--- 
-Jake Champlin
-jake.champlin.27@gmail.com
-8123742937
-<MuttClient>
