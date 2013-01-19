@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab3ASBSt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:18:49 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56614 "EHLO mail.kernel.org"
+	id S1756286Ab3ASBSR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:18:17 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56565 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756304Ab3ASBST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:18:19 -0500
+	id S1755405Ab3ASBSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:18:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 31/33] staging: vt6656: Fix inconsistent structure packing
-Date: Fri, 18 Jan 2013 17:16:56 -0800
-Message-Id: <20130119010356.757360524@linuxfoundation.org>
+        Stephen Hurd <shurd@broadcom.com>, Michael Chan <mchan@broadcom.com>
+Subject: [ 29/33] 8250/16?50: Add support for Broadcom TruManage redirected serial port
+Date: Fri, 18 Jan 2013 17:16:54 -0800
+Message-Id: <20130119010356.275515220@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
 References: <20130119010345.885772698@linuxfoundation.org>
@@ -25,238 +25,161 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Stephen Hurd <shurd@broadcom.com>
 
-commit 1ee4c55fc9620451b2a825d793042a7e0775391b upstream.
+commit ebebd49a8eab5e9aa1b1f8f1614ccc3c2120f886 upstream.
 
-vt6656 has several headers that use the #pragma pack(1) directive to
-enable structure packing, but never disable it.  The layout of
-structures defined in other headers can then depend on which order the
-various headers are included in, breaking the One Definition Rule.
+Add support for the UART device present in Broadcom TruManage capable
+NetXtreme chips (ie: 5761m 5762, and 5725).
 
-In practice this resulted in crashes on x86_64 until the order of header
-inclusion was changed for some files in commit 11d404cb56ecd ('staging:
-vt6656: fix headers and add cfg80211.').  But we need a proper fix that
-won't be affected by future changes to the order of inclusion.
+This implementation has a hidden transmit FIFO, so running in single-byte
+interrupt mode results in too many interrupts.  The UART_CAP_HFIFO
+capability was added to track this.  It continues to reload the THR as long
+as the THRE and TSRE bits are set in the LSR up to a specified limit (1024
+is used here).
 
-This removes the #pragma pack(1) directives and adds __packed to the
-structure definitions for which packing appears to have been intended.
-
-Reported-and-tested-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Stephen Hurd <shurd@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/bssdb.h |    1 -
- drivers/staging/vt6656/int.h   |    1 -
- drivers/staging/vt6656/iocmd.h |   33 ++++++++++++++++-----------------
- drivers/staging/vt6656/iowpa.h |    8 +++-----
- 4 files changed, 19 insertions(+), 24 deletions(-)
+ drivers/tty/serial/8250/8250.c     |   11 ++++++++++
+ drivers/tty/serial/8250/8250.h     |    1 
+ drivers/tty/serial/8250/8250_pci.c |   38 +++++++++++++++++++++++++++++++++++++
+ include/uapi/linux/serial_core.h   |    4 ++-
+ 4 files changed, 53 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/vt6656/bssdb.h
-+++ b/drivers/staging/vt6656/bssdb.h
-@@ -90,7 +90,6 @@ typedef struct tagSRSNCapObject {
- } SRSNCapObject, *PSRSNCapObject;
+--- a/drivers/tty/serial/8250/8250.c
++++ b/drivers/tty/serial/8250/8250.c
+@@ -290,6 +290,12 @@ static const struct serial8250_config ua
+ 				  UART_FCR_R_TRIG_00 | UART_FCR_T_TRIG_00,
+ 		.flags		= UART_CAP_FIFO,
+ 	},
++	[PORT_BRCM_TRUMANAGE] = {
++		.name		= "TruManage",
++		.fifo_size	= 1,
++		.tx_loadsz	= 1024,
++		.flags		= UART_CAP_HFIFO,
++	},
+ 	[PORT_8250_CIR] = {
+ 		.name		= "CIR port"
+ 	}
+@@ -1441,6 +1447,11 @@ void serial8250_tx_chars(struct uart_825
+ 		port->icount.tx++;
+ 		if (uart_circ_empty(xmit))
+ 			break;
++		if (up->capabilities & UART_CAP_HFIFO) {
++			if ((serial_port_in(port, UART_LSR) & BOTH_EMPTY) !=
++			    BOTH_EMPTY)
++				break;
++		}
+ 	} while (--count > 0);
  
- // BSS info(AP)
--#pragma pack(1)
- typedef struct tagKnownBSS {
-     // BSS info
-     BOOL            bActive;
---- a/drivers/staging/vt6656/int.h
-+++ b/drivers/staging/vt6656/int.h
-@@ -34,7 +34,6 @@
- #include "device.h"
+ 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+--- a/drivers/tty/serial/8250/8250.h
++++ b/drivers/tty/serial/8250/8250.h
+@@ -40,6 +40,7 @@ struct serial8250_config {
+ #define UART_CAP_AFE	(1 << 11)	/* MCR-based hw flow control */
+ #define UART_CAP_UUE	(1 << 12)	/* UART needs IER bit 6 set (Xscale) */
+ #define UART_CAP_RTOIE	(1 << 13)	/* UART needs IER bit 4 set (Xscale, Tegra) */
++#define UART_CAP_HFIFO	(1 << 14)	/* UART has a "hidden" FIFO */
  
- /*---------------------  Export Definitions -------------------------*/
--#pragma pack(1)
- typedef struct tagSINTData {
- 	BYTE byTSR0;
- 	BYTE byPkt0;
---- a/drivers/staging/vt6656/iocmd.h
-+++ b/drivers/staging/vt6656/iocmd.h
-@@ -95,13 +95,12 @@ typedef enum tagWZONETYPE {
- // Ioctl interface structure
- // Command structure
- //
--#pragma pack(1)
- typedef struct tagSCmdRequest {
- 	u8 name[16];
- 	void	*data;
- 	u16	    wResult;
- 	u16     wCmdCode;
--} SCmdRequest, *PSCmdRequest;
-+} __packed SCmdRequest, *PSCmdRequest;
+ #define UART_BUG_QUOT	(1 << 0)	/* UART has buggy quot LSB */
+ #define UART_BUG_TXEN	(1 << 1)	/* UART has buggy TX IIR status */
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1085,6 +1085,18 @@ pci_omegapci_setup(struct serial_private
+ 	return setup_port(priv, port, 2, idx * 8, 0);
+ }
  
- //
- // Scan
-@@ -111,7 +110,7 @@ typedef struct tagSCmdScan {
++static int
++pci_brcm_trumanage_setup(struct serial_private *priv,
++			 const struct pciserial_board *board,
++			 struct uart_8250_port *port, int idx)
++{
++	int ret = pci_default_setup(priv, board, port, idx);
++
++	port->port.type = PORT_BRCM_TRUMANAGE;
++	port->port.flags = (port->port.flags | UPF_FIXED_PORT | UPF_FIXED_TYPE);
++	return ret;
++}
++
+ static int skip_tx_en_setup(struct serial_private *priv,
+ 			const struct pciserial_board *board,
+ 			struct uart_8250_port *port, int idx)
+@@ -1213,6 +1225,7 @@ pci_wch_ch353_setup(struct serial_privat
+ #define PCI_VENDOR_ID_AGESTAR		0x5372
+ #define PCI_DEVICE_ID_AGESTAR_9375	0x6872
+ #define PCI_VENDOR_ID_ASIX		0x9710
++#define PCI_DEVICE_ID_BROADCOM_TRUMANAGE 0x160a
  
-     u8	    ssid[SSID_MAXLEN + 2];
+ /* Unknown vendors/cards - this should not be in linux/pci_ids.h */
+ #define PCI_SUBDEVICE_ID_UNKNOWN_0x1584	0x1584
+@@ -1788,6 +1801,17 @@ static struct pci_serial_quirk pci_seria
+ 		.setup		= pci_asix_setup,
+ 	},
+ 	/*
++	 * Broadcom TruManage (NetXtreme)
++	 */
++	{
++		.vendor		= PCI_VENDOR_ID_BROADCOM,
++		.device		= PCI_DEVICE_ID_BROADCOM_TRUMANAGE,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.setup		= pci_brcm_trumanage_setup,
++	},
++
++	/*
+ 	 * Default "match everything" terminator entry
+ 	 */
+ 	{
+@@ -1975,6 +1999,7 @@ enum pci_board_num_t {
+ 	pbn_ce4100_1_115200,
+ 	pbn_omegapci,
+ 	pbn_NETMOS9900_2s_115200,
++	pbn_brcm_trumanage,
+ };
  
--} SCmdScan, *PSCmdScan;
-+} __packed SCmdScan, *PSCmdScan;
+ /*
+@@ -2674,6 +2699,12 @@ static struct pciserial_board pci_boards
+ 		.num_ports	= 2,
+ 		.base_baud	= 115200,
+ 	},
++	[pbn_brcm_trumanage] = {
++		.flags		= FL_BASE0,
++		.num_ports	= 1,
++		.reg_shift	= 2,
++		.base_baud	= 115200,
++	},
+ };
  
- //
- // BSS Join
-@@ -126,7 +125,7 @@ typedef struct tagSCmdBSSJoin {
-     BOOL    bPSEnable;
-     BOOL    bShareKeyAuth;
+ static const struct pci_device_id blacklist[] = {
+@@ -4238,6 +4269,13 @@ static struct pci_device_id serial_pci_t
+ 		pbn_omegapci },
  
--} SCmdBSSJoin, *PSCmdBSSJoin;
-+} __packed SCmdBSSJoin, *PSCmdBSSJoin;
+ 	/*
++	 * Broadcom TruManage
++	 */
++	{	PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_BROADCOM_TRUMANAGE,
++		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		pbn_brcm_trumanage },
++
++	/*
+ 	 * AgeStar as-prs2-009
+ 	 */
+ 	{	PCI_VENDOR_ID_AGESTAR, PCI_DEVICE_ID_AGESTAR_9375,
+--- a/include/uapi/linux/serial_core.h
++++ b/include/uapi/linux/serial_core.h
+@@ -49,7 +49,9 @@
+ #define PORT_XR17D15X	21	/* Exar XR17D15x UART */
+ #define PORT_LPC3220	22	/* NXP LPC32xx SoC "Standard" UART */
+ #define PORT_8250_CIR	23	/* CIR infrared port, has its own driver */
+-#define PORT_MAX_8250	23	/* max port ID */
++#define PORT_XR17V35X	24	/* Exar XR17V35x UARTs */
++#define PORT_BRCM_TRUMANAGE	24
++#define PORT_MAX_8250	25	/* max port ID */
  
- //
- // Zonetype Setting
-@@ -137,7 +136,7 @@ typedef struct tagSCmdZoneTypeSet {
-  BOOL       bWrite;
-  WZONETYPE  ZoneType;
- 
--} SCmdZoneTypeSet, *PSCmdZoneTypeSet;
-+} __packed SCmdZoneTypeSet, *PSCmdZoneTypeSet;
- 
- typedef struct tagSWPAResult {
-          char	ifname[100];
-@@ -145,7 +144,7 @@ typedef struct tagSWPAResult {
- 	u8 key_mgmt;
- 	u8 eap_type;
-          BOOL authenticated;
--} SWPAResult, *PSWPAResult;
-+} __packed SWPAResult, *PSWPAResult;
- 
- typedef struct tagSCmdStartAP {
- 
-@@ -157,7 +156,7 @@ typedef struct tagSCmdStartAP {
-     BOOL    bShareKeyAuth;
-     u8      byBasicRate;
- 
--} SCmdStartAP, *PSCmdStartAP;
-+} __packed SCmdStartAP, *PSCmdStartAP;
- 
- typedef struct tagSCmdSetWEP {
- 
-@@ -167,7 +166,7 @@ typedef struct tagSCmdSetWEP {
-     BOOL    bWepKeyAvailable[WEP_NKEYS];
-     u32     auWepKeyLength[WEP_NKEYS];
- 
--} SCmdSetWEP, *PSCmdSetWEP;
-+} __packed SCmdSetWEP, *PSCmdSetWEP;
- 
- typedef struct tagSBSSIDItem {
- 
-@@ -180,14 +179,14 @@ typedef struct tagSBSSIDItem {
-     BOOL    bWEPOn;
-     u32     uRSSI;
- 
--} SBSSIDItem;
-+} __packed SBSSIDItem;
- 
- 
- typedef struct tagSBSSIDList {
- 
- 	u32		    uItem;
- 	SBSSIDItem	sBSSIDList[0];
--} SBSSIDList, *PSBSSIDList;
-+} __packed SBSSIDList, *PSBSSIDList;
- 
- 
- typedef struct tagSNodeItem {
-@@ -208,7 +207,7 @@ typedef struct tagSNodeItem {
-     u32            uTxAttempts;
-     u16            wFailureRatio;
- 
--} SNodeItem;
-+} __packed SNodeItem;
- 
- 
- typedef struct tagSNodeList {
-@@ -216,7 +215,7 @@ typedef struct tagSNodeList {
- 	u32		    uItem;
- 	SNodeItem	sNodeList[0];
- 
--} SNodeList, *PSNodeList;
-+} __packed SNodeList, *PSNodeList;
- 
- 
- typedef struct tagSCmdLinkStatus {
-@@ -229,7 +228,7 @@ typedef struct tagSCmdLinkStatus {
-     u32     uChannel;
-     u32     uLinkRate;
- 
--} SCmdLinkStatus, *PSCmdLinkStatus;
-+} __packed SCmdLinkStatus, *PSCmdLinkStatus;
- 
- //
- // 802.11 counter
-@@ -247,7 +246,7 @@ typedef struct tagSDot11MIBCount {
-     u32 ReceivedFragmentCount;
-     u32 MulticastReceivedFrameCount;
-     u32 FCSErrorCount;
--} SDot11MIBCount, *PSDot11MIBCount;
-+} __packed SDot11MIBCount, *PSDot11MIBCount;
- 
- 
- 
-@@ -355,13 +354,13 @@ typedef struct tagSStatMIBCount {
-     u32   ullTxBroadcastBytes[2];
-     u32   ullTxMulticastBytes[2];
-     u32   ullTxDirectedBytes[2];
--} SStatMIBCount, *PSStatMIBCount;
-+} __packed SStatMIBCount, *PSStatMIBCount;
- 
- typedef struct tagSCmdValue {
- 
-     u32     dwValue;
- 
--} SCmdValue,  *PSCmdValue;
-+} __packed SCmdValue,  *PSCmdValue;
- 
- //
- // hostapd & viawget ioctl related
-@@ -431,7 +430,7 @@ struct viawget_hostapd_param {
- 			u8 ssid[32];
- 		} scan_req;
- 	} u;
--};
-+} __packed;
- 
- /*---------------------  Export Classes  ----------------------------*/
- 
---- a/drivers/staging/vt6656/iowpa.h
-+++ b/drivers/staging/vt6656/iowpa.h
-@@ -67,12 +67,11 @@ enum {
- 
- 
- 
--#pragma pack(1)
- typedef struct viawget_wpa_header {
- 	u8 type;
- 	u16 req_ie_len;
- 	u16 resp_ie_len;
--} viawget_wpa_header;
-+} __packed viawget_wpa_header;
- 
- struct viawget_wpa_param {
- 	u32 cmd;
-@@ -113,9 +112,8 @@ struct viawget_wpa_param {
- 			u8 *buf;
- 		} scan_results;
- 	} u;
--};
-+} __packed;
- 
--#pragma pack(1)
- struct viawget_scan_result {
- 	u8 bssid[6];
- 	u8 ssid[32];
-@@ -130,7 +128,7 @@ struct viawget_scan_result {
- 	int noise;
- 	int level;
- 	int maxrate;
--};
-+} __packed;
- 
- /*---------------------  Export Classes  ----------------------------*/
- 
+ /*
+  * ARM specific type numbers.  These are not currently guaranteed
 
 
