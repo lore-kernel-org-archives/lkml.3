@@ -1,193 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab3ASEuD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 23:50:03 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:46785 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753644Ab3ASEt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 23:49:58 -0500
-Date: Sat, 19 Jan 2013 04:49:57 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>, Willy Tarreau <w@1wt.eu>
-Subject: splice() giving unexpected EOF in 3.7.3 and 3.8-rc4+
-Message-ID: <20130119044957.GA25395@dcvr.yhbt.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755596Ab3ASEw4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 23:52:56 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3670 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644Ab3ASEwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 23:52:55 -0500
+X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=oS6VeJ3zRZwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ylgaL1uFd_sA:10 a=mglTsNybAAAA:20 a=WeLpJKWFmSSlEFhsx2EA:9 a=PUjeQqilurYA:10 a=l38a4HPC-fwA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358571172.23981.5.camel@gandalf.local.home>
+Subject: Re: [PATCH 00/10] TTY: switch flipping functions to tty_port
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Greg KH <gregkh@linuxfoundation.org>,
+        jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Date: Fri, 18 Jan 2013 23:52:52 -0500
+In-Reply-To: <20130116164238.625db60c@bob.linux.org.uk>
+References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
+	 <20130116064735.GA7743@kroah.com> <50F6AD15.708@suse.cz>
+	 <1358351064.4068.43.camel@gandalf.local.home> <50F6CE7E.4090807@suse.cz>
+	 <20130116164238.625db60c@bob.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the following flow, I'm sometimes getting an unexpected EOF on the
-pipe reader even though I never close the pipe writer:
+On Wed, 2013-01-16 at 16:42 +0000, Alan Cox wrote:
+> On Wed, 16 Jan 2013 16:59:58 +0100
 
-  tcp_wr -write-> tcp_rd -splice-> pipe_wr -> pipe_rd -splice-> /dev/null
+> > OMG. It contains a true copy of serial_core!
+> 
+> And it seems to just be another 165x0 driver anyway In fact it looks
+> like the right thing to do is to take it out and shoot it. We've got a
+> 16x50 driver already.
+> 
+> There are a few bits of gunk in there to set custom board registers and
+> to figure out the configuration. See drivers/tty/serial/8250/8250_pci.c
+> and it ought to be possible to just plug it in there. The 422 stuff
+> might need a bit more tweaking.
 
-I encounter this in in 3.7.3, 3.8-rc3, and the latest from Linus
-3.8-rc4+(5da1f88b8b727dc3a66c52d4513e871be6d43d19)
+I've totally failed trying to get it working with 8250. I'm going to
+start from scratch and take bits and pieces from other drivers and put
+together something (hopefully) a bit more sane.
 
-It takes longer (about 20s) to reproduce this issue on my KVM (2 cores)
-running the latest Linus kernel, so maybe real/faster hardware is needed.
-My dual-core laptop (on 3.7.3) which hosts the VM does encounter this
-issue within a few seconds (or even <1s).
+It actually has a lot of duplicate code from omap-serial.c, or whatever
+omap-serial copied from. I'm using that as a guide as well.
 
-Using schedtool to pin to a single core (any CPU core) on real hardware
-seems to avoid this issue on real hardware.  Not sure how KVM uses CPUs,
-but schedtool doesn't help inside my VM (not even schedtool on the KVM
-process).
+I'll post something in a few weeks (I'm basically doing this outside of
+my regular choirs). It will still be crap, as I'm really a noob with the
+serial tty code.
 
-Example code below (and via: git clone git://bogomips.org/spliceeof )
+I've written serial drivers in the past, but just to get things to do
+basic communication. Nothing with interacting with the tty layer. That's
+new for me, and as a noob, I'm sure I'll produce something that will
+surely make all of you go...
 
-Expected outout from ./spliceeof:
-	done writing
-	splice(in) EOF (expected)
+  http://bit.ly/10hq0Kh
 
-Output I get from ./spliceeof:
-	splice(out) EOF (UNEXPECTED)
-	in left: 47716 # the byte value varies
+-- Steve
 
-I've successfully run similar code within the past year on some 3.x
-kernels, so I think this issue is fairly recent (Cc-ing folks who
-have touched splice lately).
 
-Any likely candidates before I start bisection?  Thanks for reading.
-
--------------------------------- 8< ------------------------------
-#define _GNU_SOURCE
-#include <poll.h>
-#include <sys/ioctl.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/tcp.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <assert.h>
-#include <limits.h>
-#include <sys/times.h>
-
-static void tcp_socketpair(int sv[2], int accept_flags)
-{
-	struct sockaddr_in addr;
-	socklen_t addrlen = sizeof(addr);
-	int l = socket(PF_INET, SOCK_STREAM, 0);
-	int c = socket(PF_INET, SOCK_STREAM, 0);
-	int a;
-
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	addr.sin_port = 0;
-	assert(0 == bind(l, (struct sockaddr*)&addr, addrlen));
-	assert(0 == listen(l, 5));
-	assert(0 == getsockname(l, (struct sockaddr *)&addr, &addrlen));
-	assert(0 == connect(c, (struct sockaddr *)&addr, addrlen));
-	a = accept4(l, NULL, NULL, accept_flags);
-	assert(a >= 0);
-	close(l);
-	sv[0] = a;
-	sv[1] = c;
-}
-
-static void * write_loop(void * fdp)
-{
-	int fd = *(int *)fdp;
-	char buf[16384];
-	ssize_t w;
-	size_t want = ULONG_MAX; /* try changing this around */
-
-	while (want > 0) {
-		size_t to_write = want > sizeof(buf) ? sizeof(buf) : want;
-
-		w = write(fd, buf, to_write);
-
-		if (w < 0) {
-			dprintf(2, "write returned zero with %zu left\n", want);
-			goto fail;
-		} else if (w == 0) {
-			dprintf(2, "write failed: %m with %zu left\n", want);
-			goto fail;
-		} else {
-			want -= (size_t)w;
-		}
-	}
-	dprintf(2, "done writing\n");
-fail:
-	close(fd);
-	return NULL;
-}
-
-static void io_wait(int fd, short events)
-{
-	struct pollfd p;
-	int rc;
-
-	p.fd = fd;
-	p.events = events;
-
-	rc = poll(&p, 1, -1);
-	assert(rc == 1 && "poll failed");
-}
-
-int main(void)
-{
-	int tcp_pair[2];
-	int pbuf[2];
-	pthread_t wt;
-	int dst = open("/dev/null", O_WRONLY);
-	size_t len = 1024 * 1024;
-	ssize_t in, out;
-	size_t in_total = 0;
-	size_t out_total = 0;
-	int fl = SPLICE_F_NONBLOCK;
-
-	assert(dst >= 0 && "open(/dev/null) failed");
-	tcp_socketpair(tcp_pair, SOCK_NONBLOCK);
-	assert(0 == pthread_create(&wt, NULL, write_loop, &tcp_pair[1]));
-	assert(0 == pipe2(pbuf, O_NONBLOCK));
-
-	for (;;) {
-		in = splice(tcp_pair[0], NULL, pbuf[1], NULL, len, fl);
-
-		if (in < 0) {
-			if (errno == EAGAIN) {
-				io_wait(tcp_pair[0], POLLIN);
-				io_wait(pbuf[1], POLLOUT);
-				continue;
-			}
-			dprintf(2, "splice(in) err: %m\n");
-			break;
-		} else if (in == 0) {
-			dprintf(2, "splice(in) EOF (expected)\n");
-			break;
-		}
-
-		in_total += in;
-		while (in > 0) {
-			out = splice(pbuf[0], NULL, dst, NULL, (size_t)in, fl);
-			if (out < 0) {
-				dprintf(2, "splice(out) err: %m\n");
-				exit(1);
-			} else if (out == 0) {
-				dprintf(2, "splice(out) EOF (UNEXPECTED)\n");
-				dprintf(2, "in left: %zd\n", in);
-				exit(1);
-			} else {
-				in -= out;
-				out_total += out;
-			}
-		}
-	}
-	assert(0 == pthread_join(wt, NULL));
-	return 0;
-}
--------------------------------- 8< ------------------------------
