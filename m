@@ -1,54 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab3ASNv4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 08:51:56 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:52853 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab3ASNvz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 08:51:55 -0500
-Message-ID: <50FAA43B.2050100@synopsys.com>
-Date: Sat, 19 Jan 2013 19:18:43 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1751932Ab3ASNzR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 08:55:17 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:46799 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751157Ab3ASNzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jan 2013 08:55:16 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: sedat.dilek@gmail.com
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Jan 18 (acpi)
+Date: Sat, 19 Jan 2013 15:01:09 +0100
+Message-ID: <1563609.uEd3dQW5Ul@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CA+icZUVE3xFzdqrM6ZsJDQfZ8Qb6ptnQuhBiVOVY1SE3Fe8OBA@mail.gmail.com>
+References: <20130118153707.0909fb9039e411acc1674c32@canb.auug.org.au> <4935167.QM3InZsTWy@vostro.rjw.lan> <CA+icZUVE3xFzdqrM6ZsJDQfZ8Qb6ptnQuhBiVOVY1SE3Fe8OBA@mail.gmail.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>
-Subject: Re: [PATCH v2 13/76] ARC: Low level IRQ/Trap/Exception Handling
-References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-14-git-send-email-vgupta@synopsys.com> <20130119033104.GD23552@ZenIV.linux.org.uk>
-In-Reply-To: <20130119033104.GD23552@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 19 January 2013 09:01 AM, Al Viro wrote:
-> On Fri, Jan 18, 2013 at 05:54:27PM +0530, Vineet Gupta wrote:
->
->> +	; --- (Slow Path #3) notify_resume ---
->> +.Lchk_notify_resume:
->> +	btst   r9, TIF_NOTIFY_RESUME
->> +	blnz   @do_notify_resume
->> +	b      resume_user_mode_begin	; unconditionally back to U mode ret chks
->> +					; for single exit point from this block
-> Umm...  Can we even get there without NOTIFY_RESUME?  Again, there's
-> future-proofing and there's laying minefields - think what will happen
-> if we *do* get there with some bit in _TIF_WORK_MASK that isn't recognized
-> by any of these cases.  Looping forever?
+On Saturday, January 19, 2013 02:50:17 PM Sedat Dilek wrote:
+> On Sat, Jan 19, 2013 at 2:45 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Friday, January 18, 2013 05:42:20 PM Randy Dunlap wrote:
+> >> On 01/17/13 20:37, Stephen Rothwell wrote:
+> >> > Hi all,
+> >> >
+> >> > Changes since 20130117:
+> >> >
+> >>
+> >>
+> >> on x86_64:
+> >>
+> >>   CC      drivers/acpi/device_pm.o
+> >> drivers/acpi/device_pm.c:778:5: error: redefinition of 'acpi_dev_suspend_late'
+> >> In file included from include/acpi/acpi_drivers.h:29:0,
+> >>                  from drivers/acpi/device_pm.c:33:
+> >> include/linux/acpi.h:526:19: note: previous definition of 'acpi_dev_suspend_late' was here
+> >> drivers/acpi/device_pm.c:810:5: error: redefinition of 'acpi_dev_resume_early'
+> >> In file included from include/acpi/acpi_drivers.h:29:0,
+> >>                  from drivers/acpi/device_pm.c:33:
+> >> include/linux/acpi.h:527:19: note: previous definition of 'acpi_dev_resume_early' was here
+> >> drivers/acpi/device_pm.c:828:5: error: redefinition of 'acpi_subsys_prepare'
+> >> In file included from include/acpi/acpi_drivers.h:29:0,
+> >>                  from drivers/acpi/device_pm.c:33:
+> >> include/linux/acpi.h:528:19: note: previous definition of 'acpi_subsys_prepare' was here
+> >> drivers/acpi/device_pm.c:846:5: error: redefinition of 'acpi_subsys_suspend_late'
+> >> In file included from include/acpi/acpi_drivers.h:29:0,
+> >>                  from drivers/acpi/device_pm.c:33:
+> >> include/linux/acpi.h:529:19: note: previous definition of 'acpi_subsys_suspend_late' was here
+> >> drivers/acpi/device_pm.c:861:5: error: redefinition of 'acpi_subsys_resume_early'
+> >> In file included from include/acpi/acpi_drivers.h:29:0,
+> >>                  from drivers/acpi/device_pm.c:33:
+> >> include/linux/acpi.h:530:19: note: previous definition of 'acpi_subsys_resume_early' was here
+> >> make[3]: *** [drivers/acpi/device_pm.o] Error 1
+> >>
+> >>
+> >>
+> >>
+> >> Full randconfig file is attached.
+> >
+> > Thanks, I'll take it for inclusion into the build testing framework.
+> >
+> > The appended patch fixes the problem for me.
+> >
+> > Thanks,
+> > Rafael
+> >
+> >
+> > ---
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Subject: ACPI / PM: Fix build for unusual combination of Kconfig options
+> >
+> > CONFIG_PM_SLEEP may be set even if CONFIG_ACPI_SLEEP is unset,
+> > although that is unusual.  For this reason, make the headers of
+> > functions built for both CONFIG_ACPI and CONFIG_PM_SLEEP set
+> > simultaneously depend on that combination of Kconfig options
+> > instead of CONFIG_ACPI_SLEEP.
+> >
+> > This fixes a build problem reported by Randy Dunlap.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  include/linux/acpi.h |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > Index: linux-pm/include/linux/acpi.h
+> > ===================================================================
+> > --- linux-pm.orig/include/linux/acpi.h
+> > +++ linux-pm/include/linux/acpi.h
+> 
+> Can you tell me how do you create such a patch with "Index:" line?
+> 
+> linux-pm.orig as a reference is not very meaninful :-).
+> 
+> If this is against Linux-Next (next-20130118) I would like to see:
+> --- next-20130118.orig/path/to/file
+> +++ next-20130118/path/to/file
+> 
+> I had used 'git format-patch' with '--subject-prefix="PATCH
+> next-20130118"' option in such a case.
+> Just as a hint by not telling you how you should do your job.
+> 
+> /me is still a Git n00b!
 
-IMHO, for future safe-ing, the test for TIF_NOTIFY_RESUME is correct (as we will
-need to add that check the moment a new bit is introduced in _TIF_WORK_MASK).
+Well, I use quilt to generate patches. :-)
 
-Regarding the infinite loop, I would assume that _TIF_WORK_MASK is golden (fixed
-by your prior comment) so anyone touching it needs to add corresponding code here
-- IMHO we don't need to handle that scenario (maybe add a comment in
-thread_info.h). With that assumption, the unconditional branch would go back to
-start and the re-test for TIF_WORK_MASK will break the loop even if any stray bit
-was set.
+This particular one was generated with "quilt refresh --diffstat", I'm not
+sure how to get the same result using git, sorry.
 
-So essentially we don't need any code change ! Am I overlooking something here ?
+Thanks,
+Rafael
 
--Vineet
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
