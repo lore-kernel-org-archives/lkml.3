@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab3ASBYF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:24:05 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57255 "EHLO mail.kernel.org"
+	id S1756777Ab3ASBYY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:24:24 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57239 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756737Ab3ASBWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:22:08 -0500
+	id S1756725Ab3ASBWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:22:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>,
-        Raoul Bhatia <raoul@bhatia.at>
-Subject: [ 10/16] drbd: add missing part_round_stats to _drbd_start_io_acct
-Date: Fri, 18 Jan 2013 17:21:48 -0800
-Message-Id: <20130119012139.891644530@linuxfoundation.org>
+        Thomas Mingarelli <thomas.mingarelli@hp.com>,
+        Shuah Khan <shuah.khan@hp.com>, Donald Dutile <ddutile@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Joerg Roedel <joro@8bytes.org>, CAI Qian <caiqian@redhat.com>
+Subject: [ 09/16] intel-iommu: Prevent devices with RMRRs from being placed into SI Domain
+Date: Fri, 18 Jan 2013 17:21:47 -0800
+Message-Id: <20130119012139.772378430@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119012138.680057206@linuxfoundation.org>
 References: <20130119012138.680057206@linuxfoundation.org>
@@ -27,30 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philipp Reisner <philipp.reisner@linbit.com>
+From: Tom Mingarelli <thomas.mingarelli@hp.com>
 
-commit 72585d2428fa3a0daab02ebad1f41e5ef517dbaa upstream.
+commit ea2447f700cab264019b52e2b417d689e052dcfd upstream.
 
-Without this, iostat frequently sees bogus svctime and >= 100% "utilization".
+This patch is to prevent non-USB devices that have RMRRs associated with them from
+being placed into the SI Domain during init. This fixes the issue where the RMRR info
+for devices being placed in and out of the SI Domain gets lost.
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-Cc: Raoul Bhatia <raoul@bhatia.at>
+Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
+Tested-by: Shuah Khan <shuah.khan@hp.com>
+Reviewed-by: Donald Dutile <ddutile@redhat.com>
+Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/drbd/drbd_req.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/pci/intel-iommu.c |   31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
 
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -37,6 +37,7 @@ static void _drbd_start_io_acct(struct d
- 	const int rw = bio_data_dir(bio);
- 	int cpu;
- 	cpu = part_stat_lock();
-+	part_round_stats(cpu, &mdev->vdisk->part0);
- 	part_stat_inc(cpu, &mdev->vdisk->part0, ios[rw]);
- 	part_stat_add(cpu, &mdev->vdisk->part0, sectors[rw], bio_sectors(bio));
- 	part_inc_in_flight(&mdev->vdisk->part0, rw);
+--- a/drivers/pci/intel-iommu.c
++++ b/drivers/pci/intel-iommu.c
+@@ -2289,8 +2289,39 @@ static int domain_add_dev_info(struct dm
+ 	return 0;
+ }
+ 
++static bool device_has_rmrr(struct pci_dev *dev)
++{
++	struct dmar_rmrr_unit *rmrr;
++	int i;
++
++	for_each_rmrr_units(rmrr) {
++		for (i = 0; i < rmrr->devices_cnt; i++) {
++			/*
++			 * Return TRUE if this RMRR contains the device that
++			 * is passed in.
++			 */
++			if (rmrr->devices[i] == dev)
++				return true;
++		}
++	}
++	return false;
++}
++
+ static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
+ {
++
++	/*
++	 * We want to prevent any device associated with an RMRR from
++	 * getting placed into the SI Domain. This is done because
++	 * problems exist when devices are moved in and out of domains
++	 * and their respective RMRR info is lost. We exempt USB devices
++	 * from this process due to their usage of RMRRs that are known
++	 * to not be needed after BIOS hand-off to OS.
++	 */
++	if (device_has_rmrr(pdev) &&
++	    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
++		return 0;
++
+ 	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
+ 		return 1;
+ 
 
 
