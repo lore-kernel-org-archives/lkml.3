@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545Ab3ASM47 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 07:56:59 -0500
-Received: from mail.ispras.ru ([83.149.199.43]:36184 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751319Ab3ASM45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 07:56:57 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+	id S1751865Ab3ASM5O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 07:57:14 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:54706 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab3ASM5K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jan 2013 07:57:10 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
         "John W. Linville" <linville@tuxdriver.com>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Johannes Berg <johannes.berg@intel.com>,
         linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ilw@linux.intel.com,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] iwlegacy: don't return zero on failure paths in il4965_pci_probe()
-Date: Sat, 19 Jan 2013 16:56:34 +0400
-Message-Id: <1358600194-20371-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
+        linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] net: wireless/rtlwifi: fix uninitialized variable issue
+Date: Sat, 19 Jan 2013 13:56:36 +0100
+Message-Id: <1358600210-15942-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If hardware is not ready, il4965_pci_probe() breaks off initialization,
-deallocates all resources, but returns zero.
-The patch adds -EIO as return value in this case.
+The use of variable packet_beacon might be uninitialized in the three files.
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
 ---
- drivers/net/wireless/iwlegacy/4965-mac.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/rtlwifi/rtl8192de/trx.c |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192se/trx.c |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8723ae/trx.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlegacy/4965-mac.c b/drivers/net/wireless/iwlegacy/4965-mac.c
-index c3fbf67..c805108 100644
---- a/drivers/net/wireless/iwlegacy/4965-mac.c
-+++ b/drivers/net/wireless/iwlegacy/4965-mac.c
-@@ -6553,6 +6553,7 @@ il4965_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	il4965_prepare_card_hw(il);
- 	if (!il->hw_ready) {
- 		IL_WARN("Failed, HW not ready\n");
-+		err = -EIO;
- 		goto out_iounmap;
- 	}
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/trx.c b/drivers/net/wireless/rtlwifi/rtl8192de/trx.c
+index a0fbf28..cdb570f 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192de/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192de/trx.c
+@@ -452,7 +452,7 @@ static void _rtl92de_translate_rx_signal_stuff(struct ieee80211_hw *hw,
+ 	u8 *praddr;
+ 	u16 type, cfc;
+ 	__le16 fc;
+-	bool packet_matchbssid, packet_toself, packet_beacon;
++	bool packet_matchbssid, packet_toself, packet_beacon = false;
+ 
+ 	tmp_buf = skb->data + pstats->rx_drvinfo_size + pstats->rx_bufshift;
+ 	hdr = (struct ieee80211_hdr *)tmp_buf;
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
+index 206561d..f8431a3 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
+@@ -480,7 +480,7 @@ static void _rtl92se_translate_rx_signal_stuff(struct ieee80211_hw *hw,
+ 	u8 *praddr;
+ 	__le16 fc;
+ 	u16 type, cfc;
+-	bool packet_matchbssid, packet_toself, packet_beacon;
++	bool packet_matchbssid, packet_toself, packet_beacon = false;
+ 
+ 	tmp_buf = skb->data + pstats->rx_drvinfo_size + pstats->rx_bufshift;
+ 
+diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/trx.c b/drivers/net/wireless/rtlwifi/rtl8723ae/trx.c
+index a313be8..ce8ad12 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8723ae/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8723ae/trx.c
+@@ -247,7 +247,7 @@ static void _rtl8723ae_translate_rx_signal_stuff(struct ieee80211_hw *hw,
+ 	u8 *psaddr;
+ 	__le16 fc;
+ 	u16 type;
+-	bool packet_matchbssid, packet_toself, packet_beacon;
++	bool packet_matchbssid, packet_toself, packet_beacon = false;
+ 
+ 	tmp_buf = skb->data + pstatus->rx_drvinfo_size + pstatus->rx_bufshift;
  
 -- 
-1.7.9.5
+1.7.10.4
 
