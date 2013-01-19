@@ -1,320 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751906Ab3ASPrT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 10:47:19 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:42439 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab3ASPrR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 10:47:17 -0500
+	id S1751920Ab3ASQNT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 11:13:19 -0500
+Received: from powered.by.root24.eu ([91.121.15.64]:37087 "EHLO Root24.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751498Ab3ASQNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jan 2013 11:13:18 -0500
+Message-ID: <50FAC61A.9060503@ionic.de>
+Date: Sat, 19 Jan 2013 17:13:14 +0100
+From: Mihai Moldovan <ionic@ionic.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUXG-srV6i9PaMgdhRG2gCpU4T+VaxhZj_=E4XjAgh8REQ@mail.gmail.com>
-References: <50BDF661.30303@ilyx.ru>
-	<20121204141223.2ecb0f76@pyramind.ukuu.org.uk>
-	<50F66AE4.2030408@ilyx.ru>
-	<20130119000708.GA32591@kroah.com>
-	<50FAAAB4.9040408@ilyx.ru>
-	<CA+icZUXG-srV6i9PaMgdhRG2gCpU4T+VaxhZj_=E4XjAgh8REQ@mail.gmail.com>
-Date: Sat, 19 Jan 2013 16:47:16 +0100
-Message-ID: <CA+icZUWQfzagyY1kcpLes9Rme+L0qPJOgWD_s3GpB-318DqCcA@mail.gmail.com>
-Subject: Re: [PATCH] tty: Correct tty buffer flush.
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Ilya Zykov <ilya@ilyx.ru>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: LKML <linux-kernel@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: i915-related and general system freezes with specific kernel
+ config // IOMMU
+References: <50F9DF53.4090601@ionic.de> <CAKMK7uExHc=PEBpn2vPrX+sQcv=U7VuvsJHRxc-SSOh=_G_1Dg@mail.gmail.com>
+In-Reply-To: <CAKMK7uExHc=PEBpn2vPrX+sQcv=U7VuvsJHRxc-SSOh=_G_1Dg@mail.gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms070808070205080009040609"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 19, 2013 at 4:12 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Sat, Jan 19, 2013 at 3:16 PM, Ilya Zykov <ilya@ilyx.ru> wrote:
->>   The root of problem is carelessly zeroing pointer(in function __tty_buffer_flush()),
->> when another thread can use it. It can be cause of "NULL pointer dereference".
->>   Main idea of the patch, this is never free last (struct tty_buffer) in the active buffer.
->> Only flush the data for ldisc(buf->head->read = buf->head->commit).
->> At that moment driver can collect(write) data in buffer without conflict.
->> It is repeat behavior of flush_to_ldisc(), only without feeding data to ldisc.
->>
->> Also revert:
->>   commit c56a00a165712fd73081f40044b1e64407bb1875
->>   tty: hold lock across tty buffer finding and buffer filling
->> In order to delete the unneeded locks any more.
->>
->> Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
->>
->
-> I have tested your patch on top of Linux-Next (next-20130118) plus my
-> own patchset (see file attachments)!
->
-> [ TESTCASE ]
->
-> # grep CONFIG_PM_DEBUG /boot/config-$(uname -r)
-> CONFIG_PM_DEBUG=y
->
-> # echo "freezer" > /sys/power/pm_test
->
-> # cat /sys/power/pm_test
-> none core processors platform devices [freezer]
->
-> # echo mem > /sys/power/state && sleep 1 <--- 1st S/R: OK
->
-> # echo mem > /sys/power/state && sleep 1 <--- 2nd S/R: OK, but caused
-> a call-trace (see above)!
->
-> [ /TESTCASE ]
->
-> Unfortunately, I get now a different call-trace on the 2nd freezer/pm-test...
->
-> +[  368.891613] PM: Preparing system for mem sleep
-> +[  373.886722] Freezing user space processes ... (elapsed 0.01 seconds) done.
-> +[  373.902741] Freezing remaining freezable tasks ...
-> +[  393.904587] Freezing of tasks failed after 20.01 seconds (1 tasks
-> refusing to freeze, wq_busy=0):
-> +[  393.904714] jbd2/loop0-8    D 0000000000000003     0   304      2 0x00000000
-> +[  393.904723]  ffff880117525b68 0000000000000046 00000000ffffffff
-> ffff8801195d9400
-> +[  393.904731]  ffff880117d74560 ffff880117525fd8 ffff880117525fd8
-> ffff880117525fd8
-> +[  393.904738]  ffff88004212c560 ffff880117d74560 ffff880117525b68
-> ffff88011fad4738
-> +[  393.904745] Call Trace:
-> +[  393.904764]  [<ffffffff811c6830>] ? __wait_on_buffer+0x30/0x30
-> +[  393.904772]  [<ffffffff816b5079>] schedule+0x29/0x70
-> +[  393.904778]  [<ffffffff816b514f>] io_schedule+0x8f/0xd0
-> +[  393.904785]  [<ffffffff811c683e>] sleep_on_buffer+0xe/0x20
-> +[  393.904794]  [<ffffffff816b394f>] __wait_on_bit+0x5f/0x90
-> +[  393.904801]  [<ffffffff811c6830>] ? __wait_on_buffer+0x30/0x30
-> +[  393.904809]  [<ffffffff816b39fc>] out_of_line_wait_on_bit+0x7c/0x90
-> +[  393.904817]  [<ffffffff8107eb00>] ? autoremove_wake_function+0x40/0x40
-> +[  393.904824]  [<ffffffff811c682e>] __wait_on_buffer+0x2e/0x30
-> +[  393.904836]  [<ffffffff8128a14f>]
-> jbd2_journal_commit_transaction+0xdef/0x1960
-> +[  393.904844]  [<ffffffff816b620e>] ? _raw_spin_lock_irqsave+0x2e/0x40
-> +[  393.904853]  [<ffffffff81069fbf>] ? try_to_del_timer_sync+0x4f/0x70
-> +[  393.904859]  [<ffffffff8128e938>] kjournald2+0xb8/0x240
-> +[  393.904865]  [<ffffffff8107eac0>] ? add_wait_queue+0x60/0x60
-> +[  393.904871]  [<ffffffff8128e880>] ? commit_timeout+0x10/0x10
-> +[  393.904877]  [<ffffffff8107ded0>] kthread+0xc0/0xd0
-> +[  393.904883]  [<ffffffff8107de10>] ? flush_kthread_worker+0xb0/0xb0
-> +[  393.904889]  [<ffffffff816bea2c>] ret_from_fork+0x7c/0xb0
-> +[  393.904894]  [<ffffffff8107de10>] ? flush_kthread_worker+0xb0/0xb0
-> +[  393.904972]
-> +[  393.904975] Restarting kernel threads ... done.
-> +[  393.905163] Restarting tasks ... done.
-> +[  393.914283] video LNXVIDEO:00: Restoring backlight state
->
-> If this ring one or more bells to you let me know!
->
-> Please, have a look at the file attachments!
-> Thanks.
->
-> Hope this helps us to track the problem!
->
+This is a cryptographically signed message in MIME format.
 
-I turned on...
+--------------ms070808070205080009040609
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-CONFIG_EXT4_DEBUG=y
-CONFIG_JBD2_DEBUG=y
+* On 19.01.2013 02:27 PM, Daniel Vetter wrote:
+> You have a gen4.5 chipset which is known to be utterly broken for
+> IOMMU+intel gpu.
 
-...to see more light in the dark.
+Nice description for what I'm seeing. ;)
 
-- Sedat -
+After some more hours of uptime I'm inclined to say, that "intel_iommu=3D=
+off
+iommu=3Doff" fixes my random freezes as well.
+Alas, the USB and PCI(e) problems are still around, but I could test reco=
+mpiling
+3.7.2 with Intel IOMMU turned off completely in the kernel config.
+Interestingly, my 3.0.2 kernel which worked fine for so long doesn't even=
+ *have*
+support for VT-d/Intel IOMMU. This could explain why I wasn't bit by thos=
+e
+problems on all previous versions.
 
 
-> - Sedat -
->
->> ---
->>  drivers/tty/tty_buffer.c |   92 +++++++++++-----------------------------------
->>  1 files changed, 22 insertions(+), 70 deletions(-)
->>
->> diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
->> index d6969f6..61ec4dd 100644
->> --- a/drivers/tty/tty_buffer.c
->> +++ b/drivers/tty/tty_buffer.c
->> @@ -119,11 +119,14 @@ static void __tty_buffer_flush(struct tty_port *port)
->>         struct tty_bufhead *buf = &port->buf;
->>         struct tty_buffer *thead;
->>
->> -       while ((thead = buf->head) != NULL) {
->> -               buf->head = thead->next;
->> -               tty_buffer_free(port, thead);
->> +       if (unlikely(buf->head == NULL))
->> +               return;
->> +       while ((thead = buf->head->next) != NULL) {
->> +               tty_buffer_free(port, buf->head);
->> +               buf->head = thead;
->>         }
->> -       buf->tail = NULL;
->> +       WARN_ON(buf->head != buf->tail);
->> +       buf->head->read = buf->head->commit;
->>  }
->>
->>  /**
->> @@ -194,19 +197,22 @@ static struct tty_buffer *tty_buffer_find(struct tty_port *port, size_t size)
->>            have queued and recycle that ? */
->>  }
->>  /**
->> - *     __tty_buffer_request_room               -       grow tty buffer if needed
->> + *     tty_buffer_request_room         -       grow tty buffer if needed
->>   *     @tty: tty structure
->>   *     @size: size desired
->>   *
->>   *     Make at least size bytes of linear space available for the tty
->>   *     buffer. If we fail return the size we managed to find.
->> - *      Locking: Caller must hold port->buf.lock
->> + *
->> + *     Locking: Takes port->buf.lock
->>   */
->> -static int __tty_buffer_request_room(struct tty_port *port, size_t size)
->> +int tty_buffer_request_room(struct tty_port *port, size_t size)
->>  {
->>         struct tty_bufhead *buf = &port->buf;
->>         struct tty_buffer *b, *n;
->>         int left;
->> +       unsigned long flags;
->> +       spin_lock_irqsave(&buf->lock, flags);
->>         /* OPTIMISATION: We could keep a per tty "zero" sized buffer to
->>            remove this conditional if its worth it. This would be invisible
->>            to the callers */
->> @@ -228,31 +234,9 @@ static int __tty_buffer_request_room(struct tty_port *port, size_t size)
->>                 } else
->>                         size = left;
->>         }
->> -
->> +       spin_unlock_irqrestore(&buf->lock, flags);
->>         return size;
->>  }
->> -
->> -
->> -/**
->> - *     tty_buffer_request_room         -       grow tty buffer if needed
->> - *     @port: tty port structure
->> - *     @size: size desired
->> - *
->> - *     Make at least size bytes of linear space available for the tty
->> - *     buffer. If we fail return the size we managed to find.
->> - *
->> - *     Locking: Takes port->buf.lock
->> - */
->> -int tty_buffer_request_room(struct tty_port *port, size_t size)
->> -{
->> -       unsigned long flags;
->> -       int length;
->> -
->> -       spin_lock_irqsave(&port->buf.lock, flags);
->> -       length = __tty_buffer_request_room(port, size);
->> -       spin_unlock_irqrestore(&port->buf.lock, flags);
->> -       return length;
->> -}
->>  EXPORT_SYMBOL_GPL(tty_buffer_request_room);
->>
->>  /**
->> @@ -271,26 +255,18 @@ EXPORT_SYMBOL_GPL(tty_buffer_request_room);
->>  int tty_insert_flip_string_fixed_flag(struct tty_port *port,
->>                 const unsigned char *chars, char flag, size_t size)
->>  {
->> -       struct tty_bufhead *buf = &port->buf;
->>         int copied = 0;
->>         do {
->>                 int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
->> -               int space;
->> -               unsigned long flags;
->> -               struct tty_buffer *tb;
->> -
->> -               spin_lock_irqsave(&buf->lock, flags);
->> -               space = __tty_buffer_request_room(port, goal);
->> -               tb = buf->tail;
->> +               int space = tty_buffer_request_room(port, goal);
->> +               struct tty_buffer *tb = port->buf.tail;
->>                 /* If there is no space then tb may be NULL */
->>                 if (unlikely(space == 0)) {
->> -                       spin_unlock_irqrestore(&buf->lock, flags);
->>                         break;
->>                 }
->>                 memcpy(tb->char_buf_ptr + tb->used, chars, space);
->>                 memset(tb->flag_buf_ptr + tb->used, flag, space);
->>                 tb->used += space;
->> -               spin_unlock_irqrestore(&buf->lock, flags);
->>                 copied += space;
->>                 chars += space;
->>                 /* There is a small chance that we need to split the data over
->> @@ -317,26 +293,18 @@ EXPORT_SYMBOL(tty_insert_flip_string_fixed_flag);
->>  int tty_insert_flip_string_flags(struct tty_port *port,
->>                 const unsigned char *chars, const char *flags, size_t size)
->>  {
->> -       struct tty_bufhead *buf = &port->buf;
->>         int copied = 0;
->>         do {
->>                 int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
->> -               int space;
->> -               unsigned long __flags;
->> -               struct tty_buffer *tb;
->> -
->> -               spin_lock_irqsave(&buf->lock, __flags);
->> -               space = __tty_buffer_request_room(port, goal);
->> -               tb = buf->tail;
->> +               int space = tty_buffer_request_room(port, goal);
->> +               struct tty_buffer *tb = port->buf.tail;
->>                 /* If there is no space then tb may be NULL */
->>                 if (unlikely(space == 0)) {
->> -                       spin_unlock_irqrestore(&buf->lock, __flags);
->>                         break;
->>                 }
->>                 memcpy(tb->char_buf_ptr + tb->used, chars, space);
->>                 memcpy(tb->flag_buf_ptr + tb->used, flags, space);
->>                 tb->used += space;
->> -               spin_unlock_irqrestore(&buf->lock, __flags);
->>                 copied += space;
->>                 chars += space;
->>                 flags += space;
->> @@ -392,21 +360,13 @@ EXPORT_SYMBOL(tty_schedule_flip);
->>  int tty_prepare_flip_string(struct tty_port *port, unsigned char **chars,
->>                 size_t size)
->>  {
->> -       struct tty_bufhead *buf = &port->buf;
->> -       int space;
->> -       unsigned long flags;
->> -       struct tty_buffer *tb;
->> -
->> -       spin_lock_irqsave(&buf->lock, flags);
->> -       space = __tty_buffer_request_room(port, size);
->> -
->> -       tb = buf->tail;
->> +       int space = tty_buffer_request_room(port, size);
->>         if (likely(space)) {
->> +               struct tty_buffer *tb = port->buf.tail;
->>                 *chars = tb->char_buf_ptr + tb->used;
->>                 memset(tb->flag_buf_ptr + tb->used, TTY_NORMAL, space);
->>                 tb->used += space;
->>         }
->> -       spin_unlock_irqrestore(&buf->lock, flags);
->>         return space;
->>  }
->>  EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
->> @@ -430,21 +390,13 @@ EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
->>  int tty_prepare_flip_string_flags(struct tty_port *port,
->>                         unsigned char **chars, char **flags, size_t size)
->>  {
->> -       struct tty_bufhead *buf = &port->buf;
->> -       int space;
->> -       unsigned long __flags;
->> -       struct tty_buffer *tb;
->> -
->> -       spin_lock_irqsave(&buf->lock, __flags);
->> -       space = __tty_buffer_request_room(port, size);
->> -
->> -       tb = buf->tail;
->> +       int space = tty_buffer_request_room(port, size);
->>         if (likely(space)) {
->> +               struct tty_buffer *tb = port->buf.tail;
->>                 *chars = tb->char_buf_ptr + tb->used;
->>                 *flags = tb->flag_buf_ptr + tb->used;
->>                 tb->used += space;
->>         }
->> -       spin_unlock_irqrestore(&buf->lock, __flags);
->>         return space;
->>  }
->>  EXPORT_SYMBOL_GPL(tty_prepare_flip_string_flags);
+> [...] and we've never added the proper
+> quirks. See https://bugzilla.kernel.org/show_bug.cgi?id=3D51921 for a
+> proposed patch to fix this (i.e. automatically set
+> intel_iommu=3Digfx_off for affected platfroms). Testing highly welcome.=
+
+
+=46rom a quick glance, I don't think this patch will work as-is, my PCI I=
+D 2e12 is
+missing.
+I'll add it to the relevant section.
+
+But even if it worked, I'd still have the "box freezes randomly" issue (m=
+ostly
+within 5 to 60 minutes of uptime). :(
+The only way to get rid of this is disabling Intel IOMMU as a whole via k=
+ernel
+parameters intel_iommu=3Doff iommu=3Doff.
+
+Anyway, I'll give it a try.
+
+Best regards,
+
+
+
+Mihai
+
+
+--------------ms070808070205080009040609
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINgjCC
+BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
+MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
+KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
+8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
+DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
+2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
+zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
+Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
+HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
+MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
+dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
+c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
+Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
+c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
+UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
+p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
++HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
+hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
+hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
+0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
+AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
+XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIHRjCCBi6gAwIBAgICHn8wDQYJKoZIhvcNAQEF
+BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
+ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
+bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMjAzMjEyMzU3NTda
+Fw0xNDAzMjMxNTE0MzlaMIGRMRkwFwYDVQQNExAwSjh4RlU1aWNwTGFuNHlLMQswCQYDVQQG
+EwJERTEbMBkGA1UECBMSQmFkZW4tV3VlcnR0ZW1iZXJnMRIwEAYDVQQHEwlLYXJsc3J1aGUx
+FzAVBgNVBAMTDk1paGFpIE1vbGRvdmFuMR0wGwYJKoZIhvcNAQkBFg5pb25pY0Bpb25pYy5k
+ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMaylRRCBj2U12flvhmZMgwADN/0
+P/ej3O9uLe8XWsr6McU8my6GYxfTXFxfcLl8MxqugflmQQqq1c1Qt69n3zHi+qTvZnHBCBHs
+G1CkuL3Of7Srx6ulz0/zgNRMlDnJ7EUAIQDoYkUzn69y/4ap3n/nQf7EmO9o3FnSCX27td5Y
+J21uJp/PLvbwvG9kdWMVeiyBubwdBSoMu1D9Cy6YlqFE1DIgPO9RR6EOkie4BgMr/3eliAoK
+j7HAOkFhsqTrVy81YtxQDYNrpeMZ2imSQUP1wN1X0NNkdcIWpUNYkRdvzrmpFXxYNhwPPPiE
+BIKctzMt00Pss2ziyMqpkQFzcI8CAwEAAaOCA6kwggOlMAkGA1UdEwQCMAAwCwYDVR0PBAQD
+AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUypNX2Sx5I6PQ
+yCj0Lgno1pTiwnswHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGQYDVR0RBBIw
+EIEOaW9uaWNAaW9uaWMuZGUwggIhBgNVHSAEggIYMIICFDCCAhAGCysGAQQBgbU3AQICMIIB
+/zAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5zdGFydHNzbC5jb20vcG9saWN5LnBkZjA0Bggr
+BgEFBQcCARYoaHR0cDovL3d3dy5zdGFydHNzbC5jb20vaW50ZXJtZWRpYXRlLnBkZjCB9wYI
+KwYBBQUHAgIwgeowJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBARqB
+vlRoaXMgY2VydGlmaWNhdGUgd2FzIGlzc3VlZCBhY2NvcmRpbmcgdG8gdGhlIENsYXNzIDIg
+VmFsaWRhdGlvbiByZXF1aXJlbWVudHMgb2YgdGhlIFN0YXJ0Q29tIENBIHBvbGljeSwgcmVs
+aWFuY2Ugb25seSBmb3IgdGhlIGludGVuZGVkIHB1cnBvc2UgaW4gY29tcGxpYW5jZSBvZiB0
+aGUgcmVseWluZyBwYXJ0eSBvYmxpZ2F0aW9ucy4wgZwGCCsGAQUFBwICMIGPMCcWIFN0YXJ0
+Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQIaZExpYWJpbGl0eSBhbmQgd2FycmFu
+dGllcyBhcmUgbGltaXRlZCEgU2VlIHNlY3Rpb24gIkxlZ2FsIGFuZCBMaW1pdGF0aW9ucyIg
+b2YgdGhlIFN0YXJ0Q29tIENBIHBvbGljeS4wNgYDVR0fBC8wLTAroCmgJ4YlaHR0cDovL2Ny
+bC5zdGFydHNzbC5jb20vY3J0dTItY3JsLmNybDCBjgYIKwYBBQUHAQEEgYEwfzA5BggrBgEF
+BQcwAYYtaHR0cDovL29jc3Auc3RhcnRzc2wuY29tL3N1Yi9jbGFzczIvY2xpZW50L2NhMEIG
+CCsGAQUFBzAChjZodHRwOi8vYWlhLnN0YXJ0c3NsLmNvbS9jZXJ0cy9zdWIuY2xhc3MyLmNs
+aWVudC5jYS5jcnQwIwYDVR0SBBwwGoYYaHR0cDovL3d3dy5zdGFydHNzbC5jb20vMA0GCSqG
+SIb3DQEBBQUAA4IBAQAWDJnVeIEl30sEHVyZ43IOK1RrYRyNJFAoClulBqL229p3whd4mtCY
+hE25avnoZIMPTxhjZJlnmIlr0Ahh8hjSeqzjeEIVzBV//vVRBwI1DnaJ2u965og2FBhp3KXc
+5pIHJA6aqJFqZE8EoI+81gdPB9Rc4cDAa0S4Bd4YtsLFfmxgR33EPC0MhEkwE2cihRTbF5Ye
+yW1j4sUmnaJKlv9mxAs79D6n3Ggx8YBAOnkmg/tCTbTrJcqrB67NUpFhEcgFNRNqaL2oxE3u
+qO7IjtyOzIlD+5dOJragt5dJJjXZF3NqWjsohcyYMECY8WEKUJlE0lPFQ4bPNfzWWdh16ooV
+MYID2jCCA9YCAQEwgZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQu
+MSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQD
+Ey9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQICHn8w
+CQYFKw4DAhoFAKCCAhswGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
+DxcNMTMwMTE5MTYxMzE0WjAjBgkqhkiG9w0BCQQxFgQU6ggkCfBU6pABybqGQDCELpEH8cMw
+bAYJKoZIhvcNAQkPMV8wXTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMH
+MA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIB
+KDCBpAYJKwYBBAGCNxAEMYGWMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4
+MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQg
+Q0ECAh5/MIGmBgsqhkiG9w0BCRACCzGBlqCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUg
+Q2xpZW50IENBAgIefzANBgkqhkiG9w0BAQEFAASCAQCzFxRl91hwpBUwE7hXtwOZVgJWxMVo
+BG4MWhsQa/T0votCZqN+LTBLuMgenQyaB/st/tUo2MrBqjpsnBE6DGQaWWz/SIQPXzmLjFqN
+SmMXfzeg8b2vFQ1bYM6P4MaQjOs+EF0+cCpF4ExnUC7/Ap5xsVrZ8WwA1oSn2ql1HhfhM8m4
+MtgjcZp8fl6QRpMAL6T7t1bWp0qWeo+kYXptvTYKLEBqegdR0xx9Twca0XfgglMa5DEYaW1c
+cZC4ghftcgDYJObV/yGuZETadKuwxGXZeLcdHC5WARxfrM6BtPcmqKPH49JCJMc+/1Ugfwg4
+ZVhqSxxSKxtzji2tgMckRgKKAAAAAAAA
+--------------ms070808070205080009040609--
