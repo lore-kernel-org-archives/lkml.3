@@ -1,192 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755179Ab3ASBGh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:06:37 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:48590 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab3ASBGe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:06:34 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1922388.1PvyliEuQR@vostro.rjw.lan>
-References: <CA+icZUW-mfMtNSY-d-=0WpX=fRBqoNx5jcX3S8x4tvGdvUc+8g@mail.gmail.com>
-	<2890633.q9n75klkI9@vostro.rjw.lan>
-	<CA+icZUVz7UPX0n=f85e=dcAMY6rgZZqj-7CqW7t4Zdtu9nPuBA@mail.gmail.com>
-	<1922388.1PvyliEuQR@vostro.rjw.lan>
-Date: Sat, 19 Jan 2013 02:06:33 +0100
-Message-ID: <CA+icZUU3AQ5jf6m-eKQ3VhZ0=tqJeZzwXJwmuthCoK=EWWOWmg@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jan 18 [ BROKEN suspend: jbd2|acpi|pm? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1755271Ab3ASBH5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:07:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37630 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753850Ab3ASBHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:07:55 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1358556871-6651-1-git-send-email-sedat.dilek@gmail.com>
+References: <1358556871-6651-1-git-send-email-sedat.dilek@gmail.com>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: dhowells@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH next-20130118 1/2] KEYS: Fix build-error when SYSTEM_TRUSTED_KEYRING=n
+Date: Sat, 19 Jan 2013 01:07:45 +0000
+Message-ID: <8514.1358557665@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 19, 2013 at 12:58 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Saturday, January 19, 2013 12:41:11 AM Sedat Dilek wrote:
->> On Sat, Jan 19, 2013 at 12:39 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Saturday, January 19, 2013 12:28:55 AM Sedat Dilek wrote:
->> >> On Sat, Jan 19, 2013 at 12:25 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >> > On Friday, January 18, 2013 11:56:53 PM Sedat Dilek wrote:
->> >> >> On Fri, Jan 18, 2013 at 11:35 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> >> >> > On Fri, Jan 18, 2013 at 11:20 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >> >> >> On Friday, January 18, 2013 11:11:07 PM Sedat Dilek wrote:
->> >> >> >>> On Fri, Jan 18, 2013 at 5:37 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> >> >> >>> > Hi all,
->> >> >> >>> >
->> >> >> >>> > Changes since 20130117:
->> >> >> >>> >
->> >> >> >>> > Undropped tree: samung
->> >> >> >>> >
->> >> >> >>> > The powerpc tree still had a build failure.
->> >> >> >>> >
->> >> >> >>> > The driver-core tree gained a build failure for which I applied a merge
->> >> >> >>> > fix patch.
->> >> >> >>> >
->> >> >> >>> > The gpio-lw tree gained a build failure so I used the version from
->> >> >> >>> > next-20130117.
->> >> >> >>> >
->> >> >> >>> > The samsung tree lost the majority of its conflicts but gained more
->> >> >> >>> > against the arm-soc and slave-dma tree.
->> >> >> >>> >
->> >> >> >>> > ----------------------------------------------------------------------------
->> >> >> >>> >
->> >> >> >>>
->> >> >> >>> From my dmesg diff-file:
->> >> >> >>>
->> >> >> >>> +[  288.730849] PM: Syncing filesystems ... done.
->> >> >> >>> +[  294.050498] Freezing user space processes ... (elapsed 0.04 seconds) done.
->> >> >> >>> +[  294.097024] Freezing remaining freezable tasks ...
->> >> >> >>> +[  314.098849] Freezing of tasks failed after 20.01 seconds (1 tasks
->> >> >> >>> refusing to freeze, wq_busy=0):
->> >> >> >>> +[  314.098862] jbd2/loop0-8    D ffffffff8180d780     0   297      2 0x00000000
->> >> >> >>> +[  314.098865]  ffff880117ec5b68 0000000000000046 ffff880117ec5b08
->> >> >> >>> ffffffff81044c29
->> >> >> >>> +[  314.098868]  ffff88011829dc80 ffff880117ec5fd8 ffff880117ec5fd8
->> >> >> >>> ffff880117ec5fd8
->> >> >> >>> +[  314.098871]  ffff880119b34560 ffff88011829dc80 ffff880117ec5b68
->> >> >> >>> ffff88011fad4738
->> >> >> >>> +[  314.098873] Call Trace:
->> >> >> >>> +[  314.098881]  [<ffffffff81044c29>] ? default_spin_lock_flags+0x9/0x10
->> >> >> >>> +[  314.098885]  [<ffffffff811c63e0>] ? __wait_on_buffer+0x30/0x30
->> >> >> >>> +[  314.098888]  [<ffffffff816b4b59>] schedule+0x29/0x70
->> >> >> >>> +[  314.098890]  [<ffffffff816b4c2f>] io_schedule+0x8f/0xd0
->> >> >> >>> +[  314.098892]  [<ffffffff811c63ee>] sleep_on_buffer+0xe/0x20
->> >> >> >>> +[  314.098896]  [<ffffffff816b342f>] __wait_on_bit+0x5f/0x90
->> >> >> >>> +[  314.098898]  [<ffffffff811c5aa1>] ? submit_bh+0x121/0x1e0
->> >> >> >>> +[  314.098900]  [<ffffffff811c63e0>] ? __wait_on_buffer+0x30/0x30
->> >> >> >>> +[  314.098903]  [<ffffffff816b34dc>] out_of_line_wait_on_bit+0x7c/0x90
->> >> >> >>> +[  314.098906]  [<ffffffff8107eb00>] ? autoremove_wake_function+0x40/0x40
->> >> >> >>> +[  314.098909]  [<ffffffff811c63de>] __wait_on_buffer+0x2e/0x30
->> >> >> >>> +[  314.098913]  [<ffffffff8128a6a1>]
->> >> >> >>> jbd2_journal_commit_transaction+0x1791/0x1960
->> >> >> >>> +[  314.098917]  [<ffffffff8109269d>] ? sched_clock_cpu+0xbd/0x110
->> >> >> >>> +[  314.098920]  [<ffffffff8107eac0>] ? add_wait_queue+0x60/0x60
->> >> >> >>> +[  314.098923]  [<ffffffff81069fbf>] ? try_to_del_timer_sync+0x4f/0x70
->> >> >> >>> +[  314.098925]  [<ffffffff8128e4e8>] kjournald2+0xb8/0x240
->> >> >> >>> +[  314.098927]  [<ffffffff8107eac0>] ? add_wait_queue+0x60/0x60
->> >> >> >>> +[  314.098929]  [<ffffffff8128e430>] ? commit_timeout+0x10/0x10
->> >> >> >>> +[  314.098931]  [<ffffffff8107ded0>] kthread+0xc0/0xd0
->> >> >> >>> +[  314.098933]  [<ffffffff8107de10>] ? flush_kthread_worker+0xb0/0xb0
->> >> >> >>> +[  314.098936]  [<ffffffff816be52c>] ret_from_fork+0x7c/0xb0
->> >> >> >>> +[  314.098938]  [<ffffffff8107de10>] ? flush_kthread_worker+0xb0/0xb0
->> >> >> >>> +[  314.098969]
->> >> >> >>> +[  314.098970] Restarting kernel threads ... done.
->> >> >> >>> +[  314.099052] Restarting tasks ... done.
->> >> >> >>>
->> >> >> >>> Please, have a lot at it.
->> >> >> >>
->> >> >> >> This is a freezer failure while freezing kernel threads, so I don't think it's
->> >> >> >> related to ACPI or PM directly.
->> >> >> >>
->> >> >> >> Does it happen on every suspend?
->> >> >> >>
->> >> >> >
->> >> >> > No, I only did one S/R.
->> >> >> >
->> >> >> > I have built a 2nd new kernel where I pulled-in latest pm.git#linux-next.
->> >> >> > With this kernel two S/Rs were fine - but that says not much.
->> >> >> >
->> >> >>
->> >> >> After several S/Rs on the "buggy" -1 kernel I know see in my syslogs:
->> >> >>
->> >> >> Jan 18 23:50:02 fambox kernel: [  141.853828] Disabling non-boot CPUs ...
->> >> >> Jan 18 23:50:02 fambox kernel: [  141.956943] smpboot: CPU 1 is now offline
->> >> >> Jan 18 23:50:02 fambox kernel: [  141.957438] NOHZ: local_softirq_pending 02
->> >> >> Jan 18 23:50:02 fambox kernel: [  141.957454] NOHZ: local_softirq_pending 02
->> >> >> Jan 18 23:50:02 fambox kernel: [  142.060830] smpboot: CPU 2 is now offline
->> >> >> Jan 18 23:50:02 fambox kernel: [  142.164639] smpboot: CPU 3 is now offline
->> >> >
->> >> > Are you worried about the "local_softirq_pending" messages?
->> >> >
->> >>
->> >> That's the only new messages I have seen after several S/Rs.
->> >
->> > They are kind of unusual.
->> >
->> > Anyway, they seem to be related to CPU hotplug (CPU offline), so you can try
->> > if you can trigger them through the sysfs CPU offline/online interface.
->> >
->>
->> Can you explain that a bit clearer or give some sample lines for testing?
->
-> There is a sysfs file
->
-> /sys/devices/system/cpu/cpuX/online
->
-> (where X=0,1,2,3,...) for each CPU core in the system.  The value read from it
-> indicates whether or not the given core is online (1 means online).  Writing 0
-> to it means that the given core should be put offline.  Writing 1 means to put
-> it back online.  You can simply write first 0s and than 1s to those files
-> for CPUs > 0 multiple times in a row and see if that triggers messages like the
-> above.  If it does, that may mean there's been a change in kernel/cpu.c, for
-> example, that causes it to appear.  The change may have been made somewhere in
-> arch/x86 too, though.
->
->> >> If you have a testcase for me to reproduce it here, I would be happy.
->> >
->> > Do you mean the freezer-related issue?
->> >
->>
->> Any one as I am still stepping in the dark.
->> I checked my disc-space as I built a lot of software today and run
->> once out of space.
->> But 1.7GiB should be enough on / for testing.
->> I wanted to run the new LTP version I built the last days.
->> Let's see what I get...
->
-> Stress-testing the freezer is rather easy and doesn't require disk space.
-> All it takes is to echo "freezer" to /sys/power/pm_test and then do
-> "echo mem > /sys/power/state && sleep 1" in a loop.  This is described in
-> Documentation/power/basic-pm-debugging.txt IIRC.
->
+Sedat Dilek <sedat.dilek@gmail.com> wrote:
 
-OK, I will enable CONFIG_PM_DEBUG!
+> -	select KEYS
+> +	depends on KEYS
 
-[ QUOTE ]
-184 Namely, after writing "freezer", "devices", "platform",
-"processors", or "core"
-185 into /sys/power/pm_test (available if the kernel is compiled with
-186 CONFIG_PM_DEBUG set) the suspend code will work in the test mode
-corresponding
-187 to given string.
-[ /QUOTE ]
+This change was pushed upstream a few hours ago.  It may not have made it into
+linux-next yet.
 
-- Sedat -
-
-[1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=Documentation/power/basic-pm-debugging.txt;hb=refs/tags/v3.8-rc4#l184
-
-> Thanks,
-> Rafael
->
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+David
