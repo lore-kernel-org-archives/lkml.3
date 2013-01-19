@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab3ASBRq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:17:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56215 "EHLO mail.kernel.org"
+	id S1756398Ab3ASBgv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:36:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56239 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754150Ab3ASBRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:17:43 -0500
+	id S1755473Ab3ASBRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:17:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Schwinge <thomas@codesourcery.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [ 02/33] sh: Fix FDPIC binary loader
-Date: Fri, 18 Jan 2013 17:16:27 -0800
-Message-Id: <20130119010346.783078982@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [ 04/33] arm64: mm: only wrprotect clean ptes if they are present
+Date: Fri, 18 Jan 2013 17:16:29 -0800
+Message-Id: <20130119010347.330247690@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
 References: <20130119010345.885772698@linuxfoundation.org>
@@ -26,35 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Schwinge <thomas@codesourcery.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 4a71997a3279a339e7336ea5d0cd27282e2dea44 upstream.
+commit 02522463c84748b3b8ad770f9424bcfa70a5b4c4 upstream.
 
-Ensure that the aux table is properly initialized, even when optional features
-are missing.  Without this, the FDPIC loader did not work.  This was meant to
-be included in commit d5ab780305bb6d60a7b5a74f18cf84eb6ad153b1.
+Marking non-present ptes as read-only can corrupt file ptes, breaking
+things like swap and file mappings.
 
-Signed-off-by: Thomas Schwinge <thomas@codesourcery.com>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+This patch ensures that we only manipulate user pte bits when the pte
+is marked present.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sh/include/asm/elf.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm64/include/asm/pgtable.h |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
---- a/arch/sh/include/asm/elf.h
-+++ b/arch/sh/include/asm/elf.h
-@@ -203,9 +203,9 @@ extern void __kernel_vsyscall;
- 	if (vdso_enabled)					\
- 		NEW_AUX_ENT(AT_SYSINFO_EHDR, VDSO_BASE);	\
- 	else							\
--		NEW_AUX_ENT(AT_IGNORE, 0);
-+		NEW_AUX_ENT(AT_IGNORE, 0)
- #else
--#define VSYSCALL_AUX_ENT
-+#define VSYSCALL_AUX_ENT	NEW_AUX_ENT(AT_IGNORE, 0)
- #endif /* CONFIG_VSYSCALL */
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -132,9 +132,8 @@ extern struct page *empty_zero_page;
+ #define pte_write(pte)		(!(pte_val(pte) & PTE_RDONLY))
+ #define pte_exec(pte)		(!(pte_val(pte) & PTE_UXN))
  
- #ifdef CONFIG_SH_FPU
+-#define pte_present_exec_user(pte) \
+-	((pte_val(pte) & (PTE_VALID | PTE_USER | PTE_UXN)) == \
+-	 (PTE_VALID | PTE_USER))
++#define pte_present_user(pte) \
++	((pte_val(pte) & (PTE_VALID | PTE_USER)) == (PTE_VALID | PTE_USER))
+ 
+ #define PTE_BIT_FUNC(fn,op) \
+ static inline pte_t pte_##fn(pte_t pte) { pte_val(pte) op; return pte; }
+@@ -157,10 +156,13 @@ extern void __sync_icache_dcache(pte_t p
+ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
+ 			      pte_t *ptep, pte_t pte)
+ {
+-	if (pte_present_exec_user(pte))
+-		__sync_icache_dcache(pte, addr);
+-	if (!pte_dirty(pte))
+-		pte = pte_wrprotect(pte);
++	if (pte_present_user(pte)) {
++		if (pte_exec(pte))
++			__sync_icache_dcache(pte, addr);
++		if (!pte_dirty(pte))
++			pte = pte_wrprotect(pte);
++	}
++
+ 	set_pte(ptep, pte);
+ }
+ 
 
 
