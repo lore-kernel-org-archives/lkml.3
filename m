@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab3ASBcp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:32:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56486 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754150Ab3ASBSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756182Ab3ASBSG (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 18 Jan 2013 20:18:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56420 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754150Ab3ASBSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:18:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lukas Czerner <lczerner@redhat.com>,
-        Carlos Maiolino <cmaiolino@redhat.com>,
-        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         CAI Qian <caiqian@redhat.com>
-Subject: [ 14/33] ext4: init pagevec in ext4_da_block_invalidatepages
-Date: Fri, 18 Jan 2013 17:16:39 -0800
-Message-Id: <20130119010350.731995581@linuxfoundation.org>
+Subject: [ 18/33] target: Add link_magic for fabric allow_link destination target_items
+Date: Fri, 18 Jan 2013 17:16:43 -0800
+Message-Id: <20130119010352.147222513@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
 References: <20130119010345.885772698@linuxfoundation.org>
@@ -28,38 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 66bea92c69477a75a5d37b9bfed5773c92a3c4b4 upstream.
+commit 0ff8754981261a80f4b77db2536dfea92c2d4539 upstream.
 
-ext4_da_block_invalidatepages is missing a pagevec_init(),
-which means that pvec->cold contains random garbage.
+This patch adds [dev,lun]_link_magic value assignment + checks within generic
+target_fabric_port_link() and target_fabric_mappedlun_link() code to ensure
+destination config_item *target_item sent from configfs_symlink() ->
+config_item_operations->allow_link() is the underlying se_device->dev_group
+and se_lun->lun_group that we expect to symlink.
 
-This affects whether the page goes to the front or
-back of the LRU when ->cold makes it to
-free_hot_cold_page()
-
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
-Reviewed-by: Carlos Maiolino <cmaiolino@redhat.com>
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/target/target_core_device.c          |    1 +
+ drivers/target/target_core_fabric_configfs.c |   12 ++++++++++++
+ drivers/target/target_core_tpg.c             |    1 +
+ drivers/target/target_core_transport.c       |    1 +
+ include/target/target_core_base.h            |    4 ++++
+ 5 files changed, 19 insertions(+)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1503,6 +1503,8 @@ static void ext4_da_block_invalidatepage
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -1624,6 +1624,7 @@ int core_dev_setup_virtual_lun0(void)
+ 		ret = PTR_ERR(dev);
+ 		goto out;
+ 	}
++	dev->dev_link_magic = SE_DEV_LINK_MAGIC;
+ 	se_dev->se_dev_ptr = dev;
+ 	g_lun0_dev = dev;
  
- 	index = mpd->first_page;
- 	end   = mpd->next_page - 1;
+--- a/drivers/target/target_core_fabric_configfs.c
++++ b/drivers/target/target_core_fabric_configfs.c
+@@ -71,6 +71,12 @@ static int target_fabric_mappedlun_link(
+ 	struct se_portal_group *se_tpg;
+ 	struct config_item *nacl_ci, *tpg_ci, *tpg_ci_s, *wwn_ci, *wwn_ci_s;
+ 	int ret = 0, lun_access;
 +
-+	pagevec_init(&pvec, 0);
- 	while (index <= end) {
- 		nr_pages = pagevec_lookup(&pvec, mapping, index, PAGEVEC_SIZE);
- 		if (nr_pages == 0)
++	if (lun->lun_link_magic != SE_LUN_LINK_MAGIC) {
++		pr_err("Bad lun->lun_link_magic, not a valid lun_ci pointer:"
++			" %p to struct lun: %p\n", lun_ci, lun);
++		return -EFAULT;
++	}
+ 	/*
+ 	 * Ensure that the source port exists
+ 	 */
+@@ -745,6 +751,12 @@ static int target_fabric_port_link(
+ 	struct target_fabric_configfs *tf;
+ 	int ret;
+ 
++	if (dev->dev_link_magic != SE_DEV_LINK_MAGIC) {
++		pr_err("Bad dev->dev_link_magic, not a valid se_dev_ci pointer:"
++			" %p to struct se_device: %p\n", se_dev_ci, dev);
++		return -EFAULT;
++	}
++
+ 	tpg_ci = &lun_ci->ci_parent->ci_group->cg_item;
+ 	se_tpg = container_of(to_config_group(tpg_ci),
+ 				struct se_portal_group, tpg_group);
+--- a/drivers/target/target_core_tpg.c
++++ b/drivers/target/target_core_tpg.c
+@@ -672,6 +672,7 @@ int core_tpg_register(
+ 	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
+ 		lun = se_tpg->tpg_lun_list[i];
+ 		lun->unpacked_lun = i;
++		lun->lun_link_magic = SE_LUN_LINK_MAGIC;
+ 		lun->lun_status = TRANSPORT_LUN_STATUS_FREE;
+ 		atomic_set(&lun->lun_acl_count, 0);
+ 		init_completion(&lun->lun_shutdown_comp);
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1071,6 +1071,7 @@ struct se_device *transport_add_device_t
+ 	dev->se_hba		= hba;
+ 	dev->se_sub_dev		= se_dev;
+ 	dev->transport		= transport;
++	dev->dev_link_magic	= SE_DEV_LINK_MAGIC;
+ 	INIT_LIST_HEAD(&dev->dev_list);
+ 	INIT_LIST_HEAD(&dev->dev_sep_list);
+ 	INIT_LIST_HEAD(&dev->dev_tmr_list);
+--- a/include/target/target_core_base.h
++++ b/include/target/target_core_base.h
+@@ -734,6 +734,8 @@ struct se_subsystem_dev {
+ };
+ 
+ struct se_device {
++#define SE_DEV_LINK_MAGIC			0xfeeddeef
++	u32			dev_link_magic;
+ 	/* RELATIVE TARGET PORT IDENTIFER Counter */
+ 	u16			dev_rpti_counter;
+ 	/* Used for SAM Task Attribute ordering */
+@@ -820,6 +822,8 @@ struct se_port_stat_grps {
+ };
+ 
+ struct se_lun {
++#define SE_LUN_LINK_MAGIC			0xffff7771
++	u32			lun_link_magic;
+ 	/* See transport_lun_status_table */
+ 	enum transport_lun_status_table lun_status;
+ 	u32			lun_access;
 
 
