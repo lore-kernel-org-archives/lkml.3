@@ -1,104 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835Ab3ASImR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 03:42:17 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:64621 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751579Ab3ASImP (ORCPT
+	id S1751794Ab3ASIsI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 03:48:08 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:58263 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539Ab3ASIsG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 03:42:15 -0500
+	Sat, 19 Jan 2013 03:48:06 -0500
+From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: 3.7.3, ttyUSB0 serial problem - devices stop working and only reboot helps (Inappropriate ioctl for device)
+Date: Sat, 19 Jan 2013 09:48:01 +0100
+User-Agent: KMail/1.13.7 (Linux/3.8.0-rc4-dirty; KDE/4.9.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>, Peter Korsgaard <jacmet@sunsite.dk>,
+        Alan Cox <alan@linux.intel.com>,
+        Preston Fick <preston.fick@silabs.com>
+References: <201301182328.43455.a.miskiewicz@gmail.com> <20130119004732.GA32311@kroah.com> <201301190918.37001.a.miskiewicz@gmail.com>
+In-Reply-To: <201301190918.37001.a.miskiewicz@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <50F87BCA.10201@redhat.com>
-References: <1358385543.7040.54.camel@host028-server-9.lan.domdv.de>
-	<1358456179.18551.34.camel@haakon2.linux-iscsi.org>
-	<50F87BCA.10201@redhat.com>
-Date: Sat, 19 Jan 2013 14:12:14 +0530
-X-Google-Sender-Auth: oaAIec-KqgBEZM-SDwKK0ZABqiI
-Message-ID: <CAP0eoCwV3Rg2s9qcb-_-jqnxX3iZY2qoQV91gaiCUP43fo6nZQ@mail.gmail.com>
-Subject: Re: LIO - the broken iSCSI target implementation
-From: Ritesh Raj Sarraf <rrs@debian.org>
-To: Andy Grover <agrover@redhat.com>, Andreas Steinmetz <ast@domdv.de>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        torvalds@linux-foundation.org,
-        target-devel <target-devel@vger.kernel.org>,
-        Kugesh Veeraraghavan <kugeshv@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201301190948.02115.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 4:01 AM, Andy Grover <agrover@redhat.com> wrote:
-> On 01/17/2013 12:56 PM, Nicholas A. Bellinger wrote:
->> On Thu, 2013-01-17 at 02:19 +0100, Andreas Steinmetz wrote:
->>> This is not a technical point of view. This is a more or less political
->>> and user point of view. And for any replies, I'm not subscribed (haven't
->>> been now for years).
->>>
->>> As a user, I was in need for an iSCSI target. Actually, I needed to
->>> export a SAS tape device (Ultrium 5) - which is one of the devices still
->>> sufficiently expensive to go the iSCSI target way) - well, not any disks
->>> (cheap enough, NFS available) or CD/DVD writers (I'd call these penny
->>> targets nowadays).
->>>
->>> Thus, lio (http://www.linux-iscsi.org/) seemed to be the politically and
->>> technically favoured solution. Except: it simply doesn't work, userspace
->>> utilities are seemingly not maintained,
->>
->> I'm not sure what you mean.  There are targetcli+rtslib packages are
->> available for virtually every distribution
->>
->> http://www.linux-iscsi.org/wiki/Targetcli#Linux_distributions
->
-> [CCing rrs@debian.org]
->
-> No... actually upstream targetcli/rtslib are not very well maintained.
-> Around 5 patches each in the last year.
->
+On Saturday 19 of January 2013, Arkadiusz Miskiewicz wrote:
+> On Saturday 19 of January 2013, Greg Kroah-Hartman wrote:
+> > On Fri, Jan 18, 2013 at 11:28:43PM +0100, Arkadiusz Miskiewicz wrote:
+> > > Hi.
+> > > 
+> > > Using 3.7.3 kernel and connecting two rs232 usb adapters, CP2102 and
+> > > FT232RL, one after disconnecting another.
+> > > 
+> > > After few cycles of reconnecting and using socat (below) I'm getting
+> > > problems accessing ttyUSB0:
+> > > ioctl(3, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or
+> > > TCGETS, 0x7fffb70c6ae0) = -1 ENOTTY (Inappropriate ioctl for device)
+> > > 
+> > > Unloading and reloading (by udev) modules ftdio_sio, cp210x, usbserial
+> > > doesn't help. I have to reboot to get ttyUSB0 working (regardless of
+> > > which driver, ftdio_sio or cp210x is handling ttyUSB0 - both stop
+> > > working).
+> > > 
+> > > Any clues?
+> > 
+> > The kernel log shows the device getting removed a bunch and then coming
+> > back, which implies electrical issues (flaky connection, low power,
+> > etc.)  Are you really removing it and plugging it back in?  Or is it
+> > doing it all by itself?
+> 
+> I was doing plug in CP2102, remove it, plug in FT232RL after few seconds,
+> remove it, plug in CP... (and various variations, several times) and
+> testing with socat before removing devices. After some iteration the
+> problem appears and only reboot helps.
 
-I am not sure what errors you are facing but there are users already
-using it. I just checked the iSCSI LIO Target, and it seems to work
-fine in my limited tests.
-If you run into issues, please file bug reports.
+The issue is really weird. Machine is Thinkpad T400 2764CTO (latest bios). 
+When the problem happened on 3.7.3 today I rebooted into 3.8rc4 and ... 
+freshly after reboot and plugging in PL2303 adapter the problem was already 
+there. Didn't have to do unplug/plug cycle to make it happen.
 
-14:38:00 root@debian-x64:~# /etc/init.d/open-iscsi restart
-[ ok ] Unmounting iscsi-backed filesystems: Unmounting all devices
-marked _netdev.
-[....] Disconnecting iSCSI targets:iscsiadm: No matching sessions found
-. ok
-[ ok ] Stopping iSCSI initiator service:.
-[ ok ] Starting iSCSI initiator service: iscsid.
-[....] Setting up iSCSI targets:
-Logging in to [iface: default, target:
-iqn.2003-01.org.linux-iscsi.debian-x64.x8664:sn.f32deae5534e, portal:
-192.168.122.21,3260] (multiple)
-Login to [iface: default, target:
-iqn.2003-01.org.linux-iscsi.debian-x64.x8664:sn.f32deae5534e, portal:
-192.168.122.21,3260] successful.
-. ok
-[ ok ] Mounting network filesystems:.
+Looks like sometimes reboot cures the problem, sometimes it doesn't. Now 
+powered off laptop and powered it on - problem gone.
 
+Connected PL2303, ran socat, disconnected PL2303 (while socat was running) -> 
+problem happened again. Looks like it doesn't depend on adapter chip type.
 
-14:38:05 root@debian-x64:~# lsb_release -a
-No LSB modules are available.
-Distributor ID:	Debian
-Description:	Debian GNU/Linux unstable (sid)
-Release:	unstable
-Codename:	sid
+So to reproduce here:
+- boot fresh 3.8rc4
+- plug in some adapter (PL2303 for example)
+- run "socat -ddd -s -u /dev/ttyUSB0,raw,echo=0,b115200,crnl,noctty,nonblock - 
+| logger" - it should run fine, without any error
+- disconnect adapter; socat should exit with error "W cannot restore terminal 
+settings on fd 3: Input/output error"
+- plug in adapter again
+- run socat again -> this time error "E tcgetattr(3, 0x7fff21411780): 
+Inappropriate ioctl for device" immediately always; regardless which adapter 
+is used and if kernel module drivers for these adapters were reloaded
 
-14:38:22 root@debian-x64:~# uname -a
-Linux debian-x64 3.2.0-4-amd64 #1 SMP Debian 3.2.32-1 x86_64 GNU/Linux
+dmesg:
+http://pastebin.com/r1Q5mmgt
 
+config:
+http://pastebin.com/8dpFFzuU
 
-We are currently under freeze for the Wheezy release. That is why you
-don't see any updates. I could surely do latest and greatest updates
-into experimental branch of the debian archive, but I have limited
-volunteer time for Debian.
-And anyways, there have not been much updates in the upstream
-repositories, like Andy mentioned. Once the licensing issues are
-sorted out, we will see which route we want to move ahead with.
+lspci:
+http://pastebin.com/TBtUg1tW
+
+lsusb:
+http://pastebin.com/SueVw9CD
+
+[   53.776047] usb 4-1: new full-speed USB device number 2 using uhci_hcd
+[   53.938053] usb 4-1: New USB device found, idVendor=067b, idProduct=2303
+[   53.938060] usb 4-1: New USB device strings: Mfr=1, Product=2, 
+SerialNumber=0
+[   53.938065] usb 4-1: Product: USB-Serial Controller
+[   53.938068] usb 4-1: Manufacturer: Prolific Technology Inc.
+[   53.949924] usbcore: registered new interface driver usbserial
+[   53.950364] usbcore: registered new interface driver usbserial_generic
+[   53.951147] usbserial: USB Serial support registered for generic
+[   53.954268] usbcore: registered new interface driver pl2303
+[   53.955009] usbserial: USB Serial support registered for pl2303
+[   53.955039] pl2303 4-1:1.0: pl2303 converter detected
+[   53.967394] usb 4-1: pl2303 converter now attached to ttyUSB0
+[   64.492122] usb 4-1: USB disconnect, device number 2
+[   64.501748] pl2303 ttyUSB0: pl2303 converter now disconnected from ttyUSB0
+[   64.502343] pl2303 4-1:1.0: device disconnected
+[   66.494930] usb 4-1: new full-speed USB device number 3 using uhci_hcd
+[   66.654247] usb 4-1: New USB device found, idVendor=067b, idProduct=2303
+[   66.654261] usb 4-1: New USB device strings: Mfr=1, Product=2, 
+SerialNumber=0
+[   66.654269] usb 4-1: Product: USB-Serial Controller
+[   66.654276] usb 4-1: Manufacturer: Prolific Technology Inc.
+[   66.659661] pl2303 4-1:1.0: pl2303 converter detected
+[   66.671587] usb 4-1: pl2303 converter now attached to ttyUSB0
+
+5722  munmap(0x7f1bfc0d7000, 4096)      = 0
+5722  write(2, "2013/01/19 09:36:38 socat[5722] E tcgetattr(3, 
+0x7fffeff64020): Inappropriate ioctl for device\n", 95) = 95
+5722  ioctl(3, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or TCGETS, 
+0x7fffeff63e50) = -1 ENOTTY (Inappropriate ioctl for device)
+5722  write(2, "2013/01/19 09:36:38 socat[5722] E tcgetattr(3, 
+0x7fffeff63f90): Inappropriate ioctl for device\n", 95) = 95
+5722  ioctl(3, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or TCGETS, 
+0x7fffeff63ec0) = -1 ENOTTY (Inappropriate ioctl for device)
+5722  write(2, "2013/01/19 09:36:38 socat[5722] E tcgetattr(3, 
+0x7fffeff64160): Inappropriate ioctl for device\n", 95) = 95
+5722  fcntl(3, F_SETFD, FD_CLOEXEC)     = 0
+5722  ioctl(1, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or TCGETS, 
+0x7fffeff64330) = -1 ENOTTY (Inappropriate ioctl for device)
+5722  select(4, [3], [1], [], NULL)     = 2 (in [3], out [1])
 
 -- 
-Ritesh Raj Sarraf
-RESEARCHUT - http://www.researchut.com
-"Necessity is the mother of invention."
+Arkadiusz Miśkiewicz, arekm / maven.pl
