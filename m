@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470Ab3ASGXM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 01:23:12 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:52204 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3ASGXK (ORCPT
+	id S1751508Ab3ASGZF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 01:25:05 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:34494 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3ASGZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 01:23:10 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com, a.zummo@towertech.it,
-        rtc-linux@googlegroups.com, Tony Prisk <linux@prisktech.co.nz>,
-        Edgar Toernig <froese@gmx.de>
-Subject: [PATCH] rtc: vt8500: Fix year field in vt8500_rtc_set_time
-Date: Sat, 19 Jan 2013 19:23:27 +1300
-Message-Id: <1358576607-27185-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 19 Jan 2013 01:25:02 -0500
+Message-ID: <50FA3C38.5030308@intel.com>
+Date: Sat, 19 Jan 2013 14:24:56 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v7 3/4] block: implement runtime pm strategy
+References: <Pine.LNX.4.44L0.1301181024340.1988-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1301181024340.1988-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-year field is incorrectly masked when setting the date. If the year
-is beyond 2099, the year field will be incorrectly updated in hardware.
+On 01/18/2013 11:26 PM, Alan Stern wrote:
+> On Fri, 18 Jan 2013, Aaron Lu wrote:
+>
+>>> Either you have to make sure the q->nr_pending is always correct, even
+>>> when runtime PM isn't being used, or else the caller has to make sure
+>>> that no I/O takes place before blk_pm_runtime_init is called.
+>>
+>> I think we can say:
+>> blk_pm_runtime_init can't be called after any requests have been
+>> submitted but not finished.
+>> Sounds more accurate?
+>
+> Okay.  I think you can add (in parentheses) that in most cases drivers
+> should call the routine before any I/O has taken place.
 
-This patch masks the year field correctly.
+The reason I put it that way is, in patch 4, the blk_pm_runtime_init is
+called after a request is executed(scsi_probe_lun). I do not want people
+get confused by the comments for blk_pm_runtime_init and the example
+code in patch 4 where we didn't follow it :-)
 
-Signed-off-by: Edgar Toernig <froese@gmx.de>
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
-Hi Andrew,
+Considering ODD's use case, I was thinking of moving the
+blk_pm_runtime_init call to sd.c, as sr will not use request based auto
+suspend. Probably right before we decrease usage count for the device in
+sd_probe_async. What do you think?
 
-This patch has been floating around since -rc1, but looks like it may have been
-missed. I have rebased it onto -rc4 to make applying it easier. Trivial fix.
-
-Regards
-Tony P
-
- drivers/rtc/rtc-vt8500.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/rtc/rtc-vt8500.c b/drivers/rtc/rtc-vt8500.c
-index 00c930f..2730533 100644
---- a/drivers/rtc/rtc-vt8500.c
-+++ b/drivers/rtc/rtc-vt8500.c
-@@ -137,7 +137,7 @@ static int vt8500_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 		return -EINVAL;
- 	}
- 
--	writel((bin2bcd(tm->tm_year - 100) << DATE_YEAR_S)
-+	writel((bin2bcd(tm->tm_year % 100) << DATE_YEAR_S)
- 		| (bin2bcd(tm->tm_mon + 1) << DATE_MONTH_S)
- 		| (bin2bcd(tm->tm_mday))
- 		| ((tm->tm_year >= 200) << DATE_CENTURY_S),
--- 
-1.7.9.5
-
+Thanks,
+Aaron
