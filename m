@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab3ASBSR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:18:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56565 "EHLO mail.kernel.org"
+	id S1756432Ab3ASBTP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:19:15 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56584 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755405Ab3ASBSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:18:14 -0500
+	id S1756268Ab3ASBSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:18:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stephen Hurd <shurd@broadcom.com>, Michael Chan <mchan@broadcom.com>
-Subject: [ 29/33] 8250/16?50: Add support for Broadcom TruManage redirected serial port
-Date: Fri, 18 Jan 2013 17:16:54 -0800
-Message-Id: <20130119010356.275515220@linuxfoundation.org>
+        Frediano Ziglio <frediano.ziglio@citrix.com>,
+        Andrew Cooper <andrew.cooper3@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 22/33] xen: Fix stack corruption in xen_failsafe_callback for 32bit PVOPS guests.
+Date: Fri, 18 Jan 2013 17:16:47 -0800
+Message-Id: <20130119010353.868130400@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
 References: <20130119010345.885772698@linuxfoundation.org>
@@ -25,161 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Hurd <shurd@broadcom.com>
+From: Andrew Cooper <andrew.cooper3@citrix.com>
 
-commit ebebd49a8eab5e9aa1b1f8f1614ccc3c2120f886 upstream.
+commit 9174adbee4a9a49d0139f5d71969852b36720809 upstream.
 
-Add support for the UART device present in Broadcom TruManage capable
-NetXtreme chips (ie: 5761m 5762, and 5725).
+This fixes CVE-2013-0190 / XSA-40
 
-This implementation has a hidden transmit FIFO, so running in single-byte
-interrupt mode results in too many interrupts.  The UART_CAP_HFIFO
-capability was added to track this.  It continues to reload the THR as long
-as the THRE and TSRE bits are set in the LSR up to a specified limit (1024
-is used here).
+There has been an error on the xen_failsafe_callback path for failed
+iret, which causes the stack pointer to be wrong when entering the
+iret_exc error path.  This can result in the kernel crashing.
 
-Signed-off-by: Stephen Hurd <shurd@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
+In the classic kernel case, the relevant code looked a little like:
+
+        popl %eax      # Error code from hypervisor
+        jz 5f
+        addl $16,%esp
+        jmp iret_exc   # Hypervisor said iret fault
+5:      addl $16,%esp
+                       # Hypervisor said segment selector fault
+
+Here, there are two identical addls on either option of a branch which
+appears to have been optimised by hoisting it above the jz, and
+converting it to an lea, which leaves the flags register unaffected.
+
+In the PVOPS case, the code looks like:
+
+        popl_cfi %eax         # Error from the hypervisor
+        lea 16(%esp),%esp     # Add $16 before choosing fault path
+        CFI_ADJUST_CFA_OFFSET -16
+        jz 5f
+        addl $16,%esp         # Incorrectly adjust %esp again
+        jmp iret_exc
+
+It is possible unprivileged userspace applications to cause this
+behaviour, for example by loading an LDT code selector, then changing
+the code selector to be not-present.  At this point, there is a race
+condition where it is possible for the hypervisor to return back to
+userspace from an interrupt, fault on its own iret, and inject a
+failsafe_callback into the kernel.
+
+This bug has been present since the introduction of Xen PVOPS support
+in commit 5ead97c84 (xen: Core Xen implementation), in 2.6.23.
+
+Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+Signed-off-by: Andrew Cooper <andrew.cooper3@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250.c     |   11 ++++++++++
- drivers/tty/serial/8250/8250.h     |    1 
- drivers/tty/serial/8250/8250_pci.c |   38 +++++++++++++++++++++++++++++++++++++
- include/uapi/linux/serial_core.h   |    4 ++-
- 4 files changed, 53 insertions(+), 1 deletion(-)
+ arch/x86/kernel/entry_32.S |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/tty/serial/8250/8250.c
-+++ b/drivers/tty/serial/8250/8250.c
-@@ -290,6 +290,12 @@ static const struct serial8250_config ua
- 				  UART_FCR_R_TRIG_00 | UART_FCR_T_TRIG_00,
- 		.flags		= UART_CAP_FIFO,
- 	},
-+	[PORT_BRCM_TRUMANAGE] = {
-+		.name		= "TruManage",
-+		.fifo_size	= 1,
-+		.tx_loadsz	= 1024,
-+		.flags		= UART_CAP_HFIFO,
-+	},
- 	[PORT_8250_CIR] = {
- 		.name		= "CIR port"
- 	}
-@@ -1441,6 +1447,11 @@ void serial8250_tx_chars(struct uart_825
- 		port->icount.tx++;
- 		if (uart_circ_empty(xmit))
- 			break;
-+		if (up->capabilities & UART_CAP_HFIFO) {
-+			if ((serial_port_in(port, UART_LSR) & BOTH_EMPTY) !=
-+			    BOTH_EMPTY)
-+				break;
-+		}
- 	} while (--count > 0);
- 
- 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
---- a/drivers/tty/serial/8250/8250.h
-+++ b/drivers/tty/serial/8250/8250.h
-@@ -40,6 +40,7 @@ struct serial8250_config {
- #define UART_CAP_AFE	(1 << 11)	/* MCR-based hw flow control */
- #define UART_CAP_UUE	(1 << 12)	/* UART needs IER bit 6 set (Xscale) */
- #define UART_CAP_RTOIE	(1 << 13)	/* UART needs IER bit 4 set (Xscale, Tegra) */
-+#define UART_CAP_HFIFO	(1 << 14)	/* UART has a "hidden" FIFO */
- 
- #define UART_BUG_QUOT	(1 << 0)	/* UART has buggy quot LSB */
- #define UART_BUG_TXEN	(1 << 1)	/* UART has buggy TX IIR status */
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1085,6 +1085,18 @@ pci_omegapci_setup(struct serial_private
- 	return setup_port(priv, port, 2, idx * 8, 0);
- }
- 
-+static int
-+pci_brcm_trumanage_setup(struct serial_private *priv,
-+			 const struct pciserial_board *board,
-+			 struct uart_8250_port *port, int idx)
-+{
-+	int ret = pci_default_setup(priv, board, port, idx);
-+
-+	port->port.type = PORT_BRCM_TRUMANAGE;
-+	port->port.flags = (port->port.flags | UPF_FIXED_PORT | UPF_FIXED_TYPE);
-+	return ret;
-+}
-+
- static int skip_tx_en_setup(struct serial_private *priv,
- 			const struct pciserial_board *board,
- 			struct uart_8250_port *port, int idx)
-@@ -1213,6 +1225,7 @@ pci_wch_ch353_setup(struct serial_privat
- #define PCI_VENDOR_ID_AGESTAR		0x5372
- #define PCI_DEVICE_ID_AGESTAR_9375	0x6872
- #define PCI_VENDOR_ID_ASIX		0x9710
-+#define PCI_DEVICE_ID_BROADCOM_TRUMANAGE 0x160a
- 
- /* Unknown vendors/cards - this should not be in linux/pci_ids.h */
- #define PCI_SUBDEVICE_ID_UNKNOWN_0x1584	0x1584
-@@ -1788,6 +1801,17 @@ static struct pci_serial_quirk pci_seria
- 		.setup		= pci_asix_setup,
- 	},
- 	/*
-+	 * Broadcom TruManage (NetXtreme)
-+	 */
-+	{
-+		.vendor		= PCI_VENDOR_ID_BROADCOM,
-+		.device		= PCI_DEVICE_ID_BROADCOM_TRUMANAGE,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.setup		= pci_brcm_trumanage_setup,
-+	},
-+
-+	/*
- 	 * Default "match everything" terminator entry
- 	 */
- 	{
-@@ -1975,6 +1999,7 @@ enum pci_board_num_t {
- 	pbn_ce4100_1_115200,
- 	pbn_omegapci,
- 	pbn_NETMOS9900_2s_115200,
-+	pbn_brcm_trumanage,
- };
- 
- /*
-@@ -2674,6 +2699,12 @@ static struct pciserial_board pci_boards
- 		.num_ports	= 2,
- 		.base_baud	= 115200,
- 	},
-+	[pbn_brcm_trumanage] = {
-+		.flags		= FL_BASE0,
-+		.num_ports	= 1,
-+		.reg_shift	= 2,
-+		.base_baud	= 115200,
-+	},
- };
- 
- static const struct pci_device_id blacklist[] = {
-@@ -4238,6 +4269,13 @@ static struct pci_device_id serial_pci_t
- 		pbn_omegapci },
- 
- 	/*
-+	 * Broadcom TruManage
-+	 */
-+	{	PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_BROADCOM_TRUMANAGE,
-+		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
-+		pbn_brcm_trumanage },
-+
-+	/*
- 	 * AgeStar as-prs2-009
- 	 */
- 	{	PCI_VENDOR_ID_AGESTAR, PCI_DEVICE_ID_AGESTAR_9375,
---- a/include/uapi/linux/serial_core.h
-+++ b/include/uapi/linux/serial_core.h
-@@ -49,7 +49,9 @@
- #define PORT_XR17D15X	21	/* Exar XR17D15x UART */
- #define PORT_LPC3220	22	/* NXP LPC32xx SoC "Standard" UART */
- #define PORT_8250_CIR	23	/* CIR infrared port, has its own driver */
--#define PORT_MAX_8250	23	/* max port ID */
-+#define PORT_XR17V35X	24	/* Exar XR17V35x UARTs */
-+#define PORT_BRCM_TRUMANAGE	24
-+#define PORT_MAX_8250	25	/* max port ID */
- 
- /*
-  * ARM specific type numbers.  These are not currently guaranteed
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1084,7 +1084,6 @@ ENTRY(xen_failsafe_callback)
+ 	lea 16(%esp),%esp
+ 	CFI_ADJUST_CFA_OFFSET -16
+ 	jz 5f
+-	addl $16,%esp
+ 	jmp iret_exc
+ 5:	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
+ 	SAVE_ALL
 
 
