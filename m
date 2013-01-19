@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab3ASBXG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:23:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57321 "EHLO mail.kernel.org"
+	id S1756782Ab3ASBXa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:23:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57311 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756782Ab3ASBWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:22:16 -0500
+	id S1756767Ab3ASBWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:22:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
         =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 14/16] USB: option: blacklist network interface on ONDA MT8205 4G LTE
-Date: Fri, 18 Jan 2013 17:21:52 -0800
-Message-Id: <20130119012140.320472221@linuxfoundation.org>
+Subject: [ 13/16] USB: option: add TP-LINK HSUPA Modem MA180
+Date: Fri, 18 Jan 2013 17:21:51 -0800
+Message-Id: <20130119012140.203089164@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119012138.680057206@linuxfoundation.org>
 References: <20130119012138.680057206@linuxfoundation.org>
@@ -28,37 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 2291dff02e5f8c708a46a7c4c888f2c467e26642 upstream.
+commit 99beb2e9687ffd61c92a9875141eabe6f57a71b9 upstream.
 
 The driver description files gives these names to the vendor specific
 functions on this modem:
 
- Diag   VID_19D2&PID_0265&MI_00
- NMEA   VID_19D2&PID_0265&MI_01
- AT cmd VID_19D2&PID_0265&MI_02
- Modem  VID_19D2&PID_0265&MI_03
- Net    VID_19D2&PID_0265&MI_04
+ Diagnostics VID_2357&PID_0201&MI_00
+ NMEA        VID_2357&PID_0201&MI_01
+ Modem       VID_2357&PID_0201&MI_03
+ Networkcard VID_2357&PID_0201&MI_04
 
+Reported-by: Thomas Schäfer <tschaefer@t-online.de>
 Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
 --- a/drivers/usb/serial/option.c
 +++ b/drivers/usb/serial/option.c
-@@ -934,7 +934,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0254, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0257, 0xff, 0xff, 0xff), /* ZTE MF821 */
- 	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0265, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0265, 0xff, 0xff, 0xff), /* ONDA MT8205 */
+@@ -449,6 +449,10 @@ static void option_instat_callback(struc
+ #define PETATEL_VENDOR_ID			0x1ff4
+ #define PETATEL_PRODUCT_NP10T			0x600e
+ 
++/* TP-LINK Incorporated products */
++#define TPLINK_VENDOR_ID			0x2357
++#define TPLINK_PRODUCT_MA180			0x0201
++
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1311,6 +1315,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x00, 0x00) },
+ 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
+ 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
++	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
 +	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0284, 0xff, 0xff, 0xff), /* ZTE MF880 */
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0317, 0xff, 0xff, 0xff) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
