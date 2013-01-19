@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab3ASB0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:26:51 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56927 "EHLO mail.kernel.org"
+	id S1756633Ab3ASB1I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:27:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56916 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756593Ab3ASBUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:20:04 -0500
+	id S1756553Ab3ASBUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:20:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Mingarelli <thomas.mingarelli@hp.com>,
-        Shuah Khan <shuah.khan@hp.com>, Donald Dutile <ddutile@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Joerg Roedel <joro@8bytes.org>, CAI Qian <caiqian@redhat.com>
-Subject: [ 11/21] intel-iommu: Prevent devices with RMRRs from being placed into SI Domain
-Date: Fri, 18 Jan 2013 17:19:29 -0800
-Message-Id: <20130119010713.310424966@linuxfoundation.org>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        CAI Qian <caiqian@redhat.com>
+Subject: [ 10/21] target: Add link_magic for fabric allow_link destination target_items
+Date: Fri, 18 Jan 2013 17:19:28 -0800
+Message-Id: <20130119010713.123101960@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010710.897187774@linuxfoundation.org>
 References: <20130119010710.897187774@linuxfoundation.org>
@@ -28,67 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Mingarelli <thomas.mingarelli@hp.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit ea2447f700cab264019b52e2b417d689e052dcfd upstream.
+commit 0ff8754981261a80f4b77db2536dfea92c2d4539 upstream.
 
-This patch is to prevent non-USB devices that have RMRRs associated with them from
-being placed into the SI Domain during init. This fixes the issue where the RMRR info
-for devices being placed in and out of the SI Domain gets lost.
+This patch adds [dev,lun]_link_magic value assignment + checks within generic
+target_fabric_port_link() and target_fabric_mappedlun_link() code to ensure
+destination config_item *target_item sent from configfs_symlink() ->
+config_item_operations->allow_link() is the underlying se_device->dev_group
+and se_lun->lun_group that we expect to symlink.
 
-Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
-Tested-by: Shuah Khan <shuah.khan@hp.com>
-Reviewed-by: Donald Dutile <ddutile@redhat.com>
-Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-Cc: CAI Qian <caiqian@redhat.com>
+Reported-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/intel-iommu.c |   31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+ drivers/target/target_core_device.c          |    1 +
+ drivers/target/target_core_fabric_configfs.c |   12 ++++++++++++
+ drivers/target/target_core_tpg.c             |    1 +
+ drivers/target/target_core_transport.c       |    1 +
+ include/target/target_core_base.h            |    4 ++++
+ 5 files changed, 19 insertions(+)
 
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -2321,8 +2321,39 @@ static int domain_add_dev_info(struct dm
- 	return 0;
- }
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -1665,6 +1665,7 @@ int core_dev_setup_virtual_lun0(void)
+ 		ret = PTR_ERR(dev);
+ 		goto out;
+ 	}
++	dev->dev_link_magic = SE_DEV_LINK_MAGIC;
+ 	se_dev->se_dev_ptr = dev;
+ 	g_lun0_dev = dev;
  
-+static bool device_has_rmrr(struct pci_dev *dev)
-+{
-+	struct dmar_rmrr_unit *rmrr;
-+	int i;
+--- a/drivers/target/target_core_fabric_configfs.c
++++ b/drivers/target/target_core_fabric_configfs.c
+@@ -72,6 +72,12 @@ static int target_fabric_mappedlun_link(
+ 	struct se_portal_group *se_tpg;
+ 	struct config_item *nacl_ci, *tpg_ci, *tpg_ci_s, *wwn_ci, *wwn_ci_s;
+ 	int ret = 0, lun_access;
 +
-+	for_each_rmrr_units(rmrr) {
-+		for (i = 0; i < rmrr->devices_cnt; i++) {
-+			/*
-+			 * Return TRUE if this RMRR contains the device that
-+			 * is passed in.
-+			 */
-+			if (rmrr->devices[i] == dev)
-+				return true;
-+		}
++	if (lun->lun_link_magic != SE_LUN_LINK_MAGIC) {
++		pr_err("Bad lun->lun_link_magic, not a valid lun_ci pointer:"
++			" %p to struct lun: %p\n", lun_ci, lun);
++		return -EFAULT;
 +	}
-+	return false;
-+}
-+
- static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
- {
-+
-+	/*
-+	 * We want to prevent any device associated with an RMRR from
-+	 * getting placed into the SI Domain. This is done because
-+	 * problems exist when devices are moved in and out of domains
-+	 * and their respective RMRR info is lost. We exempt USB devices
-+	 * from this process due to their usage of RMRRs that are known
-+	 * to not be needed after BIOS hand-off to OS.
-+	 */
-+	if (device_has_rmrr(pdev) &&
-+	    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
-+		return 0;
-+
- 	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
- 		return 1;
+ 	/*
+ 	 * Ensure that the source port exists
+ 	 */
+@@ -746,6 +752,12 @@ static int target_fabric_port_link(
+ 	struct target_fabric_configfs *tf;
+ 	int ret;
  
++	if (dev->dev_link_magic != SE_DEV_LINK_MAGIC) {
++		pr_err("Bad dev->dev_link_magic, not a valid se_dev_ci pointer:"
++			" %p to struct se_device: %p\n", se_dev_ci, dev);
++		return -EFAULT;
++	}
++
+ 	tpg_ci = &lun_ci->ci_parent->ci_group->cg_item;
+ 	se_tpg = container_of(to_config_group(tpg_ci),
+ 				struct se_portal_group, tpg_group);
+--- a/drivers/target/target_core_tpg.c
++++ b/drivers/target/target_core_tpg.c
+@@ -677,6 +677,7 @@ int core_tpg_register(
+ 	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
+ 		lun = se_tpg->tpg_lun_list[i];
+ 		lun->unpacked_lun = i;
++		lun->lun_link_magic = SE_LUN_LINK_MAGIC;
+ 		lun->lun_status = TRANSPORT_LUN_STATUS_FREE;
+ 		atomic_set(&lun->lun_acl_count, 0);
+ 		init_completion(&lun->lun_shutdown_comp);
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1341,6 +1341,7 @@ struct se_device *transport_add_device_t
+ 	dev->se_hba		= hba;
+ 	dev->se_sub_dev		= se_dev;
+ 	dev->transport		= transport;
++	dev->dev_link_magic	= SE_DEV_LINK_MAGIC;
+ 	INIT_LIST_HEAD(&dev->dev_list);
+ 	INIT_LIST_HEAD(&dev->dev_sep_list);
+ 	INIT_LIST_HEAD(&dev->dev_tmr_list);
+--- a/include/target/target_core_base.h
++++ b/include/target/target_core_base.h
+@@ -779,6 +779,8 @@ struct se_subsystem_dev {
+ };
+ 
+ struct se_device {
++#define SE_DEV_LINK_MAGIC			0xfeeddeef
++	u32			dev_link_magic;
+ 	/* RELATIVE TARGET PORT IDENTIFER Counter */
+ 	u16			dev_rpti_counter;
+ 	/* Used for SAM Task Attribute ordering */
+@@ -869,6 +871,8 @@ struct se_port_stat_grps {
+ };
+ 
+ struct se_lun {
++#define SE_LUN_LINK_MAGIC			0xffff7771
++	u32			lun_link_magic;
+ 	/* See transport_lun_status_table */
+ 	enum transport_lun_status_table lun_status;
+ 	u32			lun_access;
 
 
