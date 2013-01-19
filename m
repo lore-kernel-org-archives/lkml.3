@@ -1,237 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864Ab3ASGDp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 01:03:45 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:61568 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3ASGCe (ORCPT
+	id S1751494Ab3ASGNU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 01:13:20 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:65516 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3ASGNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 01:02:34 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Florian Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-fbdev@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH 1/4] drivers/video/wm8505fb.c: use devm_ functions
-Date: Sat, 19 Jan 2013 19:02:54 +1300
-Message-Id: <1358575377-26364-2-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358575377-26364-1-git-send-email-linux@prisktech.co.nz>
-References: <1358575377-26364-1-git-send-email-linux@prisktech.co.nz>
+	Sat, 19 Jan 2013 01:13:18 -0500
+Subject: Re: splice() giving unexpected EOF in 3.7.3 and 3.8-rc4+
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eric Wong <normalperson@yhbt.net>, David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Willy Tarreau <w@1wt.eu>
+In-Reply-To: <1358574847.3464.422.camel@edumazet-glaptop>
+References: <20130119044957.GA25395@dcvr.yhbt.net>
+	 <1358574847.3464.422.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Jan 2013 22:13:16 -0800
+Message-ID: <1358575996.3464.447.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Fri, 2013-01-18 at 21:54 -0800, Eric Dumazet wrote:
 
-The various devm_ functions allocate memory that is released when a driver
-detaches.  This patch uses these functions for data that is allocated in
-the probe function of a platform device and is only freed in the remove
-function.
+> 
+> Hmm, this might be already fixed in net-next tree, could you try it ?
+> 
 
-The patch makes some other cleanups.  First, the original code used
-devm_kzalloc, but kfree.  This would lead to a double free.  The problem
-was found using the following semantic match (http://coccinelle.lip6.fr/):
+Yes, running your program on net-next seems OK.
 
-// <smpl>
-@@
-expression x,e;
-@@
-x = devm_kzalloc(...)
-... when != x = e
-?-kfree(x,...);
-// </smpl>
+David, we need the two following commits.
 
-The error-handing code of devm_request_and_ioremap does not print any
-warning message, because devm_request_and_ioremap does this.
+They actually fixed a bug : current code in Linus tree
+can push to the pipe a 0-length frag, because of the :
 
-The call to dma_alloc_coherent is converted to its devm equivalent,
-dmam_alloc_coherent.  This implicitly introduces a call to
-dmam_free_coherent, which was completly missing in the original code.
+flen = min_t(unsigned int, flen, PAGE_SIZE - poff);
 
-A semicolon is removed at the end of the error-handling code for the call
-to dma_alloc_coherent.
+It can happen if poff == PAGE_SIZE, when one skb frag has this
+particular starting offset.
 
-The block of code calling fb_alloc_cmap is moved below the block of code
-calling wm8505fb_set_par, so that the error-handing code of the call to
-wm8505fb_set_par can just return ret.  This way there is only one block of
-error-handling code that needs to call fb_dealloc_cmap, and so this is
-moved up to the place where it is needed, eliminating the need for all
-gotos and labels in the function.  This was suggested by Tony Prisk.
 
-The initializations of fbi and ret at the beginning of the function are not
-necessary and are removed.  The call platform_set_drvdata(pdev, NULL); at
-the end of the function is also removed.
+commit 9ca1b22d6d228177e6f929f6818a1cd3d5e30c4a
+Author: Eric Dumazet <edumazet@google.com>
+Date:   Sat Jan 5 21:31:18 2013 +0000
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- drivers/video/wm8505fb.c |   78 +++++++++++-----------------------------------
- 1 file changed, 19 insertions(+), 59 deletions(-)
+    net: splice: avoid high order page splitting
+    
+    splice() can handle pages of any order, but network code tries hard to
+    split them in PAGE_SIZE units. Not quite successfully anyway, as
+    __splice_segment() assumed poff < PAGE_SIZE. This is true for
+    the skb->data part, not necessarily for the fragments.
+    
+    This patch removes this logic to give the pages as they are in the skb.
+    
+    Signed-off-by: Eric Dumazet <edumazet@google.com>
+    Cc: Willy Tarreau <w@1wt.eu>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
 
-diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
-index 4dd0580..ddf78fc 100644
---- a/drivers/video/wm8505fb.c
-+++ b/drivers/video/wm8505fb.c
-@@ -274,15 +274,11 @@ static int wm8505fb_probe(struct platform_device *pdev)
- 	unsigned long fb_mem_len;
- 	void *fb_mem_virt;
- 
--	ret = -ENOMEM;
--	fbi = NULL;
--
- 	fbi = devm_kzalloc(&pdev->dev, sizeof(struct wm8505fb_info) +
- 			sizeof(u32) * 16, GFP_KERNEL);
- 	if (!fbi) {
- 		dev_err(&pdev->dev, "Failed to initialize framebuffer device\n");
--		ret = -ENOMEM;
--		goto failed;
-+		return -ENOMEM;
- 	}
- 
- 	strcpy(fbi->fb.fix.id, DRIVER_NAME);
-@@ -308,31 +304,15 @@ static int wm8505fb_probe(struct platform_device *pdev)
- 	fbi->fb.pseudo_palette	= addr;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res == NULL) {
--		dev_err(&pdev->dev, "no I/O memory resource defined\n");
--		ret = -ENODEV;
--		goto failed_fbi;
--	}
--
--	res = request_mem_region(res->start, resource_size(res), DRIVER_NAME);
--	if (res == NULL) {
--		dev_err(&pdev->dev, "failed to request I/O memory\n");
--		ret = -EBUSY;
--		goto failed_fbi;
--	}
- 
--	fbi->regbase = ioremap(res->start, resource_size(res));
--	if (fbi->regbase == NULL) {
--		dev_err(&pdev->dev, "failed to map I/O memory\n");
--		ret = -EBUSY;
--		goto failed_free_res;
--	}
-+	fbi->regbase = devm_request_and_ioremap(&pdev->dev, res);
-+	if (fbi->regbase == NULL)
-+		return -EBUSY;
- 
- 	np = of_parse_phandle(pdev->dev.of_node, "default-mode", 0);
- 	if (!np) {
- 		pr_err("%s: No display description in Device Tree\n", __func__);
--		ret = -EINVAL;
--		goto failed_free_res;
-+		return -EINVAL;
- 	}
- 
- 	/*
-@@ -351,7 +331,7 @@ static int wm8505fb_probe(struct platform_device *pdev)
- 	ret |= of_property_read_u32(np, "bpp", &bpp);
- 	if (ret) {
- 		pr_err("%s: Unable to read display properties\n", __func__);
--		goto failed_free_res;
-+		return ret;
- 	}
- 
- 	of_mode.vmode = FB_VMODE_NONINTERLACED;
-@@ -365,12 +345,12 @@ static int wm8505fb_probe(struct platform_device *pdev)
- 
- 	/* try allocating the framebuffer */
- 	fb_mem_len = of_mode.xres * of_mode.yres * 2 * (bpp / 8);
--	fb_mem_virt = dma_alloc_coherent(&pdev->dev, fb_mem_len, &fb_mem_phys,
-+	fb_mem_virt = dmam_alloc_coherent(&pdev->dev, fb_mem_len, &fb_mem_phys,
- 				GFP_KERNEL);
- 	if (!fb_mem_virt) {
- 		pr_err("%s: Failed to allocate framebuffer\n", __func__);
- 		return -ENOMEM;
--	};
-+	}
- 
- 	fbi->fb.var.xres_virtual	= of_mode.xres;
- 	fbi->fb.var.yres_virtual	= of_mode.yres * 2;
-@@ -381,28 +361,29 @@ static int wm8505fb_probe(struct platform_device *pdev)
- 	fbi->fb.screen_base		= fb_mem_virt;
- 	fbi->fb.screen_size		= fb_mem_len;
- 
--	if (fb_alloc_cmap(&fbi->fb.cmap, 256, 0) < 0) {
--		dev_err(&pdev->dev, "Failed to allocate color map\n");
--		ret = -ENOMEM;
--		goto failed_free_io;
--	}
--
--	wm8505fb_init_hw(&fbi->fb);
--
- 	fbi->contrast = 0x80;
- 	ret = wm8505fb_set_par(&fbi->fb);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to set parameters\n");
--		goto failed_free_cmap;
-+		return ret;
- 	}
- 
-+	if (fb_alloc_cmap(&fbi->fb.cmap, 256, 0) < 0) {
-+		dev_err(&pdev->dev, "Failed to allocate color map\n");
-+		return -ENOMEM;
-+	}
-+
-+	wm8505fb_init_hw(&fbi->fb);
-+
- 	platform_set_drvdata(pdev, fbi);
- 
- 	ret = register_framebuffer(&fbi->fb);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev,
- 			"Failed to register framebuffer device: %d\n", ret);
--		goto failed_free_cmap;
-+		if (fbi->fb.cmap.len)
-+			fb_dealloc_cmap(&fbi->fb.cmap);
-+		return ret;
- 	}
- 
- 	ret = device_create_file(&pdev->dev, &dev_attr_contrast);
-@@ -416,25 +397,11 @@ static int wm8505fb_probe(struct platform_device *pdev)
- 	       fbi->fb.fix.smem_start + fbi->fb.fix.smem_len - 1);
- 
- 	return 0;
--
--failed_free_cmap:
--	if (fbi->fb.cmap.len)
--		fb_dealloc_cmap(&fbi->fb.cmap);
--failed_free_io:
--	iounmap(fbi->regbase);
--failed_free_res:
--	release_mem_region(res->start, resource_size(res));
--failed_fbi:
--	platform_set_drvdata(pdev, NULL);
--	kfree(fbi);
--failed:
--	return ret;
- }
- 
- static int wm8505fb_remove(struct platform_device *pdev)
- {
- 	struct wm8505fb_info *fbi = platform_get_drvdata(pdev);
--	struct resource *res;
- 
- 	device_remove_file(&pdev->dev, &dev_attr_contrast);
- 
-@@ -445,13 +412,6 @@ static int wm8505fb_remove(struct platform_device *pdev)
- 	if (fbi->fb.cmap.len)
- 		fb_dealloc_cmap(&fbi->fb.cmap);
- 
--	iounmap(fbi->regbase);
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	release_mem_region(res->start, resource_size(res));
--
--	kfree(fbi);
--
- 	return 0;
- }
- 
--- 
-1.7.9.5
+
+commit 18aafc622abf492809723d9c5a3c5dcea287169e
+Author: Eric Dumazet <edumazet@google.com>
+Date:   Fri Jan 11 14:46:37 2013 +0000
+
+    net: splice: fix __splice_segment()
+    
+    commit 9ca1b22d6d2 (net: splice: avoid high order page splitting)
+    forgot that skb->head could need a copy into several page frags.
+    
+    This could be the case for loopback traffic mostly.
+    
+    Also remove now useless skb argument from linear_to_page()
+    and __splice_segment() prototypes.
+    
+    Signed-off-by: Eric Dumazet <edumazet@google.com>
+    Cc: Willy Tarreau <w@1wt.eu>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+
+
+
+
 
