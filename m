@@ -1,89 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089Ab3ASRTs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 12:19:48 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60583 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab3ASRTr (ORCPT
+	id S1752232Ab3ASSDL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 13:03:11 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:56389 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088Ab3ASSDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 12:19:47 -0500
-Date: Sat, 19 Jan 2013 18:19:36 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: kernel list <linux-kernel@vger.kernel.org>, perex@perex.cz,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Null pointer dereference when accessing /dev/dsp1 with USB
- speakers
-Message-ID: <20130119171936.GA4275@amd.pavel.ucw.cz>
-References: <20130118203657.GA3555@amd.pavel.ucw.cz>
- <s5hlibpzb3w.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hlibpzb3w.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 19 Jan 2013 13:03:10 -0500
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: Hugo Mills <hugo-lkml@carfax.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: btrfs userspace question - where's the utility to dump/restore?
+In-Reply-To: Your message of "Thu, 17 Jan 2013 22:18:19 +0000."
+             <20130117221819.GA5406@carfax.org.uk>
+From: Valdis.Kletnieks@vt.edu
+References: <6196.1358453135@turing-police.cc.vt.edu>
+            <20130117221819.GA5406@carfax.org.uk>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1358618550_2156P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Sat, 19 Jan 2013 13:02:30 -0500
+Message-ID: <8544.1358618550@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A010205.50FADFB7.0117,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+--==_Exmh_1358618550_2156P
+Content-Type: text/plain; charset=us-ascii
 
-> > I have USB speakers 
-> > 
-> > Bus 004 Device 002: ID 04fa:4201 Dallas Semiconductor DS4201 Audio DAC
-> > 
-> > ... which make problems again
-> > (https://lkml.org/lkml/2008/3/20/274). They refuse to produce sound,
-> > so I updated to 3.8.0-rc2 in hope that would help... and tried testing
-> > them by "cat /bin/bash > /dev/dsp1". Instant crash :-(.
-> > 
-> > I guess this will happen in more than one config...?
-> 
-> This Oops should have been fixed recently.  Please try 3.8-rc4.
-> 
-> commit 31be5425d795585251a3ee970319c37643e0cda2
->     ALSA: usb-audio: Fix NULL dereference by access to non-existing
->     substream
+On Thu, 17 Jan 2013 22:18:19 +0000, Hugo Mills said:
 
+> On Thu, Jan 17, 2013 at 03:05:35PM -0500, Valdis Kletnieks wrote:
+> > So I'm looking at playing with btrfs, and I start looking at the
+> > userspace pieces I'll need.  What I can't find is an equivalent
+> > of the ext[34] "dump/restore" package to dump data to an external
+> > backup device. Is 'tar cf --acls --selinux --xattrs /external/fs.dump'
+> > as good as it gets, or is something else recommended?
+>
+>    tar doesn't handle reflinks(+), so the above won't quite give you a
+> complete duplicate. In the btrfs tool, there's send/receive, which
+> should(*) be sufficient to deal with reflinks.
 
-It is fixed in 3.8-rc4. But... I still get this: (it happened at least
-once with 3.8-rc2 and once with 3.8-rc4).
+So I decided to try it out on the filesystem that I stash all my music
+(mostly because I can survive without that filesystem if I trash it, and
+I have a known good backup).
 
-> > Jan 18 21:23:00 amd kernel: Slab corruption (Tainted: G        W   ):
-> > size-128 start=edd71b40, len=128
-> > Jan 18 21:23:00 amd kernel: 070: 6b 6b 6b 6b 6b 6b 6b 6b 00 6b 6b 6b
-> > 6b 6b 6b a5  kkkkkkkk.kkkkkk.
-> > Jan 18 21:23:00 amd kernel: Prev obj: start=edd71ac0, len=128
-> > Jan 18 21:23:00 amd kernel: 000: 00 7f e9 e9 c8 2f 40 f0 00 00 00 00
-> > 00 00 00 00  ...../@.........
-> > Jan 18 21:23:00 amd kernel: 010: 00 00 00 00 00 00 00 00 00 6c 94 e9
-> > 00 00 00 00  .........l......
-> > Jan 18 21:23:00 amd kernel: Next obj: start=edd71bc0, len=128
-> > Jan 18 21:23:00 amd kernel: 000: 40 12 d7 ed 40 11 d7 ed 02 00 00 00
-> > 02 00 00 00  @...@...........
-> > Jan 18 21:23:00 amd kernel: 010: 00 00 00 00 00 00 00 00 20 53 77 69
-> > 74 63 68 00  ........ Switch.
-> > Jan 18 21:23:00 amd kernel: 8:0: cannot get min/max values for control
-> > 5 (id 8)
-> > Jan 18 21:23:00 amd kernel: 8:0: cannot get min/max values for control
-> > 6 (id 8)
-> > Jan 18 21:23:00 amd kernel: 8:0: cannot get min/max values for control
-> > 1 (id 8)
-> > Jan 18 21:23:00 amd kernel: 8:0: cannot get min/max values for control
-> > 2 (id 8)
-> > Jan 18 21:23:00 amd kernel: usb 4-1: adding 4-1:1.1 (config #1,
-> > interface 1)
-> > Jan 18 21:23:00 amd kernel: hub 4-0:1.0: state 7 ports 2 chg 0000 evt
-> > 0002
+Apparently, send/receive isn't in the manpage, which is why I didn't
+see it.  Fortunately, there's --help
 
-Any ideas? Any similar reports?
+[~] btrfs send --help
+usage: btrfs send <command> <args>
 
-(Hmm, and maybe "SLAB corruption" messages should have higher
-severity? KERN_ALERT or something, so that it is broadcast to all
-consoles?)
+    btrfs send [-v] [-i <subvol>] [-p <parent>] <subvol>
+        Send the subvolume to stdout.
 
-Thanks,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+[~] btrfs send -v /mp3 > /disk2/backups/mp3.btrfs
+ERROR: /mp3 is not read-only.
+[~] mount -o remount,ro /mp3
+[~] btrfs send -v /mp3 >| /disk2/backups/mp3.btrfs
+ERROR: /mp3 is not read-only.
+
+Bah. Obviously this isn't anywhere near as easy as it is for ext4.
+
+/me wanders off to find more caffeine...
+
+--==_Exmh_1358618550_2156P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUPrftgdmEQWDXROgAQIBaBAAngFD1ot3xSKDVyVLTmAUT4ZAUEeHhxSH
+ughBr8bs0Y3BQf4rMNJl25EFGcjXTpoP4nrXl2vHpMvgOvC46Ap1mJrkqHcGFSd2
+Gml95bOftbE2mdTHIbVWbwxDAWzUYBrsaWQVy8IbPpYkz+Kf9XJE0KaRCBRN7Rso
+vw3mZaS4H0b0aXpcutYRoIjf5tH16UctiAaU/uoFNkyZ/54GJapRZIN7fzgM0up/
+YEt02QtSxQirR1gmfhYadrNlg7uz6r/va63ru6XRK0Y6kkDvXTv25oOxjqm9wi20
+dPEEqbakluzw6UUa866yF9wYTkQTtmcu9KPJ6AW373oKoqf6bL5AVlXNqw+D+mE1
+0BBtlRfQqT70kgpbhAf20ua9RaoG7QPmG/6tsxe379uCRBbYd71TTHP/L2V6ZFGy
+az8qyZGenEs01rply4BZmgtGqhrthSgFxpJc+F2gUKebXHXBIVYGLkBM2xbm9rtt
+wY8JXpiGopVzIMhk8XRk+hg5BV5niLxtQFc0+dg1zG5XYSBvd7xoETAd5DE5SMne
+6hZRl/SdpLo00qctvy5KoV2P+LZe3LC3un70JQbsRp+2blgS/jw7gKy6tVrofcYE
+hO3xi8585RCUenbuIfb5LqJPeqWc89ezrCPthfAIDzUMA6NUx0RZ9psq1Y8vZkiI
+v4eyv33FbGw=
+=AxLq
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1358618550_2156P--
+
