@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab3ASBeu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:34:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56334 "EHLO mail.kernel.org"
+	id S1755935Ab3ASBRw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:17:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56284 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753381Ab3ASBRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:17:54 -0500
+	id S1754150Ab3ASBRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:17:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 12/33] x86/Sandy Bridge: reserve pages when integrated graphics is present
-Date: Fri, 18 Jan 2013 17:16:37 -0800
-Message-Id: <20130119010349.921473299@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>,
+        Martin Svec <martin.svec@zoner.cz>, Christoph Hellwig <hch@lst.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 08/33] target: Fix missing CMD_T_ACTIVE bit regression for pending WRITEs
+Date: Fri, 18 Jan 2013 17:16:33 -0800
+Message-Id: <20130119010348.734283044@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
 References: <20130119010345.885772698@linuxfoundation.org>
@@ -26,132 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Roland Dreier <roland@purestorage.com>
 
-commit a9acc5365dbda29f7be2884efb63771dc24bd815 upstream.
+commit e627c615553a356f6f70215ebb3933c6e057553e upstream.
 
-SNB graphics devices have a bug that prevent them from accessing certain
-memory ranges, namely anything below 1M and in the pages listed in the
-table.  So reserve those at boot if set detect a SNB gfx device on the
-CPU to avoid GPU hangs.
+This patch fixes a regression bug introduced during v3.6.x code with
+the following commit to drop transport_add_cmd_to_queue(), which
+originally re-set CMD_T_ACTIVE during pending WRITE I/O submission:
 
-Stephane Marchesin had a similar patch to the page allocator awhile
-back, but rather than reserving pages up front, it leaked them at
-allocation time.
+commit af8772926f019b7bddd7477b8de5f3b0f12bad21
+Author: Christoph Hellwig <hch@infradead.org>
+Date:   Sun Jul 8 15:58:49 2012 -0400
 
-[ hpa: made a number of stylistic changes, marked arrays as static
-  const, and made less verbose; use "memblock=debug" for full
-  verbosity. ]
+    target: replace the processing thread with a TMR work queue
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: CAI Qian <caiqian@redhat.com>
+The following sequence happens for write commands (or any other
+commands with a data out phase):
+
+ - The transport calls target_submit_cmd(), which sets CMD_T_ACTIVE in
+   cmd->transport_state and sets cmd->t_state to TRANSPORT_NEW_CMD.
+ - Things go on transport_generic_new_cmd(), which notices that the
+   command needs to transfer data, so it sets cmd->t_state to
+   TRANSPORT_WRITE_PENDING and calls transport_cmd_check_stop().
+ - transport_cmd_check_stop() clears CMD_T_ACTIVE in cmd->transport_state
+   and returns in the normal case.
+ - Then we continue on to call ->se_tfo->write_pending().
+ - The data comes back from the initiator, and the transport calls
+   target_execute_cmd(), which sets cmd->t_state to TRANSPORT_PROCESSING
+   and calls into the backend to actually write the data.
+
+At this point, the backend might take a long time to complete the
+command, since it has to do real IO.  If an abort request comes in for
+this command at this point, it will not wait for the command to finish
+since CMD_T_ACTIVE is not set.  Then when the command does finally
+finish, we blow up with use-after-free.
+
+Avoid this by setting CMD_T_ACTIVE in target_execute_cmd() so that
+transport_wait_for_tasks() waits for the command to finish executing.
+This matches the behavior from before commit 1389533ef944 ("target:
+remove transport_generic_handle_data"), when data was signaled via
+transport_generic_handle_data(), which set CMD_T_ACTIVE because it
+called transport_add_cmd_to_queue().
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Reported-by: Martin Svec <martin.svec@zoner.cz>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/setup.c |   78 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 78 insertions(+)
+ drivers/target/target_core_transport.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -614,6 +614,81 @@ static __init void reserve_ibft_region(v
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1853,6 +1853,7 @@ void target_execute_cmd(struct se_cmd *c
+ 	}
  
- static unsigned reserve_low = CONFIG_X86_RESERVE_LOW << 10;
+ 	cmd->t_state = TRANSPORT_PROCESSING;
++	cmd->transport_state |= CMD_T_ACTIVE;
+ 	spin_unlock_irq(&cmd->t_state_lock);
  
-+static bool __init snb_gfx_workaround_needed(void)
-+{
-+	int i;
-+	u16 vendor, devid;
-+	static const u16 snb_ids[] = {
-+		0x0102,
-+		0x0112,
-+		0x0122,
-+		0x0106,
-+		0x0116,
-+		0x0126,
-+		0x010a,
-+	};
-+
-+	/* Assume no if something weird is going on with PCI */
-+	if (!early_pci_allowed())
-+		return false;
-+
-+	vendor = read_pci_config_16(0, 2, 0, PCI_VENDOR_ID);
-+	if (vendor != 0x8086)
-+		return false;
-+
-+	devid = read_pci_config_16(0, 2, 0, PCI_DEVICE_ID);
-+	for (i = 0; i < ARRAY_SIZE(snb_ids); i++)
-+		if (devid == snb_ids[i])
-+			return true;
-+
-+	return false;
-+}
-+
-+/*
-+ * Sandy Bridge graphics has trouble with certain ranges, exclude
-+ * them from allocation.
-+ */
-+static void __init trim_snb_memory(void)
-+{
-+	static const unsigned long bad_pages[] = {
-+		0x20050000,
-+		0x20110000,
-+		0x20130000,
-+		0x20138000,
-+		0x40004000,
-+	};
-+	int i;
-+
-+	if (!snb_gfx_workaround_needed())
-+		return;
-+
-+	printk(KERN_DEBUG "reserving inaccessible SNB gfx pages\n");
-+
-+	/*
-+	 * Reserve all memory below the 1 MB mark that has not
-+	 * already been reserved.
-+	 */
-+	memblock_reserve(0, 1<<20);
-+
-+	for (i = 0; i < ARRAY_SIZE(bad_pages); i++) {
-+		if (memblock_reserve(bad_pages[i], PAGE_SIZE))
-+			printk(KERN_WARNING "failed to reserve 0x%08lx\n",
-+			       bad_pages[i]);
-+	}
-+}
-+
-+/*
-+ * Here we put platform-specific memory range workarounds, i.e.
-+ * memory known to be corrupt or otherwise in need to be reserved on
-+ * specific platforms.
-+ *
-+ * If this gets used more widely it could use a real dispatch mechanism.
-+ */
-+static void __init trim_platform_memory_ranges(void)
-+{
-+	trim_snb_memory();
-+}
-+
- static void __init trim_bios_range(void)
- {
- 	/*
-@@ -634,6 +709,7 @@ static void __init trim_bios_range(void)
- 	 * take them out.
- 	 */
- 	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
-+
- 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
- }
- 
-@@ -912,6 +988,8 @@ void __init setup_arch(char **cmdline_p)
- 
- 	setup_real_mode();
- 
-+	trim_platform_memory_ranges();
-+
- 	init_gbpages();
- 
- 	/* max_pfn_mapped is updated here */
+ 	if (dev->dev_task_attr_type != SAM_TASK_ATTR_EMULATED)
 
 
