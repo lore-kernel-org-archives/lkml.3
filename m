@@ -1,132 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086Ab3ASAAE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 19:00:04 -0500
-Received: from powered.by.root24.eu ([91.121.15.64]:58062 "EHLO Root24.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835Ab3ASAAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 19:00:03 -0500
-Message-ID: <50F9E1FF.2030401@ionic.de>
-Date: Sat, 19 Jan 2013 00:59:59 +0100
-From: Mihai Moldovan <ionic@ionic.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1755661Ab3ASAAi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 19:00:38 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:62766 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835Ab3ASAAg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 19:00:36 -0500
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: i915-related and general system freezes with specific kernel
- config // IOMMU
-References: <50F9DF53.4090601@ionic.de>
-In-Reply-To: <50F9DF53.4090601@ionic.de>
-X-Enigmail-Version: 1.5
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms060606080806090700010705"
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1922388.1PvyliEuQR@vostro.rjw.lan>
+References: <CA+icZUW-mfMtNSY-d-=0WpX=fRBqoNx5jcX3S8x4tvGdvUc+8g@mail.gmail.com>
+	<2890633.q9n75klkI9@vostro.rjw.lan>
+	<CA+icZUVz7UPX0n=f85e=dcAMY6rgZZqj-7CqW7t4Zdtu9nPuBA@mail.gmail.com>
+	<1922388.1PvyliEuQR@vostro.rjw.lan>
+Date: Sat, 19 Jan 2013 01:00:34 +0100
+Message-ID: <CA+icZUWYVkiVAAjeBL5r4h0tdHrnFCo0b8x5whXaf1RGhGmHng@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 18 [ BROKEN suspend: jbd2|acpi|pm? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>, x86@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Sat, Jan 19, 2013 at 12:58 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Saturday, January 19, 2013 12:41:11 AM Sedat Dilek wrote:
+>> On Sat, Jan 19, 2013 at 12:39 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Saturday, January 19, 2013 12:28:55 AM Sedat Dilek wrote:
+>> >> On Sat, Jan 19, 2013 at 12:25 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> >> > On Friday, January 18, 2013 11:56:53 PM Sedat Dilek wrote:
+>> >> >> On Fri, Jan 18, 2013 at 11:35 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> >> >> > On Fri, Jan 18, 2013 at 11:20 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> >> >> >> On Friday, January 18, 2013 11:11:07 PM Sedat Dilek wrote:
+>> >> >> >>> On Fri, Jan 18, 2013 at 5:37 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> >> >> >>> > Hi all,
+>> >> >> >>> >
+>> >> >> >>> > Changes since 20130117:
+>> >> >> >>> >
+>> >> >> >>> > Undropped tree: samung
+>> >> >> >>> >
+>> >> >> >>> > The powerpc tree still had a build failure.
+>> >> >> >>> >
+>> >> >> >>> > The driver-core tree gained a build failure for which I applied a merge
+>> >> >> >>> > fix patch.
+>> >> >> >>> >
+>> >> >> >>> > The gpio-lw tree gained a build failure so I used the version from
+>> >> >> >>> > next-20130117.
+>> >> >> >>> >
+>> >> >> >>> > The samsung tree lost the majority of its conflicts but gained more
+>> >> >> >>> > against the arm-soc and slave-dma tree.
+>> >> >> >>> >
+>> >> >> >>> > ----------------------------------------------------------------------------
+>> >> >> >>> >
+>> >> >> >>>
+>> >> >> >>> From my dmesg diff-file:
+>> >> >> >>>
+>> >> >> >>> +[  288.730849] PM: Syncing filesystems ... done.
+>> >> >> >>> +[  294.050498] Freezing user space processes ... (elapsed 0.04 seconds) done.
+>> >> >> >>> +[  294.097024] Freezing remaining freezable tasks ...
+>> >> >> >>> +[  314.098849] Freezing of tasks failed after 20.01 seconds (1 tasks
+>> >> >> >>> refusing to freeze, wq_busy=0):
+>> >> >> >>> +[  314.098862] jbd2/loop0-8    D ffffffff8180d780     0   297      2 0x00000000
+>> >> >> >>> +[  314.098865]  ffff880117ec5b68 0000000000000046 ffff880117ec5b08
+>> >> >> >>> ffffffff81044c29
+>> >> >> >>> +[  314.098868]  ffff88011829dc80 ffff880117ec5fd8 ffff880117ec5fd8
+>> >> >> >>> ffff880117ec5fd8
+>> >> >> >>> +[  314.098871]  ffff880119b34560 ffff88011829dc80 ffff880117ec5b68
+>> >> >> >>> ffff88011fad4738
+>> >> >> >>> +[  314.098873] Call Trace:
+>> >> >> >>> +[  314.098881]  [<ffffffff81044c29>] ? default_spin_lock_flags+0x9/0x10
+>> >> >> >>> +[  314.098885]  [<ffffffff811c63e0>] ? __wait_on_buffer+0x30/0x30
+>> >> >> >>> +[  314.098888]  [<ffffffff816b4b59>] schedule+0x29/0x70
+>> >> >> >>> +[  314.098890]  [<ffffffff816b4c2f>] io_schedule+0x8f/0xd0
+>> >> >> >>> +[  314.098892]  [<ffffffff811c63ee>] sleep_on_buffer+0xe/0x20
+>> >> >> >>> +[  314.098896]  [<ffffffff816b342f>] __wait_on_bit+0x5f/0x90
+>> >> >> >>> +[  314.098898]  [<ffffffff811c5aa1>] ? submit_bh+0x121/0x1e0
+>> >> >> >>> +[  314.098900]  [<ffffffff811c63e0>] ? __wait_on_buffer+0x30/0x30
+>> >> >> >>> +[  314.098903]  [<ffffffff816b34dc>] out_of_line_wait_on_bit+0x7c/0x90
+>> >> >> >>> +[  314.098906]  [<ffffffff8107eb00>] ? autoremove_wake_function+0x40/0x40
+>> >> >> >>> +[  314.098909]  [<ffffffff811c63de>] __wait_on_buffer+0x2e/0x30
+>> >> >> >>> +[  314.098913]  [<ffffffff8128a6a1>]
+>> >> >> >>> jbd2_journal_commit_transaction+0x1791/0x1960
+>> >> >> >>> +[  314.098917]  [<ffffffff8109269d>] ? sched_clock_cpu+0xbd/0x110
+>> >> >> >>> +[  314.098920]  [<ffffffff8107eac0>] ? add_wait_queue+0x60/0x60
+>> >> >> >>> +[  314.098923]  [<ffffffff81069fbf>] ? try_to_del_timer_sync+0x4f/0x70
+>> >> >> >>> +[  314.098925]  [<ffffffff8128e4e8>] kjournald2+0xb8/0x240
+>> >> >> >>> +[  314.098927]  [<ffffffff8107eac0>] ? add_wait_queue+0x60/0x60
+>> >> >> >>> +[  314.098929]  [<ffffffff8128e430>] ? commit_timeout+0x10/0x10
+>> >> >> >>> +[  314.098931]  [<ffffffff8107ded0>] kthread+0xc0/0xd0
+>> >> >> >>> +[  314.098933]  [<ffffffff8107de10>] ? flush_kthread_worker+0xb0/0xb0
+>> >> >> >>> +[  314.098936]  [<ffffffff816be52c>] ret_from_fork+0x7c/0xb0
+>> >> >> >>> +[  314.098938]  [<ffffffff8107de10>] ? flush_kthread_worker+0xb0/0xb0
+>> >> >> >>> +[  314.098969]
+>> >> >> >>> +[  314.098970] Restarting kernel threads ... done.
+>> >> >> >>> +[  314.099052] Restarting tasks ... done.
+>> >> >> >>>
+>> >> >> >>> Please, have a lot at it.
+>> >> >> >>
+>> >> >> >> This is a freezer failure while freezing kernel threads, so I don't think it's
+>> >> >> >> related to ACPI or PM directly.
+>> >> >> >>
+>> >> >> >> Does it happen on every suspend?
+>> >> >> >>
+>> >> >> >
+>> >> >> > No, I only did one S/R.
+>> >> >> >
+>> >> >> > I have built a 2nd new kernel where I pulled-in latest pm.git#linux-next.
+>> >> >> > With this kernel two S/Rs were fine - but that says not much.
+>> >> >> >
+>> >> >>
+>> >> >> After several S/Rs on the "buggy" -1 kernel I know see in my syslogs:
+>> >> >>
+>> >> >> Jan 18 23:50:02 fambox kernel: [  141.853828] Disabling non-boot CPUs ...
+>> >> >> Jan 18 23:50:02 fambox kernel: [  141.956943] smpboot: CPU 1 is now offline
+>> >> >> Jan 18 23:50:02 fambox kernel: [  141.957438] NOHZ: local_softirq_pending 02
+>> >> >> Jan 18 23:50:02 fambox kernel: [  141.957454] NOHZ: local_softirq_pending 02
+>> >> >> Jan 18 23:50:02 fambox kernel: [  142.060830] smpboot: CPU 2 is now offline
+>> >> >> Jan 18 23:50:02 fambox kernel: [  142.164639] smpboot: CPU 3 is now offline
+>> >> >
+>> >> > Are you worried about the "local_softirq_pending" messages?
+>> >> >
+>> >>
+>> >> That's the only new messages I have seen after several S/Rs.
+>> >
+>> > They are kind of unusual.
+>> >
+>> > Anyway, they seem to be related to CPU hotplug (CPU offline), so you can try
+>> > if you can trigger them through the sysfs CPU offline/online interface.
+>> >
+>>
+>> Can you explain that a bit clearer or give some sample lines for testing?
+>
+> There is a sysfs file
+>
+> /sys/devices/system/cpu/cpuX/online
+>
+> (where X=0,1,2,3,...) for each CPU core in the system.  The value read from it
+> indicates whether or not the given core is online (1 means online).  Writing 0
+> to it means that the given core should be put offline.  Writing 1 means to put
+> it back online.  You can simply write first 0s and than 1s to those files
+> for CPUs > 0 multiple times in a row and see if that triggers messages like the
+> above.  If it does, that may mean there's been a change in kernel/cpu.c, for
+> example, that causes it to appear.  The change may have been made somewhere in
+> arch/x86 too, though.
+>
 
---------------ms060606080806090700010705
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+[ CCing x86 folks ]
 
-* On 19.01.2013 12:48 AM, Mihai Moldovan wrote:
-> Testing further, I rebooted using iommu=3Doff and intel_iommu=3Doff. So=
- far, I had
-> no random crashes, but the system uptime of XXXXREPLACEMEXXXX minutes i=
-s too
-> small to draw conclusions yet.
+Thanks for the explanations.
 
-And by "XXXXREPLACEMEXXXX", I meant 50 (minutes). That's embarrassing, so=
-rry.
+>> >> If you have a testcase for me to reproduce it here, I would be happy.
+>> >
+>> > Do you mean the freezer-related issue?
+>> >
+>>
+>> Any one as I am still stepping in the dark.
+>> I checked my disc-space as I built a lot of software today and run
+>> once out of space.
+>> But 1.7GiB should be enough on / for testing.
+>> I wanted to run the new LTP version I built the last days.
+>> Let's see what I get...
+>
+> Stress-testing the freezer is rather easy and doesn't require disk space.
+> All it takes is to echo "freezer" to /sys/power/pm_test and then do
+> "echo mem > /sys/power/state && sleep 1" in a loop.  This is described in
+> Documentation/power/basic-pm-debugging.txt IIRC.
+>
 
+Didn't know there is some cool docs about PM around.
+I will look into this.
 
---------------ms060606080806090700010705
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
+Furthermore, I have seen on a restart...
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINgjCC
-BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
-KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
-8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
-DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
-2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
-zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
-Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
-c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
-UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
-p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
-+HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
-hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
-hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
-0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
-AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
-XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIHRjCCBi6gAwIBAgICHn8wDQYJKoZIhvcNAQEF
-BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
-ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
-bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMjAzMjEyMzU3NTda
-Fw0xNDAzMjMxNTE0MzlaMIGRMRkwFwYDVQQNExAwSjh4RlU1aWNwTGFuNHlLMQswCQYDVQQG
-EwJERTEbMBkGA1UECBMSQmFkZW4tV3VlcnR0ZW1iZXJnMRIwEAYDVQQHEwlLYXJsc3J1aGUx
-FzAVBgNVBAMTDk1paGFpIE1vbGRvdmFuMR0wGwYJKoZIhvcNAQkBFg5pb25pY0Bpb25pYy5k
-ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMaylRRCBj2U12flvhmZMgwADN/0
-P/ej3O9uLe8XWsr6McU8my6GYxfTXFxfcLl8MxqugflmQQqq1c1Qt69n3zHi+qTvZnHBCBHs
-G1CkuL3Of7Srx6ulz0/zgNRMlDnJ7EUAIQDoYkUzn69y/4ap3n/nQf7EmO9o3FnSCX27td5Y
-J21uJp/PLvbwvG9kdWMVeiyBubwdBSoMu1D9Cy6YlqFE1DIgPO9RR6EOkie4BgMr/3eliAoK
-j7HAOkFhsqTrVy81YtxQDYNrpeMZ2imSQUP1wN1X0NNkdcIWpUNYkRdvzrmpFXxYNhwPPPiE
-BIKctzMt00Pss2ziyMqpkQFzcI8CAwEAAaOCA6kwggOlMAkGA1UdEwQCMAAwCwYDVR0PBAQD
-AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUypNX2Sx5I6PQ
-yCj0Lgno1pTiwnswHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGQYDVR0RBBIw
-EIEOaW9uaWNAaW9uaWMuZGUwggIhBgNVHSAEggIYMIICFDCCAhAGCysGAQQBgbU3AQICMIIB
-/zAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5zdGFydHNzbC5jb20vcG9saWN5LnBkZjA0Bggr
-BgEFBQcCARYoaHR0cDovL3d3dy5zdGFydHNzbC5jb20vaW50ZXJtZWRpYXRlLnBkZjCB9wYI
-KwYBBQUHAgIwgeowJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBARqB
-vlRoaXMgY2VydGlmaWNhdGUgd2FzIGlzc3VlZCBhY2NvcmRpbmcgdG8gdGhlIENsYXNzIDIg
-VmFsaWRhdGlvbiByZXF1aXJlbWVudHMgb2YgdGhlIFN0YXJ0Q29tIENBIHBvbGljeSwgcmVs
-aWFuY2Ugb25seSBmb3IgdGhlIGludGVuZGVkIHB1cnBvc2UgaW4gY29tcGxpYW5jZSBvZiB0
-aGUgcmVseWluZyBwYXJ0eSBvYmxpZ2F0aW9ucy4wgZwGCCsGAQUFBwICMIGPMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQIaZExpYWJpbGl0eSBhbmQgd2FycmFu
-dGllcyBhcmUgbGltaXRlZCEgU2VlIHNlY3Rpb24gIkxlZ2FsIGFuZCBMaW1pdGF0aW9ucyIg
-b2YgdGhlIFN0YXJ0Q29tIENBIHBvbGljeS4wNgYDVR0fBC8wLTAroCmgJ4YlaHR0cDovL2Ny
-bC5zdGFydHNzbC5jb20vY3J0dTItY3JsLmNybDCBjgYIKwYBBQUHAQEEgYEwfzA5BggrBgEF
-BQcwAYYtaHR0cDovL29jc3Auc3RhcnRzc2wuY29tL3N1Yi9jbGFzczIvY2xpZW50L2NhMEIG
-CCsGAQUFBzAChjZodHRwOi8vYWlhLnN0YXJ0c3NsLmNvbS9jZXJ0cy9zdWIuY2xhc3MyLmNs
-aWVudC5jYS5jcnQwIwYDVR0SBBwwGoYYaHR0cDovL3d3dy5zdGFydHNzbC5jb20vMA0GCSqG
-SIb3DQEBBQUAA4IBAQAWDJnVeIEl30sEHVyZ43IOK1RrYRyNJFAoClulBqL229p3whd4mtCY
-hE25avnoZIMPTxhjZJlnmIlr0Ahh8hjSeqzjeEIVzBV//vVRBwI1DnaJ2u965og2FBhp3KXc
-5pIHJA6aqJFqZE8EoI+81gdPB9Rc4cDAa0S4Bd4YtsLFfmxgR33EPC0MhEkwE2cihRTbF5Ye
-yW1j4sUmnaJKlv9mxAs79D6n3Ggx8YBAOnkmg/tCTbTrJcqrB67NUpFhEcgFNRNqaL2oxE3u
-qO7IjtyOzIlD+5dOJragt5dJJjXZF3NqWjsohcyYMECY8WEKUJlE0lPFQ4bPNfzWWdh16ooV
-MYID2jCCA9YCAQEwgZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQu
-MSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQD
-Ey9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQICHn8w
-CQYFKw4DAhoFAKCCAhswGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-DxcNMTMwMTE4MjM1OTU5WjAjBgkqhkiG9w0BCQQxFgQUDWoYliEzg9DtG/SIrxjayW0imAcw
-bAYJKoZIhvcNAQkPMV8wXTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMH
-MA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIB
-KDCBpAYJKwYBBAGCNxAEMYGWMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4
-MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQg
-Q0ECAh5/MIGmBgsqhkiG9w0BCRACCzGBlqCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUg
-Q2xpZW50IENBAgIefzANBgkqhkiG9w0BAQEFAASCAQAWRy6ESgObYHJ13amBMHx1AnPFkdbE
-irLbETe6mbS/numjNQVz5GXds0QRUK/HWqrO9eGQR9wM307ojNvHlKJlfvAS5E1uDSi6gO31
-r3nA5lJPwNAyO8NtmWKKicyrKKxrHrvUc+5jDJSLzz4S0srF3MzxMzRkjFiIkaiXTxPJg+6R
-X6YZRN8Tau6EzmG+nMXIlvz1UmxkKVwmmcpcbQq+ARHIDjY9Bk74+j7bpNboI93/4JIyCaWS
-5FUPnJoQHUz+dzURKLcBVhT9RSYYVTEiI7TfLELwwHFSz20Gx83rFKPhuDcyGTjHNurtCaRv
-qmQ4/WrcbaMnI1GH6uHWRsCvAAAAAAAA
---------------ms060606080806090700010705--
+     BUG: soft lockup - CPU#3 stuck for 23s! [kworker/3:2:6079]
+
+...approx 10 lines and a nothing happened I turned the machine off via
+power-button.
+
+- Sedat -
+
+> Thanks,
+> Rafael
+>
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
