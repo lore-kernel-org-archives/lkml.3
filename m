@@ -1,170 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920Ab3ASQNT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 11:13:19 -0500
-Received: from powered.by.root24.eu ([91.121.15.64]:37087 "EHLO Root24.de"
+	id S1751807Ab3ASQY7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 11:24:59 -0500
+Received: from londo.lunn.ch ([80.238.139.98]:55528 "EHLO londo.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab3ASQNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 11:13:18 -0500
-Message-ID: <50FAC61A.9060503@ionic.de>
-Date: Sat, 19 Jan 2013 17:13:14 +0100
-From: Mihai Moldovan <ionic@ionic.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1751508Ab3ASQY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jan 2013 11:24:57 -0500
+Date: Sat, 19 Jan 2013 17:24:29 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Soeren Moch <smoch@web.de>, Jason Cooper <jason@lakedaemon.net>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
+ dma_alloc_coherent() calls
+Message-ID: <20130119162429.GB27825@lunn.ch>
+References: <20121119144826.f59667b2.akpm@linux-foundation.org>
+ <201301171049.30415.arnd@arndb.de>
+ <50F800EB.6040104@web.de>
+ <201301172026.45514.arnd@arndb.de>
 MIME-Version: 1.0
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-CC: LKML <linux-kernel@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: Re: i915-related and general system freezes with specific kernel
- config // IOMMU
-References: <50F9DF53.4090601@ionic.de> <CAKMK7uExHc=PEBpn2vPrX+sQcv=U7VuvsJHRxc-SSOh=_G_1Dg@mail.gmail.com>
-In-Reply-To: <CAKMK7uExHc=PEBpn2vPrX+sQcv=U7VuvsJHRxc-SSOh=_G_1Dg@mail.gmail.com>
-X-Enigmail-Version: 1.5
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms070808070205080009040609"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201301172026.45514.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Thu, Jan 17, 2013 at 08:26:45PM +0000, Arnd Bergmann wrote:
+> On Thursday 17 January 2013, Soeren Moch wrote:
+> > On 17.01.2013 11:49, Arnd Bergmann wrote:
+> > > On Wednesday 16 January 2013, Soeren Moch wrote:
+> > >>>> I will see what I can do here. Is there an easy way to track the buffer
+> > >>>> usage without having to wait for complete exhaustion?
+> > >>>
+> > >>> DMA_API_DEBUG
+> > >>
+> > >> OK, maybe I can try this.
 
---------------ms070808070205080009040609
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+I tried this. Not what i expected. We have at least one problem with
+the ethernet driver:
 
-* On 19.01.2013 02:27 PM, Daniel Vetter wrote:
-> You have a gen4.5 chipset which is known to be utterly broken for
-> IOMMU+intel gpu.
+WARNING: at lib/dma-debug.c:933 check_unmap+0x4b8/0x8a8()
+mv643xx_eth_port mv643xx_eth_port.0: DMA-API: device driver failed to check map error[device address=0x000000001f22be00] [size=1536 bytes] [mapped as single]
+Modules linked in:
+[<c000db10>] (unwind_backtrace+0x0/0xf4) from [<c0016c44>] (warn_slowpath_common+0x4c/0x64)
+[<c0016c44>] (warn_slowpath_common+0x4c/0x64) from [<c0016cf0>] (warn_slowpath_fmt+0x30/0x40)
+[<c0016cf0>] (warn_slowpath_fmt+0x30/0x40) from [<c01ab540>] (check_unmap+0x4b8/0x8a8)
+[<c01ab540>] (check_unmap+0x4b8/0x8a8) from [<c01abbb8>] (debug_dma_unmap_page+0x8c/0x98)
+[<c01abbb8>] (debug_dma_unmap_page+0x8c/0x98) from [<c025cb1c>] (mv643xx_eth_poll+0x630/0x800)
+[<c025cb1c>] (mv643xx_eth_poll+0x630/0x800) from [<c0331d9c>] (net_rx_action+0xcc/0x1d4)
+[<c0331d9c>] (net_rx_action+0xcc/0x1d4) from [<c001e1b0>] (__do_softirq+0xa8/0x170)
+[<c001e1b0>] (__do_softirq+0xa8/0x170) from [<c001e3e8>] (do_softirq+0x5c/0x6c)
+[<c001e3e8>] (do_softirq+0x5c/0x6c) from [<c001e610>] (local_bh_enable+0xcc/0xdc)
+[<c001e610>] (local_bh_enable+0xcc/0xdc) from [<c0359c74>] (ip_finish_output+0x1c8/0x39c)
+[<c0359c74>] (ip_finish_output+0x1c8/0x39c) from [<c03571a4>] (ip_local_out+0x28/0x2c)
+[<c03571a4>] (ip_local_out+0x28/0x2c) from [<c0359564>] (ip_queue_xmit+0x118/0x338)
+[<c0359564>] (ip_queue_xmit+0x118/0x338) from [<c036e58c>] (tcp_transmit_skb+0x3fc/0x8e4)
+[<c036e58c>] (tcp_transmit_skb+0x3fc/0x8e4) from [<c0371218>] (tcp_write_xmit+0x228/0xb08)
+[<c0371218>] (tcp_write_xmit+0x228/0xb08) from [<c0371b6c>] (__tcp_push_pending_frames+0x30/0x9c)
+[<c0371b6c>] (__tcp_push_pending_frames+0x30/0x9c) from [<c0362940>] (tcp_sendmsg+0x158/0xdc4)
+[<c0362940>] (tcp_sendmsg+0x158/0xdc4) from [<c0386620>] (inet_sendmsg+0x38/0x74)
+[<c0386620>] (inet_sendmsg+0x38/0x74) from [<c031f370>] (sock_aio_write+0x12c/0x138)
+[<c031f370>] (sock_aio_write+0x12c/0x138) from [<c00a62f4>] (do_sync_write+0xa0/0xd0)
+[<c00a62f4>] (do_sync_write+0xa0/0xd0) from [<c00a6f18>] (vfs_write+0x13c/0x144)
+[<c00a6f18>] (vfs_write+0x13c/0x144) from [<c00a6ff0>] (sys_write+0x44/0x70)
+[<c00a6ff0>] (sys_write+0x44/0x70) from [<c0008ce0>] (ret_fast_syscall+0x0/0x2c)
+---[ end trace b75faa8779652e63 ]---
 
-Nice description for what I'm seeing. ;)
+I'm getting about 4 errors reported a second from the ethernet driver.
 
-After some more hours of uptime I'm inclined to say, that "intel_iommu=3D=
-off
-iommu=3Doff" fixes my random freezes as well.
-Alas, the USB and PCI(e) problems are still around, but I could test reco=
-mpiling
-3.7.2 with Intel IOMMU turned off completely in the kernel config.
-Interestingly, my 3.0.2 kernel which worked fine for so long doesn't even=
- *have*
-support for VT-d/Intel IOMMU. This could explain why I wasn't bit by thos=
-e
-problems on all previous versions.
+Before i look at issues with em28xx i will first try to get the noise
+from the ethernet driver sorted out.
 
-
-> [...] and we've never added the proper
-> quirks. See https://bugzilla.kernel.org/show_bug.cgi?id=3D51921 for a
-> proposed patch to fix this (i.e. automatically set
-> intel_iommu=3Digfx_off for affected platfroms). Testing highly welcome.=
-
-
-=46rom a quick glance, I don't think this patch will work as-is, my PCI I=
-D 2e12 is
-missing.
-I'll add it to the relevant section.
-
-But even if it worked, I'd still have the "box freezes randomly" issue (m=
-ostly
-within 5 to 60 minutes of uptime). :(
-The only way to get rid of this is disabling Intel IOMMU as a whole via k=
-ernel
-parameters intel_iommu=3Doff iommu=3Doff.
-
-Anyway, I'll give it a try.
-
-Best regards,
-
-
-
-Mihai
-
-
---------------ms070808070205080009040609
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINgjCC
-BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
-KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
-8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
-DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
-2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
-zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
-Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
-c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
-UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
-p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
-+HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
-hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
-hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
-0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
-AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
-XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIHRjCCBi6gAwIBAgICHn8wDQYJKoZIhvcNAQEF
-BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
-ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
-bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMjAzMjEyMzU3NTda
-Fw0xNDAzMjMxNTE0MzlaMIGRMRkwFwYDVQQNExAwSjh4RlU1aWNwTGFuNHlLMQswCQYDVQQG
-EwJERTEbMBkGA1UECBMSQmFkZW4tV3VlcnR0ZW1iZXJnMRIwEAYDVQQHEwlLYXJsc3J1aGUx
-FzAVBgNVBAMTDk1paGFpIE1vbGRvdmFuMR0wGwYJKoZIhvcNAQkBFg5pb25pY0Bpb25pYy5k
-ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMaylRRCBj2U12flvhmZMgwADN/0
-P/ej3O9uLe8XWsr6McU8my6GYxfTXFxfcLl8MxqugflmQQqq1c1Qt69n3zHi+qTvZnHBCBHs
-G1CkuL3Of7Srx6ulz0/zgNRMlDnJ7EUAIQDoYkUzn69y/4ap3n/nQf7EmO9o3FnSCX27td5Y
-J21uJp/PLvbwvG9kdWMVeiyBubwdBSoMu1D9Cy6YlqFE1DIgPO9RR6EOkie4BgMr/3eliAoK
-j7HAOkFhsqTrVy81YtxQDYNrpeMZ2imSQUP1wN1X0NNkdcIWpUNYkRdvzrmpFXxYNhwPPPiE
-BIKctzMt00Pss2ziyMqpkQFzcI8CAwEAAaOCA6kwggOlMAkGA1UdEwQCMAAwCwYDVR0PBAQD
-AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUypNX2Sx5I6PQ
-yCj0Lgno1pTiwnswHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGQYDVR0RBBIw
-EIEOaW9uaWNAaW9uaWMuZGUwggIhBgNVHSAEggIYMIICFDCCAhAGCysGAQQBgbU3AQICMIIB
-/zAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5zdGFydHNzbC5jb20vcG9saWN5LnBkZjA0Bggr
-BgEFBQcCARYoaHR0cDovL3d3dy5zdGFydHNzbC5jb20vaW50ZXJtZWRpYXRlLnBkZjCB9wYI
-KwYBBQUHAgIwgeowJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBARqB
-vlRoaXMgY2VydGlmaWNhdGUgd2FzIGlzc3VlZCBhY2NvcmRpbmcgdG8gdGhlIENsYXNzIDIg
-VmFsaWRhdGlvbiByZXF1aXJlbWVudHMgb2YgdGhlIFN0YXJ0Q29tIENBIHBvbGljeSwgcmVs
-aWFuY2Ugb25seSBmb3IgdGhlIGludGVuZGVkIHB1cnBvc2UgaW4gY29tcGxpYW5jZSBvZiB0
-aGUgcmVseWluZyBwYXJ0eSBvYmxpZ2F0aW9ucy4wgZwGCCsGAQUFBwICMIGPMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQIaZExpYWJpbGl0eSBhbmQgd2FycmFu
-dGllcyBhcmUgbGltaXRlZCEgU2VlIHNlY3Rpb24gIkxlZ2FsIGFuZCBMaW1pdGF0aW9ucyIg
-b2YgdGhlIFN0YXJ0Q29tIENBIHBvbGljeS4wNgYDVR0fBC8wLTAroCmgJ4YlaHR0cDovL2Ny
-bC5zdGFydHNzbC5jb20vY3J0dTItY3JsLmNybDCBjgYIKwYBBQUHAQEEgYEwfzA5BggrBgEF
-BQcwAYYtaHR0cDovL29jc3Auc3RhcnRzc2wuY29tL3N1Yi9jbGFzczIvY2xpZW50L2NhMEIG
-CCsGAQUFBzAChjZodHRwOi8vYWlhLnN0YXJ0c3NsLmNvbS9jZXJ0cy9zdWIuY2xhc3MyLmNs
-aWVudC5jYS5jcnQwIwYDVR0SBBwwGoYYaHR0cDovL3d3dy5zdGFydHNzbC5jb20vMA0GCSqG
-SIb3DQEBBQUAA4IBAQAWDJnVeIEl30sEHVyZ43IOK1RrYRyNJFAoClulBqL229p3whd4mtCY
-hE25avnoZIMPTxhjZJlnmIlr0Ahh8hjSeqzjeEIVzBV//vVRBwI1DnaJ2u965og2FBhp3KXc
-5pIHJA6aqJFqZE8EoI+81gdPB9Rc4cDAa0S4Bd4YtsLFfmxgR33EPC0MhEkwE2cihRTbF5Ye
-yW1j4sUmnaJKlv9mxAs79D6n3Ggx8YBAOnkmg/tCTbTrJcqrB67NUpFhEcgFNRNqaL2oxE3u
-qO7IjtyOzIlD+5dOJragt5dJJjXZF3NqWjsohcyYMECY8WEKUJlE0lPFQ4bPNfzWWdh16ooV
-MYID2jCCA9YCAQEwgZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQu
-MSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQD
-Ey9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQICHn8w
-CQYFKw4DAhoFAKCCAhswGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-DxcNMTMwMTE5MTYxMzE0WjAjBgkqhkiG9w0BCQQxFgQU6ggkCfBU6pABybqGQDCELpEH8cMw
-bAYJKoZIhvcNAQkPMV8wXTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMH
-MA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIB
-KDCBpAYJKwYBBAGCNxAEMYGWMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4
-MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQg
-Q0ECAh5/MIGmBgsqhkiG9w0BCRACCzGBlqCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUg
-Q2xpZW50IENBAgIefzANBgkqhkiG9w0BAQEFAASCAQCzFxRl91hwpBUwE7hXtwOZVgJWxMVo
-BG4MWhsQa/T0votCZqN+LTBLuMgenQyaB/st/tUo2MrBqjpsnBE6DGQaWWz/SIQPXzmLjFqN
-SmMXfzeg8b2vFQ1bYM6P4MaQjOs+EF0+cCpF4ExnUC7/Ap5xsVrZ8WwA1oSn2ql1HhfhM8m4
-MtgjcZp8fl6QRpMAL6T7t1bWp0qWeo+kYXptvTYKLEBqegdR0xx9Twca0XfgglMa5DEYaW1c
-cZC4ghftcgDYJObV/yGuZETadKuwxGXZeLcdHC5WARxfrM6BtPcmqKPH49JCJMc+/1Ugfwg4
-ZVhqSxxSKxtzji2tgMckRgKKAAAAAAAA
---------------ms070808070205080009040609--
+     Andrew
