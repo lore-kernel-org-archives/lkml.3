@@ -1,104 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab3ASGDY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 01:03:24 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:36301 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab3ASGDV (ORCPT
+	id S1751864Ab3ASGDp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 01:03:45 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:61568 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3ASGCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 01:03:21 -0500
-Date: Sat, 19 Jan 2013 01:03:32 -0500
-From: Jake Champlin <jake.champlin.27@gmail.com>
-To: abbotti@mev.co.uk
-Cc: fmhess@users.sourceforge.net, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        hsweeten@visionengravers.com, jake.champlin.27@gmail.com
-Subject: [PATCH] Staging: Comedi: pcl818: Fixed Coding Style Issues
-Message-ID: <20130119060328.GA22447@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 19 Jan 2013 01:02:34 -0500
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Florian Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-fbdev@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH 1/4] drivers/video/wm8505fb.c: use devm_ functions
+Date: Sat, 19 Jan 2013 19:02:54 +1300
+Message-Id: <1358575377-26364-2-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358575377-26364-1-git-send-email-linux@prisktech.co.nz>
+References: <1358575377-26364-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed single line if statement brace issues as well as pointer errors from
-checkpatch.pl
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Signed-off-by: Jake Champlin <jake.champlin.27@gmail.com>
+The various devm_ functions allocate memory that is released when a driver
+detaches.  This patch uses these functions for data that is allocated in
+the probe function of a platform device and is only freed in the remove
+function.
+
+The patch makes some other cleanups.  First, the original code used
+devm_kzalloc, but kfree.  This would lead to a double free.  The problem
+was found using the following semantic match (http://coccinelle.lip6.fr/):
+
+// <smpl>
+@@
+expression x,e;
+@@
+x = devm_kzalloc(...)
+... when != x = e
+?-kfree(x,...);
+// </smpl>
+
+The error-handing code of devm_request_and_ioremap does not print any
+warning message, because devm_request_and_ioremap does this.
+
+The call to dma_alloc_coherent is converted to its devm equivalent,
+dmam_alloc_coherent.  This implicitly introduces a call to
+dmam_free_coherent, which was completly missing in the original code.
+
+A semicolon is removed at the end of the error-handling code for the call
+to dma_alloc_coherent.
+
+The block of code calling fb_alloc_cmap is moved below the block of code
+calling wm8505fb_set_par, so that the error-handing code of the call to
+wm8505fb_set_par can just return ret.  This way there is only one block of
+error-handling code that needs to call fb_dealloc_cmap, and so this is
+moved up to the place where it is needed, eliminating the need for all
+gotos and labels in the function.  This was suggested by Tony Prisk.
+
+The initializations of fbi and ret at the beginning of the function are not
+necessary and are removed.  The call platform_set_drvdata(pdev, NULL); at
+the end of the function is also removed.
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
- drivers/staging/comedi/drivers/pcl818.c | 19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ drivers/video/wm8505fb.c |   78 +++++++++++-----------------------------------
+ 1 file changed, 19 insertions(+), 59 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-index 06127a5..b5af22e 100644
---- a/drivers/staging/comedi/drivers/pcl818.c
-+++ b/drivers/staging/comedi/drivers/pcl818.c
-@@ -243,8 +243,8 @@ static const struct comedi_lrange range_pcl818l_h_ai = { 4, {
- };
+diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
+index 4dd0580..ddf78fc 100644
+--- a/drivers/video/wm8505fb.c
++++ b/drivers/video/wm8505fb.c
+@@ -274,15 +274,11 @@ static int wm8505fb_probe(struct platform_device *pdev)
+ 	unsigned long fb_mem_len;
+ 	void *fb_mem_virt;
  
- static const struct comedi_lrange range718_bipolar1 = { 1, {BIP_RANGE(1),} };
--static const struct comedi_lrange range718_bipolar0_5 =
--    { 1, {BIP_RANGE(0.5),} };
-+static const struct comedi_lrange range718_bipolar0_5 = {
-+	1, {BIP_RANGE(0.5),} };
- static const struct comedi_lrange range718_unipolar2 = { 1, {UNI_RANGE(2),} };
- static const struct comedi_lrange range718_unipolar1 = { 1, {BIP_RANGE(1),} };
+-	ret = -ENOMEM;
+-	fbi = NULL;
+-
+ 	fbi = devm_kzalloc(&pdev->dev, sizeof(struct wm8505fb_info) +
+ 			sizeof(u32) * 16, GFP_KERNEL);
+ 	if (!fbi) {
+ 		dev_err(&pdev->dev, "Failed to initialize framebuffer device\n");
+-		ret = -ENOMEM;
+-		goto failed;
++		return -ENOMEM;
+ 	}
  
-@@ -1005,17 +1005,14 @@ static int pcl818_ai_cmd_mode(int mode, struct comedi_device *dev,
- 	switch (devpriv->dma) {
- 	case 1:		/*  DMA */
- 	case 3:
--		if (devpriv->dma_rtc == 0) {
-+		if (devpriv->dma_rtc == 0)
- 			pcl818_ai_mode13dma_int(mode, dev, s);
--		}
- #ifdef unused
--		else {
-+		else
- 			pcl818_ai_mode13dma_rtc(mode, dev, s);
--		}
- #else
--		else {
-+		else
- 			return -EINVAL;
--		}
- #endif
- 		break;
- 	case 0:
-@@ -1069,7 +1066,7 @@ static int pcl818_ai_cmd_mode(int mode, struct comedi_device *dev,
- */
- #ifdef PCL818_MODE13_AO
- static int pcl818_ao_mode13(int mode, struct comedi_device *dev,
--			    struct comedi_subdevice *s, comedi_trig * it)
-+			    struct comedi_subdevice *s, comedi_trig *it)
- {
- 	struct pcl818_private *devpriv = dev->private;
- 	int divisor1 = 0, divisor2 = 0;
-@@ -1124,7 +1121,7 @@ static int pcl818_ao_mode13(int mode, struct comedi_device *dev,
-    ANALOG OUTPUT MODE 1, 818 cards
- */
- static int pcl818_ao_mode1(struct comedi_device *dev,
--			   struct comedi_subdevice *s, comedi_trig * it)
-+			   struct comedi_subdevice *s, comedi_trig *it)
- {
- 	return pcl818_ao_mode13(1, dev, s, it);
+ 	strcpy(fbi->fb.fix.id, DRIVER_NAME);
+@@ -308,31 +304,15 @@ static int wm8505fb_probe(struct platform_device *pdev)
+ 	fbi->fb.pseudo_palette	= addr;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (res == NULL) {
+-		dev_err(&pdev->dev, "no I/O memory resource defined\n");
+-		ret = -ENODEV;
+-		goto failed_fbi;
+-	}
+-
+-	res = request_mem_region(res->start, resource_size(res), DRIVER_NAME);
+-	if (res == NULL) {
+-		dev_err(&pdev->dev, "failed to request I/O memory\n");
+-		ret = -EBUSY;
+-		goto failed_fbi;
+-	}
+ 
+-	fbi->regbase = ioremap(res->start, resource_size(res));
+-	if (fbi->regbase == NULL) {
+-		dev_err(&pdev->dev, "failed to map I/O memory\n");
+-		ret = -EBUSY;
+-		goto failed_free_res;
+-	}
++	fbi->regbase = devm_request_and_ioremap(&pdev->dev, res);
++	if (fbi->regbase == NULL)
++		return -EBUSY;
+ 
+ 	np = of_parse_phandle(pdev->dev.of_node, "default-mode", 0);
+ 	if (!np) {
+ 		pr_err("%s: No display description in Device Tree\n", __func__);
+-		ret = -EINVAL;
+-		goto failed_free_res;
++		return -EINVAL;
+ 	}
+ 
+ 	/*
+@@ -351,7 +331,7 @@ static int wm8505fb_probe(struct platform_device *pdev)
+ 	ret |= of_property_read_u32(np, "bpp", &bpp);
+ 	if (ret) {
+ 		pr_err("%s: Unable to read display properties\n", __func__);
+-		goto failed_free_res;
++		return ret;
+ 	}
+ 
+ 	of_mode.vmode = FB_VMODE_NONINTERLACED;
+@@ -365,12 +345,12 @@ static int wm8505fb_probe(struct platform_device *pdev)
+ 
+ 	/* try allocating the framebuffer */
+ 	fb_mem_len = of_mode.xres * of_mode.yres * 2 * (bpp / 8);
+-	fb_mem_virt = dma_alloc_coherent(&pdev->dev, fb_mem_len, &fb_mem_phys,
++	fb_mem_virt = dmam_alloc_coherent(&pdev->dev, fb_mem_len, &fb_mem_phys,
+ 				GFP_KERNEL);
+ 	if (!fb_mem_virt) {
+ 		pr_err("%s: Failed to allocate framebuffer\n", __func__);
+ 		return -ENOMEM;
+-	};
++	}
+ 
+ 	fbi->fb.var.xres_virtual	= of_mode.xres;
+ 	fbi->fb.var.yres_virtual	= of_mode.yres * 2;
+@@ -381,28 +361,29 @@ static int wm8505fb_probe(struct platform_device *pdev)
+ 	fbi->fb.screen_base		= fb_mem_virt;
+ 	fbi->fb.screen_size		= fb_mem_len;
+ 
+-	if (fb_alloc_cmap(&fbi->fb.cmap, 256, 0) < 0) {
+-		dev_err(&pdev->dev, "Failed to allocate color map\n");
+-		ret = -ENOMEM;
+-		goto failed_free_io;
+-	}
+-
+-	wm8505fb_init_hw(&fbi->fb);
+-
+ 	fbi->contrast = 0x80;
+ 	ret = wm8505fb_set_par(&fbi->fb);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to set parameters\n");
+-		goto failed_free_cmap;
++		return ret;
+ 	}
+ 
++	if (fb_alloc_cmap(&fbi->fb.cmap, 256, 0) < 0) {
++		dev_err(&pdev->dev, "Failed to allocate color map\n");
++		return -ENOMEM;
++	}
++
++	wm8505fb_init_hw(&fbi->fb);
++
+ 	platform_set_drvdata(pdev, fbi);
+ 
+ 	ret = register_framebuffer(&fbi->fb);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev,
+ 			"Failed to register framebuffer device: %d\n", ret);
+-		goto failed_free_cmap;
++		if (fbi->fb.cmap.len)
++			fb_dealloc_cmap(&fbi->fb.cmap);
++		return ret;
+ 	}
+ 
+ 	ret = device_create_file(&pdev->dev, &dev_attr_contrast);
+@@ -416,25 +397,11 @@ static int wm8505fb_probe(struct platform_device *pdev)
+ 	       fbi->fb.fix.smem_start + fbi->fb.fix.smem_len - 1);
+ 
+ 	return 0;
+-
+-failed_free_cmap:
+-	if (fbi->fb.cmap.len)
+-		fb_dealloc_cmap(&fbi->fb.cmap);
+-failed_free_io:
+-	iounmap(fbi->regbase);
+-failed_free_res:
+-	release_mem_region(res->start, resource_size(res));
+-failed_fbi:
+-	platform_set_drvdata(pdev, NULL);
+-	kfree(fbi);
+-failed:
+-	return ret;
  }
-@@ -1134,7 +1131,7 @@ static int pcl818_ao_mode1(struct comedi_device *dev,
-    ANALOG OUTPUT MODE 3, 818 cards
- */
- static int pcl818_ao_mode3(struct comedi_device *dev,
--			   struct comedi_subdevice *s, comedi_trig * it)
-+			   struct comedi_subdevice *s, comedi_trig *it)
+ 
+ static int wm8505fb_remove(struct platform_device *pdev)
  {
- 	return pcl818_ao_mode13(3, dev, s, it);
+ 	struct wm8505fb_info *fbi = platform_get_drvdata(pdev);
+-	struct resource *res;
+ 
+ 	device_remove_file(&pdev->dev, &dev_attr_contrast);
+ 
+@@ -445,13 +412,6 @@ static int wm8505fb_remove(struct platform_device *pdev)
+ 	if (fbi->fb.cmap.len)
+ 		fb_dealloc_cmap(&fbi->fb.cmap);
+ 
+-	iounmap(fbi->regbase);
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(res->start, resource_size(res));
+-
+-	kfree(fbi);
+-
+ 	return 0;
  }
+ 
 -- 
-1.8.1.1
+1.7.9.5
 
-
--- 
-Jake Champlin
-jake.champlin.27@gmail.com
-<MuttClient>
