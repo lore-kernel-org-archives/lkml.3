@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab3ASBWU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:22:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57329 "EHLO mail.kernel.org"
+	id S1756833Ab3ASBWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:22:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57339 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756742Ab3ASBWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:22:17 -0500
+	id S1756791Ab3ASBWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:22:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chen Jun <jun.d.chen@intel.com>, channing <chao.bi@intel.com>
-Subject: [ 15/16] serial:ifx6x60:Delete SPI timer when shut down port
-Date: Fri, 18 Jan 2013 17:21:53 -0800
-Message-Id: <20130119012140.454149650@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 16/16] staging: vt6656: Fix inconsistent structure packing
+Date: Fri, 18 Jan 2013 17:21:54 -0800
+Message-Id: <20130119012140.566659344@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119012138.680057206@linuxfoundation.org>
 References: <20130119012138.680057206@linuxfoundation.org>
@@ -25,31 +25,238 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: chao bi <chao.bi@intel.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 014b9b4ce84281ccb3d723c792bed19815f3571a upstream.
+commit 1ee4c55fc9620451b2a825d793042a7e0775391b upstream.
 
-When shut down SPI port, it's possible that MRDY has been asserted and a SPI
-timer was activated waiting for SRDY assert, in the case, it needs to delete
-this timer.
+vt6656 has several headers that use the #pragma pack(1) directive to
+enable structure packing, but never disable it.  The layout of
+structures defined in other headers can then depend on which order the
+various headers are included in, breaking the One Definition Rule.
 
-Signed-off-by: Chen Jun <jun.d.chen@intel.com>
-Signed-off-by: channing <chao.bi@intel.com>
+In practice this resulted in crashes on x86_64 until the order of header
+inclusion was changed for some files in commit 11d404cb56ecd ('staging:
+vt6656: fix headers and add cfg80211.').  But we need a proper fix that
+won't be affected by future changes to the order of inclusion.
+
+This removes the #pragma pack(1) directives and adds __packed to the
+structure definitions for which packing appears to have been intended.
+
+Reported-and-tested-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/ifx6x60.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/vt6656/bssdb.h |    1 -
+ drivers/staging/vt6656/int.h   |    1 -
+ drivers/staging/vt6656/iocmd.h |   33 ++++++++++++++++-----------------
+ drivers/staging/vt6656/iowpa.h |    8 +++-----
+ 4 files changed, 19 insertions(+), 24 deletions(-)
 
---- a/drivers/tty/serial/ifx6x60.c
-+++ b/drivers/tty/serial/ifx6x60.c
-@@ -551,6 +551,7 @@ static void ifx_port_shutdown(struct tty
- 		container_of(port, struct ifx_spi_device, tty_port);
+--- a/drivers/staging/vt6656/bssdb.h
++++ b/drivers/staging/vt6656/bssdb.h
+@@ -92,7 +92,6 @@ typedef struct tagSRSNCapObject {
+ } SRSNCapObject, *PSRSNCapObject;
  
- 	mrdy_set_low(ifx_dev);
-+	del_timer(&ifx_dev->spi_timer);
- 	clear_bit(IFX_SPI_STATE_TIMER_PENDING, &ifx_dev->flags);
- 	tasklet_kill(&ifx_dev->io_work_tasklet);
- }
+ // BSS info(AP)
+-#pragma pack(1)
+ typedef struct tagKnownBSS {
+     // BSS info
+     BOOL            bActive;
+--- a/drivers/staging/vt6656/int.h
++++ b/drivers/staging/vt6656/int.h
+@@ -34,7 +34,6 @@
+ #include "device.h"
+ 
+ /*---------------------  Export Definitions -------------------------*/
+-#pragma pack(1)
+ typedef struct tagSINTData {
+     BYTE    byTSR0;
+     BYTE    byPkt0;
+--- a/drivers/staging/vt6656/iocmd.h
++++ b/drivers/staging/vt6656/iocmd.h
+@@ -95,13 +95,12 @@ typedef enum tagWZONETYPE {
+ // Ioctl interface structure
+ // Command structure
+ //
+-#pragma pack(1)
+ typedef struct tagSCmdRequest {
+ 	u8 name[16];
+ 	void	*data;
+ 	u16	    wResult;
+ 	u16     wCmdCode;
+-} SCmdRequest, *PSCmdRequest;
++} __packed SCmdRequest, *PSCmdRequest;
+ 
+ //
+ // Scan
+@@ -111,7 +110,7 @@ typedef struct tagSCmdScan {
+ 
+     u8	    ssid[SSID_MAXLEN + 2];
+ 
+-} SCmdScan, *PSCmdScan;
++} __packed SCmdScan, *PSCmdScan;
+ 
+ //
+ // BSS Join
+@@ -126,7 +125,7 @@ typedef struct tagSCmdBSSJoin {
+     BOOL    bPSEnable;
+     BOOL    bShareKeyAuth;
+ 
+-} SCmdBSSJoin, *PSCmdBSSJoin;
++} __packed SCmdBSSJoin, *PSCmdBSSJoin;
+ 
+ //
+ // Zonetype Setting
+@@ -137,7 +136,7 @@ typedef struct tagSCmdZoneTypeSet {
+  BOOL       bWrite;
+  WZONETYPE  ZoneType;
+ 
+-} SCmdZoneTypeSet, *PSCmdZoneTypeSet;
++} __packed SCmdZoneTypeSet, *PSCmdZoneTypeSet;
+ 
+ typedef struct tagSWPAResult {
+          char	ifname[100];
+@@ -145,7 +144,7 @@ typedef struct tagSWPAResult {
+ 	u8 key_mgmt;
+ 	u8 eap_type;
+          BOOL authenticated;
+-} SWPAResult, *PSWPAResult;
++} __packed SWPAResult, *PSWPAResult;
+ 
+ typedef struct tagSCmdStartAP {
+ 
+@@ -157,7 +156,7 @@ typedef struct tagSCmdStartAP {
+     BOOL    bShareKeyAuth;
+     u8      byBasicRate;
+ 
+-} SCmdStartAP, *PSCmdStartAP;
++} __packed SCmdStartAP, *PSCmdStartAP;
+ 
+ typedef struct tagSCmdSetWEP {
+ 
+@@ -167,7 +166,7 @@ typedef struct tagSCmdSetWEP {
+     BOOL    bWepKeyAvailable[WEP_NKEYS];
+     u32     auWepKeyLength[WEP_NKEYS];
+ 
+-} SCmdSetWEP, *PSCmdSetWEP;
++} __packed SCmdSetWEP, *PSCmdSetWEP;
+ 
+ typedef struct tagSBSSIDItem {
+ 
+@@ -180,14 +179,14 @@ typedef struct tagSBSSIDItem {
+     BOOL    bWEPOn;
+     u32     uRSSI;
+ 
+-} SBSSIDItem;
++} __packed SBSSIDItem;
+ 
+ 
+ typedef struct tagSBSSIDList {
+ 
+ 	u32		    uItem;
+ 	SBSSIDItem	sBSSIDList[0];
+-} SBSSIDList, *PSBSSIDList;
++} __packed SBSSIDList, *PSBSSIDList;
+ 
+ 
+ typedef struct tagSNodeItem {
+@@ -208,7 +207,7 @@ typedef struct tagSNodeItem {
+     u32            uTxAttempts;
+     u16            wFailureRatio;
+ 
+-} SNodeItem;
++} __packed SNodeItem;
+ 
+ 
+ typedef struct tagSNodeList {
+@@ -216,7 +215,7 @@ typedef struct tagSNodeList {
+ 	u32		    uItem;
+ 	SNodeItem	sNodeList[0];
+ 
+-} SNodeList, *PSNodeList;
++} __packed SNodeList, *PSNodeList;
+ 
+ 
+ typedef struct tagSCmdLinkStatus {
+@@ -229,7 +228,7 @@ typedef struct tagSCmdLinkStatus {
+     u32     uChannel;
+     u32     uLinkRate;
+ 
+-} SCmdLinkStatus, *PSCmdLinkStatus;
++} __packed SCmdLinkStatus, *PSCmdLinkStatus;
+ 
+ //
+ // 802.11 counter
+@@ -247,7 +246,7 @@ typedef struct tagSDot11MIBCount {
+     u32 ReceivedFragmentCount;
+     u32 MulticastReceivedFrameCount;
+     u32 FCSErrorCount;
+-} SDot11MIBCount, *PSDot11MIBCount;
++} __packed SDot11MIBCount, *PSDot11MIBCount;
+ 
+ 
+ 
+@@ -355,13 +354,13 @@ typedef struct tagSStatMIBCount {
+     u32   ullTxBroadcastBytes[2];
+     u32   ullTxMulticastBytes[2];
+     u32   ullTxDirectedBytes[2];
+-} SStatMIBCount, *PSStatMIBCount;
++} __packed SStatMIBCount, *PSStatMIBCount;
+ 
+ typedef struct tagSCmdValue {
+ 
+     u32     dwValue;
+ 
+-} SCmdValue,  *PSCmdValue;
++} __packed SCmdValue,  *PSCmdValue;
+ 
+ //
+ // hostapd & viawget ioctl related
+@@ -431,7 +430,7 @@ struct viawget_hostapd_param {
+ 			u8 ssid[32];
+ 		} scan_req;
+ 	} u;
+-};
++} __packed;
+ 
+ /*---------------------  Export Classes  ----------------------------*/
+ 
+--- a/drivers/staging/vt6656/iowpa.h
++++ b/drivers/staging/vt6656/iowpa.h
+@@ -67,12 +67,11 @@ enum {
+ 
+ 
+ 
+-#pragma pack(1)
+ typedef struct viawget_wpa_header {
+ 	u8 type;
+ 	u16 req_ie_len;
+ 	u16 resp_ie_len;
+-} viawget_wpa_header;
++} __packed viawget_wpa_header;
+ 
+ struct viawget_wpa_param {
+ 	u32 cmd;
+@@ -113,9 +112,8 @@ struct viawget_wpa_param {
+ 			u8 *buf;
+ 		} scan_results;
+ 	} u;
+-};
++} __packed;
+ 
+-#pragma pack(1)
+ struct viawget_scan_result {
+ 	u8 bssid[6];
+ 	u8 ssid[32];
+@@ -130,7 +128,7 @@ struct viawget_scan_result {
+ 	int noise;
+ 	int level;
+ 	int maxrate;
+-};
++} __packed;
+ 
+ /*---------------------  Export Classes  ----------------------------*/
+ 
 
 
