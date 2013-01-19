@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084Ab3ASJDU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 04:03:20 -0500
-Received: from mga09.intel.com ([134.134.136.24]:52702 "EHLO mga09.intel.com"
+	id S1752210Ab3ASJGl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 04:06:41 -0500
+Received: from mga02.intel.com ([134.134.136.20]:15001 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751551Ab3ASJDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 04:03:01 -0500
+	id S1752069Ab3ASJDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jan 2013 04:03:20 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,498,1355126400"; 
-   d="scan'208";a="274089765"
+   d="scan'208";a="249499458"
 From: Jon Mason <jon.mason@intel.com>
 To: Greg KH <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Dave Jiang <dave.jiang@intel.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 03/21] NTB: correct memory barrier
-Date: Sat, 19 Jan 2013 02:02:17 -0700
-Message-Id: <1358586155-23322-4-git-send-email-jon.mason@intel.com>
+Subject: [PATCH 18/21] ntb_netdev: remove tx timeout
+Date: Sat, 19 Jan 2013 02:02:32 -0700
+Message-Id: <1358586155-23322-19-git-send-email-jon.mason@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
 References: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
@@ -24,27 +24,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mmiowb is not sufficient to flush the data and is causing data
-corruption.  Change to wmb and the data corruption is no more.
+There is a race between disabling and enabling the tx queue, resulting
+in tx timeouts.  Since all the tx timeout does is re-enable the tx
+queue, simple remove the start/stop of the queue and the tx timeout
+routine.
 
 Signed-off-by: Jon Mason <jon.mason@intel.com>
 ---
- drivers/ntb/ntb_transport.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ntb_netdev.c |   11 -----------
+ 1 file changed, 11 deletions(-)
 
-diff --git a/drivers/ntb/ntb_transport.c b/drivers/ntb/ntb_transport.c
-index 1d17857..e9666bd 100644
---- a/drivers/ntb/ntb_transport.c
-+++ b/drivers/ntb/ntb_transport.c
-@@ -1009,7 +1009,7 @@ static void ntb_tx_copy_task(struct ntb_transport_qp *qp,
- 	hdr->ver = qp->tx_pkts;
+diff --git a/drivers/net/ntb_netdev.c b/drivers/net/ntb_netdev.c
+index 28d6fea..07c06cd 100644
+--- a/drivers/net/ntb_netdev.c
++++ b/drivers/net/ntb_netdev.c
+@@ -144,9 +144,6 @@ static void ntb_netdev_tx_handler(struct ntb_transport_qp *qp, void *qp_data,
+ 	}
  
- 	/* Ensure that the data is fully copied out before setting the flag */
--	mmiowb();
-+	wmb();
- 	hdr->flags = entry->flags | DESC_DONE_FLAG;
+ 	dev_kfree_skb(skb);
+-
+-	if (netif_queue_stopped(ndev))
+-		netif_wake_queue(ndev);
+ }
  
- 	ntb_ring_sdb(qp->ndev, qp->qp_num);
+ static netdev_tx_t ntb_netdev_start_xmit(struct sk_buff *skb,
+@@ -166,7 +163,6 @@ static netdev_tx_t ntb_netdev_start_xmit(struct sk_buff *skb,
+ err:
+ 	ndev->stats.tx_dropped++;
+ 	ndev->stats.tx_errors++;
+-	netif_stop_queue(ndev);
+ 	return NETDEV_TX_BUSY;
+ }
+ 
+@@ -270,18 +266,11 @@ err:
+ 	return rc;
+ }
+ 
+-static void ntb_netdev_tx_timeout(struct net_device *ndev)
+-{
+-	if (netif_running(ndev))
+-		netif_wake_queue(ndev);
+-}
+-
+ static const struct net_device_ops ntb_netdev_ops = {
+ 	.ndo_open = ntb_netdev_open,
+ 	.ndo_stop = ntb_netdev_close,
+ 	.ndo_start_xmit = ntb_netdev_start_xmit,
+ 	.ndo_change_mtu = ntb_netdev_change_mtu,
+-	.ndo_tx_timeout = ntb_netdev_tx_timeout,
+ 	.ndo_set_mac_address = eth_mac_addr,
+ };
+ 
 -- 
 1.7.9.5
 
