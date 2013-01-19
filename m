@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268Ab3ASBge (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:36:34 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56259 "EHLO mail.kernel.org"
+	id S1755504Ab3ASBRq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:17:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56215 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755593Ab3ASBRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:17:47 -0500
+	id S1754150Ab3ASBRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:17:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mark Rustad <mark.d.rustad@intel.com>,
-        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 06/33] tcm_fc: Do not indicate retry capability to initiators
-Date: Fri, 18 Jan 2013 17:16:31 -0800
-Message-Id: <20130119010348.102456643@linuxfoundation.org>
+        Thomas Schwinge <thomas@codesourcery.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [ 02/33] sh: Fix FDPIC binary loader
+Date: Fri, 18 Jan 2013 17:16:27 -0800
+Message-Id: <20130119010346.783078982@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
 References: <20130119010345.885772698@linuxfoundation.org>
@@ -27,36 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+From: Thomas Schwinge <thomas@codesourcery.com>
 
-commit f2eeba214bcd0215b7f558cab6420e5fd153042b upstream.
+commit 4a71997a3279a339e7336ea5d0cd27282e2dea44 upstream.
 
-When generating a PRLI response to an initiator, clear the
-FCP_SPPF_RETRY bit in the response.
+Ensure that the aux table is properly initialized, even when optional features
+are missing.  Without this, the FDPIC loader did not work.  This was meant to
+be included in commit d5ab780305bb6d60a7b5a74f18cf84eb6ad153b1.
 
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Reviewed-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
-Acked by Robert Love <robert.w.love@intel.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Thomas Schwinge <thomas@codesourcery.com>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/tcm_fc/tfc_sess.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/sh/include/asm/elf.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/target/tcm_fc/tfc_sess.c
-+++ b/drivers/target/tcm_fc/tfc_sess.c
-@@ -396,10 +396,10 @@ static int ft_prli_locked(struct fc_rpor
+--- a/arch/sh/include/asm/elf.h
++++ b/arch/sh/include/asm/elf.h
+@@ -203,9 +203,9 @@ extern void __kernel_vsyscall;
+ 	if (vdso_enabled)					\
+ 		NEW_AUX_ENT(AT_SYSINFO_EHDR, VDSO_BASE);	\
+ 	else							\
+-		NEW_AUX_ENT(AT_IGNORE, 0);
++		NEW_AUX_ENT(AT_IGNORE, 0)
+ #else
+-#define VSYSCALL_AUX_ENT
++#define VSYSCALL_AUX_ENT	NEW_AUX_ENT(AT_IGNORE, 0)
+ #endif /* CONFIG_VSYSCALL */
  
- 	/*
- 	 * OR in our service parameters with other provider (initiator), if any.
--	 * TBD XXX - indicate RETRY capability?
- 	 */
- fill:
- 	fcp_parm = ntohl(spp->spp_params);
-+	fcp_parm &= ~FCP_SPPF_RETRY;
- 	spp->spp_params = htonl(fcp_parm | FCP_SPPF_TARG_FCN);
- 	return FC_SPP_RESP_ACK;
- }
+ #ifdef CONFIG_SH_FPU
 
 
