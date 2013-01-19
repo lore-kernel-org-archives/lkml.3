@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400Ab3ASB23 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:28:29 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56875 "EHLO mail.kernel.org"
+	id S1756600Ab3ASB2v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:28:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56841 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756114Ab3ASBT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:19:58 -0500
+	id S1756271Ab3ASBTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:19:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [ 19/21] tty: 8250_dw: Fix inverted arguments to serial_out in IRQ handler
-Date: Fri, 18 Jan 2013 17:19:37 -0800
-Message-Id: <20130119010714.537381066@linuxfoundation.org>
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, CAI Qian <caiqian@redhat.com>
+Subject: [ 06/21] x86/Sandy Bridge: reserve pages when integrated graphics is present
+Date: Fri, 18 Jan 2013 17:19:24 -0800
+Message-Id: <20130119010712.411068286@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010710.897187774@linuxfoundation.org>
 References: <20130119010710.897187774@linuxfoundation.org>
@@ -25,27 +26,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-commit 68e56cb3a068f9c30971c6117fbbd1e32918e49e upstream.
+commit a9acc5365dbda29f7be2884efb63771dc24bd815 upstream.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+SNB graphics devices have a bug that prevent them from accessing certain
+memory ranges, namely anything below 1M and in the pages listed in the
+table.  So reserve those at boot if set detect a SNB gfx device on the
+CPU to avoid GPU hangs.
+
+Stephane Marchesin had a similar patch to the page allocator awhile
+back, but rather than reserving pages up front, it leaked them at
+allocation time.
+
+[ hpa: made a number of stylistic changes, marked arrays as static
+  const, and made less verbose; use "memblock=debug" for full
+  verbosity. ]
+
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_dw.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/setup.c |   78 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 78 insertions(+)
 
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -79,7 +79,7 @@ static int dw8250_handle_irq(struct uart
- 	} else if ((iir & UART_IIR_BUSY) == UART_IIR_BUSY) {
- 		/* Clear the USR and write the LCR again. */
- 		(void)p->serial_in(p, UART_USR);
--		p->serial_out(p, d->last_lcr, UART_LCR);
-+		p->serial_out(p, UART_LCR, d->last_lcr);
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -620,6 +620,81 @@ static __init void reserve_ibft_region(v
  
- 		return 1;
- 	}
+ static unsigned reserve_low = CONFIG_X86_RESERVE_LOW << 10;
+ 
++static bool __init snb_gfx_workaround_needed(void)
++{
++	int i;
++	u16 vendor, devid;
++	static const u16 snb_ids[] = {
++		0x0102,
++		0x0112,
++		0x0122,
++		0x0106,
++		0x0116,
++		0x0126,
++		0x010a,
++	};
++
++	/* Assume no if something weird is going on with PCI */
++	if (!early_pci_allowed())
++		return false;
++
++	vendor = read_pci_config_16(0, 2, 0, PCI_VENDOR_ID);
++	if (vendor != 0x8086)
++		return false;
++
++	devid = read_pci_config_16(0, 2, 0, PCI_DEVICE_ID);
++	for (i = 0; i < ARRAY_SIZE(snb_ids); i++)
++		if (devid == snb_ids[i])
++			return true;
++
++	return false;
++}
++
++/*
++ * Sandy Bridge graphics has trouble with certain ranges, exclude
++ * them from allocation.
++ */
++static void __init trim_snb_memory(void)
++{
++	static const unsigned long bad_pages[] = {
++		0x20050000,
++		0x20110000,
++		0x20130000,
++		0x20138000,
++		0x40004000,
++	};
++	int i;
++
++	if (!snb_gfx_workaround_needed())
++		return;
++
++	printk(KERN_DEBUG "reserving inaccessible SNB gfx pages\n");
++
++	/*
++	 * Reserve all memory below the 1 MB mark that has not
++	 * already been reserved.
++	 */
++	memblock_reserve(0, 1<<20);
++
++	for (i = 0; i < ARRAY_SIZE(bad_pages); i++) {
++		if (memblock_reserve(bad_pages[i], PAGE_SIZE))
++			printk(KERN_WARNING "failed to reserve 0x%08lx\n",
++			       bad_pages[i]);
++	}
++}
++
++/*
++ * Here we put platform-specific memory range workarounds, i.e.
++ * memory known to be corrupt or otherwise in need to be reserved on
++ * specific platforms.
++ *
++ * If this gets used more widely it could use a real dispatch mechanism.
++ */
++static void __init trim_platform_memory_ranges(void)
++{
++	trim_snb_memory();
++}
++
+ static void __init trim_bios_range(void)
+ {
+ 	/*
+@@ -640,6 +715,7 @@ static void __init trim_bios_range(void)
+ 	 * take them out.
+ 	 */
+ 	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
++
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+ }
+ 
+@@ -919,6 +995,8 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	setup_trampolines();
+ 
++	trim_platform_memory_ranges();
++
+ 	init_gbpages();
+ 
+ 	/* max_pfn_mapped is updated here */
 
 
