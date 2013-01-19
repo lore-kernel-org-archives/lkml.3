@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab3ASANf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 19:13:35 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:53579 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957Ab3ASANe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 19:13:34 -0500
-Message-ID: <50F9E53F.4090902@parallels.com>
-Date: Fri, 18 Jan 2013 16:13:51 -0800
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755600Ab3ASAWP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 19:22:15 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:54214 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761Ab3ASAWN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 19:22:13 -0500
+Date: Fri, 18 Jan 2013 16:22:09 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Joe Millenbach <jmillenbach@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Josh Triplett <josh@joshtriplett.org>, Jamey Sharp <jamey@minilop.net>
+Subject: Re: [PATCHv4] tty: Added a CONFIG_TTY option to allow removal of TTY
+Message-ID: <20130119002209.GA30107@kroah.com>
+References: <1358491462-16562-1-git-send-email-jmillenbach@gmail.com>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <xfs@oss.sgi.com>,
-        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 09/19] list_lru: per-node list infrastructure
-References: <1354058086-27937-10-git-send-email-david@fromorbit.com> <50F6FDC8.5020909@parallels.com> <20130116225521.GF2498@dastard> <50F7475F.90609@parallels.com> <20130117042245.GG2498@dastard> <50F84118.7030608@parallels.com> <20130118001029.GK2498@dastard> <50F893D2.7080103@parallels.com> <20130118081133.GQ2498@dastard> <50F99E08.4060107@parallels.com> <20130119001042.GR2498@dastard>
-In-Reply-To: <20130119001042.GR2498@dastard>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [216.239.55.194]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358491462-16562-1-git-send-email-jmillenbach@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2013 04:10 PM, Dave Chinner wrote:
-> On Fri, Jan 18, 2013 at 11:10:00AM -0800, Glauber Costa wrote:
->> On 01/18/2013 12:11 AM, Dave Chinner wrote:
->>> On Thu, Jan 17, 2013 at 04:14:10PM -0800, Glauber Costa wrote:
->>>> On 01/17/2013 04:10 PM, Dave Chinner wrote:
->>>>> And then each object uses:
->>>>>
->>>>> struct lru_item {
->>>>> 	struct list_head global_list;
->>>>> 	struct list_head memcg_list;
->>>>> }
->>>> by objects you mean dentries, inodes, and the such, right?
->>>
->>> Yup.
->>>
->>>> Would it be acceptable to you?
->>>
->>> If it works the way I think it should, then yes.
->>>
->>>> We've been of course doing our best to avoid increasing the size of the
->>>> objects, therefore this is something we've never mentioned. However, if
->>>> it would be acceptable from the fs POV, this would undoubtedly make our
->>>> life extremely easier.
->>>
->>> I've been trying hard to work out how to avoid increasing the size
->>> of structures as well. But if we can't work out how to implement
->>> something sanely with only a single list head per object to work
->>> from, then increasing the size of objects is something that we need
->>> to consider if it solves all the problems we are trying to solve.
->>>
->>> i.e. if adding a second list head makes the code dumb, simple,
->>> obviously correct and hard to break then IMO it's a no-brainer.
->>> But we have to tick all the right boxes first...
->>>
->>
->> One of our main efforts recently has been trying to reduce memcg impact
->> when it is not in use, even if its compiled in. So what really bothers
->> me here is the fact that we are increasing the size of dentries and
->> inodes no matter what.
->>
->> Still within the idea of exploring the playing field, would an
->> indirection be worth it ?
->> We would increase the total per-object memory usage by 8 bytes instead
->> of 16: the dentry gets a pointer, and a separate allocation for the
->> list_lru.
+On Thu, Jan 17, 2013 at 10:44:22PM -0800, Joe Millenbach wrote:
+> The option allows you to remove TTY and compile without errors. This
+> saves space on systems that won't support TTY interfaces anyway.
+> bloat-o-meter output is below.
 > 
-> A separate allocation is really not an option. We can't do an
-> allocation in where dentries/inodes/other objects are added to the
-> LRU because they are under object state spinlocks, and adding a
-> potential memory allocation failure to the "add to lru" case is
-> pretty nasty, IMO.
+> The bulk of this patch consists of Kconfig changes adding "depends on
+> TTY" to various serial devices and similar drivers that require the TTY
+> layer.  Ideally, these dependencies would occur on a common intermediate
+> symbol such as SERIO, but most drivers "select SERIO" rather than
+> "depends on SERIO", and "select" does not respect dependencies.
 > 
+> bloat-o-meter output comparing our previous minimal to new minimal by
+> removing TTY.  The list is filtered to not show removed entries with awk
+> '$3 != "-"' as the list was very long.
+> 
+> add/remove: 0/226 grow/shrink: 2/14 up/down: 6/-35356 (-35350)
+> function                                     old     new   delta
+> chr_dev_init                                 166     170      +4
+> allow_signal                                  80      82      +2
+> static.__warned                              143     142      -1
+> disallow_signal                               63      62      -1
+> __set_special_pids                            95      94      -1
+> unregister_console                           126     121      -5
+> start_kernel                                 546     541      -5
+> register_console                             593     588      -5
+> copy_from_user                                45      40      -5
+> sys_setsid                                   128     120      -8
+> sys_vhangup                                   32      19     -13
+> do_exit                                     1543    1526     -17
+> bitmap_zero                                   60      40     -20
+> arch_local_irq_save                          137     117     -20
+> release_task                                 674     652     -22
+> static.spin_unlock_irqrestore                308     260     -48
+> 
+> Signed-off-by: Joe Millenbach <jmillenbach@gmail.com>
+> Reviewed-by: Jamey Sharp <jamey@minilop.net>
 
-That would of course happen on dentry creation time, not lru add time.
-It is totally possible since at creation time, we already know if memcg
-is enabled or not.
+Very nice, I've applied this to my tree now, thanks for doing this.
+
+greg k-h
