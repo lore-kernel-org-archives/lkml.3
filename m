@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab3ASBXa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:23:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57311 "EHLO mail.kernel.org"
+	id S1756763Ab3ASBWO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:22:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57290 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756767Ab3ASBWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:22:15 -0500
+	id S1756609Ab3ASBWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:22:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 13/16] USB: option: add TP-LINK HSUPA Modem MA180
-Date: Fri, 18 Jan 2013 17:21:51 -0800
-Message-Id: <20130119012140.203089164@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [ 04/16] s390/time: fix sched_clock() overflow
+Date: Fri, 18 Jan 2013 17:21:42 -0800
+Message-Id: <20130119012139.208036935@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119012138.680057206@linuxfoundation.org>
 References: <20130119012138.680057206@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,47 +26,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 99beb2e9687ffd61c92a9875141eabe6f57a71b9 upstream.
+commit ed4f20943cd4c7b55105c04daedf8d63ab6d499c upstream.
 
-The driver description files gives these names to the vendor specific
-functions on this modem:
+Converting a 64 Bit TOD format value to nanoseconds means that the value
+must be divided by 4.096. In order to achieve that we multiply with 125
+and divide by 512.
+When used within sched_clock() this triggers an overflow after appr.
+417 days. Resulting in a sched_clock() return value that is much smaller
+than previously and therefore may cause all sort of weird things in
+subsystems that rely on a monotonic sched_clock() behaviour.
 
- Diagnostics VID_2357&PID_0201&MI_00
- NMEA        VID_2357&PID_0201&MI_01
- Modem       VID_2357&PID_0201&MI_03
- Networkcard VID_2357&PID_0201&MI_04
+To fix this implement a tod_to_ns() helper function which converts TOD
+values without overflow and call this function from both places that
+open coded the conversion: sched_clock() and kvm_s390_handle_wait().
 
-Reported-by: Thomas Schäfer <tschaefer@t-online.de>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Reviewed-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/s390/include/asm/timex.h |   28 ++++++++++++++++++++++++++++
+ arch/s390/kernel/time.c       |    2 +-
+ arch/s390/kvm/interrupt.c     |    2 +-
+ 3 files changed, 30 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -449,6 +449,10 @@ static void option_instat_callback(struc
- #define PETATEL_VENDOR_ID			0x1ff4
- #define PETATEL_PRODUCT_NP10T			0x600e
+--- a/arch/s390/include/asm/timex.h
++++ b/arch/s390/include/asm/timex.h
+@@ -126,4 +126,32 @@ static inline unsigned long long get_clo
+ 	return get_clock_xt() - sched_clock_base_cc;
+ }
  
-+/* TP-LINK Incorporated products */
-+#define TPLINK_VENDOR_ID			0x2357
-+#define TPLINK_PRODUCT_MA180			0x0201
++/**
++ * tod_to_ns - convert a TOD format value to nanoseconds
++ * @todval: to be converted TOD format value
++ * Returns: number of nanoseconds that correspond to the TOD format value
++ *
++ * Converting a 64 Bit TOD format value to nanoseconds means that the value
++ * must be divided by 4.096. In order to achieve that we multiply with 125
++ * and divide by 512:
++ *
++ *    ns = (todval * 125) >> 9;
++ *
++ * In order to avoid an overflow with the multiplication we can rewrite this.
++ * With a split todval == 2^32 * th + tl (th upper 32 bits, tl lower 32 bits)
++ * we end up with
++ *
++ *    ns = ((2^32 * th + tl) * 125 ) >> 9;
++ * -> ns = (2^23 * th * 125) + ((tl * 125) >> 9);
++ *
++ */
++static inline unsigned long long tod_to_ns(unsigned long long todval)
++{
++	unsigned long long ns;
 +
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -1311,6 +1315,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x00, 0x00) },
- 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
- 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
-+	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
++	ns = ((todval >> 32) << 23) * 125;
++	ns += ((todval & 0xffffffff) * 125) >> 9;
++	return ns;
++}
++
+ #endif
+--- a/arch/s390/kernel/time.c
++++ b/arch/s390/kernel/time.c
+@@ -63,7 +63,7 @@ static DEFINE_PER_CPU(struct clock_event
+  */
+ unsigned long long notrace __kprobes sched_clock(void)
+ {
+-	return (get_clock_monotonic() * 125) >> 9;
++	return tod_to_ns(get_clock_monotonic());
+ }
+ 
+ /*
+--- a/arch/s390/kvm/interrupt.c
++++ b/arch/s390/kvm/interrupt.c
+@@ -358,7 +358,7 @@ int kvm_s390_handle_wait(struct kvm_vcpu
+ 		return 0;
+ 	}
+ 
+-	sltime = ((vcpu->arch.sie_block->ckc - now)*125)>>9;
++	sltime = tod_to_ns(vcpu->arch.sie_block->ckc - now);
+ 
+ 	hrtimer_start(&vcpu->arch.ckc_timer, ktime_set (0, sltime) , HRTIMER_MODE_REL);
+ 	VCPU_EVENT(vcpu, 5, "enabled wait via clock comparator: %llx ns", sltime);
 
 
