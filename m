@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab3ASALn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 19:11:43 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:46132 "EHLO hydra.sisk.pl"
+	id S1755704Ab3ASANf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 19:13:35 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:53579 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753890Ab3ASALm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 19:11:42 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] x86: enable common clk and add support for Lynxpoint clocks
-Date: Sat, 19 Jan 2013 01:17:36 +0100
-Message-ID: <2132297.E3RA4GlFZ9@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1358516761-20981-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1358516761-20981-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1753957Ab3ASANe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 19:13:34 -0500
+Message-ID: <50F9E53F.4090902@parallels.com>
+Date: Fri, 18 Jan 2013 16:13:51 -0800
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Dave Chinner <david@fromorbit.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <xfs@oss.sgi.com>,
+        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 09/19] list_lru: per-node list infrastructure
+References: <1354058086-27937-10-git-send-email-david@fromorbit.com> <50F6FDC8.5020909@parallels.com> <20130116225521.GF2498@dastard> <50F7475F.90609@parallels.com> <20130117042245.GG2498@dastard> <50F84118.7030608@parallels.com> <20130118001029.GK2498@dastard> <50F893D2.7080103@parallels.com> <20130118081133.GQ2498@dastard> <50F99E08.4060107@parallels.com> <20130119001042.GR2498@dastard>
+In-Reply-To: <20130119001042.GR2498@dastard>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [216.239.55.194]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 18, 2013 03:45:58 PM Mika Westerberg wrote:
-> This is second iteration of the series. First revision is available here:
+On 01/18/2013 04:10 PM, Dave Chinner wrote:
+> On Fri, Jan 18, 2013 at 11:10:00AM -0800, Glauber Costa wrote:
+>> On 01/18/2013 12:11 AM, Dave Chinner wrote:
+>>> On Thu, Jan 17, 2013 at 04:14:10PM -0800, Glauber Costa wrote:
+>>>> On 01/17/2013 04:10 PM, Dave Chinner wrote:
+>>>>> And then each object uses:
+>>>>>
+>>>>> struct lru_item {
+>>>>> 	struct list_head global_list;
+>>>>> 	struct list_head memcg_list;
+>>>>> }
+>>>> by objects you mean dentries, inodes, and the such, right?
+>>>
+>>> Yup.
+>>>
+>>>> Would it be acceptable to you?
+>>>
+>>> If it works the way I think it should, then yes.
+>>>
+>>>> We've been of course doing our best to avoid increasing the size of the
+>>>> objects, therefore this is something we've never mentioned. However, if
+>>>> it would be acceptable from the fs POV, this would undoubtedly make our
+>>>> life extremely easier.
+>>>
+>>> I've been trying hard to work out how to avoid increasing the size
+>>> of structures as well. But if we can't work out how to implement
+>>> something sanely with only a single list head per object to work
+>>> from, then increasing the size of objects is something that we need
+>>> to consider if it solves all the problems we are trying to solve.
+>>>
+>>> i.e. if adding a second list head makes the code dumb, simple,
+>>> obviously correct and hard to break then IMO it's a no-brainer.
+>>> But we have to tick all the right boxes first...
+>>>
+>>
+>> One of our main efforts recently has been trying to reduce memcg impact
+>> when it is not in use, even if its compiled in. So what really bothers
+>> me here is the fact that we are increasing the size of dentries and
+>> inodes no matter what.
+>>
+>> Still within the idea of exploring the playing field, would an
+>> indirection be worth it ?
+>> We would increase the total per-object memory usage by 8 bytes instead
+>> of 16: the dentry gets a pointer, and a separate allocation for the
+>> list_lru.
 > 
-> 	https://lkml.org/lkml/2013/1/14/213
+> A separate allocation is really not an option. We can't do an
+> allocation in where dentries/inodes/other objects are added to the
+> LRU because they are under object state spinlocks, and adding a
+> potential memory allocation failure to the "add to lru" case is
+> pretty nasty, IMO.
 > 
-> Idea is to let the LPSS peripheral drivers to use common clk framework to
-> get clock rate or enable/disable the functional clock. The discussion
-> started in this thread:
-> 
-> 	http://thread.gmane.org/gmane.linux.kernel/1417691
-> 
-> In summary, there is no point in adding a special case code to the drivers
-> in order to pass them a fixed clock rate, but instead x86 should just
-> enable common clk subsystem and take advantage of it.
-> 
-> We try to address that in this series. Instead of enabling the common clk
-> framework by default we place it under CONFIG_X86_INTEL_LPSS config option.
-> This option then selects what is necessary to support the LPSS peripheral
-> drivers.
-> 
-> We then create the Lynxpoint clock tree and populate it accordingly.
-> 
-> Changes to previous version:
-> 	- add config option CONFIG_X86_INTEL_LPSS
-> 	- pass flags to acpi_create_platform_device() instead of calling
-> 	  function in drivers/acpi/scan.c
-> 	- create the clock platform devices in drivers/acpi/acpi_platform.c
-> 
-> Please review.
-> 
-> Mika Westerberg (3):
->   x86: add support for Intel Low Power Subsystem
->   clk: x86: add support for Lynxpoint LPSS clocks
->   ACPI / platform: create LPSS clocks if Lynxpoint devices are found
->     during scan
-> 
->  arch/x86/Kconfig             |   10 +++++
->  drivers/acpi/acpi_platform.c |   25 ++++++++++-
->  drivers/acpi/internal.h      |    6 ++-
->  drivers/acpi/scan.c          |   22 +++++-----
->  drivers/clk/Makefile         |    1 +
->  drivers/clk/x86/Makefile     |    2 +
->  drivers/clk/x86/clk-lpss.c   |   99 ++++++++++++++++++++++++++++++++++++++++++
->  drivers/clk/x86/clk-lpss.h   |   36 +++++++++++++++
->  drivers/clk/x86/clk-lpt.c    |   86 ++++++++++++++++++++++++++++++++++++
->  9 files changed, 275 insertions(+), 12 deletions(-)
->  create mode 100644 drivers/clk/x86/Makefile
->  create mode 100644 drivers/clk/x86/clk-lpss.c
->  create mode 100644 drivers/clk/x86/clk-lpss.h
->  create mode 100644 drivers/clk/x86/clk-lpt.c
 
-This version looks OK to me, so if there are no objections, I'm going to
-apply it.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+That would of course happen on dentry creation time, not lru add time.
+It is totally possible since at creation time, we already know if memcg
+is enabled or not.
