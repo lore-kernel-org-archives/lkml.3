@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab3ASK4q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 05:56:46 -0500
-Received: from mxout2.iskon.hr ([213.191.128.81]:46427 "EHLO mxout2.iskon.hr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab3ASK4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 05:56:44 -0500
-X-Remote-IP: 213.191.128.133
-Date: Sat, 19 Jan 2013 11:56:40 +0100
-From: Zlatko Calusic <zlatko.calusic@iskon.hr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
+	id S1751979Ab3ASLDw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 06:03:52 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27624 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab3ASLDu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jan 2013 06:03:50 -0500
+Date: Sat, 19 Jan 2013 14:03:28 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Mark Einon <mark.einon@gmail.com>, devel@driverdev.osuosl.org,
+        sfr@canb.auug.org.au, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [RFC PATCH linux-next] et131x: Promote staging et131x driver to
+ drivers/net
+Message-ID: <20130119110328.GO4584@mwanda>
+References: <1358541648-29922-1-git-send-email-mark.einon@gmail.com>
+ <20130118225706.GA22140@kroah.com>
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org
-References: <20130118234944.5C99C31C240@corp2gmr1-1.hot.corp.google.com>
-In-Reply-To: <20130118234944.5C99C31C240@corp2gmr1-1.hot.corp.google.com>
-Message-ID: <50FA7BE8.9040906@iskon.hr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-Subject: Re: mmotm 2013-01-18-15-48 uploaded
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
-	 bases: 20130119 #9104116, check: 20130119 clean
-X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
-X-SpamTest-Group-ID: 00000000
-X-SpamTest-Info: Profiles 41663 [Jan 19 2013]
-X-SpamTest-Method: none
-X-SpamTest-Rate: 0
-X-SpamTest-SPF: none
-X-SpamTest-Status: Not detected
-X-SpamTest-Status-Extended: not_detected
-X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130118225706.GA22140@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.01.2013 00:49, akpm@linux-foundation.org wrote:
-> The mm-of-the-moment snapshot 2013-01-18-15-48 has been uploaded to
->
->     http://www.ozlabs.org/~akpm/mmotm/
->
+On Fri, Jan 18, 2013 at 02:57:06PM -0800, Greg KH wrote:
+> On Fri, Jan 18, 2013 at 08:40:47PM +0000, Mark Einon wrote:
+> > This patch moves the et131x gigabit ethernet driver from drivers/staging
+> > to drivers/net/ethernet/agere.
+> > 
+> > All the existing issues noted for this driver have been resolved, apart
+> > from one performance issue where some fragmented packets suffer from
+> > frame receive errors. As I've only tested the code on one piece of
+> > hardware to date, it would be useful to get feedback on this issue from
+> > any other users of the device (my device has been stepped on several times
+> > now, and is known to need a few wiggles before starting up correctly).
+> > 
+> > Signed-off-by: Mark Einon <mark.einon@gmail.com>
+> 
+> No objection from me for this.  It's up to the network driver
+> maintainers if this is ok or not.
+> 
 
-WARNING: vmlinux.o(.text+0x43f025): Section mismatch in reference from 
-the function release_firmware_map_entry() to the function 
-.meminit.text:firmware_map_find_entry_in_list()
-The function release_firmware_map_entry() references
-the function __meminit firmware_map_find_entry_in_list().
-This is often because release_firmware_map_entry lacks a __meminit
-annotation or the annotation of firmware_map_find_entry_in_list is wrong.
+et131x_get_regs() has endian bugs calling et131x_mii_read().
 
--- 
-Zlatko
+There are a bunch of sparse warnings as well.  I haven't looked at
+them because it's the weekend.
+
+drivers/staging/et131x/et131x.c:1870:33: warning: incorrect type in assignment (different address spaces)
+drivers/staging/et131x/et131x.c:1870:33:    expected unsigned int [usertype] *num_des
+drivers/staging/et131x/et131x.c:1870:33:    got unsigned int [noderef] <asn:2>*<noident>
+drivers/staging/et131x/et131x.c:1871:37: warning: incorrect type in assignment (different address spaces)
+drivers/staging/et131x/et131x.c:1871:37:    expected unsigned int [usertype] *full_offset
+drivers/staging/et131x/et131x.c:1871:37:    got unsigned int [noderef] <asn:2>*<noident>
+drivers/staging/et131x/et131x.c:1872:33: warning: incorrect type in assignment (different address spaces)
+drivers/staging/et131x/et131x.c:1872:33:    expected unsigned int [usertype] *min_des
+drivers/staging/et131x/et131x.c:1872:33:    got unsigned int [noderef] <asn:2>*<noident>
+drivers/staging/et131x/et131x.c:1873:33: warning: incorrect type in assignment (different address spaces)
+drivers/staging/et131x/et131x.c:1873:33:    expected unsigned int [usertype] *base_hi
+drivers/staging/et131x/et131x.c:1873:33:    got unsigned int [noderef] <asn:2>*<noident>
+drivers/staging/et131x/et131x.c:1874:33: warning: incorrect type in assignment (different address spaces)
+drivers/staging/et131x/et131x.c:1874:33:    expected unsigned int [usertype] *base_lo
+drivers/staging/et131x/et131x.c:1874:33:    got unsigned int [noderef] <asn:2>*<noident>
+drivers/staging/et131x/et131x.c:1876:33: warning: incorrect type in assignment (different address spaces)
+drivers/staging/et131x/et131x.c:1876:33:    expected unsigned int [usertype] *num_des
+drivers/staging/et131x/et131x.c:1876:33:    got unsigned int [noderef] <asn:2>*<noident>
+drivers/staging/et131x/et131x.c:1877:37: warning: incorrect type in assignment (different address spaces)
+drivers/staging/et131x/et131x.c:1877:37:    expected unsigned int [usertype] *full_offset
+drivers/staging/et131x/et131x.c:1877:37:    got unsigned int [noderef] <asn:2>*<noident>
+drivers/staging/et131x/et131x.c:1878:33: warning: incorrect type in assignment (different address spaces)
+drivers/staging/et131x/et131x.c:1878:33:    expected unsigned int [usertype] *min_des
+drivers/staging/et131x/et131x.c:1878:33:    got unsigned int [noderef] <asn:2>*<noident>
+drivers/staging/et131x/et131x.c:1879:33: warning: incorrect type in assignment (different address spaces)
+drivers/staging/et131x/et131x.c:1879:33:    expected unsigned int [usertype] *base_hi
+drivers/staging/et131x/et131x.c:1879:33:    got unsigned int [noderef] <asn:2>*<noident>
+drivers/staging/et131x/et131x.c:1880:33: warning: incorrect type in assignment (different address spaces)
+drivers/staging/et131x/et131x.c:1880:33:    expected unsigned int [usertype] *base_lo
+drivers/staging/et131x/et131x.c:1880:33:    got unsigned int [noderef] <asn:2>*<noident>
+drivers/staging/et131x/et131x.c:1898:24: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/et131x/et131x.c:1898:24:    expected void volatile [noderef] <asn:2>*addr
+drivers/staging/et131x/et131x.c:1898:24:    got unsigned int [usertype] *base_hi
+drivers/staging/et131x/et131x.c:1900:24: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/et131x/et131x.c:1900:24:    expected void volatile [noderef] <asn:2>*addr
+drivers/staging/et131x/et131x.c:1900:24:    got unsigned int [usertype] *base_lo
+drivers/staging/et131x/et131x.c:1901:60: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/et131x/et131x.c:1901:60:    expected void volatile [noderef] <asn:2>*addr
+drivers/staging/et131x/et131x.c:1901:60:    got unsigned int [usertype] *num_des
+drivers/staging/et131x/et131x.c:1902:39: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/et131x/et131x.c:1902:39:    expected void volatile [noderef] <asn:2>*addr
+drivers/staging/et131x/et131x.c:1902:39:    got unsigned int [usertype] *full_offset
+drivers/staging/et131x/et131x.c:1910:24: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/et131x/et131x.c:1910:24:    expected void volatile [noderef] <asn:2>*addr
+drivers/staging/et131x/et131x.c:1910:24:    got unsigned int [usertype] *min_des
+drivers/staging/et131x/et131x.c:2583:32: warning: incorrect type in assignment (different address spaces)
+drivers/staging/et131x/et131x.c:2583:32:    expected unsigned int [usertype] *offset
+drivers/staging/et131x/et131x.c:2583:32:    got unsigned int [noderef] <asn:2>*<noident>
+drivers/staging/et131x/et131x.c:2585:32: warning: incorrect type in assignment (different address spaces)
+drivers/staging/et131x/et131x.c:2585:32:    expected unsigned int [usertype] *offset
+drivers/staging/et131x/et131x.c:2585:32:    got unsigned int [noderef] <asn:2>*<noident>
+drivers/staging/et131x/et131x.c:2602:24: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/et131x/et131x.c:2602:24:    expected void volatile [noderef] <asn:2>*addr
+drivers/staging/et131x/et131x.c:2602:24:    got unsigned int [usertype] *offset
+drivers/staging/et131x/et131x.c:4093:13: warning: symbol 'et131x_isr' was not declared. Should it be static?
+  CC [M]  drivers/staging/et131x/et131x.o
+
+regards,
+dan carpenter
+
