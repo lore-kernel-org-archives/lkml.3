@@ -1,67 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab3ASAWP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 19:22:15 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:54214 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab3ASAWN (ORCPT
+	id S1754120Ab3ASAYW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 19:24:22 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:34468 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab3ASAYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 19:22:13 -0500
-Date: Fri, 18 Jan 2013 16:22:09 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Joe Millenbach <jmillenbach@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>, Jiri Slaby <jirislaby@gmail.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josh Triplett <josh@joshtriplett.org>, Jamey Sharp <jamey@minilop.net>
-Subject: Re: [PATCHv4] tty: Added a CONFIG_TTY option to allow removal of TTY
-Message-ID: <20130119002209.GA30107@kroah.com>
-References: <1358491462-16562-1-git-send-email-jmillenbach@gmail.com>
+	Fri, 18 Jan 2013 19:24:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358491462-16562-1-git-send-email-jmillenbach@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUWYVkiVAAjeBL5r4h0tdHrnFCo0b8x5whXaf1RGhGmHng@mail.gmail.com>
+References: <CA+icZUW-mfMtNSY-d-=0WpX=fRBqoNx5jcX3S8x4tvGdvUc+8g@mail.gmail.com>
+	<2890633.q9n75klkI9@vostro.rjw.lan>
+	<CA+icZUVz7UPX0n=f85e=dcAMY6rgZZqj-7CqW7t4Zdtu9nPuBA@mail.gmail.com>
+	<1922388.1PvyliEuQR@vostro.rjw.lan>
+	<CA+icZUWYVkiVAAjeBL5r4h0tdHrnFCo0b8x5whXaf1RGhGmHng@mail.gmail.com>
+Date: Sat, 19 Jan 2013 01:24:18 +0100
+Message-ID: <CA+icZUWVdLZX=U7g0DHCPRS1hcdOmW=OKcowfo2mBKRqenHAGw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 18 [ BROKEN suspend: jbd2|acpi|pm? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>, x86@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 10:44:22PM -0800, Joe Millenbach wrote:
-> The option allows you to remove TTY and compile without errors. This
-> saves space on systems that won't support TTY interfaces anyway.
-> bloat-o-meter output is below.
-> 
-> The bulk of this patch consists of Kconfig changes adding "depends on
-> TTY" to various serial devices and similar drivers that require the TTY
-> layer.  Ideally, these dependencies would occur on a common intermediate
-> symbol such as SERIO, but most drivers "select SERIO" rather than
-> "depends on SERIO", and "select" does not respect dependencies.
-> 
-> bloat-o-meter output comparing our previous minimal to new minimal by
-> removing TTY.  The list is filtered to not show removed entries with awk
-> '$3 != "-"' as the list was very long.
-> 
-> add/remove: 0/226 grow/shrink: 2/14 up/down: 6/-35356 (-35350)
-> function                                     old     new   delta
-> chr_dev_init                                 166     170      +4
-> allow_signal                                  80      82      +2
-> static.__warned                              143     142      -1
-> disallow_signal                               63      62      -1
-> __set_special_pids                            95      94      -1
-> unregister_console                           126     121      -5
-> start_kernel                                 546     541      -5
-> register_console                             593     588      -5
-> copy_from_user                                45      40      -5
-> sys_setsid                                   128     120      -8
-> sys_vhangup                                   32      19     -13
-> do_exit                                     1543    1526     -17
-> bitmap_zero                                   60      40     -20
-> arch_local_irq_save                          137     117     -20
-> release_task                                 674     652     -22
-> static.spin_unlock_irqrestore                308     260     -48
-> 
-> Signed-off-by: Joe Millenbach <jmillenbach@gmail.com>
-> Reviewed-by: Jamey Sharp <jamey@minilop.net>
+On Sat, Jan 19, 2013 at 1:00 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Sat, Jan 19, 2013 at 12:58 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Saturday, January 19, 2013 12:41:11 AM Sedat Dilek wrote:
+>>> On Sat, Jan 19, 2013 at 12:39 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> > On Saturday, January 19, 2013 12:28:55 AM Sedat Dilek wrote:
+>>> >> On Sat, Jan 19, 2013 at 12:25 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> >> > On Friday, January 18, 2013 11:56:53 PM Sedat Dilek wrote:
+>>> >> >> On Fri, Jan 18, 2013 at 11:35 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> >> >> > On Fri, Jan 18, 2013 at 11:20 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> >> >> >> On Friday, January 18, 2013 11:11:07 PM Sedat Dilek wrote:
+>>> >> >> >>> On Fri, Jan 18, 2013 at 5:37 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>> >> >> >>> > Hi all,
+>>> >> >> >>> >
+>>> >> >> >>> > Changes since 20130117:
+>>> >> >> >>> >
+>>> >> >> >>> > Undropped tree: samung
+>>> >> >> >>> >
+>>> >> >> >>> > The powerpc tree still had a build failure.
+>>> >> >> >>> >
+>>> >> >> >>> > The driver-core tree gained a build failure for which I applied a merge
+>>> >> >> >>> > fix patch.
+>>> >> >> >>> >
+>>> >> >> >>> > The gpio-lw tree gained a build failure so I used the version from
+>>> >> >> >>> > next-20130117.
+>>> >> >> >>> >
+>>> >> >> >>> > The samsung tree lost the majority of its conflicts but gained more
+>>> >> >> >>> > against the arm-soc and slave-dma tree.
+>>> >> >> >>> >
+>>> >> >> >>> > ----------------------------------------------------------------------------
+>>> >> >> >>> >
+>>> >> >> >>>
+>>> >> >> >>> From my dmesg diff-file:
+>>> >> >> >>>
+>>> >> >> >>> +[  288.730849] PM: Syncing filesystems ... done.
+>>> >> >> >>> +[  294.050498] Freezing user space processes ... (elapsed 0.04 seconds) done.
+>>> >> >> >>> +[  294.097024] Freezing remaining freezable tasks ...
+>>> >> >> >>> +[  314.098849] Freezing of tasks failed after 20.01 seconds (1 tasks
+>>> >> >> >>> refusing to freeze, wq_busy=0):
+>>> >> >> >>> +[  314.098862] jbd2/loop0-8    D ffffffff8180d780     0   297      2 0x00000000
+>>> >> >> >>> +[  314.098865]  ffff880117ec5b68 0000000000000046 ffff880117ec5b08
+>>> >> >> >>> ffffffff81044c29
+>>> >> >> >>> +[  314.098868]  ffff88011829dc80 ffff880117ec5fd8 ffff880117ec5fd8
+>>> >> >> >>> ffff880117ec5fd8
+>>> >> >> >>> +[  314.098871]  ffff880119b34560 ffff88011829dc80 ffff880117ec5b68
+>>> >> >> >>> ffff88011fad4738
+>>> >> >> >>> +[  314.098873] Call Trace:
+>>> >> >> >>> +[  314.098881]  [<ffffffff81044c29>] ? default_spin_lock_flags+0x9/0x10
+>>> >> >> >>> +[  314.098885]  [<ffffffff811c63e0>] ? __wait_on_buffer+0x30/0x30
+>>> >> >> >>> +[  314.098888]  [<ffffffff816b4b59>] schedule+0x29/0x70
+>>> >> >> >>> +[  314.098890]  [<ffffffff816b4c2f>] io_schedule+0x8f/0xd0
+>>> >> >> >>> +[  314.098892]  [<ffffffff811c63ee>] sleep_on_buffer+0xe/0x20
+>>> >> >> >>> +[  314.098896]  [<ffffffff816b342f>] __wait_on_bit+0x5f/0x90
+>>> >> >> >>> +[  314.098898]  [<ffffffff811c5aa1>] ? submit_bh+0x121/0x1e0
+>>> >> >> >>> +[  314.098900]  [<ffffffff811c63e0>] ? __wait_on_buffer+0x30/0x30
+>>> >> >> >>> +[  314.098903]  [<ffffffff816b34dc>] out_of_line_wait_on_bit+0x7c/0x90
+>>> >> >> >>> +[  314.098906]  [<ffffffff8107eb00>] ? autoremove_wake_function+0x40/0x40
+>>> >> >> >>> +[  314.098909]  [<ffffffff811c63de>] __wait_on_buffer+0x2e/0x30
+>>> >> >> >>> +[  314.098913]  [<ffffffff8128a6a1>]
+>>> >> >> >>> jbd2_journal_commit_transaction+0x1791/0x1960
+>>> >> >> >>> +[  314.098917]  [<ffffffff8109269d>] ? sched_clock_cpu+0xbd/0x110
+>>> >> >> >>> +[  314.098920]  [<ffffffff8107eac0>] ? add_wait_queue+0x60/0x60
+>>> >> >> >>> +[  314.098923]  [<ffffffff81069fbf>] ? try_to_del_timer_sync+0x4f/0x70
+>>> >> >> >>> +[  314.098925]  [<ffffffff8128e4e8>] kjournald2+0xb8/0x240
+>>> >> >> >>> +[  314.098927]  [<ffffffff8107eac0>] ? add_wait_queue+0x60/0x60
+>>> >> >> >>> +[  314.098929]  [<ffffffff8128e430>] ? commit_timeout+0x10/0x10
+>>> >> >> >>> +[  314.098931]  [<ffffffff8107ded0>] kthread+0xc0/0xd0
+>>> >> >> >>> +[  314.098933]  [<ffffffff8107de10>] ? flush_kthread_worker+0xb0/0xb0
+>>> >> >> >>> +[  314.098936]  [<ffffffff816be52c>] ret_from_fork+0x7c/0xb0
+>>> >> >> >>> +[  314.098938]  [<ffffffff8107de10>] ? flush_kthread_worker+0xb0/0xb0
+>>> >> >> >>> +[  314.098969]
+>>> >> >> >>> +[  314.098970] Restarting kernel threads ... done.
+>>> >> >> >>> +[  314.099052] Restarting tasks ... done.
+>>> >> >> >>>
+>>> >> >> >>> Please, have a lot at it.
+>>> >> >> >>
+>>> >> >> >> This is a freezer failure while freezing kernel threads, so I don't think it's
+>>> >> >> >> related to ACPI or PM directly.
+>>> >> >> >>
+>>> >> >> >> Does it happen on every suspend?
+>>> >> >> >>
+>>> >> >> >
+>>> >> >> > No, I only did one S/R.
+>>> >> >> >
+>>> >> >> > I have built a 2nd new kernel where I pulled-in latest pm.git#linux-next.
+>>> >> >> > With this kernel two S/Rs were fine - but that says not much.
+>>> >> >> >
+>>> >> >>
+>>> >> >> After several S/Rs on the "buggy" -1 kernel I know see in my syslogs:
+>>> >> >>
+>>> >> >> Jan 18 23:50:02 fambox kernel: [  141.853828] Disabling non-boot CPUs ...
+>>> >> >> Jan 18 23:50:02 fambox kernel: [  141.956943] smpboot: CPU 1 is now offline
+>>> >> >> Jan 18 23:50:02 fambox kernel: [  141.957438] NOHZ: local_softirq_pending 02
+>>> >> >> Jan 18 23:50:02 fambox kernel: [  141.957454] NOHZ: local_softirq_pending 02
+>>> >> >> Jan 18 23:50:02 fambox kernel: [  142.060830] smpboot: CPU 2 is now offline
+>>> >> >> Jan 18 23:50:02 fambox kernel: [  142.164639] smpboot: CPU 3 is now offline
+>>> >> >
+>>> >> > Are you worried about the "local_softirq_pending" messages?
+>>> >> >
+>>> >>
+>>> >> That's the only new messages I have seen after several S/Rs.
+>>> >
+>>> > They are kind of unusual.
+>>> >
+>>> > Anyway, they seem to be related to CPU hotplug (CPU offline), so you can try
+>>> > if you can trigger them through the sysfs CPU offline/online interface.
+>>> >
+>>>
+>>> Can you explain that a bit clearer or give some sample lines for testing?
+>>
+>> There is a sysfs file
+>>
+>> /sys/devices/system/cpu/cpuX/online
+>>
+>> (where X=0,1,2,3,...) for each CPU core in the system.  The value read from it
+>> indicates whether or not the given core is online (1 means online).  Writing 0
+>> to it means that the given core should be put offline.  Writing 1 means to put
+>> it back online.  You can simply write first 0s and than 1s to those files
+>> for CPUs > 0 multiple times in a row and see if that triggers messages like the
+>> above.  If it does, that may mean there's been a change in kernel/cpu.c, for
+>> example, that causes it to appear.  The change may have been made somewhere in
+>> arch/x86 too, though.
+>>
+>
 
-Very nice, I've applied this to my tree now, thanks for doing this.
+TESTCASE:
 
-greg k-h
+root# cat /sys/devices/system/cpu/cpu3/online
+1
+
+root# echo "0" > /sys/devices/system/cpu/cpu3/online
+
+...machine freezes immediately!
+
+I had 3 terminals open logging kernlog, syslog and messages, but no
+lines displayed!
+Machine required a hard/cold reboot.
+
+- Sedat -
+
+> [ CCing x86 folks ]
+>
+> Thanks for the explanations.
+>
+>>> >> If you have a testcase for me to reproduce it here, I would be happy.
+>>> >
+>>> > Do you mean the freezer-related issue?
+>>> >
+>>>
+>>> Any one as I am still stepping in the dark.
+>>> I checked my disc-space as I built a lot of software today and run
+>>> once out of space.
+>>> But 1.7GiB should be enough on / for testing.
+>>> I wanted to run the new LTP version I built the last days.
+>>> Let's see what I get...
+>>
+>> Stress-testing the freezer is rather easy and doesn't require disk space.
+>> All it takes is to echo "freezer" to /sys/power/pm_test and then do
+>> "echo mem > /sys/power/state && sleep 1" in a loop.  This is described in
+>> Documentation/power/basic-pm-debugging.txt IIRC.
+>>
+>
+> Didn't know there is some cool docs about PM around.
+> I will look into this.
+>
+> Furthermore, I have seen on a restart...
+>
+>      BUG: soft lockup - CPU#3 stuck for 23s! [kworker/3:2:6079]
+>
+> ...approx 10 lines and a nothing happened I turned the machine off via
+> power-button.
+>
+> - Sedat -
+>
+>> Thanks,
+>> Rafael
+>>
+>>
+>> --
+>> I speak only for myself.
+>> Rafael J. Wysocki, Intel Open Source Technology Center.
