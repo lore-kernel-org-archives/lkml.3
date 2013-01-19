@@ -1,122 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab3ASBWC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:22:02 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56938 "EHLO mail.kernel.org"
+	id S1756606Ab3ASBZc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:25:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57184 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756602Ab3ASBUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:20:05 -0500
+	id S1756672Ab3ASBWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:22:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stefan Assmann <sassmann@kpanic.de>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Abdallah Chatila <abdallah.chatila@ericsson.com>
-Subject: [ 12/21] igb: release already assigned MSI-X interrupts if setup fails
-Date: Fri, 18 Jan 2013 17:19:30 -0800
-Message-Id: <20130119010713.418274737@linuxfoundation.org>
+        Mark Rustad <mark.d.rustad@intel.com>,
+        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 03/16] tcm_fc: Do not report target role when target is not defined
+Date: Fri, 18 Jan 2013 17:21:41 -0800
+Message-Id: <20130119012139.111316918@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130119010710.897187774@linuxfoundation.org>
-References: <20130119010710.897187774@linuxfoundation.org>
+In-Reply-To: <20130119012138.680057206@linuxfoundation.org>
+References: <20130119012138.680057206@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stefan Assmann <sassmann@kpanic.de>
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-commit 52285b762b3681669215bf1d17ca6143448ab7d3 upstream.
+commit edec8dfefa1f372b2dd8197da555352e76a10c03 upstream.
 
-During MSI-X setup the system might run out of vectors. If this happens the
-already assigned vectors for this NIC should be freed before trying the
-disable MSI-X. Failing to do so results in the following oops.
+Clear the target role when no target is provided for
+the node performing a PRLI.
 
-kernel BUG at drivers/pci/msi.c:341!
-[...]
-Call Trace:
- [<ffffffff8128f39d>] pci_disable_msix+0x3d/0x60
- [<ffffffffa037d1ce>] igb_reset_interrupt_capability+0x27/0x5c [igb]
- [<ffffffffa037d229>] igb_clear_interrupt_scheme+0x26/0x2d [igb]
- [<ffffffffa0384268>] igb_request_irq+0x73/0x297 [igb]
- [<ffffffffa0384554>] __igb_open+0xc8/0x223 [igb]
- [<ffffffffa0384815>] igb_open+0x13/0x15 [igb]
- [<ffffffff8144592f>] __dev_open+0xbf/0x120
- [<ffffffff81443e51>] __dev_change_flags+0xa1/0x180
- [<ffffffff81445828>] dev_change_flags+0x28/0x70
- [<ffffffff814af537>] devinet_ioctl+0x5b7/0x620
- [<ffffffff814b01c8>] inet_ioctl+0x88/0xa0
- [<ffffffff8142e8a0>] sock_do_ioctl+0x30/0x70
- [<ffffffff8142ecf2>] sock_ioctl+0x72/0x270
- [<ffffffff8118062c>] do_vfs_ioctl+0x8c/0x340
- [<ffffffff81180981>] sys_ioctl+0xa1/0xb0
- [<ffffffff815161a9>] system_call_fastpath+0x16/0x1b
-Code: 48 89 df e8 1f 40 ed ff 4d 39 e6 49 8b 45 10 75 b6 48 83 c4 18 5b 41 5c 41 5d 41 5e 41 5f c9 c3 48 8b 7b 20 e8 3e 91 db ff eb ae <0f> 0b eb fe 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
-RIP  [<ffffffff8128e144>] free_msi_irqs+0x124/0x130
- RSP <ffff880037503bd8>
-
-Signed-off-by: Stefan Assmann <sassmann@kpanic.de>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: Abdallah Chatila <abdallah.chatila@ericsson.com>
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Reviewed-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+Acked by Robert Love <robert.w.love@intel.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/igb/igb_main.c |   22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ drivers/target/tcm_fc/tfc_sess.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -951,17 +951,18 @@ static int igb_request_msix(struct igb_a
- {
- 	struct net_device *netdev = adapter->netdev;
- 	struct e1000_hw *hw = &adapter->hw;
--	int i, err = 0, vector = 0;
-+	int i, err = 0, vector = 0, free_vector = 0;
+--- a/drivers/target/tcm_fc/tfc_sess.c
++++ b/drivers/target/tcm_fc/tfc_sess.c
+@@ -393,11 +393,11 @@ static int ft_prli_locked(struct fc_rpor
  
- 	err = request_irq(adapter->msix_entries[vector].vector,
- 	                  igb_msix_other, 0, netdev->name, adapter);
- 	if (err)
--		goto out;
--	vector++;
-+		goto err_out;
+ 	tport = ft_tport_create(rdata->local_port);
+ 	if (!tport)
+-		return 0;	/* not a target for this local port */
++		goto not_target;	/* not a target for this local port */
  
- 	for (i = 0; i < adapter->num_q_vectors; i++) {
- 		struct igb_q_vector *q_vector = adapter->q_vector[i];
+ 	acl = ft_acl_get(tport->tpg, rdata);
+ 	if (!acl)
+-		return 0;
++		goto not_target;	/* no target for this remote */
  
-+		vector++;
+ 	if (!rspp)
+ 		goto fill;
+@@ -440,6 +440,12 @@ fill:
+ 	fcp_parm &= ~FCP_SPPF_RETRY;
+ 	spp->spp_params = htonl(fcp_parm | FCP_SPPF_TARG_FCN);
+ 	return FC_SPP_RESP_ACK;
 +
- 		q_vector->itr_register = hw->hw_addr + E1000_EITR(vector);
- 
- 		if (q_vector->rx.ring && q_vector->tx.ring)
-@@ -980,13 +981,22 @@ static int igb_request_msix(struct igb_a
- 		                  igb_msix_ring, 0, q_vector->name,
- 		                  q_vector);
- 		if (err)
--			goto out;
--		vector++;
-+			goto err_free;
- 	}
- 
- 	igb_configure_msix(adapter);
- 	return 0;
--out:
-+
-+err_free:
-+	/* free already assigned IRQs */
-+	free_irq(adapter->msix_entries[free_vector++].vector, adapter);
-+
-+	vector--;
-+	for (i = 0; i < vector; i++) {
-+		free_irq(adapter->msix_entries[free_vector++].vector,
-+			 adapter->q_vector[i]);
-+	}
-+err_out:
- 	return err;
++not_target:
++	fcp_parm = ntohl(spp->spp_params);
++	fcp_parm &= ~FCP_SPPF_TARG_FCN;
++	spp->spp_params = htonl(fcp_parm);
++	return 0;
  }
  
+ /**
 
 
