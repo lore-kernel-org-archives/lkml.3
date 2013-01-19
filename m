@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab3ASBfs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:35:48 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56298 "EHLO mail.kernel.org"
+	id S1756245Ab3ASBgL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:36:11 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56273 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab3ASBRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:17:51 -0500
+	id S1755662Ab3ASBRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:17:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>,
+        Mark Rustad <mark.d.rustad@intel.com>,
+        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 09/33] target: Fix use-after-free in LUN RESET handling
-Date: Fri, 18 Jan 2013 17:16:34 -0800
-Message-Id: <20130119010349.038823359@linuxfoundation.org>
+Subject: [ 07/33] tcm_fc: Do not report target role when target is not defined
+Date: Fri, 18 Jan 2013 17:16:32 -0800
+Message-Id: <20130119010348.422429586@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
 References: <20130119010345.885772698@linuxfoundation.org>
@@ -26,56 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-commit 72b59d6ee8adaa51f70377db0a1917ed489bead8 upstream.
+commit edec8dfefa1f372b2dd8197da555352e76a10c03 upstream.
 
-If a backend IO takes a really long then an initiator might abort a
-command, and then when it gives up on the abort, send a LUN reset too,
-all before we process any of the original command or the abort.  (The
-abort will wait for the backend IO to complete too)
+Clear the target role when no target is provided for
+the node performing a PRLI.
 
-When the backend IO final completes (or fails), the abort handling
-will proceed and queue up a "return aborted status" operation.  Then,
-while that's still pending, the LUN reset might find the original
-command still on the LUN's list of commands and try to return aborted
-status again, which leads to a use-after free when the first
-se_tfo->queue_status call frees the command and then the second
-se_tfo->queue_status call runs.
-
-Fix this by removing a command from the LUN state_list when we first
-are about to queue aborted status; we shouldn't do anything
-LUN-related after we've started returning status, so this seems like
-the correct thing to do.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Reviewed-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+Acked by Robert Love <robert.w.love@intel.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/target/tcm_fc/tfc_sess.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -545,9 +545,6 @@ static void transport_lun_remove_cmd(str
+--- a/drivers/target/tcm_fc/tfc_sess.c
++++ b/drivers/target/tcm_fc/tfc_sess.c
+@@ -355,11 +355,11 @@ static int ft_prli_locked(struct fc_rpor
  
- void transport_cmd_finish_abort(struct se_cmd *cmd, int remove)
- {
--	if (!(cmd->se_cmd_flags & SCF_SCSI_TMR_CDB))
--		transport_lun_remove_cmd(cmd);
--
- 	if (transport_cmd_check_stop_to_fabric(cmd))
- 		return;
- 	if (remove)
-@@ -3090,6 +3087,8 @@ void transport_send_task_abort(struct se
- 	}
- 	cmd->scsi_status = SAM_STAT_TASK_ABORTED;
+ 	tport = ft_tport_create(rdata->local_port);
+ 	if (!tport)
+-		return 0;	/* not a target for this local port */
++		goto not_target;	/* not a target for this local port */
  
-+	transport_lun_remove_cmd(cmd);
+ 	acl = ft_acl_get(tport->tpg, rdata);
+ 	if (!acl)
+-		return 0;
++		goto not_target;	/* no target for this remote */
+ 
+ 	if (!rspp)
+ 		goto fill;
+@@ -402,6 +402,12 @@ fill:
+ 	fcp_parm &= ~FCP_SPPF_RETRY;
+ 	spp->spp_params = htonl(fcp_parm | FCP_SPPF_TARG_FCN);
+ 	return FC_SPP_RESP_ACK;
 +
- 	pr_debug("Setting SAM_STAT_TASK_ABORTED status for CDB: 0x%02x,"
- 		" ITT: 0x%08x\n", cmd->t_task_cdb[0],
- 		cmd->se_tfo->get_task_tag(cmd));
++not_target:
++	fcp_parm = ntohl(spp->spp_params);
++	fcp_parm &= ~FCP_SPPF_TARG_FCN;
++	spp->spp_params = htonl(fcp_parm);
++	return 0;
+ }
+ 
+ /**
 
 
