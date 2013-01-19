@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab3ASBdK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:33:10 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56452 "EHLO mail.kernel.org"
+	id S1756154Ab3ASBdd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:33:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56437 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756138Ab3ASBSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:18:03 -0500
+	id S1756132Ab3ASBSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:18:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stefan Assmann <sassmann@kpanic.de>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Abdallah Chatila <abdallah.chatila@ericsson.com>
-Subject: [ 20/33] igb: release already assigned MSI-X interrupts if setup fails
-Date: Fri, 18 Jan 2013 17:16:45 -0800
-Message-Id: <20130119010353.099359883@linuxfoundation.org>
+        Thomas Mingarelli <thomas.mingarelli@hp.com>,
+        Shuah Khan <shuah.khan@hp.com>, Donald Dutile <ddutile@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Joerg Roedel <joro@8bytes.org>, CAI Qian <caiqian@redhat.com>
+Subject: [ 19/33] intel-iommu: Prevent devices with RMRRs from being placed into SI Domain
+Date: Fri, 18 Jan 2013 17:16:44 -0800
+Message-Id: <20130119010352.529098892@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
 References: <20130119010345.885772698@linuxfoundation.org>
@@ -28,95 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Assmann <sassmann@kpanic.de>
+From: Tom Mingarelli <thomas.mingarelli@hp.com>
 
-commit 52285b762b3681669215bf1d17ca6143448ab7d3 upstream.
+commit ea2447f700cab264019b52e2b417d689e052dcfd upstream.
 
-During MSI-X setup the system might run out of vectors. If this happens the
-already assigned vectors for this NIC should be freed before trying the
-disable MSI-X. Failing to do so results in the following oops.
+This patch is to prevent non-USB devices that have RMRRs associated with them from
+being placed into the SI Domain during init. This fixes the issue where the RMRR info
+for devices being placed in and out of the SI Domain gets lost.
 
-kernel BUG at drivers/pci/msi.c:341!
-[...]
-Call Trace:
- [<ffffffff8128f39d>] pci_disable_msix+0x3d/0x60
- [<ffffffffa037d1ce>] igb_reset_interrupt_capability+0x27/0x5c [igb]
- [<ffffffffa037d229>] igb_clear_interrupt_scheme+0x26/0x2d [igb]
- [<ffffffffa0384268>] igb_request_irq+0x73/0x297 [igb]
- [<ffffffffa0384554>] __igb_open+0xc8/0x223 [igb]
- [<ffffffffa0384815>] igb_open+0x13/0x15 [igb]
- [<ffffffff8144592f>] __dev_open+0xbf/0x120
- [<ffffffff81443e51>] __dev_change_flags+0xa1/0x180
- [<ffffffff81445828>] dev_change_flags+0x28/0x70
- [<ffffffff814af537>] devinet_ioctl+0x5b7/0x620
- [<ffffffff814b01c8>] inet_ioctl+0x88/0xa0
- [<ffffffff8142e8a0>] sock_do_ioctl+0x30/0x70
- [<ffffffff8142ecf2>] sock_ioctl+0x72/0x270
- [<ffffffff8118062c>] do_vfs_ioctl+0x8c/0x340
- [<ffffffff81180981>] sys_ioctl+0xa1/0xb0
- [<ffffffff815161a9>] system_call_fastpath+0x16/0x1b
-Code: 48 89 df e8 1f 40 ed ff 4d 39 e6 49 8b 45 10 75 b6 48 83 c4 18 5b 41 5c 41 5d 41 5e 41 5f c9 c3 48 8b 7b 20 e8 3e 91 db ff eb ae <0f> 0b eb fe 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
-RIP  [<ffffffff8128e144>] free_msi_irqs+0x124/0x130
- RSP <ffff880037503bd8>
-
-Signed-off-by: Stefan Assmann <sassmann@kpanic.de>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: Abdallah Chatila <abdallah.chatila@ericsson.com>
+Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
+Tested-by: Shuah Khan <shuah.khan@hp.com>
+Reviewed-by: Donald Dutile <ddutile@redhat.com>
+Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Cc: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/igb/igb_main.c |   22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ drivers/iommu/intel-iommu.c |   31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
 
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -909,17 +909,18 @@ static int igb_request_msix(struct igb_a
- {
- 	struct net_device *netdev = adapter->netdev;
- 	struct e1000_hw *hw = &adapter->hw;
--	int i, err = 0, vector = 0;
-+	int i, err = 0, vector = 0, free_vector = 0;
- 
- 	err = request_irq(adapter->msix_entries[vector].vector,
- 	                  igb_msix_other, 0, netdev->name, adapter);
- 	if (err)
--		goto out;
--	vector++;
-+		goto err_out;
- 
- 	for (i = 0; i < adapter->num_q_vectors; i++) {
- 		struct igb_q_vector *q_vector = adapter->q_vector[i];
- 
-+		vector++;
-+
- 		q_vector->itr_register = hw->hw_addr + E1000_EITR(vector);
- 
- 		if (q_vector->rx.ring && q_vector->tx.ring)
-@@ -938,13 +939,22 @@ static int igb_request_msix(struct igb_a
- 		                  igb_msix_ring, 0, q_vector->name,
- 		                  q_vector);
- 		if (err)
--			goto out;
--		vector++;
-+			goto err_free;
- 	}
- 
- 	igb_configure_msix(adapter);
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -2327,8 +2327,39 @@ static int domain_add_dev_info(struct dm
  	return 0;
--out:
-+
-+err_free:
-+	/* free already assigned IRQs */
-+	free_irq(adapter->msix_entries[free_vector++].vector, adapter);
-+
-+	vector--;
-+	for (i = 0; i < vector; i++) {
-+		free_irq(adapter->msix_entries[free_vector++].vector,
-+			 adapter->q_vector[i]);
-+	}
-+err_out:
- 	return err;
  }
+ 
++static bool device_has_rmrr(struct pci_dev *dev)
++{
++	struct dmar_rmrr_unit *rmrr;
++	int i;
++
++	for_each_rmrr_units(rmrr) {
++		for (i = 0; i < rmrr->devices_cnt; i++) {
++			/*
++			 * Return TRUE if this RMRR contains the device that
++			 * is passed in.
++			 */
++			if (rmrr->devices[i] == dev)
++				return true;
++		}
++	}
++	return false;
++}
++
+ static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
+ {
++
++	/*
++	 * We want to prevent any device associated with an RMRR from
++	 * getting placed into the SI Domain. This is done because
++	 * problems exist when devices are moved in and out of domains
++	 * and their respective RMRR info is lost. We exempt USB devices
++	 * from this process due to their usage of RMRRs that are known
++	 * to not be needed after BIOS hand-off to OS.
++	 */
++	if (device_has_rmrr(pdev) &&
++	    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
++		return 0;
++
+ 	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
+ 		return 1;
  
 
 
