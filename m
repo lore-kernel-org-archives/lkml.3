@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab3ASBUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:20:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56857 "EHLO mail.kernel.org"
+	id S1756546Ab3ASBT4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:19:56 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56786 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755848Ab3ASBT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:19:57 -0500
+	id S1755848Ab3ASBTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:19:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>, CAI Qian <caiqian@redhat.com>
-Subject: [ 07/21] ALSA: usb - fix race in creation of M-Audio Fast track pro driver
-Date: Fri, 18 Jan 2013 17:19:25 -0800
-Message-Id: <20130119010712.611108425@linuxfoundation.org>
+        Mark Rustad <mark.d.rustad@intel.com>,
+        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 02/21] tcm_fc: Do not indicate retry capability to initiators
+Date: Fri, 18 Jan 2013 17:19:20 -0800
+Message-Id: <20130119010711.474387118@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010710.897187774@linuxfoundation.org>
 References: <20130119010710.897187774@linuxfoundation.org>
@@ -26,51 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-commit b98ae2729dea161edc96c9d177459b6c28bcbba5 upstream.
+commit f2eeba214bcd0215b7f558cab6420e5fd153042b upstream.
 
-A patch in the 3.2 kernel caused regression with hotplugging the
-M-Audio Fast track pro, or sound after suspend. I don't have the
-device so I haven't done a full analysis, but it seems userspace
-(both udev and pulseaudio) got confused when a card was created,
-immediately destroyed, and then created again.
+When generating a PRLI response to an initiator, clear the
+FCP_SPPF_RETRY bit in the response.
 
-However, at least one person in the bug report (martin djfun)
-reports that this patch resolves the issue for him. It also leaves
-a message in the log:
-"snd-usb-audio: probe of 1-1.1:1.1 failed with error -5" which is
-a bit misleading. It is better than non-working audio, but maybe
-there's a more elegant solution?
-
-BugLink: https://bugs.launchpad.net/bugs/1095315
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Cc: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Reviewed-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+Acked by Robert Love <robert.w.love@intel.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/quirks.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/target/tcm_fc/tfc_sess.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/quirks.c
-+++ b/sound/usb/quirks.c
-@@ -387,11 +387,13 @@ static int snd_usb_fasttrackpro_boot_qui
- 		 * rules
- 		 */
- 		err = usb_driver_set_configuration(dev, 2);
--		if (err < 0) {
-+		if (err < 0)
- 			snd_printdd("error usb_driver_set_configuration: %d\n",
- 				    err);
--			return -ENODEV;
--		}
-+		/* Always return an error, so that we stop creating a device
-+		   that will just be destroyed and recreated with a new
-+		   configuration */
-+		return -ENODEV;
- 	} else
- 		snd_printk(KERN_INFO "usb-audio: Fast Track Pro config OK\n");
+--- a/drivers/target/tcm_fc/tfc_sess.c
++++ b/drivers/target/tcm_fc/tfc_sess.c
+@@ -397,10 +397,10 @@ static int ft_prli_locked(struct fc_rpor
  
+ 	/*
+ 	 * OR in our service parameters with other provider (initiator), if any.
+-	 * TBD XXX - indicate RETRY capability?
+ 	 */
+ fill:
+ 	fcp_parm = ntohl(spp->spp_params);
++	fcp_parm &= ~FCP_SPPF_RETRY;
+ 	spp->spp_params = htonl(fcp_parm | FCP_SPPF_TARG_FCN);
+ 	return FC_SPP_RESP_ACK;
+ }
 
 
