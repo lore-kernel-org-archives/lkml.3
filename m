@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab3ASJDv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 04:03:51 -0500
-Received: from mga14.intel.com ([143.182.124.37]:51809 "EHLO mga14.intel.com"
+	id S1752114Ab3ASJDY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 04:03:24 -0500
+Received: from mga11.intel.com ([192.55.52.93]:31720 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751707Ab3ASJDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 04:03:48 -0500
+	id S1751707Ab3ASJDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jan 2013 04:03:18 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,498,1355126400"; 
-   d="scan'208";a="192921438"
+   d="scan'208";a="278958235"
 From: Jon Mason <jon.mason@intel.com>
 To: Greg KH <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Dave Jiang <dave.jiang@intel.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 13/21] NTB: Out of free receive entries issue
-Date: Sat, 19 Jan 2013 02:02:27 -0700
-Message-Id: <1358586155-23322-14-git-send-email-jon.mason@intel.com>
+Subject: [PATCH 16/21] ntb_netdev: remove init/exit from probe/remove
+Date: Sat, 19 Jan 2013 02:02:30 -0700
+Message-Id: <1358586155-23322-17-git-send-email-jon.mason@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
 References: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
@@ -24,41 +24,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the NTB client driver enqueues the maximum number of rx buffers, it
-will not be able to re-enqueue another in its callback handler due to a
-lack of free entries.  This can be avoided by adding the current entry
-to the free queue prior to calling the client callback handler.  With
-this change, ntb_netdev will no longer encounter a rx error on its first
-packet.
+Remove init/exit from probe/remove routines to correct warnings of
+"Section mismatch".
 
 Signed-off-by: Jon Mason <jon.mason@intel.com>
 ---
- drivers/ntb/ntb_transport.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/net/ntb_netdev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/ntb/ntb_transport.c b/drivers/ntb/ntb_transport.c
-index 69c58da..b3afb24 100644
---- a/drivers/ntb/ntb_transport.c
-+++ b/drivers/ntb/ntb_transport.c
-@@ -910,12 +910,15 @@ void ntb_transport_free(void *transport)
- static void ntb_rx_copy_task(struct ntb_transport_qp *qp,
- 			     struct ntb_queue_entry *entry, void *offset)
- {
--	memcpy(entry->buf, offset, entry->len);
-+	void *cb_data = entry->cb_data;
-+	unsigned int len = entry->len;
- 
--	if (qp->rx_handler && qp->client_ready == NTB_LINK_UP)
--		qp->rx_handler(qp, qp->cb_data, entry->cb_data, entry->len);
-+	memcpy(entry->buf, offset, entry->len);
- 
- 	ntb_list_add(&qp->ntb_rx_free_q_lock, &entry->entry, &qp->rx_free_q);
-+
-+	if (qp->rx_handler && qp->client_ready == NTB_LINK_UP)
-+		qp->rx_handler(qp, qp->cb_data, cb_data, len);
+diff --git a/drivers/net/ntb_netdev.c b/drivers/net/ntb_netdev.c
+index 4e52fd2..0d4a6ee 100644
+--- a/drivers/net/ntb_netdev.c
++++ b/drivers/net/ntb_netdev.c
+@@ -373,7 +373,7 @@ err:
+ 	return rc;
  }
  
- static int ntb_process_rxc(struct ntb_transport_qp *qp)
+-static void __exit ntb_netdev_remove(struct pci_dev *pdev)
++static void ntb_netdev_remove(struct pci_dev *pdev)
+ {
+ 	struct net_device *ndev;
+ 	struct ntb_netdev *dev;
 -- 
 1.7.9.5
 
