@@ -1,68 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab3ASEw4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 23:52:56 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3670 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644Ab3ASEwz (ORCPT
+	id S1751276Ab3ASFkr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 00:40:47 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:36848 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3ASFkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 23:52:55 -0500
-X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=oS6VeJ3zRZwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ylgaL1uFd_sA:10 a=mglTsNybAAAA:20 a=WeLpJKWFmSSlEFhsx2EA:9 a=PUjeQqilurYA:10 a=l38a4HPC-fwA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358571172.23981.5.camel@gandalf.local.home>
-Subject: Re: [PATCH 00/10] TTY: switch flipping functions to tty_port
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Greg KH <gregkh@linuxfoundation.org>,
-        jirislaby@gmail.com, linux-kernel@vger.kernel.org
-Date: Fri, 18 Jan 2013 23:52:52 -0500
-In-Reply-To: <20130116164238.625db60c@bob.linux.org.uk>
-References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
-	 <20130116064735.GA7743@kroah.com> <50F6AD15.708@suse.cz>
-	 <1358351064.4068.43.camel@gandalf.local.home> <50F6CE7E.4090807@suse.cz>
-	 <20130116164238.625db60c@bob.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 19 Jan 2013 00:40:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130118191827.GA419@redhat.com>
+References: <20130118191827.GA419@redhat.com>
+Date: Sat, 19 Jan 2013 13:40:44 +0800
+Message-ID: <CAJd=RBDt2TiRyROFbDpAQhdi=mcPn52+pu0LbhYvMssYBxj3eg@mail.gmail.com>
+Subject: Re: kernel BUG at kernel/smpboot.c:125!
+From: Hillf Danton <dhillf@gmail.com>
+To: Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-16 at 16:42 +0000, Alan Cox wrote:
-> On Wed, 16 Jan 2013 16:59:58 +0100
+On Sat, Jan 19, 2013 at 3:18 AM, Dave Jones <davej@redhat.com> wrote:
+> Since 3.7, we've started seeing reports of this BUG_ON in kernel/smpboot.c being hit..
+>
+> 121                 if (kthread_should_park()) {
+> 122                         __set_current_state(TASK_RUNNING);
+> 123                         preempt_enable();
+> 124                         if (ht->park && td->status == HP_THREAD_ACTIVE) {
+> 125                                 BUG_ON(td->cpu != smp_processor_id());
 
-> > OMG. It contains a true copy of serial_core!
-> 
-> And it seems to just be another 165x0 driver anyway In fact it looks
-> like the right thing to do is to take it out and shoot it. We've got a
-> 16x50 driver already.
-> 
-> There are a few bits of gunk in there to set custom board registers and
-> to figure out the configuration. See drivers/tty/serial/8250/8250_pci.c
-> and it ought to be possible to just plug it in there. The 422 stuff
-> might need a bit more tweaking.
+Unsafe to get the current cpu if kthread is not bound to it,
+would you please take a try for the following diff?
 
-I've totally failed trying to get it working with 8250. I'm going to
-start from scratch and take bits and pieces from other drivers and put
-together something (hopefully) a bit more sane.
+Hillf
+---
+--- a/kernel/kthread.c	Sat Jan 19 13:03:52 2013
++++ b/kernel/kthread.c	Sat Jan 19 13:17:54 2013
+@@ -306,6 +306,7 @@ struct task_struct *kthread_create_on_cp
+ 		return p;
+ 	set_bit(KTHREAD_IS_PER_CPU, &to_kthread(p)->flags);
+ 	to_kthread(p)->cpu = cpu;
++	__kthread_bind(p, cpu);
+ 	/* Park the thread to get it out of TASK_UNINTERRUPTIBLE state */
+ 	kthread_park(p);
+ 	return p;
+--
 
-It actually has a lot of duplicate code from omap-serial.c, or whatever
-omap-serial copied from. I'm using that as a guide as well.
-
-I'll post something in a few weeks (I'm basically doing this outside of
-my regular choirs). It will still be crap, as I'm really a noob with the
-serial tty code.
-
-I've written serial drivers in the past, but just to get things to do
-basic communication. Nothing with interacting with the tty layer. That's
-new for me, and as a noob, I'm sure I'll produce something that will
-surely make all of you go...
-
-  http://bit.ly/10hq0Kh
-
--- Steve
-
-
+> 126                                 ht->park(td->cpu);
+> 127                                 td->status = HP_THREAD_PARKED;
+> 128                         }
+> 129                         kthread_parkme();
+> 130                         /* We might have been woken for stop */
+> 131                         continue;
+> 132                 }
+>
+> In all reports, it seems that it happens when coming back from suspend/hibernate.
+>
+> Example trace below. More reports at https://bugzilla.redhat.com/show_bug.cgi?id=891088
+>
+>  > kernel BUG at kernel/smpboot.c:125!
+>  > invalid opcode: 0000 [#1] SMP
+>  > Modules linked in: cpufreq_stats des_generic md4 nls_utf8 cifs dns_resolver
+>  > fscache fuse ipt_MASQUERADE nf_conntrack_netbios_ns nf_conntrack_broadcast
+>  > ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat
+>  > nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack
+>  > nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables bnep
+>  > snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel arc4 snd_hda_codec
+>  > snd_hwdep snd_seq uvcvideo snd_seq_device iwldvm snd_pcm videobuf2_vmalloc
+>  > iTCO_wdt videobuf2_memops iTCO_vendor_support videobuf2_core mac80211 videodev
+>  > asus_nb_wmi asus_wmi media vhost_net sparse_keymap coretemp snd_page_alloc
+>  > btusb tun iwlwifi macvtap macvlan bluetooth microcode snd_timer kvm_intel snd
+>  > joydev serio_raw lpc_ich i2c_i801 cfg80211 soundcore kvm mfd_core mei rfkill
+>  > uinput dm_crypt nouveau crc32c_intel i915 mxm_wmi i2c_algo_bit drm_kms_helper
+>  > ghash_clmulni_intel ttm drm i2c_core wmi video
+>  > CPU 0
+>  > Pid: 22, comm: watchdog/3 Not tainted 3.7.1-1.fc19.x86_64 #1 ASUSTeK COMPUTER
+>  > INC. UX32VD/UX32VD
+>  > RIP: 0010:[<ffffffff8108aae3>]  [<ffffffff8108aae3>]
+>  > smpboot_thread_fn+0x193/0x1a0
+>  > RSP: 0000:ffff88029fc71e78  EFLAGS: 00010206
+>  > RAX: ffffffff810eb4b0 RBX: ffff88029fc35c80 RCX: 0000000000000000
+>  > RDX: 0000000000000000 RSI: ffff88029fc35c80 RDI: 0000000000000003
+>  > RBP: ffff88029fc71eb8 R08: ffff88029fc70000 R09: 0000000000000001
+>  > R10: 0000000000000000 R11: 0000000000000001 R12: ffff8802a4400940
+>  > R13: ffffffff81c3b9a0 R14: ffff88029fc35c80 R15: 0000000000000000
+>  > FS:  0000000000000000(0000) GS:ffff8802aee00000(0000) knlGS:0000000000000000
+>  > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>  > CR2: 00007f825e2b6000 CR3: 000000027a915000 CR4: 00000000001407f0
+>  > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>  > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>  > Process watchdog/3 (pid: 22, threadinfo ffff88029fc70000, task
+>  > ffff88029fc35c80)
+>  > Stack:
+>  >  ffff88029fc71e88 0000000000000000 ffff88029fc71eb8 0000000000000001
+>  >  ffff8802a00e5d18 ffff8802a4400940 ffffffff8108a950 0000000000000000
+>  >  ffff88029fc71f48 ffffffff81081d50 0000000000000001 0000000000000005
+>  > Call Trace:
+>  >  [<ffffffff8108a950>] ? lg_global_unlock+0x60/0x60
+>  >  [<ffffffff81081d50>] kthread+0xc0/0xd0
+>  >  [<ffffffff81010808>] ? perf_trace_xen_mmu_flush_tlb_all+0x88/0xc0
+>  >  [<ffffffff81081c90>] ? kthread_create_on_node+0x120/0x120
+>  >  [<ffffffff8163d92c>] ret_from_fork+0x7c/0xb0
+>  >  [<ffffffff81081c90>] ? kthread_create_on_node+0x120/0x120
+>  > Code: bf 77 00 0f a3 3a 19 d2 31 f6 85 d2 40 0f 95 c6 ff d0 4c 89 e7 e8 ce 4f
+>  > 0f 00 48 83 c4 20 31 c0 5b 41 5c 41 5d 41 5e 5d c3 0f 0b <0f> 0b 66 66 2e 0f 1f
+>  > 84 00 00 00 00 00 0f 1f 44 00 00 55 48 c7
+>  > RIP  [<ffffffff8108aae3>] smpboot_thread_fn+0x193/0x1a0
+>  >  RSP <ffff88029fc71e78>
+>
