@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab3ASBdd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 20:33:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56437 "EHLO mail.kernel.org"
+	id S1756249Ab3ASBdu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 20:33:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56379 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756132Ab3ASBSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 20:18:01 -0500
+	id S1756107Ab3ASBR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 20:17:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Mingarelli <thomas.mingarelli@hp.com>,
-        Shuah Khan <shuah.khan@hp.com>, Donald Dutile <ddutile@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Joerg Roedel <joro@8bytes.org>, CAI Qian <caiqian@redhat.com>
-Subject: [ 19/33] intel-iommu: Prevent devices with RMRRs from being placed into SI Domain
-Date: Fri, 18 Jan 2013 17:16:44 -0800
-Message-Id: <20130119010352.529098892@linuxfoundation.org>
+        Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        CAI Qian <caiqian@redhat.com>
+Subject: [ 16/33] drm/radeon: fix NULL pointer dereference in UMS mode
+Date: Fri, 18 Jan 2013 17:16:41 -0800
+Message-Id: <20130119010351.457566020@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130119010345.885772698@linuxfoundation.org>
 References: <20130119010345.885772698@linuxfoundation.org>
@@ -28,67 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Mingarelli <thomas.mingarelli@hp.com>
+From: Ilija Hadzic <ihadzic@research.bell-labs.com>
 
-commit ea2447f700cab264019b52e2b417d689e052dcfd upstream.
+commit ff4bd0827764e10a428a9d39e6814c5478863f94 upstream.
 
-This patch is to prevent non-USB devices that have RMRRs associated with them from
-being placed into the SI Domain during init. This fixes the issue where the RMRR info
-for devices being placed in and out of the SI Domain gets lost.
+In UMS mode parser->rdev is NULL, so dereferencing
+will cause an oops.
 
-Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
-Tested-by: Shuah Khan <shuah.khan@hp.com>
-Reviewed-by: Donald Dutile <ddutile@redhat.com>
-Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Cc: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/intel-iommu.c |   31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+ drivers/gpu/drm/radeon/radeon_cs.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -2327,8 +2327,39 @@ static int domain_add_dev_info(struct dm
- 	return 0;
- }
+--- a/drivers/gpu/drm/radeon/radeon_cs.c
++++ b/drivers/gpu/drm/radeon/radeon_cs.c
+@@ -266,7 +266,7 @@ int radeon_cs_parser_init(struct radeon_
+ 				  p->chunks[p->chunk_ib_idx].length_dw);
+ 			return -EINVAL;
+ 		}
+-		if ((p->rdev->flags & RADEON_IS_AGP)) {
++		if (p->rdev && (p->rdev->flags & RADEON_IS_AGP)) {
+ 			p->chunks[p->chunk_ib_idx].kpage[0] = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 			p->chunks[p->chunk_ib_idx].kpage[1] = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 			if (p->chunks[p->chunk_ib_idx].kpage[0] == NULL ||
+@@ -570,7 +570,8 @@ static int radeon_cs_update_pages(struct
+ 	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
+ 	int i;
+ 	int size = PAGE_SIZE;
+-	bool copy1 = (p->rdev->flags & RADEON_IS_AGP) ? false : true;
++	bool copy1 = (p->rdev && (p->rdev->flags & RADEON_IS_AGP)) ?
++		false : true;
  
-+static bool device_has_rmrr(struct pci_dev *dev)
-+{
-+	struct dmar_rmrr_unit *rmrr;
-+	int i;
-+
-+	for_each_rmrr_units(rmrr) {
-+		for (i = 0; i < rmrr->devices_cnt; i++) {
-+			/*
-+			 * Return TRUE if this RMRR contains the device that
-+			 * is passed in.
-+			 */
-+			if (rmrr->devices[i] == dev)
-+				return true;
-+		}
-+	}
-+	return false;
-+}
-+
- static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
- {
-+
-+	/*
-+	 * We want to prevent any device associated with an RMRR from
-+	 * getting placed into the SI Domain. This is done because
-+	 * problems exist when devices are moved in and out of domains
-+	 * and their respective RMRR info is lost. We exempt USB devices
-+	 * from this process due to their usage of RMRRs that are known
-+	 * to not be needed after BIOS hand-off to OS.
-+	 */
-+	if (device_has_rmrr(pdev) &&
-+	    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
-+		return 0;
-+
- 	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
- 		return 1;
- 
+ 	for (i = ibc->last_copied_page + 1; i < pg_idx; i++) {
+ 		if (DRM_COPY_FROM_USER(p->ib.ptr + (i * (PAGE_SIZE/4)),
 
 
