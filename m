@@ -1,56 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab3ASArh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 19:47:37 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:45565 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab3ASArg (ORCPT
+	id S1755726Ab3ASAuE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 19:50:04 -0500
+Received: from lunge.queued.net ([173.255.254.236]:42968 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754342Ab3ASAuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 19:47:36 -0500
-Date: Fri, 18 Jan 2013 16:47:32 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>, Peter Korsgaard <jacmet@sunsite.dk>,
-        Alan Cox <alan@linux.intel.com>,
-        Preston Fick <preston.fick@silabs.com>
-Subject: Re: 3.7.3, ttyUSB0 serial problem - devices stop working and only
- reboot helps (Inappropriate ioctl for device)
-Message-ID: <20130119004732.GA32311@kroah.com>
-References: <201301182328.43455.a.miskiewicz@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201301182328.43455.a.miskiewicz@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Jan 2013 19:50:02 -0500
+X-Greylist: delayed 547 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jan 2013 19:50:02 EST
+Date: Fri, 18 Jan 2013 16:40:43 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Woodhouse <dwmw2@infradead.org>, Vivek Goyal <vgoyal@in.ibm.com>,
+        Yinghai Lu <yhlu.kernel@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        techteam@lists.laptop.org
+Subject: Re: [RFC PATCH] x86-32: Start out eflags and cr4 clean
+Message-ID: <20130118164043.29674d75@dev.queued.net>
+In-Reply-To: <20121010125927.0968dd8b@dev.queued.net>
+References: <87sjaaj3cx.fsf@xmission.com>
+	<1348529239-17943-1-git-send-email-hpa@linux.intel.com>
+	<20121010125927.0968dd8b@dev.queued.net>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 11:28:43PM +0100, Arkadiusz Miskiewicz wrote:
-> Hi.
-> 
-> Using 3.7.3 kernel and connecting two rs232 usb adapters, CP2102 and FT232RL, 
-> one after disconnecting another.
-> 
-> After few cycles of reconnecting and using socat (below) I'm getting problems 
-> accessing ttyUSB0:
-> ioctl(3, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or TCGETS, 
-> 0x7fffb70c6ae0) = -1 ENOTTY (Inappropriate ioctl for device)
-> 
-> Unloading and reloading (by udev) modules ftdio_sio, cp210x, usbserial doesn't 
-> help. I have to reboot to get ttyUSB0 working (regardless of which driver, 
-> ftdio_sio or cp210x is handling ttyUSB0 - both stop working).
-> 
-> Any clues?
+Bad news on this patch; I've been told that it breaks booting on an
+XO-1.5.  Does anyone from OLPC know why yet?
 
-The kernel log shows the device getting removed a bunch and then coming
-back, which implies electrical issues (flaky connection, low power,
-etc.)  Are you really removing it and plugging it back in?  Or is it
-doing it all by itself?
 
-Can you try better cables?
+On Wed, 10 Oct 2012 12:59:27 -0700
+Andres Salomon <dilinger@queued.net> wrote:
 
-thanks,
-
-greg k-h
+> Thanks for Cc'ing me.  I just tested this on an XO-1, and it doesn't
+> appear to break anything.  So, looks fine to me.
+> 
+> Acked-by: Andres Salomon <dilinger@queued.net>
+> 
+> 
+> On Mon, 24 Sep 2012 16:27:19 -0700 "H. Peter
+> Anvin" <hpa@linux.intel.com> wrote:
+> 
+> > From: "H. Peter Anvin" <hpa@linux.intel.com>
+> > 
+> > %cr4 is supposed to reflect a set of features into which the
+> > operating system is opting in.  If the BIOS or bootloader leaks
+> > bits here, this is not desirable.  Consider a bootloader passing in
+> > %cr4.pae set to a legacy paging kernel, for example -- it will not
+> > have any immediate effect, but the kernel would crash when turning
+> > paging on.
+> > 
+> > A similar argument applies to %eflags, and since we have to look for
+> > %eflags.id being settable we can use a sequence which clears %eflags
+> > as a side effect.
+> > 
+> > Note that we already do this for x86-64.
+> > 
+> > I would like opinions on this especially from the PV crowd and
+> > nonstandard platforms (e.g. OLPC) to make sure we don't screw them
+> > up.
+> > 
+> > Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> > ---
+> >  arch/x86/kernel/head_32.S |   31 ++++++++++++++++---------------
+> >  1 files changed, 16 insertions(+), 15 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+> > index d42ab17..957a47a 100644
+> > --- a/arch/x86/kernel/head_32.S
+> > +++ b/arch/x86/kernel/head_32.S
+> > @@ -287,27 +287,28 @@ ENTRY(startup_32_smp)
+> >  	leal -__PAGE_OFFSET(%ecx),%esp
+> >  
+> >  default_entry:
+> > -
+> >  /*
+> >   *	New page tables may be in 4Mbyte page mode and may
+> >   *	be using the global pages. 
+> >   *
+> >   *	NOTE! If we are on a 486 we may have no cr4 at all!
+> > - *	So we do not try to touch it unless we really have
+> > - *	some bits in it to set.  This won't work if the BSP
+> > - *	implements cr4 but this AP does not -- very unlikely
+> > - *	but be warned!  The same applies to the pse feature
+> > - *	if not equally supported. --macro
+> > - *
+> > - *	NOTE! We have to correct for the fact that we're
+> > - *	not yet offset PAGE_OFFSET..
+> > + *	Specifically, cr4 exists if and only if CPUID exists,
+> > + *	which in turn exists if and only if EFLAGS.ID exists.
+> >   */
+> > -#define cr4_bits pa(mmu_cr4_features)
+> > -	movl cr4_bits,%edx
+> > -	andl %edx,%edx
+> > -	jz 6f
+> > -	movl %cr4,%eax		# Turn on paging options
+> > (PSE,PAE,..)
+> > -	orl %edx,%eax
+> > +	movl $X86_EFLAGS_ID,%ecx
+> > +	pushl %ecx
+> > +	popfl
+> > +	pushfl
+> > +	popl %eax
+> > +	pushl $0
+> > +	popfl
+> > +	pushfl
+> > +	popl %edx
+> > +	xorl %edx,%eax
+> > +	testl %ecx,%eax
+> > +	jz 6f			# No ID flag = no CPUID = no
+> > CR4 +
+> > +	movl pa(mmu_cr4_features),%eax
+> >  	movl %eax,%cr4
+> >  
+> >  	testb $X86_CR4_PAE, %al		# check if PAE is
+> > enabled
