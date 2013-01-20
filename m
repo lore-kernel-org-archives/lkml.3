@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328Ab3ATAOH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 19:14:07 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:44688 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab3ATAOD (ORCPT
+	id S1752226Ab3ATAVT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 19:21:19 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:53316 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160Ab3ATAVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 19:14:03 -0500
+	Sat, 19 Jan 2013 19:21:18 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUV2Fj4wtObY94s3h5=24dOhcxSuVUNv-qtRXAU5Hi-p1w@mail.gmail.com>
-References: <CA+icZUV2Fj4wtObY94s3h5=24dOhcxSuVUNv-qtRXAU5Hi-p1w@mail.gmail.com>
-Date: Sun, 20 Jan 2013 01:14:02 +0100
-Message-ID: <CA+icZUWDObK_HVuaBXSj-N4fF=J_qJK212ZdF2Vw1id4kK0uPw@mail.gmail.com>
-Subject: Re: WARNING: at drivers/tty/tty_buffer.c:476 flush_to_ldisc()
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Dave Jones <davej@redhat.com>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ilya Zykov <ilya@ilyx.ru>, LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>, linux-serial@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Jan Kara <jack@suse.cz>,
-        Eric Sandeen <sandeen@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAFLxGvzsb2C+qBXjCtSQcGYT6TGnRR8LuvsCAdcGvru7CvKkdA@mail.gmail.com>
+References: <CAFLxGvyd032g4CYQfS8Woz+qZHvXAQa3s_cj7TOC=XVO1-HONw@mail.gmail.com>
+	<CAE9FiQUQo2LOE=kmgQd_6A9YpkVzUZdS+MZYLzqg=SVc52LfUw@mail.gmail.com>
+	<CAFLxGvzsb2C+qBXjCtSQcGYT6TGnRR8LuvsCAdcGvru7CvKkdA@mail.gmail.com>
+Date: Sat, 19 Jan 2013 16:21:17 -0800
+X-Google-Sender-Auth: u1ntyAJXoenTrOE1oJlKvJNFQt8
+Message-ID: <CAE9FiQU_8D22DidY3m-HbHiRD4mEXVtcwBT4efRjWRCi2NZ5NQ@mail.gmail.com>
+Subject: Re: Linux detects only 2.6GiB RAM in legacy boot
+From: Yinghai Lu <yinghai@kernel.org>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 19, 2013 at 11:44 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> Hi Dave,
->
-> I suspected after initial testing a problem in TTY and applied two patches.
-> After more testing the root cause was a problem in JBD2.
-> A patch from Eric helped!
-> Follow the thread in [1] for more details.
->
-> If you are on Linux-Next (next-20130118) you need the following three patches.
->
-> Ilya Zykov (2):
->       tty: Correct tty buffer flush.
->       tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
->
-> Eric Sandeen (1):
->       jbd2: don't wake kjournald unnecessarily
->
-> Hope this helps you.
->
-> Regards,
-> - Sedat -
->
-> [0] http://marc.info/?t=135862023700004&r=1&w=2
-> [1] http://marc.info/?l=linux-serial&m=135860500714909&w=2
-> [2] http://git.kernel.org/?p=linux/kernel/git/gregkh/tty.git;a=commitdiff;h=a1bf9584429d61b7096f93ae09325e1ba538e9e8
-> [3] http://patchwork.ozlabs.org/patch/207237/
+On Sat, Jan 19, 2013 at 3:14 PM, richard -rw- weinberger
+<richard.weinberger@gmail.com> wrote:
 
-I am awfully sorry to tell you that my (JBD2) problem still exist!
-Not sure this is anymore related to TTY-NEXT, so better I shut up!
+> BTW: My BIOS is already the latest version.
 
-- Sedat -
+[    0.000000] raw: [mem 0x0000000000000000-0x000000000009d7ff] usable
+[    0.000000] raw: [mem 0x000000000009d800-0x000000000009ffff] reserved
+[    0.000000] raw: [mem 0x00000000000e0000-0x00000000000fffff] reserved
+[    0.000000] raw: [mem 0x0000000000100000-0x000000001fffffff] usable
+[    0.000000] raw: [mem 0x0000000020000000-0x00000000201fffff] reserved
+[    0.000000] raw: [mem 0x0000000020200000-0x0000000040003fff] usable
+[    0.000000] raw: [mem 0x0000000040004000-0x0000000040004fff] reserved
+[    0.000000] raw: [mem 0x0000000040005000-0x000000008cfaafff] usable
+[    0.000000] raw: [mem 0x000000008cfab000-0x00000000dae9efff] reserved
+[    0.000000] raw: [mem 0x00000000dae9f000-0x00000000daf9efff] ACPI NVS
+[    0.000000] raw: [mem 0x00000000daf9f000-0x00000000daffefff] ACPI data
+[    0.000000] raw: [mem 0x00000000dafff000-0x00000000df9fffff] reserved
+[    0.000000] raw: [mem 0x00000000f8000000-0x00000000fbffffff] reserved
+[    0.000000] raw: [mem 0x00000000fec00000-0x00000000fec00fff] reserved
+[    0.000000] raw: [mem 0x00000000fed08000-0x00000000fed08fff] reserved
+[    0.000000] raw: [mem 0x00000000fed10000-0x00000000fed19fff] reserved
+[    0.000000] raw: [mem 0x00000000fed1c000-0x00000000fed1ffff] reserved
+[    0.000000] raw: [mem 0x00000000fee00000-0x00000000fee00fff] reserved
+[    0.000000] raw: [mem 0x00000000ffc00000-0x00000000ffffffff] reserved
+[    0.000000] raw: [mem 0x0000000100000000-0x000000011e5fffff] usable
 
-[1] http://marc.info/?l=linux-kernel&m=135864041624404&w=2
+so really it is bios problem.
+
+you can request one BIOS update about it or just return it.
+
+Yinghai
