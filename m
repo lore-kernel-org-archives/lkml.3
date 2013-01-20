@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab3ATKZj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 05:25:39 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:41428 "EHLO mail.skyhub.de"
+	id S1752132Ab3ATKZh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 05:25:37 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41427 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880Ab3ATKYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751887Ab3ATKYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 20 Jan 2013 05:24:41 -0500
 From: Borislav Petkov <bp@alien8.de>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -12,9 +12,9 @@ Cc: =?UTF-8?q?Andr=C3=A9=20Przywara?= <andre@andrep.de>,
         Leonid Isaev <lisaev@umail.iu.edu>, Tom Gundersen <teg@jklm.no>,
         cpufreq@vger.kernel.org, linux-acpi@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH 5/6] powernow-k8: Cleanup module request
-Date: Sun, 20 Jan 2013 11:24:29 +0100
-Message-Id: <1358677470-17394-6-git-send-email-bp@alien8.de>
+Subject: [PATCH 6/6] powernow-k8: Cleanup init function
+Date: Sun, 20 Jan 2013 11:24:30 +0100
+Message-Id: <1358677470-17394-7-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.1.rc3
 In-Reply-To: <1358677470-17394-1-git-send-email-bp@alien8.de>
 References: <1358677470-17394-1-git-send-email-bp@alien8.de>
@@ -24,53 +24,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-Check whether we've actually already loaded acpi-cpufreq before
-requesting it.
+Make it hotplug-safe and cleanup formatting.
 
 Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- drivers/cpufreq/powernow-k8.c | 21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
+ drivers/cpufreq/powernow-k8.c | 25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-index 056faf6af1a9..0234d0c6d68c 100644
+index 0234d0c6d68c..d13a13678b5f 100644
 --- a/drivers/cpufreq/powernow-k8.c
 +++ b/drivers/cpufreq/powernow-k8.c
-@@ -1249,6 +1249,24 @@ static struct cpufreq_driver cpufreq_amd64_driver = {
- 	.attr		= powernow_k8_attr,
- };
- 
-+static void __request_acpi_cpufreq(void)
-+{
-+	const char *cur_drv, *drv = "acpi-cpufreq";
-+
-+	cur_drv = cpufreq_get_current_driver();
-+	if (!cur_drv)
-+		goto request;
-+
-+	if (strncmp(cur_drv, drv, min_t(size_t, strlen(cur_drv), strlen(drv))))
-+		pr_warn(PFX "WTF driver: %s\n", cur_drv);
-+
-+	return;
-+
-+ request:
-+	pr_warn(PFX "This CPU is not supported anymore, using acpi-cpufreq instead.\n");
-+	request_module(drv);
-+}
-+
- /* driver entry point for init */
+@@ -1271,7 +1271,7 @@ static void __request_acpi_cpufreq(void)
  static int __cpuinit powernowk8_init(void)
  {
-@@ -1256,8 +1274,7 @@ static int __cpuinit powernowk8_init(void)
- 	int rv;
+ 	unsigned int i, supported_cpus = 0;
+-	int rv;
++	int ret;
  
  	if (static_cpu_has(X86_FEATURE_HW_PSTATE)) {
--		pr_warn(PFX "this CPU is not supported anymore, using acpi-cpufreq instead.\n");
--		request_module("acpi-cpufreq");
-+		__request_acpi_cpufreq();
+ 		__request_acpi_cpufreq();
+@@ -1281,24 +1281,27 @@ static int __cpuinit powernowk8_init(void)
+ 	if (!x86_match_cpu(powernow_k8_ids))
  		return -ENODEV;
+ 
++	get_online_cpus();
+ 	for_each_online_cpu(i) {
+-		int rc;
+-		smp_call_function_single(i, check_supported_cpu, &rc, 1);
+-		if (rc == 0)
++		smp_call_function_single(i, check_supported_cpu, &ret, 1);
++		if (!ret)
+ 			supported_cpus++;
  	}
  
+-	if (supported_cpus != num_online_cpus())
++	if (supported_cpus != num_online_cpus()) {
++		put_online_cpus();
+ 		return -ENODEV;
++	}
++	put_online_cpus();
+ 
+-	rv = cpufreq_register_driver(&cpufreq_amd64_driver);
++	ret = cpufreq_register_driver(&cpufreq_amd64_driver);
++	if (ret)
++		return ret;
+ 
+-	if (!rv)
+-		pr_info(PFX "Found %d %s (%d cpu cores) (" VERSION ")\n",
+-			num_online_nodes(), boot_cpu_data.x86_model_id,
+-			supported_cpus);
++	pr_info(PFX "Found %d %s (%d cpu cores) (" VERSION ")\n",
++		num_online_nodes(), boot_cpu_data.x86_model_id, supported_cpus);
+ 
+-	return rv;
++	return ret;
+ }
+ 
+ /* driver entry point for term */
 -- 
 1.8.1.rc3
 
