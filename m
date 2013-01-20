@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab3AUAO2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 19:14:28 -0500
-Received: from ozlabs.org ([203.10.76.45]:34204 "EHLO ozlabs.org"
+	id S1752693Ab3AUAO1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 19:14:27 -0500
+Received: from ozlabs.org ([203.10.76.45]:47212 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752629Ab3AUAO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752602Ab3AUAO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 20 Jan 2013 19:14:26 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "LKML" <linux-kernel@vger.kernel.org>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Subject: [PULL] Module fixes, and a virtio block fix.
+To: Chris Samuel <chris@csamuel.org>, linux-kernel@vger.kernel.org,
+        dhowells@redhat.com, Josh Boyer <jwboyer@gmail.com>
+Subject: Re: [PATCH] MODSIGN: Warn when module signature checking fails
+In-Reply-To: <50F67D75.9080508@csamuel.org>
+References: <50F67D75.9080508@csamuel.org>
 User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 21 Jan 2013 10:38:08 +1030
-Message-ID: <87zk03wg7r.fsf@rustcorp.com.au>
+Date: Mon, 21 Jan 2013 10:06:11 +1030
+Message-ID: <87a9s3xw9g.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit a7f2a366f62319dfebf8d4dfe8b211f631c78457:
+Chris Samuel <chris@csamuel.org> writes:
+> /* Please CC me, I'm not on LKML */
+>
+> * Reworked from the original patch based on feedback from Josh Boyer
+> * (putting the code in load_module()) and Rusty Russel (use
+> * KERN_NOTICE).  Extended to cover the other failure modes.
 
-  ima: fallback to MODULE_SIG_ENFORCE for existing kernel module syscall (2012-12-24 09:35:48 -0500)
+We have errnos for a reason; let's not pollute the kernel logs.  That's
+a userspace job.
 
-are available in the git repository at:
+> @@ -3115,8 +3130,10 @@ static int load_module(struct load_info *info, 
+> const char __user *uargs,
+>    #ifdef CONFIG_MODULE_SIG
+>   	mod->sig_ok = info->sig_ok;
+> -	if (!mod->sig_ok)
+> +	if (!mod->sig_ok) {
+> +		printk_once(KERN_NOTICE "Module verification failed: signature and/or 
+> required key missing - tainting kernel\n");
+>   		add_taint_module(mod, TAINT_FORCED_MODULE);
+> +	}
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git fixes
+This part is OK, but I'll add mod->name to the printk.
 
-for you to fetch changes up to 1fb9341ac34825aa40354e74d9a2c69df7d2c304:
+How's this:
 
-  module: put modules in list much earlier. (2013-01-12 13:27:46 +1030)
+module: printk message when module signature fail taints kernel.
 
-----------------------------------------------------------------
-Various minor fixes, but a slightly more complex one to fix the per-cpu overload
-problem introduced recently by kvm id changes.
+Reported-by: Chris Samuel <chris@csamuel.org>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-----------------------------------------------------------------
-Alexander Graf (1):
-      virtio-blk: Don't free ida when disk is in use
+diff --git a/kernel/module.c b/kernel/module.c
+index ec535aa..e095e19 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3169,8 +3169,12 @@ again:
+ 
+ #ifdef CONFIG_MODULE_SIG
+ 	mod->sig_ok = info->sig_ok;
+-	if (!mod->sig_ok)
++	if (!mod->sig_ok) {
++		printk_once(KERN_NOTICE
++			    "%s: module verification failed: signature and/or"
++			    " required key missing - tainting kernel\n");
+ 		add_taint_module(mod, TAINT_FORCED_MODULE);
++	}
+ #endif
+ 
+ 	/* Now module is in final location, initialize linked lists, etc. */
 
-Rusty Russell (2):
-      module: add new state MODULE_STATE_UNFORMED.
-      module: put modules in list much earlier.
-
-Sasha Levin (1):
-      module: prevent warning when finit_module a 0 sized file
-
- drivers/block/virtio_blk.c  |    7 +-
- include/linux/module.h      |   10 +--
- kernel/debug/kdb/kdb_main.c |    2 +
- kernel/module.c             |  154 ++++++++++++++++++++++++++++++-------------
- lib/bug.c                   |    1 +
- 5 files changed, 122 insertions(+), 52 deletions(-)
