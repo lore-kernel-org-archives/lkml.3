@@ -1,54 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab3ATSIb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 13:08:31 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:47875 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351Ab3ATSI3 (ORCPT
+	id S1752499Ab3ATSLP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 13:11:15 -0500
+Received: from matrix.voodoobox.net ([75.127.97.206]:42355 "EHLO
+	matrix.voodoobox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752351Ab3ATSLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 13:08:29 -0500
-MIME-Version: 1.0
-Date: Sun, 20 Jan 2013 19:08:28 +0100
-Message-ID: <CAAXf6LXkgLiBLFmwH_GR9hkjFgOJ5z1nSTQd9Q4pJud732Lb9Q@mail.gmail.com>
-Subject: [RFC] Creating an eeprom class
-From: Thomas De Schampheleire <patrickdepinguin@gmail.com>
-To: linux-kernel@vger.kernel.org, David Brownell <david-b@pacbell.net>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Anatolij Gustschin <agust@denx.de>, Frodo Looijaard <frodol@dds.nl>,
-        Philip Edelbrock <phil@netroedge.com>,
-        Greg Kroah-Hartman <greg@kroah.com>, Ben Gardner <bgardner@wabtec.com>
-Cc: Ronny Meeus <Ronny.Meeus@gmail.com>,
-        Thomas De Schampheleire <patrickdepinguin@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 20 Jan 2013 13:11:14 -0500
+Message-ID: <1358705471.2494.51.camel@obelisk.thedillows.org>
+Subject: Re: IPsec AH use of ahash
+From: David Dillow <dave@thedillows.org>
+To: Tom St Denis <tstdenis@elliptictech.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Date: Sun, 20 Jan 2013 13:11:11 -0500
+In-Reply-To: <1361595885.93211.1358703620681.JavaMail.root@elliptictech.com>
+References: <1361595885.93211.1358703620681.JavaMail.root@elliptictech.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[plaintext and fixed address of David Brownell]
+On Sun, 2013-01-20 at 12:40 -0500, Tom St Denis wrote:
+> > On Sun, 2013-01-20 at 10:07 -0500, Tom St Denis wrote:
+> > > In all likelihood I will submit a revised CMAC patch but it'll take
+> > > time before I can get business hours to work on it.  So instead of
+> > > having a maintainer just touch it up we're all going to lose out
+> > > because of pride?
+> > 
+> > Yes -- but it would seem to be yours that presents the problem.
+> 
+> Not really.  Again, *I* have this content.  You do not. 
 
-Hi,
+You mean the content at http://lkml.org/lkml/2012/12/11/369 ?
 
-Several of the eeprom drivers that live in drivers/misc/eeprom export
-a binary sysfs file 'eeprom'. If a userspace program or script wants
-to access this file, it needs to know the full path, for example:
+Funny how posting to an mailing list works...
 
-/sys/bus/spi/devices/spi32766.0/eeprom
+>  And the only reason you don't is because someone with pull-request
+> authority is too lazy [or apathetic] to make minor cosmetic changes
+> and get the change pushed through the process.
 
-The problem with this approach is that it requires knowledge about the
-hardware configuration: is the eeprom on the SPI bus, the I2C bus, or
-maybe memory mapped?
+Someone like the author?
 
-It would therefore be more interesting to have a bus-agnostic way to
-access this eeprom file, for example:
-/sys/class/eeprom/eeprom0/eeprom
+> I was hoping to have a constructive conversation in which the
+> maintainers could come clean about the complete hypocrisy of claiming
+> that the source is the reference [since there is no documentation for
+> anything in the kernel] and then saying you can't actually read the
+> source when you want to contribute.
 
-Maybe it'd be even better to use a more generic class name than
-'eeprom', since there are several types of eeprom-like devices that
-you could export this way.
+A conversation where you have already decided the outcome -- that's a
+speech, not a dialogue.
 
-Or should we rather hook the eeprom code into the mtd subsystem?
+> Furthermore I don't think you get how the business side of this works.
 
-What is your opinion?
+I've been doing both kernel and proprietary development for close to two
+decades, so you might be surprised. I see it the other way around -- you
+don't see how the open source part works, and are expecting to
+substitute your proprietary process -- where crap code that "works" is
+preferred, to hell with trying to maintain consistency, maintainability,
+or even readability.
 
-Thanks,
-Thomas
+I've worked on those code bases, and the kernel is a breath of fresh air
+in comparison.
+
+> I was tasked with getting CMAC to work with IPsec.  I did.  I sent the
+> patch off to the LKML.  My boss tasked me with other work (totally
+> unrelated to IPsec) since in their eyes the project was done [we do
+> after all have CMAC support].
+> 
+> To then go back to my boss and say I need another couple of hours to
+> "clean" it, re-test it in our IPsec lab and then resubmit it in hopes
+> that the "maintainers" don't find some other reason to reject it is
+> totally unprofessional and unproductive.
+
+You sold your boss a bill of goods, then -- that may fly in your shop,
+but that doesn't work here. It is well known that there is likely to be
+several rounds of review, and this isn't a new thing.
+
+> > You don't think the maintainers are maintaining if they don't clean
+> > up
+> > after every random contributor -- fine, call them lieutenants then.
+> > Their job is to guide the new development towards the goals for the
+> > system, review patches, and develop new features.
+> 
+> Know this.  Being a software developer involves doing a lot of lowly
+> work that most people aren't excited by.  You guys already don't
+> comment/document your code.
+
+I do know this, and I also know that the kernel is much better
+documented than the most of the closed source code bases I've looked at
+in my career.
+
+> I'm not a volunteer.  I was paid to write the CMAC patch since our
+> project supports it [amongst other modes including AH-GMAC...].   But
+> that said we don't work on kernel time.  I don't bend my schedule
+> around the whims of some moderator who is too damn lazy to do a bit of
+> lowly work that they think is beneath them.
+
+You think davem is lazy? Gruff, sure, but lazy? Well, thank you for
+illuminating your grasp of reality.
+
+> > As for the existing style issues in net/ipv4/ah4.c you posted, no,
+> > your patch adding a feature in ah4 would probably not been rejected
+> > because of the existing issues, though if one was in the middle of your
+> > changes, it is possible that your would be asked to fix it.
+
+> Except that my CMAC content came almost exclusively from XCBC which
+> was already in the kernel.  Since you guys did reject the patch on the
+> grounds of coding style why would I assume my AH patches would be any
+> different?
+
+There's a difference between patching an existing file, and introducing
+a new one. Should you have introduced a new file based on AH, I suspect
+it would also need some cleaning up.
+
+Anyways, I'll stop feeding the troll now. You've made it quite clear
+that no one is going to convince you, and calling the maintainers lazy
+and hypocrites isn't going to convince them.
+
