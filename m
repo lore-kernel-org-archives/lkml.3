@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750992Ab3ATFGd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 00:06:33 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:62566 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706Ab3ATFGb (ORCPT
+	id S1751061Ab3ATF0a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 00:26:30 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:55827 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab3ATF02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 00:06:31 -0500
-Message-ID: <1358658381.5743.44.camel@marge.simpson.net>
-Subject: Re: IPsec AH use of ahash
-From: Mike Galbraith <bitbucket@online.de>
-To: Tom St Denis <tstdenis@elliptictech.com>
-Cc: Eric Dumazet <erdnetdev@gmail.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        David Miller <davem@davemloft.net>,
-        steffen klassert <steffen.klassert@secunet.com>,
-        herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Michal Kubecek <mkubecek@suse.cz>
-Date: Sun, 20 Jan 2013 06:06:21 +0100
-In-Reply-To: <1325444527.92017.1358591457919.JavaMail.root@elliptictech.com>
-References: <1325444527.92017.1358591457919.JavaMail.root@elliptictech.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:7Yu2T8sEAZFgFbLmvaubUsodB+65WgP7s7qaS0jdInh
- wohyoPEciOM9MBmtVq7KdNICKhhtMUS9Sx5JPTj7RjT4Si2f5/
- h3MOdIjqRUtm7vlLaTHlkUwylSYJb7LpG7MVo9J0QIbEaR+d+y
- 0QxLWgx7JIfyr0d3TMaz4vbkxVRIhz+SzMmUuANNJofHMJ8Q0H
- IMeEBahVp24+iVReJy044P0bqohXteGa/uA/MeEonfAyFMMCGa
- NLO7+ghKCUavHL6U/f7l+Rz2rCGwaKIeCHKj/HYJV+c31cLrKF
- VkNJQWtpJUWse+5jaZrcdv/oq2B784BUWK86lNUR9zbsi4LL60
- vFrUh7t28ofP29BYMMyr+zjQIyTAQe0RNIao8vB/FAEGFqmr7x
- UvkPiOacTG28Q==
+	Sun, 20 Jan 2013 00:26:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <50FB669C.3020704@nvidia.com>
+References: <1358591420-7790-1-git-send-email-acourbot@nvidia.com> <50FB669C.3020704@nvidia.com>
+From: Alexandre Courbot <acourbot@nvidia.com>
+Date: Sun, 20 Jan 2013 14:26:07 +0900
+X-Google-Sender-Auth: obLP4eEtI9WkkgelilJS4qhQCWw
+Message-ID: <CAAVeFuKkw3b-Jw1s7tc8YUyH6sg8ipqBFFxs4tUBrj9_BDsBMA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] pwm-backlight: add subdrivers & Tegra support
+To: Mark Zhang <markz@nvidia.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-01-19 at 05:30 -0500, Tom St Denis wrote:
+On Sun, Jan 20, 2013 at 12:38 PM, Mark Zhang <markz@nvidia.com> wrote:
+> So this is a non power sequence version of backlight & panel enabling,
+> isn't it? I remember we talked about this several days ago and you
+> mentioned kernel guys want an ad-hoc version(power sequence logics
+> inside driver, not in DT) and I believe this is it, right?
 
-> For those of us who do Kernel development during business hours it's
-> hard to justify the work when the path to mainline is convoluted and
-> landmined.
+Basically, yes - I still think power-seqs could be useful here
+(especially after seeing the size of these sub-drivers if you want to
+do error checking properly) and plan to give it another shot without
+DT, but this will not happen soon since we need to do some GPIO
+redesign before. You can see what's wrong in the init() function of
+the subdriver: we call a device tree function to obtain the GPIO as
+there is no get function.
 
-Sounds as though any patches you submit land on your dinner plate just
-like potatoes.  Hand the cook a pot of half peeled potatoes, he/she may
-say try again.  The result of a little extra effort is tastier taters
-for everybody feasting at the common table.. including you.
+> I think finally I can enable Tegra30 cardhu's display after this patch
+> merged.
 
--Mike
+Yes, feel free to write a subdriver for Cardhu if you like - I'd like
+to see all T20 and T30 boards supported by the time this gets merged.
 
+Thanks,
+Alex.
