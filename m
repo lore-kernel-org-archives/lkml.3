@@ -1,126 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab3ATSnY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 13:43:24 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:38453 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241Ab3ATSnW (ORCPT
+	id S1752311Ab3ATSrF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 13:47:05 -0500
+Received: from mx.scalarmail.ca ([98.158.95.75]:26813 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab3ATSrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 13:43:22 -0500
+	Sun, 20 Jan 2013 13:47:03 -0500
+Date: Sun, 20 Jan 2013 13:47:01 -0500 (EST)
+From: Tom St Denis <tstdenis@elliptictech.com>
+To: David Dillow <dave@thedillows.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Message-ID: <391440283.93368.1358707621420.JavaMail.root@elliptictech.com>
+In-Reply-To: <1358705471.2494.51.camel@obelisk.thedillows.org>
+Subject: Re: IPsec AH use of ahash
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20130120174153.GA5675@paralelels.com>
-References: <1358182435-19245-1-git-send-email-avagin@openvz.org>
- <1358182435-19245-3-git-send-email-avagin@openvz.org> <20130116123502.70af6b85.akpm@linux-foundation.org>
- <CAKgNAkgHVB3=k_XOevobcMWuEqy2r75tdTc85ZYiD8rkn5OZKA@mail.gmail.com>
- <CANaxB-wXdPZFzD3BhkD6niDA6M1NiNrc5coKf9bSx+ar_fZecg@mail.gmail.com>
- <CAKgNAkjK9iWh_PuJ92A-MKW6Q6_B8DvTL5-fkxyULqx9ZoDPfg@mail.gmail.com> <20130120174153.GA5675@paralelels.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Sun, 20 Jan 2013 19:43:01 +0100
-Message-ID: <CAKgNAkiVQqdaGWq83G7t6yHcjr=9rmwVUF_k-P20_Wcg469F7Q@mail.gmail.com>
-Subject: Re: [CRIU] [PATCH 2/3] signalfd: add ability to return siginfo in a
- raw format (v2)
-To: Andrew Vagin <avagin@parallels.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrey Wagin <avagin@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, criu@openvz.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.17.19.112]
+X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - FF3.0 (Mac)/7.2.1_GA_2790)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrey,
-
-On Sun, Jan 20, 2013 at 6:41 PM, Andrew Vagin <avagin@parallels.com> wrote:
->
->> > signalfd is a special descriptor, so I think it
->> > is not a big deal, that it works a bit strange.
->>
->> Sure, but the more we special case things, the uglier the ABI as a
->> whole becomes. So special casing should be avoided as far as we can.
->>
->> > If all other would
->> > decides, that a new syscall is better, I will not ague.
->>
->> And that's more or less how I see it too. I'm not going to argue for a
->> new syscall, based on what I know so far.
->>
->> Here is one idea to think about though, while more or less maintaining
->> your proposed interface.
->>
->> At the moment, you select signal queues in the pread() call. An
->> alternative would be to do it in the signalfd() call. In other words,
->> you could have the following flags used with signalfd()
->>
->> SFD_RAW
->> SFD_SHARED_QUEUE -- reads will be from process-wide shared signal queue
->> SFD_PER_THREAD_QUEUE --reads will be from per-thread signal queue
->
-> I suggested this variant in the initial series, but then we decided to
-> avoid adding new flags. Oleg, what do you think about this?
->
->>
->> Specifying both SFD_SHARED_QUEUE  and SFD_PER_THREAD_QUEUE would be
->> the same as omitting them both, providing the default behavior of
->> slecting from both queues.
->>
->> My point here is that you can then separate the RAW functionality from
->> the queue selector functionality. Now, it might be that at the moment
->> you always require that if the caller specifies SFD_SHARED_QUEUE  or
->> SFD_PER_THREAD_QUEUE, then they must also specify SFD_RAW. But later,
->> that constraint might be relaxed, so that users could use signalfd()
->> to select from a particular queue when reading traditional (non-RAW)
->> signalfd_siginfo structures from a signalfd.
->
-> I am not sure, that you understood this moment correctly.
-> Currently SFD_RAW is independent on SFD_*_QUEUE. If signalfd is
-> created without SFD_RAW, pread returns signalfd_siginfo-s.
-> If SFD_RAW is set, read returns siginfo_t-s.
-
-So, do you mean it is already possible to do:
-
-fd = signalfd(-1, &mask, 0)      // no SFD_RAW flag
-pread(fd, buf, count, SFD_PER_THREAD_QUEUE_OFFSET + pos)
-
-to read a siginfo from the thread specific signal queue?
-
-Thanks
-
-> One more point for two flags is that we will be able to choose a queue
-> from which signals will be dequeued. Currently we can choose a queue only
-> for pread.
-
-Also a good point, and another reason to place queue selection in the
-signalfd() call, rather than in pread().
-
-Cheers,
-
-Michael
 
 
->> This does seem like a
->> very sensible design optimization to make now (and an easy one, I
->> would suppose). What do you think?
->>
->> Cheers,
->>
->> Michael
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-api" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+----- Original Message -----
+> From: "David Dillow" <dave@thedillows.org>
+> To: "Tom St Denis" <tstdenis@elliptictech.com>
+> Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+> Sent: Sunday, 20 January, 2013 1:11:11 PM
+> Subject: Re: IPsec AH use of ahash
+> 
+> On Sun, 2013-01-20 at 12:40 -0500, Tom St Denis wrote:
+> > > On Sun, 2013-01-20 at 10:07 -0500, Tom St Denis wrote:
+> > > > In all likelihood I will submit a revised CMAC patch but it'll
+> > > > take
+> > > > time before I can get business hours to work on it.  So instead
+> > > > of
+> > > > having a maintainer just touch it up we're all going to lose
+> > > > out
+> > > > because of pride?
+> > > 
+> > > Yes -- but it would seem to be yours that presents the problem.
+> > 
+> > Not really.  Again, *I* have this content.  You do not.
+> 
+> You mean the content at http://lkml.org/lkml/2012/12/11/369 ?
+> 
+> Funny how posting to an mailing list works...
 
+I posted that in December ... it wasn't till January that I got the first reply back about it failing to meet the coding "standards."  Do you honestly expect people to sit on their hands for a month each time simple requests float by?
 
+Furthermore, it's not merged into mainline.  So no, you don't have the content.  
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+> >  And the only reason you don't is because someone with pull-request
+> > authority is too lazy [or apathetic] to make minor cosmetic changes
+> > and get the change pushed through the process.
+> 
+> Someone like the author?
+
+You mean the maintainer right?  If I have to do all of the work I should get all of the credit.
+  
+> > Furthermore I don't think you get how the business side of this
+> > works.
+> 
+> I've been doing both kernel and proprietary development for close to
+> two
+> decades, so you might be surprised. I see it the other way around --
+> you
+> don't see how the open source part works, and are expecting to
+> substitute your proprietary process -- where crap code that "works"
+> is
+> preferred, to hell with trying to maintain consistency,
+> maintainability,
+> or even readability.
+
+Um ok that's uncalled for.  What part of the fact my CMAC code is like 90% verbatim copied from the XCBC code do you not understand?   If you think the CMAC patch was bad then you better call up the authors of the XCBC code and call them out for it too.  Stop being hypocritical.
+
+You claimed my code fails to maintain "consistency" ... IT'S COPIED FROM EXISTING CODE.  Your complaint makes no sense not to mention it's insulting.
+
+Furthermore, as someone who ran OSS projects (some of which are in millions of devices around the world) I understood to cherish user contributions.  Even if they needed polishing up.  I did the bitch work of documenting, testing, packaging, development, debugging, and support.  It's far far far too common to see OSS developers shy away from the less fun side of software development...
+
+I called out the maintainers here because because not only do they not maintain the integrity of the code for which they claim authority but they are hostile towards outside contributions with ridiculous standards that they themselves don't even adhere to.  Code that they work on in the kernel doesn't meet ANY of the standards set forth that I was supposed to magically divine applied here..
+ 
+> You sold your boss a bill of goods, then -- that may fly in your
+> shop,
+> but that doesn't work here. It is well known that there is likely to
+> be
+> several rounds of review, and this isn't a new thing.
+
+Ok sure but why does that involve me re-writing the patch for cosmetic reasons?  I agreed that adding the () around the ^/& expressions would be a good idea.  However, how is it a good use of my time to re-write the patch (which includes lines of code I didn't write in the first place) for coding styles that are not actually used in the kernel?
+
+I **COPIED** existing code.  Yet somehow my code isn't good enough?
+
+> I do know this, and I also know that the kernel is much better
+> documented than the most of the closed source code bases I've looked
+> at
+> in my career.
+
+That's not really an excuse for lack of documentation/comments.  
+
+> You think davem is lazy? Gruff, sure, but lazy? Well, thank you for
+> illuminating your grasp of reality.
+
+I was a one man shop running open source math/crypto libraries yet I wrote tons of well commented code, 100s of pages of documentation, ran user support, and did all the other things real developers do.  
+
+If they can't add missing ()'s (which aren't strictly needed btw) on their own and merge the code into maintain then they're not much of developers now are they?
+
+> There's a difference between patching an existing file, and
+> introducing
+> a new one. Should you have introduced a new file based on AH, I
+> suspect
+> it would also need some cleaning up.
+
+Except when the motto is "use the source luke" you shouldn't be surprised when ... people use the source as a template for getting work done.  If you guys have such a damn problem with this you should maintain your code so it serves as an example to others.  Stop being a hypocrite.
+
+> Anyways, I'll stop feeding the troll now. You've made it quite clear
+> that no one is going to convince you, and calling the maintainers
+> lazy
+> and hypocrites isn't going to convince them.
+
+I'm sure I'll re-write the patch [when I can't say].  I'm not in a position to sell the AH-AEAD work to my bosses because the ROI just won't be there.  For now we and our customers will have access to CMAC and nobody else will which is just a crying shame.
+
+I'm not trying to pick a fight I'm trying to point out flaws in the system.  That you guys are so immobile on it is a shame.  I'd love to sell the idea to my bosses of cleaning up the CryptoAPI/IPsec maybe down the road merging our hardware drivers into mainline but it's not a case I can really make right now.  We make due quite fine with a private GPL tree of code but that's the opposite of how this should work.
+
+Tom
