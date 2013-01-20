@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398Ab3ATHkl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 02:40:41 -0500
-Received: from mail-da0-f51.google.com ([209.85.210.51]:61159 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab3ATHkj (ORCPT
+	id S1751445Ab3ATHno (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 02:43:44 -0500
+Received: from 94.43.138.210.xn.2iij.net ([210.138.43.94]:48247 "EHLO
+	mail.st-paulia.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750808Ab3ATHnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 02:40:39 -0500
-Date: Sat, 19 Jan 2013 23:40:24 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-cc: "sedat.dilek@gmail.com" <sedat.dilek@gmail.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: iwlwifi: regression in 3.8-rc4 and 3.7.3
-In-Reply-To: <0BA3FCBA62E2DC44AF3030971E174FB301920DA0@HASMSX103.ger.corp.intel.com>
-Message-ID: <alpine.LNX.2.00.1301192331140.3905@eggly.anvils>
-References: <alpine.LNX.2.00.1301192141540.1303@eggly.anvils> <CA+icZUWULf9-3vEQHM59HM7+PPXxvpWGnNB137+=WyEXj9noiQ@mail.gmail.com> <0BA3FCBA62E2DC44AF3030971E174FB301920DA0@HASMSX103.ger.corp.intel.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 20 Jan 2013 02:43:43 -0500
+Message-ID: <50FBA02C.9030203@linux-ipv6.org>
+Date: Sun, 20 Jan 2013 16:43:40 +0900
+From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Organization: USAGI Project
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: linux1394-devel@lists.sourceforge.net, netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] firewire net: Ensure checksumming in upper layer.
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Jan 2013, Grumbach, Emmanuel wrote:
-> > 
-> > On Sun, Jan 20, 2013 at 6:56 AM, Hugh Dickins <hughd@google.com> wrote:
-> > > After sending the first 2MB, scp over wireless becomes unbearably
-> > > slow, with frequent stalls: on this ThinkPad T420s running 3.8-rc4 or 3.7.3.
-> > > Not always, but often.
-> > >
-> > 
-> > There is one pending iwlwifi-fixes, dunno if it will fix your issue.
-> > [1] http://git.kernel.org/?p=linux/kernel/git/iwlwifi/iwlwifi-
-> > fixes.git;a=commitdiff;h=c3e5d7181afb66657393066bccce0956fab09ab3
-> 
-> Right - so the 2 patches are unrelated, and the one Sedat is pointing at is relevant for 3.8 only. It fixes a bug that has been introduced in 3.8.
+It is wrong to set skb->ip_summed to CHECKSUM_UNNECESSARY unless
+the device has already checked it.
 
-Yes, I have now given that one a try, but it does not affect my issue.
+Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+---
+ drivers/firewire/net.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Regarding the issue Hugh is suffering from, I have to say that I am a little confused since I am pretty sure the patch is right. Now, it might uncover other pre-existing bugs. All I can say is that I don't think that reverting the patch is *so* problematic since the patch really wants to solve a rare case. If it causes issues, we can simply revert it. It only means that when I will get a little bit of time, I might need to ask you a few logs. Thanks for the report (and the bisection).
+diff --git a/drivers/firewire/net.c b/drivers/firewire/net.c
+index e7a711f5..df6a1ca 100644
+--- a/drivers/firewire/net.c
++++ b/drivers/firewire/net.c
+@@ -520,7 +520,7 @@ static int fwnet_finish_incoming_packet(struct net_device *net,
+ 	dev = netdev_priv(net);
+ 	/* Write metadata, and then pass to the receive level */
+ 	skb->dev = net;
+-	skb->ip_summed = CHECKSUM_UNNECESSARY;  /* don't check it */
++	skb->ip_summed = CHECKSUM_NONE;
+ 
+ 	/*
+ 	 * Parse the encapsulation header. This actually does the job of
+-- 
+1.7.9.5
 
-Sure, let me know what to do, once you have time to investigate.
 
-So far as I know, I'm the first to notice: so we can probably
-leave it in 3.8-rc for now, until/unless it gives wider trouble.
-
-But reverting from 3.7-stable soon would be a good idea,
-regressions there being more tiresome.
-
-Hugh
