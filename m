@@ -1,82 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab3ATWvQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 17:51:16 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:32002 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752052Ab3ATWvO (ORCPT
+	id S1752534Ab3ATWyK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 17:54:10 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26212 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab3ATWyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 17:51:14 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkACAG6Zu08Y1KFE/2dsb2JhbAANN4F7gzKrG4ZnAQEEI1YQCw4MAgUhAgIPAkYGDQEHAQGvGJJ7gSaKAYQJgRQDiEKVd4lZgTk
-X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
-   d="scan'208";a="213112067"
-Message-ID: <50FC74E0.20305@teksavvy.com>
-Date: Sun, 20 Jan 2013 17:51:12 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Sun, 20 Jan 2013 17:54:09 -0500
+X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=247Zj1P6LJsA:10 a=D19gQVrFAAAA:8 a=uFlT3VOIAAAA:8 a=kZVh0UFGW_sxfcTcjlMA:9 a=CjuIK1q_8ugA:10 a=tXsnliwV7b4A:10 a=Wxi9scc4PbUA:10 a=L1UiOybr2u29nEn6:21 a=DweFvb80DADHjFdE:21 a=1MSqsi99kBaQQ9fZ:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Date: Sun, 20 Jan 2013 17:54:07 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tom St Denis <tstdenis@elliptictech.com>
+Cc: David Dillow <dave@thedillows.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: IPsec AH use of ahash
+Message-ID: <20130120225407.GB5434@home.goodmis.org>
+References: <1358705471.2494.51.camel@obelisk.thedillows.org>
+ <391440283.93368.1358707621420.JavaMail.root@elliptictech.com>
 MIME-Version: 1.0
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921 (another one)
-References: <50F42F85.50907@teksavvy.com> <20130114203711.GA29982@fieldses.org> <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org> <50F63882.8000607@parallels.com> <50F72F03.5070806@teksavvy.com> <50F786AF.4070107@parallels.com> <20130117130335.GD6598@fieldses.org> <50F7FB7E.2020503@parallels.com> <50F88C14.7030903@teksavvy.com> <50F8DF7E.8080107@parallels.com>
-In-Reply-To: <50F8DF7E.8080107@parallels.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <391440283.93368.1358707621420.JavaMail.root@elliptictech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Got it again, this time on a different system
-running mostly the same software.
+On Sun, Jan 20, 2013 at 01:47:01PM -0500, Tom St Denis wrote:
+> 
+> 
+> > 
+> > You mean the content at http://lkml.org/lkml/2012/12/11/369 ?
+> > 
+> > Funny how posting to an mailing list works...
+> 
+> I posted that in December ... it wasn't till January that I got the first reply back about it failing to meet the coding "standards."  Do you honestly expect people to sit on their hands for a month each time simple requests float by?
 
-This time, I noticed when it happened:  on mounting another system's storage over NFS.
-I was doing a "mount" command when suddenly this happened.  Linux-3.7.3.
+You posted in mid December. Guess what, that's a high time for people to
+take off for vacations. Also it's a time where a lot of year end work
+needs to get done and yes, new code does get pushed to the bottom of the
+priority list.
 
-[ 3342.841487] ------------[ cut here ]------------
-[ 3342.841527] kernel BUG at net/sunrpc/svc_xprt.c:921!
-[ 3342.841547] invalid opcode: 0000 [#1] PREEMPT SMP
-[ 3342.841579] Modules linked in: nfsv3 nfsv4 sha1_generic ppp_mppe ppp_async crc_ccitt ppp_generic
-slhc btusb hid_generic arc4 usbhid hid b43 coretemp kvm_intel kvm mac80211 cfg80211
-snd_hda_codec_idt dell_wmi snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm
-dell_laptop dcdbas snd_seq_dummy snd_seq_oss microcode snd_seq_midi psmouse snd_rawmidi
-snd_seq_midi_event snd_seq nouveau ttm drm_kms_helper ssb drm bnep i2c_algo_bit snd_timer i2c_core
-mxm_wmi snd_seq_device rfcomm snd bluetooth parport_pc soundcore snd_page_alloc ppdev video nfsd
-auth_rpcgss nfs lockd binfmt_misc sunrpc lp parport firewire_ohci tg3 firewire_core crc_itu_t libphy
-hwmon sdhci_pci sdhci
-[ 3342.842104] CPU 1
-[ 3342.842120] Pid: 4108, comm: nfsv4.0-svc Not tainted 3.7.3 #3 Dell Inc. Precision M6300
-       /0JM680
-[ 3342.842151] RIP: 0010:[<ffffffffa007ba6e>]  [<ffffffffa007ba6e>] svc_delete_xprt+0x23/0xf3 [sunrpc]
-[ 3342.842206] RSP: 0018:ffff8801a680be38  EFLAGS: 00010286
-[ 3342.842226] RAX: 00000000ffffffff RBX: ffff880215103000 RCX: dead000000200200
-[ 3342.842247] RDX: dead000000100100 RSI: ffff880215103038 RDI: 0000000000000006
-[ 3342.842270] RBP: ffff880215726900 R08: 0000000000000606 R09: ffff88021fd11280
-[ 3342.842293] R10: 00000000004f9885 R11: ffff88021fd11280 R12: ffff880215726900
-[ 3342.842315] R13: ffff880215103038 R14: 0000000000000000 R15: 0000000000000000
-[ 3342.842337] FS:  0000000000000000(0000) GS:ffff88021fd00000(0000) knlGS:0000000000000000
-[ 3342.842361] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 3342.842380] CR2: 0000000000b0d000 CR3: 00000001cf402000 CR4: 00000000000007e0
-[ 3342.842402] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 3342.842425] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 3342.842448] Process nfsv4.0-svc (pid: 4108, threadinfo ffff8801a680a000, task ffff8802027cf080)
-[ 3342.842476] Stack:
-[ 3342.842488]  dead000000200200 ffff88020970a000 ffff880215103000 ffff880215726900
-[ 3342.842527]  ffff880215726900 ffffffffa007c960 ffff8801a680bfd8 0000000000011280
-[ 3342.842568]  ffff8801a680bfd8 ffff88020970a000 ffff88020970a000 ffff8801a680bf08
-[ 3342.842608] Call Trace:
-[ 3342.842644]  [<ffffffffa007c960>] ? svc_recv+0xcc/0x338 [sunrpc]
-[ 3342.842678]  [<ffffffffa0488000>] ? nfs_callback_authenticate+0x20/0x20 [nfsv4]
-[ 3342.842712]  [<ffffffffa048801d>] ? nfs4_callback_svc+0x1d/0x3c [nfsv4]
-[ 3342.842739]  [<ffffffff8103dcf9>] ? kthread+0x81/0x89
-[ 3342.842763]  [<ffffffff81040101>] ? posix_cpu_nsleep_restart+0x11/0x89
-[ 3342.842787]  [<ffffffff8103dc78>] ? kthread_freezable_should_stop+0x31/0x31
-[ 3342.842813]  [<ffffffff8130302c>] ? ret_from_fork+0x7c/0xb0
-[ 3342.842835]  [<ffffffff8103dc78>] ? kthread_freezable_should_stop+0x31/0x31
-[ 3342.842856] Code: c2 84 d2 74 02 eb a0 c3 41 55 4c 8d 6f 38 41 54 4c 89 ee 55 53 48 89 fb 51 48
-8b 6f 40 bf 06 00 00 00 e8 62 fa ff ff 85 c0 74 02 <0f> 0b 48 8b 43 08 4c 8d 65 10 48 89 df ff 50 38
-4c 89 e7 e8 2a
-[ 3342.843192] RIP  [<ffffffffa007ba6e>] svc_delete_xprt+0x23/0xf3 [sunrpc]
-[ 3342.843235]  RSP <ffff8801a680be38>
-[ 3342.858471] ---[ end trace f0dbe9f9cd4029c3 ]---
+A polite "ping" is allowed if you don't hear back within a week. But
+still, this time of year is not the best for new work to be added.
+
+BTW, how much is your company paying David Miller to fix your
+submissions?  If you're not paying him, don't expect things to get done
+at your convenience, or at all.
+
+> 
+> Furthermore, it's not merged into mainline.  So no, you don't have the content.  
+
+Seems nobody (besides you) cares at the moment. When someone comes by
+and wants this feature, as you so nicely posted it to LKML, it's out
+there. They can then clean it up to David's liking, and it will be
+added. There is no harm on our side.
+
+You on the other hand need to constantly send patches to your customers.
+Seems that the one being hurt by not including these patches is still
+you.
+
+> 
+> > >  And the only reason you don't is because someone with pull-request
+> > > authority is too lazy [or apathetic] to make minor cosmetic changes
+> > > and get the change pushed through the process.
+> > 
+> > Someone like the author?
+> 
+> You mean the maintainer right?  If I have to do all of the work I should get all of the credit.
+
+You do get credit for the code that you submit. I have people send me
+code for a new feature, and I expect them to still maintain it. They
+usually have their name at the top of the file as the author.
+
+But the maintainer of the subsystem has the right to control how things
+get added to their system, as they are the ones ultimately responsible
+for the code out there. If there's a bug, the maintainer is the one that
+gets the notice. That's what they maintain, not cleaning up code from
+people that want new features. A maintainer is the one that has to make
+sure that the code continues to work.
+
+>   
+> > > Furthermore I don't think you get how the business side of this
+> > > works.
+> > 
+> > I've been doing both kernel and proprietary development for close to
+> > two
+> > decades, so you might be surprised. I see it the other way around --
+> > you
+> > don't see how the open source part works, and are expecting to
+> > substitute your proprietary process -- where crap code that "works"
+> > is
+> > preferred, to hell with trying to maintain consistency,
+> > maintainability,
+> > or even readability.
+> 
+> Um ok that's uncalled for.  What part of the fact my CMAC code is like 90% verbatim copied from the XCBC code do you not understand?
+
+So what?
+
+That code is there. There's a lot of code in the kernel that needs to be
+cleaned up. I've done exactly as you did. I copied code, submitted it to
+the maintainer, and it was rejected because things have changed since the
+time of the code I copied. Did I bitch to the maintainer saying "hey, I
+copied this and you should accept it because you have that there." No, I
+did not. Actually what I did was fix my patch to what was the right way
+to do things, and then I FIXED THE CODE I COPIED!!!
+
+
+>If you think the CMAC patch was bad then you better call up the authors of the XCBC code and call them out for it too.  Stop being hypocritical.
+
+Oh shut up!
+
+The XCBC code is in there today. And yes, if you submitted patches to
+clean that code up, I'm sure those will be accepted. But changing code
+in the kernel does take work, including removing said code. But that's
+still no reason to allow more code that will need to be cleaned up in
+the future. Fix it before it gets in.
+
+
+> 
+> You claimed my code fails to maintain "consistency" ... IT'S COPIED FROM EXISTING CODE.  Your complaint makes no sense not to mention it's insulting.
+
+He's not the one calling people lazy. Frankly sir, you're the one being
+offensive and a hypocrite.
+
+> 
+> Furthermore, as someone who ran OSS projects (some of which are in millions of devices around the world) I understood to cherish user contributions.  Even if they needed polishing up.  I did the bitch work of documenting, testing, packaging, development, debugging, and support.  It's far far far too common to see OSS developers shy away from the less fun side of software development...
+
+I maintain OSS projects too. And because there's very few people that
+contribute, I cherish submissions as well, and will do a lot of the
+grunt work that really should be done by the contributor. But the Linux
+kernel is much bigger. It changes something like 3000 lines of code a day!
+
+Maintainers do not scale well with such a project, and yes, it's up to
+the contributors to take up the slack.
+
+
+> 
+> I called out the maintainers here because because not only do they not maintain the integrity of the code for which they claim authority but they are hostile towards outside contributions with ridiculous standards that they themselves don't even adhere to.  Code that they work on in the kernel doesn't meet ANY of the standards set forth that I was supposed to magically divine applied here..
+
+My God, you sound like a 2 year old.
+
+Suck it up, and do the fixes. It's not the time you are worried about,
+as you most definitely spent more time bitching to everyone than it
+would have taken you to clean up your work.
+
+>  
+> > You sold your boss a bill of goods, then -- that may fly in your
+> > shop,
+> > but that doesn't work here. It is well known that there is likely to
+> > be
+> > several rounds of review, and this isn't a new thing.
+> 
+> Ok sure but why does that involve me re-writing the patch for cosmetic reasons?
+
+Because you are the one that cares about it being submitted. If someone
+else cares, they'll take your code and fix it, to get it in.
+
+>I agreed that adding the () around the ^/& expressions would be a good idea.  However, how is it a good use of my time to re-write the patch (which includes lines of code I didn't write in the first place) for coding styles that are not actually used in the kernel?
+
+It's better on your time than the maintainers. Do not try to compare
+your little OSS project to the Linux Kernel. They are two different
+beasts.
+
+> 
+> I **COPIED** existing code.  Yet somehow my code isn't good enough?
+
+And that's the perfect time to clean it up.
+
+> 
+> > I do know this, and I also know that the kernel is much better
+> > documented than the most of the closed source code bases I've looked
+> > at
+> > in my career.
+> 
+> That's not really an excuse for lack of documentation/comments.  
+
+We can always use more documentation and comments. And actually, the
+kernel has been getting better at this regard. New code usually does get
+better comments than what is currently in the kernel from years past.
+
+> 
+> > You think davem is lazy? Gruff, sure, but lazy? Well, thank you for
+> > illuminating your grasp of reality.
+> 
+> I was a one man shop running open source math/crypto libraries yet I wrote tons of well commented code, 100s of pages of documentation, ran user support, and did all the other things real developers do.  
+> 
+> If they can't add missing ()'s (which aren't strictly needed btw) on their own and merge the code into maintain then they're not much of developers now are they?
+
+Because honestly I doubt Dave cares about it. Again, how much are you
+paying him?  You're the one that wants this feature. If someone else
+wants it, they'll do this without the 2 year old bitch rant.
+
+> 
+> > There's a difference between patching an existing file, and
+> > introducing
+> > a new one. Should you have introduced a new file based on AH, I
+> > suspect
+> > it would also need some cleaning up.
+> 
+> Except when the motto is "use the source luke" you shouldn't be surprised when ... people use the source as a template for getting work done.  If you guys have such a damn problem with this you should maintain your code so it serves as an example to others.  Stop being a hypocrite.
+
+Fix the source Luke! It's not a big deal.
+
+> 
+> > Anyways, I'll stop feeding the troll now. You've made it quite clear
+> > that no one is going to convince you, and calling the maintainers
+> > lazy
+> > and hypocrites isn't going to convince them.
+> 
+> I'm sure I'll re-write the patch [when I can't say].  I'm not in a position to sell the AH-AEAD work to my bosses because the ROI just won't be there.  For now we and our customers will have access to CMAC and nobody else will which is just a crying shame.
+
+And when someone wants it, they will either fix up what you did, or pay
+someone to do it for them.
+
+> 
+> I'm not trying to pick a fight I'm trying to point out flaws in the system.  That you guys are so immobile on it is a shame.  I'd love to sell the idea to my bosses of cleaning up the CryptoAPI/IPsec maybe down the road merging our hardware drivers into mainline but it's not a case I can really make right now.  We make due quite fine with a private GPL tree of code but that's the opposite of how this should work.
+
+You did a good job at picking a fight here. I don't see a flaw in the
+system. I see a way to get new code in at a higher standard than the old
+code, and over time fix the old code so that it catches up with what's
+there today. This is what kernel janitors was created for.
+
+-- Steve
+
