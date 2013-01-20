@@ -1,117 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444Ab3ATTqT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 14:46:19 -0500
-Received: from mail.digium.com ([216.207.245.2]:55261 "EHLO mail.digium.com"
+	id S1752464Ab3ATTq7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 14:46:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62399 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752317Ab3ATTqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 14:46:18 -0500
-Date: Sun, 20 Jan 2013 13:45:54 -0600
-From: Shaun Ruffell <sruffell@digium.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Ingo Molnar <mingo@kernel.org>, Jan Beulich <JBeulich@suse.com>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] x86/perf_events: Fix "section type conflict" build error.
-Message-ID: <20130120194553.GA88837@digium.com>
-References: <20130109172255.GA17631@digium.com>
- <20130109215942.GA20350@digium.com>
+	id S1752317Ab3ATTq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 14:46:58 -0500
+Date: Sun, 20 Jan 2013 20:46:13 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Kernel Security <security@kernel.org>,
+        Michael Davidson <md@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Julien Tinnes <jln@google.com>,
+        Aaron Durbin <adurbin@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Roland McGrath <roland@hack.frob.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v2 2/4] ptrace: ensure arch_ptrace/ptrace_request can never
+	race with SIGKILL
+Message-ID: <20130120194613.GA14024@redhat.com>
+References: <CA+55aFzkWqSEzw9oa5JodrM2NWE0H_AF7xyzRhd+DQ=PB=ZT2A@mail.gmail.com> <20130118153700.GA27915@redhat.com> <CA+55aFxEow_-PoX0xFa07yOi6az=6uVx8zeOsfToErmzh7dB8A@mail.gmail.com> <20130118172854.GA29753@redhat.com> <20130118175224.GA520@redhat.com> <CA+55aFyEsU-pkX557A-m+xoGkA_v+fXEyA8z8HbJ5J8K1jObeg@mail.gmail.com> <20130118185559.GA3773@redhat.com> <CA+55aFy=newnMbx53HipyWbRs2mUUPSqXXCpSfDLW78gkro37g@mail.gmail.com> <20130120192448.GA6771@redhat.com> <20130120192527.GC6771@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130109215942.GA20350@digium.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130120192527.GC6771@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bump. Still an issue with v3.8-rc4. Am I mistaken in thinking this
-patch is trivial and obviously correct?
+putreg() assumes that the tracee is not running and pt_regs_access()
+can safely play with its stack. However a killed tracee can return
+from ptrace_stop() to the low-level asm code and do RESTORE_REST,
+this means that debugger can actually read/modify the kernel stack
+until the tracee does SAVE_REST again.
 
-Thanks,
-Shaun
+set_task_blockstep() can race with SIGKILL too and in some sense
+this race is even worse, the very fact the tracee can be woken up
+breaks the logic.
 
-On Wed, Jan 09, 2013 at 03:59:42PM -0600, Shaun Ruffell wrote:
-> From: Jan Beulich <JBeulich@suse.com>
-> 
-> This patch fixes a build regression first introduced in 3.7 with
-> (e09df47 "perf/x86: Update/fix generic events on P6 PMU").
-> 
-> At least some older versions of gcc, like (GCC) 4.1.2 20080704 (Red Hat
-> 4.1.2-51), dislike mixing constant and non-const data in the same
-> section. Without this patch a build will fail with the following error:
-> 
->     CC      arch/x86/kernel/cpu/perf_event_p6.o
->   arch/x86/kernel/cpu/perf_event_p6.c:22: error: p6_hw_cache_event_ids causes a section type conflict
->   make[3]: *** [arch/x86/kernel/cpu/perf_event_p6.o] Error 1
-> 
-> Newer versions of gcc simply emits the section as writable (which isn't what
-> we want, but also is not a big problem as it gets discarded post-init anyway).
-> 
-> Also get the Knight's Corner definitions in sync.
-> 
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> Cc: stable@vger.kernel.org # 3.7.x only
-> [sruffell@digium.com: Added details to the commit message.]
-> Signed-off-by: Shaun Ruffell <sruffell@digium.com>
-> 
-> ---
-> 
-> [I had the wrong stable email address when I previously sent this.
-> Sorry about the extra noise.]
-> 
-> Hans, Thomas,
-> 
-> Any chance of picking this up for 3.8? This doesn't seem too
-> controversial since it only makes sure that data in the __initconst
-> section is const.
-> 
-> Rob Landley also reported this to the list here:
-> https://lkml.org/lkml/2012/12/14/511. 
-> 
-> Thanks,
-> Shaun
-> 
->  arch/x86/kernel/cpu/perf_event_knc.c | 4 ++--
->  arch/x86/kernel/cpu/perf_event_p6.c  | 2 +-
->  2 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_knc.c b/arch/x86/kernel/cpu/perf_event_knc.c
-> index 4b7731b..838fa87 100644
-> --- a/arch/x86/kernel/cpu/perf_event_knc.c
-> +++ b/arch/x86/kernel/cpu/perf_event_knc.c
-> @@ -17,7 +17,7 @@ static const u64 knc_perfmon_event_map[] =
->    [PERF_COUNT_HW_BRANCH_MISSES]		= 0x002b,
->  };
->  
-> -static __initconst u64 knc_hw_cache_event_ids
-> +static const u64 __initconst knc_hw_cache_event_ids
->  				[PERF_COUNT_HW_CACHE_MAX]
->  				[PERF_COUNT_HW_CACHE_OP_MAX]
->  				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-> @@ -284,7 +284,7 @@ static struct attribute *intel_knc_formats_attr[] = {
->  	NULL,
->  };
->  
-> -static __initconst struct x86_pmu knc_pmu = {
-> +static const struct x86_pmu knc_pmu __initconst = {
->  	.name			= "knc",
->  	.handle_irq		= knc_pmu_handle_irq,
->  	.disable_all		= knc_pmu_disable_all,
-> diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
-> index f2af39f..b1e2fe1 100644
-> --- a/arch/x86/kernel/cpu/perf_event_p6.c
-> +++ b/arch/x86/kernel/cpu/perf_event_p6.c
-> @@ -19,7 +19,7 @@ static const u64 p6_perfmon_event_map[] =
->  
->  };
->  
-> -static __initconst u64 p6_hw_cache_event_ids
-> +static const u64 __initconst p6_hw_cache_event_ids
->  				[PERF_COUNT_HW_CACHE_MAX]
->  				[PERF_COUNT_HW_CACHE_OP_MAX]
->  				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-> -- 
-> 1.8.1
+As Linus suggested we can clear TASK_WAKEKILL around the arch_ptrace()
+call, this ensures that nobody can ever wakeup the tracee while the
+debugger looks at it. Not only this fixes the mentioned problems,
+we can do some cleanups/simplifications in arch_ptrace() paths.
+
+Probably ptrace_unfreeze_traced() needs more callers, for example
+it makes sense to make the tracee killable for oom-killer before
+access_process_vm().
+
+While at it, add the comment into may_ptrace_stop() to explain why
+ptrace_stop() still can't rely on SIGKILL and signal_pending_state().
+
+Reported-by: Salman Qazi <sqazi@google.com>
+Reported-by: Suleiman Souhlal <suleiman@google.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/kernel/step.c |    9 ++++---
+ kernel/ptrace.c        |   61 ++++++++++++++++++++++++++++++++++++++++--------
+ kernel/signal.c        |    5 ++++
+ 3 files changed, 61 insertions(+), 14 deletions(-)
+
+diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
+index cd3b243..9b4d51d 100644
+--- a/arch/x86/kernel/step.c
++++ b/arch/x86/kernel/step.c
+@@ -165,10 +165,11 @@ void set_task_blockstep(struct task_struct *task, bool on)
+ 	 * Ensure irq/preemption can't change debugctl in between.
+ 	 * Note also that both TIF_BLOCKSTEP and debugctl should
+ 	 * be changed atomically wrt preemption.
+-	 * FIXME: this means that set/clear TIF_BLOCKSTEP is simply
+-	 * wrong if task != current, SIGKILL can wakeup the stopped
+-	 * tracee and set/clear can play with the running task, this
+-	 * can confuse the next __switch_to_xtra().
++	 *
++	 * NOTE: this means that set/clear TIF_BLOCKSTEP is only safe if
++	 * task is current or it can't be running, otherwise we can race
++	 * with __switch_to_xtra(). We rely on ptrace_freeze_traced() but
++	 * PTRACE_KILL is not safe.
+ 	 */
+ 	local_irq_disable();
+ 	debugctl = get_debugctlmsr();
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 74ebdec..c68e705 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -122,6 +122,41 @@ void __ptrace_unlink(struct task_struct *child)
+ 	spin_unlock(&child->sighand->siglock);
+ }
+ 
++/* Ensure that nothing can wake it up, even SIGKILL */
++static bool ptrace_freeze_traced(struct task_struct *task)
++{
++	bool ret = false;
++
++	/* Lockless, nobody but us can set this flag */
++	if (task->jobctl & JOBCTL_LISTENING)
++		return ret;
++
++	spin_lock_irq(&task->sighand->siglock);
++	if (task_is_traced(task) && !__fatal_signal_pending(task)) {
++		task->state = __TASK_TRACED;
++		ret = true;
++	}
++	spin_unlock_irq(&task->sighand->siglock);
++
++	return ret;
++}
++
++static void ptrace_unfreeze_traced(struct task_struct *task)
++{
++	if (task->state != __TASK_TRACED)
++		return;
++
++	if (WARN_ON(!task->ptrace || task->parent != current))
++		return;
++
++	spin_lock_irq(&task->sighand->siglock);
++	if (__fatal_signal_pending(task))
++		wake_up_state(task, __TASK_TRACED);
++	else
++		task->state = TASK_TRACED;
++	spin_unlock_irq(&task->sighand->siglock);
++}
++
+ /**
+  * ptrace_check_attach - check whether ptracee is ready for ptrace operation
+  * @child: ptracee to check for
+@@ -151,24 +186,25 @@ int ptrace_check_attach(struct task_struct *child, bool ignore_state)
+ 	 * be changed by us so it's not changing right after this.
+ 	 */
+ 	read_lock(&tasklist_lock);
+-	if ((child->ptrace & PT_PTRACED) && child->parent == current) {
++	if (child->ptrace && child->parent == current) {
++		WARN_ON(child->state == __TASK_TRACED);
+ 		/*
+ 		 * child->sighand can't be NULL, release_task()
+ 		 * does ptrace_unlink() before __exit_signal().
+ 		 */
+-		spin_lock_irq(&child->sighand->siglock);
+-		WARN_ON_ONCE(task_is_stopped(child));
+-		if (ignore_state || (task_is_traced(child) &&
+-				     !(child->jobctl & JOBCTL_LISTENING)))
++		if (ignore_state || ptrace_freeze_traced(child))
+ 			ret = 0;
+-		spin_unlock_irq(&child->sighand->siglock);
+ 	}
+ 	read_unlock(&tasklist_lock);
+ 
+-	if (!ret && !ignore_state)
+-		ret = wait_task_inactive(child, TASK_TRACED) ? 0 : -ESRCH;
++	if (!ret && !ignore_state) {
++		if (!wait_task_inactive(child, __TASK_TRACED)) {
++			/* This can only happen if may_ptrace_stop() fails */
++			WARN_ON(child->state == __TASK_TRACED);
++			ret = -ESRCH;
++		}
++	}
+ 
+-	/* All systems go.. */
+ 	return ret;
+ }
+ 
+@@ -900,6 +936,8 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, unsigned long, addr,
+ 		goto out_put_task_struct;
+ 
+ 	ret = arch_ptrace(child, request, addr, data);
++	if (request != PTRACE_DETACH)
++		ptrace_unfreeze_traced(child);
+ 
+  out_put_task_struct:
+ 	put_task_struct(child);
+@@ -1039,8 +1077,11 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+ 
+ 	ret = ptrace_check_attach(child, request == PTRACE_KILL ||
+ 				  request == PTRACE_INTERRUPT);
+-	if (!ret)
++	if (!ret) {
+ 		ret = compat_arch_ptrace(child, request, addr, data);
++		if (request != PTRACE_DETACH)
++			ptrace_unfreeze_traced(child);
++	}
+ 
+  out_put_task_struct:
+ 	put_task_struct(child);
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 2bf2731..980bcf3 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1794,6 +1794,10 @@ static inline int may_ptrace_stop(void)
+ 	 * If SIGKILL was already sent before the caller unlocked
+ 	 * ->siglock we must see ->core_state != NULL. Otherwise it
+ 	 * is safe to enter schedule().
++	 *
++	 * This is almost outdated, a task with the pending SIGKILL can't
++	 * block in TASK_TRACED. But PTRACE_EVENT_EXIT can be reported
++	 * after SIGKILL was already dequeued.
+ 	 */
+ 	if (unlikely(current->mm->core_state) &&
+ 	    unlikely(current->mm == current->parent->mm))
+@@ -1919,6 +1923,7 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
+ 		if (gstop_done)
+ 			do_notify_parent_cldstop(current, false, why);
+ 
++		/* tasklist protects us from ptrace_freeze_traced() */
+ 		__set_current_state(TASK_RUNNING);
+ 		if (clear_code)
+ 			current->exit_code = 0;
+-- 
+1.5.5.1
+
+
