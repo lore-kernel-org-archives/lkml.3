@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3ATXNW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 18:13:22 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:59654 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752305Ab3ATXNT (ORCPT
+	id S1752696Ab3ATXNg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 18:13:36 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:63228 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752305Ab3ATXNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 18:13:19 -0500
+	Sun, 20 Jan 2013 18:13:32 -0500
 From: Patrik Karlin <patrik.karlin@gmail.com>
 To: chas@cmf.nrl.navy.mil
 Cc: linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, Patrik Karlin <patrik.karlin@gmail.com>
-Subject: [PATCH 2/5] drivers: atm: checkpatch.pl fixes removed all trailing whitespaces in eni.c
-Date: Mon, 21 Jan 2013 00:12:52 +0100
-Message-Id: <1358723575-8345-2-git-send-email-patrik.karlin@gmail.com>
+Subject: [PATCH 5/5] drivers: atm: checkpatch.pl fixed coding style issues in eni.c
+Date: Mon, 21 Jan 2013 00:12:55 +0100
+Message-Id: <1358723575-8345-5-git-send-email-patrik.karlin@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1358723575-8345-1-git-send-email-patrik.karlin@gmail.com>
 References: <1358723575-8345-1-git-send-email-patrik.karlin@gmail.com>
@@ -24,73 +24,843 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes all trailing whitespace's in eni.c
-as sugested by checkpatch.pl
+This patch fixes statement placement around if/else/for statments
+as suggested by checkpatch.pl
 
 Signed-off-by: Patrik Kårlin <patrik.karlin@gmail.com>
 ---
- drivers/atm/eni.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/atm/eni.c |  318 ++++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 205 insertions(+), 113 deletions(-)
 
 diff --git a/drivers/atm/eni.c b/drivers/atm/eni.c
-index 6ae0d89..1d5adc2 100644
+index 2877832..a8a18d4 100644
 --- a/drivers/atm/eni.c
 +++ b/drivers/atm/eni.c
-@@ -1,7 +1,7 @@
- /* drivers/atm/eni.c - Efficient Networks ENI155P device driver */
-- 
-+
- /* Written 1995-2000 by Werner Almesberger, EPFL LRC/ICA */
-- 
-+
+@@ -214,7 +214,8 @@ static void eni_put_free(struct eni_dev *eni_dev, void __iomem *start,
+ 			       start, size);
+ 			break;
+ 		}
+-		for (order = 0; !(((unsigned long)start | size) & (1 << order)); order++);
++		for (order = 0; !(((unsigned long)start | size) & (1 << order)); order++)
++			;
+ 		if (MID_MIN_BUF_SIZE > (1 << order)) {
+ 			printk(KERN_CRIT "eni_put_free: order %d too small\n",
+ 			       order);
+@@ -239,9 +240,12 @@ static void __iomem *eni_alloc_mem(struct eni_dev *eni_dev, unsigned long *size)
  
- #include <linux/module.h>
- #include <linux/kernel.h>
-@@ -33,7 +33,7 @@
- #if !defined(__i386__) && !defined(__x86_64__)
- #ifndef ioremap_nocache
- #define ioremap_nocache(X, Y) ioremap(X, Y)
--#endif 
-+#endif
+ 	list = eni_dev->free_list;
+ 	len = eni_dev->free_len;
+-	if (*size < MID_MIN_BUF_SIZE) *size = MID_MIN_BUF_SIZE;
+-	if (*size > MID_MAX_BUF_SIZE) return NULL;
+-	for (order = 0; (1 << order) < *size; order++);
++	if (*size < MID_MIN_BUF_SIZE)
++		*size = MID_MIN_BUF_SIZE;
++	if (*size > MID_MAX_BUF_SIZE)
++		return NULL;
++	for (order = 0; (1 << order) < *size; order++)
++		;
+ 	DPRINTK("trying: %ld->%d\n", *size, order);
+ 	best_order = 65; /* we don't have more than 2^64 of anything ... */
+ 	index = 0; /* silence GCC */
+@@ -250,12 +254,12 @@ static void __iomem *eni_alloc_mem(struct eni_dev *eni_dev, unsigned long *size)
+ 			best_order = order;
+ 			index = i;
+ 			break;
+-		}
+-		else if (best_order > list[i].order && list[i].order > order) {
++		} else if (best_order > list[i].order && list[i].order > order) {
+ 			best_order = list[i].order;
+ 			index = i;
+ 		}
+-	if (best_order == 65) return NULL;
++	if (best_order == 65)
++		return NULL;
+ 	start = list[index].start-eni_dev->base_diff;
+ 	list[index] = list[--len];
+ 	eni_dev->free_len = len;
+@@ -277,7 +281,8 @@ static void eni_free_mem(struct eni_dev *eni_dev, void __iomem *start,
+ 	start += eni_dev->base_diff;
+ 	list = eni_dev->free_list;
+ 	len = eni_dev->free_len;
+-	for (order = -1; size; order++) size >>= 1;
++	for (order = -1; size; order++)
++		size >>= 1;
+ 	DPRINTK("eni_free_mem: %p+0x%lx (order %d)\n", start, size, order);
+ 	for (i = 0; i < len; i++)
+ 		if (((unsigned long) list[i].start) == ((unsigned long)start^(1 << order)) &&
+@@ -373,7 +378,8 @@ static int do_rx_dma(struct atm_vcc *vcc, struct sk_buff *skb,
+ 		j++;
+ 	}
+ 	here = (eni_vcc->descr+size+skip) & (eni_vcc->words-1);
+-	if (!eff) size += skip;
++	if (!eff)
++		size += skip;
+ 	else {
+ 		unsigned long words;
+ 
+@@ -387,7 +393,8 @@ static int do_rx_dma(struct atm_vcc *vcc, struct sk_buff *skb,
+ 			unsigned long init;
+ 
+ 			init = 4-((paddr & 15) >> 2);
+-			if (init > words) init = words;
++			if (init > words)
++				init = words;
+ 			dma[j++] = MID_DT_WORD | (init << MID_DMA_COUNT_SHIFT) |
+ 				(vcc->vci << MID_DMA_VCI_SHIFT);
+ 			dma[j++] = paddr;
+@@ -481,7 +488,8 @@ trouble:
+ 	if (paddr)
+ 		pci_unmap_single(eni_dev->pci_dev, paddr, skb->len,
+ 				 PCI_DMA_FROMDEVICE);
+-	if (skb) dev_kfree_skb_irq(skb);
++	if (skb)
++		dev_kfree_skb_irq(skb);
+ 	return -1;
+ }
+ 
+@@ -492,10 +500,13 @@ static void discard(struct atm_vcc *vcc, unsigned long size)
+ 
+ 	eni_vcc = ENI_VCC(vcc);
+ 	EVENT("discard (size=%ld)\n", size, 0);
+-	while (do_rx_dma(vcc, NULL, 1, size, 0)) EVENT("BUSY LOOP", 0, 0);
++	while (do_rx_dma(vcc, NULL, 1, size, 0))
++		EVENT("BUSY LOOP", 0, 0);
+ 	/* could do a full fallback, but that might be more expensive */
+-	if (eni_vcc->rxing) ENI_PRV_POS(eni_vcc->last) += size+1;
+-	else eni_vcc->rx_pos = (eni_vcc->rx_pos+size+1) & (eni_vcc->words-1);
++	if (eni_vcc->rxing)
++		ENI_PRV_POS(eni_vcc->last) += size+1;
++	else
++		eni_vcc->rx_pos = (eni_vcc->rx_pos+size+1) & (eni_vcc->words-1);
+ }
+ 
+ 
+@@ -523,8 +534,7 @@ static int rx_aal0(struct atm_vcc *vcc)
+ 			vcc->dev->number);
+ 		length = 0;
+ 		atomic_inc(&vcc->stats->rx_err);
+-	}
+-	else {
++	} else {
+ 		length = ATM_CELL_SIZE-1; /* no HEC */
+ 	}
+ 	skb = length ? atm_alloc_charge(vcc, length, GFP_ATOMIC) : NULL;
+@@ -535,7 +545,8 @@ static int rx_aal0(struct atm_vcc *vcc)
+ 	skb_put(skb, length);
+ 	skb->tstamp = eni_vcc->timestamp;
+ 	DPRINTK("got len %ld\n", length);
+-	if (do_rx_dma(vcc, skb, 1, length >> 2, length >> 2)) return 1;
++	if (do_rx_dma(vcc, skb, 1, length >> 2, length >> 2))
++		return 1;
+ 	eni_vcc->rxing++;
+ 	return 0;
+ }
+@@ -562,8 +573,7 @@ static int rx_aal5(struct atm_vcc *vcc)
+ 			DPRINTK(DEV_LABEL "(itf %d): trashing empty cell\n",
+ 				vcc->dev->number);
+ 			size = 0;
+-		}
+-		else {
++		} else {
+ 			static unsigned long silence = 0;
+ 
+ 			if (time_after(jiffies, silence) || silence == 0) {
+@@ -578,15 +588,15 @@ static int rx_aal5(struct atm_vcc *vcc)
+ 		}
+ 		eff = length = 0;
+ 		atomic_inc(&vcc->stats->rx_err);
+-	}
+-	else {
++	} else {
+ 		size = (descr & MID_RED_COUNT)*(ATM_CELL_PAYLOAD >> 2);
+ 		DPRINTK("size=%ld\n", size);
+ 		length = readl(eni_vcc->recv+(((eni_vcc->descr+size-1) &
+ 					       (eni_vcc->words-1)))*4) & 0xffff;
+ 		/* -trailer(2)+header(1) */
+ 		if (length && length <= (size << 2)-8 && length <=
+-		    ATM_MAX_AAL5_PDU) eff = (length+3) >> 2;
++		    ATM_MAX_AAL5_PDU) 
++			eff = (length+3) >> 2;
+ 		else {				 /* ^ trailer length (8) */
+ 			EVENT("bad PDU (descr=0x08%lx,length=%ld)\n", descr,
+ 			      length);
+@@ -604,7 +614,8 @@ static int rx_aal5(struct atm_vcc *vcc)
+ 	}
+ 	skb_put(skb, length);
+ 	DPRINTK("got len %ld\n", length);
+-	if (do_rx_dma(vcc, skb, 1, size, eff)) return 1;
++	if (do_rx_dma(vcc, skb, 1, size, eff))
++		return 1;
+ 	eni_vcc->rxing++;
+ 	return 0;
+ }
+@@ -626,7 +637,8 @@ static inline int rx_vcc(struct atm_vcc *vcc)
+ 		DPRINTK("CB_DESCR %ld REG_DESCR %d\n", ENI_VCC(vcc)->descr,
+ 			(((unsigned) readl(vci_dsc+4) & MID_VCI_DESCR) >>
+ 			 MID_VCI_DESCR_SHIFT));
+-		if (ENI_VCC(vcc)->rx(vcc)) return 1;
++		if (ENI_VCC(vcc)->rx(vcc))
++			return 1;
+ 	}
+ 	/* clear IN_SERVICE flag */
+ 	writel(readl(vci_dsc) & ~MID_VCI_IN_SERVICE, vci_dsc);
+@@ -643,7 +655,8 @@ static inline int rx_vcc(struct atm_vcc *vcc)
+ 		DPRINTK("CB_DESCR %ld REG_DESCR %d\n", ENI_VCC(vcc)->descr,
+ 			(((unsigned) readl(vci_dsc+4) & MID_VCI_DESCR) >>
+ 			 MID_VCI_DESCR_SHIFT));
+-		if (ENI_VCC(vcc)->rx(vcc)) return 1;
++		if (ENI_VCC(vcc)->rx(vcc))
++			return 1;
+ 	}
+ 	return 0;
+ }
+@@ -657,7 +670,8 @@ static void poll_rx(struct atm_dev *dev)
+ 	eni_dev = ENI_DEV(dev);
+ 	while ((curr = eni_dev->fast)) {
+ 		EVENT("poll_rx.fast\n", 0, 0);
+-		if (rx_vcc(curr)) return;
++		if (rx_vcc(curr))
++			return;
+ 		eni_dev->fast = ENI_VCC(curr)->next;
+ 		ENI_VCC(curr)->next = ENI_VCC_NOS;
+ 		barrier();
+@@ -665,7 +679,8 @@ static void poll_rx(struct atm_dev *dev)
+ 	}
+ 	while ((curr = eni_dev->slow)) {
+ 		EVENT("poll_rx.slow\n", 0, 0);
+-		if (rx_vcc(curr)) return;
++		if (rx_vcc(curr))
++			return;
+ 		eni_dev->slow = ENI_VCC(curr)->next;
+ 		ENI_VCC(curr)->next = ENI_VCC_NOS;
+ 		barrier();
+@@ -703,13 +718,14 @@ static void get_service(struct atm_dev *dev)
+ 		if (vcc->qos.rxtp.traffic_class == ATM_CBR) {
+ 			if (eni_dev->fast)
+ 				ENI_VCC(eni_dev->last_fast)->next = vcc;
+-			else eni_dev->fast = vcc;
++			else
++				eni_dev->fast = vcc;
+ 			eni_dev->last_fast = vcc;
+-		}
+-		else {
++		} else {
+ 			if (eni_dev->slow)
+ 				ENI_VCC(eni_dev->last_slow)->next = vcc;
+-			else eni_dev->slow = vcc;
++			else
++				eni_dev->slow = vcc;
+ 			eni_dev->last_slow = vcc;
+ 		}
+ 		putting++;
+@@ -757,7 +773,8 @@ static void dequeue_rx(struct atm_dev *dev)
+ 		eni_vcc->rx_pos = ENI_PRV_POS(skb) & (eni_vcc->words-1);
+ 		pci_unmap_single(eni_dev->pci_dev, ENI_PRV_PADDR(skb), skb->len,
+ 				 PCI_DMA_TODEVICE);
+-		if (!skb->len) dev_kfree_skb_irq(skb);
++		if (!skb->len)
++			dev_kfree_skb_irq(skb);
+ 		else {
+ 			EVENT("pushing (len=%ld)\n", skb->len, 0);
+ 			if (vcc->qos.aal == ATM_AAL0)
+@@ -783,7 +800,8 @@ static int open_rx_first(struct atm_vcc *vcc)
+ 	eni_dev = ENI_DEV(vcc->dev);
+ 	eni_vcc = ENI_VCC(vcc);
+ 	eni_vcc->rx = NULL;
+-	if (vcc->qos.rxtp.traffic_class == ATM_NONE) return 0;
++	if (vcc->qos.rxtp.traffic_class == ATM_NONE)
++		return 0;
+ 	size = vcc->qos.rxtp.max_sdu*eni_dev->rx_mult/100;
+ 	if (size > MID_MAX_BUF_SIZE && vcc->qos.rxtp.max_sdu <=
+ 	    MID_MAX_BUF_SIZE)
+@@ -791,7 +809,8 @@ static int open_rx_first(struct atm_vcc *vcc)
+ 	eni_vcc->recv = eni_alloc_mem(eni_dev, &size);
+ 	DPRINTK("rx at 0x%lx\n", eni_vcc->recv);
+ 	eni_vcc->words = size >> 2;
+-	if (!eni_vcc->recv) return -ENOBUFS;
++	if (!eni_vcc->recv)
++		return -ENOBUFS;
+ 	eni_vcc->rx = vcc->qos.aal == ATM_AAL5 ? rx_aal5 : rx_aal0;
+ 	eni_vcc->descr = 0;
+ 	eni_vcc->rx_pos = 0;
+@@ -813,12 +832,14 @@ static int open_rx_second(struct atm_vcc *vcc)
+ 	DPRINTK("open_rx_second\n");
+ 	eni_dev = ENI_DEV(vcc->dev);
+ 	eni_vcc = ENI_VCC(vcc);
+-	if (!eni_vcc->rx) return 0;
++	if (!eni_vcc->rx)
++		return 0;
+ 	/* set up VCI descriptor */
+ 	here = eni_dev->vci+vcc->vci*16;
+ 	DPRINTK("loc 0x%x\n", (unsigned) (eni_vcc->recv-eni_dev->ram)/4);
+ 	size = eni_vcc->words >> 8;
+-	for (order = -1; size; order++) size >>= 1;
++	for (order = -1; size; order++)
++		size >>= 1;
+ 	writel(0, here+4); /* descr, read = 0 */
+ 	writel(0, here+8); /* write, state, count = 0 */
+ 	if (eni_dev->rx_map[vcc->vci])
+@@ -841,7 +862,8 @@ static void close_rx(struct atm_vcc *vcc)
+ 	struct eni_vcc *eni_vcc;
+ 
+ 	eni_vcc = ENI_VCC(vcc);
+-	if (!eni_vcc->rx) return;
++	if (!eni_vcc->rx)
++		return;
+ 	eni_dev = ENI_DEV(vcc->dev);
+ 	if (vcc->vpi != ATM_VPI_UNSPEC && vcc->vci != ATM_VCI_UNSPEC) {
+ 		here = eni_dev->vci+vcc->vci*16;
+@@ -864,7 +886,8 @@ static void close_rx(struct atm_vcc *vcc)
+ 			/* transition service->rx: rxing++, servicing-- */
+ 			if (!eni_vcc->servicing) {
+ 				barrier();
+-				if (!eni_vcc->rxing) break;
++				if (!eni_vcc->rxing)
++					break;
+ 			}
+ 			EVENT("drain PDUs (rx %ld, serv %ld)\n", eni_vcc->rxing,
+ 			      eni_vcc->servicing);
+@@ -881,7 +904,8 @@ static void close_rx(struct atm_vcc *vcc)
+ 			tmp = readl(eni_dev->vci+vcc->vci*16+4) & MID_VCI_READ;
+ 			at_end = eni_vcc->rx_pos == tmp >> MID_VCI_READ_SHIFT;
+ 			tasklet_enable(&eni_dev->task);
+-			if (at_end) break;
++			if (at_end)
++				break;
+ 			EVENT("drain discard (host 0x%lx, nic 0x%lx)\n",
+ 			      eni_vcc->rx_pos, tmp);
+ 			printk(KERN_INFO "draining RX: host 0x%lx, nic 0x%x\n",
+@@ -941,7 +965,8 @@ static inline void put_dma(int chan, u32 *dma, int *j, dma_addr_t paddr,
  #endif
+ 	if (paddr & 3) {
+ 		init = 4-(paddr & 3);
+-		if (init > size || size < 7) init = size;
++		if (init > size || size < 7)
++			init = size;
+ 		DPRINTK("put_dma: %lx DMA: %d/%d bytes\n",
+ 			(unsigned long) paddr, init, size);
+ 		dma[(*j)++] = MID_DT_BYTE | (init << MID_DMA_COUNT_SHIFT) |
+@@ -954,7 +979,8 @@ static inline void put_dma(int chan, u32 *dma, int *j, dma_addr_t paddr,
+ 	size &= 3;
+ 	if (words && (paddr & 31)) {
+ 		init = 8-((paddr & 31) >> 2);
+-		if (init > words) init = words;
++		if (init > words)
++			init = words;
+ 		DPRINTK("put_dma: %lx DMA: %d/%d words\n",
+ 			(unsigned long) paddr, init, words);
+ 		dma[(*j)++] = MID_DT_WORD | (init << MID_DMA_COUNT_SHIFT) |
+@@ -1096,8 +1122,10 @@ static enum enq_res do_tx(struct sk_buff *skb)
+ 	dma_size = 3; /* JK for descriptor and final fill, plus final size
+ 			 mis-alignment fix */
+ 	DPRINTK("iovcnt = %d\n", skb_shinfo(skb)->nr_frags);
+-	if (!skb_shinfo(skb)->nr_frags) dma_size += 5;
+-	else dma_size += 5*(skb_shinfo(skb)->nr_frags+1);
++	if (!skb_shinfo(skb)->nr_frags)
++		dma_size += 5;
++	else
++		dma_size += 5*(skb_shinfo(skb)->nr_frags+1);
+ 	if (dma_size > TX_DMA_BUF) {
+ 		printk(KERN_CRIT DEV_LABEL "(itf %d): needs %d DMA entries "
+ 		       "(got only %d)\n", vcc->dev->number, dma_size, TX_DMA_BUF);
+@@ -1119,8 +1147,10 @@ static enum enq_res do_tx(struct sk_buff *skb)
+ 		MID_DT_JK;
+ 	j++;
+ 	if (!skb_shinfo(skb)->nr_frags)
+-		if (aal5) put_dma(tx->index, eni_dev->dma, &j, paddr, skb->len);
+-		else put_dma(tx->index, eni_dev->dma, &j, paddr+4, skb->len-4);
++		if (aal5)
++			put_dma(tx->index, eni_dev->dma, &j, paddr, skb->len);
++		else
++			put_dma(tx->index, eni_dev->dma, &j, paddr+4, skb->len-4);
+ 	else {
+ 		DPRINTK("doing direct send\n"); /* @@@ well, this doesn't work anyway */
+ 		for (i = -1; i < skb_shinfo(skb)->nr_frags; i++)
+@@ -1189,11 +1219,13 @@ static void poll_tx(struct atm_dev *dev)
+ 		if (tx->send)
+ 			while ((skb = skb_dequeue(&tx->backlog))) {
+ 				res = do_tx(skb);
+-				if (res == enq_ok) continue;
++				if (res == enq_ok)
++					continue;
+ 				DPRINTK("re-queuing TX PDU\n");
+ 				skb_queue_head(&tx->backlog, skb);
+ 				requeued++;
+-				if (res == enq_jam) return;
++				if (res == enq_jam)
++					return;
+ 				break;
+ 			}
+ 	}
+@@ -1225,8 +1257,10 @@ static void dequeue_tx(struct atm_dev *dev)
+ 		ENI_VCC(vcc)->txing -= ENI_PRV_SIZE(skb);
+ 		pci_unmap_single(eni_dev->pci_dev, ENI_PRV_PADDR(skb), skb->len,
+ 				 PCI_DMA_TODEVICE);
+-		if (vcc->pop) vcc->pop(vcc, skb);
+-		else dev_kfree_skb_irq(skb);
++		if (vcc->pop)
++			vcc->pop(vcc, skb);
++		else
++			dev_kfree_skb_irq(skb);
+ 		atomic_inc(&vcc->stats->tx);
+ 		wake_up(&eni_dev->tx_wait);
+ 		dma_complete++;
+@@ -1239,7 +1273,8 @@ static struct eni_tx *alloc_tx(struct eni_dev *eni_dev, int ubr)
+ 	int i;
  
- /*
-@@ -90,7 +90,7 @@ static void event_dump(void)
- #else
+ 	for (i = !ubr; i < NR_CHAN; i++)
+-		if (!eni_dev->tx[i].send) return eni_dev->tx+i;
++		if (!eni_dev->tx[i].send)
++			return eni_dev->tx+i;
+ 	return NULL;
+ }
  
+@@ -1250,30 +1285,36 @@ static int comp_tx(struct eni_dev *eni_dev, int *pcr, int reserved, int *pre,
+ 	static const int pre_div[] = { 4, 16, 128, 2048 };
+ 	/* 2^(((x+2)^2-(x+2))/2+1) */
  
--/* 
-+/*
-  * NULL pointer checking
-  */
+-	if (unlimited) *pre = *res = 0;
++	if (unlimited)
++		*pre = *res = 0;
+ 	else {
+ 		if (*pcr > 0) {
+ 			int div;
  
-@@ -112,7 +112,7 @@ static int ec = 0;
+ 			for (*pre = 0; *pre < 3; (*pre)++)
+-				if (TS_CLOCK/pre_div[*pre]/64 <= *pcr) break;
++				if (TS_CLOCK/pre_div[*pre]/64 <= *pcr)
++					break;
+ 			div = pre_div[*pre]**pcr;
+ 			DPRINTK("min div %d\n", div);
+ 			*res = TS_CLOCK/div-1;
+-		}
+-		else {
++		} else {
+ 			int div;
  
- static void EVENT(const char *s, unsigned long a, unsigned long b)
+-			if (!*pcr) *pcr = eni_dev->tx_bw+reserved;
++			if (!*pcr)
++				*pcr = eni_dev->tx_bw+reserved;
+ 			for (*pre = 3; *pre >= 0; (*pre)--)
+-				if (TS_CLOCK/pre_div[*pre]/64 > -*pcr) break;
+-			if (*pre < 3) (*pre)++; /* else fail later */
++				if (TS_CLOCK/pre_div[*pre]/64 > -*pcr)
++					break;
++			if (*pre < 3)
++				(*pre)++; /* else fail later */
+ 			div = pre_div[*pre]*-*pcr;
+ 			DPRINTK("max div %d\n", div);
+ 			*res = DIV_ROUND_UP(TS_CLOCK, div)-1;
+ 		}
+-		if (*res < 0) *res = 0;
+-		if (*res > MID_SEG_MAX_RATE) *res = MID_SEG_MAX_RATE;
++		if (*res < 0)
++			*res = 0;
++		if (*res > MID_SEG_MAX_RATE)
++			*res = MID_SEG_MAX_RATE;
+ 	}
+ 	*pcr = TS_CLOCK/pre_div[*pre]/(*res+1);
+ 	DPRINTK("out pcr: %d (%d:%d)\n", *pcr, *pre, *res);
+@@ -1302,8 +1343,7 @@ static int reserve_or_set_tx(struct atm_vcc *vcc, struct atm_trafprm *txtp,
+ 		if (size > MID_MAX_BUF_SIZE && txtp->max_sdu <=
+ 		    MID_MAX_BUF_SIZE)
+ 			size = MID_MAX_BUF_SIZE;
+-	}
+-	else {
++	} else {
+ 		if (eni_dev->ubr) {
+ 			eni_vcc->tx = eni_dev->ubr;
+ 			txtp->pcr = ATM_OC3_PCR;
+@@ -1313,10 +1353,12 @@ static int reserve_or_set_tx(struct atm_vcc *vcc, struct atm_trafprm *txtp,
+ 	}
+ 	new_tx = !eni_vcc->tx;
+ 	mem = NULL; /* for gcc */
+-	if (!new_tx) tx = eni_vcc->tx;
++	if (!new_tx)
++		tx = eni_vcc->tx;
+ 	else {
+ 		mem = eni_alloc_mem(eni_dev, &size);
+-		if (!mem) return -ENOBUFS;
++		if (!mem)
++			return -ENOBUFS;
+ 		tx = alloc_tx(eni_dev, unlimited);
+ 		if (!tx) {
+ 			eni_free_mem(eni_dev, mem, size);
+@@ -1327,7 +1369,8 @@ static int reserve_or_set_tx(struct atm_vcc *vcc, struct atm_trafprm *txtp,
+ 		tx->send = mem;
+ 		tx->words = size >> 2;
+ 		skb_queue_head_init(&tx->backlog);
+-		for (order = 0; size > (1 << (order+10)); order++);
++		for (order = 0; size > (1 << (order+10)); order++)
++			;
+ 		eni_out((order << MID_SIZE_SHIFT) |
+ 			((tx->send-eni_dev->ram) >> (MID_LOC_SKIP+2)),
+ 			MID_TX_PLACE(tx->index));
+@@ -1335,9 +1378,11 @@ static int reserve_or_set_tx(struct atm_vcc *vcc, struct atm_trafprm *txtp,
+ 			MID_DESCR_START;
+ 	}
+ 	error = comp_tx(eni_dev, &rate, tx->reserved, &pre, &res, unlimited);
+-	if (!error  && txtp->min_pcr > rate) error = -EINVAL;
++	if (!error  && txtp->min_pcr > rate)
++		error = -EINVAL;
+ 	if (!error && txtp->max_pcr && txtp->max_pcr != ATM_MAX_PCR &&
+-	    txtp->max_pcr < rate) error = -EINVAL;
++	    txtp->max_pcr < rate)
++		error = -EINVAL;
+ 	if (!error && !ubr && rate > eni_dev->tx_bw+tx->reserved)
+ 		error = -EINVAL;
+ 	if (!error && set_rsv && !set_shp && rate < tx->shaping)
+@@ -1358,12 +1403,14 @@ static int reserve_or_set_tx(struct atm_vcc *vcc, struct atm_trafprm *txtp,
+ 		eni_dev->tx_bw -= rate;
+ 	}
+ 	if (set_shp || (unlimited && new_tx)) {
+-		if (unlimited && new_tx) eni_dev->ubr = tx;
++		if (unlimited && new_tx)
++			eni_dev->ubr = tx;
+ 		tx->prescaler = pre;
+ 		tx->resolution = res;
+ 		tx->shaping = rate;
+ 	}
+-	if (set_shp) eni_vcc->tx = tx;
++	if (set_shp)
++		eni_vcc->tx = tx;
+ 	DPRINTK("rsv %d shp %d\n", tx->reserved, tx->shaping);
+ 	return 0;
+ }
+@@ -1372,7 +1419,8 @@ static int reserve_or_set_tx(struct atm_vcc *vcc, struct atm_trafprm *txtp,
+ static int open_tx_first(struct atm_vcc *vcc)
  {
--	ev[ec] = s; 
-+	ev[ec] = s;
- 	ev_a[ec] = a;
- 	ev_b[ec] = b;
- 	ec = (ec+1) % EV;
-@@ -1800,7 +1800,7 @@ static void eni_do_release(struct atm_dev *dev)
- static int eni_start(struct atm_dev *dev)
- {
- 	struct eni_dev *eni_dev;
--	
-+
- 	void __iomem *buf;
- 	unsigned long buffer_mem;
- 	int error;
-@@ -2148,7 +2148,7 @@ static int eni_proc_read(struct atm_dev *dev, loff_t *pos, char *page)
- 		    " (default)"
+ 	ENI_VCC(vcc)->tx = NULL;
+-	if (vcc->qos.txtp.traffic_class == ATM_NONE) return 0;
++	if (vcc->qos.txtp.traffic_class == ATM_NONE)
++		return 0;
+ 	ENI_VCC(vcc)->txing = 0;
+ 	return reserve_or_set_tx(vcc, &vcc->qos.txtp, 1, 1);
+ }
+@@ -1391,7 +1439,8 @@ static void close_tx(struct atm_vcc *vcc)
+ 	struct eni_vcc *eni_vcc;
+ 
+ 	eni_vcc = ENI_VCC(vcc);
+-	if (!eni_vcc->tx) return;
++	if (!eni_vcc->tx)
++		return;
+ 	eni_dev = ENI_DEV(vcc->dev);
+ 	/* wait for TX queue to drain */
+ 	DPRINTK("eni_close: waiting for TX ...\n");
+@@ -1403,7 +1452,8 @@ static void close_tx(struct atm_vcc *vcc)
+ 		tasklet_disable(&eni_dev->task);
+ 		txing = skb_peek(&eni_vcc->tx->backlog) || eni_vcc->txing;
+ 		tasklet_enable(&eni_dev->task);
+-		if (!txing) break;
++		if (!txing)
++			break;
+ 		DPRINTK("%d TX left\n", eni_vcc->txing);
+ 		schedule();
+ 		set_current_state(TASK_UNINTERRUPTIBLE);
+@@ -1460,7 +1510,8 @@ static void foo(void)
+ 	       "backlogged=%d,rx_enqueued=%d,rx_dequeued=%d,putting=%d,pushed=%d\n",
+ 	       tx_complete, dma_complete, queued, requeued, submitted, backlogged,
+ 	       rx_enqueued, rx_dequeued, putting, pushed);
+-	if (eni_boards) printk(KERN_INFO "loss: %ld\n", ENI_DEV(eni_boards)->lost);
++	if (eni_boards)
++		printk(KERN_INFO "loss: %ld\n", ENI_DEV(eni_boards)->lost);
+ }
+ 
  #endif
- 		    "\n", "");
--	if (!--left) 
-+	if (!--left)
- 		return sprintf(page, "%4sBuffer multipliers: tx %d%%, rx %d%%\n",
- 		    "", eni_dev->tx_mult, eni_dev->rx_mult);
+@@ -1634,7 +1685,8 @@ static int get_esi_asic(struct atm_dev *dev)
+ 		SET_SEPROM;
+ 		tonga |= SEPROM_DATA;
+ 		SET_SEPROM;
+-		if (failed) error = -EIO;
++		if (failed)
++			error = -EIO;
+ 		else {
+ 			dev->esi[i] = 0;
+ 			for (j = 7; j >= 0; j--) {
+@@ -1644,7 +1696,8 @@ static int get_esi_asic(struct atm_dev *dev)
+ 				tonga |= SEPROM_CLK;
+ 				SET_SEPROM;
+ 				GET_SEPROM;
+-				if (tonga & SEPROM_DATA) dev->esi[i] |= 1;
++				if (tonga & SEPROM_DATA)
++					dev->esi[i] |= 1;
+ 				tonga &= ~SEPROM_CLK;
+ 				SET_SEPROM;
+ 				tonga |= SEPROM_DATA;
+@@ -1656,7 +1709,8 @@ static int get_esi_asic(struct atm_dev *dev)
+ 			tonga |= SEPROM_CLK;
+ 			SET_SEPROM;
+ 			GET_SEPROM;
+-			if (!(tonga & SEPROM_DATA)) error = -EIO;
++			if (!(tonga & SEPROM_DATA))
++				error = -EIO;
+ 			tonga &= ~SEPROM_CLK;
+ 			SET_SEPROM;
+ 			tonga |= SEPROM_DATA;
+@@ -1689,7 +1743,8 @@ static int get_esi_fpga(struct atm_dev *dev, void __iomem *base)
+ 	int i;
+ 
+ 	mac_base = base+EPROM_SIZE-sizeof(struct midway_eprom);
+-	for (i = 0; i < ESI_LEN; i++) dev->esi[i] = readb(mac_base+(i^3));
++	for (i = 0; i < ESI_LEN; i++)
++		dev->esi[i] = readb(mac_base+(i^3));
+ 	return 0;
+ }
+ 
+@@ -1747,15 +1802,19 @@ static int eni_do_init(struct atm_dev *dev)
+ 	last = MAP_MAX_SIZE-RAM_BASE;
+ 	for (i = last-RAM_INCREMENT; i >= 0; i -= RAM_INCREMENT) {
+ 		writel(0x55555555, eni_dev->ram+i);
+-		if (readl(eni_dev->ram+i) != 0x55555555) last = i;
++		if (readl(eni_dev->ram+i) != 0x55555555)
++			last = i;
+ 		else {
+ 			writel(0xAAAAAAAA, eni_dev->ram+i);
+-			if (readl(eni_dev->ram+i) != 0xAAAAAAAA) last = i;
+-			else writel(i, eni_dev->ram+i);
++			if (readl(eni_dev->ram+i) != 0xAAAAAAAA)
++				last = i;
++			else
++				writel(i, eni_dev->ram+i);
+ 		}
+ 	}
+ 	for (i = 0; i < last; i += RAM_INCREMENT)
+-		if (readl(eni_dev->ram+i) != i) break;
++		if (readl(eni_dev->ram+i) != i)
++			break;
+ 	eni_dev->mem = i;
+ 	memset_io(eni_dev->ram, 0, eni_dev->mem);
+ 	/* TODO: should shrink allocation now */
+@@ -1864,11 +1923,14 @@ static int eni_start(struct atm_dev *dev)
+ 	 */
+ 	eni_out(0xffffffff, MID_IE);
+ 	error = start_tx(dev);
+-	if (error) goto free_list;
++	if (error)
++		goto free_list;
+ 	error = start_rx(dev);
+-	if (error) goto free_list;
++	if (error)
++		goto free_list;
+ 	error = dev->phy->start(dev);
+-	if (error) goto free_list;
++	if (error)
++		goto free_list;
+ 	eni_out(eni_in(MID_MC_S) | (1 << MID_INT_SEL_SHIFT) |
+ 		MID_TX_LOCK_MODE | MID_DMA_ENABLE | MID_TX_ENABLE | MID_RX_ENABLE,
+ 		MID_MC_S);
+@@ -1890,7 +1952,8 @@ out:
+ static void eni_close(struct atm_vcc *vcc)
+ {
+ 	DPRINTK(">eni_close\n");
+-	if (!ENI_VCC(vcc)) return;
++	if (!ENI_VCC(vcc))
++		return;
+ 	clear_bit(ATM_VF_READY, &vcc->flags);
+ 	close_rx(vcc);
+ 	close_tx(vcc);
+@@ -1922,7 +1985,8 @@ static int eni_open(struct atm_vcc *vcc)
+ 		vcc->vci);
+ 	if (!test_bit(ATM_VF_PARTIAL, &vcc->flags)) {
+ 		eni_vcc = kmalloc(sizeof(struct eni_vcc), GFP_KERNEL);
+-		if (!eni_vcc) return -ENOMEM;
++		if (!eni_vcc)
++			return -ENOMEM;
+ 		vcc->dev_data = eni_vcc;
+ 		eni_vcc->tx = NULL; /* for eni_close after open_rx */
+ 		if ((error = open_rx_first(vcc))) {
+@@ -1934,7 +1998,8 @@ static int eni_open(struct atm_vcc *vcc)
+ 			return error;
+ 		}
+ 	}
+-	if (vci == ATM_VPI_UNSPEC || vpi == ATM_VCI_UNSPEC) return 0;
++	if (vci == ATM_VPI_UNSPEC || vpi == ATM_VCI_UNSPEC)
++		return 0;
+ 	if ((error = open_rx_second(vcc))) {
+ 		eni_close(vcc);
+ 		return error;
+@@ -1956,19 +2021,29 @@ static int eni_change_qos(struct atm_vcc *vcc, struct atm_qos *qos, int flgs)
+ 	struct sk_buff *skb;
+ 	int error, rate, rsv, shp;
+ 
+-	if (qos->txtp.traffic_class == ATM_NONE) return 0;
+-	if (tx == eni_dev->ubr) return -EBADFD;
++	if (qos->txtp.traffic_class == ATM_NONE)
++		return 0;
++	if (tx == eni_dev->ubr)
++		return -EBADFD;
+ 	rate = atm_pcr_goal(&qos->txtp);
+-	if (rate < 0) rate = -rate;
++	if (rate < 0)
++		rate = -rate;
+ 	rsv = shp = 0;
+-	if ((flgs & ATM_MF_DEC_RSV) && rate && rate < tx->reserved) rsv = 1;
+-	if ((flgs & ATM_MF_INC_RSV) && (!rate || rate > tx->reserved)) rsv = 1;
+-	if ((flgs & ATM_MF_DEC_SHP) && rate && rate < tx->shaping) shp = 1;
+-	if ((flgs & ATM_MF_INC_SHP) && (!rate || rate > tx->shaping)) shp = 1;
+-	if (!rsv && !shp) return 0;
++	if ((flgs & ATM_MF_DEC_RSV) && rate && rate < tx->reserved)
++		rsv = 1;
++	if ((flgs & ATM_MF_INC_RSV) && (!rate || rate > tx->reserved))
++		rsv = 1;
++	if ((flgs & ATM_MF_DEC_SHP) && rate && rate < tx->shaping)
++		shp = 1;
++	if ((flgs & ATM_MF_INC_SHP) && (!rate || rate > tx->shaping))
++		shp = 1;
++	if (!rsv && !shp)
++		return 0;
+ 	error = reserve_or_set_tx(vcc, &qos->txtp, rsv, shp);
+-	if (error) return error;
+-	if (shp && !(flgs & ATM_MF_IMMED)) return 0;
++	if (error)
++		return error;
++	if (shp && !(flgs & ATM_MF_IMMED))
++		return 0;
+ 	/*
+ 	 * Walk through the send buffer and patch the rate information in all
+ 	 * segmentation buffer descriptors of this VCC.
+@@ -1977,7 +2052,8 @@ static int eni_change_qos(struct atm_vcc *vcc, struct atm_qos *qos, int flgs)
+ 	skb_queue_walk(&eni_dev->tx_queue, skb) {
+ 		void __iomem *dsc;
+ 
+-		if (ATM_SKB(skb)->vcc != vcc) continue;
++		if (ATM_SKB(skb)->vcc != vcc)
++			continue;
+ 		dsc = tx->send+ENI_PRV_POS(skb)*4;
+ 		writel((readl(dsc) & ~(MID_SEG_RATE | MID_SEG_PR)) |
+ 		       (tx->prescaler << MID_SEG_PR_SHIFT) |
+@@ -1993,7 +2069,8 @@ static int eni_ioctl(struct atm_dev *dev, unsigned int cmd, void __user *arg)
+ 	struct eni_dev *eni_dev = ENI_DEV(dev);
+ 
+ 	if (cmd == ENI_MEMDUMP) {
+-		if (!capable(CAP_NET_ADMIN)) return -EPERM;
++		if (!capable(CAP_NET_ADMIN))
++			return -EPERM;
+ 		printk(KERN_WARNING "Please use /proc/atm/" DEV_LABEL ":%d "
+ 		       "instead of obsolete ioctl ENI_MEMDUMP\n", dev->number);
+ 		dump(dev);
+@@ -2002,15 +2079,18 @@ static int eni_ioctl(struct atm_dev *dev, unsigned int cmd, void __user *arg)
+ 	if (cmd == ENI_SETMULT) {
+ 		struct eni_multipliers mult;
+ 
+-		if (!capable(CAP_NET_ADMIN)) return -EPERM;
++		if (!capable(CAP_NET_ADMIN))
++			return -EPERM;
+ 		if (copy_from_user(&mult, arg,
+ 				   sizeof(struct eni_multipliers)))
+ 			return -EFAULT;
+ 		if ((mult.tx && mult.tx <= 100) || (mult.rx &&mult.rx <= 100) ||
+ 		    mult.tx > 65536 || mult.rx > 65536)
+ 			return -EINVAL;
+-		if (mult.tx) eni_dev->tx_mult = mult.tx;
+-		if (mult.rx) eni_dev->rx_mult = mult.rx;
++		if (mult.tx)
++			eni_dev->tx_mult = mult.tx;
++		if (mult.rx)
++			eni_dev->rx_mult = mult.rx;
+ 		return 0;
+ 	}
+ 	if (cmd == ATM_SETCIRANGE) {
+@@ -2023,7 +2103,8 @@ static int eni_ioctl(struct atm_dev *dev, unsigned int cmd, void __user *arg)
+ 			return 0;
+ 		return -EINVAL;
+ 	}
+-	if (!dev->phy->ioctl) return -ENOIOCTLCMD;
++	if (!dev->phy->ioctl)
++		return -ENOIOCTLCMD;
+ 	return dev->phy->ioctl(dev, cmd, arg);
+ }
+ 
+@@ -2048,19 +2129,24 @@ static int eni_send(struct atm_vcc *vcc, struct sk_buff *skb)
+ 
+ 	DPRINTK(">eni_send\n");
+ 	if (!ENI_VCC(vcc)->tx) {
+-		if (vcc->pop) vcc->pop(vcc, skb);
+-		else dev_kfree_skb(skb);
++		if (vcc->pop)
++			vcc->pop(vcc, skb);
++		else
++			dev_kfree_skb(skb);
+ 		return -EINVAL;
+ 	}
+ 	if (!skb) {
+ 		printk(KERN_CRIT "!skb in eni_send ?\n");
+-		if (vcc->pop) vcc->pop(vcc, skb);
++		if (vcc->pop)
++			vcc->pop(vcc, skb);
+ 		return -EINVAL;
+ 	}
+ 	if (vcc->qos.aal == ATM_AAL0) {
+ 		if (skb->len != ATM_CELL_SIZE-1) {
+-			if (vcc->pop) vcc->pop(vcc, skb);
+-			else dev_kfree_skb(skb);
++			if (vcc->pop)
++				vcc->pop(vcc, skb);
++			else
++				dev_kfree_skb(skb);
+ 			return -EINVAL;
+ 		}
+ 		*(u32 *) skb->data = htonl(*(u32 *) skb->data);
+@@ -2070,7 +2156,8 @@ static int eni_send(struct atm_vcc *vcc, struct sk_buff *skb)
+ 	tasklet_disable(&ENI_DEV(vcc->dev)->task);
+ 	res = do_tx(skb);
+ 	tasklet_enable(&ENI_DEV(vcc->dev)->task);
+-	if (res == enq_ok) return 0;
++	if (res == enq_ok)
++		return 0;
+ 	skb_queue_tail(&ENI_VCC(vcc)->tx->backlog, skb);
+ 	backlogged++;
+ 	tasklet_schedule(&ENI_DEV(vcc->dev)->task);
+@@ -2154,7 +2241,8 @@ static int eni_proc_read(struct atm_dev *dev, loff_t *pos, char *page)
  	for (i = 0; i < NR_CHAN; i++) {
+ 		struct eni_tx *tx = eni_dev->tx+i;
+ 
+-		if (!tx->send) continue;
++		if (!tx->send)
++			continue;
+ 		if (!--left) {
+ 			return sprintf(page, "tx[%d]:	 0x%ld-0x%ld "
+ 				       "(%6ld bytes), rsv %d cps, shp %d cps%s\n", i,
+@@ -2163,7 +2251,8 @@ static int eni_proc_read(struct atm_dev *dev, loff_t *pos, char *page)
+ 				       tx->reserved, tx->shaping,
+ 				       tx == eni_dev->ubr ? " (UBR)" : "");
+ 		}
+-		if (--left) continue;
++		if (--left)
++			continue;
+ 		return sprintf(page, "%10sbacklog %u packets\n", "",
+ 			       skb_queue_len(&tx->backlog));
+ 	}
+@@ -2179,7 +2268,8 @@ static int eni_proc_read(struct atm_dev *dev, loff_t *pos, char *page)
+ 			if (vcc->dev != dev)
+ 				continue;
+ 			eni_vcc = ENI_VCC(vcc);
+-			if (--left) continue;
++			if (--left)
++				continue;
+ 			length = sprintf(page, "vcc %4d: ", vcc->vci);
+ 			if (eni_vcc->rx) {
+ 				length += sprintf(page+length, "0x%ld-0x%ld "
+@@ -2187,7 +2277,8 @@ static int eni_proc_read(struct atm_dev *dev, loff_t *pos, char *page)
+ 						  (unsigned long) (eni_vcc->recv - eni_dev->ram),
+ 						  eni_vcc->recv-eni_dev->ram+eni_vcc->words*4-1,
+ 						  eni_vcc->words*4);
+-				if (eni_vcc->tx) length += sprintf(page+length, ", ");
++				if (eni_vcc->tx)
++					length += sprintf(page+length, ", ");
+ 			}
+ 			if (eni_vcc->tx)
+ 				length += sprintf(page+length, "tx[%d], txing %d bytes",
+@@ -2202,7 +2293,8 @@ static int eni_proc_read(struct atm_dev *dev, loff_t *pos, char *page)
+ 		struct eni_free *fe = eni_dev->free_list+i;
+ 		unsigned long offset;
+ 
+-		if (--left) continue;
++		if (--left)
++			continue;
+ 		offset = (unsigned long) eni_dev->ram+eni_dev->base_diff;
+ 		return sprintf(page, "free	%p-%p (%6d bytes)\n",
+ 			       fe->start-offset, fe->start-offset+(1 << fe->order)-1,
 -- 
 1.7.10.4
 
