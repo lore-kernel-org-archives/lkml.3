@@ -1,61 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab3ATNy2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 08:54:28 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:40510 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039Ab3ATNy0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 08:54:26 -0500
-Date: Sun, 20 Jan 2013 08:54:24 -0500 (EST)
-From: Tom St Denis <tstdenis@elliptictech.com>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Borislav Petkov <bp@alien8.de>, Eric Dumazet <erdnetdev@gmail.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        David Miller <davem@davemloft.net>,
-        steffen klassert <steffen.klassert@secunet.com>,
-        herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Michal Kubecek <mkubecek@suse.cz>,
-        Mike Galbraith <bitbucket@online.de>
-Message-ID: <650108746.93086.1358690064783.JavaMail.root@elliptictech.com>
-In-Reply-To: <50FBF25C.4030604@ahsoftware.de>
-Subject: Re: IPsec AH use of ahash
+	id S1752215Ab3ATOE7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 09:04:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2857 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751471Ab3ATOE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 09:04:58 -0500
+Date: Sun, 20 Jan 2013 16:04:33 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
+        jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>,
+        avi@redhat.com
+Subject: Re: [PATCH 05/29] perf, kvm: Support the intx/intx_cp modifiers in
+ KVM arch perfmon emulation v4
+Message-ID: <20130120140433.GI31120@redhat.com>
+References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
+ <1358455012-12287-6-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.17.19.111]
-X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC24 (Linux)/7.2.1_GA_2790)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358455012-12287-6-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------ Original Message -----
-> From: "Alexander Holler" <holler@ahsoftware.de>
-> To: "Tom St Denis" <tstdenis@elliptictech.com>
-> Cc: "Borislav Petkov" <bp@alien8.de>, "Eric Dumazet" <erdnetdev@gmail.com>, "Waskiewicz Jr, Peter P"
-> <peter.p.waskiewicz.jr@intel.com>, "David Miller" <davem@davemloft.net>, "steffen klassert"
-> <steffen.klassert@secunet.com>, herbert@gondor.apana.org.au, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-> "Michal Kubecek" <mkubecek@suse.cz>, "Mike Galbraith" <bitbucket@online.de>
-> Sent: Sunday, 20 January, 2013 8:34:20 AM
-> Subject: Re: IPsec AH use of ahash
+On Thu, Jan 17, 2013 at 12:36:28PM -0800, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> Am 20.01.2013 13:56, schrieb Tom St Denis:
+> This is not arch perfmon, but older CPUs will just ignore it. This makes
+> it possible to do at least some TSX measurements from a KVM guest
 > 
-> > You should really try running checkpatch.pl over code that's
-> > already in the kernel before you call out new contributors on it.
-> >
-> > How is this supposed to not be adversarial when I can't even use
-> > the Kernel source itself as a reference?
+> Cc: avi@redhat.com
+> Cc: gleb@redhat.com
+> v2: Various fixes to address review feedback
+> v3: Ignore the bits when no CPUID. No #GP. Force raw events with TSX bits.
+> v4: Use reserved bits for #GP
+> Cc: gleb@redhat.com
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |    1 +
+>  arch/x86/kvm/pmu.c              |   32 ++++++++++++++++++++++++--------
+>  2 files changed, 25 insertions(+), 8 deletions(-)
 > 
-> In case of the kernel the chicken and egg problem can be answered
-> without any questions, most source existed before checkpatch.pl
-> (evolved
-> to the current state).
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index dc87b65..703a1f8 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -320,6 +320,7 @@ struct kvm_pmu {
+>  	u64 global_ovf_ctrl;
+>  	u64 counter_bitmask[2];
+>  	u64 global_ctrl_mask;
+> +	u64 reserved_bits;
+>  	u8 version;
+>  	struct kvm_pmc gp_counters[INTEL_PMC_MAX_GENERIC];
+>  	struct kvm_pmc fixed_counters[INTEL_PMC_MAX_FIXED];
+> diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
+> index cfc258a..89405d0 100644
+> --- a/arch/x86/kvm/pmu.c
+> +++ b/arch/x86/kvm/pmu.c
+> @@ -160,7 +160,7 @@ static void stop_counter(struct kvm_pmc *pmc)
+>  
+>  static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
+>  		unsigned config, bool exclude_user, bool exclude_kernel,
+> -		bool intr)
+> +		bool intr, bool intx, bool intx_cp)
+>  {
+>  	struct perf_event *event;
+>  	struct perf_event_attr attr = {
+> @@ -173,6 +173,10 @@ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
+>  		.exclude_kernel = exclude_kernel,
+>  		.config = config,
+>  	};
+> +	if (intx)
+> +		attr.config |= HSW_INTX;
+> +	if (intx_cp)
+> +		attr.config |= HSW_INTX_CHECKPOINTED;
+>  
+>  	attr.sample_period = (-pmc->counter) & pmc_bitmask(pmc);
+>  
+> @@ -206,7 +210,8 @@ static unsigned find_arch_event(struct kvm_pmu *pmu, u8 event_select,
+>  	return arch_events[i].event_type;
+>  }
+>  
+> -static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
+> +static void reprogram_gp_counter(struct kvm_pmu *pmu, struct kvm_pmc *pmc, 
+> +				 u64 eventsel)
+No need to add pmu parameter here. It is no used by the function.
+Otherwise looks good.
 
-We clearly have different interpretations of the word "maintainer" then...  If they're not maintaining the code then are they really the maintainers of it?
+>  {
+>  	unsigned config, type = PERF_TYPE_RAW;
+>  	u8 event_select, unit_mask;
+> @@ -226,7 +231,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
+>  
+>  	if (!(eventsel & (ARCH_PERFMON_EVENTSEL_EDGE |
+>  				ARCH_PERFMON_EVENTSEL_INV |
+> -				ARCH_PERFMON_EVENTSEL_CMASK))) {
+> +				ARCH_PERFMON_EVENTSEL_CMASK |
+> +				HSW_INTX |
+> +				HSW_INTX_CHECKPOINTED))) {
+>  		config = find_arch_event(&pmc->vcpu->arch.pmu, event_select,
+>  				unit_mask);
+>  		if (config != PERF_COUNT_HW_MAX)
+> @@ -239,7 +246,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
+>  	reprogram_counter(pmc, type, config,
+>  			!(eventsel & ARCH_PERFMON_EVENTSEL_USR),
+>  			!(eventsel & ARCH_PERFMON_EVENTSEL_OS),
+> -			eventsel & ARCH_PERFMON_EVENTSEL_INT);
+> +			eventsel & ARCH_PERFMON_EVENTSEL_INT,
+> +			(eventsel & HSW_INTX),
+> +			(eventsel & HSW_INTX_CHECKPOINTED));
+>  }
+>  
+>  static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
+> @@ -256,7 +265,7 @@ static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
+>  			arch_events[fixed_pmc_events[idx]].event_type,
+>  			!(en & 0x2), /* exclude user */
+>  			!(en & 0x1), /* exclude kernel */
+> -			pmi);
+> +			pmi, false, false);
+>  }
+>  
+>  static inline u8 fixed_en_pmi(u64 ctrl, int idx)
+> @@ -289,7 +298,7 @@ static void reprogram_idx(struct kvm_pmu *pmu, int idx)
+>  		return;
+>  
+>  	if (pmc_is_gp(pmc))
+> -		reprogram_gp_counter(pmc, pmc->eventsel);
+> +		reprogram_gp_counter(pmu, pmc, pmc->eventsel);
+>  	else {
+>  		int fidx = idx - INTEL_PMC_IDX_FIXED;
+>  		reprogram_fixed_counter(pmc,
+> @@ -400,8 +409,8 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, u32 index, u64 data)
+>  		} else if ((pmc = get_gp_pmc(pmu, index, MSR_P6_EVNTSEL0))) {
+>  			if (data == pmc->eventsel)
+>  				return 0;
+> -			if (!(data & 0xffffffff00200000ull)) {
+> -				reprogram_gp_counter(pmc, data);
+> +			if (!(data & pmu->reserved_bits)) {
+> +				reprogram_gp_counter(pmu, pmc, data);
+>  				return 0;
+>  			}
+>  		}
+> @@ -442,6 +451,7 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
+>  	pmu->counter_bitmask[KVM_PMC_GP] = 0;
+>  	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
+>  	pmu->version = 0;
+> +	pmu->reserved_bits = 0xffffffff00200000ull;
+>  
+>  	entry = kvm_find_cpuid_entry(vcpu, 0xa, 0);
+>  	if (!entry)
+> @@ -470,6 +480,12 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
+>  	pmu->global_ctrl = ((1 << pmu->nr_arch_gp_counters) - 1) |
+>  		(((1ull << pmu->nr_arch_fixed_counters) - 1) << INTEL_PMC_IDX_FIXED);
+>  	pmu->global_ctrl_mask = ~pmu->global_ctrl;
+> +
+> +	entry = kvm_find_cpuid_entry(vcpu, 7, 0);
+> +	if (entry &&
+> +	    (boot_cpu_has(X86_FEATURE_HLE) || boot_cpu_has(X86_FEATURE_RTM)) &&
+> +	    (entry->ebx & (X86_FEATURE_HLE|X86_FEATURE_RTM)))
+> +		pmu->reserved_bits ^= HSW_INTX|HSW_INTX_CHECKPOINTED;
+>  }
+>  
+>  void kvm_pmu_init(struct kvm_vcpu *vcpu)
+> -- 
+> 1.7.7.6
 
-Point is I copied accepted kernel code and was rejected because of "errors" that are in existing kernel code.  Similarly if I did the upgrade to AH to use AEAD I suspect it would be rejected for the same reason.
-
-Tom
+--
+			Gleb.
