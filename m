@@ -1,79 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab3ATW0r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 17:26:47 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:37772 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752522Ab3ATW0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 17:26:45 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgAdAF5u/FB5LETJ/2dsb2JhbABDuBuFEgKBBxdzgh4BAQU6HCMQCAMOCgklDwUlAyETiBi7CxWMd02Cf2EDlguJToZ8gwmBUw
-Date: Mon, 21 Jan 2013 09:26:40 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>
-Subject: Re: [PATCH V5 00/30] loop: Issue O_DIRECT aio using bio_vec
-Message-ID: <20130120222640.GD2498@dastard>
-References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
- <x49obgmif7w.fsf@segfault.boston.devel.redhat.com>
+	id S1752626Ab3ATWcL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 17:32:11 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:47779 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752522Ab3ATWcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 17:32:09 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v9 06/11] PCI, ACPI, acpiphp: Rename alloc_acpiphp_hp_work() to alloc_acpi_hp_work
+Date: Sun, 20 Jan 2013 23:38:08 +0100
+Message-ID: <2123353.z1dtQmXUNo@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1358495602-22867-7-git-send-email-yinghai@kernel.org>
+References: <1358495602-22867-1-git-send-email-yinghai@kernel.org> <1358495602-22867-7-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49obgmif7w.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 12:16:35PM -0500, Jeff Moyer wrote:
-> Dave Kleikamp <dave.kleikamp@oracle.com> writes:
+On Thursday, January 17, 2013 11:53:17 PM Yinghai Lu wrote:
+> Will need to use it for pci root bridge hotplug support, rename
+> *acpiphp* to *acpi* and move to osc.c.
+> Also make kacpi_hotplug_wq static after that.
 > 
-> > This patchset was begun by Zach Brown and was originally submitted for
-> > review in October, 2009. Feedback was positive, and I have picked up
-> > where he left off, porting his patches to the latest mainline kernel
-> > and adding support more file systems.
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: linux-acpi@vger.kernel.org
+> ---
+>  drivers/acpi/osl.c                 |   24 +++++++++++++++++++--
+>  drivers/pci/hotplug/acpiphp_glue.c |   42 ++++++------------------------------
+>  include/acpi/acpiosxf.h            |    9 +++++++-
+>  3 files changed, 36 insertions(+), 39 deletions(-)
 > 
-> [snip]
-> 
-> > My hopes are that this patchset is finally ready for linux-next.
-> 
-> Hi, Shaggy,
-> 
-> I'm finally getting around to testing this using xfstests.  This is my
-> setup:
-> 
-> dd if=/dev/zero of=testdev.img bs=1M count=1024
-> dd if=/dev/zero of=scratchdev.img bs=1M count=1024
-> losetup -f ./testdev.img
-> losetup -f ./scratchdev.img
-> mkfs -t xfs /dev/loop0
-> mount /dev/loop0 /mnt/test
-> export TEST_DIR=/mnt/test
-> export TEST_DEV=/dev/loop0
-> export SCRATCH_MNT=/mnt/scratch
-> export SCRATCH_DEV=/dev/loop1
-> 
-> I then ran:
-> 
-> ./check -g aio
-> 
-> and here is the summary:
-> 
-> Ran: 112 113 198 207 208 209 210 211 212 239 240
-> Failures: 112 198 207 239 240
-> Failed 5 of 11 tests
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index 3ff2678..afcce46 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -84,8 +84,7 @@ static acpi_osd_handler acpi_irq_handler;
+>  static void *acpi_irq_context;
+>  static struct workqueue_struct *kacpid_wq;
+>  static struct workqueue_struct *kacpi_notify_wq;
+> -struct workqueue_struct *kacpi_hotplug_wq;
+> -EXPORT_SYMBOL(kacpi_hotplug_wq);
+> +static struct workqueue_struct *kacpi_hotplug_wq;
+>  
+>  /*
+>   * This list of permanent mappings is for memory that may be accessed from
+> @@ -1778,3 +1777,24 @@ void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+>  {
+>  	__acpi_os_prepare_sleep = func;
+>  }
+> +
+> +void alloc_acpi_hp_work(acpi_handle handle, u32 type, void *context,
+> +			void (*func)(struct work_struct *work))
+> +{
+> +	struct acpi_hp_work *hp_work;
+> +	int ret;
+> +
+> +	hp_work = kmalloc(sizeof(*hp_work), GFP_KERNEL);
+> +	if (!hp_work)
+> +		return;
+> +
+> +	hp_work->handle = handle;
+> +	hp_work->type = type;
+> +	hp_work->context = context;
+> +
+> +	INIT_WORK(&hp_work->work, func);
+> +	ret = queue_work(kacpi_hotplug_wq, &hp_work->work);
+> +	if (!ret)
+> +		kfree(hp_work);
+> +}
+> +EXPORT_SYMBOL(alloc_acpi_hp_work);
 
-There's no need to limit xfstests to the aio group here. If the loop
-device is what you are actually testing, then you probably want to
-run the auto/quick groups as they will do a whole lot more than just
-data IO to the loop devices...
+That should be EXPORT_SYMBOL_GPL().
 
-Cheers,
+> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+> index 79db296..55e03b6 100644
+> --- a/drivers/pci/hotplug/acpiphp_glue.c
+> +++ b/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -1203,34 +1203,6 @@ check_sub_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
+>  	return AE_OK ;
+>  }
+>  
+> -struct acpiphp_hp_work {
+> -	struct work_struct work;
+> -	acpi_handle handle;
+> -	u32 type;
+> -	void *context;
+> -};
+> -
+> -static void alloc_acpiphp_hp_work(acpi_handle handle, u32 type,
+> -				  void *context,
+> -				  void (*func)(struct work_struct *work))
+> -{
+> -	struct acpiphp_hp_work *hp_work;
+> -	int ret;
+> -
+> -	hp_work = kmalloc(sizeof(*hp_work), GFP_KERNEL);
+> -	if (!hp_work)
+> -		return;
+> -
+> -	hp_work->handle = handle;
+> -	hp_work->type = type;
+> -	hp_work->context = context;
+> -
+> -	INIT_WORK(&hp_work->work, func);
+> -	ret = queue_work(kacpi_hotplug_wq, &hp_work->work);
+> -	if (!ret)
+> -		kfree(hp_work);
+> -}
+> -
+>  static void _handle_hotplug_event_bridge(struct work_struct *work)
+>  {
+>  	struct acpiphp_bridge *bridge;
+> @@ -1239,11 +1211,11 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
+>  				      .pointer = objname };
+>  	struct acpi_device *device;
+>  	int num_sub_bridges = 0;
+> -	struct acpiphp_hp_work *hp_work;
+> +	struct acpi_hp_work *hp_work;
+>  	acpi_handle handle;
+>  	u32 type;
+>  
+> -	hp_work = container_of(work, struct acpiphp_hp_work, work);
+> +	hp_work = container_of(work, struct acpi_hp_work, work);
+>  	handle = hp_work->handle;
+>  	type = hp_work->type;
+>  
+> @@ -1346,8 +1318,7 @@ static void handle_hotplug_event_bridge(acpi_handle handle, u32 type,
+>  	 * For now just re-add this work to the kacpi_hotplug_wq so we
+>  	 * don't deadlock on hotplug actions.
+>  	 */
+> -	alloc_acpiphp_hp_work(handle, type, context,
+> -			      _handle_hotplug_event_bridge);
+> +	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_bridge);
+>  }
+>  
+>  static void _handle_hotplug_event_func(struct work_struct *work)
+> @@ -1356,12 +1327,12 @@ static void _handle_hotplug_event_func(struct work_struct *work)
+>  	char objname[64];
+>  	struct acpi_buffer buffer = { .length = sizeof(objname),
+>  				      .pointer = objname };
+> -	struct acpiphp_hp_work *hp_work;
+> +	struct acpi_hp_work *hp_work;
+>  	acpi_handle handle;
+>  	u32 type;
+>  	void *context;
+>  
+> -	hp_work = container_of(work, struct acpiphp_hp_work, work);
+> +	hp_work = container_of(work, struct acpi_hp_work, work);
+>  	handle = hp_work->handle;
+>  	type = hp_work->type;
+>  	context = hp_work->context;
+> @@ -1422,8 +1393,7 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
+>  	 * For now just re-add this work to the kacpi_hotplug_wq so we
+>  	 * don't deadlock on hotplug actions.
+>  	 */
+> -	alloc_acpiphp_hp_work(handle, type, context,
+> -			      _handle_hotplug_event_func);
+> +	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_func);
+>  }
+>  
+>  static acpi_status
+> diff --git a/include/acpi/acpiosxf.h b/include/acpi/acpiosxf.h
+> index 4315274..adab63c 100644
+> --- a/include/acpi/acpiosxf.h
+> +++ b/include/acpi/acpiosxf.h
+> @@ -193,7 +193,14 @@ void acpi_os_fixed_event_count(u32 fixed_event_number);
+>  /*
+>   * Threads and Scheduling
+>   */
+> -extern struct workqueue_struct *kacpi_hotplug_wq;
 
-Dave.
+include/acpi/acpiosxf.h is related to ACPICA, so while removing kacpi_hotplug_wq
+from it should be OK, please put the rest into acpi_bus.h, preferably next to the
+definition of acpi_eject_event.
+
+> +struct acpi_hp_work {
+> +	struct work_struct work;
+> +	acpi_handle handle;
+> +	u32 type;
+> +	void *context;
+> +};
+> +void alloc_acpi_hp_work(acpi_handle handle, u32 type, void *context,
+> +			void (*func)(struct work_struct *work));
+>  
+>  acpi_thread_id acpi_os_get_thread_id(void);
+
+Thanks,
+Rafael
+
+
 -- 
-Dave Chinner
-david@fromorbit.com
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
