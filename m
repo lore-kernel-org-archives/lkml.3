@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab3ATWsP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 17:48:15 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:62730 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039Ab3ATWsN (ORCPT
+	id S1752342Ab3ATWth (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 17:49:37 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:48926 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab3ATWtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 17:48:13 -0500
+	Sun, 20 Jan 2013 17:49:36 -0500
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <50FC6731.3020209@ionic.de>
+References: <50F9DF53.4090601@ionic.de>
+	<CAKMK7uExHc=PEBpn2vPrX+sQcv=U7VuvsJHRxc-SSOh=_G_1Dg@mail.gmail.com>
+	<50FC6731.3020209@ionic.de>
+Date: Sun, 20 Jan 2013 23:49:34 +0100
+Message-ID: <CAKMK7uEX0CG4LaVr3jkcPeQYTYFseG-G5f0_2zKTuCcfVfhF2g@mail.gmail.com>
+Subject: Re: i915-related and general system freezes with specific kernel
+ config // IOMMU
 From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Cc: DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Adam Jackson <ajax@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, stable@vger.kernel.org
-Subject: [PATCH] iommu/intel: disable DMAR for g4x integrated gfx
-Date: Sun, 20 Jan 2013 23:50:13 +0100
-Message-Id: <1358722213-2075-1-git-send-email-daniel.vetter@ffwll.ch>
-X-Mailer: git-send-email 1.7.10.4
+To: Mihai Moldovan <ionic@ionic.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMAR support on g4x/gm45 integrated gpus seems to be totally busted.
-So don't bother, but instead disable it by default to allow distros to
-unconditionally enable DMAR support.
+On Sun, Jan 20, 2013 at 10:52 PM, Mihai Moldovan <ionic@ionic.de> wrote:
+> the patch does work, i.e., it turns off DMAR for the graphics card and
+> alleviates the freezes when loading i915/kms.
+>
+> However, still seeing random machine freezes with it (being consistent with the
+> behavior I've experienced with intel_iommu=igfx_off).
 
-v2: Actually wire up the right quirk entry, spotted by Adam Jackson.
+Thanks for testing, I've just submitted the patch for review. It
+should included in a -fixes tree soon and the get backported to stable
+kernels.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51921
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=538163
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=538163
-Cc: Adam Jackson <ajax@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: stable@vger.kernel.org
-Tested-by: stathis <stathis@npcglib.org>
-Tested-by: Mihai Moldovan <ionic@ionic.de>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
----
- drivers/iommu/intel-iommu.c |   21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+> The patch + forcing RWBF is working, too. Interestingly, this version didn't
+> randomly freeze yet, after more than 5 hours of uptime! I'll leave the box
+> running until tomorrow to make sure I did stick around long enough.
+>
+> All those tested kernels were able to handle USB and PCI(e) devices.
+>
+> I still have to test turning off IOMMU in general and Intel IOMMU specifically.
+> Will probably do this tomorrow.
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index d4a4cd4..9743769 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -4196,6 +4196,21 @@ static struct iommu_ops intel_iommu_ops = {
- 	.pgsize_bitmap	= INTEL_IOMMU_PGSIZES,
- };
- 
-+static void __devinit quirk_iommu_g4x_gfx(struct pci_dev *dev)
-+{
-+	/* G4x/GM45 integrated gfx dmar support is totally busted. */
-+	printk(KERN_INFO "DMAR: Disabling IOMMU for graphics on this chipset\n");
-+	dmar_map_gfx = 0;
-+}
-+
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2a40, quirk_iommu_g4x_gfx);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e00, quirk_iommu_g4x_gfx);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e10, quirk_iommu_g4x_gfx);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e20, quirk_iommu_g4x_gfx);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e30, quirk_iommu_g4x_gfx);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e40, quirk_iommu_g4x_gfx);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e90, quirk_iommu_g4x_gfx);
-+
- static void __devinit quirk_iommu_rwbf(struct pci_dev *dev)
- {
- 	/*
-@@ -4204,12 +4219,6 @@ static void __devinit quirk_iommu_rwbf(struct pci_dev *dev)
- 	 */
- 	printk(KERN_INFO "DMAR: Forcing write-buffer flush capability\n");
- 	rwbf_quirk = 1;
--
--	/* https://bugzilla.redhat.com/show_bug.cgi?id=538163 */
--	if (dev->revision == 0x07) {
--		printk(KERN_INFO "DMAR: Disabling IOMMU for graphics on this chipset\n");
--		dmar_map_gfx = 0;
--	}
- }
- 
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2a40, quirk_iommu_rwbf);
+Please let me know when this works solidly for you, so that I can put
+it into a real patch and also submit it for inclusion.
+
+Thanks, Daniel
 -- 
-1.7.10.4
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
