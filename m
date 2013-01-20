@@ -1,172 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab3ATOE7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 09:04:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2857 "EHLO mx1.redhat.com"
+	id S1752215Ab3ATOMQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 09:12:16 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:47569 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751471Ab3ATOE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 09:04:58 -0500
-Date: Sun, 20 Jan 2013 16:04:33 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
-        jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>,
-        avi@redhat.com
-Subject: Re: [PATCH 05/29] perf, kvm: Support the intx/intx_cp modifiers in
- KVM arch perfmon emulation v4
-Message-ID: <20130120140433.GI31120@redhat.com>
-References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
- <1358455012-12287-6-git-send-email-andi@firstfloor.org>
+	id S1751471Ab3ATOMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 09:12:14 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Borislav Petkov <bp@alien8.de>
+Cc: =?ISO-8859-1?Q?Andr=E9?= Przywara <andre@andrep.de>,
+        Leonid Isaev <lisaev@umail.iu.edu>, Tom Gundersen <teg@jklm.no>,
+        cpufreq@vger.kernel.org, linux-acpi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 0/6] acpi-cpufreq and powernow-k8 fixes
+Date: Sun, 20 Jan 2013 15:18:11 +0100
+Message-ID: <1838903.lYvY4Nk4I1@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1358677470-17394-1-git-send-email-bp@alien8.de>
+References: <1358677470-17394-1-git-send-email-bp@alien8.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358455012-12287-6-git-send-email-andi@firstfloor.org>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 12:36:28PM -0800, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On Sunday, January 20, 2013 11:24:24 AM Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
 > 
-> This is not arch perfmon, but older CPUs will just ignore it. This makes
-> it possible to do at least some TSX measurements from a KVM guest
+> Hi all,
 > 
-> Cc: avi@redhat.com
-> Cc: gleb@redhat.com
-> v2: Various fixes to address review feedback
-> v3: Ignore the bits when no CPUID. No #GP. Force raw events with TSX bits.
-> v4: Use reserved bits for #GP
-> Cc: gleb@redhat.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/include/asm/kvm_host.h |    1 +
->  arch/x86/kvm/pmu.c              |   32 ++++++++++++++++++++++++--------
->  2 files changed, 25 insertions(+), 8 deletions(-)
+> here are a couple of patches fixing acpi-cpufreq and powernow-k8 loading
+> sequence and handoff.
 > 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index dc87b65..703a1f8 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -320,6 +320,7 @@ struct kvm_pmu {
->  	u64 global_ovf_ctrl;
->  	u64 counter_bitmask[2];
->  	u64 global_ctrl_mask;
-> +	u64 reserved_bits;
->  	u8 version;
->  	struct kvm_pmc gp_counters[INTEL_PMC_MAX_GENERIC];
->  	struct kvm_pmc fixed_counters[INTEL_PMC_MAX_FIXED];
-> diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
-> index cfc258a..89405d0 100644
-> --- a/arch/x86/kvm/pmu.c
-> +++ b/arch/x86/kvm/pmu.c
-> @@ -160,7 +160,7 @@ static void stop_counter(struct kvm_pmc *pmc)
->  
->  static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
->  		unsigned config, bool exclude_user, bool exclude_kernel,
-> -		bool intr)
-> +		bool intr, bool intx, bool intx_cp)
->  {
->  	struct perf_event *event;
->  	struct perf_event_attr attr = {
-> @@ -173,6 +173,10 @@ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
->  		.exclude_kernel = exclude_kernel,
->  		.config = config,
->  	};
-> +	if (intx)
-> +		attr.config |= HSW_INTX;
-> +	if (intx_cp)
-> +		attr.config |= HSW_INTX_CHECKPOINTED;
->  
->  	attr.sample_period = (-pmc->counter) & pmc_bitmask(pmc);
->  
-> @@ -206,7 +210,8 @@ static unsigned find_arch_event(struct kvm_pmu *pmu, u8 event_select,
->  	return arch_events[i].event_type;
->  }
->  
-> -static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
-> +static void reprogram_gp_counter(struct kvm_pmu *pmu, struct kvm_pmc *pmc, 
-> +				 u64 eventsel)
-No need to add pmu parameter here. It is no used by the function.
-Otherwise looks good.
+> Patch 0001 should be in Rafael's tree already but I'm adding it here for
+> the sake of completeness. Basically, we want to address all possible
+> cases of powernow-k8 and acpi-cpufreq:
+> 
+> (M: module, Y: built-in)
+> 
+> powernow-k8		acpi-cpufreq
+> M			M		- powernow-k8 requests acpi-cpufreq
+> M			Y		- powernow-k8 sees already loaded acpi-cpufreq
+> Y			M		- impossible after patch 0001
+> Y			Y		- patches 2,3 fix that
+> 
+> Anyway, please take a look and let me know.
 
->  {
->  	unsigned config, type = PERF_TYPE_RAW;
->  	u8 event_select, unit_mask;
-> @@ -226,7 +231,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
->  
->  	if (!(eventsel & (ARCH_PERFMON_EVENTSEL_EDGE |
->  				ARCH_PERFMON_EVENTSEL_INV |
-> -				ARCH_PERFMON_EVENTSEL_CMASK))) {
-> +				ARCH_PERFMON_EVENTSEL_CMASK |
-> +				HSW_INTX |
-> +				HSW_INTX_CHECKPOINTED))) {
->  		config = find_arch_event(&pmc->vcpu->arch.pmu, event_select,
->  				unit_mask);
->  		if (config != PERF_COUNT_HW_MAX)
-> @@ -239,7 +246,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
->  	reprogram_counter(pmc, type, config,
->  			!(eventsel & ARCH_PERFMON_EVENTSEL_USR),
->  			!(eventsel & ARCH_PERFMON_EVENTSEL_OS),
-> -			eventsel & ARCH_PERFMON_EVENTSEL_INT);
-> +			eventsel & ARCH_PERFMON_EVENTSEL_INT,
-> +			(eventsel & HSW_INTX),
-> +			(eventsel & HSW_INTX_CHECKPOINTED));
->  }
->  
->  static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
-> @@ -256,7 +265,7 @@ static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
->  			arch_events[fixed_pmc_events[idx]].event_type,
->  			!(en & 0x2), /* exclude user */
->  			!(en & 0x1), /* exclude kernel */
-> -			pmi);
-> +			pmi, false, false);
->  }
->  
->  static inline u8 fixed_en_pmi(u64 ctrl, int idx)
-> @@ -289,7 +298,7 @@ static void reprogram_idx(struct kvm_pmu *pmu, int idx)
->  		return;
->  
->  	if (pmc_is_gp(pmc))
-> -		reprogram_gp_counter(pmc, pmc->eventsel);
-> +		reprogram_gp_counter(pmu, pmc, pmc->eventsel);
->  	else {
->  		int fidx = idx - INTEL_PMC_IDX_FIXED;
->  		reprogram_fixed_counter(pmc,
-> @@ -400,8 +409,8 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, u32 index, u64 data)
->  		} else if ((pmc = get_gp_pmc(pmu, index, MSR_P6_EVNTSEL0))) {
->  			if (data == pmc->eventsel)
->  				return 0;
-> -			if (!(data & 0xffffffff00200000ull)) {
-> -				reprogram_gp_counter(pmc, data);
-> +			if (!(data & pmu->reserved_bits)) {
-> +				reprogram_gp_counter(pmu, pmc, data);
->  				return 0;
->  			}
->  		}
-> @@ -442,6 +451,7 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
->  	pmu->counter_bitmask[KVM_PMC_GP] = 0;
->  	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
->  	pmu->version = 0;
-> +	pmu->reserved_bits = 0xffffffff00200000ull;
->  
->  	entry = kvm_find_cpuid_entry(vcpu, 0xa, 0);
->  	if (!entry)
-> @@ -470,6 +480,12 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
->  	pmu->global_ctrl = ((1 << pmu->nr_arch_gp_counters) - 1) |
->  		(((1ull << pmu->nr_arch_fixed_counters) - 1) << INTEL_PMC_IDX_FIXED);
->  	pmu->global_ctrl_mask = ~pmu->global_ctrl;
-> +
-> +	entry = kvm_find_cpuid_entry(vcpu, 7, 0);
-> +	if (entry &&
-> +	    (boot_cpu_has(X86_FEATURE_HLE) || boot_cpu_has(X86_FEATURE_RTM)) &&
-> +	    (entry->ebx & (X86_FEATURE_HLE|X86_FEATURE_RTM)))
-> +		pmu->reserved_bits ^= HSW_INTX|HSW_INTX_CHECKPOINTED;
->  }
->  
->  void kvm_pmu_init(struct kvm_vcpu *vcpu)
-> -- 
-> 1.7.7.6
+Well, it all looks reasonable to me.
 
---
-			Gleb.
+I suppose you'd like it to go into v3.8 plus v3.7-stable, right?
+
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
