@@ -1,138 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698Ab3ATKgx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 05:36:53 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:56616 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751358Ab3ATKgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 05:36:52 -0500
-Date: Sun, 20 Jan 2013 11:36:52 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-Cc: linux-kernel@vger.kernel.org,
-        =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
-Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
-Message-ID: <20130120103652.GB16800@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Udo van den Heuvel <udovdh@xs4all.nl>, linux-kernel@vger.kernel.org,
-	=?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
-References: <50FBC7EF.6040207@xs4all.nl>
+	id S1752015Ab3ATKhM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 05:37:12 -0500
+Received: from 94.43.138.210.xn.2iij.net ([210.138.43.94]:48426 "EHLO
+	mail.st-paulia.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751912Ab3ATKhL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 05:37:11 -0500
+Message-ID: <50FBC8D5.50205@linux-ipv6.org>
+Date: Sun, 20 Jan 2013 19:37:09 +0900
+From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Organization: USAGI Project
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50FBC7EF.6040207@xs4all.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: linux1394-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Subject: Re: [PATCH] firewire net: Ensure checksumming in upper layer.
+References: <50FBA02C.9030203@linux-ipv6.org> <20130120105058.1aee26c4@stein>
+In-Reply-To: <20130120105058.1aee26c4@stein>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I know just the guy, CCed. :-)
+Stefan Richter wrote:
+> On Jan 20 YOSHIFUJI Hideaki wrote:
+>> It is wrong to set skb->ip_summed to CHECKSUM_UNNECESSARY unless
+>> the device has already checked it.
+>>
+>> Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+>> ---
+>>  drivers/firewire/net.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/firewire/net.c b/drivers/firewire/net.c
+>> index e7a711f5..df6a1ca 100644
+>> --- a/drivers/firewire/net.c
+>> +++ b/drivers/firewire/net.c
+>> @@ -520,7 +520,7 @@ static int fwnet_finish_incoming_packet(struct net_device *net,
+>>  	dev = netdev_priv(net);
+>>  	/* Write metadata, and then pass to the receive level */
+>>  	skb->dev = net;
+>> -	skb->ip_summed = CHECKSUM_UNNECESSARY;  /* don't check it */
+>> +	skb->ip_summed = CHECKSUM_NONE;
+>>  
+>>  	/*
+>>  	 * Parse the encapsulation header. This actually does the job of
+> 
+> Indeed neither the device nor the lower drivers check protocol checksums.
+> But the CRCs of the encapsulating 1394 packets are checked in hardware.
+> Shall protocol checksums be verified regardless?
 
-On Sun, Jan 20, 2013 at 11:33:19AM +0100, Udo van den Heuvel wrote:
-> 
-> Hello,
-> 
-> See below for a part of the logging on this F2A85X-UP4 with AMD
-> a10-5800k. Box was raid checking I guess.
-> 
-> 
-> Jan 20 03:42:08 s3 rsyslogd: [origin software="rsyslogd"
-> swVersion="5.8.10" x-pid="3031" x-info="http://www.rsyslog.com"]
-> rsyslogd was HUPed
-> Jan 20 04:11:17 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:17 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:17 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:17 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:17 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:17 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:17 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:17 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:17 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:17 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:18 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:18 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:18 s3 kernel: ------------[ cut here ]------------
-> Jan 20 04:11:18 s3 kernel: WARNING: at drivers/iommu/amd_iommu.c:1104
-> __domain_flush_pages+0x1ad/0x1b0()
-> Jan 20 04:11:18 s3 kernel: Hardware name: To be filled by O.E.M.
-> Jan 20 04:11:18 s3 kernel: Modules linked in: vfat fat usb_storage pwc
-> udf crc_itu_t nfsv3 nfs bnep bluetooth fuse cpufreq_userspace
-> nf_conntrack_netbios_ns eeprom nf_conntrack_broadcast ipt_REJECT
-> ip6t_REJECT it87 iptable_filter hwmon_vid xt_tcpudp ipt_MASQUERADE
-> nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat nf_conntrack_ipv4
-> xt_state nf_defrag_ipv4 nf_conntrack ip6table_filter ip_tables
-> ip6_tables x_tables dm_mirror dm_region_hash dm_log ext2 snd_usb_audio
-> snd_usbmidi_lib snd_hwdep snd_rawmidi snd_hda_codec_realtek
-> videobuf2_vmalloc videobuf2_memops videobuf2_core cdc_ether hid_generic
-> videodev binfmt_misc radeon cfbfillrect snd_hda_intel cfbimgblt
-> snd_hda_codec fbcon bitblit cfbcopyarea snd_seq softcursor i2c_algo_bit
-> snd_seq_device font backlight powernow_k8 mperf drm_kms_helper kvm_amd
-> ttm snd_pcm kvm drm fb snd_page_alloc snd_timer snd fbdev k10temp
-> microcode evdev i2c_piix4 xhci_hcd button nfsd exportfs auth_rpcgss
-> nfs_acl lockd sunrpc autofs4 usbhid ehci_hcd ohci_hcd sr_mod cdrom [last
-> unloaded
-> Jan 20 04:11:18 s3 kernel: : pwc]
-> Jan 20 04:11:18 s3 kernel: Pid: 506, comm: irq/43-ahci Not tainted
-> 3.6.11 #19
-> Jan 20 04:11:18 s3 kernel: Call Trace:
-> Jan 20 04:11:18 s3 kernel: [<ffffffff8103c679>] ?
-> warn_slowpath_common+0x79/0xc0
-> Jan 20 04:11:18 s3 kernel: [<ffffffff8134598d>] ?
-> __domain_flush_pages+0x1ad/0x1b0
-> Jan 20 04:11:18 s3 kernel: [<ffffffff81345c2b>] ?
-> __unmap_single.isra.24+0xdb/0x110
-> Jan 20 04:11:18 s3 kernel: [<ffffffff81346615>] ? unmap_sg+0x55/0xb0
-> Jan 20 04:11:18 s3 kernel: [<ffffffff812a9a61>] ? ata_sg_clean+0x61/0xd0
-> Jan 20 04:11:18 s3 kernel: [<ffffffff812b039d>] ?
-> ata_scsi_qc_complete+0x5d/0x420
-> Jan 20 04:11:18 s3 kernel: [<ffffffff812a9cc0>] ?
-> __ata_qc_complete+0x40/0x130
-> Jan 20 04:11:18 s3 kernel: [<ffffffff812aa05a>] ?
-> ata_qc_complete_multiple+0x7a/0xc0
-> Jan 20 04:11:30 s3 kernel: [<ffffffff812c1d2f>] ? ahci_interrupt+0xaf/0x710
-> Jan 20 04:11:30 s3 kernel: [<ffffffff8109c8e0>] ? irq_thread_fn+0x40/0x40
-> Jan 20 04:11:30 s3 kernel: [<ffffffff8109c903>] ?
-> irq_forced_thread_fn+0x23/0x50
-> Jan 20 04:11:30 s3 kernel: [<ffffffff8109c67b>] ? irq_thread+0x11b/0x180
-> Jan 20 04:11:30 s3 kernel: [<ffffffff81060d8c>] ? __wake_up_common+0x4c/0x80
-> Jan 20 04:11:30 s3 kernel: [<ffffffff8109c7e0>] ?
-> irq_finalize_oneshot+0x100/0x100
-> Jan 20 04:11:30 s3 kernel: [<ffffffff8109c560>] ?
-> wake_threads_waitq+0x50/0x50
-> Jan 20 04:11:30 s3 kernel: [<ffffffff81058d75>] ? kthread+0x85/0x90
-> Jan 20 04:11:30 s3 kernel: [<ffffffff8141ec34>] ?
-> kernel_thread_helper+0x4/0x10
-> Jan 20 04:11:30 s3 kernel: [<ffffffff81058cf0>] ?
-> kthread_freezable_should_stop+0x50/0x50
-> Jan 20 04:11:30 s3 kernel: [<ffffffff8141ec30>] ? gs_change+0xb/0xb
-> Jan 20 04:11:30 s3 kernel: ---[ end trace 73ac82546fadadb1 ]---
-> Jan 20 04:11:30 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:30 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:30 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:30 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:30 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:30 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:30 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:30 s3 kernel: AMD-Vi: Completion-Wait loop timed out
-> Jan 20 04:11:30 s3 kernel: ------------[ cut here ]------------
-> 
-> And many more of the WARNINGs.
-> 
-> What went wrong? How to fix?
-> 
-> 
-> Kind regards,
-> Udo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Yes, because packets may come from off-link source.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+--yoshfuji
