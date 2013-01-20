@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab3ATWjO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 17:39:14 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:59170 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab3ATWjN (ORCPT
+	id S1752474Ab3ATWsP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 17:48:15 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:62730 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab3ATWsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 17:39:13 -0500
-Date: Sun, 20 Jan 2013 14:39:07 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Thomas De Schampheleire <patrickdepinguin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Brownell <david-b@pacbell.net>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Anatolij Gustschin <agust@denx.de>, Frodo Looijaard <frodol@dds.nl>,
-        Philip Edelbrock <phil@netroedge.com>,
-        Ben Gardner <bgardner@wabtec.com>, Ronny Meeus <Ronny.Meeus@gmail.com>
-Subject: Re: [RFC] Creating an eeprom class
-Message-ID: <20130120223907.GA8424@kroah.com>
-References: <CAAXf6LXkgLiBLFmwH_GR9hkjFgOJ5z1nSTQd9Q4pJud732Lb9Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAXf6LXkgLiBLFmwH_GR9hkjFgOJ5z1nSTQd9Q4pJud732Lb9Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 20 Jan 2013 17:48:13 -0500
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Cc: DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Adam Jackson <ajax@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, stable@vger.kernel.org
+Subject: [PATCH] iommu/intel: disable DMAR for g4x integrated gfx
+Date: Sun, 20 Jan 2013 23:50:13 +0100
+Message-Id: <1358722213-2075-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 07:08:28PM +0100, Thomas De Schampheleire wrote:
-> [plaintext and fixed address of David Brownell]
+DMAR support on g4x/gm45 integrated gpus seems to be totally busted.
+So don't bother, but instead disable it by default to allow distros to
+unconditionally enable DMAR support.
 
-David passed away a year or so ago, so that's really not going to help :(
+v2: Actually wire up the right quirk entry, spotted by Adam Jackson.
 
-> Hi,
-> 
-> Several of the eeprom drivers that live in drivers/misc/eeprom export
-> a binary sysfs file 'eeprom'. If a userspace program or script wants
-> to access this file, it needs to know the full path, for example:
-> 
-> /sys/bus/spi/devices/spi32766.0/eeprom
-> 
-> The problem with this approach is that it requires knowledge about the
-> hardware configuration: is the eeprom on the SPI bus, the I2C bus, or
-> maybe memory mapped?
-> 
-> It would therefore be more interesting to have a bus-agnostic way to
-> access this eeprom file, for example:
-> /sys/class/eeprom/eeprom0/eeprom
-> 
-> Maybe it'd be even better to use a more generic class name than
-> 'eeprom', since there are several types of eeprom-like devices that
-> you could export this way.
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51921
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=538163
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=538163
+Cc: Adam Jackson <ajax@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: stable@vger.kernel.org
+Tested-by: stathis <stathis@npcglib.org>
+Tested-by: Mihai Moldovan <ionic@ionic.de>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/iommu/intel-iommu.c |   21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
 
-Does all of the existing "eeprom" devices use the same userspace
-interface?  If so, yes, having a "class" would make sense.
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index d4a4cd4..9743769 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -4196,6 +4196,21 @@ static struct iommu_ops intel_iommu_ops = {
+ 	.pgsize_bitmap	= INTEL_IOMMU_PGSIZES,
+ };
+ 
++static void __devinit quirk_iommu_g4x_gfx(struct pci_dev *dev)
++{
++	/* G4x/GM45 integrated gfx dmar support is totally busted. */
++	printk(KERN_INFO "DMAR: Disabling IOMMU for graphics on this chipset\n");
++	dmar_map_gfx = 0;
++}
++
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2a40, quirk_iommu_g4x_gfx);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e00, quirk_iommu_g4x_gfx);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e10, quirk_iommu_g4x_gfx);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e20, quirk_iommu_g4x_gfx);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e30, quirk_iommu_g4x_gfx);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e40, quirk_iommu_g4x_gfx);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e90, quirk_iommu_g4x_gfx);
++
+ static void __devinit quirk_iommu_rwbf(struct pci_dev *dev)
+ {
+ 	/*
+@@ -4204,12 +4219,6 @@ static void __devinit quirk_iommu_rwbf(struct pci_dev *dev)
+ 	 */
+ 	printk(KERN_INFO "DMAR: Forcing write-buffer flush capability\n");
+ 	rwbf_quirk = 1;
+-
+-	/* https://bugzilla.redhat.com/show_bug.cgi?id=538163 */
+-	if (dev->revision == 0x07) {
+-		printk(KERN_INFO "DMAR: Disabling IOMMU for graphics on this chipset\n");
+-		dmar_map_gfx = 0;
+-	}
+ }
+ 
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2a40, quirk_iommu_rwbf);
+-- 
+1.7.10.4
 
-> Or should we rather hook the eeprom code into the mtd subsystem?
-
-Why mtd?
-
-thanks,
-
-greg k-h
