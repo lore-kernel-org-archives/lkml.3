@@ -1,56 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab3ATLTZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 06:19:25 -0500
-Received: from 8bytes.org ([85.214.48.195]:40949 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751358Ab3ATLTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 06:19:24 -0500
-Date: Sun, 20 Jan 2013 12:19:20 +0100
-From: =?iso-8859-1?Q?J=F6rg_R=F6del?= <joro@8bytes.org>
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
-Message-ID: <20130120111920.GL25591@8bytes.org>
-References: <50FBC7EF.6040207@xs4all.nl>
- <20130120103652.GB16800@pd.tnic>
- <50FBC994.8020409@xs4all.nl>
+	id S1751915Ab3ATLUM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 06:20:12 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:53553 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab3ATLUL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 06:20:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FBC994.8020409@xs4all.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Sun Jan 20 12:19:20 2013
-X-DSPAM-Confidence: 0.9976
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 50fbd2b822971665154718
+Date: Sun, 20 Jan 2013 11:20:09 +0000
+Message-ID: <CAAMvbhGM+s0LKJVqR8GWz4LkBhSZCCT_xa2qh=dFjV8A92jqOg@mail.gmail.com>
+Subject: Comparing linux kernel trees.
+From: James Courtier-Dutton <james.dutton@gmail.com>
+To: LKML Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 11:40:20AM +0100, Udo van den Heuvel wrote:
-> Hello,
-> 
-> On 2013-01-20 11:36, Borislav Petkov wrote:
-> > I know just the guy, CCed. :-)
-> 
-> Thanks for the quick response!
-> I found this similar case:
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1073384
+Hi,
 
-Yes, this is a Hardware issue for which the BIOS does not apply the
-workaround. The only solution for now is to disable the IOMMU on the
-Trinity based chips. Unfortunatly I don't have access to the hardware
-any longer to write a workaround in the AMD IOMMU driver.
+I have been given a linux kernel sources tar file.
+It contains a modified version of the linux kernel.
+It is just source files, without any "git" history.
+What I would like to do is compare this with the mainline linux kernel
+git tree, and find the tag from the kernel git tree that this source
+code is most similar to.
+E.g. Finding the source code is really kernel 3.2.1 with some minor changes.
+My plan at the moment is just to automate a checkout of every git tag,
+then run diff -ur on it, and then choose the smallest diff file
+output.
+But, has anyone got a better method?
 
-The question is what to do now, I tend to disable the IOMMU if a
-Trinity chip is detected. This is not the first report of this problem
-I encountered.
+Kind Regards
 
-
-Regards,
-
-	Joerg
-
-
+James
