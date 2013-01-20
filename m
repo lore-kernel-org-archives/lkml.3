@@ -1,365 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab3ATWto (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 17:49:44 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:47792 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752495Ab3ATWtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 17:49:41 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v9 07/11] PCI, acpiphp: Move and enhance hotplug support of pci host bridge
-Date: Sun, 20 Jan 2013 23:55:39 +0100
-Message-ID: <9639993.DWkmFxRIH0@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1358495602-22867-8-git-send-email-yinghai@kernel.org>
-References: <1358495602-22867-1-git-send-email-yinghai@kernel.org> <1358495602-22867-8-git-send-email-yinghai@kernel.org>
+	id S1752493Ab3ATWvQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 17:51:16 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:32002 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752052Ab3ATWvO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 17:51:14 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkACAG6Zu08Y1KFE/2dsb2JhbAANN4F7gzKrG4ZnAQEEI1YQCw4MAgUhAgIPAkYGDQEHAQGvGJJ7gSaKAYQJgRQDiEKVd4lZgTk
+X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
+   d="scan'208";a="213112067"
+Message-ID: <50FC74E0.20305@teksavvy.com>
+Date: Sun, 20 Jan 2013 17:51:12 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921 (another one)
+References: <50F42F85.50907@teksavvy.com> <20130114203711.GA29982@fieldses.org> <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org> <50F63882.8000607@parallels.com> <50F72F03.5070806@teksavvy.com> <50F786AF.4070107@parallels.com> <20130117130335.GD6598@fieldses.org> <50F7FB7E.2020503@parallels.com> <50F88C14.7030903@teksavvy.com> <50F8DF7E.8080107@parallels.com>
+In-Reply-To: <50F8DF7E.8080107@parallels.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 17, 2013 11:53:18 PM Yinghai Lu wrote:
-> We have partial hot-add support in acpiphp driver, and it is confusing.
-> 
-> Move host bridge hot-add support to pci_root.c, and keep acpiphp simple,
-> also add hot-remove support in pci_root.c.
-> 
-> How to test it: if sci_emu patch is applied,
-> 
-> Find out root bus number to acpi root name mapping from dmesg or /sys
-> 
->   echo "\_SB.PCIB 3" > /sys/kernel/debug/acpi/sci_notify
-> to remove root bus
-> 
->   echo "\_SB.PCIB 1" > /sys/kernel/debug/acpi/sci_notify
-> to add back root bus
-> 
-> -v2: put back pci_root_hp change in one patch
-> -v3: add pcibios_resource_survey_bus() calling
-> -v4: remove not needed code with remove_bridge
-> -v5: put back support for acpiphp support for slots just on root bus.
-> -v6: change some functions to *_p2p_* to make it more clean.
-> -v7: split hot_added change out.
-> -v8: Move to pci_root.c instead of adding another file requested by Bjorn.
-> -v9: Fold three following patches into this one for easy review:
-> 	a: Add missing hot_remove support for root device.
-> 	b: Tang Chen noticed that hotplug through container will not update
-> 	   acpi_root_bridge list. After closely checking, we don't need
-> 	   that for struct for tracking and could use acpi_pci_root directly.
-> 	c: Tang Chen found handle_root_bridge_removal is very similiar to
-> 	   acpi_bus_hot_remove_device().  Change to handle_root_bridge_removal
-> 	   to use acpi_bus_hot_remove_device.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  drivers/acpi/pci_root.c            |  139 ++++++++++++++++++++++++++++++++++++
->  drivers/pci/hotplug/acpiphp_glue.c |   59 ++++-----------
->  2 files changed, 154 insertions(+), 44 deletions(-)
-> 
-> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-> index bf5108a..3ce5d80 100644
-> --- a/drivers/acpi/pci_root.c
-> +++ b/drivers/acpi/pci_root.c
-> @@ -655,3 +655,142 @@ int __init acpi_pci_root_init(void)
->  
->  	return 0;
->  }
-> +
-> +/* Support root bridge hotplug */
-> +
-> +static void handle_root_bridge_insertion(acpi_handle handle)
-> +{
-> +	struct acpi_device *device, *pdevice;
-> +	acpi_handle phandle;
-> +	int ret_val;
-> +
-> +	acpi_get_parent(handle, &phandle);
-> +	if (acpi_bus_get_device(phandle, &pdevice)) {
-> +		printk(KERN_DEBUG "no parent device, assuming NULL\n");
-> +		pdevice = NULL;
-> +	}
-> +	if (!acpi_bus_get_device(handle, &device)) {
-> +		/* check if  pci root_bus is removed */
-> +		struct acpi_pci_root *root = acpi_driver_data(device);
-> +		if (pci_find_bus(root->segment, root->secondary.start))
-> +			return;
-> +
-> +		printk(KERN_DEBUG "bus exists... trim\n");
-> +		/* this shouldn't be in here, so remove
-> +		 * the bus then re-add it...
-> +		 */
-> +		ret_val = acpi_bus_trim(device);
+Got it again, this time on a different system
+running mostly the same software.
 
-You said that this followed acpiphp, but the purpose of the trimming in there
-seems to be to handle surprise removal and re-insertion, which I'm not sure is
-OK with something like a host bridge.
+This time, I noticed when it happened:  on mounting another system's storage over NFS.
+I was doing a "mount" command when suddenly this happened.  Linux-3.7.3.
 
-The drawback is that if we have a spurious ACPI_NOTIFY_BUS_CHECK or
-ACPI_NOTIFY_DEVICE_CHECK, we'll be trying to remove the whole bus here in
-response.  That doesn't sound quite right.
-
-> +		printk(KERN_DEBUG "acpi_bus_trim return %x\n", ret_val);
-> +	}
-> +	if (acpi_bus_add(handle))
-> +		printk(KERN_ERR "cannot add bridge to acpi list\n");
-> +}
-> +
-> +static void handle_root_bridge_removal(struct acpi_device *device)
-> +{
-> +	struct acpi_eject_event *ej_event;
-> +
-> +	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
-> +	if (!ej_event)
-
-Shouldn't we do acpi_evaluate_hotplug_ost() here?
-
-> +		return;
-> +
-> +	ej_event->device = device;
-> +	ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
-> +
-> +	acpi_bus_hot_remove_device(ej_event);
-> +}
-> +
-> +static void _handle_hotplug_event_root(struct work_struct *work)
-> +{
-> +	struct acpi_pci_root *root;
-> +	char objname[64];
-> +	struct acpi_buffer buffer = { .length = sizeof(objname),
-> +				      .pointer = objname };
-> +	struct acpi_hp_work *hp_work;
-> +	acpi_handle handle;
-> +	u32 type;
-> +
-> +	hp_work = container_of(work, struct acpi_hp_work, work);
-> +	handle = hp_work->handle;
-> +	type = hp_work->type;
-> +
-> +	root = acpi_pci_find_root(handle);
-> +
-> +	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
-
-Is the path guaranteed not to be longer than 64 characters?
-
-> +
-> +	switch (type) {
-> +	case ACPI_NOTIFY_BUS_CHECK:
-> +		/* bus enumerate */
-> +		printk(KERN_DEBUG "%s: Bus check notify on %s\n", __func__,
-> +				 objname);
-
-pr_debug() would be nicer (and analogously below).
-
-> +		if (!root)
-> +			handle_root_bridge_insertion(handle);
-> +
-> +		break;
-> +
-> +	case ACPI_NOTIFY_DEVICE_CHECK:
-> +		/* device check */
-> +		printk(KERN_DEBUG "%s: Device check notify on %s\n", __func__,
-> +				 objname);
-> +		if (!root)
-> +			handle_root_bridge_insertion(handle);
-> +		break;
-> +
-> +	case ACPI_NOTIFY_EJECT_REQUEST:
-> +		/* request device eject */
-> +		printk(KERN_DEBUG "%s: Device eject notify on %s\n", __func__,
-> +				 objname);
-> +		if (root)
-> +			handle_root_bridge_removal(root->device);
-> +		break;
-> +	default:
-> +		printk(KERN_WARNING "notify_handler: unknown event type 0x%x for %s\n",
-> +				 type, objname);
-> +		break;
-> +	}
-> +
-> +	kfree(hp_work); /* allocated in handle_hotplug_event_bridge */
-> +}
-> +
-> +static void handle_hotplug_event_root(acpi_handle handle, u32 type,
-> +					void *context)
-> +{
-> +	alloc_acpi_hp_work(handle, type, context,
-> +				_handle_hotplug_event_root);
-> +}
-> +
-> +static acpi_status __init
-> +find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
-> +{
-> +	char objname[64];
-> +	struct acpi_buffer buffer = { .length = sizeof(objname),
-> +				      .pointer = objname };
-> +	int *count = (int *)context;
-> +
-> +	if (!acpi_is_root_bridge(handle))
-> +		return AE_OK;
-> +
-> +	(*count)++;
-> +
-> +	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
-> +
-> +	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-> +				handle_hotplug_event_root, NULL);
-> +	printk(KERN_DEBUG "acpi root: %s notify handler installed\n", objname);
-> +
-> +	return AE_OK;
-> +}
-> +
-> +static int __init acpi_pci_root_hp_init(void)
-> +{
-> +	int num = 0;
-> +
-> +	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> +		ACPI_UINT32_MAX, find_root_bridges, NULL, &num, NULL);
-> +
-> +	printk(KERN_DEBUG "Found %d acpi root devices\n", num);
-> +
-> +	return 0;
-> +}
-> +
-> +subsys_initcall(acpi_pci_root_hp_init);
-
-Why do we need a separate initcall here?  Is it not enough to call
-acpi_pci_root_hp_init() from acpi_init() or acpi_scan_init(), or
-acpi_pci_root_init() even?
-
-> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> index 55e03b6..45917a5 100644
-> --- a/drivers/pci/hotplug/acpiphp_glue.c
-> +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -543,10 +543,13 @@ static void cleanup_bridge(struct acpiphp_bridge *bridge)
->  	acpi_status status;
->  	acpi_handle handle = bridge->handle;
->  
-> -	status = acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-> +	if (bridge->type != BRIDGE_TYPE_HOST) {
-> +		status = acpi_remove_notify_handler(handle,
-> +					    ACPI_SYSTEM_NOTIFY,
->  					    handle_hotplug_event_bridge);
-> -	if (ACPI_FAILURE(status))
-> -		err("failed to remove notify handler\n");
-> +		if (ACPI_FAILURE(status))
-> +			err("failed to remove notify handler\n");
-> +	}
->  
->  	if ((bridge->type != BRIDGE_TYPE_HOST) &&
->  	    ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func)) {
-> @@ -630,9 +633,6 @@ static void remove_bridge(struct acpi_pci_root *root)
->  	bridge = acpiphp_handle_to_bridge(handle);
->  	if (bridge)
->  		cleanup_bridge(bridge);
-> -	else
-> -		acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-> -					   handle_hotplug_event_bridge);
->  }
->  
->  static int power_on_slot(struct acpiphp_slot *slot)
-> @@ -1123,18 +1123,12 @@ static void acpiphp_sanitize_bus(struct pci_bus *bus)
->  }
->  
->  /* Program resources in newly inserted bridge */
-> -static int acpiphp_configure_bridge (acpi_handle handle)
-> +static int acpiphp_configure_p2p_bridge(acpi_handle handle)
->  {
-> -	struct pci_bus *bus;
-> +	struct pci_dev *pdev = acpi_get_pci_dev(handle);
-> +	struct pci_bus *bus = pdev->subordinate;
->  
-> -	if (acpi_is_root_bridge(handle)) {
-> -		struct acpi_pci_root *root = acpi_pci_find_root(handle);
-> -		bus = root->bus;
-> -	} else {
-> -		struct pci_dev *pdev = acpi_get_pci_dev(handle);
-> -		bus = pdev->subordinate;
-> -		pci_dev_put(pdev);
-> -	}
-> +	pci_dev_put(pdev);
->  
->  	pci_bus_size_bridges(bus);
->  	pci_bus_assign_resources(bus);
-> @@ -1144,7 +1138,7 @@ static int acpiphp_configure_bridge (acpi_handle handle)
->  	return 0;
->  }
->  
-> -static void handle_bridge_insertion(acpi_handle handle, u32 type)
-> +static void handle_p2p_bridge_insertion(acpi_handle handle, u32 type)
->  {
->  	struct acpi_device *device;
->  
-> @@ -1162,8 +1156,8 @@ static void handle_bridge_insertion(acpi_handle handle, u32 type)
->  		err("ACPI device object missing\n");
->  		return;
->  	}
-> -	if (!acpiphp_configure_bridge(handle))
-> -		add_bridge(handle);
-> +	if (!acpiphp_configure_p2p_bridge(handle))
-> +		add_p2p_bridge(handle);
->  	else
->  		err("cannot configure and start bridge\n");
->  
-> @@ -1221,7 +1215,7 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
->  
->  	if (acpi_bus_get_device(handle, &device)) {
->  		/* This bridge must have just been physically inserted */
-> -		handle_bridge_insertion(handle, type);
-> +		handle_p2p_bridge_insertion(handle, type);
->  		goto out;
->  	}
->  
-> @@ -1396,21 +1390,6 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
->  	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_func);
->  }
->  
-> -static acpi_status
-> -find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
-> -{
-> -	int *count = (int *)context;
-> -
-> -	if (!acpi_is_root_bridge(handle))
-> -		return AE_OK;
-> -
-> -	(*count)++;
-> -	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-> -				    handle_hotplug_event_bridge, NULL);
-> -
-> -	return AE_OK ;
-> -}
-> -
->  static struct acpi_pci_driver acpi_pci_hp_driver = {
->  	.add =		add_bridge,
->  	.remove =	remove_bridge,
-> @@ -1421,15 +1400,7 @@ static struct acpi_pci_driver acpi_pci_hp_driver = {
->   */
->  int __init acpiphp_glue_init(void)
->  {
-> -	int num = 0;
-> -
-> -	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> -			ACPI_UINT32_MAX, find_root_bridges, NULL, &num, NULL);
-> -
-> -	if (num <= 0)
-> -		return -1;
-> -	else
-> -		acpi_pci_register_driver(&acpi_pci_hp_driver);
-> +	acpi_pci_register_driver(&acpi_pci_hp_driver);
->  
->  	return 0;
->  }
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+[ 3342.841487] ------------[ cut here ]------------
+[ 3342.841527] kernel BUG at net/sunrpc/svc_xprt.c:921!
+[ 3342.841547] invalid opcode: 0000 [#1] PREEMPT SMP
+[ 3342.841579] Modules linked in: nfsv3 nfsv4 sha1_generic ppp_mppe ppp_async crc_ccitt ppp_generic
+slhc btusb hid_generic arc4 usbhid hid b43 coretemp kvm_intel kvm mac80211 cfg80211
+snd_hda_codec_idt dell_wmi snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm
+dell_laptop dcdbas snd_seq_dummy snd_seq_oss microcode snd_seq_midi psmouse snd_rawmidi
+snd_seq_midi_event snd_seq nouveau ttm drm_kms_helper ssb drm bnep i2c_algo_bit snd_timer i2c_core
+mxm_wmi snd_seq_device rfcomm snd bluetooth parport_pc soundcore snd_page_alloc ppdev video nfsd
+auth_rpcgss nfs lockd binfmt_misc sunrpc lp parport firewire_ohci tg3 firewire_core crc_itu_t libphy
+hwmon sdhci_pci sdhci
+[ 3342.842104] CPU 1
+[ 3342.842120] Pid: 4108, comm: nfsv4.0-svc Not tainted 3.7.3 #3 Dell Inc. Precision M6300
+       /0JM680
+[ 3342.842151] RIP: 0010:[<ffffffffa007ba6e>]  [<ffffffffa007ba6e>] svc_delete_xprt+0x23/0xf3 [sunrpc]
+[ 3342.842206] RSP: 0018:ffff8801a680be38  EFLAGS: 00010286
+[ 3342.842226] RAX: 00000000ffffffff RBX: ffff880215103000 RCX: dead000000200200
+[ 3342.842247] RDX: dead000000100100 RSI: ffff880215103038 RDI: 0000000000000006
+[ 3342.842270] RBP: ffff880215726900 R08: 0000000000000606 R09: ffff88021fd11280
+[ 3342.842293] R10: 00000000004f9885 R11: ffff88021fd11280 R12: ffff880215726900
+[ 3342.842315] R13: ffff880215103038 R14: 0000000000000000 R15: 0000000000000000
+[ 3342.842337] FS:  0000000000000000(0000) GS:ffff88021fd00000(0000) knlGS:0000000000000000
+[ 3342.842361] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 3342.842380] CR2: 0000000000b0d000 CR3: 00000001cf402000 CR4: 00000000000007e0
+[ 3342.842402] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 3342.842425] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 3342.842448] Process nfsv4.0-svc (pid: 4108, threadinfo ffff8801a680a000, task ffff8802027cf080)
+[ 3342.842476] Stack:
+[ 3342.842488]  dead000000200200 ffff88020970a000 ffff880215103000 ffff880215726900
+[ 3342.842527]  ffff880215726900 ffffffffa007c960 ffff8801a680bfd8 0000000000011280
+[ 3342.842568]  ffff8801a680bfd8 ffff88020970a000 ffff88020970a000 ffff8801a680bf08
+[ 3342.842608] Call Trace:
+[ 3342.842644]  [<ffffffffa007c960>] ? svc_recv+0xcc/0x338 [sunrpc]
+[ 3342.842678]  [<ffffffffa0488000>] ? nfs_callback_authenticate+0x20/0x20 [nfsv4]
+[ 3342.842712]  [<ffffffffa048801d>] ? nfs4_callback_svc+0x1d/0x3c [nfsv4]
+[ 3342.842739]  [<ffffffff8103dcf9>] ? kthread+0x81/0x89
+[ 3342.842763]  [<ffffffff81040101>] ? posix_cpu_nsleep_restart+0x11/0x89
+[ 3342.842787]  [<ffffffff8103dc78>] ? kthread_freezable_should_stop+0x31/0x31
+[ 3342.842813]  [<ffffffff8130302c>] ? ret_from_fork+0x7c/0xb0
+[ 3342.842835]  [<ffffffff8103dc78>] ? kthread_freezable_should_stop+0x31/0x31
+[ 3342.842856] Code: c2 84 d2 74 02 eb a0 c3 41 55 4c 8d 6f 38 41 54 4c 89 ee 55 53 48 89 fb 51 48
+8b 6f 40 bf 06 00 00 00 e8 62 fa ff ff 85 c0 74 02 <0f> 0b 48 8b 43 08 4c 8d 65 10 48 89 df ff 50 38
+4c 89 e7 e8 2a
+[ 3342.843192] RIP  [<ffffffffa007ba6e>] svc_delete_xprt+0x23/0xf3 [sunrpc]
+[ 3342.843235]  RSP <ffff8801a680be38>
+[ 3342.858471] ---[ end trace f0dbe9f9cd4029c3 ]---
