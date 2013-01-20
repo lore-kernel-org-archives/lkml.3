@@ -1,148 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab3ATQR4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 11:17:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42448 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752323Ab3ATQRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 11:17:55 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1358440365.2689.72.camel@falcor1>
-References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com> <1358285695-26173-3-git-send-email-vgoyal@redhat.com> <1358437021.2689.52.camel@falcor1> <20130117155154.GC12165@redhat.com> <1358440365.2689.72.camel@falcor1>
+	id S1752392Ab3ATQcK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 11:32:10 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:45837 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab3ATQcI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 11:32:08 -0500
+Date: Sun, 20 Jan 2013 19:31:30 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Stefano Brivio <stefano.brivio@polimi.it>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, b43-dev@lists.infradead.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Laight <David.Laight@ACULAB.COM>,
+        kernel-janitors@vger.kernel.org
+Subject: [patch v3] b43: N-PHY: fix gain in
+ b43_nphy_get_gain_ctl_workaround_ent()
+Message-ID: <20130120163130.GA7730@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 20 Jan 2013 08:17:40 -0800
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>, Vivek Goyal <vgoyal@redhat.com>
-CC: linux-kernel@vger.kernel.org, ebiederm@xmission.com, pjones@redhat.com,
-        dhowells@redhat.com, jwboyer@redhat.com
-Message-ID: <adaba402-2f13-4e0b-ac06-143adaf6101b@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7118@saturn3.aculab.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You then get into issues like: do we have to ban prelink as a result?
+There were no break statements in this switch statement so everything
+used the default settings.  Per Walter Harms's suggestion, I've replaced
+the switch statement and done a little cleanup.
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+v2: Make additional style fixes as well while we're messing with the
+    function.
+v3: Make the array static const int.
 
->On Thu, 2013-01-17 at 10:51 -0500, Vivek Goyal wrote:
->> On Thu, Jan 17, 2013 at 10:37:01AM -0500, Mimi Zohar wrote:
->> > On Tue, 2013-01-15 at 16:34 -0500, Vivek Goyal wrote:
->> > > If a binary is signed, verify its signature. If signature is not
->valid, do
->> > > not allow execution. If binary is not signed, execution is
->allowed
->> > > unconditionally.
->> > > 
->> > > CONFIG_BINFMT_ELF_SIGNATURE controls whether elf binary signature
->support
->> > > is compiled in or not.
->> > > 
->> > > Signature are expected to be present in elf section ".section".
->This code
->> > > is written along the lines of module signature verification code.
->Just
->> > > that I have removed the magic string. It is not needed as
->signature is
->> > > expected to be present in a specific section.
->> > 
->> > Right, it's written along the lines of the original module
->signature
->> > verification code, where the signature was in the ELF header, not
->the
->> > version that was upstreamed, where the signature was appended.
->> > 
->> > > I put the signature into a section, instead of appending it so
->that
->> > > strip operation works fine.
->> > 
->> > Wouldn't the original reasons for not embedding the signature in
->the ELF
->> > header for modules apply here too?  
->> 
->> I think rusty wanted to append signatures. He thought it is much
->easier.
->> Adding a .signature section makes life easier for user space tools.
->One
->> can strip files even after signing.
->> 
->> Not that I am married to the idea of putting signature in a section.
->Just
->> that it sounded reasonable enough to do for an RFC. So if appending 
->> signature proves to be better, it is easy to implement that.
->> > 
->> > > One signs and verifies  all the areas mapped by PT_LOAD segments
->of elf
->> > > binary. Typically Elf header is mapped in first PT_LOAD segment.
->As adding
->> > > .signature section can change three elf header fields (e_shoff,
->e_shnum
->> > > and e_shstrndx), these fields are excluded from digest
->calculation
->> > > 
->> > > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
->> > 
->> > At this point, why would you want yet another method for signing
->files?
->> 
->> Are you saying that append signature instead of putting them in a
->section
->> or are you saying that just use IMA.
->> 
->> - For the first, I am fine with appending too if that works better.
->So
->>   what's wrong with current implementation. Just because we append
->the
->>   signatures in case of modules, we should follow the same thing for
->>   executables too?
->
->No, I was saying that if this patch set were to be upstreamed, then the
->signature verification, at least for ELF modules and ELF executables,
->should be the same.  The patch would then be a lot smaller.
->
->> - If above comment is w.r.t use of IMA, then I have no issues in
->using
->>   IMA as long as it can meet all the requirements. Looks like there
->is
->>   a long TODO list before we get there. In fact for some things its
->not
->>   even clear whether they fit in IMA or somehwere else.
->> 
->>   - Make sure IMA/EVM stuff chains into secureboot chain of trust.
->
->For sure.
->
->>   - Sort out all the memory locking related issues I mentioned in
->>     other mail. You seemed to be of opinion that it is out of scope
->>     for IMA, but I think it probably is nice extenstion.
->
->Yes, it would be, but I'm not sure that your method of mmaping a file
->with MAP_LOCKED is scalable, when all executables are signed.  If it
->is,
->then why not do it in general?  Otherwise there needs to be a more
->scalable solution.
->
->>     Or somehow a way needs to be found to make sure nobody can modify
->>     process address space without processe's knowledge.
->
->I'm not sure I understand.  Does your patch already address this?
->
->>   - Once all this works, then one needs to figure out all the RPM
->stuff
->>     and plugins to make sure files can be singed on build server and
->>     installed properly on target system.
->
->Yes, we need the distros involvment in this to sign all files.
->Immutable files should be signed with digital signatures.  Mutable
->files
->should have hashes.
->
->thanks,
->
->Mimi
-
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+diff --git a/drivers/net/wireless/b43/tables_nphy.c b/drivers/net/wireless/b43/tables_nphy.c
+index 97d4e27..aaca60c 100644
+--- a/drivers/net/wireless/b43/tables_nphy.c
++++ b/drivers/net/wireless/b43/tables_nphy.c
+@@ -3226,8 +3226,6 @@ struct nphy_gain_ctl_workaround_entry *b43_nphy_get_gain_ctl_workaround_ent(
+ {
+ 	struct nphy_gain_ctl_workaround_entry *e;
+ 	u8 phy_idx;
+-	u8 tr_iso = ghz5 ? dev->dev->bus_sprom->fem.ghz5.tr_iso :
+-			   dev->dev->bus_sprom->fem.ghz2.tr_iso;
+ 
+ 	if (!ghz5 && dev->phy.rev >= 6 && dev->phy.radio_rev == 11)
+ 		return &nphy_gain_ctl_wa_phy6_radio11_ghz2;
+@@ -3249,6 +3247,10 @@ struct nphy_gain_ctl_workaround_entry *b43_nphy_get_gain_ctl_workaround_ent(
+ 		    !b43_channel_type_is_40mhz(dev->phy.channel_type))
+ 			e->cliplo_gain = 0x2d;
+ 	} else if (!ghz5 && dev->phy.rev >= 5) {
++		static const int gain_data[] = {0x0062, 0x0064, 0x006a, 0x106a,
++						0x106c, 0x1074, 0x107c, 0x207c};
++		u8 tr_iso = dev->dev->bus_sprom->fem.ghz2.tr_iso;
++
+ 		if (ext_lna) {
+ 			e->rfseq_init[0] &= ~0x4000;
+ 			e->rfseq_init[1] &= ~0x4000;
+@@ -3256,26 +3258,10 @@ struct nphy_gain_ctl_workaround_entry *b43_nphy_get_gain_ctl_workaround_ent(
+ 			e->rfseq_init[3] &= ~0x4000;
+ 			e->init_gain &= ~0x4000;
+ 		}
+-		switch (tr_iso) {
+-		case 0:
+-			e->cliplo_gain = 0x0062;
+-		case 1:
+-			e->cliplo_gain = 0x0064;
+-		case 2:
+-			e->cliplo_gain = 0x006a;
+-		case 3:
+-			e->cliplo_gain = 0x106a;
+-		case 4:
+-			e->cliplo_gain = 0x106c;
+-		case 5:
+-			e->cliplo_gain = 0x1074;
+-		case 6:
+-			e->cliplo_gain = 0x107c;
+-		case 7:
+-			e->cliplo_gain = 0x207c;
+-		default:
+-			e->cliplo_gain = 0x106a;
+-		}
++		if (tr_iso > 7)
++			tr_iso = 3;
++		e->cliplo_gain = gain_data[tr_iso];
++
+ 	} else if (ghz5 && dev->phy.rev == 4 && ext_lna) {
+ 		e->rfseq_init[0] &= ~0x4000;
+ 		e->rfseq_init[1] &= ~0x4000;
