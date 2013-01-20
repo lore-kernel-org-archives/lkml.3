@@ -1,128 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab3ATSrF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 13:47:05 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:26813 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab3ATSrD (ORCPT
+	id S1752400Ab3ATTV2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 14:21:28 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51899 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259Ab3ATTV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 13:47:03 -0500
-Date: Sun, 20 Jan 2013 13:47:01 -0500 (EST)
-From: Tom St Denis <tstdenis@elliptictech.com>
-To: David Dillow <dave@thedillows.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Message-ID: <391440283.93368.1358707621420.JavaMail.root@elliptictech.com>
-In-Reply-To: <1358705471.2494.51.camel@obelisk.thedillows.org>
-Subject: Re: IPsec AH use of ahash
+	Sun, 20 Jan 2013 14:21:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.17.19.112]
-X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - FF3.0 (Mac)/7.2.1_GA_2790)
+In-Reply-To: <20130120202003.46105e04704f19f219d6373e@gmail.com>
+References: <20130120202003.46105e04704f19f219d6373e@gmail.com>
+Date: Sun, 20 Jan 2013 14:21:26 -0500
+Message-ID: <CA+5PVA7Mw35Jo47FrFS2fXwT=i9T08o931teiWnNkuUG1U1rpg@mail.gmail.com>
+Subject: Re: Kernel 3.7.* Problerm
+From: Josh Boyer <jwboyer@gmail.com>
+To: Suho Park <suho.hrvatska@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jan 20, 2013 at 6:20 AM, Suho Park <suho.hrvatska@gmail.com> wrote:
+> I used the following method since 2.4 version
+> 1. copy .config from the old kernel
+> 2. make oldconfig
+> (2-1. make dep)
+> 3. make && make modules && make modules_install && make install
+> and then change the symbolic link of kernel header in /usr/include
+> to the compiled kernel header.
+> Works well from 2.4.0 up to 3.6.11
 
+There is a "headers_install" make target that will actually install the
+kernel headers in a sanitized fashion onto your machine.  Linking
+to the raw kernel header files isn't recommended at all.  The resulting
+headers from this target are explicitly supposed to be for userspace to
+include, without getting conflicts or kernel-internal definitions
+included.
 
------ Original Message -----
-> From: "David Dillow" <dave@thedillows.org>
-> To: "Tom St Denis" <tstdenis@elliptictech.com>
-> Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-> Sent: Sunday, 20 January, 2013 1:11:11 PM
-> Subject: Re: IPsec AH use of ahash
-> 
-> On Sun, 2013-01-20 at 12:40 -0500, Tom St Denis wrote:
-> > > On Sun, 2013-01-20 at 10:07 -0500, Tom St Denis wrote:
-> > > > In all likelihood I will submit a revised CMAC patch but it'll
-> > > > take
-> > > > time before I can get business hours to work on it.  So instead
-> > > > of
-> > > > having a maintainer just touch it up we're all going to lose
-> > > > out
-> > > > because of pride?
-> > > 
-> > > Yes -- but it would seem to be yours that presents the problem.
-> > 
-> > Not really.  Again, *I* have this content.  You do not.
-> 
-> You mean the content at http://lkml.org/lkml/2012/12/11/369 ?
-> 
-> Funny how posting to an mailing list works...
+> There are many applications using linux kernel header,
+> and I add the following in Makefile
+> -I/usr/include/uapi, where uapi is symbolically linked to
+> the kernel/include/uapi, for example I tested netfilter.
+>
+> Is there any good reason of the division of the kernel headers?
+> Or is there any good solution?.
 
-I posted that in December ... it wasn't till January that I got the first reply back about it failing to meet the coding "standards."  Do you honestly expect people to sit on their hands for a month each time simple requests float by?
+Use the headers_install target.
 
-Furthermore, it's not merged into mainline.  So no, you don't have the content.  
-
-> >  And the only reason you don't is because someone with pull-request
-> > authority is too lazy [or apathetic] to make minor cosmetic changes
-> > and get the change pushed through the process.
-> 
-> Someone like the author?
-
-You mean the maintainer right?  If I have to do all of the work I should get all of the credit.
-  
-> > Furthermore I don't think you get how the business side of this
-> > works.
-> 
-> I've been doing both kernel and proprietary development for close to
-> two
-> decades, so you might be surprised. I see it the other way around --
-> you
-> don't see how the open source part works, and are expecting to
-> substitute your proprietary process -- where crap code that "works"
-> is
-> preferred, to hell with trying to maintain consistency,
-> maintainability,
-> or even readability.
-
-Um ok that's uncalled for.  What part of the fact my CMAC code is like 90% verbatim copied from the XCBC code do you not understand?   If you think the CMAC patch was bad then you better call up the authors of the XCBC code and call them out for it too.  Stop being hypocritical.
-
-You claimed my code fails to maintain "consistency" ... IT'S COPIED FROM EXISTING CODE.  Your complaint makes no sense not to mention it's insulting.
-
-Furthermore, as someone who ran OSS projects (some of which are in millions of devices around the world) I understood to cherish user contributions.  Even if they needed polishing up.  I did the bitch work of documenting, testing, packaging, development, debugging, and support.  It's far far far too common to see OSS developers shy away from the less fun side of software development...
-
-I called out the maintainers here because because not only do they not maintain the integrity of the code for which they claim authority but they are hostile towards outside contributions with ridiculous standards that they themselves don't even adhere to.  Code that they work on in the kernel doesn't meet ANY of the standards set forth that I was supposed to magically divine applied here..
- 
-> You sold your boss a bill of goods, then -- that may fly in your
-> shop,
-> but that doesn't work here. It is well known that there is likely to
-> be
-> several rounds of review, and this isn't a new thing.
-
-Ok sure but why does that involve me re-writing the patch for cosmetic reasons?  I agreed that adding the () around the ^/& expressions would be a good idea.  However, how is it a good use of my time to re-write the patch (which includes lines of code I didn't write in the first place) for coding styles that are not actually used in the kernel?
-
-I **COPIED** existing code.  Yet somehow my code isn't good enough?
-
-> I do know this, and I also know that the kernel is much better
-> documented than the most of the closed source code bases I've looked
-> at
-> in my career.
-
-That's not really an excuse for lack of documentation/comments.  
-
-> You think davem is lazy? Gruff, sure, but lazy? Well, thank you for
-> illuminating your grasp of reality.
-
-I was a one man shop running open source math/crypto libraries yet I wrote tons of well commented code, 100s of pages of documentation, ran user support, and did all the other things real developers do.  
-
-If they can't add missing ()'s (which aren't strictly needed btw) on their own and merge the code into maintain then they're not much of developers now are they?
-
-> There's a difference between patching an existing file, and
-> introducing
-> a new one. Should you have introduced a new file based on AH, I
-> suspect
-> it would also need some cleaning up.
-
-Except when the motto is "use the source luke" you shouldn't be surprised when ... people use the source as a template for getting work done.  If you guys have such a damn problem with this you should maintain your code so it serves as an example to others.  Stop being a hypocrite.
-
-> Anyways, I'll stop feeding the troll now. You've made it quite clear
-> that no one is going to convince you, and calling the maintainers
-> lazy
-> and hypocrites isn't going to convince them.
-
-I'm sure I'll re-write the patch [when I can't say].  I'm not in a position to sell the AH-AEAD work to my bosses because the ROI just won't be there.  For now we and our customers will have access to CMAC and nobody else will which is just a crying shame.
-
-I'm not trying to pick a fight I'm trying to point out flaws in the system.  That you guys are so immobile on it is a shame.  I'd love to sell the idea to my bosses of cleaning up the CryptoAPI/IPsec maybe down the road merging our hardware drivers into mainline but it's not a case I can really make right now.  We make due quite fine with a private GPL tree of code but that's the opposite of how this should work.
-
-Tom
+josh
