@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab3ATVf1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 16:35:27 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:36108 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752503Ab3ATVf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 16:35:26 -0500
-X-Greylist: delayed 2008 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Jan 2013 16:35:26 EST
-Date: Sun, 20 Jan 2013 22:01:41 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Cong Ding <dinggnu@gmail.com>, "Hans J. Koch" <hjk@hansjkoch.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/1] uio.c: solve memory leak
-Message-ID: <20130120210140.GA13035@local>
-References: <1354210800-27230-1-git-send-email-dinggnu@gmail.com>
- <20121211012112.GA11273@local>
- <CAM3j68oNeb5HVYVHTSnQoiBHa7T4krkiDLy0dQkBZUd5BQgo2w@mail.gmail.com>
- <20130118220050.GA31286@kroah.com>
+	id S1752625Ab3ATVnG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 16:43:06 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:63206 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752569Ab3ATVnE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 16:43:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130118220050.GA31286@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAKMK7uG7no98LGGEZ1nH=6V6HPgYZeZaJE8Jmo_np4DDZtwJ6Q@mail.gmail.com>
+References: <CA+icZUXpp=PF2dJ93RJtMaaWbqoAZ9Oiqt6QPXsE1AiR-D4gGg@mail.gmail.com>
+	<CAKMK7uG7no98LGGEZ1nH=6V6HPgYZeZaJE8Jmo_np4DDZtwJ6Q@mail.gmail.com>
+Date: Sun, 20 Jan 2013 22:43:02 +0100
+Message-ID: <CA+icZUUsqejwefNPpApMyLCf5u5fd3pKUrGGQDCQGOghMah_Vg@mail.gmail.com>
+Subject: Re: [PULL] kms locking rework
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Dave Airlie <airlied@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 02:00:50PM -0800, Greg Kroah-Hartman wrote:
-> On Fri, Jan 18, 2013 at 10:05:45PM +0100, Cong Ding wrote:
-> > On Tue, Dec 11, 2012 at 2:21 AM, Hans J. Koch <hjk@hansjkoch.de> wrote:
-> > > On Thu, Nov 29, 2012 at 05:40:00PM +0000, Cong Ding wrote:
-> > >> In version 1, I forgot to modify the same bug in the first loop.
-> > >>
-> > >> we have to call kobject_put() to clean up the kobject after function
-> > >> kobject_init(), kobject_add(), or kobject_uevent() is called.
-> > >>
-> > >> Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> > >
-> > > Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
-> > 
-> > Hi Greg, is this patch stil in the queue?
-> 
-> Hans is queueing up UIO patches to send to me, I'm waiting for him to
-> send them as I don't have any in my trees.
+On Sun, Jan 20, 2013 at 10:24 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> On Sun, Jan 20, 2013 at 10:15 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> Hi Daniel,
+>>
+>> I am testing your patchset (original postings at [1]).
+>> At a 1st look it seems to be OK.
+>> Any tests you want me to run?
+>
+> Imo the fundamentals of the series are well-tested with the i-g-t
+> series, so running things on as many (non-i915) gpus as possible is
+> the most interesting thing. I just don't have that many radeon/nouveau
+> machines lying around for that ...
+>
 
-I'll set that up tonight or tomorrow. Sorry, I was delayed by illness
-and a lot of other work.
+I am here on SNB, so.
 
-Thanks,
-Hans
+> If you want to get really fancy, set up a zaphod dual-head config with
+> 2 independent X servers to check whether concurrent pageflips don't
+> cause havoc. That needs something which pageflips, ofc.
 
-> 
-> thanks,
-> 
-> greg k-h
-> 
+Sounds like a lot of work...
+Any docs/wiki around to manage such a setup?
+
+- Sedat -
+
+> -Daniel
+> --
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
