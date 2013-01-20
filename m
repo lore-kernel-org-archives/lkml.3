@@ -1,48 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497Ab3ATUXv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 15:23:51 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:57823 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444Ab3ATUXu (ORCPT
+	id S1752515Ab3ATUbF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 15:31:05 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59468 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752452Ab3ATUbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 15:23:50 -0500
+	Sun, 20 Jan 2013 15:31:04 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1361595885.93211.1358703620681.JavaMail.root@elliptictech.com>
+References: <1361595885.93211.1358703620681.JavaMail.root@elliptictech.com>
 MIME-Version: 1.0
-In-Reply-To: <20130120192547.GD6771@redhat.com>
-References: <20130116181830.GA6469@redhat.com> <CA+55aFzkWqSEzw9oa5JodrM2NWE0H_AF7xyzRhd+DQ=PB=ZT2A@mail.gmail.com>
- <20130118153700.GA27915@redhat.com> <CA+55aFxEow_-PoX0xFa07yOi6az=6uVx8zeOsfToErmzh7dB8A@mail.gmail.com>
- <20130118172854.GA29753@redhat.com> <20130118175224.GA520@redhat.com>
- <CA+55aFyEsU-pkX557A-m+xoGkA_v+fXEyA8z8HbJ5J8K1jObeg@mail.gmail.com>
- <20130118185559.GA3773@redhat.com> <CA+55aFy=newnMbx53HipyWbRs2mUUPSqXXCpSfDLW78gkro37g@mail.gmail.com>
- <20130120192448.GA6771@redhat.com> <20130120192547.GD6771@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 20 Jan 2013 12:23:29 -0800
-X-Google-Sender-Auth: n2pfkNnkP_RkLAqQbFEVzvXLBxw
-Message-ID: <CA+55aFy_ozUj78-d8JSry6D=vD0--mPHkZx9Cvwfk5RFNo2OXw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] ia64: kill thread_matches(), unexport ptrace_check_attach()
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Kernel Security <security@kernel.org>,
-        Michael Davidson <md@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Julien Tinnes <jln@google.com>,
-        Aaron Durbin <adurbin@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Roland McGrath <roland@hack.frob.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: IPsec AH use of ahash
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Date: Sun, 20 Jan 2013 20:30:49 +0000
+To: Tom St Denis <tstdenis@elliptictech.com>,
+        David Dillow <dave@thedillows.org>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Message-ID: <8b7b5c2c-1e9f-4390-8492-a21cf8566d55@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 11:25 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> arch/ia64/kernel/ptrace.c:thread_matches() has no users since e868a55c
-> "[IA64] remove find_thread_for_addr()", remove it.
+Look at it from the kernel end. What happens if your change shows up bugs on another architecture or has a flaw. It works for you now but you plan to dump and run. That's not a viable long term development model for upstream.
 
-I think this one should go first, so that there are no stale callers
-of ptrace_check_attach() when you change the semantics. In fact, I'll
-apply it immediately, since it's clearly correct and independent of
-the other changes.
+The licence allows you to do it, and other parties who care more to pick it up and run with it. Unless someone does however it's just a burden. If nobody wants it upstream enough better it stays out perhaps - if the call is wrong eventually other people will care enoug to share the work. If not you get to pick between doing the extra or re-porting your code to new releases 
 
-              Linus
+Alan
