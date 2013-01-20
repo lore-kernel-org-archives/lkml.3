@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab3ATDM5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jan 2013 22:12:57 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50143 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab3ATDM4 (ORCPT
+	id S1752823Ab3ATDiK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jan 2013 22:38:10 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1406 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752242Ab3ATDiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jan 2013 22:12:56 -0500
-Date: Sun, 20 Jan 2013 03:12:53 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Issues with "x86, um: switch to generic fork/vfork/clone" commit
-Message-ID: <20130120031253.GO4939@ZenIV.linux.org.uk>
-References: <50F3D2F2.3080200@6wind.com>
- <20130119063808.GN4939@ZenIV.linux.org.uk>
+	Sat, 19 Jan 2013 22:38:08 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sat, 19 Jan 2013 19:36:46 -0800
+Message-ID: <50FB669C.3020704@nvidia.com>
+Date: Sun, 20 Jan 2013 11:38:04 +0800
+From: Mark Zhang <markz@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130119063808.GN4939@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Courbot <acourbot@nvidia.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "gnurou@gmail.com" <gnurou@gmail.com>
+Subject: Re: [PATCH 0/3] pwm-backlight: add subdrivers & Tegra support
+References: <1358591420-7790-1-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1358591420-7790-1-git-send-email-acourbot@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 19, 2013 at 06:38:08AM +0000, Al Viro wrote:
-> > [   64.313636] kbd[2563]: segfault at 9fe ip 000009fe sp b758293c
-> > error 4 in dash[8048000+18000]
-> > 
-> > After bisecting, the following commit seems responsible:
-> > 1d4b4b2994b5fc208963c0b795291f8c1f18becf (x86, um: switch to generic
-> > fork/vfork/clone)
+Yeah, thanks Alex. :)
+
+So this is a non power sequence version of backlight & panel enabling,
+isn't it? I remember we talked about this several days ago and you
+mentioned kernel guys want an ad-hoc version(power sequence logics
+inside driver, not in DT) and I believe this is it, right?
+
+I think finally I can enable Tegra30 cardhu's display after this patch
+merged.
+
+Mark
+On 01/19/2013 06:30 PM, Alexandre Courbot wrote:
+> This series introduces a way to use pwm-backlight hooks with platforms
+> that use the device tree through a subdriver system. It also adds support
+> for the Tegra-based Ventana board, adding the last missing block to enable
+> its panel. Support for other Tegra board can thus be easily added.
 > 
-> Er...  Bisect of the guest kernel, I take it?  Could you check if building
-> the guest !SMP affects anything?
-
-OK...  I think I understand what's going on.  We need asmlinkage_protect
-in sys_clone() ;-/  For what it's worth, I really wonder if we ought to
-treat that as syscall wrappers - i.e. have SYSCALL_DEFINEx on i386 add
-a wrapper that would do asmlinkage_protect itself.  IMO it's the same kind
-of thing as argument normalization handled by syscall wrappers - we make
-sure that C function plays well with what asm glue is doing and expecting.
-
-Anyway, the following seems to fix the problem here (and yes, I could reproduce
-it with your config); could you verify that it fixes things on your setup?
-If it does, this sucker should go into mainline and -stable...
-
-diff --git a/kernel/fork.c b/kernel/fork.c
-index a31b823..e05cff2 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1660,8 +1660,10 @@ SYSCALL_DEFINE5(clone, unsigned long, clone_flags, unsigned long, newsp,
- 		 int, tls_val)
- #endif
- {
--	return do_fork(clone_flags, newsp, 0,
--		parent_tidptr, child_tidptr);
-+	long ret = do_fork(clone_flags, newsp, 0, parent_tidptr, child_tidptr);
-+	asmlinkage_protect(5, ret, clone_flags, newsp,
-+			parent_tidptr, child_tidptr, tls_val);
-+	return ret;
- }
- #endif
- 
+> I have something else in mind to properly support this (power
+> sequences), but this work relies on the GPIO subsystem redesign which will
+> take some time. The pwm-backlight subdrivers can do the job by the meantime.
+> 
+> There are a few design points that might need to be discussed:
+> 1) Link order is important: subdrivers register themselves in their
+> module_init function, which must be called before pwm-backlight's probe.
+> This forbids linking subdrivers as separate modules from pwm-backlight.
+> 2) The subdriver's data is temporarily passed through the backlight
+> device's driver data. This should not hurt, but maybe there is a better way
+> to do this.
+> 3) Subdrivers must add themselves into pwm-backlight's own of_device_id
+> table. It would be cleaner to not have to list subdrivers into
+> pwm-backlight's main file, but I cannot think of a way to do otherwise.
+> 
+> Suggestions for the 3 points listed above are very welcome - in any case,
+> I hope to make this converge into something mergeable quickly.
+> 
+> Note that these patches are the last missing block to get a functional
+> panel on Tegra boards. Using 3.8rc4 and these patches, the internal panel
+> on Ventana is usable out-of-the-box. Yay.
+> 
+> Alexandre Courbot (3):
+>   pwm-backlight: add subdriver mechanism
+>   tegra: pwm-backlight: add tegra pwm-bl driver
+>   tegra: ventana: of: add host1x device to DT
+> 
+>  arch/arm/boot/dts/tegra20-ventana.dts  |  29 +++++-
+>  arch/arm/configs/tegra_defconfig       |   1 +
+>  drivers/video/backlight/Kconfig        |   7 ++
+>  drivers/video/backlight/Makefile       |   4 +
+>  drivers/video/backlight/pwm_bl.c       |  70 ++++++++++++++-
+>  drivers/video/backlight/pwm_bl_tegra.c | 159 +++++++++++++++++++++++++++++++++
+>  include/linux/pwm_backlight.h          |  15 ++++
+>  7 files changed, 281 insertions(+), 4 deletions(-)
+>  create mode 100644 drivers/video/backlight/pwm_bl_tegra.c
+> 
