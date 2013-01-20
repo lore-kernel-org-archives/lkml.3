@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab3ATLUp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 06:20:45 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:65488 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab3ATLUo (ORCPT
+	id S1751946Ab3ATLZT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 06:25:19 -0500
+Received: from pindarots.xs4all.nl ([80.101.128.228]:46577 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672Ab3ATLZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 06:20:44 -0500
-Date: Sun, 20 Jan 2013 20:20:03 +0900
-From: Suho Park <suho.hrvatska@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Kernel 3.7.* Problerm
-Message-Id: <20130120202003.46105e04704f19f219d6373e@gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.18.9; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 20 Jan 2013 06:25:18 -0500
+Message-ID: <50FBD413.1000406@xs4all.nl>
+Date: Sun, 20 Jan 2013 12:25:07 +0100
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?J=F6rg_R=F6del?= <joro@8bytes.org>
+CC: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
+References: <50FBC7EF.6040207@xs4all.nl> <20130120103652.GB16800@pd.tnic> <50FBC994.8020409@xs4all.nl> <20130120111920.GL25591@8bytes.org>
+In-Reply-To: <20130120111920.GL25591@8bytes.org>
+X-Enigmail-Version: 1.5.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I used the following method since 2.4 version
-1. copy .config from the old kernel
-2. make oldconfig
-(2-1. make dep)
-3. make && make modules && make modules_install && make install
-and then change the symbolic link of kernel header in /usr/include
-to the compiled kernel header.
-Works well from 2.4.0 up to 3.6.11
+Hello Jörg,
 
-The problem is that 
-3.6.11----->3.7.0 is OK
-3.7.0 ----->3.7.1 not OK
-3.7.1----->3.7.3 not OK
+On 2013-01-20 12:19, Jörg Rödel wrote:
+> On Sun, Jan 20, 2013 at 11:40:20AM +0100, Udo van den Heuvel wrote:
+>> Hello,
+>>
+>> On 2013-01-20 11:36, Borislav Petkov wrote:
+>>> I know just the guy, CCed. :-)
+>>
+>> Thanks for the quick response!
+>> I found this similar case:
+>> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1073384
+> 
+> Yes, this is a Hardware issue for which the BIOS does not apply the
+> workaround.
 
-The point is that kerhel header is devided
-into two parts linux/include/linux,
-linux/include/uapi/linux.
+Hardware issue? What is wrong c.q. happening?
 
-The solution is that I always change the kernel
-header includes to point 3.6.11, and compile 3.7.3
+I have this:
 
-There are many applications using linux kernel header,
-and I add the following in Makefile
--I/usr/include/uapi, where uapi is symbolically linked to
-the kernel/include/uapi, for example I tested netfilter.
+# dmesg|grep IOMMU
+[    0.000000] ACPI: IVRS 000000009dd12420 00070 (v02  AMD   AMDIOMMU
+00000001 AMD  00000000)
+[    0.000000] Please enable the IOMMU option in the BIOS setup
+[    1.125636] AMD-Vi: Found IOMMU at 0000:00:00.2 cap 0x40
 
-Is there any good reason of the division of the kernel headers?
-Or is there any good solution?.
+So kernel says I have no IOMMU but still one is found? (!?)
 
--- 
-++++++++++++++++++++++++++
-Suho Park(suhopark@math.snu.ac.kr)
-+82-10-3450-6216
-++++++++++++++++++++++++++
+> The only solution for now is to disable the IOMMU on the
+> Trinity based chips. 
+
+In PC-BIOS I assume?
+I did not yet find an option, but this is the first occurrence.
+Can the BIOS vendor fix this? If so: please explain so I cna contact
+Gigabyte (motherboard manufacturer)
+
+> The question is what to do now, I tend to disable the IOMMU if a
+> Trinity chip is detected. This is not the first report of this problem
+> I encountered.
+
+I know, see the URL I posted.
+What is the impact of disabling the IOMMU?
+
+
+Udo
