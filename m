@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab3ATNRb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 08:17:31 -0500
-Received: from mga14.intel.com ([143.182.124.37]:57781 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab3ATNRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 08:17:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,500,1355126400"; 
-   d="scan'208";a="193141992"
-Date: Sun, 20 Jan 2013 04:52:43 -0800
-From: Vinod Koul <vinod.koul@intel.com>
-To: Matt Porter <mporter@ti.com>
-Cc: Dan Williams <djbw@fb.com>, Chris Ball <cjb@laptop.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] dmaengine: add dma_get_channel_caps()
-Message-ID: <20130120125243.GD23398@intel.com>
-References: <1357844826-30746-1-git-send-email-mporter@ti.com>
- <1357844826-30746-2-git-send-email-mporter@ti.com>
+	id S1752214Ab3ATN0n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 08:26:43 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:43793 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab3ATN0m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 08:26:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357844826-30746-2-git-send-email-mporter@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1358681368-13044-1-git-send-email-merez@codeaurora.org>
+References: <1358681368-13044-1-git-send-email-merez@codeaurora.org>
+Date: Sun, 20 Jan 2013 14:26:40 +0100
+Message-ID: <CAPDyKFp3BmtGparw4TH28GVjmQPVmb3Pn+snrtiDHANxwbH6Kg@mail.gmail.com>
+Subject: Re: [PATCH v1] mmc: core: move the cache disabling operation to mmc_suspend
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Maya Erez <merez@codeaurora.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 02:07:04PM -0500, Matt Porter wrote:
-> +/* struct dmaengine_chan_caps - expose capability of a channel
-> + * Note: each channel can have same or different capabilities
-> + *
-> + * This primarily classifies capabilities into
-> + * a) APIs/ops supported
-> + * b) channel physical capabilities
-> + *
-> + * @cap_mask: api/ops capability (DMA_INTERRUPT and DMA_PRIVATE
-> + *	       are invalid api/ops and will never be set)
-> + * @seg_nr: maximum number of SG segments supported on a SG/SLAVE
-> + *	    channel (0 for no maximum or not a SG/SLAVE channel)
-> + * @seg_len: maximum length of SG segments supported on a SG/SLAVE
-> + *	     channel (0 for no maximum or not a SG/SLAVE channel)
-> + */
-> +struct dmaengine_chan_caps {
-> +	dma_cap_mask_t cap_mask;
-> +	int seg_nr;
-> +	int seg_len;
-> +};
-Now am really unclear why we would need direction as argument.
-
-Also, I would add the channel physical capablities like direction, widths,
-lengths etc supported.
- 
-> +/**
-> + * dma_get_channel_caps - flush pending transactions to HW
-flush pending... ???
-
-> + * driver does not implement per channel capbilities then
-> + * NULL is returned.
-> + */
-> +static inline struct dmaengine_chan_caps
-> +*dma_get_channel_caps(struct dma_chan *chan, enum dma_transfer_direction dir)
-you need to add this for when CONFIG_DMA_ENGINE is not defined as well.
-> +{
-> +	if (chan->device->device_channel_caps)
-> +		return chan->device->device_channel_caps(chan, dir);
-> +	return NULL;
-> +}
+On 20 January 2013 12:29, Maya Erez <merez@codeaurora.org> wrote:
+> Cache control is an eMMC feature and in therefore should be
+> part of MMC's bus resume operations, performed in mmc_suspend,
+> rather than in the generic mmc_suspend_host().
+>
+> Signed-off-by: Maya Erez <merez@codeaurora.org>
+>
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index aaed768..b438bb2 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -2388,6 +2388,7 @@ EXPORT_SYMBOL(mmc_flush_cache);
+>   * Turn the cache ON/OFF.
+>   * Turning the cache OFF shall trigger flushing of the data
+>   * to the non-volatile storage.
+> + * This function should be called with host claimed
+>   */
+>  int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
+>  {
+> @@ -2399,7 +2400,6 @@ int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
+>                         mmc_card_is_removable(host))
+>                 return err;
+>
+> -       mmc_claim_host(host);
+>         if (card && mmc_card_mmc(card) &&
+>                         (card->ext_csd.cache_size > 0)) {
+>                 enable = !!enable;
+> @@ -2417,7 +2417,6 @@ int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
+>                                 card->ext_csd.cache_ctrl = enable;
+>                 }
+>         }
+> -       mmc_release_host(host);
+>
+>         return err;
+>  }
+> @@ -2436,10 +2435,6 @@ int mmc_suspend_host(struct mmc_host *host)
+>         cancel_delayed_work(&host->detect);
+>         mmc_flush_scheduled_work();
+>
+> -       err = mmc_cache_ctrl(host, 0);
+> -       if (err)
+> -               goto out;
+> -
+>         mmc_bus_get(host);
+>         if (host->bus_ops && !host->bus_dead) {
+>                 if (host->bus_ops->suspend) {
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index e6e3911..dc17d40 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -1379,6 +1379,11 @@ static int mmc_suspend(struct mmc_host *host)
+>         BUG_ON(!host->card);
+>
+>         mmc_claim_host(host);
 > +
->  enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
->  #ifdef CONFIG_DMA_ENGINE
->  enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
---
-~Vinod
+> +       err = mmc_cache_ctrl(host, 0);
+> +       if (err)
+> +               goto out;
+> +
+>         if (mmc_can_poweroff_notify(host->card))
+>                 err = mmc_poweroff_notify(host->card, EXT_CSD_POWER_OFF_SHORT);
+>         else if (mmc_card_can_sleep(host))
+> @@ -1386,8 +1391,9 @@ static int mmc_suspend(struct mmc_host *host)
+>         else if (!mmc_host_is_spi(host))
+>                 err = mmc_deselect_cards(host);
+>         host->card->state &= ~(MMC_STATE_HIGHSPEED | MMC_STATE_HIGHSPEED_200);
+> -       mmc_release_host(host);
+>
+> +out:
+> +       mmc_release_host(host);
+>         return err;
+>  }
+>
+> --
+> 1.7.3.3
+> --
+> QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+> of Code Aurora Forum, hosted by The Linux Foundation
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
