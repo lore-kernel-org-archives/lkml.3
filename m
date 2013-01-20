@@ -1,49 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab3ATTg1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 14:36:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26833 "EHLO mx1.redhat.com"
+	id S1752444Ab3ATTqT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 14:46:19 -0500
+Received: from mail.digium.com ([216.207.245.2]:55261 "EHLO mail.digium.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752317Ab3ATTg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 14:36:26 -0500
-Date: Sun, 20 Jan 2013 20:35:42 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Kernel Security <security@kernel.org>,
-        Michael Davidson <md@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Julien Tinnes <jln@google.com>,
-        Aaron Durbin <adurbin@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Roland McGrath <roland@hack.frob.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 0/4] (Was: ptrace: prevent PTRACE_SETREGS from
-	corrupting stack)
-Message-ID: <20130120193542.GA9241@redhat.com>
-References: <20130116181830.GA6469@redhat.com> <CA+55aFzkWqSEzw9oa5JodrM2NWE0H_AF7xyzRhd+DQ=PB=ZT2A@mail.gmail.com> <20130118153700.GA27915@redhat.com> <CA+55aFxEow_-PoX0xFa07yOi6az=6uVx8zeOsfToErmzh7dB8A@mail.gmail.com> <20130118172854.GA29753@redhat.com> <20130118175224.GA520@redhat.com> <CA+55aFyEsU-pkX557A-m+xoGkA_v+fXEyA8z8HbJ5J8K1jObeg@mail.gmail.com> <20130118185559.GA3773@redhat.com> <CA+55aFy=newnMbx53HipyWbRs2mUUPSqXXCpSfDLW78gkro37g@mail.gmail.com> <20130120192448.GA6771@redhat.com>
+	id S1752317Ab3ATTqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 14:46:18 -0500
+Date: Sun, 20 Jan 2013 13:45:54 -0600
+From: Shaun Ruffell <sruffell@digium.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Ingo Molnar <mingo@kernel.org>, Jan Beulich <JBeulich@suse.com>,
+        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] x86/perf_events: Fix "section type conflict" build error.
+Message-ID: <20130120194553.GA88837@digium.com>
+References: <20130109172255.GA17631@digium.com>
+ <20130109215942.GA20350@digium.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130120192448.GA6771@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130109215942.GA20350@digium.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20, Oleg Nesterov wrote:
->
-> > And we'd need to make sure to re-set the WAKEKILL flag not just in all
-> > the callers of ptrace_check_attach(), but also in the failure case of
-> > wait_task_inactive(). I'm not sure it can actually fail if we cleared
-> > WAKEKILL, but it's all pretty subtle.
->
-> Afaics it can't fail if we clear WAKEKILL... So 2/4 assumes it should
-> always succeed and adds the warning.
+Bump. Still an issue with v3.8-rc4. Am I mistaken in thinking this
+patch is trivial and obviously correct?
 
-Argh! It can, exactly because we can not kill may_ptrace_stop() yet.
-I'll update and resend 2/4.
+Thanks,
+Shaun
 
-Oleg.
-
+On Wed, Jan 09, 2013 at 03:59:42PM -0600, Shaun Ruffell wrote:
+> From: Jan Beulich <JBeulich@suse.com>
+> 
+> This patch fixes a build regression first introduced in 3.7 with
+> (e09df47 "perf/x86: Update/fix generic events on P6 PMU").
+> 
+> At least some older versions of gcc, like (GCC) 4.1.2 20080704 (Red Hat
+> 4.1.2-51), dislike mixing constant and non-const data in the same
+> section. Without this patch a build will fail with the following error:
+> 
+>     CC      arch/x86/kernel/cpu/perf_event_p6.o
+>   arch/x86/kernel/cpu/perf_event_p6.c:22: error: p6_hw_cache_event_ids causes a section type conflict
+>   make[3]: *** [arch/x86/kernel/cpu/perf_event_p6.o] Error 1
+> 
+> Newer versions of gcc simply emits the section as writable (which isn't what
+> we want, but also is not a big problem as it gets discarded post-init anyway).
+> 
+> Also get the Knight's Corner definitions in sync.
+> 
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> Cc: stable@vger.kernel.org # 3.7.x only
+> [sruffell@digium.com: Added details to the commit message.]
+> Signed-off-by: Shaun Ruffell <sruffell@digium.com>
+> 
+> ---
+> 
+> [I had the wrong stable email address when I previously sent this.
+> Sorry about the extra noise.]
+> 
+> Hans, Thomas,
+> 
+> Any chance of picking this up for 3.8? This doesn't seem too
+> controversial since it only makes sure that data in the __initconst
+> section is const.
+> 
+> Rob Landley also reported this to the list here:
+> https://lkml.org/lkml/2012/12/14/511. 
+> 
+> Thanks,
+> Shaun
+> 
+>  arch/x86/kernel/cpu/perf_event_knc.c | 4 ++--
+>  arch/x86/kernel/cpu/perf_event_p6.c  | 2 +-
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_knc.c b/arch/x86/kernel/cpu/perf_event_knc.c
+> index 4b7731b..838fa87 100644
+> --- a/arch/x86/kernel/cpu/perf_event_knc.c
+> +++ b/arch/x86/kernel/cpu/perf_event_knc.c
+> @@ -17,7 +17,7 @@ static const u64 knc_perfmon_event_map[] =
+>    [PERF_COUNT_HW_BRANCH_MISSES]		= 0x002b,
+>  };
+>  
+> -static __initconst u64 knc_hw_cache_event_ids
+> +static const u64 __initconst knc_hw_cache_event_ids
+>  				[PERF_COUNT_HW_CACHE_MAX]
+>  				[PERF_COUNT_HW_CACHE_OP_MAX]
+>  				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
+> @@ -284,7 +284,7 @@ static struct attribute *intel_knc_formats_attr[] = {
+>  	NULL,
+>  };
+>  
+> -static __initconst struct x86_pmu knc_pmu = {
+> +static const struct x86_pmu knc_pmu __initconst = {
+>  	.name			= "knc",
+>  	.handle_irq		= knc_pmu_handle_irq,
+>  	.disable_all		= knc_pmu_disable_all,
+> diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
+> index f2af39f..b1e2fe1 100644
+> --- a/arch/x86/kernel/cpu/perf_event_p6.c
+> +++ b/arch/x86/kernel/cpu/perf_event_p6.c
+> @@ -19,7 +19,7 @@ static const u64 p6_perfmon_event_map[] =
+>  
+>  };
+>  
+> -static __initconst u64 p6_hw_cache_event_ids
+> +static const u64 __initconst p6_hw_cache_event_ids
+>  				[PERF_COUNT_HW_CACHE_MAX]
+>  				[PERF_COUNT_HW_CACHE_OP_MAX]
+>  				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
+> -- 
+> 1.8.1
