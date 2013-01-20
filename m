@@ -1,112 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502Ab3ATRkX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 12:40:23 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:56334 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380Ab3ATRkV (ORCPT
+	id S1752476Ab3ATRnA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 12:43:00 -0500
+Received: from relay.parallels.com ([195.214.232.42]:49095 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380Ab3ATRm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 12:40:21 -0500
-Date: Sun, 20 Jan 2013 12:40:20 -0500 (EST)
-From: Tom St Denis <tstdenis@elliptictech.com>
-To: David Dillow <dave@thedillows.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Message-ID: <1361595885.93211.1358703620681.JavaMail.root@elliptictech.com>
-In-Reply-To: <1358699692.2494.29.camel@obelisk.thedillows.org>
-Subject: Re: IPsec AH use of ahash
+	Sun, 20 Jan 2013 12:42:58 -0500
+Date: Sun, 20 Jan 2013 21:41:54 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>
+CC: Andrey Wagin <avagin@gmail.com>, David Howells <dhowells@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>, <linux-api@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <criu@openvz.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [CRIU] [PATCH 2/3] signalfd: add ability to return siginfo in a
+ raw format (v2)
+Message-ID: <20130120174153.GA5675@paralelels.com>
+References: <1358182435-19245-1-git-send-email-avagin@openvz.org>
+ <1358182435-19245-3-git-send-email-avagin@openvz.org>
+ <20130116123502.70af6b85.akpm@linux-foundation.org>
+ <CAKgNAkgHVB3=k_XOevobcMWuEqy2r75tdTc85ZYiD8rkn5OZKA@mail.gmail.com>
+ <CANaxB-wXdPZFzD3BhkD6niDA6M1NiNrc5coKf9bSx+ar_fZecg@mail.gmail.com>
+ <CAKgNAkjK9iWh_PuJ92A-MKW6Q6_B8DvTL5-fkxyULqx9ZoDPfg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.17.19.112]
-X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC24 (Linux)/7.2.1_GA_2790)
+Content-Type: text/plain; charset="koi8-r"
+Content-Disposition: inline
+In-Reply-To: <CAKgNAkjK9iWh_PuJ92A-MKW6Q6_B8DvTL5-fkxyULqx9ZoDPfg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [83.149.8.214]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "David Dillow" <dave@thedillows.org>
-> To: "Tom St Denis" <tstdenis@elliptictech.com>
-> Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-> Sent: Sunday, 20 January, 2013 11:34:52 AM
-> Subject: Re: IPsec AH use of ahash
+
+> > signalfd is a special descriptor, so I think it
+> > is not a big deal, that it works a bit strange.
 > 
-> On Sun, 2013-01-20 at 10:07 -0500, Tom St Denis wrote:
-> > In all likelihood I will submit a revised CMAC patch but it'll take
-> > time before I can get business hours to work on it.  So instead of
-> > having a maintainer just touch it up we're all going to lose out
-> > because of pride?
+> Sure, but the more we special case things, the uglier the ABI as a
+> whole becomes. So special casing should be avoided as far as we can.
 > 
-> Yes -- but it would seem to be yours that presents the problem.
+> > If all other would
+> > decides, that a new syscall is better, I will not ague.
+> 
+> And that's more or less how I see it too. I'm not going to argue for a
+> new syscall, based on what I know so far.
+> 
+> Here is one idea to think about though, while more or less maintaining
+> your proposed interface.
+> 
+> At the moment, you select signal queues in the pread() call. An
+> alternative would be to do it in the signalfd() call. In other words,
+> you could have the following flags used with signalfd()
+> 
+> SFD_RAW
+> SFD_SHARED_QUEUE -- reads will be from process-wide shared signal queue
+> SFD_PER_THREAD_QUEUE --reads will be from per-thread signal queue
 
-Not really.  Again, *I* have this content.  You do not.  And the only reason you don't is because someone with pull-request authority is too lazy [or apathetic] to make minor cosmetic changes and get the change pushed through the process.
- 
-> I'm sure you could have fixed your patch up in the amount of time
-> you've
-> spent railing against the push-back. How much of that were you
-> billing
-> for, and is that a productive use your employer's money? Even on your
-> own time, how productive has that been? Do you feel better, having
-> vented?
+I suggested this variant in the initial series, but then we decided to
+avoid adding new flags. Oleg, what do you think about this?
 
-I was hoping to have a constructive conversation in which the maintainers could come clean about the complete hypocrisy of claiming that the source is the reference [since there is no documentation for anything in the kernel] and then saying you can't actually read the source when you want to contribute. Then to tell me I have to adhere to some coding standard (which all things aside I don't agree with in the first place) despite the fact that *none* of the code in the kernel complies with it.
+> 
+> Specifying both SFD_SHARED_QUEUE  and SFD_PER_THREAD_QUEUE would be
+> the same as omitting them both, providing the default behavior of
+> slecting from both queues.
+> 
+> My point here is that you can then separate the RAW functionality from
+> the queue selector functionality. Now, it might be that at the moment
+> you always require that if the caller specifies SFD_SHARED_QUEUE  or
+> SFD_PER_THREAD_QUEUE, then they must also specify SFD_RAW. But later,
+> that constraint might be relaxed, so that users could use signalfd()
+> to select from a particular queue when reading traditional (non-RAW)
+> signalfd_siginfo structures from a signalfd.
 
-Furthermore I don't think you get how the business side of this works.
+I am not sure, that you understood this moment correctly.
+Currently SFD_RAW is independent on SFD_*_QUEUE. If signalfd is
+created without SFD_RAW, pread returns signalfd_siginfo-s.
+If SFD_RAW is set, read returns siginfo_t-s.
 
-I was tasked with getting CMAC to work with IPsec.  I did.  I sent the patch off to the LKML.  My boss tasked me with other work (totally unrelated to IPsec) since in their eyes the project was done [we do after all have CMAC support].  
+One more point for two flags is that we will be able to choose a queue
+from which signals will be dequeued. Currently we can choose a queue only
+for pread.
 
-To then go back to my boss and say I need another couple of hours to "clean" it, re-test it in our IPsec lab and then resubmit it in hopes that the "maintainers" don't find some other reason to reject it is totally unprofessional and unproductive.
+Thanks
 
-> You don't think the maintainers are maintaining if they don't clean
-> up
-> after every random contributor -- fine, call them lieutenants then.
-> Their job is to guide the new development towards the goals for the
-> system, review patches, and develop new features.
+> This does seem like a
+> very sensible design optimization to make now (and an easy one, I
+> would suppose). What do you think?
+> 
+> Cheers,
+> 
+> Michael
 
-Know this.  Being a software developer involves doing a lot of lowly work that most people aren't excited by.  You guys already don't comment/document your code.  It's unreasonable to assume you can't at least maintain your own style guidelines... I mean what does a maintainer do?
-
-> You'll notice I didn't say "reformat code when standards change."
-> This
-> is a distributed project and it doesn't scale to have the code
-> continually in flux -- reformatting creates conflicts in other
-> contributors patches, which then consume all of a lieutenant's time
-> if
-> they were to try to fix up each one for them. It's much better to
-> push
-> push that work out to the edge of the network -- put another way,
-> "many
-> hands make light work." Fixing existing formatting problems is
-> acceptable in a patch series if one is working in the area, but it is
-> rare that a series devoted solely to that kind of cleanup gets in.
-
-Because the volunteers don't want to do lowly bitch work.
-
-I'm not a volunteer.  I was paid to write the CMAC patch since our project supports it [amongst other modes including AH-GMAC...].   But that said we don't work on kernel time.  I don't bend my schedule around the whims of some moderator who is too damn lazy to do a bit of lowly work that they think is beneath them.
- 
-> The coding styles have evolved over time, and are different for
-> different areas of the kernel -- for example, most of the kernel
-> wants
-> '/*' on its own line for a multi-line comment, but under net/ it
-> should
-> not. You should try to match the style in your area -- claiming that
-> the
-> cryto/ code does it one way is unlikely to sway opinion in net/.
-> Different lieutenants, different opinions.
-
-Which of course is asinine.
- 
-> As for the existing style issues in net/ipv4/ah4.c you posted, no,
-> your
-> patch adding a feature in ah4 would probably not been rejected
-> because
-> of the existing issues, though if one was in the middle of your
-> changes,
-> it is possible that your would be asked to fix it. As for the issues
-> checkpatch.pl found, they are in many cases legitimate, but are also
-> the
-> exceptions -- there are plenty of counter-examples in that file
-> showing
-> the preferred style.
-
-Except that my CMAC content came almost exclusively from XCBC which was already in the kernel.  Since you guys did reject the patch on the grounds of coding style why would I assume my AH patches would be any different?
-
-Tom
