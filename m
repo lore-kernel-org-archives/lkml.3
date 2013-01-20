@@ -1,216 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab3ATTq7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 14:46:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62399 "EHLO mx1.redhat.com"
+	id S1752481Ab3ATT4y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 14:56:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38084 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752317Ab3ATTq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 14:46:58 -0500
-Date: Sun, 20 Jan 2013 20:46:13 +0100
+	id S1752404Ab3ATT4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 14:56:50 -0500
+Date: Sun, 20 Jan 2013 20:55:55 +0100
 From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Kernel Security <security@kernel.org>,
-        Michael Davidson <md@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Julien Tinnes <jln@google.com>,
-        Aaron Durbin <adurbin@google.com>,
+To: Andrew Vagin <avagin@parallels.com>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrey Wagin <avagin@gmail.com>, David Howells <dhowells@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, criu@openvz.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Roland McGrath <roland@hack.frob.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v2 2/4] ptrace: ensure arch_ptrace/ptrace_request can never
-	race with SIGKILL
-Message-ID: <20130120194613.GA14024@redhat.com>
-References: <CA+55aFzkWqSEzw9oa5JodrM2NWE0H_AF7xyzRhd+DQ=PB=ZT2A@mail.gmail.com> <20130118153700.GA27915@redhat.com> <CA+55aFxEow_-PoX0xFa07yOi6az=6uVx8zeOsfToErmzh7dB8A@mail.gmail.com> <20130118172854.GA29753@redhat.com> <20130118175224.GA520@redhat.com> <CA+55aFyEsU-pkX557A-m+xoGkA_v+fXEyA8z8HbJ5J8K1jObeg@mail.gmail.com> <20130118185559.GA3773@redhat.com> <CA+55aFy=newnMbx53HipyWbRs2mUUPSqXXCpSfDLW78gkro37g@mail.gmail.com> <20130120192448.GA6771@redhat.com> <20130120192527.GC6771@redhat.com>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [CRIU] [PATCH 2/3] signalfd: add ability to return siginfo in
+	a raw format (v2)
+Message-ID: <20130120195555.GA14177@redhat.com>
+References: <1358182435-19245-1-git-send-email-avagin@openvz.org> <1358182435-19245-3-git-send-email-avagin@openvz.org> <20130116123502.70af6b85.akpm@linux-foundation.org> <CAKgNAkgHVB3=k_XOevobcMWuEqy2r75tdTc85ZYiD8rkn5OZKA@mail.gmail.com> <CANaxB-wXdPZFzD3BhkD6niDA6M1NiNrc5coKf9bSx+ar_fZecg@mail.gmail.com> <CAKgNAkjK9iWh_PuJ92A-MKW6Q6_B8DvTL5-fkxyULqx9ZoDPfg@mail.gmail.com> <20130120174153.GA5675@paralelels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130120192527.GC6771@redhat.com>
+In-Reply-To: <20130120174153.GA5675@paralelels.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-putreg() assumes that the tracee is not running and pt_regs_access()
-can safely play with its stack. However a killed tracee can return
-from ptrace_stop() to the low-level asm code and do RESTORE_REST,
-this means that debugger can actually read/modify the kernel stack
-until the tracee does SAVE_REST again.
+On 01/20, Andrew Vagin wrote:
+>
+> > SFD_RAW
+> > SFD_SHARED_QUEUE -- reads will be from process-wide shared signal queue
+> > SFD_PER_THREAD_QUEUE --reads will be from per-thread signal queue
+>
+> I suggested this variant in the initial series, but then we decided to
+> avoid adding new flags.
 
-set_task_blockstep() can race with SIGKILL too and in some sense
-this race is even worse, the very fact the tracee can be woken up
-breaks the logic.
+Yes, because SFD_SHARED/PRIVATE will add even more complications into this
+code. And outside of signalfd.c too. And nobody except c/r will ever use
+these features I guess.
 
-As Linus suggested we can clear TASK_WAKEKILL around the arch_ptrace()
-call, this ensures that nobody can ever wakeup the tracee while the
-debugger looks at it. Not only this fixes the mentioned problems,
-we can do some cleanups/simplifications in arch_ptrace() paths.
+> Oleg, what do you think about this?
 
-Probably ptrace_unfreeze_traced() needs more callers, for example
-it makes sense to make the tracee killable for oom-killer before
-access_process_vm().
+See above... but as I said from the very beginning I won't insist.
 
-While at it, add the comment into may_ptrace_stop() to explain why
-ptrace_stop() still can't rely on SIGKILL and signal_pending_state().
-
-Reported-by: Salman Qazi <sqazi@google.com>
-Reported-by: Suleiman Souhlal <suleiman@google.com>
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/step.c |    9 ++++---
- kernel/ptrace.c        |   61 ++++++++++++++++++++++++++++++++++++++++--------
- kernel/signal.c        |    5 ++++
- 3 files changed, 61 insertions(+), 14 deletions(-)
-
-diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
-index cd3b243..9b4d51d 100644
---- a/arch/x86/kernel/step.c
-+++ b/arch/x86/kernel/step.c
-@@ -165,10 +165,11 @@ void set_task_blockstep(struct task_struct *task, bool on)
- 	 * Ensure irq/preemption can't change debugctl in between.
- 	 * Note also that both TIF_BLOCKSTEP and debugctl should
- 	 * be changed atomically wrt preemption.
--	 * FIXME: this means that set/clear TIF_BLOCKSTEP is simply
--	 * wrong if task != current, SIGKILL can wakeup the stopped
--	 * tracee and set/clear can play with the running task, this
--	 * can confuse the next __switch_to_xtra().
-+	 *
-+	 * NOTE: this means that set/clear TIF_BLOCKSTEP is only safe if
-+	 * task is current or it can't be running, otherwise we can race
-+	 * with __switch_to_xtra(). We rely on ptrace_freeze_traced() but
-+	 * PTRACE_KILL is not safe.
- 	 */
- 	local_irq_disable();
- 	debugctl = get_debugctlmsr();
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 74ebdec..c68e705 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -122,6 +122,41 @@ void __ptrace_unlink(struct task_struct *child)
- 	spin_unlock(&child->sighand->siglock);
- }
- 
-+/* Ensure that nothing can wake it up, even SIGKILL */
-+static bool ptrace_freeze_traced(struct task_struct *task)
-+{
-+	bool ret = false;
-+
-+	/* Lockless, nobody but us can set this flag */
-+	if (task->jobctl & JOBCTL_LISTENING)
-+		return ret;
-+
-+	spin_lock_irq(&task->sighand->siglock);
-+	if (task_is_traced(task) && !__fatal_signal_pending(task)) {
-+		task->state = __TASK_TRACED;
-+		ret = true;
-+	}
-+	spin_unlock_irq(&task->sighand->siglock);
-+
-+	return ret;
-+}
-+
-+static void ptrace_unfreeze_traced(struct task_struct *task)
-+{
-+	if (task->state != __TASK_TRACED)
-+		return;
-+
-+	if (WARN_ON(!task->ptrace || task->parent != current))
-+		return;
-+
-+	spin_lock_irq(&task->sighand->siglock);
-+	if (__fatal_signal_pending(task))
-+		wake_up_state(task, __TASK_TRACED);
-+	else
-+		task->state = TASK_TRACED;
-+	spin_unlock_irq(&task->sighand->siglock);
-+}
-+
- /**
-  * ptrace_check_attach - check whether ptracee is ready for ptrace operation
-  * @child: ptracee to check for
-@@ -151,24 +186,25 @@ int ptrace_check_attach(struct task_struct *child, bool ignore_state)
- 	 * be changed by us so it's not changing right after this.
- 	 */
- 	read_lock(&tasklist_lock);
--	if ((child->ptrace & PT_PTRACED) && child->parent == current) {
-+	if (child->ptrace && child->parent == current) {
-+		WARN_ON(child->state == __TASK_TRACED);
- 		/*
- 		 * child->sighand can't be NULL, release_task()
- 		 * does ptrace_unlink() before __exit_signal().
- 		 */
--		spin_lock_irq(&child->sighand->siglock);
--		WARN_ON_ONCE(task_is_stopped(child));
--		if (ignore_state || (task_is_traced(child) &&
--				     !(child->jobctl & JOBCTL_LISTENING)))
-+		if (ignore_state || ptrace_freeze_traced(child))
- 			ret = 0;
--		spin_unlock_irq(&child->sighand->siglock);
- 	}
- 	read_unlock(&tasklist_lock);
- 
--	if (!ret && !ignore_state)
--		ret = wait_task_inactive(child, TASK_TRACED) ? 0 : -ESRCH;
-+	if (!ret && !ignore_state) {
-+		if (!wait_task_inactive(child, __TASK_TRACED)) {
-+			/* This can only happen if may_ptrace_stop() fails */
-+			WARN_ON(child->state == __TASK_TRACED);
-+			ret = -ESRCH;
-+		}
-+	}
- 
--	/* All systems go.. */
- 	return ret;
- }
- 
-@@ -900,6 +936,8 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, unsigned long, addr,
- 		goto out_put_task_struct;
- 
- 	ret = arch_ptrace(child, request, addr, data);
-+	if (request != PTRACE_DETACH)
-+		ptrace_unfreeze_traced(child);
- 
-  out_put_task_struct:
- 	put_task_struct(child);
-@@ -1039,8 +1077,11 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
- 
- 	ret = ptrace_check_attach(child, request == PTRACE_KILL ||
- 				  request == PTRACE_INTERRUPT);
--	if (!ret)
-+	if (!ret) {
- 		ret = compat_arch_ptrace(child, request, addr, data);
-+		if (request != PTRACE_DETACH)
-+			ptrace_unfreeze_traced(child);
-+	}
- 
-  out_put_task_struct:
- 	put_task_struct(child);
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 2bf2731..980bcf3 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1794,6 +1794,10 @@ static inline int may_ptrace_stop(void)
- 	 * If SIGKILL was already sent before the caller unlocked
- 	 * ->siglock we must see ->core_state != NULL. Otherwise it
- 	 * is safe to enter schedule().
-+	 *
-+	 * This is almost outdated, a task with the pending SIGKILL can't
-+	 * block in TASK_TRACED. But PTRACE_EVENT_EXIT can be reported
-+	 * after SIGKILL was already dequeued.
- 	 */
- 	if (unlikely(current->mm->core_state) &&
- 	    unlikely(current->mm == current->parent->mm))
-@@ -1919,6 +1923,7 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
- 		if (gstop_done)
- 			do_notify_parent_cldstop(current, false, why);
- 
-+		/* tasklist protects us from ptrace_freeze_traced() */
- 		__set_current_state(TASK_RUNNING);
- 		if (clear_code)
- 			current->exit_code = 0;
--- 
-1.5.5.1
-
+Oleg.
 
