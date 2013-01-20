@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab3ATVTa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 16:19:30 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:47877 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514Ab3ATVT3 (ORCPT
+	id S1752584Ab3ATVYb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 16:24:31 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:50858 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499Ab3ATVY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 16:19:29 -0500
+	Sun, 20 Jan 2013 16:24:29 -0500
 MIME-Version: 1.0
 X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20130120153209.GA2881@biers.ffwll.ch>
-References: <20130120153209.GA2881@biers.ffwll.ch>
-Date: Sun, 20 Jan 2013 22:19:27 +0100
-X-Google-Sender-Auth: Ror1AieS2BrQGDerswg03MxIJno
-Message-ID: <CAKMK7uHf91QQhzcJftbzkAtSGQ5MyQmZu9CY-Q_kOBMyR5vVGQ@mail.gmail.com>
+In-Reply-To: <CA+icZUXpp=PF2dJ93RJtMaaWbqoAZ9Oiqt6QPXsE1AiR-D4gGg@mail.gmail.com>
+References: <CA+icZUXpp=PF2dJ93RJtMaaWbqoAZ9Oiqt6QPXsE1AiR-D4gGg@mail.gmail.com>
+Date: Sun, 20 Jan 2013 22:24:28 +0100
+Message-ID: <CAKMK7uG7no98LGGEZ1nH=6V6HPgYZeZaJE8Jmo_np4DDZtwJ6Q@mail.gmail.com>
 Subject: Re: [PULL] kms locking rework
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: sedat.dilek@gmail.com
+Cc: Dave Airlie <airlied@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 4:32 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> Changes since the patchbomb on dri-devel:
-> - Added a patch to adjust the new omapdrm code in 3.8-rc4, reviewed by Rob
->   Clark on irc (hence also why the baseline of this pull is 3.8-rc4).
-> - Slightly fixed/clarified some commit messages and fixed one spelling
->   fail in a comment.
-> - Sprinkled Rob's r-b tags over the patches (for drm core changes +
->   omapdrm).
+On Sun, Jan 20, 2013 at 10:15 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> Hi Daniel,
+>
+> I am testing your patchset (original postings at [1]).
+> At a 1st look it seems to be OK.
+> Any tests you want me to run?
 
-I've updated the pull with a tiny change to fix up the kerneldoc for
-drm_modeset_unlock_all - I've mislabelled one of the arguments.
+Imo the fundamentals of the series are well-tested with the i-g-t
+series, so running things on as many (non-i915) gpus as possible is
+the most interesting thing. I just don't have that many radeon/nouveau
+machines lying around for that ...
+
+If you want to get really fancy, set up a zaphod dual-head config with
+2 independent X servers to check whether concurrent pageflips don't
+cause havoc. That needs something which pageflips, ofc.
 -Daniel
 -- 
 Daniel Vetter
