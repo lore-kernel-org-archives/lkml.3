@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab3AUUKR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 15:10:17 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:50396 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752797Ab3AUUKP (ORCPT
+	id S1756544Ab3AUUL7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 15:11:59 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:40135 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752699Ab3AUUL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 15:10:15 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Clark <rob@ti.com>
-Subject: Re: [PATCH 15/15] staging/omapdrm: don't build on multiplatform
-Date: Mon, 21 Jan 2013 20:09:57 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <201301211741.11875.arnd@arndb.de> <50FD8B63.1060506@ti.com>
-In-Reply-To: <50FD8B63.1060506@ti.com>
+	Mon, 21 Jan 2013 15:11:57 -0500
+Date: Mon, 21 Jan 2013 15:11:56 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <arm@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        Manjunath Goudar <manjunath.goudar@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH 13/15] USB: ehci: make orion and mxc bus glues coexist
+In-Reply-To: <20130121184237.GC10106@arwen.pp.htv.fi>
+Message-ID: <Pine.LNX.4.44L0.1301211459550.24224-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301212009.58198.arnd@arndb.de>
-X-Provags-ID: V02:K0:15QUiyFjuVoC55nTVkMA40tNtlB4NvuCASy4VvSzbb/
- tlm7abB0pPtAPVPXkGplUo7bDUfmjmAtdPakWGLSVMjVhy2pzU
- euDOa/7qg9D2z8G/peYsiMHDFOLLVvf/0d5PYs8Yb+6rg4tTi4
- TwFiVFmJG2g/ODkj6HRma37Sqn+KEqEPlzz/Ss7s2GNSU4Klgx
- ZVKUD0p2rRoFo5Yl8UcdUOdgtCxzbGyJ9crM51lcc5Ay2OPJSL
- oYFpfqcyOrr0XpC1Dfi26PM7fGs9RaiClB/ryfKR1SzAHn0U23
- 4WfWY1X0lgw/mlrWSLDw518rsKvlKlqa3M/brKuR6PVG6NEPb5
- 2gB4niGN3gWX2PN46n8Y=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 21 January 2013, Rob Clark wrote:
-> ahh, ok, I see.. the if ARCH_OMAP2PLUS bit looks like it came in 
-> recently (770b6cb)
+On Mon, 21 Jan 2013, Felipe Balbi wrote:
+
+> On Mon, Jan 21, 2013 at 05:16:06PM +0000, Arnd Bergmann wrote:
+> > In linux-3.8-rc1 it became possible to build the imx and
+> > mvebu platforms together in a single kernel, which clashes
+> > in the ehci driver.
+> > 
+> > Manjunath Goudar is already working on a patch to convert
+> > both the imx and the mvebu glue drivers (along with all
+> > the other ARM specific ones) to the new probing method,
+> > but that will be too late to fix v3.8. This patch instead
+> > adds yet another hack like the existing ones to allow
+> > the ehci driver to load both back-ends.
+
+Pardon me for being confused.  Is this about imx and mvebu (as 
+mentioned here) or about orion and mxc (as described in the patch 
+title, the error messages below, and the patch itself)?
+
+> > Without this patch, building allyesconfig results in:
+> > 
+> > drivers/usb/host/ehci-hcd.c:1285:0: error: "PLATFORM_DRIVER" redefined
+> > drivers/usb/host/ehci-hcd.c:1255:0: note: this is the location of the previous definition
+> > In file included from drivers/usb/host/ehci-hcd.c:1254:0:
+> > drivers/usb/host/ehci-mxc.c:280:31: warning: 'ehci_mxc_driver' defined but not used
+
+Was the point here to fix the build error or to allow the two drivers
+to coexist?  The first would be eaiser than the second.
+
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Alan Stern <stern@rowland.harvard.edu>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: linux-usb@vger.kernel.org
+> > Cc: Manjunath Goudar <manjunath.goudar@linaro.org>
+> > Cc: Shawn Guo <shawn.guo@linaro.org>
+> > Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> > Cc: Jason Cooper <jason@lakedaemon.net>
+> > Cc: Andrew Lunn <andrew@lunn.ch>
+> > Cc: Gregory Clement <gregory.clement@free-electrons.com>
 > 
-> what about changing this to 'if ARCH_OMAP2PLUS || ARCH_MULTIPLATFORM'?
+> NAK, should be converted to the new usage of ehci library driver. Alan
+> Stern already implemented for a few drivers, help is very welcome.
 
-Fine with me in general, but the patch I posted would be the more
-conservative choice for v3.8.
+Arnd, please take a look at
 
-	Arnd
+	http://marc.info/?l=linux-usb&m=135843716515529&w=2
+
+I can't test it easily, not being set up for cross compilation.  I'm 
+waiting to hear from anybody whether it works before submitting it.
+(There's also a report of memory corruption involving a similar patch 
+for ehci-omap; it hasn't been tracked down yet.)
+
+Alan Stern
+
