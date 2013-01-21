@@ -1,100 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab3AUVAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 16:00:23 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:34662 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab3AUVAS (ORCPT
+	id S1756684Ab3AUVB4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 16:01:56 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:35627 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab3AUVBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 16:00:18 -0500
-Message-ID: <50FDAC5F.4040605@linaro.org>
-Date: Mon, 21 Jan 2013 13:00:15 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
+	Mon, 21 Jan 2013 16:01:55 -0500
+Date: Mon, 21 Jan 2013 13:01:50 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
 To: Arnd Bergmann <arnd@arndb.de>
-CC: Matt Sealey <matt@genesi-usa.com>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ben Dooks <ben@simtec.co.uk>
-Subject: Re: One of these things (CONFIG_HZ) is not like the others..
-References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com> <201301212041.17951.arnd@arndb.de>
-In-Reply-To: <201301212041.17951.arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Cc: Soeren Moch <smoch@web.de>, Jason Cooper <jason@lakedaemon.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
+ dma_alloc_coherent() calls
+Message-ID: <20130121210150.GA9184@kroah.com>
+References: <20121119144826.f59667b2.akpm@linux-foundation.org>
+ <201301192005.20093.arnd@arndb.de>
+ <50FD5844.1010201@web.de>
+ <201301211855.25455.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201301211855.25455.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 12:41 PM, Arnd Bergmann wrote:
-> On Monday 21 January 2013, Matt Sealey wrote:
->> config HZ
->>          int
->>          default 200 if ARCH_EBSA110 || ARCH_S3C24XX || ARCH_S5P64X0 || \
->>                  ARCH_S5PV210 || ARCH_EXYNOS4
->>          default OMAP_32K_TIMER_HZ if ARCH_OMAP && OMAP_32K_TIMER
->>          default AT91_TIMER_HZ if ARCH_AT91
->>          default SHMOBILE_TIMER_HZ if ARCH_SHMOBILE
->>          default 100
->>
->> There is a patch floating around ("ARM: OMAP2+: timer: remove
->> CONFIG_OMAP_32K_TIMER")
->> which modifies the OMAP line, so I'll ignore that for my below
->> example, and I saw a patch for adding Exynos5 processors to the top
->> default somewhere around here.
->>
->> So, based on those getting in, in my case here, I can see a situation where;
->>
->> * I build multiplatform for i.MX6 and Exynos4/5 ARCH_MULTIPLATFORM, I
->> will get CONFIG_HZ=200.
->>
->> * If I built for just i.MX6, I will get CONFIG_HZ=100.
->>
->> Either way, if I boot a kernel on i.MX6, CONFIG_HZ depends on the
->> other ARM platforms I also want to boot on it.. this is not exactly
->> multiplatform compliant, right?
-> Right. It's pretty clear that the above logic does not work
-> with multiplatform.  Maybe we should just make ARCH_MULTIPLATFORM
-> select NO_HZ to make the question much less interesting.
+On Mon, Jan 21, 2013 at 06:55:25PM +0000, Arnd Bergmann wrote:
+> On Monday 21 January 2013, Soeren Moch wrote:
+> > On 01/19/13 21:05, Arnd Bergmann wrote:
+> > > from the distribution of the numbers, it seems that there is exactly 1 MB
+> > > of data allocated between bus addresses 0x1f90000 and 0x1f9ffff, allocated
+> > > in individual pages. This matches the size of your pool, so it's definitely
+> > > something coming from USB, and no single other allocation, but it does not
+> > > directly point to a specific line of code.
+> > Very interesting, so this is no fragmentation problem nor something 
+> > caused by sata or ethernet.
+> 
+> Right.
+> 
+> > > One thing I found was that the ARM dma-mapping code seems buggy in the way
+> > > that it does a bitwise and between the gfp mask and GFP_ATOMIC, which does
+> > > not work because GFP_ATOMIC is defined by the absence of __GFP_WAIT.
+> > >
+> > > I believe we need the patch below, but it is not clear to me if that issue
+> > > is related to your problem or now.
+> > Out of curiosity I checked include/linux/gfp.h. GFP_ATOMIC is defined as 
+> > __GFP_HIGH (which means 'use emergency pool', and no wait), so this 
+> > patch should not make any difference for "normal" (GPF_ATOMIC / 
+> > GFP_KERNEL) allocations, only for gfp_flags accidentally set to zero. 
+> 
+> Yes, or one of the rare cases where someone intentionally does something like
+> (GFP_ATOMIC & !__GFP_HIGH) or (GFP_KERNEL || __GFP_HIGH), which are both
+> wrong.
+> 
+> > So, can a new test with this patch help to debug the pool exhaustion?
+> 
+> Yes, but I would not expect this to change much. It's a bug, but not likely
+> the one you are hitting.
+> 
+> > > So even for a GFP_KERNEL passed into usb_submit_urb, the ehci driver
+> > > causes the low-level allocation to be GFP_ATOMIC, because
+> > > qh_append_tds() is called under a spinlock. If we have hundreds
+> > > of URBs in flight, that will exhaust the pool rather quickly.
+> > >
+> > Maybe there are hundreds of URBs in flight in my application, I have no 
+> > idea how to check this.
+> 
+> I don't know a lot about USB, but I always assumed that this was not
+> a normal condition and that there are only a couple of URBs per endpoint
+> used at a time. Maybe Greg or someone else with a USB background can
+> shed some light on this.
 
-Although, even with NO_HZ, we still have some sense of HZ.
+There's no restriction on how many URBs a driver can have outstanding at
+once, and if you have a system with a lot of USB devices running at the
+same time, there could be lots of URBs in flight depending on the number
+of host controllers and devices and drivers being used.
 
-> Regarding the defaults, I would suggest putting them into all the
-> defaults into the defconfig files and removing the other hardcoding
-> otherwise. Ben Dooks and Russell are probably the best to know
-> what triggered the 200 HZ for s3c24xx and for ebsa110. My guess
-> is that the other samsung ones are the result of cargo cult
-> programming.
->
-> at91 and omap set the HZ value to something that is derived
-> from their hardware timer, but we have also forever had logic
-> to calculate the exact time when that does not match. This code
-> has very recently been moved into the new register_refined_jiffies()
-> function. John can probably tell is if this solves all the problems
-> for these platforms.
+Sorry,
 
-Yea, as far as timekeeping is concerned, we shouldn't be HZ dependent 
-(and the register_refined_jiffies is really only necessary if you're not 
-expecting a proper clocksource to eventually be registered), assuming 
-the hardware can do something close to the HZ value requested.
-
-So I'd probably want to hear about what history caused the specific 200 
-HZ selections, as I suspect there's actual hardware limitations there. 
-So if you can not get actual timer ticks any faster then 200 HZ on that 
-hardware, setting HZ higher could cause some jiffies related timer 
-trouble (ie: if the kernel thinks HZ is 1000 but the hardware can only 
-do 200, that's a different problem then if the hardware actually can 
-only do 999.8 HZ). So things like timer-wheel timeouts may not happen 
-when they should.
-
-I suspect the best approach for multi-arch in those cases may be to 
-select HZ=100 and use HRT to allow more modern systems to have 
-finer-grained timers.
-
-thanks
--john
-
-
-
+greg k-h
