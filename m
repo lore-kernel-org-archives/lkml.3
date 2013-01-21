@@ -1,260 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192Ab3AUKOW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:14:22 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:64996 "EHLO
+	id S1753253Ab3AUKOf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:14:35 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:51691 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753163Ab3AUKJ7 (ORCPT
+	with ESMTP id S1752499Ab3AUKOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:09:59 -0500
+	Mon, 21 Jan 2013 05:14:32 -0500
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org
-Subject: [PATCH 14/33] media: Convert to devm_ioremap_resource()
-Date: Mon, 21 Jan 2013 11:09:07 +0100
-Message-Id: <1358762966-20791-15-git-send-email-thierry.reding@avionic-design.de>
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
+Subject: [PATCH 01/33] lib: devres: Introduce devm_ioremap_resource()
+Date: Mon, 21 Jan 2013 11:08:54 +0100
+Message-Id: <1358762966-20791-2-git-send-email-thierry.reding@avionic-design.de>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
 References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:kJ0LUlKLmBbKuGZFaoF1tpny1wCmgzPS9G59wMuMmow
- Qk+5D0/rV9aAAzjrPE1u7a6VjNBdy9dWCorTFvPa4N6rIz2wTx
- N/SvRxbCZPbgL4B3UvaRi/NOFRftKeSHDT/eS+F7cfwaffc6Oj
- ZHFXE8wu407SErtx5maKDbjb8EEWzmN76HVW+8TzFMeS+DVy+2
- LC4e9s1c4axXpypmbgAw8rAF0C4yNgoA65L2hko2NtT42Kk5q0
- dwHtHoLpCrPMf5uxNUgq9k5NOjDc13UE7MBC7092memeCtfequ
- H3mxX9FsnvDbA0qZvCSRFimYjVTJNEQ+9lY/VUC0dDYzsLHMvy
- IyC0Y/OieLFDEmW/QY/YY170+gnKBipKomHSKbI2ubJTi9b8U6
- hjBxRMUB60AYqnnMdM46tYKUBJxwIkIFk8AffGyCWXXKDmrkfL
- /x1f3
+X-Provags-ID: V02:K0:XcQLUkMtHDRIR8RPB9SO0SFeGbzJ0gAZHKSEs9c8vIL
+ S/N8VpgsjiMz3V1n2hq+HJu/QjHzDwglQGUWvK3vTSJpOpyyVe
+ 1KoB2D0GBGKYVdIA8APErTtTj/RMw7+/TeYVocs2vxOCC4+uHm
+ Oc1qjQa8/HNYVBmZZJcLvDMXmu+gp+nQEljE3vlxETwxa86VWI
+ sZDhbXS5UfTx3pHPI1jypAX0mwJXLOIgO76yxA6QXHmL4BHkSM
+ hbzADT/LiPUeq+coDM1ugbNgAflQMZV0SdIsnAr7Bimlp4JhqN
+ x5CLAg1PjCUzuack4r1DD/6AlHIsXTVffPDw4zPukH2gOlik6s
+ cZ0YW1+DAGduWRVzAWwNUEsyRy63mU6g8Rs7fCZ76LGGvI/+hw
+ Tvy8QrYcdq1AwfGjRZ5e0ysyxzGZYy0kx0JrfFaCri10jN1aSd
+ ipBF1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert all uses of devm_request_and_ioremap() to the newly introduced
-devm_ioremap_resource() which provides more consistent error handling.
+The devm_request_and_ioremap() function is very useful and helps avoid a
+whole lot of boilerplate. However, one issue that keeps popping up is
+its lack of a specific error code to determine which of the steps that
+it performs failed. Furthermore, while the function gives an example and
+suggests what error code to return on failure, a wide variety of error
+codes are used throughout the tree.
 
-devm_ioremap_resource() provides its own error messages so all explicit
-error messages can be removed from the failure code paths.
+In an attempt to fix these problems, this patch adds a new function that
+drivers can transition to. The devm_ioremap_resource() returns a pointer
+to the remapped I/O memory on success or an ERR_PTR() encoded error code
+on failure. Callers can check for failure using IS_ERR() and determine
+its cause by extracting the error code using PTR_ERR().
+
+devm_request_and_ioremap() is implemented as a wrapper around the new
+API and return NULL on failure as before. This ensures that backwards
+compatibility is maintained until all users have been converted to the
+new API, at which point the old devm_request_and_ioremap() function
+should be removed. To help prevent new users from being added in the
+meantime, devm_request_and_ioremap() is marked __deprecated.
+
+A semantic patch is included which can be used to convert from the old
+devm_request_and_ioremap() API to the new devm_ioremap_resource() API.
+Some non-trivial cases may require manual intervention, though.
 
 Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-media@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/media/platform/exynos-gsc/gsc-core.c   |  8 +++-----
- drivers/media/platform/mx2_emmaprp.c           |  6 +++---
- drivers/media/platform/s3c-camif/camif-core.c  |  8 +++-----
- drivers/media/platform/s5p-fimc/fimc-core.c    |  8 +++-----
- drivers/media/platform/s5p-fimc/fimc-lite.c    |  8 +++-----
- drivers/media/platform/s5p-fimc/mipi-csis.c    |  8 +++-----
- drivers/media/platform/s5p-g2d/g2d.c           |  8 +++-----
- drivers/media/platform/s5p-jpeg/jpeg-core.c    |  8 +++-----
- drivers/media/platform/s5p-mfc/s5p_mfc.c       |  8 +++-----
- drivers/media/platform/soc_camera/mx2_camera.c | 12 ++++++------
- 10 files changed, 33 insertions(+), 49 deletions(-)
+ Documentation/driver-model/devres.txt              |  3 +-
+ include/linux/device.h                             |  3 +-
+ lib/devres.c                                       | 57 ++++++++++----
+ scripts/coccinelle/api/devm_ioremap_resource.cocci | 90 ++++++++++++++++++++++
+ 4 files changed, 138 insertions(+), 15 deletions(-)
+ create mode 100644 scripts/coccinelle/api/devm_ioremap_resource.cocci
 
-diff --git a/drivers/media/platform/exynos-gsc/gsc-core.c b/drivers/media/platform/exynos-gsc/gsc-core.c
-index 2b1b9f3..c1a0713 100644
---- a/drivers/media/platform/exynos-gsc/gsc-core.c
-+++ b/drivers/media/platform/exynos-gsc/gsc-core.c
-@@ -1098,11 +1098,9 @@ static int gsc_probe(struct platform_device *pdev)
- 	mutex_init(&gsc->lock);
+diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+index 43cff70..25240fc 100644
+--- a/Documentation/driver-model/devres.txt
++++ b/Documentation/driver-model/devres.txt
+@@ -266,7 +266,8 @@ IOMAP
+   devm_ioremap()
+   devm_ioremap_nocache()
+   devm_iounmap()
+-  devm_request_and_ioremap() : checks resource, requests region, ioremaps
++  devm_ioremap_resource() : checks resource, requests memory region, ioremaps
++  devm_request_and_ioremap() : obsoleted by devm_ioremap_resource()
+   pcim_iomap()
+   pcim_iounmap()
+   pcim_iomap_table()	: array of mapped addresses indexed by BAR
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 43dcda9..558c405 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -573,8 +573,9 @@ extern int devres_release_group(struct device *dev, void *id);
+ extern void *devm_kzalloc(struct device *dev, size_t size, gfp_t gfp);
+ extern void devm_kfree(struct device *dev, void *p);
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	gsc->regs = devm_request_and_ioremap(dev, res);
--	if (!gsc->regs) {
--		dev_err(dev, "failed to map registers\n");
--		return -ENOENT;
--	}
-+	gsc->regs = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(gsc->regs))
-+		return PTR_ERR(gsc->regs);
++void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
+ void __iomem *devm_request_and_ioremap(struct device *dev,
+-			struct resource *res);
++			struct resource *res) __deprecated;
  
- 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	if (!res) {
-diff --git a/drivers/media/platform/mx2_emmaprp.c b/drivers/media/platform/mx2_emmaprp.c
-index 6b155d7..4b9e0a2 100644
---- a/drivers/media/platform/mx2_emmaprp.c
-+++ b/drivers/media/platform/mx2_emmaprp.c
-@@ -941,9 +941,9 @@ static int emmaprp_probe(struct platform_device *pdev)
+ struct device_dma_parameters {
+ 	/*
+diff --git a/lib/devres.c b/lib/devres.c
+index 80b9c76..9c76b3a 100644
+--- a/lib/devres.c
++++ b/lib/devres.c
+@@ -86,22 +86,24 @@ void devm_iounmap(struct device *dev, void __iomem *addr)
+ EXPORT_SYMBOL(devm_iounmap);
  
- 	platform_set_drvdata(pdev, pcdev);
+ /**
+- * devm_request_and_ioremap() - Check, request region, and ioremap resource
+- * @dev: Generic device to handle the resource for
++ * devm_ioremap_resource() - check, request region, and ioremap resource
++ * @dev: generic device to handle the resource for
+  * @res: resource to be handled
+  *
+- * Takes all necessary steps to ioremap a mem resource. Uses managed device, so
+- * everything is undone on driver detach. Checks arguments, so you can feed
+- * it the result from e.g. platform_get_resource() directly. Returns the
+- * remapped pointer or NULL on error. Usage example:
++ * Checks that a resource is a valid memory region, requests the memory region
++ * and ioremaps it either as cacheable or as non-cacheable memory depending on
++ * the resource's flags. All operations are managed and will be undone on
++ * driver detach.
++ *
++ * Returns a pointer to the remapped memory or an ERR_PTR() encoded error code
++ * on failure. Usage example:
+  *
+  *	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+- *	base = devm_request_and_ioremap(&pdev->dev, res);
+- *	if (!base)
+- *		return -EADDRNOTAVAIL;
++ *	base = devm_ioremap_resource(&pdev->dev, res);
++ *	if (IS_ERR(base))
++ *		return PTR_ERR(base);
+  */
+-void __iomem *devm_request_and_ioremap(struct device *dev,
+-			struct resource *res)
++void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res)
+ {
+ 	resource_size_t size;
+ 	const char *name;
+@@ -111,7 +113,7 @@ void __iomem *devm_request_and_ioremap(struct device *dev,
  
--	pcdev->base_emma = devm_request_and_ioremap(&pdev->dev, res_emma);
--	if (!pcdev->base_emma) {
--		ret = -ENXIO;
-+	pcdev->base_emma = devm_ioremap_resource(&pdev->dev, res_emma);
-+	if (IS_ERR(pcdev->base_emma)) {
-+		ret = PTR_ERR(pcdev->base_emma);
- 		goto rel_vdev;
+ 	if (!res || resource_type(res) != IORESOURCE_MEM) {
+ 		dev_err(dev, "invalid resource\n");
+-		return NULL;
++		return ERR_PTR(-EINVAL);
  	}
  
-diff --git a/drivers/media/platform/s3c-camif/camif-core.c b/drivers/media/platform/s3c-camif/camif-core.c
-index e2716c3..09a8c9c 100644
---- a/drivers/media/platform/s3c-camif/camif-core.c
-+++ b/drivers/media/platform/s3c-camif/camif-core.c
-@@ -433,11 +433,9 @@ static int s3c_camif_probe(struct platform_device *pdev)
+ 	size = resource_size(res);
+@@ -119,7 +121,7 @@ void __iomem *devm_request_and_ioremap(struct device *dev,
  
- 	mres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
--	camif->io_base = devm_request_and_ioremap(dev, mres);
--	if (!camif->io_base) {
--		dev_err(dev, "failed to obtain I/O memory\n");
--		return -ENOENT;
--	}
-+	camif->io_base = devm_ioremap_resource(dev, mres);
-+	if (IS_ERR(camif->io_base))
-+		return PTR_ERR(camif->io_base);
- 
- 	ret = camif_request_irqs(pdev, camif);
- 	if (ret < 0)
-diff --git a/drivers/media/platform/s5p-fimc/fimc-core.c b/drivers/media/platform/s5p-fimc/fimc-core.c
-index 545b46a..acc0f84 100644
---- a/drivers/media/platform/s5p-fimc/fimc-core.c
-+++ b/drivers/media/platform/s5p-fimc/fimc-core.c
-@@ -909,11 +909,9 @@ static int fimc_probe(struct platform_device *pdev)
- 	mutex_init(&fimc->lock);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	fimc->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (fimc->regs == NULL) {
--		dev_err(&pdev->dev, "Failed to obtain io memory\n");
--		return -ENOENT;
--	}
-+	fimc->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(fimc->regs))
-+		return PTR_ERR(fimc->regs);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	if (res == NULL) {
-diff --git a/drivers/media/platform/s5p-fimc/fimc-lite.c b/drivers/media/platform/s5p-fimc/fimc-lite.c
-index ed67220..67db9f8 100644
---- a/drivers/media/platform/s5p-fimc/fimc-lite.c
-+++ b/drivers/media/platform/s5p-fimc/fimc-lite.c
-@@ -1426,11 +1426,9 @@ static int fimc_lite_probe(struct platform_device *pdev)
- 	mutex_init(&fimc->lock);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	fimc->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (fimc->regs == NULL) {
--		dev_err(&pdev->dev, "Failed to obtain io memory\n");
--		return -ENOENT;
--	}
-+	fimc->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(fimc->regs))
-+		return PTR_ERR(fimc->regs);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	if (res == NULL) {
-diff --git a/drivers/media/platform/s5p-fimc/mipi-csis.c b/drivers/media/platform/s5p-fimc/mipi-csis.c
-index ec3fa7d..7abae01 100644
---- a/drivers/media/platform/s5p-fimc/mipi-csis.c
-+++ b/drivers/media/platform/s5p-fimc/mipi-csis.c
-@@ -686,11 +686,9 @@ static int s5pcsis_probe(struct platform_device *pdev)
+ 	if (!devm_request_mem_region(dev, res->start, size, name)) {
+ 		dev_err(dev, "can't request region for resource %pR\n", res);
+-		return NULL;
++		return ERR_PTR(-EBUSY);
  	}
  
- 	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	state->regs = devm_request_and_ioremap(&pdev->dev, mem_res);
--	if (state->regs == NULL) {
--		dev_err(&pdev->dev, "Failed to request and remap io memory\n");
--		return -ENXIO;
--	}
-+	state->regs = devm_ioremap_resource(&pdev->dev, mem_res);
-+	if (IS_ERR(state->regs))
-+		return PTR_ERR(state->regs);
- 
- 	state->irq = platform_get_irq(pdev, 0);
- 	if (state->irq < 0) {
-diff --git a/drivers/media/platform/s5p-g2d/g2d.c b/drivers/media/platform/s5p-g2d/g2d.c
-index 1bfbc32..6ed259f 100644
---- a/drivers/media/platform/s5p-g2d/g2d.c
-+++ b/drivers/media/platform/s5p-g2d/g2d.c
-@@ -708,11 +708,9 @@ static int g2d_probe(struct platform_device *pdev)
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
--	dev->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (dev->regs == NULL) {
--			dev_err(&pdev->dev, "Failed to obtain io memory\n");
--			return -ENOENT;
--	}
-+	dev->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(dev->regs))
-+		return PTR_ERR(dev->regs);
- 
- 	dev->clk = clk_get(&pdev->dev, "sclk_fimg2d");
- 	if (IS_ERR_OR_NULL(dev->clk)) {
-diff --git a/drivers/media/platform/s5p-jpeg/jpeg-core.c b/drivers/media/platform/s5p-jpeg/jpeg-core.c
-index 17983c4..3b02375 100644
---- a/drivers/media/platform/s5p-jpeg/jpeg-core.c
-+++ b/drivers/media/platform/s5p-jpeg/jpeg-core.c
-@@ -1325,11 +1325,9 @@ static int s5p_jpeg_probe(struct platform_device *pdev)
- 	/* memory-mapped registers */
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
--	jpeg->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (jpeg->regs == NULL) {
--		dev_err(&pdev->dev, "Failed to obtain io memory\n");
--		return -ENOENT;
--	}
-+	jpeg->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(jpeg->regs))
-+		return PTR_ERR(jpeg->regs);
- 
- 	/* interrupt service routine registration */
- 	jpeg->irq = ret = platform_get_irq(pdev, 0);
-diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc.c b/drivers/media/platform/s5p-mfc/s5p_mfc.c
-index 379f574..b2e9e1a 100644
---- a/drivers/media/platform/s5p-mfc/s5p_mfc.c
-+++ b/drivers/media/platform/s5p-mfc/s5p_mfc.c
-@@ -1061,11 +1061,9 @@ static int s5p_mfc_probe(struct platform_device *pdev)
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
--	dev->regs_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (dev->regs_base == NULL) {
--		dev_err(&pdev->dev, "Failed to obtain io memory\n");
--		return -ENOENT;
--	}
-+	dev->regs_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(dev->regs_base))
-+		return PTR_ERR(dev->regs_base);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	if (res == NULL) {
-diff --git a/drivers/media/platform/soc_camera/mx2_camera.c b/drivers/media/platform/soc_camera/mx2_camera.c
-index 8bda2c9..1abdc7d 100644
---- a/drivers/media/platform/soc_camera/mx2_camera.c
-+++ b/drivers/media/platform/soc_camera/mx2_camera.c
-@@ -1707,9 +1707,9 @@ static int mx27_camera_emma_init(struct platform_device *pdev)
- 		goto out;
+ 	if (res->flags & IORESOURCE_CACHEABLE)
+@@ -130,10 +132,39 @@ void __iomem *devm_request_and_ioremap(struct device *dev,
+ 	if (!dest_ptr) {
+ 		dev_err(dev, "ioremap failed for resource %pR\n", res);
+ 		devm_release_mem_region(dev, res->start, size);
++		dest_ptr = ERR_PTR(-ENOMEM);
  	}
  
--	pcdev->base_emma = devm_request_and_ioremap(pcdev->dev, res_emma);
--	if (!pcdev->base_emma) {
--		err = -EADDRNOTAVAIL;
-+	pcdev->base_emma = devm_ioremap_resource(pcdev->dev, res_emma);
-+	if (IS_ERR(pcdev->base_emma)) {
-+		err = PTR_ERR(pcdev->base_emma);
- 		goto out;
- 	}
+ 	return dest_ptr;
+ }
++EXPORT_SYMBOL(devm_ioremap_resource);
++
++/**
++ * devm_request_and_ioremap() - Check, request region, and ioremap resource
++ * @dev: Generic device to handle the resource for
++ * @res: resource to be handled
++ *
++ * Takes all necessary steps to ioremap a mem resource. Uses managed device, so
++ * everything is undone on driver detach. Checks arguments, so you can feed
++ * it the result from e.g. platform_get_resource() directly. Returns the
++ * remapped pointer or NULL on error. Usage example:
++ *
++ *	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++ *	base = devm_request_and_ioremap(&pdev->dev, res);
++ *	if (!base)
++ *		return -EADDRNOTAVAIL;
++ */
++void __iomem *devm_request_and_ioremap(struct device *device,
++				       struct resource *res)
++{
++	void __iomem *dest_ptr;
++
++	dest_ptr = devm_ioremap_resource(device, res);
++	if (IS_ERR(dest_ptr))
++		return NULL;
++
++	return dest_ptr;
++}
+ EXPORT_SYMBOL(devm_request_and_ioremap);
  
-@@ -1824,9 +1824,9 @@ static int mx2_camera_probe(struct platform_device *pdev)
- 	INIT_LIST_HEAD(&pcdev->discard);
- 	spin_lock_init(&pcdev->lock);
- 
--	pcdev->base_csi = devm_request_and_ioremap(&pdev->dev, res_csi);
--	if (!pcdev->base_csi) {
--		err = -EADDRNOTAVAIL;
-+	pcdev->base_csi = devm_ioremap_resource(&pdev->dev, res_csi);
-+	if (IS_ERR(pcdev->base_csi)) {
-+		err = PTR_ERR(pcdev->base_csi);
- 		goto exit;
- 	}
- 
+ #ifdef CONFIG_HAS_IOPORT
+diff --git a/scripts/coccinelle/api/devm_ioremap_resource.cocci b/scripts/coccinelle/api/devm_ioremap_resource.cocci
+new file mode 100644
+index 0000000..495daa3
+--- /dev/null
++++ b/scripts/coccinelle/api/devm_ioremap_resource.cocci
+@@ -0,0 +1,90 @@
++virtual patch
++virtual report
++
++@depends on patch@
++expression base, dev, res;
++@@
++
++-base = devm_request_and_ioremap(dev, res);
+++base = devm_ioremap_resource(dev, res);
++ ...
++ if (
++-base == NULL
+++IS_ERR(base)
++ || ...) {
++<...
++-	return ...;
+++	return PTR_ERR(base);
++...>
++ }
++
++@depends on patch@
++expression e, E, ret;
++identifier l;
++@@
++
++ e = devm_ioremap_resource(...);
++ ...
++ if (IS_ERR(e) || ...) {
++ 	... when any
++-	ret = E;
+++	ret = PTR_ERR(e);
++ 	...
++(
++ 	return ret;
++|
++ 	goto l;
++)
++ }
++
++@depends on patch@
++expression e;
++@@
++
++ e = devm_ioremap_resource(...);
++ ...
++ if (IS_ERR(e) || ...) {
++ 	...
++-	\(dev_dbg\|dev_err\|pr_debug\|pr_err\|DRM_ERROR\)(...);
++ 	...
++ }
++
++@depends on patch@
++expression e;
++identifier l;
++@@
++
++ e = devm_ioremap_resource(...);
++ ...
++ if (IS_ERR(e) || ...)
++-{
++(
++ 	return ...;
++|
++ 	goto l;
++)
++-}
++
++@r depends on report@
++expression e;
++identifier l;
++position p1;
++@@
++
++*e = devm_request_and_ioremap@p1(...);
++ ...
++ if (e == NULL || ...) {
++ 	...
++(
++ 	return ...;
++|
++ 	goto l;
++)
++ }
++
++@script:python depends on r@
++p1 << r.p1;
++@@
++
++msg = "ERROR: deprecated devm_request_and_ioremap() API used on line %s" % (p1[0].line)
++coccilib.report.print_report(p1[0], msg)
 -- 
 1.8.1.1
 
