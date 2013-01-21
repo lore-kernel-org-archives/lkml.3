@@ -1,128 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab3AUOvG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 09:51:06 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:3581 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935Ab3AUOvE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 09:51:04 -0500
-Date: Mon, 21 Jan 2013 09:51:02 -0500 (EST)
-From: Tom St Denis <tstdenis@elliptictech.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Dillow <dave@thedillows.org>, Borislav Petkov <bp@alien8.de>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Message-ID: <1731098824.95194.1358779862449.JavaMail.root@elliptictech.com>
-In-Reply-To: <1358779061.21576.19.camel@gandalf.local.home>
-Subject: Re: IPsec AH use of ahash
+	id S1756080Ab3AUOw0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 09:52:26 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:53175 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752935Ab3AUOwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 09:52:24 -0500
+Date: Mon, 21 Jan 2013 15:55:21 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Udo van den Heuvel <udovdh@xs4all.nl>
+Cc: =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>,
+        linux-kernel@vger.kernel.org,
+        Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Jacob Shin <jacob.shin@amd.com>
+Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
+Message-ID: <20130121145521.GD4445@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Udo van den Heuvel <udovdh@xs4all.nl>,
+	=?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>,
+	linux-kernel@vger.kernel.org,
+	Boris Ostrovsky <boris.ostrovsky@amd.com>,
+	Jacob Shin <jacob.shin@amd.com>
+References: <50FBC7EF.6040207@xs4all.nl>
+ <20130120103652.GB16800@pd.tnic>
+ <50FBC994.8020409@xs4all.nl>
+ <20130120111920.GL25591@8bytes.org>
+ <50FBD413.1000406@xs4all.nl>
+ <20130120114011.GN25591@8bytes.org>
+ <20130120114828.GB16519@pd.tnic>
+ <20130120115755.GO25591@8bytes.org>
+ <20130121130942.GB4445@pd.tnic>
+ <50FD4C4B.9080507@xs4all.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.17.19.111]
-X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC24 (Linux)/7.2.1_GA_2790)
+Content-Disposition: inline
+In-Reply-To: <50FD4C4B.9080507@xs4all.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "Tom St Denis" <tstdenis@elliptictech.com>
-> Cc: "David Dillow" <dave@thedillows.org>, "Borislav Petkov" <bp@alien8.de>, linux-kernel@vger.kernel.org,
-> netdev@vger.kernel.org
-> Sent: Monday, 21 January, 2013 9:37:41 AM
-> Subject: Re: IPsec AH use of ahash
+On Mon, Jan 21, 2013 at 03:10:19PM +0100, Udo van den Heuvel wrote:
+> On 2013-01-21 14:09, Borislav Petkov wrote:
+> >> Let's see what happens...
 > > 
-> > I find that 73% of all stats are made up.
+> > Btw, while we're at it, here's some more h0rkage from my PD box:
+> > 
+> > [    0.220022] [Firmware Bug]: AMD-Vi: IOAPIC[9] not in IVRS table
+> > [    0.220078] [Firmware Bug]: AMD-Vi: IOAPIC[10] not in IVRS table
+> > [    0.220132] [Firmware Bug]: AMD-Vi: No southbridge IOAPIC found in IVRS table
+> > [    0.220187] AMD-Vi: Disabling interrupt remapping due to BIOS Bug(s)
 > 
-> I was only talking about my own experience. I gave no numbers.
-
-That was a joke.  You assumed that because I don't trim whitespace from multi-line comments [among other asinine code style issues] that I'm a bad developer.  Yet what actually happened was a build configuration error in which the file wasn't being compiled fully.
-
-Let it go.
-
-> I was just giving examples of what I use. As those usually apply to
-> what
-> I do. If your code is affected by any configs, you should compile
-> with
-> them on and off to make sure you didn't break them. This is a bit
-> more
-> extensive testing, and not always required. But it does help to do
-> so,
-> as it becomes embarrassing if your code breaks on a config you didn't
-> test.
+> I have:
 > 
-> That's coming from my own experience too ;-)
-
-Yup, I missed the self-test flag in the menu.  That's full on my bad.  
-
-That said, it should be the opposite [default on] since self-testing should be relatively cheap and easy.  Generally unless it's prohibitive you want as much self-test code-path testing in the default build as possible.  Users who are tight on memory can turn it off if it suits their platform.
-
-> > I actually did resubmit this morning with most of the checkpatch
-> > issues fixed.
+> # dmesg|grep -i amd-vi
+> [    1.125636] AMD-Vi: Found IOMMU at 0000:00:00.2 cap 0x40
+> [    1.125701] AMD-Vi:  Extended features:  PreF PPR GT IA
+> [    1.131725] AMD-Vi: Lazy IO/TLB flushing enabled
 > 
-> Thank you.
+> Is that 'OK'?
 
-Like I said I'm not trying to force everyone else to adopt to how we do things.  I was just airing out a complaint from the point of view of a new submitter.
+That's simply dumping the IOMMU extended features and yes, it is ok.
 
-I still think checkpatch rules are full of sh!t but I know now to run code I submit through it regardless of where the code came from.  :-)
+Mine happen when enabling CONFIG_IRQ_REMAP and they're somewhat related.
+Anyways, I decided to show them to Joerg so that he's aware.
 
-> Your boss micro manages your time that much? And 45 mintes to do
-> that?
+Btw, you could try enabling that on your machine and see whether IRQ
+remapping works there.
 
-Strictly speaking I haven't actually tried the code out in the lab yet.  I was hoping that testmgr would run but it hasn't.
+Thanks.
 
-Realistically speaking none of the changes I made this morning should have any bearing on the correctness of the code.  I'd be surprised if it failed in the lab.
+-- 
+Regards/Gruss,
+    Boris.
 
-> > Seriously, no spaces on the trailing edge of multi line comments?
-> >  :-/
-> 
-> Some of checkpatch'es complaints are annoying. I'll grant you that.
-> And
-> checkpatch is more of a guideline than a strict rule. It's up to the
-> maintainer of the code to determine how much checkpatch should be
-> enforced.
-
-That's not the impression I got from this weekends exchange.  
-
-> For example, checkpatch complains on code like:
-> 
-> +       asm volatile (
-> +#ifdef CONFIG_X86_64
-> +                       "       xchg   %%rbx,%%rsp      \n"
-> +#else
-> +                       "       xchgl   %%ebx,%%esp     \n"
-> +#endif
-> +                       "       int3                    \n"
-> +                       "       .globl jprobe_return_end\n"
-> +                       "       jprobe_return_end:      \n"
-> +                       "       nop                     \n"::"b"
-> +                       (kcb->jprobe_saved_sp):"memory");
-> 
-> Because the white space before the '\n' is not needed. But adding
-> that
-> whitespace makes it easier to read the assembly.
-
-So who gets to decide when/where to deviate from the rules?  
- 
-> When enforcing checkpatch makes the code less readable, that's when
-> it
-> should be ignored. But again, that's really up to the maintainer of
-> the
-> code to decide.
-
-So we divine what the maintainer wants and doesn't want when we submit patches?  I think for me I'm going to follow them literally for now to avoid issues. 
-
-> > Anyways, I did re-submit.  I still have no idea how testmgr works
-> > but hopefully someone can pick it up from there.
-> 
-> Well thank you again. This is the way the kernel community works.
-> Just
-> state you're not familiar with testmgr, and someone who is should
-> check
-> it out.
-
-Hopefully :-)
-
-Tom
+Sent from a fat crate under my desk. Formatting is fine.
+--
