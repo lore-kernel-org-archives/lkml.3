@@ -1,53 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab3AUBv2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 20:51:28 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:31292 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752497Ab3AUBv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 20:51:27 -0500
-X-IronPort-AV: E=Sophos;i="4.84,503,1355068800"; 
-   d="scan'208";a="6617621"
-Message-ID: <50FC9EDB.7060105@cn.fujitsu.com>
-Date: Mon, 21 Jan 2013 09:50:19 +0800
-From: Lin Feng <linfeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1752638Ab3AUBw0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 20:52:26 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52749 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497Ab3AUBwY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 20:52:24 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-a7-50fc9f56cff4
+Date: Mon, 21 Jan 2013 10:52:22 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/2] mm: prevent to add a page to swap if may_writepage
+ is unset
+Message-ID: <20130121015222.GA3666@blaptop>
+References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
+ <1357712474-27595-2-git-send-email-minchan@kernel.org>
+ <20130116134155.18092f1a.akpm@linux-foundation.org>
+ <20130117005314.GB18669@blaptop>
+ <20130117142238.e32c46d5.akpm@linux-foundation.org>
+ <20130117233641.GA31368@blaptop>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memory-hotplug: mm/Kconfig: move auto selects from MEMORY_HOTPLUG
- to MEMORY_HOTREMOVE as needed
-References: <1358495676-4488-1-git-send-email-linfeng@cn.fujitsu.com> <20130118135828.GD10701@dhcp22.suse.cz>
-In-Reply-To: <20130118135828.GD10701@dhcp22.suse.cz>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/21 09:50:33,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/21 09:50:33,
-	Serialize complete at 2013/01/21 09:50:33
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130117233641.GA31368@blaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+Hi,
 
-On 01/18/2013 09:58 PM, Michal Hocko wrote:
-> On Fri 18-01-13 15:54:36, Lin Feng wrote:
->> Besides page_isolation.c selected by MEMORY_ISOLATION under MEMORY_HOTPLUG
->> is also such case, move it too.
+On Fri, Jan 18, 2013 at 08:36:42AM +0900, Minchan Kim wrote:
+> On Thu, Jan 17, 2013 at 02:22:38PM -0800, Andrew Morton wrote:
+> > On Thu, 17 Jan 2013 09:53:14 +0900
+> > Minchan Kim <minchan@kernel.org> wrote:
+> > 
+> > > Recently, Luigi reported there are lots of free swap space when
+> > > OOM happens. It's easily reproduced on zram-over-swap, where
+> > > many instance of memory hogs are running and laptop_mode is enabled.
+> > > He said there was no problem when he disabled laptop_mode.
+> > > 
+> > > The problem when I investigate problem is following as.
+> > > 
+> > > Assumption for easy explanation: There are no page cache page in system
+> > > because they all are already reclaimed.
+> > > 
+> > > 1. try_to_free_pages disable may_writepage when laptop_mode is enabled.
+> > > 2. shrink_inactive_list isolates victim pages from inactive anon lru list.
+> > > 3. shrink_page_list adds them to swapcache via add_to_swap but it doesn't
+> > >    pageout because sc->may_writepage is 0 so the page is rotated back into
+> > >    inactive anon lru list. The add_to_swap made the page Dirty by SetPageDirty
+> > > 4. 3 couldn't reclaim any pages so do_try_to_free_pages increase priority and
+> > >    retry reclaim with higher priority.
+> > > 5. shrink_inactlive_list try to isolate victim pages from inactive anon lru list
+> > >    but got failed because it try to isolate pages with ISOLATE_CLEAN mode but
+> > >    inactive anon lru list is full of dirty pages by 3 so it just returns
+> > >    without  any reclaim progress.
+> > > 6. do_try_to_free_pages doesn't set may_write due to zero total_scanned.
+> > 
+> > s/may_write/may_writepage/
 > 
-> Yes, it seems that only HOTREMOVE needs MEMORY_ISOLATION but that should
-> be done in a separate patch as this change is already upstream and
-> should be merged separately. It would also be nice to mention which
-I didn't notice such rules before, I will take care next time :)
-
-> functions are we talking about. AFAICS:
-> alloc_migrate_target, test_pages_isolated, start_isolate_page_range and
-> undo_isolate_page_range.
+> Thanks!
 > 
-Anyway, thanks all your good suggestions for the fixes in this series.
+> > 
+> > >    Because sc->nr_scanned is increased by shrink_page_list but we don't call
+> > >    shrink_page_list in 5 due to short of isolated pages.
+> > 
+> > This is the bug, is it not?
+> > 
+> > In laptop mode, we still need to write out dirty swapcache at some
+> > point.  An appropriate time to do this is when the scanning priority is
+> 
+> Yes and when to some point is really important. Now, the point for that is
+> depends on on the number of scanned pages by shrink_page_list. It means we
+> must isolate victim pages from inactive LRU list and call shrink_page_list
+> to increase sc->nr_scanned but unfortunately, we have various filters to
+> decrease CPU consumption and LRU churning when VM try to isolate victim pages
+> so it could prevent isolating victim pages from LRU list.
+> 
+> > getting high.  But it seems that this ISOLATE_CLEAN->total_scanned
+> 
+> Yes. I absolutely agree on that some point should depend on priority, NOT
+> the number of scanned pages. And I already said to you about that.
+> https://lkml.org/lkml/2013/1/10/643
+> 
+> We used to use such heuristic in several places in VM, ie DEF_PRIORITY - 2
+> But why I hesitate with the patch is that I think this patch should go to
+> stable tree so the patch should be really small and have no side effect so
+> I don't wanted to change laptop_mode behavior heavily caused by changing
+> condition for may_writepage trigger point.
+> 
+> > interaction is preventing that.
+> > 
+> > (An enhancement to laptop mode would be to opportunistically write out
+> > dirty swapcache in or around laptop_mode_timer_fn()).
+> 
+> It could but it should be another patch and VM shouldn't rely on ONLY
+> laptop_mode_timer_fn, IMHO. VM should have own rule to reclaim pages
+> regardless of laptop_mode's help to prevent OOM kill.
+> 
+> > 
+> > > Above loop is continued until OOM happens.
+> > > The problem didn't happen before [1] was merged because old logic's isolatation
+> > > in shrink_inactive_list was successful and tried to call shrink_page_list
+> > > to pageout them but it still ends up failed to page out by may_writepage.
+> > > But important point is that sc->nr_scanned was increased althoug we couldn't
+> > > swap out them so do_try_to_free_pages could set may_writepages.
+> > > So this patch need to go stable tree althoug it's a band-aid.
+> > > Then, for latest linus tree, we should fix laptop_mode's fundamental
+> > > problem.
+> > 
+> > Well.  Perhaps we can do that now.
+> 
+> Okay. If you don't object my suggestion, I will send patches next week.
+> Thanks for the review, Andrew!
 
-thanks again,
-linfeng 
+Andrew, If nobody objects, I would like to drop [1] and add ths patch instead of [1].
+Luigi, below patch passed my test. If anybody doesn't object, could you test this
+patch?
+
+Thanks!
+
+[1] mm: prevent addition of pages to swap if may_writepage is unset
+
+-------------- &< --------------------
+
+>From 94086dc7152359d052802c55c82ef19509fe8cce Mon Sep 17 00:00:00 2001
+From: Minchan Kim <minchan@kernel.org>
+Date: Mon, 21 Jan 2013 10:43:43 +0900
+Subject: [PATCH] mm: Use up free swap space before reaching OOM kill
+
+Recently, Luigi reported there are lots of free swap space when
+OOM happens. It's easily reproduced on zram-over-swap, where
+many instance of memory hogs are running and laptop_mode is enabled.
+He said there was no problem when he disabled laptop_mode.
+The problem when I investigate problem is following as.
+
+Assumption for easy explanation: There are no page cache page in system
+because they all are already reclaimed.
+
+1. try_to_free_pages disable may_writepage when laptop_mode is enabled.
+2. shrink_inactive_list isolates victim pages from inactive anon lru list.
+3. shrink_page_list adds them to swapcache via add_to_swap but it doesn't
+   pageout because sc->may_writepage is 0 so the page is rotated back into
+   inactive anon lru list. The add_to_swap made the page Dirty by SetPageDirty.
+4. 3 couldn't reclaim any pages so do_try_to_free_pages increase priority and
+   retry reclaim with higher priority.
+5. shrink_inactlive_list try to isolate victim pages from inactive anon lru list
+   but got failed because it try to isolate pages with ISOLATE_CLEAN mode but
+   inactive anon lru list is full of dirty pages by 3 so it just returns
+   without  any reclaim progress.
+6. do_try_to_free_pages doesn't set may_writepage due to zero total_scanned.
+   Because sc->nr_scanned is increased by shrink_page_list but we don't call
+   shrink_page_list in 5 due to short of isolated pages.
+
+Above loop is continued until OOM happens.
+The problem didn't happen before [1] was merged because old logic's
+isolatation in shrink_inactive_list was successful and tried to call
+shrink_page_list to pageout them but it still ends up failed to page out
+by may_writepage. But important point is that sc->nr_scanned was increased
+although we couldn't swap out them so do_try_to_free_pages could set
+may_writepages.
+
+Since [1] was introduced, it's not a good idea any more to depends on
+only the number of scanned pages for setting may_writepage. So this patch
+adds new trigger point of setting may_writepage as below DEF_PRIOIRTY - 2
+which is used to show the significant memory pressure in VM so it's good
+fit for our purpose which would be better to lose power saving or clickety
+rather than OOM killing.
+
+[1] f80c067[mm: zone_reclaim: make isolate_lru_page() filter-aware]
+
+Reported-by: Luigi Semenzato <semenzato@google.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ mm/vmscan.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 740bad9..d333df0 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2204,6 +2204,13 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 			goto out;
+ 
+ 		/*
++		 * If we're getting trouble reclaiming, start doing
++		 * writepage even in laptop mode.
++		 */
++		if (sc->priority < DEF_PRIORITY - 2)
++			sc->may_writepage = 1;
++
++		/*
+ 		 * Try to write back as many pages as we just scanned.  This
+ 		 * tends to cause slow streaming writers to write data to the
+ 		 * disk smoothly, at the dirtying rate, which is nice.   But
+@@ -2774,12 +2781,10 @@ loop_again:
+ 			}
+ 
+ 			/*
+-			 * If we've done a decent amount of scanning and
+-			 * the reclaim ratio is low, start doing writepage
+-			 * even in laptop mode
++			 * If we're getting trouble reclaiming, start doing
++			 * writepage even in laptop mode.
+ 			 */
+-			if (total_scanned > SWAP_CLUSTER_MAX * 2 &&
+-			    total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
++			if (sc.priority < DEF_PRIORITY - 2)
+ 				sc.may_writepage = 1;
+ 
+ 			if (zone->all_unreclaimable) {
+-- 
+1.7.9.5
+
+>- 
+Kind regards,
+Minchan Kim
