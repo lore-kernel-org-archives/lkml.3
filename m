@@ -1,127 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab3AUNMF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 08:12:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57228 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753022Ab3AUNMB (ORCPT
+	id S1754664Ab3AUNQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 08:16:33 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:35137 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987Ab3AUNQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 08:12:01 -0500
-Message-ID: <50FD3E93.70407@canonical.com>
-Date: Mon, 21 Jan 2013 13:11:47 +0000
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	Mon, 21 Jan 2013 08:16:31 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-input@vger.kernel.org>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        NeilBrown <neilb@suse.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [RFC PATCH] Input: gpio_keys: Fix suspend/resume press event lost
+Date: Mon, 21 Jan 2013 15:15:14 +0200
+Message-ID: <1358774114-8281-1-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andre Przywara <andre@andrep.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: kernel 3.7+ cpufreq regression on AMD system running as dom0
-References: <50F42B3E.7090602@canonical.com> <20130114163445.GA4867@liondog.tnic> <20130115175305.GA12449@phenom.dumpdata.com> <20130115181839.GC8101@liondog.tnic> <20130118190015.GC11351@phenom.dumpdata.com> <20130118200331.GF4062@pd.tnic> <50FD32FA.7010306@canonical.com> <20130121124255.GB4823@pd.tnic>
-In-Reply-To: <20130121124255.GB4823@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 12:42 PM, Borislav Petkov wrote:
-> On Mon, Jan 21, 2013 at 12:22:18PM +0000, Stefan Bader wrote:
->> So for having the "check for sensible BIOS" in mainline I refreshed
->> the patch (fixed the bit test, and actually tested it this time) and
->> also added some hopefully sensible explanation to it (attached
->> below).
->>
->> Should I send it to acpi lists or would that have to go via an Andre?
->
-> Maybe Rafael could pick it up?
->
->>
->> -Stefan
->>
->>  From 6e2fc8291c91339123a37162382d8b08b50867ba Mon Sep 17 00:00:00 2001
->> From: Stefan Bader <stefan.bader@canonical.com>
->> Date: Mon, 14 Jan 2013 16:17:00 +0100
->> Subject: [PATCH] ACPI: Check MSR valid bit before using P-state frequencies
->>
->> To fix incorrect P-state frequencies which can happen on
->> some AMD systems f594065faf4f9067c2283a34619fc0714e79a98d
->>    "ACPI: Add fixups for AMD P-state figures"
->> introduced a quirk to obtain the correct values by reading
->> from AMD specific MSRs.
->>
->> This did cause a regression when running a kernel using that
->> quirk under Xen which does (currently) not pass on the contents
->> of the HW but 0.
->
-> Actually this should say "does not currently pass through MSR accesses
-> to baremetal" or similar.
+Rebased on linux_omap/master.
 
-Ok, that sounds much better.
+During suspend/resume the key press can be lost if time of resume
+sequence is significant.
 
->
-> And this bit you mean is actually bit 63:
->
-> "63: PstateEn. Read-write. 1=The P-state specified by this MSR is valid.
-> 0=The P-state specified by this MSR is not valid. The purpose of this
-> register is to indicate if the rest of the P-state information in the
-> register is valid after a reset; it controls no hardware."
->
-> in the MSRC001_00[68:64] P-State [4:0] Registers.
+If press event cannot be remembered then the driver can read the
+current button state only in time of interrupt handling. But in some
+cases when time between IRQ and IRQ handler is significant we can
+read incorrect state. As a particular case, when device is in suspend
+we press wakupable key and up it back in a jiffy, the interrupt
+handler read the state of up but the interrupt source is press indeed.
+As a result, in a OS like android, we resume then suspend right away
+because the key state is not changed.
 
-Darn, yes.
+This patch add to gpio_keys framework opportunity to recover lost of
+press key event at resuming. The variable "key_pressed" from
+gpio_button_data structure is not used for gpio keys, it is only used
+for gpio irq keys, so it is logically used to remember press lost
+while resuming.
 
->
->> And this seems to cause a failure to initialize
->> the ondemand governour (hard to say for sure as all P-states
->> appear to run at the same frequency).
->>
->> While this should also be fixed in the hypervisor (to allow
->> a guest to read that MSR), this patch is intended to work
->> around the issue in the meantime. In discussion it turned out
->> that indeed real HW/BIOSes may choose to not set the valid bit
->> and thus mark the P-state as invalid. So this could be considered
->> a fix for broken BIOSes that also works around the issue on Xen.
->>
->> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
->> Cc: stable@vger.kernel.org # v3.7..
->> ---
->>   drivers/acpi/processor_perflib.c | 3 +++
->>   1 file changed, 3 insertions(+)
->>
->> diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
->> index 836bfe0..41f4bdac 100644
->> --- a/drivers/acpi/processor_perflib.c
->> +++ b/drivers/acpi/processor_perflib.c
->> @@ -340,6 +340,9 @@ static void amd_fixup_frequency(struct
->> acpi_processor_px *px, int i)
->>   	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
->>   	    || boot_cpu_data.x86 == 0x11) {
->>   		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
->> +		/* Bit 63 indicates whether contents are valid */
->> +		if (!(hi & 0x80000000))
->
-> You can make this a lot more explicit:
->
-> 		if (!(hi & BIT(31)))
-> 			return;
->
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ drivers/input/keyboard/gpio_keys.c |   31 ++++++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
 
-True, ok, so let me respin the whole thing and re-send it.
-
--Stefan
-> This way
->
-> 1) you're sure you're testing the correct bit and
-> 2) any reviewer can know on the spot which bit it is about.
->
->> +			return;
->>   		fid = lo & 0x3f;
->>   		did = (lo >> 6) & 7;
->>   		if (boot_cpu_data.x86 == 0x10)
->
-> Thanks.
->
+diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
+index b29ca65..33ac8c5 100644
+--- a/drivers/input/keyboard/gpio_keys.c
++++ b/drivers/input/keyboard/gpio_keys.c
+@@ -45,6 +45,7 @@ struct gpio_button_data {
+ struct gpio_keys_drvdata {
+ 	const struct gpio_keys_platform_data *pdata;
+ 	struct input_dev *input;
++	int suspended;
+ 	struct mutex disable_lock;
+ 	struct gpio_button_data data[0];
+ };
+@@ -326,14 +327,40 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
+ {
+ 	const struct gpio_keys_button *button = bdata->button;
+ 	struct input_dev *input = bdata->input;
++	struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
+ 	unsigned int type = button->type ?: EV_KEY;
+ 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
+ 
++	/*
++	 * Don't generate input event while resuming,
++	 * it will be generated at gpio_keys_resume function
++	*/
++	if (ddata->suspended) {
++		/*
++		 * missed press event while resuming so set
++		 * key_pressed flag to generate press and up events
++		 * while gpio_keys_resume function.
++		 */
++		if (button->wakeup && state == 0)
++			bdata->key_pressed = 1;
++		return;
++	}
++
+ 	if (type == EV_ABS) {
+ 		if (state)
+ 			input_event(input, type, button->code, button->value);
+ 	} else {
+-		input_event(input, type, button->code, !!state);
++		/*
++		 * missed press key, so generate press event then up event
++		 */
++		if (bdata->key_pressed) {
++			input_event(bdata->input, EV_KEY, button->code, 1);
++			input_sync(bdata->input);
++			input_event(bdata->input, EV_KEY, button->code, 0);
++			bdata->key_pressed = 0;
++		} else {
++			input_event(input, type, button->code, !!state);
++		}
+ 	}
+ 	input_sync(input);
+ }
+@@ -822,6 +849,7 @@ static int gpio_keys_suspend(struct device *dev)
+ 		mutex_unlock(&input->mutex);
+ 	}
+ 
++	ddata->suspended = 1;
+ 	return 0;
+ }
+ 
+@@ -832,6 +860,7 @@ static int gpio_keys_resume(struct device *dev)
+ 	int error = 0;
+ 	int i;
+ 
++	ddata->suspended = 0;
+ 	if (device_may_wakeup(dev)) {
+ 		for (i = 0; i < ddata->pdata->nbuttons; i++) {
+ 			struct gpio_button_data *bdata = &ddata->data[i];
+-- 
+1.7.9.5
 
