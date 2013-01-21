@@ -1,99 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab3AUXRX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 18:17:23 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51729 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab3AUXRW (ORCPT
+	id S1754001Ab3AUXV1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 18:21:27 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:31319 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752165Ab3AUXVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 18:17:22 -0500
-Date: Mon, 21 Jan 2013 23:13:18 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: One of these things (CONFIG_HZ) is not like the others..
-Message-ID: <20130121231318.GC23505@n2100.arm.linux.org.uk>
-References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com> <201301212041.17951.arnd@arndb.de> <50FDAC5F.4040605@linaro.org> <CAKGA1b=D5CNikijoOAk5xP6TC-nB_gEGtS05ncrPR68sQTMrxw@mail.gmail.com> <50FDC2DD.7090406@linaro.org> <CAKGA1bmtTH1N8nx79MGiMighdQROpNtpvAZXhHKT+mT3kcazBQ@mail.gmail.com>
+	Mon, 21 Jan 2013 18:21:25 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AioOAGXK/VB5LKUj/2dsb2JhbABEhVyyQIYTF3OCHgEBBTocFgoDEAgDDgoJJQ8FJQMhE4gYrQePHhWMYRuEKAOWC5BKgwmBWw
+Date: Tue, 22 Jan 2013 10:21:21 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, xfs@oss.sgi.com,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC, PATCH 00/19] Numa aware LRU lists and shrinkers
+Message-ID: <20130121232121.GG2498@dastard>
+References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
+ <50FD6815.90900@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKGA1bmtTH1N8nx79MGiMighdQROpNtpvAZXhHKT+mT3kcazBQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <50FD6815.90900@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 04:54:31PM -0600, Matt Sealey wrote:
-> Hmm, I think it might be appreciated for people looking at this stuff
-> (same as I stumbled into it) for a little comment on WHY the default
-> is 200. That way you don't wonder even if you know why EBSA110 has a
-> HZ=200 default, why Exynos is lumped in there too (to reduce the
-> number of interrupts firing?
+On Mon, Jan 21, 2013 at 08:08:53PM +0400, Glauber Costa wrote:
+> On 11/28/2012 03:14 AM, Dave Chinner wrote:
+> > [PATCH 09/19] list_lru: per-node list infrastructure
+> > 
+> > This makes the generic LRU list much more scalable by changing it to
+> > a {list,lock,count} tuple per node. There are no external API
+> > changes to this changeover, so is transparent to current users.
+> > 
+> > [PATCH 10/19] shrinker: add node awareness
+> > [PATCH 11/19] fs: convert inode and dentry shrinking to be node
+> > 
+> > Adds a nodemask to the struct shrink_control for callers of
+> > shrink_slab to set appropriately for their reclaim context. This
+> > nodemask is then passed by the inode and dentry cache reclaim code
+> > to the generic LRU list code to implement node aware shrinking.
+> 
+> I have a follow up question that popped up from a discussion between me
+> and my very American friend Johnny Wheeler, also known as Johannes
+> Weiner (CC'd). I actually remember we discussing this, but don't fully
+> remember the outcome. And since I can't find it anywhere, it must have
+> been in a media other than e-mail. So I thought it would do no harm in
+> at least documenting it...
+> 
+> Why are we doing this per-node, instead of per-zone?
+> 
+> It seems to me that the goal is to collapse all zones of a node into a
+> single list, but since the number of zones is not terribly larger than
+> the number of nodes, and zones is where the pressure comes from, what do
+> we really gain from this?
 
-Err, _reduce_ ?
+The number is quite a bit higher - there are platforms with 5 zones
+to a node. The reality is, though, for most platforms slab
+allocations come from a single zone - they never come from ZONE_DMA,
+ZONE_HIGHMEM or ZONE_MOVEABLE, so there is there is no good reason
+for having cache LRUs for these zones. So, two zones at most.
 
-Can you please explain why changing HZ from 100 to 200 is a reduction?
+And then there's the complexity issue - it's simple/trivial to user
+per node lists, node masks, etc. It's an obvious abstraction that
+everyone understands, is simle to understand, acheives exactly the
+purpose that is needed and is not tied to the /current/
+implementation of the current VM memory management code.
 
-> Maybe the Exynos timer interrupt is kind
-> of a horrid core NMI kind of thing and it's desirable for it not to be
-> every millisecond,
+I don't see any good reason for tying LRUs to MM zones. the
+original implementation of the per-node shrinkers by Nick Piggin did
+this: the LRUs for the dentry and inode caches were embedded in the
+struct zone, and it wasn't generically extensible because of that.
+i.e. node-aware shrinkers were directly influenced by the zone
+infrastructure and so the internal implementation of the mm
+subsystem started leaking out and determining how completely
+unrelated subsystems need to implement their own cache
+management.....
 
-Huh?  HZ=100 is centisecond intervals...
+Cheers,
 
-> or maybe it has the same restrictions as EBSA110,
-> but where would anyone go to find out this information?)
-
-Maybe the mailing list archives.  No, not these ones.  The full ones
-on lists.arm.linux.org.uk.  The lurker archives contain every email
-that has been on these mailing lists stretching back into the late
-1990s.  They are the only _full_ archives (give or take a few problems
-with connectivity between lists.arm.linux.org.uk and lists.infradead.org
-throwing the archiver subscription off.)
-
-> I think then the default 100 at the end of the arch/arm/Kconfig is
-> saying "you are not allowed to know that such a thing as rope even
-> exists," when in fact what we should be doing is just making sure they
-> can't swing it over the rafters.. am I taking the analogy too far? :)
-
-I think you're understanding is just waaaayyyyy off.  That default is
-there because that is the _architecture_ _default_ and there _has_ to
-be a default.  No, including kernel/Kconfig.hz won't give us any kind
-of non-specified default because, as I've already said in one of my
-other mails, you can't supplement Kconfig symbol definitions by
-declaring it multiple times.
-
-> I know where the 60Hz clocksource might come from, the old Amiga
-> platforms have one based on the PSU frequency (50Hz in Europe, 60Hz
-> US/Japan). Even a 60Hz clocksource is useful though (on the Amiga, at
-> least, it is precisely the vsync clock for synchronizing your display
-> output on TV-out, which makes it completely useful for the framebuffer
-> driver), but.. you just won't expect to assign it as sched_clock or
-> your delay timer. And if anyone does I'd expect they'd know full well
-> it'd not run so well.
-
-Except in the UK where it'd be 50Hz for the TV out.  (Lengthy irrelevant
-explanation why this is so for UK cut.)
-
-> >From that description, we are booting with standard HZ on ARM, and the
-> core sched_clock (as in we can call setup_sched_clock)
-> and/or/both/optionally using a real delay_timer switch to HRT mode if
-> we have the right equipment available in the kernel and at runtime on
-> the SoC.. but the process scheduler isn't compiled with the means to
-> actually take advantage of us being in HRT mode?
-
-Don't mix sched_clock() into this; it has nothing to do with HZ at all.
-You're confusing your apples with your oranges.
-
-> A simple BUILD_BUG_ON and a BUG_ON right after each other in the
-> appropriate clocksource driver solves that.. if there's an insistence
-> on having at least some rope, we can put them in a field and tell them
-> they have to use the moon to actually hang themselves...
-
-No it doesn't - it introduces a whole load of new ways to make the
-kernel build or boot fail for pointless reasons - more failures, more
-regressions.
-
-No thank you.
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
