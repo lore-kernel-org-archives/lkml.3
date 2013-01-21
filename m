@@ -1,115 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948Ab3AUP6R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 10:58:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63281 "EHLO mx1.redhat.com"
+	id S1756111Ab3AUP6f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 10:58:35 -0500
+Received: from mga09.intel.com ([134.134.136.24]:64007 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753201Ab3AUP6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 10:58:16 -0500
-Message-ID: <50FD4245.3070402@redhat.com>
-Date: Mon, 21 Jan 2013 21:27:33 +0800
-From: Zhouping Liu <zliu@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753763Ab3AUP6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 10:58:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,507,1355126400"; 
+   d="scan'208";a="274707248"
+Message-ID: <50FD65A8.2030600@linux.intel.com>
+Date: Mon, 21 Jan 2013 09:58:32 -0600
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        Li Zefan <lizefan@huawei.com>, CAI Qian <caiqian@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
-References: <4FEE7665.6020409@jp.fujitsu.com> <389106003.8637801.1358757547754.JavaMail.root@redhat.com> <20130121105624.GF7798@dhcp22.suse.cz>
-In-Reply-To: <20130121105624.GF7798@dhcp22.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Feng Tang <feng.tang@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/5] x86: Add cpu capability flag X86_FEATURE_TSC_S3_NOTSTOP
+References: <1358750325-21217-1-git-send-email-feng.tang@intel.com> <1358750325-21217-2-git-send-email-feng.tang@intel.com> <20130121072729.GB11915@gchen.bj.intel.com> <20130121075900.GA509@feng-snb>
+In-Reply-To: <20130121075900.GA509@feng-snb>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 06:56 PM, Michal Hocko wrote:
-> On Mon 21-01-13 03:39:07, Zhouping Liu wrote:
->>
->> ----- Original Message -----
->>> From: "Kamezawa Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
->>> To: "Tejun Heo" <tj@kernel.org>
->>> Cc: "David Rientjes" <rientjes@google.com>, "Michal Hocko" <mhocko@suse.cz>, "Zhouping Liu" <zliu@redhat.com>,
->>> linux-mm@kvack.org, "Li Zefan" <lizefan@huawei.com>, "CAI Qian" <caiqian@redhat.com>, "LKML"
->>> <linux-kernel@vger.kernel.org>, "Andrew Morton" <akpm@linux-foundation.org>
->>> Sent: Saturday, June 30, 2012 11:45:41 AM
->>> Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
->>>
->>> (2012/06/29 3:31), Tejun Heo wrote:
->>>> Hello, KAME.
->>>>
->>>> On Thu, Jun 28, 2012 at 01:04:16PM +0900, Kamezawa Hiroyuki wrote:
->>>>>> I still wish it's folded into CONFIG_MEMCG and conditionalized
->>>>>> just on
->>>>>> CONFIG_SWAP tho.
->>>>>>
->>>>> In old days, memsw controller was not very stable. So, we devided
->>>>> the config.
->>>>> And, it makes size of memory for swap-device double (adds 2bytes
->>>>> per swapent.)
->>>>> That is the problem.
->>>> I see.  Do you think it's now reasonable to drop the separate
->>>> config
->>>> option?  Having memcg enabled but swap unaccounted sounds
->>>> half-broken
->>>> to me.
->>>>
->>> Hmm. Maybe it's ok if we can keep boot option. I'll cook a patch in
->>> the next week.
->> Hello Kame and All,
->>
->> Sorry for so delay to open the thread. (please open the link https://lkml.org/lkml/2012/6/26/547 if you don't remember the topic)
->>
->> do you have any updates for the issue?
->>
->> I checked the latest version, if we don't open CONFIG_MEMCG_SWAP_ENABLED(commit c255a458055e changed
->> CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED as CONFIG_MEMCG_SWAP_ENABLED), the issue still exist:
->>
->> [root@dhcp-8-128 ~] cat .config  | grep -i memcg
->> CONFIG_MEMCG=y
->> CONFIG_MEMCG_SWAP=y
->> # CONFIG_MEMCG_SWAP_ENABLED is not set
->> CONFIG_MEMCG_KMEM=y
->> [root@dhcp-8-128 ~] uname -r
->> 3.8.0-rc4+
->> [root@dhcp-8-128 ~] cat memory.memsw.*
->> cat: memory.memsw.failcnt: Operation not supported
->> cat: memory.memsw.limit_in_bytes: Operation not supported
->> cat: memory.memsw.max_usage_in_bytes: Operation not supported
->> cat: memory.memsw.usage_in_bytes: Operation not supported
-> Ohh, this one got lost. I thought Kame was working on that.
-> Anyway the patch bellow should work:
-> ---
->  From 5f8141bf7d27014cfbc7b450f13f6146b5ab099d Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Mon, 21 Jan 2013 11:33:26 +0100
-> Subject: [PATCH] memcg: Do not create memsw files if swap accounting is
->   disabled
->
-> Zhouping Liu has reported that memsw files are exported even though
-> swap accounting is runtime disabled if CONFIG_MEMCG_SWAP is enabled.
-> This behavior has been introduced by af36f906 (memcg: always create
-> memsw files if CONFIG_CGROUP_MEM_RES_CTLR_SWAP) and it causes any
-> attempt to open the file to return EOPNOTSUPP. Although EOPNOTSUPP
-> should say be clear that memsw operations are not supported in the given
-> configuration it is fair to say that this behavior could be quite
-> confusing.
->
-> Let's tear memsw files out of default cgroup files and add
-> them only if the swap accounting is really enabled (either by
-> CONFIG_MEMCG_SWAP_ENABLED or swapaccount=1 boot parameter). We can
-> hook into mem_cgroup_init which is called when the memcg subsystem is
-> initialized and which happens after boot command line is processed.
+On 01/21/2013 01:59 AM, Feng Tang wrote:
+>>>  
+>> We have an existed "TSC always running in C3+" feature and name it as
+>> X86_FEATURE_NONSTOP_TSC, so how about naming it with the same style,
+>> like X86_FEATURE_NONSTOP_TSC_S3?
+> 
+> Yeah, actually I used a name X86_FEATURE_xxx_TSC, then I did a grep,
+> and found there is no unified name convention for TSC, so I chose such
+> a name.
+> 
 
-Thanks for your quick patch, your patch looks good for me.
+I think NONSTOP_TSC_S3 is quite a bit more consistent than S3_NOTSTOP...
 
-I tested it with or without CONFIG_MEMCG_SWAP_ENABLED=y,
-and also tested it with swapaccount=1 kernel parameters, all are okay.
+	-hpa
 
-Tested-by: Zhouping Liu <zliu@redhat.com>
 
-Thanks,
-Zhouping
