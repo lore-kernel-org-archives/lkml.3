@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab3AUUSo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 15:18:44 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:23244
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752699Ab3AUUSn (ORCPT
+	id S1756565Ab3AUUVZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 15:21:25 -0500
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:1065
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752797Ab3AUUVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 15:18:43 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+	Mon, 21 Jan 2013 15:21:21 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1155h)
-X-WSS-ID: 0MGZSEY-01-3BA-02
+X-WSS-ID: 0MGZSJD-02-0MB-02
 X-M-MSG: 
 From: "Steven L. Kinney" <steven.kinney@amd.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -30,8 +30,8 @@ CC: Bjorn Helgaas <bhelgaas@google.com>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
         "Steven L. Kinney" <steven.kinney@amd.com>
 Subject: [PATCH 0/3] AMD IOMMUv2 Performance Counter patches
-Date: Mon, 21 Jan 2013 14:18:00 -0600
-Message-ID: <1358799483-6198-1-git-send-email-steven.kinney@amd.com>
+Date: Mon, 21 Jan 2013 14:20:55 -0600
+Message-ID: <1358799658-6236-1-git-send-email-steven.kinney@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
