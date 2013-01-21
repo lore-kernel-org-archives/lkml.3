@@ -1,98 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab3AUDjL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 22:39:11 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:44662 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629Ab3AUDjK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 22:39:10 -0500
-From: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
-To: Greg KH <greg@kroah.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
-        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
-        "Yili (Neil)" <neil.yi@huawei.com>,
-        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
-        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
-        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
-        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>
-Subject: RE: USB: storage: optimize the matching rules and support new
- switch command for Huawei USB storage devices
-Thread-Topic: USB: storage: optimize the matching rules and support new
- switch command for Huawei USB storage devices
-Thread-Index: AQHN9dWvRQ2hZuXEpkGIic+AV6y7wZhTJJRQ
-Date: Mon, 21 Jan 2013 03:37:15 +0000
-Message-ID: <910F9D9E13B84F4C8FA771DC9BDE99F327016D33@szxeml546-mbx.china.huawei.com>
-References: <fe8c85797e7f.7e7ffe8c8579@huawei.com>
- <20130118234359.GA2160@kroah.com>
-In-Reply-To: <20130118234359.GA2160@kroah.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.11.34.182]
-Content-Type: text/plain; charset="utf-8"
+	id S1752696Ab3AUDkP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 22:40:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:22522 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752629Ab3AUDkN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 22:40:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,502,1355126400"; 
+   d="scan'208";a="274495557"
+Date: Sun, 20 Jan 2013 19:15:23 -0800
+From: Vinod Koul <vinod.koul@intel.com>
+To: Matt Porter <mporter@ti.com>
+Cc: Dan Williams <djbw@fb.com>, Chris Ball <cjb@laptop.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] dmaengine: add per channel capabilities api
+Message-ID: <20130121031523.GA21551@intel.com>
+References: <1357844826-30746-1-git-send-email-mporter@ti.com>
+ <abcd725c6216491da2b1054e5e11ad82@DFLE72.ent.ti.com>
+ <20130120163735.GC21407@beef>
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130120163735.GC21407@beef>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0L3dRdV017572
 
-Dear Greg:
-	
+On Sun, Jan 20, 2013 at 11:37:35AM -0500, Matt Porter wrote:
+> On Sun, Jan 20, 2013 at 12:37:34PM +0000, Vinod Koul wrote:
+> > On Thu, Jan 10, 2013 at 02:07:03PM -0500, Matt Porter wrote:
+> > > The call is implemented as follows:
+> > > 
+> > > 	struct dmaengine_chan_caps
+> > > 	*dma_get_channel_caps(struct dma_chan *chan,
+> > > 			      enum dma_transfer_direction dir);
+> > > 
+> > > The dma transfer direction parameter may appear a bit out of place
+> > > but it is necessary since the direction field in struct
+> > > dma_slave_config was deprecated. In some cases, EDMA for one, it
+> > > is necessary for the dmaengine driver to have the burst and address
+> > > width slave configuration parameters available in order to compute
+> > > the maximum segment size that can be handle. Due to this requirement,
+> > > the calling order of this api is as follows:
+> > Well you are passing direction as argument so even in EDMA it doesn't seem to
+> > help you as you seem to need burst and width!. So why do you even need the
+> > direction to compute the capablities
+> 
+> Yes, I need burst and width, but they are dependent on direction (dst vs
+> src, as stored in the slave channel config). Ok, so I think I know where
+> this is leading...the problem is probably that I made an implicit
+> dependency on burst and width here. The expectation in this
+And also due to wrong documentation. This is what you have put up the flow as:
+Due to this requirement,
+the calling order of this api is as follows:
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Saturday, January 19, 2013 7:44 AM
-> To: Fangxiaozhi (Franko)
-> Cc: linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Xueguiying (Zihan);
-> Linlei (Lei Lin); Yili (Neil); Wangyuhua (Roger, Credit); Huqiao (C); balbi@ti.com;
-> mdharm-usb@one-eyed-alien.net; sebastian@breakpoint.cc
-> Subject: Re: USB: storage: optimize the matching rules and support new switch
-> command for Huawei USB storage devices
-> 
-> On Mon, Jan 14, 2013 at 10:55:48AM +0800, fangxiaozhi 00110321 wrote:
-> >
-> > From: fangxiaozhi <huananhu@huawei.com>
-> >
-> > 1. Optimize the matching rules with new macro for Huawei USB storage
-> >    devices, to avoid to load USB storage driver for the modem interface
-> >    with Huawei devices.
-> > 2. Add to support new switch command for new Huawei USB dongles.
-> >
-> > Signed-off-by: fangxiaozhi <huananhu@huawei.com>
-> 
-> This patch breaks the build, did you test it out?
-> 
-> I get the following errors:
-> 
-> drivers/usb/storage/unusual_devs.h:1530:1: error: implicit declaration of
-> function â€˜UNUSUAL_VENDOR_INTFâ€™ [-Werror=implicit-function-declaration]
-> drivers/usb/storage/unusual_devs.h:1534:3: warning: missing braces around
-> initializer [-Wmissing-braces]
-> drivers/usb/storage/unusual_devs.h:1534:3: warning: (near initialization for
-> â€˜us_unusual_dev_list[186]â€™) [-Wmissing-braces]
-> drivers/usb/storage/unusual_devs.h:1534:3: error: initializer element is not
-> constant
-> drivers/usb/storage/unusual_devs.h:1534:3: error: (near initialization for
-> â€˜us_unusual_dev_list[186].vendorNameâ€™)
-> drivers/usb/storage/unusual_devs.h:1537:1: warning: braces around scalar
-> initializer [enabled by default]
-> 
-> And it goes on and on...
-----------The macro define, please see another patch: 
-	[PATCH 1/1]linux-usb:Define a new macro for USB storage match rules
-	http://www.spinics.net/lists/linux-usb/msg76629.html
-> Care to fix this up and resend it?
-> 
-> thanks,
-> 
-> greg k-h
+1. Allocate a DMA slave channel
+1a. [Optionally] Get channel capabilities
+2. Set slave and controller specific parameters
+3. Get a descriptor for transaction
+4. Submit the transaction
+5. Issue pending requests and wait for callback notification
 
-Best Regards,
-Franko Fang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Now when we query capablities, slave parameters _are_not_set_.
+So seems like you have thought something and written something else!
+
+Which brings me to the point on what are we trying to query:
+a) API capability, dont need slave parameters for that
+b) Sg segment length and numbers: Well these are capabilities, so it tells
+you what is the maximum I can do. IMO it doesn't make sense to tie it down to
+burst, width etc. For that configuration you are checking maximum. What this
+needs to return is what is the maximum length it supports and maximum number of
+sg list the h/w can use. Also if you return your burst and width capablity, then
+any client can easily find out what is the length byte value it can hold.
+
+If you feel this computaion if client specific, though looking at doesnt make me
+think so, you can add a callback for this computaion given the parameters.
+
+--
+~Vinod
