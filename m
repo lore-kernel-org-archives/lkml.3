@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab3AUC7o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 21:59:44 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:43761 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab3AUC7m (ORCPT
+	id S1752657Ab3AUDHv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 22:07:51 -0500
+Received: from talus.maths.usyd.edu.au ([129.78.68.1]:59556 "EHLO
+	talus.maths.usyd.edu.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568Ab3AUDHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 21:59:42 -0500
-Message-ID: <50FCAF18.4030101@gmail.com>
-Date: Mon, 21 Jan 2013 10:59:36 +0800
-From: Mark Zhang <nvmarkzhang@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Mark Zhang <markz@nvidia.com>, gnurou@gmail.com
-Subject: Re: [PATCH 0/3] pwm-backlight: add subdrivers & Tegra support
-References: <1358591420-7790-1-git-send-email-acourbot@nvidia.com> <50FCA346.2070608@gmail.com>
-In-Reply-To: <50FCA346.2070608@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 20 Jan 2013 22:07:50 -0500
+X-smtpdoor-from: psz@maths.usyd.edu.au
+X-smtpdoor-want-Message-ID: <201301210307.r0L37YuG018834@como.maths.usyd.edu.au>
+Date: Mon, 21 Jan 2013 14:07:34 +1100
+From: paul.szabo@sydney.edu.au
+Message-Id: <201301210307.r0L37YuG018834@como.maths.usyd.edu.au>
+To: linux-mm@kvack.org
+Subject: [PATCH] MAX_PAUSE to be at least 4
+Cc: 695182@bugs.debian.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch is applied OK on 3.8-rc4.
+Ensure MAX_PAUSE is 4 or larger, so limits in
+	return clamp_val(t, 4, MAX_PAUSE);
+(the only use of it) are not back-to-front.
 
-Hmmm.. But I think it's better to make the patch can be applied on
-linux-next.
+(This patch does not solve the PAE OOM issue.)
 
-Mark
-On 01/21/2013 10:09 AM, Mark Zhang wrote:
-> Hi Alex,
-> 
-> This patch set applies failed on tot linux-next(0118). Here is the log:
-> 
-> markz@markz-hp6200:~/tegradrm/official-upstream-kernel$ git am
-> ~/Desktop/*.eml
-> Applying: pwm-backlight: add subdriver mechanism
-> error: patch failed: drivers/video/backlight/pwm_bl.c:35
-> error: drivers/video/backlight/pwm_bl.c: patch does not apply
-> Patch failed at 0001 pwm-backlight: add subdriver mechanism
-> When you have resolved this problem run "git am --resolved".
-> If you would prefer to skip this patch, instead run "git am --skip".
-> To restore the original branch and stop patching run "git am --abort".
-> 
-> Anyway, I'll try to apply this on 3.8-rc4.
-> 
-> Mark
-> On 01/19/2013 06:30 PM, Alexandre Courbot wrote:
->> This series introduces a way to use pwm-backlight hooks with platforms
->> that use the device tree through a subdriver system. It also adds support
->> for the Tegra-based Ventana board, adding the last missing block to enable
->> its panel. Support for other Tegra board can thus be easily added.
->>
->> I have something else in mind to properly support this (power
->> sequences), but this work relies on the GPIO subsystem redesign which will
->> take some time. The pwm-backlight subdrivers can do the job by the meantime.
->>
->> There are a few design points that might need to be discussed:
->> 1) Link order is important: subdrivers register themselves in their
->> module_init function, which must be called before pwm-backlight's probe.
->> This forbids linking subdrivers as separate modules from pwm-backlight.
->> 2) The subdriver's data is temporarily passed through the backlight
->> device's driver data. This should not hurt, but maybe there is a better way
->> to do this.
->> 3) Subdrivers must add themselves into pwm-backlight's own of_device_id
->> table. It would be cleaner to not have to list subdrivers into
->> pwm-backlight's main file, but I cannot think of a way to do otherwise.
->>
->> Suggestions for the 3 points listed above are very welcome - in any case,
->> I hope to make this converge into something mergeable quickly.
->>
->> Note that these patches are the last missing block to get a functional
->> panel on Tegra boards. Using 3.8rc4 and these patches, the internal panel
->> on Ventana is usable out-of-the-box. Yay.
->>
->> Alexandre Courbot (3):
->>   pwm-backlight: add subdriver mechanism
->>   tegra: pwm-backlight: add tegra pwm-bl driver
->>   tegra: ventana: of: add host1x device to DT
->>
->>  arch/arm/boot/dts/tegra20-ventana.dts  |  29 +++++-
->>  arch/arm/configs/tegra_defconfig       |   1 +
->>  drivers/video/backlight/Kconfig        |   7 ++
->>  drivers/video/backlight/Makefile       |   4 +
->>  drivers/video/backlight/pwm_bl.c       |  70 ++++++++++++++-
->>  drivers/video/backlight/pwm_bl_tegra.c | 159 +++++++++++++++++++++++++++++++++
->>  include/linux/pwm_backlight.h          |  15 ++++
->>  7 files changed, 281 insertions(+), 4 deletions(-)
->>  create mode 100644 drivers/video/backlight/pwm_bl_tegra.c
->>
+Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
+School of Mathematics and Statistics   University of Sydney    Australia
+
+Reported-by: Paul Szabo <psz@maths.usyd.edu.au>
+Reference: http://bugs.debian.org/695182
+Signed-off-by: Paul Szabo <psz@maths.usyd.edu.au>
+
+--- mm/page-writeback.c.old	2012-12-06 22:20:40.000000000 +1100
++++ mm/page-writeback.c	2013-01-21 13:57:05.000000000 +1100
+@@ -39,7 +39,7 @@
+ /*
+  * Sleep at most 200ms at a time in balance_dirty_pages().
+  */
+-#define MAX_PAUSE		max(HZ/5, 1)
++#define MAX_PAUSE		max(HZ/5, 4)
+ 
+ /*
+  * Estimate write bandwidth at 200ms intervals.
