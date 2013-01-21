@@ -1,105 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab3AUNII (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 08:08:08 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:54285 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab3AUNIG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 08:08:06 -0500
-From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-To: mturquette@linaro.org
-Cc: patches@linaro.org, linaro-dev@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Subject: [PATCH] clk: allow reparenting of a clock to the orphan list
-Date: Mon, 21 Jan 2013 18:33:57 +0530
-Message-Id: <1358773437-21163-1-git-send-email-rajagopal.venkat@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755239Ab3AUNI5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 08:08:57 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:42364 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752736Ab3AUNIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 08:08:55 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: [PATCH] x86, msr: Unify variable names
+Date: Mon, 21 Jan 2013 14:11:51 +0100
+Message-Id: <1358773911-4544-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.1.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow reparenting of a clock(multiple and single parent)
-to the orphan list when new parent clock is NULL.
+From: Borislav Petkov <bp@suse.de>
 
-Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Make sure all MSR-accessing primitives which split MSR values in
+two 32-bit parts have their variables called 'low' and 'high' for
+consistence with the rest of the code and for ease of staring.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- drivers/clk/clk.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/msr.h | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index e964994..5c9277a 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1102,7 +1102,7 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
- 	struct dentry *new_parent_d;
- #endif
+diff --git a/arch/x86/include/asm/msr.h b/arch/x86/include/asm/msr.h
+index 9264802e2824..cb7502852acb 100644
+--- a/arch/x86/include/asm/msr.h
++++ b/arch/x86/include/asm/msr.h
+@@ -137,11 +137,11 @@ static inline unsigned long long native_read_pmc(int counter)
+  * pointer indirection), this allows gcc to optimize better
+  */
  
--	if (!clk || !new_parent)
-+	if (!clk)
- 		return;
+-#define rdmsr(msr, val1, val2)					\
++#define rdmsr(msr, low, high)					\
+ do {								\
+ 	u64 __val = native_read_msr((msr));			\
+-	(void)((val1) = (u32)__val);				\
+-	(void)((val2) = (u32)(__val >> 32));			\
++	(void)((low) = (u32)__val);				\
++	(void)((high) = (u32)(__val >> 32));			\
+ } while (0)
  
- 	hlist_del(&clk->child_node);
-@@ -1140,11 +1140,14 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
- {
- 	struct clk *old_parent;
- 	unsigned long flags;
--	int ret = -EINVAL;
--	u8 i;
-+	int ret = 0;
-+	u8 i = 0;
+ static inline void wrmsr(unsigned msr, unsigned low, unsigned high)
+@@ -162,12 +162,12 @@ static inline int wrmsr_safe(unsigned msr, unsigned low, unsigned high)
+ }
  
- 	old_parent = clk->parent;
+ /* rdmsr with exception handling */
+-#define rdmsr_safe(msr, p1, p2)					\
++#define rdmsr_safe(msr, low, high)				\
+ ({								\
+ 	int __err;						\
+ 	u64 __val = native_read_msr_safe((msr), &__err);	\
+-	(*p1) = (u32)__val;					\
+-	(*p2) = (u32)(__val >> 32);				\
++	(*low) = (u32)__val;					\
++	(*high) = (u32)(__val >> 32);				\
+ 	__err;							\
+ })
  
-+	if (clk->num_parents == 1 || !parent)
-+		goto migrate;
-+
- 	if (!clk->parents)
- 		clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
- 								GFP_KERNEL);
-@@ -1165,11 +1168,13 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
- 	}
+@@ -208,7 +208,7 @@ do {                                                            \
+ #define wrmsrl_safe(msr, val) wrmsr_safe((msr), (u32)(val),		\
+ 					     (u32)((val) >> 32))
  
- 	if (i == clk->num_parents) {
-+		ret = -EINVAL;
- 		pr_debug("%s: clock %s is not a possible parent of clock %s\n",
- 				__func__, parent->name, clk->name);
- 		goto out;
- 	}
+-#define write_tsc(val1, val2) wrmsr(MSR_IA32_TSC, (val1), (val2))
++#define write_tsc(low, high) wrmsr(MSR_IA32_TSC, (low), (high))
  
-+migrate:
- 	/* migrate prepare and enable */
- 	if (clk->prepare_count)
- 		__clk_prepare(parent);
-@@ -1181,7 +1186,8 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
- 	spin_unlock_irqrestore(&enable_lock, flags);
+ #define write_rdtscp_aux(val) wrmsr(MSR_TSC_AUX, (val), 0)
  
- 	/* change clock input source */
--	ret = clk->ops->set_parent(clk->hw, i);
-+	if (clk->ops->set_parent)
-+		ret = clk->ops->set_parent(clk->hw, i);
- 
- 	/* clean up old prepare and enable */
- 	spin_lock_irqsave(&enable_lock, flags);
-@@ -1215,7 +1221,7 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
- 	if (!clk || !clk->ops)
- 		return -EINVAL;
- 
--	if (!clk->ops->set_parent)
-+	if (clk->num_parents > 1 && !clk->ops->set_parent)
- 		return -ENOSYS;
- 
- 	/* prevent racing with updates to the clock topology */
-@@ -1226,7 +1232,7 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
- 
- 	/* propagate PRE_RATE_CHANGE notifications */
- 	if (clk->notifier_count)
--		ret = __clk_speculate_rates(clk, parent->rate);
-+		ret = __clk_speculate_rates(clk, parent ? parent->rate : 0);
- 
- 	/* abort if a driver objects */
- 	if (ret == NOTIFY_STOP)
 -- 
-1.7.10.4
+1.8.1.rc3
 
