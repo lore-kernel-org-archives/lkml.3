@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab3AUEaH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 23:30:07 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:56345 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631Ab3AUEaF (ORCPT
+	id S1752729Ab3AUEh7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 23:37:59 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:60026 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631Ab3AUEh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 23:30:05 -0500
-Date: Mon, 21 Jan 2013 15:30:02 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: James Morris <jmorris@namei.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Subject: Re: linux-next: manual merge of the security tree with Linus' tree
-Message-Id: <20130121153002.1f7f9ff1b46532a44704c6c0@canb.auug.org.au>
-In-Reply-To: <1358737823.2406.114.camel@falcor1.watson.ibm.com>
-References: <20130121131230.9f79cf5dcd8a8ac069594111@canb.auug.org.au>
-	<1358737823.2406.114.camel@falcor1.watson.ibm.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_Jan_2013_15_30_02_+1100_AFUr0FgtZ6+bHhP5"
+	Sun, 20 Jan 2013 23:37:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <87vcarur8n.fsf@rustcorp.com.au>
+References: <20130118074309.GB31793@elgon.mountain> <87ip6rwcvz.fsf@rustcorp.com.au>
+ <CA+55aFzEkSOWL13cX2xaYttPF5=Qpvya9Yapk-RC8KQ5=QJk+w@mail.gmail.com> <87vcarur8n.fsf@rustcorp.com.au>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 20 Jan 2013 20:37:36 -0800
+X-Google-Sender-Auth: ibmTKtsyiwY4a8lgLqaDW1fx3kg
+Message-ID: <CA+55aFyhfuLJqsEiAJ3jyf_OikgZroFkfBW1i-LYwCr0YOVX1w@mail.gmail.com>
+Subject: Re: [patch] module: potential deadlock in error path
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kernel-janitors <kernel-janitors@vger.kernel.org>,
+        Alexander Graf <agraf@suse.de>, Prarit Bhargava <prarit@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_Jan_2013_15_30_02_+1100_AFUr0FgtZ6+bHhP5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Mimi,
-
-On Sun, 20 Jan 2013 22:10:23 -0500 Mimi Zohar <zohar@linux.vnet.ibm.com> wr=
-ote:
+On Sun, Jan 20, 2013 at 7:52 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
 >
-> Sorry Stephen, the merged result should look like what's contained in
-> linux-integrity/next-upstreamed-patches:
->=20
-> int ima_module_check(struct file *file)
-> {
->         if (!file) {
->                 if ((ima_appraise & IMA_APPRAISE_MODULES) &&
->                     (ima_appraise & IMA_APPRAISE_ENFORCE)) {
-> #ifndef CONFIG_MODULE_SIG_FORCE
->                         return -EACCES; /* INTEGRITY_UNKNOWN */
-> #endif
->                 }
->                 return 0;
->         }
->         return process_measurement(file, file->f_dentry->d_name.name,
->                                    MAY_EXEC, MODULE_CHECK);
-> }
+> You've now conflated two completely different lock paths into a single
+> unlock.
 
-OK, I will use that version tomorrow.
+We have that elsewhere too. And it's what we used to have before too.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+So the simple fact is that commit 1fb9341ac348 just introduced this
+bug, and moving the goto target around is the obvious fix for it, and
+makes it match the old code that was simply incorrectly modified.
 
---Signature=_Mon__21_Jan_2013_15_30_02_+1100_AFUr0FgtZ6+bHhP5
-Content-Type: application/pgp-signature
+The suggested patch instead has *some* cleanup inside the
+if-statement, and some at the goto target. That makes no sense to
+humans, and just makes it harder for the compiler to generate better
+code.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> mutex_bug_cleanup() should really lock internally, but doesn't
+> so we wrap it.  And that mutex_unlock of yours has nothing to do with
+> cleaning up ddebug, so the labels misnamed, at best.
 
-iQIcBAEBCAAGBQJQ/MRKAAoJEECxmPOUX5FEm5MP/06LXDCg/Wx5zkVC7boA2eNa
-AlJazRx0YEiE4WSFumrAkkUfKgxkZvHNhGVstdteIeYDc9X+8QSS3v73U5oWLoF4
-5Uc4OJF/2JiR/UBwjcu5OppF6lCYt8Z2qWjylYLZdJJdmrShro3kzFH20Te2L+PR
-5KJgfGLshX6GAC1MKIbx8c8nmeVHs8hj0O/PVM052RWupXqjRF7MPRSWhaXT5nnq
-AC6buaUJD0upvryFj9ovavVufmAa5KaoCwfXjvsCL9zwZRd3rJt7CYsZOL6lnnbB
-1N6FrEUOMLpKnz3c4sJ+3mrkuZ9JbuEetO2HoPwdRqoLODG31oQx5GwCT8J0ds5q
-k8+VStBMURP65o2SjjmFqjRs4T3C2K/Ht62Ylh0nPJHsOlmKBJ//EPEacCniHiLY
-AGtc2bGUqH+/MwF9ovZXtP+6MT4xTqVfmHrBHpzQE8dsIImJp7TSrFXE5/aoR6uv
-2z/2D0H/7wKd7zHyxGoX9JUaLDgxAx4aQkug6jKnwM7AdLj5FVfmf2fwf1rHIz6W
-arhVefaWvOqMyvyi1zcEMQWwFwUV/hXQOxkYXmBph/62ArsJ1qLbySJiT5Im8dR6
-af6zu1srBP9VF0NxHdFuF8Gp+2UuuqksejmVbUB2BDPtxspPU4nJLr1Wpb2BDd9y
-I66keKXx25mJihbgoUpT
-=fDbT
------END PGP SIGNATURE-----
+Bah, humbug. It's called "ddebug_cleanup" because it's called after
+the  debug setup, so it needs to clean up the state set up by that.
+The fact that it needs to unlock is secondary, and is simply because
+the lock is taken at that point, so needs to be released. The naming
+is not wonderful, but it's not hugely illogical, and again, that's
+what it used to (except "ddebug" has been renamed to
+"ddebug_cleanup"). You could rename it if you want to (we used to have
+a target called "unlock" at that point), but that's *still* no excuse
+for just creating code that does cleanup in two totally unrelated
+places.
 
---Signature=_Mon__21_Jan_2013_15_30_02_+1100_AFUr0FgtZ6+bHhP5--
+> Not that it matters much: this is going to change for next merge window.
+
+Now, agreed, that looks better, although I suspect you could have
+taken the "split that ugly function up" further still.
+
+                   Linus
