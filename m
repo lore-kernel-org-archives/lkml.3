@@ -1,81 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab3AUKUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:20:30 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:61225 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752403Ab3AUKU3 (ORCPT
+	id S1752853Ab3AUKW4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:22:56 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:65365 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab3AUKWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:20:29 -0500
-Date: Mon, 21 Jan 2013 05:20:27 -0500 (EST)
-From: Tom St Denis <tstdenis@elliptictech.com>
-To: David Dillow <dave@thedillows.org>
-Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Message-ID: <207592188.94267.1358763627877.JavaMail.root@elliptictech.com>
-In-Reply-To: <1358759881.2595.15.camel@obelisk.thedillows.org>
-Subject: Re: IPsec AH use of ahash
+	Mon, 21 Jan 2013 05:22:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.17.19.112]
-X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC24 (Linux)/7.2.1_GA_2790)
+In-Reply-To: <201301211101.10562.hverkuil@xs4all.nl>
+References: <1358236853-2467-1-git-send-email-prabhakar.lad@ti.com> <201301211101.10562.hverkuil@xs4all.nl>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Mon, 21 Jan 2013 15:52:32 +0530
+Message-ID: <CA+V-a8uoHP_m2MMfTvgkuMNtEJe28Df94izyfmNxNDzSA2o6jQ@mail.gmail.com>
+Subject: Re: [PATCH] media: adv7343: accept configuration through platform data
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Hans,
 
+Thanks for the review!
 
------ Original Message -----
-> From: "David Dillow" <dave@thedillows.org>
-> To: "Tom St Denis" <tstdenis@elliptictech.com>
-> Cc: "Borislav Petkov" <bp@alien8.de>, linux-kernel@vger.kernel.org, netdev@vger.kernel.org, "Steven Rostedt"
-> <rostedt@goodmis.org>
-> Sent: Monday, 21 January, 2013 4:18:01 AM
-> Subject: Re: IPsec AH use of ahash
-> 
-> On Sun, 2013-01-20 at 19:40 -0500, Tom St Denis wrote:
-> > The problem is for me to add the ()'s is a no brainer.
-> 
-> It was more than just the ()'s. You completely botched the
-> indentation
-> in the parts of code you didn't copy from xcbc.c, among other issues.
+On Mon, Jan 21, 2013 at 3:31 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> On Tue January 15 2013 09:00:53 Lad, Prabhakar wrote:
+>> The current code was implemented with some default configurations,
+>> this default configuration works on board and doesn't work on other.
+>>
+>> This patch accepts the configuration through platform data and configures
+>> the encoder depending on the data set.
+>
+> Just one small comment...
+>
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+>> ---
+>>  drivers/media/i2c/adv7343.c |   36 +++++++++++++++++++++++++++++++-----
+>>  include/media/adv7343.h     |   32 ++++++++++++++++++++++++++++++++
+>>  2 files changed, 63 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/media/i2c/adv7343.c b/drivers/media/i2c/adv7343.c
+>> index 2b5aa67..a058058 100644
+>> --- a/drivers/media/i2c/adv7343.c
+>> +++ b/drivers/media/i2c/adv7343.c
+>> @@ -43,6 +43,7 @@ MODULE_PARM_DESC(debug, "Debug level 0-1");
+>>  struct adv7343_state {
+>>       struct v4l2_subdev sd;
+>>       struct v4l2_ctrl_handler hdl;
+>> +     const struct adv7343_platform_data *pdata;
+>>       u8 reg00;
+>>       u8 reg01;
+>>       u8 reg02;
+>> @@ -215,12 +216,23 @@ static int adv7343_setoutput(struct v4l2_subdev *sd, u32 output_type)
+>>       /* Enable Appropriate DAC */
+>>       val = state->reg00 & 0x03;
+>>
+>> -     if (output_type == ADV7343_COMPOSITE_ID)
+>> -             val |= ADV7343_COMPOSITE_POWER_VALUE;
+>> -     else if (output_type == ADV7343_COMPONENT_ID)
+>> -             val |= ADV7343_COMPONENT_POWER_VALUE;
+>> +     /* configure default configuration */
+>> +     if (!state->pdata)
+>> +             if (output_type == ADV7343_COMPOSITE_ID)
+>> +                     val |= ADV7343_COMPOSITE_POWER_VALUE;
+>> +             else if (output_type == ADV7343_COMPONENT_ID)
+>> +                     val |= ADV7343_COMPONENT_POWER_VALUE;
+>> +             else
+>> +                     val |= ADV7343_SVIDEO_POWER_VALUE;
+>>       else
+>> -             val |= ADV7343_SVIDEO_POWER_VALUE;
+>> +             val = state->pdata->mode_config.sleep_mode << 0 |
+>> +                   state->pdata->mode_config.pll_control << 1 |
+>> +                   state->pdata->mode_config.dac_3 << 2 |
+>> +                   state->pdata->mode_config.dac_2 << 3 |
+>> +                   state->pdata->mode_config.dac_1 << 4 |
+>> +                   state->pdata->mode_config.dac_6 << 5 |
+>> +                   state->pdata->mode_config.dac_5 << 6 |
+>> +                   state->pdata->mode_config.dac_4 << 7;
+>>
+>>       err = adv7343_write(sd, ADV7343_POWER_MODE_REG, val);
+>>       if (err < 0)
+>> @@ -238,6 +250,17 @@ static int adv7343_setoutput(struct v4l2_subdev *sd, u32 output_type)
+>>
+>>       /* configure SD DAC Output 2 and SD DAC Output 1 bit to zero */
+>>       val = state->reg82 & (SD_DAC_1_DI & SD_DAC_2_DI);
+>> +
+>> +     if (state->pdata && state->pdata->sd_config.sd_dac_out1)
+>> +             val = val | (state->pdata->sd_config.sd_dac_out1 << 1);
+>> +     else if (state->pdata && !state->pdata->sd_config.sd_dac_out1)
+>> +             val = val & ~(state->pdata->sd_config.sd_dac_out1 << 1);
+>> +
+>> +     if (state->pdata && state->pdata->sd_config.sd_dac_out2)
+>> +             val = val | (state->pdata->sd_config.sd_dac_out2 << 2);
+>> +     else if (state->pdata && !state->pdata->sd_config.sd_dac_out2)
+>> +             val = val & ~(state->pdata->sd_config.sd_dac_out2 << 2);
+>> +
+>>       err = adv7343_write(sd, ADV7343_SD_MODE_REG2, val);
+>>       if (err < 0)
+>>               goto setoutput_exit;
+>> @@ -401,6 +424,9 @@ static int adv7343_probe(struct i2c_client *client,
+>>       if (state == NULL)
+>>               return -ENOMEM;
+>>
+>> +     /* Copy board specific information here */
+>> +     state->pdata = client->dev.platform_data;
+>> +
+>>       state->reg00    = 0x80;
+>>       state->reg01    = 0x00;
+>>       state->reg02    = 0x20;
+>> diff --git a/include/media/adv7343.h b/include/media/adv7343.h
+>> index d6f8a4e..8086e46 100644
+>> --- a/include/media/adv7343.h
+>> +++ b/include/media/adv7343.h
+>> @@ -20,4 +20,36 @@
+>>  #define ADV7343_COMPONENT_ID (1)
+>>  #define ADV7343_SVIDEO_ID    (2)
+>>
+>> +struct adv7343_power_mode {
+>> +     bool sleep_mode;
+>> +     bool pll_control;
+>> +     bool dac_1;
+>> +     bool dac_2;
+>> +     bool dac_3;
+>> +     bool dac_4;
+>> +     bool dac_5;
+>> +     bool dac_6;
+>> +};
+>
+> Can you add a short description for struct adv7343_power_mode? It's
+> sufficient to point to the relevant section in the datasheet (add a url
+> or something like that).
+>
+Ok I'll do the needy. and respin v2.
 
-Leaving coding indentation aside [I assume you mean the use of braces because my tab stops should match given the patchset for the other files was minimal] that's not really a good use of time here.
- 
-> > For me to re-write complete statements for coding style reasons
-> > means
-> > I have to actually go out and test it again.
-> 
-> Well, for some of the code you submitted, that would be the first
-> testing it got, even compile testing AFAICT. I don't doubt that you
-> tested against your hardware, but it is obvious that you didn't run
-> the
-> algorithm tests you added, or even tried to compile them. You were
-> missing a semicolon after your test data, and you were also missing a
-> "\x" in there, so your test data was wrong.
+Regards,
+--Prabhakar
 
-The missing semi-colon is in fact missing and for that I apologize.  This btw is the first legitimate gripe with the code thus far.
-
-Though I must say this code has "compiled" in 3.6, 3.6.7, 3.7, and 3.8 without error so it's not surprising it wasn't caught.  After having consulted the "documentation" I never really did figure out how to get testmgr to run so I took a bit of leap of faith there that everything was fine.  Not really an excuse but it is at least an observable hole in the build documentation.
-
-I couldn't spot the missing \x but I don't doubt you.  That format for vector data is so backwards that it's easy to make that mistake.  After having worked on crypto code for 10+ years I've never seen anyone use that format and I've seen stupid formats before (NIST CAVP anyone?).
-
-Again all valid critiques of the code and valid reasons to do a re-spin.  I apologize for the oversight there.  Having "used the source" I found the build symbol required to activate the test manager so I should be good to go now.
-
-> I know this, because I just spent the five minutes required to fix up
-> the checkpatch warnings to prove to myself that you could have done
-> it
-> faster than sending one considered message to the list about how much
-> we
-> suck. Of course, that assumes you are trying to have a discussion
-> instead of trolling; it's much easier to spew bile than to think
-> before
-> you post.
-
-This wasn't about how you all suck.  Quite the contrary it was about how good people are missing perspective.  You all started this by harping on the coding style "problems" but as a new developer to the kernel (well at least a new submitter...) I used the source as a guide so that I wouldn't deviate from what I perceived as the norm.  I was legitimately frustrated because performing a re-spin solely to work past coding style problems is not something a business case could be made for.  I'd like to contribute properly but at the same time you can't throw red flags on the play each time someone plays the game like you do.
-
-At least the testmgr errors are something I can work on whenever without setting up a lab so likely that'll be something I can tackle today actually.
-
-Tom
-
+> Regards,
+>
+>         Hans
+>
+>> +
+>> +/**
+>> + * struct adv7343_sd_config - SD Only Output Configuration.
+>> + * @sd_dac_out1: Configure SD DAC Output 1.
+>> + * @sd_dac_out2: Configure SD DAC Output 2.
+>> + */
+>> +struct adv7343_sd_config {
+>> +     /* SD only Output Configuration */
+>> +     bool sd_dac_out1;
+>> +     bool sd_dac_out2;
+>> +};
+>> +
+>> +/**
+>> + * struct adv7343_platform_data - Platform data values and access functions.
+>> + * @mode_config: Configuration for power mode.
+>> + * @sd_config: SD Only Configuration.
+>> + */
+>> +struct adv7343_platform_data {
+>> +     struct adv7343_power_mode mode_config;
+>> +     struct adv7343_sd_config sd_config;
+>> +};
+>> +
+>>  #endif                               /* End of #ifndef ADV7343_H */
+>>
