@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab3AUQmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 11:42:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58681 "EHLO mx1.redhat.com"
+	id S1755890Ab3AUQnQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 11:43:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39825 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752782Ab3AUQmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 11:42:18 -0500
-Date: Mon, 21 Jan 2013 11:42:13 -0500
+	id S1752052Ab3AUQnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 11:43:14 -0500
+Date: Mon, 21 Jan 2013 10:45:01 -0500
 From: Vivek Goyal <vgoyal@redhat.com>
 To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        pjones@redhat.com, hpa@zytor.com, dhowells@redhat.com,
-        jwboyer@redhat.com
+Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, pjones@redhat.com,
+        hpa@zytor.com, dhowells@redhat.com, jwboyer@redhat.com
 Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
-Message-ID: <20130121164213.GB27617@redhat.com>
+Message-ID: <20130121154501.GA27617@redhat.com>
 References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
  <1358285695-26173-3-git-send-email-vgoyal@redhat.com>
- <871udloiku.fsf@xmission.com>
- <1358312159.4593.37.camel@falcor1>
+ <1358437021.2689.52.camel@falcor1>
+ <20130117155154.GC12165@redhat.com>
+ <1358440365.2689.72.camel@falcor1>
+ <20130117173605.GB2237@redhat.com>
+ <1358702400.2406.103.camel@falcor1.watson.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1358312159.4593.37.camel@falcor1>
+In-Reply-To: <1358702400.2406.103.camel@falcor1.watson.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 11:55:59PM -0500, Mimi Zohar wrote:
-
-[..]
-> Please remind me why you can't use IMA-appraisal, which was upstreamed
-> in Linux 3.7?  Why another method is needed?
-
-So is this IMA-appraisal also supports digital signatures? The IMA white
-paper seems to put digital signatures in separate category
-(IMA-Appraisal-Signature-Extension).
-
+On Sun, Jan 20, 2013 at 12:20:00PM -0500, Mimi Zohar wrote:
+> On Thu, 2013-01-17 at 12:36 -0500, Vivek Goyal wrote:
+> > On Thu, Jan 17, 2013 at 11:32:45AM -0500, Mimi Zohar wrote:
+> > 
+> > [..]
+> > > > > At this point, why would you want yet another method for signing files?
+> > > > 
+> > > > Are you saying that append signature instead of putting them in a section
+> > > > or are you saying that just use IMA.
+> > > > 
+> > > > - For the first, I am fine with appending too if that works better. So
+> > > >   what's wrong with current implementation. Just because we append the
+> > > >   signatures in case of modules, we should follow the same thing for
+> > > >   executables too?
+> > > 
+> > > No, I was saying that if this patch set were to be upstreamed, then the
+> > > signature verification, at least for ELF modules and ELF executables,
+> > > should be the same.  The patch would then be a lot smaller.
+> > 
+> > I don't think that patch is lot smaller. Initially I had written code
+> > where signatures were appended. Parsing the signature is little different
+> > from module. In case of modules, whole file is already in memory and
+> > in case of executables, we are reading selected portions of file in
+> > buffer. 
 > 
-> With IMA-appraisal, there are a couple of issues that would still need
-> to be addressed:
-> - missing the ability to specify the validation method required.
-> - modify the ima_appraise_tcb policy policy to require elf executables
-> to be digitally signed.
+> Have you looked at the original kernel module signature verification
+> code as posted by David?  It did something similar, but was not
+> upstreamed.
 
-For my use case, all executable don't have to be digitally signed. If
-something is digitally signed then do the signature verification.
+I have. I think keeping code in a section makes stripping of section
+easy. Anyway, these sections are not loaded in memory at file exec
+time so it should be fine.
+
+So appending signature is easy and I can change the implementation to
+do it like modules.
+
+But please give a more stronger reason that why it should be appened
+to executable then put in a section.
 
 Thanks
 Vivek
