@@ -1,192 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab3AUNMG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 08:12:06 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:50064 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909Ab3AUNMC (ORCPT
+	id S1754363Ab3AUNMF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 08:12:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57228 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753022Ab3AUNMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 08:12:02 -0500
-Date: Mon, 21 Jan 2013 13:11:55 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 7/8] ARM: ux500: Use the GPIO regulator framework for
- SDI0's 'en' and 'vsel'
-Message-ID: <20130121131155.GB6551@gmail.com>
-References: <1355404930-5691-1-git-send-email-lee.jones@linaro.org>
- <1355404930-5691-8-git-send-email-lee.jones@linaro.org>
- <CAPDyKFo2VbEfFXe_HYTk9KyzbDgTa3Aj_kTC-2tYUJ4TMMxaJw@mail.gmail.com>
+	Mon, 21 Jan 2013 08:12:01 -0500
+Message-ID: <50FD3E93.70407@canonical.com>
+Date: Mon, 21 Jan 2013 13:11:47 +0000
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPDyKFo2VbEfFXe_HYTk9KyzbDgTa3Aj_kTC-2tYUJ4TMMxaJw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andre Przywara <andre@andrep.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: kernel 3.7+ cpufreq regression on AMD system running as dom0
+References: <50F42B3E.7090602@canonical.com> <20130114163445.GA4867@liondog.tnic> <20130115175305.GA12449@phenom.dumpdata.com> <20130115181839.GC8101@liondog.tnic> <20130118190015.GC11351@phenom.dumpdata.com> <20130118200331.GF4062@pd.tnic> <50FD32FA.7010306@canonical.com> <20130121124255.GB4823@pd.tnic>
+In-Reply-To: <20130121124255.GB4823@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Dec 2012, Ulf Hansson wrote:
+On 01/21/2013 12:42 PM, Borislav Petkov wrote:
+> On Mon, Jan 21, 2013 at 12:22:18PM +0000, Stefan Bader wrote:
+>> So for having the "check for sensible BIOS" in mainline I refreshed
+>> the patch (fixed the bit test, and actually tested it this time) and
+>> also added some hopefully sensible explanation to it (attached
+>> below).
+>>
+>> Should I send it to acpi lists or would that have to go via an Andre?
+>
+> Maybe Rafael could pick it up?
+>
+>>
+>> -Stefan
+>>
+>>  From 6e2fc8291c91339123a37162382d8b08b50867ba Mon Sep 17 00:00:00 2001
+>> From: Stefan Bader <stefan.bader@canonical.com>
+>> Date: Mon, 14 Jan 2013 16:17:00 +0100
+>> Subject: [PATCH] ACPI: Check MSR valid bit before using P-state frequencies
+>>
+>> To fix incorrect P-state frequencies which can happen on
+>> some AMD systems f594065faf4f9067c2283a34619fc0714e79a98d
+>>    "ACPI: Add fixups for AMD P-state figures"
+>> introduced a quirk to obtain the correct values by reading
+>> from AMD specific MSRs.
+>>
+>> This did cause a regression when running a kernel using that
+>> quirk under Xen which does (currently) not pass on the contents
+>> of the HW but 0.
+>
+> Actually this should say "does not currently pass through MSR accesses
+> to baremetal" or similar.
 
-> On 13 December 2012 14:22, Lee Jones <lee.jones@linaro.org> wrote:
-> > To prevent lots of unnecessary call-backs into platform code, we're
-> > now using the GPIO regulator framework to control the 'enable' (en)
-> > and 'voltage select' (vsel) GPIO pins which in turn control the
-> > MMCI's secondary regulator settings. This already works with Device
-> > Tree, but when booting with ATAGs we need to register it as a
-> > platform device.
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Ok, that sounds much better.
 
-What's the latest on these Ulf? Have they been taken in yet? 
+>
+> And this bit you mean is actually bit 63:
+>
+> "63: PstateEn. Read-write. 1=The P-state specified by this MSR is valid.
+> 0=The P-state specified by this MSR is not valid. The purpose of this
+> register is to indicate if the rest of the P-state information in the
+> register is valid after a reset; it controls no hardware."
+>
+> in the MSRC001_00[68:64] P-State [4:0] Registers.
 
-> >  arch/arm/mach-ux500/board-mop500-regulators.c |   14 ++++++++
-> >  arch/arm/mach-ux500/board-mop500-regulators.h |    1 +
-> >  arch/arm/mach-ux500/board-mop500.c            |   44 +++++++++++++++++++++++++
-> >  3 files changed, 59 insertions(+)
-> >
-> > diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-> > index 2a17bc5..cb75405 100644
-> > --- a/arch/arm/mach-ux500/board-mop500-regulators.c
-> > +++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-> > @@ -28,6 +28,20 @@ struct regulator_init_data gpio_en_3v3_regulator = {
-> >         .consumer_supplies = gpio_en_3v3_consumers,
-> >  };
-> >
-> > +static struct regulator_consumer_supply sdi0_reg_consumers[] = {
-> > +        REGULATOR_SUPPLY("vqmmc", "sdi0"),
-> > +};
-> > +
-> > +struct regulator_init_data sdi0_reg_init_data = {
-> > +        .constraints = {
-> > +                .min_uV         = 1800000,
-> > +                .max_uV         = 2900000,
-> > +                .valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|REGULATOR_CHANGE_STATUS,
-> > +        },
-> > +        .num_consumer_supplies  = ARRAY_SIZE(sdi0_reg_consumers),
-> > +        .consumer_supplies      = sdi0_reg_consumers,
-> > +};
-> > +
-> >  /*
-> >   * TPS61052 regulator
-> >   */
-> > diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
-> > index 78a0642..0c79d90 100644
-> > --- a/arch/arm/mach-ux500/board-mop500-regulators.h
-> > +++ b/arch/arm/mach-ux500/board-mop500-regulators.h
-> > @@ -19,5 +19,6 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS];
-> >  extern struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS];
-> >  extern struct regulator_init_data tps61052_regulator;
-> >  extern struct regulator_init_data gpio_en_3v3_regulator;
-> > +extern struct regulator_init_data sdi0_reg_init_data;
-> >
-> >  #endif
-> > diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-> > index daa4237..e934176 100644
-> > --- a/arch/arm/mach-ux500/board-mop500.c
-> > +++ b/arch/arm/mach-ux500/board-mop500.c
-> > @@ -24,6 +24,8 @@
-> >  #include <linux/mfd/abx500/ab8500.h>
-> >  #include <linux/regulator/ab8500.h>
-> >  #include <linux/regulator/fixed.h>
-> > +#include <linux/regulator/driver.h>
-> > +#include <linux/regulator/gpio-regulator.h>
-> >  #include <linux/mfd/tc3589x.h>
-> >  #include <linux/mfd/tps6105x.h>
-> >  #include <linux/mfd/abx500/ab8500-gpio.h>
-> > @@ -91,6 +93,37 @@ static struct platform_device snowball_gpio_en_3v3_regulator_dev = {
-> >         },
-> >  };
-> >
-> > +/* Dynamically populated. */
-> > +static struct gpio sdi0_reg_gpios[] = {
-> > +        { 0, GPIOF_OUT_INIT_LOW, "mmci_vsel" },
-> > +};
-> > +
-> > +static struct gpio_regulator_state sdi0_reg_states[] = {
-> > +        { .value = 2900000, .gpios = (0 << 0) },
-> > +        { .value = 1800000, .gpios = (1 << 0) },
-> > +};
-> > +
-> > +static struct gpio_regulator_config sdi0_reg_info = {
-> > +       .supply_name           = "ext-mmc-level-shifter",
-> > +       .gpios                 = sdi0_reg_gpios,
-> > +       .nr_gpios              = ARRAY_SIZE(sdi0_reg_gpios),
-> > +       .states                = sdi0_reg_states,
-> > +       .nr_states             = ARRAY_SIZE(sdi0_reg_states),
-> > +       .type                  = REGULATOR_VOLTAGE,
-> > +       .enable_high           = 1,
-> > +       .enabled_at_boot       = 0,
-> > +       .init_data             = &sdi0_reg_init_data,
-> > +       .startup_delay         = 100,
-> > +};
-> > +
-> > +static struct platform_device sdi0_regulator = {
-> > +        .name = "gpio-regulator",
-> > +        .id   = -1,
-> > +        .dev  = {
-> > +                .platform_data = &sdi0_reg_info,
-> > +        },
-> > +};
-> > +
-> >  static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
-> >         .gpio_base              = MOP500_AB8500_PIN_GPIO(1),
-> >         .irq_base               = MOP500_AB8500_VIR_GPIO_IRQ_BASE,
-> > @@ -440,6 +473,7 @@ static struct hash_platform_data u8500_hash1_platform_data = {
-> >  /* add any platform devices here - TODO */
-> >  static struct platform_device *mop500_platform_devs[] __initdata = {
-> >         &mop500_gpio_keys_device,
-> > +       &sdi0_regulator,
-> >  };
-> >
-> >  #ifdef CONFIG_STE_DMA40
-> > @@ -581,6 +615,7 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
-> >         &snowball_key_dev,
-> >         &snowball_sbnet_dev,
-> >         &snowball_gpio_en_3v3_regulator_dev,
-> > +       &sdi0_regulator,
-> >  };
-> >
-> >  static void __init mop500_init_machine(void)
-> > @@ -591,6 +626,9 @@ static void __init mop500_init_machine(void)
-> >
-> >         mop500_gpio_keys[0].gpio = GPIO_PROX_SENSOR;
-> >
-> > +       sdi0_reg_info.enable_gpio = GPIO_SDMMC_EN;
-> > +       sdi0_reg_info.gpios[0].gpio = GPIO_SDMMC_1V8_3V_SEL;
-> > +
-> >         mop500_pinmaps_init();
-> >         parent = u8500_init_devices(&ab8500_platdata);
-> >
-> > @@ -623,6 +661,9 @@ static void __init snowball_init_machine(void)
-> >         struct device *parent = NULL;
-> >         int i;
-> >
-> > +       sdi0_reg_info.enable_gpio = SNOWBALL_SDMMC_EN_GPIO;
-> > +       sdi0_reg_info.gpios[0].gpio = SNOWBALL_SDMMC_1V8_3V_GPIO;
-> > +
-> >         snowball_pinmaps_init();
-> >         parent = u8500_init_devices(&ab8500_platdata);
-> >
-> > @@ -655,6 +696,9 @@ static void __init hrefv60_init_machine(void)
-> >          */
-> >         mop500_gpio_keys[0].gpio = HREFV60_PROX_SENSE_GPIO;
-> >
-> > +       sdi0_reg_info.enable_gpio = HREFV60_SDMMC_EN_GPIO;
-> > +       sdi0_reg_info.gpios[0].gpio = HREFV60_SDMMC_1V8_3V_GPIO;
-> > +
-> >         hrefv60_pinmaps_init();
-> >         parent = u8500_init_devices(&ab8500_platdata);
-> >
-> >
-> 
-> 
-> Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+Darn, yes.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>
+>> And this seems to cause a failure to initialize
+>> the ondemand governour (hard to say for sure as all P-states
+>> appear to run at the same frequency).
+>>
+>> While this should also be fixed in the hypervisor (to allow
+>> a guest to read that MSR), this patch is intended to work
+>> around the issue in the meantime. In discussion it turned out
+>> that indeed real HW/BIOSes may choose to not set the valid bit
+>> and thus mark the P-state as invalid. So this could be considered
+>> a fix for broken BIOSes that also works around the issue on Xen.
+>>
+>> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+>> Cc: stable@vger.kernel.org # v3.7..
+>> ---
+>>   drivers/acpi/processor_perflib.c | 3 +++
+>>   1 file changed, 3 insertions(+)
+>>
+>> diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
+>> index 836bfe0..41f4bdac 100644
+>> --- a/drivers/acpi/processor_perflib.c
+>> +++ b/drivers/acpi/processor_perflib.c
+>> @@ -340,6 +340,9 @@ static void amd_fixup_frequency(struct
+>> acpi_processor_px *px, int i)
+>>   	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
+>>   	    || boot_cpu_data.x86 == 0x11) {
+>>   		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
+>> +		/* Bit 63 indicates whether contents are valid */
+>> +		if (!(hi & 0x80000000))
+>
+> You can make this a lot more explicit:
+>
+> 		if (!(hi & BIT(31)))
+> 			return;
+>
+
+True, ok, so let me respin the whole thing and re-send it.
+
+-Stefan
+> This way
+>
+> 1) you're sure you're testing the correct bit and
+> 2) any reviewer can know on the spot which bit it is about.
+>
+>> +			return;
+>>   		fid = lo & 0x3f;
+>>   		did = (lo >> 6) & 7;
+>>   		if (boot_cpu_data.x86 == 0x10)
+>
+> Thanks.
+>
+
