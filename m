@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006Ab3AUHUk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 02:20:40 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:51185 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab3AUHUi (ORCPT
+	id S1752040Ab3AUH0B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 02:26:01 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:52713 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab3AUH0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 02:20:38 -0500
+	Mon, 21 Jan 2013 02:26:00 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130118154504.GA28072@redhat.com>
-References: <50E3FDFA.4070203@suse.cz>
-	<20130102114311.66215bf5@pyramind.ukuu.org.uk>
-	<CAMSQXEHmDb5rUQnT1JNcMCzdaN+gAr+1hR=PyPiDMu7vK5ykxA@mail.gmail.com>
-	<50E4854E.8060801@suse.cz>
-	<CAMSQXEGU2WmhmMqP7XMK2x39GN9iDDWpg-Wa7_cAauHWx5OWbQ@mail.gmail.com>
-	<50F66120.50704@linux.vnet.ibm.com>
-	<CAMSQXEE=Qp8kVcEp8nBhNDmOaDMUQUUou+5Z2f8-1znykqy6mQ@mail.gmail.com>
-	<50F683D9.1080908@linux.vnet.ibm.com>
-	<CAMSQXEHjP5mzs9u5DUmuYgoEceM2OO=E8844-XQ7LPCSECoGRw@mail.gmail.com>
-	<50F7D8C2.1030506@linux.vnet.ibm.com>
-	<20130118154504.GA28072@redhat.com>
-Date: Mon, 21 Jan 2013 08:20:37 +0100
-Message-ID: <CAMSQXEE0kLw_3pKPTOcxWd8XF4-jU7NxE8S0Hpdb5YperNWFxA@mail.gmail.com>
-Subject: Re: [PATCH] tty: Only wakeup the line discipline idle queue when
- queue is active
-From: Ivo Sieben <meltedpianoman@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>
+In-Reply-To: <20130120223907.GA8424@kroah.com>
+References: <CAAXf6LXkgLiBLFmwH_GR9hkjFgOJ5z1nSTQd9Q4pJud732Lb9Q@mail.gmail.com>
+	<20130120223907.GA8424@kroah.com>
+Date: Mon, 21 Jan 2013 08:25:59 +0100
+Message-ID: <CAAXf6LXGOzqu=VeSdeuu3kNBjVBcobp-2keDmSZ_JSL-72Uu+Q@mail.gmail.com>
+Subject: Re: [RFC] Creating an eeprom class
+From: Thomas De Schampheleire <patrickdepinguin@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
+        Anatolij Gustschin <agust@denx.de>, Frodo Looijaard <frodol@dds.nl>,
+        Philip Edelbrock <phil@netroedge.com>,
+        Ben Gardner <bgardner@wabtec.com>, Ronny Meeus <Ronny.Meeus@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-2013/1/18 Oleg Nesterov <oleg@redhat.com>:
+On Sun, Jan 20, 2013 at 11:39 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sun, Jan 20, 2013 at 07:08:28PM +0100, Thomas De Schampheleire wrote:
+>> [plaintext and fixed address of David Brownell]
 >
-> I can't understand why do you dislike Ivo's simple patch. There are
-> a lot of "if (waitqueue_active) wake_up" examples. Even if we add the
-> new helpers (personally I don't think this makes sense) , we can do
-> this later. Why should we delay this fix?
+> David passed away a year or so ago, so that's really not going to help :(
+
+So sorry to hear that, I was not aware...
+
 >
+>> Hi,
+>>
+>> Several of the eeprom drivers that live in drivers/misc/eeprom export
+>> a binary sysfs file 'eeprom'. If a userspace program or script wants
+>> to access this file, it needs to know the full path, for example:
+>>
+>> /sys/bus/spi/devices/spi32766.0/eeprom
+>>
+>> The problem with this approach is that it requires knowledge about the
+>> hardware configuration: is the eeprom on the SPI bus, the I2C bus, or
+>> maybe memory mapped?
+>>
+>> It would therefore be more interesting to have a bus-agnostic way to
+>> access this eeprom file, for example:
+>> /sys/class/eeprom/eeprom0/eeprom
+>>
+>> Maybe it'd be even better to use a more generic class name than
+>> 'eeprom', since there are several types of eeprom-like devices that
+>> you could export this way.
+>
+> Does all of the existing "eeprom" devices use the same userspace
+> interface?  If so, yes, having a "class" would make sense.
 
-FYI: Greg has added my patch to his tty-next branch, so my fix has
-been approved.
-Thank you all for reviewing.
+All but one do. That one (eeprom_93cx6.c) exports its read/write
+functions to other kernel code, and is used in several
+wireless/ethernet drivers.
 
-Regards,
-Ivo Sieben
+>
+>> Or should we rather hook the eeprom code into the mtd subsystem?
+>
+> Why mtd?
+
+Because an eeprom is a piece of memory. Maybe mtd is overkill in term
+of the operations supported, but from a high-level perspective an
+eeprom is a memory technology device, right?
+
+Thanks,
+Thomas
