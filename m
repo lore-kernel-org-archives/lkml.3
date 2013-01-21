@@ -1,82 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab3AUSvK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 13:51:10 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51883 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab3AUSvJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 13:51:09 -0500
-Date: Mon, 21 Jan 2013 20:50:45 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 29/33] usb: Convert to devm_ioremap_resource()
-Message-ID: <20130121185045.GD10106@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
- <1358762966-20791-30-git-send-email-thierry.reding@avionic-design.de>
+	id S1756065Ab3AUSyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 13:54:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53845 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755711Ab3AUSyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 13:54:38 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130121175250.1AAC7981@kernel.stglabs.ibm.com>
+References: <20130121175244.E5839E06@kernel.stglabs.ibm.com> <20130121175250.1AAC7981@kernel.stglabs.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ylS2wUBXLOxYXZFQ"
-Content-Disposition: inline
-In-Reply-To: <1358762966-20791-30-git-send-email-thierry.reding@avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 5/5] fix kvm's use of __pa() on percpu areas
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 21 Jan 2013 12:38:06 -0600
+To: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+CC: linux-mm@kvack.org, Gleb Natapov <gleb@redhat.com>, x86@kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>
+Message-ID: <08cba1bf-6476-4fad-8d29-e380ec7127ba@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ylS2wUBXLOxYXZFQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Final question: are any of these done in frequent paths?  (I believe no, but...)
 
-On Mon, Jan 21, 2013 at 11:09:22AM +0100, Thierry Reding wrote:
-> Convert all uses of devm_request_and_ioremap() to the newly introduced
-> devm_ioremap_resource() which provides more consistent error handling.
->=20
-> devm_ioremap_resource() provides its own error messages so all explicit
-> error messages can be removed from the failure code paths.
->=20
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: linux-usb@vger.kernel.org
+Dave Hansen <dave@linux.vnet.ibm.com> wrote:
 
-For drivers/usb/renenas, drivers/usb/otg, drivers/usb/phy,
-drivers/usb/musb and drivers/usb/gadget:
+>
+>In short, it is illegal to call __pa() on an address holding
+>a percpu variable.  The times when this actually matters are
+>pretty obscure (certain 32-bit NUMA systems), but it _does_
+>happen.  It is important to keep KVM guests working on these
+>systems because the real hardware is getting harder and
+>harder to find.
+>
+>This bug manifested first by me seeing a plain hang at boot
+>after this message:
+>
+>	CPU 0 irqstacks, hard=f3018000 soft=f301a000
+>
+>or, sometimes, it would actually make it out to the console:
+>
+>[    0.000000] BUG: unable to handle kernel paging request at ffffffff
+>
+>I eventually traced it down to the KVM async pagefault code.
+>This can be worked around by disabling that code either at
+>compile-time, or on the kernel command-line.
+>
+>The kvm async pagefault code was injecting page faults in
+>to the guest which the guest misinterpreted because its
+>"reason" was not being properly sent from the host.
+>
+>The guest passes a physical address of an per-cpu async page
+>fault structure via an MSR to the host.  Since __pa() is
+>broken on percpu data, the physical address it sent was
+>bascially bogus and the host went scribbling on random data.
+>The guest never saw the real reason for the page fault (it
+>was injected by the host), assumed that the kernel had taken
+>a _real_ page fault, and panic()'d.  The behavior varied,
+>though, depending on what got corrupted by the bad write.
+>
+>Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+>Acked-by: Rik van Riel <riel@redhat.com>
+>---
+>
+> linux-2.6.git-dave/arch/x86/kernel/kvm.c      |    9 +++++----
+> linux-2.6.git-dave/arch/x86/kernel/kvmclock.c |    4 ++--
+> 2 files changed, 7 insertions(+), 6 deletions(-)
+>
+>diff -puN arch/x86/kernel/kvm.c~fix-kvm-__pa-use-on-percpu-areas
+>arch/x86/kernel/kvm.c
+>---
+>linux-2.6.git/arch/x86/kernel/kvm.c~fix-kvm-__pa-use-on-percpu-areas	2013-01-17
+>10:22:26.914436992 -0800
+>+++ linux-2.6.git-dave/arch/x86/kernel/kvm.c	2013-01-17
+>10:22:26.922437062 -0800
+>@@ -289,9 +289,9 @@ static void kvm_register_steal_time(void
+> 
+> 	memset(st, 0, sizeof(*st));
+> 
+>-	wrmsrl(MSR_KVM_STEAL_TIME, (__pa(st) | KVM_MSR_ENABLED));
+>+	wrmsrl(MSR_KVM_STEAL_TIME, (slow_virt_to_phys(st) |
+>KVM_MSR_ENABLED));
+> 	printk(KERN_INFO "kvm-stealtime: cpu %d, msr %lx\n",
+>-		cpu, __pa(st));
+>+		cpu, slow_virt_to_phys(st));
+> }
+> 
+>static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) =
+>KVM_PV_EOI_DISABLED;
+>@@ -316,7 +316,7 @@ void __cpuinit kvm_guest_cpu_init(void)
+> 		return;
+> 
+> 	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF) && kvmapf) {
+>-		u64 pa = __pa(&__get_cpu_var(apf_reason));
+>+		u64 pa = slow_virt_to_phys(&__get_cpu_var(apf_reason));
+> 
+> #ifdef CONFIG_PREEMPT
+> 		pa |= KVM_ASYNC_PF_SEND_ALWAYS;
+>@@ -332,7 +332,8 @@ void __cpuinit kvm_guest_cpu_init(void)
+> 		/* Size alignment is implied but just to make it explicit. */
+> 		BUILD_BUG_ON(__alignof__(kvm_apic_eoi) < 4);
+> 		__get_cpu_var(kvm_apic_eoi) = 0;
+>-		pa = __pa(&__get_cpu_var(kvm_apic_eoi)) | KVM_MSR_ENABLED;
+>+		pa = slow_virt_to_phys(&__get_cpu_var(kvm_apic_eoi))
+>+			| KVM_MSR_ENABLED;
+> 		wrmsrl(MSR_KVM_PV_EOI_EN, pa);
+> 	}
+> 
+>diff -puN arch/x86/kernel/kvmclock.c~fix-kvm-__pa-use-on-percpu-areas
+>arch/x86/kernel/kvmclock.c
+>---
+>linux-2.6.git/arch/x86/kernel/kvmclock.c~fix-kvm-__pa-use-on-percpu-areas	2013-01-17
+>10:22:26.918437028 -0800
+>+++ linux-2.6.git-dave/arch/x86/kernel/kvmclock.c	2013-01-17
+>10:22:26.922437062 -0800
+>@@ -162,8 +162,8 @@ int kvm_register_clock(char *txt)
+> 	int low, high, ret;
+> 	struct pvclock_vcpu_time_info *src = &hv_clock[cpu].pvti;
+> 
+>-	low = (int)__pa(src) | 1;
+>-	high = ((u64)__pa(src) >> 32);
+>+	low = (int)slow_virt_to_phys(src) | 1;
+>+	high = ((u64)slow_virt_to_phys(src) >> 32);
+> 	ret = native_write_msr_safe(msr_kvm_system_time, low, high);
+> 	printk(KERN_INFO "kvm-clock: cpu %d, msr %x:%x, %s\n",
+> 	       cpu, high, low, txt);
+>_
 
-Acked-by: Felipe Balbi <balbi@ti.com>
-
---=20
-balbi
-
---ylS2wUBXLOxYXZFQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ/Y4FAAoJEIaOsuA1yqRE6JgP/38INvyZHVh8bsMeAYCsRvZu
-cjtZIUKo/vc9iRRvwW/vkPFJaNopWqLAuJxOHAe/gdZNAw/DeVKqq46O5P4DkBr9
-olqBtEhrbvEu/wrbdgWZxVGvRe0drZO8a5I9y8sMDaN0UO7z8aULRx0IoaUotW4v
-75lvQRBgo3vk2gGQfMK0WOi5UQw5BJCA0oPhFFAL/7n1tm+kP6nA3R1UdbkUwzi8
-jMZfxvxh7GqFWVtY/ahRZxjyWAkrrdmDaI09yGV2apVvslaIc4rLPifNYET1V0M7
-nBZ3sXsCrBwHvHhLLdO7Rqk86n+xQLPKhViDTc/aywL13eqfhHDun/94bejsi6Vk
-b4Nuy8GvUNKRydcjARnmyey8gLVwMOiXDKY86ZeRL5nkmwYsDPXAqEVUFEG/4IRp
-e7TonbsZe/mc1RhOI0McSsR08P7UdMJl5V+QoeYDybZkKXGduYcOkigZQSOp8vZY
-LAg3YNZy/msOmTre7mT6HIz4WMbJiFcN5vhqpHeMix4rpeSyUGFh3KfmMvba3oU3
-5EuLFo64P0rmYTsnEQkam8OFnUEavwvjqUB7GUHaTfo4IyZhxQgkIh+whYSLWwRT
-sSfHJXHiBDK8cGQXjnSnVqVd5CR8+TwZ/jVLJP6RvMDbwgAUF9S15OeHik1ixiiJ
-2GpuK6nRqcFrS6S96rPo
-=pYIw
------END PGP SIGNATURE-----
-
---ylS2wUBXLOxYXZFQ--
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
