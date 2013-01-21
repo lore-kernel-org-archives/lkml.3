@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694Ab3AUGCe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 01:02:34 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39490 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab3AUGCd (ORCPT
+	id S1752752Ab3AUGIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 01:08:15 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:37668 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab3AUGIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 01:02:33 -0500
-Date: Mon, 21 Jan 2013 06:02:29 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Issues with "x86, um: switch to generic fork/vfork/clone" commit
-Message-ID: <20130121060229.GT4939@ZenIV.linux.org.uk>
-References: <50F3D2F2.3080200@6wind.com>
- <20130119063808.GN4939@ZenIV.linux.org.uk>
- <20130120031253.GO4939@ZenIV.linux.org.uk>
- <CA+55aFyRMC43_H1hL5goAQxX4EdTuXOu5A9CoBk9fpGoJT_nig@mail.gmail.com>
- <20130121012217.GQ4939@ZenIV.linux.org.uk>
- <CA+55aFwG2j_+2pjUJuZqT1yk0xDEyeFMgCxHmxAzfGXHO5qCXQ@mail.gmail.com>
- <20130121023010.GR4939@ZenIV.linux.org.uk>
- <CA+55aFwPM3qWE7F7nwUVKphVTJb7WE7zPF5artdVw7Xq5Z1UgQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwPM3qWE7F7nwUVKphVTJb7WE7zPF5artdVw7Xq5Z1UgQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 Jan 2013 01:08:13 -0500
+Date: Mon, 21 Jan 2013 17:08:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tang Chen <tangchen@cn.fujitsu.com>
+Subject: linux-next: build failure after merge of the final tree (akpm tree
+ related)
+Message-Id: <20130121170804.8b6eec010e00a6cbbcbad66f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_Jan_2013_17_08_04_+1100_=kCXM5GvNlC4eDXd"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 06:39:09PM -0800, Linus Torvalds wrote:
+--Signature=_Mon__21_Jan_2013_17_08_04_+1100_=kCXM5GvNlC4eDXd
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> And right now, that HAVE_SYSCALL_WRAPPERS does make it much harder to
-> think about the header file changes.
+Hi all,
 
-Agreed.
+After merging the final tree, today's linux-next build (arm defconfig)
+failed like this:
 
-> > FWIW, there's another bit of ugliness around that area - all these
-> > #define __SC_BLAH3, etc., all of the same form.  This stuff begs for
-> > something like
-> > #define __MAP1(m,t,a) m(t,a)
-> > #define __MAP2(m,t,a,...) m(t,a) __MAP1(m,__VA_ARGS__)
-> > #define __MAP3(m,t,a,...) m(t,a) __MAP2(m,__VA_ARGS__)
-> > #define __MAP4(m,t,a,...) m(t,a) __MAP3(m,__VA_ARGS__)
-> > #define __MAP5(m,t,a,...) m(t,a) __MAP4(m,__VA_ARGS__)
-> > #define __MAP6(m,t,a,...) m(t,a) __MAP5(m,__VA_ARGS__)
-> > #define __MAP(n,...) __MAP##n(__VA_ARGS__)
-> > with __MAP(x,__SC_DECL,__VA_ARGS__) instead of __SC_DECL##x(__VA_ARGS__)
-> > etc. in users...
+mm/memblock.c: In function 'memblock_find_in_range_node':
+mm/memblock.c:104:2: error: invalid use of undefined type 'struct movableco=
+re_map'
+mm/memblock.c:123:4: error: invalid use of undefined type 'struct movableco=
+re_map'
+mm/memblock.c:130:7: error: invalid use of undefined type 'struct movableco=
+re_map'
+mm/memblock.c:131:4: error: invalid use of undefined type 'struct movableco=
+re_map'
 
-... with missing commas added, of course.
+Caused by commit "page_alloc: bootmem limit with movablecore_map" from
+the akpm tree.  The definition of struct movablecore_map is protected by
+CONFIG_HAVE_MEMBLOCK_NODE_MAP but its use is not.
 
-> Well, I can see both sides. The above is the nice and dense
-> declaration model with less duplication, but christ, it's hard for
-> people to wrap their minds around unless they've seen it a million
-> times. It really does take some getting used to, and the long-form can
-> be easier to understand.
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Umm...  Even with
-/*
- * __MAP - apply a given macro to all syscall arguments.
- * __MAP(n, m, t1, a1, ..., tn, an) will expand to
- *      m(t1,a1), m(t2,a2), ..., m(tn, an)
- * Note that the first argument of __MAP must be equal to the number of
- * type, name pairs in the list.  The list itself (all arguments of __MAP
- * starting with the 3rd one) is in the form we pass to SYSCALL_DEFINE<n>.
- */
-slapped on top of it?
+--Signature=_Mon__21_Jan_2013_17_08_04_+1100_=kCXM5GvNlC4eDXd
+Content-Type: application/pgp-signature
 
-> That said, we have so many of those things now when it comes to the
-> syscall stuff that the dense form seems to be called for just to be
-> consistent.
-> 
-> So go wild if you have the energy for it. I'm not going to pull that
-> for 3.8, though.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-No, that's obviously next cycle fodder, along with the sick tricks for
-generating compat wrappers on s390 if Martin can live with those.
+iQIcBAEBCAAGBQJQ/NtEAAoJEECxmPOUX5FE7AUP/jZoCtC9Q5N6ExZBGWvMYJQ6
+JzVD4DNZywoL3VfKktDvLHz+i7cWTjZ1STlTB2+RHld1Usski6BFWpZYI/zZCkv9
+zO6xKKMkilhxstcCutiX5NV6C3nlpnR4iQp+uVRWX53ALPvkO7QTebE8KQWTvRN7
+OYotyPituqzn5rWcu7hiJQ3KXiPcg0S3WS1FFTxZzYk/YG84YVB4rjtYXKqAtALU
+pINiDmQt/cLSlUPLpAIeRouqEMPRKe0uA9rHcklV9otGkAbumSGKc+IfKALz9pYl
+ziG+qpa94mkTXXWLIXV0ZChCHz6hjERcrTbuCAulFZl1JpzJ5GPMxaMigS+WDTlm
+ZYx5uzS38PfePxeXJZMICqk56QrxBzUU4ZjmJzEGbrgdoe4yJnZg5RpOFwbzYS5w
+FPm5YKOZW1Dolrmu1WPi7Lk+9eVCjDnm2Lmi09m/+XoT1xKI8MP9FE1ggSEhCtVV
+wO91Yqwyd3VzcdcAG56aCYumxzhag498x5shnAIvqqC8Ei8RJoDDULnko8t3EvLt
+aY2obknglYBKy3thmDZLUs663fza5D4MNurPl/fIXH+t1MfksLtU3vuowb3lePGo
+dxNGYRVSiUF7PYOelpx7GxCrGDqivSUBbF9bBwx42yxGJHW6oVSNKB+JUXcRNkmf
+cmB5R0NSWkI/QIavt2Sg
+=PCWr
+-----END PGP SIGNATURE-----
 
-BTW, grep for asmlinkage; it's amazing how much cargo-culting is going
-on with it ;-/  Some of the instances are syscalls yet to be converted
-to SYSCALL_DEFINE<n>; even more of COMPAT_SYSCALL_DEFINE<n>-to-be.  We
-also have a bunch of declarations in syscalls.h and compat.h - those
-are fine.  _Some_ of the rest might be legitimate - ia64 and i386 have
-non-trivial asmlinkage expansion and some (but not all) of arch/{x86,ia64}
-instances do make sense.  Not all of those - e.g. things like
-FPU_divide_by_zero() have no business being regparm(0); they are only called
-from C code and forcing their arguments on stack is a pure pessimization for
-no reason whatsoever.  Everything else in arch/* is magic green marker,
-AFAICS...
-
-There are some borderline cases - e.g. I'm not sure if having sys_recv
-done *not* via SYSCALL_DEFINE() is deliberate; it might cut down on
-some overhead (the sucker's calling sys_recvfrom(), which does normalizations,
-which make normalizing in sys_recv() pointless).  OTOH, sys_send *is*
-done as SYSCALL_DEFINE, even though it ends up calling sys_sendto()...
+--Signature=_Mon__21_Jan_2013_17_08_04_+1100_=kCXM5GvNlC4eDXd--
