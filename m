@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab3AUQDk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 11:03:40 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:49103 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780Ab3AUQDh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 11:03:37 -0500
-Message-ID: <1358784212.6590.30.camel@hornet>
-Subject: Re: [PATCH 7/7] clk: vexpress: Use common of_clk_init() function
-From: Pawel Moll <pawel.moll@arm.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "linux@prisktech.co.nz" <linux@prisktech.co.nz>,
-        "josh.cartwright@ni.com" <josh.cartwright@ni.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Mon, 21 Jan 2013 16:03:32 +0000
-In-Reply-To: <20130118175827.3982.65450@quantum>
-References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
-	 <1357282858-2112-7-git-send-email-pgaikwad@nvidia.com>
-	 <20130118175827.3982.65450@quantum>
-X-Mailer: Evolution 3.6.2-0ubuntu0.1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 21 Jan 2013 16:03:33.0039 (UTC) FILETIME=[DCB0ABF0:01CDF7F0]
-X-MC-Unique: 113012116033505201
-Content-Type: text/plain; charset=UTF-8
+	id S932089Ab3AUQFB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 11:05:01 -0500
+Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:50934
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753780Ab3AUQE7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 11:04:59 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(z21eIz98dIc89bh1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz177df4h17326ah8275eha1495iz2dh668h839h947hd25hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1155h)
+X-WSS-ID: 0MGZGO3-01-5R8-02
+X-M-MSG: 
+Date: Mon, 21 Jan 2013 10:04:50 -0600
+From: Jacob Shin <jacob.shin@amd.com>
+To: Borislav Petkov <bp@alien8.de>,
+        =?iso-8859-1?Q?J=F6rg_R=F6del?= <joro@8bytes.org>,
+        Udo van den Heuvel <udovdh@xs4all.nl>, <linux-kernel@vger.kernel.org>,
+        Boris Ostrovsky <boris.ostrovsky@amd.com>
+CC: <Suravee.Suthikulpanit@amd.com>
+Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
+Message-ID: <20130121160450.GA24792@jshin-Toonie>
+References: <50FBC7EF.6040207@xs4all.nl>
+ <20130120103652.GB16800@pd.tnic>
+ <50FBC994.8020409@xs4all.nl>
+ <20130120111920.GL25591@8bytes.org>
+ <50FBD413.1000406@xs4all.nl>
+ <20130120114011.GN25591@8bytes.org>
+ <20130120114828.GB16519@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <20130120114828.GB16519@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-18 at 17:58 +0000, Mike Turquette wrote:
-> Quoting Prashant Gaikwad (2013-01-03 23:00:58)
-> > Use common of_clk_init() function for clock initialization.
-> > 
-> > Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+On Sun, Jan 20, 2013 at 12:48:28PM +0100, Borislav Petkov wrote:
+> On Sun, Jan 20, 2013 at 12:40:11PM +0100, Jörg Rödel wrote:
+> > Yes, the BIOS vendor can fix this issue. They need to disable NB clock
+> > gating for the IOMMU.
 > 
-> Pawel or Linus,
+> Right, Udo, you can try Gigabyte first.
 > 
-> Can I get a Tested-by before I take this series into clk-next?
+> Btw, can't we add a quirk to disable NB clock gating? Maybe Boris and
+> Jacob could help. CCed.
 
-I'll just got back to work and will test it soon, most likely tomorrow.
+Hi, yes we will try and reproduce the NB clock gating issue on our
+end and submit a patch ASAP.
 
-Cheers!
+And Boris P., I think your IOAPIC not in IVRS issue we've also seen
+something similar recently (on Xen), so we'll atempt to tackle that
+one too afterwards.
 
-Pawel
+-Jacob
 
+> 
+> Guys, the error description is at
+> http://marc.info/?l=linux-kernel&m=135867802432660
+> 
+> Thanks.
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+> 
 
