@@ -1,35 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3AUKK3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:10:29 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:55305 "EHLO
+	id S1753708Ab3AUKKs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:10:48 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:49967 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376Ab3AUKKX (ORCPT
+	with ESMTP id S1753053Ab3AUKKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:10:23 -0500
+	Mon, 21 Jan 2013 05:10:39 -0500
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH 29/33] usb: Convert to devm_ioremap_resource()
-Date: Mon, 21 Jan 2013 11:09:22 +0100
-Message-Id: <1358762966-20791-30-git-send-email-thierry.reding@avionic-design.de>
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
+Subject: [PATCH 19/33] mtd: Convert to devm_ioremap_resource()
+Date: Mon, 21 Jan 2013 11:09:12 +0100
+Message-Id: <1358762966-20791-20-git-send-email-thierry.reding@avionic-design.de>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
 References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:S4I2cW5hqxxOXNisSUTu4pOkw4l4wqtbGhlz1af535q
- 8yr+YYyuN21HyMvQkZMvZCc2B5+rWd2yVP7ppuN6fOL3ORyWk3
- IJyLrd98q4fHmCo9aIxxE+01c40UGiVmmLLFizFy3gIQrD3PWk
- UG0/CZ6CLU9kghWvJ1DdLb4Ag5SMFiYbYHfhvwrxHWkfJhdOU7
- iJRGBOEdEPLFxsDHSgef1a+PrLLSeFAI/GU+3M2F9YdJZVSzA6
- alSVocS9ANPrGzTs8c2amZ1wDakym2G1yiEKpHWD8bBL4cTVsp
- QmgARNtDOIpcDRkWNlnQf/ddIy3+nDG2j25jO6h5i+vzvzTZD0
- VeI7QVm29nVnbJNh/fBTiNMhba8BZn4kD4woJQQSWGJBTwmnWX
- lwd1ayLCghZ7pxTZOr1YW72qgaRW6Ah29u+Tt+W1HEBbi9+u/u
- ydN+4
+X-Provags-ID: V02:K0:ApU6LogR3I4rQ55N4IIaafUtiOHfdYf5miz9nh6dboh
+ xqAfkjPcSNLYSBCJrgbjN1j5C33XUOlcHyk1ww/Nk18EVB2Ka4
+ EbAw4M4UmrAXjiHeJVI1yBh1MIav5PFa+YZIgI92DgJUriUy39
+ lJv/x3LSzpGwyvkaI9su2f8vvFzVsCoP7UhAZ2Tzz4PbOfwvfP
+ lKv7E9FvYcbkazBZ2dJc4GMwOrzo1VgYOzYOHyKqrqvaJiKzJn
+ tQjUDk5gKLbjcJlWJO4CKonz5Fe+AafrdlEq2DxJsDI1xkDWUB
+ kBxCuXSSpYhB6bGWfJxaNRlWNZdNY1KvSvXVgH64zs59pw9jzj
+ WxdOkNLwPkE85mSQuvzqJLW2QyhgN+euTqtehT2GmNm+iOzuap
+ 9xnqJvW00/iyonUoVKd5P8d9lmDi+u9NLBwvkSkTY6PXIk2pLN
+ nKB70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -41,505 +40,264 @@ devm_ioremap_resource() provides its own error messages so all explicit
 error messages can be removed from the failure code paths.
 
 Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-mtd@lists.infradead.org
 ---
- drivers/usb/chipidea/usbmisc_imx6q.c |  6 +++---
- drivers/usb/gadget/bcm63xx_udc.c     | 13 +++++++------
- drivers/usb/gadget/s3c-hsotg.c       |  7 +++----
- drivers/usb/gadget/s3c-hsudc.c       |  7 +++----
- drivers/usb/host/ehci-atmel.c        |  7 +++----
- drivers/usb/host/ehci-grlib.c        |  9 ++++-----
- drivers/usb/host/ehci-mxc.c          |  7 +++----
- drivers/usb/host/ehci-platform.c     |  7 ++++---
- drivers/usb/host/ehci-ppc-of.c       |  8 ++++----
- drivers/usb/host/ehci-sead3.c        |  8 ++++----
- drivers/usb/host/ehci-sh.c           |  7 +++----
- drivers/usb/host/ehci-vt8500.c       |  8 ++++----
- drivers/usb/host/ehci-xilinx-of.c    |  8 ++++----
- drivers/usb/host/ohci-nxp.c          |  7 +++----
- drivers/usb/host/ohci-platform.c     |  7 ++++---
- drivers/usb/host/ohci-s3c2410.c      |  7 +++----
- drivers/usb/musb/musb_dsps.c         |  7 +++----
- drivers/usb/musb/omap2430.c          |  4 +---
- drivers/usb/otg/mxs-phy.c            |  6 +++---
- drivers/usb/phy/mv_u3d_phy.c         |  8 +++-----
- drivers/usb/phy/omap-usb2.c          |  8 +++-----
- drivers/usb/renesas_usbhs/common.c   |  9 ++++-----
- 22 files changed, 76 insertions(+), 89 deletions(-)
+ drivers/mtd/devices/spear_smi.c   |  7 +++----
+ drivers/mtd/maps/autcpu12-nvram.c |  9 ++++-----
+ drivers/mtd/maps/lantiq-flash.c   |  8 ++++----
+ drivers/mtd/nand/fsmc_nand.c      | 33 +++++++++++++--------------------
+ drivers/mtd/nand/lpc32xx_mlc.c    |  9 ++++-----
+ drivers/mtd/nand/lpc32xx_slc.c    |  8 +++-----
+ drivers/mtd/nand/mxc_nand.c       | 12 ++++++------
+ drivers/mtd/nand/s3c2410.c        |  7 +++----
+ drivers/mtd/nand/txx9ndfmc.c      |  7 ++++---
+ 9 files changed, 44 insertions(+), 56 deletions(-)
 
-diff --git a/drivers/usb/chipidea/usbmisc_imx6q.c b/drivers/usb/chipidea/usbmisc_imx6q.c
-index 845efe2..a1bce39 100644
---- a/drivers/usb/chipidea/usbmisc_imx6q.c
-+++ b/drivers/usb/chipidea/usbmisc_imx6q.c
-@@ -98,9 +98,9 @@ static int usbmisc_imx6q_probe(struct platform_device *pdev)
- 	spin_lock_init(&data->lock);
+diff --git a/drivers/mtd/devices/spear_smi.c b/drivers/mtd/devices/spear_smi.c
+index 2aabd96..8a82b8b 100644
+--- a/drivers/mtd/devices/spear_smi.c
++++ b/drivers/mtd/devices/spear_smi.c
+@@ -949,10 +949,9 @@ static int spear_smi_probe(struct platform_device *pdev)
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	data->base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!data->base)
--		return -EADDRNOTAVAIL;
-+	data->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(data->base))
-+		return PTR_ERR(data->base);
+ 	smi_base = platform_get_resource(pdev, IORESOURCE_MEM, 0);
  
- 	data->clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(data->clk)) {
-diff --git a/drivers/usb/gadget/bcm63xx_udc.c b/drivers/usb/gadget/bcm63xx_udc.c
-index 47a4993..8cc8253 100644
---- a/drivers/usb/gadget/bcm63xx_udc.c
-+++ b/drivers/usb/gadget/bcm63xx_udc.c
-@@ -2351,19 +2351,20 @@ static int bcm63xx_udc_probe(struct platform_device *pdev)
- 		dev_err(dev, "error finding USBD resource\n");
- 		return -ENXIO;
- 	}
--	udc->usbd_regs = devm_request_and_ioremap(dev, res);
-+
-+	udc->usbd_regs = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(udc->usbd_regs))
-+		return PTR_ERR(udc->usbd_regs);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
- 	if (!res) {
- 		dev_err(dev, "error finding IUDMA resource\n");
- 		return -ENXIO;
- 	}
--	udc->iudma_regs = devm_request_and_ioremap(dev, res);
- 
--	if (!udc->usbd_regs || !udc->iudma_regs) {
--		dev_err(dev, "error requesting resources\n");
--		return -ENXIO;
--	}
-+	udc->iudma_regs = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(udc->iudma_regs))
-+		return PTR_ERR(udc->iudma_regs);
- 
- 	spin_lock_init(&udc->lock);
- 	INIT_WORK(&udc->ep0_wq, bcm63xx_ep0_process);
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index 439c3f9..de80fa6 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -3525,10 +3525,9 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
--	hsotg->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (!hsotg->regs) {
--		dev_err(dev, "cannot map registers\n");
--		ret = -ENXIO;
-+	hsotg->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(hsotg->regs)) {
-+		ret = PTR_ERR(hsotg->regs);
- 		goto err_clk;
+-	dev->io_base = devm_request_and_ioremap(&pdev->dev, smi_base);
+-	if (!dev->io_base) {
+-		ret = -EIO;
+-		dev_err(&pdev->dev, "devm_request_and_ioremap fail\n");
++	dev->io_base = devm_ioremap_resource(&pdev->dev, smi_base);
++	if (IS_ERR(dev->io_base)) {
++		ret = PTR_ERR(dev->io_base);
+ 		goto err;
  	}
  
-diff --git a/drivers/usb/gadget/s3c-hsudc.c b/drivers/usb/gadget/s3c-hsudc.c
-index 52379b1..94ca33b 100644
---- a/drivers/usb/gadget/s3c-hsudc.c
-+++ b/drivers/usb/gadget/s3c-hsudc.c
-@@ -1295,10 +1295,9 @@ static int s3c_hsudc_probe(struct platform_device *pdev)
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
--	hsudc->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (!hsudc->regs) {
--		dev_err(dev, "error mapping device register area\n");
--		ret = -EBUSY;
-+	hsudc->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(hsudc->regs)) {
-+		ret = PTR_ERR(hsudc->regs);
- 		goto err_res;
- 	}
- 
-diff --git a/drivers/usb/host/ehci-atmel.c b/drivers/usb/host/ehci-atmel.c
-index 27639487..f3beac4 100644
---- a/drivers/usb/host/ehci-atmel.c
-+++ b/drivers/usb/host/ehci-atmel.c
-@@ -143,10 +143,9 @@ static int ehci_atmel_drv_probe(struct platform_device *pdev)
- 	hcd->rsrc_start = res->start;
- 	hcd->rsrc_len = resource_size(res);
- 
--	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (hcd->regs == NULL) {
--		dev_dbg(&pdev->dev, "error mapping memory\n");
--		retval = -EFAULT;
-+	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(hcd->regs)) {
-+		retval = PTR_ERR(hcd->regs);
- 		goto fail_request_resource;
- 	}
- 
-diff --git a/drivers/usb/host/ehci-grlib.c b/drivers/usb/host/ehci-grlib.c
-index 1fc8929..5d75de9 100644
---- a/drivers/usb/host/ehci-grlib.c
-+++ b/drivers/usb/host/ehci-grlib.c
-@@ -25,7 +25,7 @@
-  * Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  */
- 
--
-+#include <linux/err.h>
- #include <linux/signal.h>
- 
- #include <linux/of_irq.h>
-@@ -118,10 +118,9 @@ static int ehci_hcd_grlib_probe(struct platform_device *op)
- 		goto err_irq;
- 	}
- 
--	hcd->regs = devm_request_and_ioremap(&op->dev, &res);
--	if (!hcd->regs) {
--		pr_err("%s: devm_request_and_ioremap failed\n", __FILE__);
--		rv = -ENOMEM;
-+	hcd->regs = devm_ioremap_resource(&op->dev, &res);
-+	if (IS_ERR(hcd->regs)) {
-+		rv = PTR_ERR(hcd->regs);
- 		goto err_ioremap;
- 	}
- 
-diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
-index ec7f5d2..4f506af 100644
---- a/drivers/usb/host/ehci-mxc.c
-+++ b/drivers/usb/host/ehci-mxc.c
-@@ -128,10 +128,9 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
- 	hcd->rsrc_start = res->start;
- 	hcd->rsrc_len = resource_size(res);
- 
--	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (!hcd->regs) {
--		dev_err(dev, "error mapping memory\n");
--		ret = -EFAULT;
-+	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(hcd->regs)) {
-+		ret = PTR_ERR(hcd->regs);
- 		goto err_alloc;
- 	}
- 
-diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
-index 58fa0c9..ca75063 100644
---- a/drivers/usb/host/ehci-platform.c
-+++ b/drivers/usb/host/ehci-platform.c
-@@ -18,6 +18,7 @@
-  *
-  * Licensed under the GNU/GPL. See COPYING for details.
-  */
-+#include <linux/err.h>
- #include <linux/kernel.h>
- #include <linux/hrtimer.h>
- #include <linux/io.h>
-@@ -104,9 +105,9 @@ static int ehci_platform_probe(struct platform_device *dev)
- 	hcd->rsrc_start = res_mem->start;
- 	hcd->rsrc_len = resource_size(res_mem);
- 
--	hcd->regs = devm_request_and_ioremap(&dev->dev, res_mem);
--	if (!hcd->regs) {
--		err = -ENOMEM;
-+	hcd->regs = devm_ioremap_resource(&dev->dev, res_mem);
-+	if (IS_ERR(hcd->regs)) {
-+		err = PTR_ERR(hcd->regs);
- 		goto err_put_hcd;
- 	}
- 	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
-diff --git a/drivers/usb/host/ehci-ppc-of.c b/drivers/usb/host/ehci-ppc-of.c
-index 45aceef..56dc732 100644
---- a/drivers/usb/host/ehci-ppc-of.c
-+++ b/drivers/usb/host/ehci-ppc-of.c
-@@ -12,6 +12,7 @@
-  * This file is licenced under the GPL.
-  */
- 
-+#include <linux/err.h>
- #include <linux/signal.h>
- 
- #include <linux/of.h>
-@@ -121,10 +122,9 @@ static int ehci_hcd_ppc_of_probe(struct platform_device *op)
- 		goto err_irq;
- 	}
- 
--	hcd->regs = devm_request_and_ioremap(&op->dev, &res);
--	if (!hcd->regs) {
--		pr_err("%s: devm_request_and_ioremap failed\n", __FILE__);
--		rv = -ENOMEM;
-+	hcd->regs = devm_ioremap_resource(&op->dev, &res);
-+	if (IS_ERR(hcd->regs)) {
-+		rv = PTR_ERR(hcd->regs);
- 		goto err_ioremap;
- 	}
- 
-diff --git a/drivers/usb/host/ehci-sead3.c b/drivers/usb/host/ehci-sead3.c
-index efad02d..f55477c 100644
---- a/drivers/usb/host/ehci-sead3.c
-+++ b/drivers/usb/host/ehci-sead3.c
-@@ -19,6 +19,7 @@
-  * Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  */
- 
-+#include <linux/err.h>
- #include <linux/platform_device.h>
- 
- static int ehci_sead3_setup(struct usb_hcd *hcd)
-@@ -112,10 +113,9 @@ static int ehci_hcd_sead3_drv_probe(struct platform_device *pdev)
- 	hcd->rsrc_start = res->start;
- 	hcd->rsrc_len = resource_size(res);
- 
--	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (!hcd->regs) {
--		pr_debug("ioremap failed");
--		ret = -ENOMEM;
-+	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(hcd->regs)) {
-+		ret = PTR_ERR(hcd->regs);
- 		goto err1;
- 	}
- 
-diff --git a/drivers/usb/host/ehci-sh.c b/drivers/usb/host/ehci-sh.c
-index 0c90a24..3565a30 100644
---- a/drivers/usb/host/ehci-sh.c
-+++ b/drivers/usb/host/ehci-sh.c
-@@ -118,10 +118,9 @@ static int ehci_hcd_sh_probe(struct platform_device *pdev)
- 	hcd->rsrc_start = res->start;
- 	hcd->rsrc_len = resource_size(res);
- 
--	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (hcd->regs == NULL) {
--		dev_dbg(&pdev->dev, "error mapping memory\n");
--		ret = -ENXIO;
-+	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(hcd->regs)) {
-+		ret = PTR_ERR(hcd->regs);
- 		goto fail_request_resource;
- 	}
- 
-diff --git a/drivers/usb/host/ehci-vt8500.c b/drivers/usb/host/ehci-vt8500.c
-index 11695d5..7ecf709 100644
---- a/drivers/usb/host/ehci-vt8500.c
-+++ b/drivers/usb/host/ehci-vt8500.c
+diff --git a/drivers/mtd/maps/autcpu12-nvram.c b/drivers/mtd/maps/autcpu12-nvram.c
+index a2dc2ae..c3525d2 100644
+--- a/drivers/mtd/maps/autcpu12-nvram.c
++++ b/drivers/mtd/maps/autcpu12-nvram.c
 @@ -16,6 +16,7 @@
-  *
-  */
- 
-+#include <linux/err.h>
- #include <linux/of.h>
- #include <linux/platform_device.h>
- 
-@@ -96,10 +97,9 @@ static int vt8500_ehci_drv_probe(struct platform_device *pdev)
- 	hcd->rsrc_start = res->start;
- 	hcd->rsrc_len = resource_size(res);
- 
--	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (!hcd->regs) {
--		pr_debug("ioremap failed");
--		ret = -ENOMEM;
-+	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(hcd->regs)) {
-+		ret = PTR_ERR(hcd->regs);
- 		goto err1;
- 	}
- 
-diff --git a/drivers/usb/host/ehci-xilinx-of.c b/drivers/usb/host/ehci-xilinx-of.c
-index 4f285e8..d845e3b 100644
---- a/drivers/usb/host/ehci-xilinx-of.c
-+++ b/drivers/usb/host/ehci-xilinx-of.c
-@@ -25,6 +25,7 @@
-  *
-  */
- 
-+#include <linux/err.h>
- #include <linux/signal.h>
- 
- #include <linux/of.h>
-@@ -159,10 +160,9 @@ static int ehci_hcd_xilinx_of_probe(struct platform_device *op)
- 		goto err_irq;
- 	}
- 
--	hcd->regs = devm_request_and_ioremap(&op->dev, &res);
--	if (!hcd->regs) {
--		pr_err("%s: devm_request_and_ioremap failed\n", __FILE__);
--		rv = -ENOMEM;
-+	hcd->regs = devm_ioremap_resource(&op->dev, &res);
-+	if (IS_ERR(hcd->regs)) {
-+		rv = PTR_ERR(hcd->regs);
- 		goto err_irq;
- 	}
- 
-diff --git a/drivers/usb/host/ohci-nxp.c b/drivers/usb/host/ohci-nxp.c
-index 2344040..f4988fb 100644
---- a/drivers/usb/host/ohci-nxp.c
-+++ b/drivers/usb/host/ohci-nxp.c
-@@ -306,10 +306,9 @@ static int usb_hcd_nxp_probe(struct platform_device *pdev)
- 		goto out8;
- 	}
- 
--	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (!hcd->regs) {
--		dev_err(&pdev->dev, "Failed to devm_request_and_ioremap\n");
--		ret =  -ENOMEM;
-+	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(hcd->regs)) {
-+		ret = PTR_ERR(hcd->regs);
- 		goto out8;
- 	}
- 	hcd->rsrc_start = res->start;
-diff --git a/drivers/usb/host/ohci-platform.c b/drivers/usb/host/ohci-platform.c
-index 084503b..c3e7287 100644
---- a/drivers/usb/host/ohci-platform.c
-+++ b/drivers/usb/host/ohci-platform.c
-@@ -13,6 +13,7 @@
-  *
-  * Licensed under the GNU/GPL. See COPYING for details.
+  * along with this program; if not, write to the Free Software
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
   */
 +#include <linux/err.h>
- #include <linux/platform_device.h>
- #include <linux/usb/ohci_pdriver.h>
+ #include <linux/sizes.h>
  
-@@ -127,9 +128,9 @@ static int ohci_platform_probe(struct platform_device *dev)
- 	hcd->rsrc_start = res_mem->start;
- 	hcd->rsrc_len = resource_size(res_mem);
- 
--	hcd->regs = devm_request_and_ioremap(&dev->dev, res_mem);
--	if (!hcd->regs) {
--		err = -ENOMEM;
-+	hcd->regs = devm_ioremap_resource(&dev->dev, res_mem);
-+	if (IS_ERR(hcd->regs)) {
-+		err = PTR_ERR(hcd->regs);
- 		goto err_put_hcd;
- 	}
- 	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
-diff --git a/drivers/usb/host/ohci-s3c2410.c b/drivers/usb/host/ohci-s3c2410.c
-index ad0f552..e125770 100644
---- a/drivers/usb/host/ohci-s3c2410.c
-+++ b/drivers/usb/host/ohci-s3c2410.c
-@@ -351,10 +351,9 @@ static int usb_hcd_s3c2410_probe(const struct hc_driver *driver,
- 	hcd->rsrc_start = dev->resource[0].start;
- 	hcd->rsrc_len	= resource_size(&dev->resource[0]);
- 
--	hcd->regs = devm_request_and_ioremap(&dev->dev, &dev->resource[0]);
--	if (!hcd->regs) {
--		dev_err(&dev->dev, "devm_request_and_ioremap failed\n");
--		retval = -ENOMEM;
-+	hcd->regs = devm_ioremap_resource(&dev->dev, &dev->resource[0]);
-+	if (IS_ERR(hcd->regs)) {
-+		retval = PTR_ERR(hcd->regs);
- 		goto err_put;
- 	}
- 
-diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index f7d764d..99f470d 100644
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -500,10 +500,9 @@ static int dsps_create_musb_pdev(struct dsps_glue *glue, u8 id)
- 	resources[0].end = resources[0].start + SZ_4 - 1;
- 	resources[0].flags = IORESOURCE_MEM;
- 
--	glue->usb_ctrl[id] = devm_request_and_ioremap(&pdev->dev, resources);
--	if (glue->usb_ctrl[id] == NULL) {
--		dev_err(dev, "Failed to obtain usb_ctrl%d memory\n", id);
--		ret = -ENODEV;
-+	glue->usb_ctrl[id] = devm_ioremap_resource(&pdev->dev, resources);
-+	if (IS_ERR(glue->usb_ctrl[id])) {
-+		ret = PTR_ERR(glue->usb_ctrl[id]);
- 		goto err0;
- 	}
- 
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index da00af4..acd5f9d 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -523,9 +523,7 @@ static int omap2430_probe(struct platform_device *pdev)
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
- 
--	glue->control_otghs = devm_request_and_ioremap(&pdev->dev, res);
--	if (glue->control_otghs == NULL)
--		dev_dbg(&pdev->dev, "Failed to obtain control memory\n");
-+	glue->control_otghs = devm_ioremap_resource(&pdev->dev, res);
- 
- 	if (np) {
- 		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-diff --git a/drivers/usb/otg/mxs-phy.c b/drivers/usb/otg/mxs-phy.c
-index 7630272..60df28a 100644
---- a/drivers/usb/otg/mxs-phy.c
-+++ b/drivers/usb/otg/mxs-phy.c
-@@ -115,9 +115,9 @@ static int mxs_phy_probe(struct platform_device *pdev)
- 		return -ENOENT;
- 	}
- 
--	base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!base)
+ #include <linux/types.h>
+@@ -55,12 +56,10 @@ static int autcpu12_nvram_probe(struct platform_device *pdev)
+ 	priv->map.bankwidth	= 4;
+ 	priv->map.phys		= res->start;
+ 	priv->map.size		= resource_size(res);
+-	priv->map.virt		= devm_request_and_ioremap(&pdev->dev, res);
++	priv->map.virt = devm_ioremap_resource(&pdev->dev, res);
+ 	strcpy((char *)priv->map.name, res->name);
+-	if (!priv->map.virt) {
+-		dev_err(&pdev->dev, "failed to remap mem resource\n");
 -		return -EBUSY;
-+	base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
- 
- 	clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(clk)) {
-diff --git a/drivers/usb/phy/mv_u3d_phy.c b/drivers/usb/phy/mv_u3d_phy.c
-index eaddbe3..9d85991 100644
---- a/drivers/usb/phy/mv_u3d_phy.c
-+++ b/drivers/usb/phy/mv_u3d_phy.c
-@@ -283,11 +283,9 @@ static int mv_u3d_phy_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	phy_base = devm_request_and_ioremap(dev, res);
--	if (!phy_base) {
--		dev_err(dev, "%s: register mapping failed\n", __func__);
--		return -ENXIO;
 -	}
-+	phy_base = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(phy_base))
-+		return PTR_ERR(phy_base);
++	if (IS_ERR(priv->map.virt))
++		return PTR_ERR(priv->map.virt);
  
- 	mv_u3d_phy = devm_kzalloc(dev, sizeof(*mv_u3d_phy), GFP_KERNEL);
- 	if (!mv_u3d_phy)
-diff --git a/drivers/usb/phy/omap-usb2.c b/drivers/usb/phy/omap-usb2.c
-index 26ae8f4..2fdb8ed 100644
---- a/drivers/usb/phy/omap-usb2.c
-+++ b/drivers/usb/phy/omap-usb2.c
-@@ -168,11 +168,9 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 	simple_map_init(&priv->map);
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
- 
--	phy->control_dev = devm_request_and_ioremap(&pdev->dev, res);
--	if (phy->control_dev == NULL) {
--		dev_err(&pdev->dev, "Failed to obtain io memory\n");
--		return -ENXIO;
--	}
-+	phy->control_dev = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(phy->control_dev))
-+		return PTR_ERR(phy->control_dev);
- 
- 	phy->is_suspended	= 1;
- 	omap_usb_phy_power(phy, 0);
-diff --git a/drivers/usb/renesas_usbhs/common.c b/drivers/usb/renesas_usbhs/common.c
-index 38bce04..cfd2050 100644
---- a/drivers/usb/renesas_usbhs/common.c
-+++ b/drivers/usb/renesas_usbhs/common.c
-@@ -14,6 +14,7 @@
-  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-  *
+diff --git a/drivers/mtd/maps/lantiq-flash.c b/drivers/mtd/maps/lantiq-flash.c
+index 3c3c791..d1da6ed 100644
+--- a/drivers/mtd/maps/lantiq-flash.c
++++ b/drivers/mtd/maps/lantiq-flash.c
+@@ -7,6 +7,7 @@
+  *  Copyright (C) 2010 John Crispin <blogic@openwrt.org>
   */
+ 
 +#include <linux/err.h>
- #include <linux/io.h>
  #include <linux/module.h>
- #include <linux/pm_runtime.h>
-@@ -443,11 +444,9 @@ static int usbhs_probe(struct platform_device *pdev)
- 		return -ENOMEM;
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+@@ -136,10 +137,9 @@ ltq_mtd_probe(struct platform_device *pdev)
+ 	ltq_mtd->map = kzalloc(sizeof(struct map_info), GFP_KERNEL);
+ 	ltq_mtd->map->phys = ltq_mtd->res->start;
+ 	ltq_mtd->map->size = resource_size(ltq_mtd->res);
+-	ltq_mtd->map->virt = devm_request_and_ioremap(&pdev->dev, ltq_mtd->res);
+-	if (!ltq_mtd->map->virt) {
+-		dev_err(&pdev->dev, "failed to remap mem resource\n");
+-		err = -EBUSY;
++	ltq_mtd->map->virt = devm_ioremap_resource(&pdev->dev, ltq_mtd->res);
++	if (IS_ERR(ltq_mtd->map->virt)) {
++		err = PTR_ERR(ltq_mtd->map->virt);
+ 		goto err_out;
  	}
  
--	priv->base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!priv->base) {
--		dev_err(&pdev->dev, "ioremap error.\n");
+diff --git a/drivers/mtd/nand/fsmc_nand.c b/drivers/mtd/nand/fsmc_nand.c
+index 67e62d3..c543cc0 100644
+--- a/drivers/mtd/nand/fsmc_nand.c
++++ b/drivers/mtd/nand/fsmc_nand.c
+@@ -937,42 +937,35 @@ static int __init fsmc_nand_probe(struct platform_device *pdev)
+ 	if (!res)
+ 		return -EINVAL;
+ 
+-	host->data_va = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!host->data_va) {
+-		dev_err(&pdev->dev, "data ioremap failed\n");
 -		return -ENOMEM;
 -	}
-+	priv->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(priv->base))
-+		return PTR_ERR(priv->base);
++	host->data_va = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(host->data_va))
++		return PTR_ERR(host->data_va);
++	
+ 	host->data_pa = (dma_addr_t)res->start;
  
- 	/*
- 	 * care platform info
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "nand_addr");
+ 	if (!res)
+ 		return -EINVAL;
+ 
+-	host->addr_va = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!host->addr_va) {
+-		dev_err(&pdev->dev, "ale ioremap failed\n");
+-		return -ENOMEM;
+-	}
++	host->addr_va = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(host->addr_va))
++		return PTR_ERR(host->addr_va);
+ 
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "nand_cmd");
+ 	if (!res)
+ 		return -EINVAL;
+ 
+-	host->cmd_va = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!host->cmd_va) {
+-		dev_err(&pdev->dev, "ale ioremap failed\n");
+-		return -ENOMEM;
+-	}
++	host->cmd_va = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(host->cmd_va))
++		return PTR_ERR(host->cmd_va);
+ 
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "fsmc_regs");
+ 	if (!res)
+ 		return -EINVAL;
+ 
+-	host->regs_va = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!host->regs_va) {
+-		dev_err(&pdev->dev, "regs ioremap failed\n");
+-		return -ENOMEM;
+-	}
++	host->regs_va = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(host->regs_va))
++		return PTR_ERR(host->regs_va);
+ 
+ 	host->clk = clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(host->clk)) {
+diff --git a/drivers/mtd/nand/lpc32xx_mlc.c b/drivers/mtd/nand/lpc32xx_mlc.c
+index f182bef..0ca22ae 100644
+--- a/drivers/mtd/nand/lpc32xx_mlc.c
++++ b/drivers/mtd/nand/lpc32xx_mlc.c
+@@ -677,11 +677,10 @@ static int lpc32xx_nand_probe(struct platform_device *pdev)
+ 		return -ENXIO;
+ 	}
+ 
+-	host->io_base = devm_request_and_ioremap(&pdev->dev, rc);
+-	if (host->io_base == NULL) {
+-		dev_err(&pdev->dev, "ioremap failed\n");
+-		return -EIO;
+-	}
++	host->io_base = devm_ioremap_resource(&pdev->dev, rc);
++	if (IS_ERR(host->io_base))
++		return PTR_ERR(host->io_base);
++	
+ 	host->io_base_phy = rc->start;
+ 
+ 	mtd = &host->mtd;
+diff --git a/drivers/mtd/nand/lpc32xx_slc.c b/drivers/mtd/nand/lpc32xx_slc.c
+index 030b78c..be94ed5 100644
+--- a/drivers/mtd/nand/lpc32xx_slc.c
++++ b/drivers/mtd/nand/lpc32xx_slc.c
+@@ -778,11 +778,9 @@ static int lpc32xx_nand_probe(struct platform_device *pdev)
+ 	}
+ 	host->io_base_dma = rc->start;
+ 
+-	host->io_base = devm_request_and_ioremap(&pdev->dev, rc);
+-	if (host->io_base == NULL) {
+-		dev_err(&pdev->dev, "ioremap failed\n");
+-		return -ENOMEM;
+-	}
++	host->io_base = devm_ioremap_resource(&pdev->dev, rc);
++	if (IS_ERR(host->io_base))
++		return PTR_ERR(host->io_base);
+ 
+ 	if (pdev->dev.of_node)
+ 		host->ncfg = lpc32xx_parse_dt(&pdev->dev);
+diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
+index 45204e4..60ac5b9 100644
+--- a/drivers/mtd/nand/mxc_nand.c
++++ b/drivers/mtd/nand/mxc_nand.c
+@@ -1437,9 +1437,9 @@ static int mxcnd_probe(struct platform_device *pdev)
+ 		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 		if (!res)
+ 			return -ENODEV;
+-		host->regs_ip = devm_request_and_ioremap(&pdev->dev, res);
+-		if (!host->regs_ip)
+-			return -ENOMEM;
++		host->regs_ip = devm_ioremap_resource(&pdev->dev, res);
++		if (IS_ERR(host->regs_ip))
++			return PTR_ERR(host->regs_ip);
+ 
+ 		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+ 	} else {
+@@ -1449,9 +1449,9 @@ static int mxcnd_probe(struct platform_device *pdev)
+ 	if (!res)
+ 		return -ENODEV;
+ 
+-	host->base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!host->base)
+-		return -ENOMEM;
++	host->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(host->base))
++		return PTR_ERR(host->base);
+ 
+ 	host->main_area0 = host->base;
+ 
+diff --git a/drivers/mtd/nand/s3c2410.c b/drivers/mtd/nand/s3c2410.c
+index df954b4..d65afd2 100644
+--- a/drivers/mtd/nand/s3c2410.c
++++ b/drivers/mtd/nand/s3c2410.c
+@@ -952,10 +952,9 @@ static int s3c24xx_nand_probe(struct platform_device *pdev)
+ 	info->platform	= plat;
+ 	info->cpu_type	= cpu_type;
+ 
+-	info->regs	= devm_request_and_ioremap(&pdev->dev, res);
+-	if (info->regs == NULL) {
+-		dev_err(&pdev->dev, "cannot reserve register region\n");
+-		err = -EIO;
++	info->regs = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(info->regs)) {
++		err = PTR_ERR(info->regs);
+ 		goto exit_error;
+ 	}
+ 
+diff --git a/drivers/mtd/nand/txx9ndfmc.c b/drivers/mtd/nand/txx9ndfmc.c
+index e3d7266..e1e8748 100644
+--- a/drivers/mtd/nand/txx9ndfmc.c
++++ b/drivers/mtd/nand/txx9ndfmc.c
+@@ -9,6 +9,7 @@
+  * (C) Copyright TOSHIBA CORPORATION 2004-2007
+  * All Rights Reserved.
+  */
++#include <linux/err.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+@@ -286,9 +287,9 @@ static int __init txx9ndfmc_probe(struct platform_device *dev)
+ 	drvdata = devm_kzalloc(&dev->dev, sizeof(*drvdata), GFP_KERNEL);
+ 	if (!drvdata)
+ 		return -ENOMEM;
+-	drvdata->base = devm_request_and_ioremap(&dev->dev, res);
+-	if (!drvdata->base)
+-		return -EBUSY;
++	drvdata->base = devm_ioremap_resource(&dev->dev, res);
++	if (IS_ERR(drvdata->base))
++		return PTR_ERR(drvdata->base);
+ 
+ 	hold = plat->hold ?: 20; /* tDH */
+ 	spw = plat->spw ?: 90; /* max(tREADID, tWP, tRP) */
 -- 
 1.8.1.1
 
