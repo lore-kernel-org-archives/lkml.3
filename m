@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab3AUAb7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 19:31:59 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:42086 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752495Ab3AUAb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 19:31:57 -0500
-Date: Mon, 21 Jan 2013 01:34:41 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Tom St Denis <tstdenis@elliptictech.com>,
-        David Dillow <dave@thedillows.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: IPsec AH use of ahash
-Message-ID: <20130121003441.GA19447@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Tom St Denis <tstdenis@elliptictech.com>,
-	David Dillow <dave@thedillows.org>, linux-kernel@vger.kernel.org,
-	netdev@vger.kernel.org
-References: <1358705471.2494.51.camel@obelisk.thedillows.org>
- <391440283.93368.1358707621420.JavaMail.root@elliptictech.com>
- <20130120225407.GB5434@home.goodmis.org>
+	id S1752642Ab3AUAdV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 19:33:21 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:48252 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752495Ab3AUAdU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 19:33:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130120225407.GB5434@home.goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+ekxPVxdAdk0xkFmeOoMZjZxyxojFb_CmwhdeTx2OJDSXt9PA@mail.gmail.com>
+References: <CA+ekxPVxdAdk0xkFmeOoMZjZxyxojFb_CmwhdeTx2OJDSXt9PA@mail.gmail.com>
+Date: Sun, 20 Jan 2013 17:33:19 -0700
+Message-ID: <CA+ekxPWMgTkyhvLt+Jp3UFescd9L1dR-9GRCnQuqnWHS-E_L+g@mail.gmail.com>
+Subject: Re: Death of Andre Hedrick - A belated birthday present
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 05:54:07PM -0500, Steven Rostedt wrote:
-> My God, you sound like a 2 year old.
-> 
-> Suck it up, and do the fixes. It's not the time you are worried about,
-> as you most definitely spent more time bitching to everyone than it
-> would have taken you to clean up your work.
+Here is Andre's last gift to me, along with dozens of other attack
+blogs.  I have to wonder if this case was similiar to Aaron Schwart's
+case since I had filed charges with the FBI about all this that had
+gone on for years on end and they had notified me they were close to
+catching him and his buddies and knew all the identities of the people
+involved in this stalking.  His name did come up as their number 1
+suspect on TORNET along with a bunch of other Linux folks including
+ex-Novell folks (Wipfel, Murphy, Bradford, Perens).
 
-It's like you're reading my mind... :-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Most of it has come done but to be honest, someone who stalks people
+on the internet then kills himself on their birthday while posting
+blogs which point back to LKML definitely is mentally unstable.  I was
+notified he had purchased firearms along with a guy named Fagerburg
+and they were concerned our friend Andre was planning a visit to my
+home in New Mexico.  One of the members of LKML (I am not mentioning
+names) was arrested by the New Mexico police with illegal handguns
+south of Sante Fe after cruising my house in Albuq
