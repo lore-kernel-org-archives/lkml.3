@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab3AUSYc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 13:24:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:33853 "EHLO mail.kernel.org"
+	id S1756278Ab3AUSYp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 13:24:45 -0500
+Received: from mail.kernel.org ([198.145.19.201]:33861 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753644Ab3AUSYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 13:24:31 -0500
-Date: Mon, 21 Jan 2013 10:25:52 -0800
+	id S1755823Ab3AUSYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 13:24:44 -0500
+Date: Mon, 21 Jan 2013 10:26:04 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Jon Mason <jon.mason@intel.com>
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Dave Jiang <dave.jiang@intel.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH 08/21] NTB: declare unused variables
-Message-ID: <20130121182552.GD5499@kroah.com>
+Subject: Re: [PATCH 15/21] NTB: Update Version
+Message-ID: <20130121182604.GE5499@kroah.com>
 References: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
- <1358586155-23322-9-git-send-email-jon.mason@intel.com>
- <20130120234228.GC14196@kroah.com>
- <20130121175054.GE22208@jonmason-lab>
+ <1358586155-23322-16-git-send-email-jon.mason@intel.com>
+ <20130120234714.GA21708@kroah.com>
+ <20130121175740.GF22208@jonmason-lab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130121175054.GE22208@jonmason-lab>
+In-Reply-To: <20130121175740.GF22208@jonmason-lab>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 10:50:55AM -0700, Jon Mason wrote:
-> On Sun, Jan 20, 2013 at 03:42:28PM -0800, Greg KH wrote:
-> > On Sat, Jan 19, 2013 at 02:02:22AM -0700, Jon Mason wrote:
-> > > Tag pci_device_id in ntb_pci_probe as unused function parameters.  This
-> > > corrects issues found by 'EXTRA_CFLAGS=-W'.
+On Mon, Jan 21, 2013 at 10:57:41AM -0700, Jon Mason wrote:
+> On Sun, Jan 20, 2013 at 03:47:14PM -0800, Greg KH wrote:
+> > On Sat, Jan 19, 2013 at 02:02:29AM -0700, Jon Mason wrote:
+> > > Update NTB version to 0.25
+> > > 
+> > > Signed-off-by: Jon Mason <jon.mason@intel.com>
+> > > ---
+> > >  drivers/ntb/ntb_hw.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
+> > > index b792ccd..df86882 100644
+> > > --- a/drivers/ntb/ntb_hw.c
+> > > +++ b/drivers/ntb/ntb_hw.c
+> > > @@ -56,7 +56,7 @@
+> > >  #include "ntb_regs.h"
+> > >  
+> > >  #define NTB_NAME	"Intel(R) PCI-E Non-Transparent Bridge Driver"
+> > > -#define NTB_VER		"0.24"
+> > > +#define NTB_VER		"0.25"
 > > 
-> > Why would you build the kernel with that option?  This isn't needed, so
+> > I'm not objecting to this, but in the end, does it really matter?  Why
+> > not just stick with whatever kernel version you are using?  Keeping this
+> > up to date is going to be hard over the long haul, right?
 > 
-> Per Documentation/SubmitChecklist:
-> 
-> 22: Newly-added code has been compiled with `gcc -W' (use "make
->     EXTRA_CFLAGS=-W").  This will generate lots of noise, but is good for
->     finding bugs like "warning: comparison between signed and unsigned".
-> 
-> 
-> I was attempting to comply with that suggestion.  If this is
-> unnecessary, then I can toss these, but I don't really see them
-> hurting anything.
+> Currently, it is a convenient way to verify the people testing the
+> code are running the latest version, since they are usually running
+> their tests on a stable kernel.  As the code becomes more stable, I
+> can see this becoming unnecessary and I will remove it then.
 
-It's messy and unneeded, so I'd not recommend using it.  As the
-checklist says, it generates a lot of noise, and is good for finding
-real bugs, this isn't a "real" bug at all.
-
-> Same goes for the other 2 patches found via 'EXTRA_CFLAGS=-W'.
-
-Understood, I've not applied them either :)
-
-thanks,
+Ok, that sounds good, thanks.
 
 greg k-h
