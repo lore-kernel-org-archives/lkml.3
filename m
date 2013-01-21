@@ -1,60 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab3AUFWI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 00:22:08 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:35336 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab3AUFWF (ORCPT
+	id S1752533Ab3AUFVj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 00:21:39 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44169 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab3AUFVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 00:22:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <2129071.O9G31gJZfd@vostro.rjw.lan>
-References: <1358495602-22867-1-git-send-email-yinghai@kernel.org>
-	<1358495602-22867-11-git-send-email-yinghai@kernel.org>
-	<2129071.O9G31gJZfd@vostro.rjw.lan>
-Date: Sun, 20 Jan 2013 21:22:04 -0800
-X-Google-Sender-Auth: ay8Juvjh_OOMxnX1zpOFqLJATa0
-Message-ID: <CAE9FiQWaiPDpmdxm34YPoxcGVMUV+rgFqFZVBZsQy7JOaA4yXQ@mail.gmail.com>
-Subject: Re: [PATCH v9 10/11] PCI: Add match_driver in struct pci_dev
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 21 Jan 2013 00:21:37 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-9e-50fcd05ef7a4
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, jmarchan@redhat.com,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v3 3/4] zram: get rid of lockdep warning
+Date: Mon, 21 Jan 2013 14:21:30 +0900
+Message-Id: <1358745691-4556-3-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358745691-4556-1-git-send-email-minchan@kernel.org>
+References: <1358745691-4556-1-git-send-email-minchan@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 3:15 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, January 17, 2013 11:53:21 PM Yinghai Lu wrote:
->> with that we could move out attaching driver for pci device,
->> out of device_add for pci hot add path.
->>
->> pci_bus_attach_device() will attach driver to pci device.
->
-> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> for the code, but you still aren't saying in the changelog why the change
-> is needed.
+Lockdep complains about recursive deadlock of zram->init_lock.
+[1] made it false positive because we can't request IO to zram
+before setting disksize. Anyway, we should shut lockdep up to
+avoid many reporting from user.
 
-Thanks.
-
-Please check if the changelog is good to you.
-
+Cc: Jerome Marchand <jmarchan@redhat.com>
+Cc: Nitin Gupta <ngupta@vflare.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
-Subject: [PATCH] PCI: Skip attaching driver in device_add()
+ drivers/staging/zram/zram_drv.c   |  115 +++++++++++++++++++------------------
+ drivers/staging/zram/zram_drv.h   |   12 +++-
+ drivers/staging/zram/zram_sysfs.c |   10 +++-
+ 3 files changed, 79 insertions(+), 58 deletions(-)
 
-We want to add pci device to device tree as early as possible but
-delay attach driver in next following path.
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index e95e37c..1f6938a 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -462,19 +462,12 @@ error:
+ void __zram_reset_device(struct zram *zram)
+ {
+ 	size_t index;
++	struct zram_meta meta;
+ 
+ 	if (!zram->init_done)
+ 		goto out;
+ 
+ 	zram->init_done = 0;
+-
+-	/* Free various per-device buffers */
+-	kfree(zram->compress_workmem);
+-	free_pages((unsigned long)zram->compress_buffer, 1);
+-
+-	zram->compress_workmem = NULL;
+-	zram->compress_buffer = NULL;
+-
+ 	/* Free all pages that are still in this zram device */
+ 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+ 		unsigned long handle = zram->table[index].handle;
+@@ -484,11 +477,11 @@ void __zram_reset_device(struct zram *zram)
+ 		zs_free(zram->mem_pool, handle);
+ 	}
+ 
+-	vfree(zram->table);
+-	zram->table = NULL;
+-
+-	zs_destroy_pool(zram->mem_pool);
+-	zram->mem_pool = NULL;
++	meta.compress_workmem = zram->compress_workmem;
++	meta.compress_buffer = zram->compress_buffer;
++	meta.table = zram->table;
++	meta.mem_pool = zram->mem_pool;
++	zram_meta_free(&meta);
+ 
+ 	/* Reset stats */
+ 	memset(&zram->stats, 0, sizeof(zram->stats));
+@@ -505,12 +498,59 @@ void zram_reset_device(struct zram *zram)
+ 	up_write(&zram->init_lock);
+ }
+ 
+-/* zram->init_lock should be held */
+-int zram_init_device(struct zram *zram)
++void zram_meta_free(struct zram_meta *meta)
++{
++	zs_destroy_pool(meta->mem_pool);
++	kfree(meta->compress_workmem);
++	free_pages((unsigned long)meta->compress_buffer, 1);
++	vfree(meta->table);
++	kfree(meta);
++}
++
++int zram_meta_alloc(struct zram_meta *meta, u64 disksize)
+ {
+-	int ret;
+ 	size_t num_pages;
+ 
++	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
++	if (!meta->compress_workmem) {
++		pr_err("Error allocating compressor working memory!\n");
++		goto out;
++	}
++
++	meta->compress_buffer =
++			(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO, 1);
++	if (!meta->compress_buffer) {
++		pr_err("Error allocating compressor buffer space\n");
++		goto free_workmem;
++	}
++
++	num_pages = disksize >> PAGE_SHIFT;
++	meta->table = vzalloc(num_pages * sizeof(*meta->table));
++	if (!meta->table) {
++		pr_err("Error allocating zram address table\n");
++		goto free_buffer;
++	}
++
++	meta->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
++	if (!meta->mem_pool) {
++		pr_err("Error creating memory pool\n");
++		goto free_table;
++	}
++
++	return 0;
++
++free_table:
++	vfree(meta->table);
++free_buffer:
++	free_pages((unsigned long)meta->compress_buffer, 1);
++free_workmem:
++	kfree(meta->compress_workmem);
++out:
++	return -ENOMEM;
++}
++
++void zram_init_device(struct zram *zram, struct zram_meta *meta)
++{
+ 	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
+ 		pr_info(
+ 		"There is little point creating a zram of greater than "
+@@ -525,51 +565,16 @@ int zram_init_device(struct zram *zram)
+ 		);
+ 	}
+ 
+-	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+-	if (!zram->compress_workmem) {
+-		pr_err("Error allocating compressor working memory!\n");
+-		ret = -ENOMEM;
+-		goto fail_no_table;
+-	}
+-
+-	zram->compress_buffer =
+-		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
+-	if (!zram->compress_buffer) {
+-		pr_err("Error allocating compressor buffer space\n");
+-		ret = -ENOMEM;
+-		goto fail_no_table;
+-	}
+-
+-	num_pages = zram->disksize >> PAGE_SHIFT;
+-	zram->table = vzalloc(num_pages * sizeof(*zram->table));
+-	if (!zram->table) {
+-		pr_err("Error allocating zram address table\n");
+-		ret = -ENOMEM;
+-		goto fail_no_table;
+-	}
+-
+ 	/* zram devices sort of resembles non-rotational disks */
+ 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+ 
+-	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
+-	if (!zram->mem_pool) {
+-		pr_err("Error creating memory pool\n");
+-		ret = -ENOMEM;
+-		goto fail;
+-	}
+-
++	zram->mem_pool = meta->mem_pool;
++	zram->compress_workmem = meta->compress_workmem;
++	zram->compress_buffer = meta->compress_buffer;
++	zram->table = meta->table;
+ 	zram->init_done = 1;
+ 
+ 	pr_debug("Initialization done!\n");
+-	return 0;
+-
+-fail_no_table:
+-	/* To prevent accessing table entries during cleanup */
+-	zram->disksize = 0;
+-fail:
+-	__zram_reset_device(zram);
+-	pr_err("Initialization failed: err=%d\n", ret);
+-	return ret;
+ }
+ 
+ static void zram_slot_free_notify(struct block_device *bdev,
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index 5b671d1..fbe7db0 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -83,11 +83,19 @@ struct zram_stats {
+ 	u32 bad_compress;	/* % of pages with compression ratio>=75% */
+ };
+ 
++struct zram_meta {
++	void *compress_workmem;
++	void *compress_buffer;
++	struct table *table;
++	struct zs_pool *mem_pool;
++};
++
+ struct zram {
+ 	struct zs_pool *mem_pool;
+ 	void *compress_workmem;
+ 	void *compress_buffer;
+ 	struct table *table;
++
+ 	spinlock_t stat64_lock;	/* protect 64-bit stats */
+ 	struct rw_semaphore lock; /* protect compression buffers and table
+ 				   * against concurrent read and writes */
+@@ -111,7 +119,9 @@ unsigned int zram_get_num_devices(void);
+ extern struct attribute_group zram_disk_attr_group;
+ #endif
+ 
+-extern int zram_init_device(struct zram *zram);
+ extern void zram_reset_device(struct zram *zram);
++extern int zram_meta_alloc(struct zram_meta *meta, u64 disksize);
++extern void zram_meta_free(struct zram_meta *meta);
++extern void zram_init_device(struct zram *zram, struct zram_meta *meta);
+ 
+ #endif
+diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+index 369db12..31433ef 100644
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -56,22 +56,28 @@ static ssize_t disksize_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t len)
+ {
+ 	u64 disksize;
++	struct zram_meta meta;
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+ 	disksize = memparse(buf, NULL);
+ 	if (!disksize)
+ 		return -EINVAL;
+ 
++	disksize = PAGE_ALIGN(disksize);
++	if (zram_meta_alloc(&meta, disksize))
++		return -ENOMEM;
++
+ 	down_write(&zram->init_lock);
+ 	if (zram->init_done) {
+ 		up_write(&zram->init_lock);
++		zram_meta_free(&meta);
+ 		pr_info("Cannot change disksize for initialized device\n");
+ 		return -EBUSY;
+ 	}
+ 
+-	zram->disksize = PAGE_ALIGN(disksize);
++	zram->disksize = disksize;
+ 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+-	zram_init_device(zram);
++	zram_init_device(zram, &meta);
+ 	up_write(&zram->init_lock);
+ 
+ 	return len;
+-- 
+1.7.9.5
 
-To make that patch smaller, in this patch:
-
-We add match_driver field in pci_dev and default vaule is false, it will
-make pci_bus_match fail, so device_add  will skip attaching driver,
-then pci_bus_attach_device() will set match_driver to true so
-pci_bus_match will return true and device_attach will attach driver
-to pci device.
-
----
