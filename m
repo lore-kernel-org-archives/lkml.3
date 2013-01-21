@@ -1,142 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319Ab3AUMoi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 07:44:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4728 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753858Ab3AUMog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 07:44:36 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH] tools lib traceevent: Handle dynamic array's element size properly
-Date: Mon, 21 Jan 2013 13:44:11 +0100
-Message-Id: <1358772251-4411-1-git-send-email-jolsa@redhat.com>
+	id S1755012Ab3AUMot (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 07:44:49 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:36776 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754657Ab3AUMor (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 07:44:47 -0500
+Message-ID: <50FD381E.6040002@intel.com>
+Date: Mon, 21 Jan 2013 20:44:14 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Aaron Lu <aaron.lu@intel.com>, Jens Axboe <axboe@kernel.dk>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v7 4/4] sd: change to auto suspend mode
+References: <Pine.LNX.4.44L0.1301181613060.1190-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1301181613060.1190-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixing the dynamic array format field parsing.
+On 01/19/2013 05:25 AM, Alan Stern wrote:
+> On Wed, 16 Jan 2013, Aaron Lu wrote:
+>
+>> From: Lin Ming<ming.m.lin@intel.com>
+>>
+>> Uses block layer runtime pm helper functions in
+>> scsi_runtime_suspend/resume.
+>> Remove scsi_autopm_* from sd open/release path and check_events path.
+>> And remove the quiesce call in runtime suspend path, as we know there is
+>> no request to quiesce for the device.
+>>
+>> Signed-off-by: Lin Ming<ming.m.lin@intel.com>
+>> Signed-off-by: Aaron Lu<aaron.lu@intel.com>
+>
+>> --- a/drivers/scsi/scsi_sysfs.c
+>> +++ b/drivers/scsi/scsi_sysfs.c
+>> @@ -893,6 +893,8 @@ int scsi_sysfs_add_sdev(struct scsi_device *sdev)
+>>   	 */
+>>   	scsi_autopm_get_device(sdev);
+>>
+>> +	blk_pm_runtime_init(rq,&sdev->sdev_gendev);
+>> +
+>>   	error = device_add(&sdev->sdev_gendev);
+>>   	if (error) {
+>>   		sdev_printk(KERN_INFO, sdev,
+>
+> Someone just asked about the default autosuspend delay, and I realized
+> your patch series doesn't set one.  Since we don't know the properties
+> of the disk drive at this point (or even whether the device is a disk
+> drive), the only safe course is to call
+>
+> 	pm_runtime_set_autosuspend_delay(&sdev->sdev_gendev, -1);
+>
+> before calling blk_pm_runtime_init().  Then autosuspends will be
+> prevented until userspace writes a non-negative value into the device's
+> control/autosuspend_delay_ms file.
 
-Currently the event_read_fields function could segfault while parsing
-dynamic array other than string type. The reason is the event->pevent
-does not need to be set and gets dereferenced unconditionaly.
+OK, that would be safer, thanks for the suggestion.
+I often set the autosuspend delay before allowing runtime PM for the
+device, since we forbid it in scsi_sysfs_add_sdev.
 
-Also adding proper initialization of field->elementsize based on the
-parsed dynamic type.
+>
+> The kerneldoc for blk_pm_runtime_init() should mention that the caller
+> needs to set the autosuspend delay beforehand.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- tools/lib/traceevent/event-parse.c | 40 +++++++++++++++++++++++++++++++++++---
- tools/lib/traceevent/event-parse.h |  1 +
- 2 files changed, 38 insertions(+), 3 deletions(-)
+OK.
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index f504619..d682df2 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -1223,6 +1223,34 @@ static int field_is_long(struct format_field *field)
- 	return 0;
- }
- 
-+static unsigned int field_dynamic_elem_size(struct format_field *field)
-+{
-+	/* This covers all FIELD_IS_STRING types. */
-+	static struct {
-+		char *type;
-+		unsigned int size;
-+	} table[] = {
-+		{ "u8",   1 },
-+		{ "u16",  2 },
-+		{ "u32",  4 },
-+		{ "u64",  8 },
-+		{ "s8",   1 },
-+		{ "s16",  2 },
-+		{ "s32",  4 },
-+		{ "s64",  8 },
-+		{ "char", 1 },
-+		{ },
-+	};
-+	int i;
-+
-+	for (i = 0; table[i].type; i++) {
-+		if (!strcmp(table[i].type, field->type_dyn))
-+			return table[i].size;
-+	}
-+
-+	return 0;
-+}
-+
- static int event_read_fields(struct event_format *event, struct format_field **fields)
- {
- 	struct format_field *field = NULL;
-@@ -1390,7 +1418,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 				field->type = new_type;
- 				strcat(field->type, " ");
- 				strcat(field->type, field->name);
--				free_token(field->name);
-+				field->type_dyn = field->name;
- 				strcat(field->type, brackets);
- 				field->name = token;
- 				type = read_token(&token);
-@@ -1477,10 +1505,14 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 		if (field->flags & FIELD_IS_ARRAY) {
- 			if (field->arraylen)
- 				field->elementsize = field->size / field->arraylen;
-+			else if (field->flags & FIELD_IS_DYNAMIC)
-+				field->elementsize = field_dynamic_elem_size(field);
- 			else if (field->flags & FIELD_IS_STRING)
- 				field->elementsize = 1;
--			else
--				field->elementsize = event->pevent->long_size;
-+			else if (field->flags & FIELD_IS_LONG)
-+				field->elementsize = event->pevent ?
-+						     event->pevent->long_size :
-+						     sizeof(long);
- 		} else
- 			field->elementsize = field->size;
- 
-@@ -1496,6 +1528,7 @@ fail:
- fail_expect:
- 	if (field) {
- 		free(field->type);
-+		free(field->type_dyn);
- 		free(field->name);
- 		free(field);
- 	}
-@@ -5500,6 +5533,7 @@ static void free_format_fields(struct format_field *field)
- 	while (field) {
- 		next = field->next;
- 		free(field->type);
-+		free(field->type_dyn);
- 		free(field->name);
- 		free(field);
- 		field = next;
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 7be7e89..4d54af2 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -174,6 +174,7 @@ struct format_field {
- 	struct format_field	*next;
- 	struct event_format	*event;
- 	char			*type;
-+	char			*type_dyn;
- 	char			*name;
- 	int			offset;
- 	int			size;
--- 
-1.7.11.7
-
+Thanks,
+Aaron
