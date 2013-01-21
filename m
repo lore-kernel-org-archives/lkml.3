@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab3AUDQI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 22:16:08 -0500
-Received: from talus.maths.usyd.edu.au ([129.78.68.1]:59864 "EHLO
-	talus.maths.usyd.edu.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629Ab3AUDQH (ORCPT
+	id S1752709Ab3AUDQS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 22:16:18 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:38875 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629Ab3AUDQP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 22:16:07 -0500
-X-smtpdoor-from: psz@maths.usyd.edu.au
-X-smtpdoor-want-Message-ID: <201301210315.r0L3FnGV021298@como.maths.usyd.edu.au>
-Date: Mon, 21 Jan 2013 14:15:49 +1100
-From: paul.szabo@sydney.edu.au
-Message-Id: <201301210315.r0L3FnGV021298@como.maths.usyd.edu.au>
-To: linux-mm@kvack.org
-Subject: [PATCH] Subtract min_free_kbytes from dirtyable memory
-Cc: 695182@bugs.debian.org, linux-kernel@vger.kernel.org
+	Sun, 20 Jan 2013 22:16:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <871udfw8e0.fsf@rustcorp.com.au>
+References: <87zk03wg7r.fsf@rustcorp.com.au> <CA+55aFwzdcv0LXovZobha=EH=L6DapJt+ODP0nq=TWWAqCxLYQ@mail.gmail.com>
+ <87fw1vwcao.fsf@rustcorp.com.au> <CA+55aFy1nW859yaGP17epRX8A+TaJ8APvb0-Ww1zw91dCAOhoQ@mail.gmail.com>
+ <871udfw8e0.fsf@rustcorp.com.au>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 20 Jan 2013 19:15:54 -0800
+X-Google-Sender-Auth: 6eaoo40IZnGoePxJcsLCkz6u51I
+Message-ID: <CA+55aFwNiKaWPTWuxvyud2jkpZgO8z0DGaof7icBDM1ycAFb_A@mail.gmail.com>
+Subject: Re: [PULL] Module fixes, and a virtio block fix.
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Junio C Hamano <gitster@pobox.com>, Git Mailing List <git@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Alexander Graf <agraf@suse.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When calculating amount of dirtyable memory, min_free_kbytes should be
-subtracted because it is not intended for dirty pages.
+On Sun, Jan 20, 2013 at 6:57 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>
+> I'm confused.  The default argument is HEAD: what does it know about tag
+> names?
 
-Using an "extern int" because that is the only interface to some such
-sysctl values.
+Ugh. I actually thought that if you give it the tag name directly (as
+the "end") it will use that.
 
-(This patch does not solve the PAE OOM issue.)
+But no. It figures it out with "git describe --exact" internally.
+Regardless, if your HEAD is actually tagged, it *will* have the
+tag-name in git-request-pull.
 
-Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
-School of Mathematics and Statistics   University of Sydney    Australia
+And it will have it based on your *local* repo, so the fact that it
+hasn't been mirrored out yet doesn't really matter. git request-pull
+knows that tag name regardless of mirroring issues.
 
-Reported-by: Paul Szabo <psz@maths.usyd.edu.au>
-Reference: http://bugs.debian.org/695182
-Signed-off-by: Paul Szabo <psz@maths.usyd.edu.au>
+> The bug is that if it can't find that commit at the remote end, it
+> still generates a valid-looking request (with a warning at the end),
+> where it guesses you're talking about the master branch.
 
---- mm/page-writeback.c.old	2012-12-06 22:20:40.000000000 +1100
-+++ mm/page-writeback.c	2013-01-21 13:57:05.000000000 +1100
-@@ -343,12 +343,16 @@
- unsigned long determine_dirtyable_memory(void)
- {
- 	unsigned long x;
-+	extern int min_free_kbytes;
- 
- 	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
- 
- 	if (!vm_highmem_is_dirtyable)
- 		x -= highmem_dirtyable_memory(x);
- 
-+	/* Subtract min_free_kbytes */
-+	x -= min(x, min_free_kbytes >> (PAGE_SHIFT - 10));
-+
- 	return x + 1;	/* Ensure that we never return 0 */
- }
+It really shouldn't do that any more, but you seem to have the older
+version with the bug.
 
+At  least one of the annoying problems was fixed in the 1.7.11 series,
+you have 1.7.10.
+
+The nice thing about git is that it is *really* easy to upgrade. Just
+fetch the sources, do "make; make install" all as a normal user, and
+you do not need to worry about package management or distro issues or
+any crap like that. It installs into your $(HOME)/bin, and as long as
+your PATH has that first, you'll get it. I've long suggested that as
+the workaround for distros having old versions (some more so than
+others).
+
+> Since I use a wrapper script now for your pull requests I can use sed to
+> unscrew it:
+>
+> [alias]
+>         for-linus = !check-commits && TAGNAME=`git symbolic-ref HEAD | cut -d/ -f3`-for-linus && git tag -f -u D1ADB8F1 $TAGNAME HEAD && git push korg tag $TAGNAME && git request-pull master korg | sed s,gitolite@ra.kernel.org:/pub,git://git.kernel.org/pub, && git log --stat --reverse master..$TAGNAME | emails-from-log | grep -v 'rusty@rustcorp' | grep -v 'stable@kernel.org' | sed 's/^/Cc: /'
+
+Heh. Ok. That will at least hide the breakage. But I suspect you could
+fix it by just updating git.
+
+             Linus
