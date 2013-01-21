@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab3AURMI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:12:08 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:27192 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752592Ab3AURMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:12:06 -0500
-From: Jan Kiszka <jan.kiszka@siemens.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>
-Subject: [PATCH v4 07/13] scripts/gdb: Add task iteration helper
-Date: Mon, 21 Jan 2013 18:06:14 +0100
-Message-Id: <150b6a984796b0cdf5dd3dda0e7373edd8fdb996.1358787929.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
-References: <cover.1358787929.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
-References: <cover.1358787929.git.jan.kiszka@siemens.com>
+	id S1753006Ab3AUROK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:14:10 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:47482 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537Ab3AUROH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 12:14:07 -0500
+Date: Mon, 21 Jan 2013 12:14:01 -0500 (EST)
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <1329559360.389477.1358788441066.JavaMail.root@mail.savoirfairelinux.com>
+In-Reply-To: <alpine.LNX.2.00.1301211714520.8266@pobox.suse.cz>
+Subject: Re: [PATCH] HID: add ThingM blink(1) USB LED support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [208.88.110.46]
+X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - FF3.0 (Linux)/7.1.4_GA_2555)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The internal helper for_each_task iterates over all tasks of the target,
-calling the provided function on each. For performance reasons, we cache
-a reference to the gdb type object of a task.
+Hi Jiri,
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- scripts/gdb/task.py |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 40 insertions(+), 0 deletions(-)
- create mode 100644 scripts/gdb/task.py
+> hid-blink sounds too generic to me, taking into account that this is
+> not
+> 'generic HID blinking' framework, but rather a specific device driver
+> for
+> a particular device.
+> 
+> So something like hid-thingm-blink sounds more reasonable to me.
 
-diff --git a/scripts/gdb/task.py b/scripts/gdb/task.py
-new file mode 100644
-index 0000000..ff05aa5
---- /dev/null
-+++ b/scripts/gdb/task.py
-@@ -0,0 +1,40 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  task & thread tools
-+#
-+# Copyright (c) Siemens AG, 2011, 2012
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import gdb
-+
-+from utils import *
-+
-+task_ptr_type = None
-+
-+def get_task_ptr_type():
-+	global task_ptr_type
-+	if task_ptr_type == None:
-+		task_ptr_type = get_type("struct task_struct").pointer()
-+	return task_ptr_type
-+
-+def for_each_task(func, arg = None):
-+	init_task = gdb.parse_and_eval("init_task")
-+	g = init_task.address
-+	while True:
-+		g =  container_of(g['tasks']['next'], get_task_ptr_type(),
-+				  "tasks")
-+		if g == init_task.address:
-+			break;
-+		t = g
-+		while True:
-+			func(t, arg)
-+			t = container_of(t['thread_group']['next'],
-+					 get_task_ptr_type(), "thread_group")
-+			if t == g:
-+				break
--- 
-1.7.3.4
+Ok, I'll name the file hid-thingm-blink1.c instead.
+Should I keep the Kconfig macro CONFIG_BLINK1 or CONFIG_THINGM_BLINK1
+sounds better?
 
+> Linux Kernel is being shipped under GPL v2, without "or any later"
+> clause
+> added. So I am afraid I can't merge the code with this license.
+
+No problem, I'll change the clause.
+
+Thanks,
+Vivien
