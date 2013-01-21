@@ -1,88 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab3AUOjU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 09:39:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45764 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753015Ab3AUOjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 09:39:18 -0500
-Message-ID: <50FD530A.6010500@redhat.com>
-Date: Mon, 21 Jan 2013 09:39:06 -0500
-From: Rik van Riel <riel@redhat.com>
+	id S1756001Ab3AUOoo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 09:44:44 -0500
+Received: from pindarots.xs4all.nl ([80.101.128.228]:54916 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752998Ab3AUOon (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 09:44:43 -0500
+Message-ID: <50FD544B.6000806@xs4all.nl>
+Date: Mon, 21 Jan 2013 15:44:27 +0100
+From: Udo van den Heuvel <udovdh@xs4all.nl>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 1/2] mm: prevent to add a page to swap if may_writepage
- is unset
-References: <1357712474-27595-1-git-send-email-minchan@kernel.org> <1357712474-27595-2-git-send-email-minchan@kernel.org> <20130116134155.18092f1a.akpm@linux-foundation.org> <20130117005314.GB18669@blaptop> <20130117142238.e32c46d5.akpm@linux-foundation.org> <20130117233641.GA31368@blaptop> <20130121015222.GA3666@blaptop>
-In-Reply-To: <20130121015222.GA3666@blaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Boris Ostrovsky <boris.ostrovsky@amd.com>
+CC: =?ISO-8859-1?Q?J=F6rg_R=F6del?= <joro@8bytes.org>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        Jacob Shin <jacob.shin@amd.com>
+Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
+References: <50FBC7EF.6040207@xs4all.nl> <20130120103652.GB16800@pd.tnic> <50FBC994.8020409@xs4all.nl> <20130120111920.GL25591@8bytes.org> <50FBD413.1000406@xs4all.nl> <20130120114011.GN25591@8bytes.org> <20130120114828.GB16519@pd.tnic> <20130120115755.GO25591@8bytes.org> <50FD52AB.9080000@amd.com>
+In-Reply-To: <50FD52AB.9080000@amd.com>
+X-Enigmail-Version: 1.5.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2013 08:52 PM, Minchan Kim wrote:
+On 2013-01-21 15:37, Boris Ostrovsky wrote:
+>>> Btw, can't we add a quirk to disable NB clock gating? Maybe Boris and
+>>> Jacob could help. CCed.
+> 
+> 
+> Are you talking about erratum 746?
 
->  From 94086dc7152359d052802c55c82ef19509fe8cce Mon Sep 17 00:00:00 2001
-> From: Minchan Kim <minchan@kernel.org>
-> Date: Mon, 21 Jan 2013 10:43:43 +0900
-> Subject: [PATCH] mm: Use up free swap space before reaching OOM kill
->
-> Recently, Luigi reported there are lots of free swap space when
-> OOM happens. It's easily reproduced on zram-over-swap, where
-> many instance of memory hogs are running and laptop_mode is enabled.
-> He said there was no problem when he disabled laptop_mode.
-> The problem when I investigate problem is following as.
->
-> Assumption for easy explanation: There are no page cache page in system
-> because they all are already reclaimed.
->
-> 1. try_to_free_pages disable may_writepage when laptop_mode is enabled.
-> 2. shrink_inactive_list isolates victim pages from inactive anon lru list.
-> 3. shrink_page_list adds them to swapcache via add_to_swap but it doesn't
->     pageout because sc->may_writepage is 0 so the page is rotated back into
->     inactive anon lru list. The add_to_swap made the page Dirty by SetPageDirty.
-> 4. 3 couldn't reclaim any pages so do_try_to_free_pages increase priority and
->     retry reclaim with higher priority.
-> 5. shrink_inactlive_list try to isolate victim pages from inactive anon lru list
->     but got failed because it try to isolate pages with ISOLATE_CLEAN mode but
->     inactive anon lru list is full of dirty pages by 3 so it just returns
->     without  any reclaim progress.
-> 6. do_try_to_free_pages doesn't set may_writepage due to zero total_scanned.
->     Because sc->nr_scanned is increased by shrink_page_list but we don't call
->     shrink_page_list in 5 due to short of isolated pages.
->
-> Above loop is continued until OOM happens.
-> The problem didn't happen before [1] was merged because old logic's
-> isolatation in shrink_inactive_list was successful and tried to call
-> shrink_page_list to pageout them but it still ends up failed to page out
-> by may_writepage. But important point is that sc->nr_scanned was increased
-> although we couldn't swap out them so do_try_to_free_pages could set
-> may_writepages.
->
-> Since [1] was introduced, it's not a good idea any more to depends on
-> only the number of scanned pages for setting may_writepage. So this patch
-> adds new trigger point of setting may_writepage as below DEF_PRIOIRTY - 2
-> which is used to show the significant memory pressure in VM so it's good
-> fit for our purpose which would be better to lose power saving or clickety
-> rather than OOM killing.
->
-> [1] f80c067[mm: zone_reclaim: make isolate_lru_page() filter-aware]
->
-> Reported-by: Luigi Semenzato <semenzato@google.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+Link please?
+If we have a link I could add that to the Gigabyte case.
 
-Your patch is a nice simplification.  I am ok with the
-change, provided it works for Luigi :)
+Udo
 
-Acked-by: Rik van Riel <riel@redhat.com>
-
-
--- 
-All rights reversed
