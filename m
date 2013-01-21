@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab3AUVUV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 16:20:21 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:48021 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab3AUVUP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 16:20:15 -0500
-Date: Mon, 21 Jan 2013 22:20:15 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH v4 06/13] scripts/gdb: Add lx-dmesg command
-Message-ID: <20130121212015.GQ30577@one.firstfloor.org>
-References: <cover.1358787929.git.jan.kiszka@siemens.com> <40443e3682bae5c8227434f945f7297d49af4afb.1358787929.git.jan.kiszka@siemens.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <40443e3682bae5c8227434f945f7297d49af4afb.1358787929.git.jan.kiszka@siemens.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1752824Ab3AUVUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 16:20:44 -0500
+Received: from mout.gmx.net ([212.227.15.18]:64500 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751718Ab3AUVUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 16:20:42 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX18DLe9OJ8kDuSRnMNkfslT2TKQYVoaqhYTxd/qRmQ
+	oTKh3CRelsTG/h
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        Mori Hess <fmhess@users.sourceforge.net>,
+        Peter Huewe <peterhuewe@gmx.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging/comedi: Add pci_driver.name to skel driver
+Date: Mon, 21 Jan 2013 22:23:46 +0100
+Message-Id: <1358803426-9852-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00207A6F6949C@AUSP01VMBX24.collaborationhost.net>
+References: <ADE657CA350FB648AAC2C43247A983F00207A6F6949C@AUSP01VMBX24.collaborationhost.net>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 06:06:13PM +0100, Jan Kiszka wrote:
-> This pokes into the log buffer of the debugged kernel, dumping it to the
-> gdb console. Helping in case the target should or can no longer execute
-> dmesg itself.
+This patch adds the comedi_driver.name to pci_driver.name
+to the skel driver, so we can remove the workaround in drivers.c
 
-Very useful, as this got very painful when the log buffer was changed
-a few releases ago.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+missed a comma, sorry
+ drivers/staging/comedi/drivers/skel.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
--Andi
+diff --git a/drivers/staging/comedi/drivers/skel.c b/drivers/staging/comedi/drivers/skel.c
+index e2d7970..48178ca 100644
+--- a/drivers/staging/comedi/drivers/skel.c
++++ b/drivers/staging/comedi/drivers/skel.c
+@@ -713,6 +713,7 @@ static void skel_pci_remove(struct pci_dev *dev)
+ }
+ 
+ static struct pci_driver skel_pci_driver = {
++	.name = "dummy",
+ 	.id_table = skel_pci_table,
+ 	.probe = &skel_pci_probe,
+ 	.remove = &skel_pci_remove
+-- 
+1.7.8.6
+
