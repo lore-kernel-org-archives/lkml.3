@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab3AURax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:30:53 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:47752 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273Ab3AURav (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:30:51 -0500
-Message-ID: <50FD7B17.3080207@ti.com>
-Date: Mon, 21 Jan 2013 11:29:59 -0600
-From: Rob Clark <rob@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1754287Ab3AURiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:38:20 -0500
+Received: from mga01.intel.com ([192.55.52.88]:35353 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752909Ab3AURiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 12:38:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,508,1355126400"; 
+   d="scan'208";a="276458718"
+Date: Mon, 21 Jan 2013 10:38:18 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Dave Jiang <dave.jiang@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH 01/21] NTB: correct missing readq/writeq errors
+Message-ID: <20130121173818.GD22208@jonmason-lab>
+References: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
+ <1358586155-23322-2-git-send-email-jon.mason@intel.com>
+ <20130120234005.GA14196@kroah.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <arm@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 15/15] staging/omapdrm: don't build on multiplatform
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <1358788568-11137-16-git-send-email-arnd@arndb.de> <50FD7A5F.9020702@ti.com>
-In-Reply-To: <50FD7A5F.9020702@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130120234005.GA14196@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 11:26 AM, Rob Clark wrote:
-> On 01/21/2013 11:16 AM, Arnd Bergmann wrote:
->> The omapdrm driver is incorrectly flagged to allow building
->> on non-omap platforms, when ARCH_MULTIPLATFORM is set.
->>
->> This does not work, because it unconditionally selects
->> the OMAP2_DSS symbol that only works on OMAP.
->> The problem was introduced in 5e3b087499 "staging:
->> drm/omap: add support for ARCH_MULTIPLATFORM", which this
->> patch partly reverts.
->
-> Are you sure OMAP2_DSS requires ARCH_OMAP2PLUS?  I don't see this, and 
-> it at least used to not depend on ARCH_OMAP2PLUS.  If it does now, I 
-> think the correct fix would be to remove the dependency in OMAP2_DSS.  
-> I don't think removing ARCH_MULTIPLATFORM support in omapdrm is the 
-> correct solution.
+On Sun, Jan 20, 2013 at 03:40:05PM -0800, Greg KH wrote:
+> On Sat, Jan 19, 2013 at 02:02:15AM -0700, Jon Mason wrote:
+> > Atomic readq and writeq do not exist by default on some 32bit
+> > architectures, thus causing compile errors due to non-existent symbols.
+> > In those cases, use the definitions of those symbols from
+> > include/asm-generic/io-64-nonatomic-hi-lo.h
+> > 
+> > Signed-off-by: Jon Mason <jon.mason@intel.com>
+> > ---
+> >  drivers/ntb/ntb_hw.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
+> > index 4c71b17..0b46fef 100644
+> > --- a/drivers/ntb/ntb_hw.c
+> > +++ b/drivers/ntb/ntb_hw.c
+> > @@ -45,6 +45,7 @@
+> >   * Contact Information:
+> >   * Jon Mason <jon.mason@intel.com>
+> >   */
+> > +#include <asm-generic/io-64-nonatomic-hi-lo.h>
+> 
+> Really?  This seems really odd.  Usually we just don't build the code
+> for any platform that doesn't have readq/writeq.  Otherwise, shouldn't
+> those arches just include this file themselves to keep everything
+> working?  Individual drivers shouldn't have to do this.
 
-hmm, yes, it does appear that OMAP2_DSS depends on ARCH_OMAP2PLUS.. let 
-me have a quick look at this, fixing omapdss would be a better solution..
+There is no readq/writeq for 32bit x86.  I was using this header file
+to get around that.  I freely admit that I have done 0 testing on
+32bit, but it should work.  If you prefer I modify the Kconfig to only
+enable this for x86_64 until such time as I test on x86_32, I will
+happily submit that patch.
 
-BR,
--R
+Thanks,
+Jon
 
->
->
->> Without this patch, building allyesconfig results in:
->>
->> warning: (VIDEO_OMAP2_VOUT && DRM_OMAP) selects OMAP2_DSS which has 
->> unmet direct dependencies (HAS_IOMEM && ARCH_OMAP2PLUS)
->> warning: (VIDEO_OMAP2_VOUT && DRM_OMAP) selects OMAP2_DSS which has 
->> unmet direct dependencies (HAS_IOMEM && ARCH_OMAP2PLUS)
->> drivers/video/omap2/dss/dss.c: In function 'dss_calc_clock_div':
->> drivers/video/omap2/dss/dss.c:572:20: error: 
->> 'CONFIG_OMAP2_DSS_MIN_FCK_PER_PCK' undeclared (first use in this 
->> function)
->> drivers/video/omap2/dss/dss.c:572:20: note: each undeclared 
->> identifier is reported only once for each function it appears in
->> drivers/staging/omapdrm/omap_connector.c: In function 
->> 'omap_connector_dpms':
->> drivers/staging/omapdrm/omap_connector.c:116:8: error: 
->> 'OMAP_DSS_DISPLAY_SUSPENDED' undeclared (first use in this function)
->> drivers/staging/omapdrm/omap_connector.c:116:8: note: each undeclared 
->> identifier is reported only once for each function it appears in
->
->
-> This was an unrelated build break which should be fixed in latest 
-> master after 'staging: drm/omap: use omapdss low level API'
->
-> BR,
-> -R
->
->>
->> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->> Cc: Rob Clark <rob@ti.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> ---
->>   drivers/staging/omapdrm/Kconfig |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/staging/omapdrm/Kconfig 
->> b/drivers/staging/omapdrm/Kconfig
->> index b724a41..81a7cba 100644
->> --- a/drivers/staging/omapdrm/Kconfig
->> +++ b/drivers/staging/omapdrm/Kconfig
->> @@ -2,7 +2,7 @@
->>   config DRM_OMAP
->>       tristate "OMAP DRM"
->>       depends on DRM && !CONFIG_FB_OMAP2
->> -    depends on ARCH_OMAP2PLUS || ARCH_MULTIPLATFORM
->> +    depends on ARCH_OMAP2PLUS
->>       select DRM_KMS_HELPER
->>       select OMAP2_DSS
->>       select FB_SYS_FILLRECT
->
-
+> 
+> So, I'm not going to take this one just yet, sorry.
+> 
+> greg k-h
