@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab3AUMOH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 07:14:07 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:56528
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753353Ab3AUMDP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 07:03:15 -0500
-X-IronPort-AV: E=Sophos;i="4.84,506,1355094000"; 
-   d="scan'208";a="169187845"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Roland Dreier <roland@kernel.org>
-Cc: kernel-janitors@vger.kernel.org, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 14/15] drivers/infiniband/hw/mlx4/sysfs.c: adjust duplicate test
-Date: Mon, 21 Jan 2013 14:02:58 +0100
-Message-Id: <1358773378-4700-15-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
+	id S1754357Ab3AUMOS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 07:14:18 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:39542 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753253Ab3AUMOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 07:14:15 -0500
+Message-ID: <50FD3123.6090003@parallels.com>
+Date: Mon, 21 Jan 2013 16:14:27 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Colin Cross <ccross@google.com>
+CC: <cgroups@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v5 00/11] per-cgroup cpu-stat
+References: <1357731938-8417-1-git-send-email-glommer@parallels.com> <CAMbhsRQ7B4Uu1Wukfay+m4K7CVXtVbsTTEd6JHrwC2s+NcEFNA@mail.gmail.com>
+In-Reply-To: <CAMbhsRQ7B4Uu1Wukfay+m4K7CVXtVbsTTEd6JHrwC2s+NcEFNA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 01/16/2013 04:33 AM, Colin Cross wrote:
+> On Wed, Jan 9, 2013 at 3:45 AM, Glauber Costa <glommer@parallels.com> wrote:
+>> [ update: I thought I posted this already before leaving for holidays. However,
+>>   now that I am checking for replies, I can't find nor replies nor the original
+>>   mail in my boxes or archives. I am posting again for safety sake, but sorry
+>>   you are getting this twice by any chance ]
+>>
+>> Hi all,
+>>
+>> This is an attempt to provide userspace with enough information to reconstruct
+>> per-container version of files like "/proc/stat". In particular, we are
+>> interested in knowing the per-cgroup slices of user time, system time, wait
+>> time, number of processes, and a variety of statistics.
+>>
+>> This task is made more complicated by the fact that multiple controllers are
+>> involved in collecting those statistics: cpu and cpuacct. So the first thing I
+>> am doing here, is ressurecting Tejun's patches that aim at deprecating cpuacct.
+>>
+>> This is one of the major differences from earlier attempts: all data is provided
+>> by the cpu controller, resulting in greater simplicity.
+> 
+> Android userspace is currently using both cpu and cpuacct, and not
+> co-mounting them.  They are used for fundamentally different uses such
+> that creating a single hierarchy for both of them while maintaining
+> the existing behavior is not possible.
+> 
+> We use the cpu cgroup primarily as a priority container.  A simple
+> view is that each thread is assigned to a foreground cgroup when it is
+> user-visible, and a background cgroup when it is not.  The foreground
+> cgroup is assigned a significantly higher cpu.shares value such that
+> when each group is fully loaded the background group will get 5% and
+> the foreground group will get 95%.
+> 
+> We use the cpuacct cgroup to measure cpu usage per uid, primarily to
+> estimate one cause of battery usage.  Each uid gets a cgroup, and when
+> spawning a task for a new uid we put it in the appropriate cgroup.
 
-Delete successive tests to the same location.  The code tested the result
-of a previous allocation, that itself was already tested.  It is changed to
-test the result of the most recent allocation.
+As we are all in a way sons of Linus the Great, the fact that you have
+this usecase should be by itself a reason for us not to deprecate it.
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+I still view this, however, as a not common use case. And from the
+scheduler PoV, we still have all the duplicate hierarchy walks. So
+assuming we would carry on all the changes in this patchset, except the
+deprecation, would it be okay for you?
 
-// <smpl>
-@s exists@
-local idexpression y;
-expression x,e;
-@@
+This way we could take steps to make sure the scheduler codepaths for
+cpuacct are not taking during normal comounted operation, and you could
+still have your setup unchanged.
 
-*if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
- { ... when forall
-   return ...; }
-... when != \(y = e\|y += e\|y -= e\|y |= e\|y &= e\|y++\|y--\|&y\)
-    when != \(XT_GETPAGE(...,y)\|WMI_CMD_BUF(...)\)
-*if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
- { ... when forall
-   return ...; }
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
- drivers/infiniband/hw/mlx4/sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/infiniband/hw/mlx4/sysfs.c b/drivers/infiniband/hw/mlx4/sysfs.c
-index 5b2a01d..97516eb 100644
---- a/drivers/infiniband/hw/mlx4/sysfs.c
-+++ b/drivers/infiniband/hw/mlx4/sysfs.c
-@@ -732,7 +732,7 @@ int mlx4_ib_device_register_sysfs(struct mlx4_ib_dev *dev)
- 	dev->ports_parent =
- 		kobject_create_and_add("ports",
- 				       kobject_get(dev->iov_parent));
--	if (!dev->iov_parent) {
-+	if (!dev->ports_parent) {
- 		ret = -ENOMEM;
- 		goto err_ports;
- 	}
+Tejun, any words here?
 
