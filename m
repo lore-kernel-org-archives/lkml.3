@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266Ab3AUQGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 11:06:07 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:55556 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635Ab3AUQGG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 11:06:06 -0500
-Date: Mon, 21 Jan 2013 17:05:47 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 02/33] ARM: Convert to devm_ioremap_resource()
-Message-ID: <20130121160547.GA10790@avionic-0098.adnet.avionic-design.de>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
- <1358762966-20791-3-git-send-email-thierry.reding@avionic-design.de>
- <20130121155846.GN23505@n2100.arm.linux.org.uk>
+	id S1752718Ab3AUQIn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 11:08:43 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:48929 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752324Ab3AUQIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 11:08:40 -0500
+Message-ID: <50FD6815.90900@parallels.com>
+Date: Mon, 21 Jan 2013 20:08:53 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
-Content-Disposition: inline
-In-Reply-To: <20130121155846.GN23505@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:tYpGyPuOxsk7SYJIY5CEslz1lTUYurVwfNFqx/sHyav
- /oCgaZx98rvIMFGu88YbU0X/6igEx7jgS4w2deYhbMGoF7KyWO
- devvI7t4ZUsXbND8KCMvdbgDFBvNlHyH38VJcCCDfyKgmYYEup
- Gsn6QYrib1tBdoGYd6XNngHU8w4V11xOcX42ft3lJ3FycWAFij
- dH69s8BFVHz/BA/R4mMdIWRJRYCQ7dqAHcBThkC7Ul2KeB0j3E
- NDjqkUqYnLeLtK6glG1C7B50Y1srai1xC+MZwYwbTs4lBS43v5
- wooruYHZVvMDr76mHHjoeD8xmkUtCujhwipFAwmRwUpzwhaP+W
- YRJbM5T6+J8p8W7O4Wm6u0+1hoGkB9VySN826Wgw5luvV7jOhr
- oFl9z2HiWW7PiY2jX8u7+X5UEkt0YgX93Y=
+To: Dave Chinner <david@fromorbit.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <xfs@oss.sgi.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC, PATCH 00/19] Numa aware LRU lists and shrinkers
+References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
+In-Reply-To: <1354058086-27937-1-git-send-email-david@fromorbit.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/28/2012 03:14 AM, Dave Chinner wrote:
+> [PATCH 09/19] list_lru: per-node list infrastructure
+> 
+> This makes the generic LRU list much more scalable by changing it to
+> a {list,lock,count} tuple per node. There are no external API
+> changes to this changeover, so is transparent to current users.
+> 
+> [PATCH 10/19] shrinker: add node awareness
+> [PATCH 11/19] fs: convert inode and dentry shrinking to be node
+> 
+> Adds a nodemask to the struct shrink_control for callers of
+> shrink_slab to set appropriately for their reclaim context. This
+> nodemask is then passed by the inode and dentry cache reclaim code
+> to the generic LRU list code to implement node aware shrinking.
 
---xHFwDpU9dbj6ez1V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I have a follow up question that popped up from a discussion between me
+and my very American friend Johnny Wheeler, also known as Johannes
+Weiner (CC'd). I actually remember we discussing this, but don't fully
+remember the outcome. And since I can't find it anywhere, it must have
+been in a media other than e-mail. So I thought it would do no harm in
+at least documenting it...
 
-On Mon, Jan 21, 2013 at 03:58:46PM +0000, Russell King - ARM Linux wrote:
-> On Mon, Jan 21, 2013 at 11:08:55AM +0100, Thierry Reding wrote:
-> > Convert all uses of devm_request_and_ioremap() to the newly introduced
-> > devm_ioremap_resource() which provides more consistent error handling.
->=20
-> Does this include the resource part of the handling too?
+Why are we doing this per-node, instead of per-zone?
 
-I'm not sure I understand your question. devm_ioremap_resource() does a
-devm_request_mem_region() internally if that's what you were asking.
+It seems to me that the goal is to collapse all zones of a node into a
+single list, but since the number of zones is not terribly larger than
+the number of nodes, and zones is where the pressure comes from, what do
+we really gain from this?
 
-Thierry
-
---xHFwDpU9dbj6ez1V
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ/WdbAAoJEN0jrNd/PrOhL8EQAJBQNGDu2f4ZmqnUVj1/xVYC
-d+2d+Mq6DZTe74qeLIWpylkMnBQAdXYItU3Krlp+t0zot+LsysEbnarD5GSpijNU
-ARVAzUowaSiQ+jfMKC2SFTYtZykz5xp1u1PKmxrcf98IJT6XbwYWEWXOsHE17Ny2
-dSh/cnIJKv1Oh4pC7RrpiBYvfWJFgxgxCjYFxYhGviN0ozH+sgKyNeO0B92iEdna
-f1xrNR9rHywUlORWWUgqVSKjZ4W8Zb9aE4smlpLzPUTf6NIYqneMGOMHmXlrUH6H
-LHFpLDpaN0epstWYzgXYkJdNm/j3xlVCztNuwX13qqSRS7XZpOjZ0U/hvb+lK4Br
-ifZXkAyL4FK/U60XEzKkReWIzbVICFdoDgRj/DQa1gUgS340Eu/2+Xm+/FqP0HNQ
-DrYuffcCdsV+R73NdbCMD3fufj1urOeG1gydjfDS4kg4pasbO4SOZm6SLSUqipRu
-DRt/g7uzCErWTfmZSM3AffrjtglhuY9irhrAdkfa9r0VeCodkAsBWKn7fAbm7u5N
-2UivC4fxZma0ccH+AvMtbfDpE2SidEH1Pv7HUub0cZ/CJE4oUEL8fxUf+Ur3SI9H
-XJaz1uLloS8TVgrv7ArQazZeCcUcqdXiPLY3kfpsbSYf52OknQW9B3m4Kcqo9VKk
-2w4GDspT/5R3+LG3d+Cl
-=a2NW
------END PGP SIGNATURE-----
-
---xHFwDpU9dbj6ez1V--
