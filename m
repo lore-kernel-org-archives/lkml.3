@@ -1,208 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab3AUMib (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 07:38:31 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:65219 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab3AUMia (ORCPT
+	id S1754306Ab3AUMix (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 07:38:53 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:42011 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752852Ab3AUMiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 07:38:30 -0500
+	Mon, 21 Jan 2013 07:38:51 -0500
+Message-ID: <50FD36CF.1000702@synopsys.com>
+Date: Mon, 21 Jan 2013 18:08:39 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <87bocjl00m.fsf@sejong.aot.lge.com>
-References: <1358550839-7509-1-git-send-email-eranian@google.com>
-	<1358550839-7509-3-git-send-email-eranian@google.com>
-	<87bocjl00m.fsf@sejong.aot.lge.com>
-Date: Mon, 21 Jan 2013 13:38:29 +0100
-Message-ID: <CABPqkBQD-v8aEP=cgGDw8g4jGTGMA--mK_vvs73TxtDpmcKizg@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] perf stat: add interval printing
-From: Stephane Eranian <eranian@google.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 28/76] ARC: I/O and DMA Mappings
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-29-git-send-email-vgupta@synopsys.com> <201301181555.43487.arnd@arndb.de>
+In-Reply-To: <201301181555.43487.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 3:53 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> Hi Stephane,
->
-> On Sat, 19 Jan 2013 00:13:59 +0100, Stephane Eranian wrote:
->> This patch adds a new printing mode for perf stat.
->> It allows internval printing. That means perf stat
->> can now print event deltas at regular time interval.
->> This is useful to detect phases in programs.
+On Friday 18 January 2013 09:25 PM, Arnd Bergmann wrote:
+> On Friday 18 January 2013, Vineet Gupta wrote:
+>> TBD: Do we need early ioremap support like openrisc
 >>
->> The -I option enables interval printing. It expects
->> an interval duration in milliseconds. Minimum is
->> 100ms. Once, activated perf stat prints events deltas
->> since last printout. All modes are supported.
->>
->> $ perf stat -I 1000 -e cycles noploop 10
->> noploop for 10 seconds
+>> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> Can you explain why early ioremap is necessary for you?
 >
-> Is this line an output from perf stat?
->
-> In addition, how about adding a head line like:
->
-> # time                count      event
-> #
+> I wasn't aware that openrisc has it. In a lot of cases,
+> you can use fixmap as a replacement.
 
-Will add that in non -x mode.
+This came about when enabling the early console of arc uart using the early param
+registration. I prefer console to be up as early as possible because the high
+configurability of ARC means you get early panics if hardware and software don't
+match (cache geom, mmu ver, ....) and it's good if we could print it out via uart.
 
->> 1.000086918         2385155642 cycles                    #    0.000 GHz
->> 2.000267937         2392279774 cycles                    #    0.000 GHz
->> 3.000385400         2390971450 cycles                    #    0.000 GHz
->> 4.000504408         2390996752 cycles                    #    0.000 GHz
->> 5.000626878         2390853097 cycles                    #    0.000 GHz
->>
->> The output format makes it easy to feed into a plotting program
->> such as gnuplot when the -I option is used in combination with the -x
->> option:
->>
->> $ perf stat -x, -I 1000 -e cycles noploop 10
->> noploop for 10 seconds
->> 1.000084113,2378775498,cycles
->> 2.000245798,2391056897,cycles
->> 3.000354445,2392089414,cycles
->> 4.000459115,2390936603,cycles
->> 5.000565341,2392108173,cycles
->>
->> Signed-off-by: Stephane Eranian <eranian@google.com>
->> ---
-> [snip]
->> @@ -877,6 +977,8 @@ static void print_counter(struct perf_evsel *counter)
->>  static void print_stat(int argc, const char **argv)
->>  {
->>       struct perf_evsel *counter;
->> +     struct timespec ts, rs;
->> +     char prefix[64] = { 0, };
->>       int i;
->>
->>       fflush(stdout);
->> @@ -899,12 +1001,18 @@ static void print_stat(int argc, const char **argv)
->>               fprintf(output, ":\n\n");
->>       }
->>
->> +     if (interval) {
->> +             clock_gettime(CLOCK_MONOTONIC, &ts);
->> +             diff_timespec(&rs, &ts, &ref_time);
->> +             sprintf(prefix, "%lu.%09lu%s", rs.tv_sec, rs.tv_nsec, csv_sep);
->> +     }
->
-> AFAICS the only caller of print_stat() is cmd_stat() and it'll call this
-> only if interval is 0.  So why not just setting prefix to NULL then?
->
-I don't understand your point here. Prefix is set ONLY when interval
-is non zero. Prefix is setup before print_counter() so that each counter
-for each interval is timestamped with the same value.
+So we do end up calling ioremap very early
 
+setup_arch
+   machine_desc->init_early
+   plat_fpga_early_init
+       arc_fpga_serial_init
+             early_platform_add_devices
+             early_platform_driver_probe
+                  arc_serial_probe_earlyprintk
+                        ioremap_nocache()
+
+However, ioremap on ARC typically avoids MMU mappings (hence need for paging_init
+etc to have run apriori) because memory mapped peripherals are typically wired up
+in ARC's dedicated uncached address space. So unless the driver needs special
+access permissions (in addition to uncached semantics), we can simply
+short-circuit all of MMU routing.
+
+So the comment above can be deleted, and we probably need a check in
+ioremap_prot() so that early ioremap bails out if called early - probably using
+slab_is_available()
 
 >
 >> +
->>       if (no_aggr) {
->>               list_for_each_entry(counter, &evsel_list->entries, node)
->> -                     print_counter(counter);
->> +                     print_counter(counter, prefix);
->>       } else {
->>               list_for_each_entry(counter, &evsel_list->entries, node)
->> -                     print_counter_aggr(counter);
->> +                     print_counter_aggr(counter, prefix);
->>       }
->>
->>       if (!csv_output) {
->> @@ -925,7 +1033,7 @@ static volatile int signr = -1;
->>
->>  static void skip_signal(int signo)
->>  {
->> -     if(child_pid == -1)
->> +     if((child_pid == -1) || interval)
+>> +#ifndef _ASM_ARC_IO_H
+>> +#define _ASM_ARC_IO_H
+>> +
+>> +#include <asm/byteorder.h>
+>> +#include <asm/page.h>
+>> +
+>> +extern void __iomem *ioremap(unsigned long physaddr, unsigned long size);
+>> +extern void iounmap(const void __iomem *addr);
+>> +
+>> +#define ioremap_nocache(phy, sz)	ioremap(phy, sz)
+>> +#define ioremap_wc(phy, sz)		ioremap(phy, sz)
+>> +
+>> +/* Change struct page to physical address */
+>> +#define page_to_phys(page)		(page_to_pfn(page) << PAGE_SHIFT)
+>> +
+>> +#include <asm-generic/io.h>
+> I think I commented before that asm-generic/io.h has a number of
+> problems and you should at least override the __raw_{read,write}{b,w,l,q}
+> functions with your own ones using inline assembly.
 >
-> Looks like it needs a whitespace :)
->
-Fixed.
+> You should also define a non-NULL PCI_IOBASE.
 
->
->>               done = 1;
->>
->>       signr = signo;
->> @@ -1145,6 +1253,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
->>                       "command to run prior to the measured command"),
->>       OPT_STRING(0, "post", &post_cmd, "command",
->>                       "command to run after to the measured command"),
->> +     OPT_INTEGER('I', "interval-print", &interval,
->> +                 "print counts at regular interval in ms (>= 100)"),
->>       OPT_END()
->>       };
->>       const char * const stat_usage[] = {
->> @@ -1245,12 +1355,23 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
->>               usage_with_options(stat_usage, options);
->>               return -1;
->>       }
->> +     if (interval < 0 || (interval > 0 && interval < 100)) {
->> +             pr_err("print interval must be >= 100ms\n");
->> +             usage_with_options(stat_usage, options);
->> +             return -1;
->> +     }
->
-> How about making 'interval' unsigned and simplify the condition a bit:
->
-Done.
+Sorry for missing out on this one - this was indeed suggested in the private
+pre-list review you did. The 64-bit version certainly needs to be wrapped in a irq
+safe block.
 
->         if (interval && interval < 100) {
->                 ...
->         }
->
-> Thanks,
-> Namhyung
->
->>
->>       list_for_each_entry(pos, &evsel_list->entries, node) {
->>               if (perf_evsel__alloc_stat_priv(pos) < 0 ||
->>                   perf_evsel__alloc_counts(pos, perf_evsel__nr_cpus(pos)) < 0)
->>                       goto out_free_fd;
->>       }
->> +     if (interval) {
->> +             list_for_each_entry(pos, &evsel_list->entries, node) {
->> +                     if (perf_evsel__alloc_prev_raw_counts(pos) < 0)
->> +                             goto out_free_fd;
->> +             }
->> +     }
->
-> It's not about your patch, but I can't find where it frees evsel->counts
-> - a counter part of perf_evsel__alloc_counts().  Seems we leak that?
->
-You are right. But it's beyond the scope of my patch.
-Truth is, there is not even a perf_evsel__free_counts().
+However others will be exactly same as generic ones. Given that these routines
+operate on __iomem memory which has to be uncached: either wired in uncached
+address space, or goes via an uncached MMU mapping, IMHO the inline-asm or 'C'
+version won't add any value. We do have uncached LD/ST, I've tried to avoid them
+so far as they have certain micro-architectural quirks and per previous argument
+it seems they would be redundant.
 
->
->>
->>       /*
->>        * We dont want to block the signals - that would cause
->> @@ -1260,6 +1381,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
->>        */
->>       atexit(sig_atexit);
->>       signal(SIGINT,  skip_signal);
->> +     signal(SIGCHLD, skip_signal);
->>       signal(SIGALRM, skip_signal);
->>       signal(SIGABRT, skip_signal);
->>
->> @@ -1272,11 +1394,13 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
->>               status = run_perf_stat(argc, argv);
->>       }
->>
->> -     if (status != -1)
->> +     if (status != -1 && !interval)
->>               print_stat(argc, argv);
->>  out_free_fd:
->> -     list_for_each_entry(pos, &evsel_list->entries, node)
->> +     list_for_each_entry(pos, &evsel_list->entries, node) {
->>               perf_evsel__free_stat_priv(pos);
->> +             perf_evsel__free_prev_raw_counts(pos);
->> +     }
->>       perf_evlist__delete_maps(evsel_list);
->>  out:
->>       perf_evlist__delete(evsel_list);
+Having said that I might be over-looking something important - so please let me know.
+
+-Vineet
+
