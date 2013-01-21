@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704Ab3AUBUT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 20:20:19 -0500
-Received: from ozlabs.org ([203.10.76.45]:35137 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752581Ab3AUBUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 20:20:16 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [patch] module: potential deadlock in error path
-In-Reply-To: <20130118074309.GB31793@elgon.mountain>
-References: <20130118074309.GB31793@elgon.mountain>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 21 Jan 2013 11:50:00 +1030
-Message-ID: <87ip6rwcvz.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752750Ab3AUBUt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 20:20:49 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48980 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752581Ab3AUBUs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 20:20:48 -0500
+Message-ID: <1358731234.24121.230.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] rtlwifi/rtl8188ee: Add firmware for new driver
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        dwmw2@infradead.org
+Date: Mon, 21 Jan 2013 01:20:34 +0000
+In-Reply-To: <1357882244-8853-1-git-send-email-Larry.Finger@lwfinger.net>
+References: <1357882244-8853-1-git-send-email-Larry.Finger@lwfinger.net>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-+cZ2NcGb0B4DGDgPLZM0"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Carpenter <dan.carpenter@oracle.com> writes:
-> We take the lock twice if we hit this goto.
->
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-Damn, just pushed that to Linus: should have read mail first.
+--=-+cZ2NcGb0B4DGDgPLZM0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I've added this, thanks.
+On Thu, 2013-01-10 at 23:30 -0600, Larry Finger wrote:
+> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+> ---
+>  WHENCE                 |    8 ++++++++
+>  rtlwifi/rtl8188efw.bin |  Bin 0 -> 11216 bytes
+>  2 files changed, 8 insertions(+)
+>  create mode 100644 rtlwifi/rtl8188efw.bin
+[...]
 
-The following changes since commit a7f2a366f62319dfebf8d4dfe8b211f631c78457:
+Applied, thanks.
 
-  ima: fallback to MODULE_SIG_ENFORCE for existing kernel module syscall (2012-12-24 09:35:48 -0500)
+Ben.
 
-are available in the git repository at:
+--=20
+Ben Hutchings
+Q.  Which is the greater problem in the world today, ignorance or apathy?
+A.  I don't know and I couldn't care less.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/fixes-for-linus
+--=-+cZ2NcGb0B4DGDgPLZM0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-for you to fetch changes up to 8f82d479da05bd7df8cca3a5fbc0273f73b601c0:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-  module: potential deadlock in error path (2013-01-21 11:29:33 +1030)
+iQIVAwUAUPyX4ue/yOyVhhEJAQq93RAAxIYCTs65tmYib1BKVAFUn/st1d0bBL9L
+IElYm7d7YUEmQDkcBUuh+AQIC5XYNo4r7kyiHFpVq1Z7Hf9WmNsEBchHc1EG6m6a
+JGAySv4qPwAbknsojnwQ5RrMRoCV1MOJIbjJnn5uMeiJqJWHB9iAB8RjNacqhIOk
+7QtmYou5ieoclHIgWZQgcc88IndSoOotgeNFmbyyAaoGZiFvaesdQmp39AAl70CS
+YuTEFVhO3Zu0jTlYkUw85W1BJ9DsSe20VP2f9uV2w91YBLM59V6m0jP0B+xAfeif
+R1g8RTu40E3QDTdpu4g9QjbANZ8a0YfybfxNbSPUM/WOVH1l17XmC86/KY9O60Iy
+7UxWEcdwX3I1n5IBZldfM20y5Qwrrak84DELi3wTH5cZNXdTDwiqjcHot12jvfAT
+OTpSGmJ4/6vX0/wgk8HQr8KPpn5clKHsIIlG51/vZpotLLMLGuX8G4pzIjbJdCnv
+xMqR5T6mOTpYtITLVBuT/xhrjILYcZAL/jbCdv6ZvGsuo/k2CxYGThRJYDrS1i7n
+AGS8iDolpqnfXLkFyP+mpUPfVnMMGbEP7XYKpUyL7F+J2cb8VaAM0jDRylvTPwxt
+C7UV612PCKeykybV+LPseGIqxpJePFfFmOa1AcBlxmUY5Ul8AejpdbyJBAjgNrOA
+zSXGPDEI/Wc=
+=nGmM
+-----END PGP SIGNATURE-----
 
-----------------------------------------------------------------
-Various minor fixes, but a slightly more complex one to fix the per-cpu overload
-problem introduced recently by kvm id changes.
-
-(Now with an error path fix from Dan, thanks)
-
-----------------------------------------------------------------
-Alexander Graf (1):
-      virtio-blk: Don't free ida when disk is in use
-
-Dan Carpenter (1):
-      module: potential deadlock in error path
-
-Rusty Russell (2):
-      module: add new state MODULE_STATE_UNFORMED.
-      module: put modules in list much earlier.
-
-Sasha Levin (1):
-      module: prevent warning when finit_module a 0 sized file
-
- drivers/block/virtio_blk.c  |    7 +-
- include/linux/module.h      |   10 +--
- kernel/debug/kdb/kdb_main.c |    2 +
- kernel/module.c             |  156 ++++++++++++++++++++++++++++++-------------
- lib/bug.c                   |    1 +
- 5 files changed, 124 insertions(+), 52 deletions(-)
+--=-+cZ2NcGb0B4DGDgPLZM0--
