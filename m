@@ -1,123 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab3AUGmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 01:42:19 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:62781 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab3AUGmS (ORCPT
+	id S1752806Ab3AUGpO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 01:45:14 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:47814 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab3AUGpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 01:42:18 -0500
-Message-ID: <1358750523.4994.55.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
-From: Mike Galbraith <bitbucket@online.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
-        mingo@kernel.org, a.p.zijlstra@chello.nl
-Date: Mon, 21 Jan 2013 07:42:03 +0100
-In-Reply-To: <50FCCCF5.30504@linux.vnet.ibm.com>
-References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com>
-	 <50ED384C.1030301@linux.vnet.ibm.com>
-	 <1357977704.6796.47.camel@marge.simpson.net>
-	 <1357985943.6796.55.camel@marge.simpson.net>
-	 <1358155290.5631.19.camel@marge.simpson.net>
-	 <50F79256.1010900@linux.vnet.ibm.com>
-	 <1358654997.5743.17.camel@marge.simpson.net>
-	 <50FCACE3.5000706@linux.vnet.ibm.com>
-	 <1358743128.4994.33.camel@marge.simpson.net>
-	 <50FCCCF5.30504@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:HPgrJyF9KYgbVMEQ9lYeqAPYdFNthhPLzu3IKVQmxpc
- VKMrsS7b2HKty0gaJhoYeEqU2m9ryRDeLQcUVWBAbNdfGQRA0V
- QaKNzYASia3VXV7NcpbvB3uc8Q05k1VjmSyAzgTI4+Yxq2wlQC
- sBev5m2D0EU0uc17fpxlgXTFawnmnG1xNmYuI40/NsnFp+sOkG
- UmjGGyQS9c78xz3EU+W5P3TthDkwFzu4g03wGcaxSdJRaf4d1k
- 8NNcqqGt3qu+Gt2IhvPI60adYs6rKxz2b1vKurlfQ0VcaAvPPr
- JipXn4rGRmKy+h7Yd4G3mPeicTttNxdzGk1Dq4wHdKJUFDVt0T
- nBtZMK91IetcqmOplXMZG3cVTxnhD1kxCPK2ObtuDiGzAMKjqU
- /SMolA3M9xsNQ==
+	Mon, 21 Jan 2013 01:45:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <1358168377-22919-1-git-send-email-gautam.vivek@samsung.com>
+References: <1358168377-22919-1-git-send-email-gautam.vivek@samsung.com>
+Date: Mon, 21 Jan 2013 12:15:10 +0530
+Message-ID: <CAFp+6iHbvwTBUSZO2EvCaeCT=g=UzubLGrmPHjKUgi9Ef7enzQ@mail.gmail.com>
+Subject: Re: [PATCH v3 0/2] Adding USB 3.0 DRD-phy support for exynos5250
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: balbi@ti.com
+Cc: linux-usb@vger.kernel.org, kgene.kim@samsung.com, p.paneri@samsung.com,
+        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        sylvester.nawrocki@gmail.com, av.tikhomirov@samsung.com,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, kishon <kishon@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-21 at 13:07 +0800, Michael Wang wrote:
+Hi Felipe,
 
-> That seems like the default one, could you please show me the numbers in
-> your datapoint file?
 
-Yup, I do not touch the workfile.  Datapoints is what you see in the
-tabulated result...
+On Mon, Jan 14, 2013 at 6:29 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> Changes from v2:
+>  - Renaming 'samsung-usbphy.c' driver to 'samsung-usb2.c' indicating
+>    usb 2.0 phy controller's driver for Samsung's SoCs.
+>  - Moving the register definitions and strcuture definitions to
+>    common header file 'samsung-usbphy.h' to be used across
+>    usb 2.0 and usb 3.0 phy.
+>  - Keeping common exported function definitions in samsung-usbphy.c
+>    which can be used across usb 2.0 and usb 3.0 phy.
+>  - Writting separate driver file for Samsung's USB 3.0 phy controller.
+>    and making it dependent on USB_DWC3.
+>
 
-1
-1
-1
-5
-5
-5
-10
-10
-10
-...
+Is the re-organization being done here fine as per requirements for
+separate drivers for usb 2.0 type PHY and usb 3.0 type PHY ?
 
-so it does three consecutive runs at each load level.  I quiesce the
-box, set governor to performance, echo 250 32000 32 4096
-> /proc/sys/kernel/sem, then ./multitask -nl -f, and point it
-at ./datapoints.
+> Rebased on top of usb-next followed by following patches/patch-threads:
+>         -- [PATCH v9 1/2] usb: phy: samsung: Introducing usb phy driver for hsotg
+>         -- [PATCH] usb: phy: samsung: Add support to set pmu isolation (version 6)
+>         -- [PATCH v6 0/4] Adding usb2.0 host-phy support for exynos5250
+>
+> Changes form v1:
+>  - Moved architecture related patch out of this patch-set.
+>  - Replaced unnecessary multi-line macro definitions by
+>    single line definitions.
+>  - Creating new data structure for USB 3.0 phy type and embedding
+>    it in 'samsung_usbphy' structure.
+>  - Adding a flag in 'samsung_usbphy' structure to check if device
+>    has usb 3.0 type phy or not.
+>  - Restructuring probe sequence for USB 3.0 phy, such that we are
+>    initializing only when device has usb3.0 type phy.
+>
+> Vivek Gautam (2):
+>   usb: phy: samsung: Common out the generic stuff
+>   usb: phy: samsung: Add PHY support for USB 3.0 controller
+>
+>  drivers/usb/phy/Kconfig          |    8 +
+>  drivers/usb/phy/Makefile         |    3 +-
+>  drivers/usb/phy/samsung-usb2.c   |  511 +++++++++++++++++++++++++++
+>  drivers/usb/phy/samsung-usb3.c   |  349 +++++++++++++++++++
+>  drivers/usb/phy/samsung-usbphy.c |  713 +-------------------------------------
+>  drivers/usb/phy/samsung-usbphy.h |  328 +++++++++++++++++
+>  6 files changed, 1205 insertions(+), 707 deletions(-)
+>  create mode 100644 drivers/usb/phy/samsung-usb2.c
+>  create mode 100644 drivers/usb/phy/samsung-usb3.c
+>  create mode 100644 drivers/usb/phy/samsung-usbphy.h
+>
 
-> I'm not familiar with this benchmark, but I'd like to have a try on my
-> server, to make sure whether it is a generic issue.
 
-One thing I didn't like about your changes is that you don't ask
-wake_affine() if it's ok to pull cross node or not, which I though might
-induce imbalance, but twiddling that didn't fix up the collapse, pretty
-much leaving only the balance path.
 
-> >> And I'm confusing about how those new parameter value was figured out
-> >> and how could them help solve the possible issue?
-> > 
-> > Oh, that's easy.  I set sched_min_granularity_ns such that last_buddy
-> > kicks in when a third task arrives on a runqueue, and set
-> > sched_wakeup_granularity_ns near minimum that still allows wakeup
-> > preemption to occur.  Combined effect is reduced over-scheduling.
-> 
-> That sounds very hard, to catch the timing, whatever, it could be an
-> important clue for analysis.
-
-(Play with the knobs with a bunch of different loads, I think you'll
-find that those settings work well)
-
-> >> Do you have any idea about which part in this patch set may cause the issue?
-> > 
-> > Nope, I'm as puzzled by that as you are.  When the box had 40 cores,
-> > both virgin and patched showed over-scheduling effects, but not like
-> > this.  With 20 cores, symptoms changed in a most puzzling way, and I
-> > don't see how you'd be directly responsible.
-> 
-> Hmm...
-> 
-> > 
-> >> One change by designed is that, for old logical, if it's a wake up and
-> >> we found affine sd, the select func will never go into the balance path,
-> >> but the new logical will, in some cases, do you think this could be a
-> >> problem?
-> > 
-> > Since it's the high load end, where looking for an idle core is most
-> > likely to be a waste of time, it makes sense that entering the balance
-> > path would hurt _some_, it isn't free.. except for twiddling preemption
-> > knobs making the collapse just go away.  We're still going to enter that
-> > path if all cores are busy, no matter how I twiddle those knobs.
-> 
-> May be we could try change this back to the old way later, after the aim
-> 7 test on my server.
-
-Yeah, something funny is going on.  I'd like select_idle_sibling() to
-just go away, that task be integrated into one and only one short and
-sweet balance path.  I don't see why fine_idlest* needs to continue
-traversal after seeing a zero.  It should be just fine to say gee, we're
-done.  Hohum, so much for pure test and report, twiddle twiddle tweak,
-bend spindle mutilate ;-) 
-   
--Mike
-
+-- 
+Thanks & Regards
+Vivek
