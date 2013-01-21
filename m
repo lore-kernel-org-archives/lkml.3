@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756582Ab3AUXLi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 18:11:38 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:44682 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753838Ab3AUXLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 18:11:36 -0500
-Date: Mon, 21 Jan 2013 18:11:30 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Eric Sandeen <sandeen@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
-Subject: Re: jbd2: don't wake kjournald unnecessarily
-Message-ID: <20130121231130.GB12410@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Sedat Dilek <sedat.dilek@gmail.com>, Jan Kara <jack@suse.cz>,
-	Eric Sandeen <sandeen@redhat.com>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	Ext4 Developers List <linux-ext4@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
-References: <CA+icZUWOvk5i+XY22xdZYuxu=Vy3fG2QxJStEgNFQVS4u55y-w@mail.gmail.com>
- <CA+icZUUzNYE9QAh_p7=ZNuvZbxRPCb9zd4k7+aW-hv34mQWz=A@mail.gmail.com>
- <20130121104733.GE5588@quack.suse.cz>
- <CA+icZUVy-=jJkRsEKmX+ZGRjiGr4wwp3pqdxuLCRHeqW_H0x9Q@mail.gmail.com>
- <CA+icZUVAP4ArN+j34GTUwMxte5DtLPJSrLmK9T6Na8Qy+aM0Rg@mail.gmail.com>
- <20130121140738.GI5588@quack.suse.cz>
- <CA+icZUXLcdnNPvA9o8d5msOQ0MkMci8mPXujLZ3zcYjYcVZ7JQ@mail.gmail.com>
+	id S1754667Ab3AUXNU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 18:13:20 -0500
+Received: from mga09.intel.com ([134.134.136.24]:15905 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287Ab3AUXNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 18:13:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,510,1355126400"; 
+   d="scan'208";a="250432233"
+Message-ID: <50FDCB8C.40208@linux.intel.com>
+Date: Mon, 21 Jan 2013 15:13:16 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+icZUXLcdnNPvA9o8d5msOQ0MkMci8mPXujLZ3zcYjYcVZ7JQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 13/13 -next] tracing: Remove the extra 4 bytes of padding
+ in events
+References: <20130121211403.337052956@goodmis.org> <20130121211729.357828882@goodmis.org>
+In-Reply-To: <20130121211729.357828882@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 12:04:32AM +0100, Sedat Dilek wrote:
-> 
-> Beyond the FUSE/LOOP fun, will you apply this patch to your linux-next GIT tree?
-> 
-> Feel free to add...
-> 
->      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-> 
-> A similiar patch for JBD went through your tree into mainline (see [1] and [2]).
+On 1/21/2013 1:14 PM, Steven Rostedt wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
+>
+> Due to a userspace issue with PowerTop v1, which hardcoded
+> the offset of event fields that it was using, it broke when
+> we removed the Big Kernel Lock counter from the event header.
+>
+>   (commit e6e1e2593 "tracing: Remove lock_depth from event entry")
+>
+> Because this broke userspace, it was determined that we must
+> keep those 4 bytes around.
+>
+>   (commit a3a4a5acd "Regression: partial revert "tracing: Remove lock_depth from event entry"")
+>
+> This unfortunately wastes space in the ring buffer. 4 bytes per
+> event, where a lot of events are just 24 bytes. That's 16% of the
+> buffer wasted. A million events will add 4 megs of white space
+> into the buffer.
+>
+> It was later noticed that PowerTop v1 could not work on systems
+> where the kernel was 64 bit but the userspace was 32 bits.
+> The reason was because the offsets are different between the
+> two and the hard coded offset of one would not work with the other.
+>
+> With PowerTop v2, it implemented the same interface that both
+> perf and trace-cmd use. That is, it reads the format file of
+> the event to find the offsets of the fields it needs. This fixes
+> the problem with running powertop on a 32 bit userspace running
+> on a 64 bit kernel. It also no longer requires the 4 byte padding.
+>
+> As PowerTop v2 has been out for a while, and is included in all
+> major distributions, it is time that we can safely remove the
+> 4 bytes of padding. Users of PowerTop v1 should upgrade to
+> PowerTop v2.
+>
+> Cc: Arjan van de Ven <arjan@linux.intel.com>
 
-I'm not at all convinced that this patch has anything to do with your
-problem.  I don't see how it could affect things, and I believe you
-mentioned that you saw the problem even with this patch applied?  (I'm
-not sure; some of your messages which you sent were hard to
-understand, and you mentioned something about trying to send messages
-when low on sleep :-).
+this only impacts the users of the 2.0beta series (which, while arguably staying around for too long, is now very very obsolete and
+replaced by the final in all distros that I'm aware of)
 
-In any case, the reason why I haven't pulled this patch into the ext4
-tree is because I was waiting for Eric and some of the performance
-team folks at Red Hat to supply some additional information about why
-this commit was making a difference in performance for a particular
-proprietary, closed source benchmark.
 
-I'm very suspicious about applying patches under the "cargo cult"
-school of programming.  ("We don't understand why it makes a
-difference, but it seems to be good, so bombs away!" :-)
+Acked-By: Arjan van de Ven <arjan@linux.intel.com>
 
-Regards,
-
-					- Ted
