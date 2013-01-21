@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab3AUNqv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 08:46:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56263 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751993Ab3AUNqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 08:46:50 -0500
-Date: Mon, 21 Jan 2013 14:46:46 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Zhouping Liu <zliu@redhat.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        Li Zefan <lizefan@huawei.com>, CAI Qian <caiqian@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
-Message-ID: <20130121134646.GL7798@dhcp22.suse.cz>
-References: <4FEE7665.6020409@jp.fujitsu.com>
- <389106003.8637801.1358757547754.JavaMail.root@redhat.com>
- <20130121105624.GF7798@dhcp22.suse.cz>
- <50FD4245.3070402@redhat.com>
+	id S1753150Ab3AUNvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 08:51:16 -0500
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:52987 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375Ab3AUNvP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 08:51:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FD4245.3070402@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1358175470-5041-1-git-send-email-lee.jones@linaro.org>
+References: <1358175470-5041-1-git-send-email-lee.jones@linaro.org>
+Date: Mon, 21 Jan 2013 14:51:14 +0100
+Message-ID: <CACRpkdYydqJ+BVsh7P411zCod+83f2pVV5tPsKfoWPYUnOVpDQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ARM: ux500: Disable Power Supply and Battery
+ Management by default
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 21-01-13 21:27:33, Zhouping Liu wrote:
-> On 01/21/2013 06:56 PM, Michal Hocko wrote:
-[...]
-> > From 5f8141bf7d27014cfbc7b450f13f6146b5ab099d Mon Sep 17 00:00:00 2001
-> >From: Michal Hocko <mhocko@suse.cz>
-> >Date: Mon, 21 Jan 2013 11:33:26 +0100
-> >Subject: [PATCH] memcg: Do not create memsw files if swap accounting is
-> >  disabled
-> >
-> >Zhouping Liu has reported that memsw files are exported even though
-> >swap accounting is runtime disabled if CONFIG_MEMCG_SWAP is enabled.
-> >This behavior has been introduced by af36f906 (memcg: always create
-> >memsw files if CONFIG_CGROUP_MEM_RES_CTLR_SWAP) and it causes any
-> >attempt to open the file to return EOPNOTSUPP. Although EOPNOTSUPP
-> >should say be clear that memsw operations are not supported in the given
-> >configuration it is fair to say that this behavior could be quite
-> >confusing.
-> >
-> >Let's tear memsw files out of default cgroup files and add
-> >them only if the swap accounting is really enabled (either by
-> >CONFIG_MEMCG_SWAP_ENABLED or swapaccount=1 boot parameter). We can
-> >hook into mem_cgroup_init which is called when the memcg subsystem is
-> >initialized and which happens after boot command line is processed.
-> 
-> Thanks for your quick patch, your patch looks good for me.
-> 
-> I tested it with or without CONFIG_MEMCG_SWAP_ENABLED=y,
-> and also tested it with swapaccount=1 kernel parameters, all are okay.
-> 
-> Tested-by: Zhouping Liu <zliu@redhat.com>
+On Mon, Jan 14, 2013 at 3:57 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Thanks for testing!
+> The AB8500 Battery Management collection of drivers are more than a
+> little bit broken. There is lots of work still on-going in that area
+> and it's improving day by day; however, it's not ready to be enabled
+> by default just yet.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
--- 
-Michal Hocko
-SUSE Labs
+Is this going for fixes (v3.8?)
+
+For v3.9 I think you've submitted a whole lot of patches
+actually fixing it up?
+
+Anyway: Acked-by: Linus Walleij <linus.walleij@linaro.org>
+since you certainly know the status of this driver better than
+me.
+
+Yours,
+Linus Walleij
