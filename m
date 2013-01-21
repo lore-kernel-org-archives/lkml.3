@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270Ab3AURXa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:23:30 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:64388 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754165Ab3AURXZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:23:25 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 02/33] ARM: Convert to devm_ioremap_resource()
-Date: Mon, 21 Jan 2013 17:23:07 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de> <20130121160547.GA10790@avionic-0098.adnet.avionic-design.de> <20130121161611.GS23505@n2100.arm.linux.org.uk>
-In-Reply-To: <20130121161611.GS23505@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301211723.07248.arnd@arndb.de>
-X-Provags-ID: V02:K0:HSWfk6LPc51mvcd5mQ0MpOUAi0cVc4NZUU68BdVeQTk
- Rc7lzniZ1FdgCDz/CpC/uFBt0wFCa/SVpooILucVcz8rpRON8V
- sI/1qvFLWHf8OgfoVcZI3vLSlazgo2wkrQxjSeOwcVUZhujEvC
- GNsVGV8Vqx3Ln6Uo0Ca33Mv9cJEtC49K5aHOukSmcYgOSovnJ8
- mImWfKOJ5dqkvSKKpNGYVIIT/f6Rjbmp3o3DF05yx0tf4Dbue6
- kIVaUMmqS+JrOcfh777RWN7XRC0eZoVLD2SK+BhSuL/jgCRzFJ
- 9INWwa9/4LTIIfkpfMwfPCBypnAswMP42+45hYr3G1G4P0Gpg/
- Kpr+yUwzj93WPjc7bc/Q=
+	id S1756299Ab3AURXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:23:16 -0500
+Received: from david.siemens.de ([192.35.17.14]:21668 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752449Ab3AURXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 12:23:13 -0500
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>
+Subject: [PATCH v4 05/13] scripts/gdb: Add read_u16/32/64 helpers
+Date: Mon, 21 Jan 2013 18:06:12 +0100
+Message-Id: <2cff4333b45f0812a69bef7abfd403b842e23d87.1358787929.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
+References: <cover.1358787929.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
+References: <cover.1358787929.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 21 January 2013, Russell King - ARM Linux wrote:
-> On Mon, Jan 21, 2013 at 05:05:47PM +0100, Thierry Reding wrote:
-> > On Mon, Jan 21, 2013 at 03:58:46PM +0000, Russell King - ARM Linux wrote:
-> > > On Mon, Jan 21, 2013 at 11:08:55AM +0100, Thierry Reding wrote:
-> > > > Convert all uses of devm_request_and_ioremap() to the newly introduced
-> > > > devm_ioremap_resource() which provides more consistent error handling.
-> > > 
-> > > Does this include the resource part of the handling too?
-> > 
-> > I'm not sure I understand your question. devm_ioremap_resource() does a
-> > devm_request_mem_region() internally if that's what you were asking.
-> 
-> Ah, that's fine then.  The function name is a little misleading, and as
-> it doesn't exist in mainline at present, it is not something I know about.
+Add helpers for reading integers from target memory buffers. Required
+when caching the memory access is more efficient than reading individual
+values via gdb.
 
-The usual problem with long patch series like this: The introductory mail
-PATCH 0/xx explains this nicely, but it's not possible to put everyone
-on Cc because then it gets rejected by vger for overly long mail headers.
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ scripts/gdb/utils.py |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
-We had a discussion about the function name earlier, but could not come
-up with one that isn't too bulky but still carries the same meaning
-as devm_request_and_ioremap() with a different symbol.
+diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
+index 44daa29c..8d54241 100644
+--- a/scripts/gdb/utils.py
++++ b/scripts/gdb/utils.py
+@@ -73,3 +73,21 @@ def get_target_endianness():
+ 		else:
+ 			raise gdb.GdgError("unknown endianness '%s'" % endian)
+ 	return target_endianness
++
++def read_u16(buffer):
++	if get_target_endianness() == LITTLE_ENDIAN:
++		return ord(buffer[0]) + (ord(buffer[1]) << 8)
++	else:
++		return ord(buffer[1]) + (ord(buffer[0]) << 8)
++
++def read_u32(buffer):
++	if get_target_endianness() == LITTLE_ENDIAN:
++		return read_u16(buffer[0:2]) + (read_u16(buffer[2:4]) << 16)
++	else:
++		return read_u16(buffer[2:4]) + (read_u16(buffer[0:2]) << 16)
++
++def read_u64(buffer):
++	if get_target_endianness() == LITTLE_ENDIAN:
++		return read_u32(buffer[0:4]) + (read_u32(buffer[4:8]) << 32)
++	else:
++		return read_u32(buffer[4:8]) + (read_u32(buffer[0:4]) << 32)
+-- 
+1.7.3.4
 
-	Arnd
