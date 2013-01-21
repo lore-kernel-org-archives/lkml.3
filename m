@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab3AUCMp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 21:12:45 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:38821 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab3AUCMn (ORCPT
+	id S1752659Ab3AUCO3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 21:14:29 -0500
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:35049 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab3AUCO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 21:12:43 -0500
-Date: Mon, 21 Jan 2013 13:12:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Morris <jmorris@namei.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Subject: linux-next: manual merge of the security tree with Linus' tree
-Message-Id: <20130121131230.9f79cf5dcd8a8ac069594111@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_Jan_2013_13_12_30_+1100_ZZLU9HpXdIcywDSR"
+	Sun, 20 Jan 2013 21:14:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <7vpq0zi9c7.fsf@alter.siamese.dyndns.org>
+References: <87zk03wg7r.fsf@rustcorp.com.au> <CA+55aFwzdcv0LXovZobha=EH=L6DapJt+ODP0nq=TWWAqCxLYQ@mail.gmail.com>
+ <87fw1vwcao.fsf@rustcorp.com.au> <CA+55aFy1nW859yaGP17epRX8A+TaJ8APvb0-Ww1zw91dCAOhoQ@mail.gmail.com>
+ <7vpq0zi9c7.fsf@alter.siamese.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 20 Jan 2013 18:14:06 -0800
+X-Google-Sender-Auth: 6hPNTy2zwUlgyimM7RjN0tnRnqA
+Message-ID: <CA+55aFw=8w8Eao3iA5F5-jFaO0MtcH+jivTD8SkDtMfrhQgWHg@mail.gmail.com>
+Subject: Re: [PULL] Module fixes, and a virtio block fix.
+To: Junio C Hamano <gitster@pobox.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Git Mailing List <git@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Alexander Graf <agraf@suse.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_Jan_2013_13_12_30_+1100_ZZLU9HpXdIcywDSR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Jan 20, 2013 at 6:00 PM, Junio C Hamano <gitster@pobox.com> wrote:
+>
+> What you mean by "corrupt" is not clear to me
 
-Hi James,
+Some versions would just silently change the actual name you were using.
 
-Today's linux-next merge of the security tree got a conflict in
-security/integrity/ima/ima_main.c between commit a7f2a366f623 ("ima:
-fallback to MODULE_SIG_ENFORCE for existing kernel module syscall") from
-Linus' tree and commit 750943a30714 ("ima: remove enforce checking
-duplication") from the security tree.
+So if you said "for-linus", it might change it to "linus", just
+because that branch happened to have the same SHA1 commit ID.
 
-I think I fixed it up (see below).
+That's not right.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Other versions would replace the "for-linus" with "**missing-branch**"
+because "for-linus" hadn't mirrored out yet.
 
-diff --cc security/integrity/ima/ima_main.c
-index dba965d,cd00ba3..0000000
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@@ -291,18 -275,10 +275,18 @@@ EXPORT_SYMBOL_GPL(ima_file_check)
-   */
-  int ima_module_check(struct file *file)
-  {
-- 	int rc =3D 0;
--=20
- -	if (!file)
- +	if (!file) {
- +		if (ima_appraise & IMA_APPRAISE_MODULES) {
- +#ifndef CONFIG_MODULE_SIG_FORCE
-- 			rc =3D -EACCES;	/* INTEGRITY_UNKNOWN */
-++			return -EACCES;	/* INTEGRITY_UNKNOWN */
-++#else
-++			return 0;
- +#endif
- +		}
-- 	} else
-- 		rc =3D process_measurement(file, file->f_dentry->d_name.name,
-- 					 MAY_EXEC, MODULE_CHECK);
-- 	return (ima_appraise & IMA_APPRAISE_ENFORCE) ? rc : 0;
-+ 		return -EACCES;	/* INTEGRITY_UNKNOWN */
-++	}
-+ 	return process_measurement(file, file->f_dentry->d_name.name,
-+ 				   MAY_EXEC, MODULE_CHECK);
-  }
- =20
-  static int __init init_ima(void)
+That's not right either.
 
---Signature=_Mon__21_Jan_2013_13_12_30_+1100_ZZLU9HpXdIcywDSR
-Content-Type: application/pgp-signature
+Basically, if "git request-pull" is given a branch/tag name, that is
+the only valid output (although going from branch->tag *might* be
+acceptable). The whole "verify that it actually exists on the remote
+side" must never *ever* actually change the message itself, it should
+just cause a warning outside of the message.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I can't say from the commit message whether that's the thing that
+fixed it or not, but at least some people stopped sending me broken
+pull requests after updating to git. I'm just not sure which of the
+two different failure cases they happened to have (Rusty seems to have
+hit both)
 
-iQIcBAEBCAAGBQJQ/KQOAAoJEECxmPOUX5FEwAMQAImZ8LdFFDOxwtvRgIwTEa8H
-Brg6vMWmm6rSXESspIBob4UGI3VI1pB7J27x28K4Tl4Xpa4GJmbkiNqnedmrA+Js
-lEXpY1v2tcU+9uFTgjSOJrVkpY9ERCwCfwfi923J5230RGlkemW9xHFoMXPx+XvV
-Pd6kEC08ivSjCwMPitC1ZuNw0dI1RcNu5uEmPlQ0D9M/x7RdpMitsSspc4kU/ZuC
-scZvzDXj1sOVwf5kx4bKhOuQMoFpgMidhhvfXaeRNc8q9olXiQ+hQ/c2zMd6c/k2
-IuZICj5wwt1hhmF1bl+WIup2NrT9qnJgY/6WppeDUzyzDs3EfIdY8QerMwy2eHje
-mac/ATddYM9IHmymhNmqtyxoC08Rhpdt7Rx/js3Q2Q5CC0Dv5QZLDqrS/bs9X7+h
-ZJWH7e99IBWN6wSewwUKPdjU/+a9wLAMZygsUB5eboj0GV7xi18cjU3Xf5iUSl/C
-jBRIT17ZDI4laS7LlnHG2bGDN9QIeoj04z2nhmerox5+4YQWMpjBs9Tfbx0CClcn
-QV5lEw3rK2EZmM7QrTyJgRPrS/mbZGKNpg8BERrj+TcL+zdU8vKz5PGo11SrIJtA
-k9VSUELoMKaSgqjAFH2zZE8aoVx0npPCnVOXUFrouYIvJpI7kNp1vjqN4a0Pg7iH
-Wg+88C2E0mznqmQbT2qL
-=MsA6
------END PGP SIGNATURE-----
-
---Signature=_Mon__21_Jan_2013_13_12_30_+1100_ZZLU9HpXdIcywDSR--
+            Linus
