@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab3AUW2m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 17:28:42 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:52003 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756607Ab3AUW2j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 17:28:39 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH 2/7] ARM: sunxi: Add pinctrl driver for Allwinner SoCs
-Date: Mon, 21 Jan 2013 22:28:25 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>, Linus Walleij <linus.walleij@linaro.org>,
-        Stefan Roese <sr@denx.de>, Alejandro Mery <amery@geeks.cl>,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1358544639-14761-1-git-send-email-maxime.ripard@free-electrons.com> <1358544639-14761-3-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1358544639-14761-3-git-send-email-maxime.ripard@free-electrons.com>
+	id S1756873Ab3AUW2u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 17:28:50 -0500
+Received: from mga14.intel.com ([143.182.124.37]:34902 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756607Ab3AUW2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 17:28:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,508,1355126400"; 
+   d="scan'208";a="246708008"
+Date: Mon, 21 Jan 2013 15:28:46 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Dave Jiang <dave.jiang@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH 14/21] NTB: Fix Sparse Warnings
+Message-ID: <20130121222846.GK22208@jonmason-lab>
+References: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
+ <1358586155-23322-15-git-send-email-jon.mason@intel.com>
+ <20130120234534.GD14196@kroah.com>
+ <20130121211350.GH22208@jonmason-lab>
+ <20130121213719.GA20506@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301212228.25770.arnd@arndb.de>
-X-Provags-ID: V02:K0:JMCnUh9Rcb44ZdIW9Yfm+2gFXM+Qu+X9XwToQvfxsKU
- ZaghWrWMi61a595pFtbSIUfer9GtGXR/w/ezxTUfbbFIE0NjCo
- FjOXjfIaNRFJlT+7UtjPW2/gRjG1EJttl3BuEZbqTpl39m8kXj
- aL4xpc7dVz9VJDJ2L0z3+hqSvUhN4K47DVY/9efROhOkTW6yoS
- GBRg3lHpAOPpi7cFdmXlBG50SCiWNrb20cJI7Br05cjSTyGLSs
- bawfQMucCLq48XOjkJdyTbj8iAhAnF62/8qydceiS2P78dakNz
- ZN2sMu6Z7GJcdFse2jJZG78KMMGixPRHeqDhdpT8KXGPuUTGa/
- iYEDnZrNxfcr/Xew9oWs=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130121213719.GA20506@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 January 2013, Maxime Ripard wrote:
-> The Allwinner SoCs have an IP module that handle both the muxing and the
-> GPIOs.
+On Mon, Jan 21, 2013 at 01:37:19PM -0800, Greg KH wrote:
+> On Mon, Jan 21, 2013 at 02:13:50PM -0700, Jon Mason wrote:
+> > On Sun, Jan 20, 2013 at 03:45:34PM -0800, Greg KH wrote:
+> > > On Sat, Jan 19, 2013 at 02:02:28AM -0700, Jon Mason wrote:
+> > > > Address the sparse warnings and resulting fallout
+> > > > 
+> > > > Signed-off-by: Jon Mason <jon.mason@intel.com>
+> > > > ---
+> > > >  drivers/ntb/ntb_hw.c        |    7 ++++---
+> > > >  drivers/ntb/ntb_hw.h        |    4 ++--
+> > > >  drivers/ntb/ntb_transport.c |   32 ++++++++++++++++----------------
+> > > >  3 files changed, 22 insertions(+), 21 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
+> > > > index 18cb5dc..b792ccd 100644
+> > > > --- a/drivers/ntb/ntb_hw.c
+> > > > +++ b/drivers/ntb/ntb_hw.c
+> > > > @@ -104,8 +104,9 @@ MODULE_DEVICE_TABLE(pci, ntb_pci_tbl);
+> > > >   *
+> > > >   * RETURNS: An appropriate -ERRNO error value on error, or zero for success.
+> > > >   */
+> > > > -int ntb_register_event_callback(struct ntb_device *ndev,
+> > > > -				void (*func)(void *handle, unsigned int event))
+> > > > +int
+> > > > +ntb_register_event_callback(struct ntb_device *ndev,
+> > > > +			    void (*func)(void *handle, enum ntb_hw_event event))
+> > > 
+> > > What is sparse complaining about here that moving the function name to
+> > > the start of the line fixes?  That shouldn't be necessary at all.  Ah,
+> > > the enum?  If so, why change the first line at all?
+> > 
+> > All an effort to get it to fit in under 80 chars.
 > 
-> This IP has 8 banks of 32 bits, with a number of pins actually useful
-> for each of these banks varying from one to another, and depending on
-> the SoC used on the board.
+> The original lines were less than 80 characters :)
 > 
-> This driver only implements the pinctrl part, the gpio part will come
-> eventually.
+> > > > --- a/drivers/ntb/ntb_transport.c
+> > > > +++ b/drivers/ntb/ntb_transport.c
+> > > > @@ -58,7 +58,7 @@
+> > > >  #include <linux/ntb.h>
+> > > >  #include "ntb_hw.h"
+> > > >  
+> > > > -#define NTB_TRANSPORT_VERSION	1
+> > > > +#define NTB_TRANSPORT_VERSION	2
+> > > 
+> > > How is this a sparse fix?
+> > 
+> > I changed the format of the header below.
 > 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Ah, ok.
+> 
+> Care to resend this without the first chunk?
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Works for me :)
+
+Resending with the minor edit now.
+
+Thanks,
+Jon
+
+> 
+> thanks,
+> 
+> greg k-h
