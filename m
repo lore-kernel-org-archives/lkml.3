@@ -1,102 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab3AUJWD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 04:22:03 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:52118 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558Ab3AUJWA (ORCPT
+	id S1752768Ab3AUJWy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 04:22:54 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:33607 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558Ab3AUJWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 04:22:00 -0500
-Message-ID: <50FD0893.1050805@gmail.com>
-Date: Mon, 21 Jan 2013 01:21:23 -0800
-From: John Fastabend <john.fastabend@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 21 Jan 2013 04:22:53 -0500
+Message-ID: <50FD08E1.8000302@linux.vnet.ibm.com>
+Date: Mon, 21 Jan 2013 17:22:41 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>
-CC: Daniel Wagner <wagi@monom.org>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Daniel Wagner <daniel.wagner@bmw-carit.de>,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [BUG] Bug in netprio_cgroup and netcls_cgroup ?
-References: <50FCDB5C.4050608@huawei.com> <50FD0144.1000401@monom.org> <50FD0402.6060400@huawei.com>
-In-Reply-To: <50FD0402.6060400@huawei.com>
-Content-Type: text/plain; charset=GB2312
+To: Mike Galbraith <bitbucket@online.de>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
+        mingo@kernel.org, a.p.zijlstra@chello.nl
+Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
+References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com> <50ED384C.1030301@linux.vnet.ibm.com> <1357977704.6796.47.camel@marge.simpson.net> <1357985943.6796.55.camel@marge.simpson.net> <1358155290.5631.19.camel@marge.simpson.net> <50F79256.1010900@linux.vnet.ibm.com> <1358654997.5743.17.camel@marge.simpson.net> <50FCACE3.5000706@linux.vnet.ibm.com> <1358743128.4994.33.camel@marge.simpson.net> <50FCCCF5.30504@linux.vnet.ibm.com> <1358750523.4994.55.camel@marge.simpson.net> <1358752180.4994.65.camel@marge.simpson.net> <50FCF212.3010504@linux.vnet.ibm.com> <1358759355.4994.108.camel@marge.simpson.net>
+In-Reply-To: <1358759355.4994.108.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012109-5140-0000-0000-000002A7505E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 01:01 AM, Li Zefan wrote:
-> On 2013/1/21 16:50, Daniel Wagner wrote:
->> Hi Li,
->>
->> On 21.01.2013 07:08, Li Zefan wrote:
->>> I'm not a network developer, so correct me if I'm wrong.
+On 01/21/2013 05:09 PM, Mike Galbraith wrote:
+> On Mon, 2013-01-21 at 15:45 +0800, Michael Wang wrote: 
+>> On 01/21/2013 03:09 PM, Mike Galbraith wrote:
+>>> On Mon, 2013-01-21 at 07:42 +0100, Mike Galbraith wrote: 
+>>>> On Mon, 2013-01-21 at 13:07 +0800, Michael Wang wrote:
 >>>
->>> Since commit 7955490f732c2b8
->>> ("net: netprio_cgroup: rework update socket logic"), sock->sk->sk_cgrp_prioidx
->>> is set when the socket is created, and won't be updated unless the task is
->>> moved to another cgroup.
+>>>>> May be we could try change this back to the old way later, after the aim
+>>>>> 7 test on my server.
+>>>>
+>>>> Yeah, something funny is going on.
 >>>
->>> Now the problem is, a socket can be _shared_ by multiple processes (fork, SCM_RIGHT).
->>> If we place those processes in different cgroups, and each cgroup has
->>> different configs, but all of the processes will send data via this socket
->>> with the same network priority.
+>>> Never entering balance path kills the collapse.  Asking wake_affine()
+>>> wrt the pull as before, but allowing us to continue should no idle cpu
+>>> be found, still collapsed.  So the source of funny behavior is indeed in
+>>> balance_path.
 >>
->> Wouldn't that be addressed by 48a87cc26c13b68f6cce4e9d769fcb17a6b3e4b8
->>
->>     net: netprio: fd passed in SCM_RIGHTS datagram not set correctly
->>
->>      A socket fd passed in a SCM_RIGHTS datagram was not getting
->>      updated with the new tasks cgrp prioidx. This leaves IO on
->>      the socket tagged with the old tasks priority.
->>
->>      To fix this add a check in the scm recvmsg path to update the
->>      sock cgrp prioidx with the new tasks value.
->>
->> As I read this this should work for net_prio.
->>
+>> Below patch based on the patch set could help to avoid enter balance path
+>> if affine_sd could be found, just like the old logical, would you like to
+>> take a try and see whether it could help fix the collapse?
 > 
-> But after process A passed the socket fd to B, both A and B can use the
-> same socket to send data, right? Then if A and B were placed in different
-> cgroups with differnt configs, A's config won't take effect anymore.
+> No, it does not.
+
+Hmm...what have changed now compared to the old logical?
+
+May be I missed some thing, well, I think I need to find a machine which
+could reproduce the issue firstly.
+
+Regards,
+Michael Wang
+
 > 
-> Am I missing something?
+>>
+>> Regards,
+>> Michael Wang
+>>
+>> ---
+>>  kernel/sched/fair.c |   14 ++++++++------
+>>  1 files changed, 8 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index d600708..4e95bb0 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -3297,6 +3297,8 @@ next:
+>>                         sg = sg->next;
+>>                 } while (sg != sd->groups);
+>>         }
+>> +
+>> +       return -1;
+>>  done:
+>>         return target;
+>>  }
+>> @@ -3349,7 +3351,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>>                  * some cases.
+>>                  */
+>>                 new_cpu = select_idle_sibling(p, prev_cpu);
+>> -               if (idle_cpu(new_cpu))
+>> +               if (new_cpu != -1)
+>>                         goto unlock;
+>>
+>>                 /*
+>> @@ -3363,15 +3365,15 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>>                         goto balance_path;
+>>
+>>                 new_cpu = select_idle_sibling(p, cpu);
+>> -               if (!idle_cpu(new_cpu))
+>> -                       goto balance_path;
+>> -
+>>                 /*
+>>                  * Invoke wake_affine() finally since it is no doubt a
+>>                  * performance killer.
+>>                  */
+>> -               if (wake_affine(sbm->affine_map[prev_cpu], p, sync))
+>> -                       goto unlock;
+>> +               if (new_cpu == -1 ||
+>> +                       !wake_affine(sbm->affine_map[prev_cpu], p, sync))
+>> +                       new_cpu = prev_cpu;
+>> +
+>> +               goto unlock;
+>>         }
+>>
+>>  balance_path:
 > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
-Hi Zefan,
-
-Neil and I discusses this here, http://patchwork.ozlabs.org/patch/172343/
-look towards the bottom of the thread. Quoted here.
-
->> I like the idea, but IIRC last time we tried this I think it caused problems
->> with processes that shared sockets.  That is to say, if you have a parent and
->> child process that dup an socket descriptior, and put them in separate cgroups,
->> you get unpredictable results, as the socket gets assigned a priority based on
->> the last processed that moved cgroups.
->>
->> Neil
->>
-> 
-> Shared sockets creates strange behavior as it exists today. If a dup
-> of the socket fd is created the private data is still shared right. So
-> in this case the sk_cgrp_prioidx value is going to get updated by both
-> threads and then it is a race to see what it happens to be set to in
-> the xmit path.
-> 
-> With this patch at least the behavior is deterministic. Without it
-> I can create the above scenario but have no way to determine what the
-> skb priority will actually be set to.
-> 
-
-Its unfortunate but I'm not sure how to fix it off hand with the shared
-value
-in the socket.
-
-.John
-
--- 
-John Fastabend         Intel Corporation
