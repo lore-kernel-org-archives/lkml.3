@@ -1,97 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214Ab3AUHgI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 02:36:08 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:39301 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab3AUHgF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 02:36:05 -0500
-Message-ID: <50FCEFDE.8000705@gmail.com>
-Date: Mon, 21 Jan 2013 15:35:58 +0800
-From: Mark Zhang <nvmarkzhang@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1752062Ab3AUHhT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 02:37:19 -0500
+Received: from mga01.intel.com ([192.55.52.88]:46989 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751368Ab3AUHhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 02:37:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,504,1355126400"; 
+   d="asc'?scan'208";a="276253851"
+Date: Mon, 21 Jan 2013 02:27:29 -0500
+From: Chen Gong <gong.chen@linux.intel.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/5] x86: Add cpu capability flag
+ X86_FEATURE_TSC_S3_NOTSTOP
+Message-ID: <20130121072729.GB11915@gchen.bj.intel.com>
+Mail-Followup-To: Feng Tang <feng.tang@intel.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+	"H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
+	Len Brown <lenb@kernel.org>,
+	"Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+	linux-kernel@vger.kernel.org
+References: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
+ <1358750325-21217-2-git-send-email-feng.tang@intel.com>
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Mark Zhang <markz@nvidia.com>, gnurou@gmail.com
-Subject: Re: [PATCH 2/3] tegra: pwm-backlight: add tegra pwm-bl driver
-References: <1358591420-7790-1-git-send-email-acourbot@nvidia.com> <1358591420-7790-3-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1358591420-7790-3-git-send-email-acourbot@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DBIVS5p969aUjpLe"
+Content-Disposition: inline
+In-Reply-To: <1358750325-21217-2-git-send-email-feng.tang@intel.com>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2013 06:30 PM, Alexandre Courbot wrote:
-> Add a PWM-backlight subdriver for Tegra boards, with support for
-> Ventana.
-> 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+
+--DBIVS5p969aUjpLe
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Jan 21, 2013 at 02:38:41PM +0800, Feng Tang wrote:
+> Date:	Mon, 21 Jan 2013 14:38:41 +0800
+> From: Feng Tang <feng.tang@intel.com>
+> To: Thomas Gleixner <tglx@linutronix.de>, John Stultz
+>  <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin"
+>  <hpa@linux.intel.com>, x86@kernel.org, Len Brown <lenb@kernel.org>,
+>  "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+>  linux-kernel@vger.kernel.org
+> Cc: Feng Tang <feng.tang@intel.com>
+> Subject: [RFC PATCH 1/5] x86: Add cpu capability flag
+>  X86_FEATURE_TSC_S3_NOTSTOP
+> X-Mailer: git-send-email 1.7.9.5
+>=20
+> On some new Intel Atom processors (Penwell and Cloverview), there is
+> a feature that the TSC won't stop S3, say the TSC value won't be
+> reset to 0 after resume. This feature makes TSC a more reliable
+> clocksource and could benefit the timekeeping code during system
+> suspend/resume cycle, so add a flag for it.
+>=20
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
 > ---
-[...]
->  
-> +	backlight {
-> +		compatible = "pwm-backlight-ventana";
-> +		brightness-levels = <0 16 32 48 64 80 96 112 128 144 160 176 192 208 224 240 255>;
-> +		default-brightness-level = <12>;
-> +
-> +		pwms = <&pwm 2 5000000>;
+>  arch/x86/include/asm/cpufeature.h |    1 +
+>  arch/x86/kernel/cpu/intel.c       |   12 ++++++++++++
+>  2 files changed, 13 insertions(+)
+>=20
+> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpu=
+feature.h
+> index 2d9075e..f7e1eac 100644
+> --- a/arch/x86/include/asm/cpufeature.h
+> +++ b/arch/x86/include/asm/cpufeature.h
+> @@ -100,6 +100,7 @@
+>  #define X86_FEATURE_AMD_DCM     (3*32+27) /* multi-node processor */
+>  #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
+>  #define X86_FEATURE_EAGER_FPU	(3*32+29) /* "eagerfpu" Non lazy FPU resto=
+re */
+> +#define X86_FEATURE_TSC_S3_NOTSTOP (3*32+30) /* TSC doesn't stop in S3 s=
+tate */
+> =20
+We have an existed "TSC always running in C3+" feature and name it as
+X86_FEATURE_NONSTOP_TSC, so how about naming it with the same style,
+like X86_FEATURE_NONSTOP_TSC_S3?
 
-After read the codes of tegra pwm driver & pwm framework, I got to know
-the meaning of this property. So I think we need to add a doc(e.g:
-Documentation/devicetree/bindings/video/backlight/nvidia,tegra20-bl.txt)
-to explain this, "Documentation/devicetree/bindings/pwm/pwm.txt" doesn't
-explain this, because this may be different between different pwm drivers.
 
-> +		pwm-names = "backlight";
-> +
-> +		power-supply = <&vdd_bl_reg>;
-> +		panel-supply = <&vdd_pnl_reg>;
-> +		bl-gpio = <&gpio 28 0>;
-> +		bl-panel = <&gpio 10 0>;
-> +	};
-> +
-[...]
-> diff --git a/drivers/video/backlight/pwm_bl_tegra.c b/drivers/video/backlight/pwm_bl_tegra.c
-> new file mode 100644
-> index 0000000..8f2195b
-> --- /dev/null
-> +++ b/drivers/video/backlight/pwm_bl_tegra.c
+--DBIVS5p969aUjpLe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-So according to the filename, I think we can put all tegra boards codes
-here, right? Just like what you do for Ventana, if I wanna add support
-for cardhu, I can define similar functions -- let's say "init_cardhu",
-"exit_cardhu", "notify_cardhu" and "notify_after_cardhu", right?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-But I think if we do in this way, the file will become very long soon.
-And there are a lot of redundant codes in it. So do you have any
-suggestions?
+iQIcBAEBAgAGBQJQ/O3hAAoJEI01n1+kOSLHjmMQAIm/owcSBPRSgLtt6oMfUYzp
+RBnLMe9vzZWEj5GegOrBiScYB4ZFaDW+Lw+dw0CLr0JdrW9mlFWS2Km3lIsjJNvg
+UcOGKmNykDARghgVgFQQb/oO7SLxe7V/ybul69FD7WIJLk5OqaWZ1xyWyMf3R7Ly
+3L3V7VRGtOhByMPx0QZv3eyflKQ+12reYvTxC370CXwapHhMweh5szC0AbKgwWxm
+SfX95nwKE581DcBE/HzlhouXpPpq19pI8FrpZAWUE0GNv2QQXyu8+XytS7qnMJEb
+H6NB8GpWXEp3vyby3dPLaHlNHerk5l5gI6RmWzlPHqfjiv4pu5Y932Ybtb7dqi7x
+iJG7rh78M1SFWaRkGDrs1GB2elVGiHi/sfhJ2+5TVeaSEGH/P0JRYUBz8OZ79SnC
+j/UAM6dKtZy1cJ334ifvt75sjVnhZyRRJ3JnUcjrk/y/+DD2bY66JaPDImCHBWuc
+DARJOG2o5HgV7qiHYzX41djd8WzUoXaQj0tZSQcALI3EniRYKGcUCB88fqykNmEt
+pncBefTLCgwW0MpAYinaRBk0KU2TAzUOhV/t358kY3z0oqDPoK8Agvhg/UYW9dCD
+g8edzx20PC9By97pdpEzDLJtnWyw5fyfmjdTSz8CoqKElyHDDFCzz+bQgXS2/z7t
+z1UTqrERKNT02AHH+bB6
+=P36F
+-----END PGP SIGNATURE-----
 
-Mark
-> @@ -0,0 +1,159 @@
-> +/*
-> + * pwm-backlight subdriver for Tegra.
-> + *
-> + * Copyright (c) 2013 NVIDIA CORPORATION.  All rights reserved.
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + */
-[...]
-> +MODULE_DESCRIPTION("Backlight Driver for Tegra boards");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:pwm-tegra-backlight");
-> +
-> +
-> 
+--DBIVS5p969aUjpLe--
