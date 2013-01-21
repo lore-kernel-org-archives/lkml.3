@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab3AUVCD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 16:02:03 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:47446 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab3AUVCA (ORCPT
+	id S1756769Ab3AUVCY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 16:02:24 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:58978 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752718Ab3AUVCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 16:02:00 -0500
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Philip Avinash <avinashphilip@ti.com>
-Cc: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <zonque@gmail.com>
-Subject: Re: [PATCH 2/3] ARM: dts: AM33XX: Add GPMC node
-References: <1358491295-4022-1-git-send-email-avinashphilip@ti.com>
-	<1358491295-4022-3-git-send-email-avinashphilip@ti.com>
-Date: Mon, 21 Jan 2013 22:01:53 +0100
-In-Reply-To: <1358491295-4022-3-git-send-email-avinashphilip@ti.com> (Philip
-	Avinash's message of "Fri, 18 Jan 2013 12:11:34 +0530")
-Message-ID: <8738xu9rni.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Mon, 21 Jan 2013 16:02:22 -0500
+X-Sasl-enc: ILzFNTygsECT8OfRAEw/2bY+zUhWkQkb7c1Py4WseB0c 1358802141
+Date: Mon, 21 Jan 2013 13:02:19 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wolfgang Frisch <wfpub@roembden.net>, Johan Hovold <jhovold@gmail.com>
+Subject: Re: linux-next: manual merge of the usb tree with Linus' tree
+Message-ID: <20130121210219.GB9184@kroah.com>
+References: <20130121150711.c4673d930c2f00253c2e471a@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130121150711.c4673d930c2f00253c2e471a@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Philip" == Philip Avinash <avinashphilip@ti.com> writes:
+On Mon, Jan 21, 2013 at 03:07:11PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the usb tree got a conflict in
+> drivers/usb/serial/io_ti.c between commit 1ee0a224bc9a ("USB: io_ti: Fix
+> NULL dereference in chase_port()") from Linus' tree and commit
+> f40d781554ef ("USB: io_ti: kill custom closing_wait implementation") from
+> the usb tree.
+> 
+> I fixed it up (the latter removed the code fixed by the former, so I just
+> used thet) and can carry the fix as necessary (no action is required).
 
- Philip> From: "Philip, Avinash" <avinashphilip@ti.com>
- Philip> Add GPMC data node to AM33XX device tree file.
+Yes, that is the correct fix, thanks for this.
 
- Philip> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
- Philip> ---
- Philip>  arch/arm/boot/dts/am33xx.dtsi |   12 ++++++++++++
- Philip>  1 file changed, 12 insertions(+)
-
- Philip> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
- Philip> index eaef5e7..f4209d8 100644
- Philip> --- a/arch/arm/boot/dts/am33xx.dtsi
- Philip> +++ b/arch/arm/boot/dts/am33xx.dtsi
- Philip> @@ -393,5 +393,17 @@
- Philip>  			ti,hwmods = "elm";
- Philip>  			status = "disabled";
- Philip>  		};
- Philip> +
- Philip> +		gpmc: gpmc@50000000 {
- Philip> +			compatible = "ti,am3352-gpmc";
- Philip> +			ti,hwmods = "gpmc";
- Philip> +			reg = <0x50000000 0x2000>;
- Philip> +			interrupts = <100>;
- Philip> +			num-cs = <8>;
-
-Next to Jan's comment about am335x having 7 cs signals, I just realized
-the difference in compatible string between the gpmc and elm. The gpmc
-refers to a real device (which is afaik how it should be done), but the
-elm compatible is simply ti,am33xx-elm.
-
-Presumably it should have been ti,am3352-elm in the binding instead?
-
-Other than that it looks fine.
-
-Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
-
--- 
-Bye, Peter Korsgaard
+greg k-h
