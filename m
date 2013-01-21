@@ -1,71 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab3AURiU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:38:20 -0500
-Received: from mga01.intel.com ([192.55.52.88]:35353 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752909Ab3AURiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:38:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,508,1355126400"; 
-   d="scan'208";a="276458718"
-Date: Mon, 21 Jan 2013 10:38:18 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH 01/21] NTB: correct missing readq/writeq errors
-Message-ID: <20130121173818.GD22208@jonmason-lab>
-References: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
- <1358586155-23322-2-git-send-email-jon.mason@intel.com>
- <20130120234005.GA14196@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130120234005.GA14196@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755330Ab3AURjB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:39:01 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:49772 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab3AURjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 12:39:00 -0500
+From: Matt Sealey <matt@genesi-usa.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Matt Sealey <matt@genesi-usa.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] mc13892-regulator: correct/refine handling of the SWxHI bit
+Date: Mon, 21 Jan 2013 11:38:40 -0600
+Message-Id: <1358789920-1341-1-git-send-email-matt@genesi-usa.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 03:40:05PM -0800, Greg KH wrote:
-> On Sat, Jan 19, 2013 at 02:02:15AM -0700, Jon Mason wrote:
-> > Atomic readq and writeq do not exist by default on some 32bit
-> > architectures, thus causing compile errors due to non-existent symbols.
-> > In those cases, use the definitions of those symbols from
-> > include/asm-generic/io-64-nonatomic-hi-lo.h
-> > 
-> > Signed-off-by: Jon Mason <jon.mason@intel.com>
-> > ---
-> >  drivers/ntb/ntb_hw.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-> > index 4c71b17..0b46fef 100644
-> > --- a/drivers/ntb/ntb_hw.c
-> > +++ b/drivers/ntb/ntb_hw.c
-> > @@ -45,6 +45,7 @@
-> >   * Contact Information:
-> >   * Jon Mason <jon.mason@intel.com>
-> >   */
-> > +#include <asm-generic/io-64-nonatomic-hi-lo.h>
-> 
-> Really?  This seems really odd.  Usually we just don't build the code
-> for any platform that doesn't have readq/writeq.  Otherwise, shouldn't
-> those arches just include this file themselves to keep everything
-> working?  Individual drivers shouldn't have to do this.
+MC13892 PMIC supports a "HI" bit for 3 of it's 4 buck switcher outputs,
+which enables a higher set of voltage ranges.
 
-There is no readq/writeq for 32bit x86.  I was using this header file
-to get around that.  I freely admit that I have done 0 testing on
-32bit, but it should work.  If you prefer I modify the Kconfig to only
-enable this for x86_64 until such time as I test on x86_32, I will
-happily submit that patch.
+Despite a comment in the code ('sw regulators need special care due to the
+"hi" bit'), it actually does not take special care since it does not modify
+it's use of the selector table index when this bit is set, giving us very
+odd behavior when setting a high voltage on supported switchers or listing
+current voltages. Net effect is in best case the kernel and sysfs report
+lower voltages than are actually set in hardware (1300mV instead of 1800mV
+for example) and in the worst case setting a voltage (e.g. 1800mV) will cause
+an undervoltage condition (e.g. 1300mV).
 
-Thanks,
-Jon
+Correct the behavior, taking into account SW1 doesn't support the HI bit,
+and as such we need to ignore it.
 
-> 
-> So, I'm not going to take this one just yet, sorry.
-> 
-> greg k-h
+While we are modifying these functions, fix and optimize the following;
+
+* set_voltage_sel callback was using .reg instead of .vsel_reg - since
+  they were set to the same value it actually didn't break anything but
+  it would be semantically incorrect to use .reg in this case. We now use
+  .vsel_reg and be consistent.
+* vsel_shift is always 0 for every SWx regulator, and constantly shifting
+  and masking off the bottom few bits is time consuming and makes the
+  code very hard to read - optimize this out.
+* get_voltage_sel uses the variable "val" and set_voltage_sel uses the
+  variable "selector" (and reg_value). Introduce the variable "selector"
+  to get_voltage_sel such that it makes more sense and allow some leaner
+  code in light of the modifications in this patch. Add better exposure
+  to the debug print so the register value AND the selector are printed as
+  this will adequately show the HI bit in the register.
+* correct a comment in probe which is doing a version check. Magic
+  values are awful but for once instance, a comment does just as
+  good a job as something symbolic.
+
+Signed-off-by: Matt Sealey <matt@genesi-usa.com>
+Tested-by: Steev Klimaszewski <steev@genesi-usa.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/regulator/mc13892-regulator.c |   72 +++++++++++++++++++++++++--------
+ 1 file changed, 56 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/regulator/mc13892-regulator.c b/drivers/regulator/mc13892-regulator.c
+index 0d84b1f..169457b 100644
+--- a/drivers/regulator/mc13892-regulator.c
++++ b/drivers/regulator/mc13892-regulator.c
+@@ -164,6 +164,14 @@ static const unsigned int mc13892_sw1[] = {
+ 	1350000, 1375000
+ };
+ 
++/*
++ * Note: this table is used to derive SWxVSEL by index into
++ * the array. Offset the values by the index of 1100000uV
++ * to get the actual register value for that voltage selector
++ * if the HI bit is to be set as well.
++ */
++#define MC13892_SWxHI_SEL_OFFSET		20
++
+ static const unsigned int mc13892_sw[] = {
+ 	600000,   625000,  650000,  675000,  700000,  725000,
+ 	750000,   775000,  800000,  825000,  850000,  875000,
+@@ -239,7 +247,6 @@ static const unsigned int mc13892_pwgtdrv[] = {
+ };
+ 
+ static struct regulator_ops mc13892_gpo_regulator_ops;
+-/* sw regulators need special care due to the "hi bit" */
+ static struct regulator_ops mc13892_sw_regulator_ops;
+ 
+ 
+@@ -396,7 +403,7 @@ static int mc13892_sw_regulator_get_voltage_sel(struct regulator_dev *rdev)
+ {
+ 	struct mc13xxx_regulator_priv *priv = rdev_get_drvdata(rdev);
+ 	int ret, id = rdev_get_id(rdev);
+-	unsigned int val;
++	unsigned int val, selector;
+ 
+ 	dev_dbg(rdev_get_dev(rdev), "%s id: %d\n", __func__, id);
+ 
+@@ -407,12 +414,28 @@ static int mc13892_sw_regulator_get_voltage_sel(struct regulator_dev *rdev)
+ 	if (ret)
+ 		return ret;
+ 
+-	val = (val & mc13892_regulators[id].vsel_mask)
+-		>> mc13892_regulators[id].vsel_shift;
++	/*
++	 * Figure out if the HI bit is set inside the switcher mode register
++	 * since this means the selector value we return is at a different
++	 * offset into the selector table.
++	 *
++	 * According to the MC13892 documentation note 59 (Table 47) the SW1
++	 * buck switcher does not support output range programming therefore
++	 * the HI bit must always remain 0. So do not do anything strange if
++	 * our register is MC13892_SWITCHERS0.
++	 */
++
++	selector = val & mc13892_regulators[id].vsel_mask;
++
++	if ((mc13892_regulators[id].vsel_reg != MC13892_SWITCHERS0) &&
++	    (val & MC13892_SWITCHERS0_SWxHI)) {
++		selector += MC13892_SWxHI_SEL_OFFSET;
++	}
+ 
+-	dev_dbg(rdev_get_dev(rdev), "%s id: %d val: %d\n", __func__, id, val);
++	dev_dbg(rdev_get_dev(rdev), "%s id: %d val: 0x%08x selector: %d\n",
++			__func__, id, val, selector);
+ 
+-	return val;
++	return selector;
+ }
+ 
+ static int mc13892_sw_regulator_set_voltage_sel(struct regulator_dev *rdev,
+@@ -425,18 +448,35 @@ static int mc13892_sw_regulator_set_voltage_sel(struct regulator_dev *rdev,
+ 
+ 	volt = rdev->desc->volt_table[selector];
+ 	mask = mc13892_regulators[id].vsel_mask;
+-	reg_value = selector << mc13892_regulators[id].vsel_shift;
+-
+-	if (volt > 1375000) {
+-		mask |= MC13892_SWITCHERS0_SWxHI;
+-		reg_value |= MC13892_SWITCHERS0_SWxHI;
+-	} else if (volt < 1100000) {
+-		mask |= MC13892_SWITCHERS0_SWxHI;
+-		reg_value &= ~MC13892_SWITCHERS0_SWxHI;
++	reg_value = selector;
++
++	/*
++	 * Don't mess with the HI bit or support HI voltage offsets for SW1.
++	 *
++	 * Since the get_voltage_sel callback has given a fudged value for
++	 * the selector offset, we need to back out that offset if HI is
++	 * to be set so we write the correct value to the register.
++	 *
++	 * The HI bit addition and selector offset handling COULD be more
++	 * complicated by shifting and masking off the voltage selector part
++	 * of the register then logical OR it back in, but since the selector
++	 * is at bits 4:0 there is very little point. This makes the whole
++	 * thing more readable and we do far less work.
++	 */
++
++	if (mc13892_regulators[id].vsel_reg != MC13892_SWITCHERS0) {
++		if (volt > 1375000) {
++			reg_value -= MC13892_SWxHI_SEL_OFFSET;
++			reg_value |= MC13892_SWITCHERS0_SWxHI;
++			mask |= MC13892_SWITCHERS0_SWxHI;
++		} else if (volt < 1100000) {
++			reg_value &= ~MC13892_SWITCHERS0_SWxHI;
++			mask |= MC13892_SWITCHERS0_SWxHI;
++		}
+ 	}
+ 
+ 	mc13xxx_lock(priv->mc13xxx);
+-	ret = mc13xxx_reg_rmw(priv->mc13xxx, mc13892_regulators[id].reg, mask,
++	ret = mc13xxx_reg_rmw(priv->mc13xxx, mc13892_regulators[id].vsel_reg, mask,
+ 			      reg_value);
+ 	mc13xxx_unlock(priv->mc13xxx);
+ 
+@@ -520,7 +560,7 @@ static int mc13892_regulator_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto err_unlock;
+ 
+-	/* enable switch auto mode */
++	/* enable switch auto mode (on 2.0A silicon only) */
+ 	if ((val & 0x0000FFFF) == 0x45d0) {
+ 		ret = mc13xxx_reg_rmw(mc13892, MC13892_SWITCHERS4,
+ 			MC13892_SWITCHERS4_SW1MODE_M |
+-- 
+1.7.10.4
+
