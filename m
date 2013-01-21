@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab3AUVZr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 16:25:47 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10763 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab3AUVR3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 16:17:29 -0500
-X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Ct_QjbzOAfgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=wZsor_wAm5oA:10 a=VwQbUJbxAAAA:8 a=EWowKxTDecqCg0zHWx0A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130121211403.337052956@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 21 Jan 2013 16:14:03 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 00/13 -next] [For linux-next] tracing: Review of changes
+	id S1752376Ab3AUVcT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 16:32:19 -0500
+Received: from mail1.bemta7.messagelabs.com ([216.82.255.50]:28042 "EHLO
+	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751541Ab3AUVcS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 16:32:18 -0500
+X-Greylist: delayed 417 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jan 2013 16:32:17 EST
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-160.messagelabs.com!1358803517!10645035!8
+X-Originating-IP: [216.166.12.72]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.8; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: =?iso-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        Mori Hess <fmhess@users.sourceforge.net>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 21 Jan 2013 15:25:17 -0600
+Subject: RE: [PATCH 1/2] staging/comedi: Add pci_driver.name to skel driver
+Thread-Topic: [PATCH 1/2] staging/comedi: Add pci_driver.name to skel driver
+Thread-Index: Ac34HWfHJMhDml0rRNWU9fRcHdPS1AAAA3Cg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F00207A6F694A5@AUSP01VMBX24.collaborationhost.net>
+References: <1358801517-18265-1-git-send-email-peterhuewe@gmx.de>
+ <ADE657CA350FB648AAC2C43247A983F00207A6F69495@AUSP01VMBX24.collaborationhost.net>
+ <201301212225.29314.PeterHuewe@gmx.de>
+In-Reply-To: <201301212225.29314.PeterHuewe@gmx.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm posting these as a generic review of the changes I'll be pushing
-into linux-next and will be pushing this for 3.9.
+On Monday, January 21, 2013 2:25 PM, Peter Hüwe wrote:
+>
+> It's okay to drop my patches so you don't have to rebase.
+>
+>  (I posted a version with the missing comma nevertheless)
 
-These patches have passed a series of tests I've run on few machines
-with several different configs and such.
+Peter,
 
-You can find the patches here. I'll add these to linux-next tomorrow.
+Your updated versions are ok. I'm about done with the rebase anyway.
+Please make sure to at least compile test your patches before posting
+in the future.
 
--- Steve
+Greg,
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/core
+These two patches need to be applied before my cleanup series for
+the comedi drivers.c file. I'll be posting them shortly.
 
-Head SHA1: a701a1b03bf36d4e31c9fd036a96bde5a11cd5ce
+Thanks,
+Hartley
 
-
-Fengguang Wu (1):
-      tracing/syscalls: Make local functions static
-
-Hiraku Toyooka (1):
-      tracing: Add checks if tr->buffer is NULL in tracing_reset{_online_cpus}
-
-Jovi Zhang (1):
-      tracing: Verify target file before registering a uprobe event
-
-Masami Hiramatsu (3):
-      ftrace: Move ARCH_SUPPORTS_FTRACE_SAVE_REGS in Kconfig
-      kprobes/x86: Move ftrace-based kprobe code into kprobes-ftrace.c
-      kprobes/x86: Move kprobes stuff under arch/x86/kernel/kprobes/
-
-Shan Wei (1):
-      tracing: Use this_cpu_ptr per-cpu helper
-
-Steven Rostedt (6):
-      tracing: Fix sparse warning with is_signed_type() macro
-      ring-buffer: Remove unnecessary recusive call in rb_advance_iter()
-      tracing: Remove unneeded check of max_tr->buffer before tracing_reset
-      tracing/lockdep: Disable lockdep first in entering NMI
-      tracing/fgraph: Add max_graph_depth to limit function_graph depth
-      tracing: Remove the extra 4 bytes of padding in events
-
-----
- arch/Kconfig                         |   12 +
- arch/x86/Kconfig                     |    2 +
- arch/x86/include/asm/ftrace.h        |    1 -
- arch/x86/kernel/Makefile             |    3 +-
- arch/x86/kernel/kprobes-common.h     |  102 ---
- arch/x86/kernel/kprobes-opt.c        |  512 ---------------
- arch/x86/kernel/kprobes.c            | 1130 ----------------------------------
- arch/x86/kernel/kprobes/Makefile     |    7 +
- arch/x86/kernel/kprobes/common.h     |  113 ++++
- arch/x86/kernel/kprobes/core.c       | 1064 ++++++++++++++++++++++++++++++++
- arch/x86/kernel/kprobes/ftrace.c     |   93 +++
- arch/x86/kernel/kprobes/opt.c        |  512 +++++++++++++++
- include/linux/ftrace.h               |    6 +-
- include/linux/ftrace_event.h         |    3 +-
- include/linux/hardirq.h              |    4 +-
- include/linux/kprobes.h              |   12 +-
- kernel/kprobes.c                     |    8 +-
- kernel/trace/Kconfig                 |    8 +
- kernel/trace/blktrace.c              |    2 +-
- kernel/trace/ftrace.c                |    6 +-
- kernel/trace/ring_buffer.c           |    2 +-
- kernel/trace/trace.c                 |   15 +-
- kernel/trace/trace_events.c          |    1 -
- kernel/trace/trace_functions_graph.c |   60 +-
- kernel/trace/trace_selftest.c        |    2 +-
- kernel/trace/trace_syscalls.c        |   18 +-
- kernel/trace/trace_uprobe.c          |    6 +-
- 27 files changed, 1909 insertions(+), 1795 deletions(-)
