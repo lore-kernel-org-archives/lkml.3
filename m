@@ -1,218 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab3AURTP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:19:15 -0500
+	id S1756341Ab3AURT3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:19:29 -0500
 Received: from goliath.siemens.de ([192.35.17.28]:19848 "EHLO
 	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755253Ab3AURSi (ORCPT
+	with ESMTP id S1756297Ab3AURTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:18:38 -0500
+	Mon, 21 Jan 2013 12:19:25 -0500
+X-Greylist: delayed 753 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jan 2013 12:19:25 EST
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>
-Subject: [PATCH v4 03/13] scripts/gdb: Add lx-symbols command
-Date: Mon, 21 Jan 2013 18:06:10 +0100
-Message-Id: <2ce8613114b7af6da0b55bdab8c38c69024fbd13.1358787929.git.jan.kiszka@siemens.com>
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
+        linux-ia64@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>, sparclinux@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>
+Subject: [PATCH v4 00/13] Add gdb python scripts as kernel debugging helpers
+Date: Mon, 21 Jan 2013 18:06:07 +0100
+Message-Id: <cover.1358787929.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
-References: <cover.1358787929.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
-References: <cover.1358787929.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is probably the most useful helper when debugging kernel modules:
-lx-symbols will first reload vmlinux. Then it searches recursively for
-*.ko files in the specified paths and the current directory. Finally it
-walks the kernel's module list, issuing the necessary add-symbol-file
-command for each loaded module so that gdb know which module symbol
-correspond to which address.
+Version 4 of this series is a rebase over latest 3.8-rc4+. Moreover, I
+updated the mechanism that implements automatic symbol loading for new
+modules. It was affected by the refactorings around finit_module.
 
-In addition, the command installs a silent breakpoint in the load_module
-function at the point where the module was loaded but not yet
-initialized. The breakpoint handler will try to load symbols from the
-module files found during lx-symbols execution. This way, breakpoints
-can be set to module initialization functions, and there is usually no
-need to explicitly call lx-symbols after (re-)loading a module.
+While waiting for feedback who could imagine picking this up for merge,
+I wrote a tiny tutorial, see below.
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
+
+Here is the original series intro again:
+
+This adds the infrastructure and first tools that make kernel debugging
+through gdb more comfortable. Since 7.0, gdb supports python scripting.
+And this opens the doors to automate steps like the tedious loading of
+module symbols at the right address, resolving per-cpu variables or even
+retrieving the current kernel log without resuming an stopped target.
+
+Many of the helpers naturally depend on the layout of structures or
+internal mechanics of the kernel. So the best place to maintain such
+things, keeping them consistent with the corresponding kernel is, well,
+the kernel itself.
+
+While these scripts have been originally developed for debugging via
+QEMU/KVM, I've now also added the required bits for KGDB. Works fine,
+but as QEMU/KVM tends to outperform KGDB it remains the recommendation
+- when available.
+
+There are two architecture dependencies so far, one regarding per-cpu,
+the other regarding thread_info calculation. None of them I was able to
+test on a target, so I'm counting on review/testing by the corresponding
+communities.
+
+This series should be considered the foundation of much more kernel
+state exploration helpers, e.g. around tasks, timers, locks, sockets -
+I guess people will have even more ideas.
+
+
+And this is a tutorial for the gdb extension using QEMU/KVM as target
+platform:
+
+ o Set up a virtual Linux machine for KVM (see www.linux-kvm.org and
+   www.qemu.org for more details)
+
+ o Build the kernel with this series applied, enabling CONFIG_DEBUG_INFO
+   (but leave CONFIG_DEBUG_INFO_REDUCED off)
+
+ o Install that kernel on the guest
+
+ o Enable the gdb stub of QEMU/KVM, either
+    - at VM startup time by appending "-s" to the QEMU command line
+   or
+    - during runtime by issuing "gdbserver" from the QEMU monitor
+      console
+
+ o cd /path/to/linux-build
+
+ o Start gdb: gdb vmlinux
+
+ o Attach to the booted guest:
+    (gdb) target remote :1234
+
+ o Load module (and main kernel) symbols:
+    (gdb) lx-symbols
+    loading vmlinux
+    scanning for modules in /home/user/linux/build
+    loading @0xffffffffa0020000: /home/user/linux/build/net/netfilter/xt_tcpudp.ko
+    loading @0xffffffffa0016000: /home/user/linux/build/net/netfilter/xt_pkttype.ko
+    loading @0xffffffffa0002000: /home/user/linux/build/net/netfilter/xt_limit.ko
+    loading @0xffffffffa00ca000: /home/user/linux/build/net/packet/af_packet.ko
+    loading @0xffffffffa003c000: /home/user/linux/build/fs/fuse/fuse.ko
+    ...
+    loading @0xffffffffa0000000: /home/user/linux/build/drivers/ata/ata_generic.ko
+
+ o Set a breakpoint on some not yet loaded module function, e.g.:
+    (gdb) b btrfs_init_sysfs
+    Function "btrfs_init_sysfs" not defined.
+    Make breakpoint pending on future shared library load? (y or [n]) y
+    Breakpoint 1 (btrfs_init_sysfs) pending.
+
+ o Continue the target
+
+ o Load the module on the target and watch what happens:
+    loading @0xffffffffa0034000: /home/user/linux/build/lib/libcrc32c.ko
+    loading @0xffffffffa0050000: /home/user/linux/build/lib/lzo/lzo_compress.ko
+    loading @0xffffffffa006e000: /home/user/linux/build/lib/zlib_deflate/zlib_deflate.ko
+    loading @0xffffffffa01b1000: /home/user/linux/build/fs/btrfs/btrfs.ko
+
+    Breakpoint 1, btrfs_init_sysfs () at /home/user/linux/fs/btrfs/sysfs.c:36
+    36              btrfs_kset = kset_create_and_add("btrfs", NULL, fs_kobj);
+
+ o Let's examine the current task a bit:
+    (gdb) p ().pid
+     = 4998
+    (gdb) p ().comm
+     = "modprobe\000\000\000\000\000\000\000"
+
+ o Dump the log buffer of target kernel:
+    (gdb) lx-dmesg
+    [     0.000000] Initializing cgroup subsys cpuset
+    [     0.000000] Initializing cgroup subsys cpu
+    [     0.000000] Linux version 3.8.0-rc4-dbg+ (...
+    [     0.000000] Command line: root=/dev/sda2 resume=/dev/sda1 vga=0x314
+    [     0.000000] e820: BIOS-provided physical RAM map:
+    [     0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
+    [     0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff] reserved
+    ....
+
+ o Make use of the per-cpu helper for the current or a specified CPU:
+    (gdb) p ("runqueues").nr_running
+     = 1
+    (gdb) p ("runqueues", 2).nr_running
+     = 0
+
+ o And now we are digging deep into hrtimers using the container_of
+   helper:
+    (gdb) set  = ("hrtimer_bases").clock_base[0].active.next
+    (gdb) p *(, "struct hrtimer", "node")
+     = {
+      node = {
+        node = {
+          __rb_parent_color = 18446612133355256072,
+          rb_right = 0x0 <irq_stack_union>,
+          rb_left = 0x0 <irq_stack_union>
+        },
+        expires = {
+          tv64 = 1835268000000
+        }
+      },
+      _softexpires = {
+        tv64 = 1835268000000
+      },
+      function = 0xffffffff81078232 <tick_sched_timer>,
+      base = 0xffff88003fd0d6f0,
+      state = 1,
+      start_pid = 0,
+      start_site = 0xffffffff81055c1f <hrtimer_start_range_ns+20>,
+      start_comm = "swapper/2\000\000\000\000\000\000"
+    }
+
+Hope this provided some ideas and inspirations on how the commands and
+helper functions can support kernel development.
+
+Enjoy,
+Jan
+
+PS: Also available via git://git.kiszka.org/linux.git queues/gdb-scripts
+
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Fenghua Yu <fenghua.yu@intel.com>
+CC: Kay Sievers <kay@vrfy.org>
+CC: linux-ia64@vger.kernel.org
+CC: linux-kbuild@vger.kernel.org
+CC: Michal Marek <mmarek@suse.cz>
+CC: sparclinux@vger.kernel.org
+CC: Tony Luck <tony.luck@intel.com>
+
+Jan Kiszka (13):
+  scripts/gdb: Add infrastructure
+  scripts/gdb: Add container_of helper and convenience function
+  scripts/gdb: Add lx-symbols command
+  scripts/gdb: Add get_target_endianness helper
+  scripts/gdb: Add read_u16/32/64 helpers
+  scripts/gdb: Add lx-dmesg command
+  scripts/gdb: Add task iteration helper
+  scripts/gdb: Add helper and convenience function to look up tasks
+  scripts/gdb: Add is_target_arch helper
+  scripts/gdb: Add internal helper and convenience function to retrieve
+    thread_info
+  scripts/gdb: Add get_gdbserver_type helper
+  scripts/gdb: Add internal helper and convenience function for per-cpu
+    lookup
+  scripts/gdb: Add lx_current convenience function
+
+ Makefile                   |    5 +-
+ scripts/Makefile           |    3 +-
+ scripts/gdb/Makefile       |    9 +++
+ scripts/gdb/dmesg.py       |   63 ++++++++++++++++++
+ scripts/gdb/percpu.py      |   76 ++++++++++++++++++++++
  scripts/gdb/symbols.py     |  153 ++++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py |    1 +
- 2 files changed, 154 insertions(+), 0 deletions(-)
+ scripts/gdb/task.py        |  108 +++++++++++++++++++++++++++++++
+ scripts/gdb/utils.py       |  137 +++++++++++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |   28 ++++++++
+ 9 files changed, 580 insertions(+), 2 deletions(-)
+ create mode 100644 scripts/gdb/Makefile
+ create mode 100644 scripts/gdb/dmesg.py
+ create mode 100644 scripts/gdb/percpu.py
  create mode 100644 scripts/gdb/symbols.py
+ create mode 100644 scripts/gdb/task.py
+ create mode 100644 scripts/gdb/utils.py
+ create mode 100644 scripts/gdb/vmlinux-gdb.py
 
-diff --git a/scripts/gdb/symbols.py b/scripts/gdb/symbols.py
-new file mode 100644
-index 0000000..c50d5e1
---- /dev/null
-+++ b/scripts/gdb/symbols.py
-@@ -0,0 +1,153 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  load kernel and module symbols
-+#
-+# Copyright (c) Siemens AG, 2011-2013
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import gdb
-+import os
-+import re
-+import string
-+
-+from utils import *
-+
-+class LinuxSymbols(gdb.Command):
-+	__doc__ = "(Re-)load symbols of Linux kernel and currently loaded modules.\n" \
-+		  "\n" \
-+		  "The kernel (vmlinux) is taken from the current working directly. Modules (.ko)\n" \
-+		  "are scanned recursively, starting in the same directory. Optionally, the module\n" \
-+		  "search path can be extended by a space separated list of paths passed to the\n" \
-+		  "lx-symbols command."
-+
-+	module_files = []
-+	breakpoint = None
-+
-+	def __init__(self):
-+		super(LinuxSymbols, self).__init__("lx-symbols",
-+						   gdb.COMMAND_FILES,
-+						   gdb.COMPLETE_FILENAME)
-+
-+	def _load_module_symbols(self, module):
-+		module_name = module['name'].string()
-+		module_addr = str(module['module_core']).split()[0]
-+		module_pattern = ".*/" + \
-+			string.replace(module_name, "_", r"[_\-]") + r"\.ko$"
-+		module_path = ""
-+		for name in self.module_files:
-+			if re.match(module_pattern, name):
-+				module_path = name
-+				break
-+
-+		if module_path:
-+			print "loading @" + module_addr + ": " + module_path
-+			if gdb.VERSION >= "7.2":
-+				gdb.execute("add-symbol-file " + \
-+					    module_path + " " + module_addr,
-+					    to_string = True)
-+			else:
-+				gdb.execute("add-symbol-file " + \
-+					    module_path + " " + module_addr)
-+		else:
-+			print "no module object found for '" + \
-+			      module_name + "'"
-+
-+	if gdb_version >= "7.3":
-+		class _LoadModuleBreakpoint(gdb.Breakpoint):
-+			def __init__(self, spec, gdb_command):
-+				super(LinuxSymbols._LoadModuleBreakpoint,
-+				      self).__init__(spec, internal = True)
-+				self.silent = True
-+				self.gdb_command = gdb_command
-+
-+			def stop(self):
-+				module = gdb.parse_and_eval("mod")
-+				self.gdb_command._load_module_symbols(module)
-+				return False
-+
-+		def _find_breakpoint_location(self):
-+			breakpoint_match = "^[0-9]*[\t]*err = parse_args\(.*"
-+
-+			src = gdb.execute("list kernel/module.c:load_module",
-+					  to_string = True)
-+			done = False
-+			lineno = None
-+			while not done:
-+				src = gdb.execute("list", to_string = True)
-+				for line in src.splitlines():
-+					if re.match(breakpoint_match, line):
-+						done = True
-+						lineno = line.split()[0]
-+						break
-+					elif re.match("^[0-9]*\t}$", line):
-+						done = True
-+						break
-+			return lineno
-+
-+	def _load_all_module_symbols(self, arg):
-+		modules = gdb.parse_and_eval("modules")
-+		entry = modules['next']
-+		if entry == modules.address:
-+			print "no modules found"
-+			return
-+
-+		self.module_files = []
-+		paths = arg.split()
-+		paths.append(os.getcwd())
-+		for path in paths:
-+			print "scanning for modules in " + path
-+			for root, dirs, files in os.walk(path):
-+				for name in files:
-+					if re.match(r".*\.ko$", name):
-+						self.module_files.append(
-+							root + "/" + name)
-+
-+		module_type = gdb.lookup_type("struct module").pointer()
-+
-+		while entry != modules.address:
-+			module = container_of(entry, module_type, "list")
-+			self._load_module_symbols(module)
-+			entry = entry['next']
-+
-+	def invoke(self, arg, from_tty):
-+		print "loading vmlinux"
-+
-+		saved_states = []
-+		if (gdb.breakpoints() != None):
-+			for breakpoint in gdb.breakpoints():
-+				saved_states.append({
-+					'breakpoint': breakpoint,
-+					'enabled': breakpoint.enabled })
-+
-+		# drop all current symbols and reload vmlinux
-+		gdb.execute("symbol-file", to_string = True)
-+		gdb.execute("symbol-file vmlinux")
-+
-+		self._load_all_module_symbols(arg)
-+
-+		for saved_state in saved_states:
-+			saved_state['breakpoint'].enabled = \
-+				saved_state['enabled']
-+
-+		if gdb_version < "7.3":
-+			print "Note: symbol update on module loading not " \
-+			      "supported with this gdb version"
-+		else:
-+			if self.breakpoint != None:
-+				self.breakpoint.delete()
-+				self.breakpoint = None
-+			lineno = self._find_breakpoint_location()
-+			if lineno != None:
-+				self.breakpoint = self._LoadModuleBreakpoint(
-+					lineno, self)
-+			else:
-+				print "unable to detect breakpoint location " \
-+				      "of load module completion"
-+
-+LinuxSymbols()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index 8ef76c9..3553b7d 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -22,3 +22,4 @@ if gdb_version < "7.1":
- 	      "to work."
- else:
- 	import utils
-+	import symbols
 -- 
 1.7.3.4
 
