@@ -1,106 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab3AUOrR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 09:47:17 -0500
-Received: from mga09.intel.com ([134.134.136.24]:42784 "EHLO mga09.intel.com"
+	id S1756114Ab3AUOrm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 09:47:42 -0500
+Received: from 8bytes.org ([85.214.48.195]:42286 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752835Ab3AUOrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 09:47:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,506,1355126400"; 
-   d="scan'208";a="250146777"
-Message-ID: <50FD54EA.4060804@intel.com>
-Date: Mon, 21 Jan 2013 22:47:06 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1755965Ab3AUOrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 09:47:40 -0500
+Date: Mon, 21 Jan 2013 15:47:37 +0100
+From: =?iso-8859-1?Q?J=F6rg_R=F6del?= <joro@8bytes.org>
+To: Boris Ostrovsky <boris.ostrovsky@amd.com>
+Cc: Borislav Petkov <bp@alien8.de>, Udo van den Heuvel <udovdh@xs4all.nl>,
+        linux-kernel@vger.kernel.org, Jacob Shin <jacob.shin@amd.com>
+Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
+Message-ID: <20130121144737.GQ25591@8bytes.org>
+References: <50FBC7EF.6040207@xs4all.nl>
+ <20130120103652.GB16800@pd.tnic>
+ <50FBC994.8020409@xs4all.nl>
+ <20130120111920.GL25591@8bytes.org>
+ <50FBD413.1000406@xs4all.nl>
+ <20130120114011.GN25591@8bytes.org>
+ <20130120114828.GB16519@pd.tnic>
+ <20130120115755.GO25591@8bytes.org>
+ <50FD52AB.9080000@amd.com>
 MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>, namhyung@kernel.org,
-        Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        preeti@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 09/22] sched: compute runnable load avg in cpu_load
- and cpu_avg_load_per_task
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-10-git-send-email-alex.shi@intel.com> <50E7EAB1.6020302@intel.com> <50E92DC3.4050906@intel.com> <CA+55aFxbS-u1Zfwg2oKOmHq6FBF+dRRhrdssqc9PpC_gXoV3+g@mail.gmail.com> <50EFB1DB.7090804@intel.com>
-In-Reply-To: <50EFB1DB.7090804@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FD52AB.9080000@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Jan 21 15:47:38 2013
+X-DSPAM-Confidence: 0.9978
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 50fd550a22971007520612
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2013 02:31 PM, Alex Shi wrote:
-> On 01/07/2013 02:31 AM, Linus Torvalds wrote:
->> On Sat, Jan 5, 2013 at 11:54 PM, Alex Shi <alex.shi@intel.com> wrote:
->>>
->>> I just looked into the aim9 benchmark, in this case it forks 2000 tasks,
->>> after all tasks ready, aim9 give a signal than all tasks burst waking up
->>> and run until all finished.
->>> Since each of tasks are finished very quickly, a imbalanced empty cpu
->>> may goes to sleep till a regular balancing give it some new tasks. That
->>> causes the performance dropping. cause more idle entering.
->>
->> Sounds like for AIM (and possibly for other really bursty loads), we
->> might want to do some load-balancing at wakeup time by *just* looking
->> at the number of running tasks, rather than at the load average. Hmm?
->>
->> The load average is fundamentally always going to run behind a bit,
->> and while you want to use it for long-term balancing, a short-term you
->> might want to do just a "if we have a huge amount of runnable
->> processes, do a load balancing *now*". Where "huge amount" should
->> probably be relative to the long-term load balancing (ie comparing the
->> number of runnable processes on this CPU right *now* with the load
->> average over the last second or so would show a clear spike, and a
->> reason for quick action).
->>
-> 
-> Sorry for response late!
-> 
-> Just written a patch following your suggestion, but no clear improvement for this case.
-> I also tried change the burst checking interval, also no clear help.
-> 
-> If I totally give up runnable load in periodic balancing, the performance can recover 60%
-> of lose.
-> 
-> I will try to optimize wake up balancing in weekend.
-> 
+Hi Boris,
 
-(btw, the time for runnable avg to accumulate to 100%, needs 345ms; to
-50% needs 32 ms)
+On Mon, Jan 21, 2013 at 09:37:31AM -0500, Boris Ostrovsky wrote:
+> Are you talking about erratum 746?
 
-I have tried some tuning in both wake up balancing and regular
-balancing. Yes, when using instant load weight (without runnable avg
-engage), both in waking up, and regular balance, the performance recovered.
+The problems seen here are not about PPR failures, so it is not
+particularily this erratum, but the workaround looks similar.
 
-But with per_cpu nr_running tracking, it's hard to find a elegant way to
-detect the burst whenever in waking up or in regular balance.
-In waking up, the whole sd_llc domain cpus are candidates, so just
-checking this_cpu is not enough.
-In regular balance, this_cpu is the migration destination cpu, checking
-if the burst on the cpu is not useful. Instead, we need to check whole
-domains' increased task number.
 
-So, guess 2 solutions for this issue.
-1, for quick waking up, we need use instant load(same as current
-balancing) to do balance; and for regular balance, we can record both
-instant load and runnable load data for whole domain, then decide which
-one to use according to task number increasing in the domain after
-tracking done the whole domain.
+	Joerg
 
-2, we can keep current instant load balancing as performance balance
-policy, and using runnable load balancing in power friend policy.
-Since, none of us find performance benefit with runnable load balancing
-on benchmark hackbench/kbuild/aim9/tbench/specjbb etc.
-I prefer the 2nd.
 
-What's your opinions of this?
-
-Best regards
-Alex
