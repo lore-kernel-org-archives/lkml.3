@@ -1,35 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab3AUKRf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:17:35 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:53309 "EHLO
+	id S1753194Ab3AUKRh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:17:37 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:63980 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752986Ab3AUKJp (ORCPT
+	with ESMTP id S1752985Ab3AUKJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Jan 2013 05:09:45 -0500
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Chris Ball <cjb@laptop.org>, Ben Dooks <ben-linux@fluff.org>,
-        linux-mmc@vger.kernel.org
-Subject: [PATCH 18/33] mmc: Convert to devm_ioremap_resource()
-Date: Mon, 21 Jan 2013 11:09:11 +0100
-Message-Id: <1358762966-20791-19-git-send-email-thierry.reding@avionic-design.de>
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
+Subject: [PATCH 17/33] misc: Convert to devm_ioremap_resource()
+Date: Mon, 21 Jan 2013 11:09:10 +0100
+Message-Id: <1358762966-20791-18-git-send-email-thierry.reding@avionic-design.de>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
 References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:1kTybBPnjeHa9zxc0sMLM4pCtNwFyxvRaJLu/RcFDay
- XOUJebwcrso/4uTOMQTGKpu9TvakyZddYRULixlMTEQZyRq8Yw
- +2geQbXTPQKgeFnDJ9rddFr2vDczONJkVr52dJEwWVcwdCOtG/
- FYPglMPqReUFr8XBS7OIE06dxGDHc5PtVT49D/EF87pqXgzU7w
- 2/yxSIfWHrV+APsKoqOwNmPPRZCBKl30XBfqbTSJEApP/GgSne
- oADbTiqUMGlmNMo1cebe+jgDvzT8ML3YPq9uck910Dva5/m5ZG
- y8666WwzDkhWSWad4SKSL9STzeUjqzrUkiUlac4+c8KR3YtjGR
- GDgPqcx3l+fE1i+f6G+hSRee/pG/O5+kc1YtFSXCGre8hEurGd
- XKpcKZWt/3fF/UdjElgGd2U0YR7YIG7/k/SvYV5uI8m05dx9/3
- TSEws
+X-Provags-ID: V02:K0:Ce6LymJvRBZUTxVwpCdPmgjhu5bk+Cvolyi16M19lr2
+ zgqYAp1tI4KaYdtq+pqnN2HuPkZbZh+RJM7oyKnDiiZzDiMjxr
+ svQSbIMHoXjrmuQBUIWwXLjzeBvi2gucGf4jkZLvWqYYW3GlH2
+ UG+pUz2xgSILCzuK2X9PkTzLOmzzuhaLi3aDsiSxxCV7zYns5L
+ ZdoCBe7c/YdoaJVy/Vj77WsE/OK1CxPoJqBjXn/gIIzYJKgWGS
+ ealRd4dFZTZilxfP7wrJgY1p/0hmcxbjrOO8A644PgJAbItprU
+ 3okyGMAz+sZDi/DDVhif0PduGMo69UddYLKSohto3JLrdeIA/U
+ NpQ0MElqtZ+OoD+PM7aCX11J0Xlw0a+5Y0Cy7PkS8EGwsVZ6R9
+ OM6pN3L6GdX7eToncvVu4iHTVNxf30XXP7dZaftedn9t7fccTr
+ 3/4Jv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -41,74 +39,30 @@ devm_ioremap_resource() provides its own error messages so all explicit
 error messages can be removed from the failure code paths.
 
 Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Chris Ball <cjb@laptop.org>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: linux-mmc@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/mmc/host/dw_mmc-pltfm.c | 7 ++++---
- drivers/mmc/host/mxs-mmc.c      | 6 +++---
- drivers/mmc/host/sdhci-s3c.c    | 7 +++----
- 3 files changed, 10 insertions(+), 10 deletions(-)
+ drivers/misc/atmel-ssc.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
-index 5e1fb1d..41c27b7 100644
---- a/drivers/mmc/host/dw_mmc-pltfm.c
-+++ b/drivers/mmc/host/dw_mmc-pltfm.c
-@@ -10,6 +10,7 @@
-  * (at your option) any later version.
-  */
- 
-+#include <linux/err.h>
- #include <linux/interrupt.h>
- #include <linux/module.h>
- #include <linux/io.h>
-@@ -46,9 +47,9 @@ int dw_mci_pltfm_register(struct platform_device *pdev,
- 	host->dev = &pdev->dev;
- 	host->irq_flags = 0;
- 	host->pdata = pdev->dev.platform_data;
--	host->regs = devm_request_and_ioremap(&pdev->dev, regs);
--	if (!host->regs)
--		return -ENOMEM;
-+	host->regs = devm_ioremap_resource(&pdev->dev, regs);
-+	if (IS_ERR(host->regs))
-+		return PTR_ERR(host->regs);
- 
- 	if (drv_data && drv_data->init) {
- 		ret = drv_data->init(host);
-diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-index 206fe49..5b66555 100644
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -614,9 +614,9 @@ static int mxs_mmc_probe(struct platform_device *pdev)
- 	host = mmc_priv(mmc);
- 	ssp = &host->ssp;
- 	ssp->dev = &pdev->dev;
--	ssp->base = devm_request_and_ioremap(&pdev->dev, iores);
--	if (!ssp->base) {
--		ret = -EADDRNOTAVAIL;
-+	ssp->base = devm_ioremap_resource(&pdev->dev, iores);
-+	if (IS_ERR(ssp->base)) {
-+		ret = PTR_ERR(ssp->base);
- 		goto out_mmc_free;
+diff --git a/drivers/misc/atmel-ssc.c b/drivers/misc/atmel-ssc.c
+index 3c09cbb..c208238 100644
+--- a/drivers/misc/atmel-ssc.c
++++ b/drivers/misc/atmel-ssc.c
+@@ -159,11 +159,9 @@ static int ssc_probe(struct platform_device *pdev)
+ 		return -ENXIO;
  	}
  
-diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
-index 82a8de1..a0c6214 100644
---- a/drivers/mmc/host/sdhci-s3c.c
-+++ b/drivers/mmc/host/sdhci-s3c.c
-@@ -651,10 +651,9 @@ static int sdhci_s3c_probe(struct platform_device *pdev)
- #endif
+-	ssc->regs = devm_request_and_ioremap(&pdev->dev, regs);
+-	if (!ssc->regs) {
+-		dev_dbg(&pdev->dev, "ioremap failed\n");
+-		return -EINVAL;
+-	}
++	ssc->regs = devm_ioremap_resource(&pdev->dev, regs);
++	if (IS_ERR(ssc->regs))
++		return PTR_ERR(ssc->regs);
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	host->ioaddr = devm_request_and_ioremap(&pdev->dev, res);
--	if (!host->ioaddr) {
--		dev_err(dev, "failed to map registers\n");
--		ret = -ENXIO;
-+	host->ioaddr = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(host->ioaddr)) {
-+		ret = PTR_ERR(host->ioaddr);
- 		goto err_req_regs;
- 	}
+ 	ssc->phybase = regs->start;
  
 -- 
 1.8.1.1
