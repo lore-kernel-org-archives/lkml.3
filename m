@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab3AURWl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:22:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12189 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755250Ab3AURWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:22:39 -0500
-Date: Mon, 21 Jan 2013 18:21:51 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Kernel Security <security@kernel.org>,
-        Michael Davidson <md@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Julien Tinnes <jln@google.com>,
-        Aaron Durbin <adurbin@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Roland McGrath <roland@hack.frob.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 2/4] ptrace: ensure arch_ptrace/ptrace_request can
-	never race with SIGKILL
-Message-ID: <20130121172151.GA4691@redhat.com>
-References: <20130118153700.GA27915@redhat.com> <CA+55aFxEow_-PoX0xFa07yOi6az=6uVx8zeOsfToErmzh7dB8A@mail.gmail.com> <20130118172854.GA29753@redhat.com> <20130118175224.GA520@redhat.com> <CA+55aFyEsU-pkX557A-m+xoGkA_v+fXEyA8z8HbJ5J8K1jObeg@mail.gmail.com> <20130118185559.GA3773@redhat.com> <CA+55aFy=newnMbx53HipyWbRs2mUUPSqXXCpSfDLW78gkro37g@mail.gmail.com> <20130120192448.GA6771@redhat.com> <20130120192527.GC6771@redhat.com> <CA+55aFx1+hFSCa4nX80C30BkEOugXRvBZ=7LA+u+KOq_qSaJsg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx1+hFSCa4nX80C30BkEOugXRvBZ=7LA+u+KOq_qSaJsg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756167Ab3AURW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:22:57 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:54029 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875Ab3AURQ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 12:16:58 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Heiko Schocher <hs@denx.de>,
+        Sekhar Nori <nsekhar@ti.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [PATCH 11/15] mtd: davinci_nand: fix OF support
+Date: Mon, 21 Jan 2013 17:16:04 +0000
+Message-Id: <1358788568-11137-12-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:3R9FYvVfs9FUkqiMSUn7q49Fbs+fyE/xYytmn8D22ny
+ q5RatoT6UJYA1D5Oqx+8AZSPchWredfw7haRQ0dF2NVpT4rRlx
+ Ecrhc9SZEmjyUp4bp4YWrL1zL65Y6xBfRIpLPbpV4QsLNacMFg
+ 1QhocwjlBCIaWjne4SKlaTgKUYHPi+tqzMi3UbQkMwXFlo+uOt
+ 8Hu3XW+A1H3QTQF4J2bQBUSHoc/276tP312B8fR6qKvRGhwVqw
+ wniHxARLBPQn1dgfw6X1YCuAdo5dbuCwG7JqFAWI79spLGs8Nz
+ vHBZvP/c1s/206+G3Ip7sIjZteUSLJVMep5uECsUFcludB6xQu
+ olEZX9E3YhHe5Aqz+2519JSD3Wz80aPFcv3BgC36B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20, Linus Torvalds wrote:
->
-> On Sun, Jan 20, 2013 at 11:25 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > +
-> > +static void ptrace_unfreeze_traced(struct task_struct *task)
-> > +{
-> > +       if (task->state != __TASK_TRACED)
-> > +               return;
-> > +
-> > +       if (WARN_ON(!task->ptrace || task->parent != current))
-> > +               return;
->
-> This WARN_ON() is bogus.
->
-> Because you added the warning, you then need to make the callers check
-> for the whole PTRACE_UNATTACH.
->
-> So I think you should just remove the WARN_ON(), and then just call
-> ptrace_unfreeze_traced() unconditionally after you've successfully
-> done a ptrace_check_attach(). Just to keep the code simpler.
+The patch cdeadd "mtd: nand: davinci: add OF support for
+davinci nand controller" ironically causes a build error
+when CONFIG_OF is enabled because of a missing ';'
+character:
 
-This is what initial patch did. But, assuming that ptrace_unfreeze_traced()
-is called unconditionally, we need a locking or barriers, otherwise
+drivers/mtd/nand/davinci_nand.c:527:1: error: expected ',' or ';' before 'extern'
 
-	// another debugger attached after we did PTRACE_DETACH ?
-	if (!task->ptrace || task->parent != current)
-		return;
+This is the obvious fix.
 
-is racy. Suppose we trace the natural child, then do PTRACE_DETACH,
-then another tracer comes. We can see ->ptrace and __TASK_TRACED,
-but see the old task->parent == current.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Heiko Schocher <hs@denx.de>
+Cc: Sekhar Nori <nsekhar@ti.com>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: David Woodhouse <David.Woodhouse@intel.com>
+---
+ drivers/mtd/nand/davinci_nand.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Of course, this is only theoretical, and probably we can add a barrier
-before this check, but I am not sure this will make the code simpler.
-If nothing else, this needs a comment.
-
-If PTRACE_DETACH doesn't do _unfreeze_, we know that the task is either
-traced by us or it is exiting/exited, so we can always trust the
-"state == __TASK_TRACED" check.
-
-So I'd prefer to keep this code, but I won't insist if you still disagree.
-
-> Also, in your corrected version, you had
->
-> +               if (!wait_task_inactive(child, __TASK_TRACED)) {
-> +                       /* This can only happen if may_ptrace_stop() fails */
-> +                       WARN_ON(child->state == __TASK_TRACED);
-> +                       ret = -ESRCH;
->
-> where I actually think that the comment is not really helpful. It
-> doesn't really explain what he child can do to get to ptrace_stop() in
-> the first place, and what that does to the child state...
-
-OK. Agreed. This comment reflects the fact that the first version removed
-may_ptrace_stop() to ensure wait_task_inactive() can't fail.
-
-I'll update the comment and resend.
-
-Oleg.
+diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+index 3502606..feae55c 100644
+--- a/drivers/mtd/nand/davinci_nand.c
++++ b/drivers/mtd/nand/davinci_nand.c
+@@ -523,7 +523,7 @@ static struct nand_ecclayout hwecc4_2048 __initconst = {
+ static const struct of_device_id davinci_nand_of_match[] = {
+ 	{.compatible = "ti,davinci-nand", },
+ 	{},
+-}
++};
+ MODULE_DEVICE_TABLE(of, davinci_nand_of_match);
+ 
+ static struct davinci_nand_pdata
+-- 
+1.7.10.4
 
