@@ -1,162 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430Ab3AUXX4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 18:23:56 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:53198 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab3AUXXy (ORCPT
+	id S1752691Ab3AUX33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 18:29:29 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51726 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752351Ab3AUX31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 18:23:54 -0500
+	Mon, 21 Jan 2013 18:29:27 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-01-50fdcf558e72
+Date: Tue, 22 Jan 2013 08:29:25 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 3/4] zram: get rid of lockdep warning
+Message-ID: <20130121232925.GF3666@blaptop>
+References: <1358745691-4556-1-git-send-email-minchan@kernel.org>
+ <1358745691-4556-3-git-send-email-minchan@kernel.org>
+ <50FD9B50.4090802@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130121224252.GY23505@n2100.arm.linux.org.uk>
-References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com>
- <201301212041.17951.arnd@arndb.de> <50FDAC5F.4040605@linaro.org>
- <20130121211218.GX23505@n2100.arm.linux.org.uk> <CAKGA1bkZ4sN_eXAk1nUzvGE6cvvQ+b+jnTezTM863qFNL8NqWg@mail.gmail.com>
- <20130121224252.GY23505@n2100.arm.linux.org.uk>
-From: Matt Sealey <matt@genesi-usa.com>
-Date: Mon, 21 Jan 2013 17:23:33 -0600
-Message-ID: <CAKGA1b=AG_a=KCi6qoeoRoG+5bcYkn3gAVb4S2dbaFzu4ioJdQ@mail.gmail.com>
-Subject: Re: One of these things (CONFIG_HZ) is not like the others..
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FD9B50.4090802@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 4:42 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Mon, Jan 21, 2013 at 04:20:14PM -0600, Matt Sealey wrote:
->> I am sorry it sounded if I was being high and mighty about not being
->> able to select my own HZ (or being forced by Exynos to be 200 or by
->> not being able to test an Exynos board, forced to default to 100). My
->> real "grievance" here is we got a configuration item for the scheduler
->> which is being left out of ARM configurations which *can* use high
->> resolution timers, but I don't know if this is a real problem or not,
->> hence asking about it, and that HZ=100 is the ARM default whether we
->> might be able to select that or not.. which seems low.
->
-> Well, I have a versatile platform here.  It's the inteligence behind
-> the power control system for booting the boards on the nightly tests
-> (currently disabled because I'm waiting for my main server to lock up
-> again, and I need to use one of the serial ports for that.)
->
-> The point is, it talks via I2C to a load of power monitors to read
-> samples out.  It does this at sub-100Hz intervals.  Yet the kernel is
-> built with HZ=100.  NO_HZ=y and highres timers are enabled... works
-> fine.
->
-> So, no, HZ=100 is not a limit in that scenario.  With NO_HZ=y and
-> highres timers, it all works with epoll() - you get the interval that
-> you're after.  I've verified this with calls to gettimeofday() and
-> the POSIX clocks.
+On Mon, Jan 21, 2013 at 08:47:28PM +0100, Jerome Marchand wrote:
+> On 01/21/2013 06:21 AM, Minchan Kim wrote:
+> > Lockdep complains about recursive deadlock of zram->init_lock.
+> > [1] made it false positive because we can't request IO to zram
+> > before setting disksize. Anyway, we should shut lockdep up to
+> > avoid many reporting from user.
+> > 
+> > Cc: Jerome Marchand <jmarchan@redhat.com>
+> > Cc: Nitin Gupta <ngupta@vflare.org>
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  drivers/staging/zram/zram_drv.c   |  115 +++++++++++++++++++------------------
+> >  drivers/staging/zram/zram_drv.h   |   12 +++-
+> >  drivers/staging/zram/zram_sysfs.c |   10 +++-
+> >  3 files changed, 79 insertions(+), 58 deletions(-)
+> > 
+> > diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> > index e95e37c..1f6938a 100644
+> > --- a/drivers/staging/zram/zram_drv.c
+> > +++ b/drivers/staging/zram/zram_drv.c
+> > @@ -462,19 +462,12 @@ error:
+> >  void __zram_reset_device(struct zram *zram)
+> >  {
+> >  	size_t index;
+> > +	struct zram_meta meta;
+> >  
+> >  	if (!zram->init_done)
+> >  		goto out;
+> >  
+> >  	zram->init_done = 0;
+> > -
+> > -	/* Free various per-device buffers */
+> > -	kfree(zram->compress_workmem);
+> > -	free_pages((unsigned long)zram->compress_buffer, 1);
+> > -
+> > -	zram->compress_workmem = NULL;
+> > -	zram->compress_buffer = NULL;
+> > -
+> >  	/* Free all pages that are still in this zram device */
+> >  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+> >  		unsigned long handle = zram->table[index].handle;
+> > @@ -484,11 +477,11 @@ void __zram_reset_device(struct zram *zram)
+> >  		zs_free(zram->mem_pool, handle);
+> >  	}
+> >  
+> > -	vfree(zram->table);
+> > -	zram->table = NULL;
+> > -
+> > -	zs_destroy_pool(zram->mem_pool);
+> > -	zram->mem_pool = NULL;
+> > +	meta.compress_workmem = zram->compress_workmem;
+> > +	meta.compress_buffer = zram->compress_buffer;
+> > +	meta.table = zram->table;
+> > +	meta.mem_pool = zram->mem_pool;
+> > +	zram_meta_free(&meta);
+> >  
+> >  	/* Reset stats */
+> >  	memset(&zram->stats, 0, sizeof(zram->stats));
+> > @@ -505,12 +498,59 @@ void zram_reset_device(struct zram *zram)
+> >  	up_write(&zram->init_lock);
+> >  }
+> >  
+> > -/* zram->init_lock should be held */
+> > -int zram_init_device(struct zram *zram)
+> > +void zram_meta_free(struct zram_meta *meta)
+> > +{
+> > +	zs_destroy_pool(meta->mem_pool);
+> > +	kfree(meta->compress_workmem);
+> > +	free_pages((unsigned long)meta->compress_buffer, 1);
+> > +	vfree(meta->table);
+> > +	kfree(meta);
+> 
+> At all callsite, meta is a local variable. We don't want to free it.
 
-Okay.
+Argh, It was error from previous version which uses zram_meta dynamically.
+I will filx in next spin.
 
-So, can you read this (it's short):
+> 
+> > +}
+> > +
+> > +int zram_meta_alloc(struct zram_meta *meta, u64 disksize)
+> >  {
+> > -	int ret;
+> >  	size_t num_pages;
+> >  
+> > +	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+> > +	if (!meta->compress_workmem) {
+> > +		pr_err("Error allocating compressor working memory!\n");
+> > +		goto out;
+> > +	}
+> > +
+> > +	meta->compress_buffer =
+> > +			(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO, 1);
+> > +	if (!meta->compress_buffer) {
+> > +		pr_err("Error allocating compressor buffer space\n");
+> > +		goto free_workmem;
+> > +	}
+> > +
+> > +	num_pages = disksize >> PAGE_SHIFT;
+> > +	meta->table = vzalloc(num_pages * sizeof(*meta->table));
+> > +	if (!meta->table) {
+> > +		pr_err("Error allocating zram address table\n");
+> > +		goto free_buffer;
+> > +	}
+> > +
+> > +	meta->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
+> > +	if (!meta->mem_pool) {
+> > +		pr_err("Error creating memory pool\n");
+> > +		goto free_table;
+> > +	}
+> > +
+> > +	return 0;
+> > +
+> > +free_table:
+> > +	vfree(meta->table);
+> > +free_buffer:
+> > +	free_pages((unsigned long)meta->compress_buffer, 1);
+> > +free_workmem:
+> > +	kfree(meta->compress_workmem);
+> > +out:
+> > +	return -ENOMEM;
+> > +}
+> > +
+> > +void zram_init_device(struct zram *zram, struct zram_meta *meta)
+> > +{
+> >  	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
+> >  		pr_info(
+> >  		"There is little point creating a zram of greater than "
+> > @@ -525,51 +565,16 @@ int zram_init_device(struct zram *zram)
+> >  		);
+> >  	}
+> >  
+> > -	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+> > -	if (!zram->compress_workmem) {
+> > -		pr_err("Error allocating compressor working memory!\n");
+> > -		ret = -ENOMEM;
+> > -		goto fail_no_table;
+> > -	}
+> > -
+> > -	zram->compress_buffer =
+> > -		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
+> > -	if (!zram->compress_buffer) {
+> > -		pr_err("Error allocating compressor buffer space\n");
+> > -		ret = -ENOMEM;
+> > -		goto fail_no_table;
+> > -	}
+> > -
+> > -	num_pages = zram->disksize >> PAGE_SHIFT;
+> > -	zram->table = vzalloc(num_pages * sizeof(*zram->table));
+> > -	if (!zram->table) {
+> > -		pr_err("Error allocating zram address table\n");
+> > -		ret = -ENOMEM;
+> > -		goto fail_no_table;
+> > -	}
+> > -
+> >  	/* zram devices sort of resembles non-rotational disks */
+> >  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+> >  
+> > -	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
+> > -	if (!zram->mem_pool) {
+> > -		pr_err("Error creating memory pool\n");
+> > -		ret = -ENOMEM;
+> > -		goto fail;
+> > -	}
+> > -
+> > +	zram->mem_pool = meta->mem_pool;
+> > +	zram->compress_workmem = meta->compress_workmem;
+> > +	zram->compress_buffer = meta->compress_buffer;
+> > +	zram->table = meta->table;
+> >  	zram->init_done = 1;
+> >  
+> >  	pr_debug("Initialization done!\n");
+> > -	return 0;
+> > -
+> > -fail_no_table:
+> > -	/* To prevent accessing table entries during cleanup */
+> > -	zram->disksize = 0;
+> > -fail:
+> > -	__zram_reset_device(zram);
+> 
+> Here goes the last call to __zram_reset_device() outside of zram_reset_device().
+> I guess we should get rid of it.
 
-http://ck.kolivas.org/patches/bfs/bfs-configuration-faq.txt
+Yeb. Will include it.
+Thanks for the review!
 
-And please tell me if he's batshit crazy and I should completely
-ignore any scheduler discussion that isn't ARM-specific, or maybe..
-and I can almost guarantee this, he doesn't have an ARM platform so
-he's just delightfully ill-informed about anything but his quad-core
-x86?
+> 
+> Jerome
+> 
+> > -	pr_err("Initialization failed: err=%d\n", ret);
+> > -	return ret;
+> >  }
+> >  
+> >  static void zram_slot_free_notify(struct block_device *bdev,
+> > diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+> > index 5b671d1..fbe7db0 100644
+> > --- a/drivers/staging/zram/zram_drv.h
+> > +++ b/drivers/staging/zram/zram_drv.h
+> > @@ -83,11 +83,19 @@ struct zram_stats {
+> >  	u32 bad_compress;	/* % of pages with compression ratio>=75% */
+> >  };
+> >  
+> > +struct zram_meta {
+> > +	void *compress_workmem;
+> > +	void *compress_buffer;
+> > +	struct table *table;
+> > +	struct zs_pool *mem_pool;
+> > +};
+> > +
+> >  struct zram {
+> >  	struct zs_pool *mem_pool;
+> >  	void *compress_workmem;
+> >  	void *compress_buffer;
+> >  	struct table *table;
+> > +
+> >  	spinlock_t stat64_lock;	/* protect 64-bit stats */
+> >  	struct rw_semaphore lock; /* protect compression buffers and table
+> >  				   * against concurrent read and writes */
+> > @@ -111,7 +119,9 @@ unsigned int zram_get_num_devices(void);
+> >  extern struct attribute_group zram_disk_attr_group;
+> >  #endif
+> >  
+> > -extern int zram_init_device(struct zram *zram);
+> >  extern void zram_reset_device(struct zram *zram);
+> > +extern int zram_meta_alloc(struct zram_meta *meta, u64 disksize);
+> > +extern void zram_meta_free(struct zram_meta *meta);
+> > +extern void zram_init_device(struct zram *zram, struct zram_meta *meta);
+> >  
+> >  #endif
+> > diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+> > index 369db12..31433ef 100644
+> > --- a/drivers/staging/zram/zram_sysfs.c
+> > +++ b/drivers/staging/zram/zram_sysfs.c
+> > @@ -56,22 +56,28 @@ static ssize_t disksize_store(struct device *dev,
+> >  		struct device_attribute *attr, const char *buf, size_t len)
+> >  {
+> >  	u64 disksize;
+> > +	struct zram_meta meta;
+> >  	struct zram *zram = dev_to_zram(dev);
+> >  
+> >  	disksize = memparse(buf, NULL);
+> >  	if (!disksize)
+> >  		return -EINVAL;
+> >  
+> > +	disksize = PAGE_ALIGN(disksize);
+> > +	if (zram_meta_alloc(&meta, disksize))
+> > +		return -ENOMEM;
+> > +
+> >  	down_write(&zram->init_lock);
+> >  	if (zram->init_done) {
+> >  		up_write(&zram->init_lock);
+> > +		zram_meta_free(&meta);
+> >  		pr_info("Cannot change disksize for initialized device\n");
+> >  		return -EBUSY;
+> >  	}
+> >  
+> > -	zram->disksize = PAGE_ALIGN(disksize);
+> > +	zram->disksize = disksize;
+> >  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+> > -	zram_init_device(zram);
+> > +	zram_init_device(zram, &meta);
+> >  	up_write(&zram->init_lock);
+> >  
+> >  	return len;
+> > 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
->> HZ=250 is the "current" kernel default if you don't touch anything, it
->> seems, apologies for thinking it was HZ=100.
->
-> Actually, it always used to be 100Hz on everything, including x86.
-> It got upped when there were interactivity issues... which haven't
-> been reported on ARM - so why change something that we know works and
-> everyone is happy with?
-
-I don't know. I guess this is why I included Ingo and Peter as they
-seem to be responsible for core HZ-related things; why have HZ=250 on
-x86 when CONFIG_NO_HZ and HZ=100 would work just as effectively? Isn't
-CONFIG_NO_HZ the default on x86 and PPC and.. pretty much everything
-else?
-
-I know Con K. has been accused many times of peddling snake-oil... but
-he has pretty graphs and benchmarks that kind of bear him out on most
-things even if the results do not get his work upstream. I can't fault
-the statistical significance of his results.. but even a placebo
-effect can be graphed, correlation is not causation, etc, etc. - I
-don't know if anything real filters down into the documentation
-though.
-
->> And that is too high for
->> EBSA110 and a couple of other boards, especially where HZ must equal
->> some exact divisor being pumped right into some timer unit.
->
-> EBSA110 can do 250Hz, but it'll mean manually recalculating the timer
-> arithmetic - because it's not a "reloading" counter - software has to
-> manually reload it, and you have to take account of how far it's
-> rolled over to get anything close to a regular interrupt rate which
-> NTP is happy with.  And believe me, it used to be one of two main NTP
-> broadcasting servers on my network, so I know it works.
-
-A-ha...
-
->> Anyway, a patch for ARM could perhaps end up like this:
->>
->> ~~
->> if ARCH_MULTIPLATFORM
->> source kernel/Kconfig.hz
->> else
->> HZ
->>     default 100
->> endif
->>
->> HZ
->>     default 200 if ARCH_EBSA110 || ARCH_ETC_ETC || ARCH_UND_SO_WEITER
->>     # any previous platform definitions where *really* required here.
->>     # but not default 100 since it would override kernel/Kconfig.hz every time
->
-> That doesn't work - if you define the same symbol twice, one definition
-> takes priority over the other (I don't remember which way it works).
-> They don't accumulate.
-
-Well I did some testing.. a couple days of poking around, and they
-don't need to accumulate.
-
-> Because... it simply doesn't work like that.  Try it and check to see
-> what Kconfig produces.
-
-I did test it.. whatever you define last, sticks, and it's down to the
-order they're parsed in the tree - luckily, arch/arm/Kconfig is
-sourced first, which sources the mach/plat stuff way down at  the
-bottom. As long as you have your "default" set somewhere, any further
-default just has to be sourced or added later in *one* of the
-Kconfigs, same as building any C file with "gcc -E" and spitting it
-out.
-
-Someone, at the end of it all, has to set some default, and as long as
-the one you want is the last one, everything is shiny.
-
-> We know this, because our FRAME_POINTER config overrides the generic
-> one - not partially, but totally and utterly in every way.
-
-But for something as simple as CONFIG_HZ getting a value.. it works
-okay. If Kconfig.hz sets CONFIG_HZ=250 because CONFIG_HZ_250 is
-default yes, and it CONFIG_HZ defaults to 250 if it's set, and then
-you put
-
-HZ
-   default 100
-
-Right after it, or right after it's source in arch/x86/Kconfig, or
-whatever, that "default" is what sticks and what ends up in CONFIG_HZ
-in the local .config.
-
-> I just don't see how that's remotely possible.
-
-Maybe I tested it wrong, you'd know better than I exactly how (and I
-would appreciate knowing how so I can go back and test it again :)
-
---
-Matt Sealey <matt@genesi-usa.com>
-Product Development Analyst, Genesi USA, Inc.
+-- 
+Kind regards,
+Minchan Kim
