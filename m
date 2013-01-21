@@ -1,219 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab3AUTsr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 14:48:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36206 "EHLO mx1.redhat.com"
+	id S1756547Ab3AUTsx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 14:48:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41150 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752233Ab3AUTsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 14:48:45 -0500
-Date: Mon, 21 Jan 2013 20:48:00 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Kernel Security <security@kernel.org>,
-        Michael Davidson <md@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Julien Tinnes <jln@google.com>,
-        Aaron Durbin <adurbin@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Roland McGrath <roland@hack.frob.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v3 2/3] ptrace: ensure arch_ptrace/ptrace_request can never
-	race with SIGKILL
-Message-ID: <20130121194800.GC18775@redhat.com>
-References: <20130118175224.GA520@redhat.com> <CA+55aFyEsU-pkX557A-m+xoGkA_v+fXEyA8z8HbJ5J8K1jObeg@mail.gmail.com> <20130118185559.GA3773@redhat.com> <CA+55aFy=newnMbx53HipyWbRs2mUUPSqXXCpSfDLW78gkro37g@mail.gmail.com> <20130120192448.GA6771@redhat.com> <20130120192527.GC6771@redhat.com> <CA+55aFx1+hFSCa4nX80C30BkEOugXRvBZ=7LA+u+KOq_qSaJsg@mail.gmail.com> <20130121172151.GA4691@redhat.com> <CA+55aFwRkvEP5YJy+a=TFgDX==YuU7CJ+D_U+B2s4e1LX-nz3g@mail.gmail.com> <20130121194723.GA18775@redhat.com>
+	id S1755848Ab3AUTsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 14:48:46 -0500
+Message-ID: <50FD9B50.4090802@redhat.com>
+Date: Mon, 21 Jan 2013 20:47:28 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130121194723.GA18775@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 3/4] zram: get rid of lockdep warning
+References: <1358745691-4556-1-git-send-email-minchan@kernel.org> <1358745691-4556-3-git-send-email-minchan@kernel.org>
+In-Reply-To: <1358745691-4556-3-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-putreg() assumes that the tracee is not running and pt_regs_access()
-can safely play with its stack. However a killed tracee can return
-from ptrace_stop() to the low-level asm code and do RESTORE_REST,
-this means that debugger can actually read/modify the kernel stack
-until the tracee does SAVE_REST again.
+On 01/21/2013 06:21 AM, Minchan Kim wrote:
+> Lockdep complains about recursive deadlock of zram->init_lock.
+> [1] made it false positive because we can't request IO to zram
+> before setting disksize. Anyway, we should shut lockdep up to
+> avoid many reporting from user.
+> 
+> Cc: Jerome Marchand <jmarchan@redhat.com>
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/staging/zram/zram_drv.c   |  115 +++++++++++++++++++------------------
+>  drivers/staging/zram/zram_drv.h   |   12 +++-
+>  drivers/staging/zram/zram_sysfs.c |   10 +++-
+>  3 files changed, 79 insertions(+), 58 deletions(-)
+> 
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index e95e37c..1f6938a 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -462,19 +462,12 @@ error:
+>  void __zram_reset_device(struct zram *zram)
+>  {
+>  	size_t index;
+> +	struct zram_meta meta;
+>  
+>  	if (!zram->init_done)
+>  		goto out;
+>  
+>  	zram->init_done = 0;
+> -
+> -	/* Free various per-device buffers */
+> -	kfree(zram->compress_workmem);
+> -	free_pages((unsigned long)zram->compress_buffer, 1);
+> -
+> -	zram->compress_workmem = NULL;
+> -	zram->compress_buffer = NULL;
+> -
+>  	/* Free all pages that are still in this zram device */
+>  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+>  		unsigned long handle = zram->table[index].handle;
+> @@ -484,11 +477,11 @@ void __zram_reset_device(struct zram *zram)
+>  		zs_free(zram->mem_pool, handle);
+>  	}
+>  
+> -	vfree(zram->table);
+> -	zram->table = NULL;
+> -
+> -	zs_destroy_pool(zram->mem_pool);
+> -	zram->mem_pool = NULL;
+> +	meta.compress_workmem = zram->compress_workmem;
+> +	meta.compress_buffer = zram->compress_buffer;
+> +	meta.table = zram->table;
+> +	meta.mem_pool = zram->mem_pool;
+> +	zram_meta_free(&meta);
+>  
+>  	/* Reset stats */
+>  	memset(&zram->stats, 0, sizeof(zram->stats));
+> @@ -505,12 +498,59 @@ void zram_reset_device(struct zram *zram)
+>  	up_write(&zram->init_lock);
+>  }
+>  
+> -/* zram->init_lock should be held */
+> -int zram_init_device(struct zram *zram)
+> +void zram_meta_free(struct zram_meta *meta)
+> +{
+> +	zs_destroy_pool(meta->mem_pool);
+> +	kfree(meta->compress_workmem);
+> +	free_pages((unsigned long)meta->compress_buffer, 1);
+> +	vfree(meta->table);
+> +	kfree(meta);
 
-set_task_blockstep() can race with SIGKILL too and in some sense
-this race is even worse, the very fact the tracee can be woken up
-breaks the logic.
+At all callsite, meta is a local variable. We don't want to free it.
 
-As Linus suggested we can clear TASK_WAKEKILL around the arch_ptrace()
-call, this ensures that nobody can ever wakeup the tracee while the
-debugger looks at it. Not only this fixes the mentioned problems,
-we can do some cleanups/simplifications in arch_ptrace() paths.
+> +}
+> +
+> +int zram_meta_alloc(struct zram_meta *meta, u64 disksize)
+>  {
+> -	int ret;
+>  	size_t num_pages;
+>  
+> +	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+> +	if (!meta->compress_workmem) {
+> +		pr_err("Error allocating compressor working memory!\n");
+> +		goto out;
+> +	}
+> +
+> +	meta->compress_buffer =
+> +			(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO, 1);
+> +	if (!meta->compress_buffer) {
+> +		pr_err("Error allocating compressor buffer space\n");
+> +		goto free_workmem;
+> +	}
+> +
+> +	num_pages = disksize >> PAGE_SHIFT;
+> +	meta->table = vzalloc(num_pages * sizeof(*meta->table));
+> +	if (!meta->table) {
+> +		pr_err("Error allocating zram address table\n");
+> +		goto free_buffer;
+> +	}
+> +
+> +	meta->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
+> +	if (!meta->mem_pool) {
+> +		pr_err("Error creating memory pool\n");
+> +		goto free_table;
+> +	}
+> +
+> +	return 0;
+> +
+> +free_table:
+> +	vfree(meta->table);
+> +free_buffer:
+> +	free_pages((unsigned long)meta->compress_buffer, 1);
+> +free_workmem:
+> +	kfree(meta->compress_workmem);
+> +out:
+> +	return -ENOMEM;
+> +}
+> +
+> +void zram_init_device(struct zram *zram, struct zram_meta *meta)
+> +{
+>  	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
+>  		pr_info(
+>  		"There is little point creating a zram of greater than "
+> @@ -525,51 +565,16 @@ int zram_init_device(struct zram *zram)
+>  		);
+>  	}
+>  
+> -	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+> -	if (!zram->compress_workmem) {
+> -		pr_err("Error allocating compressor working memory!\n");
+> -		ret = -ENOMEM;
+> -		goto fail_no_table;
+> -	}
+> -
+> -	zram->compress_buffer =
+> -		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
+> -	if (!zram->compress_buffer) {
+> -		pr_err("Error allocating compressor buffer space\n");
+> -		ret = -ENOMEM;
+> -		goto fail_no_table;
+> -	}
+> -
+> -	num_pages = zram->disksize >> PAGE_SHIFT;
+> -	zram->table = vzalloc(num_pages * sizeof(*zram->table));
+> -	if (!zram->table) {
+> -		pr_err("Error allocating zram address table\n");
+> -		ret = -ENOMEM;
+> -		goto fail_no_table;
+> -	}
+> -
+>  	/* zram devices sort of resembles non-rotational disks */
+>  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+>  
+> -	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
+> -	if (!zram->mem_pool) {
+> -		pr_err("Error creating memory pool\n");
+> -		ret = -ENOMEM;
+> -		goto fail;
+> -	}
+> -
+> +	zram->mem_pool = meta->mem_pool;
+> +	zram->compress_workmem = meta->compress_workmem;
+> +	zram->compress_buffer = meta->compress_buffer;
+> +	zram->table = meta->table;
+>  	zram->init_done = 1;
+>  
+>  	pr_debug("Initialization done!\n");
+> -	return 0;
+> -
+> -fail_no_table:
+> -	/* To prevent accessing table entries during cleanup */
+> -	zram->disksize = 0;
+> -fail:
+> -	__zram_reset_device(zram);
 
-Probably ptrace_unfreeze_traced() needs more callers, for example
-it makes sense to make the tracee killable for oom-killer before
-access_process_vm().
+Here goes the last call to __zram_reset_device() outside of zram_reset_device().
+I guess we should get rid of it.
 
-While at it, add the comment into may_ptrace_stop() to explain why
-ptrace_stop() still can't rely on SIGKILL and signal_pending_state().
+Jerome
 
-Reported-by: Salman Qazi <sqazi@google.com>
-Reported-by: Suleiman Souhlal <suleiman@google.com>
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/step.c |    9 +++---
- kernel/ptrace.c        |   64 ++++++++++++++++++++++++++++++++++++++++-------
- kernel/signal.c        |    5 +++
- 3 files changed, 64 insertions(+), 14 deletions(-)
-
-diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
-index cd3b243..9b4d51d 100644
---- a/arch/x86/kernel/step.c
-+++ b/arch/x86/kernel/step.c
-@@ -165,10 +165,11 @@ void set_task_blockstep(struct task_struct *task, bool on)
- 	 * Ensure irq/preemption can't change debugctl in between.
- 	 * Note also that both TIF_BLOCKSTEP and debugctl should
- 	 * be changed atomically wrt preemption.
--	 * FIXME: this means that set/clear TIF_BLOCKSTEP is simply
--	 * wrong if task != current, SIGKILL can wakeup the stopped
--	 * tracee and set/clear can play with the running task, this
--	 * can confuse the next __switch_to_xtra().
-+	 *
-+	 * NOTE: this means that set/clear TIF_BLOCKSTEP is only safe if
-+	 * task is current or it can't be running, otherwise we can race
-+	 * with __switch_to_xtra(). We rely on ptrace_freeze_traced() but
-+	 * PTRACE_KILL is not safe.
- 	 */
- 	local_irq_disable();
- 	debugctl = get_debugctlmsr();
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 62f7c27..b6c22b5 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -122,6 +122,40 @@ void __ptrace_unlink(struct task_struct *child)
- 	spin_unlock(&child->sighand->siglock);
- }
- 
-+/* Ensure that nothing can wake it up, even SIGKILL */
-+static bool ptrace_freeze_traced(struct task_struct *task)
-+{
-+	bool ret = false;
-+
-+	/* Lockless, nobody but us can set this flag */
-+	if (task->jobctl & JOBCTL_LISTENING)
-+		return ret;
-+
-+	spin_lock_irq(&task->sighand->siglock);
-+	if (task_is_traced(task) && !__fatal_signal_pending(task)) {
-+		task->state = __TASK_TRACED;
-+		ret = true;
-+	}
-+	spin_unlock_irq(&task->sighand->siglock);
-+
-+	return ret;
-+}
-+
-+static void ptrace_unfreeze_traced(struct task_struct *task)
-+{
-+	if (task->state != __TASK_TRACED)
-+		return;
-+
-+	WARN_ON(!task->ptrace || task->parent != current);
-+
-+	spin_lock_irq(&task->sighand->siglock);
-+	if (__fatal_signal_pending(task))
-+		wake_up_state(task, __TASK_TRACED);
-+	else
-+		task->state = TASK_TRACED;
-+	spin_unlock_irq(&task->sighand->siglock);
-+}
-+
- /**
-  * ptrace_check_attach - check whether ptracee is ready for ptrace operation
-  * @child: ptracee to check for
-@@ -151,24 +185,29 @@ static int ptrace_check_attach(struct task_struct *child, bool ignore_state)
- 	 * be changed by us so it's not changing right after this.
- 	 */
- 	read_lock(&tasklist_lock);
--	if ((child->ptrace & PT_PTRACED) && child->parent == current) {
-+	if (child->ptrace && child->parent == current) {
-+		WARN_ON(child->state == __TASK_TRACED);
- 		/*
- 		 * child->sighand can't be NULL, release_task()
- 		 * does ptrace_unlink() before __exit_signal().
- 		 */
--		spin_lock_irq(&child->sighand->siglock);
--		WARN_ON_ONCE(task_is_stopped(child));
--		if (ignore_state || (task_is_traced(child) &&
--				     !(child->jobctl & JOBCTL_LISTENING)))
-+		if (ignore_state || ptrace_freeze_traced(child))
- 			ret = 0;
--		spin_unlock_irq(&child->sighand->siglock);
- 	}
- 	read_unlock(&tasklist_lock);
- 
--	if (!ret && !ignore_state)
--		ret = wait_task_inactive(child, TASK_TRACED) ? 0 : -ESRCH;
-+	if (!ret && !ignore_state) {
-+		if (!wait_task_inactive(child, __TASK_TRACED)) {
-+			/*
-+			 * This can only happen if may_ptrace_stop() fails and
-+			 * ptrace_stop() changes ->state back to TASK_RUNNING,
-+			 * so we should not worry about leaking __TASK_TRACED.
-+			 */
-+			WARN_ON(child->state == __TASK_TRACED);
-+			ret = -ESRCH;
-+		}
-+	}
- 
--	/* All systems go.. */
- 	return ret;
- }
- 
-@@ -900,6 +939,8 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, unsigned long, addr,
- 		goto out_put_task_struct;
- 
- 	ret = arch_ptrace(child, request, addr, data);
-+	if (request != PTRACE_DETACH)
-+		ptrace_unfreeze_traced(child);
- 
-  out_put_task_struct:
- 	put_task_struct(child);
-@@ -1039,8 +1080,11 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
- 
- 	ret = ptrace_check_attach(child, request == PTRACE_KILL ||
- 				  request == PTRACE_INTERRUPT);
--	if (!ret)
-+	if (!ret) {
- 		ret = compat_arch_ptrace(child, request, addr, data);
-+		if (request != PTRACE_DETACH)
-+			ptrace_unfreeze_traced(child);
-+	}
- 
-  out_put_task_struct:
- 	put_task_struct(child);
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 2bf2731..980bcf3 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1794,6 +1794,10 @@ static inline int may_ptrace_stop(void)
- 	 * If SIGKILL was already sent before the caller unlocked
- 	 * ->siglock we must see ->core_state != NULL. Otherwise it
- 	 * is safe to enter schedule().
-+	 *
-+	 * This is almost outdated, a task with the pending SIGKILL can't
-+	 * block in TASK_TRACED. But PTRACE_EVENT_EXIT can be reported
-+	 * after SIGKILL was already dequeued.
- 	 */
- 	if (unlikely(current->mm->core_state) &&
- 	    unlikely(current->mm == current->parent->mm))
-@@ -1919,6 +1923,7 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
- 		if (gstop_done)
- 			do_notify_parent_cldstop(current, false, why);
- 
-+		/* tasklist protects us from ptrace_freeze_traced() */
- 		__set_current_state(TASK_RUNNING);
- 		if (clear_code)
- 			current->exit_code = 0;
--- 
-1.5.5.1
-
+> -	pr_err("Initialization failed: err=%d\n", ret);
+> -	return ret;
+>  }
+>  
+>  static void zram_slot_free_notify(struct block_device *bdev,
+> diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+> index 5b671d1..fbe7db0 100644
+> --- a/drivers/staging/zram/zram_drv.h
+> +++ b/drivers/staging/zram/zram_drv.h
+> @@ -83,11 +83,19 @@ struct zram_stats {
+>  	u32 bad_compress;	/* % of pages with compression ratio>=75% */
+>  };
+>  
+> +struct zram_meta {
+> +	void *compress_workmem;
+> +	void *compress_buffer;
+> +	struct table *table;
+> +	struct zs_pool *mem_pool;
+> +};
+> +
+>  struct zram {
+>  	struct zs_pool *mem_pool;
+>  	void *compress_workmem;
+>  	void *compress_buffer;
+>  	struct table *table;
+> +
+>  	spinlock_t stat64_lock;	/* protect 64-bit stats */
+>  	struct rw_semaphore lock; /* protect compression buffers and table
+>  				   * against concurrent read and writes */
+> @@ -111,7 +119,9 @@ unsigned int zram_get_num_devices(void);
+>  extern struct attribute_group zram_disk_attr_group;
+>  #endif
+>  
+> -extern int zram_init_device(struct zram *zram);
+>  extern void zram_reset_device(struct zram *zram);
+> +extern int zram_meta_alloc(struct zram_meta *meta, u64 disksize);
+> +extern void zram_meta_free(struct zram_meta *meta);
+> +extern void zram_init_device(struct zram *zram, struct zram_meta *meta);
+>  
+>  #endif
+> diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+> index 369db12..31433ef 100644
+> --- a/drivers/staging/zram/zram_sysfs.c
+> +++ b/drivers/staging/zram/zram_sysfs.c
+> @@ -56,22 +56,28 @@ static ssize_t disksize_store(struct device *dev,
+>  		struct device_attribute *attr, const char *buf, size_t len)
+>  {
+>  	u64 disksize;
+> +	struct zram_meta meta;
+>  	struct zram *zram = dev_to_zram(dev);
+>  
+>  	disksize = memparse(buf, NULL);
+>  	if (!disksize)
+>  		return -EINVAL;
+>  
+> +	disksize = PAGE_ALIGN(disksize);
+> +	if (zram_meta_alloc(&meta, disksize))
+> +		return -ENOMEM;
+> +
+>  	down_write(&zram->init_lock);
+>  	if (zram->init_done) {
+>  		up_write(&zram->init_lock);
+> +		zram_meta_free(&meta);
+>  		pr_info("Cannot change disksize for initialized device\n");
+>  		return -EBUSY;
+>  	}
+>  
+> -	zram->disksize = PAGE_ALIGN(disksize);
+> +	zram->disksize = disksize;
+>  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+> -	zram_init_device(zram);
+> +	zram_init_device(zram, &meta);
+>  	up_write(&zram->init_lock);
+>  
+>  	return len;
+> 
 
