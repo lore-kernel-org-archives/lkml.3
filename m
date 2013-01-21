@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387Ab3AURU5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:20:57 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:54378 "EHLO
+	id S1756300Ab3AURU4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:20:56 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:64587 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202Ab3AURRH (ORCPT
+	with ESMTP id S1755202Ab3AURRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Jan 2013 12:17:07 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Rob Clark <rob@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
         Inki Dae <inki.dae@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>
-Subject: [PATCH 07/15] drm/exynos: don't include plat/gpio-cfg.h
-Date: Mon, 21 Jan 2013 17:16:00 +0000
-Message-Id: <1358788568-11137-8-git-send-email-arnd@arndb.de>
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [PATCH 08/15] drm/exynos: fimd and ipp are broken on multiplatform
+Date: Mon, 21 Jan 2013 17:16:01 +0000
+Message-Id: <1358788568-11137-9-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1358788568-11137-1-git-send-email-arnd@arndb.de>
 References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:BFtiBXXVtGzO7N4XFgfhRjcH2w6fF1t8SM1oYuZPioR
- OyF+DHJSGJKTPekXejgyDI5V1tWz1D0nc5JnD6ap2uPyuL7NQj
- E3rilpBFDolA+yg9tj1rJftnCfkBVC7FezvY5ytzNts8KKtbu1
- h8bCW+2VmOzcyPwbQdD34hgtZKUqZMBQsYd0lK05TsxAjYDOB9
- gTBoXCYMvJv5ne58p0m/0pqQOjETXKG7ye4ptL6AKHFegTiHEc
- lscJw3m24tmuuZzLpK73pmzJR8aCD0DBGsLoZiWGKJGQuLyf5j
- GKxezeNIwRuL/XGyo4PdqqQi62SAkJdJt6x2bY7/UVGON1KquW
- ZNTcaLC6J4SnPvtMrhTEjqsSk/ON7nP24jNLct9Dj
+X-Provags-ID: V02:K0:veDhCeoKxR7GmFKWpTiAVAb3lrOBgTuFZVQLmlQ9WBY
+ U0lRR8zDCaVBc4WOEdEvRo9WXRFYJjgvMkEuItPXIwTav76tDQ
+ Si7MG0lE8LcJ5yLZSq9aKGGCzbk4PDq49aGnBer+BHzi99s39m
+ 4uTb3DAELACjoYde6SA/AySlBedCdUu4lKPN7fyw8jWN9ENs5v
+ Ync96SQuKsSE7rwjIbb2xkVafa8JW9BOyUhacinoisoZef3iI4
+ w6S0XU7YBW2geQKH4AwzEiu4Ufg+Z0bhyBh4rOlebkD74lPdIJ
+ ULzrgUv80ewoCzcUrwKpUV96SA7bcAENol9mx1+m67UkYle241
+ 1D1IRqBylxW8yhDyoa8A/OZcnuuQvf0vCPDcSfJ7H
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch  9eb3e9e6f3 "drm/exynos: add support for ARCH_MULTIPLATFORM"
-allowed building the exynos hdmi driver on non-samsung platforms,
-which unfortunately broke compilation in combination with 22c4f42897
-"drm: exynos: hdmi: add support for exynos5 hdmi", which added
-an inclusion of the samsung-specific plat/gpio-cfg.h header file.
+While the exynos DRM support in principle can work on
+multiplatform, the FIMD and IPP sections of it both
+include the plat/map-base.h header file, which is
+not available on multiplatform. Rather than disabling
+the entire driver, we can just conditionally build
+these two parts.
 
-Fortunately, that header file is not required any more here, so
-we can simply revert the inclusion in order to build the ARM
-allyesconfig again without getting this error:
+Without this patch, building allyesconfig results in:
 
-drivers/gpu/drm/exynos/exynos_hdmi.c:37:27: fatal error: plat/gpio-cfg.h: No such file or directory
+drivers/gpu/drm/exynos/exynos_drm_fimc.c:19:27: fatal error: plat/map-base.h: No such file or directory
+drivers/gpu/drm/exynos/exynos_drm_ipp.c:20:27: fatal error: plat/map-base.h: No such file or directory
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Clark <rob@ti.com>
+Cc: Joonyoung Shim <jy0922.shim@samsung.com>
 Cc: Inki Dae <inki.dae@samsung.com>
+Cc: Seung-Woo Kim <sw0312.kim@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Rahul Sharma <rahul.sharma@samsung.com>
+Cc: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org
 ---
- drivers/gpu/drm/exynos/exynos_hdmi.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/gpu/drm/exynos/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
-index 41ff79d..b5f5119 100644
---- a/drivers/gpu/drm/exynos/exynos_hdmi.c
-+++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
-@@ -34,7 +34,6 @@
- #include <linux/regulator/consumer.h>
- #include <linux/io.h>
- #include <linux/of_gpio.h>
--#include <plat/gpio-cfg.h>
+diff --git a/drivers/gpu/drm/exynos/Kconfig b/drivers/gpu/drm/exynos/Kconfig
+index 1d1f1e5..046bcda 100644
+--- a/drivers/gpu/drm/exynos/Kconfig
++++ b/drivers/gpu/drm/exynos/Kconfig
+@@ -24,7 +24,7 @@ config DRM_EXYNOS_DMABUF
  
- #include <drm/exynos_drm.h>
+ config DRM_EXYNOS_FIMD
+ 	bool "Exynos DRM FIMD"
+-	depends on DRM_EXYNOS && !FB_S3C
++	depends on DRM_EXYNOS && !FB_S3C && !ARCH_MULTIPLATFORM
+ 	help
+ 	  Choose this option if you want to use Exynos FIMD for DRM.
+ 
+@@ -48,7 +48,7 @@ config DRM_EXYNOS_G2D
+ 
+ config DRM_EXYNOS_IPP
+ 	bool "Exynos DRM IPP"
+-	depends on DRM_EXYNOS
++	depends on DRM_EXYNOS && !ARCH_MULTIPLATFORM
+ 	help
+ 	  Choose this option if you want to use IPP feature for DRM.
  
 -- 
 1.7.10.4
