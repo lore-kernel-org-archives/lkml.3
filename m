@@ -1,296 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab3AUKOf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:14:35 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:51691 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499Ab3AUKOc (ORCPT
+	id S1753430Ab3AUKOt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:14:49 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:48529 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab3AUKOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:14:32 -0500
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
-Subject: [PATCH 01/33] lib: devres: Introduce devm_ioremap_resource()
-Date: Mon, 21 Jan 2013 11:08:54 +0100
-Message-Id: <1358762966-20791-2-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:XcQLUkMtHDRIR8RPB9SO0SFeGbzJ0gAZHKSEs9c8vIL
- S/N8VpgsjiMz3V1n2hq+HJu/QjHzDwglQGUWvK3vTSJpOpyyVe
- 1KoB2D0GBGKYVdIA8APErTtTj/RMw7+/TeYVocs2vxOCC4+uHm
- Oc1qjQa8/HNYVBmZZJcLvDMXmu+gp+nQEljE3vlxETwxa86VWI
- sZDhbXS5UfTx3pHPI1jypAX0mwJXLOIgO76yxA6QXHmL4BHkSM
- hbzADT/LiPUeq+coDM1ugbNgAflQMZV0SdIsnAr7Bimlp4JhqN
- x5CLAg1PjCUzuack4r1DD/6AlHIsXTVffPDw4zPukH2gOlik6s
- cZ0YW1+DAGduWRVzAWwNUEsyRy63mU6g8Rs7fCZ76LGGvI/+hw
- Tvy8QrYcdq1AwfGjRZ5e0ysyxzGZYy0kx0JrfFaCri10jN1aSd
- ipBF1
+	Mon, 21 Jan 2013 05:14:47 -0500
+Message-ID: <50FD1504.5020408@synopsys.com>
+Date: Mon, 21 Jan 2013 15:44:28 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel,gmane.linux.drivers.devicetree
+To: Rob Herring <robherring2@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v2 32/76] ARC: [DeviceTree] Basic support
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-33-git-send-email-vgupta@synopsys.com> <50F97017.4090705@gmail.com>
+In-Reply-To: <50F97017.4090705@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The devm_request_and_ioremap() function is very useful and helps avoid a
-whole lot of boilerplate. However, one issue that keeps popping up is
-its lack of a specific error code to determine which of the steps that
-it performs failed. Furthermore, while the function gives an example and
-suggests what error code to return on failure, a wide variety of error
-codes are used throughout the tree.
+On Friday 18 January 2013 09:23 PM, Rob Herring wrote:
+> On 01/18/2013 06:24 AM, Vineet Gupta wrote:
+>> This is minimal infrastructure needed for devicetree work.
+>> It uses an a sample "skeleton" devicetree - embedded in kernel image -
+>> to print the board, manufacturer by parsing the top-level "compatible"
+>> string.
+>>
+>> As of now we don't need any additional "board" specific "machine_desc".
+>>
+>> TODO: support interpreting the command line as boot-loader passed dtb
+>>
+>> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Cc: Grant Likely <grant.likely@secretlab.ca>
+>> Cc: devicetree-discuss@lists.ozlabs.org
+>> Cc: Rob Herring <rob.herring@calxeda.com>
+>> ---
+>>  arch/arc/Kconfig                |    9 +++++
+>>  arch/arc/Makefile               |    9 +++++
+>>  arch/arc/boot/dtb/Makefile      |   22 ++++++++++++
+> 
+> This is .../boot/dts/Makefile on other arches. We should be consistent.
 
-In an attempt to fix these problems, this patch adds a new function that
-drivers can transition to. The devm_ioremap_resource() returns a pointer
-to the remapped I/O memory on success or an ERR_PTR() encoded error code
-on failure. Callers can check for failure using IS_ERR() and determine
-its cause by extracting the error code using PTR_ERR().
+OK, everything moved over to boot/dts folder, boot/dtb nuked, although latter
+seemed a clean approach - specially given that some arches have billions of source
+files in them - anyways not a big worry for ARC port.
 
-devm_request_and_ioremap() is implemented as a wrapper around the new
-API and return NULL on failure as before. This ensures that backwards
-compatibility is maintained until all users have been converted to the
-new API, at which point the old devm_request_and_ioremap() function
-should be removed. To help prevent new users from being added in the
-meantime, devm_request_and_ioremap() is marked __deprecated.
 
-A semantic patch is included which can be used to convert from the old
-devm_request_and_ioremap() API to the new devm_ioremap_resource() API.
-Some non-trivial cases may require manual intervention, though.
+>> [snip....]
+>>
+>> +
+>> +# Rule to build device tree blobs
+>> +$(obj)/%.dtb: $(src)/../dts/%.dts FORCE
+>> +	$(call if_changed_dep,dtc)
+> 
+> There are common rules that went into 3.8. Please use them.
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
----
- Documentation/driver-model/devres.txt              |  3 +-
- include/linux/device.h                             |  3 +-
- lib/devres.c                                       | 57 ++++++++++----
- scripts/coccinelle/api/devm_ioremap_resource.cocci | 90 ++++++++++++++++++++++
- 4 files changed, 138 insertions(+), 15 deletions(-)
- create mode 100644 scripts/coccinelle/api/devm_ioremap_resource.cocci
+How does the equivalent of following look like:
 
-diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
-index 43cff70..25240fc 100644
---- a/Documentation/driver-model/devres.txt
-+++ b/Documentation/driver-model/devres.txt
-@@ -266,7 +266,8 @@ IOMAP
-   devm_ioremap()
-   devm_ioremap_nocache()
-   devm_iounmap()
--  devm_request_and_ioremap() : checks resource, requests region, ioremaps
-+  devm_ioremap_resource() : checks resource, requests memory region, ioremaps
-+  devm_request_and_ioremap() : obsoleted by devm_ioremap_resource()
-   pcim_iomap()
-   pcim_iounmap()
-   pcim_iomap_table()	: array of mapped addresses indexed by BAR
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 43dcda9..558c405 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -573,8 +573,9 @@ extern int devres_release_group(struct device *dev, void *id);
- extern void *devm_kzalloc(struct device *dev, size_t size, gfp_t gfp);
- extern void devm_kfree(struct device *dev, void *p);
- 
-+void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
- void __iomem *devm_request_and_ioremap(struct device *dev,
--			struct resource *res);
-+			struct resource *res) __deprecated;
- 
- struct device_dma_parameters {
- 	/*
-diff --git a/lib/devres.c b/lib/devres.c
-index 80b9c76..9c76b3a 100644
---- a/lib/devres.c
-+++ b/lib/devres.c
-@@ -86,22 +86,24 @@ void devm_iounmap(struct device *dev, void __iomem *addr)
- EXPORT_SYMBOL(devm_iounmap);
- 
- /**
-- * devm_request_and_ioremap() - Check, request region, and ioremap resource
-- * @dev: Generic device to handle the resource for
-+ * devm_ioremap_resource() - check, request region, and ioremap resource
-+ * @dev: generic device to handle the resource for
-  * @res: resource to be handled
-  *
-- * Takes all necessary steps to ioremap a mem resource. Uses managed device, so
-- * everything is undone on driver detach. Checks arguments, so you can feed
-- * it the result from e.g. platform_get_resource() directly. Returns the
-- * remapped pointer or NULL on error. Usage example:
-+ * Checks that a resource is a valid memory region, requests the memory region
-+ * and ioremaps it either as cacheable or as non-cacheable memory depending on
-+ * the resource's flags. All operations are managed and will be undone on
-+ * driver detach.
-+ *
-+ * Returns a pointer to the remapped memory or an ERR_PTR() encoded error code
-+ * on failure. Usage example:
-  *
-  *	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-- *	base = devm_request_and_ioremap(&pdev->dev, res);
-- *	if (!base)
-- *		return -EADDRNOTAVAIL;
-+ *	base = devm_ioremap_resource(&pdev->dev, res);
-+ *	if (IS_ERR(base))
-+ *		return PTR_ERR(base);
-  */
--void __iomem *devm_request_and_ioremap(struct device *dev,
--			struct resource *res)
-+void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res)
- {
- 	resource_size_t size;
- 	const char *name;
-@@ -111,7 +113,7 @@ void __iomem *devm_request_and_ioremap(struct device *dev,
- 
- 	if (!res || resource_type(res) != IORESOURCE_MEM) {
- 		dev_err(dev, "invalid resource\n");
--		return NULL;
-+		return ERR_PTR(-EINVAL);
- 	}
- 
- 	size = resource_size(res);
-@@ -119,7 +121,7 @@ void __iomem *devm_request_and_ioremap(struct device *dev,
- 
- 	if (!devm_request_mem_region(dev, res->start, size, name)) {
- 		dev_err(dev, "can't request region for resource %pR\n", res);
--		return NULL;
-+		return ERR_PTR(-EBUSY);
- 	}
- 
- 	if (res->flags & IORESOURCE_CACHEABLE)
-@@ -130,10 +132,39 @@ void __iomem *devm_request_and_ioremap(struct device *dev,
- 	if (!dest_ptr) {
- 		dev_err(dev, "ioremap failed for resource %pR\n", res);
- 		devm_release_mem_region(dev, res->start, size);
-+		dest_ptr = ERR_PTR(-ENOMEM);
- 	}
- 
- 	return dest_ptr;
- }
-+EXPORT_SYMBOL(devm_ioremap_resource);
-+
-+/**
-+ * devm_request_and_ioremap() - Check, request region, and ioremap resource
-+ * @dev: Generic device to handle the resource for
-+ * @res: resource to be handled
-+ *
-+ * Takes all necessary steps to ioremap a mem resource. Uses managed device, so
-+ * everything is undone on driver detach. Checks arguments, so you can feed
-+ * it the result from e.g. platform_get_resource() directly. Returns the
-+ * remapped pointer or NULL on error. Usage example:
-+ *
-+ *	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+ *	base = devm_request_and_ioremap(&pdev->dev, res);
-+ *	if (!base)
-+ *		return -EADDRNOTAVAIL;
-+ */
-+void __iomem *devm_request_and_ioremap(struct device *device,
-+				       struct resource *res)
-+{
-+	void __iomem *dest_ptr;
-+
-+	dest_ptr = devm_ioremap_resource(device, res);
-+	if (IS_ERR(dest_ptr))
-+		return NULL;
-+
-+	return dest_ptr;
-+}
- EXPORT_SYMBOL(devm_request_and_ioremap);
- 
- #ifdef CONFIG_HAS_IOPORT
-diff --git a/scripts/coccinelle/api/devm_ioremap_resource.cocci b/scripts/coccinelle/api/devm_ioremap_resource.cocci
-new file mode 100644
-index 0000000..495daa3
---- /dev/null
-+++ b/scripts/coccinelle/api/devm_ioremap_resource.cocci
-@@ -0,0 +1,90 @@
-+virtual patch
-+virtual report
-+
-+@depends on patch@
-+expression base, dev, res;
-+@@
-+
-+-base = devm_request_and_ioremap(dev, res);
-++base = devm_ioremap_resource(dev, res);
-+ ...
-+ if (
-+-base == NULL
-++IS_ERR(base)
-+ || ...) {
-+<...
-+-	return ...;
-++	return PTR_ERR(base);
-+...>
-+ }
-+
-+@depends on patch@
-+expression e, E, ret;
-+identifier l;
-+@@
-+
-+ e = devm_ioremap_resource(...);
-+ ...
-+ if (IS_ERR(e) || ...) {
-+ 	... when any
-+-	ret = E;
-++	ret = PTR_ERR(e);
-+ 	...
-+(
-+ 	return ret;
-+|
-+ 	goto l;
-+)
-+ }
-+
-+@depends on patch@
-+expression e;
-+@@
-+
-+ e = devm_ioremap_resource(...);
-+ ...
-+ if (IS_ERR(e) || ...) {
-+ 	...
-+-	\(dev_dbg\|dev_err\|pr_debug\|pr_err\|DRM_ERROR\)(...);
-+ 	...
-+ }
-+
-+@depends on patch@
-+expression e;
-+identifier l;
-+@@
-+
-+ e = devm_ioremap_resource(...);
-+ ...
-+ if (IS_ERR(e) || ...)
-+-{
-+(
-+ 	return ...;
-+|
-+ 	goto l;
-+)
-+-}
-+
-+@r depends on report@
-+expression e;
-+identifier l;
-+position p1;
-+@@
-+
-+*e = devm_request_and_ioremap@p1(...);
-+ ...
-+ if (e == NULL || ...) {
-+ 	...
-+(
-+ 	return ...;
-+|
-+ 	goto l;
-+)
-+ }
-+
-+@script:python depends on r@
-+p1 << r.p1;
-+@@
-+
-+msg = "ERROR: deprecated devm_request_and_ioremap() API used on line %s" % (p1[0].line)
-+coccilib.report.print_report(p1[0], msg)
--- 
-1.8.1.1
+diff --git a/arch/arc/boot/dts/Makefile b/arch/arc/boot/dts/Makefile
 
+@@ -1,7 +1,5 @@
+ ifeq ($(CONFIG_OF),y)
+
+-dtb-y  += skeleton.dtb
+-
+ # Built-in dtb
+ builtindtb-y                           := skeleton
+
+@@ -11,12 +9,6 @@ endif
+
+ obj-y  += $(patsubst "%",%,$(builtindtb-y)).dtb.o
+
+-clean-files += $(obj)/$(dtb-y) $(obj)/*.dtb.S $(obj)/*.dtb.o
+-
+-# Rule to build device tree blobs
+-$(obj)/%.dtb: $(src)/../dts/%.dts FORCE
+-       $(call if_changed_dep,dtc)
+-
+-$(obj)/dtbs: $(addprefix $(obj)/, $(dtb-y))
++clean-files += *.dtb
+
+One observation above is that the explicitly build dtb file (make ARCH=arc
+angel4.dtb) doesn't get cleaned with make {clean,distclean} despite above
+clean-files and this is true even for orig version.
+
+>> +
+>> +$(obj)/dtbs: $(addprefix $(obj)/, $(dtb-y))
+>> +
+>> +endif
+>> diff --git a/arch/arc/boot/dts/skeleton.dts b/arch/arc/boot/dts/skeleton.dts
+>> new file mode 100644
+>> index 0000000..25a84fb
+>> --- /dev/null
+>> +++ b/arch/arc/boot/dts/skeleton.dts
+>> @@ -0,0 +1,10 @@
+>> +/*
+>> + * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +/dts-v1/;
+>> +
+>> +/include/ "skeleton.dtsi"
+>> diff --git a/arch/arc/boot/dts/skeleton.dtsi b/arch/arc/boot/dts/skeleton.dtsi
+>> new file mode 100644
+>> index 0000000..f6a457a
+>> --- /dev/null
+>> +++ b/arch/arc/boot/dts/skeleton.dtsi
+>> @@ -0,0 +1,21 @@
+>> +/*
+>> + * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +/*
+>> + * Skeleton device tree; the bare minimum needed to boot; just include and
+>> + * add a compatible value.
+>> + */
+>> +
+>> +/ {
+>> +	compatible = "snps,arc-angel4", "snps,arc-ml509";
+> 
+> Normally, you wouldn't have this as part of skeleton. If you need
+> something generic, then perhaps generic.dts would be better.
+
+So you mean rename arc/arc/boot/dts/skeleton.dts to arch/arc/boot/dts/generic.dts
+as that's what the semantics are here. I agree.
+
+However I think skeleton semantics are better: I'll take out the specific boards
+name from it, and for empty CONFIG_ARC_BUILTIN_DTB_NAME, include a real board DT
+file rather than skeleton. OK ?
+
+
+>> [snipped...]
+>>  early_param("mem", setup_mem_sz);
+>>  
+>> +void __init early_init_dt_add_memory_arch(u64 base, u64 size)
+>> +{
+>> +	pr_err("%s(%llx, %llx)\n", __func__, base, size);
+> 
+> ? Is this todo?
+
+Yes, ARC port currently doesn't handle the cmdline provided by DT - given that I
+added the the DT support itself very recently. I plan to fix this soon, but assume
+it not absolutely must in terms of requirements.
+
+
+>> +#ifdef CONFIG_OF_FLATTREE
+>> +void __init early_init_dt_setup_initrd_arch(unsigned long start,
+>> +					    unsigned long end)
+>> +{
+>> +	pr_err("%s(%lx, %lx)\n", __func__, start, end);
+> 
+> And this?
+
+Ditto !
+
+Many thanks for your review.
+-Vineet
