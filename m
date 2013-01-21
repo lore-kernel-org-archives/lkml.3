@@ -1,142 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976Ab3AUHfp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 02:35:45 -0500
-Received: from mga02.intel.com ([134.134.136.20]:28694 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751365Ab3AUHfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 02:35:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,504,1355126400"; 
-   d="asc'?scan'208";a="274544626"
-Date: Mon, 21 Jan 2013 02:25:56 -0500
-From: Chen Gong <gong.chen@linux.intel.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 4/5] clocksource: Enlarge the maxim time interval
- when configuring the scale and shift
-Message-ID: <20130121072556.GA11915@gchen.bj.intel.com>
-Mail-Followup-To: Feng Tang <feng.tang@intel.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-	"H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
-	Len Brown <lenb@kernel.org>,
-	"Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-	linux-kernel@vger.kernel.org
-References: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
- <1358750325-21217-5-git-send-email-feng.tang@intel.com>
+	id S1752214Ab3AUHgI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 02:36:08 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:39301 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3AUHgF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 02:36:05 -0500
+Message-ID: <50FCEFDE.8000705@gmail.com>
+Date: Mon, 21 Jan 2013 15:35:58 +0800
+From: Mark Zhang <nvmarkzhang@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
-Content-Disposition: inline
-In-Reply-To: <1358750325-21217-5-git-send-email-feng.tang@intel.com>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Courbot <acourbot@nvidia.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Mark Zhang <markz@nvidia.com>, gnurou@gmail.com
+Subject: Re: [PATCH 2/3] tegra: pwm-backlight: add tegra pwm-bl driver
+References: <1358591420-7790-1-git-send-email-acourbot@nvidia.com> <1358591420-7790-3-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1358591420-7790-3-git-send-email-acourbot@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---uAKRQypu60I7Lcqm
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Jan 21, 2013 at 02:38:44PM +0800, Feng Tang wrote:
-> Date:	Mon, 21 Jan 2013 14:38:44 +0800
-> From: Feng Tang <feng.tang@intel.com>
-> To: Thomas Gleixner <tglx@linutronix.de>, John Stultz
->  <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin"
->  <hpa@linux.intel.com>, x86@kernel.org, Len Brown <lenb@kernel.org>,
->  "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
->  linux-kernel@vger.kernel.org
-> Cc: Feng Tang <feng.tang@intel.com>
-> Subject: [RFC PATCH 4/5] clocksource: Enlarge the maxim time interval when
->  configuring the scale and shift
-> X-Mailer: git-send-email 1.7.9.5
->=20
-> On our x86 platform, we see a failure case of calling clocksource_cyc2ns(=
-),
-> which return a negative value. The reason is the time interval was large
-> (more than 1000 seconds), while its TSC frequency is 2GHz, so the followi=
-ng
-> fomular overflowed:
-> 	((u64) cycles * mult) >> shift
->=20
-> So enlarge the time interval from 10 mins to 40 mins to fix the bug.
->=20
-> Another solution may be adding a "max_interval" in struct clocksource, and
-> use a default value (like current 10 minutes) when clocksource driver
-> doesn't set it.
->=20
-As you said, it looks like it is a littleb it arbitrary from 10m -> 40m, I
-think max_interval is a better choice, if timer guys not minding too many
-control knobs :-).
-
-> Signed-off-by: Feng Tang <feng.tang@intel.com>
+On 01/19/2013 06:30 PM, Alexandre Courbot wrote:
+> Add a PWM-backlight subdriver for Tegra boards, with support for
+> Ventana.
+> 
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 > ---
->  kernel/time/clocksource.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->=20
-> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-> index c958338..48fbfcb 100644
-> --- a/kernel/time/clocksource.c
-> +++ b/kernel/time/clocksource.c
-> @@ -663,7 +663,7 @@ void __clocksource_updatefreq_scale(struct clocksourc=
-e *cs, u32 scale, u32 freq)
->  	 * Calc the maximum number of seconds which we can run before
->  	 * wrapping around. For clocksources which have a mask > 32bit
->  	 * we need to limit the max sleep time to have a good
-> -	 * conversion precision. 10 minutes is still a reasonable
-> +	 * conversion precision. 40 minutes is still a reasonable
->  	 * amount. That results in a shift value of 24 for a
->  	 * clocksource with mask >=3D 40bit and f >=3D 4GHz. That maps to
->  	 * ~ 0.06ppm granularity for NTP. We apply the same 12.5%
-> @@ -674,8 +674,8 @@ void __clocksource_updatefreq_scale(struct clocksourc=
-e *cs, u32 scale, u32 freq)
->  	do_div(sec, scale);
->  	if (!sec)
->  		sec =3D 1;
-> -	else if (sec > 600 && cs->mask > UINT_MAX)
-> -		sec =3D 600;
-> +	else if (sec > 2400 && cs->mask > UINT_MAX)
-> +		sec =3D 2400;
-> =20
->  	clocks_calc_mult_shift(&cs->mult, &cs->shift, freq,
->  			       NSEC_PER_SEC / scale, sec * scale);
-> --=20
-> 1.7.9.5
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+[...]
+>  
+> +	backlight {
+> +		compatible = "pwm-backlight-ventana";
+> +		brightness-levels = <0 16 32 48 64 80 96 112 128 144 160 176 192 208 224 240 255>;
+> +		default-brightness-level = <12>;
+> +
+> +		pwms = <&pwm 2 5000000>;
 
---uAKRQypu60I7Lcqm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+After read the codes of tegra pwm driver & pwm framework, I got to know
+the meaning of this property. So I think we need to add a doc(e.g:
+Documentation/devicetree/bindings/video/backlight/nvidia,tegra20-bl.txt)
+to explain this, "Documentation/devicetree/bindings/pwm/pwm.txt" doesn't
+explain this, because this may be different between different pwm drivers.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> +		pwm-names = "backlight";
+> +
+> +		power-supply = <&vdd_bl_reg>;
+> +		panel-supply = <&vdd_pnl_reg>;
+> +		bl-gpio = <&gpio 28 0>;
+> +		bl-panel = <&gpio 10 0>;
+> +	};
+> +
+[...]
+> diff --git a/drivers/video/backlight/pwm_bl_tegra.c b/drivers/video/backlight/pwm_bl_tegra.c
+> new file mode 100644
+> index 0000000..8f2195b
+> --- /dev/null
+> +++ b/drivers/video/backlight/pwm_bl_tegra.c
 
-iQIcBAEBAgAGBQJQ/O2DAAoJEI01n1+kOSLH/HYP/jluhyitLpJVOBsk3OKC0Uxi
-RLKPRODwZSdaR+Y+7w/xPySPFdOmWJd0DD2VJzmBdO6L5NldSv0iOwE0zihOoM98
-RM/xDniLpk3SEjAOC+EzorbNz2xdJn0h3URBxMs73geHarW3+WF30h2ou5Y4X9WN
-V0Tb6htlD7uRErCf7lbWn/HR0NdZkji7n2k3MU+7kYtaTCv5278TMjRSMCSRN5R4
-f0BSVBOcq6+3mm6zlosCS+6aBi86p0zkpyY8E3t3WL6xjbs+U2kqCY+rwgGgZ2Uk
-uQE8A82r0yB2NtGhIPgD9YBTZ9dG0uoAi59qH9FpCszNo4qntOM910bdFR4AKGlR
-7dWo4uL0hPGq8tFvKfXTx6Ja1LicHc7SSAs4P3zBiSbYqsOno0jgh2BL8y4hMITy
-E2M2hDBr3VRdmZTV0na8FVaFxQjYIsdjC8k3wTlJfGEPRqAEqPkbi6IZUPeQ1Qkx
-1d4Wk33ob9c450MXR6v8kNy691c0osO9z0aPYPdiiteb9ymVzwBPuOkoMAIqt2+i
-p6RdO+F2suh2+uBcjzURx0u/LgKdB+Me/f4UTeZgwmAng95cdFfXbtWPnIZWohac
-90whRbVBJq78QtX3NLqtM/SFn11m30Q9KsPr13v23I2bBXDypJ8l4jLWv99tz1it
-JAkzCosA+K6f2ePuTn7D
-=Q1W3
------END PGP SIGNATURE-----
+So according to the filename, I think we can put all tegra boards codes
+here, right? Just like what you do for Ventana, if I wanna add support
+for cardhu, I can define similar functions -- let's say "init_cardhu",
+"exit_cardhu", "notify_cardhu" and "notify_after_cardhu", right?
 
---uAKRQypu60I7Lcqm--
+But I think if we do in this way, the file will become very long soon.
+And there are a lot of redundant codes in it. So do you have any
+suggestions?
+
+Mark
+> @@ -0,0 +1,159 @@
+> +/*
+> + * pwm-backlight subdriver for Tegra.
+> + *
+> + * Copyright (c) 2013 NVIDIA CORPORATION.  All rights reserved.
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+[...]
+> +MODULE_DESCRIPTION("Backlight Driver for Tegra boards");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:pwm-tegra-backlight");
+> +
+> +
+> 
