@@ -1,193 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab3AUCxd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 21:53:33 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48592 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543Ab3AUCxc (ORCPT
+	id S1752682Ab3AUC5K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 21:57:10 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:57749 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752543Ab3AUC5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 21:53:32 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-af-50fcadaa41dc
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
-        namhyung.kim@lge.com
-Subject: Re: [PATCH v4 2/2] perf stat: add interval printing
-References: <1358550839-7509-1-git-send-email-eranian@google.com>
-	<1358550839-7509-3-git-send-email-eranian@google.com>
-Date: Mon, 21 Jan 2013 11:53:29 +0900
-In-Reply-To: <1358550839-7509-3-git-send-email-eranian@google.com> (Stephane
-	Eranian's message of "Sat, 19 Jan 2013 00:13:59 +0100")
-Message-ID: <87bocjl00m.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Sun, 20 Jan 2013 21:57:08 -0500
+Message-ID: <50FCAE43.7090206@linux.vnet.ibm.com>
+Date: Mon, 21 Jan 2013 08:26:03 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Ivo Sieben <meltedpianoman@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] tty: Only wakeup the line discipline idle queue when
+ queue is active
+References: <50E3FDFA.4070203@suse.cz> <20130102114311.66215bf5@pyramind.ukuu.org.uk> <CAMSQXEHmDb5rUQnT1JNcMCzdaN+gAr+1hR=PyPiDMu7vK5ykxA@mail.gmail.com> <50E4854E.8060801@suse.cz> <CAMSQXEGU2WmhmMqP7XMK2x39GN9iDDWpg-Wa7_cAauHWx5OWbQ@mail.gmail.com> <50F66120.50704@linux.vnet.ibm.com> <CAMSQXEE=Qp8kVcEp8nBhNDmOaDMUQUUou+5Z2f8-1znykqy6mQ@mail.gmail.com> <50F683D9.1080908@linux.vnet.ibm.com> <CAMSQXEHjP5mzs9u5DUmuYgoEceM2OO=E8844-XQ7LPCSECoGRw@mail.gmail.com> <50F7D8C2.1030506@linux.vnet.ibm.com> <20130118154504.GA28072@redhat.com>
+In-Reply-To: <20130118154504.GA28072@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012102-1618-0000-0000-000003384DF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephane,
+On 01/18/2013 09:15 PM, Oleg Nesterov wrote:
+> On 01/17, Preeti U Murthy wrote:
+>>
+>> On 01/16/2013 05:32 PM, Ivo Sieben wrote:
+>>>
+>>> I don't have a problem that there is a context switch to the high
+>>> priority process: it has a higher priority, so it probably is more
+>>> important.
+>>> My problem is that even when the waitqueue is empty, the high priority
+>>> thread has a risk to block on the spinlock needlessly (causing context
+>>> switches to low priority task and back to the high priority task)
+>>>
+>> Fair enough Ivo.I think you should go ahead with merging the
+>> waitqueue_active()
+>>   wake_up()
+>> logic into the wake_up() variants.
+> 
+> This is not easy. We can't simply change wake_up*() helpers or modify
+> __wake_up().
 
-On Sat, 19 Jan 2013 00:13:59 +0100, Stephane Eranian wrote:
-> This patch adds a new printing mode for perf stat.
-> It allows internval printing. That means perf stat
-> can now print event deltas at regular time interval.
-> This is useful to detect phases in programs.
->
-> The -I option enables interval printing. It expects
-> an interval duration in milliseconds. Minimum is
-> 100ms. Once, activated perf stat prints events deltas
-> since last printout. All modes are supported.
->
-> $ perf stat -I 1000 -e cycles noploop 10
-> noploop for 10 seconds
+Hmm.I need to confess that I don't really know what goes into a change
+such as this.Since there are a lot of waitqueue_active()+wake_up()
+calls,I was wondering why at all have a separate logic as
+waitqueue_active(),if we could do what it does in wake_up*(). But you
+guys can decide this best.
+> 
+> I can't understand why do you dislike Ivo's simple patch. There are
+> a lot of "if (waitqueue_active) wake_up" examples. Even if we add the
+> new helpers (personally I don't think this makes sense) , we can do
+> this later. Why should we delay this fix?
 
-Is this line an output from perf stat?
+Personally i was concerned about how this could cause a scheduler
+overhead.There does not seem to be much of a problem here.Ivo's patch
+for adding a waitqueue_active() for his specific problem would also do
+well,unless there is a dire requirement for a clean up,which I am unable
+to evaluate.
 
-In addition, how about adding a head line like:
+> 
+> Oleg.
+> 
 
-# time                count      event
-#
-> 1.000086918         2385155642 cycles                    #    0.000 GHz
-> 2.000267937         2392279774 cycles                    #    0.000 GHz
-> 3.000385400         2390971450 cycles                    #    0.000 GHz
-> 4.000504408         2390996752 cycles                    #    0.000 GHz
-> 5.000626878         2390853097 cycles                    #    0.000 GHz
->
-> The output format makes it easy to feed into a plotting program
-> such as gnuplot when the -I option is used in combination with the -x
-> option:
->
-> $ perf stat -x, -I 1000 -e cycles noploop 10
-> noploop for 10 seconds
-> 1.000084113,2378775498,cycles
-> 2.000245798,2391056897,cycles
-> 3.000354445,2392089414,cycles
-> 4.000459115,2390936603,cycles
-> 5.000565341,2392108173,cycles
->
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
-[snip]
-> @@ -877,6 +977,8 @@ static void print_counter(struct perf_evsel *counter)
->  static void print_stat(int argc, const char **argv)
->  {
->  	struct perf_evsel *counter;
-> +	struct timespec ts, rs;
-> +	char prefix[64] = { 0, };
->  	int i;
->  
->  	fflush(stdout);
-> @@ -899,12 +1001,18 @@ static void print_stat(int argc, const char **argv)
->  		fprintf(output, ":\n\n");
->  	}
->  
-> +	if (interval) {
-> +		clock_gettime(CLOCK_MONOTONIC, &ts);
-> +		diff_timespec(&rs, &ts, &ref_time);
-> +		sprintf(prefix, "%lu.%09lu%s", rs.tv_sec, rs.tv_nsec, csv_sep);
-> +	}
+Thank you
 
-AFAICS the only caller of print_stat() is cmd_stat() and it'll call this
-only if interval is 0.  So why not just setting prefix to NULL then?
+Regards
+Preeti U Murthy
 
-
-> +
->  	if (no_aggr) {
->  		list_for_each_entry(counter, &evsel_list->entries, node)
-> -			print_counter(counter);
-> +			print_counter(counter, prefix);
->  	} else {
->  		list_for_each_entry(counter, &evsel_list->entries, node)
-> -			print_counter_aggr(counter);
-> +			print_counter_aggr(counter, prefix);
->  	}
->  
->  	if (!csv_output) {
-> @@ -925,7 +1033,7 @@ static volatile int signr = -1;
->  
->  static void skip_signal(int signo)
->  {
-> -	if(child_pid == -1)
-> +	if((child_pid == -1) || interval)
-
-Looks like it needs a whitespace :)
-
-
->  		done = 1;
->  
->  	signr = signo;
-> @@ -1145,6 +1253,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
->  			"command to run prior to the measured command"),
->  	OPT_STRING(0, "post", &post_cmd, "command",
->  			"command to run after to the measured command"),
-> +	OPT_INTEGER('I', "interval-print", &interval,
-> +		    "print counts at regular interval in ms (>= 100)"),
->  	OPT_END()
->  	};
->  	const char * const stat_usage[] = {
-> @@ -1245,12 +1355,23 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
->  		usage_with_options(stat_usage, options);
->  		return -1;
->  	}
-> +	if (interval < 0 || (interval > 0 && interval < 100)) {
-> +		pr_err("print interval must be >= 100ms\n");
-> +		usage_with_options(stat_usage, options);
-> +		return -1;
-> +	}
-
-How about making 'interval' unsigned and simplify the condition a bit:
-
-	if (interval && interval < 100) {
-		...
-	}
-
-Thanks,
-Namhyung
-
->  
->  	list_for_each_entry(pos, &evsel_list->entries, node) {
->  		if (perf_evsel__alloc_stat_priv(pos) < 0 ||
->  		    perf_evsel__alloc_counts(pos, perf_evsel__nr_cpus(pos)) < 0)
->  			goto out_free_fd;
->  	}
-> +	if (interval) {
-> +		list_for_each_entry(pos, &evsel_list->entries, node) {
-> +			if (perf_evsel__alloc_prev_raw_counts(pos) < 0)
-> +				goto out_free_fd;
-> +		}
-> +	}
-
-It's not about your patch, but I can't find where it frees evsel->counts
-- a counter part of perf_evsel__alloc_counts().  Seems we leak that?
-
-
->  
->  	/*
->  	 * We dont want to block the signals - that would cause
-> @@ -1260,6 +1381,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
->  	 */
->  	atexit(sig_atexit);
->  	signal(SIGINT,  skip_signal);
-> +	signal(SIGCHLD, skip_signal);
->  	signal(SIGALRM, skip_signal);
->  	signal(SIGABRT, skip_signal);
->  
-> @@ -1272,11 +1394,13 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
->  		status = run_perf_stat(argc, argv);
->  	}
->  
-> -	if (status != -1)
-> +	if (status != -1 && !interval)
->  		print_stat(argc, argv);
->  out_free_fd:
-> -	list_for_each_entry(pos, &evsel_list->entries, node)
-> +	list_for_each_entry(pos, &evsel_list->entries, node) {
->  		perf_evsel__free_stat_priv(pos);
-> +		perf_evsel__free_prev_raw_counts(pos);
-> +	}
->  	perf_evlist__delete_maps(evsel_list);
->  out:
->  	perf_evlist__delete(evsel_list);
