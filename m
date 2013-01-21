@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab3AURMK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:12:10 -0500
+	id S1754001Ab3AURMI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:12:08 -0500
 Received: from thoth.sbs.de ([192.35.17.2]:27192 "EHLO thoth.sbs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752561Ab3AURMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:12:05 -0500
+	id S1752592Ab3AURMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 12:12:06 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>
-Subject: [PATCH v4 04/13] scripts/gdb: Add get_target_endianness helper
-Date: Mon, 21 Jan 2013 18:06:11 +0100
-Message-Id: <85cba341bd6f53cb474d7dc3cb1c029df25a645a.1358787929.git.jan.kiszka@siemens.com>
+Subject: [PATCH v4 07/13] scripts/gdb: Add task iteration helper
+Date: Mon, 21 Jan 2013 18:06:14 +0100
+Message-Id: <150b6a984796b0cdf5dd3dda0e7373edd8fdb996.1358787929.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
 References: <cover.1358787929.git.jan.kiszka@siemens.com>
@@ -23,40 +23,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parse the target endianness from the output of "show endian" and cache
-the result to return it via the new helper get_target_endiannes. We will
-need it for reading integers from buffers that contain target memory.
+The internal helper for_each_task iterates over all tasks of the target,
+calling the provided function on each. For performance reasons, we cache
+a reference to the gdb type object of a task.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/utils.py |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+ scripts/gdb/task.py |   40 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 40 insertions(+), 0 deletions(-)
+ create mode 100644 scripts/gdb/task.py
 
-diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
-index 2f6eafb..44daa29c 100644
---- a/scripts/gdb/utils.py
-+++ b/scripts/gdb/utils.py
-@@ -56,3 +56,20 @@ class ContainerOf(gdb.Function):
- 				    elementname.string())
- 
- ContainerOf()
+diff --git a/scripts/gdb/task.py b/scripts/gdb/task.py
+new file mode 100644
+index 0000000..ff05aa5
+--- /dev/null
++++ b/scripts/gdb/task.py
+@@ -0,0 +1,40 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  task & thread tools
++#
++# Copyright (c) Siemens AG, 2011, 2012
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
 +
++import gdb
 +
-+BIG_ENDIAN = 0
-+LITTLE_ENDIAN = 1
-+target_endianness = None
++from utils import *
 +
-+def get_target_endianness():
-+	global target_endianness
-+	if target_endianness == None:
-+		endian = gdb.execute("show endian", False, True)
-+		if endian.find("little endian") >= 0:
-+			target_endianness = LITTLE_ENDIAN
-+		elif endian.find("big endian") >= 0:
-+			target_endianness = BIG_ENDIAN
-+		else:
-+			raise gdb.GdgError("unknown endianness '%s'" % endian)
-+	return target_endianness
++task_ptr_type = None
++
++def get_task_ptr_type():
++	global task_ptr_type
++	if task_ptr_type == None:
++		task_ptr_type = get_type("struct task_struct").pointer()
++	return task_ptr_type
++
++def for_each_task(func, arg = None):
++	init_task = gdb.parse_and_eval("init_task")
++	g = init_task.address
++	while True:
++		g =  container_of(g['tasks']['next'], get_task_ptr_type(),
++				  "tasks")
++		if g == init_task.address:
++			break;
++		t = g
++		while True:
++			func(t, arg)
++			t = container_of(t['thread_group']['next'],
++					 get_task_ptr_type(), "thread_group")
++			if t == g:
++				break
 -- 
 1.7.3.4
 
