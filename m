@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634Ab3AUUf5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 15:35:57 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:38340 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752815Ab3AUUfz (ORCPT
+	id S1756644Ab3AUUhY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 15:37:24 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:39672 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754664Ab3AUUhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 15:35:55 -0500
-Date: Mon, 21 Jan 2013 15:35:54 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Arnd Bergmann <arnd@arndb.de>
-cc: balbi@ti.com, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <arm@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>,
-        Manjunath Goudar <manjunath.goudar@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH 13/15] USB: ehci: make orion and mxc bus glues coexist
-In-Reply-To: <201301212014.20678.arnd@arndb.de>
-Message-ID: <Pine.LNX.4.44L0.1301211533580.24224-100000@netrider.rowland.org>
+	Mon, 21 Jan 2013 15:37:23 -0500
+X-Auth-Info: +eOZPfnNHh5vyb7a1eFQd3v8c2akLT+6LD+YIufpLHk=
+Message-ID: <50FDB509.9030004@denx.de>
+Date: Mon, 21 Jan 2013 22:37:13 +0100
+From: Heiko Schocher <hs@denx.de>
+Organization: DENX Software Engineering
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Sekhar Nori <nsekhar@ti.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: Re: [PATCH 11/15] mtd: davinci_nand: fix OF support
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <1358788568-11137-12-git-send-email-arnd@arndb.de>
+In-Reply-To: <1358788568-11137-12-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jan 2013, Arnd Bergmann wrote:
+Hello Arnd,
 
-> On Monday 21 January 2013, Felipe Balbi wrote:
-> > On Mon, Jan 21, 2013 at 05:16:06PM +0000, Arnd Bergmann wrote:
-> > > Manjunath Goudar is already working on a patch to convert
-> > > both the imx and the mvebu glue drivers (along with all
-> > > the other ARM specific ones) to the new probing method,
-> > > but that will be too late to fix v3.8. This patch instead
-> > > adds yet another hack like the existing ones to allow
-> > > the ehci driver to load both back-ends.
-> > 
-> > NAK, should be converted to the new usage of ehci library driver. Alan
-> > Stern already implemented for a few drivers, help is very welcome.
+On 21.01.2013 18:16, Arnd Bergmann wrote:
+> The patch cdeadd "mtd: nand: davinci: add OF support for
+> davinci nand controller" ironically causes a build error
+> when CONFIG_OF is enabled because of a missing ';'
+> character:
 > 
-> As I explained above, Manjunath already has a patch [1] for that, but I
-> think it's too late to include that in v3.8 given the regression
-> potential and size of the patch. Once he submits that patch for 3.9,
-> my change would get taken out anyway, but it lets us build important
-> configurations (including allyesconfig build tests) on 3.8.
+> drivers/mtd/nand/davinci_nand.c:527:1: error: expected ',' or ';' before 'extern'
 > 
-> 	Arnd
+> This is the obvious fix.
 > 
-> [1] http://git.linaro.org/gitweb?p=people/manjunathgoudar/usb-refactoring.git;a=commitdiff;h=d9f28dba727212d022605c955796a3a83b3978ae
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Heiko Schocher <hs@denx.de>
+> Cc: Sekhar Nori <nsekhar@ti.com>
+> Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> Cc: David Woodhouse <David.Woodhouse@intel.com>
+> ---
+>  drivers/mtd/nand/davinci_nand.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Is Manjunath aware of the first patch attached to this email message?
+Already fixed here:
+http://lists.infradead.org/pipermail/linux-mtd/2013-January/045366.html
 
-	http://marc.info/?l=linux-usb&m=135843902916416&w=2
-
-Alan Stern
+bye,
+Heiko
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
 
