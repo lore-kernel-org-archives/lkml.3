@@ -1,107 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab3AUXmF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 18:42:05 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:55436 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab3AUXmD (ORCPT
+	id S1756557Ab3AUXmR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 18:42:17 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:39352 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756224Ab3AUXmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 18:42:03 -0500
-Date: Mon, 21 Jan 2013 15:41:58 -0800
+	Mon, 21 Jan 2013 18:42:14 -0500
+Date: Mon, 21 Jan 2013 15:42:10 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Mitch Bradley <wmb@firmworks.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v4] drivers/pinctrl: grab default handles from device core
-Message-ID: <20130121234158.GA9322@kroah.com>
-References: <1358795855-21064-1-git-send-email-linus.walleij@stericsson.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Stefan Roese <sr@denx.de>, Alejandro Mery <amery@geeks.cl>,
+        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] tty: of_serial: Add pinctrl support
+Message-ID: <20130121234210.GB9322@kroah.com>
+References: <1358544639-14761-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1358544639-14761-7-git-send-email-maxime.ripard@free-electrons.com>
+ <CACRpkdYNOTcTVNMqD-q8sJ50nuwoXZLUJZpMXWa=mrZGnGY9+g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1358795855-21064-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <CACRpkdYNOTcTVNMqD-q8sJ50nuwoXZLUJZpMXWa=mrZGnGY9+g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 08:17:35PM +0100, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+On Mon, Jan 21, 2013 at 11:13:55PM +0100, Linus Walleij wrote:
+> On Fri, Jan 18, 2013 at 10:30 PM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
 > 
-> This makes the device core auto-grab the pinctrl handle and set
-> the "default" (PINCTRL_STATE_DEFAULT) state for every device
-> that is present in the device model right before probe. This will
-> account for the lion's share of embedded silicon devcies.
+> > Use pinctrl to configure the SoCs pins directly from the driver.
+> >
+> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 > 
-> A modification of the semantics for pinctrl_get() is also done:
-> previously if the pinctrl handle for a certain device was already
-> taken, the pinctrl core would return an error. Now, since the
-> core may have already default-grabbed the handle and set its
-> state to "default", if the handle was already taken, this will
-> be disregarded and the located, previously instanitated handle
-> will be returned to the caller.
+> You can poke Greg about this which is fun because it does become
+> superfluous with the patch titled
+> "[PATCH v4] drivers/pinctrl: grab default handles from device core"
+> http://marc.info/?l=linux-kernel&m=135879594515932&w=2
 > 
-> This way all code in drivers explicitly requesting their pinctrl
-> handlers will still be functional, and drivers that want to
-> explicitly retrieve and switch their handles can still do that.
-> But if the desired functionality is just boilerplate of this
-> type in the probe() function:
+> Which will auto-grab the default state on any device.
 > 
-> struct pinctrl  *p;
-> 
-> p = devm_pinctrl_get_select_default(&dev);
-> if (IS_ERR(p)) {
->    if (PTR_ERR(p) == -EPROBE_DEFER)
->         return -EPROBE_DEFER;
->         dev_warn(&dev, "no pinctrl handle\n");
-> }
-> 
-> The discussion began with the addition of such boilerplate
-> to the omap4 keypad driver:
-> http://marc.info/?l=linux-input&m=135091157719300&w=2
-> 
-> A previous approach using notifiers was discussed:
-> http://marc.info/?l=linux-kernel&m=135263661110528&w=2
-> This failed because it could not handle deferred probes.
-> 
-> This patch alone does not solve the entire dilemma faced:
-> whether code should be distributed into the drivers or
-> if it should be centralized to e.g. a PM domain. But it
-> solves the immediate issue of the addition of boilerplate
-> to a lot of drivers that just want to grab the default
-> state. As mentioned, they can later explicitly retrieve
-> the handle and set different states, and this could as
-> well be done by e.g. PM domains as it is only related
-> to a certain struct device * pointer.
-> 
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Benoit Cousson <b-cousson@ti.com>
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Cc: Mitch Bradley <wmb@firmworks.com>
-> Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Cc: Rickard Andersson <rickard.andersson@stericsson.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> Greg, can I have your ACK on that device core grab patch
+> so you don't have to merge this patch but can point out that
+> it solves the boilerplate problem?
 
-
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-Feel free to take this through your tree.
-
-thanks,
+Yes you now do.
 
 greg k-h
