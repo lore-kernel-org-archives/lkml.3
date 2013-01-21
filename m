@@ -1,33 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab3AUPIm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 10:08:42 -0500
-Received: from mail.palosanto.com ([201.234.196.171]:39549 "EHLO
-	pbx.palosanto.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab3AUPIl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 10:08:41 -0500
-Message-ID: <50FD59F7.7000308@palosanto.com>
-Date: Mon, 21 Jan 2013 10:08:39 -0500
-From: =?UTF-8?B?QWxleCBWaWxsYWPDrcKtcyBMYXNzbw==?= 
-	<a_villacis@palosanto.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756139Ab3AUPKF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 10:10:05 -0500
+Received: from 8bytes.org ([85.214.48.195]:42334 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753797Ab3AUPKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 10:10:03 -0500
+Date: Mon, 21 Jan 2013 16:10:00 +0100
+From: =?iso-8859-1?Q?J=F6rg_R=F6del?= <joro@8bytes.org>
+To: Borislav Petkov <bp@alien8.de>, Udo van den Heuvel <udovdh@xs4all.nl>,
+        linux-kernel@vger.kernel.org,
+        Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Jacob Shin <jacob.shin@amd.com>
+Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
+Message-ID: <20130121151000.GR25591@8bytes.org>
+References: <50FBC7EF.6040207@xs4all.nl>
+ <20130120103652.GB16800@pd.tnic>
+ <50FBC994.8020409@xs4all.nl>
+ <20130120111920.GL25591@8bytes.org>
+ <50FBD413.1000406@xs4all.nl>
+ <20130120114011.GN25591@8bytes.org>
+ <20130120114828.GB16519@pd.tnic>
+ <20130120115755.GO25591@8bytes.org>
+ <20130121130942.GB4445@pd.tnic>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: kernel command line parameter parsing is broken at drm_kms_helper.edid_firmware
- when compiling under Fedora 18
-References: <50FB4697.1050907@palosanto.com>
-In-Reply-To: <50FB4697.1050907@palosanto.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130121130942.GB4445@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Jan 21 16:10:01 2013
+X-DSPAM-Confidence: 0.9970
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 50fd5a4922971235695577
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El 19/01/13 20:21, Alex Villacís Lasso escribió:
-> I am having this strange issue. My computer has a LCD display that does not send any EDID, and therefore I need the command parameter "drm_kms_helper.edid_firmware=edid/1280x1024.bin" In Fedora 16, the stock kernel does not have 
-> CONFIG_DRM_LOAD_EDID_FIRMWARE set. Therefore I compiled my own kernel from vanilla sources, and the parameter worked. I have just now upgraded to Fedora 18. The new stock kernel is supposed to have CONFIG_DRM_LOAD_EDID_FIRMWARE set, but when I boot with 
-> the drm_kms_helper parameter, I get a message "drm_kms_helper: Unknown parameter `bin'". I thought this was a kernel bug caused by some patch in the stock kernel, so I filed https://bugzilla.redhat.com/show_bug.cgi?id=901899 , and then proceeded to 
-> compile 3.8-rc4 from vanilla sources. However, I am surprised to find that the vanilla sources, when compiled under Fedora 18, exhibit the same bug. Has anyone seen a situation like this? Is this a possible compiler bug in Fedora 18? A grub2 bug? 
-> Apparently the kernel is misparsing the commandline parameter and thinks "bin" is the module parameter, not "edid_firmware".
-BTW, I have CONFIG_DYNAMIC_DEBUG=y in my kernel config, and I tried adding dyndbg="file params.c +p" to the kernel command line, but I see no additional debug output that might point out what is happening.
+On Mon, Jan 21, 2013 at 02:09:42PM +0100, Borislav Petkov wrote:
+> [    0.220022] [Firmware Bug]: AMD-Vi: IOAPIC[9] not in IVRS table
+> [    0.220078] [Firmware Bug]: AMD-Vi: IOAPIC[10] not in IVRS table
+> [    0.220132] [Firmware Bug]: AMD-Vi: No southbridge IOAPIC found in IVRS table
+> [    0.220187] AMD-Vi: Disabling interrupt remapping due to BIOS Bug(s)
+
+Yes, that are BIOS bugs too that prevent interrupt remapping to function
+reliably. But the good thing is that these bugs can be detected easily
+to enable a workaround :-)
+
+
+	Joerg
+
+
