@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab3AUUtA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 15:49:00 -0500
-Received: from mout.gmx.net ([212.227.15.18]:51247 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752250Ab3AUUs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 15:48:56 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/cqKRnjc3cEIrr4WH7WteDLeBCCifOT0fwKb7t0Q
-	ysRFBDUVJdH9rm
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        Peter Huewe <peterhuewe@gmx.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] staging/comedi: remove workaround for !pci_driver.name
-Date: Mon, 21 Jan 2013 21:51:57 +0100
-Message-Id: <1358801517-18265-2-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1358801517-18265-1-git-send-email-peterhuewe@gmx.de>
-References: <1358801517-18265-1-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S1755607Ab3AUUv3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 15:51:29 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:37513 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab3AUUv2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 15:51:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <1358788568-11137-7-git-send-email-arnd@arndb.de>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+	<1358788568-11137-7-git-send-email-arnd@arndb.de>
+Date: Mon, 21 Jan 2013 21:51:26 +0100
+Message-ID: <CAPDyKFp-N29V0sj7PfswE__p00JAAO_16+WwxLtBU3QJXe5gyw@mail.gmail.com>
+Subject: Re: [PATCH 06/15] clk: export __clk_get_name
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        Mike Turquette <mturquette@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All pci drivers in drivers/ have the pci_driver.name field set, so we
-can remove this workaround and the accompanying todo.
+On 21 January 2013 18:15, Arnd Bergmann <arnd@arndb.de> wrote:
+> The __clk_get_name is used by drivers that provide their
+> own clocks, which have traditionally all been built-in.
+> The new imx drm driver however provides clocks but can
+> be built as a module, so we need to export __clk_get_name.
+>
+> While this is only a staging driver, it's likely that
+> there will be others like it in the future.
+>
+> Without this patch, building ARM allmodconfig results in:
+>
+> ERROR: "__clk_get_name" [drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.ko] undefined!
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Mike Turquette <mturquette@linaro.org>
+> ---
+>  drivers/clk/clk.c |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 251e45d..13b793e 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -263,6 +263,7 @@ inline const char *__clk_get_name(struct clk *clk)
+>  {
+>         return !clk ? NULL : clk->name;
+>  }
+> +EXPORT_SYMBOL_GPL(__clk_get_name);
+>
+>  inline struct clk_hw *__clk_get_hw(struct clk *clk)
+>  {
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/staging/comedi/drivers.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
-index 8b681ac..cebdd9e 100644
---- a/drivers/staging/comedi/drivers.c
-+++ b/drivers/staging/comedi/drivers.c
-@@ -536,10 +536,6 @@ int comedi_pci_driver_register(struct comedi_driver *comedi_driver,
- 	if (ret < 0)
- 		return ret;
- 
--	/* FIXME: Remove this test after auditing all comedi pci drivers */
--	if (!pci_driver->name)
--		pci_driver->name = comedi_driver->driver_name;
--
- 	ret = pci_register_driver(pci_driver);
- 	if (ret < 0) {
- 		comedi_driver_unregister(comedi_driver);
--- 
-1.7.8.6
-
+Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
