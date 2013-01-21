@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab3AUTr0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 14:47:26 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:10357 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab3AUTrY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 14:47:24 -0500
-Message-ID: <1358797641.3758.4.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH 4/15] drivers/net/ethernet/sfc/ptp.c: adjust duplicate
- test
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        <kernel-janitors@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Mon, 21 Jan 2013 19:47:21 +0000
-In-Reply-To: <1358773378-4700-5-git-send-email-Julia.Lawall@lip6.fr>
-References: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
-	 <1358773378-4700-5-git-send-email-Julia.Lawall@lip6.fr>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S1753842Ab3AUTsL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 14:48:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52812 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751781Ab3AUTsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 14:48:09 -0500
+Date: Mon, 21 Jan 2013 20:47:23 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Kernel Security <security@kernel.org>,
+        Michael Davidson <md@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Julien Tinnes <jln@google.com>,
+        Aaron Durbin <adurbin@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Roland McGrath <roland@hack.frob.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v3 0/3] ptrace: ensure arch_ptrace/ptrace_request can never
+	race with SIGKILL
+Message-ID: <20130121194723.GA18775@redhat.com>
+References: <20130118172854.GA29753@redhat.com> <20130118175224.GA520@redhat.com> <CA+55aFyEsU-pkX557A-m+xoGkA_v+fXEyA8z8HbJ5J8K1jObeg@mail.gmail.com> <20130118185559.GA3773@redhat.com> <CA+55aFy=newnMbx53HipyWbRs2mUUPSqXXCpSfDLW78gkro37g@mail.gmail.com> <20130120192448.GA6771@redhat.com> <20130120192527.GC6771@redhat.com> <CA+55aFx1+hFSCa4nX80C30BkEOugXRvBZ=7LA+u+KOq_qSaJsg@mail.gmail.com> <20130121172151.GA4691@redhat.com> <CA+55aFwRkvEP5YJy+a=TFgDX==YuU7CJ+D_U+B2s4e1LX-nz3g@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19570.005
-X-TM-AS-Result: No--15.291900-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwRkvEP5YJy+a=TFgDX==YuU7CJ+D_U+B2s4e1LX-nz3g@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-21 at 14:02 +0100, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Delete successive tests to the same location.  rc was previously tested and
-> not subsequently updated.  efx_phc_adjtime can return an error code, so the
-> call is updated so that is tested instead.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @s exists@
-> local idexpression y;
-> expression x,e;
-> @@
-> 
-> *if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
->  { ... when forall
->    return ...; }
-> ... when != \(y = e\|y += e\|y -= e\|y |= e\|y &= e\|y++\|y--\|&y\)
->     when != \(XT_GETPAGE(...,y)\|WMI_CMD_BUF(...)\)
-> *if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
->  { ... when forall
->    return ...; }
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+On 01/21, Linus Torvalds wrote:
+>
+> I guess that works then. It's a bit sad, but at least I see why you did it.
 
-Acked-by: Ben Hutchings <bhutchings@solarflare.com>
+OK, please see v3 rebased on top of "unexport ptrace_check_attach()" you
+already applied.
 
-> ---
-> Not tested.  I'm not familiar with this function, so I don't know whether it
-> is desirable to test its result.
+I tried to update the comment in ptrace_check_attach(), and changed unfreeze()
+to simply do WARN_ON() without if/return.
 
-Yes, the result should be tested.  Thanks.
+There is also the cosmetic change in 1/3,
 
-Ben.
+	-		ptrace_signal_wake_up(child, task_is_traced(child));
+	+		ptrace_signal_wake_up(child, true);
 
->  drivers/net/ethernet/sfc/ptp.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/ethernet/sfc/ptp.c b/drivers/net/ethernet/sfc/ptp.c
-> index 0767043..3f93624 100644
-> --- a/drivers/net/ethernet/sfc/ptp.c
-> +++ b/drivers/net/ethernet/sfc/ptp.c
-> @@ -1439,7 +1439,7 @@ static int efx_phc_settime(struct ptp_clock_info *ptp,
->  
->  	delta = timespec_sub(*e_ts, time_now);
->  
-> -	efx_phc_adjtime(ptp, timespec_to_ns(&delta));
-> +	rc = efx_phc_adjtime(ptp, timespec_to_ns(&delta));
->  	if (rc != 0)
->  		return rc;
->  
-> 
+in __ptrace_unlink().
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Oleg.
 
