@@ -1,162 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab3AUXXR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 18:23:17 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63682 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439Ab3AUXXQ (ORCPT
+	id S1755890Ab3AUXXc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 18:23:32 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:23774 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752351Ab3AUXXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 18:23:16 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-db-50fdcde1ab50
-Date: Tue, 22 Jan 2013 08:23:13 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 1/4] zram: force disksize setting before using zram
-Message-ID: <20130121232313.GE3666@blaptop>
-References: <1358745691-4556-1-git-send-email-minchan@kernel.org>
- <50FD9954.7000303@redhat.com>
+	Mon, 21 Jan 2013 18:23:30 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19UP07Sjwpl9PJjExxXiEFy
+Date: Mon, 21 Jan 2013 15:23:22 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Matt Sealey <matt@genesi-usa.com>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>, Ben Dooks <ben@simtec.co.uk>
+Subject: Re: One of these things (CONFIG_HZ) is not like the others..
+Message-ID: <20130121232322.GK15361@atomide.com>
+References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com>
+ <201301212041.17951.arnd@arndb.de>
+ <20130121210341.GW23505@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50FD9954.7000303@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20130121210341.GW23505@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 08:39:00PM +0100, Jerome Marchand wrote:
-> On 01/21/2013 06:21 AM, Minchan Kim wrote:
-> > Now zram document syas "set disksize is optional"
-> > but partly it's wrong. When you try to use zram firstly after
-> > booting, you must set disksize, otherwise zram can't work because
-> > zram gendisk's size is 0. But once you do it, you can use zram freely
-> > after reset because reset doesn't reset to zero paradoxically.
-> > So in this time, disksize setting is optional.:(
-> > It's inconsitent for user behavior and not straightforward.
-> > 
-> > This patch forces always setting disksize firstly before using zram.
-> > Yes. It changes current behavior so someone could complain when
-> > he upgrades zram. Apparently it could be a problem if zram is mainline
-> > but it still lives in staging so behavior could be changed for right
-> > way to go. Let them excuse.
-> > 
-> > Cc: Nitin Gupta <ngupta@vflare.org>
-> > Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  drivers/staging/zram/zram.txt     |   27 +++++++++----------
-> >  drivers/staging/zram/zram_drv.c   |   52 ++++++++++++++-----------------------
-> >  drivers/staging/zram/zram_drv.h   |    5 +---
-> >  drivers/staging/zram/zram_sysfs.c |    6 +----
-> >  4 files changed, 35 insertions(+), 55 deletions(-)
-> > 
-> > diff --git a/drivers/staging/zram/zram.txt b/drivers/staging/zram/zram.txt
-> > index 5f75d29..765d790 100644
-> > --- a/drivers/staging/zram/zram.txt
-> > +++ b/drivers/staging/zram/zram.txt
-> > @@ -23,17 +23,17 @@ Following shows a typical sequence of steps for using zram.
-> >  	This creates 4 devices: /dev/zram{0,1,2,3}
-> >  	(num_devices parameter is optional. Default: 1)
-> >  
-> > -2) Set Disksize (Optional):
-> > -	Set disk size by writing the value to sysfs node 'disksize'
-> > -	(in bytes). If disksize is not given, default value of 25%
-> > -	of RAM is used.
-> > -
-> > -	# Initialize /dev/zram0 with 50MB disksize
-> > -	echo $((50*1024*1024)) > /sys/block/zram0/disksize
-> > -
-> > -	NOTE: disksize cannot be changed if the disk contains any
-> > -	data. So, for such a disk, you need to issue 'reset' (see below)
-> > -	before you can change its disksize.
-> > +2) Set Disksize
-> > +        Set disk size by writing the value to sysfs node 'disksize'.
-> > +        The value can be either in bytes or you can use mem suffixes.
-> > +        Examples:
-> > +            # Initialize /dev/zram0 with 50MB disksize
-> > +            echo $((50*1024*1024)) > /sys/block/zram0/disksize
-> > +
-> > +            # Using mem suffixes
-> > +            echo 256K > /sys/block/zram0/disksize
-> > +            echo 512M > /sys/block/zram0/disksize
-> > +            echo 1G > /sys/block/zram0/disksize
-> >  
-> >  3) Activate:
-> >  	mkswap /dev/zram0
-> > @@ -65,8 +65,9 @@ Following shows a typical sequence of steps for using zram.
-> >  	echo 1 > /sys/block/zram0/reset
-> >  	echo 1 > /sys/block/zram1/reset
-> >  
-> > -	(This frees all the memory allocated for the given device).
-> > -
-> > +	This frees all the memory allocated for the given device and
-> > +	resets the disksize to zero. You must set the disksize again
-> > +	before reusing the device.
-> >  
-> >  Please report any problems at:
-> >   - Mailing list: linux-mm-cc at laptop dot org
-> > diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> > index 61fb8f1..1d45401 100644
-> > --- a/drivers/staging/zram/zram_drv.c
-> > +++ b/drivers/staging/zram/zram_drv.c
-> > @@ -94,34 +94,6 @@ static int page_zero_filled(void *ptr)
-> >  	return 1;
-> >  }
-> >  
-> > -static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
-> > -{
-> > -	if (!zram->disksize) {
-> > -		pr_info(
-> > -		"disk size not provided. You can use disksize_kb module "
-> > -		"param to specify size.\nUsing default: (%u%% of RAM).\n",
-> > -		default_disksize_perc_ram
-> > -		);
-> > -		zram->disksize = default_disksize_perc_ram *
-> > -					(totalram_bytes / 100);
-> > -	}
-> > -
-> > -	if (zram->disksize > 2 * (totalram_bytes)) {
-> > -		pr_info(
-> > -		"There is little point creating a zram of greater than "
-> > -		"twice the size of memory since we expect a 2:1 compression "
-> > -		"ratio. Note that zram uses about 0.1%% of the size of "
-> > -		"the disk when not in use so a huge zram is "
-> > -		"wasteful.\n"
-> > -		"\tMemory Size: %zu kB\n"
-> > -		"\tSize you selected: %llu kB\n"
-> > -		"Continuing anyway ...\n",
-> > -		totalram_bytes >> 10, zram->disksize >> 10);
-> > -	}
-> > -
-> > -	zram->disksize &= PAGE_MASK;
-> > -}
-> > -
-> >  static void zram_free_page(struct zram *zram, size_t index)
-> >  {
-> >  	unsigned long handle = zram->table[index].handle;
-> > @@ -495,6 +467,9 @@ void __zram_reset_device(struct zram *zram)
-> >  {
-> >  	size_t index;
-> >  
-> > +	if (!zram->init_done)
-> > +		goto out;
+* Russell King - ARM Linux <linux@arm.linux.org.uk> [130121 13:07]:
 > 
-> In that case, the device has not been initialized yet or has been
-> reset already. zram->disksize and disk capacity should already been
-> zero in that case. Why don't we just return here?
-> 
-> Jerome
+> As for Samsung and the rest I can't comment.  The original reason OMAP
+> used this though was because the 32768Hz counter can't produce 100Hz
+> without a .1% error - too much error under pre-clocksource
+> implementations for timekeeping.  Whether that's changed with the
+> clocksource/clockevent support needs to be checked.
 
-Done.
-Thanks for the pointing out, Jerome!
+Yes that's why HZ was originally set to 128. That value (or some multiple)
+still makes sense when the 32 KiHZ clock source is being used. Of course
+we should rely on the local timer when running for the SoCs that have
+them.
 
--- 
-Kind regards,
-Minchan Kim
+Regards,
+
+Tony
