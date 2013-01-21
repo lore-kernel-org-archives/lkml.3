@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab3AURW5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:22:57 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:54029 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab3AURQ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:16:58 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Heiko Schocher <hs@denx.de>,
-        Sekhar Nori <nsekhar@ti.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [PATCH 11/15] mtd: davinci_nand: fix OF support
-Date: Mon, 21 Jan 2013 17:16:04 +0000
-Message-Id: <1358788568-11137-12-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1358788568-11137-1-git-send-email-arnd@arndb.de>
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:3R9FYvVfs9FUkqiMSUn7q49Fbs+fyE/xYytmn8D22ny
- q5RatoT6UJYA1D5Oqx+8AZSPchWredfw7haRQ0dF2NVpT4rRlx
- Ecrhc9SZEmjyUp4bp4YWrL1zL65Y6xBfRIpLPbpV4QsLNacMFg
- 1QhocwjlBCIaWjne4SKlaTgKUYHPi+tqzMi3UbQkMwXFlo+uOt
- 8Hu3XW+A1H3QTQF4J2bQBUSHoc/276tP312B8fR6qKvRGhwVqw
- wniHxARLBPQn1dgfw6X1YCuAdo5dbuCwG7JqFAWI79spLGs8Nz
- vHBZvP/c1s/206+G3Ip7sIjZteUSLJVMep5uECsUFcludB6xQu
- olEZX9E3YhHe5Aqz+2519JSD3Wz80aPFcv3BgC36B
+	id S1756258Ab3AURXF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:23:05 -0500
+Received: from david.siemens.de ([192.35.17.14]:21668 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751978Ab3AURXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 12:23:01 -0500
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>
+Subject: [PATCH v4 09/13] scripts/gdb: Add is_target_arch helper
+Date: Mon, 21 Jan 2013 18:06:16 +0100
+Message-Id: <af0d497a6acbc99b9094802758d4bec3032c8fc9.1358787929.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
+References: <cover.1358787929.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
+References: <cover.1358787929.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch cdeadd "mtd: nand: davinci: add OF support for
-davinci nand controller" ironically causes a build error
-when CONFIG_OF is enabled because of a missing ';'
-character:
+This helper caches to result of "show architecture" and matches the
+provided arch (sub-)string against that output.
 
-drivers/mtd/nand/davinci_nand.c:527:1: error: expected ',' or ';' before 'extern'
-
-This is the obvious fix.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Heiko Schocher <hs@denx.de>
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- drivers/mtd/nand/davinci_nand.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ scripts/gdb/utils.py |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-index 3502606..feae55c 100644
---- a/drivers/mtd/nand/davinci_nand.c
-+++ b/drivers/mtd/nand/davinci_nand.c
-@@ -523,7 +523,7 @@ static struct nand_ecclayout hwecc4_2048 __initconst = {
- static const struct of_device_id davinci_nand_of_match[] = {
- 	{.compatible = "ti,davinci-nand", },
- 	{},
--}
-+};
- MODULE_DEVICE_TABLE(of, davinci_nand_of_match);
- 
- static struct davinci_nand_pdata
+diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
+index 8d54241..532d379 100644
+--- a/scripts/gdb/utils.py
++++ b/scripts/gdb/utils.py
+@@ -91,3 +91,12 @@ def read_u64(buffer):
+ 		return read_u32(buffer[0:4]) + (read_u32(buffer[4:8]) << 32)
+ 	else:
+ 		return read_u32(buffer[4:8]) + (read_u32(buffer[0:4]) << 32)
++
++
++target_arch = None
++
++def is_target_arch(arch):
++	global target_arch
++	if target_arch == None:
++		target_arch = gdb.execute("show architecture", False, True)
++	return target_arch.find(arch) >= 0
 -- 
-1.7.10.4
+1.7.3.4
 
