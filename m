@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab3AUDKb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 22:10:31 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:43933 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629Ab3AUDK3 (ORCPT
+	id S1752674Ab3AUDQI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 22:16:08 -0500
+Received: from talus.maths.usyd.edu.au ([129.78.68.1]:59864 "EHLO
+	talus.maths.usyd.edu.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629Ab3AUDQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 22:10:29 -0500
-Message-ID: <1358737823.2406.114.camel@falcor1.watson.ibm.com>
-Subject: Re: linux-next: manual merge of the security tree with Linus' tree
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: James Morris <jmorris@namei.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Date: Sun, 20 Jan 2013 22:10:23 -0500
-In-Reply-To: <20130121131230.9f79cf5dcd8a8ac069594111@canb.auug.org.au>
-References: <20130121131230.9f79cf5dcd8a8ac069594111@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012103-7606-0000-0000-0000079B835E
+	Sun, 20 Jan 2013 22:16:07 -0500
+X-smtpdoor-from: psz@maths.usyd.edu.au
+X-smtpdoor-want-Message-ID: <201301210315.r0L3FnGV021298@como.maths.usyd.edu.au>
+Date: Mon, 21 Jan 2013 14:15:49 +1100
+From: paul.szabo@sydney.edu.au
+Message-Id: <201301210315.r0L3FnGV021298@como.maths.usyd.edu.au>
+To: linux-mm@kvack.org
+Subject: [PATCH] Subtract min_free_kbytes from dirtyable memory
+Cc: 695182@bugs.debian.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-21 at 13:12 +1100, Stephen Rothwell wrote:
-> Hi James,
-> 
-> Today's linux-next merge of the security tree got a conflict in
-> security/integrity/ima/ima_main.c between commit a7f2a366f623 ("ima:
-> fallback to MODULE_SIG_ENFORCE for existing kernel module syscall") from
-> Linus' tree and commit 750943a30714 ("ima: remove enforce checking
-> duplication") from the security tree.
-> 
-> I think I fixed it up (see below).
+When calculating amount of dirtyable memory, min_free_kbytes should be
+subtracted because it is not intended for dirty pages.
 
-Sorry Stephen, the merged result should look like what's contained in
-linux-integrity/next-upstreamed-patches:
+Using an "extern int" because that is the only interface to some such
+sysctl values.
 
-int ima_module_check(struct file *file)
-{
-        if (!file) {
-                if ((ima_appraise & IMA_APPRAISE_MODULES) &&
-                    (ima_appraise & IMA_APPRAISE_ENFORCE)) {
-#ifndef CONFIG_MODULE_SIG_FORCE
-                        return -EACCES; /* INTEGRITY_UNKNOWN */
-#endif
-                }
-                return 0;
-        }
-        return process_measurement(file, file->f_dentry->d_name.name,
-                                   MAY_EXEC, MODULE_CHECK);
-}
+(This patch does not solve the PAE OOM issue.)
 
-thanks,
+Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
+School of Mathematics and Statistics   University of Sydney    Australia
 
-Mimi
+Reported-by: Paul Szabo <psz@maths.usyd.edu.au>
+Reference: http://bugs.debian.org/695182
+Signed-off-by: Paul Szabo <psz@maths.usyd.edu.au>
+
+--- mm/page-writeback.c.old	2012-12-06 22:20:40.000000000 +1100
++++ mm/page-writeback.c	2013-01-21 13:57:05.000000000 +1100
+@@ -343,12 +343,16 @@
+ unsigned long determine_dirtyable_memory(void)
+ {
+ 	unsigned long x;
++	extern int min_free_kbytes;
+ 
+ 	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
+ 
+ 	if (!vm_highmem_is_dirtyable)
+ 		x -= highmem_dirtyable_memory(x);
+ 
++	/* Subtract min_free_kbytes */
++	x -= min(x, min_free_kbytes >> (PAGE_SHIFT - 10));
++
+ 	return x + 1;	/* Ensure that we never return 0 */
+ }
 
