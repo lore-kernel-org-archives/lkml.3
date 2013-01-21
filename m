@@ -1,45 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab3AUHlo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 02:41:44 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:39305 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955Ab3AUHln (ORCPT
+	id S1752291Ab3AUHoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 02:44:30 -0500
+Received: from mail.windriver.com ([147.11.1.11]:60889 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861Ab3AUHo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 02:41:43 -0500
+	Mon, 21 Jan 2013 02:44:28 -0500
+From: Tiejun Chen <tiejun.chen@windriver.com>
+To: <benh@kernel.crashing.org>, <galak@kernel.crashing.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <jason.wessel@windriver.com>
+Subject: [v2][PATCH 1/6] powerpc/book3e: load critical/machine/debug exception stack
+Date: Mon, 21 Jan 2013 15:44:10 +0800
+Message-ID: <1358754255-31484-2-git-send-email-tiejun.chen@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358754255-31484-1-git-send-email-tiejun.chen@windriver.com>
+References: <1358754255-31484-1-git-send-email-tiejun.chen@windriver.com>
 MIME-Version: 1.0
-In-Reply-To: <CADGQE7GnR2e-RN6A7iAS1BHCL9odH09z+ds8NdM3bL0hfsLf9A@mail.gmail.com>
-References: <1358390177-24422-1-git-send-email-nickolai@csail.mit.edu>
-	<CAH2r5mv=hMN7yHLf0wLMnyjpeQRj-1SmN8n2581AMFZput5nqg@mail.gmail.com>
-	<CADGQE7GnR2e-RN6A7iAS1BHCL9odH09z+ds8NdM3bL0hfsLf9A@mail.gmail.com>
-Date: Mon, 21 Jan 2013 01:41:42 -0600
-Message-ID: <CAH2r5mvK6gCqRSh-75a7mqRAH3O-QGvdvhv_VxN1FRxDVv-ctw@mail.gmail.com>
-Subject: Re: [PATCH] cifs: fix srcip_matches() for ipv6
-From: Steve French <smfrench@gmail.com>
-To: Nickolai Zeldovich <nickolai@csail.mit.edu>
-Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-merged into cifs-2.6.git
+We always alloc critical/machine/debug check exceptions. This is
+different from the normal exception. So we should load these exception
+stack properly like we did for booke.
 
-On Wed, Jan 16, 2013 at 10:04 PM, Nickolai Zeldovich
-<nickolai@csail.mit.edu> wrote:
-> On Wed, Jan 16, 2013 at 10:51 PM, Steve French <smfrench@gmail.com> wrote:
->> How did you discover this - did you have an ipv6 test case or by
->> inspection or ...?
->
-> By mostly-automated inspection (i.e., with the help of a static
-> program analysis tool).
->
-> Nickolai.
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+---
+ arch/powerpc/kernel/exceptions-64e.S |   40 +++++++++++++++++++++++++++++++---
+ 1 file changed, 37 insertions(+), 3 deletions(-)
 
-
-
+diff --git a/arch/powerpc/kernel/exceptions-64e.S b/arch/powerpc/kernel/exceptions-64e.S
+index ae54553..767f856 100644
+--- a/arch/powerpc/kernel/exceptions-64e.S
++++ b/arch/powerpc/kernel/exceptions-64e.S
+@@ -36,6 +36,28 @@
+  */
+ #define	SPECIAL_EXC_FRAME_SIZE	INT_FRAME_SIZE
+ 
++/* only on book3e */
++#define DBG_STACK_BASE		dbgirq_ctx
++#define MC_STACK_BASE		mcheckirq_ctx
++#define CRIT_STACK_BASE		critirq_ctx
++
++#ifdef CONFIG_SMP
++#define BOOK3E_LOAD_EXC_LEVEL_STACK(level)		\
++	mfspr	r14,SPRN_PIR;				\
++	slwi	r14,r14,3;				\
++	LOAD_REG_IMMEDIATE(r10, level##_STACK_BASE);	\
++	add	r10,r10,r14;				\
++	ld	r10,0(r10);				\
++	addi	r10,r10,THREAD_SIZE;			\
++	std	r10,PACA_##level##_STACK(r13);
++#else
++#define BOOK3E_LOAD_EXC_LEVEL_STACK(level)		\
++	LOAD_REG_IMMEDIATE(r10, level##_STACK_BASE);	\
++	ld	r10,0(r10);				\
++	addi	r10,r10,THREAD_SIZE;			\
++	std	r10,PACA_##level##_STACK(r13);
++#endif
++
+ /* Exception prolog code for all exceptions */
+ #define EXCEPTION_PROLOG(n, intnum, type, addition)	    		    \
+ 	mtspr	SPRN_SPRG_##type##_SCRATCH,r13;	/* get spare registers */   \
+@@ -68,20 +90,32 @@
+ #define SPRN_GDBELL_SRR1	SPRN_GSRR1
+ 
+ #define CRIT_SET_KSTACK						            \
++	andi.	r10,r11,MSR_PR;							\
++	bne	1f;								\
++	BOOK3E_LOAD_EXC_LEVEL_STACK(CRIT);					\
+ 	ld	r1,PACA_CRIT_STACK(r13);				    \
+-	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;
++	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;					\
++1:
+ #define SPRN_CRIT_SRR0	SPRN_CSRR0
+ #define SPRN_CRIT_SRR1	SPRN_CSRR1
+ 
+ #define DBG_SET_KSTACK						            \
++	andi.	r10,r11,MSR_PR;							\
++	bne	1f;								\
++	BOOK3E_LOAD_EXC_LEVEL_STACK(DBG);					\
+ 	ld	r1,PACA_DBG_STACK(r13);					    \
+-	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;
++	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;					\
++1:
+ #define SPRN_DBG_SRR0	SPRN_DSRR0
+ #define SPRN_DBG_SRR1	SPRN_DSRR1
+ 
+ #define MC_SET_KSTACK						            \
++	andi.	r10,r11,MSR_PR;							\
++	bne	1f;								\
++	BOOK3E_LOAD_EXC_LEVEL_STACK(MC);					\
+ 	ld	r1,PACA_MC_STACK(r13);					    \
+-	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;
++	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;					\
++1:
+ #define SPRN_MC_SRR0	SPRN_MCSRR0
+ #define SPRN_MC_SRR1	SPRN_MCSRR1
+ 
 -- 
-Thanks,
+1.7.9.5
 
-Steve
