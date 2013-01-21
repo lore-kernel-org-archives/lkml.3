@@ -1,121 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab3AUPDu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 10:03:50 -0500
-Received: from mout.web.de ([212.227.17.12]:53221 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753296Ab3AUPDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 10:03:48 -0500
-Message-ID: <50FD5844.1010201@web.de>
-Date: Mon, 21 Jan 2013 16:01:24 +0100
-From: Soeren Moch <smoch@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S932097Ab3AUPD4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 10:03:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57785 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753296Ab3AUPDx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 10:03:53 -0500
+Message-ID: <50FD58CF.8080101@canonical.com>
+Date: Mon, 21 Jan 2013 15:03:43 +0000
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Jason Cooper <jason@lakedaemon.net>, Greg KH <gregkh@linuxfoundation.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all dma_alloc_coherent()
- calls
-References: <20121119144826.f59667b2.akpm@linux-foundation.org> <201301172026.45514.arnd@arndb.de> <50FABBED.1020905@web.de> <201301192005.20093.arnd@arndb.de>
-In-Reply-To: <201301192005.20093.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:/mzZIEX24WW6aXKTaDutk/qqkU/bXoqVVtYIoGiMEcw
- A34XDZ8EMsNI0FTBLnoIe7e/VBVhFEbfN8htFHABwJHxdY9z90
- XiLyRD0UjmKkr5GHieqW6pOGmjrjrjtyCF5tUYl1v/woIQZggF
- WwfLFykzdV8EkpbmI9aeSokOdAA2qzeX/H32pLzZr/r7qh0WMJ
- 1Jdp0GE79QTdLhvSAJM0Q==
+To: Borislav Petkov <bp@alien8.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andre Przywara <andre@andrep.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: kernel 3.7+ cpufreq regression on AMD system running as dom0
+References: <50F42B3E.7090602@canonical.com> <20130114163445.GA4867@liondog.tnic> <20130115175305.GA12449@phenom.dumpdata.com> <20130115181839.GC8101@liondog.tnic> <20130118190015.GC11351@phenom.dumpdata.com> <20130118200331.GF4062@pd.tnic> <50FD32FA.7010306@canonical.com> <20130121124255.GB4823@pd.tnic>
+In-Reply-To: <20130121124255.GB4823@pd.tnic>
+Content-Type: multipart/mixed;
+ boundary="------------060005090304060508090409"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/13 21:05, Arnd Bergmann wrote:
-> I found at least one source line that incorrectly uses an atomic
-> allocation, in ehci_mem_init():
->
->                  dma_alloc_coherent (ehci_to_hcd(ehci)->self.controller,
->                          ehci->periodic_size * sizeof(__le32),
->                          &ehci->periodic_dma, 0);
->
-> The last argument is the GFP_ flag, which should never be zero, as
-> that is implicit !wait. This function is called only once, so it
-> is not the actual culprit, but there could be other instances
-> where we accidentally allocate something as GFP_ATOMIC.
->
-> The total number of allocations I found for each type are
->
-> sata_mv: 66 pages (270336 bytes)
-> mv643xx_eth: 4 pages == (16384 bytes)
-> orion_ehci: 154 pages (630784 bytes)
-> orion_ehci (atomic): 256 pages (1048576 bytes)
->
-> from the distribution of the numbers, it seems that there is exactly 1 MB
-> of data allocated between bus addresses 0x1f90000 and 0x1f9ffff, allocated
-> in individual pages. This matches the size of your pool, so it's definitely
-> something coming from USB, and no single other allocation, but it does not
-> directly point to a specific line of code.
-Very interesting, so this is no fragmentation problem nor something 
-caused by sata or ethernet.
-> One thing I found was that the ARM dma-mapping code seems buggy in the way
-> that it does a bitwise and between the gfp mask and GFP_ATOMIC, which does
-> not work because GFP_ATOMIC is defined by the absence of __GFP_WAIT.
->
-> I believe we need the patch below, but it is not clear to me if that issue
-> is related to your problem or now.
-Out of curiosity I checked include/linux/gfp.h. GFP_ATOMIC is defined as 
-__GFP_HIGH (which means 'use emergency pool', and no wait), so this 
-patch should not make any difference for "normal" (GPF_ATOMIC / 
-GFP_KERNEL) allocations, only for gfp_flags accidentally set to zero. 
-So, can a new test with this patch help to debug the pool exhaustion?
-> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-> index 6b2fb87..c57975f 100644
-> --- a/arch/arm/mm/dma-mapping.c
-> +++ b/arch/arm/mm/dma-mapping.c
-> @@ -640,7 +641,7 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
->   
->   	if (is_coherent || nommu())
->   		addr = __alloc_simple_buffer(dev, size, gfp, &page);
-> -	else if (gfp & GFP_ATOMIC)
-> +	else if (!(gfp & __GFP_WAIT))
->   		addr = __alloc_from_pool(size, &page);
->   	else if (!IS_ENABLED(CONFIG_CMA))
->   		addr = __alloc_remap_buffer(dev, size, gfp, prot, &page, caller);
-> @@ -1272,7 +1273,7 @@ static void *arm_iommu_alloc_attrs(struct device *dev, size_t size,
->   	*handle = DMA_ERROR_CODE;
->   	size = PAGE_ALIGN(size);
->   
-> -	if (gfp & GFP_ATOMIC)
-> +	if (!(gfp & __GFP_WAIT))
->   		return __iommu_alloc_atomic(dev, size, handle);
->   
->   	pages = __iommu_alloc_buffer(dev, size, gfp, attrs);
-> 8<-------
->
-> There is one more code path I could find, which is usb_submit_urb() =>
-> usb_hcd_submit_urb => ehci_urb_enqueue() => submit_async() =>
-> qh_append_tds() => qh_make(GFP_ATOMIC) => ehci_qh_alloc() =>
-> dma_pool_alloc() => pool_alloc_page() => dma_alloc_coherent()
->
-> So even for a GFP_KERNEL passed into usb_submit_urb, the ehci driver
-> causes the low-level allocation to be GFP_ATOMIC, because
-> qh_append_tds() is called under a spinlock. If we have hundreds
-> of URBs in flight, that will exhaust the pool rather quickly.
->
-Maybe there are hundreds of URBs in flight in my application, I have no 
-idea how to check this. It seems to me that bad reception conditions 
-(lost lock / regained lock messages for some dvb channels) accelerate 
-the buffer exhaustion. But even with a 4MB coherent pool I see the 
-error. Is there any chance to fix this in the usb or dvb subsystem (or 
-wherever)? Should I try to further increase the pool size, or what else 
-can I do besides using an older kernel?
+This is a multi-part message in MIME format.
+--------------060005090304060508090409
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-   Soeren
+Ok, so how about this?
+
+-Stefan
+
+ From 9870926d4a847e36c0f61921762fd50f1c92f75d Mon Sep 17 00:00:00 2001
+From: Stefan Bader <stefan.bader@canonical.com>
+Date: Mon, 14 Jan 2013 16:17:00 +0100
+Subject: [PATCH] ACPI: Check MSR valid bit before using P-state frequencies
+
+To fix incorrect P-state frequencies which can happen on
+some AMD systems f594065faf4f9067c2283a34619fc0714e79a98d
+   "ACPI: Add fixups for AMD P-state figures"
+introduced a quirk to obtain the correct values by reading
+from AMD specific MSRs.
+
+This did cause a regression when running a kernel using that
+quirk under Xen which does (currently) not pass through MSR
+reads to the HW. Instead the guest gets a 0 in return.
+And this seems to cause a failure to initialize the ondemand
+governour (hard to say for sure as all P-states appear to run
+at the same frequency).
+
+While this should also be fixed in the hypervisor (to allow
+a guest to read that MSR), this patch is intended to work
+around the issue in the meantime. In discussion it turned out
+that indeed real HW/BIOSes may choose to not set the valid bit
+and thus mark the P-state as invalid. So this could be considered
+a fix for broken BIOSes that also works around the issue on Xen.
+
+[v2] Reword description text and use helper for bit index.
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Cc: stable@vger.kernel.org # v3.7..
+---
+  drivers/acpi/processor_perflib.c | 11 +++++++++++
+  1 file changed, 11 insertions(+)
+
+diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
+index 836bfe0..caa042e 100644
+--- a/drivers/acpi/processor_perflib.c
++++ b/drivers/acpi/processor_perflib.c
+@@ -340,6 +340,17 @@ static void amd_fixup_frequency(struct acpi_processor_px 
+*px, int i)
+  	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
+  	    || boot_cpu_data.x86 == 0x11) {
+  		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
++		/*
++		 * MSR C001_0064+:
++		 * Bit 63: PstateEn. Read-write. 1=The P-state specified by
++		 * this MSR is valid. 0=The P-state specified by this MSR is
++		 * not valid. The purpose of this register is to indicate if
++		 * the rest of the P-state information in the register is
++		 * valid after a reset; it controls no hardware.
++		 */
++		if (!(hi & BIT(31)))
++			return;
++
+  		fid = lo & 0x3f;
+  		did = (lo >> 6) & 7;
+  		if (boot_cpu_data.x86 == 0x10)
+-- 
+1.8.0
+
+
+--------------060005090304060508090409
+Content-Type: text/x-diff;
+ name="0001-ACPI-Check-MSR-valid-bit-before-using-P-state-freque.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-ACPI-Check-MSR-valid-bit-before-using-P-state-freque.pa";
+ filename*1="tch"
+
+>From 9870926d4a847e36c0f61921762fd50f1c92f75d Mon Sep 17 00:00:00 2001
+From: Stefan Bader <stefan.bader@canonical.com>
+Date: Mon, 14 Jan 2013 16:17:00 +0100
+Subject: [PATCH] ACPI: Check MSR valid bit before using P-state frequencies
+
+To fix incorrect P-state frequencies which can happen on
+some AMD systems f594065faf4f9067c2283a34619fc0714e79a98d
+  "ACPI: Add fixups for AMD P-state figures"
+introduced a quirk to obtain the correct values by reading
+from AMD specific MSRs.
+
+This did cause a regression when running a kernel using that
+quirk under Xen which does (currently) not pass through MSR
+reads to the HW. Instead the guest gets a 0 in return.
+And this seems to cause a failure to initialize the ondemand
+governour (hard to say for sure as all P-states appear to run
+at the same frequency).
+
+While this should also be fixed in the hypervisor (to allow
+a guest to read that MSR), this patch is intended to work
+around the issue in the meantime. In discussion it turned out
+that indeed real HW/BIOSes may choose to not set the valid bit
+and thus mark the P-state as invalid. So this could be considered
+a fix for broken BIOSes that also works around the issue on Xen.
+
+[v2] Reword description text and use helper for bit index.
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Cc: stable@vger.kernel.org # v3.7..
+---
+ drivers/acpi/processor_perflib.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
+index 836bfe0..caa042e 100644
+--- a/drivers/acpi/processor_perflib.c
++++ b/drivers/acpi/processor_perflib.c
+@@ -340,6 +340,17 @@ static void amd_fixup_frequency(struct acpi_processor_px *px, int i)
+ 	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
+ 	    || boot_cpu_data.x86 == 0x11) {
+ 		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
++		/*
++		 * MSR C001_0064+:
++		 * Bit 63: PstateEn. Read-write. 1=The P-state specified by
++		 * this MSR is valid. 0=The P-state specified by this MSR is
++		 * not valid. The purpose of this register is to indicate if
++		 * the rest of the P-state information in the register is
++		 * valid after a reset; it controls no hardware.
++		 */
++		if (!(hi & BIT(31)))
++			return;
++
+ 		fid = lo & 0x3f;
+ 		did = (lo >> 6) & 7;
+ 		if (boot_cpu_data.x86 == 0x10)
+-- 
+1.8.0
+
+
+--------------060005090304060508090409--
