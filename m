@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab3AUBkw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 20:40:52 -0500
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:52085 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab3AUBkt (ORCPT
+	id S1752625Ab3AUBpz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 20:45:55 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:55925 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab3AUBpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 20:40:49 -0500
+	Sun, 20 Jan 2013 20:45:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130121012217.GQ4939@ZenIV.linux.org.uk>
-References: <50F3D2F2.3080200@6wind.com> <20130119063808.GN4939@ZenIV.linux.org.uk>
- <20130120031253.GO4939@ZenIV.linux.org.uk> <CA+55aFyRMC43_H1hL5goAQxX4EdTuXOu5A9CoBk9fpGoJT_nig@mail.gmail.com>
- <20130121012217.GQ4939@ZenIV.linux.org.uk>
+In-Reply-To: <87fw1vwcao.fsf@rustcorp.com.au>
+References: <87zk03wg7r.fsf@rustcorp.com.au> <CA+55aFwzdcv0LXovZobha=EH=L6DapJt+ODP0nq=TWWAqCxLYQ@mail.gmail.com>
+ <87fw1vwcao.fsf@rustcorp.com.au>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 20 Jan 2013 17:40:28 -0800
-X-Google-Sender-Auth: R93Ri6b567i4zSOzSz52BbsvAFw
-Message-ID: <CA+55aFwG2j_+2pjUJuZqT1yk0xDEyeFMgCxHmxAzfGXHO5qCXQ@mail.gmail.com>
-Subject: Re: Issues with "x86, um: switch to generic fork/vfork/clone" commit
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 20 Jan 2013 17:45:33 -0800
+X-Google-Sender-Auth: -A1zmeG7ioQAwkgxJZYs89ETsME
+Message-ID: <CA+55aFy1nW859yaGP17epRX8A+TaJ8APvb0-Ww1zw91dCAOhoQ@mail.gmail.com>
+Subject: Re: [PULL] Module fixes, and a virtio block fix.
+To: Rusty Russell <rusty@rustcorp.com.au>, Junio C Hamano <gitster@pobox.com>,
+        Git Mailing List <git@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Alexander Graf <agraf@suse.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 5:22 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+On Sun, Jan 20, 2013 at 5:32 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
 >
-> Anyway, that's a separate story - semctl(2) is going to be ugly, no matter
-> what we do, but the rest of those guys doesn't have to.  How about the
-> following (completely untested):
+> Due to the delay on git.kernel.org, git request-pull fails.  It *looks*
+> like it succeeds, except the warning, but (as we learned last time I
+> screwed up), it doesn't put the branchname because it can't know.
 
-Hmm.  Looks like the RightThing(tm) to me.
+I think this should be fixed in modern git versions.
 
-The thing that stands out that I question the value of that
-HAVE_SYSCALL_WRAPPERS thing. Is there any reason we don't just make
-all architectures use it? What's the downside? I'm not sure I see the
-point of the non-wrapper version.
+And it sure as hell knows the proper tag name, since you *gave* it the
+name and it used it for generating the actual contents. The fact that
+some versions then screw that up and re-write the tag-name to
+something randomly matching that isn't a tag was just a bug.
 
-                  Linus
+> For want of a better solution, I'll now resort to sending pull requests
+> with the anti-social gitolite URL in it, like so:
+
+That's even worse, fwiw. It means that the pull request address makes
+no sense to anybody who doesn't have a kernel.org address, and then
+I'm forced to just edit things by hand instead to not pollute the
+kernel changelog history with crap.
+
+Junio, didn't "git request-pull" get fixed so that it *warns* about
+missing tagnames/branches, but never actually corrupts the pull
+request? Or did it just get "fixed" to be a hard error instead of
+corrupting things? Because this is annoying.
+
+                Linus
