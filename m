@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab3AUOI6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 09:08:58 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:52855 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752923Ab3AUOI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 09:08:56 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <rob.herring@calxeda.com>, <rob@landley.net>, <tony@atomide.com>,
-        <balbi@ti.com>, <b-cousson@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-CC: <grant.likely@secretlab.ca>, <linux@arm.linux.org.uk>,
-        <gregkh@linuxfoundation.org>, <kishon@ti.com>
-Subject: [PATCH v2 2/4] ARM: OMAP: devices: create device for usb part of control module
-Date: Mon, 21 Jan 2013 19:38:26 +0530
-Message-ID: <1358777308-2409-3-git-send-email-kishon@ti.com>
+	id S1755511Ab3AUOJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 09:09:09 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:56527 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab3AUOJF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 09:09:05 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH v5 0/2] perf stat: add interval counter printing
+Date: Mon, 21 Jan 2013 15:06:52 +0100
+Message-Id: <1358777214-14220-1-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358777308-2409-1-git-send-email-kishon@ti.com>
-References: <1358777308-2409-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A seperate driver has been added to handle the usb part of control
-module. A device for the above driver is created here, using the register
-address information to be used by the driver for powering on the PHY and
-for writing to the mailbox.
+This small patchset extends perf stat with the -I option.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/mach-omap2/devices.c |   45 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
+The -I option enables interval printing. It expects
+an interval duration in milliseconds. Minimum is
+100ms. Once, activated perf stat prints events deltas
+since last printout. All modes are supported.
 
-diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
-index 5e304d0..edc5ec2 100644
---- a/arch/arm/mach-omap2/devices.c
-+++ b/arch/arm/mach-omap2/devices.c
-@@ -20,6 +20,7 @@
- #include <linux/pinctrl/machine.h>
- #include <linux/platform_data/omap4-keypad.h>
- #include <linux/platform_data/omap_ocp2scp.h>
-+#include <linux/usb/omap_control_usb.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/map.h>
-@@ -254,6 +255,49 @@ static inline void omap_init_camera(void)
- #endif
- }
- 
-+#if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)
-+static struct omap_control_usb_platform_data omap4_control_usb_pdata = {
-+	.has_mailbox = true,
-+};
-+
-+struct resource omap4_control_usb_res[] = {
-+	{
-+		.name	= "control_dev_conf",
-+		.start	= 0x4a002300,
-+		.end	= 0x4a002303,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
-+		.name	= "otghs_control",
-+		.start	= 0x4a00233c,
-+		.end	= 0x4a00233f,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+static struct platform_device omap4_control_usb = {
-+	.name		= "omap-control-usb",
-+	.id		= -1,
-+	.dev = {
-+		.platform_data = &omap4_control_usb_pdata,
-+	},
-+	.num_resources = 2,
-+	.resource = omap4_control_usb_res,
-+};
-+
-+static inline void __init omap_init_control_usb(void)
-+{
-+	if (!cpu_is_omap44xx())
-+		return;
-+
-+	if (platform_device_register(&omap4_control_usb))
-+		pr_err("Error registering omap_control_usb device\n");
-+}
-+
-+#else
-+static inline void omap_init_control_usb(void) { }
-+#endif /* CONFIG_OMAP_CONTROL_USB */
-+
- int __init omap4_keyboard_init(struct omap4_keypad_platform_data
- 			*sdp4430_keypad_data, struct omap_board_data *bdata)
- {
-@@ -721,6 +765,7 @@ static int __init omap2_init_devices(void)
- 	omap_init_mbox();
- 	/* If dtb is there, the devices will be created dynamically */
- 	if (!of_have_populated_dt()) {
-+		omap_init_control_usb();
- 		omap_init_dmic();
- 		omap_init_mcpdm();
- 		omap_init_mcspi();
+$ perf stat -I 1000 -e cycles noploop 10
+noploop for 10 seconds
+ #           time             counts events
+      1.000109853      2,388,560,546 cycles
+      2.000262846      2,393,332,358 cycles
+      3.000354131      2,393,176,537 cycles
+      4.000439503      2,393,203,790 cycles
+      5.000527075      2,393,167,675 cycles
+      6.000609052      2,393,203,670 cycles
+      7.000691082      2,393,175,678 cycles
+
+The output format makes it easy to feed into a plotting program
+such as gnuplot when the -I option is used in combination with the -x
+option:
+
+$ perf stat -x, -I 1000 -e cycles noploop 10
+noploop for 10 seconds
+1.000084113,2378775498,cycles
+2.000245798,2391056897,cycles
+3.000354445,2392089414,cycles
+4.000459115,2390936603,cycles
+5.000565341,2392108173,cycles
+
+The first patch adds the code to keep previous counts. The second
+is the actual extension of perf stat.
+
+In v2, we changed the option from -T to -I based on feedback
+from Andi Kleen (who is using -T in an upcoming patch).
+
+In v3, added compute_deltas() to evsel.c to factorize
+deltas computation based on Jiri's comments.
+
+In v4, we made sure that counts are printed in case
+the run is interrupted by CTRL-C based on Andi Kleen's
+feedback.
+
+In v5, we added the column headings printed every 25 lines.
+Cleaned up the code some more based on Namhyung's comments.
+
+Stephane Eranian (2):
+  perf tools: add evsel prev_raw_count field
+  perf stat: add interval printing
+
+ tools/perf/Documentation/perf-stat.txt |    4 +
+ tools/perf/builtin-stat.c              |  165 +++++++++++++++++++++++++++++---
+ tools/perf/util/evsel.c                |   26 +++++
+ tools/perf/util/evsel.h                |    1 +
+ 4 files changed, 181 insertions(+), 15 deletions(-)
+
 -- 
 1.7.9.5
 
