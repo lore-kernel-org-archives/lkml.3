@@ -1,164 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab3AUPD4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 10:03:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57785 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296Ab3AUPDx (ORCPT
+	id S1756126Ab3AUPIm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 10:08:42 -0500
+Received: from mail.palosanto.com ([201.234.196.171]:39549 "EHLO
+	pbx.palosanto.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428Ab3AUPIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 10:03:53 -0500
-Message-ID: <50FD58CF.8080101@canonical.com>
-Date: Mon, 21 Jan 2013 15:03:43 +0000
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	Mon, 21 Jan 2013 10:08:41 -0500
+Message-ID: <50FD59F7.7000308@palosanto.com>
+Date: Mon, 21 Jan 2013 10:08:39 -0500
+From: =?UTF-8?B?QWxleCBWaWxsYWPDrcKtcyBMYXNzbw==?= 
+	<a_villacis@palosanto.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andre Przywara <andre@andrep.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: kernel 3.7+ cpufreq regression on AMD system running as dom0
-References: <50F42B3E.7090602@canonical.com> <20130114163445.GA4867@liondog.tnic> <20130115175305.GA12449@phenom.dumpdata.com> <20130115181839.GC8101@liondog.tnic> <20130118190015.GC11351@phenom.dumpdata.com> <20130118200331.GF4062@pd.tnic> <50FD32FA.7010306@canonical.com> <20130121124255.GB4823@pd.tnic>
-In-Reply-To: <20130121124255.GB4823@pd.tnic>
-Content-Type: multipart/mixed;
- boundary="------------060005090304060508090409"
+To: linux-kernel@vger.kernel.org
+Subject: Re: kernel command line parameter parsing is broken at drm_kms_helper.edid_firmware
+ when compiling under Fedora 18
+References: <50FB4697.1050907@palosanto.com>
+In-Reply-To: <50FB4697.1050907@palosanto.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060005090304060508090409
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-
-Ok, so how about this?
-
--Stefan
-
- From 9870926d4a847e36c0f61921762fd50f1c92f75d Mon Sep 17 00:00:00 2001
-From: Stefan Bader <stefan.bader@canonical.com>
-Date: Mon, 14 Jan 2013 16:17:00 +0100
-Subject: [PATCH] ACPI: Check MSR valid bit before using P-state frequencies
-
-To fix incorrect P-state frequencies which can happen on
-some AMD systems f594065faf4f9067c2283a34619fc0714e79a98d
-   "ACPI: Add fixups for AMD P-state figures"
-introduced a quirk to obtain the correct values by reading
-from AMD specific MSRs.
-
-This did cause a regression when running a kernel using that
-quirk under Xen which does (currently) not pass through MSR
-reads to the HW. Instead the guest gets a 0 in return.
-And this seems to cause a failure to initialize the ondemand
-governour (hard to say for sure as all P-states appear to run
-at the same frequency).
-
-While this should also be fixed in the hypervisor (to allow
-a guest to read that MSR), this patch is intended to work
-around the issue in the meantime. In discussion it turned out
-that indeed real HW/BIOSes may choose to not set the valid bit
-and thus mark the P-state as invalid. So this could be considered
-a fix for broken BIOSes that also works around the issue on Xen.
-
-[v2] Reword description text and use helper for bit index.
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Cc: stable@vger.kernel.org # v3.7..
----
-  drivers/acpi/processor_perflib.c | 11 +++++++++++
-  1 file changed, 11 insertions(+)
-
-diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
-index 836bfe0..caa042e 100644
---- a/drivers/acpi/processor_perflib.c
-+++ b/drivers/acpi/processor_perflib.c
-@@ -340,6 +340,17 @@ static void amd_fixup_frequency(struct acpi_processor_px 
-*px, int i)
-  	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
-  	    || boot_cpu_data.x86 == 0x11) {
-  		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
-+		/*
-+		 * MSR C001_0064+:
-+		 * Bit 63: PstateEn. Read-write. 1=The P-state specified by
-+		 * this MSR is valid. 0=The P-state specified by this MSR is
-+		 * not valid. The purpose of this register is to indicate if
-+		 * the rest of the P-state information in the register is
-+		 * valid after a reset; it controls no hardware.
-+		 */
-+		if (!(hi & BIT(31)))
-+			return;
-+
-  		fid = lo & 0x3f;
-  		did = (lo >> 6) & 7;
-  		if (boot_cpu_data.x86 == 0x10)
--- 
-1.8.0
-
-
---------------060005090304060508090409
-Content-Type: text/x-diff;
- name="0001-ACPI-Check-MSR-valid-bit-before-using-P-state-freque.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-ACPI-Check-MSR-valid-bit-before-using-P-state-freque.pa";
- filename*1="tch"
-
->From 9870926d4a847e36c0f61921762fd50f1c92f75d Mon Sep 17 00:00:00 2001
-From: Stefan Bader <stefan.bader@canonical.com>
-Date: Mon, 14 Jan 2013 16:17:00 +0100
-Subject: [PATCH] ACPI: Check MSR valid bit before using P-state frequencies
-
-To fix incorrect P-state frequencies which can happen on
-some AMD systems f594065faf4f9067c2283a34619fc0714e79a98d
-  "ACPI: Add fixups for AMD P-state figures"
-introduced a quirk to obtain the correct values by reading
-from AMD specific MSRs.
-
-This did cause a regression when running a kernel using that
-quirk under Xen which does (currently) not pass through MSR
-reads to the HW. Instead the guest gets a 0 in return.
-And this seems to cause a failure to initialize the ondemand
-governour (hard to say for sure as all P-states appear to run
-at the same frequency).
-
-While this should also be fixed in the hypervisor (to allow
-a guest to read that MSR), this patch is intended to work
-around the issue in the meantime. In discussion it turned out
-that indeed real HW/BIOSes may choose to not set the valid bit
-and thus mark the P-state as invalid. So this could be considered
-a fix for broken BIOSes that also works around the issue on Xen.
-
-[v2] Reword description text and use helper for bit index.
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Cc: stable@vger.kernel.org # v3.7..
----
- drivers/acpi/processor_perflib.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
-
-diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
-index 836bfe0..caa042e 100644
---- a/drivers/acpi/processor_perflib.c
-+++ b/drivers/acpi/processor_perflib.c
-@@ -340,6 +340,17 @@ static void amd_fixup_frequency(struct acpi_processor_px *px, int i)
- 	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
- 	    || boot_cpu_data.x86 == 0x11) {
- 		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
-+		/*
-+		 * MSR C001_0064+:
-+		 * Bit 63: PstateEn. Read-write. 1=The P-state specified by
-+		 * this MSR is valid. 0=The P-state specified by this MSR is
-+		 * not valid. The purpose of this register is to indicate if
-+		 * the rest of the P-state information in the register is
-+		 * valid after a reset; it controls no hardware.
-+		 */
-+		if (!(hi & BIT(31)))
-+			return;
-+
- 		fid = lo & 0x3f;
- 		did = (lo >> 6) & 7;
- 		if (boot_cpu_data.x86 == 0x10)
--- 
-1.8.0
-
-
---------------060005090304060508090409--
+El 19/01/13 20:21, Alex Villacís Lasso escribió:
+> I am having this strange issue. My computer has a LCD display that does not send any EDID, and therefore I need the command parameter "drm_kms_helper.edid_firmware=edid/1280x1024.bin" In Fedora 16, the stock kernel does not have 
+> CONFIG_DRM_LOAD_EDID_FIRMWARE set. Therefore I compiled my own kernel from vanilla sources, and the parameter worked. I have just now upgraded to Fedora 18. The new stock kernel is supposed to have CONFIG_DRM_LOAD_EDID_FIRMWARE set, but when I boot with 
+> the drm_kms_helper parameter, I get a message "drm_kms_helper: Unknown parameter `bin'". I thought this was a kernel bug caused by some patch in the stock kernel, so I filed https://bugzilla.redhat.com/show_bug.cgi?id=901899 , and then proceeded to 
+> compile 3.8-rc4 from vanilla sources. However, I am surprised to find that the vanilla sources, when compiled under Fedora 18, exhibit the same bug. Has anyone seen a situation like this? Is this a possible compiler bug in Fedora 18? A grub2 bug? 
+> Apparently the kernel is misparsing the commandline parameter and thinks "bin" is the module parameter, not "edid_firmware".
+BTW, I have CONFIG_DYNAMIC_DEBUG=y in my kernel config, and I tried adding dyndbg="file params.c +p" to the kernel command line, but I see no additional debug output that might point out what is happening.
