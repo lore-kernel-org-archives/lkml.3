@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab3AUUrp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 15:47:45 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:49312 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752308Ab3AUUrn (ORCPT
+	id S1752308Ab3AUUrs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 15:47:48 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:61630 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756615Ab3AUUrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 15:47:43 -0500
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Philip Avinash <avinashphilip@ti.com>
-Cc: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org, nsekhar@ti.com,
-        linux-kernel@vger.kernel.org, gururaja.hebbar@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: dts: AM33XX: Add ELM node
-References: <1358491295-4022-1-git-send-email-avinashphilip@ti.com>
-	<1358491295-4022-2-git-send-email-avinashphilip@ti.com>
-Date: Mon, 21 Jan 2013 21:47:38 +0100
-In-Reply-To: <1358491295-4022-2-git-send-email-avinashphilip@ti.com> (Philip
-	Avinash's message of "Fri, 18 Jan 2013 12:11:33 +0530")
-Message-ID: <877gn69sb9.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Mon, 21 Jan 2013 15:47:46 -0500
+Date: Mon, 21 Jan 2013 12:47:41 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Jon Mason <jon.mason@intel.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH 01/21] NTB: correct missing readq/writeq errors
+Message-ID: <20130121204741.GA10361@kroah.com>
+References: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
+ <1358586155-23322-2-git-send-email-jon.mason@intel.com>
+ <20130120234005.GA14196@kroah.com>
+ <20130121173818.GD22208@jonmason-lab>
+ <20130121182345.GC5499@kroah.com>
+ <1358800493.3758.10.camel@bwh-desktop.uk.solarflarecom.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358800493.3758.10.camel@bwh-desktop.uk.solarflarecom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Philip" == Philip Avinash <avinashphilip@ti.com> writes:
+On Mon, Jan 21, 2013 at 08:34:53PM +0000, Ben Hutchings wrote:
+> On Mon, 2013-01-21 at 10:23 -0800, Greg KH wrote:
+> > On Mon, Jan 21, 2013 at 10:38:18AM -0700, Jon Mason wrote:
+> > > On Sun, Jan 20, 2013 at 03:40:05PM -0800, Greg KH wrote:
+> > > > On Sat, Jan 19, 2013 at 02:02:15AM -0700, Jon Mason wrote:
+> > > > > Atomic readq and writeq do not exist by default on some 32bit
+> > > > > architectures, thus causing compile errors due to non-existent symbols.
+> > > > > In those cases, use the definitions of those symbols from
+> > > > > include/asm-generic/io-64-nonatomic-hi-lo.h
+> > > > > 
+> > > > > Signed-off-by: Jon Mason <jon.mason@intel.com>
+> > > > > ---
+> > > > >  drivers/ntb/ntb_hw.c |    1 +
+> > > > >  1 file changed, 1 insertion(+)
+> > > > > 
+> > > > > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
+> > > > > index 4c71b17..0b46fef 100644
+> > > > > --- a/drivers/ntb/ntb_hw.c
+> > > > > +++ b/drivers/ntb/ntb_hw.c
+> > > > > @@ -45,6 +45,7 @@
+> > > > >   * Contact Information:
+> > > > >   * Jon Mason <jon.mason@intel.com>
+> > > > >   */
+> > > > > +#include <asm-generic/io-64-nonatomic-hi-lo.h>
+> > > > 
+> > > > Really?  This seems really odd.  Usually we just don't build the code
+> > > > for any platform that doesn't have readq/writeq.  Otherwise, shouldn't
+> > > > those arches just include this file themselves to keep everything
+> > > > working?  Individual drivers shouldn't have to do this.
+> > > 
+> > > There is no readq/writeq for 32bit x86.  I was using this header file
+> > > to get around that.  I freely admit that I have done 0 testing on
+> > > 32bit, but it should work.  If you prefer I modify the Kconfig to only
+> > > enable this for x86_64 until such time as I test on x86_32, I will
+> > > happily submit that patch.
+> > 
+> > No, other drivers on 32bit x86 also use readq,
+> 
+> I don't think so, because it's not defined for CONFIG_X86_32.
 
- Philip> From: "Philip, Avinash" <avinashphilip@ti.com>
- Philip> Add ELM data node to AM33XX device tree file.
+Ah, you are right, I was confused by drivers/char/hpet.c, which used
+readq, but only on 64bit processors.
 
- Philip> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
- Philip> ---
- Philip>  arch/arm/boot/dts/am33xx.dtsi |    8 ++++++++
- Philip>  1 file changed, 8 insertions(+)
+Jon, as you say you never tested this on 32bit processors, I'd recommend
+just making the Kconfig file enforce that and only build on x86-64 for
+now.
 
- Philip> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
- Philip> index c2f14e8..eaef5e7 100644
- Philip> --- a/arch/arm/boot/dts/am33xx.dtsi
- Philip> +++ b/arch/arm/boot/dts/am33xx.dtsi
- Philip> @@ -385,5 +385,13 @@
- Philip>  				mac-address = [ 00 00 00 00 00 00 ];
- Philip>  			};
- Philip>  		};
- Philip> +
- Philip> +		elm: elm@48080000 {
- Philip> +			compatible	= "ti,am33xx-elm";
+thanks,
 
-Please drop the <tab> after compatible.
-
-Other than that it looks goood.
-
-Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
-
--- 
-Bye, Peter Korsgaard
+greg k-h
