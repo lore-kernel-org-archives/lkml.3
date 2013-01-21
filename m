@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab3AURRD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:17:03 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:51282 "EHLO
+	id S1755623Ab3AURRM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:17:12 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:49184 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202Ab3AURQ7 (ORCPT
+	with ESMTP id S1754726Ab3AURRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:16:59 -0500
+	Mon, 21 Jan 2013 12:17:03 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Felipe Balbi <balbi@ti.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH 12/15] USB: gadget/freescale: disable non-multiplatform drivers
-Date: Mon, 21 Jan 2013 17:16:05 +0000
-Message-Id: <1358788568-11137-13-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Wan ZongShun <mcuos.com@gmail.com>
+Subject: [PATCH 04/15] ARM: w90x900: fix legacy assembly syntax
+Date: Mon, 21 Jan 2013 17:15:57 +0000
+Message-Id: <1358788568-11137-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1358788568-11137-1-git-send-email-arnd@arndb.de>
 References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:WdL7dgwuk9U5HnounbbKvrzHsWPumyeOcVysJGvKuv2
- 1PWA1QkK9gSow5FwrxAmYxHcj9REepJ2JUexsOVPaAnGBW2MaE
- jNI1z1I9q1n5g/byNBPW+cP87C1dQHJz7tFSIJU/taiz7wuRjW
- YfJYa+3J6qIgffI4PW05HMEcAA1wFq9Tue3TfDID0QGvHV374A
- 6tGh0MWVvrfBzPg78L9KJEHJTRDWg3Ie9xJYzbOeRxia8VIV02
- CofzKtV2m4ANwAzyJOvij3BIXSvkXD9bzhkdBuMGM8vJC4rGpu
- 6jJQYmJl4C+vpPCdZEauOVo8ij1xdH7BoCCbUUJSkbSNVr+2eR
- C8s/velzklFcmpy7eiNx7ZiAFwMGgPlDXkf/xwKkr
+X-Provags-ID: V02:K0:hO+thD9h9WsqkZTu1CoT0ucmFr7140/A0RelCY5eAGu
+ qiMxrjhP4mRziHkgHjkyYJurZd1DEYQkqlc/vPNaR+6Y+GN/uw
+ kzSBL3k5Jxl0FKS/1TXiM7VECgB6EJMqpbVkN8wVpjirpcXAwW
+ 51qLClS8c8eAKBJWUrzbMhYlBrwc/+ETd5zs5/J/johHudujbp
+ /qpZLhS/NGrnXwQzX7nAy9L6XE9c9ddqyt28iELt5NH+UCgDov
+ +UFtsJG06A3ZhdYEZiEOjo+t0VfYeYpmHVxCm9EsddXNO+Sge+
+ 7V65269kYEnkX3bsORrkJooaGzGI5VOqcZY956fviDxIVBaYtV
+ jfY1HqJw7omg1+nOOSXzo36D9SGjb7rAD2rE2KbeU
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both the fsl_mxc gadget and the imx_udc gadget drivers fail to build
-without the mach/hardware.h file that is not available when building
-for multiplatform. Let's disable these drivers for v3.8 in combination
-with CONFIG_ARCH_MULTIPLATFORM, and fix them properly in v3.9 unless
-someone has an better solution.
+New ARM binutils don't allow extraneous whitespace inside
+of brackets, which causes this error on all mach-w90x900
+defconfigs:
 
-Without this patch, building allyesconfig results in:
+arch/arm/kernel/entry-armv.S: Assembler messages:
+arch/arm/kernel/entry-armv.S:214: Error: ARM register expected -- `ldr r0,[ r6,#(0x10C)]'
+arch/arm/kernel/entry-armv.S:214: Error: ARM register expected -- `ldr r0,[ r6,#(0x110)]'
+arch/arm/kernel/entry-armv.S:430: Error: ARM register expected -- `ldr r0,[ r6,#(0x10C)]'
+arch/arm/kernel/entry-armv.S:430: Error: ARM register expected -- `ldr r0,[ r6,#(0x110)]'
 
-drivers/usb/gadget/fsl_mxc_udc.c:21:27: fatal error: mach/hardware.h: No such file or directory
+This removes the whitespace in order to build the kernel
+again.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
+Cc: Wan ZongShun <mcuos.com@gmail.com>
 ---
- drivers/usb/gadget/Kconfig |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-w90x900/include/mach/entry-macro.S |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 14625fd..ca57a6d 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -173,6 +173,7 @@ config USB_BCM63XX_UDC
- config USB_FSL_USB2
- 	tristate "Freescale Highspeed USB DR Peripheral Controller"
- 	depends on FSL_SOC || ARCH_MXC
-+	depends on !ARCH_MULTIPLATFORM
- 	select USB_FSL_MPH_DR_OF if OF
- 	help
- 	   Some of Freescale PowerPC and i.MX processors have a High Speed
-@@ -280,7 +281,7 @@ config USB_S3C_HSOTG
+diff --git a/arch/arm/mach-w90x900/include/mach/entry-macro.S b/arch/arm/mach-w90x900/include/mach/entry-macro.S
+index e286dac..0ff612a 100644
+--- a/arch/arm/mach-w90x900/include/mach/entry-macro.S
++++ b/arch/arm/mach-w90x900/include/mach/entry-macro.S
+@@ -19,8 +19,8 @@
  
- config USB_IMX
- 	tristate "Freescale i.MX1 USB Peripheral Controller"
--	depends on ARCH_MXC
-+	depends on ARCH_MXC && !ARCH_MULTIPLATFORM
- 	help
- 	   Freescale's i.MX1 includes an integrated full speed
- 	   USB 1.1 device controller.
+ 		mov	\base, #AIC_BA
+ 
+-		ldr	\irqnr, [ \base, #AIC_IPER]
+-		ldr	\irqnr, [ \base, #AIC_ISNR]
++		ldr	\irqnr, [\base, #AIC_IPER]
++		ldr	\irqnr, [\base, #AIC_ISNR]
+ 		cmp	\irqnr, #0
+ 
+ 	.endm
 -- 
 1.7.10.4
 
