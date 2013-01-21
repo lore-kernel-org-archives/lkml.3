@@ -1,51 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab3AUTb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 14:31:58 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:34548 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756206Ab3AUTb5 (ORCPT
+	id S1754659Ab3AUTr0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 14:47:26 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:10357 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750Ab3AUTrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 14:31:57 -0500
-Date: Mon, 21 Jan 2013 14:31:55 -0500 (EST)
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: simon@mungewell.org
-Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org
-Message-ID: <1270977623.602972.1358796715392.JavaMail.root@mail.savoirfairelinux.com>
-In-Reply-To: <d76e4c014234c2f0e8ef1328f0e7572a.squirrel@mungewell.org>
-Subject: Re: [PATCH v2] HID: add ThingM blink(1) USB RGB LED support
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Mon, 21 Jan 2013 14:47:24 -0500
+Message-ID: <1358797641.3758.4.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH 4/15] drivers/net/ethernet/sfc/ptp.c: adjust duplicate
+ test
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        <kernel-janitors@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Mon, 21 Jan 2013 19:47:21 +0000
+In-Reply-To: <1358773378-4700-5-git-send-email-Julia.Lawall@lip6.fr>
+References: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1358773378-4700-5-git-send-email-Julia.Lawall@lip6.fr>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [208.88.110.46]
-X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - FF3.0 (Linux)/7.1.4_GA_2555)
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19570.005
+X-TM-AS-Result: No--15.291900-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
-
-> > +++ b/Documentation/ABI/testing/sysfs-driver-hid-blink1
-> > @@ -0,0 +1,23 @@
-> > +What:		/sys/class/leds/blink(1)::<serial>/rgb
-> > +Date:		January 2013
-> > +Contact:	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-> > +Description:	The ThingM blink(1) is an USB RGB LED. The color
-> > notation is
-> > +		3-byte hexadecimal. Read this attribute to get the last set
-> > +		color. Write the 24-bit hexadecimal color to change the current
-> > +		LED color. The default color is full white (0xFFFFFF).
-> > +		For instance, set the color to green with: echo 00FF00 > rgb
-> > +
+On Mon, 2013-01-21 at 14:02 +0100, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> Shouldn't the name presented in the sys/class/leds directories change
-> appropriately too?
+> Delete successive tests to the same location.  rc was previously tested and
+> not subsequently updated.  efx_phc_adjtime can return an error code, so the
+> call is updated so that is tested instead.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @s exists@
+> local idexpression y;
+> expression x,e;
+> @@
+> 
+> *if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
+>  { ... when forall
+>    return ...; }
+> ... when != \(y = e\|y += e\|y -= e\|y |= e\|y &= e\|y++\|y--\|&y\)
+>     when != \(XT_GETPAGE(...,y)\|WMI_CMD_BUF(...)\)
+> *if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
+>  { ... when forall
+>    return ...; }
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-The directory name for the device under /sys/class/leds is "blink(1)::<serial>",
-where <serial> is the last 4 digits of the device serial number (the first 4
-digits are always the same: "1A00"). For instance, "blink(1)::1234".
-Let me know if I misunderstood your question.
+Acked-by: Ben Hutchings <bhutchings@solarflare.com>
 
-Thanks,
-Vivien
+> ---
+> Not tested.  I'm not familiar with this function, so I don't know whether it
+> is desirable to test its result.
+
+Yes, the result should be tested.  Thanks.
+
+Ben.
+
+>  drivers/net/ethernet/sfc/ptp.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/ethernet/sfc/ptp.c b/drivers/net/ethernet/sfc/ptp.c
+> index 0767043..3f93624 100644
+> --- a/drivers/net/ethernet/sfc/ptp.c
+> +++ b/drivers/net/ethernet/sfc/ptp.c
+> @@ -1439,7 +1439,7 @@ static int efx_phc_settime(struct ptp_clock_info *ptp,
+>  
+>  	delta = timespec_sub(*e_ts, time_now);
+>  
+> -	efx_phc_adjtime(ptp, timespec_to_ns(&delta));
+> +	rc = efx_phc_adjtime(ptp, timespec_to_ns(&delta));
+>  	if (rc != 0)
+>  		return rc;
+>  
+> 
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
