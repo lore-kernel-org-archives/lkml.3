@@ -1,60 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030Ab3AUOrG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 09:47:06 -0500
-Received: from mga11.intel.com ([192.55.52.93]:30582 "EHLO mga11.intel.com"
+	id S1756071Ab3AUOrR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 09:47:17 -0500
+Received: from mga09.intel.com ([134.134.136.24]:42784 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752998Ab3AUOrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 09:47:04 -0500
+	id S1752835Ab3AUOrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 09:47:12 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,506,1355126400"; 
-   d="scan'208";a="279817365"
-Date: Mon, 21 Jan 2013 06:22:05 -0800
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        Viresh Kumar <viresh.linux@gmail.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [PATCH 2/2] dw_dmac: return proper residue value
-Message-ID: <20130121142205.GB26562@intel.com>
-References: <1358758844-24711-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1358758844-24711-2-git-send-email-andriy.shevchenko@linux.intel.com>
- <20130121084924.GA26562@intel.com>
- <1358761551.12502.39.camel@smile>
+   d="scan'208";a="250146777"
+Message-ID: <50FD54EA.4060804@intel.com>
+Date: Mon, 21 Jan 2013 22:47:06 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358761551.12502.39.camel@smile>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, namhyung@kernel.org,
+        Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        preeti@linux.vnet.ibm.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 09/22] sched: compute runnable load avg in cpu_load
+ and cpu_avg_load_per_task
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-10-git-send-email-alex.shi@intel.com> <50E7EAB1.6020302@intel.com> <50E92DC3.4050906@intel.com> <CA+55aFxbS-u1Zfwg2oKOmHq6FBF+dRRhrdssqc9PpC_gXoV3+g@mail.gmail.com> <50EFB1DB.7090804@intel.com>
+In-Reply-To: <50EFB1DB.7090804@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 11:45:51AM +0200, Andy Shevchenko wrote:
-> > > +	return 0;
-> > hmmm, why not use BLOCK_TS value. That way you dont need to look at direction
-> > and along with burst can easily calculate residue...
+On 01/11/2013 02:31 PM, Alex Shi wrote:
+> On 01/07/2013 02:31 AM, Linus Torvalds wrote:
+>> On Sat, Jan 5, 2013 at 11:54 PM, Alex Shi <alex.shi@intel.com> wrote:
+>>>
+>>> I just looked into the aim9 benchmark, in this case it forks 2000 tasks,
+>>> after all tasks ready, aim9 give a signal than all tasks burst waking up
+>>> and run until all finished.
+>>> Since each of tasks are finished very quickly, a imbalanced empty cpu
+>>> may goes to sleep till a regular balancing give it some new tasks. That
+>>> causes the performance dropping. cause more idle entering.
+>>
+>> Sounds like for AIM (and possibly for other really bursty loads), we
+>> might want to do some load-balancing at wakeup time by *just* looking
+>> at the number of running tasks, rather than at the load average. Hmm?
+>>
+>> The load average is fundamentally always going to run behind a bit,
+>> and while you want to use it for long-term balancing, a short-term you
+>> might want to do just a "if we have a huge amount of runnable
+>> processes, do a load balancing *now*". Where "huge amount" should
+>> probably be relative to the long-term load balancing (ie comparing the
+>> number of runnable processes on this CPU right *now* with the load
+>> average over the last second or so would show a clear spike, and a
+>> reason for quick action).
+>>
 > 
-> Do you mean to read CTL hi/lo and do
+> Sorry for response late!
 > 
-> desc->len - ctlhi.block_ts * ctllo.src_tr_width?
+> Just written a patch following your suggestion, but no clear improvement for this case.
+> I also tried change the burst checking interval, also no clear help.
 > 
-Yes
-> I think it could be not precise when memory-to-peripheral transfer is
-> going on. In that case you probably will have src_tr_width like 32 bits,
-> meanwhile peripheral may receive only byte stream.
-Nope that is not the case.
-SAR/DAR is always incremented in src/dstn_tr_width granularity. For example if
-you are using MEM to DMA, then SAR will always increment in case of x86 in 4byte
-granularity as we will read bursts not singles.
+> If I totally give up runnable load in periodic balancing, the performance can recover 60%
+> of lose.
+> 
+> I will try to optimize wake up balancing in weekend.
+> 
 
-Also if check the spec, it says "Once the transfer starts, the read-back value is the
-total number of data items already read from the source peripheral, regardless of
-what is the flow controller"
+(btw, the time for runnable avg to accumulate to 100%, needs 345ms; to
+50% needs 32 ms)
 
-So basically you get what is read from buffer in case of MEM->PER and get what
-is read from FIFO in case of PER->MEM which IMO gives you better or equal results
-than your calulation.
+I have tried some tuning in both wake up balancing and regular
+balancing. Yes, when using instant load weight (without runnable avg
+engage), both in waking up, and regular balance, the performance recovered.
 
---
-~Vinod
+But with per_cpu nr_running tracking, it's hard to find a elegant way to
+detect the burst whenever in waking up or in regular balance.
+In waking up, the whole sd_llc domain cpus are candidates, so just
+checking this_cpu is not enough.
+In regular balance, this_cpu is the migration destination cpu, checking
+if the burst on the cpu is not useful. Instead, we need to check whole
+domains' increased task number.
+
+So, guess 2 solutions for this issue.
+1, for quick waking up, we need use instant load(same as current
+balancing) to do balance; and for regular balance, we can record both
+instant load and runnable load data for whole domain, then decide which
+one to use according to task number increasing in the domain after
+tracking done the whole domain.
+
+2, we can keep current instant load balancing as performance balance
+policy, and using runnable load balancing in power friend policy.
+Since, none of us find performance benefit with runnable load balancing
+on benchmark hackbench/kbuild/aim9/tbench/specjbb etc.
+I prefer the 2nd.
+
+What's your opinions of this?
+
+Best regards
+Alex
