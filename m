@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab3AUVuI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 16:50:08 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:49664 "EHLO
+	id S1753605Ab3AUVun (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 16:50:43 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:50018 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab3AUVuH (ORCPT
+	with ESMTP id S1751795Ab3AUVul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 16:50:07 -0500
+	Mon, 21 Jan 2013 16:50:41 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 13/15] USB: ehci: make orion and mxc bus glues coexist
-Date: Mon, 21 Jan 2013 21:49:14 +0000
+To: Heiko Schocher <hs@denx.de>
+Subject: Re: [PATCH 11/15] mtd: davinci_nand: fix OF support
+Date: Mon, 21 Jan 2013 21:50:21 +0000
 User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: balbi@ti.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arm@kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        Manjunath Goudar <manjunath.goudar@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-References: <Pine.LNX.4.44L0.1301211533580.24224-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1301211533580.24224-100000@netrider.rowland.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Sekhar Nori <nsekhar@ti.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <1358788568-11137-12-git-send-email-arnd@arndb.de> <50FDB509.9030004@denx.de>
+In-Reply-To: <50FDB509.9030004@denx.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201301212149.15139.arnd@arndb.de>
-X-Provags-ID: V02:K0:Fp4xo0/MBIqLFD1q8bm9x6HzEeJ1E045eC7rjCqPlu3
- d+6XILYZypa3Wo9zjgHFyj6xGYL/abjgqcpi72SFyKO/HJXmpT
- yAA0ENPkpUyI/o+M+/QsvP3payzKekG8iQZweM8OyQKqvH4LPa
- Qn3Y/TotYFd15WprxZ9PuV0mY+vCkdNgmhcFCuY6b3RNQEw9hw
- S5GWlhKKesP+A88rzlCsU+fd5bxU1Yl0SdXdxI4SExN5TwJCzR
- miyPsC7xVYx/8skQhYRD9hhMx3HtzP3NGYjNv1Vn3DefBdV/p1
- lnXq9hwZ77bQ6zEnVEkBw6kBndzsS015JnxGf6RxB+7auqIP4u
- BRBCg3rhmnsdI3v94QYM=
+Message-Id: <201301212150.21659.arnd@arndb.de>
+X-Provags-ID: V02:K0:N9kt4PEDtVPZq6Btv4hLGzE/vs42t5uRBHMSDxBqfcQ
+ hS0a3RGWamOD8HBQgEWgdn8IqnlkB54IyJ1+HGYtdCrkyg1iIb
+ eKcljyGwypWJePl1mFAMd0qRLtHofpOQOre6q8gE7WrxZt7vXG
+ 5iGSj5kK/JtF1GwEZoopqy8Ci5oZTinxbR2wdgfrKUvfufZdvB
+ i0jj7lvdHePR5yTD/qDOWl83DzkLsh9Ow1w6HjBuuLdK6juYcF
+ 1anAeLqe0S9dPADMmpAwOm/7+gA2rTudRYJsHv7gSYBujKe17C
+ Kcp6O7EWUpc6YYz/C4rxn6d7wgfORFRa3JyzJcArtnx6a2ztjR
+ TMONiQfRpOO84L6/AHMo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 21 January 2013, Alan Stern wrote:
-> Is Manjunath aware of the first patch attached to this email message?
+On Monday 21 January 2013, Heiko Schocher wrote:
+> Already fixed here:
+> http://lists.infradead.org/pipermail/linux-mtd/2013-January/045366.html
 > 
->         http://marc.info/?l=linux-usb&amp;m=135843902916416&amp;w=2
-> 
 
-I would not expect so. Manjunath is still learning about the open
-source processes, but he has also done a similar patch in his tree,
-and one for most of the other ARM based platforms.
-
-Manjunath: following up on the discussions we've had, I would suggest
-you take a look at that patch, and do a comparison with your version
-(apply it on the same base, then use git-diff to show the differences
-between the version) and thing about whether your they are significant
-or not.  Since Alan posted his version on the mailing list first, that's
-the one that should get merged, but there might be something in it that
-you can learn from it and that I did not see.
-
-Alan, one comment about your version: You keep maintaining the
-'#if IS_ENABLED' list in the main driver, which I think can actually
-get removed now. Since the base driver can be built independent of
-the presence of platform glue drivers, there is no need to forbid
-it any more, and the #if block will cause merge conflicts for each
-patch that converts or adds another platform. I think we can actually
-get the same results by turning the Kconfig logic around and making
-the platform glue drivers 'select USB_EHCI_HCD' than depending on
-it.
+Ok, thanks for the confirmation. I had only checked -rc4, not any newer
+snapshot.
 
 	Arnd
