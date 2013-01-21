@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab3AUAsI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 19:48:08 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:47931 "EHLO hydra.sisk.pl"
+	id S1752717Ab3AUAu5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 19:50:57 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:54512 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752709Ab3AUAsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 19:48:04 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
-        Len Brown <lenb@kernel.org>
-Subject: [RFC][Update][PATCH 0/3] ACPI / PM: Export power resources information to user space
-Date: Mon, 21 Jan 2013 01:48:55 +0100
-Message-ID: <2096792.ELJ8WGVaaz@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <3307415.pdOY6ovZLa@vostro.rjw.lan>
-References: <3307415.pdOY6ovZLa@vostro.rjw.lan>
+	id S1752495Ab3AUAu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 19:50:56 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Pedro Alves <palves@redhat.com>
+Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
+Date: Sun, 20 Jan 2013 19:54:47 -0500
+User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        "Carlos O'Donell" <carlos@systemhalted.org>,
+        David Miller <davem@davemloft.net>, libc-alpha@sourceware.org,
+        bhutchings@solarflare.com, amwang@redhat.com, tmb@mageia.org,
+        eblake@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
+        schwab@suse.de
+References: <201301161205.04502.vapier@gentoo.org> <50F95B0A.1090205@linux-ipv6.org> <50F95DF3.7080602@redhat.com>
+In-Reply-To: <50F95DF3.7080602@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed;
+  boundary="nextPart6316602.foUSqU4aQs";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301201954.51109.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, January 20, 2013 03:51:40 PM Rafael J. Wysocki wrote:
-> Hi Greg,
-> 
-> The following patch series is about exporting ACPI power resources to user
-> space that will be necessary for PM diagnostics on new platforms (powertop is
-> the target).  Still, existing systems can also benefit from that, like my
-> oldish HP nx6325 on which the patches have been tested.
-> 
-> Patch [1/3] shouldn't be really controverisal, as it only makes it possible
-> to read power resources' reference counters from user space in a quite
-> straightforward way.
-> 
-> Patch [3/3], however, exposes lists of power resources associated with
-> different power states of devices using ACPI PM as sysfs subdirectories
-> containing symbolic links and that requires some sysfs changes made by
-> patch [2/3].
-> 
-> Admittedly, my sysfs skills are limited so please let me know if those
-> changes make sense and are acceptable from your perspective.  If not, then
-> please kindly advise what I can do instead of them.
-> 
-> The patches apply on top of the current linux-next branch of the linux-pm.git
-> tree.
+--nextPart6316602.foUSqU4aQs
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Refreshed with Documentation/ABI files as requested.
+On Friday 18 January 2013 09:36:35 Pedro Alves wrote:
+> On 01/18/2013 02:24 PM, YOSHIFUJI Hideaki wrote:
+> >>>> It's simple enough to move all of the __GLIBC__ uses into
+> >>>> libc-compat.h, then you control userspace libc coordination from one
+> >>>> file.
+> >>>=20
+> >>> How about just deciding on a single macro/symbol both the
+> >>> kernel and libc (any libc that needs this) define?  Something
+> >>> like both the kernel and userland doing:
+> >>>=20
+> >>> #ifndef __IPV6_BITS_DEFINED
+> >>> #define __IPV6_BITS_DEFINED
+> >>> ...
+> >>> define in6_addr, sockaddr_in6, ipv6_mreq, whatnot
+> >>> #endif
+> >=20
+> > Hmm, how should we handle future structs/enums then?
+> > For example, if I want to have in6_flowlabel_req{} defined in
+> > glibc, what should we do?
+>=20
+> Include the glibc header first?  Or is this some other
+> use case?
+>=20
+> The point wasn't that you'd have only one macro for all
+> structs/enums (you could split into __IPV6_IN6_ADDR_DEFINED,
+> __IPV6_SOCKADDR_IN6_DEFINED, etc.) but to have the kernel
+> and libc agree on guard macros, instead of having the kernel
+> do #ifdef __GLIBC__ and glibc doing #ifdef _NETINET_IN_H.
+>=20
+> But as Carlos says, the devil is in the details, and
+> I sure am not qualified on the details here.
 
-Thanks,
-Rafael
+i shipped some kernel header versions in Gentoo where the linux network=20
+headers would include the C library's header (as defined by POSIX) so the=20
+structs that were the same would only come from glibc.  the only reported=20
+breakage was due to defines that the kernel provided but glibc did not.
+=2Dmike
 
+--nextPart6316602.foUSqU4aQs
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJQ/JHaAAoJEEFjO5/oN/WBUr4QAILaTm3EUqS154DTDuZSjwq/
+RF5BF+k04XBwsbMudP0gb4pYLJNUxOdYcKN4HvmqIwOBDftKYt2D4EmCHMBDiMnN
+2/KMODXhoQHXk2cH3T0f3O64R95xyAoLTstN1yOf4daSJsj964nQ4k6s9PROWU81
+OApkodMcbVSuXCLiQpJC1zgbZp2z9klweZKdGEdIONjnChGhN8yAGfqKEtrQLIq3
+BujiVjDIDwYDCJeLed17n6okGnr71YELRcpJuk6hYwNa4HFJ+7lF/zaNEl/k/28J
+dYGDsGwnCkrAdgPYvm4lr3uajoR5F13wsAADuK3R7qzOlj3whiG+H2NcX8ERQX1B
+6PH5A5LPyueXBJ9GbSKakXxML3eGf+Z3kHwK8QL4ZU4PddBw6QbPXxfeiFleAfTg
+SDsRPDXxxISmOMDMdsqw/1CoErxf8/dND8r58wsHdBEVXeXNDAlo2M58Z0KTK+SV
++u4/YAPhiq5hVmamdj7YlRqtkenVDuKTKQpnttPB+S7++iU2x9oFHuL9drcMhiuW
+X7q8KPpCtlzvbSZHMwtnyLCem8qEKaNPHYulPa1GGlNQ6VADxYL/p9rFK7oI7iSY
+tcqIk0wY4/faM70oiMO4kpmzIpnhJgoPv+1zhdyHyvuegBMWI7YI9Mmdz8GtiPoz
+eR+4W34f9I7rixpeblxG
+=NEGe
+-----END PGP SIGNATURE-----
+
+--nextPart6316602.foUSqU4aQs--
