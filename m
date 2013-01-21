@@ -1,96 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab3AUW2u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 17:28:50 -0500
-Received: from mga14.intel.com ([143.182.124.37]:34902 "EHLO mga14.intel.com"
+	id S1756909Ab3AUW24 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 17:28:56 -0500
+Received: from mga01.intel.com ([192.55.52.88]:32957 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756607Ab3AUW2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 17:28:47 -0500
+	id S1756607Ab3AUW2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 17:28:54 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,508,1355126400"; 
-   d="scan'208";a="246708008"
-Date: Mon, 21 Jan 2013 15:28:46 -0700
+   d="scan'208";a="280089655"
 From: Jon Mason <jon.mason@intel.com>
 To: Greg KH <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Dave Jiang <dave.jiang@intel.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH 14/21] NTB: Fix Sparse Warnings
-Message-ID: <20130121222846.GK22208@jonmason-lab>
-References: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
- <1358586155-23322-15-git-send-email-jon.mason@intel.com>
- <20130120234534.GD14196@kroah.com>
- <20130121211350.GH22208@jonmason-lab>
- <20130121213719.GA20506@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130121213719.GA20506@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: [PATCH 1/2] NTB: disable x86_32 support
+Date: Mon, 21 Jan 2013 15:28:51 -0700
+Message-Id: <1358807332-22782-1-git-send-email-jon.mason@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 01:37:19PM -0800, Greg KH wrote:
-> On Mon, Jan 21, 2013 at 02:13:50PM -0700, Jon Mason wrote:
-> > On Sun, Jan 20, 2013 at 03:45:34PM -0800, Greg KH wrote:
-> > > On Sat, Jan 19, 2013 at 02:02:28AM -0700, Jon Mason wrote:
-> > > > Address the sparse warnings and resulting fallout
-> > > > 
-> > > > Signed-off-by: Jon Mason <jon.mason@intel.com>
-> > > > ---
-> > > >  drivers/ntb/ntb_hw.c        |    7 ++++---
-> > > >  drivers/ntb/ntb_hw.h        |    4 ++--
-> > > >  drivers/ntb/ntb_transport.c |   32 ++++++++++++++++----------------
-> > > >  3 files changed, 22 insertions(+), 21 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-> > > > index 18cb5dc..b792ccd 100644
-> > > > --- a/drivers/ntb/ntb_hw.c
-> > > > +++ b/drivers/ntb/ntb_hw.c
-> > > > @@ -104,8 +104,9 @@ MODULE_DEVICE_TABLE(pci, ntb_pci_tbl);
-> > > >   *
-> > > >   * RETURNS: An appropriate -ERRNO error value on error, or zero for success.
-> > > >   */
-> > > > -int ntb_register_event_callback(struct ntb_device *ndev,
-> > > > -				void (*func)(void *handle, unsigned int event))
-> > > > +int
-> > > > +ntb_register_event_callback(struct ntb_device *ndev,
-> > > > +			    void (*func)(void *handle, enum ntb_hw_event event))
-> > > 
-> > > What is sparse complaining about here that moving the function name to
-> > > the start of the line fixes?  That shouldn't be necessary at all.  Ah,
-> > > the enum?  If so, why change the first line at all?
-> > 
-> > All an effort to get it to fit in under 80 chars.
-> 
-> The original lines were less than 80 characters :)
-> 
-> > > > --- a/drivers/ntb/ntb_transport.c
-> > > > +++ b/drivers/ntb/ntb_transport.c
-> > > > @@ -58,7 +58,7 @@
-> > > >  #include <linux/ntb.h>
-> > > >  #include "ntb_hw.h"
-> > > >  
-> > > > -#define NTB_TRANSPORT_VERSION	1
-> > > > +#define NTB_TRANSPORT_VERSION	2
-> > > 
-> > > How is this a sparse fix?
-> > 
-> > I changed the format of the header below.
-> 
-> Ah, ok.
-> 
-> Care to resend this without the first chunk?
+Atomic readq and writeq do not exist by default on some 32bit
+architectures, thus causing compile errors due to non-existent symbols.
+Since NTB has not been tested 32bit, disable x86_32 support until such
+time as this and any other issues can be properly discovered.
 
-Works for me :)
+Signed-off-by: Jon Mason <jon.mason@intel.com>
+---
+ drivers/ntb/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Resending with the minor edit now.
+diff --git a/drivers/ntb/Kconfig b/drivers/ntb/Kconfig
+index f69df793..37ee649 100644
+--- a/drivers/ntb/Kconfig
++++ b/drivers/ntb/Kconfig
+@@ -1,7 +1,7 @@
+ config NTB
+        tristate "Intel Non-Transparent Bridge support"
+        depends on PCI
+-       depends on X86
++       depends on X86_64
+        help
+         The PCI-E Non-transparent bridge hardware is a point-to-point PCI-E bus
+         connecting 2 systems.  When configured, writes to the device's PCI
+-- 
+1.7.9.5
 
-Thanks,
-Jon
-
-> 
-> thanks,
-> 
-> greg k-h
