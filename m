@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab3AUMBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 07:01:20 -0500
-Received: from ozlabs.org ([203.10.76.45]:52675 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752440Ab3AUMBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 07:01:19 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Steven Rostedt <rostedt@goodmis.org>, Sasha Levin <sasha.levin@oracle.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, fweisbec@gmail.com,
-        ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
-        masami.hiramatsu.pt@hitachi.com, jbaron@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        MartinSchwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-s390 <linux-s390@vger.kernel.org>
-Subject: Re: [PATCH 2/5] jump label: constify lookup functions
-In-Reply-To: <1358544300.7383.37.camel@gandalf.local.home>
-References: <1357772960-4436-1-git-send-email-sasha.levin@oracle.com> <1357772960-4436-2-git-send-email-sasha.levin@oracle.com> <1358544300.7383.37.camel@gandalf.local.home>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 21 Jan 2013 17:21:06 +1030
-Message-ID: <87sj5vuizp.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753956Ab3AUMDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 07:03:22 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:41316
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753335Ab3AUMDO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 07:03:14 -0500
+X-IronPort-AV: E=Sophos;i="4.84,506,1355094000"; 
+   d="scan'208";a="169187836"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+Cc: kernel-janitors@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/15] drivers/scsi/bnx2fc/bnx2fc_io.c: adjust duplicate test
+Date: Mon, 21 Jan 2013 14:02:49 +0100
+Message-Id: <1358773378-4700-6-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt <rostedt@goodmis.org> writes:
-> On Wed, 2013-01-09 at 18:09 -0500, Sasha Levin wrote:
->> Modify the parameters of all the lookup and the bookkeeping functions which
->> should be const to const.
->> 
->> For example, jump_label_text_reserved() doesn't modify the memory it works on,
->> it just checks whether there are any jump labels there.
->
-> This is dependent on the module patch, which Rusty is taking. I need to
-> see that he has it before this can go in. At least see it in linux-next.
->
-> Also, you should have Cc'd the linux-arch mailing list. I'll send it
-> there.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-I've put it in now.
+Delete successive tests to the same location.  The code tested the result
+of a previous allocation, that itself was already tested.  It is changed to
+test the result of the most recent allocation.
 
-Thanks,
-Rusty.
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+@s exists@
+local idexpression y;
+expression x,e;
+@@
+
+*if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
+ { ... when forall
+   return ...; }
+... when != \(y = e\|y += e\|y -= e\|y |= e\|y &= e\|y++\|y--\|&y\)
+    when != \(XT_GETPAGE(...,y)\|WMI_CMD_BUF(...)\)
+*if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
+ { ... when forall
+   return ...; }
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ drivers/scsi/bnx2fc/bnx2fc_io.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/scsi/bnx2fc/bnx2fc_io.c b/drivers/scsi/bnx2fc/bnx2fc_io.c
+index 8d4626c..8bea53d 100644
+--- a/drivers/scsi/bnx2fc/bnx2fc_io.c
++++ b/drivers/scsi/bnx2fc/bnx2fc_io.c
+@@ -654,7 +654,7 @@ int bnx2fc_init_mp_req(struct bnx2fc_cmd *io_req)
+ 	mp_req->mp_resp_bd = dma_alloc_coherent(&hba->pcidev->dev, sz,
+ 						 &mp_req->mp_resp_bd_dma,
+ 						 GFP_ATOMIC);
+-	if (!mp_req->mp_req_bd) {
++	if (!mp_req->mp_resp_bd) {
+ 		printk(KERN_ERR PFX "unable to alloc MP resp bd\n");
+ 		bnx2fc_free_mp_resc(io_req);
+ 		return FAILED;
+
