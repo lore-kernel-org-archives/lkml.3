@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab3AUKaW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:30:22 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:58756 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab3AUKaU (ORCPT
+	id S1752440Ab3AUKhW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:37:22 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:32394 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751509Ab3AUKhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:30:20 -0500
-Message-ID: <1358764210.4994.133.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
-From: Mike Galbraith <bitbucket@online.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
-        mingo@kernel.org, a.p.zijlstra@chello.nl
-Date: Mon, 21 Jan 2013 11:30:10 +0100
-In-Reply-To: <1358761496.4994.118.camel@marge.simpson.net>
-References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com>
-	 <50ED384C.1030301@linux.vnet.ibm.com>
-	 <1357977704.6796.47.camel@marge.simpson.net>
-	 <1357985943.6796.55.camel@marge.simpson.net>
-	 <1358155290.5631.19.camel@marge.simpson.net>
-	 <50F79256.1010900@linux.vnet.ibm.com>
-	 <1358654997.5743.17.camel@marge.simpson.net>
-	 <50FCACE3.5000706@linux.vnet.ibm.com>
-	 <1358743128.4994.33.camel@marge.simpson.net>
-	 <50FCCCF5.30504@linux.vnet.ibm.com>
-	 <1358750523.4994.55.camel@marge.simpson.net>
-	 <1358752180.4994.65.camel@marge.simpson.net>
-	 <50FCF212.3010504@linux.vnet.ibm.com>
-	 <1358759355.4994.108.camel@marge.simpson.net>
-	 <50FD08E1.8000302@linux.vnet.ibm.com>
-	 <1358761496.4994.118.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:JgSlJrgOWGY2s4y7zgkKfLUvuHUK+eqcLVKRgJ4mUEB
- Fjm69CAPB1nSA5OlH1nKMTkym7v72BQWfhrZDI6P4lJIDLrEQ1
- 1GNuIm5ndLqn2LBdvHYe4pk/fos4vVPVZsrTfSJBrS4QyUCS/K
- 7vTobqU8ujme9iTtEz4owa/tKkeJiAdxlLXGNZEf2bb/u3Ts5a
- HM91TpaHJVwOIIIzytHMde/pKoLdsf6oXZIE2GESsKOZoZOAg8
- b16K2YXn9C4iyEzNU794HXD7wxbltfFHqWOXiHSTdyRKI8EVPk
- wqCDbIT94NFqGYyG/WZeAdCmPnkkqTyseG1ThNMVeLg2WdDX/f
- pjKvpt0rSf8PRg87+xfjTFjLevm/Z7kVQGBfiBuZsqS58bDbQ+
- JvYSH49+25o9g==
+	Mon, 21 Jan 2013 05:37:20 -0500
+X-IronPort-AV: E=Sophos;i="4.84,505,1355094000"; 
+   d="scan'208";a="190888617"
+Date: Mon, 21 Jan 2013 11:37:13 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Namjae Jeon <linkinjeon@gmail.com>
+cc: jaegeuk.kim@samsung.com, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] f2fs: use _safe() version of list_for_each
+In-Reply-To: <CAKYAXd-H0KHMavYRk3PEshXNtN_ke5rH_qa-8XTT6RWZXYmFcw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1301211135300.1930@hadrien>
+References: <20130120150258.GB32551@elgon.mountain> <20130121083245.GA11592@core.coreip.homeip.net> <1358760001.8234.150.camel@kjgkr> <CAKYAXd-H0KHMavYRk3PEshXNtN_ke5rH_qa-8XTT6RWZXYmFcw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-2084525288-1358764633=:1930"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-21 at 10:44 +0100, Mike Galbraith wrote: 
-> On Mon, 2013-01-21 at 17:22 +0800, Michael Wang wrote: 
-> > On 01/21/2013 05:09 PM, Mike Galbraith wrote:
-> > > On Mon, 2013-01-21 at 15:45 +0800, Michael Wang wrote: 
-> > >> On 01/21/2013 03:09 PM, Mike Galbraith wrote:
-> > >>> On Mon, 2013-01-21 at 07:42 +0100, Mike Galbraith wrote: 
-> > >>>> On Mon, 2013-01-21 at 13:07 +0800, Michael Wang wrote:
-> > >>>
-> > >>>>> May be we could try change this back to the old way later, after the aim
-> > >>>>> 7 test on my server.
-> > >>>>
-> > >>>> Yeah, something funny is going on.
-> > >>>
-> > >>> Never entering balance path kills the collapse.  Asking wake_affine()
-> > >>> wrt the pull as before, but allowing us to continue should no idle cpu
-> > >>> be found, still collapsed.  So the source of funny behavior is indeed in
-> > >>> balance_path.
-> > >>
-> > >> Below patch based on the patch set could help to avoid enter balance path
-> > >> if affine_sd could be found, just like the old logical, would you like to
-> > >> take a try and see whether it could help fix the collapse?
-> > > 
-> > > No, it does not.
-> > 
-> > Hmm...what have changed now compared to the old logical?
-> 
-> What I did earlier to confirm the collapse originates in balance_path is
-> below.  I just retested to confirm.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-...
+--8323329-2084525288-1358764633=:1930
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-And you can add..
+On Mon, 21 Jan 2013, Namjae Jeon wrote:
 
-if (per_cpu(sd_llc_id, cpu) == per_cpu(sd_llc_id, prev_cpu))
-goto unlock;
+> 2013/1/21, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> > 2013-01-21 (월), 00:32 -0800, Dmitry Torokhov:
+> >> On Sun, Jan 20, 2013 at 06:02:58PM +0300, Dan Carpenter wrote:
+> >> > This is calling list_del() inside a loop which is a problem when we try
+> >> > move to the next item on the list.  I've converted it to use the _safe
+> >> > version.  And also, as a cleanup, I've converted it to use
+> >> > list_for_each_entry instead of list_for_each.
+> >> >
+> >> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> >> > ---
+> >> > Static analysis stuff.  Untested.  Please review carefully.
+> >>
+> >> Makes sense to me.
+> >>
+> >> Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> >>
+> >
+> > No doubt, applied.
+> > Thanks,
+> I agree in cases – where we will have chances of parallel access and
+> modification to the linked we should use list_for_each_entry_safe()
+> But my point was related with this code change case in the patch.
+> We will have path like this:
+> f2fs_fill_super->recover_fsync_data->destroy_fsync_dnodes()
+> From this calling path – there can only be a single caller at any
+> given time. So, we will not have the case of having parallel access to
+> the list which is local to recover_fsync_data() and destroyed on exit
+> from this function.
+> From the real issue point of view – this does not looks convincing to
+> me why expensive _safe fucntion should used.
 
-..before calling select_idle_sibling() the second time to optimize
-department of redundancy department idle search algorithm ;-)
+The need for the safe version has nothing to do with parallelism.  It has
+to do with whether the loop deletes some of the elements in the list.
+The non-safe list mechanism uses the current element to get to the next
+element.  If the current element has been deleted, it cannot get to the
+next one.
 
--Mike
-
+julia
+--8323329-2084525288-1358764633=:1930--
