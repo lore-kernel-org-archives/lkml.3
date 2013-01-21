@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab3AUFlQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 00:41:16 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:55201 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab3AUFlO (ORCPT
+	id S1751625Ab3AUFnt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 00:43:49 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:38023 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab3AUFnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 00:41:14 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>
-Subject: Re: [PATCH] fat: eliminate iterations in fat_search_long in case of EOD
-References: <1358561990-8216-1-git-send-email-linkinjeon@gmail.com>
-	<87vcasxgre.fsf@devron.myhome.or.jp>
-	<CAKYAXd_DH+O4PKUsfQKVVXoi84Sm2f64A3+aESOgQb9JvX_e+w@mail.gmail.com>
-Date: Mon, 21 Jan 2013 14:41:09 +0900
-In-Reply-To: <CAKYAXd_DH+O4PKUsfQKVVXoi84Sm2f64A3+aESOgQb9JvX_e+w@mail.gmail.com>
-	(Namjae Jeon's message of "Mon, 21 Jan 2013 13:15:17 +0900")
-Message-ID: <87ip6rxfd6.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 21 Jan 2013 00:43:47 -0500
+Date: Mon, 21 Jan 2013 16:43:36 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Airlie <airlied@linux.ie>
+Subject: linux-next: manual merge of the akpm tree with the drm tree
+Message-Id: <20130121164336.9edf1179a8e5c91baea8571a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_Jan_2013_16_43_36_+1100_oWq4nSPXY2LvyxSy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+--Signature=_Mon__21_Jan_2013_16_43_36_+1100_oWq4nSPXY2LvyxSy
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 2013/1/20, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
->> Namjae Jeon <linkinjeon@gmail.com> writes:
->>
->>> From: Namjae Jeon <namjae.jeon@samsung.com>
->>>
->>> When searching a directory for names, we can stop checking for further
->>> entries if we detect End of Directory, i.e. if (de->name[0] == 0x00).The
->>> current code traverses the cluster chain of a directory until a hit is
->>> found or till the last cluster for that directory, ignoring the EOD mark.
->>> Fix this.
->>
->> f_pos still works fine after this change?
-> Hi OGAWA.
-> I can not find f_pos usage in fat_search_long function.
-> Maybe, Have you seen other function such as __fat_readdir ?
-> Let me know your opinion.
+Hi Andrew,
 
-Ah, I see. Only ->lookup. So, this makes behavior more strange.
-I.e. readdir() returns beyond 0, but lookup() can't find it?
+Today's linux-next merge of the akpm tree got a conflict in
+drivers/gpu/drm/drm_fb_helper.c between commit 848499032504 ("drm: add
+drm_modeset_lock|unlock_all") from the drm tree and commit
+"drivers/gpu/drm/drm_fb_helper.c: avoid sleeping in unblank_screen() if
+oops in progress" from the akpm tree.
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+I can't see an easy way to resolve these, so I just dropped the akpm tree
+patch.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__21_Jan_2013_16_43_36_+1100_oWq4nSPXY2LvyxSy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ/NWIAAoJEECxmPOUX5FESO4P/jOWQW1Rfm4vDN9GH9gGfy4p
+wLXyC+WPMbVLHIdb581Vg5fJA8h3pxukaUahWlCVcW1zh8RsW8DPYpH6LAUF/q9d
+7PRT3uXN+SbQcgfmU6cpi5IOv2/li3abV7fQ0d4L0+aYgv0oidutlY/qut8KQQtI
+inKDhV+jTP9zPNEAhKTEDq03cEIbcHRDwSeu6Che7SFjzWpaNsx8Wi1qnKvxVZl9
++RFih44eTQ3+WdVnjd5RHIVIYaQr57hocFVPiUHlbZA3FcEckRBk/zb1qK2JEhuG
+h3rdv98cYlkmjxZ9gW/70tGsmqlqhYw2SoP9BeYROVMFqqMFrK2CsL6r17wTKqxG
+WvOaUivx+e/5NQdQwbAt5GPwIEqbcTXd3wEG2BAXkXKHbBy31mCvaLCUUqvbMX1N
+TW4lMMvjK+KWuR16yapFA6+3KxU8WTBi+RYkx8SSc2poG1Q7WBFxGQgnPdqLqAfy
+DAAD/AmEfE0YwlR6Qq5t820OKhNlbbX0G7TyB8doflrW+SIXF0QkS0mqF2IGD03U
+VkLZBBXLkYJmpPyYfqKugvTyVLhm4/XF4VPwBo3q+2X0Ge1ae1Q4JlCk5xAqvlsS
+Mdc4Cs2ttFbWoqNh6hmYEbWHFZ+kpQ6orQ4gRsck7Wg6D1mHTYryT2bhF/Sws2xC
+VCslGmvZLr2fS0Mf0jYv
+=YtPi
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__21_Jan_2013_16_43_36_+1100_oWq4nSPXY2LvyxSy--
