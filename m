@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270Ab3AUTs1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 14:48:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53545 "EHLO mx1.redhat.com"
+	id S1756512Ab3AUTsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 14:48:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36206 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752887Ab3AUTs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 14:48:26 -0500
-Date: Mon, 21 Jan 2013 20:47:41 +0100
+	id S1752233Ab3AUTsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 14:48:45 -0500
+Date: Mon, 21 Jan 2013 20:48:00 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Dan Carpenter <dan.carpenter@oracle.com>,
@@ -19,9 +19,9 @@ Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         Tejun Heo <tj@kernel.org>, Roland McGrath <roland@hack.frob.com>,
         Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v3 1/3] ptrace: introduce signal_wake_up_state() and
-	ptrace_signal_wake_up()
-Message-ID: <20130121194741.GB18775@redhat.com>
+Subject: [PATCH v3 2/3] ptrace: ensure arch_ptrace/ptrace_request can never
+	race with SIGKILL
+Message-ID: <20130121194800.GC18775@redhat.com>
 References: <20130118175224.GA520@redhat.com> <CA+55aFyEsU-pkX557A-m+xoGkA_v+fXEyA8z8HbJ5J8K1jObeg@mail.gmail.com> <20130118185559.GA3773@redhat.com> <CA+55aFy=newnMbx53HipyWbRs2mUUPSqXXCpSfDLW78gkro37g@mail.gmail.com> <20130120192448.GA6771@redhat.com> <20130120192527.GC6771@redhat.com> <CA+55aFx1+hFSCa4nX80C30BkEOugXRvBZ=7LA+u+KOq_qSaJsg@mail.gmail.com> <20130121172151.GA4691@redhat.com> <CA+55aFwRkvEP5YJy+a=TFgDX==YuU7CJ+D_U+B2s4e1LX-nz3g@mail.gmail.com> <20130121194723.GA18775@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -32,128 +32,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup and preparation for the next change.
+putreg() assumes that the tracee is not running and pt_regs_access()
+can safely play with its stack. However a killed tracee can return
+from ptrace_stop() to the low-level asm code and do RESTORE_REST,
+this means that debugger can actually read/modify the kernel stack
+until the tracee does SAVE_REST again.
 
-signal_wake_up(resume => true) is overused. None of ptrace/jctl callers
-actually want to wakeup a TASK_WAKEKILL task, but they can't specify the
-necessary mask.
+set_task_blockstep() can race with SIGKILL too and in some sense
+this race is even worse, the very fact the tracee can be woken up
+breaks the logic.
 
-Turn signal_wake_up() into signal_wake_up_state(state), reintroduce
-signal_wake_up() as a trivial helper, and add ptrace_signal_wake_up()
-which adds __TASK_TRACED.
+As Linus suggested we can clear TASK_WAKEKILL around the arch_ptrace()
+call, this ensures that nobody can ever wakeup the tracee while the
+debugger looks at it. Not only this fixes the mentioned problems,
+we can do some cleanups/simplifications in arch_ptrace() paths.
 
-This way ptrace_signal_wake_up() can work "inside" ptrace_request()
-even if the tracee doesn't have the TASK_WAKEKILL bit set.
+Probably ptrace_unfreeze_traced() needs more callers, for example
+it makes sense to make the tracee killable for oom-killer before
+access_process_vm().
 
+While at it, add the comment into may_ptrace_stop() to explain why
+ptrace_stop() still can't rely on SIGKILL and signal_pending_state().
+
+Reported-by: Salman Qazi <sqazi@google.com>
+Reported-by: Suleiman Souhlal <suleiman@google.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- include/linux/sched.h |   11 ++++++++++-
- kernel/ptrace.c       |    8 ++++----
- kernel/signal.c       |   14 ++++----------
- 3 files changed, 18 insertions(+), 15 deletions(-)
+ arch/x86/kernel/step.c |    9 +++---
+ kernel/ptrace.c        |   64 ++++++++++++++++++++++++++++++++++++++++-------
+ kernel/signal.c        |    5 +++
+ 3 files changed, 64 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 206bb08..48b4151 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2713,7 +2713,16 @@ static inline void thread_group_cputime_init(struct signal_struct *sig)
- extern void recalc_sigpending_and_wake(struct task_struct *t);
- extern void recalc_sigpending(void);
- 
--extern void signal_wake_up(struct task_struct *t, int resume_stopped);
-+extern void signal_wake_up_state(struct task_struct *t, unsigned int state);
-+
-+static inline void signal_wake_up(struct task_struct *t, bool resume)
-+{
-+	signal_wake_up_state(t, resume ? TASK_WAKEKILL : 0);
-+}
-+static inline void ptrace_signal_wake_up(struct task_struct *t, bool resume)
-+{
-+	signal_wake_up_state(t, resume ? __TASK_TRACED : 0);
-+}
- 
- /*
-  * Wrappers for p->thread_info->cpu access. No-op on UP.
+diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
+index cd3b243..9b4d51d 100644
+--- a/arch/x86/kernel/step.c
++++ b/arch/x86/kernel/step.c
+@@ -165,10 +165,11 @@ void set_task_blockstep(struct task_struct *task, bool on)
+ 	 * Ensure irq/preemption can't change debugctl in between.
+ 	 * Note also that both TIF_BLOCKSTEP and debugctl should
+ 	 * be changed atomically wrt preemption.
+-	 * FIXME: this means that set/clear TIF_BLOCKSTEP is simply
+-	 * wrong if task != current, SIGKILL can wakeup the stopped
+-	 * tracee and set/clear can play with the running task, this
+-	 * can confuse the next __switch_to_xtra().
++	 *
++	 * NOTE: this means that set/clear TIF_BLOCKSTEP is only safe if
++	 * task is current or it can't be running, otherwise we can race
++	 * with __switch_to_xtra(). We rely on ptrace_freeze_traced() but
++	 * PTRACE_KILL is not safe.
+ 	 */
+ 	local_irq_disable();
+ 	debugctl = get_debugctlmsr();
 diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 612a561..62f7c27 100644
+index 62f7c27..b6c22b5 100644
 --- a/kernel/ptrace.c
 +++ b/kernel/ptrace.c
-@@ -117,7 +117,7 @@ void __ptrace_unlink(struct task_struct *child)
- 	 * TASK_KILLABLE sleeps.
- 	 */
- 	if (child->jobctl & JOBCTL_STOP_PENDING || task_is_traced(child))
--		signal_wake_up(child, task_is_traced(child));
-+		ptrace_signal_wake_up(child, true);
- 
+@@ -122,6 +122,40 @@ void __ptrace_unlink(struct task_struct *child)
  	spin_unlock(&child->sighand->siglock);
  }
-@@ -317,7 +317,7 @@ static int ptrace_attach(struct task_struct *task, long request,
+ 
++/* Ensure that nothing can wake it up, even SIGKILL */
++static bool ptrace_freeze_traced(struct task_struct *task)
++{
++	bool ret = false;
++
++	/* Lockless, nobody but us can set this flag */
++	if (task->jobctl & JOBCTL_LISTENING)
++		return ret;
++
++	spin_lock_irq(&task->sighand->siglock);
++	if (task_is_traced(task) && !__fatal_signal_pending(task)) {
++		task->state = __TASK_TRACED;
++		ret = true;
++	}
++	spin_unlock_irq(&task->sighand->siglock);
++
++	return ret;
++}
++
++static void ptrace_unfreeze_traced(struct task_struct *task)
++{
++	if (task->state != __TASK_TRACED)
++		return;
++
++	WARN_ON(!task->ptrace || task->parent != current);
++
++	spin_lock_irq(&task->sighand->siglock);
++	if (__fatal_signal_pending(task))
++		wake_up_state(task, __TASK_TRACED);
++	else
++		task->state = TASK_TRACED;
++	spin_unlock_irq(&task->sighand->siglock);
++}
++
+ /**
+  * ptrace_check_attach - check whether ptracee is ready for ptrace operation
+  * @child: ptracee to check for
+@@ -151,24 +185,29 @@ static int ptrace_check_attach(struct task_struct *child, bool ignore_state)
+ 	 * be changed by us so it's not changing right after this.
  	 */
- 	if (task_is_stopped(task) &&
- 	    task_set_jobctl_pending(task, JOBCTL_TRAP_STOP | JOBCTL_TRAPPING))
--		signal_wake_up(task, 1);
-+		signal_wake_up_state(task, __TASK_STOPPED);
- 
- 	spin_unlock(&task->sighand->siglock);
- 
-@@ -737,7 +737,7 @@ int ptrace_request(struct task_struct *child, long request,
- 		 * tracee into STOP.
+ 	read_lock(&tasklist_lock);
+-	if ((child->ptrace & PT_PTRACED) && child->parent == current) {
++	if (child->ptrace && child->parent == current) {
++		WARN_ON(child->state == __TASK_TRACED);
+ 		/*
+ 		 * child->sighand can't be NULL, release_task()
+ 		 * does ptrace_unlink() before __exit_signal().
  		 */
- 		if (likely(task_set_jobctl_pending(child, JOBCTL_TRAP_STOP)))
--			signal_wake_up(child, child->jobctl & JOBCTL_LISTENING);
-+			ptrace_signal_wake_up(child, child->jobctl & JOBCTL_LISTENING);
- 
- 		unlock_task_sighand(child, &flags);
- 		ret = 0;
-@@ -763,7 +763,7 @@ int ptrace_request(struct task_struct *child, long request,
- 			 * start of this trap and now.  Trigger re-trap.
- 			 */
- 			if (child->jobctl & JOBCTL_TRAP_NOTIFY)
--				signal_wake_up(child, true);
-+				ptrace_signal_wake_up(child, true);
+-		spin_lock_irq(&child->sighand->siglock);
+-		WARN_ON_ONCE(task_is_stopped(child));
+-		if (ignore_state || (task_is_traced(child) &&
+-				     !(child->jobctl & JOBCTL_LISTENING)))
++		if (ignore_state || ptrace_freeze_traced(child))
  			ret = 0;
- 		}
- 		unlock_task_sighand(child, &flags);
+-		spin_unlock_irq(&child->sighand->siglock);
+ 	}
+ 	read_unlock(&tasklist_lock);
+ 
+-	if (!ret && !ignore_state)
+-		ret = wait_task_inactive(child, TASK_TRACED) ? 0 : -ESRCH;
++	if (!ret && !ignore_state) {
++		if (!wait_task_inactive(child, __TASK_TRACED)) {
++			/*
++			 * This can only happen if may_ptrace_stop() fails and
++			 * ptrace_stop() changes ->state back to TASK_RUNNING,
++			 * so we should not worry about leaking __TASK_TRACED.
++			 */
++			WARN_ON(child->state == __TASK_TRACED);
++			ret = -ESRCH;
++		}
++	}
+ 
+-	/* All systems go.. */
+ 	return ret;
+ }
+ 
+@@ -900,6 +939,8 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, unsigned long, addr,
+ 		goto out_put_task_struct;
+ 
+ 	ret = arch_ptrace(child, request, addr, data);
++	if (request != PTRACE_DETACH)
++		ptrace_unfreeze_traced(child);
+ 
+  out_put_task_struct:
+ 	put_task_struct(child);
+@@ -1039,8 +1080,11 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+ 
+ 	ret = ptrace_check_attach(child, request == PTRACE_KILL ||
+ 				  request == PTRACE_INTERRUPT);
+-	if (!ret)
++	if (!ret) {
+ 		ret = compat_arch_ptrace(child, request, addr, data);
++		if (request != PTRACE_DETACH)
++			ptrace_unfreeze_traced(child);
++	}
+ 
+  out_put_task_struct:
+ 	put_task_struct(child);
 diff --git a/kernel/signal.c b/kernel/signal.c
-index 372771e..2bf2731 100644
+index 2bf2731..980bcf3 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
-@@ -680,23 +680,17 @@ int dequeue_signal(struct task_struct *tsk, sigset_t *mask, siginfo_t *info)
-  * No need to set need_resched since signal event passing
-  * goes through ->blocked
-  */
--void signal_wake_up(struct task_struct *t, int resume)
-+void signal_wake_up_state(struct task_struct *t, unsigned int state)
- {
--	unsigned int mask;
--
- 	set_tsk_thread_flag(t, TIF_SIGPENDING);
--
- 	/*
--	 * For SIGKILL, we want to wake it up in the stopped/traced/killable
-+	 * TASK_WAKEKILL also means wake it up in the stopped/traced/killable
- 	 * case. We don't check t->state here because there is a race with it
- 	 * executing another processor and just now entering stopped state.
- 	 * By using wake_up_state, we ensure the process will wake up and
- 	 * handle its death signal.
+@@ -1794,6 +1794,10 @@ static inline int may_ptrace_stop(void)
+ 	 * If SIGKILL was already sent before the caller unlocked
+ 	 * ->siglock we must see ->core_state != NULL. Otherwise it
+ 	 * is safe to enter schedule().
++	 *
++	 * This is almost outdated, a task with the pending SIGKILL can't
++	 * block in TASK_TRACED. But PTRACE_EVENT_EXIT can be reported
++	 * after SIGKILL was already dequeued.
  	 */
--	mask = TASK_INTERRUPTIBLE;
--	if (resume)
--		mask |= TASK_WAKEKILL;
--	if (!wake_up_state(t, mask))
-+	if (!wake_up_state(t, state | TASK_INTERRUPTIBLE))
- 		kick_process(t);
- }
+ 	if (unlikely(current->mm->core_state) &&
+ 	    unlikely(current->mm == current->parent->mm))
+@@ -1919,6 +1923,7 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
+ 		if (gstop_done)
+ 			do_notify_parent_cldstop(current, false, why);
  
-@@ -844,7 +838,7 @@ static void ptrace_trap_notify(struct task_struct *t)
- 	assert_spin_locked(&t->sighand->siglock);
- 
- 	task_set_jobctl_pending(t, JOBCTL_TRAP_NOTIFY);
--	signal_wake_up(t, t->jobctl & JOBCTL_LISTENING);
-+	ptrace_signal_wake_up(t, t->jobctl & JOBCTL_LISTENING);
- }
- 
- /*
++		/* tasklist protects us from ptrace_freeze_traced() */
+ 		__set_current_state(TASK_RUNNING);
+ 		if (clear_code)
+ 			current->exit_code = 0;
 -- 
 1.5.5.1
 
