@@ -1,173 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab3AUKW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:22:56 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:65365 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab3AUKWy (ORCPT
+	id S1752694Ab3AUK0m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:26:42 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:47825 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874Ab3AUK0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:22:54 -0500
+	Mon, 21 Jan 2013 05:26:41 -0500
+Date: Mon, 21 Jan 2013 02:26:38 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH 01/33] lib: devres: Introduce devm_ioremap_resource()
+Message-ID: <20130121102638.GA13784@core.coreip.homeip.net>
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
+ <1358762966-20791-2-git-send-email-thierry.reding@avionic-design.de>
 MIME-Version: 1.0
-In-Reply-To: <201301211101.10562.hverkuil@xs4all.nl>
-References: <1358236853-2467-1-git-send-email-prabhakar.lad@ti.com> <201301211101.10562.hverkuil@xs4all.nl>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Mon, 21 Jan 2013 15:52:32 +0530
-Message-ID: <CA+V-a8uoHP_m2MMfTvgkuMNtEJe28Df94izyfmNxNDzSA2o6jQ@mail.gmail.com>
-Subject: Re: [PATCH] media: adv7343: accept configuration through platform data
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358762966-20791-2-git-send-email-thierry.reding@avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+On Mon, Jan 21, 2013 at 11:08:54AM +0100, Thierry Reding wrote:
+> The devm_request_and_ioremap() function is very useful and helps avoid a
+> whole lot of boilerplate. However, one issue that keeps popping up is
+> its lack of a specific error code to determine which of the steps that
+> it performs failed. Furthermore, while the function gives an example and
+> suggests what error code to return on failure, a wide variety of error
+> codes are used throughout the tree.
+> 
+> In an attempt to fix these problems, this patch adds a new function that
+> drivers can transition to. The devm_ioremap_resource() returns a pointer
+> to the remapped I/O memory on success or an ERR_PTR() encoded error code
+> on failure. Callers can check for failure using IS_ERR() and determine
+> its cause by extracting the error code using PTR_ERR().
+> 
+> devm_request_and_ioremap() is implemented as a wrapper around the new
+> API and return NULL on failure as before. This ensures that backwards
+> compatibility is maintained until all users have been converted to the
+> new API, at which point the old devm_request_and_ioremap() function
+> should be removed. To help prevent new users from being added in the
+> meantime, devm_request_and_ioremap() is marked __deprecated.
+> 
+> A semantic patch is included which can be used to convert from the old
+> devm_request_and_ioremap() API to the new devm_ioremap_resource() API.
+> Some non-trivial cases may require manual intervention, though.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-Thanks for the review!
+This looks good to me.
 
-On Mon, Jan 21, 2013 at 3:31 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> On Tue January 15 2013 09:00:53 Lad, Prabhakar wrote:
->> The current code was implemented with some default configurations,
->> this default configuration works on board and doesn't work on other.
->>
->> This patch accepts the configuration through platform data and configures
->> the encoder depending on the data set.
->
-> Just one small comment...
->
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
->> ---
->>  drivers/media/i2c/adv7343.c |   36 +++++++++++++++++++++++++++++++-----
->>  include/media/adv7343.h     |   32 ++++++++++++++++++++++++++++++++
->>  2 files changed, 63 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/media/i2c/adv7343.c b/drivers/media/i2c/adv7343.c
->> index 2b5aa67..a058058 100644
->> --- a/drivers/media/i2c/adv7343.c
->> +++ b/drivers/media/i2c/adv7343.c
->> @@ -43,6 +43,7 @@ MODULE_PARM_DESC(debug, "Debug level 0-1");
->>  struct adv7343_state {
->>       struct v4l2_subdev sd;
->>       struct v4l2_ctrl_handler hdl;
->> +     const struct adv7343_platform_data *pdata;
->>       u8 reg00;
->>       u8 reg01;
->>       u8 reg02;
->> @@ -215,12 +216,23 @@ static int adv7343_setoutput(struct v4l2_subdev *sd, u32 output_type)
->>       /* Enable Appropriate DAC */
->>       val = state->reg00 & 0x03;
->>
->> -     if (output_type == ADV7343_COMPOSITE_ID)
->> -             val |= ADV7343_COMPOSITE_POWER_VALUE;
->> -     else if (output_type == ADV7343_COMPONENT_ID)
->> -             val |= ADV7343_COMPONENT_POWER_VALUE;
->> +     /* configure default configuration */
->> +     if (!state->pdata)
->> +             if (output_type == ADV7343_COMPOSITE_ID)
->> +                     val |= ADV7343_COMPOSITE_POWER_VALUE;
->> +             else if (output_type == ADV7343_COMPONENT_ID)
->> +                     val |= ADV7343_COMPONENT_POWER_VALUE;
->> +             else
->> +                     val |= ADV7343_SVIDEO_POWER_VALUE;
->>       else
->> -             val |= ADV7343_SVIDEO_POWER_VALUE;
->> +             val = state->pdata->mode_config.sleep_mode << 0 |
->> +                   state->pdata->mode_config.pll_control << 1 |
->> +                   state->pdata->mode_config.dac_3 << 2 |
->> +                   state->pdata->mode_config.dac_2 << 3 |
->> +                   state->pdata->mode_config.dac_1 << 4 |
->> +                   state->pdata->mode_config.dac_6 << 5 |
->> +                   state->pdata->mode_config.dac_5 << 6 |
->> +                   state->pdata->mode_config.dac_4 << 7;
->>
->>       err = adv7343_write(sd, ADV7343_POWER_MODE_REG, val);
->>       if (err < 0)
->> @@ -238,6 +250,17 @@ static int adv7343_setoutput(struct v4l2_subdev *sd, u32 output_type)
->>
->>       /* configure SD DAC Output 2 and SD DAC Output 1 bit to zero */
->>       val = state->reg82 & (SD_DAC_1_DI & SD_DAC_2_DI);
->> +
->> +     if (state->pdata && state->pdata->sd_config.sd_dac_out1)
->> +             val = val | (state->pdata->sd_config.sd_dac_out1 << 1);
->> +     else if (state->pdata && !state->pdata->sd_config.sd_dac_out1)
->> +             val = val & ~(state->pdata->sd_config.sd_dac_out1 << 1);
->> +
->> +     if (state->pdata && state->pdata->sd_config.sd_dac_out2)
->> +             val = val | (state->pdata->sd_config.sd_dac_out2 << 2);
->> +     else if (state->pdata && !state->pdata->sd_config.sd_dac_out2)
->> +             val = val & ~(state->pdata->sd_config.sd_dac_out2 << 2);
->> +
->>       err = adv7343_write(sd, ADV7343_SD_MODE_REG2, val);
->>       if (err < 0)
->>               goto setoutput_exit;
->> @@ -401,6 +424,9 @@ static int adv7343_probe(struct i2c_client *client,
->>       if (state == NULL)
->>               return -ENOMEM;
->>
->> +     /* Copy board specific information here */
->> +     state->pdata = client->dev.platform_data;
->> +
->>       state->reg00    = 0x80;
->>       state->reg01    = 0x00;
->>       state->reg02    = 0x20;
->> diff --git a/include/media/adv7343.h b/include/media/adv7343.h
->> index d6f8a4e..8086e46 100644
->> --- a/include/media/adv7343.h
->> +++ b/include/media/adv7343.h
->> @@ -20,4 +20,36 @@
->>  #define ADV7343_COMPONENT_ID (1)
->>  #define ADV7343_SVIDEO_ID    (2)
->>
->> +struct adv7343_power_mode {
->> +     bool sleep_mode;
->> +     bool pll_control;
->> +     bool dac_1;
->> +     bool dac_2;
->> +     bool dac_3;
->> +     bool dac_4;
->> +     bool dac_5;
->> +     bool dac_6;
->> +};
->
-> Can you add a short description for struct adv7343_power_mode? It's
-> sufficient to point to the relevant section in the datasheet (add a url
-> or something like that).
->
-Ok I'll do the needy. and respin v2.
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-Regards,
---Prabhakar
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  Documentation/driver-model/devres.txt              |  3 +-
+>  include/linux/device.h                             |  3 +-
+>  lib/devres.c                                       | 57 ++++++++++----
+>  scripts/coccinelle/api/devm_ioremap_resource.cocci | 90 ++++++++++++++++++++++
+>  4 files changed, 138 insertions(+), 15 deletions(-)
+>  create mode 100644 scripts/coccinelle/api/devm_ioremap_resource.cocci
+> 
+> diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+> index 43cff70..25240fc 100644
+> --- a/Documentation/driver-model/devres.txt
+> +++ b/Documentation/driver-model/devres.txt
+> @@ -266,7 +266,8 @@ IOMAP
+>    devm_ioremap()
+>    devm_ioremap_nocache()
+>    devm_iounmap()
+> -  devm_request_and_ioremap() : checks resource, requests region, ioremaps
+> +  devm_ioremap_resource() : checks resource, requests memory region, ioremaps
+> +  devm_request_and_ioremap() : obsoleted by devm_ioremap_resource()
+>    pcim_iomap()
+>    pcim_iounmap()
+>    pcim_iomap_table()	: array of mapped addresses indexed by BAR
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index 43dcda9..558c405 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -573,8 +573,9 @@ extern int devres_release_group(struct device *dev, void *id);
+>  extern void *devm_kzalloc(struct device *dev, size_t size, gfp_t gfp);
+>  extern void devm_kfree(struct device *dev, void *p);
+>  
+> +void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
+>  void __iomem *devm_request_and_ioremap(struct device *dev,
+> -			struct resource *res);
+> +			struct resource *res) __deprecated;
+>  
+>  struct device_dma_parameters {
+>  	/*
+> diff --git a/lib/devres.c b/lib/devres.c
+> index 80b9c76..9c76b3a 100644
+> --- a/lib/devres.c
+> +++ b/lib/devres.c
+> @@ -86,22 +86,24 @@ void devm_iounmap(struct device *dev, void __iomem *addr)
+>  EXPORT_SYMBOL(devm_iounmap);
+>  
+>  /**
+> - * devm_request_and_ioremap() - Check, request region, and ioremap resource
+> - * @dev: Generic device to handle the resource for
+> + * devm_ioremap_resource() - check, request region, and ioremap resource
+> + * @dev: generic device to handle the resource for
+>   * @res: resource to be handled
+>   *
+> - * Takes all necessary steps to ioremap a mem resource. Uses managed device, so
+> - * everything is undone on driver detach. Checks arguments, so you can feed
+> - * it the result from e.g. platform_get_resource() directly. Returns the
+> - * remapped pointer or NULL on error. Usage example:
+> + * Checks that a resource is a valid memory region, requests the memory region
+> + * and ioremaps it either as cacheable or as non-cacheable memory depending on
+> + * the resource's flags. All operations are managed and will be undone on
+> + * driver detach.
+> + *
+> + * Returns a pointer to the remapped memory or an ERR_PTR() encoded error code
+> + * on failure. Usage example:
+>   *
+>   *	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> - *	base = devm_request_and_ioremap(&pdev->dev, res);
+> - *	if (!base)
+> - *		return -EADDRNOTAVAIL;
+> + *	base = devm_ioremap_resource(&pdev->dev, res);
+> + *	if (IS_ERR(base))
+> + *		return PTR_ERR(base);
+>   */
+> -void __iomem *devm_request_and_ioremap(struct device *dev,
+> -			struct resource *res)
+> +void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res)
+>  {
+>  	resource_size_t size;
+>  	const char *name;
+> @@ -111,7 +113,7 @@ void __iomem *devm_request_and_ioremap(struct device *dev,
+>  
+>  	if (!res || resource_type(res) != IORESOURCE_MEM) {
+>  		dev_err(dev, "invalid resource\n");
+> -		return NULL;
+> +		return ERR_PTR(-EINVAL);
+>  	}
+>  
+>  	size = resource_size(res);
+> @@ -119,7 +121,7 @@ void __iomem *devm_request_and_ioremap(struct device *dev,
+>  
+>  	if (!devm_request_mem_region(dev, res->start, size, name)) {
+>  		dev_err(dev, "can't request region for resource %pR\n", res);
+> -		return NULL;
+> +		return ERR_PTR(-EBUSY);
+>  	}
+>  
+>  	if (res->flags & IORESOURCE_CACHEABLE)
+> @@ -130,10 +132,39 @@ void __iomem *devm_request_and_ioremap(struct device *dev,
+>  	if (!dest_ptr) {
+>  		dev_err(dev, "ioremap failed for resource %pR\n", res);
+>  		devm_release_mem_region(dev, res->start, size);
+> +		dest_ptr = ERR_PTR(-ENOMEM);
+>  	}
+>  
+>  	return dest_ptr;
+>  }
+> +EXPORT_SYMBOL(devm_ioremap_resource);
+> +
+> +/**
+> + * devm_request_and_ioremap() - Check, request region, and ioremap resource
+> + * @dev: Generic device to handle the resource for
+> + * @res: resource to be handled
+> + *
+> + * Takes all necessary steps to ioremap a mem resource. Uses managed device, so
+> + * everything is undone on driver detach. Checks arguments, so you can feed
+> + * it the result from e.g. platform_get_resource() directly. Returns the
+> + * remapped pointer or NULL on error. Usage example:
+> + *
+> + *	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> + *	base = devm_request_and_ioremap(&pdev->dev, res);
+> + *	if (!base)
+> + *		return -EADDRNOTAVAIL;
+> + */
+> +void __iomem *devm_request_and_ioremap(struct device *device,
+> +				       struct resource *res)
+> +{
+> +	void __iomem *dest_ptr;
+> +
+> +	dest_ptr = devm_ioremap_resource(device, res);
+> +	if (IS_ERR(dest_ptr))
+> +		return NULL;
+> +
+> +	return dest_ptr;
+> +}
+>  EXPORT_SYMBOL(devm_request_and_ioremap);
+>  
+>  #ifdef CONFIG_HAS_IOPORT
+> diff --git a/scripts/coccinelle/api/devm_ioremap_resource.cocci b/scripts/coccinelle/api/devm_ioremap_resource.cocci
+> new file mode 100644
+> index 0000000..495daa3
+> --- /dev/null
+> +++ b/scripts/coccinelle/api/devm_ioremap_resource.cocci
+> @@ -0,0 +1,90 @@
+> +virtual patch
+> +virtual report
+> +
+> +@depends on patch@
+> +expression base, dev, res;
+> +@@
+> +
+> +-base = devm_request_and_ioremap(dev, res);
+> ++base = devm_ioremap_resource(dev, res);
+> + ...
+> + if (
+> +-base == NULL
+> ++IS_ERR(base)
+> + || ...) {
+> +<...
+> +-	return ...;
+> ++	return PTR_ERR(base);
+> +...>
+> + }
+> +
+> +@depends on patch@
+> +expression e, E, ret;
+> +identifier l;
+> +@@
+> +
+> + e = devm_ioremap_resource(...);
+> + ...
+> + if (IS_ERR(e) || ...) {
+> + 	... when any
+> +-	ret = E;
+> ++	ret = PTR_ERR(e);
+> + 	...
+> +(
+> + 	return ret;
+> +|
+> + 	goto l;
+> +)
+> + }
+> +
+> +@depends on patch@
+> +expression e;
+> +@@
+> +
+> + e = devm_ioremap_resource(...);
+> + ...
+> + if (IS_ERR(e) || ...) {
+> + 	...
+> +-	\(dev_dbg\|dev_err\|pr_debug\|pr_err\|DRM_ERROR\)(...);
+> + 	...
+> + }
+> +
+> +@depends on patch@
+> +expression e;
+> +identifier l;
+> +@@
+> +
+> + e = devm_ioremap_resource(...);
+> + ...
+> + if (IS_ERR(e) || ...)
+> +-{
+> +(
+> + 	return ...;
+> +|
+> + 	goto l;
+> +)
+> +-}
+> +
+> +@r depends on report@
+> +expression e;
+> +identifier l;
+> +position p1;
+> +@@
+> +
+> +*e = devm_request_and_ioremap@p1(...);
+> + ...
+> + if (e == NULL || ...) {
+> + 	...
+> +(
+> + 	return ...;
+> +|
+> + 	goto l;
+> +)
+> + }
+> +
+> +@script:python depends on r@
+> +p1 << r.p1;
+> +@@
+> +
+> +msg = "ERROR: deprecated devm_request_and_ioremap() API used on line %s" % (p1[0].line)
+> +coccilib.report.print_report(p1[0], msg)
+> -- 
+> 1.8.1.1
+> 
 
-> Regards,
->
->         Hans
->
->> +
->> +/**
->> + * struct adv7343_sd_config - SD Only Output Configuration.
->> + * @sd_dac_out1: Configure SD DAC Output 1.
->> + * @sd_dac_out2: Configure SD DAC Output 2.
->> + */
->> +struct adv7343_sd_config {
->> +     /* SD only Output Configuration */
->> +     bool sd_dac_out1;
->> +     bool sd_dac_out2;
->> +};
->> +
->> +/**
->> + * struct adv7343_platform_data - Platform data values and access functions.
->> + * @mode_config: Configuration for power mode.
->> + * @sd_config: SD Only Configuration.
->> + */
->> +struct adv7343_platform_data {
->> +     struct adv7343_power_mode mode_config;
->> +     struct adv7343_sd_config sd_config;
->> +};
->> +
->>  #endif                               /* End of #ifndef ADV7343_H */
->>
+-- 
+Dmitry
