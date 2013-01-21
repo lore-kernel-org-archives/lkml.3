@@ -1,193 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab3AUO2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 09:28:48 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:64336 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab3AUO2p (ORCPT
+	id S1755805Ab3AUO3p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 09:29:45 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:51503 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497Ab3AUO3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 09:28:45 -0500
+	Mon, 21 Jan 2013 09:29:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: Re: [PATCH v2 69/76] ARC: [Review] Multi-platform image #2: Board callback Infrastructure
+Date: Mon, 21 Jan 2013 14:29:37 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <201301181505.10350.arnd@arndb.de> <50FD4C47.8080805@synopsys.com>
+In-Reply-To: <50FD4C47.8080805@synopsys.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130121140738.GI5588@quack.suse.cz>
-References: <CA+icZUWOvk5i+XY22xdZYuxu=Vy3fG2QxJStEgNFQVS4u55y-w@mail.gmail.com>
-	<CA+icZUUzNYE9QAh_p7=ZNuvZbxRPCb9zd4k7+aW-hv34mQWz=A@mail.gmail.com>
-	<20130121104733.GE5588@quack.suse.cz>
-	<CA+icZUVy-=jJkRsEKmX+ZGRjiGr4wwp3pqdxuLCRHeqW_H0x9Q@mail.gmail.com>
-	<CA+icZUVAP4ArN+j34GTUwMxte5DtLPJSrLmK9T6Na8Qy+aM0Rg@mail.gmail.com>
-	<20130121140738.GI5588@quack.suse.cz>
-Date: Mon, 21 Jan 2013 15:28:44 +0100
-Message-ID: <CA+icZUVya4cYGcmX=YeOKZNhXpgEBioDFp8o1Q=TKWmKEvFm6Q@mail.gmail.com>
-Subject: Re: jbd2: don't wake kjournald unnecessarily
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Eric Sandeen <sandeen@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301211429.38119.arnd@arndb.de>
+X-Provags-ID: V02:K0:QW0HYKm/aKSkGdfIhg4loXKxF7SP/ikrKaZZTMvKUJs
+ EaFyFFwkH1fZqUojy1OGuPoLVbqSFwrf5nKvlLBtQ59dZ0l1BG
+ kxJF1LSga1h7aNXpVefJpdUyqLd8qckskufrD4E/h2ZCXrCPop
+ 89pSgA669zgHiDEKV8K75ICjlZvgP9qlhFkIf126jVIzYoTqUB
+ 3tqcdWCAqFqQUSt06+FqxRhjUw3eOKX1Pm/uTXu1QMmfwERPK5
+ LJ1IFMy1bQBbWZcSHf1xJ8gv2qeY1ae0FOL3qChb6IRamslk0o
+ zz4nXj+RE3n3Jn2QPPWaSu2WNQwNd4fZtbos2hd3dniMtRBMAe
+ 9UtS0CzbDQg8ucDqc2gQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 3:07 PM, Jan Kara <jack@suse.cz> wrote:
-> On Mon 21-01-13 13:30:26, Sedat Dilek wrote:
->> On Mon, Jan 21, 2013 at 12:40 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> > On Mon, Jan 21, 2013 at 11:47 AM, Jan Kara <jack@suse.cz> wrote:
->> >>   The traces don't suggest an ext4/jbd2 problem. What is happening is that
->> >> jbd2 is waiting for IO to finish and that never happens. Seeing that you
->> >> loop device I'd think it's some interaction of the loop device and
->> >> freezing. Can you reproduce the issue without the loop device (i.e. with
->> >> the filesystem directly on e.g. scsi disk)? I suspect the reason is
->> >> something like that the backing filesystem is already frozen so filesystem
->> >> on top of it cannot write all the data and hangs waiting for IO -> suspend
->> >> doesn't happen. Contents of /proc/mounts and losetup -l would help us
->> >> understand what's going on.
->> >>
->> >
->> > As said I am here in a very uncommon WUBI environment means my
->> > Ubuntu/precise rootfs-image lays on the Win7-partition (NTFS).
->> > Your explanation sounds reasonable to me as this line from my attached
->> > testcase causes the troubles.
->> >
->> >      echo mem > /sys/power/state && sleep 1
->> >
->> > So, /sys/ is not writable immediately after freezer ends
->> >
->> > I checked again and again my logs and have seen "starving" lines
->> > reported by rtkit-daemon, but did not really get wiser what they want
->> > to tell me. Stopping rtkit-daemon or resetting all or all-known
->> > threads before running my pm_test/freezer did not help, too.
->> >
->> > /usr/sbin/rtkitctl --help
->> > rtkitctl [options]
->> >
->> >   -h, --help         Show this help
->> >       --version      Show version
->> >
->> >       --reset-known  Reset real-time status of known threads
->> >       --reset-all    Reset real-time status of all threads
->> >       --start        Start RealtimeKit if it is not running already
->> >   -k, --exit         Terminate running RealtimeKit daemon
->> >
->> > Here are the outputs you wanted with some more (fstab, grub-config) etc.
->> > I have here no -l option for losetup command.
->> >
->> >
->> > - Sedat -
->> >
->> > P.S.: Outputs for Honza...
->> >
->> > $ sudo cat /proc/mounts
->> > rootfs / rootfs rw 0 0
->> > sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
->> > proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
->> > udev /dev devtmpfs rw,relatime,size=1966948k,nr_inodes=491737,mode=755 0 0
->> > devpts /dev/pts devpts rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0
->> > tmpfs /run tmpfs rw,nosuid,relatime,size=788076k,mode=755 0 0
->> > /dev/sda2 /host fuseblk
->> > rw,nosuid,nodev,relatime,user_id=0,group_id=0,allow_other,blksize=4096
->> > 0 0
->> > /dev/loop0 / ext4 rw,relatime,errors=remount-ro,data=ordered 0 0
->> > none /sys/fs/fuse/connections fusectl rw,relatime 0 0
->> > none /sys/kernel/debug debugfs rw,relatime 0 0
->> > none /sys/kernel/security securityfs rw,relatime 0 0
->> > none /run/lock tmpfs rw,nosuid,nodev,noexec,relatime,size=5120k 0 0
->> > none /run/shm tmpfs rw,nosuid,nodev,relatime 0 0
->> > gvfs-fuse-daemon /home/wearefam/.gvfs fuse.gvfs-fuse-daemon
->> > rw,nosuid,nodev,relatime,user_id=1000,group_id=1000 0 0
->> >
->> > $ sudo losetup --all --verbose
->> > /dev/loop0: [0802]:17982 (/host/ubuntu/disks/root.disk)
->> >
->> > $ sudo losetup --find --verbose
->> > Loop device is /dev/loop1
->> > /dev/loop1
->> >
->> >  [ /etc/fstab ]
->> > # /etc/fstab: static file system information.
->> >
->> > # Use 'blkid' to print the universally unique identifier for a
->> > # device; this may be used with UUID= as a more robust way to name devices
->> > # that works even if disks are added and removed. See fstab(5).
->> >
->> > # <file system>                 <mount point>   <type>  <options>
->> >          <dump>  <pass>
->> > proc                            /proc           proc
->> > nodev,noexec,nosuid     0       0
->> > /host/ubuntu/disks/root.disk    /               ext4
->> > loop,errors=remount-ro  0       1
->> > /host/ubuntu/disks/swap.disk    none            swap    loop,sw
->> >          0       0
->> > - EOF -
->> >
->> > [ /boot/grub/grub.cfg ]
->> > ...
->> > menuentry 'Ubuntu, mit Linux 3.8.0-rc4-next20130121-1-iniza-generic'
->> > --class ubuntu --class gnu-linux --class gnu --class os {
->> >         set gfxpayload=$linux_gfx_mode
->> >         insmod part_msdos
->> >         insmod ntfs
->> >         set root='(hd0,msdos2)'
->> >         search --no-floppy --fs-uuid --set=root 001AADA61AAD9964
->> >         loopback loop0 /ubuntu/disks/root.disk
->> >         set root=(loop0)
->> >         linux   /boot/vmlinuz-3.8.0-rc4-next20130121-1-iniza-generic
->> > root=UUID=001AADA61AAD9964 loop=/ubuntu/disks/root.disk ro
->> >         initrd  /boot/initrd.img-3.8.0-rc4-next20130121-1-iniza-generic
->> > }
->> > ...
->> >
->>
->> Here some more useful outputs:
->>
->> $ LC_ALL=C df -h -T
->> Filesystem     Type      Size  Used Avail Use% Mounted on
->> rootfs         rootfs     17G   15G  1.5G  92% /
->> udev           devtmpfs  1.9G   12K  1.9G   1% /dev
->> tmpfs          tmpfs     770M  892K  769M   1% /run
->> /dev/sda2      fuseblk   444G   81G  364G  19% /host
->> /dev/loop0     ext4       17G   15G  1.5G  92% /
->> none           tmpfs     5.0M     0  5.0M   0% /run/lock
->> none           tmpfs     1.9G  260K  1.9G   1% /run/shm
->>
->> $ sudo LC_ALL=C fdisk -l /dev/sda
->>
->> Disk /dev/sda: 500.1 GB, 500107862016 bytes
->> 255 heads, 63 sectors/track, 60801 cylinders, total 976773168 sectors
->> Units = sectors of 1 * 512 = 512 bytes
->> Sector size (logical/physical): 512 bytes / 4096 bytes
->> I/O size (minimum/optimal): 4096 bytes / 4096 bytes
->> Disk identifier: 0xcb9885ab
->>
->>    Device Boot      Start         End      Blocks   Id  System
->> /dev/sda1   *        2048      206847      102400    7  HPFS/NTFS/exFAT
->> /dev/sda2          206848   931299327   465546240    7  HPFS/NTFS/exFAT
->> /dev/sda3       931299328   976773119    22736896   27  Hidden NTFS WinRE
->>
->> I am still reflecting on any shitty userspace app is causing all the
->> trouble, but I have zero clue how to dig that...
->   Well, I think the outputs make it pretty clear. /dev/loop0 is a mounted
-> image from fuse filesystem. Fuse daemon making filesystem accessible gets
-> frozen before /dev/loop0 gets fully written out and so jbd2 journal thread
-> hangs. Maybe Miklos (added to CC) could fill in some details / ideas but I
-> think the setup like you have never really worked...
->
+On Monday 21 January 2013, Vineet Gupta wrote:
+> OK - I'll make a note. BTW init_time was a recent addition, the reason being it's
+> timing. For registering a clocksource, init_irq and init_smp are too early
+> (timekeeping not yet up) while init_machine (arch initcall) seemed too late - but
+> thinking again, it could well be done in there. I need to check with the relevant
+> platform folks.
 
-Thank you for the explanations.
-Before doing some patches for Linux Test Project and replying to
-LLVMLinux I was reflecting about FUSE when saw the 'df -h -T' line.
-You might be right, that pm_test/freezer could never be OK here.
-I wantend to test against Linux v3.8-rc4 to be sure.
-Anyway, thanks for sharing your thoughts with me!
+For linux-3.9, we're adding support to drivers/clocksource to keep the individual
+clocksource drivers separate from the platform (on ARM). If you follow the same
+model, you can just call the global clocksource init function from arch code
+and it will find the right timer from the device tree, rather than having
+to list it per platform.
 
-Let's see what Miklos says...
+> > It probably makese sense for you to keep the above structure
+> > for now, but you can also think about obsoleting some
+> > of the calls in the future. It may be a good idea to have
+> > a default version for each of these but still allow overriding
+> > them for maximum flexibility in the platform.
+> 
+> IMHO the default has to be NULL, unless the platform has a quirk. It would be
+> cleaner (and easier to read) if any default was factored out into ARC common code.
 
-Regards,
-- Sedat -
+Yes, that's what I meant.
 
->                                                                 Honza
-> --
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+	Arnd
