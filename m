@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab3AUVpu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 16:45:50 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:58721 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab3AUVps (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 16:45:48 -0500
-Message-ID: <50FDB6FE.7010601@mvista.com>
-Date: Tue, 22 Jan 2013 01:45:34 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Felipe Balbi <balbi@ti.com>, kernel-janitors@vger.kernel.org,
+	id S1753033Ab3AUVrj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 16:47:39 -0500
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:52901
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752165Ab3AUVri convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 16:47:38 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI9371Id6eah542Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1155h)
+X-WSS-ID: 0MGZWJ4-02-46V-02
+X-M-MSG: 
+From: "Kinney, Steven" <Steven.Kinney@amd.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/15] drivers/usb/musb/omap2430.c: adjust duplicate test
-References: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr> <1358773378-4700-14-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1358773378-4700-14-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Myron Stowe <myron.stowe@redhat.com>, Hiroshi DOYU <hdoyu@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Jiri Kosina <jkosina@suse.cz>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Renninger <trenn@suse.de>, Andi Kleen <ak@linux.intel.com>
+Subject: RE: [PATCH 2/3] AMD IOMMUv2 PC resource management hooks
+Thread-Topic: [PATCH 2/3] AMD IOMMUv2 PC resource management hooks
+Thread-Index: AQHN+BTe2RleD7oETU2JWWt2TEs+9ZhUsf4A//+fDOA=
+Date: Mon, 21 Jan 2013 21:47:30 +0000
+Message-ID: <57D41218901B4442B4AFF404D21591163B9FAD@sausexdag02.amd.com>
+References: <1358799658-6236-1-git-send-email-steven.kinney@amd.com>
+ <1358799658-6236-3-git-send-email-steven.kinney@amd.com>
+ <20130121213218.GI25252@moon>
+In-Reply-To: <20130121213218.GI25252@moon>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.236.70.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21-01-2013 17:02, Julia Lawall wrote:
+Hi Cyrill,
 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+                 Agree, will clean this up.
 
-> Delete successive tests to the same location.  Data is the just previously
-> allocated and tested value.  Test the result of the allocation made here
-> instead.
+Thanks
 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
+-----Original Message-----
+From: Cyrill Gorcunov [mailto:gorcunov@gmail.com] On Behalf Of Cyrill Gorcunov
+Sent: Monday, January 21, 2013 3:32 PM
+To: Kinney, Steven
+Cc: Thomas Gleixner; Ingo Molnar; H. Peter Anvin; x86@kernel.org; Joerg Roedel; Bjorn Helgaas; Greg Kroah-Hartman; Sebastian Andrzej Siewior; Myron Stowe; Hiroshi DOYU; Stephen Warren; Jiri Kosina; Kukjin Kim; linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org; Peter Zijlstra; Paul Mackerras; Arnaldo Carvalho de Melo; Thomas Renninger; Andi Kleen
+Subject: Re: [PATCH 2/3] AMD IOMMUv2 PC resource management hooks
 
-> // <smpl>
-> @s exists@
-> local idexpression y;
-> expression x,e;
-> @@
+On Mon, Jan 21, 2013 at 02:20:57PM -0600, Steven L. Kinney wrote:
+> +u8 amd_iommu_v2_get_max_pc_banks(u16 devid) {
+> +	struct amd_iommu *iommu;
+> +
+> +	/* locate the iommu governing the devid */
+> +	iommu = amd_iommu_rlookup_table[devid];
+> +
+> +	if (iommu)
+> +		return iommu->max_banks;
+> +
+> +	return -ENODEV;
+> +}
+> +EXPORT_SYMBOL(amd_iommu_v2_get_max_pc_banks);
 
-> *if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
->   { ... when forall
->     return ...; }
-> ... when != \(y = e\|y += e\|y -= e\|y |= e\|y &= e\|y++\|y--\|&y\)
->      when != \(XT_GETPAGE(...,y)\|WMI_CMD_BUF(...)\)
-> *if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
->   { ... when forall
->     return ...; }
-> // </smpl>
+Hi Steven, may not it be better to return int here, instead of u8?
 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
-> ---
-> The previous code could be further simplified by removing the
-> initializations of ret to -ENOMEM, as is absent in this case.  But that is
-> probably for another patch.
-
-    I've already sent such patch and Felipe has queued it.
-
->   drivers/usb/musb/omap2430.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-> index da00af4..533c4fd 100644
-> --- a/drivers/usb/musb/omap2430.c
-> +++ b/drivers/usb/musb/omap2430.c
-> @@ -545,7 +545,7 @@ static int omap2430_probe(struct platform_device *pdev)
->   		}
->
->   		config = devm_kzalloc(&pdev->dev, sizeof(*config), GFP_KERNEL);
-> -		if (!data) {
-> +		if (!config) {
-
-    Same about this change. You're a bit late this time. :-)
-
-WBR, Sergei
 
