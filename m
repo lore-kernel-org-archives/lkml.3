@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab3AUXKP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 18:10:15 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:3123 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754337Ab3AUXKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 18:10:12 -0500
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <50FDC9B6.3040908@broadcom.com>
-Date: Mon, 21 Jan 2013 15:05:26 -0800
-From: "Bhanu Prakash Gollapudi" <bprakash@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615
- Thunderbird/13.0.1
+	id S1756582Ab3AUXLi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 18:11:38 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:44682 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753838Ab3AUXLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 18:11:36 -0500
+Date: Mon, 21 Jan 2013 18:11:30 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Eric Sandeen <sandeen@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
+Subject: Re: jbd2: don't wake kjournald unnecessarily
+Message-ID: <20130121231130.GB12410@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Sedat Dilek <sedat.dilek@gmail.com>, Jan Kara <jack@suse.cz>,
+	Eric Sandeen <sandeen@redhat.com>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	Ext4 Developers List <linux-ext4@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
+References: <CA+icZUWOvk5i+XY22xdZYuxu=Vy3fG2QxJStEgNFQVS4u55y-w@mail.gmail.com>
+ <CA+icZUUzNYE9QAh_p7=ZNuvZbxRPCb9zd4k7+aW-hv34mQWz=A@mail.gmail.com>
+ <20130121104733.GE5588@quack.suse.cz>
+ <CA+icZUVy-=jJkRsEKmX+ZGRjiGr4wwp3pqdxuLCRHeqW_H0x9Q@mail.gmail.com>
+ <CA+icZUVAP4ArN+j34GTUwMxte5DtLPJSrLmK9T6Na8Qy+aM0Rg@mail.gmail.com>
+ <20130121140738.GI5588@quack.suse.cz>
+ <CA+icZUXLcdnNPvA9o8d5msOQ0MkMci8mPXujLZ3zcYjYcVZ7JQ@mail.gmail.com>
 MIME-Version: 1.0
-To: "Julia Lawall" <Julia.Lawall@lip6.fr>
-cc: kernel-janitors@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/15] drivers/scsi/bnx2fc/bnx2fc_io.c: adjust
- duplicate test
-References: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
- <1358773378-4700-6-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1358773378-4700-6-git-send-email-Julia.Lawall@lip6.fr>
-X-WSS-ID: 7CE3159A3R41015107-03-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUXLcdnNPvA9o8d5msOQ0MkMci8mPXujLZ3zcYjYcVZ7JQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 05:02 AM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> Delete successive tests to the same location.  The code tested the result
-> of a previous allocation, that itself was already tested.  It is changed to
-> test the result of the most recent allocation.
->
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @s exists@
-> local idexpression y;
-> expression x,e;
-> @@
->
-> *if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
->   { ... when forall
->     return ...; }
-> ... when != \(y = e\|y += e\|y -= e\|y |= e\|y &= e\|y++\|y--\|&y\)
->      when != \(XT_GETPAGE(...,y)\|WMI_CMD_BUF(...)\)
-> *if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
->   { ... when forall
->     return ...; }
-> // </smpl>
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> ---
->   drivers/scsi/bnx2fc/bnx2fc_io.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/scsi/bnx2fc/bnx2fc_io.c b/drivers/scsi/bnx2fc/bnx2fc_io.c
-> index 8d4626c..8bea53d 100644
-> --- a/drivers/scsi/bnx2fc/bnx2fc_io.c
-> +++ b/drivers/scsi/bnx2fc/bnx2fc_io.c
-> @@ -654,7 +654,7 @@ int bnx2fc_init_mp_req(struct bnx2fc_cmd *io_req)
->   	mp_req->mp_resp_bd = dma_alloc_coherent(&hba->pcidev->dev, sz,
->   						 &mp_req->mp_resp_bd_dma,
->   						 GFP_ATOMIC);
-> -	if (!mp_req->mp_req_bd) {
-> +	if (!mp_req->mp_resp_bd) {
->   		printk(KERN_ERR PFX "unable to alloc MP resp bd\n");
->   		bnx2fc_free_mp_resc(io_req);
->   		return FAILED;
->
->
-Acked-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+On Tue, Jan 22, 2013 at 12:04:32AM +0100, Sedat Dilek wrote:
+> 
+> Beyond the FUSE/LOOP fun, will you apply this patch to your linux-next GIT tree?
+> 
+> Feel free to add...
+> 
+>      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+> 
+> A similiar patch for JBD went through your tree into mainline (see [1] and [2]).
 
+I'm not at all convinced that this patch has anything to do with your
+problem.  I don't see how it could affect things, and I believe you
+mentioned that you saw the problem even with this patch applied?  (I'm
+not sure; some of your messages which you sent were hard to
+understand, and you mentioned something about trying to send messages
+when low on sleep :-).
 
+In any case, the reason why I haven't pulled this patch into the ext4
+tree is because I was waiting for Eric and some of the performance
+team folks at Red Hat to supply some additional information about why
+this commit was making a difference in performance for a particular
+proprietary, closed source benchmark.
+
+I'm very suspicious about applying patches under the "cargo cult"
+school of programming.  ("We don't understand why it makes a
+difference, but it seems to be good, so bombs away!" :-)
+
+Regards,
+
+					- Ted
