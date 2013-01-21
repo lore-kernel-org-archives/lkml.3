@@ -1,47 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab3AUNfu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 08:35:50 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:55714 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752544Ab3AUNfs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 08:35:48 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/1] ARM: ux500: Turn on the 'heartbeat' LED trigger
-Date: Mon, 21 Jan 2013 13:35:40 +0000
-Message-Id: <1358775340-8197-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753929Ab3AUNgT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 08:36:19 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39291 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752132Ab3AUNgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 08:36:17 -0500
+Message-ID: <50FD43F5.1020208@ti.com>
+Date: Mon, 21 Jan 2013 19:04:45 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <linux-sh@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <balbi@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <b-cousson@ti.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <horms@verge.net.au>,
+        <magnus.damm@gmail.com>, <cbou@mail.ru>, <dwmw2@infradead.org>,
+        <alexander.shishkin@linux.intel.com>, <gregkh@linuxfoundation.org>,
+        <leoli@freescale.com>, <eric.y.miao@gmail.com>,
+        <haojian.zhuang@gmail.com>, <stern@rowland.harvard.edu>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: Re: [RFC PATCH 5/6] usb: otg: add device tree support to otg library
+References: <1358348462-27693-1-git-send-email-kishon@ti.com> <1358348462-27693-6-git-send-email-kishon@ti.com> <50FD40D1.8020405@ti.com>
+In-Reply-To: <50FD40D1.8020405@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The heartbeat LED trigger provides an excellent debugging tool
-when hacking on development boards. Here we enable it on all
-u8500 based platforms. This will pulse the User LED on the
-Snowball low-cost development board only.
+On Monday 21 January 2013 06:51 PM, Roger Quadros wrote:
+> On 01/16/2013 05:01 PM, Kishon Vijay Abraham I wrote:
+>> Added an API devm_usb_get_phy_by_phandle(), to get usb phy by passing a
+>> device node phandle value. This function will return a pointer to
+>> the phy on success, -EPROBE_DEFER if there is a device_node for the phandle,
+>> but the phy has not been added, or a ERR_PTR() otherwise.
+>>
+>> Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>   drivers/usb/otg/otg.c   |   77 +++++++++++++++++++++++++++++++++++++++++++++++
+>>   include/linux/usb/phy.h |    8 +++++
+>>   2 files changed, 85 insertions(+)
+>>
+>> diff --git a/drivers/usb/otg/otg.c b/drivers/usb/otg/otg.c
+>> index dbf2043..e9799bb 100644
+>> --- a/drivers/usb/otg/otg.c
+>> +++ b/drivers/usb/otg/otg.c
+>> @@ -13,7 +13,9 @@
+>>   #include <linux/export.h>
+>>   #include <linux/err.h>
+>>   #include <linux/device.h>
+>> +#include <linux/module.h>
+>>   #include <linux/slab.h>
+>> +#include <linux/of.h>
+>>
+>>   #include <linux/usb/otg.h>
+>>
+>> @@ -34,6 +36,20 @@ static struct usb_phy *__usb_find_phy(struct device *dev, u8 index)
+>>   	return ERR_PTR(-ENODEV);
+>>   }
+>>
+>> +static struct usb_phy *__of_usb_find_phy(struct device_node *node)
+>> +{
+>> +	struct usb_phy  *phy;
+>> +
+>> +	list_for_each_entry(phy, &phy_list, head) {
+>> +		if (node != phy->dev->of_node)
+>> +			continue;
+>> +
+>> +		return phy;
+>> +	}
+>> +
+>> +	return ERR_PTR(-ENODEV);
+>> +}
+>> +
+>>   static void devm_usb_phy_release(struct device *dev, void *res)
+>>   {
+>>   	struct usb_phy *phy = *(struct usb_phy **)res;
+>> @@ -109,6 +125,67 @@ err0:
+>>   }
+>>   EXPORT_SYMBOL(usb_get_phy);
+>>
+>> + /**
+>> + * devm_usb_get_phy_by_phandle - find the USB PHY by phandle
+>> + * @dev - device that requests this phy
+>> + * @phandle - name of the property holding the phy phandle value
+>> + * @index - the index of the phy
+>> + *
+>> + * Returns the phy driver associated with the given phandle value,
+>> + * after getting a refcount to it, -ENODEV if there is no such phy or
+>> + * -EPROBE_DEFER if there is a phandle to the phy, but the device is
+>> + * not yet loaded. While at that, it also associates the device with
+>> + * the phy using devres. On driver detach, release function is invoked
+>> + * on the devres data, then, devres data is freed.
+>> + *
+>> + * For use by USB host and peripheral drivers.
+>> + */
+>> +struct usb_phy *devm_usb_get_phy_by_phandle(struct device *dev,
+>> +	const char *phandle, u8 index)
+>> +{
+>> +	struct usb_phy	*phy = NULL, **ptr;
+>> +	unsigned long	flags;
+>> +	struct device_node *node;
+>> +
+>> +	if (!dev->of_node) {
+>> +		dev_dbg(dev, "device does not have a device node entry\n");
+>> +		return ERR_PTR(-EINVAL);
+>> +	}
+>> +
+>> +	node = of_parse_phandle(dev->of_node, phandle, index);
+>> +	if (!node) {
+>> +		dev_dbg(dev, "failed to get %s phandle in %s node\n", phandle,
+>> +			dev->of_node->full_name);
+>> +		return ERR_PTR(-ENODEV);
+>> +	}
+>> +
+>> +	ptr = devres_alloc(devm_usb_phy_release, sizeof(*ptr), GFP_KERNEL);
+>> +	if (!ptr) {
+>> +		dev_dbg(dev, "failed to allocate memory for devres\n");
+>> +		return ERR_PTR(-ENOMEM);
+>> +	}
+>
+> I fail to understand why you need ptr at all and why do devres_alloc()
+> for it.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/configs/u8500_defconfig |    2 ++
- 1 file changed, 2 insertions(+)
+Thats how we create a "managed device resource". You can have a look at 
+Documentation/driver-model/devres.txt and drivers/base/devres.c.
 
-diff --git a/arch/arm/configs/u8500_defconfig b/arch/arm/configs/u8500_defconfig
-index 029961d..16368ef 100644
---- a/arch/arm/configs/u8500_defconfig
-+++ b/arch/arm/configs/u8500_defconfig
-@@ -91,6 +91,8 @@ CONFIG_LEDS_CLASS=y
- CONFIG_LEDS_LM3530=y
- CONFIG_LEDS_LP5521=y
- CONFIG_LEDS_GPIO=y
-+CONFIG_LEDS_TRIGGERS=y
-+CONFIG_LEDS_TRIGGER_HEARTBEAT=y
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_AB8500=y
- CONFIG_RTC_DRV_PL031=y
--- 
-1.7.9.5
+I'm not sure if that is what you are looking for :-P
 
+Thanks
+Kishon
