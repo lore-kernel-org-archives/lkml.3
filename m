@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab3AUKmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:42:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27573 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752581Ab3AUKmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:42:14 -0500
-Date: Mon, 21 Jan 2013 11:41:54 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ilw@linux.intel.com,
-        ldv-project@linuxtesting.org
-Subject: Re: [PATCH] iwlegacy: don't return zero on failure paths in
- il4965_pci_probe()
-Message-ID: <20130121104153.GA5424@redhat.com>
-References: <1358600194-20371-1-git-send-email-khoroshilov@ispras.ru>
+	id S1752798Ab3AUKpi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:45:38 -0500
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:42085 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab3AUKpg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 05:45:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358600194-20371-1-git-send-email-khoroshilov@ispras.ru>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1358762966-20791-13-git-send-email-thierry.reding@avionic-design.de>
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
+	<1358762966-20791-13-git-send-email-thierry.reding@avionic-design.de>
+Date: Mon, 21 Jan 2013 16:15:35 +0530
+X-Google-Sender-Auth: VLSrazh_YnnXmvaq1i0c0UTk9Hk
+Message-ID: <CAOh2x==ECCN-2wEkFuNQ6DN2K6LMe3kvYMXXpk1bzQvUVo19Wg@mail.gmail.com>
+Subject: Re: [PATCH 12/33] Input: Convert to devm_ioremap_resource()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
+        linux-input@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 19, 2013 at 04:56:34PM +0400, Alexey Khoroshilov wrote:
-> If hardware is not ready, il4965_pci_probe() breaks off initialization,
-> deallocates all resources, but returns zero.
-> The patch adds -EIO as return value in this case.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+On Mon, Jan 21, 2013 at 3:39 PM, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
+> diff --git a/drivers/input/keyboard/spear-keyboard.c b/drivers/input/keyboard/spear-keyboard.c
+> @@ -228,11 +228,9 @@ static int spear_kbd_probe(struct platform_device *pdev)
+>                 kbd->suspended_rate = pdata->suspended_rate;
+>         }
+>
+> -       kbd->io_base = devm_request_and_ioremap(&pdev->dev, res);
+> -       if (!kbd->io_base) {
+> -               dev_err(&pdev->dev, "request-ioremap failed for kbd_region\n");
 
-ACK
+I would like to keep this error message as is.
 
+> -               return -ENOMEM;
+> -       }
+> +       kbd->io_base = devm_ioremap_resource(&pdev->dev, res);
+> +       if (IS_ERR(kbd->io_base))
+> +               return PTR_ERR(kbd->io_base);
+
+apart from that, for SPEAr
+
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
