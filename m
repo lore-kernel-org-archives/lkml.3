@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab3AUTUt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 14:20:49 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:37087 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755279Ab3AUTUr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 14:20:47 -0500
-Date: Mon, 21 Jan 2013 11:17:10 -0800
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 10/24] ab8500-chargalg: Only root should have write
- permission on sysfs file
-Message-ID: <20130121191710.GB15037@lizard.mcd01528.sjc.wayport.net>
-References: <1358769840-4763-1-git-send-email-lee.jones@linaro.org>
- <1358769840-4763-11-git-send-email-lee.jones@linaro.org>
+	id S1756519Ab3AUTZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 14:25:14 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54096 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756419Ab3AUTZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 14:25:10 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <50FD901C.8000002@linux.vnet.ibm.com>
+References: <20130121175244.E5839E06@kernel.stglabs.ibm.com> <20130121175250.1AAC7981@kernel.stglabs.ibm.com> <08cba1bf-6476-4fad-8d29-e380ec7127ba@email.android.com> <50FD901C.8000002@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1358769840-4763-11-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 5/5] fix kvm's use of __pa() on percpu areas
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 21 Jan 2013 13:22:50 -0600
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Gleb Natapov <gleb@redhat.com>, x86@kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>
+Message-ID: <6a43e949-61b2-4d96-8e85-46de3da8c3d0@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 12:03:46PM +0000, Lee Jones wrote:
-> Only root should have write permission on sysfs file ab8500_chargalg/chargalg.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Cool, just checking.
 
-I guess it is a candidate for -stable?
+Dave Hansen <dave@linux.vnet.ibm.com> wrote:
 
-> ---
->  drivers/power/abx500_chargalg.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/power/abx500_chargalg.c b/drivers/power/abx500_chargalg.c
-> index 2463fa0..f59bc02 100644
-> --- a/drivers/power/abx500_chargalg.c
-> +++ b/drivers/power/abx500_chargalg.c
-> @@ -1711,7 +1711,7 @@ static ssize_t abx500_chargalg_sysfs_charger(struct kobject *kobj,
->  static struct attribute abx500_chargalg_en_charger = \
->  {
->  	.name = "chargalg",
-> -	.mode = S_IWUGO,
-> +	.mode = S_IWUSR,
->  };
->  
->  static struct attribute *abx500_chargalg_chg[] = {
-> -- 
-> 1.7.9.5
-> 
+>On 01/21/2013 10:38 AM, H. Peter Anvin wrote:
+>> Final question: are any of these done in frequent paths?  (I believe
+>no, but...)
+>
+>Nope.  All of the places that it gets used here are in
+>initialization-time paths.  The two we have here are when kvm and the
+>host are setting up a new vcpu and when the kvmclock clocksource is
+>being registered.  A CPU getting hotplugged is the only thing that
+>might
+>even have these get called more than at boot.
+
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
