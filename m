@@ -1,496 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364Ab3AUUlB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 15:41:01 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:41239 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751887Ab3AUUk6 (ORCPT
+	id S1756691Ab3AUUli (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 15:41:38 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:63532 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756655Ab3AUUlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 15:40:58 -0500
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Cc: Tim Gardner <rtg.canonical@gmail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Olof Johansson <olof@lixom.net>,
-        Tony Luck <tony.luck@intel.com>,
-        Steve Langasek <steve.langasek@canonical.com>,
-        Colin Ian King <colin.king@canonical.com>,
-        Matt Fleming <matt.fleming@intel.com>, David Airlie <airlied@linux.ie>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Dave Jiang <dave.jiang@intel.com>, Peter Jones <pjones@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, stable@vger.kernel.org
-Subject: [PATCH 1/2] efi: Make 'efi_enabled' a function to query EFI facilities
-Date: Mon, 21 Jan 2013 20:40:37 +0000
-Message-Id: <1358800838-10459-2-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1358800838-10459-1-git-send-email-matt@console-pimps.org>
-References: <1358800838-10459-1-git-send-email-matt@console-pimps.org>
+	Mon, 21 Jan 2013 15:41:37 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Matt Sealey <matt@genesi-usa.com>
+Subject: Re: One of these things (CONFIG_HZ) is not like the others..
+Date: Mon, 21 Jan 2013 20:41:17 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>, Ben Dooks <ben@simtec.co.uk>
+References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com>
+In-Reply-To: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301212041.17951.arnd@arndb.de>
+X-Provags-ID: V02:K0:u2mgYc4REeRifhW5FpaicUmKSii0JCP0Ws3I2oRxhKa
+ zBiW0hSk2MyfO9UBsoZX1EmNIbqZn0YwIwIVfzLDmkDSsuoUh1
+ 6hSmyLhcNIrPsdy5jSL9XCQxSKCWyeydUD/IKqfEgwWklOyQXJ
+ uv7DD0CwWcnfmmn1VQYTaiaq/NIo/qEScxdgoMV8MoERzxqnK4
+ VIF1KVnUmqieE2V4iUwraqMfG9oV13b2kaDUGT5/v2R9e8kG76
+ vdwuT1zWXICR4eFXg4A5A7qqL96sLYJishXbCUbj1osn4RO9rC
+ EyyeTGeoJIRm2Q4WRJ9QrY7dbaG1q4dIxef7gE/G7zYNcFvnPG
+ NpchThmkxGcq7+3iWgzU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+On Monday 21 January 2013, Matt Sealey wrote:
+> 
+> ARM seems to be the only "major" platform not using the
+> kernel/Kconfig.hz definitions, instead rolling it's own and setting
+> what could be described as both reasonable and unreasonable defaults
+> for platforms. If we're going wholesale for multiplatform on ARM then
+> having CONFIG_HZ be selected dependent on platform options seems
+> rather curious since building a kernel for Exynos, OMAP or so will
+> force the default to a value which is not truly desired by the
+> maintainers.
 
-Originally 'efi_enabled' indicated whether a kernel was booted from
-EFI firmware. Over time its semantics have changed, and it now
-indicates whether or not we are booted on an EFI machine with
-bit-native firmware, e.g. 64-bit kernel with 64-bit firmware.
+Agreed 100%.
 
-But users actually want to query 'efi_enabled' for different reasons -
-what they really want access to is the list of available EFI
-facilities.
+(adding John Stultz to Cc, he's the local time expert)
 
-For instance, the x86 reboot code needs to know whether it can invoke
-the ResetSystem() function provided by the EFI runtime services, while
-the ACPI OSL code wants to know whether the EFI config tables were
-mapped successfully. There are also checks in some of the platform
-driver code to simply see if they're running on an EFI machine (which
-would make it a bad idea to do BIOS-y things).
+> config HZ
+>         int
+>         default 200 if ARCH_EBSA110 || ARCH_S3C24XX || ARCH_S5P64X0 || \
+>                 ARCH_S5PV210 || ARCH_EXYNOS4
+>         default OMAP_32K_TIMER_HZ if ARCH_OMAP && OMAP_32K_TIMER
+>         default AT91_TIMER_HZ if ARCH_AT91
+>         default SHMOBILE_TIMER_HZ if ARCH_SHMOBILE
+>         default 100
+> 
+> There is a patch floating around ("ARM: OMAP2+: timer: remove
+> CONFIG_OMAP_32K_TIMER")
+> which modifies the OMAP line, so I'll ignore that for my below
+> example, and I saw a patch for adding Exynos5 processors to the top
+> default somewhere around here.
+> 
+> So, based on those getting in, in my case here, I can see a situation where;
+> 
+> * I build multiplatform for i.MX6 and Exynos4/5 ARCH_MULTIPLATFORM, I
+> will get CONFIG_HZ=200.
+> 
+> * If I built for just i.MX6, I will get CONFIG_HZ=100.
+> 
+> Either way, if I boot a kernel on i.MX6, CONFIG_HZ depends on the
+> other ARM platforms I also want to boot on it.. this is not exactly
+> multiplatform compliant, right?
 
-Cc: David Airlie <airlied@linux.ie>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Corentin Chary <corentincj@iksaif.net>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Dave Jiang <dave.jiang@intel.com>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Peter Jones <pjones@redhat.com>
-Cc: Colin Ian King <colin.king@canonical.com>
-Cc: Steve Langasek <steve.langasek@canonical.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: stable@vger.kernel.org
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/x86/include/asm/efi.h             |  1 +
- arch/x86/kernel/reboot.c               |  2 +-
- arch/x86/kernel/setup.c                | 28 ++++++++---------
- arch/x86/platform/efi/efi.c            | 56 ++++++++++++++++++++--------------
- drivers/acpi/osl.c                     |  2 +-
- drivers/firmware/dmi_scan.c            |  2 +-
- drivers/firmware/efivars.c             |  4 +--
- drivers/firmware/iscsi_ibft_find.c     |  2 +-
- drivers/gpu/drm/radeon/radeon_device.c |  3 +-
- drivers/platform/x86/ibm_rtl.c         |  2 +-
- drivers/scsi/isci/init.c               |  2 +-
- include/linux/efi.h                    | 24 +++++++++++----
- init/main.c                            |  4 +--
- 13 files changed, 78 insertions(+), 54 deletions(-)
+Right. It's pretty clear that the above logic does not work
+with multiplatform.  Maybe we should just make ARCH_MULTIPLATFORM
+select NO_HZ to make the question much less interesting.
 
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index 6e8fdf5..28677c5 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -94,6 +94,7 @@ extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
- #endif /* CONFIG_X86_32 */
- 
- extern int add_efi_memmap;
-+extern unsigned long x86_efi_facility;
- extern void efi_set_executable(efi_memory_desc_t *md, bool executable);
- extern int efi_memblock_x86_reserve_range(void);
- extern void efi_call_phys_prelog(void);
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 4e8ba39..76fa1e9 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -584,7 +584,7 @@ static void native_machine_emergency_restart(void)
- 			break;
- 
- 		case BOOT_EFI:
--			if (efi_enabled)
-+			if (efi_enabled(EFI_RUNTIME_SERVICES))
- 				efi.reset_system(reboot_mode ?
- 						 EFI_RESET_WARM :
- 						 EFI_RESET_COLD,
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 23ddd55..dbc7369 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -729,15 +729,15 @@ void __init setup_arch(char **cmdline_p)
- #ifdef CONFIG_EFI
- 	if (!strncmp((char *)&boot_params.efi_info.efi_loader_signature,
- 		     "EL32", 4)) {
--		efi_enabled = 1;
--		efi_64bit = false;
-+		set_bit(EFI_BOOT, &x86_efi_facility);
- 	} else if (!strncmp((char *)&boot_params.efi_info.efi_loader_signature,
- 		     "EL64", 4)) {
--		efi_enabled = 1;
--		efi_64bit = true;
-+		set_bit(EFI_BOOT, &x86_efi_facility);
-+		set_bit(EFI_64BIT, &x86_efi_facility);
- 	}
--	if (efi_enabled && efi_memblock_x86_reserve_range())
--		efi_enabled = 0;
-+
-+	if (efi_enabled(EFI_BOOT))
-+		efi_memblock_x86_reserve_range();
- #endif
- 
- 	x86_init.oem.arch_setup();
-@@ -810,7 +810,7 @@ void __init setup_arch(char **cmdline_p)
- 
- 	finish_e820_parsing();
- 
--	if (efi_enabled)
-+	if (efi_enabled(EFI_BOOT))
- 		efi_init();
- 
- 	dmi_scan_machine();
-@@ -893,7 +893,7 @@ void __init setup_arch(char **cmdline_p)
- 	 * The EFI specification says that boot service code won't be called
- 	 * after ExitBootServices(). This is, in fact, a lie.
- 	 */
--	if (efi_enabled)
-+	if (efi_enabled(EFI_MEMMAP))
- 		efi_reserve_boot_services();
- 
- 	/* preallocate 4k for mptable mpc */
-@@ -1034,7 +1034,7 @@ void __init setup_arch(char **cmdline_p)
- 
- #ifdef CONFIG_VT
- #if defined(CONFIG_VGA_CONSOLE)
--	if (!efi_enabled || (efi_mem_type(0xa0000) != EFI_CONVENTIONAL_MEMORY))
-+	if (!efi_enabled(EFI_BOOT) || (efi_mem_type(0xa0000) != EFI_CONVENTIONAL_MEMORY))
- 		conswitchp = &vga_con;
- #elif defined(CONFIG_DUMMY_CONSOLE)
- 	conswitchp = &dummy_con;
-@@ -1051,14 +1051,14 @@ void __init setup_arch(char **cmdline_p)
- 	register_refined_jiffies(CLOCK_TICK_RATE);
- 
- #ifdef CONFIG_EFI
--	/* Once setup is done above, disable efi_enabled on mismatched
--	 * firmware/kernel archtectures since there is no support for
--	 * runtime services.
-+	/* Once setup is done above, unmap the EFI memory map on
-+	 * mismatched firmware/kernel archtectures since there is no
-+	 * support for runtime services.
- 	 */
--	if (efi_enabled && IS_ENABLED(CONFIG_X86_64) != efi_64bit) {
-+	if (efi_enabled(EFI_BOOT) &&
-+	    IS_ENABLED(CONFIG_X86_64) != efi_enabled(EFI_64BIT)) {
- 		pr_info("efi: Setup done, disabling due to 32/64-bit mismatch\n");
- 		efi_unmap_memmap();
--		efi_enabled = 0;
- 	}
- #endif
- }
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index ad44391..7d61548 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -51,9 +51,6 @@
- 
- #define EFI_DEBUG	1
- 
--int efi_enabled;
--EXPORT_SYMBOL(efi_enabled);
--
- struct efi __read_mostly efi = {
- 	.mps        = EFI_INVALID_TABLE_ADDR,
- 	.acpi       = EFI_INVALID_TABLE_ADDR,
-@@ -69,19 +66,27 @@ EXPORT_SYMBOL(efi);
- 
- struct efi_memory_map memmap;
- 
--bool efi_64bit;
--
- static struct efi efi_phys __initdata;
- static efi_system_table_t efi_systab __initdata;
- 
- static inline bool efi_is_native(void)
- {
--	return IS_ENABLED(CONFIG_X86_64) == efi_64bit;
-+	return IS_ENABLED(CONFIG_X86_64) == efi_enabled(EFI_64BIT);
-+}
-+
-+unsigned long x86_efi_facility;
-+
-+/*
-+ * Returns 1 if 'facility' is enabled, 0 otherwise.
-+ */
-+int efi_enabled(int facility)
-+{
-+	return test_bit(facility, &x86_efi_facility) != 0;
- }
- 
- static int __init setup_noefi(char *arg)
- {
--	efi_enabled = 0;
-+	clear_bit(EFI_BOOT, &x86_efi_facility);
- 	return 0;
- }
- early_param("noefi", setup_noefi);
-@@ -426,6 +431,7 @@ void __init efi_reserve_boot_services(void)
- 
- void __init efi_unmap_memmap(void)
- {
-+	clear_bit(EFI_MEMMAP, &x86_efi_facility);
- 	if (memmap.map) {
- 		early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
- 		memmap.map = NULL;
-@@ -460,7 +466,7 @@ void __init efi_free_boot_services(void)
- 
- static int __init efi_systab_init(void *phys)
- {
--	if (efi_64bit) {
-+	if (efi_enabled(EFI_64BIT)) {
- 		efi_system_table_64_t *systab64;
- 		u64 tmp = 0;
- 
-@@ -552,7 +558,7 @@ static int __init efi_config_init(u64 tables, int nr_tables)
- 	void *config_tables, *tablep;
- 	int i, sz;
- 
--	if (efi_64bit)
-+	if (efi_enabled(EFI_64BIT))
- 		sz = sizeof(efi_config_table_64_t);
- 	else
- 		sz = sizeof(efi_config_table_32_t);
-@@ -572,7 +578,7 @@ static int __init efi_config_init(u64 tables, int nr_tables)
- 		efi_guid_t guid;
- 		unsigned long table;
- 
--		if (efi_64bit) {
-+		if (efi_enabled(EFI_64BIT)) {
- 			u64 table64;
- 			guid = ((efi_config_table_64_t *)tablep)->guid;
- 			table64 = ((efi_config_table_64_t *)tablep)->table;
-@@ -684,7 +690,6 @@ void __init efi_init(void)
- 	if (boot_params.efi_info.efi_systab_hi ||
- 	    boot_params.efi_info.efi_memmap_hi) {
- 		pr_info("Table located above 4GB, disabling EFI.\n");
--		efi_enabled = 0;
- 		return;
- 	}
- 	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
-@@ -694,10 +699,10 @@ void __init efi_init(void)
- 			  ((__u64)boot_params.efi_info.efi_systab_hi<<32));
- #endif
- 
--	if (efi_systab_init(efi_phys.systab)) {
--		efi_enabled = 0;
-+	if (efi_systab_init(efi_phys.systab))
- 		return;
--	}
-+
-+	set_bit(EFI_SYSTEM_TABLES, &x86_efi_facility);
- 
- 	/*
- 	 * Show what we know for posterity
-@@ -715,10 +720,10 @@ void __init efi_init(void)
- 		efi.systab->hdr.revision >> 16,
- 		efi.systab->hdr.revision & 0xffff, vendor);
- 
--	if (efi_config_init(efi.systab->tables, efi.systab->nr_tables)) {
--		efi_enabled = 0;
-+	if (efi_config_init(efi.systab->tables, efi.systab->nr_tables))
- 		return;
--	}
-+
-+	set_bit(EFI_CONFIG_TABLES, &x86_efi_facility);
- 
- 	/*
- 	 * Note: We currently don't support runtime services on an EFI
-@@ -727,15 +732,17 @@ void __init efi_init(void)
- 
- 	if (!efi_is_native())
- 		pr_info("No EFI runtime due to 32/64-bit mismatch with kernel\n");
--	else if (efi_runtime_init()) {
--		efi_enabled = 0;
--		return;
-+	else {
-+		if (efi_runtime_init())
-+			return;
-+		set_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
- 	}
- 
--	if (efi_memmap_init()) {
--		efi_enabled = 0;
-+	if (efi_memmap_init())
- 		return;
--	}
-+
-+	set_bit(EFI_MEMMAP, &x86_efi_facility);
-+
- #ifdef CONFIG_X86_32
- 	if (efi_is_native()) {
- 		x86_platform.get_wallclock = efi_get_time;
-@@ -969,6 +976,9 @@ u32 efi_mem_type(unsigned long phys_addr)
- 	efi_memory_desc_t *md;
- 	void *p;
- 
-+	if (!efi_enabled(EFI_MEMMAP))
-+		return 0;
-+
- 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
- 		md = p;
- 		if ((md->phys_addr <= phys_addr) &&
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 3ff2678..bd22f86 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -250,7 +250,7 @@ acpi_physical_address __init acpi_os_get_root_pointer(void)
- 		return acpi_rsdp;
- #endif
- 
--	if (efi_enabled) {
-+	if (efi_enabled(EFI_CONFIG_TABLES)) {
- 		if (efi.acpi20 != EFI_INVALID_TABLE_ADDR)
- 			return efi.acpi20;
- 		else if (efi.acpi != EFI_INVALID_TABLE_ADDR)
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index fd3ae62..982f1f5 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -471,7 +471,7 @@ void __init dmi_scan_machine(void)
- 	char __iomem *p, *q;
- 	int rc;
- 
--	if (efi_enabled) {
-+	if (efi_enabled(EFI_CONFIG_TABLES)) {
- 		if (efi.smbios == EFI_INVALID_TABLE_ADDR)
- 			goto error;
- 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 7b1c374..1065119 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1782,7 +1782,7 @@ efivars_init(void)
- 	printk(KERN_INFO "EFI Variables Facility v%s %s\n", EFIVARS_VERSION,
- 	       EFIVARS_DATE);
- 
--	if (!efi_enabled)
-+	if (!efi_enabled(EFI_RUNTIME_SERVICES))
- 		return 0;
- 
- 	/* For now we'll register the efi directory at /sys/firmware/efi */
-@@ -1822,7 +1822,7 @@ err_put:
- static void __exit
- efivars_exit(void)
- {
--	if (efi_enabled) {
-+	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
- 		unregister_efivars(&__efivars);
- 		kobject_put(efi_kobj);
- 	}
-diff --git a/drivers/firmware/iscsi_ibft_find.c b/drivers/firmware/iscsi_ibft_find.c
-index 4da4eb9..2224f1d 100644
---- a/drivers/firmware/iscsi_ibft_find.c
-+++ b/drivers/firmware/iscsi_ibft_find.c
-@@ -99,7 +99,7 @@ unsigned long __init find_ibft_region(unsigned long *sizep)
- 	/* iBFT 1.03 section 1.4.3.1 mandates that UEFI machines will
- 	 * only use ACPI for this */
- 
--	if (!efi_enabled)
-+	if (!efi_enabled(EFI_BOOT))
- 		find_ibft_in_mem();
- 
- 	if (ibft_addr) {
-diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-index cd75626..9a68174 100644
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -429,7 +429,8 @@ bool radeon_card_posted(struct radeon_device *rdev)
- {
- 	uint32_t reg;
- 
--	if (efi_enabled && rdev->pdev->subsystem_vendor == PCI_VENDOR_ID_APPLE)
-+	if (efi_enabled(EFI_BOOT) &&
-+	    rdev->pdev->subsystem_vendor == PCI_VENDOR_ID_APPLE)
- 		return false;
- 
- 	/* first check CRTCs */
-diff --git a/drivers/platform/x86/ibm_rtl.c b/drivers/platform/x86/ibm_rtl.c
-index 7481146..97c2be1 100644
---- a/drivers/platform/x86/ibm_rtl.c
-+++ b/drivers/platform/x86/ibm_rtl.c
-@@ -244,7 +244,7 @@ static int __init ibm_rtl_init(void) {
- 	if (force)
- 		pr_warn("module loaded by force\n");
- 	/* first ensure that we are running on IBM HW */
--	else if (efi_enabled || !dmi_check_system(ibm_rtl_dmi_table))
-+	else if (efi_enabled(EFI_BOOT) || !dmi_check_system(ibm_rtl_dmi_table))
- 		return -ENODEV;
- 
- 	/* Get the address for the Extended BIOS Data Area */
-diff --git a/drivers/scsi/isci/init.c b/drivers/scsi/isci/init.c
-index b74050b..9ac1e9d 100644
---- a/drivers/scsi/isci/init.c
-+++ b/drivers/scsi/isci/init.c
-@@ -633,7 +633,7 @@ static int __devinit isci_pci_probe(struct pci_dev *pdev, const struct pci_devic
- 		return -ENOMEM;
- 	pci_set_drvdata(pdev, pci_info);
- 
--	if (efi_enabled)
-+	if (efi_enabled(EFI_RUNTIME_SERVICES))
- 		orom = isci_get_efi_var(pdev);
- 
- 	if (!orom)
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 8b84916..7a9498a 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -618,18 +618,30 @@ extern int __init efi_setup_pcdp_console(char *);
- #endif
- 
- /*
-- * We play games with efi_enabled so that the compiler will, if possible, remove
-- * EFI-related code altogether.
-+ * We play games with efi_enabled so that the compiler will, if
-+ * possible, remove EFI-related code altogether.
-  */
-+#define EFI_BOOT		0	/* Were we booted from EFI? */
-+#define EFI_SYSTEM_TABLES	1	/* Can we use EFI system tables? */
-+#define EFI_CONFIG_TABLES	2	/* Can we use EFI config tables? */
-+#define EFI_RUNTIME_SERVICES	3	/* Can we use runtime services? */
-+#define EFI_MEMMAP		4	/* Can we use EFI memory map? */
-+#define EFI_64BIT		5	/* Is the firmware 64-bit? */
-+
- #ifdef CONFIG_EFI
- # ifdef CONFIG_X86
--   extern int efi_enabled;
--   extern bool efi_64bit;
-+extern int efi_enabled(int facility);
- # else
--#  define efi_enabled 1
-+static inline int efi_enabled(int facility)
-+{
-+	return 1;
-+}
- # endif
- #else
--# define efi_enabled 0
-+static inline int efi_enabled(int facility)
-+{
-+	return 0;
-+}
- #endif
- 
- /*
-diff --git a/init/main.c b/init/main.c
-index 85d69df..cd30179 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -604,7 +604,7 @@ asmlinkage void __init start_kernel(void)
- 	pidmap_init();
- 	anon_vma_init();
- #ifdef CONFIG_X86
--	if (efi_enabled)
-+	if (efi_enabled(EFI_RUNTIME_SERVICES))
- 		efi_enter_virtual_mode();
- #endif
- 	thread_info_cache_init();
-@@ -632,7 +632,7 @@ asmlinkage void __init start_kernel(void)
- 	acpi_early_init(); /* before LAPIC and SMP init */
- 	sfi_init_late();
- 
--	if (efi_enabled) {
-+	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
- 		efi_late_init();
- 		efi_free_boot_services();
- 	}
--- 
-1.7.11.7
+Regarding the defaults, I would suggest putting them into all the
+defaults into the defconfig files and removing the other hardcoding
+otherwise. Ben Dooks and Russell are probably the best to know 
+what triggered the 200 HZ for s3c24xx and for ebsa110. My guess
+is that the other samsung ones are the result of cargo cult
+programming.
 
+at91 and omap set the HZ value to something that is derived
+from their hardware timer, but we have also forever had logic
+to calculate the exact time when that does not match. This code
+has very recently been moved into the new register_refined_jiffies()
+function. John can probably tell is if this solves all the problems
+for these platforms.
+
+> Additionally, using kernel/Kconfig.hz is a predicate for enabling
+> (forced enabling, even) CONFIG_SCHED_HRTICK which is defined nowhere
+> else. I don't know how many ARM systems here benefit from this, if
+> there is a benefit, or what this really means.. if you really have a
+> high resolution timer (and hrtimers enabled) that would assist the
+> scheduler this way, is it supposed to make a big difference to the way
+> the scheduler works for the better or worse? Is this actually
+> overridden by ARM sched_clock handling or so? Shouldn't there be a
+> help entry or some documentation for what this option does? I have
+> CC'd the scheduler maintainers because I'd really like to know what I
+> am doing here before I venture into putting patches out which could
+> potentially rip open spacetime and have us all sucked in..
+
+Yes, that sounds like yet another bug.
+
+	Arnd
