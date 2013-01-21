@@ -1,96 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419Ab3AUH7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 02:59:07 -0500
-Received: from mga14.intel.com ([143.182.124.37]:45077 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263Ab3AUH7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 02:59:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,505,1355126400"; 
-   d="scan'208";a="193332272"
-Date: Mon, 21 Jan 2013 15:59:00 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/5] x86: Add cpu capability flag
- X86_FEATURE_TSC_S3_NOTSTOP
-Message-ID: <20130121075900.GA509@feng-snb>
-References: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
- <1358750325-21217-2-git-send-email-feng.tang@intel.com>
- <20130121072729.GB11915@gchen.bj.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130121072729.GB11915@gchen.bj.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752447Ab3AUIBd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 03:01:33 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53513 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab3AUIBc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 03:01:32 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-2d-50fcf5d9e100
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>, js1304@gmail.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 1/3] slub: correct to calculate num of acquired objects in get_partial_node()
+Date: Mon, 21 Jan 2013 17:01:25 +0900
+Message-Id: <1358755287-3899-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 02:27:29AM -0500, Chen Gong wrote:
-> On Mon, Jan 21, 2013 at 02:38:41PM +0800, Feng Tang wrote:
-> > Date:	Mon, 21 Jan 2013 14:38:41 +0800
-> > From: Feng Tang <feng.tang@intel.com>
-> > To: Thomas Gleixner <tglx@linutronix.de>, John Stultz
-> >  <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin"
-> >  <hpa@linux.intel.com>, x86@kernel.org, Len Brown <lenb@kernel.org>,
-> >  "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-> >  linux-kernel@vger.kernel.org
-> > Cc: Feng Tang <feng.tang@intel.com>
-> > Subject: [RFC PATCH 1/5] x86: Add cpu capability flag
-> >  X86_FEATURE_TSC_S3_NOTSTOP
-> > X-Mailer: git-send-email 1.7.9.5
-> > 
-> > On some new Intel Atom processors (Penwell and Cloverview), there is
-> > a feature that the TSC won't stop S3, say the TSC value won't be
-> > reset to 0 after resume. This feature makes TSC a more reliable
-> > clocksource and could benefit the timekeeping code during system
-> > suspend/resume cycle, so add a flag for it.
-> > 
-> > Signed-off-by: Feng Tang <feng.tang@intel.com>
-> > ---
-> >  arch/x86/include/asm/cpufeature.h |    1 +
-> >  arch/x86/kernel/cpu/intel.c       |   12 ++++++++++++
-> >  2 files changed, 13 insertions(+)
-> > 
-> > diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-> > index 2d9075e..f7e1eac 100644
-> > --- a/arch/x86/include/asm/cpufeature.h
-> > +++ b/arch/x86/include/asm/cpufeature.h
-> > @@ -100,6 +100,7 @@
-> >  #define X86_FEATURE_AMD_DCM     (3*32+27) /* multi-node processor */
-> >  #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
-> >  #define X86_FEATURE_EAGER_FPU	(3*32+29) /* "eagerfpu" Non lazy FPU restore */
-> > +#define X86_FEATURE_TSC_S3_NOTSTOP (3*32+30) /* TSC doesn't stop in S3 state */
-> >  
-> We have an existed "TSC always running in C3+" feature and name it as
-> X86_FEATURE_NONSTOP_TSC, so how about naming it with the same style,
-> like X86_FEATURE_NONSTOP_TSC_S3?
+There is a subtle bug when calculating a number of acquired objects.
 
-Yeah, actually I used a name X86_FEATURE_xxx_TSC, then I did a grep,
-and found there is no unified name convention for TSC, so I chose such
-a name.
+Currently, we calculate "available = page->objects - page->inuse",
+after acquire_slab() is called in get_partial_node().
 
---------------
-#grep _TSC arch/x86/include/asm/cpufeature.h
-#define X86_FEATURE_TSC         (0*32+ 4) /* Time Stamp Counter */
-#define X86_FEATURE_CONSTANT_TSC (3*32+ 8) /* TSC ticks at a constant rate */
-#define X86_FEATURE_TSC_RELIABLE (3*32+23) /* TSC is known to be reliable */
-#define X86_FEATURE_NONSTOP_TSC (3*32+24) /* TSC does not stop in C states */
-#define X86_FEATURE_TSC_S3_NOTSTOP (3*32+30) /* TSC doesn't stop in S3 state */
-#define X86_FEATURE_TSC_DEADLINE_TIMER  (4*32+24) /* Tsc deadline timer */
-#define X86_FEATURE_TSCRATEMSR  (8*32+ 9) /* "tsc_scale" AMD TSC scaling support */
-#define X86_FEATURE_TSC_ADJUST  (9*32+ 1) /* TSC adjustment MSR 0x3b */
+In acquire_slab() with mode = 1, we always set new.inuse = page->objects.
+So,
 
-Thanks,
-Feng
+	acquire_slab(s, n, page, object == NULL);
 
+	if (!object) {
+		c->page = page;
+		stat(s, ALLOC_FROM_PARTIAL);
+		object = t;
+		available = page->objects - page->inuse;
 
+		!!! availabe is always 0 !!!
+	...
 
+Therfore, "available > s->cpu_partial / 2" is always false and
+we always go to second iteration.
+This patch correct this problem.
 
+After that, we don't need return value of put_cpu_partial().
+So remove it.
 
+v2: calculate nr of objects using new.objects and new.inuse.
+It is more accurate way than before.
+
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+diff --git a/mm/slub.c b/mm/slub.c
+index ba2ca53..7204c74 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1493,7 +1493,7 @@ static inline void remove_partial(struct kmem_cache_node *n,
+  */
+ static inline void *acquire_slab(struct kmem_cache *s,
+ 		struct kmem_cache_node *n, struct page *page,
+-		int mode)
++		int mode, int *objects)
+ {
+ 	void *freelist;
+ 	unsigned long counters;
+@@ -1507,6 +1507,7 @@ static inline void *acquire_slab(struct kmem_cache *s,
+ 	freelist = page->freelist;
+ 	counters = page->counters;
+ 	new.counters = counters;
++	*objects = new.objects - new.inuse;
+ 	if (mode) {
+ 		new.inuse = page->objects;
+ 		new.freelist = NULL;
+@@ -1528,7 +1529,7 @@ static inline void *acquire_slab(struct kmem_cache *s,
+ 	return freelist;
+ }
+ 
+-static int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain);
++static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain);
+ static inline bool pfmemalloc_match(struct page *page, gfp_t gfpflags);
+ 
+ /*
+@@ -1539,6 +1540,8 @@ static void *get_partial_node(struct kmem_cache *s, struct kmem_cache_node *n,
+ {
+ 	struct page *page, *page2;
+ 	void *object = NULL;
++	int available = 0;
++	int objects;
+ 
+ 	/*
+ 	 * Racy check. If we mistakenly see no partial slabs then we
+@@ -1552,22 +1555,21 @@ static void *get_partial_node(struct kmem_cache *s, struct kmem_cache_node *n,
+ 	spin_lock(&n->list_lock);
+ 	list_for_each_entry_safe(page, page2, &n->partial, lru) {
+ 		void *t;
+-		int available;
+ 
+ 		if (!pfmemalloc_match(page, flags))
+ 			continue;
+ 
+-		t = acquire_slab(s, n, page, object == NULL);
++		t = acquire_slab(s, n, page, object == NULL, &objects);
+ 		if (!t)
+ 			break;
+ 
++		available += objects;
+ 		if (!object) {
+ 			c->page = page;
+ 			stat(s, ALLOC_FROM_PARTIAL);
+ 			object = t;
+-			available =  page->objects - page->inuse;
+ 		} else {
+-			available = put_cpu_partial(s, page, 0);
++			put_cpu_partial(s, page, 0);
+ 			stat(s, CPU_PARTIAL_NODE);
+ 		}
+ 		if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
+@@ -1946,7 +1948,7 @@ static void unfreeze_partials(struct kmem_cache *s,
+  * If we did not find a slot then simply move all the partials to the
+  * per node partial list.
+  */
+-static int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
++static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+ {
+ 	struct page *oldpage;
+ 	int pages;
+@@ -1984,7 +1986,6 @@ static int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+ 		page->next = oldpage;
+ 
+ 	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
+-	return pobjects;
+ }
+ 
+ static inline void flush_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
+-- 
+1.7.9.5
 
