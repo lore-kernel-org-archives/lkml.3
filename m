@@ -1,93 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924Ab3AUPpk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 10:45:40 -0500
-Received: from relay.parallels.com ([195.214.232.42]:57308 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753566Ab3AUPpi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 10:45:38 -0500
-Date: Mon, 21 Jan 2013 19:44:44 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-CC: Oleg Nesterov <oleg@redhat.com>, Andrey Wagin <avagin@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>, <linux-api@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <criu@openvz.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [CRIU] [PATCH 2/3] signalfd: add ability to return siginfo in a
- raw format (v2)
-Message-ID: <20130121154444.GA10849@paralelels.com>
-References: <1358182435-19245-1-git-send-email-avagin@openvz.org>
- <1358182435-19245-3-git-send-email-avagin@openvz.org>
- <20130116123502.70af6b85.akpm@linux-foundation.org>
- <CAKgNAkgHVB3=k_XOevobcMWuEqy2r75tdTc85ZYiD8rkn5OZKA@mail.gmail.com>
- <CANaxB-wXdPZFzD3BhkD6niDA6M1NiNrc5coKf9bSx+ar_fZecg@mail.gmail.com>
- <CAKgNAkjK9iWh_PuJ92A-MKW6Q6_B8DvTL5-fkxyULqx9ZoDPfg@mail.gmail.com>
- <20130120174153.GA5675@paralelels.com>
- <20130120195555.GA14177@redhat.com>
- <CAKgNAkhcha9CkYHESqx72LyFB_xw7du=OU566Nk1LzHw+EnQQA@mail.gmail.com>
+	id S1755948Ab3AUP6R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 10:58:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63281 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753201Ab3AUP6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 10:58:16 -0500
+Message-ID: <50FD4245.3070402@redhat.com>
+Date: Mon, 21 Jan 2013 21:27:33 +0800
+From: Zhouping Liu <zliu@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="koi8-r"
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkhcha9CkYHESqx72LyFB_xw7du=OU566Nk1LzHw+EnQQA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.30.16.48]
+To: Michal Hocko <mhocko@suse.cz>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        Li Zefan <lizefan@huawei.com>, CAI Qian <caiqian@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
+References: <4FEE7665.6020409@jp.fujitsu.com> <389106003.8637801.1358757547754.JavaMail.root@redhat.com> <20130121105624.GF7798@dhcp22.suse.cz>
+In-Reply-To: <20130121105624.GF7798@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 09:33:41PM +0100, Michael Kerrisk (man-pages) wrote:
-> Hi Oleg,
-> 
-> On Sun, Jan 20, 2013 at 8:55 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 01/20, Andrew Vagin wrote:
-> >>
-> >> > SFD_RAW
-> >> > SFD_SHARED_QUEUE -- reads will be from process-wide shared signal queue
-> >> > SFD_PER_THREAD_QUEUE --reads will be from per-thread signal queue
-> >>
-> >> I suggested this variant in the initial series, but then we decided to
-> >> avoid adding new flags.
-> >
-> > Yes, because SFD_SHARED/PRIVATE will add even more complications into this
-> > code. And outside of signalfd.c too. And nobody except c/r will ever use
-> > these features I guess.
-> 
-> So, I must admit that I don't understand why adding SFD_SHARED and
-> SFD_PER_THREAD in signalfd() makes things more complicated than adding
-> the equivalents in pread(). But, I'll take your word for that, if
-> that's what you meant.
+On 01/21/2013 06:56 PM, Michal Hocko wrote:
+> On Mon 21-01-13 03:39:07, Zhouping Liu wrote:
+>>
+>> ----- Original Message -----
+>>> From: "Kamezawa Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
+>>> To: "Tejun Heo" <tj@kernel.org>
+>>> Cc: "David Rientjes" <rientjes@google.com>, "Michal Hocko" <mhocko@suse.cz>, "Zhouping Liu" <zliu@redhat.com>,
+>>> linux-mm@kvack.org, "Li Zefan" <lizefan@huawei.com>, "CAI Qian" <caiqian@redhat.com>, "LKML"
+>>> <linux-kernel@vger.kernel.org>, "Andrew Morton" <akpm@linux-foundation.org>
+>>> Sent: Saturday, June 30, 2012 11:45:41 AM
+>>> Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
+>>>
+>>> (2012/06/29 3:31), Tejun Heo wrote:
+>>>> Hello, KAME.
+>>>>
+>>>> On Thu, Jun 28, 2012 at 01:04:16PM +0900, Kamezawa Hiroyuki wrote:
+>>>>>> I still wish it's folded into CONFIG_MEMCG and conditionalized
+>>>>>> just on
+>>>>>> CONFIG_SWAP tho.
+>>>>>>
+>>>>> In old days, memsw controller was not very stable. So, we devided
+>>>>> the config.
+>>>>> And, it makes size of memory for swap-device double (adds 2bytes
+>>>>> per swapent.)
+>>>>> That is the problem.
+>>>> I see.  Do you think it's now reasonable to drop the separate
+>>>> config
+>>>> option?  Having memcg enabled but swap unaccounted sounds
+>>>> half-broken
+>>>> to me.
+>>>>
+>>> Hmm. Maybe it's ok if we can keep boot option. I'll cook a patch in
+>>> the next week.
+>> Hello Kame and All,
+>>
+>> Sorry for so delay to open the thread. (please open the link https://lkml.org/lkml/2012/6/26/547 if you don't remember the topic)
+>>
+>> do you have any updates for the issue?
+>>
+>> I checked the latest version, if we don't open CONFIG_MEMCG_SWAP_ENABLED(commit c255a458055e changed
+>> CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED as CONFIG_MEMCG_SWAP_ENABLED), the issue still exist:
+>>
+>> [root@dhcp-8-128 ~] cat .config  | grep -i memcg
+>> CONFIG_MEMCG=y
+>> CONFIG_MEMCG_SWAP=y
+>> # CONFIG_MEMCG_SWAP_ENABLED is not set
+>> CONFIG_MEMCG_KMEM=y
+>> [root@dhcp-8-128 ~] uname -r
+>> 3.8.0-rc4+
+>> [root@dhcp-8-128 ~] cat memory.memsw.*
+>> cat: memory.memsw.failcnt: Operation not supported
+>> cat: memory.memsw.limit_in_bytes: Operation not supported
+>> cat: memory.memsw.max_usage_in_bytes: Operation not supported
+>> cat: memory.memsw.usage_in_bytes: Operation not supported
+> Ohh, this one got lost. I thought Kame was working on that.
+> Anyway the patch bellow should work:
+> ---
+>  From 5f8141bf7d27014cfbc7b450f13f6146b5ab099d Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Mon, 21 Jan 2013 11:33:26 +0100
+> Subject: [PATCH] memcg: Do not create memsw files if swap accounting is
+>   disabled
+>
+> Zhouping Liu has reported that memsw files are exported even though
+> swap accounting is runtime disabled if CONFIG_MEMCG_SWAP is enabled.
+> This behavior has been introduced by af36f906 (memcg: always create
+> memsw files if CONFIG_CGROUP_MEM_RES_CTLR_SWAP) and it causes any
+> attempt to open the file to return EOPNOTSUPP. Although EOPNOTSUPP
+> should say be clear that memsw operations are not supported in the given
+> configuration it is fair to say that this behavior could be quite
+> confusing.
+>
+> Let's tear memsw files out of default cgroup files and add
+> them only if the swap accounting is really enabled (either by
+> CONFIG_MEMCG_SWAP_ENABLED or swapaccount=1 boot parameter). We can
+> hook into mem_cgroup_init which is called when the memcg subsystem is
+> initialized and which happens after boot command line is processed.
 
-You could look at the initial series.
-http://thread.gmane.org/gmane.linux.file-systems/70327
+Thanks for your quick patch, your patch looks good for me.
 
-In this case dequeue_signal should be changed for specifying a queue.
-signalfd_poll() should be fixed too. All this changes are not a big
-deal, but...
+I tested it with or without CONFIG_MEMCG_SWAP_ENABLED=y,
+and also tested it with swapaccount=1 kernel parameters, all are okay.
 
-If we want to have two flags for specifying queues, we will need one
-more flag SFD_PEEK, which will say, that signals should not be dequeued.
-Currently we get this information from offset too. If offset isn't zero,
-signals are not dequeued. With flags this sentence will look ugly.
+Tested-by: Zhouping Liu <zliu@redhat.com>
 
-> 
-> However, note that I did suggest that in the initial implementation
-> you might require that if SFD_SHARED_QUEUE or SFD_PER_THREAD_QUEUE is
-> specified in signalfd(), then SFD_RAW could be required as well.
-> Later, if someone wants to do the work, they could relax the
-> constraint, so as to allow signalfd() to be used to do per-queue
-> select even when reading siginfo (i.e., SFD_SHARED_QUEUE or
-> SFD_PER_THREAD_QUEUE specified but not SFD_RAW). Surely that is not
-> more complicated than the current implementation. And it allows for an
-> orthogonal expansion of the design that seems more natural and may one
-> day be useful.
-> 
-> Cheers,
-> 
-> Michael
+Thanks,
+Zhouping
