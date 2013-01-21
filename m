@@ -1,132 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab3AUA6W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 19:58:22 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:47723 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab3AUA6V (ORCPT
+	id S1752656Ab3AUA7v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 19:59:51 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:35388 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752495Ab3AUA7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 19:58:21 -0500
-X-AuditID: cbfee61b-b7fb06d000000f28-36-50fc92ab96a0
-Message-id: <1358729895.8234.147.camel@kjgkr>
-Subject: Re: [bug report] f2fs: off by one in garbage collection functions
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Date: Mon, 21 Jan 2013 09:58:15 +0900
-In-reply-to: <20130118132949.GA5708@elgon.mountain>
-References: <20130118132949.GA5708@elgon.mountain>
-Organization: samsung
-Content-type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature"; boundary="=-FPfzcPGP4HKcFM9q9Nb0"
-X-Mailer: Evolution 3.2.3-0ubuntu6
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsVy+t8zQ901k/4EGJxcw2hxedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgyjnbsYC/4IVIx59NptgbGLsEuRg4OCQETiaa+xC5GTiBTTOLC
-	vfVsXYxcHEICyxglVrz/wAqRMJHY9ewQK0RiOqPE9IVn2SGcHiaJWc2r2ECqeAV0JWZsuc0I
-	YgsLeEmsv9fPBrKBTUBbYvN+A5CwkICixNv9d8GGigjoSFzu/MEOYjMLeEg0dnwHi7MIqEqc
-	ndfOAtLKKWAs8fNKCESrkcTOtV1gJfwCohInWz8xQrRWSfxtaWKHuFNJYnd7JzvENYISPybf
-	Y4GIX2KXuHTXH2K8gMS3yYdYIH6Xldh0gBmiRFLi4IobLBMYxWchmToLySSIuKZE6/bf7BC2
-	tsSyha+ZIWxbiXXr3kPV2EhsurqAEcKWl9j+dg7zAkb2VYyiqQXJBcVJ6blGesWJucWleel6
-	yfm5mxghUSi9g3FVg8UhRgEORiUe3oS+PwFCrIllxZW5hxhVgOY82rD6AqMUS15+XqqSCG9F
-	EFCaNyWxsiq1KD++qDQntfgQYxXQcxOZpUST84GJI68k3tDY2MTMxNTE3NLU3JQqwkrivIyn
-	ngQICaQnlqRmp6YWpBbBLGfi4JRqYLQQDi/O81b8eeTpUcnDmZu/LSt8rCE8aw//d824xhaG
-	4Mf9vacXeL8/sn73SVNnnumal9ZEbNx7tPf+Hg0LYcbL17WljwqfiGyZ1vNjls/T0CMeorqR
-	6/7UnnJbzsjuWnuZ4WrWm2dTTrWyJH1ebxW4aHrIrND0bpFMH+OCsIyjnfpLdy7PrlViKc5I
-	NNRiLipOBADG2J+0KQMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPKsWRmVeSWpSXmKPExsVy+t9jQd3Vk/4EGHz4Zm5xedccNgdGj8+b
-	5AIYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA
-	pioplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM4527GAv+CFSMefTabYG
-	xi7BLkZODgkBE4ldzw6xQthiEhfurWfrYuTiEBKYzigxfeFZdginh0liVvMqNpAqXgFdiRlb
-	bjOC2MICXhLr7/UDxTk42AS0JTbvNwAJCwkoSrzdfxdsqIiAjsTlzh/sIDazgIdEY8d3sDiL
-	gKrE2XntLCCtnALGEj+vhEC0GknsXNsFVsIvICpxsvUTI0RrlcTfliZ2iDuVJHa3d7JDXCMo
-	8WPyPZYJjIKzkJTNQpKCiGtKtG7/zQ5ha0ssW/iaGcK2lVi37j1UjY3EpqsLGCFseYntb+cw
-	L2BkX8UomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHOfPpHcwrmqwOMQowMGoxMOb0PcnQIg1
-	say4MvcQowrQnEcbVl9glGLJy89LVRLhrQgCSvOmJFZWpRblxxeV5qQWH2KcyAgMjYnMUqLJ
-	+cDklFcSb2hsYmZkaWRmYWRibk5LYSVxXsZTTwKEBNITS1KzU1MLUotgjmLi4JRqYGx6qPzV
-	iD2JpeF+Tvj++t8X/Fhu3O7KtilRmXHMIVKFfZ/dlP6tXXbX9kyKqZb3smvTn+p7Oe76L+kf
-	PfOev+SfnOkvlNahzfGS2f/SloaAfxst9a44LZV92y1yt3vtxp325RdUT85N3NNkfD6j+q5J
-	6TrxI4fPC65kWXIjdUPqqQdsdQLTLZRYijMSDbWYi4oTAcH5j/VyAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 20 Jan 2013 19:59:49 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Carlos O'Donell" <carlos@systemhalted.org>
+Cc: Eric Paris <eparis@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
+        libc-alpha@sourceware.org, dwalsh@redhat.com, dmalcolm@redhat.com,
+        sds@tycho.nsa.gov, segoon@openwall.com,
+        linux-security-module@vger.kernel.org
+References: <1357747463.2593.28.camel@localhost>
+	<1357760637.2593.55.camel@localhost>
+	<50EDCFC0.3010401@schaufler-ca.com>
+	<1357763560.1342.7.camel@localhost> <50EDD8D4.60003@schaufler-ca.com>
+	<20130109205947.GE26036@sunsite.ms.mff.cuni.cz>
+	<1357765795.1342.21.camel@localhost>
+	<50EDEC85.5060802@systemhalted.org> <871udfmmkx.fsf@xmission.com>
+Date: Sun, 20 Jan 2013 16:59:35 -0800
+In-Reply-To: <871udfmmkx.fsf@xmission.com> (Eric W. Biederman's message of
+	"Sun, 20 Jan 2013 16:00:46 -0800")
+Message-ID: <871udfl5ag.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19mzEE2Y5Q/HNcjiDQ1lXgPysvPm6MsFWk=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4980]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Carlos O'Donell <carlos@systemhalted.org>
+X-Spam-Relay-Country: 
+Subject: Re: Friendlier EPERM - Request for input
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ebiederm@xmission.com (Eric W. Biederman) writes:
 
---=-FPfzcPGP4HKcFM9q9Nb0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> Carlos O'Donell <carlos@systemhalted.org> writes:
+>
+>> On 01/09/2013 04:09 PM, Eric Paris wrote:
+>>> On Wed, 2013-01-09 at 21:59 +0100, Jakub Jelinek wrote:
+>>>> On Wed, Jan 09, 2013 at 12:53:40PM -0800, Casey Schaufler wrote:
+>>>>> I'm suggesting that the string returned by get_extended_error_info()
+>>>>> ought to be the audit record the system call would generate, regardless
+>>>>> of whether the audit system would emit it or not.
+>>>>
+>>>> What system call would that info be for and would it be reset on next
+>>>> syscall that succeeded, or also failed?
+>>>>
+>>>> The thing is, various functions e.g. perform some syscall, save errno, do
+>>>> some other syscall, and if they decide that the first syscall should be what
+>>>> determines the whole function's errno, just restore errno from the saved
+>>>> value and return.  Similarly, various functions just set errno upon
+>>>> detecting some error condition in userspace.
+>>>> There is no 1:1 mapping between many libc library calls and syscalls.
+>>>> So, when would it be safe to call this new get_extended_error_info function
+>>>> and how to determine to which syscall it was relevant?
+>>
+>> I asked the same questions as Jakub asked but in a slightly different
+>> formulation (http://cygwin.com/ml/libc-alpha/2013-01/msg00267.html).
+>>  
+>>> I was thinking of it to be the last kernel error.  So if the first and
+>>> that second operation caused the kernel to want to make available
+>>> extended errno information you would end up with the second.  I see this
+>>> is an informative piece of information, not normative.  Not a
+>>> replacement for errno.  I'm hoping for a best effort way to provide
+>>> extended errno information.
+>>
+>> IMO Casey's answer is the right solution i.e. whatever the errno
+>> behaviour was.
+>
+> Let me propose a different mechanism for getting this to user space
+> that gives you a save/restore ability.
+>
+> When a system call returns with an error we return the error code
+> in one register and leave the rest of the registers that calling
+> conventions allow us to stomp unchanged.
+>
+> On i386 (probabaly our most constraint architecture) that gives us
+> 4 32bit registers or 16 bytes/characters to play with.
+>
+> Returning either an exteneded error number or a short
+> string in those extra bytes should be very doable, and largely
+> backwards compatible.
+>
+> Then in userspace for those applications who care you can
+> have a "struct exteneded_error" that holds the extra information.
+>
+> To use that information I expect you want something like:
+>
+> char *explain_error(int (*failed_func)(...), int errno, struct extended_error *error);
 
-Hi,
+Hmm.  It seems it seems someone else has already written libexplain.
+http://libexplain.sourceforge.net/
 
-2013-01-18 (=EA=B8=88), 16:29 +0300, Dan Carpenter:
-> Hello Jaegeuk Kim,
->=20
-> The patch 7bc0900347e0: "f2fs: add garbage collection functions" from=20
-> Nov 2, 2012, has an off-by-one bug.
->=20
->    429  block_t start_bidx_of_node(unsigned int node_ofs)
->    430  {
->    431          unsigned int indirect_blks =3D 2 * NIDS_PER_BLOCK + 4;
->    432          unsigned int bidx;
->    433 =20
->    434          if (node_ofs =3D=3D 0)
->    435                  return 0;
->    436 =20
->    437          if (node_ofs <=3D 2) {
->    438                  bidx =3D node_ofs - 1;
->    439          } else if (node_ofs <=3D indirect_blks) {
->    440                  int dec =3D (node_ofs - 4) / (NIDS_PER_BLOCK + 1)=
-;
->=20
-> If node_ofs =3D=3D 3 here then (node_ofs - 4) is a very high positive
-> number.  We divide by 1019 and we get another still very high number but
-> not so high that it is negative when cast as an int.
+Certainly I would suggest starting there for better explanaitions of why
+things fail.
 
-If the node_ofs is equal to 3, then it's a run-time bug on its caller,
-gc_data_segment(), not here itself.
+If you want good error messages certainly some amount of help from user
+space appears necessary.
 
-In gc_data_segment(),
-1. check_dnode(&nofs);
-2. start_bidx_of_node(nofs);
-
-Here, it means that we don't care about indirect node pages whose node
-offsets are 3, 3+1018+1, (3+1018+1)+1018+1, and so on.
-(Ref. *Index Structure* in Document/filesystems/f2fs.txt)
-Instead, we just check direct node pages only.
-
-But, anyway, I'd better write comments to make it clear.
-Thank you for reviewing.
-
---=20
-Jaegeuk Kim
-Samsung
-
---=-FPfzcPGP4HKcFM9q9Nb0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ/JKnAAoJEEAUqH6CSFDS904P/jWR/sBFhgXlNH+GpF+Mk341
-1tU12ND08QmD61GCglhQkGzGNMbrcZymRmfgOY5QcINvB3Tk8tPXkZWvqi9raElB
-NLFQBALBr1ohBLNXmPp3F3ElQxkhLN0xw1dL6PY8WjdQonZZPEzIfFiEyQogDvK4
-13rGVvaCrdLn6u679XhNC2vdxSISI+8kI/hHQdW8oRq8TuKGcZTKz6VbdvROU+rS
-pwD7k583PKAeLGYkhrr1Psak5NBs4nB1Ujd5itqPRl9hTYi+2n+cSa0vReXVWY5L
-cxOvgHEcDFX6KaPwa9gkol04m6xJxyp7D6nCPf86eo5LjuE+LLLnMFLo7KkrzVuB
-BQg9lkHfP9a5vbE/DoDAD/8gTH7H8ZW3eHoe2a+64HKKT6rT1Gd4VMEKqd5fySz8
-FUzkZ3OW1Hl0/mSpTbqnP7H+ZihQQOCJIXvNyvlnz/wmtk5JyvOOLBuKdmvnx3fe
-i9XnA82u3jt8sIWX0mKcP7F2pznp2GEhghRxurG0SFmEN/tJdM9CoqoGthtJHBR0
-gCkJqQtHMaF4tXtc9sBAqzElyXpWBZw1eahMWPcjqB6hFd5/2mEf/ncXvbWimMU4
-6uOwMbfYtXnoeKcq9PFyM4AAlNzj61SbvJiPnP9bYtX0Yd5BV0avwkVDQbxBpUDc
-AEtbc/jlQp308eeEdtu+
-=nZHP
------END PGP SIGNATURE-----
-
---=-FPfzcPGP4HKcFM9q9Nb0--
-
+Eric
