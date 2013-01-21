@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab3AUGbc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 01:31:32 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:50806 "EHLO
+	id S1752801Ab3AUGfJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 01:35:09 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:49991 "EHLO
 	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab3AUGba (ORCPT
+	with ESMTP id S1751792Ab3AUGfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 01:31:30 -0500
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LAK <linux-arm-kernel@lists.infradead.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>
-Cc: Sekhar Nori <nsekhar@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, Heiko Schocher <hs@denx.de>
-Subject: [PATCH 2/2] ARM: davinci: da850: add OF_DEV_AUXDATA entry for eth0.
-Date: Mon, 21 Jan 2013 11:59:19 +0530
-Message-Id: <1358749759-20517-3-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1358749759-20517-1-git-send-email-prabhakar.lad@ti.com>
-References: <1358749759-20517-1-git-send-email-prabhakar.lad@ti.com>
+	Mon, 21 Jan 2013 01:35:07 -0500
+Message-ID: <50FCE196.1070702@gmail.com>
+Date: Mon, 21 Jan 2013 14:35:02 +0800
+From: Bin Wang <wbin00@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+CC: Bin Wang <wbin00@gmail.com>
+Subject: scripts/package/Makefile: KBUILD_OUTPUT is useless in rpm build
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+I found KBUILD_OUTPUT variable is useless in the rpm-pkg and rpm target.
 
-Add OF_DEV_AUXDATA for eth0  driver in da850 board dt
-file to use emac clock.
+Yes there is a comment said:
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: davinci-linux-open-source@linux.davincidsp.com
-Cc: netdev@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Heiko Schocher <hs@denx.de>
----
- arch/arm/mach-davinci/da8xx-dt.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+# Note that the rpm-pkg target cannot be used with KBUILD_OUTPUT,
+# but the binrpm-pkg target can; for some reason O= gets ignored.
 
-diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
-index 37c27af..d548a38 100644
---- a/arch/arm/mach-davinci/da8xx-dt.c
-+++ b/arch/arm/mach-davinci/da8xx-dt.c
-@@ -37,11 +37,18 @@ static void __init da8xx_init_irq(void)
- 	of_irq_init(da8xx_irq_match);
- }
- 
-+struct of_dev_auxdata da850_evm_auxdata_lookup[] __initdata = {
-+	OF_DEV_AUXDATA("ti,davinci-dm6467-emac", 0x01e20000, "davinci_emac.1",
-+		       NULL),
-+	{}
-+};
-+
- #ifdef CONFIG_ARCH_DAVINCI_DA850
- 
- static void __init da850_init_machine(void)
- {
--	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+	of_platform_populate(NULL, of_default_bus_match_table,
-+			     da850_evm_auxdata_lookup, NULL);
- 
- 	da8xx_uart_clk_enable();
- }
+It does not say for what reason. Also, the code under rpm-pkg checks if
+KBUILD_OUTPUT is defined.
+
+> @if test -n "$(KBUILD_OUTPUT)"; then \
+> echo "Building source + binary RPM is not possible outside the"; \
+> echo "kernel source tree. Don't set KBUILD_OUTPUT, or use the"; \
+> echo "binrpm-pkg target instead."; \
+> false; \
+> fi
+
+But the fact is, whether or not the user use "O=" option, KBUILD_OUTPUT
+is always empty. I try to figure out why but the big Makefile drives me
+crazy. I'm thinking if the "O=" option really don't effect KBUILD_OUTPUT
+here, at least remove these code.
+
 -- 
-1.7.4.1
-
+Bin Wang
