@@ -1,34 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab3AUKJk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:09:40 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:57143 "EHLO
+	id S1753118Ab3AUKJw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:09:52 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:58334 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918Ab3AUKJi (ORCPT
+	with ESMTP id S1753055Ab3AUKJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:09:38 -0500
+	Mon, 21 Jan 2013 05:09:50 -0500
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: [PATCH 07/33] dma: Convert to devm_ioremap_resource()
-Date: Mon, 21 Jan 2013 11:09:00 +0100
-Message-Id: <1358762966-20791-8-git-send-email-thierry.reding@avionic-design.de>
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
+Subject: [PATCH 23/33] pwm: Convert to devm_ioremap_resource()
+Date: Mon, 21 Jan 2013 11:09:16 +0100
+Message-Id: <1358762966-20791-24-git-send-email-thierry.reding@avionic-design.de>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
 References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:JlD+OCL5UkL0VBFpmTsyjJ3Go2XNiZqgEuafsVqL4p4
- jHzgYTkU9tQSGrjZSoQxxlx1a/GrgQUd3AbwVjCTWGxq5l2ssw
- 8Pft5xZEchfWVfXskeJfqQ+GtGwW2P01Its/PT18xUC7hetEdF
- dhXuAnEUzzlL3NZTQ41lnL7WyPHEHLgdgP5Y6DeBYdzKZO3679
- /sbqkBv/d6inYCcyi5tr3s83MTe+5P8IuPJWf6gPM9r6rA00Q2
- 83iuSLT6hOD9u0lyXLH85E3pOJwGt0K0FNunM9R0NlyAAB5wkh
- 9/JwStaz6Z2Y0yOJ4tDbW/QyHaXokraDFtRbwT1h5uo+apJjG0
- 6qqhxYdOHRfPb0UI6xE6rKoqxuDCD4X0O3d8CQsUcuRUWFeS6+
- 9tj0hZU3XLigy8hR5+vMP0GdmM6m/Z7kFq4L2SY0bnmvlIBcaC
- 11vFz
+X-Provags-ID: V02:K0:yhlmZYU3Z4PtkNNCR7CBJfuC/EW8DvTO3s8HU9AkLeD
+ 8p8RhoCptkEoSZ5g3ZoQRMWiieEEw/BpZMX7m+/aE3gvYnwk53
+ SHRORWftzKmI3Woz8XKI0/laJ+UNBgKvyJ/ridrYRYKwlocqRF
+ QRHGLUlFHHp5VBv/6oKYzbbVufoAvlKeMHIqO2NwNHzR4aRPlG
+ WwXGbmT2Utm8hCcH+/jtEqZPPxPtoEijRo4iXWx+wcDBevSU9d
+ HW8TRv7Hjpcu+0dXuwwQbLviJJjUFK1jbUFoBYLJZPkb9Audcv
+ R1BNbP6zr37VmPy9WzMszcqYkwDi8YIZn3ntui/BZAd2ZkhpT2
+ EK9Qo0OMfQvNYKcgl6xKmKvGrkchdtrt0Wyiz/GYxzuUpP4oMC
+ /cUrl9XtGqt9HLeILPy1HyFeg9ZQqlvNcdVhJkqfFKLi3rtuF8
+ SDRCa
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,147 +35,209 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Convert all uses of devm_request_and_ioremap() to the newly introduced
 devm_ioremap_resource() which provides more consistent error handling.
 
-devm_ioremap_resource() provides its own error messages so all explicit
-error messages can be removed from the failure code paths.
-
 Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>
 ---
- drivers/dma/dw_dmac.c         |  7 ++++---
- drivers/dma/imx-dma.c         |  7 ++++---
- drivers/dma/mmp_pdma.c        |  7 ++++---
- drivers/dma/mmp_tdma.c        |  7 ++++---
- drivers/dma/tegra20-apb-dma.c | 10 ++++------
- 5 files changed, 20 insertions(+), 18 deletions(-)
+ drivers/pwm/pwm-imx.c      | 6 +++---
+ drivers/pwm/pwm-lpc32xx.c  | 6 +++---
+ drivers/pwm/pwm-mxs.c      | 6 +++---
+ drivers/pwm/pwm-puv3.c     | 6 +++---
+ drivers/pwm/pwm-pxa.c      | 6 +++---
+ drivers/pwm/pwm-spear.c    | 6 +++---
+ drivers/pwm/pwm-tegra.c    | 6 +++---
+ drivers/pwm/pwm-tiecap.c   | 6 +++---
+ drivers/pwm/pwm-tiehrpwm.c | 6 +++---
+ drivers/pwm/pwm-tipwmss.c  | 6 +++---
+ drivers/pwm/pwm-vt8500.c   | 6 +++---
+ 11 files changed, 33 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 3e8ba02..b33d1f6 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -14,6 +14,7 @@
- #include <linux/delay.h>
- #include <linux/dmaengine.h>
- #include <linux/dma-mapping.h>
-+#include <linux/err.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
-@@ -1489,9 +1490,9 @@ static int dw_probe(struct platform_device *pdev)
- 	if (irq < 0)
- 		return irq;
- 
--	regs = devm_request_and_ioremap(&pdev->dev, io);
--	if (!regs)
--		return -EBUSY;
-+	regs = devm_ioremap_resource(&pdev->dev, io);
-+	if (IS_ERR(regs))
-+		return PTR_ERR(regs);
- 
- 	dw_params = dma_read_byaddr(regs, DW_PARAMS);
- 	autocfg = dw_params >> DW_PARAMS_EN & 0x1;
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index dbf0e6f..84ae491 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -14,6 +14,7 @@
-  * http://www.opensource.org/licenses/gpl-license.html
-  * http://www.gnu.org/copyleft/gpl.html
-  */
-+#include <linux/err.h>
- #include <linux/init.h>
- #include <linux/types.h>
- #include <linux/mm.h>
-@@ -1011,9 +1012,9 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 	imxdma->devtype = pdev->id_entry->driver_data;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	imxdma->base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!imxdma->base)
--		return -EADDRNOTAVAIL;
-+	imxdma->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(imxdma->base))
-+		return PTR_ERR(imxdma->base);
- 
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0)
-diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
-index c6d98c0..dc74665 100644
---- a/drivers/dma/mmp_pdma.c
-+++ b/drivers/dma/mmp_pdma.c
-@@ -5,6 +5,7 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  */
-+#include <linux/err.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/types.h>
-@@ -782,9 +783,9 @@ static int mmp_pdma_probe(struct platform_device *op)
- 	if (!iores)
- 		return -EINVAL;
- 
--	pdev->base = devm_request_and_ioremap(pdev->dev, iores);
--	if (!pdev->base)
--		return -EADDRNOTAVAIL;
-+	pdev->base = devm_ioremap_resource(pdev->dev, iores);
-+	if (IS_ERR(pdev->base))
-+		return PTR_ERR(pdev->base);
- 
- 	of_id = of_match_device(mmp_pdma_dt_ids, pdev->dev);
- 	if (of_id)
-diff --git a/drivers/dma/mmp_tdma.c b/drivers/dma/mmp_tdma.c
-index a9f1cd5..43d5a6c 100644
---- a/drivers/dma/mmp_tdma.c
-+++ b/drivers/dma/mmp_tdma.c
-@@ -9,6 +9,7 @@
-  *
-  */
- 
-+#include <linux/err.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/types.h>
-@@ -547,9 +548,9 @@ static int mmp_tdma_probe(struct platform_device *pdev)
- 	if (!iores)
- 		return -EINVAL;
- 
--	tdev->base = devm_request_and_ioremap(&pdev->dev, iores);
--	if (!tdev->base)
--		return -EADDRNOTAVAIL;
-+	tdev->base = devm_ioremap_resource(&pdev->dev, iores);
-+	if (IS_ERR(tdev->base))
-+		return PTR_ERR(tdev->base);
- 
- 	INIT_LIST_HEAD(&tdev->device.channels);
- 
-diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-index c39e61b..7d6d8b4 100644
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -21,6 +21,7 @@
- #include <linux/delay.h>
- #include <linux/dmaengine.h>
- #include <linux/dma-mapping.h>
-+#include <linux/err.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
-@@ -1236,12 +1237,9 @@ static int tegra_dma_probe(struct platform_device *pdev)
- 		return -EINVAL;
+diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+index 65a86bd..3f5677b 100644
+--- a/drivers/pwm/pwm-imx.c
++++ b/drivers/pwm/pwm-imx.c
+@@ -274,9 +274,9 @@ static int imx_pwm_probe(struct platform_device *pdev)
+ 		return -ENODEV;
  	}
  
--	tdma->base_addr = devm_request_and_ioremap(&pdev->dev, res);
--	if (!tdma->base_addr) {
--		dev_err(&pdev->dev,
--			"Cannot request memregion/iomap dma address\n");
+-	imx->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (imx->mmio_base == NULL)
 -		return -EADDRNOTAVAIL;
--	}
-+	tdma->base_addr = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(tdma->base_addr))
-+		return PTR_ERR(tdma->base_addr);
++	imx->mmio_base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(imx->mmio_base))
++		return PTR_ERR(imx->mmio_base);
  
- 	tdma->dma_clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(tdma->dma_clk)) {
+ 	data = of_id->data;
+ 	imx->config = data->config;
+diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
+index 1410644..b3f0d0d 100644
+--- a/drivers/pwm/pwm-lpc32xx.c
++++ b/drivers/pwm/pwm-lpc32xx.c
+@@ -110,9 +110,9 @@ static int lpc32xx_pwm_probe(struct platform_device *pdev)
+ 	if (!res)
+ 		return -EINVAL;
+ 
+-	lpc32xx->base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!lpc32xx->base)
+-		return -EADDRNOTAVAIL;
++	lpc32xx->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(lpc32xx->base))
++		return PTR_ERR(lpc32xx->base);
+ 
+ 	lpc32xx->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(lpc32xx->clk))
+diff --git a/drivers/pwm/pwm-mxs.c b/drivers/pwm/pwm-mxs.c
+index 7ec345f..a53d309 100644
+--- a/drivers/pwm/pwm-mxs.c
++++ b/drivers/pwm/pwm-mxs.c
+@@ -139,9 +139,9 @@ static int mxs_pwm_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	mxs->base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!mxs->base)
+-		return -EADDRNOTAVAIL;
++	mxs->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(mxs->base))
++		return PTR_ERR(mxs->base);
+ 
+ 	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+ 	if (IS_ERR(pinctrl))
+diff --git a/drivers/pwm/pwm-puv3.c b/drivers/pwm/pwm-puv3.c
+index b882f60..db964e6e 100644
+--- a/drivers/pwm/pwm-puv3.c
++++ b/drivers/pwm/pwm-puv3.c
+@@ -123,9 +123,9 @@ static int pwm_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	puv3->base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (puv3->base == NULL)
+-		return -EADDRNOTAVAIL;
++	puv3->base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(puv3->base))
++		return PTR_ERR(puv3->base);
+ 
+ 	puv3->chip.dev = &pdev->dev;
+ 	puv3->chip.ops = &puv3_pwm_ops;
+diff --git a/drivers/pwm/pwm-pxa.c b/drivers/pwm/pwm-pxa.c
+index f32fc4e..20370e6 100644
+--- a/drivers/pwm/pwm-pxa.c
++++ b/drivers/pwm/pwm-pxa.c
+@@ -165,9 +165,9 @@ static int pwm_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	pwm->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (pwm->mmio_base == NULL)
+-		return -EADDRNOTAVAIL;
++	pwm->mmio_base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(pwm->mmio_base))
++		return PTR_ERR(pwm->mmio_base);
+ 
+ 	ret = pwmchip_add(&pwm->chip);
+ 	if (ret < 0) {
+diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
+index 83b21d9..69a2d9e 100644
+--- a/drivers/pwm/pwm-spear.c
++++ b/drivers/pwm/pwm-spear.c
+@@ -192,9 +192,9 @@ static int spear_pwm_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
+-	pc->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (!pc->mmio_base)
+-		return -EADDRNOTAVAIL;
++	pc->mmio_base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(pc->mmio_base))
++		return PTR_ERR(pc->mmio_base);
+ 
+ 	pc->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(pc->clk))
+diff --git a/drivers/pwm/pwm-tegra.c b/drivers/pwm/pwm-tegra.c
+index 30c0e2b..71900e8 100644
+--- a/drivers/pwm/pwm-tegra.c
++++ b/drivers/pwm/pwm-tegra.c
+@@ -186,9 +186,9 @@ static int tegra_pwm_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	pwm->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (!pwm->mmio_base)
+-		return -EADDRNOTAVAIL;
++	pwm->mmio_base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(pwm->mmio_base))
++		return PTR_ERR(pwm->mmio_base);
+ 
+ 	platform_set_drvdata(pdev, pwm);
+ 
+diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
+index 5cf016d..27a67d6 100644
+--- a/drivers/pwm/pwm-tiecap.c
++++ b/drivers/pwm/pwm-tiecap.c
+@@ -238,9 +238,9 @@ static int ecap_pwm_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	pc->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (!pc->mmio_base)
+-		return -EADDRNOTAVAIL;
++	pc->mmio_base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(pc->mmio_base))
++		return PTR_ERR(pc->mmio_base);
+ 
+ 	ret = pwmchip_add(&pc->chip);
+ 	if (ret < 0) {
+diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
+index 72a6dd4..5a13995 100644
+--- a/drivers/pwm/pwm-tiehrpwm.c
++++ b/drivers/pwm/pwm-tiehrpwm.c
+@@ -453,9 +453,9 @@ static int ehrpwm_pwm_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	pc->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (!pc->mmio_base)
+-		return  -EADDRNOTAVAIL;
++	pc->mmio_base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(pc->mmio_base))
++		return PTR_ERR(pc->mmio_base);
+ 
+ 	/* Acquire tbclk for Time Base EHRPWM submodule */
+ 	pc->tbclk = devm_clk_get(&pdev->dev, "tbclk");
+diff --git a/drivers/pwm/pwm-tipwmss.c b/drivers/pwm/pwm-tipwmss.c
+index 3448a1c..17cbc59 100644
+--- a/drivers/pwm/pwm-tipwmss.c
++++ b/drivers/pwm/pwm-tipwmss.c
+@@ -75,9 +75,9 @@ static int pwmss_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	info->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (!info->mmio_base)
+-		return -EADDRNOTAVAIL;
++	info->mmio_base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(info->mmio_base))
++		return PTR_ERR(info->mmio_base);
+ 
+ 	pm_runtime_enable(&pdev->dev);
+ 	pm_runtime_get_sync(&pdev->dev);
+diff --git a/drivers/pwm/pwm-vt8500.c b/drivers/pwm/pwm-vt8500.c
+index b0ba2d4..f9de9b2 100644
+--- a/drivers/pwm/pwm-vt8500.c
++++ b/drivers/pwm/pwm-vt8500.c
+@@ -178,9 +178,9 @@ static int vt8500_pwm_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	chip->base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (!chip->base)
+-		return -EADDRNOTAVAIL;
++	chip->base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(chip->base))
++		return PTR_ERR(chip->base);
+ 
+ 	ret = clk_prepare(chip->clk);
+ 	if (ret < 0) {
 -- 
 1.8.1.1
 
