@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab3AUIiA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 03:38:00 -0500
-Received: from mga03.intel.com ([143.182.124.21]:24729 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751509Ab3AUIh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 03:37:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,505,1355126400"; 
-   d="scan'208";a="246410553"
-From: "Lan, Tianyu" <tianyu.lan@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: linux-next: build failure after merge of the usb tree
-Thread-Topic: linux-next: build failure after merge of the usb tree
-Thread-Index: AQHN947k7eA10gX81kSaQ4eu17jBO5hTdRYA
-Date: Mon, 21 Jan 2013 08:37:54 +0000
-Message-ID: <4CFBC02C07DA244CA19D6815A05BE6EE1B9746@SHSMSX101.ccr.corp.intel.com>
-References: <20130121152132.bbcc78f7d2b20741734d0fd2@canb.auug.org.au>
-In-Reply-To: <20130121152132.bbcc78f7d2b20741734d0fd2@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="gb2312"
+	id S1752373Ab3AUIkB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 03:40:01 -0500
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:57863 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509Ab3AUIkA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 03:40:00 -0500
+Date: Mon, 21 Jan 2013 03:39:07 -0500 (EST)
+From: Zhouping Liu <zliu@redhat.com>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Li Zefan <lizefan@huawei.com>,
+        CAI Qian <caiqian@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Message-ID: <389106003.8637801.1358757547754.JavaMail.root@redhat.com>
+In-Reply-To: <4FEE7665.6020409@jp.fujitsu.com>
+Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.16.255.10]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0L8c1mN018872
 
-Hi Stephen£∫
-	Sorry for this. I have produced a fix patch which has been merged by usb-next tree.
-http://git.kernel.org/?p=linux/kernel/git/gregkh/usb.git;a=commit;h=9f7344fbaf191de63df315c7e0fa4c976e2ea419
 
-Best Regards 
-Tianyu Lan 
 
------Original Message-----
-From: Stephen Rothwell [mailto:sfr@canb.auug.org.au] 
-Sent: Monday, January 21, 2013 12:22 PM
-To: Greg KH
-Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Lan, Tianyu
-Subject: linux-next: build failure after merge of the usb tree
+----- Original Message -----
+> From: "Kamezawa Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
+> To: "Tejun Heo" <tj@kernel.org>
+> Cc: "David Rientjes" <rientjes@google.com>, "Michal Hocko" <mhocko@suse.cz>, "Zhouping Liu" <zliu@redhat.com>,
+> linux-mm@kvack.org, "Li Zefan" <lizefan@huawei.com>, "CAI Qian" <caiqian@redhat.com>, "LKML"
+> <linux-kernel@vger.kernel.org>, "Andrew Morton" <akpm@linux-foundation.org>
+> Sent: Saturday, June 30, 2012 11:45:41 AM
+> Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
+> 
+> (2012/06/29 3:31), Tejun Heo wrote:
+> > Hello, KAME.
+> >
+> > On Thu, Jun 28, 2012 at 01:04:16PM +0900, Kamezawa Hiroyuki wrote:
+> >>> I still wish it's folded into CONFIG_MEMCG and conditionalized
+> >>> just on
+> >>> CONFIG_SWAP tho.
+> >>>
+> >>
+> >> In old days, memsw controller was not very stable. So, we devided
+> >> the config.
+> >> And, it makes size of memory for swap-device double (adds 2bytes
+> >> per swapent.)
+> >> That is the problem.
+> >
+> > I see.  Do you think it's now reasonable to drop the separate
+> > config
+> > option?  Having memcg enabled but swap unaccounted sounds
+> > half-broken
+> > to me.
+> >
+> 
+> Hmm. Maybe it's ok if we can keep boot option. I'll cook a patch in
+> the next week.
 
-Hi Greg,
+Hello Kame and All,
 
-After merging the usb tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Sorry for so delay to open the thread. (please open the link https://lkml.org/lkml/2012/6/26/547 if you don't remember the topic)
 
-drivers/usb/core/port.c: In function 'usb_port_device_release':
-drivers/usb/core/port.c:25:2: error: implicit declaration of function 'kfree' [-Werror=implicit-function-declaration]
-drivers/usb/core/port.c: In function 'usb_hub_create_port_device':
-drivers/usb/core/port.c:38:2: error: implicit declaration of function 'kzalloc' [-Werror=implicit-function-declaration]
-drivers/usb/core/port.c:38:11: warning: assignment makes pointer from integer without a cast [enabled by default]
+do you have any updates for the issue?
 
-Caused by commit 6e30d7cba992 ("usb: Add driver/usb/core/(port.c,hub.h) files").  See Rule 1 in Documentation/SubmitChecklist.
+I checked the latest version, if we don't open CONFIG_MEMCG_SWAP_ENABLED(commit c255a458055e changed
+CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED as CONFIG_MEMCG_SWAP_ENABLED), the issue still exist:
 
-I have used the usb tree from next-20130118 for today.
---
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+[root@dhcp-8-128 ~] cat .config  | grep -i memcg
+CONFIG_MEMCG=y
+CONFIG_MEMCG_SWAP=y
+# CONFIG_MEMCG_SWAP_ENABLED is not set
+CONFIG_MEMCG_KMEM=y
+[root@dhcp-8-128 ~] uname -r
+3.8.0-rc4+
+[root@dhcp-8-128 ~] cat memory.memsw.*
+cat: memory.memsw.failcnt: Operation not supported
+cat: memory.memsw.limit_in_bytes: Operation not supported
+cat: memory.memsw.max_usage_in_bytes: Operation not supported
+cat: memory.memsw.usage_in_bytes: Operation not supported
+
+As David said, we should not export memory.memsw.* files if we disable CONFIG_MEMCG_SWAP_ENABLED, or return -EINVAL, right?
+(please correct me if I'm wrong)
+
+-- 
+Thanks,
+Zhouping
