@@ -1,93 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab3AUX3u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 18:29:50 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:64195 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351Ab3AUX3r (ORCPT
+	id S1753053Ab3AUXal (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 18:30:41 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:56410 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752351Ab3AUXak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 18:29:47 -0500
+	Mon, 21 Jan 2013 18:30:40 -0500
+Message-ID: <50FDCF98.7080702@free-electrons.com>
+Date: Tue, 22 Jan 2013 00:30:32 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130121231130.GB12410@thunk.org>
-References: <CA+icZUWOvk5i+XY22xdZYuxu=Vy3fG2QxJStEgNFQVS4u55y-w@mail.gmail.com>
-	<CA+icZUUzNYE9QAh_p7=ZNuvZbxRPCb9zd4k7+aW-hv34mQWz=A@mail.gmail.com>
-	<20130121104733.GE5588@quack.suse.cz>
-	<CA+icZUVy-=jJkRsEKmX+ZGRjiGr4wwp3pqdxuLCRHeqW_H0x9Q@mail.gmail.com>
-	<CA+icZUVAP4ArN+j34GTUwMxte5DtLPJSrLmK9T6Na8Qy+aM0Rg@mail.gmail.com>
-	<20130121140738.GI5588@quack.suse.cz>
-	<CA+icZUXLcdnNPvA9o8d5msOQ0MkMci8mPXujLZ3zcYjYcVZ7JQ@mail.gmail.com>
-	<20130121231130.GB12410@thunk.org>
-Date: Tue, 22 Jan 2013 00:29:46 +0100
-Message-ID: <CA+icZUUA95x57CgLLtV6Z05aNv3FoTRDcmt71BwbqQLscrzwrw@mail.gmail.com>
-Subject: Re: jbd2: don't wake kjournald unnecessarily
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Sedat Dilek <sedat.dilek@gmail.com>,
-        Jan Kara <jack@suse.cz>, Eric Sandeen <sandeen@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
+        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/3] gpio: pca953x: make the register access by GPIO
+ bank
+References: <1357599097-19053-1-git-send-email-gregory.clement@free-electrons.com> <1357599097-19053-2-git-send-email-gregory.clement@free-electrons.com> <50EBD9B6.3090601@free-electrons.com> <50EBDFAD.2090903@free-electrons.com>
+In-Reply-To: <50EBDFAD.2090903@free-electrons.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 12:11 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Tue, Jan 22, 2013 at 12:04:32AM +0100, Sedat Dilek wrote:
+On 01/08/2013 09:58 AM, Gregory CLEMENT wrote:
+> On 01/08/2013 09:32 AM, Maxime Ripard wrote:
+>> Hi Gregory,
+> 
+> Hi Maxime,
+> 
+> thanks for testing
 >>
->> Beyond the FUSE/LOOP fun, will you apply this patch to your linux-next GIT tree?
+>> On 07/01/2013 23:51, Gregory CLEMENT wrote:
+>>> -static int pca953x_write_reg(struct pca953x_chip *chip, int reg, u32 val)
+>>> +static int pca953x_read_single(struct pca953x_chip *chip, int reg, u32 *val,
+>>> +				int off)
+>>> +{
+>>> +	int ret;
+>>> +	int bank_shift = fls((chip->gpio_chip.ngpio - 1) / BANK_SZ);
+>>> +	int offset = off / BANK_SZ;
+>>> +
+>>> +	ret = i2c_smbus_read_byte_data(chip->client,
+>>> +				(reg << bank_shift) + offset);
+>>> +	*val = ret;
+>>> +
+>>> +	if (ret < 0) {
+>>> +		dev_err(&chip->client->dev, "failed reading register\n", reg);
 >>
->> Feel free to add...
+>> This triggers a warning, since you have an argument but nothing corresponding to it in your format string.
+> 
+> OK this one is easy, I didn't finished to clean up the message.
+> 
 >>
->>      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+>>>  static irqreturn_t pca953x_irq_handler(int irq, void *devid)
+>>>  {
+>>>  	struct pca953x_chip *chip = devid;
+>>> -	u32 pending;
+>>> -	u32 level;
+>>> +	u8 pending[MAX_BANK];
+>>> +	u8 level;
+>>> +	int i;
+>>>  
+>>> -	pending = pca953x_irq_pending(chip);
+>>> -
+>>> -	if (!pending)
+>>> +	if (!pca953x_irq_pending(chip, pending))
+>>>  		return IRQ_HANDLED;
+>>>  
+>>> -	do {
+>>> -		level = __ffs(pending);
+>>> -		handle_nested_irq(irq_find_mapping(chip->domain, level));
+>>> -
+>>> -		pending &= ~(1 << level);
+>>> -	} while (pending);
+>>> +	for (i = 0; i < NBANK(chip); i++) {
+>>> +		do {
+>>> +			level = __ffs(pending[i]);
+>>> +			handle_nested_irq(irq_find_mapping(chip->domain,
+>>> +							level + (BANK_SZ * i)));
+>>> +			pending[i] &= ~(1 << level);
+>>> +		} while (pending[i]);
+>>> +	}
+>>>  
+>>>  	return IRQ_HANDLED;
+>>>  }
 >>
->> A similiar patch for JBD went through your tree into mainline (see [1] and [2]).
->
-> I'm not at all convinced that this patch has anything to do with your
-> problem.  I don't see how it could affect things, and I believe you
-> mentioned that you saw the problem even with this patch applied?  (I'm
-> not sure; some of your messages which you sent were hard to
-> understand, and you mentioned something about trying to send messages
-> when low on sleep :-).
->
+>> This triggers the following warning when an interrupt is raised:
+>>
+>> [   30.773500] ------------[ cut here ]------------
+>> [   30.778843] WARNING: at /home/tmp/linux/kernel/irq/irqdomain.c:137 irq_domain_legacy_revmap+0x2c/0x48()
+>> [   30.788375] Modules linked in:
+>> [   30.791531] [<c0014100>] (unwind_backtrace+0x0/0xf0) from [<c001c878>] (warn_slowpath_common+0x4c/0x64)
+>> [   30.801125] [<c001c878>] (warn_slowpath_common+0x4c/0x64) from [<c001c8ac>] (warn_slowpath_null+0x1c/0x24)
+>> [   30.810968] [<c001c8ac>] (warn_slowpath_null+0x1c/0x24) from [<c006b5e0>] (irq_domain_legacy_revmap+0x2c/0x48)
+>> [   30.821187] [<c006b5e0>] (irq_domain_legacy_revmap+0x2c/0x48) from [<c01c3734>] (pca953x_irq_handler+0x16c/0x1ac)
+>> [   30.831656] [<c01c3734>] (pca953x_irq_handler+0x16c/0x1ac) from [<c0068688>] (irq_thread+0xd0/0x124)
+>> [   30.841000] [<c0068688>] (irq_thread+0xd0/0x124) from [<c003c238>] (kthread+0xa4/0xb0)
+>> [   30.849125] [<c003c238>] (kthread+0xa4/0xb0) from [<c000ed48>] (ret_from_fork+0x14/0x2c)
+>> [   30.857375] ---[ end trace 09584b7a73100a49 ]---
+>>
+> 
+> Humm it seems that this warning is caused by attempting to use an out of range hwirq.
+> I need to investigate it more in details.
 
-Even with little sleep I know what I have written.
-YES, it didn't fix my problem but it also did not hurt my system.
-I just run Linux Test Project w/o errors which also means nothing.
-( Hmmm, I checked-out xfstests... did I compile it :-)? )
+Unfortunately I didn't receive information on Mirabox to be able to use
+interrupt. So I will need you help to debug this part.
 
-> In any case, the reason why I haven't pulled this patch into the ext4
-> tree is because I was waiting for Eric and some of the performance
-> team folks at Red Hat to supply some additional information about why
-> this commit was making a difference in performance for a particular
-> proprietary, closed source benchmark.
->
+Could you try the branch gpio-pca9505-debug  at
+https://github.com/MISL-EBU-System-SW/mainline-public.git ?
 
-I am not following the linux-ext4/linux-fsdevel MLs so much, but IIRC
-this patch is from December 2012.
-An identical patch for JBD (approx. from same date) went upstream,
-that's why I asked.
-But now I know you care of JBD2 stuff :-).
-Of course, I leave it to the experts to decide.
-Come on Eric, open the pandora box and bomb Ted with logs and traces :-).
+I suspect that we use a GPIO above 8 to generate the interrupt, am I right?
 
-> I'm very suspicious about applying patches under the "cargo cult"
-> school of programming.  ("We don't understand why it makes a
-> difference, but it seems to be good, so bombs away!" :-)
->
+Thanks,
 
-A good attitude - a man we can trust!
-
-I would liked to see a more positive development on my issue.
-But I still see no real reason to throw this WUBI installation away
-hitting a "corner" case.
-It was done as a temporary installation and made me happy in my daily
-working life.
-If I will get unhappy I boot into Win7, oops.
-
-- Sedat -
-
-> Regards,
->
->                                         - Ted
+Gregory
