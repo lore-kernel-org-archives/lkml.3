@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751625Ab3AUFnt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 00:43:49 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:38023 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699Ab3AUFnr (ORCPT
+	id S1752646Ab3AUFpg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 00:45:36 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:37874 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848Ab3AUFpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 00:43:47 -0500
-Date: Mon, 21 Jan 2013 16:43:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Airlie <airlied@linux.ie>
-Subject: linux-next: manual merge of the akpm tree with the drm tree
-Message-Id: <20130121164336.9edf1179a8e5c91baea8571a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_Jan_2013_16_43_36_+1100_oWq4nSPXY2LvyxSy"
+	Mon, 21 Jan 2013 00:45:34 -0500
+MIME-Version: 1.0
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <2007041.tOt4VKpdOD@vostro.rjw.lan>
+References: <1358538755-29109-1-git-send-email-nm@ti.com>
+	<2007041.tOt4VKpdOD@vostro.rjw.lan>
+Date: Mon, 21 Jan 2013 14:45:32 +0900
+X-Google-Sender-Auth: LVg3ipIyYeKW_7v5Tur84iXel6E
+Message-ID: <CAJ0PZbS6Ka7ZNJ+a4kXW89dYgwASWA_3pYQFPFtTNv8DwwQzLw@mail.gmail.com>
+Subject: Re: [PATCH 0/4] OPP usage fixes for RCU locking
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Nishanth Menon <nm@ti.com>, linux-pm <linux-pm@vger.kernel.org>,
+        Kevin <khilman@deeprootsystems.com>,
+        lkml <linux-kernel@vger.kernel.org>, lo <linux-omap@vger.kernel.org>,
+        Jack <jack@embed.me.uk>, Alexander <holler@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_Jan_2013_16_43_36_+1100_oWq4nSPXY2LvyxSy
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Jan 19, 2013 at 7:28 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, January 18, 2013 01:52:31 PM Nishanth Menon wrote:
+>> Hi,
+>> Despite being documented in function documentation and in
+>> Documentation/power/opp.txt, many of the users of OPP APIs
+>> dont honor RCU lock usage appropriately.
+>>
+>> This recently appeared in IRC discussion earlier today [1].
+>> I did an audit of current usage and the following series
+>> is a result of this.
+>>
+>> NOTE:
+>> 1. The patch "PM / devfreq: exynos4_bus: honor RCU lock usage" has only
+>>    been build tested as I dont have an exynos platform to try it on. I have
+>>    tried to make it as least intrusive as possible and at least reviewed
+>>    to ensure I haven't screwed anything up.
+>>
+>> Other than this, I have added appropriate tested by information in requisite
+>> patches.
+>
+> Thanks for the fixes.
+>
+> MyungJoo, do you want me to take the devfreq ones too?
+>
+> Rafael
 
-Hi Andrew,
+Yes, please take RCU-OPP patches. Having those patches splitted
+doesn't seem beneficial.
 
-Today's linux-next merge of the akpm tree got a conflict in
-drivers/gpu/drm/drm_fb_helper.c between commit 848499032504 ("drm: add
-drm_modeset_lock|unlock_all") from the drm tree and commit
-"drivers/gpu/drm/drm_fb_helper.c: avoid sleeping in unblank_screen() if
-oops in progress" from the akpm tree.
+I'll let other devfreq patches be based on this after you get them applied.
 
-I can't see an easy way to resolve these, so I just dropped the akpm tree
-patch.
 
---=20
+
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+MyungJoo
 
---Signature=_Mon__21_Jan_2013_16_43_36_+1100_oWq4nSPXY2LvyxSy
-Content-Type: application/pgp-signature
+>
+>
+>> Series is based off: v3.8-rc4 tag
+>> Also available in the following location[2]:
+>> https://github.com/nmenon/linux-2.6-playground branch: post/pm/opp-fixes-v1
+>>
+>> Nishanth Menon (4):
+>>   cpufreq: OMAP: use RCU locks around usage of OPP
+>>   cpufreq: cpufreq-cpu0: use RCU locks around usage of OPP
+>>   PM / devfreq: add locking documentation for recommend_opp
+>>   PM / devfreq: exynos4_bus: honor RCU lock usage
+>>
+>>  drivers/cpufreq/cpufreq-cpu0.c |    5 +++
+>>  drivers/cpufreq/omap-cpufreq.c |    3 ++
+>>  drivers/devfreq/devfreq.c      |    5 +++
+>>  drivers/devfreq/exynos4_bus.c  |   94 ++++++++++++++++++++++++++++------------
+>>  4 files changed, 80 insertions(+), 27 deletions(-)
+>>
+>> [1] http://www.beagleboard.org/irclogs/index.php?date=2013-01-18#T14:14:07
+>> [2] https://github.com/nmenon/linux-2.6-playground/commits/post/pm/opp-fixes-v1
+>>
+>> Regards,
+>> Nishanth Menon
+>>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQ/NWIAAoJEECxmPOUX5FESO4P/jOWQW1Rfm4vDN9GH9gGfy4p
-wLXyC+WPMbVLHIdb581Vg5fJA8h3pxukaUahWlCVcW1zh8RsW8DPYpH6LAUF/q9d
-7PRT3uXN+SbQcgfmU6cpi5IOv2/li3abV7fQ0d4L0+aYgv0oidutlY/qut8KQQtI
-inKDhV+jTP9zPNEAhKTEDq03cEIbcHRDwSeu6Che7SFjzWpaNsx8Wi1qnKvxVZl9
-+RFih44eTQ3+WdVnjd5RHIVIYaQr57hocFVPiUHlbZA3FcEckRBk/zb1qK2JEhuG
-h3rdv98cYlkmjxZ9gW/70tGsmqlqhYw2SoP9BeYROVMFqqMFrK2CsL6r17wTKqxG
-WvOaUivx+e/5NQdQwbAt5GPwIEqbcTXd3wEG2BAXkXKHbBy31mCvaLCUUqvbMX1N
-TW4lMMvjK+KWuR16yapFA6+3KxU8WTBi+RYkx8SSc2poG1Q7WBFxGQgnPdqLqAfy
-DAAD/AmEfE0YwlR6Qq5t820OKhNlbbX0G7TyB8doflrW+SIXF0QkS0mqF2IGD03U
-VkLZBBXLkYJmpPyYfqKugvTyVLhm4/XF4VPwBo3q+2X0Ge1ae1Q4JlCk5xAqvlsS
-Mdc4Cs2ttFbWoqNh6hmYEbWHFZ+kpQ6orQ4gRsck7Wg6D1mHTYryT2bhF/Sws2xC
-VCslGmvZLr2fS0Mf0jYv
-=YtPi
------END PGP SIGNATURE-----
 
---Signature=_Mon__21_Jan_2013_16_43_36_+1100_oWq4nSPXY2LvyxSy--
+-- 
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
