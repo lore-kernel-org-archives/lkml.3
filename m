@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab3AUVXZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 16:23:25 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38498 "EHLO
+	id S1756792Ab3AUVVd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 16:21:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38455 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756837Ab3AUVVf (ORCPT
+	with ESMTP id S1756400Ab3AUVV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 16:21:35 -0500
+	Mon, 21 Jan 2013 16:21:28 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
         Jiang Liu <jiang.liu@huawei.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Tang Chen <tangchen@cn.fujitsu.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v10 08/11] PCI, ACPI: debug print for installation of acpi root bridge's notifier
-Date: Mon, 21 Jan 2013 13:20:49 -0800
-Message-Id: <1358803252-20639-9-git-send-email-yinghai@kernel.org>
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v10 04/11] PCI: Fix a device reference count leakage issue in pci_dev_present()
+Date: Mon, 21 Jan 2013 13:20:45 -0800
+Message-Id: <1358803252-20639-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1358803252-20639-1-git-send-email-yinghai@kernel.org>
 References: <1358803252-20639-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tang Chen <tangchen@cn.fujitsu.com>
+From: Jiang Liu <jiang.liu@huawei.com>
 
-acpi_install_notify_handler() could fail. So check the exit status
-and give a better debug info.
+Function pci_get_dev_by_id() will hold a reference count on the pci device
+returned, so pci_dev_present() should release the corresponding reference
+count to avoid memory leakage.
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/acpi/pci_root.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ drivers/pci/search.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-index a2d2c4c..417487a 100644
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -751,6 +751,7 @@ static void handle_hotplug_event_root(acpi_handle handle, u32 type,
- static acpi_status __init
- find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
- {
-+	acpi_status status;
- 	char objname[64];
- 	struct acpi_buffer buffer = { .length = sizeof(objname),
- 				      .pointer = objname };
-@@ -763,9 +764,14 @@ find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
- 
- 	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
- 
--	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
--				handle_hotplug_event_root, NULL);
--	printk(KERN_DEBUG "acpi root: %s notify handler installed\n", objname);
-+	status = acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-+					handle_hotplug_event_root, NULL);
-+	if (ACPI_FAILURE(status))
-+		printk(KERN_DEBUG "acpi root: %s notify handler is not installed, exit status: %u\n",
-+				  objname, (unsigned int)status);
-+	else
-+		printk(KERN_DEBUG "acpi root: %s notify handler is installed\n",
-+				 objname);
- 
- 	return AE_OK;
+diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+index bf969ba..d0627fa 100644
+--- a/drivers/pci/search.c
++++ b/drivers/pci/search.c
+@@ -319,13 +319,13 @@ int pci_dev_present(const struct pci_device_id *ids)
+ 	WARN_ON(in_interrupt());
+ 	while (ids->vendor || ids->subvendor || ids->class_mask) {
+ 		found = pci_get_dev_by_id(ids, NULL);
+-		if (found)
+-			goto exit;
++		if (found) {
++			pci_dev_put(found);
++			return 1;
++		}
+ 		ids++;
+ 	}
+-exit:
+-	if (found)
+-		return 1;
++
+ 	return 0;
  }
+ EXPORT_SYMBOL(pci_dev_present);
 -- 
 1.7.10.4
 
