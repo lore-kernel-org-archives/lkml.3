@@ -1,106 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab3AUBbv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 20:31:51 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49053 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752581Ab3AUBbt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 20:31:49 -0500
-Message-ID: <1358731892.24121.238.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] linux-firmware: add MISSING file
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Pavel Roskin <proski@gnu.org>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Xose Vazquez Perez <xose.vazquez@gmail.com>,
-        Daniel Drake <dsd@laptop.org>, Ulrich Kunitz <kune@deine-taler.de>,
-        David Woodhouse <dwmw2@infradead.org>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 21 Jan 2013 01:31:32 +0000
-In-Reply-To: <20130114175533.4f184cd3@mj>
-References: <1358030383-15609-1-git-send-email-xose.vazquez@gmail.com>
-	 <CAFLxGvxTenzaaypsUz6pYmjiyEeUtkNGDKwBNeAVFUb5ZZgonQ@mail.gmail.com>
-	 <20130114175533.4f184cd3@mj>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-VCZvQISQsRs1FNey2Auk"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1752629Ab3AUBdW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 20:33:22 -0500
+Received: from ozlabs.org ([203.10.76.45]:42237 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752534Ab3AUBdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 20:33:21 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Alexander Graf <agraf@suse.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PULL] Module fixes, and a virtio block fix.
+In-Reply-To: <CA+55aFwzdcv0LXovZobha=EH=L6DapJt+ODP0nq=TWWAqCxLYQ@mail.gmail.com>
+References: <87zk03wg7r.fsf@rustcorp.com.au> <CA+55aFwzdcv0LXovZobha=EH=L6DapJt+ODP0nq=TWWAqCxLYQ@mail.gmail.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 21 Jan 2013 12:02:47 +1030
+Message-ID: <87fw1vwcao.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus Torvalds <torvalds@linux-foundation.org> writes:
+> On Sun, Jan 20, 2013 at 4:08 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>
+>> are available in the git repository at:
+>>
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git fixes
+>
+> Ugh.
+>
+> You *meant* the "fixes-for-linus" tag, not the "fixes" branch.
+>
+> Either you mistyped, or you have one of the unfortunate old git
+> versions that silently "fixed" the branch name for you to the first
+> one it saw.
+>
+> Either way, please fix for future pull requests...
 
---=-VCZvQISQsRs1FNey2Auk
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Ugh indeed.
 
-On Mon, 2013-01-14 at 17:55 -0500, Pavel Roskin wrote:
-> On Sun, 13 Jan 2013 00:09:46 +0100
-> richard -rw- weinberger <richard.weinberger@gmail.com> wrote:
->=20
-> > > +This file attempts to document the reason why a firmware is not
-> > > present +in this bundle.
-> >=20
-> > From the user's point of view this not really helpful.
-> > Wouldn't a in-kernel table of known but missing firmware files make
-> > more sense? The kernel could write a log like "Yeah, I know this
-> > firmware but sadly I don't have it because of ..."
->=20
-> The firmware file may be absent on the system even if it's in the
-> linux-firmware tree.  Conversely, the firmware may be present on the
-> system but not in the linux-firmware tree.
->=20
-> The kernel doesn't know whether the firmware is missing due to
-> licensing issues or due to misconfiguration.  The kernel cannot know
-> that.  And I don't think the kernel should include as much information
-> as the MISSING file would include.
+Due to the delay on git.kernel.org, git request-pull fails.  It *looks*
+like it succeeds, except the warning, but (as we learned last time I
+screwed up), it doesn't put the branchname because it can't know.
 
-I can see some value in an index explaining where to get firmware,
-whether it's available from the copyright holder or some licensee or
-must be extracted from Windows drivers with a particular tool.
+So this time I fixed it manually.  Badly.
 
-I'm not sure whether linux-firmware.git is the right place for that,
-though.  Would distributions include this in their packages and would
-users be able to find it there?  Would a wiki page be more useful?
+For want of a better solution, I'll now resort to sending pull requests
+with the anti-social gitolite URL in it, like so:
 
-Putting my Debian hat, I can say that we don't distribute any of the
-older files that are 'GPL but no source visible', while we do distribute
-some files not included in linux-firmware.git that require click-wrap
-licences.  I also prune files that aren't referenced by the kernel
-version in any current release.  So a file that says what's missing from
-linux-firmware.git would not be that useful to Debian users, for
-example.
 
-Ben.
+The following changes since commit a7f2a366f62319dfebf8d4dfe8b211f631c78457:
 
---=20
-Ben Hutchings
-Q.  Which is the greater problem in the world today, ignorance or apathy?
-A.  I don't know and I couldn't care less.
+  ima: fallback to MODULE_SIG_ENFORCE for existing kernel module syscall (2012-12-24 09:35:48 -0500)
 
---=-VCZvQISQsRs1FNey2Auk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+are available in the git repository at:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+  gitolite@ra.kernel.org:/pub/scm/linux/kernel/git/rusty/linux.git tags/fixes-for-linus
 
-iQIVAwUAUPyadOe/yOyVhhEJAQqvOw//RLcyEOZnEzSAZpTZ1LDGj8vlG4Uhgb3v
-3rDNk56BSo0JN4D/eH3mWBT5cbMXtGPcoOmnURvlxAs23/OTJFhQ4K9ZBcKQGJxs
-voOHUeXEBJIpwlw6nxtyJuV7Z4NhIcHtm0wJmEb6RnTFYaGYzb2Zc7MxKlMPN6uQ
-Fke+y8CPAP0sAMO+yfxBqwCkL60GaxvjltOlQVIBGQcgumihPvKvjYl/eiJRuiRy
-6JazOvC1mvb5uKUJm60AlX2D3SBVdRm31JjpPwfIhvjv4H1ilgJTSDKdGJqwJkdM
-AZGx88eLoHWVij2MFm9x39c7RpdKTiZdd3neDu84pFkMaKHhQA62m9MoFW+XfbuG
-Leoc1Nss+JiXRLhJ//KvD4j6MTgoWU/ANi13iGY/lNj+gHLA/+u6tNH7BTKKEpHE
-jIN5pQbg31XMJixL9nArJXdj8ouvzUfaou99ssvcWP+LEDBjHftrDlq9XijbEYOe
-ZDueHofcdFDnqYqISsJcCzyZ04rvdGcY1OvML18XF2y90uNe67UkL+LLF0lCpZnz
-QFcFwcTJqGPXREvjuVfWuuIl+unu5snpPaqcQELy9l4hOoP3gp+am/GlQwQwRkzv
-oyiWoZvofU5DXWXztB6gEp4ZklOwMBmUPgI8jPYBNLK8UD7Twrs0W+1m/EqS32fA
-AA7sTqgL748=
-=82jV
------END PGP SIGNATURE-----
+for you to fetch changes up to 8f82d479da05bd7df8cca3a5fbc0273f73b601c0:
 
---=-VCZvQISQsRs1FNey2Auk--
+  module: potential deadlock in error path (2013-01-21 11:29:33 +1030)
+
+----------------------------------------------------------------
+Various minor fixes, but a slightly more complex one to fix the per-cpu overload
+problem introduced recently by kvm id changes.
+
+(Now with an error path fix from Dan, thanks)
+
+----------------------------------------------------------------
+Alexander Graf (1):
+      virtio-blk: Don't free ida when disk is in use
+
+Dan Carpenter (1):
+      module: potential deadlock in error path
+
+Rusty Russell (2):
+      module: add new state MODULE_STATE_UNFORMED.
+      module: put modules in list much earlier.
+
+Sasha Levin (1):
+      module: prevent warning when finit_module a 0 sized file
+
+ drivers/block/virtio_blk.c  |    7 +-
+ include/linux/module.h      |   10 +--
+ kernel/debug/kdb/kdb_main.c |    2 +
+ kernel/module.c             |  156 ++++++++++++++++++++++++++++++-------------
+ lib/bug.c                   |    1 +
+ 5 files changed, 124 insertions(+), 52 deletions(-)
+
+
+
+
+
+
