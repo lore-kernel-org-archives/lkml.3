@@ -1,155 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780Ab3AUVNx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 16:13:53 -0500
-Received: from mga02.intel.com ([134.134.136.20]:21702 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752074Ab3AUVNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 16:13:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,508,1355126400"; 
-   d="scan'208";a="274831232"
-Date: Mon, 21 Jan 2013 14:13:50 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH 14/21] NTB: Fix Sparse Warnings
-Message-ID: <20130121211350.GH22208@jonmason-lab>
-References: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
- <1358586155-23322-15-git-send-email-jon.mason@intel.com>
- <20130120234534.GD14196@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130120234534.GD14196@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756798Ab3AUVOA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 16:14:00 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:55323 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074Ab3AUVN7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 16:13:59 -0500
+From: Laurent Navet <laurent.navet@gmail.com>
+To: linux-pcmcia@lists.infradead.org
+Cc: plagnioj@jcrosoft.com, gregkh@linuxfoundation.org, nicolas.ferre@atmel.com,
+        wfp5p@virginia.edu, linux-kernel@vger.kernel.org
+Subject: drivers/pcmcia fix checkpatch CodingStyle issues 
+Date: Mon, 21 Jan 2013 22:16:03 +0100
+Message-Id: <1358802966-10430-1-git-send-email-laurent.navet@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 03:45:34PM -0800, Greg KH wrote:
-> On Sat, Jan 19, 2013 at 02:02:28AM -0700, Jon Mason wrote:
-> > Address the sparse warnings and resulting fallout
-> > 
-> > Signed-off-by: Jon Mason <jon.mason@intel.com>
-> > ---
-> >  drivers/ntb/ntb_hw.c        |    7 ++++---
-> >  drivers/ntb/ntb_hw.h        |    4 ++--
-> >  drivers/ntb/ntb_transport.c |   32 ++++++++++++++++----------------
-> >  3 files changed, 22 insertions(+), 21 deletions(-)
-> > 
-> > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-> > index 18cb5dc..b792ccd 100644
-> > --- a/drivers/ntb/ntb_hw.c
-> > +++ b/drivers/ntb/ntb_hw.c
-> > @@ -104,8 +104,9 @@ MODULE_DEVICE_TABLE(pci, ntb_pci_tbl);
-> >   *
-> >   * RETURNS: An appropriate -ERRNO error value on error, or zero for success.
-> >   */
-> > -int ntb_register_event_callback(struct ntb_device *ndev,
-> > -				void (*func)(void *handle, unsigned int event))
-> > +int
-> > +ntb_register_event_callback(struct ntb_device *ndev,
-> > +			    void (*func)(void *handle, enum ntb_hw_event event))
-> 
-> What is sparse complaining about here that moving the function name to
-> the start of the line fixes?  That shouldn't be necessary at all.  Ah,
-> the enum?  If so, why change the first line at all?
+[PATCH 1/3] drivers: pcmcia: at91_cf.c fix checkpatch error
+[PATCH 2/3] drivers: pcmcia: ds.c fix checkpatch errors
+[PATCH 3/3] drivers: pcmcia: electra_cf.c fix checkpatch error and
 
-All an effort to get it to fit in under 80 chars.
+There is a lot of checkpatch issues in drivers/pcmcia directory
+this fix some of them, if this kind of work is appreciated,
+i can do more.
 
-> 
-> >  {
-> >  	if (ndev->event_cb)
-> >  		return -EINVAL;
-> > @@ -344,7 +345,7 @@ int ntb_read_remote_spad(struct ntb_device *ndev, unsigned int idx, u32 *val)
-> >   *
-> >   * RETURNS: pointer to virtual address, or NULL on error.
-> >   */
-> > -void *ntb_get_mw_vbase(struct ntb_device *ndev, unsigned int mw)
-> > +void __iomem *ntb_get_mw_vbase(struct ntb_device *ndev, unsigned int mw)
-> 
-> That makes sense to fix.
-> 
-> >  {
-> >  	if (mw > NTB_NUM_MW)
-> >  		return NULL;
-> > diff --git a/drivers/ntb/ntb_hw.h b/drivers/ntb/ntb_hw.h
-> > index 5e00951..3a3038c 100644
-> > --- a/drivers/ntb/ntb_hw.h
-> > +++ b/drivers/ntb/ntb_hw.h
-> > @@ -165,14 +165,14 @@ int ntb_register_db_callback(struct ntb_device *ndev, unsigned int idx,
-> >  void ntb_unregister_db_callback(struct ntb_device *ndev, unsigned int idx);
-> >  int ntb_register_event_callback(struct ntb_device *ndev,
-> >  				void (*event_cb_func) (void *handle,
-> > -						       unsigned int event));
-> > +						      enum ntb_hw_event event));
-> >  void ntb_unregister_event_callback(struct ntb_device *ndev);
-> >  int ntb_get_max_spads(struct ntb_device *ndev);
-> >  int ntb_write_local_spad(struct ntb_device *ndev, unsigned int idx, u32 val);
-> >  int ntb_read_local_spad(struct ntb_device *ndev, unsigned int idx, u32 *val);
-> >  int ntb_write_remote_spad(struct ntb_device *ndev, unsigned int idx, u32 val);
-> >  int ntb_read_remote_spad(struct ntb_device *ndev, unsigned int idx, u32 *val);
-> > -void *ntb_get_mw_vbase(struct ntb_device *ndev, unsigned int mw);
-> > +void __iomem *ntb_get_mw_vbase(struct ntb_device *ndev, unsigned int mw);
-> >  resource_size_t ntb_get_mw_size(struct ntb_device *ndev, unsigned int mw);
-> >  void ntb_ring_sdb(struct ntb_device *ndev, unsigned int idx);
-> >  void *ntb_find_transport(struct pci_dev *pdev);
-> > diff --git a/drivers/ntb/ntb_transport.c b/drivers/ntb/ntb_transport.c
-> > index b3afb24..e0bdfd7 100644
-> > --- a/drivers/ntb/ntb_transport.c
-> > +++ b/drivers/ntb/ntb_transport.c
-> > @@ -58,7 +58,7 @@
-> >  #include <linux/ntb.h>
-> >  #include "ntb_hw.h"
-> >  
-> > -#define NTB_TRANSPORT_VERSION	1
-> > +#define NTB_TRANSPORT_VERSION	2
-> 
-> How is this a sparse fix?
+Regards.
 
-I changed the format of the header below.
-
-> 
-> >  static unsigned int transport_mtu = 0x401E;
-> >  module_param(transport_mtu, uint, 0644);
-> > @@ -91,14 +91,14 @@ struct ntb_transport_qp {
-> >  	bool qp_link;
-> >  	u8 qp_num;	/* Only 64 QP's are allowed.  0-63 */
-> >  
-> > -	struct ntb_rx_info *rx_info;
-> > +	struct ntb_rx_info __iomem *rx_info;
-> >  	struct ntb_rx_info *remote_rx_info;
-> >  
-> >  	void (*tx_handler) (struct ntb_transport_qp *qp, void *qp_data,
-> >  			    void *data, int len);
-> >  	struct list_head tx_free_q;
-> >  	spinlock_t ntb_tx_free_q_lock;
-> > -	void *tx_mw;
-> > +	void __iomem *tx_mw;
-> >  	unsigned int tx_index;
-> >  	unsigned int tx_max_entry;
-> >  	unsigned int tx_max_frame;
-> > @@ -166,7 +166,7 @@ enum {
-> >  };
-> >  
-> >  struct ntb_payload_header {
-> > -	u64 ver;
-> > +	unsigned int ver;
-> 
-> why does sparse care about this?
-
-I am using the number of tx/rx packets transmitted as a sanity check
-on the data.  This is a 64bit counter.  There is no iowrite64, so I
-truncated this to 32bits.  I can rework this part of the patch to do 2
-iowrite32's and keep the value as 64bit.
-
-Thanks,
-Jon
-
-> 
-> thanks,
-> 
-> greg k-h
