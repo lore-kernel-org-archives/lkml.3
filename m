@@ -1,44 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab3AUOd5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 09:33:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2194 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753485Ab3AUOd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 09:33:56 -0500
-Message-ID: <50FD51C4.6070909@redhat.com>
-Date: Mon, 21 Jan 2013 09:33:40 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] mm/rmap: rename anon_vma_unlock() => anon_vma_unlock_write()
-References: <20130121115921.23500.7190.stgit@zurg>
-In-Reply-To: <20130121115921.23500.7190.stgit@zurg>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1755939Ab3AUOho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 09:37:44 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20825 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754030Ab3AUOhm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 09:37:42 -0500
+X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=247Zj1P6LJsA:10 a=FXmwvOYqAAAA:8 a=5PTCx8dfAAAA:8 a=VwQbUJbxAAAA:8 a=_gdoW3n9s2TqR2CJYbAA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=QmGog7O91dkA:10 a=jyh3A23puWoA:10 a=1JvJEtVdGvUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358779061.21576.19.camel@gandalf.local.home>
+Subject: Re: IPsec AH use of ahash
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tom St Denis <tstdenis@elliptictech.com>
+Cc: David Dillow <dave@thedillows.org>, Borislav Petkov <bp@alien8.de>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Date: Mon, 21 Jan 2013 09:37:41 -0500
+In-Reply-To: <1924594099.94729.1358775949651.JavaMail.root@elliptictech.com>
+References: <1924594099.94729.1358775949651.JavaMail.root@elliptictech.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 06:59 AM, Konstantin Khlebnikov wrote:
-> comment in 4fc3f1d66b1ef0d7b8dc11f4ff1cc510f78b37d6 ("mm/rmap, migration:
-> Make rmap_walk_anon() and try_to_unmap_anon() more scalable") says:
->
-> | Rename anon_vma_[un]lock() => anon_vma_[un]lock_write(),
-> | to make it clearer that it's an exclusive write-lock in
-> | that case - suggested by Rik van Riel.
->
-> But that commit renames only anon_vma_lock()
->
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Rik van Riel <riel@redhat.com>
+On Mon, 2013-01-21 at 08:45 -0500, Tom St Denis wrote:
+> 
+> ----- Original Message -----
+> > From: "Steven Rostedt" <rostedt@goodmis.org>
+> > To: "Tom St Denis" <tstdenis@elliptictech.com>
+> > Cc: "David Dillow" <dave@thedillows.org>, "Borislav Petkov" <bp@alien8.de>, linux-kernel@vger.kernel.org,
+> > netdev@vger.kernel.org
+> > Sent: Monday, 21 January, 2013 8:38:54 AM
+> > Subject: Re: IPsec AH use of ahash
+> 
+> > > The missing semi-colon is in fact missing and for that I apologize.
+> > >  This btw is the first legitimate gripe with the code thus far.
+> > 
+> > I've also found that those that have poor coding styles also have
+> > more
+> > of these "legitimate" problems too. Which is another reason not to
+> > accept patches with coding style issues.
+> 
+> I find that 73% of all stats are made up.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+I was only talking about my own experience. I gave no numbers.
 
 
--- 
-All rights reversed
+> > Did you try different configs? Before submitting my code, I run under
+> > 8
+> > different configs. SMP, non-SMP, PREEMPT, non PREEMPT, etc. also I
+> > run a
+> > few random configs before submitting.
+> 
+> None of course apply to this code [or shouldn't at least].
+
+I was just giving examples of what I use. As those usually apply to what
+I do. If your code is affected by any configs, you should compile with
+them on and off to make sure you didn't break them. This is a bit more
+extensive testing, and not always required. But it does help to do so,
+as it becomes embarrassing if your code breaks on a config you didn't
+test.
+
+That's coming from my own experience too ;-)
+
+>   
+> 
+> > Until you can play by the rules, don't bother playing. Feel free to
+> > dump
+> > code on LKML. Maybe someone that knows how to play the game will take
+> > it. But leave your gripes to your managers. No one here, but you,
+> > thinks
+> > there's a problem with the frame work.
+> 
+> I actually did resubmit this morning with most of the checkpatch issues fixed. 
+
+Thank you.
+
+> 
+> I'll avoid beating the dead horse though I'd like to move forward.
+> 
+> > > At least the testmgr errors are something I can work on whenever
+> > > without setting up a lab so likely that'll be something I can
+> > > tackle today actually.
+> > 
+> > While you're at it. You could spend an extra 5 minutes cleaning up
+> > the
+> > coding style ;-)
+> 
+> It actually took me about 45 minutes and about 5 revisions of the patches to clean up all the random coding style gripes from checkpatch.  The only reason I worked on it though is that there were build errors.  That way I can justify it to my boss.
+
+Your boss micro manages your time that much? And 45 mintes to do that?
+
+> 
+> Seriously, no spaces on the trailing edge of multi line comments?  :-/
+
+Some of checkpatch'es complaints are annoying. I'll grant you that. And
+checkpatch is more of a guideline than a strict rule. It's up to the
+maintainer of the code to determine how much checkpatch should be
+enforced.
+
+For example, checkpatch complains on code like:
+
++       asm volatile (
++#ifdef CONFIG_X86_64
++                       "       xchg   %%rbx,%%rsp      \n"
++#else
++                       "       xchgl   %%ebx,%%esp     \n"
++#endif
++                       "       int3                    \n"
++                       "       .globl jprobe_return_end\n"
++                       "       jprobe_return_end:      \n"
++                       "       nop                     \n"::"b"
++                       (kcb->jprobe_saved_sp):"memory");
+
+Because the white space before the '\n' is not needed. But adding that
+whitespace makes it easier to read the assembly.
+
+When enforcing checkpatch makes the code less readable, that's when it
+should be ignored. But again, that's really up to the maintainer of the
+code to decide.
+
+> 
+> Anyways, I did re-submit.  I still have no idea how testmgr works but hopefully someone can pick it up from there.
+
+Well thank you again. This is the way the kernel community works. Just
+state you're not familiar with testmgr, and someone who is should check
+it out.
+
+-- Steve
+
+
