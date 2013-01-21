@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab3AUMdA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 07:33:00 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36819 "EHLO arroyo.ext.ti.com"
+	id S1753261Ab3AUMei (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 07:34:38 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:48171 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752964Ab3AUMc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 07:32:57 -0500
-Message-ID: <50FD3561.7010104@ti.com>
-Date: Mon, 21 Jan 2013 18:02:33 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1752015Ab3AUMeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 07:34:37 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: myungjoo.ham@gmail.com
+Cc: Nishanth Menon <nm@ti.com>, linux-pm <linux-pm@vger.kernel.org>,
+        Kevin <khilman@deeprootsystems.com>,
+        lkml <linux-kernel@vger.kernel.org>, lo <linux-omap@vger.kernel.org>,
+        Jack <jack@embed.me.uk>, Alexander <holler@ahsoftware.de>
+Subject: Re: [PATCH 0/4] OPP usage fixes for RCU locking
+Date: Mon, 21 Jan 2013 13:40:35 +0100
+Message-ID: <3394404.9F6oTTpRKB@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAJ0PZbS6Ka7ZNJ+a4kXW89dYgwASWA_3pYQFPFtTNv8DwwQzLw@mail.gmail.com>
+References: <1358538755-29109-1-git-send-email-nm@ti.com> <2007041.tOt4VKpdOD@vostro.rjw.lan> <CAJ0PZbS6Ka7ZNJ+a4kXW89dYgwASWA_3pYQFPFtTNv8DwwQzLw@mail.gmail.com>
 MIME-Version: 1.0
-To: "Kumar, Anil" <anilkumar.v@ti.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux@arm.linux.org.uk>, <khilman@deeprootsystems.com>, <hs@denx.de>
-Subject: Re: [PATCH V5 3/3] ARM: davinci: da850: add NAND driver DT entries
-References: <1358327261-9679-1-git-send-email-anilkumar.v@ti.com> <1358327261-9679-4-git-send-email-anilkumar.v@ti.com>
-In-Reply-To: <1358327261-9679-4-git-send-email-anilkumar.v@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anil,
-
-On 1/16/2013 2:37 PM, Kumar, Anil wrote:
-> Add NAND driver DT node and related pinctrl DT data to export NAND
-> functionality on da850 evm.
+On Monday, January 21, 2013 02:45:32 PM MyungJoo Ham wrote:
+> On Sat, Jan 19, 2013 at 7:28 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Friday, January 18, 2013 01:52:31 PM Nishanth Menon wrote:
+> >> Hi,
+> >> Despite being documented in function documentation and in
+> >> Documentation/power/opp.txt, many of the users of OPP APIs
+> >> dont honor RCU lock usage appropriately.
+> >>
+> >> This recently appeared in IRC discussion earlier today [1].
+> >> I did an audit of current usage and the following series
+> >> is a result of this.
+> >>
+> >> NOTE:
+> >> 1. The patch "PM / devfreq: exynos4_bus: honor RCU lock usage" has only
+> >>    been build tested as I dont have an exynos platform to try it on. I have
+> >>    tried to make it as least intrusive as possible and at least reviewed
+> >>    to ensure I haven't screwed anything up.
+> >>
+> >> Other than this, I have added appropriate tested by information in requisite
+> >> patches.
+> >
+> > Thanks for the fixes.
+> >
+> > MyungJoo, do you want me to take the devfreq ones too?
+> >
+> > Rafael
 > 
-> Signed-off-by: Kumar, Anil <anilkumar.v@ti.com>
+> Yes, please take RCU-OPP patches. Having those patches splitted
+> doesn't seem beneficial.
 
-I applied all three patches in this series.
+OK, I will take them.
 
-> +	nand_cs3@62000000 {
-> +		compatible = "ti,davinci-nand";
-> +		reg = <0x62000000 0x807ff
-> +			0x68000000 0x8000>;
+> I'll let other devfreq patches be based on this after you get them applied.
 
-While applying I changed the indentation of this line so the two
-addresses are aligned.
+OK
 
 Thanks,
-Sekhar
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
