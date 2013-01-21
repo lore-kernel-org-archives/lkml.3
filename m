@@ -1,199 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047Ab3AULMF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 06:12:05 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:58740 "EHLO bear.ext.ti.com"
+	id S1753233Ab3AULMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 06:12:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54540 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752398Ab3AULMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 06:12:03 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <sameo@linux.intel.com>, <balbi@ti.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>
-CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <rogerq@ti.com>
-Subject: [PATCH v9 16/22] mfd: omap-usb-host: Manage HSIC clocks for HSIC mode
-Date: Mon, 21 Jan 2013 13:11:50 +0200
-Message-ID: <1358766710-5694-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1358511445-26656-18-git-send-email-rogerq@ti.com>
-References: <1358511445-26656-18-git-send-email-rogerq@ti.com>
+	id S1753097Ab3AULMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 06:12:10 -0500
+Date: Mon, 21 Jan 2013 12:12:06 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Zhouping Liu <zliu@redhat.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        Li Zefan <lizefan@huawei.com>, CAI Qian <caiqian@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
+Message-ID: <20130121111206.GG7798@dhcp22.suse.cz>
+References: <4FEE7665.6020409@jp.fujitsu.com>
+ <389106003.8637801.1358757547754.JavaMail.root@redhat.com>
+ <20130121105624.GF7798@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130121105624.GF7798@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the optional HSIC clocks (60MHz and 480MHz) for the ports
-that are configured in HSIC mode.
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+And we can put another clean up patch on top of the fix:
 ---
- drivers/mfd/omap-usb-host.c |   97 ++++++++++++++++++++++++++++++++++++------
- 1 files changed, 83 insertions(+), 14 deletions(-)
+>From a81d36002e7dbd976b617d5eadf32265f36038a4 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Mon, 21 Jan 2013 12:05:29 +0100
+Subject: [PATCH] memcg: clean up swap accounting initialization code
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 9fa0215..bdfc8b7 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -93,6 +93,8 @@
- struct usbhs_hcd_omap {
- 	int				nports;
- 	struct clk			**utmi_clk;
-+	struct clk			**hsic60m_clk;
-+	struct clk			**hsic480m_clk;
+Memcg swap accounting is currently enabled by enable_swap_cgroup when
+the root cgroup is created. mem_cgroup_init acts as a memcg subsystem
+initializer which sounds like a much better place for enable_swap_cgroup
+as well. We already register memsw files from there so it makes a lot of
+sense to merge those two into a single enable_swap_cgroup function.
+
+This patch doesn't introduce any semantical changes.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |   30 ++++++++++++------------------
+ 1 file changed, 12 insertions(+), 18 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index a2800db..878d62c 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6221,18 +6221,6 @@ struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg)
+ }
+ EXPORT_SYMBOL(parent_mem_cgroup);
  
- 	struct clk			*xclk60mhsp1_ck;
- 	struct clk			*xclk60mhsp2_ck;
-@@ -286,13 +288,40 @@ static int usbhs_runtime_resume(struct device *dev)
- 		clk_enable(omap->ehci_logic_fck);
- 
- 	for (i = 0; i < omap->nports; i++) {
--		if (!is_ehci_tll_mode(pdata->port_mode[i]) ||
--				IS_ERR(omap->utmi_clk[i]))
--			continue;
+-#ifdef CONFIG_MEMCG_SWAP
+-static void __init enable_swap_cgroup(void)
+-{
+-	if (!mem_cgroup_disabled() && really_do_swap_account)
+-		do_swap_account = 1;
+-}
+-#else
+-static void __init enable_swap_cgroup(void)
+-{
+-}
+-#endif
 -
--		r = clk_enable(omap->utmi_clk[i]);
--		if (r)
--			dev_err(dev, "Can't enable port %d clk : %d\n", i, r);
-+		switch (pdata->port_mode[i]) {
-+		case OMAP_EHCI_PORT_MODE_HSIC:
-+			if (!IS_ERR(omap->hsic60m_clk[i])) {
-+				r = clk_enable(omap->hsic60m_clk[i]);
-+				if (r) {
-+					dev_err(dev,
-+					 "Can't enable port %d hsic60m clk:%d\n",
-+					 i, r);
-+				}
-+			}
+ static int mem_cgroup_soft_limit_tree_init(void)
+ {
+ 	struct mem_cgroup_tree_per_node *rtpn;
+@@ -6286,7 +6274,6 @@ mem_cgroup_css_alloc(struct cgroup *cont)
+ 	/* root ? */
+ 	if (cont->parent == NULL) {
+ 		int cpu;
+-		enable_swap_cgroup();
+ 		parent = NULL;
+ 		if (mem_cgroup_soft_limit_tree_init())
+ 			goto free_out;
+@@ -6976,12 +6963,19 @@ __setup("swapaccount=", enable_swap_account);
+ 
+ static void __init memsw_file_init(void)
+ {
+-	if (really_do_swap_account)
+-		WARN_ON(cgroup_add_cftypes(&mem_cgroup_subsys,
+-					memsw_cgroup_files));
++	WARN_ON(cgroup_add_cftypes(&mem_cgroup_subsys, memsw_cgroup_files));
++}
 +
-+			if (!IS_ERR(omap->hsic480m_clk[i])) {
-+				r = clk_enable(omap->hsic480m_clk[i]);
-+				if (r) {
-+					dev_err(dev,
-+					 "Can't enable port %d hsic480m clk:%d\n",
-+					 i, r);
-+				}
-+			}
-+		/* Fall through as HSIC mode needs utmi_clk */
-+
-+		case OMAP_EHCI_PORT_MODE_TLL:
-+			if (!IS_ERR(omap->utmi_clk[i])) {
-+				r = clk_enable(omap->utmi_clk[i]);
-+				if (r) {
-+					dev_err(dev,
-+					 "Can't enable port %d clk : %d\n",
-+					 i, r);
-+				}
-+			}
-+			break;
-+		default:
-+			break;
-+		}
- 	}
- 
- 	spin_unlock_irqrestore(&omap->lock, flags);
-@@ -312,9 +341,22 @@ static int usbhs_runtime_suspend(struct device *dev)
- 	spin_lock_irqsave(&omap->lock, flags);
- 
- 	for (i = 0; i < omap->nports; i++) {
--		if (is_ehci_tll_mode(pdata->port_mode[i]) &&
--				!IS_ERR(omap->utmi_clk[i]))
--			clk_disable(omap->utmi_clk[i]);
-+		switch (pdata->port_mode[i]) {
-+		case OMAP_EHCI_PORT_MODE_HSIC:
-+			if (!IS_ERR(omap->hsic60m_clk[i]))
-+				clk_disable(omap->hsic60m_clk[i]);
-+
-+			if (!IS_ERR(omap->hsic480m_clk[i]))
-+				clk_disable(omap->hsic480m_clk[i]);
-+		/* Fall through as utmi_clks were used in HSIC mode */
-+
-+		case OMAP_EHCI_PORT_MODE_TLL:
-+			if (!IS_ERR(omap->utmi_clk[i]))
-+				clk_disable(omap->utmi_clk[i]);
-+			break;
-+		default:
-+			break;
-+		}
- 	}
- 
- 	if (!IS_ERR(omap->ehci_logic_fck))
-@@ -520,7 +562,10 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 
- 	i = sizeof(struct clk *) * omap->nports;
- 	omap->utmi_clk = devm_kzalloc(dev, i, GFP_KERNEL);
--	if (!omap->utmi_clk) {
-+	omap->hsic480m_clk = devm_kzalloc(dev, i, GFP_KERNEL);
-+	omap->hsic60m_clk = devm_kzalloc(dev, i, GFP_KERNEL);
-+
-+	if (!omap->utmi_clk || !omap->hsic480m_clk || !omap->hsic60m_clk) {
- 		dev_err(dev, "Memory allocation failed\n");
- 		ret = -ENOMEM;
- 		goto err_mem;
-@@ -578,7 +623,7 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 	}
- 
- 	for (i = 0; i < omap->nports; i++) {
--		char clkname[] = "usb_host_hs_utmi_px_clk";
-+		char clkname[30];
- 
- 		/* clock names are indexed from 1*/
- 		snprintf(clkname, sizeof(clkname),
-@@ -592,6 +637,20 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 		if (IS_ERR(omap->utmi_clk[i]))
- 			dev_dbg(dev, "Failed to get clock : %s : %ld\n",
- 				clkname, PTR_ERR(omap->utmi_clk[i]));
-+
-+		snprintf(clkname, sizeof(clkname),
-+				"usb_host_hs_hsic480m_p%d_clk", i + 1);
-+		omap->hsic480m_clk[i] = clk_get(dev, clkname);
-+		if (IS_ERR(omap->hsic480m_clk[i]))
-+			dev_dbg(dev, "Failed to get clock : %s : %ld\n",
-+				clkname, PTR_ERR(omap->hsic480m_clk[i]));
-+
-+		snprintf(clkname, sizeof(clkname),
-+				"usb_host_hs_hsic60m_p%d_clk", i + 1);
-+		omap->hsic60m_clk[i] = clk_get(dev, clkname);
-+		if (IS_ERR(omap->hsic60m_clk[i]))
-+			dev_dbg(dev, "Failed to get clock : %s : %ld\n",
-+				clkname, PTR_ERR(omap->hsic60m_clk[i]));
- 	}
- 
- 	if (is_ehci_phy_mode(pdata->port_mode[0])) {
-@@ -635,9 +694,14 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- err_alloc:
- 	omap_usbhs_deinit(&pdev->dev);
- 
--	for (i = 0; i < omap->nports; i++)
-+	for (i = 0; i < omap->nports; i++) {
- 		if (!IS_ERR(omap->utmi_clk[i]))
- 			clk_put(omap->utmi_clk[i]);
-+		if (!IS_ERR(omap->hsic60m_clk[i]))
-+			clk_put(omap->hsic60m_clk[i]);
-+		if (!IS_ERR(omap->hsic480m_clk[i]))
-+			clk_put(omap->hsic480m_clk[i]);
++static void __init enable_swap_cgroup(void)
++{
++	if (!mem_cgroup_disabled() && really_do_swap_account) {
++		do_swap_account = 1;
++		memsw_file_init();
 +	}
- 
- 	clk_put(omap->init_60m_fclk);
- 
-@@ -676,9 +740,14 @@ static int usbhs_omap_remove(struct platform_device *pdev)
- 
- 	omap_usbhs_deinit(&pdev->dev);
- 
--	for (i = 0; i < omap->nports; i++)
-+	for (i = 0; i < omap->nports; i++) {
- 		if (!IS_ERR(omap->utmi_clk[i]))
- 			clk_put(omap->utmi_clk[i]);
-+		if (!IS_ERR(omap->hsic60m_clk[i]))
-+			clk_put(omap->hsic60m_clk[i]);
-+		if (!IS_ERR(omap->hsic480m_clk[i]))
-+			clk_put(omap->hsic480m_clk[i]);
-+	}
- 
- 	clk_put(omap->init_60m_fclk);
- 	clk_put(omap->utmi_p1_gfclk);
+ }
++
+ #else
+-static void __init memsw_file_init(void)
++static void __init enable_swap_cgroup(void)
+ {
+ }
+ #endif
+@@ -6995,7 +6989,7 @@ static void __init memsw_file_init(void)
+ static int __init mem_cgroup_init(void)
+ {
+ 	hotcpu_notifier(memcg_cpu_hotplug_callback, 0);
+-	memsw_file_init();
++	enable_swap_cgroup();
+ 	return 0;
+ }
+ subsys_initcall(mem_cgroup_init);
 -- 
-1.7.4.1
+1.7.10.4
 
+-- 
+Michal Hocko
+SUSE Labs
