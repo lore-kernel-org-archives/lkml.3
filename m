@@ -1,309 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab3AUX33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 18:29:29 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51726 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351Ab3AUX31 (ORCPT
+	id S1755337Ab3AUX3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 18:29:50 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:64195 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752351Ab3AUX3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 18:29:27 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-01-50fdcf558e72
-Date: Tue, 22 Jan 2013 08:29:25 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 3/4] zram: get rid of lockdep warning
-Message-ID: <20130121232925.GF3666@blaptop>
-References: <1358745691-4556-1-git-send-email-minchan@kernel.org>
- <1358745691-4556-3-git-send-email-minchan@kernel.org>
- <50FD9B50.4090802@redhat.com>
+	Mon, 21 Jan 2013 18:29:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FD9B50.4090802@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130121231130.GB12410@thunk.org>
+References: <CA+icZUWOvk5i+XY22xdZYuxu=Vy3fG2QxJStEgNFQVS4u55y-w@mail.gmail.com>
+	<CA+icZUUzNYE9QAh_p7=ZNuvZbxRPCb9zd4k7+aW-hv34mQWz=A@mail.gmail.com>
+	<20130121104733.GE5588@quack.suse.cz>
+	<CA+icZUVy-=jJkRsEKmX+ZGRjiGr4wwp3pqdxuLCRHeqW_H0x9Q@mail.gmail.com>
+	<CA+icZUVAP4ArN+j34GTUwMxte5DtLPJSrLmK9T6Na8Qy+aM0Rg@mail.gmail.com>
+	<20130121140738.GI5588@quack.suse.cz>
+	<CA+icZUXLcdnNPvA9o8d5msOQ0MkMci8mPXujLZ3zcYjYcVZ7JQ@mail.gmail.com>
+	<20130121231130.GB12410@thunk.org>
+Date: Tue, 22 Jan 2013 00:29:46 +0100
+Message-ID: <CA+icZUUA95x57CgLLtV6Z05aNv3FoTRDcmt71BwbqQLscrzwrw@mail.gmail.com>
+Subject: Re: jbd2: don't wake kjournald unnecessarily
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Jan Kara <jack@suse.cz>, Eric Sandeen <sandeen@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 08:47:28PM +0100, Jerome Marchand wrote:
-> On 01/21/2013 06:21 AM, Minchan Kim wrote:
-> > Lockdep complains about recursive deadlock of zram->init_lock.
-> > [1] made it false positive because we can't request IO to zram
-> > before setting disksize. Anyway, we should shut lockdep up to
-> > avoid many reporting from user.
-> > 
-> > Cc: Jerome Marchand <jmarchan@redhat.com>
-> > Cc: Nitin Gupta <ngupta@vflare.org>
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  drivers/staging/zram/zram_drv.c   |  115 +++++++++++++++++++------------------
-> >  drivers/staging/zram/zram_drv.h   |   12 +++-
-> >  drivers/staging/zram/zram_sysfs.c |   10 +++-
-> >  3 files changed, 79 insertions(+), 58 deletions(-)
-> > 
-> > diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> > index e95e37c..1f6938a 100644
-> > --- a/drivers/staging/zram/zram_drv.c
-> > +++ b/drivers/staging/zram/zram_drv.c
-> > @@ -462,19 +462,12 @@ error:
-> >  void __zram_reset_device(struct zram *zram)
-> >  {
-> >  	size_t index;
-> > +	struct zram_meta meta;
-> >  
-> >  	if (!zram->init_done)
-> >  		goto out;
-> >  
-> >  	zram->init_done = 0;
-> > -
-> > -	/* Free various per-device buffers */
-> > -	kfree(zram->compress_workmem);
-> > -	free_pages((unsigned long)zram->compress_buffer, 1);
-> > -
-> > -	zram->compress_workmem = NULL;
-> > -	zram->compress_buffer = NULL;
-> > -
-> >  	/* Free all pages that are still in this zram device */
-> >  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
-> >  		unsigned long handle = zram->table[index].handle;
-> > @@ -484,11 +477,11 @@ void __zram_reset_device(struct zram *zram)
-> >  		zs_free(zram->mem_pool, handle);
-> >  	}
-> >  
-> > -	vfree(zram->table);
-> > -	zram->table = NULL;
-> > -
-> > -	zs_destroy_pool(zram->mem_pool);
-> > -	zram->mem_pool = NULL;
-> > +	meta.compress_workmem = zram->compress_workmem;
-> > +	meta.compress_buffer = zram->compress_buffer;
-> > +	meta.table = zram->table;
-> > +	meta.mem_pool = zram->mem_pool;
-> > +	zram_meta_free(&meta);
-> >  
-> >  	/* Reset stats */
-> >  	memset(&zram->stats, 0, sizeof(zram->stats));
-> > @@ -505,12 +498,59 @@ void zram_reset_device(struct zram *zram)
-> >  	up_write(&zram->init_lock);
-> >  }
-> >  
-> > -/* zram->init_lock should be held */
-> > -int zram_init_device(struct zram *zram)
-> > +void zram_meta_free(struct zram_meta *meta)
-> > +{
-> > +	zs_destroy_pool(meta->mem_pool);
-> > +	kfree(meta->compress_workmem);
-> > +	free_pages((unsigned long)meta->compress_buffer, 1);
-> > +	vfree(meta->table);
-> > +	kfree(meta);
-> 
-> At all callsite, meta is a local variable. We don't want to free it.
+On Tue, Jan 22, 2013 at 12:11 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Tue, Jan 22, 2013 at 12:04:32AM +0100, Sedat Dilek wrote:
+>>
+>> Beyond the FUSE/LOOP fun, will you apply this patch to your linux-next GIT tree?
+>>
+>> Feel free to add...
+>>
+>>      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+>>
+>> A similiar patch for JBD went through your tree into mainline (see [1] and [2]).
+>
+> I'm not at all convinced that this patch has anything to do with your
+> problem.  I don't see how it could affect things, and I believe you
+> mentioned that you saw the problem even with this patch applied?  (I'm
+> not sure; some of your messages which you sent were hard to
+> understand, and you mentioned something about trying to send messages
+> when low on sleep :-).
+>
 
-Argh, It was error from previous version which uses zram_meta dynamically.
-I will filx in next spin.
+Even with little sleep I know what I have written.
+YES, it didn't fix my problem but it also did not hurt my system.
+I just run Linux Test Project w/o errors which also means nothing.
+( Hmmm, I checked-out xfstests... did I compile it :-)? )
 
-> 
-> > +}
-> > +
-> > +int zram_meta_alloc(struct zram_meta *meta, u64 disksize)
-> >  {
-> > -	int ret;
-> >  	size_t num_pages;
-> >  
-> > +	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
-> > +	if (!meta->compress_workmem) {
-> > +		pr_err("Error allocating compressor working memory!\n");
-> > +		goto out;
-> > +	}
-> > +
-> > +	meta->compress_buffer =
-> > +			(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO, 1);
-> > +	if (!meta->compress_buffer) {
-> > +		pr_err("Error allocating compressor buffer space\n");
-> > +		goto free_workmem;
-> > +	}
-> > +
-> > +	num_pages = disksize >> PAGE_SHIFT;
-> > +	meta->table = vzalloc(num_pages * sizeof(*meta->table));
-> > +	if (!meta->table) {
-> > +		pr_err("Error allocating zram address table\n");
-> > +		goto free_buffer;
-> > +	}
-> > +
-> > +	meta->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
-> > +	if (!meta->mem_pool) {
-> > +		pr_err("Error creating memory pool\n");
-> > +		goto free_table;
-> > +	}
-> > +
-> > +	return 0;
-> > +
-> > +free_table:
-> > +	vfree(meta->table);
-> > +free_buffer:
-> > +	free_pages((unsigned long)meta->compress_buffer, 1);
-> > +free_workmem:
-> > +	kfree(meta->compress_workmem);
-> > +out:
-> > +	return -ENOMEM;
-> > +}
-> > +
-> > +void zram_init_device(struct zram *zram, struct zram_meta *meta)
-> > +{
-> >  	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
-> >  		pr_info(
-> >  		"There is little point creating a zram of greater than "
-> > @@ -525,51 +565,16 @@ int zram_init_device(struct zram *zram)
-> >  		);
-> >  	}
-> >  
-> > -	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
-> > -	if (!zram->compress_workmem) {
-> > -		pr_err("Error allocating compressor working memory!\n");
-> > -		ret = -ENOMEM;
-> > -		goto fail_no_table;
-> > -	}
-> > -
-> > -	zram->compress_buffer =
-> > -		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
-> > -	if (!zram->compress_buffer) {
-> > -		pr_err("Error allocating compressor buffer space\n");
-> > -		ret = -ENOMEM;
-> > -		goto fail_no_table;
-> > -	}
-> > -
-> > -	num_pages = zram->disksize >> PAGE_SHIFT;
-> > -	zram->table = vzalloc(num_pages * sizeof(*zram->table));
-> > -	if (!zram->table) {
-> > -		pr_err("Error allocating zram address table\n");
-> > -		ret = -ENOMEM;
-> > -		goto fail_no_table;
-> > -	}
-> > -
-> >  	/* zram devices sort of resembles non-rotational disks */
-> >  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
-> >  
-> > -	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
-> > -	if (!zram->mem_pool) {
-> > -		pr_err("Error creating memory pool\n");
-> > -		ret = -ENOMEM;
-> > -		goto fail;
-> > -	}
-> > -
-> > +	zram->mem_pool = meta->mem_pool;
-> > +	zram->compress_workmem = meta->compress_workmem;
-> > +	zram->compress_buffer = meta->compress_buffer;
-> > +	zram->table = meta->table;
-> >  	zram->init_done = 1;
-> >  
-> >  	pr_debug("Initialization done!\n");
-> > -	return 0;
-> > -
-> > -fail_no_table:
-> > -	/* To prevent accessing table entries during cleanup */
-> > -	zram->disksize = 0;
-> > -fail:
-> > -	__zram_reset_device(zram);
-> 
-> Here goes the last call to __zram_reset_device() outside of zram_reset_device().
-> I guess we should get rid of it.
+> In any case, the reason why I haven't pulled this patch into the ext4
+> tree is because I was waiting for Eric and some of the performance
+> team folks at Red Hat to supply some additional information about why
+> this commit was making a difference in performance for a particular
+> proprietary, closed source benchmark.
+>
 
-Yeb. Will include it.
-Thanks for the review!
+I am not following the linux-ext4/linux-fsdevel MLs so much, but IIRC
+this patch is from December 2012.
+An identical patch for JBD (approx. from same date) went upstream,
+that's why I asked.
+But now I know you care of JBD2 stuff :-).
+Of course, I leave it to the experts to decide.
+Come on Eric, open the pandora box and bomb Ted with logs and traces :-).
 
-> 
-> Jerome
-> 
-> > -	pr_err("Initialization failed: err=%d\n", ret);
-> > -	return ret;
-> >  }
-> >  
-> >  static void zram_slot_free_notify(struct block_device *bdev,
-> > diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-> > index 5b671d1..fbe7db0 100644
-> > --- a/drivers/staging/zram/zram_drv.h
-> > +++ b/drivers/staging/zram/zram_drv.h
-> > @@ -83,11 +83,19 @@ struct zram_stats {
-> >  	u32 bad_compress;	/* % of pages with compression ratio>=75% */
-> >  };
-> >  
-> > +struct zram_meta {
-> > +	void *compress_workmem;
-> > +	void *compress_buffer;
-> > +	struct table *table;
-> > +	struct zs_pool *mem_pool;
-> > +};
-> > +
-> >  struct zram {
-> >  	struct zs_pool *mem_pool;
-> >  	void *compress_workmem;
-> >  	void *compress_buffer;
-> >  	struct table *table;
-> > +
-> >  	spinlock_t stat64_lock;	/* protect 64-bit stats */
-> >  	struct rw_semaphore lock; /* protect compression buffers and table
-> >  				   * against concurrent read and writes */
-> > @@ -111,7 +119,9 @@ unsigned int zram_get_num_devices(void);
-> >  extern struct attribute_group zram_disk_attr_group;
-> >  #endif
-> >  
-> > -extern int zram_init_device(struct zram *zram);
-> >  extern void zram_reset_device(struct zram *zram);
-> > +extern int zram_meta_alloc(struct zram_meta *meta, u64 disksize);
-> > +extern void zram_meta_free(struct zram_meta *meta);
-> > +extern void zram_init_device(struct zram *zram, struct zram_meta *meta);
-> >  
-> >  #endif
-> > diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-> > index 369db12..31433ef 100644
-> > --- a/drivers/staging/zram/zram_sysfs.c
-> > +++ b/drivers/staging/zram/zram_sysfs.c
-> > @@ -56,22 +56,28 @@ static ssize_t disksize_store(struct device *dev,
-> >  		struct device_attribute *attr, const char *buf, size_t len)
-> >  {
-> >  	u64 disksize;
-> > +	struct zram_meta meta;
-> >  	struct zram *zram = dev_to_zram(dev);
-> >  
-> >  	disksize = memparse(buf, NULL);
-> >  	if (!disksize)
-> >  		return -EINVAL;
-> >  
-> > +	disksize = PAGE_ALIGN(disksize);
-> > +	if (zram_meta_alloc(&meta, disksize))
-> > +		return -ENOMEM;
-> > +
-> >  	down_write(&zram->init_lock);
-> >  	if (zram->init_done) {
-> >  		up_write(&zram->init_lock);
-> > +		zram_meta_free(&meta);
-> >  		pr_info("Cannot change disksize for initialized device\n");
-> >  		return -EBUSY;
-> >  	}
-> >  
-> > -	zram->disksize = PAGE_ALIGN(disksize);
-> > +	zram->disksize = disksize;
-> >  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-> > -	zram_init_device(zram);
-> > +	zram_init_device(zram, &meta);
-> >  	up_write(&zram->init_lock);
-> >  
-> >  	return len;
-> > 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> I'm very suspicious about applying patches under the "cargo cult"
+> school of programming.  ("We don't understand why it makes a
+> difference, but it seems to be good, so bombs away!" :-)
+>
 
--- 
-Kind regards,
-Minchan Kim
+A good attitude - a man we can trust!
+
+I would liked to see a more positive development on my issue.
+But I still see no real reason to throw this WUBI installation away
+hitting a "corner" case.
+It was done as a temporary installation and made me happy in my daily
+working life.
+If I will get unhappy I boot into Win7, oops.
+
+- Sedat -
+
+> Regards,
+>
+>                                         - Ted
