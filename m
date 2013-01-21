@@ -1,135 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185Ab3AUMDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 07:03:11 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:41316
+	id S1754850Ab3AUMPg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 07:15:36 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:56523
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752866Ab3AUMDJ (ORCPT
+	by vger.kernel.org with ESMTP id S1752985Ab3AUMDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 07:03:09 -0500
+	Mon, 21 Jan 2013 07:03:11 -0500
 X-IronPort-AV: E=Sophos;i="4.84,506,1355094000"; 
-   d="scan'208";a="169187829"
+   d="scan'208";a="169187831"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 0/14] adjust duplicate test
-Date: Mon, 21 Jan 2013 14:02:44 +0100
-Message-Id: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/15] drivers/usb/chipidea/core.c: adjust duplicate test
+Date: Mon, 21 Jan 2013 14:02:46 +0100
+Message-Id: <1358773378-4700-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches fix cases where a value is tested that was previously
-tested.  Often the problem is that the tested value has not been updated
-properly.  Sometimes the test is simply duplicated.  These problems were
-found using the following semantic match (http://coccinelle.lip6.fr/):
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+
+Delete successive tests to the same location.  In this case res has already
+been tested for being NULL, and calling devm_request_and_ioremap will not
+make it NULL.  On the other hand, devm_request_and_ioremap can return NULL
+on failure.
+
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
 // <smpl>
-@r exists@
-expression e1,e2;
-identifier f,g;
-position p1,p2;
-@@
-
-if@p1 ( \(e1->f == NULL\|IS_ERR(e1->f)\) ) { ... when forall
-   return ...; }
-... when != \(e1->f = e2\|e1->f += e2\|e1->f -= e2\|e1->f |= e2\|e1->f &= e2\|e1->f++\|e1->f--\|g(...,e1,...)\)
-if@p2 ( \(e1->f == NULL\|IS_ERR(e1->f)\) ) { ... when forall
-   return ...; }
-
-@rsame exists@
-expression e;
-position r.p1,r.p2;
-statement S1,S2;
-@@
-
-if@p1 ( e ) S1
-... when any
-if@p2 ( e ) S2
-
-@rok depends on rsame exists@
-expression e1,e2;
-identifier f;
-position r.p1,r.p2;
-statement S1,S2;
-@@
-
-if@p1 ( \(e1->f == NULL\|IS_ERR(e1->f)\) ) S1
-... when any
- \(e1->f = e2\|e1->f += e2\|e1->f -= e2\|e1->f |= e2\|e1->f &= e2\|e1->f++\|e1->f--\|g(...,e1,...)\)
-... when any
-if@p2 ( ... ) S2
-
-@rother depends on rsame exists@
-position r.p1,r.p2;
-statement S;
-@@
-
-... when != if@p1 (...) S
-if@p2 ( ... ) { ... return ...; }
-
-@script:python depends on rsame && !rok && !rother@
-p1 << r.p1;
-p2 << r.p2;
-@@
-
-if (p1[0].line != p2[0].line):
-  cocci.print_main("",p1)
-  cocci.print_secs("",p2)
-
 @s exists@
 local idexpression y;
-expression e;
-position p1,p2;
+expression x,e;
 @@
 
-
-if@p1 ( \(y == NULL\|IS_ERR(y)\|y != 0\) ) { ... when forall
+*if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
+ { ... when forall
    return ...; }
-... when != \(y = e\|y += e\|y -= e\|y |= e\|y &= e\|y++\|y--\|&y\|XT_GETPAGE(...,y)\|WMI_CMD_BUF(...)\)
-if@p2 ( \(y == NULL\|IS_ERR(y)\|y != 0\) ) { ... when forall
+... when != \(y = e\|y += e\|y -= e\|y |= e\|y &= e\|y++\|y--\|&y\)
+    when != \(XT_GETPAGE(...,y)\|WMI_CMD_BUF(...)\)
+*if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
+ { ... when forall
    return ...; }
-
-@ssame exists@
-expression e;
-position s.p1,s.p2;
-statement S1,S2;
-@@
-
-if@p1 ( e ) S1
-... when any
-if@p2 ( e ) S2
-
-@sok depends on ssame exists@
-local idexpression y;
-expression e;
-position s.p1,s.p2;
-statement S1,S2;
-@@
-
-if@p1 ( \(y == NULL\|IS_ERR(y)\|y != 0\) ) S1
-... when any
- \(y = e\|y += e\|y -= e\|y |= e\|y &= e\|y++\|y--\|&y\|XT_GETPAGE(...,y)\|WMI_CMD_BUF(...)\)
-... when any
-if@p2 ( ... ) S2
-
-@sother depends on ssame exists@
-position s.p1,s.p2;
-statement S;
-@@
-
-... when != if@p1 (...) S
-if@p2 ( ... ) { ... return ...; }
-
-@script:python depends on ssame && !sok && !sother@
-p1 << s.p1;
-p2 << s.p2;
-@@
-
-if (p1[0].line != p2[0].line):
-  cocci.print_main("",p1)
-  cocci.print_secs("",p2)
-
 // </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+This code could be improved in other ways.  The previous NULL test on res
+is not needed, and the dev_err in the error-handling code for the call to
+devm_request_and_ioremap is redundant with respect to the logging already
+done by devm_request_and_ioremap.  But these should probably be done
+separately.
+
+ drivers/usb/chipidea/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+index aebf695..57cae1f 100644
+--- a/drivers/usb/chipidea/core.c
++++ b/drivers/usb/chipidea/core.c
+@@ -411,7 +411,7 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	base = devm_request_and_ioremap(dev, res);
+-	if (!res) {
++	if (!base) {
+ 		dev_err(dev, "can't request and ioremap resource\n");
+ 		return -ENOMEM;
+ 	}
 
