@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab3AUBko (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 20:40:44 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:44580 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752493Ab3AUBkn (ORCPT
+	id S1752642Ab3AUBkw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 20:40:52 -0500
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:52085 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab3AUBkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 20:40:43 -0500
-Date: Mon, 21 Jan 2013 01:40:41 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
-        John Kacur <jkacur@gmail.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Subject: Re: [RFC][PATCH v3] slub: Keep page and object in sync in
- slab_alloc_node()
-In-Reply-To: <1358536190.11051.573.camel@edumazet-glaptop>
-Message-ID: <0000013c5ac3b6c6-3f8fa112-f11b-4b13-8394-7f688fd18191-000000@email.amazonses.com>
-References: <1358446258.23211.32.camel@gandalf.local.home> <1358447864.23211.34.camel@gandalf.local.home> <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com> <1358458996.23211.46.camel@gandalf.local.home>
- <0000013c4a7e7fbf-c51fd42a-2455-4fec-bb37-915035956f05-000000@email.amazonses.com> <1358462763.23211.57.camel@gandalf.local.home> <1358464245.23211.62.camel@gandalf.local.home> <1358464837.23211.66.camel@gandalf.local.home> <1358468598.23211.67.camel@gandalf.local.home>
- <1358468924.23211.69.camel@gandalf.local.home> <1358521791.7383.11.camel@gandalf.local.home> <0000013c4ef61783-2778b0f1-fdc1-421b-9d3e-ccd68d528115-000000@email.amazonses.com> <1358536190.11051.573.camel@edumazet-glaptop>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 20 Jan 2013 20:40:49 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+In-Reply-To: <20130121012217.GQ4939@ZenIV.linux.org.uk>
+References: <50F3D2F2.3080200@6wind.com> <20130119063808.GN4939@ZenIV.linux.org.uk>
+ <20130120031253.GO4939@ZenIV.linux.org.uk> <CA+55aFyRMC43_H1hL5goAQxX4EdTuXOu5A9CoBk9fpGoJT_nig@mail.gmail.com>
+ <20130121012217.GQ4939@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 20 Jan 2013 17:40:28 -0800
+X-Google-Sender-Auth: R93Ri6b567i4zSOzSz52BbsvAFw
+Message-ID: <CA+55aFwG2j_+2pjUJuZqT1yk0xDEyeFMgCxHmxAzfGXHO5qCXQ@mail.gmail.com>
+Subject: Re: Issues with "x86, um: switch to generic fork/vfork/clone" commit
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jan 2013, Eric Dumazet wrote:
-
-> On Fri, 2013-01-18 at 18:40 +0000, Christoph Lameter wrote:
+On Sun, Jan 20, 2013 at 5:22 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
 >
-> > The fetching of the tid is the only critical thing here. If the tid is
-> > retrieved from the right cpu then the cmpxchg will fail if any changes
-> > occured to freelist or the page variable.
-> >
-> > The tid can be retrieved without disabling preemption through
-> > this_cpu_read().
->
-> Strictly speaking, this_cpu_read() _does_ disable preemption.
+> Anyway, that's a separate story - semctl(2) is going to be ugly, no matter
+> what we do, but the rest of those guys doesn't have to.  How about the
+> following (completely untested):
 
-Yes on x86 the relocation and the fetch is just a single instruction and
-therefore no preemption can occur.
+Hmm.  Looks like the RightThing(tm) to me.
 
+The thing that stands out that I question the value of that
+HAVE_SYSCALL_WRAPPERS thing. Is there any reason we don't just make
+all architectures use it? What's the downside? I'm not sure I see the
+point of the non-wrapper version.
+
+                  Linus
