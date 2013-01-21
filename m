@@ -1,91 +1,497 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270Ab3AUTS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 14:18:27 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:64682 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752797Ab3AUTS0 (ORCPT
+	id S1756439Ab3AUTSn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 14:18:43 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:45891 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752725Ab3AUTSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 14:18:26 -0500
-Date: Mon, 21 Jan 2013 11:14:11 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Jonas Aaberg <jonas.aberg@stericsson.com>
-Subject: Re: [PATCH 16/24] ab8500-bm: Flush all work queues before suspending
-Message-ID: <20130121191411.GA16177@lizard.mcd01528.sjc.wayport.net>
-References: <1358769840-4763-1-git-send-email-lee.jones@linaro.org>
- <1358769840-4763-17-git-send-email-lee.jones@linaro.org>
+	Mon, 21 Jan 2013 14:18:40 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mitch Bradley <wmb@firmworks.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v4] drivers/pinctrl: grab default handles from device core
+Date: Mon, 21 Jan 2013 20:17:35 +0100
+Message-ID: <1358795855-21064-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1358769840-4763-17-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 12:03:52PM +0000, Lee Jones wrote:
-> From: Jonas Aaberg <jonas.aberg@stericsson.com>
-> 
-> Flush all workqueues at suspend time to avoid suspending during work.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
-> Reviewed-by: Marcus COOPER <marcus.xm.cooper@stericsson.com>
-> Reviewed-on: http://gerrit.lud.stericsson.com/gerrit/61915
+From: Linus Walleij <linus.walleij@linaro.org>
 
-I do remeber I was commenting on that patch, and I was asking to merge the
-changes into the patches that introduce the workqueues (aka problems).
+This makes the device core auto-grab the pinctrl handle and set
+the "default" (PINCTRL_STATE_DEFAULT) state for every device
+that is present in the device model right before probe. This will
+account for the lion's share of embedded silicon devcies.
 
-Now I see that "ab8500_charger: Detect charger removal" commit already in
-the mainline, i.e. I merged the patch with the *known* possible
-regression. The issue was known to me during the first review cycle, and I
-pointed you to my review comments. But the patch sneaked in anyway...
+A modification of the semantics for pinctrl_get() is also done:
+previously if the pinctrl handle for a certain device was already
+taken, the pinctrl core would return an error. Now, since the
+core may have already default-grabbed the handle and set its
+state to "default", if the handle was already taken, this will
+be disregarded and the located, previously instanitated handle
+will be returned to the caller.
 
-> ---
->  drivers/power/ab8500_charger.c |   11 +++++++++++
->  drivers/power/ab8500_fg.c      |    5 +++++
->  2 files changed, 16 insertions(+)
-> 
-> diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
-> index da965ee..a632b94 100644
-> --- a/drivers/power/ab8500_charger.c
-> +++ b/drivers/power/ab8500_charger.c
-> @@ -2866,6 +2866,17 @@ static int ab8500_charger_suspend(struct platform_device *pdev,
->  	if (delayed_work_pending(&di->check_hw_failure_work))
->  		cancel_delayed_work(&di->check_hw_failure_work);
->  
-> +	flush_delayed_work(&di->attach_work);
-> +	flush_delayed_work(&di->usb_charger_attached_work);
-> +	flush_delayed_work(&di->ac_charger_attached_work);
-> +	flush_delayed_work(&di->check_usbchgnotok_work);
-> +	flush_delayed_work(&di->check_vbat_work);
-> +	flush_delayed_work(&di->kick_wd_work);
-> +
-> +	flush_work(&di->usb_link_status_work);
-> +	flush_work(&di->ac_work);
-> +	flush_work(&di->detect_usb_type_work);
-> +
->  	return 0;
->  }
->  #else
-> diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
-> index 0378aab..1a78116 100644
-> --- a/drivers/power/ab8500_fg.c
-> +++ b/drivers/power/ab8500_fg.c
-> @@ -2410,6 +2410,11 @@ static int ab8500_fg_suspend(struct platform_device *pdev,
->  	struct ab8500_fg *di = platform_get_drvdata(pdev);
->  
->  	flush_delayed_work(&di->fg_periodic_work);
-> +	flush_work(&di->fg_work);
-> +	flush_work(&di->fg_acc_cur_work);
-> +	flush_delayed_work(&di->fg_reinit_work);
-> +	flush_delayed_work(&di->fg_low_bat_work);
-> +	flush_delayed_work(&di->fg_check_hw_failure_work);
->  
->  	/*
->  	 * If the FG is enabled we will disable it before going to suspend
-> -- 
-> 1.7.9.5
+This way all code in drivers explicitly requesting their pinctrl
+handlers will still be functional, and drivers that want to
+explicitly retrieve and switch their handles can still do that.
+But if the desired functionality is just boilerplate of this
+type in the probe() function:
+
+struct pinctrl  *p;
+
+p = devm_pinctrl_get_select_default(&dev);
+if (IS_ERR(p)) {
+   if (PTR_ERR(p) == -EPROBE_DEFER)
+        return -EPROBE_DEFER;
+        dev_warn(&dev, "no pinctrl handle\n");
+}
+
+The discussion began with the addition of such boilerplate
+to the omap4 keypad driver:
+http://marc.info/?l=linux-input&m=135091157719300&w=2
+
+A previous approach using notifiers was discussed:
+http://marc.info/?l=linux-kernel&m=135263661110528&w=2
+This failed because it could not handle deferred probes.
+
+This patch alone does not solve the entire dilemma faced:
+whether code should be distributed into the drivers or
+if it should be centralized to e.g. a PM domain. But it
+solves the immediate issue of the addition of boilerplate
+to a lot of drivers that just want to grab the default
+state. As mentioned, they can later explicitly retrieve
+the handle and set different states, and this could as
+well be done by e.g. PM domains as it is only related
+to a certain struct device * pointer.
+
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Benoit Cousson <b-cousson@ti.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Mitch Bradley <wmb@firmworks.com>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Rickard Andersson <rickard.andersson@stericsson.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v3->v4:
+- Drop overzealous NULL checks.
+- Move kref initialization to pinctrl_create().
+- Seeking Tested-by from Stephen Warren so we do not disturb
+  the Tegra platform.
+- Seeking ACK on this from Greg (and others who like it) so I
+  can merge it through the pinctrl subsystem.
+ChangeLog v2->v3:
+- Abstain from using IS_ERR_OR_NULL() in the driver core,
+  Russell recently sent a patch to remove it. Handle the
+  NULL case explicitly even though it's a bogus case.
+- Make sure we handle probe deferral correctly in the device
+  core file. devm_kfree() the container on error so we don't
+  waste memory for devices without pinctrl handles.
+- Introduce reference counting into the pinctrl core using
+  <linux/kref.h> so that we don't release pinctrl handles
+  that have been obtained for two or more places.
+ChangeLog v1->v2:
+- Only store a pointer in the device struct, and only allocate
+  this if it's really used by the device.
+---
+ Documentation/pinctrl.txt       | 24 +++++++++--
+ drivers/base/Makefile           |  1 +
+ drivers/base/dd.c               |  7 +++
+ drivers/base/pinctrl.c          | 95 +++++++++++++++++++++++++++++++++++++++++
+ drivers/pinctrl/core.c          | 30 +++++++++++--
+ drivers/pinctrl/core.h          |  3 ++
+ include/linux/device.h          |  7 +++
+ include/linux/pinctrl/devinfo.h | 45 +++++++++++++++++++
+ 8 files changed, 205 insertions(+), 7 deletions(-)
+ create mode 100644 drivers/base/pinctrl.c
+ create mode 100644 include/linux/pinctrl/devinfo.h
+
+diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+index da40efb..68836e5 100644
+--- a/Documentation/pinctrl.txt
++++ b/Documentation/pinctrl.txt
+@@ -972,6 +972,18 @@ pinmux core.
+ Pin control requests from drivers
+ =================================
+ 
++When a device driver is about to probe the device core will automatically
++attempt to issue pinctrl_get_select_default() on these devices.
++This way driver writers do not need to add any of the boilerplate code
++of the type found below. However when doing fine-grained state selection
++and not using the "default" state, you may have to do some device driver
++handling of the pinctrl handles and states.
++
++So if you just want to put the pins for a certain device into the default
++state and be done with it, there is nothing you need to do besides
++providing the proper mapping table. The device core will take care of
++the rest.
++
+ Generally it is discouraged to let individual drivers get and enable pin
+ control. So if possible, handle the pin control in platform code or some other
+ place where you have access to all the affected struct device * pointers. In
+@@ -1097,9 +1109,9 @@ situations that can be electrically unpleasant, you will certainly want to
+ mux in and bias pins in a certain way before the GPIO subsystems starts to
+ deal with them.
+ 
+-The above can be hidden: using pinctrl hogs, the pin control driver may be
+-setting up the config and muxing for the pins when it is probing,
+-nevertheless orthogonal to the GPIO subsystem.
++The above can be hidden: using the device core, the pinctrl core may be
++setting up the config and muxing for the pins right before the device is
++probing, nevertheless orthogonal to the GPIO subsystem.
+ 
+ But there are also situations where it makes sense for the GPIO subsystem
+ to communicate directly with with the pinctrl subsystem, using the latter
+@@ -1144,6 +1156,12 @@ PIN_MAP_MUX_GROUP_HOG_DEFAULT("pinctrl-foo", NULL /* group */, "power_func")
+ 
+ This gives the exact same result as the above construction.
+ 
++This should not be used for any kind of device which is represented in
++the device model, as the pinctrl core will attempt to do the equal of
++pinctrl_get_select_default() for these devices right before their device
++drivers are probed, so hogging these will just make the model look
++strange. Instead put in proper map entries.
++
+ 
+ Runtime pinmuxing
+ =================
+diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+index 5aa2d70..4e22ce3 100644
+--- a/drivers/base/Makefile
++++ b/drivers/base/Makefile
+@@ -21,6 +21,7 @@ endif
+ obj-$(CONFIG_SYS_HYPERVISOR) += hypervisor.o
+ obj-$(CONFIG_REGMAP)	+= regmap/
+ obj-$(CONFIG_SOC_BUS) += soc.o
++obj-$(CONFIG_PINCTRL) += pinctrl.o
+ 
+ ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
+ 
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index e3bbed8..65631015 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -24,6 +24,7 @@
+ #include <linux/wait.h>
+ #include <linux/async.h>
+ #include <linux/pm_runtime.h>
++#include <linux/pinctrl/devinfo.h>
+ 
+ #include "base.h"
+ #include "power/power.h"
+@@ -269,6 +270,12 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+ 	WARN_ON(!list_empty(&dev->devres_head));
+ 
+ 	dev->driver = drv;
++
++	/* If using pinctrl, bind pins now before probing */
++	ret = pinctrl_bind_pins(dev);
++	if (ret)
++		goto probe_failed;
++
+ 	if (driver_sysfs_add(dev)) {
+ 		printk(KERN_ERR "%s: driver_sysfs_add(%s) failed\n",
+ 			__func__, dev_name(dev));
+diff --git a/drivers/base/pinctrl.c b/drivers/base/pinctrl.c
+new file mode 100644
+index 0000000..a1f6b49
+--- /dev/null
++++ b/drivers/base/pinctrl.c
+@@ -0,0 +1,95 @@
++/*
++ * Driver core interface to the pinctrl subsystem.
++ *
++ * Copyright (C) 2012 ST-Ericsson SA
++ * Written on behalf of Linaro for ST-Ericsson
++ * Based on bits of regulator core, gpio core and clk core
++ *
++ * Author: Linus Walleij <linus.walleij@linaro.org>
++ *
++ * License terms: GNU General Public License (GPL) version 2
++ */
++
++#include <linux/device.h>
++#include <linux/pinctrl/devinfo.h>
++#include <linux/pinctrl/consumer.h>
++#include <linux/slab.h>
++
++/**
++ * pinctrl_bind_pins() - called by the device core before probe
++ * @dev: the device that is just about to probe
++ */
++int pinctrl_bind_pins(struct device *dev)
++{
++	struct dev_pin_info *dpi;
++	int ret;
++
++	/* Allocate a pin state container on-the-fly */
++	if (!dev->pins) {
++		dpi = devm_kzalloc(dev, sizeof(*dpi), GFP_KERNEL);
++		if (!dpi)
++			return -ENOMEM;
++	} else
++		dpi = dev->pins;
++
++	/*
++	 * Check if we already have a pinctrl handle, as we may arrive here
++	 * after a deferral in the state selection below
++	 */
++	if (!dpi->p) {
++		dpi->p = devm_pinctrl_get(dev);
++		if (IS_ERR(dpi->p)) {
++			int ret = PTR_ERR(dpi->p);
++
++			dev_dbg(dev, "no pinctrl handle\n");
++			/*
++			 * If no pinctrl handle was found for this device,
++			 * let's explicitly free the pin container in the
++			 * device, there is no point in keeping it around.
++			 */
++			devm_kfree(dev, dpi);
++			dev->pins = NULL;
++			/* Only return deferrals */
++			if (ret == -EPROBE_DEFER)
++				return ret;
++			return 0;
++		}
++	}
++
++	/*
++	 * For a newly allocated info struct, here is where we keep it,
++	 * since at this point it actually contains something.
++	 */
++	dev->pins = dpi;
++
++	/*
++	 * We may have looked up the state earlier as well.
++	 */
++	if (!dpi->default_state) {
++		dpi->default_state = pinctrl_lookup_state(dpi->p,
++						PINCTRL_STATE_DEFAULT);
++		if (IS_ERR(dpi->default_state)) {
++			dev_dbg(dev, "no default pinctrl state\n");
++			return 0;
++		}
++	}
++
++	ret = pinctrl_select_state(dpi->p, dpi->default_state);
++	if (ret) {
++		dev_dbg(dev, "failed to activate default pinctrl state\n");
++
++		/* Only return deferrals */
++		if (ret == -EPROBE_DEFER) {
++			/*
++			 * The devm_* allocated container will be free():ed
++			 * during deferral, re-obtain handle and all up above
++			 * next time we try to probe.
++			 */
++			dev->pins = NULL;
++			return ret;
++		}
++		return 0;
++	}
++
++	return 0;
++}
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 5b4885c..895b4b7 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -14,6 +14,7 @@
+ #define pr_fmt(fmt) "pinctrl core: " fmt
+ 
+ #include <linux/kernel.h>
++#include <linux/kref.h>
+ #include <linux/export.h>
+ #include <linux/init.h>
+ #include <linux/device.h>
+@@ -721,6 +722,8 @@ static struct pinctrl *create_pinctrl(struct device *dev)
+ 		return ERR_PTR(ret);
+ 	}
+ 
++	kref_init(&p->users);
++
+ 	/* Add the pinctrl handle to the global list */
+ 	list_add_tail(&p->node, &pinctrl_list);
+ 
+@@ -734,9 +737,17 @@ static struct pinctrl *pinctrl_get_locked(struct device *dev)
+ 	if (WARN_ON(!dev))
+ 		return ERR_PTR(-EINVAL);
+ 
++	/*
++	 * See if somebody else (such as the device core) has already
++	 * obtained a handle to the pinctrl for this device. In that case,
++	 * return another pointer to it.
++	 */
+ 	p = find_pinctrl(dev);
+-	if (p != NULL)
+-		return ERR_PTR(-EBUSY);
++	if (p != NULL) {
++		dev_dbg(dev, "obtain a copy of previously claimed pinctrl\n");
++		kref_get(&p->users);
++		return p;
++	}
+ 
+ 	return create_pinctrl(dev);
+ }
+@@ -792,13 +803,24 @@ static void pinctrl_put_locked(struct pinctrl *p, bool inlist)
+ }
+ 
+ /**
+- * pinctrl_put() - release a previously claimed pinctrl handle
++ * pinctrl_release() - release the pinctrl handle
++ * @kref: the kref in the pinctrl being released
++ */
++void pinctrl_release(struct kref *kref)
++{
++	struct pinctrl *p = container_of(kref, struct pinctrl, users);
++
++	pinctrl_put_locked(p, true);
++}
++
++/**
++ * pinctrl_put() - decrease use count on a previously claimed pinctrl handle
+  * @p: the pinctrl handle to release
+  */
+ void pinctrl_put(struct pinctrl *p)
+ {
+ 	mutex_lock(&pinctrl_mutex);
+-	pinctrl_put_locked(p, true);
++	kref_put(&p->users, pinctrl_release);
+ 	mutex_unlock(&pinctrl_mutex);
+ }
+ EXPORT_SYMBOL_GPL(pinctrl_put);
+diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
+index 12f5694..bd483d6 100644
+--- a/drivers/pinctrl/core.h
++++ b/drivers/pinctrl/core.h
+@@ -9,6 +9,7 @@
+  * License terms: GNU General Public License (GPL) version 2
+  */
+ 
++#include <linux/kref.h>
+ #include <linux/mutex.h>
+ #include <linux/radix-tree.h>
+ #include <linux/pinctrl/pinconf.h>
+@@ -54,6 +55,7 @@ struct pinctrl_dev {
+  * @state: the current state
+  * @dt_maps: the mapping table chunks dynamically parsed from device tree for
+  *	this device, if any
++ * @users: reference count
+  */
+ struct pinctrl {
+ 	struct list_head node;
+@@ -61,6 +63,7 @@ struct pinctrl {
+ 	struct list_head states;
+ 	struct pinctrl_state *state;
+ 	struct list_head dt_maps;
++	struct kref users;
+ };
+ 
+ /**
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 43dcda9..001f663 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -21,6 +21,7 @@
+ #include <linux/compiler.h>
+ #include <linux/types.h>
+ #include <linux/mutex.h>
++#include <linux/pinctrl/devinfo.h>
+ #include <linux/pm.h>
+ #include <linux/atomic.h>
+ #include <linux/ratelimit.h>
+@@ -620,6 +621,8 @@ struct acpi_dev_node {
+  * @pm_domain:	Provide callbacks that are executed during system suspend,
+  * 		hibernation, system resume and during runtime PM transitions
+  * 		along with subsystem-level and driver-level callbacks.
++ * @pins:	For device pin management.
++ *		See Documentation/pinctrl.txt for details.
+  * @numa_node:	NUMA node this device is close to.
+  * @dma_mask:	Dma mask (if dma'ble device).
+  * @coherent_dma_mask: Like dma_mask, but for alloc_coherent mapping as not all
+@@ -672,6 +675,10 @@ struct device {
+ 	struct dev_pm_info	power;
+ 	struct dev_pm_domain	*pm_domain;
+ 
++#ifdef CONFIG_PINCTRL
++	struct dev_pin_info	*pins;
++#endif
++
+ #ifdef CONFIG_NUMA
+ 	int		numa_node;	/* NUMA node this device is close to */
+ #endif
+diff --git a/include/linux/pinctrl/devinfo.h b/include/linux/pinctrl/devinfo.h
+new file mode 100644
+index 0000000..6e5f8a9
+--- /dev/null
++++ b/include/linux/pinctrl/devinfo.h
+@@ -0,0 +1,45 @@
++/*
++ * Per-device information from the pin control system.
++ * This is the stuff that get included into the device
++ * core.
++ *
++ * Copyright (C) 2012 ST-Ericsson SA
++ * Written on behalf of Linaro for ST-Ericsson
++ * This interface is used in the core to keep track of pins.
++ *
++ * Author: Linus Walleij <linus.walleij@linaro.org>
++ *
++ * License terms: GNU General Public License (GPL) version 2
++ */
++
++#ifndef PINCTRL_DEVINFO_H
++#define PINCTRL_DEVINFO_H
++
++#ifdef CONFIG_PINCTRL
++
++/* The device core acts as a consumer toward pinctrl */
++#include <linux/pinctrl/consumer.h>
++
++/**
++ * struct dev_pin_info - pin state container for devices
++ * @p: pinctrl handle for the containing device
++ * @default_state: the default state for the handle, if found
++ */
++struct dev_pin_info {
++	struct pinctrl *p;
++	struct pinctrl_state *default_state;
++};
++
++extern int pinctrl_bind_pins(struct device *dev);
++
++#else
++
++/* Stubs if we're not using pinctrl */
++
++static inline int pinctrl_bind_pins(struct device *dev)
++{
++	return 0;
++}
++
++#endif /* CONFIG_PINCTRL */
++#endif /* PINCTRL_DEVINFO_H */
+-- 
+1.7.11.3
+
