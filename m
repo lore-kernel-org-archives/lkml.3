@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab3AUW0j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 17:26:39 -0500
-Received: from gimli.pxnet.com ([89.1.7.7]:45315 "EHLO mail.pxnet.com"
+	id S1756618Ab3AUW3x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 17:29:53 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:48529 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752245Ab3AUW0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 17:26:37 -0500
-X-Greylist: delayed 1730 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jan 2013 17:26:35 EST
-From: Tilman Schmidt <tilman@imap.cc>
-To: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>
-CC: Hansjoerg Lipp <hjlipp@web.de>, Karsten Keil <keil@b1-systems.de>,
-        i4ldeveloper@listserv.isdn4linux.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130121-patch-isdn-00.tilman@imap.cc>
-Subject: [PATCH 0/6] ISDN patches for net-next
-Date: Mon, 21 Jan 2013 22:57:20 +0100 (CET)
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (mail.pxnet.com [89.1.7.7]); Mon, 21 Jan 2013 22:57:26 +0100 (CET)
+	id S1755876Ab3AUW3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 17:29:52 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [RFC][Update 2][PATCH 2/4] ACPI / PM: Expose reference count values of ACPI power resources
+Date: Mon, 21 Jan 2013 23:35:51 +0100
+Message-ID: <9864072.snIRhummIS@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130121205357.GB17006@kroah.com>
+References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <1618594.EyAyXTlIBb@vostro.rjw.lan> <20130121205357.GB17006@kroah.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Karsten, David,
+On Monday, January 21, 2013 12:53:57 PM Greg Kroah-Hartman wrote:
+> On Mon, Jan 21, 2013 at 02:05:47PM +0100, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > Since ACPI power resources are going to be used more extensively on
+> > new hardware platforms, it becomes necessary for user space (powertop
+> > in particular) to observe some properties of those resources for
+> > diagnostics purposes.
+> > 
+> > For this reason, export the reference counts of ACPI power resources
+> > to user space by adding a new reference_count attribute to the sysfs
+> > directory representing each power resource.  The value read from
+> > that attribute represents the number of devices using the power
+> > resource at the given time.  If that value is 0, it meas that the
+> > power resource is not used and therefore it has been turned off.
+> 
+> Why does userspace need to know a reference count?  Is it so that if it
+> is not 0, it can work to try to lower it to 0?  Or something else?
 
-here's a series of six patches to the ISDN subsystem. Please consider
-for application to net-next. The last one should also go into -stable
-and is tagged "CC: stable" accordingly.
+Yes, this information is needed to say if (1) the power resource is in use
+and (2) how many users there are at the moment, so that we can go and look
+if it really has to be in use.
 
-Thanks,
-Tilman
+Perhaps I can just expose the "in use"/"not in use" information.  I don't
+think it will be much less convenient, because we should scan all of the
+possible users anyway in case they are coming and going frequently.
 
-Tilman Schmidt (6):
-      isdn/divert: fix readability damage
-      isdn/gigaset: leave DLE mode before hanging up
-      isdn/gigaset: beautify interface.c
-      isdn/gigaset: beautify common.c
-      isdn/gigaset: beautify ev-layer.c
-      isdn/gigaset: fix zero size border case in debug dump
+So should I do that and rename the attribute to "resource_in_use" (or something
+similar)?
 
- drivers/isdn/divert/divert_init.c |   33 +-
- drivers/isdn/divert/isdn_divert.c |  423 ++++++++++++++++++--------------------
- drivers/isdn/divert/isdn_divert.h |   28 +-
- drivers/isdn/gigaset/capi.c       |    2 
- drivers/isdn/gigaset/common.c     |   31 --
- drivers/isdn/gigaset/ev-layer.c   |  124 +++++------
- drivers/isdn/gigaset/gigaset.h    |    9 
- drivers/isdn/gigaset/interface.c  |   46 +---
- 8 files changed, 332 insertions(+), 364 deletions(-)
+Rafael
 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
