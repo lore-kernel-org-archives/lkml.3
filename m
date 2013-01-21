@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab3AULPe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 06:15:34 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34330 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752534Ab3AULPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 06:15:32 -0500
-From: Luciano Coelho <coelho@ti.com>
-To: <tony@atomide.com>
-CC: <peter.ujfalusi@ti.com>, <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH] OMAP: omap4-panda: add UART2 muxing for WiLink shared transport
-Date: Mon, 21 Jan 2013 13:14:12 +0200
-Message-ID: <1358766852-24503-1-git-send-email-coelho@ti.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753251Ab3AULTb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 06:19:31 -0500
+Received: from vaxjo.synopsys.com ([198.182.60.75]:41617 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab3AULT3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 06:19:29 -0500
+Message-ID: <50FD2432.8010201@synopsys.com>
+Date: Mon, 21 Jan 2013 16:49:14 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>
+Subject: Re: [PATCH v2 17/76] ARC: Process-creation/scheduling/idle-loop
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-18-git-send-email-vgupta@synopsys.com> <201301181435.15491.arnd@arndb.de>
+In-Reply-To: <201301181435.15491.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the UART2 muxing data to the board file (this used to be,
-erroneously, done in the bootloader).
+On Friday 18 January 2013 08:05 PM, Arnd Bergmann wrote:
+> On Friday 18 January 2013, Vineet Gupta wrote:
+>> +void cpu_idle(void)
+>> +{
+>> +       /* Since we SLEEP in idle loop, TIF_POLLING_NRFLAG can't be set */
+>> +
+>> +       /* endless idle loop with no priority at all */
+>> +       while (1) {
+>> +               tick_nohz_idle_enter();
+>> +               rcu_idle_enter();
+>> +
+>> +               while (!need_resched())
+>> +                       arch_idle();
+>> +
+>> +               rcu_idle_exit();
+>> +               tick_nohz_idle_exit();
+>> +
+>> +               schedule_preempt_disabled();
+>> +       }
+>> +}
+> Unless I'm mistaken, you have introduced the classic sleep race
+> here, where an interrupt can happen between the check for
+> need_resched() and the sleep instruction in arch_idle().
 
-Cc: stable <stable@vger.kernel.org> [3.7]
-Signed-off-by: Luciano Coelho <coelho@ti.com>
----
- arch/arm/mach-omap2/board-omap4panda.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+Hmm... there is indeed a race - so we could end up missing a reschedule
+opportunity, for until next interrupt (so next tick, if NOHZ is not enabled, and
+indefinitely if system has no other interrupting sources).
 
-diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
-index 5c8e9ce..769c1fe 100644
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -397,6 +397,12 @@ static struct omap_board_mux board_mux[] __initdata = {
- 		  OMAP_PULL_ENA),
- 	OMAP4_MUX(ABE_MCBSP1_FSX, OMAP_MUX_MODE0 | OMAP_PIN_INPUT),
- 
-+	/* UART2 - BT/FM/GPS shared transport */
-+	OMAP4_MUX(UART2_CTS,	OMAP_PIN_INPUT	| OMAP_MUX_MODE0),
-+	OMAP4_MUX(UART2_RTS,	OMAP_PIN_OUTPUT	| OMAP_MUX_MODE0),
-+	OMAP4_MUX(UART2_RX,	OMAP_PIN_INPUT	| OMAP_MUX_MODE0),
-+	OMAP4_MUX(UART2_TX,	OMAP_PIN_OUTPUT	| OMAP_MUX_MODE0),
-+
- 	{ .reg_offset = OMAP_MUX_TERMINATOR },
- };
- 
--- 
-1.7.10.4
 
+> To avoid that, you need to disable interrupts around
+> the inner loop. The sleep instruction should return with
+> interrupts implicitly enabled if ARC behaves like most
+> other architectures doing this.
+>
+> 	Arnd
+
+Indeed sleep has option to turn on interrupts before it commits - so this is
+certainly doable.
+
+ static inline void arch_idle(void)
+ {
+-       __asm__("sleep");
++       /* sleep, but enable all interrupts before committing */
++       __asm__("sleep 0x3");
+ }
+
+
+-               while (!need_resched())
++doze:
++               local_irq_disable();
++               if (!need_resched()) {
+                        arch_idle();
++                       goto doze;
++               } else {
++                       local_irq_enable();
++               }
+
+
+Thx,
+-Vineet
