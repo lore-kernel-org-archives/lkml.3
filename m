@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab3AUGiq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 01:38:46 -0500
+	id S1752867Ab3AUGiv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 01:38:51 -0500
 Received: from mga03.intel.com ([143.182.124.21]:39002 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751792Ab3AUGip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 01:38:45 -0500
+	id S1751792Ab3AUGiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 01:38:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,504,1355126400"; 
-   d="scan'208";a="193316304"
+   d="scan'208";a="193316319"
 From: Feng Tang <feng.tang@intel.com>
 To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
         Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
@@ -16,9 +16,9 @@ To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         linux-kernel@vger.kernel.org
 Cc: Feng Tang <feng.tang@intel.com>
-Subject: [RFC PATCH 1/5] x86: Add cpu capability flag X86_FEATURE_TSC_S3_NOTSTOP
-Date: Mon, 21 Jan 2013 14:38:41 +0800
-Message-Id: <1358750325-21217-2-git-send-email-feng.tang@intel.com>
+Subject: [RFC PATCH 2/5] clocksource: Add new feature flag CLOCK_SOURCE_SUSPEND_NOTSTOP
+Date: Mon, 21 Jan 2013 14:38:42 +0800
+Message-Id: <1358750325-21217-3-git-send-email-feng.tang@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
 References: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
@@ -26,53 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some new Intel Atom processors (Penwell and Cloverview), there is
-a feature that the TSC won't stop S3, say the TSC value won't be
-reset to 0 after resume. This feature makes TSC a more reliable
-clocksource and could benefit the timekeeping code during system
-suspend/resume cycle, so add a flag for it.
+Some x86 processors have a TSC clocksource, which continue to work when
+system is suspend. Add a feature flag so that it could be utilized.
 
 Signed-off-by: Feng Tang <feng.tang@intel.com>
 ---
- arch/x86/include/asm/cpufeature.h |    1 +
- arch/x86/kernel/cpu/intel.c       |   12 ++++++++++++
- 2 files changed, 13 insertions(+)
+ include/linux/clocksource.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 2d9075e..f7e1eac 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -100,6 +100,7 @@
- #define X86_FEATURE_AMD_DCM     (3*32+27) /* multi-node processor */
- #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
- #define X86_FEATURE_EAGER_FPU	(3*32+29) /* "eagerfpu" Non lazy FPU restore */
-+#define X86_FEATURE_TSC_S3_NOTSTOP (3*32+30) /* TSC doesn't stop in S3 state */
+diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+index 4dceaf8..2d53a8a 100644
+--- a/include/linux/clocksource.h
++++ b/include/linux/clocksource.h
+@@ -206,6 +206,7 @@ struct clocksource {
+ #define CLOCK_SOURCE_WATCHDOG			0x10
+ #define CLOCK_SOURCE_VALID_FOR_HRES		0x20
+ #define CLOCK_SOURCE_UNSTABLE			0x40
++#define CLOCK_SOURCE_SUSPEND_NOTSTOP		0x80
  
- /* Intel-defined CPU features, CPUID level 0x00000001 (ecx), word 4 */
- #define X86_FEATURE_XMM3	(4*32+ 0) /* "pni" SSE-3 */
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index fcaabd0..532f873 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -97,6 +97,18 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
- 			sched_clock_stable = 1;
- 	}
- 
-+	/* Penwell and Cloverview have the TSC which doesn't sleep on S3 */
-+	if (c->x86 == 6) {
-+		switch (c->x86_model) {
-+		case 0x27:	/* Penwell */
-+		case 0x35:	/* Cloverview */
-+			set_cpu_cap(c, X86_FEATURE_TSC_S3_NOTSTOP);
-+			break;
-+		default:
-+			;
-+		}
-+	}
-+
- 	/*
- 	 * There is a known erratum on Pentium III and Core Solo
- 	 * and Core Duo CPUs.
+ /* simplify initialization of mask field */
+ #define CLOCKSOURCE_MASK(bits) (cycle_t)((bits) < 64 ? ((1ULL<<(bits))-1) : -1)
 -- 
 1.7.9.5
 
