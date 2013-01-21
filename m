@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab3AUJx6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 04:53:58 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:8651 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab3AUJx4 (ORCPT
+	id S1752403Ab3AUJ5P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 04:57:15 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:57339 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637Ab3AUJ5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 04:53:56 -0500
-Message-ID: <50FD0FED.7070204@huawei.com>
-Date: Mon, 21 Jan 2013 17:52:45 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: John Fastabend <john.fastabend@gmail.com>
-CC: Daniel Wagner <wagi@monom.org>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Daniel Wagner <daniel.wagner@bmw-carit.de>,
-        LKML <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [BUG] Bug in netprio_cgroup and netcls_cgroup ?
-References: <50FCDB5C.4050608@huawei.com> <50FD0144.1000401@monom.org> <50FD0402.6060400@huawei.com> <50FD0893.1050805@gmail.com>
-In-Reply-To: <50FD0893.1050805@gmail.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	Mon, 21 Jan 2013 04:57:13 -0500
+From: Matthieu CASTET <matthieu.castet@parrot.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, rientjes@google.com, cl@linux.com,
+        rmk@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        Matthieu CASTET <matthieu.castet@parrot.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [PATCH] slab : allow SLAB_RED_ZONE and SLAB_STORE_USER to work on arm
+Date: Mon, 21 Jan 2013 10:56:31 +0100
+Message-Id: <1358762191-13839-1-git-send-email-matthieu.castet@parrot.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/1/21 17:21, John Fastabend wrote:
-> On 01/21/2013 01:01 AM, Li Zefan wrote:
->> On 2013/1/21 16:50, Daniel Wagner wrote:
->>> Hi Li,
->>>
->>> On 21.01.2013 07:08, Li Zefan wrote:
->>>> I'm not a network developer, so correct me if I'm wrong.
->>>>
->>>> Since commit 7955490f732c2b8
->>>> ("net: netprio_cgroup: rework update socket logic"), sock->sk->sk_cgrp_prioidx
->>>> is set when the socket is created, and won't be updated unless the task is
->>>> moved to another cgroup.
->>>>
->>>> Now the problem is, a socket can be _shared_ by multiple processes (fork, SCM_RIGHT).
->>>> If we place those processes in different cgroups, and each cgroup has
->>>> different configs, but all of the processes will send data via this socket
->>>> with the same network priority.
->>>
->>> Wouldn't that be addressed by 48a87cc26c13b68f6cce4e9d769fcb17a6b3e4b8
->>>
->>>     net: netprio: fd passed in SCM_RIGHTS datagram not set correctly
->>>
->>>      A socket fd passed in a SCM_RIGHTS datagram was not getting
->>>      updated with the new tasks cgrp prioidx. This leaves IO on
->>>      the socket tagged with the old tasks priority.
->>>
->>>      To fix this add a check in the scm recvmsg path to update the
->>>      sock cgrp prioidx with the new tasks value.
->>>
->>> As I read this this should work for net_prio.
->>>
->>
->> But after process A passed the socket fd to B, both A and B can use the
->> same socket to send data, right? Then if A and B were placed in different
->> cgroups with differnt configs, A's config won't take effect anymore.
->>
->> Am I missing something?
->>
->>
-> 
-> Hi Zefan,
-> 
-> Neil and I discusses this here, http://patchwork.ozlabs.org/patch/172343/
-> look towards the bottom of the thread. Quoted here.
-> 
+The current slab code only allow to put redzone( and user store) info if "buffer
+alignment(ralign) <= __alignof__(unsigned long long)". This was done because we
+want to keep the buffer aligned for user even after adding redzone at the
+beginning of the buffer (the user store is stored after user buffer) [1]
 
-So this is a known issue. Why not document this behavior in
-Documentation/cgroups/netprio.txt?
+But instead of disabling this feature when "ralign > __alignof__(unsigned long
+long)", we can force the alignment by allocating ralign before user buffer.
+
+This is done by setting ralign in obj_offset when "ralign > __alignof__(unsigned
+long long)" and keeping the old behavior when  "ralign <= __alignof__(unsigned
+long long)" (we set sizeof(unsigned long long)).
+
+The 5c5e3b33b7cb959a401f823707bee006caadd76e commit wasn't handling "ralign <=
+__alignof__(unsigned long long)", that's why it broked some configuration.
+
+This was tested on omap3 (ralign is 64 and __alignof__(unsigned long long) is 8)
+
+[1]
+/*
+ * memory layout of objects:
+ * 0        : objp
+ * 0 .. cachep->obj_offset - BYTES_PER_WORD - 1: padding. This ensures that
+ *      the end of an object is aligned with the end of the real
+ *      allocation. Catches writes behind the end of the allocation.
+ * cachep->obj_offset - BYTES_PER_WORD .. cachep->obj_offset - 1:
+ *      redzone word.
+ * cachep->obj_offset: The real object.
+ * cachep->buffer_size - 2* BYTES_PER_WORD: redzone word [BYTES_PER_WORD long]
+ * cachep->buffer_size - 1* BYTES_PER_WORD: last caller address
+ *                  [BYTES_PER_WORD long]
+ */
+
+Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
+CC: Russell King <rmk@arm.linux.org.uk>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+---
+ mm/slab.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/mm/slab.c b/mm/slab.c
+index e7667a3..d2380d9 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2392,9 +2392,6 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 	if (ralign < cachep->align) {
+ 		ralign = cachep->align;
+ 	}
+-	/* disable debug if necessary */
+-	if (ralign > __alignof__(unsigned long long))
+-		flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
+ 	/*
+ 	 * 4) Store it.
+ 	 */
+@@ -2414,8 +2411,9 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 	 */
+ 	if (flags & SLAB_RED_ZONE) {
+ 		/* add space for red zone words */
+-		cachep->obj_offset += sizeof(unsigned long long);
+-		size += 2 * sizeof(unsigned long long);
++		int offset = max(ralign, sizeof(unsigned long long));
++		cachep->obj_offset += offset;
++		size += offset + sizeof(unsigned long long);
+ 	}
+ 	if (flags & SLAB_STORE_USER) {
+ 		/* user store requires one word storage behind the end of
+-- 
+1.7.10.4
 
