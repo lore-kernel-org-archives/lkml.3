@@ -1,34 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753116Ab3AUKNi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:13:38 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:49307 "EHLO
+	id S1753196Ab3AUKKB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:10:01 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:59338 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128Ab3AUKKC (ORCPT
+	with ESMTP id S1753128Ab3AUKJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:10:02 -0500
+	Mon, 21 Jan 2013 05:09:56 -0500
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: [PATCH 09/33] drm: Convert to devm_ioremap_resource()
-Date: Mon, 21 Jan 2013 11:09:02 +0100
-Message-Id: <1358762966-20791-10-git-send-email-thierry.reding@avionic-design.de>
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net
+Subject: [PATCH 25/33] spi: Convert to devm_ioremap_resource()
+Date: Mon, 21 Jan 2013 11:09:18 +0100
+Message-Id: <1358762966-20791-26-git-send-email-thierry.reding@avionic-design.de>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
 References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:Bi2QJVVDFWP4HAzMBK54sOKervQ4dTpXGDwx9KTfZrQ
- AN2kY1bSubvh+urFTWXeYsi/Nj9CnekiojS+WD1jKqMzLMdKEm
- FyRSaYLqJwUdVp9SagSNJKm4Oum8tszr4dN0DY+HT3xtVNVxt3
- uFOiHFNmYTZO8N5W649QWhSLl25/GRI3PVoWYj9jOtgJtr8m5D
- 38nwtNDiiuIMyu2gclIIYHTKfYXKpxAJl066aQPhqxFGfUExlB
- 2ladTCqnuPctXsIENyM7q1SYXSFVfkPTb7jLoSl+wt2iv7MPEq
- cRw/74uiLjO+lAm4ynmTTSLOzkSFdIXPWwSXkVNAFPC1cXUTQ8
- a+cEkcp1CUwdGBCfW6Kao1tYy+U2puI4EO7aMezVTxshstkhGZ
- hacdbG8s1T4Rx4iMMgYjF1dsgyZSCQ0b/6Zd7EzGyvI2RPq0YH
- W6auM
+X-Provags-ID: V02:K0:8Krf8hvyB2tou/r1c2zLZfGpbUHj2a1cctwOhwagEPa
+ +1T90ukqlgjnzSP9pFazUV7c19GcsOiuW7BhgccaQF2aMDcU6t
+ My6jr5ATRZDZo5/jy8byNYArxDN+Jeu6dlAw1tYL6BqcAQBfPx
+ aN2/CRYu0c+eoe6yJ+EXp96BijDUmjXjY1JUhv5DbBwerEvmzh
+ zu9aWCbqoHjOqZH/Zc5/f+qs/vEy0tC5MyvTR/pZ7gEwIRSbfD
+ 65Rd1hNAgWI2PFlAzzu456N7TZjNHACPzGjWArYHRN+omft+Y0
+ xf5Y4rO+uyA7IIOAqhH+zeJNxBSdCN6mNGBQG4y9mOnHer+lHe
+ g5GiS1hPscs8Oczsaikoub73DB7nRNEE0muF+LMPTUAvZNDYV7
+ SDclbdHPDRrZzOo8gz3r8b3BRZR4p3av/FA6dHk3R1QlexRW7d
+ EfEp+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -40,184 +41,143 @@ devm_ioremap_resource() provides its own error messages so all explicit
 error messages can be removed from the failure code paths.
 
 Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: spi-devel-general@lists.sourceforge.net
 ---
- drivers/gpu/drm/exynos/exynos_drm_fimc.c    | 8 +++-----
- drivers/gpu/drm/exynos/exynos_drm_fimd.c    | 8 +++-----
- drivers/gpu/drm/exynos/exynos_drm_g2d.c     | 7 +++----
- drivers/gpu/drm/exynos/exynos_drm_gsc.c     | 8 +++-----
- drivers/gpu/drm/exynos/exynos_drm_rotator.c | 8 +++-----
- drivers/gpu/drm/exynos/exynos_hdmi.c        | 8 +++-----
- drivers/gpu/drm/tegra/dc.c                  | 8 +++-----
- drivers/gpu/drm/tegra/hdmi.c                | 6 +++---
- drivers/gpu/drm/tegra/host1x.c              | 6 +++---
- 9 files changed, 27 insertions(+), 40 deletions(-)
+ drivers/spi/spi-ep93xx.c         | 7 +++----
+ drivers/spi/spi-mxs.c            | 6 +++---
+ drivers/spi/spi-omap2-mcspi.c    | 7 +++----
+ drivers/spi/spi-s3c64xx.c        | 7 +++----
+ drivers/spi/spi-sirf.c           | 7 +++----
+ drivers/spi/spi-tegra20-sflash.c | 8 +++-----
+ drivers/spi/spi-tegra20-slink.c  | 8 +++-----
+ 7 files changed, 21 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimc.c b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
-index 67a83e6..411f69b7 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_fimc.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
-@@ -1785,11 +1785,9 @@ static int fimc_probe(struct platform_device *pdev)
+diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
+index acb1e19..2e31f32 100644
+--- a/drivers/spi/spi-ep93xx.c
++++ b/drivers/spi/spi-ep93xx.c
+@@ -1085,10 +1085,9 @@ static int ep93xx_spi_probe(struct platform_device *pdev)
  
- 	/* resource memory */
- 	ctx->regs_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	ctx->regs = devm_request_and_ioremap(dev, ctx->regs_res);
--	if (!ctx->regs) {
--		dev_err(dev, "failed to map registers.\n");
--		return -ENXIO;
--	}
-+	ctx->regs = devm_ioremap_resource(dev, ctx->regs_res);
-+	if (IS_ERR(ctx->regs))
-+		return PTR_ERR(ctx->regs);
+ 	espi->sspdr_phys = res->start + SSPDR;
  
- 	/* resource irq */
- 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimd.c b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
-index 9537761..36493ce 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_fimd.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
-@@ -913,11 +913,9 @@ static int fimd_probe(struct platform_device *pdev)
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
--	ctx->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (!ctx->regs) {
--		dev_err(dev, "failed to map registers\n");
--		return -ENXIO;
--	}
-+	ctx->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(ctx->regs))
-+		return PTR_ERR(ctx->regs);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	if (!res) {
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_g2d.c b/drivers/gpu/drm/exynos/exynos_drm_g2d.c
-index 36c3905..7329abd 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_g2d.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_g2d.c
-@@ -1136,10 +1136,9 @@ static int g2d_probe(struct platform_device *pdev)
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
--	g2d->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (!g2d->regs) {
--		dev_err(dev, "failed to remap I/O memory\n");
--		ret = -ENXIO;
-+	g2d->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(g2d->regs)) {
-+		ret = PTR_ERR(g2d->regs);
- 		goto err_put_clk;
+-	espi->regs_base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!espi->regs_base) {
+-		dev_err(&pdev->dev, "failed to map resources\n");
+-		error = -ENODEV;
++	espi->regs_base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(espi->regs_base)) {
++		error = PTR_ERR(espi->regs_base);
+ 		goto fail_put_clock;
  	}
  
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_gsc.c b/drivers/gpu/drm/exynos/exynos_drm_gsc.c
-index 8140753..7841c3b 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_gsc.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_gsc.c
-@@ -1692,11 +1692,9 @@ static int gsc_probe(struct platform_device *pdev)
+diff --git a/drivers/spi/spi-mxs.c b/drivers/spi/spi-mxs.c
+index a3ede24..b735988 100644
+--- a/drivers/spi/spi-mxs.c
++++ b/drivers/spi/spi-mxs.c
+@@ -538,9 +538,9 @@ static int mxs_spi_probe(struct platform_device *pdev)
+ 	if (!iores || irq_err < 0 || irq_dma < 0)
+ 		return -EINVAL;
  
- 	/* resource memory */
- 	ctx->regs_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	ctx->regs = devm_request_and_ioremap(dev, ctx->regs_res);
--	if (!ctx->regs) {
--		dev_err(dev, "failed to map registers.\n");
--		return -ENXIO;
--	}
-+	ctx->regs = devm_ioremap_resource(dev, ctx->regs_res);
-+	if (IS_ERR(ctx->regs))
-+		return PTR_ERR(ctx->regs);
- 
- 	/* resource irq */
- 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_rotator.c b/drivers/gpu/drm/exynos/exynos_drm_rotator.c
-index e9e83ef..a6da774 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_rotator.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_rotator.c
-@@ -656,11 +656,9 @@ static int rotator_probe(struct platform_device *pdev)
- 				platform_get_device_id(pdev)->driver_data;
- 
- 	rot->regs_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	rot->regs = devm_request_and_ioremap(dev, rot->regs_res);
--	if (!rot->regs) {
--		dev_err(dev, "failed to map register\n");
--		return -ENXIO;
--	}
-+	rot->regs = devm_ioremap_resource(dev, rot->regs_res);
-+	if (IS_ERR(rot->regs))
-+		return PTR_ERR(rot->regs);
- 
- 	rot->irq = platform_get_irq(pdev, 0);
- 	if (rot->irq < 0) {
-diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
-index 41ff79d..d4c3f3d 100644
---- a/drivers/gpu/drm/exynos/exynos_hdmi.c
-+++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
-@@ -2526,11 +2526,9 @@ static int hdmi_probe(struct platform_device *pdev)
- 		return -ENOENT;
- 	}
- 
--	hdata->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (!hdata->regs) {
--		DRM_ERROR("failed to map registers\n");
--		return -ENXIO;
--	}
-+	hdata->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(hdata->regs))
-+		return PTR_ERR(hdata->regs);
- 
- 	ret = devm_gpio_request(&pdev->dev, hdata->hpd_gpio, "HPD");
- 	if (ret) {
-diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
-index 656b2e3..d365c6d 100644
---- a/drivers/gpu/drm/tegra/dc.c
-+++ b/drivers/gpu/drm/tegra/dc.c
-@@ -764,11 +764,9 @@ static int tegra_dc_probe(struct platform_device *pdev)
- 		return -ENXIO;
- 	}
- 
--	dc->regs = devm_request_and_ioremap(&pdev->dev, regs);
--	if (!dc->regs) {
--		dev_err(&pdev->dev, "failed to remap registers\n");
--		return -ENXIO;
--	}
-+	dc->regs = devm_ioremap_resource(&pdev->dev, regs);
-+	if (IS_ERR(dc->regs))
-+		return PTR_ERR(dc->regs);
- 
- 	dc->irq = platform_get_irq(pdev, 0);
- 	if (dc->irq < 0) {
-diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/drm/tegra/hdmi.c
-index e060c7e..266af78 100644
---- a/drivers/gpu/drm/tegra/hdmi.c
-+++ b/drivers/gpu/drm/tegra/hdmi.c
-@@ -1259,9 +1259,9 @@ static int tegra_hdmi_probe(struct platform_device *pdev)
- 	if (!regs)
- 		return -ENXIO;
- 
--	hdmi->regs = devm_request_and_ioremap(&pdev->dev, regs);
--	if (!hdmi->regs)
+-	base = devm_request_and_ioremap(&pdev->dev, iores);
+-	if (!base)
 -		return -EADDRNOTAVAIL;
-+	hdmi->regs = devm_ioremap_resource(&pdev->dev, regs);
-+	if (IS_ERR(hdmi->regs))
-+		return PTR_ERR(hdmi->regs);
++	base = devm_ioremap_resource(&pdev->dev, iores);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
  
- 	err = platform_get_irq(pdev, 0);
- 	if (err < 0)
-diff --git a/drivers/gpu/drm/tegra/host1x.c b/drivers/gpu/drm/tegra/host1x.c
-index 5d17b11..92e25a7 100644
---- a/drivers/gpu/drm/tegra/host1x.c
-+++ b/drivers/gpu/drm/tegra/host1x.c
-@@ -139,9 +139,9 @@ static int tegra_host1x_probe(struct platform_device *pdev)
+ 	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+ 	if (IS_ERR(pinctrl))
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index b610f52..71a9482 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -1204,10 +1204,9 @@ static int omap2_mcspi_probe(struct platform_device *pdev)
+ 	r->end += regs_offset;
+ 	mcspi->phys = r->start;
  
- 	host1x->irq = err;
+-	mcspi->base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (!mcspi->base) {
+-		dev_dbg(&pdev->dev, "can't ioremap MCSPI\n");
+-		status = -ENOMEM;
++	mcspi->base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(mcspi->base)) {
++		status = PTR_ERR(mcspi->base);
+ 		goto free_master;
+ 	}
  
--	host1x->regs = devm_request_and_ioremap(&pdev->dev, regs);
--	if (!host1x->regs) {
--		err = -EADDRNOTAVAIL;
-+	host1x->regs = devm_ioremap_resource(&pdev->dev, regs);
-+	if (IS_ERR(host1x->regs)) {
-+		err = PTR_ERR(host1x->regs);
- 		goto err;
+diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+index ad93231..3d4a7c4 100644
+--- a/drivers/spi/spi-s3c64xx.c
++++ b/drivers/spi/spi-s3c64xx.c
+@@ -1276,10 +1276,9 @@ static int __init s3c64xx_spi_probe(struct platform_device *pdev)
+ 	/* the spi->mode bits understood by this driver: */
+ 	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
+ 
+-	sdd->regs = devm_request_and_ioremap(&pdev->dev, mem_res);
+-	if (sdd->regs == NULL) {
+-		dev_err(&pdev->dev, "Unable to remap IO\n");
+-		ret = -ENXIO;
++	sdd->regs = devm_ioremap_resource(&pdev->dev, mem_res);
++	if (IS_ERR(sdd->regs)) {
++		ret = PTR_ERR(sdd->regs);
+ 		goto err1;
+ 	}
+ 
+diff --git a/drivers/spi/spi-sirf.c b/drivers/spi/spi-sirf.c
+index e0f43a5..78c8842 100644
+--- a/drivers/spi/spi-sirf.c
++++ b/drivers/spi/spi-sirf.c
+@@ -535,10 +535,9 @@ static int spi_sirfsoc_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	sspi->base = devm_request_and_ioremap(&pdev->dev, mem_res);
+-	if (!sspi->base) {
+-		dev_err(&pdev->dev, "IO remap failed!\n");
+-		ret = -ENOMEM;
++	sspi->base = devm_ioremap_resource(&pdev->dev, mem_res);
++	if (IS_ERR(sspi->base)) {
++		ret = PTR_ERR(sspi->base);
+ 		goto free_master;
+ 	}
+ 
+diff --git a/drivers/spi/spi-tegra20-sflash.c b/drivers/spi/spi-tegra20-sflash.c
+index 448a8cc..69c9d23 100644
+--- a/drivers/spi/spi-tegra20-sflash.c
++++ b/drivers/spi/spi-tegra20-sflash.c
+@@ -508,11 +508,9 @@ static int tegra_sflash_probe(struct platform_device *pdev)
+ 		ret = -ENODEV;
+ 		goto exit_free_master;
+ 	}
+-	tsd->base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (!tsd->base) {
+-		dev_err(&pdev->dev,
+-			"Cannot request memregion/iomap dma address\n");
+-		ret = -EADDRNOTAVAIL;
++	tsd->base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(tsd->base)) {
++		ret = PTR_ERR(tsd->base);
+ 		goto exit_free_master;
+ 	}
+ 
+diff --git a/drivers/spi/spi-tegra20-slink.c b/drivers/spi/spi-tegra20-slink.c
+index 651167f..96bd6c2 100644
+--- a/drivers/spi/spi-tegra20-slink.c
++++ b/drivers/spi/spi-tegra20-slink.c
+@@ -1172,11 +1172,9 @@ static int tegra_slink_probe(struct platform_device *pdev)
+ 		goto exit_free_master;
+ 	}
+ 	tspi->phys = r->start;
+-	tspi->base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (!tspi->base) {
+-		dev_err(&pdev->dev,
+-			"Cannot request memregion/iomap dma address\n");
+-		ret = -EADDRNOTAVAIL;
++	tspi->base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(tspi->base)) {
++		ret = PTR_ERR(tspi->base);
+ 		goto exit_free_master;
  	}
  
 -- 
