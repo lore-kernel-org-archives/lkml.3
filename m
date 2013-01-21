@@ -1,107 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab3AUG5J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 01:57:09 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37174 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab3AUG5H (ORCPT
+	id S1751637Ab3AUHDN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 02:03:13 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:59521 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab3AUHDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 01:57:07 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Date: Mon, 21 Jan 2013 15:56:50 +0900 (JST)
-Message-Id: <20130121.155650.229769620.d.hatayama@jp.fujitsu.com>
-To: vgoyal@redhat.com
-Cc: riel@redhat.com, kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        lisa.mitchell@hp.com, kumagai-atsushi@mxc.nes.nec.co.jp,
-        ebiederm@xmission.com, cpw@sgi.com
-Subject: Re: [RFC PATCH v1 0/3] kdump, vmcore: Map vmcore memory in direct
- mapping region
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <20130118205413.GB10969@redhat.com>
-References: <20130117221348.GJ2237@redhat.com>
-	<20130118.230659.282304499.d.hatayama@jp.fujitsu.com>
-	<20130118205413.GB10969@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Jan 2013 02:03:11 -0500
+Date: Mon, 21 Jan 2013 08:03:01 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Simon Horman <horms@verge.net.au>
+Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v2 1/2] ARM: shmobile: sh73a0: Use generic irqchip_init()
+Message-ID: <20130121070301.GB15508@avionic-0098.adnet.avionic-design.de>
+References: <1358493373-28722-1-git-send-email-thierry.reding@avionic-design.de>
+ <20130121005439.GF19062@verge.net.au>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QKdGvSO+nmPlgiQ/"
+Content-Disposition: inline
+In-Reply-To: <20130121005439.GF19062@verge.net.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:2Gs5YRcw1BLUXXc/TdqJ6DFJdbRpAMsrnYFxRgMJAeH
+ twQmEq6c6aoZwDfZHokiaq56BRGwqR1Bfi/Z3NvgQNLnoYpJFj
+ 89ZC0KqlqRobqUdPZH2YHHpUXL6+vgF/gupNi7c7ORrthlzt+B
+ j9vwsmHPTmOX7E1IR4UVEjir0h7NUTrzE+hMBRPsnRS28hbWQW
+ T1S+uqZFba0azdg/lTtKZWmPhUlAS0S5OXkf20GJRb+dT5cUsL
+ fmnEKiB+by1j8rGEcOBQhNhx87WvWxyy0IigwpxnfRSGSnVmti
+ ssfra7uTKT2IGWE+A+vedGls0V3MOB/UHv6uUk/1jhs2VnQy9R
+ OwakkPt1DXJYRnJx8A5njs7WLWimgfCNfCrvaHlZ6tceqbI3nj
+ OmLCNr5CrMqK5YL0hyvHgPaq7lQJgXeAu5EeiqYv/7NNzKBTBT
+ YuYPF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [RFC PATCH v1 0/3] kdump, vmcore: Map vmcore memory in direct mapping region
-Date: Fri, 18 Jan 2013 15:54:13 -0500
 
-> On Fri, Jan 18, 2013 at 11:06:59PM +0900, HATAYAMA Daisuke wrote:
-> 
-> [..]
->> > These are impressive improvements. I missed the discussion on mmap().
->> > So why couldn't we provide mmap() interface for /proc/vmcore. If that
->> > works then application can select to mmap/unmap bigger chunks of file
->> > (instead ioremap mapping/remapping a page at a time). 
->> > 
->> > And if application controls the size of mapping, then it can vary the
->> > size of mapping based on available amount of free memory. That way if
->> > somebody reserves less amount of memory, we could still dump but with
->> > some time penalty.
->> > 
->> 
->> mmap() needs user-space page table in addition to kernel-space's,
-> 
-> [ CC Rik van Riel] 
-> 
-> I was chatting with Rik and it does not look like that there is any
-> fundamental requirement that range of pfn being mapped in user tables
-> has to be mapped in kernel tables too. Did you run into specific issue.
-> 
+--QKdGvSO+nmPlgiQ/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-No, I was confused simply this around.
+On Mon, Jan 21, 2013 at 09:54:39AM +0900, Simon Horman wrote:
+> On Fri, Jan 18, 2013 at 08:16:12AM +0100, Thierry Reding wrote:
+> > The asm/hardware/gic.h header does no longer exist and the corresponding
+> > functionality was moved to linux/irqchip.h and linux/irqchip/arm-gic.h
+> > respectively. gic_handle_irq() and of_irq_init() are no longer available
+> > either and have been replaced by irqchip_init().
+>=20
+> asm/hardware/gic.h Seems to still exist in Linus's tree.
+> Could you let me know which tree of which branch I should depend on
+> in order to apply this change?
 
->> and
->> it looks that remap_pfn_range() that creates the user-space page
->> table, doesn't support large pages, only 4KB pages.
-> 
-> This indeed looks like the case. May be we can enahnce remap_pfn_range()
-> to take an argument and create larger size mappings.
-> 
+I found this when doing an automated build over all ARM defconfigs on
+linux-next.
 
-Adding a new argument to remap_pfn_range would never easily be
-accepted because it changes signature of it. It is the function that
-is exported to modules.
+Commit 520f7bd73354f003a9a59937b28e4903d985c420 "irqchip: Move ARM gic.h
+to include/linux/irqchip/arm-gic.h" moved the file and was merged
+through Olof Johansson's next/cleanup and for-next branches.
 
-As init_memory_mapping does, it should internally automatically divide
-a given ranges of kernel address space into properly aligned ones then
-remap them.
+Adding Olof on Cc since I'm not quite sure myself about how this is
+handled.
 
-Also, if we extend this in the future, we need to have some feature
-for userland to know a given kernel can use 2MB/1GB pages for
-remapping. makedumpfile needs to estimate how much memory is required
-for the remapping.
+Thierry
 
->> If mmaping small
->> chunks only for small memory programming, then we would again face the
->> same issue as with ioremap.
-> 
-> Even if it is 4KB pages, I think it will still be faster than current
-> interface. Because we will not be issuing these many tlb flushes.
-> (Assuming makedumpfile has been modified to map/unap large areas of
-> /proc/vmcore).
-> 
+--QKdGvSO+nmPlgiQ/
+Content-Type: application/pgp-signature
 
-OK, I'll go in this direction first. From my local investigation, I'm
-beginning with thinking that my idea to map a whole DIMM ranges in
-direct mapping region is difficult due to some memory hot-plug issues,
-and mmap interface is more useful than keeping page table handling in
-/proc/vmcore when we process /proc/vmcore in paralell where each
-process reads different range.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-Assuming we can use 4KB pages only, if we use 1MB buffer for page
-table, we can cover about 500MB memory region. Then, remapping is done
-about 2000 times. On ioremap case, remapping is done 268435456
-times. Peformacne should be improved so much. We should benchmark this
-first.
+iQIcBAEBAgAGBQJQ/OglAAoJEN0jrNd/PrOh4cYP+wQwC94qxtul2hK6Zpcn3Ib5
+Ko/yqqvcRc9tXDEJmuKGfsZ7liT0pTHlBgIyJqYPh1vZ9jjkAAalrj+F/3DliVrU
+hfITcHR8IGfBDh7SQMuHZ4IZBUdbOQgQaDpJqb7X6jQ00yA1/8BrvokUb7kVC2+5
+y/3w7NMgiIX24W70kdpb7qPjMu4qz0yw79XlkuMsFBQCAhc6iZUYnllWlOAHDJzG
+3hdZWMFn/pTncrCHpEY4uqghKESm6QmkjdK5y4zQspdbSnc3/3xNhBmbjIiXi3b1
+cRDkwPcHSD1e1AkyGh4c18mbDBQZmegx6scs4xm9ogx0aHLwa2350FD8qR49N0Ew
+OkpoVKuUzcHqvb1Z9qhIqsN2E+pdu4AEuWVIjyatB4QbF1ENTaWrCliEiX6Vphd4
+aZH52BAW2SW60dl/1/Nij9yKYoxE+3BdfdpF7ek8BgML9HoF1zGHWn+n8rBdcu4L
+Chb8aOx210hRcvLLSdmrQsrHfmsM5BDyBZXwseQ52fcrfE6bEDeQv5qOFE9Jo/8l
+SIXUYDqzar+NQ3roepFHpRi2TH5GGoXOE9VGR1l9MCutljHF6I8Rc4XNp9oezukz
+PVMFxuHlegDkFmKYDNkAE4B5jWXOnv91r+cftj87SwbshofcKxJSzlMN5/c0IcpK
+gAQQAsi3eVMyF80uJIiI
+=xr2d
+-----END PGP SIGNATURE-----
 
-Thanks.
-HATAYAMA, Daisuke
-
+--QKdGvSO+nmPlgiQ/--
