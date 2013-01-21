@@ -1,74 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040Ab3AUH0B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 02:26:01 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:52713 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699Ab3AUH0A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 02:26:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130120223907.GA8424@kroah.com>
-References: <CAAXf6LXkgLiBLFmwH_GR9hkjFgOJ5z1nSTQd9Q4pJud732Lb9Q@mail.gmail.com>
-	<20130120223907.GA8424@kroah.com>
-Date: Mon, 21 Jan 2013 08:25:59 +0100
-Message-ID: <CAAXf6LXGOzqu=VeSdeuu3kNBjVBcobp-2keDmSZ_JSL-72Uu+Q@mail.gmail.com>
-Subject: Re: [RFC] Creating an eeprom class
-From: Thomas De Schampheleire <patrickdepinguin@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
-        Anatolij Gustschin <agust@denx.de>, Frodo Looijaard <frodol@dds.nl>,
-        Philip Edelbrock <phil@netroedge.com>,
-        Ben Gardner <bgardner@wabtec.com>, Ronny Meeus <Ronny.Meeus@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752245Ab3AUH0S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 02:26:18 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:57204 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752074Ab3AUH0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 02:26:15 -0500
+X-IronPort-AV: E=Sophos;i="4.84,505,1355068800"; 
+   d="scan'208";a="6620931"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: sfr@canb.auug.org.au, tangchen@cn.fujitsu.com, akpm@linux-foundation.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/1] page_alloc: Bootmem limit with movablecore_map
+Date: Mon, 21 Jan 2013 15:25:33 +0800
+Message-Id: <1358753133-23355-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <20130121170804.8b6eec010e00a6cbbcbad66f@canb.auug.org.au>
+References: <20130121170804.8b6eec010e00a6cbbcbad66f@canb.auug.org.au>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/21 15:25:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/21 15:25:20,
+	Serialize complete at 2013/01/21 15:25:20
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 11:39 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Sun, Jan 20, 2013 at 07:08:28PM +0100, Thomas De Schampheleire wrote:
->> [plaintext and fixed address of David Brownell]
->
-> David passed away a year or so ago, so that's really not going to help :(
+This patch make sure bootmem will not allocate memory from areas that
+may be ZONE_MOVABLE. The map info is from movablecore_map boot option.
 
-So sorry to hear that, I was not aware...
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
+---
+ include/linux/memblock.h |    2 +
+ mm/memblock.c            |   50 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 52 insertions(+), 0 deletions(-)
 
->
->> Hi,
->>
->> Several of the eeprom drivers that live in drivers/misc/eeprom export
->> a binary sysfs file 'eeprom'. If a userspace program or script wants
->> to access this file, it needs to know the full path, for example:
->>
->> /sys/bus/spi/devices/spi32766.0/eeprom
->>
->> The problem with this approach is that it requires knowledge about the
->> hardware configuration: is the eeprom on the SPI bus, the I2C bus, or
->> maybe memory mapped?
->>
->> It would therefore be more interesting to have a bus-agnostic way to
->> access this eeprom file, for example:
->> /sys/class/eeprom/eeprom0/eeprom
->>
->> Maybe it'd be even better to use a more generic class name than
->> 'eeprom', since there are several types of eeprom-like devices that
->> you could export this way.
->
-> Does all of the existing "eeprom" devices use the same userspace
-> interface?  If so, yes, having a "class" would make sense.
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index d452ee1..ac52bbc 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -60,6 +60,8 @@ int memblock_reserve(phys_addr_t base, phys_addr_t size);
+ void memblock_trim_memory(phys_addr_t align);
+ 
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
++extern struct movablecore_map movablecore_map;
++
+ void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
+ 			  unsigned long *out_end_pfn, int *out_nid);
+ 
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 88adc8a..0218231 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -92,9 +92,58 @@ static long __init_memblock memblock_overlaps_region(struct memblock_type *type,
+  *
+  * Find @size free area aligned to @align in the specified range and node.
+  *
++ * If we have CONFIG_HAVE_MEMBLOCK_NODE_MAP defined, we need to check if the
++ * memory we found if not in hotpluggable ranges.
++ *
+  * RETURNS:
+  * Found address on success, %0 on failure.
+  */
++#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
++phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
++					phys_addr_t end, phys_addr_t size,
++					phys_addr_t align, int nid)
++{
++	phys_addr_t this_start, this_end, cand;
++	u64 i;
++	int curr = movablecore_map.nr_map - 1;
++
++	/* pump up @end */
++	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
++		end = memblock.current_limit;
++
++	/* avoid allocating the first page */
++	start = max_t(phys_addr_t, start, PAGE_SIZE);
++	end = max(start, end);
++
++	for_each_free_mem_range_reverse(i, nid, &this_start, &this_end, NULL) {
++		this_start = clamp(this_start, start, end);
++		this_end = clamp(this_end, start, end);
++
++restart:
++		if (this_end <= this_start || this_end < size)
++			continue;
++
++		for (; curr >= 0; curr--) {
++			if ((movablecore_map.map[curr].start_pfn << PAGE_SHIFT)
++			    < this_end)
++				break;
++		}
++
++		cand = round_down(this_end - size, align);
++		if (curr >= 0 &&
++		    cand < movablecore_map.map[curr].end_pfn << PAGE_SHIFT) {
++			this_end = movablecore_map.map[curr].start_pfn
++				   << PAGE_SHIFT;
++			goto restart;
++		}
++
++		if (cand >= this_start)
++			return cand;
++	}
++
++	return 0;
++}
++#else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+ 					phys_addr_t end, phys_addr_t size,
+ 					phys_addr_t align, int nid)
+@@ -123,6 +172,7 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+ 	}
+ 	return 0;
+ }
++#endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
+ /**
+  * memblock_find_in_range - find free area in given range
+-- 
+1.7.1
 
-All but one do. That one (eeprom_93cx6.c) exports its read/write
-functions to other kernel code, and is used in several
-wireless/ethernet drivers.
-
->
->> Or should we rather hook the eeprom code into the mtd subsystem?
->
-> Why mtd?
-
-Because an eeprom is a piece of memory. Maybe mtd is overkill in term
-of the operations supported, but from a high-level perspective an
-eeprom is a memory technology device, right?
-
-Thanks,
-Thomas
