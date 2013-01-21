@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab3AUVun (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 16:50:43 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:50018 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab3AUVul (ORCPT
+	id S1753252Ab3AUVw1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 16:52:27 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:41974 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab3AUVw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 16:50:41 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Heiko Schocher <hs@denx.de>
-Subject: Re: [PATCH 11/15] mtd: davinci_nand: fix OF support
-Date: Mon, 21 Jan 2013 21:50:21 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Sekhar Nori <nsekhar@ti.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <1358788568-11137-12-git-send-email-arnd@arndb.de> <50FDB509.9030004@denx.de>
-In-Reply-To: <50FDB509.9030004@denx.de>
+	Mon, 21 Jan 2013 16:52:26 -0500
+Date: Tue, 22 Jan 2013 01:52:22 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: "Kinney, Steven" <Steven.Kinney@amd.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Myron Stowe <myron.stowe@redhat.com>, Hiroshi DOYU <hdoyu@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Jiri Kosina <jkosina@suse.cz>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Renninger <trenn@suse.de>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] AMD IOMMUv2 PC resource management hooks
+Message-ID: <20130121215222.GK25252@moon>
+References: <1358799658-6236-1-git-send-email-steven.kinney@amd.com>
+ <1358799658-6236-3-git-send-email-steven.kinney@amd.com>
+ <20130121213218.GI25252@moon>
+ <57D41218901B4442B4AFF404D21591163B9FAD@sausexdag02.amd.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301212150.21659.arnd@arndb.de>
-X-Provags-ID: V02:K0:N9kt4PEDtVPZq6Btv4hLGzE/vs42t5uRBHMSDxBqfcQ
- hS0a3RGWamOD8HBQgEWgdn8IqnlkB54IyJ1+HGYtdCrkyg1iIb
- eKcljyGwypWJePl1mFAMd0qRLtHofpOQOre6q8gE7WrxZt7vXG
- 5iGSj5kK/JtF1GwEZoopqy8Ci5oZTinxbR2wdgfrKUvfufZdvB
- i0jj7lvdHePR5yTD/qDOWl83DzkLsh9Ow1w6HjBuuLdK6juYcF
- 1anAeLqe0S9dPADMmpAwOm/7+gA2rTudRYJsHv7gSYBujKe17C
- Kcp6O7EWUpc6YYz/C4rxn6d7wgfORFRa3JyzJcArtnx6a2ztjR
- TMONiQfRpOO84L6/AHMo=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <57D41218901B4442B4AFF404D21591163B9FAD@sausexdag02.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 21 January 2013, Heiko Schocher wrote:
-> Already fixed here:
-> http://lists.infradead.org/pipermail/linux-mtd/2013-January/045366.html
-> 
+On Mon, Jan 21, 2013 at 09:47:30PM +0000, Kinney, Steven wrote:
+> Hi Cyrill,
+> Agree, will clean this up.
 
-Ok, thanks for the confirmation. I had only checked -rc4, not any newer
-snapshot.
-
-	Arnd
+Yeah, but no rush. Lets wait for other opinions as well.
