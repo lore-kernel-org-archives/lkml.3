@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214Ab3AUIno (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 03:43:44 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:47752 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab3AUInm (ORCPT
+	id S1752223Ab3AUIqb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 03:46:31 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:35222 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757Ab3AUIqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 03:43:42 -0500
+	Mon, 21 Jan 2013 03:46:30 -0500
+Message-ID: <50FD005C.8040402@linux.vnet.ibm.com>
+Date: Mon, 21 Jan 2013 16:46:20 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20130121164336.9edf1179a8e5c91baea8571a@canb.auug.org.au>
-References: <20130121164336.9edf1179a8e5c91baea8571a@canb.auug.org.au>
-Date: Mon, 21 Jan 2013 09:43:40 +0100
-Message-ID: <CAKMK7uHJf6C99kNFybBhv3kXKze8x+YRDSHNycOfbY_QiSC7HA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the akpm tree with the drm tree
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dave Airlie <airlied@linux.ie>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mike Galbraith <bitbucket@online.de>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
+        mingo@kernel.org, a.p.zijlstra@chello.nl
+Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
+References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com> <50ED384C.1030301@linux.vnet.ibm.com> <1357977704.6796.47.camel@marge.simpson.net> <1357985943.6796.55.camel@marge.simpson.net> <1358155290.5631.19.camel@marge.simpson.net> <50F79256.1010900@linux.vnet.ibm.com> <1358654997.5743.17.camel@marge.simpson.net> <50FCACE3.5000706@linux.vnet.ibm.com> <1358743128.4994.33.camel@marge.simpson.net> <50FCCCF5.30504@linux.vnet.ibm.com> <1358750523.4994.55.camel@marge.simpson.net> <50FCEF6C.6010801@linux.vnet.ibm.com> <1358756780.4994.104.camel@marge.simpson.net>
+In-Reply-To: <1358756780.4994.104.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012108-8256-0000-0000-000005E86D38
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 01/21/2013 04:26 PM, Mike Galbraith wrote:
+> On Mon, 2013-01-21 at 15:34 +0800, Michael Wang wrote: 
+>> On 01/21/2013 02:42 PM, Mike Galbraith wrote:
+>>> On Mon, 2013-01-21 at 13:07 +0800, Michael Wang wrote:
+>>>
+>>>> That seems like the default one, could you please show me the numbers in
+>>>> your datapoint file?
+>>>
+>>> Yup, I do not touch the workfile.  Datapoints is what you see in the
+>>> tabulated result...
+>>>
+>>> 1
+>>> 1
+>>> 1
+>>> 5
+>>> 5
+>>> 5
+>>> 10
+>>> 10
+>>> 10
+>>> ...
+>>>
+>>> so it does three consecutive runs at each load level.  I quiesce the
+>>> box, set governor to performance, echo 250 32000 32 4096
+>>>> /proc/sys/kernel/sem, then ./multitask -nl -f, and point it
+>>> at ./datapoints.
+>>
+>> I have changed the "/proc/sys/kernel/sem" to:
+>>
+>> 2000    2048000 256     1024
+>>
+>> and run few rounds, seems like I can't reproduce this issue on my 12 cpu
+>> X86 server:
+>>
+>> 	prev		post
+>> Tasks    jobs/min  	jobs/min
+>>     1      508.39    	506.69
+>>     5     2792.63   	2792.63
+>>    10     5454.55   	5449.64
+>>    20    10262.49  	10271.19
+>>    40    18089.55  	18184.55
+>>    80    28995.22  	28960.57
+>>   160    41365.19  	41613.73
+>>   320    53099.67  	52767.35
+>>   640    61308.88  	61483.83
+>>  1280    66707.95  	66484.96
+>>  2560    69736.58  	69350.02
+>>
+>> Almost nothing changed...I would like to find another machine and do the
+>> test again later.
+> 
+> Hm.  Those numbers look odd.  Ok, I've got 8 more cores, but your hefty
+> load throughput is low.  When I look low end numbers, seems your cores
+> are more macho than my 2.27 GHz EX cores, so it should have been a lot
+> closer.  Oh wait, you said "12 cpu".. so 1 6 core package + HT?  This
+> box is 2 NUMA nodes (was 4), 2 (was 4) 10 core packages + HT.
 
-I'm working on some follow-up patches for the drm fb helper library
-already, and fixing up the panic handling is on the plan already. And
-since the fb helper has its own panic notifier anyway (simply
-unblanking is not good enough to display an oops on a kms device) I
-think we should simply return without doing anything from our
-->fb_blank if an oops is in progress.
+It's a 12 core package, and only 1 physical cpu:
 
-So please drop the patch from the akpm tree, I'll take care of this
-(and reply to the original patch submission with my plan).
+Intel(R) Xeon(R) CPU           X5690  @ 3.47GHz
 
-Thanks, Daniel
+So does that means the issue was related to the case when there are
+multiple nodes?
 
-On Mon, Jan 21, 2013 at 6:43 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Andrew,
->
-> Today's linux-next merge of the akpm tree got a conflict in
-> drivers/gpu/drm/drm_fb_helper.c between commit 848499032504 ("drm: add
-> drm_modeset_lock|unlock_all") from the drm tree and commit
-> "drivers/gpu/drm/drm_fb_helper.c: avoid sleeping in unblank_screen() if
-> oops in progress" from the akpm tree.
->
-> I can't see an easy way to resolve these, so I just dropped the akpm tree
-> patch.
->
+Regards,
+Michael Wang
+
+> 
+> -Mike
+> 
 > --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-
-
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
