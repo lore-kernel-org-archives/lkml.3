@@ -1,78 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab3AUMot (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 07:44:49 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:36776 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754657Ab3AUMor (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 07:44:47 -0500
-Message-ID: <50FD381E.6040002@intel.com>
-Date: Mon, 21 Jan 2013 20:44:14 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1754034Ab3AUMrl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 07:47:41 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:48192 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752291Ab3AUMrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 07:47:40 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Stefan Bader <stefan.bader@canonical.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andre Przywara <andre@andrep.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: kernel 3.7+ cpufreq regression on AMD system running as dom0
+Date: Mon, 21 Jan 2013 13:53:38 +0100
+Message-ID: <2554137.GLUGe7mQDl@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130121124255.GB4823@pd.tnic>
+References: <50F42B3E.7090602@canonical.com> <50FD32FA.7010306@canonical.com> <20130121124255.GB4823@pd.tnic>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Aaron Lu <aaron.lu@intel.com>, Jens Axboe <axboe@kernel.dk>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Shane Huang <shane.huang@amd.com>
-Subject: Re: [PATCH v7 4/4] sd: change to auto suspend mode
-References: <Pine.LNX.4.44L0.1301181613060.1190-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1301181613060.1190-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2013 05:25 AM, Alan Stern wrote:
-> On Wed, 16 Jan 2013, Aaron Lu wrote:
->
->> From: Lin Ming<ming.m.lin@intel.com>
->>
->> Uses block layer runtime pm helper functions in
->> scsi_runtime_suspend/resume.
->> Remove scsi_autopm_* from sd open/release path and check_events path.
->> And remove the quiesce call in runtime suspend path, as we know there is
->> no request to quiesce for the device.
->>
->> Signed-off-by: Lin Ming<ming.m.lin@intel.com>
->> Signed-off-by: Aaron Lu<aaron.lu@intel.com>
->
->> --- a/drivers/scsi/scsi_sysfs.c
->> +++ b/drivers/scsi/scsi_sysfs.c
->> @@ -893,6 +893,8 @@ int scsi_sysfs_add_sdev(struct scsi_device *sdev)
->>   	 */
->>   	scsi_autopm_get_device(sdev);
->>
->> +	blk_pm_runtime_init(rq,&sdev->sdev_gendev);
->> +
->>   	error = device_add(&sdev->sdev_gendev);
->>   	if (error) {
->>   		sdev_printk(KERN_INFO, sdev,
->
-> Someone just asked about the default autosuspend delay, and I realized
-> your patch series doesn't set one.  Since we don't know the properties
-> of the disk drive at this point (or even whether the device is a disk
-> drive), the only safe course is to call
->
-> 	pm_runtime_set_autosuspend_delay(&sdev->sdev_gendev, -1);
->
-> before calling blk_pm_runtime_init().  Then autosuspends will be
-> prevented until userspace writes a non-negative value into the device's
-> control/autosuspend_delay_ms file.
+On Monday, January 21, 2013 01:42:55 PM Borislav Petkov wrote:
+> On Mon, Jan 21, 2013 at 12:22:18PM +0000, Stefan Bader wrote:
+> > So for having the "check for sensible BIOS" in mainline I refreshed
+> > the patch (fixed the bit test, and actually tested it this time) and
+> > also added some hopefully sensible explanation to it (attached
+> > below).
+> > 
+> > Should I send it to acpi lists or would that have to go via an Andre?
+> 
+> Maybe Rafael could pick it up?
 
-OK, that would be safer, thanks for the suggestion.
-I often set the autosuspend delay before allowing runtime PM for the
-device, since we forbid it in scsi_sysfs_add_sdev.
-
->
-> The kerneldoc for blk_pm_runtime_init() should mention that the caller
-> needs to set the autosuspend delay beforehand.
-
-OK.
+I can, if you ACK it for me. :-)
 
 Thanks,
-Aaron
+Rafael
+
+ 
+> > From 6e2fc8291c91339123a37162382d8b08b50867ba Mon Sep 17 00:00:00 2001
+> > From: Stefan Bader <stefan.bader@canonical.com>
+> > Date: Mon, 14 Jan 2013 16:17:00 +0100
+> > Subject: [PATCH] ACPI: Check MSR valid bit before using P-state frequencies
+> > 
+> > To fix incorrect P-state frequencies which can happen on
+> > some AMD systems f594065faf4f9067c2283a34619fc0714e79a98d
+> >   "ACPI: Add fixups for AMD P-state figures"
+> > introduced a quirk to obtain the correct values by reading
+> > from AMD specific MSRs.
+> > 
+> > This did cause a regression when running a kernel using that
+> > quirk under Xen which does (currently) not pass on the contents
+> > of the HW but 0.
+> 
+> Actually this should say "does not currently pass through MSR accesses
+> to baremetal" or similar.
+> 
+> And this bit you mean is actually bit 63:
+> 
+> "63: PstateEn. Read-write. 1=The P-state specified by this MSR is valid.
+> 0=The P-state specified by this MSR is not valid. The purpose of this
+> register is to indicate if the rest of the P-state information in the
+> register is valid after a reset; it controls no hardware."
+> 
+> in the MSRC001_00[68:64] P-State [4:0] Registers.
+> 
+> > And this seems to cause a failure to initialize
+> > the ondemand governour (hard to say for sure as all P-states
+> > appear to run at the same frequency).
+> > 
+> > While this should also be fixed in the hypervisor (to allow
+> > a guest to read that MSR), this patch is intended to work
+> > around the issue in the meantime. In discussion it turned out
+> > that indeed real HW/BIOSes may choose to not set the valid bit
+> > and thus mark the P-state as invalid. So this could be considered
+> > a fix for broken BIOSes that also works around the issue on Xen.
+> > 
+> > Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+> > Cc: stable@vger.kernel.org # v3.7..
+> > ---
+> >  drivers/acpi/processor_perflib.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
+> > index 836bfe0..41f4bdac 100644
+> > --- a/drivers/acpi/processor_perflib.c
+> > +++ b/drivers/acpi/processor_perflib.c
+> > @@ -340,6 +340,9 @@ static void amd_fixup_frequency(struct
+> > acpi_processor_px *px, int i)
+> >  	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
+> >  	    || boot_cpu_data.x86 == 0x11) {
+> >  		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
+> > +		/* Bit 63 indicates whether contents are valid */
+> > +		if (!(hi & 0x80000000))
+> 
+> You can make this a lot more explicit:
+> 
+> 		if (!(hi & BIT(31)))
+> 			return;
+> 
+> This way
+> 
+> 1) you're sure you're testing the correct bit and
+> 2) any reviewer can know on the spot which bit it is about.
+> 
+> > +			return;
+> >  		fid = lo & 0x3f;
+> >  		did = (lo >> 6) & 7;
+> >  		if (boot_cpu_data.x86 == 0x10)
+> 
+> Thanks.
+> 
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
