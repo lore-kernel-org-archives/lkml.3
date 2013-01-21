@@ -1,101 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab3AUMix (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 07:38:53 -0500
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:42011 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852Ab3AUMiv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 07:38:51 -0500
-Message-ID: <50FD36CF.1000702@synopsys.com>
-Date: Mon, 21 Jan 2013 18:08:39 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1754110Ab3AUMkB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 07:40:01 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:56568 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752981Ab3AUMj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 07:39:59 -0500
+Date: Mon, 21 Jan 2013 13:42:55 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andre Przywara <andre@andrep.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: kernel 3.7+ cpufreq regression on AMD system running as dom0
+Message-ID: <20130121124255.GB4823@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Stefan Bader <stefan.bader@canonical.com>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	Andre Przywara <andre@andrep.de>,
+	"xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
+References: <50F42B3E.7090602@canonical.com>
+ <20130114163445.GA4867@liondog.tnic>
+ <20130115175305.GA12449@phenom.dumpdata.com>
+ <20130115181839.GC8101@liondog.tnic>
+ <20130118190015.GC11351@phenom.dumpdata.com>
+ <20130118200331.GF4062@pd.tnic>
+ <50FD32FA.7010306@canonical.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 28/76] ARC: I/O and DMA Mappings
-References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-29-git-send-email-vgupta@synopsys.com> <201301181555.43487.arnd@arndb.de>
-In-Reply-To: <201301181555.43487.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50FD32FA.7010306@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 January 2013 09:25 PM, Arnd Bergmann wrote:
-> On Friday 18 January 2013, Vineet Gupta wrote:
->> TBD: Do we need early ioremap support like openrisc
->>
->> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> Can you explain why early ioremap is necessary for you?
->
-> I wasn't aware that openrisc has it. In a lot of cases,
-> you can use fixmap as a replacement.
+On Mon, Jan 21, 2013 at 12:22:18PM +0000, Stefan Bader wrote:
+> So for having the "check for sensible BIOS" in mainline I refreshed
+> the patch (fixed the bit test, and actually tested it this time) and
+> also added some hopefully sensible explanation to it (attached
+> below).
+> 
+> Should I send it to acpi lists or would that have to go via an Andre?
 
-This came about when enabling the early console of arc uart using the early param
-registration. I prefer console to be up as early as possible because the high
-configurability of ARC means you get early panics if hardware and software don't
-match (cache geom, mmu ver, ....) and it's good if we could print it out via uart.
+Maybe Rafael could pick it up?
 
-So we do end up calling ioremap very early
+> 
+> -Stefan
+> 
+> From 6e2fc8291c91339123a37162382d8b08b50867ba Mon Sep 17 00:00:00 2001
+> From: Stefan Bader <stefan.bader@canonical.com>
+> Date: Mon, 14 Jan 2013 16:17:00 +0100
+> Subject: [PATCH] ACPI: Check MSR valid bit before using P-state frequencies
+> 
+> To fix incorrect P-state frequencies which can happen on
+> some AMD systems f594065faf4f9067c2283a34619fc0714e79a98d
+>   "ACPI: Add fixups for AMD P-state figures"
+> introduced a quirk to obtain the correct values by reading
+> from AMD specific MSRs.
+> 
+> This did cause a regression when running a kernel using that
+> quirk under Xen which does (currently) not pass on the contents
+> of the HW but 0.
 
-setup_arch
-   machine_desc->init_early
-   plat_fpga_early_init
-       arc_fpga_serial_init
-             early_platform_add_devices
-             early_platform_driver_probe
-                  arc_serial_probe_earlyprintk
-                        ioremap_nocache()
+Actually this should say "does not currently pass through MSR accesses
+to baremetal" or similar.
 
-However, ioremap on ARC typically avoids MMU mappings (hence need for paging_init
-etc to have run apriori) because memory mapped peripherals are typically wired up
-in ARC's dedicated uncached address space. So unless the driver needs special
-access permissions (in addition to uncached semantics), we can simply
-short-circuit all of MMU routing.
+And this bit you mean is actually bit 63:
 
-So the comment above can be deleted, and we probably need a check in
-ioremap_prot() so that early ioremap bails out if called early - probably using
-slab_is_available()
+"63: PstateEn. Read-write. 1=The P-state specified by this MSR is valid.
+0=The P-state specified by this MSR is not valid. The purpose of this
+register is to indicate if the rest of the P-state information in the
+register is valid after a reset; it controls no hardware."
 
->
->> +
->> +#ifndef _ASM_ARC_IO_H
->> +#define _ASM_ARC_IO_H
->> +
->> +#include <asm/byteorder.h>
->> +#include <asm/page.h>
->> +
->> +extern void __iomem *ioremap(unsigned long physaddr, unsigned long size);
->> +extern void iounmap(const void __iomem *addr);
->> +
->> +#define ioremap_nocache(phy, sz)	ioremap(phy, sz)
->> +#define ioremap_wc(phy, sz)		ioremap(phy, sz)
->> +
->> +/* Change struct page to physical address */
->> +#define page_to_phys(page)		(page_to_pfn(page) << PAGE_SHIFT)
->> +
->> +#include <asm-generic/io.h>
-> I think I commented before that asm-generic/io.h has a number of
-> problems and you should at least override the __raw_{read,write}{b,w,l,q}
-> functions with your own ones using inline assembly.
->
-> You should also define a non-NULL PCI_IOBASE.
+in the MSRC001_00[68:64] P-State [4:0] Registers.
 
-Sorry for missing out on this one - this was indeed suggested in the private
-pre-list review you did. The 64-bit version certainly needs to be wrapped in a irq
-safe block.
+> And this seems to cause a failure to initialize
+> the ondemand governour (hard to say for sure as all P-states
+> appear to run at the same frequency).
+> 
+> While this should also be fixed in the hypervisor (to allow
+> a guest to read that MSR), this patch is intended to work
+> around the issue in the meantime. In discussion it turned out
+> that indeed real HW/BIOSes may choose to not set the valid bit
+> and thus mark the P-state as invalid. So this could be considered
+> a fix for broken BIOSes that also works around the issue on Xen.
+> 
+> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+> Cc: stable@vger.kernel.org # v3.7..
+> ---
+>  drivers/acpi/processor_perflib.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
+> index 836bfe0..41f4bdac 100644
+> --- a/drivers/acpi/processor_perflib.c
+> +++ b/drivers/acpi/processor_perflib.c
+> @@ -340,6 +340,9 @@ static void amd_fixup_frequency(struct
+> acpi_processor_px *px, int i)
+>  	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
+>  	    || boot_cpu_data.x86 == 0x11) {
+>  		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
+> +		/* Bit 63 indicates whether contents are valid */
+> +		if (!(hi & 0x80000000))
 
-However others will be exactly same as generic ones. Given that these routines
-operate on __iomem memory which has to be uncached: either wired in uncached
-address space, or goes via an uncached MMU mapping, IMHO the inline-asm or 'C'
-version won't add any value. We do have uncached LD/ST, I've tried to avoid them
-so far as they have certain micro-architectural quirks and per previous argument
-it seems they would be redundant.
+You can make this a lot more explicit:
 
-Having said that I might be over-looking something important - so please let me know.
+		if (!(hi & BIT(31)))
+			return;
 
--Vineet
+This way
 
+1) you're sure you're testing the correct bit and
+2) any reviewer can know on the spot which bit it is about.
+
+> +			return;
+>  		fid = lo & 0x3f;
+>  		did = (lo >> 6) & 7;
+>  		if (boot_cpu_data.x86 == 0x10)
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
