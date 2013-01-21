@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab3AUEHW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 23:07:22 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:56682 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617Ab3AUEHU (ORCPT
+	id S1752762Ab3AUEPU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 23:15:20 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:64654 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617Ab3AUEPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 23:07:20 -0500
-Date: Mon, 21 Jan 2013 15:07:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wolfgang Frisch <wfpub@roembden.net>, Johan Hovold <jhovold@gmail.com>
-Subject: linux-next: manual merge of the usb tree with Linus' tree
-Message-Id: <20130121150711.c4673d930c2f00253c2e471a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_Jan_2013_15_07_11_+1100_uJZhOeWf8EiiHT.G"
+	Sun, 20 Jan 2013 23:15:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <87vcasxgre.fsf@devron.myhome.or.jp>
+References: <1358561990-8216-1-git-send-email-linkinjeon@gmail.com>
+	<87vcasxgre.fsf@devron.myhome.or.jp>
+Date: Mon, 21 Jan 2013 13:15:17 +0900
+Message-ID: <CAKYAXd_DH+O4PKUsfQKVVXoi84Sm2f64A3+aESOgQb9JvX_e+w@mail.gmail.com>
+Subject: Re: [PATCH] fat: eliminate iterations in fat_search_long in case of EOD
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_Jan_2013_15_07_11_+1100_uJZhOeWf8EiiHT.G
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+2013/1/20, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> When searching a directory for names, we can stop checking for further
+>> entries if we detect End of Directory, i.e. if (de->name[0] == 0x00).The
+>> current code traverses the cluster chain of a directory until a hit is
+>> found or till the last cluster for that directory, ignoring the EOD mark.
+>> Fix this.
+>
+> f_pos still works fine after this change?
+Hi OGAWA.
+I can not find f_pos usage in fat_search_long function.
+Maybe, Have you seen other function such as __fat_readdir ?
+Let me know your opinion.
 
-Hi Greg,
-
-Today's linux-next merge of the usb tree got a conflict in
-drivers/usb/serial/io_ti.c between commit 1ee0a224bc9a ("USB: io_ti: Fix
-NULL dereference in chase_port()") from Linus' tree and commit
-f40d781554ef ("USB: io_ti: kill custom closing_wait implementation") from
-the usb tree.
-
-I fixed it up (the latter removed the code fixed by the former, so I just
-used thet) and can carry the fix as necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__21_Jan_2013_15_07_11_+1100_uJZhOeWf8EiiHT.G
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ/L7vAAoJEECxmPOUX5FE64wP/RVnQE2QY71bzVWCm9RAfzp0
-YUipy9+7NyRP43mdn+PrVwcVx3pfFxjseFxuyASQ4qBo52WxD6bMGE8ovzgVSvuF
-Zwx1+bTF2RF6InmMEcBPzYnMdj/fRk18BMp+9ye8hFL9LK2dTwFvHbdbGpaCfRfJ
-mUYzJQ4xDEcAHVIfQGW4g3P5wpISRsgdfMUkm1RG4266gaEJu9kPbZijFN3UR0RM
-up8JAwLbxmEWqepgiFTdfqZXG1iWQ25pXshISTSsk2rYQCVOgVfuCIBV1q4MqknL
-QfDjWyAQ7jAkPS7HVd7L5bxgw35/wGFPYA/uRJCiTQ1/XAs9RxOb60dUUHB+Cpub
-soumAEADJIIyik2ULO445cjG7waDsxXqbh2cKZRcp5QtuMycvLVEPCEFdEIf4YfB
-7Gs+myuoU68y1iG3YKCeuy1hQItdPrhA7wY/tUGef41JqOjADiS0BQx5VUsA5wMH
-cUr3CKkioYsGqSzsW6oHHePKAzEmRwe/CBZ4DtX2d+etGLAGG9CnKGnegTCSyEJh
-0icxx/KoahvRUkRjEk+QRPQiS0mMKhisaqx0BQ9OoEVaOQWBmsBkLNKLzBSF5Lm8
-1UeUxv/98U4ermpsr5+Z+H8SGcto+b4krta9kWJel4JatleSpuG3S1ld4WjYJ23j
-go5RnH/gSY9tRm7c1xKc
-=fkN6
------END PGP SIGNATURE-----
-
---Signature=_Mon__21_Jan_2013_15_07_11_+1100_uJZhOeWf8EiiHT.G--
+Thanks.
+>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
+>> ---
+>>  fs/fat/dir.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/fat/dir.c b/fs/fat/dir.c
+>> index 58bf744..cde0e69 100644
+>> --- a/fs/fat/dir.c
+>> +++ b/fs/fat/dir.c
+>> @@ -484,10 +484,10 @@ parse_record:
+>>  		nr_slots = 0;
+>>  		if (de->name[0] == DELETED_FLAG)
+>>  			continue;
+>> +		if (!de->name[0])
+>> +			goto end_of_dir;
+>>  		if (de->attr != ATTR_EXT && (de->attr & ATTR_VOLUME))
+>>  			continue;
+>> -		if (de->attr != ATTR_EXT && IS_FREE(de->name))
+>> -			continue;
+>>  		if (de->attr == ATTR_EXT) {
+>>  			int status = fat_parse_long(inode, &cpos, &bh, &de,
+>>  						    &unicode, &nr_slots);
+>
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
