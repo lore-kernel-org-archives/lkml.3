@@ -1,35 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab3AUKKE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:10:04 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:59177 "EHLO
+	id S1753116Ab3AUKNi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:13:38 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:49307 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab3AUKJz (ORCPT
+	with ESMTP id S1753128Ab3AUKKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:09:55 -0500
+	Mon, 21 Jan 2013 05:10:02 -0500
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-Subject: [PATCH 30/33] video: Convert to devm_ioremap_resource()
-Date: Mon, 21 Jan 2013 11:09:23 +0100
-Message-Id: <1358762966-20791-31-git-send-email-thierry.reding@avionic-design.de>
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [PATCH 09/33] drm: Convert to devm_ioremap_resource()
+Date: Mon, 21 Jan 2013 11:09:02 +0100
+Message-Id: <1358762966-20791-10-git-send-email-thierry.reding@avionic-design.de>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
 References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:Zvf39s5l5VdJ8xdSehHhIPij6kCTIdgz26De1bUiXZy
- BleFkDWFgF9WfLQr/gYq+KGCgsQVSn4045LOQHwKjzsFWcfG33
- 71K+paaBmerPU/fzNwwd+bNmYVrT9xBj4bM/xTzQ/tFBhD0SQe
- +IGtysCZFLz8rzytYkZBLM0DptAkUfmX3JtTtOuZLyngUy8bpB
- iW+zvMegkT3klA46mvvb6sdcn9BG/OTKIqk6+Ps0QWhmePSFKv
- N8g/Jrc2YL3GQxSIFE9/8yHJBv+O4UCFeRUP7bR21E3XDzSP5q
- /Es0KkGsjo9R21PGO84dfFCjoICGeu+xKxjoRe0y60B9gNRA59
- 2k1WmUtMAJvPyIm3iKZRo9+EcDK4xvDgpGHn3XMQWGB0rZyZRh
- E2nTMtZpbpL1EsdlyGVdkTU5wIWNe7mbKZD9Ky+V607fXR46wd
- YAHEL
+X-Provags-ID: V02:K0:Bi2QJVVDFWP4HAzMBK54sOKervQ4dTpXGDwx9KTfZrQ
+ AN2kY1bSubvh+urFTWXeYsi/Nj9CnekiojS+WD1jKqMzLMdKEm
+ FyRSaYLqJwUdVp9SagSNJKm4Oum8tszr4dN0DY+HT3xtVNVxt3
+ uFOiHFNmYTZO8N5W649QWhSLl25/GRI3PVoWYj9jOtgJtr8m5D
+ 38nwtNDiiuIMyu2gclIIYHTKfYXKpxAJl066aQPhqxFGfUExlB
+ 2ladTCqnuPctXsIENyM7q1SYXSFVfkPTb7jLoSl+wt2iv7MPEq
+ cRw/74uiLjO+lAm4ynmTTSLOzkSFdIXPWwSXkVNAFPC1cXUTQ8
+ a+cEkcp1CUwdGBCfW6Kao1tYy+U2puI4EO7aMezVTxshstkhGZ
+ hacdbG8s1T4Rx4iMMgYjF1dsgyZSCQ0b/6Zd7EzGyvI2RPq0YH
+ W6auM
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -41,114 +40,184 @@ devm_ioremap_resource() provides its own error messages so all explicit
 error messages can be removed from the failure code paths.
 
 Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-fbdev@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org
 ---
- drivers/video/exynos/exynos_dp_core.c | 8 +++-----
- drivers/video/jz4740_fb.c             | 6 +++---
- drivers/video/omap2/dss/hdmi.c        | 8 +++-----
- drivers/video/omap2/vrfb.c            | 9 ++++-----
- drivers/video/s3c-fb.c                | 7 +++----
- 5 files changed, 16 insertions(+), 22 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_fimc.c    | 8 +++-----
+ drivers/gpu/drm/exynos/exynos_drm_fimd.c    | 8 +++-----
+ drivers/gpu/drm/exynos/exynos_drm_g2d.c     | 7 +++----
+ drivers/gpu/drm/exynos/exynos_drm_gsc.c     | 8 +++-----
+ drivers/gpu/drm/exynos/exynos_drm_rotator.c | 8 +++-----
+ drivers/gpu/drm/exynos/exynos_hdmi.c        | 8 +++-----
+ drivers/gpu/drm/tegra/dc.c                  | 8 +++-----
+ drivers/gpu/drm/tegra/hdmi.c                | 6 +++---
+ drivers/gpu/drm/tegra/host1x.c              | 6 +++---
+ 9 files changed, 27 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/video/exynos/exynos_dp_core.c b/drivers/video/exynos/exynos_dp_core.c
-index 4ef18e2..7aae0bf 100644
---- a/drivers/video/exynos/exynos_dp_core.c
-+++ b/drivers/video/exynos/exynos_dp_core.c
-@@ -1076,11 +1076,9 @@ static int exynos_dp_probe(struct platform_device *pdev)
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimc.c b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
+index 67a83e6..411f69b7 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_fimc.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
+@@ -1785,11 +1785,9 @@ static int fimc_probe(struct platform_device *pdev)
+ 
+ 	/* resource memory */
+ 	ctx->regs_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	ctx->regs = devm_request_and_ioremap(dev, ctx->regs_res);
+-	if (!ctx->regs) {
+-		dev_err(dev, "failed to map registers.\n");
+-		return -ENXIO;
+-	}
++	ctx->regs = devm_ioremap_resource(dev, ctx->regs_res);
++	if (IS_ERR(ctx->regs))
++		return PTR_ERR(ctx->regs);
+ 
+ 	/* resource irq */
+ 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimd.c b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
+index 9537761..36493ce 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_fimd.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
+@@ -913,11 +913,9 @@ static int fimd_probe(struct platform_device *pdev)
  
  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
  
--	dp->reg_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!dp->reg_base) {
--		dev_err(&pdev->dev, "failed to ioremap\n");
--		return -ENOMEM;
--	}
-+	dp->reg_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(dp->reg_base))
-+		return PTR_ERR(dp->reg_base);
- 
- 	dp->irq = platform_get_irq(pdev, 0);
- 	if (dp->irq == -ENXIO) {
-diff --git a/drivers/video/jz4740_fb.c b/drivers/video/jz4740_fb.c
-index d999bb5..36979b4 100644
---- a/drivers/video/jz4740_fb.c
-+++ b/drivers/video/jz4740_fb.c
-@@ -660,9 +660,9 @@ static int jzfb_probe(struct platform_device *pdev)
- 	}
- 
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	jzfb->base = devm_request_and_ioremap(&pdev->dev, mem);
--	if (!jzfb->base) {
--		ret = -EBUSY;
-+	jzfb->base = devm_ioremap_resource(&pdev->dev, mem);
-+	if (IS_ERR(jzfb->base)) {
-+		ret = PTR_ERR(jzfb->base);
- 		goto err_framebuffer_release;
- 	}
- 
-diff --git a/drivers/video/omap2/dss/hdmi.c b/drivers/video/omap2/dss/hdmi.c
-index 769d082..7292364 100644
---- a/drivers/video/omap2/dss/hdmi.c
-+++ b/drivers/video/omap2/dss/hdmi.c
-@@ -1080,11 +1080,9 @@ static int __init omapdss_hdmihw_probe(struct platform_device *pdev)
- 	}
- 
- 	/* Base address taken from platform */
--	hdmi.ip_data.base_wp = devm_request_and_ioremap(&pdev->dev, res);
--	if (!hdmi.ip_data.base_wp) {
--		DSSERR("can't ioremap WP\n");
--		return -ENOMEM;
--	}
-+	hdmi.ip_data.base_wp = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(hdmi.ip_data.base_wp))
-+		return PTR_ERR(hdmi.ip_data.base_wp);
- 
- 	r = hdmi_get_clocks(pdev);
- 	if (r) {
-diff --git a/drivers/video/omap2/vrfb.c b/drivers/video/omap2/vrfb.c
-index 5d8fdac..10560ef 100644
---- a/drivers/video/omap2/vrfb.c
-+++ b/drivers/video/omap2/vrfb.c
-@@ -20,6 +20,7 @@
- 
- /*#define DEBUG*/
- 
-+#include <linux/err.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/ioport.h>
-@@ -357,11 +358,9 @@ static int __init vrfb_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	vrfb_base = devm_request_and_ioremap(&pdev->dev, mem);
--	if (!vrfb_base) {
--		dev_err(&pdev->dev, "can't ioremap vrfb memory\n");
--		return -ENOMEM;
--	}
-+	vrfb_base = devm_ioremap_resource(&pdev->dev, mem);
-+	if (IS_ERR(vrfb_base))
-+		return PTR_ERR(vrfb_base);
- 
- 	num_ctxs = pdev->num_resources - 1;
- 
-diff --git a/drivers/video/s3c-fb.c b/drivers/video/s3c-fb.c
-index 9b57a23..968a625 100644
---- a/drivers/video/s3c-fb.c
-+++ b/drivers/video/s3c-fb.c
-@@ -1421,10 +1421,9 @@ static int s3c_fb_probe(struct platform_device *pdev)
- 	pm_runtime_enable(sfb->dev);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	sfb->regs = devm_request_and_ioremap(dev, res);
--	if (!sfb->regs) {
+-	ctx->regs = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!ctx->regs) {
 -		dev_err(dev, "failed to map registers\n");
+-		return -ENXIO;
+-	}
++	ctx->regs = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(ctx->regs))
++		return PTR_ERR(ctx->regs);
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	if (!res) {
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_g2d.c b/drivers/gpu/drm/exynos/exynos_drm_g2d.c
+index 36c3905..7329abd 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_g2d.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_g2d.c
+@@ -1136,10 +1136,9 @@ static int g2d_probe(struct platform_device *pdev)
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 
+-	g2d->regs = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!g2d->regs) {
+-		dev_err(dev, "failed to remap I/O memory\n");
 -		ret = -ENXIO;
-+	sfb->regs = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(sfb->regs)) {
-+		ret = PTR_ERR(sfb->regs);
- 		goto err_lcd_clk;
++	g2d->regs = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(g2d->regs)) {
++		ret = PTR_ERR(g2d->regs);
+ 		goto err_put_clk;
+ 	}
+ 
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_gsc.c b/drivers/gpu/drm/exynos/exynos_drm_gsc.c
+index 8140753..7841c3b 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_gsc.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_gsc.c
+@@ -1692,11 +1692,9 @@ static int gsc_probe(struct platform_device *pdev)
+ 
+ 	/* resource memory */
+ 	ctx->regs_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	ctx->regs = devm_request_and_ioremap(dev, ctx->regs_res);
+-	if (!ctx->regs) {
+-		dev_err(dev, "failed to map registers.\n");
+-		return -ENXIO;
+-	}
++	ctx->regs = devm_ioremap_resource(dev, ctx->regs_res);
++	if (IS_ERR(ctx->regs))
++		return PTR_ERR(ctx->regs);
+ 
+ 	/* resource irq */
+ 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_rotator.c b/drivers/gpu/drm/exynos/exynos_drm_rotator.c
+index e9e83ef..a6da774 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_rotator.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_rotator.c
+@@ -656,11 +656,9 @@ static int rotator_probe(struct platform_device *pdev)
+ 				platform_get_device_id(pdev)->driver_data;
+ 
+ 	rot->regs_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	rot->regs = devm_request_and_ioremap(dev, rot->regs_res);
+-	if (!rot->regs) {
+-		dev_err(dev, "failed to map register\n");
+-		return -ENXIO;
+-	}
++	rot->regs = devm_ioremap_resource(dev, rot->regs_res);
++	if (IS_ERR(rot->regs))
++		return PTR_ERR(rot->regs);
+ 
+ 	rot->irq = platform_get_irq(pdev, 0);
+ 	if (rot->irq < 0) {
+diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+index 41ff79d..d4c3f3d 100644
+--- a/drivers/gpu/drm/exynos/exynos_hdmi.c
++++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
+@@ -2526,11 +2526,9 @@ static int hdmi_probe(struct platform_device *pdev)
+ 		return -ENOENT;
+ 	}
+ 
+-	hdata->regs = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!hdata->regs) {
+-		DRM_ERROR("failed to map registers\n");
+-		return -ENXIO;
+-	}
++	hdata->regs = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(hdata->regs))
++		return PTR_ERR(hdata->regs);
+ 
+ 	ret = devm_gpio_request(&pdev->dev, hdata->hpd_gpio, "HPD");
+ 	if (ret) {
+diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
+index 656b2e3..d365c6d 100644
+--- a/drivers/gpu/drm/tegra/dc.c
++++ b/drivers/gpu/drm/tegra/dc.c
+@@ -764,11 +764,9 @@ static int tegra_dc_probe(struct platform_device *pdev)
+ 		return -ENXIO;
+ 	}
+ 
+-	dc->regs = devm_request_and_ioremap(&pdev->dev, regs);
+-	if (!dc->regs) {
+-		dev_err(&pdev->dev, "failed to remap registers\n");
+-		return -ENXIO;
+-	}
++	dc->regs = devm_ioremap_resource(&pdev->dev, regs);
++	if (IS_ERR(dc->regs))
++		return PTR_ERR(dc->regs);
+ 
+ 	dc->irq = platform_get_irq(pdev, 0);
+ 	if (dc->irq < 0) {
+diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/drm/tegra/hdmi.c
+index e060c7e..266af78 100644
+--- a/drivers/gpu/drm/tegra/hdmi.c
++++ b/drivers/gpu/drm/tegra/hdmi.c
+@@ -1259,9 +1259,9 @@ static int tegra_hdmi_probe(struct platform_device *pdev)
+ 	if (!regs)
+ 		return -ENXIO;
+ 
+-	hdmi->regs = devm_request_and_ioremap(&pdev->dev, regs);
+-	if (!hdmi->regs)
+-		return -EADDRNOTAVAIL;
++	hdmi->regs = devm_ioremap_resource(&pdev->dev, regs);
++	if (IS_ERR(hdmi->regs))
++		return PTR_ERR(hdmi->regs);
+ 
+ 	err = platform_get_irq(pdev, 0);
+ 	if (err < 0)
+diff --git a/drivers/gpu/drm/tegra/host1x.c b/drivers/gpu/drm/tegra/host1x.c
+index 5d17b11..92e25a7 100644
+--- a/drivers/gpu/drm/tegra/host1x.c
++++ b/drivers/gpu/drm/tegra/host1x.c
+@@ -139,9 +139,9 @@ static int tegra_host1x_probe(struct platform_device *pdev)
+ 
+ 	host1x->irq = err;
+ 
+-	host1x->regs = devm_request_and_ioremap(&pdev->dev, regs);
+-	if (!host1x->regs) {
+-		err = -EADDRNOTAVAIL;
++	host1x->regs = devm_ioremap_resource(&pdev->dev, regs);
++	if (IS_ERR(host1x->regs)) {
++		err = PTR_ERR(host1x->regs);
+ 		goto err;
  	}
  
 -- 
