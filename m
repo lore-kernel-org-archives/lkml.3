@@ -1,114 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab3AUOGd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 09:06:33 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:37656 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273Ab3AUOGc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 09:06:32 -0500
-Date: Mon, 21 Jan 2013 14:06:26 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com, ulf.hansson@linaro.org,
-        Chris Ball <cjb@laptop.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [PATCH 1/8] mmc: mmci: Move ios_handler functionality into the
- driver
-Message-ID: <20130121140626.GB6857@gmail.com>
-References: <1355404930-5691-1-git-send-email-lee.jones@linaro.org>
- <1355404930-5691-2-git-send-email-lee.jones@linaro.org>
+	id S1755127Ab3AUOHm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 09:07:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57243 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752621Ab3AUOHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 09:07:40 -0500
+Date: Mon, 21 Jan 2013 15:07:38 +0100
+From: Jan Kara <jack@suse.cz>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Eric Sandeen <sandeen@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
+Subject: Re: jbd2: don't wake kjournald unnecessarily
+Message-ID: <20130121140738.GI5588@quack.suse.cz>
+References: <CA+icZUWOvk5i+XY22xdZYuxu=Vy3fG2QxJStEgNFQVS4u55y-w@mail.gmail.com>
+ <CA+icZUUzNYE9QAh_p7=ZNuvZbxRPCb9zd4k7+aW-hv34mQWz=A@mail.gmail.com>
+ <20130121104733.GE5588@quack.suse.cz>
+ <CA+icZUVy-=jJkRsEKmX+ZGRjiGr4wwp3pqdxuLCRHeqW_H0x9Q@mail.gmail.com>
+ <CA+icZUVAP4ArN+j34GTUwMxte5DtLPJSrLmK9T6Na8Qy+aM0Rg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1355404930-5691-2-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+icZUVAP4ArN+j34GTUwMxte5DtLPJSrLmK9T6Na8Qy+aM0Rg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Dec 2012, Lee Jones wrote:
-
-> There are currently two instances of the ios_handler being used.
-> Both of which mearly toy with some regulator settings. Now there
-> is a GPIO regulator API, we can use that instead, and lessen the
-> per platform burden. By doing this, we also become more Device
-> Tree compatible.
+On Mon 21-01-13 13:30:26, Sedat Dilek wrote:
+> On Mon, Jan 21, 2013 at 12:40 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> > On Mon, Jan 21, 2013 at 11:47 AM, Jan Kara <jack@suse.cz> wrote:
+> >>   The traces don't suggest an ext4/jbd2 problem. What is happening is that
+> >> jbd2 is waiting for IO to finish and that never happens. Seeing that you
+> >> loop device I'd think it's some interaction of the loop device and
+> >> freezing. Can you reproduce the issue without the loop device (i.e. with
+> >> the filesystem directly on e.g. scsi disk)? I suspect the reason is
+> >> something like that the backing filesystem is already frozen so filesystem
+> >> on top of it cannot write all the data and hangs waiting for IO -> suspend
+> >> doesn't happen. Contents of /proc/mounts and losetup -l would help us
+> >> understand what's going on.
+> >>
+> >
+> > As said I am here in a very uncommon WUBI environment means my
+> > Ubuntu/precise rootfs-image lays on the Win7-partition (NTFS).
+> > Your explanation sounds reasonable to me as this line from my attached
+> > testcase causes the troubles.
+> >
+> >      echo mem > /sys/power/state && sleep 1
+> >
+> > So, /sys/ is not writable immediately after freezer ends
+> >
+> > I checked again and again my logs and have seen "starving" lines
+> > reported by rtkit-daemon, but did not really get wiser what they want
+> > to tell me. Stopping rtkit-daemon or resetting all or all-known
+> > threads before running my pm_test/freezer did not help, too.
+> >
+> > /usr/sbin/rtkitctl --help
+> > rtkitctl [options]
+> >
+> >   -h, --help         Show this help
+> >       --version      Show version
+> >
+> >       --reset-known  Reset real-time status of known threads
+> >       --reset-all    Reset real-time status of all threads
+> >       --start        Start RealtimeKit if it is not running already
+> >   -k, --exit         Terminate running RealtimeKit daemon
+> >
+> > Here are the outputs you wanted with some more (fstab, grub-config) etc.
+> > I have here no -l option for losetup command.
+> >
+> >
+> > - Sedat -
+> >
+> > P.S.: Outputs for Honza...
+> >
+> > $ sudo cat /proc/mounts
+> > rootfs / rootfs rw 0 0
+> > sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+> > proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+> > udev /dev devtmpfs rw,relatime,size=1966948k,nr_inodes=491737,mode=755 0 0
+> > devpts /dev/pts devpts rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0
+> > tmpfs /run tmpfs rw,nosuid,relatime,size=788076k,mode=755 0 0
+> > /dev/sda2 /host fuseblk
+> > rw,nosuid,nodev,relatime,user_id=0,group_id=0,allow_other,blksize=4096
+> > 0 0
+> > /dev/loop0 / ext4 rw,relatime,errors=remount-ro,data=ordered 0 0
+> > none /sys/fs/fuse/connections fusectl rw,relatime 0 0
+> > none /sys/kernel/debug debugfs rw,relatime 0 0
+> > none /sys/kernel/security securityfs rw,relatime 0 0
+> > none /run/lock tmpfs rw,nosuid,nodev,noexec,relatime,size=5120k 0 0
+> > none /run/shm tmpfs rw,nosuid,nodev,relatime 0 0
+> > gvfs-fuse-daemon /home/wearefam/.gvfs fuse.gvfs-fuse-daemon
+> > rw,nosuid,nodev,relatime,user_id=1000,group_id=1000 0 0
+> >
+> > $ sudo losetup --all --verbose
+> > /dev/loop0: [0802]:17982 (/host/ubuntu/disks/root.disk)
+> >
+> > $ sudo losetup --find --verbose
+> > Loop device is /dev/loop1
+> > /dev/loop1
+> >
+> >  [ /etc/fstab ]
+> > # /etc/fstab: static file system information.
+> >
+> > # Use 'blkid' to print the universally unique identifier for a
+> > # device; this may be used with UUID= as a more robust way to name devices
+> > # that works even if disks are added and removed. See fstab(5).
+> >
+> > # <file system>                 <mount point>   <type>  <options>
+> >          <dump>  <pass>
+> > proc                            /proc           proc
+> > nodev,noexec,nosuid     0       0
+> > /host/ubuntu/disks/root.disk    /               ext4
+> > loop,errors=remount-ro  0       1
+> > /host/ubuntu/disks/swap.disk    none            swap    loop,sw
+> >          0       0
+> > - EOF -
+> >
+> > [ /boot/grub/grub.cfg ]
+> > ...
+> > menuentry 'Ubuntu, mit Linux 3.8.0-rc4-next20130121-1-iniza-generic'
+> > --class ubuntu --class gnu-linux --class gnu --class os {
+> >         set gfxpayload=$linux_gfx_mode
+> >         insmod part_msdos
+> >         insmod ntfs
+> >         set root='(hd0,msdos2)'
+> >         search --no-floppy --fs-uuid --set=root 001AADA61AAD9964
+> >         loopback loop0 /ubuntu/disks/root.disk
+> >         set root=(loop0)
+> >         linux   /boot/vmlinuz-3.8.0-rc4-next20130121-1-iniza-generic
+> > root=UUID=001AADA61AAD9964 loop=/ubuntu/disks/root.disk ro
+> >         initrd  /boot/initrd.img-3.8.0-rc4-next20130121-1-iniza-generic
+> > }
+> > ...
+> >
 > 
-> Cc: Chris Ball <cjb@laptop.org>
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Acked-by: Ulf Hansson <ulf.hansson@stericsson.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-
-Any more news on this one?
-
->  drivers/mmc/host/mmci.c |   22 ++++++++++++++++++++++
->  drivers/mmc/host/mmci.h |    1 +
->  2 files changed, 23 insertions(+)
+> Here some more useful outputs:
 > 
-> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-> index edc3e9b..d45c931 100644
-> --- a/drivers/mmc/host/mmci.c
-> +++ b/drivers/mmc/host/mmci.c
-> @@ -1091,6 +1091,16 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
->  	case MMC_POWER_OFF:
->  		if (host->vcc)
->  			ret = mmc_regulator_set_ocr(mmc, host->vcc, 0);
-> +
-> +		if (host->vqmmc) {
-> +			if (regulator_is_enabled(host->vqmmc)) {
-> +				ret = regulator_disable(host->vqmmc);
-> +				if (ret < 0)
-> +					dev_warn(mmc_dev(mmc),
-> +						 "unable to disable vmmc-ios\n");
-> +			}
-> +		}
-> +
->  		break;
->  	case MMC_POWER_UP:
->  		if (host->vcc) {
-> @@ -1115,6 +1125,14 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
->  
->  		break;
->  	case MMC_POWER_ON:
-> +		if (host->vqmmc)
-> +			if (!regulator_is_enabled(host->vqmmc)) {
-> +				ret = regulator_enable(host->vqmmc);
-> +				if (ret < 0)
-> +					dev_warn(mmc_dev(mmc),
-> +						 "unable to enable vmmc-ios\n");
-> +			}
-> +
->  		pwr |= MCI_PWR_ON;
->  		break;
->  	}
-> @@ -1379,6 +1397,10 @@ static int __devinit mmci_probe(struct amba_device *dev,
->  				 "(using regulator instead)\n");
->  		}
->  	}
-> +
-> +	host->vqmmc = regulator_get(&dev->dev, "vqmmc");
-> +	if (IS_ERR(host->vqmmc))
-> +		host->vqmmc = NULL;
->  #endif
->  	/* Fall back to platform data if no regulator is found */
->  	if (host->vcc == NULL)
-> diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
-> index d437ccf..b87d9e2 100644
-> --- a/drivers/mmc/host/mmci.h
-> +++ b/drivers/mmc/host/mmci.h
-> @@ -194,6 +194,7 @@ struct mmci_host {
->  	struct sg_mapping_iter	sg_miter;
->  	unsigned int		size;
->  	struct regulator	*vcc;
-> +	struct regulator	*vqmmc;
->  
->  #ifdef CONFIG_DMA_ENGINE
->  	/* DMA stuff */
+> $ LC_ALL=C df -h -T
+> Filesystem     Type      Size  Used Avail Use% Mounted on
+> rootfs         rootfs     17G   15G  1.5G  92% /
+> udev           devtmpfs  1.9G   12K  1.9G   1% /dev
+> tmpfs          tmpfs     770M  892K  769M   1% /run
+> /dev/sda2      fuseblk   444G   81G  364G  19% /host
+> /dev/loop0     ext4       17G   15G  1.5G  92% /
+> none           tmpfs     5.0M     0  5.0M   0% /run/lock
+> none           tmpfs     1.9G  260K  1.9G   1% /run/shm
+> 
+> $ sudo LC_ALL=C fdisk -l /dev/sda
+> 
+> Disk /dev/sda: 500.1 GB, 500107862016 bytes
+> 255 heads, 63 sectors/track, 60801 cylinders, total 976773168 sectors
+> Units = sectors of 1 * 512 = 512 bytes
+> Sector size (logical/physical): 512 bytes / 4096 bytes
+> I/O size (minimum/optimal): 4096 bytes / 4096 bytes
+> Disk identifier: 0xcb9885ab
+> 
+>    Device Boot      Start         End      Blocks   Id  System
+> /dev/sda1   *        2048      206847      102400    7  HPFS/NTFS/exFAT
+> /dev/sda2          206848   931299327   465546240    7  HPFS/NTFS/exFAT
+> /dev/sda3       931299328   976773119    22736896   27  Hidden NTFS WinRE
+> 
+> I am still reflecting on any shitty userspace app is causing all the
+> trouble, but I have zero clue how to dig that...
+  Well, I think the outputs make it pretty clear. /dev/loop0 is a mounted
+image from fuse filesystem. Fuse daemon making filesystem accessible gets
+frozen before /dev/loop0 gets fully written out and so jbd2 journal thread
+hangs. Maybe Miklos (added to CC) could fill in some details / ideas but I
+think the setup like you have never really worked...
 
+								Honza
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
