@@ -1,45 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab3AUNvQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 08:51:16 -0500
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:52987 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab3AUNvP (ORCPT
+	id S1753840Ab3AUNvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 08:51:20 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:42375 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375Ab3AUNvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 08:51:15 -0500
+	Mon, 21 Jan 2013 08:51:18 -0500
+Message-ID: <50FD47CA.5050806@synopsys.com>
+Date: Mon, 21 Jan 2013 19:21:06 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1358175470-5041-1-git-send-email-lee.jones@linaro.org>
-References: <1358175470-5041-1-git-send-email-lee.jones@linaro.org>
-Date: Mon, 21 Jan 2013 14:51:14 +0100
-Message-ID: <CACRpkdYydqJ+BVsh7P411zCod+83f2pVV5tPsKfoWPYUnOVpDQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ARM: ux500: Disable Power Supply and Battery
- Management by default
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 63/76] ARC: Hostlink Pseudo-Driver for Metaware Debugger
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-64-git-send-email-vgupta@synopsys.com> <201301181458.26891.arnd@arndb.de>
+In-Reply-To: <201301181458.26891.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 3:57 PM, Lee Jones <lee.jones@linaro.org> wrote:
-
-> The AB8500 Battery Management collection of drivers are more than a
-> little bit broken. There is lots of work still on-going in that area
-> and it's improving day by day; however, it's not ready to be enabled
-> by default just yet.
+On Friday 18 January 2013 08:28 PM, Arnd Bergmann wrote:
+> On Friday 18 January 2013, Vineet Gupta wrote:
+>> +static int arc_hl_nr_devs = 1;
+> This seems to be read-only and hardcoded to 1. If this is true, you could
+> simplify the driver significantly by just using misc_register, rather
+> than registering your own major device number.
 >
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 	Arnd
 
-Is this going for fixes (v3.8?)
+:-) Indeed virtually there's nothing left in there after misc_register
 
-For v3.9 I think you've submitted a whole lot of patches
-actually fixing it up?
-
-Anyway: Acked-by: Linus Walleij <linus.walleij@linaro.org>
-since you certainly know the status of this driver better than
-me.
-
-Yours,
-Linus Walleij
+Thx,
+-Vineet
