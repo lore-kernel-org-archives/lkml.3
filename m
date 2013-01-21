@@ -1,173 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab3AUKOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:14:49 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:48529 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787Ab3AUKOr (ORCPT
+	id S1753163Ab3AUKPV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:15:21 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:57816 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935Ab3AUKJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:14:47 -0500
-Message-ID: <50FD1504.5020408@synopsys.com>
-Date: Mon, 21 Jan 2013 15:44:28 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel,gmane.linux.drivers.devicetree
-To: Rob Herring <robherring2@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v2 32/76] ARC: [DeviceTree] Basic support
-References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-33-git-send-email-vgupta@synopsys.com> <50F97017.4090705@gmail.com>
-In-Reply-To: <50F97017.4090705@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+	Mon, 21 Jan 2013 05:09:58 -0500
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: [PATCH 32/33] watchdog: Convert to devm_ioremap_resource()
+Date: Mon, 21 Jan 2013 11:09:25 +0100
+Message-Id: <1358762966-20791-33-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
+X-Provags-ID: V02:K0:y4PWJMChG8qP7TG5RstQl7DsBm4cR6JeVVRKrrftVwF
+ bxx0fPYjYZLq83hZFeq3eyoSXRX77G0IT10VARxMmSHQEXPtbV
+ 1NTQt1tsUNZWpnZBzD5D9CsxInqDIRc01XSvdQ+TqhKnT2j+cA
+ F1rullXVWZ55lu6xz50m714XIThxcNWKw+DQFR3gshlslCydyY
+ gJWF43PnZIx2PUw7kcwhSTEgbVj+ezdbYXWAysr0tYemYGCMZe
+ AMg8QRkFwU0JtwELOs6YiC6Pqo0UL+ZzcF+m9c2h/R7FO7eq4Y
+ EuDrFjtxqokSm94fAXg4QdsPZEzJJUbC8L4etGutXBeSB2vBkZ
+ Qc480jo0xTP3UI6QrPkbH56KvxbwFomyr/clk2iWuzLA/i7EvH
+ 1RRSd0iFDBZHo8N+J6wjRlxR8rOYy3s3bB1aUr1cxOZJqNkBuK
+ DGG0l
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 January 2013 09:23 PM, Rob Herring wrote:
-> On 01/18/2013 06:24 AM, Vineet Gupta wrote:
->> This is minimal infrastructure needed for devicetree work.
->> It uses an a sample "skeleton" devicetree - embedded in kernel image -
->> to print the board, manufacturer by parsing the top-level "compatible"
->> string.
->>
->> As of now we don't need any additional "board" specific "machine_desc".
->>
->> TODO: support interpreting the command line as boot-loader passed dtb
->>
->> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
->> Cc: devicetree-discuss@lists.ozlabs.org
->> Cc: Rob Herring <rob.herring@calxeda.com>
->> ---
->>  arch/arc/Kconfig                |    9 +++++
->>  arch/arc/Makefile               |    9 +++++
->>  arch/arc/boot/dtb/Makefile      |   22 ++++++++++++
-> 
-> This is .../boot/dts/Makefile on other arches. We should be consistent.
+Convert all uses of devm_request_and_ioremap() to the newly introduced
+devm_ioremap_resource() which provides more consistent error handling.
 
-OK, everything moved over to boot/dts folder, boot/dtb nuked, although latter
-seemed a clean approach - specially given that some arches have billions of source
-files in them - anyways not a big worry for ARC port.
+devm_ioremap_resource() provides its own error messages so all explicit
+error messages can be removed from the failure code paths.
 
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-watchdog@vger.kernel.org
+---
+ drivers/watchdog/ar7_wdt.c     | 8 +++-----
+ drivers/watchdog/dw_wdt.c      | 6 +++---
+ drivers/watchdog/imx2_wdt.c    | 8 +++-----
+ drivers/watchdog/jz4740_wdt.c  | 6 +++---
+ drivers/watchdog/lantiq_wdt.c  | 8 +++-----
+ drivers/watchdog/max63xx_wdt.c | 7 ++++---
+ drivers/watchdog/pnx4008_wdt.c | 6 +++---
+ drivers/watchdog/txx9wdt.c     | 6 +++---
+ 8 files changed, 25 insertions(+), 30 deletions(-)
 
->> [snip....]
->>
->> +
->> +# Rule to build device tree blobs
->> +$(obj)/%.dtb: $(src)/../dts/%.dts FORCE
->> +	$(call if_changed_dep,dtc)
-> 
-> There are common rules that went into 3.8. Please use them.
+diff --git a/drivers/watchdog/ar7_wdt.c b/drivers/watchdog/ar7_wdt.c
+index 3003e2a..2f3cc8f 100644
+--- a/drivers/watchdog/ar7_wdt.c
++++ b/drivers/watchdog/ar7_wdt.c
+@@ -285,11 +285,9 @@ static int ar7_wdt_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	ar7_wdt = devm_request_and_ioremap(&pdev->dev, ar7_regs_wdt);
+-	if (!ar7_wdt) {
+-		pr_err("could not ioremap registers\n");
+-		return -ENXIO;
+-	}
++	ar7_wdt = devm_ioremap_resource(&pdev->dev, ar7_regs_wdt);
++	if (IS_ERR(ar7_wdt))
++		return PTR_ERR(ar7_wdt);
+ 
+ 	vbus_clk = clk_get(NULL, "vbus");
+ 	if (IS_ERR(vbus_clk)) {
+diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
+index a0eba3c..2037669 100644
+--- a/drivers/watchdog/dw_wdt.c
++++ b/drivers/watchdog/dw_wdt.c
+@@ -301,9 +301,9 @@ static int dw_wdt_drv_probe(struct platform_device *pdev)
+ 	if (!mem)
+ 		return -EINVAL;
+ 
+-	dw_wdt.regs = devm_request_and_ioremap(&pdev->dev, mem);
+-	if (!dw_wdt.regs)
+-		return -ENOMEM;
++	dw_wdt.regs = devm_ioremap_resource(&pdev->dev, mem);
++	if (IS_ERR(dw_wdt.regs))
++		return PTR_ERR(dw_wdt.regs);
+ 
+ 	dw_wdt.clk = clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(dw_wdt.clk))
+diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
+index 9a45d029..7f023e2 100644
+--- a/drivers/watchdog/imx2_wdt.c
++++ b/drivers/watchdog/imx2_wdt.c
+@@ -262,11 +262,9 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	imx2_wdt.base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!imx2_wdt.base) {
+-		dev_err(&pdev->dev, "ioremap failed\n");
+-		return -ENOMEM;
+-	}
++	imx2_wdt.base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(imx2_wdt.base))
++		return PTR_ERR(imx2_wdt.base);
+ 
+ 	imx2_wdt.clk = clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(imx2_wdt.clk)) {
+diff --git a/drivers/watchdog/jz4740_wdt.c b/drivers/watchdog/jz4740_wdt.c
+index a61408f..1cb25f6 100644
+--- a/drivers/watchdog/jz4740_wdt.c
++++ b/drivers/watchdog/jz4740_wdt.c
+@@ -171,9 +171,9 @@ static int jz4740_wdt_probe(struct platform_device *pdev)
+ 	watchdog_set_drvdata(jz4740_wdt, drvdata);
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	drvdata->base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (drvdata->base == NULL) {
+-		ret = -EBUSY;
++	drvdata->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(drvdata->base)) {
++		ret = PTR_ERR(drvdata->base);
+ 		goto err_out;
+ 	}
+ 
+diff --git a/drivers/watchdog/lantiq_wdt.c b/drivers/watchdog/lantiq_wdt.c
+index 79fe01b..088fd0c 100644
+--- a/drivers/watchdog/lantiq_wdt.c
++++ b/drivers/watchdog/lantiq_wdt.c
+@@ -197,11 +197,9 @@ ltq_wdt_probe(struct platform_device *pdev)
+ 		return -ENOENT;
+ 	}
+ 
+-	ltq_wdt_membase = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!ltq_wdt_membase) {
+-		dev_err(&pdev->dev, "cannot remap I/O memory region\n");
+-		return -ENOMEM;
+-	}
++	ltq_wdt_membase = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(ltq_wdt_membase))
++		return PTR_ERR(ltq_wdt_membase);
+ 
+ 	/* we do not need to enable the clock as it is always running */
+ 	clk = clk_get_io();
+diff --git a/drivers/watchdog/max63xx_wdt.c b/drivers/watchdog/max63xx_wdt.c
+index 773c661..cc9d328 100644
+--- a/drivers/watchdog/max63xx_wdt.c
++++ b/drivers/watchdog/max63xx_wdt.c
+@@ -14,6 +14,7 @@
+  * another interface, some abstraction will have to be introduced.
+  */
+ 
++#include <linux/err.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/types.h>
+@@ -198,9 +199,9 @@ static int max63xx_wdt_probe(struct platform_device *pdev)
+ 	heartbeat = current_timeout->twd;
+ 
+ 	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	wdt_base = devm_request_and_ioremap(&pdev->dev, wdt_mem);
+-	if (!wdt_base)
+-		return -ENOMEM;
++	wdt_base = devm_ioremap_resource(&pdev->dev, wdt_mem);
++	if (IS_ERR(wdt_base))
++		return PTR_ERR(wdt_base);
+ 
+ 	max63xx_wdt_dev.timeout = heartbeat;
+ 	watchdog_set_nowayout(&max63xx_wdt_dev, nowayout);
+diff --git a/drivers/watchdog/pnx4008_wdt.c b/drivers/watchdog/pnx4008_wdt.c
+index dcba5da..de1f3fa 100644
+--- a/drivers/watchdog/pnx4008_wdt.c
++++ b/drivers/watchdog/pnx4008_wdt.c
+@@ -155,9 +155,9 @@ static int pnx4008_wdt_probe(struct platform_device *pdev)
+ 		heartbeat = DEFAULT_HEARTBEAT;
+ 
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	wdt_base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (!wdt_base)
+-		return -EADDRINUSE;
++	wdt_base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(wdt_base))
++		return PTR_ERR(wdt_base);
+ 
+ 	wdt_clk = clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(wdt_clk))
+diff --git a/drivers/watchdog/txx9wdt.c b/drivers/watchdog/txx9wdt.c
+index 98e1637..626dc0b 100644
+--- a/drivers/watchdog/txx9wdt.c
++++ b/drivers/watchdog/txx9wdt.c
+@@ -121,9 +121,9 @@ static int __init txx9wdt_probe(struct platform_device *dev)
+ 	}
+ 
+ 	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
+-	txx9wdt_reg = devm_request_and_ioremap(&dev->dev, res);
+-	if (!txx9wdt_reg) {
+-		ret = -EBUSY;
++	txx9wdt_reg = devm_ioremap_resource(&dev->dev, res);
++	if (IS_ERR(txx9wdt_reg)) {
++		ret = PTR_ERR(txx9wdt_reg);
+ 		goto exit;
+ 	}
+ 
+-- 
+1.8.1.1
 
-How does the equivalent of following look like:
-
-diff --git a/arch/arc/boot/dts/Makefile b/arch/arc/boot/dts/Makefile
-
-@@ -1,7 +1,5 @@
- ifeq ($(CONFIG_OF),y)
-
--dtb-y  += skeleton.dtb
--
- # Built-in dtb
- builtindtb-y                           := skeleton
-
-@@ -11,12 +9,6 @@ endif
-
- obj-y  += $(patsubst "%",%,$(builtindtb-y)).dtb.o
-
--clean-files += $(obj)/$(dtb-y) $(obj)/*.dtb.S $(obj)/*.dtb.o
--
--# Rule to build device tree blobs
--$(obj)/%.dtb: $(src)/../dts/%.dts FORCE
--       $(call if_changed_dep,dtc)
--
--$(obj)/dtbs: $(addprefix $(obj)/, $(dtb-y))
-+clean-files += *.dtb
-
-One observation above is that the explicitly build dtb file (make ARCH=arc
-angel4.dtb) doesn't get cleaned with make {clean,distclean} despite above
-clean-files and this is true even for orig version.
-
->> +
->> +$(obj)/dtbs: $(addprefix $(obj)/, $(dtb-y))
->> +
->> +endif
->> diff --git a/arch/arc/boot/dts/skeleton.dts b/arch/arc/boot/dts/skeleton.dts
->> new file mode 100644
->> index 0000000..25a84fb
->> --- /dev/null
->> +++ b/arch/arc/boot/dts/skeleton.dts
->> @@ -0,0 +1,10 @@
->> +/*
->> + * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +/dts-v1/;
->> +
->> +/include/ "skeleton.dtsi"
->> diff --git a/arch/arc/boot/dts/skeleton.dtsi b/arch/arc/boot/dts/skeleton.dtsi
->> new file mode 100644
->> index 0000000..f6a457a
->> --- /dev/null
->> +++ b/arch/arc/boot/dts/skeleton.dtsi
->> @@ -0,0 +1,21 @@
->> +/*
->> + * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +/*
->> + * Skeleton device tree; the bare minimum needed to boot; just include and
->> + * add a compatible value.
->> + */
->> +
->> +/ {
->> +	compatible = "snps,arc-angel4", "snps,arc-ml509";
-> 
-> Normally, you wouldn't have this as part of skeleton. If you need
-> something generic, then perhaps generic.dts would be better.
-
-So you mean rename arc/arc/boot/dts/skeleton.dts to arch/arc/boot/dts/generic.dts
-as that's what the semantics are here. I agree.
-
-However I think skeleton semantics are better: I'll take out the specific boards
-name from it, and for empty CONFIG_ARC_BUILTIN_DTB_NAME, include a real board DT
-file rather than skeleton. OK ?
-
-
->> [snipped...]
->>  early_param("mem", setup_mem_sz);
->>  
->> +void __init early_init_dt_add_memory_arch(u64 base, u64 size)
->> +{
->> +	pr_err("%s(%llx, %llx)\n", __func__, base, size);
-> 
-> ? Is this todo?
-
-Yes, ARC port currently doesn't handle the cmdline provided by DT - given that I
-added the the DT support itself very recently. I plan to fix this soon, but assume
-it not absolutely must in terms of requirements.
-
-
->> +#ifdef CONFIG_OF_FLATTREE
->> +void __init early_init_dt_setup_initrd_arch(unsigned long start,
->> +					    unsigned long end)
->> +{
->> +	pr_err("%s(%lx, %lx)\n", __func__, start, end);
-> 
-> And this?
-
-Ditto !
-
-Many thanks for your review.
--Vineet
