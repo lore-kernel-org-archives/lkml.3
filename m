@@ -1,278 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab3AUFVj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 00:21:39 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44169 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab3AUFVh (ORCPT
+	id S1752633Ab3AUF1t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 00:27:49 -0500
+Received: from myspam1.stec-inc.com ([210.19.18.169]:40891 "HELO
+	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750803Ab3AUF1r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 00:21:37 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-9e-50fcd05ef7a4
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, jmarchan@redhat.com,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v3 3/4] zram: get rid of lockdep warning
-Date: Mon, 21 Jan 2013 14:21:30 +0900
-Message-Id: <1358745691-4556-3-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358745691-4556-1-git-send-email-minchan@kernel.org>
-References: <1358745691-4556-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 21 Jan 2013 00:27:47 -0500
+X-ASG-Debug-ID: 1358746062-053ea90dcf1c1a30001-xx1T2L
+X-Barracuda-Envelope-From: akale@stec-inc.com
+X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
+From: Amit Kale <akale@stec-inc.com>
+X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
+X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
+To: Mike Snitzer <snitzer@redhat.com>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>
+CC: device-mapper development <dm-devel@redhat.com>,
+        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
+        "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "lsf-pc@lists.linux-foundation.org" 
+	<lsf-pc@lists.linux-foundation.org>,
+        Joe Thornber <ejt@redhat.com>
+Date: Mon, 21 Jan 2013 13:26:08 +0800
+Subject: RE: [LSF/MM TOPIC] Re: [dm-devel] Announcement: STEC EnhanceIO SSD
+ caching software for Linux kernel
+Thread-Topic: [LSF/MM TOPIC] Re: [dm-devel] Announcement: STEC EnhanceIO SSD
+ caching software for Linux kernel
+X-ASG-Orig-Subj: RE: [LSF/MM TOPIC] Re: [dm-devel] Announcement: STEC EnhanceIO SSD
+ caching software for Linux kernel
+Thread-Index: Ac31w/jHOeBJxiH/Qriwi37EPsJMQQB034rg
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D5D4D@MYMBX.MY.STEC-INC.AD>
+References: <20130117132620.GA2438@raspberrypi>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7248@MYMBX.MY.STEC-INC.AD>
+ <50F844A3.9020300@warr.net>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D72F1@MYMBX.MY.STEC-INC.AD>
+ <50F970A3.4000403@warr.net> <20130118161135.GA3118@raspberrypi>
+ <50F97C0F.9010405@warr.net>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7345@MYMBX.MY.STEC-INC.AD>
+ <50F9963A.2080608@warr.net> <20130118212543.GB6425@blackbox.djwong.org>
+ <20130118213759.GA30278@redhat.com>
+In-Reply-To: <20130118213759.GA30278@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
+X-Barracuda-Start-Time: 1358746062
+X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.120453
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lockdep complains about recursive deadlock of zram->init_lock.
-[1] made it false positive because we can't request IO to zram
-before setting disksize. Anyway, we should shut lockdep up to
-avoid many reporting from user.
+> -----Original Message-----
+> From: Mike Snitzer [mailto:snitzer@redhat.com]
+> Sent: Saturday, January 19, 2013 3:08 AM
+> To: Darrick J. Wong
+> Cc: device-mapper development; Amit Kale; linux-bcache@vger.kernel.org;
+> kent.overstreet@gmail.com; LKML; lsf-pc@lists.linux-foundation.org; Joe
+> Thornber
+> Subject: Re: [LSF/MM TOPIC] Re: [dm-devel] Announcement: STEC EnhanceIO
+> SSD caching software for Linux kernel
+> 
+> On Fri, Jan 18 2013 at  4:25pm -0500,
+> Darrick J. Wong <darrick.wong@oracle.com> wrote:
+> 
+> > Since Joe is putting together a testing tree to compare the three
+> > caching things, what do you all think of having a(nother) session
+> > about ssd caching at this year's LSFMM Summit?
+> >
+> > [Apologies for hijacking the thread.]
+> > [Adding lsf-pc to the cc list.]
+> 
+> Hopefully we'll have some findings on the comparisons well before LSF
+> (since we currently have some momentum).  But yes it may be worthwhile
+> to discuss things further and/or report findings.
 
-Cc: Jerome Marchand <jmarchan@redhat.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- drivers/staging/zram/zram_drv.c   |  115 +++++++++++++++++++------------------
- drivers/staging/zram/zram_drv.h   |   12 +++-
- drivers/staging/zram/zram_sysfs.c |   10 +++-
- 3 files changed, 79 insertions(+), 58 deletions(-)
+We should have performance comparisons presented well before the summit. It'll be good to have ssd caching session in any case. The likelihood that one of them will be included in Linux kernel before April is very low.
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index e95e37c..1f6938a 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -462,19 +462,12 @@ error:
- void __zram_reset_device(struct zram *zram)
- {
- 	size_t index;
-+	struct zram_meta meta;
- 
- 	if (!zram->init_done)
- 		goto out;
- 
- 	zram->init_done = 0;
--
--	/* Free various per-device buffers */
--	kfree(zram->compress_workmem);
--	free_pages((unsigned long)zram->compress_buffer, 1);
--
--	zram->compress_workmem = NULL;
--	zram->compress_buffer = NULL;
--
- 	/* Free all pages that are still in this zram device */
- 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
- 		unsigned long handle = zram->table[index].handle;
-@@ -484,11 +477,11 @@ void __zram_reset_device(struct zram *zram)
- 		zs_free(zram->mem_pool, handle);
- 	}
- 
--	vfree(zram->table);
--	zram->table = NULL;
--
--	zs_destroy_pool(zram->mem_pool);
--	zram->mem_pool = NULL;
-+	meta.compress_workmem = zram->compress_workmem;
-+	meta.compress_buffer = zram->compress_buffer;
-+	meta.table = zram->table;
-+	meta.mem_pool = zram->mem_pool;
-+	zram_meta_free(&meta);
- 
- 	/* Reset stats */
- 	memset(&zram->stats, 0, sizeof(zram->stats));
-@@ -505,12 +498,59 @@ void zram_reset_device(struct zram *zram)
- 	up_write(&zram->init_lock);
- }
- 
--/* zram->init_lock should be held */
--int zram_init_device(struct zram *zram)
-+void zram_meta_free(struct zram_meta *meta)
-+{
-+	zs_destroy_pool(meta->mem_pool);
-+	kfree(meta->compress_workmem);
-+	free_pages((unsigned long)meta->compress_buffer, 1);
-+	vfree(meta->table);
-+	kfree(meta);
-+}
-+
-+int zram_meta_alloc(struct zram_meta *meta, u64 disksize)
- {
--	int ret;
- 	size_t num_pages;
- 
-+	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
-+	if (!meta->compress_workmem) {
-+		pr_err("Error allocating compressor working memory!\n");
-+		goto out;
-+	}
-+
-+	meta->compress_buffer =
-+			(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO, 1);
-+	if (!meta->compress_buffer) {
-+		pr_err("Error allocating compressor buffer space\n");
-+		goto free_workmem;
-+	}
-+
-+	num_pages = disksize >> PAGE_SHIFT;
-+	meta->table = vzalloc(num_pages * sizeof(*meta->table));
-+	if (!meta->table) {
-+		pr_err("Error allocating zram address table\n");
-+		goto free_buffer;
-+	}
-+
-+	meta->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
-+	if (!meta->mem_pool) {
-+		pr_err("Error creating memory pool\n");
-+		goto free_table;
-+	}
-+
-+	return 0;
-+
-+free_table:
-+	vfree(meta->table);
-+free_buffer:
-+	free_pages((unsigned long)meta->compress_buffer, 1);
-+free_workmem:
-+	kfree(meta->compress_workmem);
-+out:
-+	return -ENOMEM;
-+}
-+
-+void zram_init_device(struct zram *zram, struct zram_meta *meta)
-+{
- 	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
- 		pr_info(
- 		"There is little point creating a zram of greater than "
-@@ -525,51 +565,16 @@ int zram_init_device(struct zram *zram)
- 		);
- 	}
- 
--	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
--	if (!zram->compress_workmem) {
--		pr_err("Error allocating compressor working memory!\n");
--		ret = -ENOMEM;
--		goto fail_no_table;
--	}
--
--	zram->compress_buffer =
--		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
--	if (!zram->compress_buffer) {
--		pr_err("Error allocating compressor buffer space\n");
--		ret = -ENOMEM;
--		goto fail_no_table;
--	}
--
--	num_pages = zram->disksize >> PAGE_SHIFT;
--	zram->table = vzalloc(num_pages * sizeof(*zram->table));
--	if (!zram->table) {
--		pr_err("Error allocating zram address table\n");
--		ret = -ENOMEM;
--		goto fail_no_table;
--	}
--
- 	/* zram devices sort of resembles non-rotational disks */
- 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
- 
--	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
--	if (!zram->mem_pool) {
--		pr_err("Error creating memory pool\n");
--		ret = -ENOMEM;
--		goto fail;
--	}
--
-+	zram->mem_pool = meta->mem_pool;
-+	zram->compress_workmem = meta->compress_workmem;
-+	zram->compress_buffer = meta->compress_buffer;
-+	zram->table = meta->table;
- 	zram->init_done = 1;
- 
- 	pr_debug("Initialization done!\n");
--	return 0;
--
--fail_no_table:
--	/* To prevent accessing table entries during cleanup */
--	zram->disksize = 0;
--fail:
--	__zram_reset_device(zram);
--	pr_err("Initialization failed: err=%d\n", ret);
--	return ret;
- }
- 
- static void zram_slot_free_notify(struct block_device *bdev,
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 5b671d1..fbe7db0 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -83,11 +83,19 @@ struct zram_stats {
- 	u32 bad_compress;	/* % of pages with compression ratio>=75% */
- };
- 
-+struct zram_meta {
-+	void *compress_workmem;
-+	void *compress_buffer;
-+	struct table *table;
-+	struct zs_pool *mem_pool;
-+};
-+
- struct zram {
- 	struct zs_pool *mem_pool;
- 	void *compress_workmem;
- 	void *compress_buffer;
- 	struct table *table;
-+
- 	spinlock_t stat64_lock;	/* protect 64-bit stats */
- 	struct rw_semaphore lock; /* protect compression buffers and table
- 				   * against concurrent read and writes */
-@@ -111,7 +119,9 @@ unsigned int zram_get_num_devices(void);
- extern struct attribute_group zram_disk_attr_group;
- #endif
- 
--extern int zram_init_device(struct zram *zram);
- extern void zram_reset_device(struct zram *zram);
-+extern int zram_meta_alloc(struct zram_meta *meta, u64 disksize);
-+extern void zram_meta_free(struct zram_meta *meta);
-+extern void zram_init_device(struct zram *zram, struct zram_meta *meta);
- 
- #endif
-diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-index 369db12..31433ef 100644
---- a/drivers/staging/zram/zram_sysfs.c
-+++ b/drivers/staging/zram/zram_sysfs.c
-@@ -56,22 +56,28 @@ static ssize_t disksize_store(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t len)
- {
- 	u64 disksize;
-+	struct zram_meta meta;
- 	struct zram *zram = dev_to_zram(dev);
- 
- 	disksize = memparse(buf, NULL);
- 	if (!disksize)
- 		return -EINVAL;
- 
-+	disksize = PAGE_ALIGN(disksize);
-+	if (zram_meta_alloc(&meta, disksize))
-+		return -ENOMEM;
-+
- 	down_write(&zram->init_lock);
- 	if (zram->init_done) {
- 		up_write(&zram->init_lock);
-+		zram_meta_free(&meta);
- 		pr_info("Cannot change disksize for initialized device\n");
- 		return -EBUSY;
- 	}
- 
--	zram->disksize = PAGE_ALIGN(disksize);
-+	zram->disksize = disksize;
- 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
--	zram_init_device(zram);
-+	zram_init_device(zram, &meta);
- 	up_write(&zram->init_lock);
- 
- 	return len;
--- 
-1.7.9.5
+-Amit
 
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+
+
+
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
