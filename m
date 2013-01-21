@@ -1,246 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab3AUUJo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 15:09:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9227 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752666Ab3AUUJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 15:09:43 -0500
-Message-ID: <50FD9954.7000303@redhat.com>
-Date: Mon, 21 Jan 2013 20:39:00 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1756501Ab3AUUKR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 15:10:17 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:50396 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752797Ab3AUUKP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 15:10:15 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Clark <rob@ti.com>
+Subject: Re: [PATCH 15/15] staging/omapdrm: don't build on multiplatform
+Date: Mon, 21 Jan 2013 20:09:57 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <201301211741.11875.arnd@arndb.de> <50FD8B63.1060506@ti.com>
+In-Reply-To: <50FD8B63.1060506@ti.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 1/4] zram: force disksize setting before using zram
-References: <1358745691-4556-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1358745691-4556-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201301212009.58198.arnd@arndb.de>
+X-Provags-ID: V02:K0:15QUiyFjuVoC55nTVkMA40tNtlB4NvuCASy4VvSzbb/
+ tlm7abB0pPtAPVPXkGplUo7bDUfmjmAtdPakWGLSVMjVhy2pzU
+ euDOa/7qg9D2z8G/peYsiMHDFOLLVvf/0d5PYs8Yb+6rg4tTi4
+ TwFiVFmJG2g/ODkj6HRma37Sqn+KEqEPlzz/Ss7s2GNSU4Klgx
+ ZVKUD0p2rRoFo5Yl8UcdUOdgtCxzbGyJ9crM51lcc5Ay2OPJSL
+ oYFpfqcyOrr0XpC1Dfi26PM7fGs9RaiClB/ryfKR1SzAHn0U23
+ 4WfWY1X0lgw/mlrWSLDw518rsKvlKlqa3M/brKuR6PVG6NEPb5
+ 2gB4niGN3gWX2PN46n8Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 06:21 AM, Minchan Kim wrote:
-> Now zram document syas "set disksize is optional"
-> but partly it's wrong. When you try to use zram firstly after
-> booting, you must set disksize, otherwise zram can't work because
-> zram gendisk's size is 0. But once you do it, you can use zram freely
-> after reset because reset doesn't reset to zero paradoxically.
-> So in this time, disksize setting is optional.:(
-> It's inconsitent for user behavior and not straightforward.
+On Monday 21 January 2013, Rob Clark wrote:
+> ahh, ok, I see.. the if ARCH_OMAP2PLUS bit looks like it came in 
+> recently (770b6cb)
 > 
-> This patch forces always setting disksize firstly before using zram.
-> Yes. It changes current behavior so someone could complain when
-> he upgrades zram. Apparently it could be a problem if zram is mainline
-> but it still lives in staging so behavior could be changed for right
-> way to go. Let them excuse.
-> 
-> Cc: Nitin Gupta <ngupta@vflare.org>
-> Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/staging/zram/zram.txt     |   27 +++++++++----------
->  drivers/staging/zram/zram_drv.c   |   52 ++++++++++++++-----------------------
->  drivers/staging/zram/zram_drv.h   |    5 +---
->  drivers/staging/zram/zram_sysfs.c |    6 +----
->  4 files changed, 35 insertions(+), 55 deletions(-)
-> 
-> diff --git a/drivers/staging/zram/zram.txt b/drivers/staging/zram/zram.txt
-> index 5f75d29..765d790 100644
-> --- a/drivers/staging/zram/zram.txt
-> +++ b/drivers/staging/zram/zram.txt
-> @@ -23,17 +23,17 @@ Following shows a typical sequence of steps for using zram.
->  	This creates 4 devices: /dev/zram{0,1,2,3}
->  	(num_devices parameter is optional. Default: 1)
->  
-> -2) Set Disksize (Optional):
-> -	Set disk size by writing the value to sysfs node 'disksize'
-> -	(in bytes). If disksize is not given, default value of 25%
-> -	of RAM is used.
-> -
-> -	# Initialize /dev/zram0 with 50MB disksize
-> -	echo $((50*1024*1024)) > /sys/block/zram0/disksize
-> -
-> -	NOTE: disksize cannot be changed if the disk contains any
-> -	data. So, for such a disk, you need to issue 'reset' (see below)
-> -	before you can change its disksize.
-> +2) Set Disksize
-> +        Set disk size by writing the value to sysfs node 'disksize'.
-> +        The value can be either in bytes or you can use mem suffixes.
-> +        Examples:
-> +            # Initialize /dev/zram0 with 50MB disksize
-> +            echo $((50*1024*1024)) > /sys/block/zram0/disksize
-> +
-> +            # Using mem suffixes
-> +            echo 256K > /sys/block/zram0/disksize
-> +            echo 512M > /sys/block/zram0/disksize
-> +            echo 1G > /sys/block/zram0/disksize
->  
->  3) Activate:
->  	mkswap /dev/zram0
-> @@ -65,8 +65,9 @@ Following shows a typical sequence of steps for using zram.
->  	echo 1 > /sys/block/zram0/reset
->  	echo 1 > /sys/block/zram1/reset
->  
-> -	(This frees all the memory allocated for the given device).
-> -
-> +	This frees all the memory allocated for the given device and
-> +	resets the disksize to zero. You must set the disksize again
-> +	before reusing the device.
->  
->  Please report any problems at:
->   - Mailing list: linux-mm-cc at laptop dot org
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 61fb8f1..1d45401 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -94,34 +94,6 @@ static int page_zero_filled(void *ptr)
->  	return 1;
->  }
->  
-> -static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
-> -{
-> -	if (!zram->disksize) {
-> -		pr_info(
-> -		"disk size not provided. You can use disksize_kb module "
-> -		"param to specify size.\nUsing default: (%u%% of RAM).\n",
-> -		default_disksize_perc_ram
-> -		);
-> -		zram->disksize = default_disksize_perc_ram *
-> -					(totalram_bytes / 100);
-> -	}
-> -
-> -	if (zram->disksize > 2 * (totalram_bytes)) {
-> -		pr_info(
-> -		"There is little point creating a zram of greater than "
-> -		"twice the size of memory since we expect a 2:1 compression "
-> -		"ratio. Note that zram uses about 0.1%% of the size of "
-> -		"the disk when not in use so a huge zram is "
-> -		"wasteful.\n"
-> -		"\tMemory Size: %zu kB\n"
-> -		"\tSize you selected: %llu kB\n"
-> -		"Continuing anyway ...\n",
-> -		totalram_bytes >> 10, zram->disksize >> 10);
-> -	}
-> -
-> -	zram->disksize &= PAGE_MASK;
-> -}
-> -
->  static void zram_free_page(struct zram *zram, size_t index)
->  {
->  	unsigned long handle = zram->table[index].handle;
-> @@ -495,6 +467,9 @@ void __zram_reset_device(struct zram *zram)
->  {
->  	size_t index;
->  
-> +	if (!zram->init_done)
-> +		goto out;
+> what about changing this to 'if ARCH_OMAP2PLUS || ARCH_MULTIPLATFORM'?
 
-In that case, the device has not been initialized yet or has been
-reset already. zram->disksize and disk capacity should already been
-zero in that case. Why don't we just return here?
+Fine with me in general, but the patch I posted would be the more
+conservative choice for v3.8.
 
-Jerome
-
-> +
->  	zram->init_done = 0;
->  
->  	/* Free various per-device buffers */
-> @@ -522,7 +497,9 @@ void __zram_reset_device(struct zram *zram)
->  	/* Reset stats */
->  	memset(&zram->stats, 0, sizeof(zram->stats));
->  
-> +out:
->  	zram->disksize = 0;
-> +	set_capacity(zram->disk, 0);
->  }
->  
->  void zram_reset_device(struct zram *zram)
-> @@ -544,7 +521,19 @@ int zram_init_device(struct zram *zram)
->  		return 0;
->  	}
->  
-> -	zram_set_disksize(zram, totalram_pages << PAGE_SHIFT);
-> +	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
-> +		pr_info(
-> +		"There is little point creating a zram of greater than "
-> +		"twice the size of memory since we expect a 2:1 compression "
-> +		"ratio. Note that zram uses about 0.1%% of the size of "
-> +		"the disk when not in use so a huge zram is "
-> +		"wasteful.\n"
-> +		"\tMemory Size: %zu kB\n"
-> +		"\tSize you selected: %llu kB\n"
-> +		"Continuing anyway ...\n",
-> +		(totalram_pages << PAGE_SHIFT) >> 10, zram->disksize >> 10
-> +		);
-> +	}
->  
->  	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
->  	if (!zram->compress_workmem) {
-> @@ -569,8 +558,6 @@ int zram_init_device(struct zram *zram)
->  		goto fail_no_table;
->  	}
->  
-> -	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-> -
->  	/* zram devices sort of resembles non-rotational disks */
->  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
->  
-> @@ -749,8 +736,7 @@ static void __exit zram_exit(void)
->  		zram = &zram_devices[i];
->  
->  		destroy_device(zram);
-> -		if (zram->init_done)
-> -			zram_reset_device(zram);
-> +		zram_reset_device(zram);
->  	}
->  
->  	unregister_blkdev(zram_major, "zram");
-> diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-> index df2eec4..5b671d1 100644
-> --- a/drivers/staging/zram/zram_drv.h
-> +++ b/drivers/staging/zram/zram_drv.h
-> @@ -28,9 +28,6 @@ static const unsigned max_num_devices = 32;
->  
->  /*-- Configurable parameters */
->  
-> -/* Default zram disk size: 25% of total RAM */
-> -static const unsigned default_disksize_perc_ram = 25;
-> -
->  /*
->   * Pages that compress to size greater than this are stored
->   * uncompressed in memory.
-> @@ -115,6 +112,6 @@ extern struct attribute_group zram_disk_attr_group;
->  #endif
->  
->  extern int zram_init_device(struct zram *zram);
-> -extern void __zram_reset_device(struct zram *zram);
-> +extern void zram_reset_device(struct zram *zram);
->  
->  #endif
-> diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-> index de1eacf..4143af9 100644
-> --- a/drivers/staging/zram/zram_sysfs.c
-> +++ b/drivers/staging/zram/zram_sysfs.c
-> @@ -110,11 +110,7 @@ static ssize_t reset_store(struct device *dev,
->  	if (bdev)
->  		fsync_bdev(bdev);
->  
-> -	down_write(&zram->init_lock);
-> -	if (zram->init_done)
-> -		__zram_reset_device(zram);
-> -	up_write(&zram->init_lock);
-> -
-> +	zram_reset_device(zram);
->  	return len;
->  }
->  
-> 
-
+	Arnd
