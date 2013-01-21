@@ -1,260 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab3AUKS4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:18:56 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62927 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752654Ab3AUKJi (ORCPT
+	id S1752912Ab3AUKUa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:20:30 -0500
+Received: from mx.scalarmail.ca ([98.158.95.75]:61225 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403Ab3AUKU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:09:38 -0500
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Ben Dooks <ben-linux@fluff.org>, linux-i2c@vger.kernel.org
-Subject: [PATCH 10/33] i2c: Convert to devm_ioremap_resource()
-Date: Mon, 21 Jan 2013 11:09:03 +0100
-Message-Id: <1358762966-20791-11-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:SRv4bEbpK5n/NgM2LmYdhsmJHS+LWDiEn2AheiGOaH/
- lCn8Zmwatu5q7xI+xMM6vnhd8XmMPx6W6MJ15CzwZXYvy9hlcL
- YhFF4BkoUJDL+zBw2we2agRuk7EyPTMotwg5pWhI8JTijsStQE
- 7/8IaksCTBWbGPqSeAU5GoIvU6mzHmxnmxhmUaEZvIf1n4nr1S
- wL075yjGWCAxKnNH9vOLPlKUY3jFjiCfHTsdTJawO9iugwbjCL
- ehhfN9CFy10l9AM9y+OI5Ze5wBuuXD4vwwYZon65PzLfH4POWl
- lOpu5Endhj8Nw4j/C6i3k/XGTV9a54FiN+NH+MxsmUn6OYgsxO
- p9Izt7Nkz3ivCM4dXU5Oqm10cQ8hIYFoLCxo0IYnVNUz1OXsH+
- FOmho50y2GVig8Dc4j1aMzJpjqhcNVKXLF52yGVmak5vWQ5Sx/
- pTpQu
+	Mon, 21 Jan 2013 05:20:29 -0500
+Date: Mon, 21 Jan 2013 05:20:27 -0500 (EST)
+From: Tom St Denis <tstdenis@elliptictech.com>
+To: David Dillow <dave@thedillows.org>
+Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Message-ID: <207592188.94267.1358763627877.JavaMail.root@elliptictech.com>
+In-Reply-To: <1358759881.2595.15.camel@obelisk.thedillows.org>
+Subject: Re: IPsec AH use of ahash
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.17.19.112]
+X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC24 (Linux)/7.2.1_GA_2790)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert all uses of devm_request_and_ioremap() to the newly introduced
-devm_ioremap_resource() which provides more consistent error handling.
 
-devm_ioremap_resource() provides its own error messages so all explicit
-error messages can be removed from the failure code paths.
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: linux-i2c@vger.kernel.org
----
- drivers/i2c/busses/i2c-at91.c    | 6 +++---
- drivers/i2c/busses/i2c-imx.c     | 6 +++---
- drivers/i2c/busses/i2c-ocores.c  | 7 ++++---
- drivers/i2c/busses/i2c-omap.c    | 8 +++-----
- drivers/i2c/busses/i2c-rcar.c    | 8 +++-----
- drivers/i2c/busses/i2c-s3c2410.c | 7 +++----
- drivers/i2c/busses/i2c-sirf.c    | 7 +++----
- drivers/i2c/busses/i2c-stu300.c  | 6 +++---
- drivers/i2c/busses/i2c-tegra.c   | 8 +++-----
- drivers/i2c/busses/i2c-xlr.c     | 9 ++++-----
- 10 files changed, 32 insertions(+), 40 deletions(-)
+----- Original Message -----
+> From: "David Dillow" <dave@thedillows.org>
+> To: "Tom St Denis" <tstdenis@elliptictech.com>
+> Cc: "Borislav Petkov" <bp@alien8.de>, linux-kernel@vger.kernel.org, netdev@vger.kernel.org, "Steven Rostedt"
+> <rostedt@goodmis.org>
+> Sent: Monday, 21 January, 2013 4:18:01 AM
+> Subject: Re: IPsec AH use of ahash
+> 
+> On Sun, 2013-01-20 at 19:40 -0500, Tom St Denis wrote:
+> > The problem is for me to add the ()'s is a no brainer.
+> 
+> It was more than just the ()'s. You completely botched the
+> indentation
+> in the parts of code you didn't copy from xcbc.c, among other issues.
 
-diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-index 2bfc04d..ebc2241 100644
---- a/drivers/i2c/busses/i2c-at91.c
-+++ b/drivers/i2c/busses/i2c-at91.c
-@@ -723,9 +723,9 @@ static int at91_twi_probe(struct platform_device *pdev)
- 	if (!dev->pdata)
- 		return -ENODEV;
+Leaving coding indentation aside [I assume you mean the use of braces because my tab stops should match given the patchset for the other files was minimal] that's not really a good use of time here.
  
--	dev->base = devm_request_and_ioremap(&pdev->dev, mem);
--	if (!dev->base)
--		return -EBUSY;
-+	dev->base = devm_ioremap_resource(&pdev->dev, mem);
-+	if (IS_ERR(dev->base))
-+		return PTR_ERR(dev->base);
- 
- 	dev->irq = platform_get_irq(pdev, 0);
- 	if (dev->irq < 0)
-diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
-index b973474..a71ece6 100644
---- a/drivers/i2c/busses/i2c-imx.c
-+++ b/drivers/i2c/busses/i2c-imx.c
-@@ -511,9 +511,9 @@ static int __init i2c_imx_probe(struct platform_device *pdev)
- 		return -ENOENT;
- 	}
- 
--	base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!base)
--		return -EBUSY;
-+	base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
- 
- 	i2c_imx = devm_kzalloc(&pdev->dev, sizeof(struct imx_i2c_struct),
- 				GFP_KERNEL);
-diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
-index a873d0a..a337d08 100644
---- a/drivers/i2c/busses/i2c-ocores.c
-+++ b/drivers/i2c/busses/i2c-ocores.c
-@@ -12,6 +12,7 @@
-  * kind, whether express or implied.
-  */
- 
-+#include <linux/err.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/init.h>
-@@ -364,9 +365,9 @@ static int ocores_i2c_probe(struct platform_device *pdev)
- 	if (!i2c)
- 		return -ENOMEM;
- 
--	i2c->base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!i2c->base)
--		return -EADDRNOTAVAIL;
-+	i2c->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(i2c->base))
-+		return PTR_ERR(i2c->base);
- 
- 	pdata = pdev->dev.platform_data;
- 	if (pdata) {
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index 20d41bf..a9bf4ca 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -1103,11 +1103,9 @@ omap_i2c_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	dev->base = devm_request_and_ioremap(&pdev->dev, mem);
--	if (!dev->base) {
--		dev_err(&pdev->dev, "I2C region already claimed\n");
--		return -ENOMEM;
--	}
-+	dev->base = devm_ioremap_resource(&pdev->dev, mem);
-+	if (IS_ERR(dev->base))
-+		return PTR_ERR(dev->base);
- 
- 	match = of_match_device(of_match_ptr(omap_i2c_of_match), &pdev->dev);
- 	if (match) {
-diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
-index 9bd4d73..4ba4a95 100644
---- a/drivers/i2c/busses/i2c-rcar.c
-+++ b/drivers/i2c/busses/i2c-rcar.c
-@@ -642,11 +642,9 @@ static int rcar_i2c_probe(struct platform_device *pdev)
- 	if (ret < 0)
- 		return ret;
- 
--	priv->io = devm_request_and_ioremap(dev, res);
--	if (!priv->io) {
--		dev_err(dev, "cannot ioremap\n");
--		return -ENODEV;
--	}
-+	priv->io = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(priv->io))
-+		return PTR_ERR(priv->io);
- 
- 	priv->irq = platform_get_irq(pdev, 0);
- 	init_waitqueue_head(&priv->wait);
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index a290d08..c807a6d 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -1042,11 +1042,10 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
- 		goto err_clk;
- 	}
- 
--	i2c->regs = devm_request_and_ioremap(&pdev->dev, res);
-+	i2c->regs = devm_ioremap_resource(&pdev->dev, res);
- 
--	if (i2c->regs == NULL) {
--		dev_err(&pdev->dev, "cannot map IO\n");
--		ret = -ENXIO;
-+	if (IS_ERR(i2c->regs)) {
-+		ret = PTR_ERR(i2c->regs);
- 		goto err_clk;
- 	}
- 
-diff --git a/drivers/i2c/busses/i2c-sirf.c b/drivers/i2c/busses/i2c-sirf.c
-index 3f1818b..183cf05 100644
---- a/drivers/i2c/busses/i2c-sirf.c
-+++ b/drivers/i2c/busses/i2c-sirf.c
-@@ -308,10 +308,9 @@ static int i2c_sirfsoc_probe(struct platform_device *pdev)
- 		goto out;
- 	}
- 
--	siic->base = devm_request_and_ioremap(&pdev->dev, mem_res);
--	if (siic->base == NULL) {
--		dev_err(&pdev->dev, "IO remap failed!\n");
--		err = -ENOMEM;
-+	siic->base = devm_ioremap_resource(&pdev->dev, mem_res);
-+	if (IS_ERR(siic->base)) {
-+		err = PTR_ERR(siic->base);
- 		goto out;
- 	}
- 
-diff --git a/drivers/i2c/busses/i2c-stu300.c b/drivers/i2c/busses/i2c-stu300.c
-index 580a0c0..60195b5 100644
---- a/drivers/i2c/busses/i2c-stu300.c
-+++ b/drivers/i2c/busses/i2c-stu300.c
-@@ -888,11 +888,11 @@ stu300_probe(struct platform_device *pdev)
- 	if (!res)
- 		return -ENOENT;
- 
--	dev->virtbase = devm_request_and_ioremap(&pdev->dev, res);
-+	dev->virtbase = devm_ioremap_resource(&pdev->dev, res);
- 	dev_dbg(&pdev->dev, "initialize bus device I2C%d on virtual "
- 		"base %p\n", bus_nr, dev->virtbase);
--	if (!dev->virtbase)
--		return -ENOMEM;
-+	if (IS_ERR(dev->virtbase))
-+		return PTR_ERR(dev->virtbase);
- 
- 	dev->irq = platform_get_irq(pdev, 0);
- 	ret = devm_request_irq(&pdev->dev, dev->irq, stu300_irh, 0, NAME, dev);
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index 7b38877..1fb3009 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -669,11 +669,9 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!base) {
--		dev_err(&pdev->dev, "Cannot request/ioremap I2C registers\n");
--		return -EADDRNOTAVAIL;
--	}
-+	base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	if (!res) {
-diff --git a/drivers/i2c/busses/i2c-xlr.c b/drivers/i2c/busses/i2c-xlr.c
-index a005265..93f029e 100644
---- a/drivers/i2c/busses/i2c-xlr.c
-+++ b/drivers/i2c/busses/i2c-xlr.c
-@@ -7,6 +7,7 @@
-  * warranty of any kind, whether express or implied.
-  */
- 
-+#include <linux/err.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/slab.h>
-@@ -225,11 +226,9 @@ static int xlr_i2c_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	priv->iobase = devm_request_and_ioremap(&pdev->dev, res);
--	if (!priv->iobase) {
--		dev_err(&pdev->dev, "devm_request_and_ioremap failed\n");
--		return -EBUSY;
--	}
-+	priv->iobase = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(priv->iobase))
-+		return PTR_ERR(priv->iobase);
- 
- 	priv->adap.dev.parent = &pdev->dev;
- 	priv->adap.owner	= THIS_MODULE;
--- 
-1.8.1.1
+> > For me to re-write complete statements for coding style reasons
+> > means
+> > I have to actually go out and test it again.
+> 
+> Well, for some of the code you submitted, that would be the first
+> testing it got, even compile testing AFAICT. I don't doubt that you
+> tested against your hardware, but it is obvious that you didn't run
+> the
+> algorithm tests you added, or even tried to compile them. You were
+> missing a semicolon after your test data, and you were also missing a
+> "\x" in there, so your test data was wrong.
+
+The missing semi-colon is in fact missing and for that I apologize.  This btw is the first legitimate gripe with the code thus far.
+
+Though I must say this code has "compiled" in 3.6, 3.6.7, 3.7, and 3.8 without error so it's not surprising it wasn't caught.  After having consulted the "documentation" I never really did figure out how to get testmgr to run so I took a bit of leap of faith there that everything was fine.  Not really an excuse but it is at least an observable hole in the build documentation.
+
+I couldn't spot the missing \x but I don't doubt you.  That format for vector data is so backwards that it's easy to make that mistake.  After having worked on crypto code for 10+ years I've never seen anyone use that format and I've seen stupid formats before (NIST CAVP anyone?).
+
+Again all valid critiques of the code and valid reasons to do a re-spin.  I apologize for the oversight there.  Having "used the source" I found the build symbol required to activate the test manager so I should be good to go now.
+
+> I know this, because I just spent the five minutes required to fix up
+> the checkpatch warnings to prove to myself that you could have done
+> it
+> faster than sending one considered message to the list about how much
+> we
+> suck. Of course, that assumes you are trying to have a discussion
+> instead of trolling; it's much easier to spew bile than to think
+> before
+> you post.
+
+This wasn't about how you all suck.  Quite the contrary it was about how good people are missing perspective.  You all started this by harping on the coding style "problems" but as a new developer to the kernel (well at least a new submitter...) I used the source as a guide so that I wouldn't deviate from what I perceived as the norm.  I was legitimately frustrated because performing a re-spin solely to work past coding style problems is not something a business case could be made for.  I'd like to contribute properly but at the same time you can't throw red flags on the play each time someone plays the game like you do.
+
+At least the testmgr errors are something I can work on whenever without setting up a lab so likely that'll be something I can tackle today actually.
+
+Tom
 
