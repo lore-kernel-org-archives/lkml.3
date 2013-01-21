@@ -1,133 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab3AUMkB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 07:40:01 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:56568 "EHLO mail.skyhub.de"
+	id S1754319Ab3AUMoi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 07:44:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4728 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752981Ab3AUMj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 07:39:59 -0500
-Date: Mon, 21 Jan 2013 13:42:55 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andre Przywara <andre@andrep.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: kernel 3.7+ cpufreq regression on AMD system running as dom0
-Message-ID: <20130121124255.GB4823@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Stefan Bader <stefan.bader@canonical.com>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	Andre Przywara <andre@andrep.de>,
-	"xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
-References: <50F42B3E.7090602@canonical.com>
- <20130114163445.GA4867@liondog.tnic>
- <20130115175305.GA12449@phenom.dumpdata.com>
- <20130115181839.GC8101@liondog.tnic>
- <20130118190015.GC11351@phenom.dumpdata.com>
- <20130118200331.GF4062@pd.tnic>
- <50FD32FA.7010306@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50FD32FA.7010306@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753858Ab3AUMog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 07:44:36 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH] tools lib traceevent: Handle dynamic array's element size properly
+Date: Mon, 21 Jan 2013 13:44:11 +0100
+Message-Id: <1358772251-4411-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 12:22:18PM +0000, Stefan Bader wrote:
-> So for having the "check for sensible BIOS" in mainline I refreshed
-> the patch (fixed the bit test, and actually tested it this time) and
-> also added some hopefully sensible explanation to it (attached
-> below).
-> 
-> Should I send it to acpi lists or would that have to go via an Andre?
+Fixing the dynamic array format field parsing.
 
-Maybe Rafael could pick it up?
+Currently the event_read_fields function could segfault while parsing
+dynamic array other than string type. The reason is the event->pevent
+does not need to be set and gets dereferenced unconditionaly.
 
-> 
-> -Stefan
-> 
-> From 6e2fc8291c91339123a37162382d8b08b50867ba Mon Sep 17 00:00:00 2001
-> From: Stefan Bader <stefan.bader@canonical.com>
-> Date: Mon, 14 Jan 2013 16:17:00 +0100
-> Subject: [PATCH] ACPI: Check MSR valid bit before using P-state frequencies
-> 
-> To fix incorrect P-state frequencies which can happen on
-> some AMD systems f594065faf4f9067c2283a34619fc0714e79a98d
->   "ACPI: Add fixups for AMD P-state figures"
-> introduced a quirk to obtain the correct values by reading
-> from AMD specific MSRs.
-> 
-> This did cause a regression when running a kernel using that
-> quirk under Xen which does (currently) not pass on the contents
-> of the HW but 0.
+Also adding proper initialization of field->elementsize based on the
+parsed dynamic type.
 
-Actually this should say "does not currently pass through MSR accesses
-to baremetal" or similar.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ tools/lib/traceevent/event-parse.c | 40 +++++++++++++++++++++++++++++++++++---
+ tools/lib/traceevent/event-parse.h |  1 +
+ 2 files changed, 38 insertions(+), 3 deletions(-)
 
-And this bit you mean is actually bit 63:
-
-"63: PstateEn. Read-write. 1=The P-state specified by this MSR is valid.
-0=The P-state specified by this MSR is not valid. The purpose of this
-register is to indicate if the rest of the P-state information in the
-register is valid after a reset; it controls no hardware."
-
-in the MSRC001_00[68:64] P-State [4:0] Registers.
-
-> And this seems to cause a failure to initialize
-> the ondemand governour (hard to say for sure as all P-states
-> appear to run at the same frequency).
-> 
-> While this should also be fixed in the hypervisor (to allow
-> a guest to read that MSR), this patch is intended to work
-> around the issue in the meantime. In discussion it turned out
-> that indeed real HW/BIOSes may choose to not set the valid bit
-> and thus mark the P-state as invalid. So this could be considered
-> a fix for broken BIOSes that also works around the issue on Xen.
-> 
-> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-> Cc: stable@vger.kernel.org # v3.7..
-> ---
->  drivers/acpi/processor_perflib.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
-> index 836bfe0..41f4bdac 100644
-> --- a/drivers/acpi/processor_perflib.c
-> +++ b/drivers/acpi/processor_perflib.c
-> @@ -340,6 +340,9 @@ static void amd_fixup_frequency(struct
-> acpi_processor_px *px, int i)
->  	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
->  	    || boot_cpu_data.x86 == 0x11) {
->  		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
-> +		/* Bit 63 indicates whether contents are valid */
-> +		if (!(hi & 0x80000000))
-
-You can make this a lot more explicit:
-
-		if (!(hi & BIT(31)))
-			return;
-
-This way
-
-1) you're sure you're testing the correct bit and
-2) any reviewer can know on the spot which bit it is about.
-
-> +			return;
->  		fid = lo & 0x3f;
->  		did = (lo >> 6) & 7;
->  		if (boot_cpu_data.x86 == 0x10)
-
-Thanks.
-
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index f504619..d682df2 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -1223,6 +1223,34 @@ static int field_is_long(struct format_field *field)
+ 	return 0;
+ }
+ 
++static unsigned int field_dynamic_elem_size(struct format_field *field)
++{
++	/* This covers all FIELD_IS_STRING types. */
++	static struct {
++		char *type;
++		unsigned int size;
++	} table[] = {
++		{ "u8",   1 },
++		{ "u16",  2 },
++		{ "u32",  4 },
++		{ "u64",  8 },
++		{ "s8",   1 },
++		{ "s16",  2 },
++		{ "s32",  4 },
++		{ "s64",  8 },
++		{ "char", 1 },
++		{ },
++	};
++	int i;
++
++	for (i = 0; table[i].type; i++) {
++		if (!strcmp(table[i].type, field->type_dyn))
++			return table[i].size;
++	}
++
++	return 0;
++}
++
+ static int event_read_fields(struct event_format *event, struct format_field **fields)
+ {
+ 	struct format_field *field = NULL;
+@@ -1390,7 +1418,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ 				field->type = new_type;
+ 				strcat(field->type, " ");
+ 				strcat(field->type, field->name);
+-				free_token(field->name);
++				field->type_dyn = field->name;
+ 				strcat(field->type, brackets);
+ 				field->name = token;
+ 				type = read_token(&token);
+@@ -1477,10 +1505,14 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ 		if (field->flags & FIELD_IS_ARRAY) {
+ 			if (field->arraylen)
+ 				field->elementsize = field->size / field->arraylen;
++			else if (field->flags & FIELD_IS_DYNAMIC)
++				field->elementsize = field_dynamic_elem_size(field);
+ 			else if (field->flags & FIELD_IS_STRING)
+ 				field->elementsize = 1;
+-			else
+-				field->elementsize = event->pevent->long_size;
++			else if (field->flags & FIELD_IS_LONG)
++				field->elementsize = event->pevent ?
++						     event->pevent->long_size :
++						     sizeof(long);
+ 		} else
+ 			field->elementsize = field->size;
+ 
+@@ -1496,6 +1528,7 @@ fail:
+ fail_expect:
+ 	if (field) {
+ 		free(field->type);
++		free(field->type_dyn);
+ 		free(field->name);
+ 		free(field);
+ 	}
+@@ -5500,6 +5533,7 @@ static void free_format_fields(struct format_field *field)
+ 	while (field) {
+ 		next = field->next;
+ 		free(field->type);
++		free(field->type_dyn);
+ 		free(field->name);
+ 		free(field);
+ 		field = next;
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index 7be7e89..4d54af2 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -174,6 +174,7 @@ struct format_field {
+ 	struct format_field	*next;
+ 	struct event_format	*event;
+ 	char			*type;
++	char			*type_dyn;
+ 	char			*name;
+ 	int			offset;
+ 	int			size;
 -- 
-Regards/Gruss,
-    Boris.
+1.7.11.7
 
-Sent from a fat crate under my desk. Formatting is fine.
---
