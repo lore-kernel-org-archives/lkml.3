@@ -1,532 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab3AUM5d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 07:57:33 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:6738 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499Ab3AUM5a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 07:57:30 -0500
-Date: Mon, 21 Jan 2013 07:57:28 -0500 (EST)
-From: Tom St Denis <tstdenis@elliptictech.com>
-To: linux-kernel@vger.kernel.org
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        David Miller <davem@davemloft.net>, linux-crypto@vger.kernel.org
-Message-ID: <436404741.94502.1358773048618.JavaMail.root@elliptictech.com>
-In-Reply-To: <537355069.94465.1358772395763.JavaMail.root@elliptictech.com>
-Subject: [PATCH] CMAC support for CryptoAPI, fixed patch issues, indent, and
- testmgr build issues
+	id S1753954Ab3AUM7g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 07:59:36 -0500
+Received: from m50-134.163.com ([123.125.50.134]:37491 "EHLO m50-134.163.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753022Ab3AUM7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 07:59:35 -0500
+X-Greylist: delayed 1086 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jan 2013 07:59:34 EST
+Message-ID: <50FD36C5.7060902@163.com>
+Date: Mon, 21 Jan 2013 20:38:29 +0800
+From: Jason Luan <luanjianhai@163.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.17.19.111]
-X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC24 (Linux)/7.2.1_GA_2790)
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: xen-devel@lists.xensource.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [V2] xen-netback notify DomU to send ARP.
+References: <50EC099D.6020407@oracle.com> <50EC297A02000078000B3BB5@nat28.tlf.novell.com> <1357652541.7989.179.camel@zakaz.uk.xensource.com> <50EC3DFD.8060206@oracle.com> <1357660834.12649.103.camel@dagon.hellion.org.uk> <50ED1EB3.3080605@oracle.com> <50ED4F1D02000078000B3F87@nat28.tlf.novell.com> <50ED6255.7020006@oracle.com> <50ED825802000078000B4113@nat28.tlf.novell.com> <50ED8ED3.8010007@163.com> <50ED9E6502000078000B4220@nat28.tlf.novell.com> <50ED950A.6010203@163.com> <50EDA80002000078000B427B@nat28.tlf.novell.com> <50EDA624.1010008@163.com> <50EE66FF.2020802@oracle.com> <50EF7106.7000302@oracle.com> <50FCED9F.1050708@oracle.com> <50FD3AB202000078000B7CD5@nat28.tlf.novell.com> <1358770987.3279.196.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1358770987.3279.196.camel@zakaz.uk.xensource.com>
+Content-Type: multipart/mixed;
+ boundary="------------010208060107020202060606"
+X-CM-TRANSID: DtGowEBpAkbFNv1QNo0jAQ--.7852S3
+X-Coremail-Antispam: 1Uf129KBjvJXoW7Aw15Jr18JFy3tr48tFyUAwb_yoW8JFyfpa
+	4kta1DCF4DJr4DG3Z2q3WSgF1Yvr1xtryUJry3Gw17Zas0vrnrtFWxKr45Wa40qr45Gw4j
+	va1UWasxWayrJFJanT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
+	9KBjDUYxBIdaVFxhVjvjDU0xZFpf9x07j5nYrUUUUU=
+X-CM-SenderInfo: hoxd0yxldqxtrl6rljoofrz/1tbiKwerIE9o3Nl-kwAAsp
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey all,
+This is a multi-part message in MIME format.
+--------------010208060107020202060606
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 
-Here's an updated patch which addresses a couple of build issues and coding style complaints.  
+于 2013年01月21日 20:23, Ian Campbell 写道:
+> Which Linux did you test? pvops or something based on the classic-Xen
+> patches?
+>
+> On Mon, 2013-01-21 at 11:55 +0000, Jan Beulich wrote:
+>>>>> On 21.01.13 at 08:26, jianhai luan <jianhai.luan@oracle.com> wrote:
+>>> +static void notify_front_arping(struct xenbus_device *dev)
+>>> +{
+>>> +	int err;
+>>> +
+>>> +	if (dev->state != XenbusStateConnected)
+>>> +		return;
+>>> +
+>>> +	err = xenbus_printf(XBT_NIL, dev->nodename, "state", "%d", dev->state);
+>>> +	if (err) {
+>>> +		pr_fmt("Error writing the state");
+>> What's this? pr_fmt() alone makes no sense at all, and I'd be
+>> pretty surprised if the compiler didn't warn about this construct.
+>>
+>> Further, you probably want to say "re-writing" and include the
+>> error code in the message. And of course you want a \n at the
+>> end.
+>>
+>> Finally - no need for the braces ...
+>>
+>>> +	}
+>>> +
+>>> +	return;
+>> ... nor this "return".
+> Agreed on all counts.
+>
+> Jason, when you resend with these fixes please CC the netdev list and
+> folks listed by ./scripts/get-maintainers.pl for the patch.
+>
+> Ian.
 
-I still can't get it to run via testmgr I get 
+Thank you for your notifying.
+>
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
 
-[  162.407807] alg: No test for cmac(aes) (cmac(aes-generic))
 
-Despite the fact I have an entry for cmac(aes) (much like xcbc(aes)...).
+Thanks,
+Jason
 
-Here's the patch to bring 3.8-rc4 up with CMAC ...
+--------------010208060107020202060606
+Content-Type: text/x-patch;
+ name="0001-xen-netback-notify-frontend-to-send-gratuitous-ARP.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-xen-netback-notify-frontend-to-send-gratuitous-ARP.patc";
+ filename*1="h"
 
-Signed-off-by: Tom St Denis <tstdenis@elliptictech.com>
+>From a1acd31b9672d1000549e71a9467b71b1c229d7d Mon Sep 17 00:00:00 2001
+From: Jason Luan <jianhai.luan@oracle.com>
+Date: Fri, 28 Dec 2012 15:43:06 +0800
+Subject: [PATCH] xen-netback notify frontend to send gratuitous ARP.
 
+In the real network environment, some cause will lead
+to Active-Backup mode bonding chose new actived port.
+After that, the trffic, destinated to DomU by inactived
+port (former actived port), will be unreachable at now.
+DomU should send gratutious ARP initialtivly to find the
+new corrected path.
+
+By netback's Connected->Connected transition, frontend
+will watch the change, and send gratuitous ARP.
+
+Signed-off-by: Jason Luan <jianhai.luan@oracle.com>
 ---
- crypto/Kconfig               |   8 ++
- crypto/Makefile              |   1 +
- crypto/cmac.c                | 317 +++++++++++++++++++++++++++++++++++++++++++
- crypto/testmgr.c             |   9 ++
- crypto/testmgr.h             |  52 +++++++
- include/uapi/linux/pfkeyv2.h |   1 +
- net/xfrm/xfrm_algo.c         |  17 +++
- 7 files changed, 405 insertions(+)
- create mode 100644 crypto/cmac.c
+ drivers/net/xen-netback/xenbus.c |   48 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 4641d95..5ac2c7f 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -301,6 +301,14 @@ config CRYPTO_XCBC
- 		http://csrc.nist.gov/encryption/modes/proposedmodes/
- 		 xcbc-mac/xcbc-mac-spec.pdf
- 
-+config CRYPTO_CMAC
-+	tristate "CMAC support"
-+	depends on EXPERIMENTAL
-+	select CRYPTO_HASH
-+	select CRYPTO_MANAGER
-+	help
-+	  NIST CMAC cipher based MAC
-+
- config CRYPTO_VMAC
- 	tristate "VMAC support"
- 	depends on EXPERIMENTAL
-diff --git a/crypto/Makefile b/crypto/Makefile
-index d59dec7..85a615d 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -35,6 +35,7 @@ obj-$(CONFIG_CRYPTO_USER) += crypto_user.o
- obj-$(CONFIG_CRYPTO_HMAC) += hmac.o
- obj-$(CONFIG_CRYPTO_VMAC) += vmac.o
- obj-$(CONFIG_CRYPTO_XCBC) += xcbc.o
-+obj-$(CONFIG_CRYPTO_CMAC) += cmac.o
- obj-$(CONFIG_CRYPTO_NULL) += crypto_null.o
- obj-$(CONFIG_CRYPTO_MD4) += md4.o
- obj-$(CONFIG_CRYPTO_MD5) += md5.o
-diff --git a/crypto/cmac.c b/crypto/cmac.c
-new file mode 100644
-index 0000000..1ffeea7
---- /dev/null
-+++ b/crypto/cmac.c
-@@ -0,0 +1,317 @@
-+/*
-+ * Copyright (C)2006 USAGI/WIDE Project
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * Author:
-+ *	 Tom St Denis <tstdenis@elliptictech.com>
-+ *
-+ * Derived from the XCBC code of:
-+ *	 Kazunori Miyazawa <miyazawa@linux-ipv6.org>
-+ */
-+
-+#include <crypto/internal/hash.h>
-+#include <linux/err.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+
-+/*
-+ * +------------------------
-+ * | <parent tfm>
-+ * +------------------------
-+ * | cmac_tfm_ctx
-+ * +------------------------
-+ * | consts (block size * 2)
-+ * +------------------------
-+ */
-+struct cmac_tfm_ctx {
-+	struct crypto_cipher *child;
-+	u8 ctx[];
-+};
-+
-+/*
-+ * +------------------------
-+ * | <shash desc>
-+ * +------------------------
-+ * | cmac_desc_ctx
-+ * +------------------------
-+ * | odds (block size)
-+ * +------------------------
-+ * | prev (block size)
-+ * +------------------------
-+ */
-+struct cmac_desc_ctx {
-+	unsigned int len;
-+	u8 ctx[];
-+};
-+
-+static int crypto_cmac_digest_setkey(struct crypto_shash *parent,
-+					  const u8 *inkey, unsigned int keylen)
-+{
-+	unsigned long alignmask = crypto_shash_alignmask(parent);
-+	struct cmac_tfm_ctx *ctx = crypto_shash_ctx(parent);
-+	int bs = crypto_shash_blocksize(parent);
-+	u8 *consts = PTR_ALIGN(&ctx->ctx[0], alignmask + 1);
-+	int x, y, err = 0;
-+	u8 msb, mask;
-+
-+	switch (bs) {
-+	case 16:
-+		mask = 0x87;
-+		break;
-+	case 8:
-+		mask = 0x1B;
-+		break;
-+	default:
-+		return -EINVAL; /*  only support 64/128 bit block ciphers */
-+	}
-+
-+	err = crypto_cipher_setkey(ctx->child, inkey, keylen);
-+	if (err)
-+		return err;
-+
-+	/* encrypt the zero block */
-+	memset(consts, 0, bs);
-+	crypto_cipher_encrypt_one(ctx->child, consts, consts);
-+
-+	for (x = 0; x < 2; x++) {
-+		/* if msb(L * u^(x+1)) = 0 then just shift,
-+		otherwise shift and xor constant mask */
-+		msb = consts[x*bs + 0] >> 7;
-+
-+		/* shift left */
-+		for (y = 0; y < (bs - 1); y++)
-+			consts[x*bs + y] =
-+				((consts[x*bs + y] << 1) |
-+				(consts[x*bs + y+1] >> 7)) & 255;
-+
-+		consts[x*bs + bs - 1] =
-+			((consts[x*bs + bs - 1] << 1) ^
-+			(msb ? mask : 0)) & 255;
-+
-+		/* copy up as require */
-+		if (x == 0)
-+			memcpy(&consts[(x+1)*bs], &consts[x*bs], bs);
-+	}
-+	return 0;
-+}
-+
-+static int crypto_cmac_digest_init(struct shash_desc *pdesc)
-+{
-+	unsigned long alignmask = crypto_shash_alignmask(pdesc->tfm);
-+	struct cmac_desc_ctx *ctx = shash_desc_ctx(pdesc);
-+	int bs = crypto_shash_blocksize(pdesc->tfm);
-+	u8 *prev = PTR_ALIGN(&ctx->ctx[0], alignmask + 1) + bs;
-+
-+	ctx->len = 0;
-+	memset(prev, 0, bs);
-+
-+	return 0;
-+}
-+
-+static int crypto_cmac_digest_update(struct shash_desc *pdesc, const u8 *p,
-+					  unsigned int len)
-+{
-+	struct crypto_shash *parent = pdesc->tfm;
-+	unsigned long alignmask = crypto_shash_alignmask(parent);
-+	struct cmac_tfm_ctx *tctx = crypto_shash_ctx(parent);
-+	struct cmac_desc_ctx *ctx = shash_desc_ctx(pdesc);
-+	struct crypto_cipher *tfm = tctx->child;
-+	int bs = crypto_shash_blocksize(parent);
-+	u8 *odds = PTR_ALIGN(&ctx->ctx[0], alignmask + 1);
-+	u8 *prev = odds + bs;
-+
-+	/* checking the data can fill the block */
-+	if ((ctx->len + len) <= bs) {
-+		memcpy(odds + ctx->len, p, len);
-+		ctx->len += len;
-+		return 0;
-+	}
-+
-+	/* filling odds with new data and encrypting it */
-+	memcpy(odds + ctx->len, p, bs - ctx->len);
-+	len -= bs - ctx->len;
-+	p += bs - ctx->len;
-+
-+	crypto_xor(prev, odds, bs);
-+	crypto_cipher_encrypt_one(tfm, prev, prev);
-+
-+	/* clearing the length */
-+	ctx->len = 0;
-+
-+	/* encrypting the rest of data */
-+	while (len > bs) {
-+		crypto_xor(prev, p, bs);
-+		crypto_cipher_encrypt_one(tfm, prev, prev);
-+		p += bs;
-+		len -= bs;
-+	}
-+
-+	/* keeping the surplus of blocksize */
-+	if (len) {
-+		memcpy(odds, p, len);
-+		ctx->len = len;
-+	}
-+
-+	return 0;
-+}
-+
-+static int crypto_cmac_digest_final(struct shash_desc *pdesc, u8 *out)
-+{
-+	struct crypto_shash *parent = pdesc->tfm;
-+	unsigned long alignmask = crypto_shash_alignmask(parent);
-+	struct cmac_tfm_ctx *tctx = crypto_shash_ctx(parent);
-+	struct cmac_desc_ctx *ctx = shash_desc_ctx(pdesc);
-+	struct crypto_cipher *tfm = tctx->child;
-+	int bs = crypto_shash_blocksize(parent);
-+	u8 *consts = PTR_ALIGN(&tctx->ctx[0], alignmask + 1);
-+	u8 *odds = PTR_ALIGN(&ctx->ctx[0], alignmask + 1);
-+	u8 *prev = odds + bs;
-+	unsigned int offset = 0;
-+
-+	if (ctx->len != bs) {
-+		unsigned int rlen;
-+		u8 *p = odds + ctx->len;
-+
-+		*p = 0x80;
-+		p++;
-+
-+		rlen = bs - ctx->len - 1;
-+		if (rlen)
-+			memset(p, 0, rlen);
-+
-+		offset += bs;
-+	}
-+
-+	crypto_xor(prev, odds, bs);
-+	crypto_xor(prev, consts + offset, bs);
-+
-+	crypto_cipher_encrypt_one(tfm, out, prev);
-+
-+	return 0;
-+}
-+
-+static int cmac_init_tfm(struct crypto_tfm *tfm)
-+{
-+	struct crypto_cipher *cipher;
-+	struct crypto_instance *inst = (void *)tfm->__crt_alg;
-+	struct crypto_spawn *spawn = crypto_instance_ctx(inst);
-+	struct cmac_tfm_ctx *ctx = crypto_tfm_ctx(tfm);
-+
-+	cipher = crypto_spawn_cipher(spawn);
-+	if (IS_ERR(cipher))
-+		return PTR_ERR(cipher);
-+
-+	ctx->child = cipher;
-+
-+	return 0;
-+};
-+
-+static void cmac_exit_tfm(struct crypto_tfm *tfm)
-+{
-+	struct cmac_tfm_ctx *ctx = crypto_tfm_ctx(tfm);
-+	crypto_free_cipher(ctx->child);
-+}
-+
-+static int cmac_create(struct crypto_template *tmpl, struct rtattr **tb)
-+{
-+	struct shash_instance *inst;
-+	struct crypto_alg *alg;
-+	unsigned long alignmask;
-+	int err;
-+
-+	err = crypto_check_attr_type(tb, CRYPTO_ALG_TYPE_SHASH);
-+	if (err)
-+		return err;
-+
-+	alg = crypto_get_attr_alg(tb, CRYPTO_ALG_TYPE_CIPHER,
-+				  CRYPTO_ALG_TYPE_MASK);
-+	if (IS_ERR(alg))
-+		return PTR_ERR(alg);
-+
-+	switch (alg->cra_blocksize) {
-+	case 16:
-+		break;
-+	default:
-+		goto out_put_alg;
-+	}
-+
-+	inst = shash_alloc_instance("cmac", alg);
-+	err = PTR_ERR(inst);
-+	if (IS_ERR(inst))
-+		goto out_put_alg;
-+
-+	err = crypto_init_spawn(shash_instance_ctx(inst), alg,
-+				shash_crypto_instance(inst),
-+				CRYPTO_ALG_TYPE_MASK);
-+	if (err)
-+		goto out_free_inst;
-+
-+	alignmask = alg->cra_alignmask | 3;
-+	inst->alg.base.cra_alignmask = alignmask;
-+	inst->alg.base.cra_priority = alg->cra_priority;
-+	inst->alg.base.cra_blocksize = alg->cra_blocksize;
-+
-+	inst->alg.digestsize = alg->cra_blocksize;
-+	inst->alg.descsize = ALIGN(sizeof(struct cmac_desc_ctx),
-+					crypto_tfm_ctx_alignment()) +
-+				  (alignmask &
-+					~(crypto_tfm_ctx_alignment() - 1)) +
-+				  alg->cra_blocksize * 2;
-+
-+	inst->alg.base.cra_ctxsize = ALIGN(sizeof(struct cmac_tfm_ctx),
-+						alignmask + 1) +
-+					  alg->cra_blocksize * 2;
-+	inst->alg.base.cra_init = cmac_init_tfm;
-+	inst->alg.base.cra_exit = cmac_exit_tfm;
-+
-+	inst->alg.init = crypto_cmac_digest_init;
-+	inst->alg.update = crypto_cmac_digest_update;
-+	inst->alg.final = crypto_cmac_digest_final;
-+	inst->alg.setkey = crypto_cmac_digest_setkey;
-+
-+	err = shash_register_instance(tmpl, inst);
-+	if (err) {
-+out_free_inst:
-+		shash_free_instance(shash_crypto_instance(inst));
-+	}
-+
-+out_put_alg:
-+	crypto_mod_put(alg);
-+	return err;
-+}
-+
-+static struct crypto_template crypto_cmac_tmpl = {
-+	.name = "cmac",
-+	.create = cmac_create,
-+	.free = shash_free_instance,
-+	.module = THIS_MODULE,
-+};
-+
-+static int __init crypto_cmac_module_init(void)
-+{
-+	return crypto_register_template(&crypto_cmac_tmpl);
-+}
-+
-+static void __exit crypto_cmac_module_exit(void)
-+{
-+	crypto_unregister_template(&crypto_cmac_tmpl);
-+}
-+
-+module_init(crypto_cmac_module_init);
-+module_exit(crypto_cmac_module_exit);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("CMAC keyed hash algorithm");
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index edf4a08..6de7994 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -2859,6 +2859,15 @@ static const struct alg_test_desc alg_test_descs[] = {
- 			}
- 		}
- 	}, {
-+		.alg = "cmac(aes)",
-+		.test = alg_test_hash,
-+		.suite = {
-+			.hash = {
-+				.vecs = aes_cmac128_tv_template,
-+				.count = CMAC_AES_TEST_VECTORS
-+			}
-+		}
-+	}, {
- 		.alg = "xcbc(aes)",
- 		.test = alg_test_hash,
- 		.suite = {
-diff --git a/crypto/testmgr.h b/crypto/testmgr.h
-index b5721e0..9688bfe 100644
---- a/crypto/testmgr.h
-+++ b/crypto/testmgr.h
-@@ -1639,6 +1639,58 @@ static struct hash_testvec hmac_sha256_tv_template[] = {
- 	},
+diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
+index 410018c..844fd86 100644
+--- a/drivers/net/xen-netback/xenbus.c
++++ b/drivers/net/xen-netback/xenbus.c
+@@ -26,6 +26,7 @@ struct backend_info {
+ 	struct xenvif *vif;
+ 	enum xenbus_state frontend_state;
+ 	struct xenbus_watch hotplug_status_watch;
++	struct notifier_block vif_notifier;
+ 	u8 have_hotplug_status_watch:1;
  };
  
-+#define CMAC_AES_TEST_VECTORS 4
-+
-+static struct hash_testvec aes_cmac128_tv_template[] = {
-+	{
-+		.key  = "\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab"
-+		"\xf7\x15\x88\x09\xcf\x4f\x3c",
-+		.plaintext = zeroed_string,
-+		.digest = "\xbb\x1d\x69\x29\xe9\x59\x37\x28\x7f"
-+		"\xa3\x7d\x12\x9b\x75\x67\x46",
-+		.psize   = 0,
-+		.ksize   = 16,
-+	},
-+
-+	{
-+		.key       = "\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab\xf7"
-+		"\x15\x88\x09\xcf\x4f\x3c",
-+		.plaintext = "\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96\xe9\x3d"
-+		"\x7e\x11\x73\x93\x17\x2a",
-+		.digest    = "\x07\x0a\x16\xb4\x6b\x4d\x41\x44\xf7\x9b"
-+		"\xdd\x9d\xd0\x4a\x28\x7c",
-+		.psize   = 16,
-+		.ksize   = 16,
-+	},
-+
-+	{
-+		.key  = "\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab\xf7"
-+		"\x15\x88\x09\xcf\x4f\x3c",
-+		.plaintext = "\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96\xe9"
-+		"\x3d\x7e\x11\x73\x93\x17"
-+		"\x2a\xae\x2d\x8a\x57\x1e\x03\xac\x9c\x9e\xb7\x6f\xac\x45\xaf"
-+		"\x8e\x51\x30\xc8\x1c\x46\xa3\x5c\xe4\x11",
-+		.digest    = "\xdf\xa6\x67\x47\xde\x9a\xe6\x30\x30\xca\x32"
-+		"\x61\x14\x97\xc8\x27",
-+		.psize   = 40,
-+		.ksize   = 16,
-+	},
-+	{
-+		.key  = "\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab\xf7"
-+		"\x15\x88\x09\xcf\x4f\x3c",
-+		.plaintext = "\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96\xe9"
-+		"\x3d\x7e\x11\x73\x93\x17"
-+		"\x2a\xae\x2d\x8a\x57\x1e\x03\xac\x9c\x9e\xb7\x6f\xac\x45\xaf"
-+		"\x8e\x51\x30\xc8\x1c\x46\xa3\x5c\xe4\x11\xe5\xfb\xc1\x19\x1a"
-+		"\x0a\x52\xef\xf6\x9f\x24\x45\xdf\x4f\x9b\x17\xad\x2b\x41\x7b"
-+		"\xe6\x6c\x37\x10",
-+		.digest    = "\x51\xf0\xbe\xbf\x7e\x3b\x9d\x92\xfc\x49\x74"
-+		"\x17\x79\x36\x3c\xfe",
-+		.psize   = 64,
-+		.ksize   = 16,
-+	},
-+};
-+
- #define XCBC_AES_TEST_VECTORS 6
+@@ -34,11 +35,54 @@ static void connect(struct backend_info *);
+ static void backend_create_xenvif(struct backend_info *be);
+ static void unregister_hotplug_status_watch(struct backend_info *be);
  
- static struct hash_testvec aes_xcbc128_tv_template[] = {
-diff --git a/include/uapi/linux/pfkeyv2.h b/include/uapi/linux/pfkeyv2.h
-index 0b80c80..d61898e 100644
---- a/include/uapi/linux/pfkeyv2.h
-+++ b/include/uapi/linux/pfkeyv2.h
-@@ -296,6 +296,7 @@ struct sadb_x_kmaddress {
- #define SADB_X_AALG_SHA2_512HMAC	7
- #define SADB_X_AALG_RIPEMD160HMAC	8
- #define SADB_X_AALG_AES_XCBC_MAC	9
-+#define SADB_X_AALG_AES_CMAC_MAC	10
- #define SADB_X_AALG_NULL		251	/* kame */
- #define SADB_AALG_MAX			251
- 
-diff --git a/net/xfrm/xfrm_algo.c b/net/xfrm/xfrm_algo.c
-index 4ce2d93..bd6f227 100644
---- a/net/xfrm/xfrm_algo.c
-+++ b/net/xfrm/xfrm_algo.c
-@@ -265,6 +265,23 @@ static struct xfrm_algo_desc aalg_list[] = {
- 	}
- },
- {
-+	.name = "cmac(aes)",
-+
-+	.uinfo = {
-+		.auth = {
-+			.icv_truncbits = 96,
-+			.icv_fullbits = 128,
-+		}
-+	},
-+
-+	.desc = {
-+		.sadb_alg_id = SADB_X_AALG_AES_CMAC_MAC,
-+		.sadb_alg_ivlen = 0,
-+		.sadb_alg_minbits = 128,
-+		.sadb_alg_maxbits = 128
-+	}
-+},
++/*
++ * By Connected->Connected transition, netfront will watch the change and
++ * send gratuitous ARP.
++ */
++static void notify_front_arping(struct xenbus_device *dev)
 +{
- 	.name = "xcbc(aes)",
++	int err;
++
++	if (dev->state != XenbusStateConnected)
++		return;
++
++	err = xenbus_printf(XBT_NIL, dev->nodename, "state", "%d", dev->state);
++	if (err)
++		pr_warn("NetBack: Failure to notify DomU (err=%d)\n", err);
++}
++
++#define nb_to_backend(nb) container_of(nb, struct backend_info, vif_notifier)
++/**
++ * When network condition of vif change, notify the frontend.
++ */
++static int netback_netdev_event(struct notifier_block *this,
++				unsigned long event, void *ptr)
++{
++	struct net_device *event_dev = ptr;
++	struct backend_info *be = nb_to_backend(this);
++
++	pr_debug("event_dev: %s, event: %lx\n",
++		 event_dev ? event_dev->name : "None", event);
++
++	if (!be->vif)
++		return NOTIFY_DONE;
++
++	switch (event) {
++	case NETDEV_NOTIFY_PEERS:
++		/* Notify frontend to Send gratuitous ARP */
++		notify_front_arping(be->dev);
++		break;
++	}
++
++	return NOTIFY_DONE;
++}
++
+ static int netback_remove(struct xenbus_device *dev)
+ {
+ 	struct backend_info *be = dev_get_drvdata(&dev->dev);
  
- 	.uinfo = {
+ 	unregister_hotplug_status_watch(be);
++	unregister_netdevice_notifier(&be->vif_notifier);
+ 	if (be->vif) {
+ 		kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
+ 		xenbus_rm(XBT_NIL, dev->nodename, "hotplug-status");
+@@ -129,6 +173,10 @@ static int netback_probe(struct xenbus_device *dev,
+ 	/* This kicks hotplug scripts, so do it immediately. */
+ 	backend_create_xenvif(be);
+ 
++	/* Register Frontend Event Notify */
++	be->vif_notifier.notifier_call = netback_netdev_event;
++	register_netdevice_notifier(&be->vif_notifier);
++
+ 	return 0;
+ 
+ abort_transaction:
 -- 
-1.8.1.rc2.6.g18499ba
+1.7.9.5
+
+
+--------------010208060107020202060606--
 
