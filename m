@@ -1,74 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab3AUC7W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 21:59:22 -0500
-Received: from ozlabs.org ([203.10.76.45]:34855 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752610Ab3AUC7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 21:59:20 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Junio C Hamano <gitster@pobox.com>,
-        Git Mailing List <git@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Alexander Graf <agraf@suse.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PULL] Module fixes, and a virtio block fix.
-In-Reply-To: <CA+55aFy1nW859yaGP17epRX8A+TaJ8APvb0-Ww1zw91dCAOhoQ@mail.gmail.com>
-References: <87zk03wg7r.fsf@rustcorp.com.au> <CA+55aFwzdcv0LXovZobha=EH=L6DapJt+ODP0nq=TWWAqCxLYQ@mail.gmail.com> <87fw1vwcao.fsf@rustcorp.com.au> <CA+55aFy1nW859yaGP17epRX8A+TaJ8APvb0-Ww1zw91dCAOhoQ@mail.gmail.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 21 Jan 2013 13:27:11 +1030
-Message-ID: <871udfw8e0.fsf@rustcorp.com.au>
+	id S1752714Ab3AUC7o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 21:59:44 -0500
+Received: from mail-da0-f42.google.com ([209.85.210.42]:43761 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab3AUC7m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 21:59:42 -0500
+Message-ID: <50FCAF18.4030101@gmail.com>
+Date: Mon, 21 Jan 2013 10:59:36 +0800
+From: Mark Zhang <nvmarkzhang@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Alexandre Courbot <acourbot@nvidia.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Mark Zhang <markz@nvidia.com>, gnurou@gmail.com
+Subject: Re: [PATCH 0/3] pwm-backlight: add subdrivers & Tegra support
+References: <1358591420-7790-1-git-send-email-acourbot@nvidia.com> <50FCA346.2070608@gmail.com>
+In-Reply-To: <50FCA346.2070608@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+Patch is applied OK on 3.8-rc4.
 
-> On Sun, Jan 20, 2013 at 5:32 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+Hmmm.. But I think it's better to make the patch can be applied on
+linux-next.
+
+Mark
+On 01/21/2013 10:09 AM, Mark Zhang wrote:
+> Hi Alex,
+> 
+> This patch set applies failed on tot linux-next(0118). Here is the log:
+> 
+> markz@markz-hp6200:~/tegradrm/official-upstream-kernel$ git am
+> ~/Desktop/*.eml
+> Applying: pwm-backlight: add subdriver mechanism
+> error: patch failed: drivers/video/backlight/pwm_bl.c:35
+> error: drivers/video/backlight/pwm_bl.c: patch does not apply
+> Patch failed at 0001 pwm-backlight: add subdriver mechanism
+> When you have resolved this problem run "git am --resolved".
+> If you would prefer to skip this patch, instead run "git am --skip".
+> To restore the original branch and stop patching run "git am --abort".
+> 
+> Anyway, I'll try to apply this on 3.8-rc4.
+> 
+> Mark
+> On 01/19/2013 06:30 PM, Alexandre Courbot wrote:
+>> This series introduces a way to use pwm-backlight hooks with platforms
+>> that use the device tree through a subdriver system. It also adds support
+>> for the Tegra-based Ventana board, adding the last missing block to enable
+>> its panel. Support for other Tegra board can thus be easily added.
 >>
->> Due to the delay on git.kernel.org, git request-pull fails.  It *looks*
->> like it succeeds, except the warning, but (as we learned last time I
->> screwed up), it doesn't put the branchname because it can't know.
->
-> I think this should be fixed in modern git versions.
->
-> And it sure as hell knows the proper tag name, since you *gave* it the
-> name and it used it for generating the actual contents. The fact that
-> some versions then screw that up and re-write the tag-name to
-> something randomly matching that isn't a tag was just a bug.
-
-I'm confused.  The default argument is HEAD: what does it know about tag
-names?
-
-        git request-pull master korg
-
-The bug is that if it can't find that commit at the remote end, it
-still generates a valid-looking request (with a warning at the end),
-where it guesses you're talking about the master branch.
-
->> For want of a better solution, I'll now resort to sending pull requests
->> with the anti-social gitolite URL in it, like so:
->
-> That's even worse, fwiw. It means that the pull request address makes
-> no sense to anybody who doesn't have a kernel.org address, and then
-> I'm forced to just edit things by hand instead to not pollute the
-> kernel changelog history with crap.
-
-Since I use a wrapper script now for your pull requests I can use sed to
-unscrew it:
-
-[alias]
-	for-linus = !check-commits && TAGNAME=`git symbolic-ref HEAD | cut -d/ -f3`-for-linus && git tag -f -u D1ADB8F1 $TAGNAME HEAD && git push korg tag $TAGNAME && git request-pull master korg | sed s,gitolite@ra.kernel.org:/pub,git://git.kernel.org/pub, && git log --stat --reverse master..$TAGNAME | emails-from-log | grep -v 'rusty@rustcorp' | grep -v 'stable@kernel.org' | sed 's/^/Cc: /'
-
-> Junio, didn't "git request-pull" get fixed so that it *warns* about
-> missing tagnames/branches, but never actually corrupts the pull
-> request? Or did it just get "fixed" to be a hard error instead of
-> corrupting things? Because this is annoying.
-
-Here: git version 1.7.10.4
-
-Cheers,
-Rusty.
+>> I have something else in mind to properly support this (power
+>> sequences), but this work relies on the GPIO subsystem redesign which will
+>> take some time. The pwm-backlight subdrivers can do the job by the meantime.
+>>
+>> There are a few design points that might need to be discussed:
+>> 1) Link order is important: subdrivers register themselves in their
+>> module_init function, which must be called before pwm-backlight's probe.
+>> This forbids linking subdrivers as separate modules from pwm-backlight.
+>> 2) The subdriver's data is temporarily passed through the backlight
+>> device's driver data. This should not hurt, but maybe there is a better way
+>> to do this.
+>> 3) Subdrivers must add themselves into pwm-backlight's own of_device_id
+>> table. It would be cleaner to not have to list subdrivers into
+>> pwm-backlight's main file, but I cannot think of a way to do otherwise.
+>>
+>> Suggestions for the 3 points listed above are very welcome - in any case,
+>> I hope to make this converge into something mergeable quickly.
+>>
+>> Note that these patches are the last missing block to get a functional
+>> panel on Tegra boards. Using 3.8rc4 and these patches, the internal panel
+>> on Ventana is usable out-of-the-box. Yay.
+>>
+>> Alexandre Courbot (3):
+>>   pwm-backlight: add subdriver mechanism
+>>   tegra: pwm-backlight: add tegra pwm-bl driver
+>>   tegra: ventana: of: add host1x device to DT
+>>
+>>  arch/arm/boot/dts/tegra20-ventana.dts  |  29 +++++-
+>>  arch/arm/configs/tegra_defconfig       |   1 +
+>>  drivers/video/backlight/Kconfig        |   7 ++
+>>  drivers/video/backlight/Makefile       |   4 +
+>>  drivers/video/backlight/pwm_bl.c       |  70 ++++++++++++++-
+>>  drivers/video/backlight/pwm_bl_tegra.c | 159 +++++++++++++++++++++++++++++++++
+>>  include/linux/pwm_backlight.h          |  15 ++++
+>>  7 files changed, 281 insertions(+), 4 deletions(-)
+>>  create mode 100644 drivers/video/backlight/pwm_bl_tegra.c
+>>
