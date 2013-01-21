@@ -1,37 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab3AUS7w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 13:59:52 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:39620 "EHLO e7.ny.us.ibm.com"
+	id S1756224Ab3AUTAa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 14:00:30 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55112 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753657Ab3AUS7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 13:59:51 -0500
-Message-ID: <50FD901C.8000002@linux.vnet.ibm.com>
-Date: Mon, 21 Jan 2013 10:59:40 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751635Ab3AUTA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 14:00:28 -0500
+Date: Mon, 21 Jan 2013 21:00:14 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Felipe Balbi <balbi@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <arm@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 12/15] USB: gadget/freescale: disable non-multiplatform
+ drivers
+Message-ID: <20130121190014.GA11827@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+ <1358788568-11137-13-git-send-email-arnd@arndb.de>
+ <20130121184138.GB10106@arwen.pp.htv.fi>
+ <20130121185716.GA26754@kroah.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Gleb Natapov <gleb@redhat.com>, x86@kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 5/5] fix kvm's use of __pa() on percpu areas
-References: <20130121175244.E5839E06@kernel.stglabs.ibm.com> <20130121175250.1AAC7981@kernel.stglabs.ibm.com> <08cba1bf-6476-4fad-8d29-e380ec7127ba@email.android.com>
-In-Reply-To: <08cba1bf-6476-4fad-8d29-e380ec7127ba@email.android.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012118-5806-0000-0000-00001E8B7448
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
+Content-Disposition: inline
+In-Reply-To: <20130121185716.GA26754@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 10:38 AM, H. Peter Anvin wrote:
-> Final question: are any of these done in frequent paths?  (I believe no, but...)
+--0F1p//8PRICkK4MW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Nope.  All of the places that it gets used here are in
-initialization-time paths.  The two we have here are when kvm and the
-host are setting up a new vcpu and when the kvmclock clocksource is
-being registered.  A CPU getting hotplugged is the only thing that might
-even have these get called more than at boot.
+On Mon, Jan 21, 2013 at 10:57:16AM -0800, Greg Kroah-Hartman wrote:
+> On Mon, Jan 21, 2013 at 08:41:38PM +0200, Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > On Mon, Jan 21, 2013 at 05:16:05PM +0000, Arnd Bergmann wrote:
+> > > Both the fsl_mxc gadget and the imx_udc gadget drivers fail to build
+> > > without the mach/hardware.h file that is not available when building
+> > > for multiplatform. Let's disable these drivers for v3.8 in combination
+> > > with CONFIG_ARCH_MULTIPLATFORM, and fix them properly in v3.9 unless
+> > > someone has an better solution.
+> > >=20
+> > > Without this patch, building allyesconfig results in:
+> > >=20
+> > > drivers/usb/gadget/fsl_mxc_udc.c:21:27: fatal error: mach/hardware.h:=
+ No such file or directory
+> > >=20
+> > > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > > Cc: Felipe Balbi <balbi@ti.com>
+> > > Cc: Shawn Guo <shawn.guo@linaro.org>
+> > > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > Cc: linux-usb@vger.kernel.org
+> >=20
+> > NAK, I prefer to see a real fix for the problem (which in fact is
+> > already in my fixes branch).
+>=20
+> I'll pull that branch now, sorry for the delay.
 
+no problem ;-)
+
+--=20
+balbi
+
+--0F1p//8PRICkK4MW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ/ZA9AAoJEIaOsuA1yqRE8KgP/iGgsJ+iFWr2GKXvZVgNQMP2
+3O8SHpQs/2niXM+udVITymVLbqGpWc2x9fvh1cOqhZWVCF/X3dSokSNAHgV4MfbQ
+7z9gjGOAmXA0LLNVypUaCfZBNE6JLu0tUpXdtBgoEj8nin8fwYslFRSraymL8TxW
+ArfJimECtTe+zI+hpnjyUc+KlxY/f3HwzsjWFvi8rD88Ds8SFq6zv0hIHPLFbQRV
+crxaZVCX/IQvjlu/LHb/A46vxNtNUY13Hu0FSXEUX+9/HMQSF0WZtynerCmIxPiU
+xGgK5rGSwnZb85hjt6pGPYT/K4QrSmNoHUpidp2iBG93cLNp3WHLI9yOWYbDaigM
+EQquDi0ckUY5QvXufcTM23vKSkuWAanQFG589HgFWSbcmj/s4f+4E/fjIE4Fu+dd
+dVdVsT4ECf4vFIAgvb+tqMujuqOR/bglNvSDtOra3N4OYX4M4FQF13juT57hQliK
+PlBO68BNIe0j/I/dHn5UYnfzuNY81PfksiXIVDlOi2AF84l96xaWO/zC01dZaDQO
+SKmnbVrDnhnBewOpiXO6qqiRw9c2OnSJAnfkgfQzYuuPGX40xL4fcp3ViKbAM2Pn
+MqBCB8MZehwX8fhXLYl/nie4MA8u45cgkcX/s/2KDZSWj2k4NctYU56mPkEm360x
+NsaRa1a65yvZLJraJIuu
+=ZhvT
+-----END PGP SIGNATURE-----
+
+--0F1p//8PRICkK4MW--
