@@ -1,171 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab3AURou (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:44:50 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2362 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab3AURos (ORCPT
+	id S1755265Ab3AURqj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:46:39 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45144 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516Ab3AURqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:44:48 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 21 Jan 2013 09:44:28 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] ARM: tegra: DTS: harmony: enable keyboard
-Date: Mon, 21 Jan 2013 23:14:05 +0530
-Message-ID: <1358790245-21724-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Mon, 21 Jan 2013 12:46:37 -0500
+Message-ID: <50FD7EF9.1010205@wwwdotorg.org>
+Date: Mon, 21 Jan 2013 10:46:33 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Alexandre Courbot <acourbot@nvidia.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Mark Zhang <markz@nvidia.com>,
+        gnurou@gmail.com
+Subject: Re: [PATCH 2/3] tegra: pwm-backlight: add tegra pwm-bl driver
+References: <1358591420-7790-1-git-send-email-acourbot@nvidia.com> <1358591420-7790-3-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1358591420-7790-3-git-send-email-acourbot@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable Tegra based keyboard interfacing for keys and provide
-all key mapping through DTS file.
+On 01/19/2013 03:30 AM, Alexandre Courbot wrote:
+> Add a PWM-backlight subdriver for Tegra boards, with support for
+> Ventana.
+> 
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  arch/arm/boot/dts/tegra20-ventana.dts  |  18 +++-
+>  arch/arm/configs/tegra_defconfig       |   1 +
+>  drivers/video/backlight/Kconfig        |   7 ++
+>  drivers/video/backlight/pwm_bl.c       |   3 +
+>  drivers/video/backlight/pwm_bl_tegra.c | 159 +++++++++++++++++++++++++++++++++
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Stephen,
-Request you to give a try on this patch? The patch is generated based on seaboard
-patch and downstream key mapping. I am expecting that it should work.
-Sorry for troubling you again.
-If this works then we are completely done with the KBC.
+This should be at least 3 separate patches: (1) Driver code (2) Ventana
+.dts file (3) Tegra defconfig.
 
- arch/arm/boot/dts/tegra20-harmony.dts |  117 +++++++++++++++++++++++++++++++++
- 1 files changed, 117 insertions(+), 0 deletions(-)
+> diff --git a/arch/arm/boot/dts/tegra20-ventana.dts b/arch/arm/boot/dts/tegra20-ventana.dts
 
-diff --git a/arch/arm/boot/dts/tegra20-harmony.dts b/arch/arm/boot/dts/tegra20-harmony.dts
-index b506de9..54295e3 100644
---- a/arch/arm/boot/dts/tegra20-harmony.dts
-+++ b/arch/arm/boot/dts/tegra20-harmony.dts
-@@ -448,6 +448,123 @@
- 		bus-width = <8>;
- 	};
- 
-+	kbc {
-+		status = "okay";
-+		nvidia,debounce-delay-ms = <2>;
-+		nvidia,repeat-delay-ms = <160>;
-+		nvidia,kbc-row-pins = <0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15>;
-+		nvidia,kbc-col-pins = <16 17 18 19 20 21 22 23>;
-+		linux,keymap = <0x00020011	/* KEY_W */
-+				0x0003001F	/* KEY_S */
-+				0x0004001E	/* KEY_A */
-+				0x0005002C	/* KEY_Z */
-+				0x000701D0	/* KEY_FN */
-+				0x0107008B	/* KEY_MENU */
-+				0x02060038	/* KEY_LEFTALT */
-+				0x02070064	/* KEY_RIGHTALT */
-+				0x03000006	/* KEY_5 */
-+				0x03010005	/* KEY_4 */
-+				0x03020013	/* KEY_R */
-+				0x03030012	/* KEY_E */
-+				0x03040021	/* KEY_F */
-+				0x03050020	/* KEY_D */
-+				0x0306002D	/* KEY_X */
-+				0x04000008	/* KEY_7 */
-+				0x04010007	/* KEY_6 */
-+				0x04020014	/* KEY_T */
-+				0x04030023	/* KEY_H */
-+				0x04040022	/* KEY_G */
-+				0x0405002F	/* KEY_V */
-+				0x0406002E	/* KEY_C */
-+				0x04070039	/* KEY_SPACE */
-+				0x0500000A	/* KEY_9 */
-+				0x05010009	/* KEY_8 */
-+				0x05020016	/* KEY_U */
-+				0x05030015	/* KEY_Y */
-+				0x05040024	/* KEY_J */
-+				0x05050031	/* KEY_N */
-+				0x05060030	/* KEY_B */
-+				0x0507002B	/* KEY_BACKSLASH */
-+				0x0600000C	/* KEY_MINUS */
-+				0x0601000B	/* KEY_0 */
-+				0x06020018	/* KEY_O */
-+				0x06030017	/* KEY_I */
-+				0x06040026	/* KEY_L */
-+				0x06050025	/* KEY_K */
-+				0x06060033	/* KEY_COMMA */
-+				0x06070032	/* KEY_M */
-+				0x0701000D	/* KEY_EQUAL */
-+				0x0702001B	/* KEY_RIGHTBRACE */
-+				0x0703001C	/* KEY_ENTER */
-+				0x0707008B	/* KEY_MENU */
-+				0x0804002A	/* KEY_LEFTSHIFT */
-+				0x08050036	/* KEY_RIGHTSHIFT */
-+				0x0905001D	/* KEY_LEFTCTRL */
-+				0x09070061	/* KEY_RIGHTCTRL */
-+				0x0B00001A	/* KEY_LEFTBRACE */
-+				0x0B010019	/* KEY_P */
-+				0x0B020028	/* KEY_APOSTROPHE */
-+				0x0B030027	/* KEY_SEMICOLON */
-+				0x0B040035	/* KEY_SLASH */
-+				0x0B050034	/* KEY_DOT */
-+				0x0C000044	/* KEY_F10 */
-+				0x0C010043	/* KEY_F9 */
-+				0x0C02000E	/* KEY_BACKSPACE */
-+				0x0C030004	/* KEY_3 */
-+				0x0C040003	/* KEY_2 */
-+				0x0C050067	/* KEY_UP */
-+				0x0C0600D2	/* KEY_PRINT */
-+				0x0C070077	/* KEY_PAUSE */
-+				0x0D00006E	/* KEY_INSERT */
-+				0x0D01006F	/* KEY_DELETE */
-+				0x0D030068	/* KEY_PAGEUP */
-+				0x0D04006D	/* KEY_PAGEDOWN */
-+				0x0D05006A	/* KEY_RIGHT */
-+				0x0D06006C	/* KEY_DOWN */
-+				0x0D070069	/* KEY_LEFT */
-+				0x0E000057	/* KEY_F11 */
-+				0x0E010058	/* KEY_F12 */
-+				0x0E020042	/* KEY_F8 */
-+				0x0E030010	/* KEY_Q */
-+				0x0E04003E	/* KEY_F4 */
-+				0x0E05003D	/* KEY_F3 */
-+				0x0E060002	/* KEY_1 */
-+				0x0E070041	/* KEY_F7 */
-+				0x0F000001	/* KEY_ESC */
-+				0x0F010029	/* KEY_GRAVE */
-+				0x0F02003F	/* KEY_F5 */
-+				0x0F03000F	/* KEY_TAB */
-+				0x0F04003B	/* KEY_F1 */
-+				0x0F05003C	/* KEY_F2 */
-+				0x0F06003A	/* KEY_CAPSLOCK */
-+				0x0F070040	/* KEY_F6 */
-+				0x14000047	/* KEY_KP7 */
-+				0x15000049	/* KEY_KP9 */
-+				0x15010048	/* KEY_KP8 */
-+				0x1502004B	/* KEY_KP4 */
-+				0x1504004F	/* KEY_KP1 */
-+				0x1601004E	/* KEY_KPSLASH */
-+				0x1602004D	/* KEY_KP6 */
-+				0x1603004C	/* KEY_KP5 */
-+				0x16040051	/* KEY_KP3 */
-+				0x16050050	/* KEY_KP2 */
-+				0x16070052	/* KEY_KP0 */
-+				0x1B010037	/* KEY_KPASTERISK */
-+				0x1B03004A	/* KEY_KPMINUS */
-+				0x1B04004E	/* KEY_KPPLUS */
-+				0x1B050053	/* KEY_KPDOT */
-+				0x1C050073	/* KEY_VOLUMEUP */
-+				0x1D030066	/* KEY_HOME */
-+				0x1D04006B	/* KEY_END */
-+				0x1D0500E1	/* KEY_BRIGHTNESSUP */
-+				0x1D060072	/* KEY_VOLUMEDOWN */
-+				0x1D0700E0	/* KEY_BRIGHTNESSDOWN */
-+				0x1E000045	/* KEY_NUMLOCK */
-+				0x1E010046	/* KEY_SCROLLLOCK */
-+				0x1E020071	/* KEY_MUTE */
-+				0x1F0400D6>;	/* KEY_QUESTION */
-+	};
-+
- 	regulators {
- 		compatible = "simple-bus";
- 		#address-cells = <1>;
--- 
-1.7.1.1
+> +	backlight {
+> +		compatible = "pwm-backlight-ventana";
 
+If this is Ventana-specific, this should have a vendor prefix; "nvidia,"
+would be appropriate.
+
+But, why is this Ventana-specific; surely it's at most panel-specific,
+or perhaps even generic across any/most LCD panels?
+
+There needs to be binding documentation.
+
+> +		brightness-levels = <0 16 32 48 64 80 96 112 128 144 160 176 192 208 224 240 255>;
+> +		default-brightness-level = <12>;
+> +
+> +		pwms = <&pwm 2 5000000>;
+> +		pwm-names = "backlight";
+> +
+> +		power-supply = <&vdd_bl_reg>;
+
+"power" doesn't seem like a good regulator name; power to what? Is this
+for the backlight, since I see there's a panel-supply below?
+
+> +		panel-supply = <&vdd_pnl_reg>;
+
+> +		bl-gpio = <&gpio 28 0>;
+> +		bl-panel = <&gpio 10 0>;
+
+GPIO names usually have "gpios" in their name, so I assume those should
+be bl-enable-gpios, panel-enable-gpios?
+
+> diff --git a/drivers/video/backlight/pwm_bl_tegra.c b/drivers/video/backlight/pwm_bl_tegra.c
+
+> +static void exit_ventana(struct device *dev)
+> +{
+> +	struct ventana_bl_data *data = pwm_backlight_get_subdriver_data(dev);
+> +
+> +	devm_gpio_free(dev, data->panel_gpio);
+> +	devm_gpio_free(dev, data->bl_gpio);
+> +	devm_regulator_put(data->vdd_panel);
+> +	devm_regulator_put(data->vdd_power);
+> +	devm_kfree(dev, data);
+> +}
+
+There shouldn't be a need to explicitly free devm-allocated objects in
+almost all cases; that's the whole point of the devm APIs.
+
+> +static struct pwm_backlight_subdriver pwm_backlight_ventana_subdriver = {
+> +	.name = "pwm-backlight-ventana",
+> +	.init = init_ventana,
+> +	.exit = exit_ventana,
+> +	.notify = notify_ventana,
+> +	.notify_after = notify_after_ventana,
+> +};
+
+It seems like all of that code should be completely generic.
+
+> +static int __init pwm_backlight_tegra_init(void)
+> +{
+> +	pwm_backlight_add_subdriver(&pwm_backlight_ventana_subdriver);
+> +	return 0;
+> +}
+> +
+> +static void __exit pwm_backlight_tegra_exit(void)
+> +{
+> +	pwm_backlight_remove_subdriver(&pwm_backlight_ventana_subdriver);
+> +}
+> +
+> +module_init(pwm_backlight_tegra_init);
+> +module_exit(pwm_backlight_tegra_exit);
+
+Rather than invent some new registration mechanism, if we need
+board-/panel-/...-specific drivers, it'd be better to make each of those
+specific drivers a full platform device in an of itself (i.e. regular
+Linux platform device/driver, have its own probe(), etc.), and have
+those specific drivers call into the base PWM backlight code, treating
+it like a utility API.
+
+> +MODULE_DESCRIPTION("Backlight Driver for Tegra boards");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:pwm-tegra-backlight");
+> +
+> +
+
+Some extra blank lines there.
