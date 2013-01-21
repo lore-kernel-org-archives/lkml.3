@@ -1,125 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab3AUHtj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 02:49:39 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:55859 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab3AUHtg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 02:49:36 -0500
-Date: Mon, 21 Jan 2013 08:49:28 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Mark Zhang <markz@nvidia.com>, gnurou@gmail.com
-Subject: Re: [PATCH 0/3] pwm-backlight: add subdrivers & Tegra support
-Message-ID: <20130121074928.GE15508@avionic-0098.adnet.avionic-design.de>
-References: <1358591420-7790-1-git-send-email-acourbot@nvidia.com>
+	id S1752419Ab3AUH7H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 02:59:07 -0500
+Received: from mga14.intel.com ([143.182.124.37]:45077 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752263Ab3AUH7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 02:59:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,505,1355126400"; 
+   d="scan'208";a="193332272"
+Date: Mon, 21 Jan 2013 15:59:00 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/5] x86: Add cpu capability flag
+ X86_FEATURE_TSC_S3_NOTSTOP
+Message-ID: <20130121075900.GA509@feng-snb>
+References: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
+ <1358750325-21217-2-git-send-email-feng.tang@intel.com>
+ <20130121072729.GB11915@gchen.bj.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="X3gaHHMYHkYqP6yf"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1358591420-7790-1-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <20130121072729.GB11915@gchen.bj.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:JQLXmxtOR0pEbJQHxrHtYAwwikyuF0W5SUDdU7+qt2C
- XbJ9oI4BLWlhbdDjl+q1DW7avfjOS/hIUbmMLV6V5eSObu7KoQ
- GIFOtjpiNiXavHSPlFdBRM7ZB/vTQByS+1A12Xk3YfFO3P/QOq
- vZlSCiXaLVR3pgu4uGf1tbs/adRd6xRABentoFKW1Bpf51TX8B
- 8ttZrp62PilC4kO0Xe818VfDNwBcHjWr6SlG6lQWpXfS22Csd6
- 9z1/sVN9nUxO4+Ssqucr+Rdalr1joYwmNFtFHFJqTcNY59nb9+
- yjU+dRgFFJiyJ58xTowsAR6Pl25oHSgs/GNli8/cmWWIWJW5Mf
- f8c8UVnXjmQoJjFBkw2viRmhf5qjDOtDOje8g1qkUEgbPN/+MN
- WyYHhhnbeHOyIcrS/rM6bR03Okx5E8PspJHh45CU0/hg0PQAlt
- N125O
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 21, 2013 at 02:27:29AM -0500, Chen Gong wrote:
+> On Mon, Jan 21, 2013 at 02:38:41PM +0800, Feng Tang wrote:
+> > Date:	Mon, 21 Jan 2013 14:38:41 +0800
+> > From: Feng Tang <feng.tang@intel.com>
+> > To: Thomas Gleixner <tglx@linutronix.de>, John Stultz
+> >  <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin"
+> >  <hpa@linux.intel.com>, x86@kernel.org, Len Brown <lenb@kernel.org>,
+> >  "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+> >  linux-kernel@vger.kernel.org
+> > Cc: Feng Tang <feng.tang@intel.com>
+> > Subject: [RFC PATCH 1/5] x86: Add cpu capability flag
+> >  X86_FEATURE_TSC_S3_NOTSTOP
+> > X-Mailer: git-send-email 1.7.9.5
+> > 
+> > On some new Intel Atom processors (Penwell and Cloverview), there is
+> > a feature that the TSC won't stop S3, say the TSC value won't be
+> > reset to 0 after resume. This feature makes TSC a more reliable
+> > clocksource and could benefit the timekeeping code during system
+> > suspend/resume cycle, so add a flag for it.
+> > 
+> > Signed-off-by: Feng Tang <feng.tang@intel.com>
+> > ---
+> >  arch/x86/include/asm/cpufeature.h |    1 +
+> >  arch/x86/kernel/cpu/intel.c       |   12 ++++++++++++
+> >  2 files changed, 13 insertions(+)
+> > 
+> > diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+> > index 2d9075e..f7e1eac 100644
+> > --- a/arch/x86/include/asm/cpufeature.h
+> > +++ b/arch/x86/include/asm/cpufeature.h
+> > @@ -100,6 +100,7 @@
+> >  #define X86_FEATURE_AMD_DCM     (3*32+27) /* multi-node processor */
+> >  #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
+> >  #define X86_FEATURE_EAGER_FPU	(3*32+29) /* "eagerfpu" Non lazy FPU restore */
+> > +#define X86_FEATURE_TSC_S3_NOTSTOP (3*32+30) /* TSC doesn't stop in S3 state */
+> >  
+> We have an existed "TSC always running in C3+" feature and name it as
+> X86_FEATURE_NONSTOP_TSC, so how about naming it with the same style,
+> like X86_FEATURE_NONSTOP_TSC_S3?
 
---X3gaHHMYHkYqP6yf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yeah, actually I used a name X86_FEATURE_xxx_TSC, then I did a grep,
+and found there is no unified name convention for TSC, so I chose such
+a name.
 
-On Sat, Jan 19, 2013 at 07:30:17PM +0900, Alexandre Courbot wrote:
-> This series introduces a way to use pwm-backlight hooks with platforms
-> that use the device tree through a subdriver system. It also adds support
-> for the Tegra-based Ventana board, adding the last missing block to enable
-> its panel. Support for other Tegra board can thus be easily added.
->=20
-> I have something else in mind to properly support this (power
-> sequences), but this work relies on the GPIO subsystem redesign which will
-> take some time. The pwm-backlight subdrivers can do the job by the meanti=
-me.
->=20
-> There are a few design points that might need to be discussed:
-> 1) Link order is important: subdrivers register themselves in their
-> module_init function, which must be called before pwm-backlight's probe.
-> This forbids linking subdrivers as separate modules from pwm-backlight.
-> 2) The subdriver's data is temporarily passed through the backlight
-> device's driver data. This should not hurt, but maybe there is a better w=
-ay
-> to do this.
-> 3) Subdrivers must add themselves into pwm-backlight's own of_device_id
-> table. It would be cleaner to not have to list subdrivers into
-> pwm-backlight's main file, but I cannot think of a way to do otherwise.
->=20
-> Suggestions for the 3 points listed above are very welcome - in any case,
-> I hope to make this converge into something mergeable quickly.
->=20
-> Note that these patches are the last missing block to get a functional
-> panel on Tegra boards. Using 3.8rc4 and these patches, the internal panel
-> on Ventana is usable out-of-the-box. Yay.
+--------------
+#grep _TSC arch/x86/include/asm/cpufeature.h
+#define X86_FEATURE_TSC         (0*32+ 4) /* Time Stamp Counter */
+#define X86_FEATURE_CONSTANT_TSC (3*32+ 8) /* TSC ticks at a constant rate */
+#define X86_FEATURE_TSC_RELIABLE (3*32+23) /* TSC is known to be reliable */
+#define X86_FEATURE_NONSTOP_TSC (3*32+24) /* TSC does not stop in C states */
+#define X86_FEATURE_TSC_S3_NOTSTOP (3*32+30) /* TSC doesn't stop in S3 state */
+#define X86_FEATURE_TSC_DEADLINE_TIMER  (4*32+24) /* Tsc deadline timer */
+#define X86_FEATURE_TSCRATEMSR  (8*32+ 9) /* "tsc_scale" AMD TSC scaling support */
+#define X86_FEATURE_TSC_ADJUST  (9*32+ 1) /* TSC adjustment MSR 0x3b */
 
-Hi Alexandre,
+Thanks,
+Feng
 
-It's great to see you pick this up. I've been meaning to do this myself
-but I just can't find the time right now. Generally I think the approach
-you've chosen looks good, but I don't think doing it in pwm-backlight is
-the right way.
 
-Eventually this should all be covered by the CDF, but since that's not
-ready yet we want something ad-hoc to get the hardware supported. As
-such I would like to see this go into some sort of minimalistic, Tegra-
-specific display/panel framework. I'd prefer to keep the pwm-backlight
-driver as simple and generic as possible, that is, a driver for a PWM-
-controlled backlight.
 
-Another advantage of moving this into a sort of display framework is
-that it may help in defining the requirements for a CDF and that moving
-the code to the CDF should be easier once it is done.
 
-Last but not least, abstracting away the panel allows other things such
-as physical dimensions and display modes to be properly encapsulated. I
-think that power-on/off timing requirements for panels also belong to
-this set since they are usually specific to a given panel.
 
-Maybe adding these drivers to tegra-drm for now would be a good option.
-That way the corresponding glue can be added without a need for inter-
-tree dependencies.
 
-Thierry
-
---X3gaHHMYHkYqP6yf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ/PMIAAoJEN0jrNd/PrOhSUsP/2Ln9bxzgHXpCRq3ULOIj2H2
-c3rliK7PvQDW2fHWkrUlwlsTc5jA2LNE+Y7XCBNi45cv6r11DKpDgSz6OPSq+GML
-5bFT0ZO4+et0fc0+exOfPjN/crHMovpnGk5FhM8gAKGLdyDWpDSFFuM+DEN5eYuf
-8n5jypiuYDu/InMzF4PlGqt7Y8XweBoo64vpO9W1RQ9oFRoAv8gq2/zNFydett43
-If6nWjOCNbSv3i6L7M7SeTU6Sqw7ZsMcahPYTYjvl3qgevAqNeuoOffkCFaq7HG7
-Q30t5efs3g0O/c2OwwdoszNEcLaKijDSQr6PgZaw2YIZwhkvMbDlzO8iCD75pZBA
-CxYuSg+JAP+NjlVm5Lzz5QGXTneh/ZAIvTJokMBkcOvZkQyXwLofDVAewmyAR+Rf
-zlq2hWDQmtLXo3ByFzkF9hLdKvTGiYYGDRxGkG030bi+S06iONft9C7KUibpBFVb
-yaosKGwgEWN7arXV/KC/r9DnW8BvRw9mCeiN2hPX2QHAggkmjYSm8gdkxTF9W2P6
-rLdtqc/5iC2CjhWE5o2MQ17KEi9pWDjBlyWPdXHdVj1sPf/hJi1oOikej/Horbhg
-3HaJiSRXT2WgVnvnVC1ROBUxdMxg/KRkvD79/qgysVGAyjN0/fAHpZ00koUIAboD
-MscwCxL1IIDZnc/ORv61
-=hOoR
------END PGP SIGNATURE-----
-
---X3gaHHMYHkYqP6yf--
