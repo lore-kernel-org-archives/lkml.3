@@ -1,93 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab3AUViB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 16:38:01 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:36608 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab3AUViA convert rfc822-to-8bit (ORCPT
+	id S1752638Ab3AUVir (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 16:38:47 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:52121 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848Ab3AUVip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 16:38:00 -0500
-Date: Mon, 21 Jan 2013 13:38:23 -0800
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@ghostprotocols.net, Anton Blanchard <anton@au1.ibm.com>,
-        paulus@samba.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH] perf: Fix compile warnings in tests/attr.c
-Message-ID: <20130121213823.GA4774@us.ibm.com>
-References: <20130119013052.GA24693@us.ibm.com>
- <20130121135906.GD1995@krava.brq.redhat.com>
+	Mon, 21 Jan 2013 16:38:45 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 13/15] USB: ehci: make orion and mxc bus glues coexist
+Date: Mon, 21 Jan 2013 21:37:42 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Felipe Balbi <balbi@ti.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org,
+        Manjunath Goudar <manjunath.goudar@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+References: <Pine.LNX.4.44L0.1301211459550.24224-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1301211459550.24224-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20130121135906.GD1995@krava.brq.redhat.com>
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012121-7408-0000-0000-00000C15DCD5
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301212137.42611.arnd@arndb.de>
+X-Provags-ID: V02:K0:4bHtVMBtei3WYeDsQaOOzxLKai+yearYNiyoWuxKWR2
+ 9XqHosk5t7sFgvE8t+c1VVmOg9drsfDTcQE3Kopj/7H9dqjPxU
+ 9zS+3Ehz5WvgSRaiAyCh1GmZOB1j8mDDBMhNhyDjOlp/4aufDw
+ x9l6u+vUDo3imQr97oyCn08LQtEHCWG6LwzGbNCETddJeZSEvH
+ wHvp4MASvA8s0/jyg38CjzklDdWRd0v4dajRn+KDROM7WHrIsz
+ pPbbrY4suRJl9K7nNO4/VcEKPxuViPtIkb0dtrMUR1lxYn3DNa
+ HJRUhdSASDghMS3XADB90rLSGoDeAOxzLZ4C03vsKC6Y+LDftw
+ 1bU2z7jGUAzZ+7RdiNXs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Olsa [jolsa@redhat.com] wrote:
-| On Fri, Jan 18, 2013 at 05:30:52PM -0800, Sukadev Bhattiprolu wrote:
-| > From 4d266e5040c33103f5d226b0d16b89f8ef79e3ad Mon Sep 17 00:00:00 2001
-| > From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-| > Date: Fri, 18 Jan 2013 11:14:28 -0800
-| > Subject: [PATCH] perf: Fix compile warnings in tests/attr.c
-| > 
-| > Replace '%llu' in printf()s with 'PRIu64' in 'tools/perf/tests/attr.c'
-| > to fix compile warnings (which become errors due to -Werror).
-| 
-| i386 and x86_64 compiles fine for me with gcc versions 4.6.3-2 and 4.7.2-2
+On Monday 21 January 2013, Alan Stern wrote:
+> On Mon, 21 Jan 2013, Felipe Balbi wrote:
+> 
+> > On Mon, Jan 21, 2013 at 05:16:06PM +0000, Arnd Bergmann wrote:
+> > > In linux-3.8-rc1 it became possible to build the imx and
+> > > mvebu platforms together in a single kernel, which clashes
+> > > in the ehci driver.
+> > > 
+> > > Manjunath Goudar is already working on a patch to convert
+> > > both the imx and the mvebu glue drivers (along with all
+> > > the other ARM specific ones) to the new probing method,
+> > > but that will be too late to fix v3.8. This patch instead
+> > > adds yet another hack like the existing ones to allow
+> > > the ehci driver to load both back-ends.
+> 
+> Pardon me for being confused.  Is this about imx and mvebu (as 
+> mentioned here) or about orion and mxc (as described in the patch 
+> title, the error messages below, and the patch itself)?
 
-But is broken on Power for 64bit :-( I am trying to fix that and thought
-that use of format specifiers like 'PRIu64' was the way to go.
+mxc is the old name for imx: the platform got removed, but some
+of the drivers still carry the old name. Similarly, orion was
+used before as the name for the superset of various Marvell platforms,
+and mvebu is the superset of that and some of the newer ones.
 
-| 
-| with your patch for x86_64 I'm getting following warnings/errors:
+Sorry for the confusion.
 
-| 
-|     CC tests/attr.o
-| tests/attr.c: In function ‘store_event’:
-| tests/attr.c:69:4: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 6 has type ‘__u64’ [-Werror=format]
+> > > Without this patch, building allyesconfig results in:
+> > > 
+> > > drivers/usb/host/ehci-hcd.c:1285:0: error: "PLATFORM_DRIVER" redefined
+> > > drivers/usb/host/ehci-hcd.c:1255:0: note: this is the location of the previous definition
+> > > In file included from drivers/usb/host/ehci-hcd.c:1254:0:
+> > > drivers/usb/host/ehci-mxc.c:280:31: warning: 'ehci_mxc_driver' defined but not used
+> 
+> Was the point here to fix the build error or to allow the two drivers
+> to coexist?  The first would be eaiser than the second.
 
-Here is what I see on an x86_64 box, RHEL6.2 box:
+Fixing the build error is probably the more important part here, but
+we also really want this to work, since people are migrating towards
+multiplatform kernels now, and mvebu/orion and imx/mxc are two of the
+more important ones.
 
-	$ rpm -qf /usr/include/linux/types.h
-	kernel-headers-2.6.32-220.4.2.el6.x86_64
+> > NAK, should be converted to the new usage of ehci library driver. Alan
+> > Stern already implemented for a few drivers, help is very welcome.
+> 
+> Arnd, please take a look at
+> 
+>         http://marc.info/?l=linux-usb&amp;m=135843716515529&amp;w=2
+> 
+> I can't test it easily, not being set up for cross compilation.  I'm 
+> waiting to hear from anybody whether it works before submitting it.
+> (There's also a report of memory corruption involving a similar patch 
+> for ehci-omap; it hasn't been tracked down yet.)
 
-	$ cat foo.c
-	#include <linux/types.h>
+Your patch looks good to me, but it also seems to do some other
+changes that are not required to fix the problem but could wait
+for 3.9 instead. You definitely have my Ack if you are willing
+to take it for 3.8 though.
 
-	$ cc -Werror -Wall foo.c
-	In file included from /usr/include/asm-generic/types.h:7,
-			 from /usr/include/asm/types.h:6,
-			 from /usr/include/linux/types.h:4,
-			 from foo5.c:1:
-	/usr/include/asm-generic/int-ll64.h:31:2: error: #error __u64 defined as unsigned long long
+Shawn or Sascha should be able to test it.
 
-where the #error is my debug message.
-
-<snip>
-
-| make: *** [tests/attr.o] Error 1
-| 
-| i386 compiles fine
-
-__u64 is 'unsigned long long' on x86 and PRIu64 is 'llu' which is fine.
-
-__u64 is 'unsigned long' on Power and PRIu64 is 'lu' which is again fine.
-
-But __u64 is 'unsigned long long' on x86_64, but PRIu64 is '%lu' bc __WORDSIZE
-is 64.
-
-On x86_64, shouldn't __u64, be defined as 'unsigned long' rather than
-'unsigned long long' - ie include 'int-l64.h' rather than 'int-ll64.h' ?
-
-BTW, does 'perf' with my patch compile, (with warnings) for you on x86_64
-with 'WERROR=0 make' ?
-
-Sukadev
-
+	Arnd
