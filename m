@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab3AUDqR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 22:46:17 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:48731 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab3AUDqP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 22:46:15 -0500
-Date: Mon, 21 Jan 2013 14:46:04 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: linux-next: manual merge of the tty tree with Linus' tree
-Message-Id: <20130121144604.3c2f94e93ce6252aa43d3d9e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_Jan_2013_14_46_04_+1100_Sr3YSJBcdFakWMeY"
+	id S1752737Ab3AUDtY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 22:49:24 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:55853 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752649Ab3AUDtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 22:49:23 -0500
+Date: Mon, 21 Jan 2013 03:49:20 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1301210346500.6221@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1632967662-1358740160=:6221"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_Jan_2013_14_46_04_+1100_Sr3YSJBcdFakWMeY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Hi Greg,
+--29444707-1632967662-1358740160=:6221
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-Today's linux-next merge of the tty tree got a conflict in
-drivers/tty/serial/vt8500_serial.c between commit a6dd114e16cb ("tty:
-serial: vt8500: fix return value check in vt8500_serial_probe()") from
-Linus' tree and commit 12faa35ae5cb ("serial: vt8500: UART uses gated
-clock rather than 24Mhz reference") from the tty tree.
 
-I fixed it up (I just used the tty tree version - which included the
-former fix) and can carry the fix as necessary (no action is required).
+Hi Linus,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+A bunch of intel and radeon fixes, along with two fixes to TTM code.
 
---Signature=_Mon__21_Jan_2013_14_46_04_+1100_Sr3YSJBcdFakWMeY
-Content-Type: application/pgp-signature
+The correct fix for the Intel ironlake failure is in this, and should make 
+things more stable, along with some misc radeon fixes.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Dave.
 
-iQIcBAEBCAAGBQJQ/Ln8AAoJEECxmPOUX5FE6sMP/0tiEJPx0XAAE1rfizLbYl5k
-5rZVHMvunt6LK3kwnaHpY2PSaje9Pq2zvOtBHRTnGU3IQvbw1Xg7FF8GsLYYHj8t
-LuFz1mVhRTL9RgMcu7E9qV5yB1GyudlIAbBaWkE7YjquTSqELrEWS2Q7fWNvPvkd
-RLyy8S4ot3umAZF4VaQcPn1CMdaZ2Q9lZrMTRKqsYhK8av6HRjQahyMsTl6AeJVt
-OY8lDP5PPjjop7IgNyUHhW7jdA2zDzMc0lpT+3o6h42+cQhy0F1LD/xL3tZC8thV
-m77Dqnv3BjxJurmFS36+EwzkZ78l95AiT5Z3E4wHZUWcpWjG8UHnSBXIfXyHWfY1
-pi5sWhXrwPSNtj/ImdVPxu7pGLfN3ler2rfmxp5FodPvWqQbUXSGG6jRyGuYIadU
-gUegJVGvAzXBhBX1VMd6z8Gd0uu02IGBPlQHv70EaYVfvli2dtn63/Ws5jeYFfCy
-MUbIky/jCuVm72koO+vQK6qB4YW/1D62z1CBnwjNkUq2QTatG5YRKPZL4HMeYu+r
-E4rAdbDeV0XIXyiUwFg1ac1R7BlihjW1XfybHDY2HuoCZU6zck/bpIFitbXoEarI
-dGh4LxqqAQ2henoYB877CGMaCaSZiRTrMO16E0XqkR2O36WMncsNDkdYEZunTAPb
-hHvsUK3hOgq69/PA+sA7
-=1p53
------END PGP SIGNATURE-----
+The following changes since commit 7b4cf994e4c6ba48872bb25253cc393b7fb74c82:
 
---Signature=_Mon__21_Jan_2013_14_46_04_+1100_Sr3YSJBcdFakWMeY--
+  udldrmfb: udl_get_edid: drop unneeded i-- (2013-01-14 08:45:27 +1000)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux.git drm-fixes
+
+for you to fetch changes up to 014b34409fb2015f63663b6cafdf557fdf289628:
+
+  ttm: on move memory failure don't leave a node dangling (2013-01-21 13:45:23 +1000)
+
+----------------------------------------------------------------
+Alex Deucher (2):
+      drm/radeon: clear reset flags if engines are idle
+      Revert "drm/radeon: do not move bo to different placement at each cs"
+
+Chris Wilson (2):
+      drm/i915: Record DERRMR, FORCEWAKE and RING_CTL in error-state
+      drm/i915: Invalidate the relocation presumed_offsets along the slow path
+
+Dave Airlie (4):
+      Merge branch 'drm-fixes-3.8' of git://people.freedesktop.org/~agd5f/linux into drm-next
+      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-next
+      ttm: don't destroy old mm_node on memcpy failure
+      ttm: on move memory failure don't leave a node dangling
+
+Jani Nikula (2):
+      drm/i915/eDP: do not write power sequence registers for ghost eDP
+      drm/i915: fix FORCEWAKE posting reads
+
+Jerome Glisse (1):
+      drm/radeon: improve semaphore debugging on lockup
+
+Marek Ol¨ák (1):
+      drm/radeon: allow FP16 color clear registers on r500
+
+ drivers/gpu/drm/i915/i915_debugfs.c        |  3 ++
+ drivers/gpu/drm/i915/i915_drv.h            |  3 ++
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c | 21 +++++++++++++
+ drivers/gpu/drm/i915/i915_irq.c            | 11 +++++++
+ drivers/gpu/drm/i915/i915_reg.h            |  2 ++
+ drivers/gpu/drm/i915/intel_dp.c            | 47 ++++++++++++++++++++----------
+ drivers/gpu/drm/i915/intel_pm.c            | 17 +++++++----
+ drivers/gpu/drm/radeon/evergreen.c         |  6 ++++
+ drivers/gpu/drm/radeon/ni.c                |  6 ++++
+ drivers/gpu/drm/radeon/r600.c              |  6 ++++
+ drivers/gpu/drm/radeon/radeon.h            |  3 +-
+ drivers/gpu/drm/radeon/radeon_drv.c        |  3 +-
+ drivers/gpu/drm/radeon/radeon_object.c     | 18 +++++++-----
+ drivers/gpu/drm/radeon/radeon_ring.c       |  2 ++
+ drivers/gpu/drm/radeon/radeon_semaphore.c  |  4 +++
+ drivers/gpu/drm/radeon/reg_srcs/rv515      |  2 ++
+ drivers/gpu/drm/radeon/si.c                |  6 ++++
+ drivers/gpu/drm/ttm/ttm_bo.c               |  1 +
+ drivers/gpu/drm/ttm/ttm_bo_util.c          | 11 +++++--
+ 19 files changed, 140 insertions(+), 32 deletions(-)
+--29444707-1632967662-1358740160=:6221--
