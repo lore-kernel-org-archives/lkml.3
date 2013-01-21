@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab3AUAsL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 19:48:11 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:47921 "EHLO hydra.sisk.pl"
+	id S1752762Ab3AUAsK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 19:48:10 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:47927 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752707Ab3AUAsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 19:48:03 -0500
+	id S1752708Ab3AUAsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 19:48:04 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
         Len Brown <lenb@kernel.org>
-Subject: [RFC][Update][PATCH 2/3] sysfs: Functions for adding/removing symlinks to/from attribute groups
-Date: Mon, 21 Jan 2013 01:51:13 +0100
-Message-ID: <2912919.SOcAj4Hg1E@vostro.rjw.lan>
+Subject: [RFC][Update][PATCH 1/3] ACPI / PM: Expose reference count values of ACPI power resources
+Date: Mon, 21 Jan 2013 01:50:23 +0100
+Message-ID: <1472223.8t75QKOqIW@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <2096792.ELJ8WGVaaz@vostro.rjw.lan>
 References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <2096792.ELJ8WGVaaz@vostro.rjw.lan>
@@ -27,169 +27,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-The most convenient way to expose ACPI power resources lists of a
-device is to put symbolic links to sysfs directories representing
-those resources into special attribute groups in the device's sysfs
-directory.  For this purpose, it is necessary to be able to add
-symbolic links to attribute groups.
+Since ACPI power resources are going to be used more extensively on
+new hardware platforms, it becomes necessary for user space (powertop
+in particular) to observe some properties of those resources for
+diagnostics purposes.
 
-For this reason, add sysfs helper functions for adding/removing
-symbolic links to/from attribute groups, sysfs_add_link_to_group()
-and sysfs_remove_link_from_group(), respectively.
+For this reason, export the reference counts of ACPI power resources
+to user space by adding a new reference_count attribute to the sysfs
+directory representing each power resource.  The value read from
+that attribute represents the number of devices using the power
+resource at the given time.  If that value is 0, it meas that the
+power resource is not used and therefore it has been turned off.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- fs/sysfs/group.c      |   42 ++++++++++++++++++++++++++++++++++++++++++
- fs/sysfs/symlink.c    |   46 +++++++++++++++++++++++++++++++++-------------
- include/linux/sysfs.h |    6 ++++++
- 3 files changed, 81 insertions(+), 13 deletions(-)
+ Documentation/ABI/testing/sysfs-devices-reference_count |   13 ++++++++
+ drivers/acpi/power.c                                    |   26 +++++++++++++++-
+ drivers/acpi/scan.c                                     |    3 +
+ include/acpi/acpi_bus.h                                 |    1 
+ 4 files changed, 42 insertions(+), 1 deletion(-)
 
-Index: linux-pm/fs/sysfs/group.c
+Index: linux-pm/include/acpi/acpi_bus.h
 ===================================================================
---- linux-pm.orig/fs/sysfs/group.c
-+++ linux-pm/fs/sysfs/group.c
-@@ -205,6 +205,48 @@ void sysfs_unmerge_group(struct kobject
- }
- EXPORT_SYMBOL_GPL(sysfs_unmerge_group);
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -280,6 +280,7 @@ struct acpi_device {
+ 	struct mutex physical_node_lock;
+ 	DECLARE_BITMAP(physical_node_id_bitmap, ACPI_MAX_PHYSICAL_NODE);
+ 	struct list_head power_dependent;
++	void (*remove)(struct acpi_device *);
+ };
  
-+/**
-+ * sysfs_add_link_to_group - add a symlink to an attribute group.
-+ * @kobj:	The kobject containing the group.
-+ * @group_name:	The name of the group.
-+ * @target:	The target kobject of the symlink to create.
-+ * @link_name:	The name of the symlink to create.
-+ */
-+int sysfs_add_link_to_group(struct kobject *kobj, const char *group_name,
-+			    struct kobject *target, const char *link_name)
-+{
-+	struct sysfs_dirent *dir_sd;
-+	int error = 0;
-+
-+	dir_sd = sysfs_get_dirent(kobj->sd, NULL, group_name);
-+	if (!dir_sd)
-+		return -ENOENT;
-+
-+	error = sysfs_add_link(dir_sd, target, link_name);
-+	sysfs_put(dir_sd);
-+
-+	return error;
-+}
-+EXPORT_SYMBOL_GPL(sysfs_add_link_to_group);
-+
-+/**
-+ * sysfs_remove_link_from_group - remove a symlink from an attribute group.
-+ * @kobj:	The kobject containing the group.
-+ * @group_name:	The name of the group.
-+ * @link_name:	The name of the symlink to remove.
-+ */
-+void sysfs_remove_link_from_group(struct kobject *kobj, const char *group_name,
-+				  const char *link_name)
-+{
-+	struct sysfs_dirent *dir_sd;
-+
-+	dir_sd = sysfs_get_dirent(kobj->sd, NULL, group_name);
-+	if (dir_sd) {
-+		sysfs_hash_and_remove(dir_sd, NULL, link_name);
-+		sysfs_put(dir_sd);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(sysfs_remove_link_from_group);
- 
- EXPORT_SYMBOL_GPL(sysfs_create_group);
- EXPORT_SYMBOL_GPL(sysfs_update_group);
-Index: linux-pm/fs/sysfs/symlink.c
+ static inline void *acpi_driver_data(struct acpi_device *d)
+Index: linux-pm/drivers/acpi/scan.c
 ===================================================================
---- linux-pm.orig/fs/sysfs/symlink.c
-+++ linux-pm/fs/sysfs/symlink.c
-@@ -21,26 +21,17 @@
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -767,6 +767,9 @@ static void acpi_device_unregister(struc
  
- #include "sysfs.h"
+ 	acpi_power_add_remove_device(device, false);
+ 	acpi_device_remove_files(device);
++	if (device->remove)
++		device->remove(device);
++
+ 	device_unregister(&device->dev);
+ 	/*
+ 	 * Drop the reference counts of all power resources the device depends
+Index: linux-pm/drivers/acpi/power.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/power.c
++++ linux-pm/drivers/acpi/power.c
+@@ -87,6 +87,12 @@ static DEFINE_MUTEX(power_resource_list_
+                              Power Resource Management
+    -------------------------------------------------------------------------- */
  
--static int sysfs_do_create_link(struct kobject *kobj, struct kobject *target,
--				const char *name, int warn)
-+static int sysfs_do_create_link_sd(struct sysfs_dirent *parent_sd,
-+				   struct kobject *target,
-+				   const char *name, int warn)
++static inline
++struct acpi_power_resource *to_power_resource(struct acpi_device *device)
++{
++	return container_of(device, struct acpi_power_resource, device);
++}
++
+ static struct acpi_power_resource *acpi_power_get_context(acpi_handle handle)
  {
--	struct sysfs_dirent *parent_sd = NULL;
- 	struct sysfs_dirent *target_sd = NULL;
- 	struct sysfs_dirent *sd = NULL;
- 	struct sysfs_addrm_cxt acxt;
- 	enum kobj_ns_type ns_type;
- 	int error;
+ 	struct acpi_device *device;
+@@ -94,7 +100,7 @@ static struct acpi_power_resource *acpi_
+ 	if (acpi_bus_get_device(handle, &device))
+ 		return NULL;
  
--	BUG_ON(!name);
--
--	if (!kobj)
--		parent_sd = &sysfs_root;
--	else
--		parent_sd = kobj->sd;
--
--	error = -EFAULT;
--	if (!parent_sd)
--		goto out_put;
-+	BUG_ON(!name || !parent_sd);
- 
- 	/* target->sd can go away beneath us but is protected with
- 	 * sysfs_assoc_lock.  Fetch target_sd from it.
-@@ -96,6 +87,35 @@ static int sysfs_do_create_link(struct k
+-	return container_of(device, struct acpi_power_resource, device);
++	return to_power_resource(device);
  }
  
- /**
-+ *	sysfs_add_link - create symlink to a given object.
-+ *	@sd:		directory we're creating the link in.
-+ *	@target:	object we're pointing to.
-+ *	@name:		name of the symlink.
-+ */
-+int sysfs_add_link(struct sysfs_dirent *sd, struct kobject *target,
-+		   const char *name)
-+{
-+	return sysfs_do_create_link_sd(sd, target, name, 1);
+ static int acpi_power_resources_list_add(acpi_handle handle,
+@@ -679,6 +685,21 @@ static void acpi_release_power_resource(
+ 	kfree(resource);
+ }
+ 
++static ssize_t acpi_power_refcount_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf) {
++	struct acpi_power_resource *resource;
++
++	resource = to_power_resource(to_acpi_device(dev));
++	return sprintf(buf, "%u\n", resource->ref_count);
 +}
-+EXPORT_SYMBOL_GPL(sysfs_add_link);
++static DEVICE_ATTR(reference_count, 0444, acpi_power_refcount_show, NULL);
 +
-+static int sysfs_do_create_link(struct kobject *kobj, struct kobject *target,
-+				const char *name, int warn)
++static void acpi_power_sysfs_remove(struct acpi_device *device)
 +{
-+	struct sysfs_dirent *parent_sd = NULL;
-+
-+	if (!kobj)
-+		parent_sd = &sysfs_root;
-+	else
-+		parent_sd = kobj->sd;
-+
-+	if (!parent_sd)
-+		return -EFAULT;
-+
-+	return sysfs_do_create_link_sd(parent_sd, target, name, warn);
++	device_remove_file(&device->dev, &dev_attr_reference_count);
 +}
 +
-+/**
-  *	sysfs_create_link - create symlink between two objects.
-  *	@kobj:	object whose directory we're creating the link in.
-  *	@target:	object we're pointing to.
-Index: linux-pm/include/linux/sysfs.h
+ int acpi_add_power_resource(acpi_handle handle)
+ {
+ 	struct acpi_power_resource *resource;
+@@ -726,6 +747,9 @@ int acpi_add_power_resource(acpi_handle
+ 	if (result)
+ 		goto err;
+ 
++	if (!device_create_file(&device->dev, &dev_attr_reference_count))
++		device->remove = acpi_power_sysfs_remove;
++
+ 	mutex_lock(&power_resource_list_lock);
+ 	list_add(&resource->list_node, &acpi_power_resource_list);
+ 	mutex_unlock(&power_resource_list_lock);
+Index: linux-pm/Documentation/ABI/testing/sysfs-devices-reference_count
 ===================================================================
---- linux-pm.orig/include/linux/sysfs.h
-+++ linux-pm/include/linux/sysfs.h
-@@ -154,6 +154,8 @@ int __must_check sysfs_create_bin_file(s
- void sysfs_remove_bin_file(struct kobject *kobj,
- 			   const struct bin_attribute *attr);
- 
-+int __must_check sysfs_add_link(struct sysfs_dirent *sd, struct kobject *target,
-+				const char *name);
- int __must_check sysfs_create_link(struct kobject *kobj, struct kobject *target,
- 				   const char *name);
- int __must_check sysfs_create_link_nowarn(struct kobject *kobj,
-@@ -181,6 +183,10 @@ int sysfs_merge_group(struct kobject *ko
- 		       const struct attribute_group *grp);
- void sysfs_unmerge_group(struct kobject *kobj,
- 		       const struct attribute_group *grp);
-+int sysfs_add_link_to_group(struct kobject *kobj, const char *group_name,
-+			    struct kobject *target, const char *link_name);
-+void sysfs_remove_link_from_group(struct kobject *kobj, const char *group_name,
-+				  const char *link_name);
- 
- void sysfs_notify(struct kobject *kobj, const char *dir, const char *attr);
- void sysfs_notify_dirent(struct sysfs_dirent *sd);
+--- /dev/null
++++ linux-pm/Documentation/ABI/testing/sysfs-devices-reference_count
+@@ -0,0 +1,13 @@
++What:		/sys/devices/.../reference_count
++Date:		January 2012
++Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++Description:
++		The /sys/devices/.../reference_count attribute allows user
++		space to retrieve the current number of devices using the ACPI
++		power resource represented by the given device object (whose
++		directory contains that attribute).  If the read value is 0,
++		the power resource is currently not in use and therefore it
++		has been turned off.
++
++		This attribute is read-only.  It only is present for device
++		objects representing ACPI power resources.
 
