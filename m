@@ -1,100 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756391Ab3AURTb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:19:31 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:57688 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756343Ab3AURT3 (ORCPT
+	id S1756199Ab3AURSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:18:37 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:19848 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755253Ab3AURSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:19:29 -0500
-Message-ID: <50FD786E.4050108@gmail.com>
-Date: Mon, 21 Jan 2013 09:18:38 -0800
-From: John Fastabend <john.fastabend@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>
-CC: Daniel Wagner <wagi@monom.org>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Daniel Wagner <daniel.wagner@bmw-carit.de>,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [BUG] Bug in netprio_cgroup and netcls_cgroup ?
-References: <50FCDB5C.4050608@huawei.com> <50FD0144.1000401@monom.org> <50FD0402.6060400@huawei.com> <50FD09FD.4010804@monom.org> <50FD1113.6010402@huawei.com>
-In-Reply-To: <50FD1113.6010402@huawei.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Jan 2013 12:18:35 -0500
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>
+Subject: [PATCH v4 13/13] scripts/gdb: Add lx_current convenience function
+Date: Mon, 21 Jan 2013 18:06:20 +0100
+Message-Id: <266ac6de0961add828fd1c5824b1ca88e5443999.1358787929.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
+References: <cover.1358787929.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
+References: <cover.1358787929.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 01:57 AM, Li Zefan wrote:
-> On 2013/1/21 17:27, Daniel Wagner wrote:
->> On 21.01.2013 10:01, Li Zefan wrote:
->>> On 2013/1/21 16:50, Daniel Wagner wrote:
->>>> Hi Li,
->>>>
->>>> On 21.01.2013 07:08, Li Zefan wrote:
->>>>> I'm not a network developer, so correct me if I'm wrong.
->>>>>
->>>>> Since commit 7955490f732c2b8
->>>>> ("net: netprio_cgroup: rework update socket logic"), sock->sk->sk_cgrp_prioidx
->>>>> is set when the socket is created, and won't be updated unless the task is
->>>>> moved to another cgroup.
->>>>>
->>>>> Now the problem is, a socket can be _shared_ by multiple processes (fork, SCM_RIGHT).
->>>>> If we place those processes in different cgroups, and each cgroup has
->>>>> different configs, but all of the processes will send data via this socket
->>>>> with the same network priority.
->>>>
->>>> Wouldn't that be addressed by 48a87cc26c13b68f6cce4e9d769fcb17a6b3e4b8
->>>>
->>>>      net: netprio: fd passed in SCM_RIGHTS datagram not set correctly
->>>>
->>>>       A socket fd passed in a SCM_RIGHTS datagram was not getting
->>>>       updated with the new tasks cgrp prioidx. This leaves IO on
->>>>       the socket tagged with the old tasks priority.
->>>>
->>>>       To fix this add a check in the scm recvmsg path to update the
->>>>       sock cgrp prioidx with the new tasks value.
->>>>
->>>> As I read this this should work for net_prio.
->>>>
->>>
->>> But after process A passed the socket fd to B, both A and B can use the
->>> same socket to send data, right? Then if A and B were placed in different
->>> cgroups with differnt configs, A's config won't take effect anymore.
->>>
->>> Am I missing something?
->>
->> I don't know. I guess at one point the socket resources are shared and then
->> one configuration is taking preference. As you can see I am far away of
->> being
->> an expert in this field. Hopefully someone who understands this bits
->> can chip in.
->>
->> BTW, isn't this a similar to what should happen with the block io cgroup?
->> What is the behavior with a fd writing to a file in the scenario you
->> describe above?
->>
-> 
-> It forbids task moving in this case:
-> 
-> /*
->   * We cannot support shared io contexts, as we have no mean to support
->   * two tasks with the same ioc in two different groups without major rework
->   * of the main cic data structures.  For now we allow a task to change
->   * its cgroup only if it's the only owner of its ioc.
->   */
-> static int blkcg_can_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
-> 
+This is a shorthand for *$lx_per_cpu("current_task"), i.e. a convenience
+function to retrieve the currently running task of the active context.
 
-OK, I guess we should do something similar in the netprio, netcls
-cgroups and
-yes document it as you noted in your last comment.
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ scripts/gdb/percpu.py |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-Thanks,
-John
-
+diff --git a/scripts/gdb/percpu.py b/scripts/gdb/percpu.py
+index e2556919..dbc84c0 100644
+--- a/scripts/gdb/percpu.py
++++ b/scripts/gdb/percpu.py
+@@ -59,3 +59,18 @@ class PerCpu(gdb.Function):
+ 		return per_cpu(var_name.string(), cpu)
+ 
+ PerCpu()
++
++
++class LxCurrentFunc(gdb.Function):
++	__doc__ = "Return current task.\n" \
++		  "\n" \
++		  "$lx_current([CPU]): Return the per-cpu task variable for the given CPU\n" \
++		  "number. If CPU is omitted, the CPU of the current context is used."
++
++	def __init__(self):
++		super(LxCurrentFunc, self).__init__("lx_current")
++
++	def invoke(self, cpu = -1):
++		return per_cpu("current_task", cpu).dereference()
++
++LxCurrentFunc()
 -- 
-John Fastabend         Intel Corporation
+1.7.3.4
+
