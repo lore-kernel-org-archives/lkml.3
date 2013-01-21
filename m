@@ -1,74 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab3AUCjc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 21:39:32 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:46692 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab3AUCjb (ORCPT
+	id S1752627Ab3AUClJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 21:41:09 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:42370 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab3AUClH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 21:39:31 -0500
+	Sun, 20 Jan 2013 21:41:07 -0500
+Message-ID: <50FCAA82.2030903@linux.vnet.ibm.com>
+Date: Mon, 21 Jan 2013 08:10:02 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20130121023010.GR4939@ZenIV.linux.org.uk>
-References: <50F3D2F2.3080200@6wind.com> <20130119063808.GN4939@ZenIV.linux.org.uk>
- <20130120031253.GO4939@ZenIV.linux.org.uk> <CA+55aFyRMC43_H1hL5goAQxX4EdTuXOu5A9CoBk9fpGoJT_nig@mail.gmail.com>
- <20130121012217.GQ4939@ZenIV.linux.org.uk> <CA+55aFwG2j_+2pjUJuZqT1yk0xDEyeFMgCxHmxAzfGXHO5qCXQ@mail.gmail.com>
- <20130121023010.GR4939@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 20 Jan 2013 18:39:09 -0800
-X-Google-Sender-Auth: 43HJTW99k4LINGfjKG5maosVv08
-Message-ID: <CA+55aFwPM3qWE7F7nwUVKphVTJb7WE7zPF5artdVw7Xq5Z1UgQ@mail.gmail.com>
-Subject: Re: Issues with "x86, um: switch to generic fork/vfork/clone" commit
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Alex Shi <alex.shi@intel.com>
+CC: Vincent Guittot <vincent.guittot@linaro.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Paul McKenney <paul.mckenney@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Venki Pallipadi <venki@google.com>,
+        Robin Randhawa <robin.randhawa@arm.com>,
+        Lists linaro-dev <linaro-dev@lists.linaro.org>
+Subject: Re: sched: Consequences of integrating the Per Entity Load Tracking
+ Metric into the Load Balancer
+References: <50E3B61A.3040808@linux.vnet.ibm.com> <CAKfTPtDF==vxfLy8JA5UtszdRPFSoTs8t7LkdeUjUOM6SsF1PA@mail.gmail.com> <50EBB76A.3070501@linux.vnet.ibm.com> <CAKfTPtB4ABqkB=x6sUzCmvJCj6p+RaFKpGYneNt+zASyL-oU0w@mail.gmail.com> <50ECE097.7010609@linux.vnet.ibm.com> <50FC0DB1.6050605@intel.com> <50FC12B4.2030103@intel.com>
+In-Reply-To: <50FC12B4.2030103@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012102-5816-0000-0000-000006562AEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 6:30 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Neither do I, to be honest.  It might be saving us a few cycles on
-> some architectures, but I'd like to see examples of that.  amd64
-> doesn't seem to be one, at least...
+Hi Alex,
+Thank you very much for running the below benchmark on
+blocked_load+runnable_load:) Just a few queries.
 
-I think that the inlining of the body should make it basically be
-pretty much free even on architectures that would want to do something
-about the casts.
+How did you do the wake up balancing? Did you iterate over the L3
+package looking for an idle cpu? Or did you just query the L2 package
+for an idle cpu?
 
-.. and thinking about it, the architectures that do actually generate
-code for casting to a narrower type should already have selected that
-HAVE_SYSCALL_WRAPPERS option anyway, so the only reason *not* to
-select it is for a n architecture that doesn't generate any extra
-code.
+I think when you are using blocked_load+runnable_load it would be better
+if we just query the L2 package as Vincent had pointed out because the
+fundamental behind using blocked_load+runnable_load is to keep a steady
+state across cpus unless we could reap the advantage of moving the
+blocked load to a sibling core when it wakes up.
 
-And right now, that HAVE_SYSCALL_WRAPPERS does make it much harder to
-think about the header file changes.
+And the drop of performance is relative to what?
+1.Your v3 patchset with runnable_load_avg in weighted_cpu_load().
+2.Your v3 patchset with runnable_load_avg+blocked_load_avg in
+weighted_cpu_load().
 
-> FWIW, there's another bit of ugliness around that area - all these
-> #define __SC_BLAH3, etc., all of the same form.  This stuff begs for
-> something like
-> #define __MAP1(m,t,a) m(t,a)
-> #define __MAP2(m,t,a,...) m(t,a) __MAP1(m,__VA_ARGS__)
-> #define __MAP3(m,t,a,...) m(t,a) __MAP2(m,__VA_ARGS__)
-> #define __MAP4(m,t,a,...) m(t,a) __MAP3(m,__VA_ARGS__)
-> #define __MAP5(m,t,a,...) m(t,a) __MAP4(m,__VA_ARGS__)
-> #define __MAP6(m,t,a,...) m(t,a) __MAP5(m,__VA_ARGS__)
-> #define __MAP(n,...) __MAP##n(__VA_ARGS__)
-> with __MAP(x,__SC_DECL,__VA_ARGS__) instead of __SC_DECL##x(__VA_ARGS__)
-> etc. in users...
+Are the above two what you are comparing? And in the above two versions
+have you included your [PATCH] sched: use instant load weight in burst
+regular load balance?
 
-Well, I can see both sides. The above is the nice and dense
-declaration model with less duplication, but christ, it's hard for
-people to wrap their minds around unless they've seen it a million
-times. It really does take some getting used to, and the long-form can
-be easier to understand.
+On 01/20/2013 09:22 PM, Alex Shi wrote:
+>>>> The blocked load of a cluster will be high if the blocked tasks have
+>>>> run recently. The contribution of a blocked task will be divided by 2
+>>>> each 32ms, so it means that a high blocked load will be made of recent
+>>>> running tasks and the long sleeping tasks will not influence the load
+>>>> balancing.
+>>>> The load balance period is between 1 tick (10ms for idle load balance
+>>>> on ARM) and up to 256 ms (for busy load balance) so a high blocked
+>>>> load should imply some tasks that have run recently otherwise your
+>>>> blocked load will be small and will not have a large influence on your
+>>>> load balance
+>>
+>> Just tried using cfs's runnable_load_avg + blocked_load_avg in
+>> weighted_cpuload() with my v3 patchset, aim9 shared workfile testing
+>> show the performance dropped 70% more on the NHM EP machine. :(
+>>
+> 
+> Ops, the performance is still worse than just count runnable_load_avg.
+> But dropping is not so big, it dropped 30%, not 70%.
+> 
 
-That said, we have so many of those things now when it comes to the
-syscall stuff that the dense form seems to be called for just to be
-consistent.
+Thank you
 
-So go wild if you have the energy for it. I'm not going to pull that
-for 3.8, though.
+Regards
+Preeti U Murthy
 
-                 Linus
