@@ -1,137 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab3AUBFY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 20:05:24 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:54937 "EHLO smtp.gentoo.org"
+	id S1752728Ab3AUBFl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 20:05:41 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:54248 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752574Ab3AUBFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 20:05:22 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: libc-alpha@sourceware.org
-Subject: Re: Friendlier EPERM - Request for input
-Date: Sun, 20 Jan 2013 20:09:14 -0500
-User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Carlos O'Donell" <carlos@systemhalted.org>,
-        Eric Paris <eparis@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
-        dwalsh@redhat.com, dmalcolm@redhat.com, sds@tycho.nsa.gov,
-        segoon@openwall.com, linux-security-module@vger.kernel.org
-References: <1357747463.2593.28.camel@localhost> <50EDEC85.5060802@systemhalted.org> <871udfmmkx.fsf@xmission.com>
-In-Reply-To: <871udfmmkx.fsf@xmission.com>
+	id S1752542Ab3AUBFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 20:05:38 -0500
+Date: Mon, 21 Jan 2013 02:08:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Tom St Denis <tstdenis@elliptictech.com>
+Cc: David Dillow <dave@thedillows.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: IPsec AH use of ahash
+Message-ID: <20130121010829.GB19343@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Tom St Denis <tstdenis@elliptictech.com>,
+	David Dillow <dave@thedillows.org>, linux-kernel@vger.kernel.org,
+	netdev@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+References: <20130121003441.GA19447@pd.tnic>
+ <861997288.94032.1358728848956.JavaMail.root@elliptictech.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart11444090.qxFYdlmvCa";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301202009.17647.vapier@gentoo.org>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <861997288.94032.1358728848956.JavaMail.root@elliptictech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart11444090.qxFYdlmvCa
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Sun, Jan 20, 2013 at 07:40:49PM -0500, Tom St Denis wrote:
+> If you guys can't appreciate that I should just bow out of the
+> discussion. I didn't come here looking for a fight I came here to seek
+> reason.
 
-On Sunday 20 January 2013 19:00:46 Eric W. Biederman wrote:
-> Carlos O'Donell writes:
-> > On 01/09/2013 04:09 PM, Eric Paris wrote:
-> >> On Wed, 2013-01-09 at 21:59 +0100, Jakub Jelinek wrote:
-> >>> On Wed, Jan 09, 2013 at 12:53:40PM -0800, Casey Schaufler wrote:
-> >>>> I'm suggesting that the string returned by get_extended_error_info()
-> >>>> ought to be the audit record the system call would generate,
-> >>>> regardless of whether the audit system would emit it or not.
-> >>>=20
-> >>> What system call would that info be for and would it be reset on next
-> >>> syscall that succeeded, or also failed?
-> >>>=20
-> >>> The thing is, various functions e.g. perform some syscall, save errno,
-> >>> do some other syscall, and if they decide that the first syscall
-> >>> should be what determines the whole function's errno, just restore
-> >>> errno from the saved value and return.  Similarly, various functions
-> >>> just set errno upon detecting some error condition in userspace.
-> >>> There is no 1:1 mapping between many libc library calls and syscalls.
-> >>> So, when would it be safe to call this new get_extended_error_info
-> >>> function and how to determine to which syscall it was relevant?
-> >=20
-> > I asked the same questions as Jakub asked but in a slightly different
-> > formulation (http://cygwin.com/ml/libc-alpha/2013-01/msg00267.html).
-> >=20
-> >> I was thinking of it to be the last kernel error.  So if the first and
-> >> that second operation caused the kernel to want to make available
-> >> extended errno information you would end up with the second.  I see th=
-is
-> >> is an informative piece of information, not normative.  Not a
-> >> replacement for errno.  I'm hoping for a best effort way to provide
-> >> extended errno information.
-> >=20
-> > IMO Casey's answer is the right solution i.e. whatever the errno
-> > behaviour was.
->=20
-> Let me propose a different mechanism for getting this to user space
-> that gives you a save/restore ability.
->=20
-> When a system call returns with an error we return the error code
-> in one register and leave the rest of the registers that calling
-> conventions allow us to stomp unchanged.
+Ok, I'm going to pretty much repeat what Steve said but I'm going to
+repeat it only once and if you don't want to understand it then, don't
+even bother replying.
 
-the syscall ABI is not the same as the calling convention.  pretty much all=
- C=20
-libraries use inline asm to do syscalls.  a few applications do too, but fo=
-r=20
-the most part those have converted to the syscall() library function nowada=
-ys=20
-since the kernel stopped exporting _syscall[1-6]() macros for apps to use=20
-directly.
+If you want to get your code in the kernel, simply do what the
+maintainer asks you and stop debating. He's not asking you to swallow
+knifes or walk on embers or some other crazy shit - he asks you
+reasonable stuff and he *knows* that code needs testing and that it
+takes a while but this is a price we all pay. Accept it.
 
-basically, that means you can't change the syscall ABI w/out breaking=20
-userspace especially on i386 as it is the most constrained architecture.  y=
-ou=20
-might get away with it with others which have a lot of spare regs that pret=
-ty=20
-much no one uses, but that can be dicey too since you're relying on how cod=
-e=20
-just happens to be generated by gcc.
+You're not the only one being asked to retest stuff and you're not going
+to be the last one so stop wasting your time and get something done
+instead.
 
-the inline asm declares the syscall args only as inputs.  the only output i=
-s=20
-the return register, and memory/cc are the only clobbers.
+-- 
+Regards/Gruss,
+    Boris.
 
-you could do this in a backwards compatible way by setting a bit in the=20
-syscall NR to indicate that userland knows it will get back two values.  th=
-e=20
-kernel will check & clear that bit first before looking up the syscall tabl=
-e. =20
-somewhat like how the x32 ABI is handled.
-
-not saying i like that idea at all, just providing an alternative that woul=
-d=20
-work w/out breaking userspace.
-=2Dmike
-
---nextPart11444090.qxFYdlmvCa
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ/JU9AAoJEEFjO5/oN/WB5IQQAK2KcCUBddkngS5PsbXAixEu
-HRdXV2NH1Pkh87tH6YaVAkSuJ89Kbep5wgppX7PLJcF9xNRiqhCZ3tb84pQLHhsT
-TKZqNDs7Q0Kz7DUQGQnk0+QCQJ76DAWEvywJc0zb/A4NKyACDthyhyWqj0ZV1S90
-tEXbZ11zS1l7iF9KqA1yhVYEy4v168+4DiCfCMqSCmTMgQno7x4kTXyfFUfMfyFu
-Q0+LajI3rsnsTdo7s386Xj2OY3Ewd5DKSddcT/MT7M8TaePqWHw1dGkVghY8EsmW
-Fj4lzlAZ4ZfxsxaoeLl5GTwYCKoE5JqYmubMRkQ9yth4qssq2DkZpn0a/uQtIi76
-Oyp6zpzbDzLZpol9Ycv5Vd7auxgsoNBqsrcvv7mwQZ2PLca4GRQxLzbMq77EPliY
-4ricpxLbEwfrZ63nYz6E0bnxNwokvPai9g+qCsb2kfC5yEuk2qKtGZYkqfzgYve4
-fvZnd5SJY27Nqk3twcS3FD8kDtlOh7jt0kc8pqNYXw0pBvH6L2GRmtq1ZSm2oD1p
-VKwZUg6ZWDQjU8S/QIwj//ZU1pwuCD0S3Kg+rZKTOyg9/VyxqBJvKCbn58CPe09D
-WuiXr65qRB2HHwrOFm0uxXxC95gqWpD7B0DoU4MLS+Ut8Lq61cwk95hYR8KtDyZX
-PxiDpq22qds4BDxeOkDV
-=+V9S
------END PGP SIGNATURE-----
-
---nextPart11444090.qxFYdlmvCa--
+Sent from a fat crate under my desk. Formatting is fine.
+--
