@@ -1,218 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab3AUOWJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 09:22:09 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8011 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab3AUOWH (ORCPT
+	id S1755526Ab3AUOYV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 09:24:21 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:38003 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754030Ab3AUOYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 09:22:07 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 21 Jan 2013 06:20:27 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <w.sang@pengutronix.de>
-CC: <swarren@nvidia.com>, <khali@linux-fr.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH RESEND] i2c: tegra: add support for Tegra114 SoC
-Date: Mon, 21 Jan 2013 19:51:02 +0530
-Message-ID: <1358778062-21600-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Mon, 21 Jan 2013 09:24:19 -0500
+Message-ID: <50FD4F61.6060702@ti.com>
+Date: Mon, 21 Jan 2013 16:23:29 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: kishon <kishon@ti.com>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <linux-sh@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <balbi@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <b-cousson@ti.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <horms@verge.net.au>,
+        <magnus.damm@gmail.com>, <cbou@mail.ru>, <dwmw2@infradead.org>,
+        <alexander.shishkin@linux.intel.com>, <gregkh@linuxfoundation.org>,
+        <leoli@freescale.com>, <eric.y.miao@gmail.com>,
+        <haojian.zhuang@gmail.com>, <stern@rowland.harvard.edu>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: Re: [RFC PATCH 5/6] usb: otg: add device tree support to otg library
+References: <1358348462-27693-1-git-send-email-kishon@ti.com> <1358348462-27693-6-git-send-email-kishon@ti.com> <50FD40D1.8020405@ti.com> <50FD43F5.1020208@ti.com>
+In-Reply-To: <50FD43F5.1020208@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NVIDIA's Tegra114 has following enhanced feature in i2c controller:
-- Enable/disable control for per packet transfer complete interrupt.
-  Earlier SoCs could not disable this.
-- Single clock source for standard/fast and HS mode clock speed.
-  The clock divisor for fast/standard mode is added into the i2c
-  controller to meet the HS and standard/fast mode of clock speed
-  from single source.
+On 01/21/2013 03:34 PM, kishon wrote:
+> On Monday 21 January 2013 06:51 PM, Roger Quadros wrote:
+>> On 01/16/2013 05:01 PM, Kishon Vijay Abraham I wrote:
+>>> Added an API devm_usb_get_phy_by_phandle(), to get usb phy by passing a
+>>> device node phandle value. This function will return a pointer to
+>>> the phy on success, -EPROBE_DEFER if there is a device_node for the
+>>> phandle,
+>>> but the phy has not been added, or a ERR_PTR() otherwise.
+>>>
+>>> Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>> ---
+>>>   drivers/usb/otg/otg.c   |   77
+>>> +++++++++++++++++++++++++++++++++++++++++++++++
+>>>   include/linux/usb/phy.h |    8 +++++
+>>>   2 files changed, 85 insertions(+)
+>>>
+>>> diff --git a/drivers/usb/otg/otg.c b/drivers/usb/otg/otg.c
+>>> index dbf2043..e9799bb 100644
+>>> --- a/drivers/usb/otg/otg.c
+>>> +++ b/drivers/usb/otg/otg.c
+>>> @@ -13,7 +13,9 @@
+>>>   #include <linux/export.h>
+>>>   #include <linux/err.h>
+>>>   #include <linux/device.h>
+>>> +#include <linux/module.h>
+>>>   #include <linux/slab.h>
+>>> +#include <linux/of.h>
+>>>
+>>>   #include <linux/usb/otg.h>
+>>>
+>>> @@ -34,6 +36,20 @@ static struct usb_phy *__usb_find_phy(struct
+>>> device *dev, u8 index)
+>>>       return ERR_PTR(-ENODEV);
+>>>   }
+>>>
+>>> +static struct usb_phy *__of_usb_find_phy(struct device_node *node)
+>>> +{
+>>> +    struct usb_phy  *phy;
+>>> +
+>>> +    list_for_each_entry(phy, &phy_list, head) {
+>>> +        if (node != phy->dev->of_node)
+>>> +            continue;
+>>> +
+>>> +        return phy;
+>>> +    }
+>>> +
+>>> +    return ERR_PTR(-ENODEV);
+>>> +}
+>>> +
+>>>   static void devm_usb_phy_release(struct device *dev, void *res)
+>>>   {
+>>>       struct usb_phy *phy = *(struct usb_phy **)res;
+>>> @@ -109,6 +125,67 @@ err0:
+>>>   }
+>>>   EXPORT_SYMBOL(usb_get_phy);
+>>>
+>>> + /**
+>>> + * devm_usb_get_phy_by_phandle - find the USB PHY by phandle
+>>> + * @dev - device that requests this phy
+>>> + * @phandle - name of the property holding the phy phandle value
+>>> + * @index - the index of the phy
+>>> + *
+>>> + * Returns the phy driver associated with the given phandle value,
+>>> + * after getting a refcount to it, -ENODEV if there is no such phy or
+>>> + * -EPROBE_DEFER if there is a phandle to the phy, but the device is
+>>> + * not yet loaded. While at that, it also associates the device with
+>>> + * the phy using devres. On driver detach, release function is invoked
+>>> + * on the devres data, then, devres data is freed.
+>>> + *
+>>> + * For use by USB host and peripheral drivers.
+>>> + */
+>>> +struct usb_phy *devm_usb_get_phy_by_phandle(struct device *dev,
+>>> +    const char *phandle, u8 index)
+>>> +{
+>>> +    struct usb_phy    *phy = NULL, **ptr;
+>>> +    unsigned long    flags;
+>>> +    struct device_node *node;
+>>> +
+>>> +    if (!dev->of_node) {
+>>> +        dev_dbg(dev, "device does not have a device node entry\n");
+>>> +        return ERR_PTR(-EINVAL);
+>>> +    }
+>>> +
+>>> +    node = of_parse_phandle(dev->of_node, phandle, index);
+>>> +    if (!node) {
+>>> +        dev_dbg(dev, "failed to get %s phandle in %s node\n", phandle,
+>>> +            dev->of_node->full_name);
+>>> +        return ERR_PTR(-ENODEV);
+>>> +    }
+>>> +
+>>> +    ptr = devres_alloc(devm_usb_phy_release, sizeof(*ptr), GFP_KERNEL);
+>>> +    if (!ptr) {
+>>> +        dev_dbg(dev, "failed to allocate memory for devres\n");
+>>> +        return ERR_PTR(-ENOMEM);
+>>> +    }
+>>
+>> I fail to understand why you need ptr at all and why do devres_alloc()
+>> for it.
+> 
+> Thats how we create a "managed device resource". You can have a look at
+> Documentation/driver-model/devres.txt and drivers/base/devres.c.
 
-Add support for the above feature to make it functional on T114 SOCs.
+OK, I get it now. You might want to update the text file too since you
+are adding a automagically managed interface.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
----
-Just resending if this is missed in long holiday.
-Adding reviewed-by: Stephen as he has already given his score.
-
- drivers/i2c/busses/i2c-tegra.c |   77 ++++++++++++++++++++++++++++++++-------
- 1 files changed, 63 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index 7b38877..2dadb96 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -71,6 +71,8 @@
- #define I2C_INT_TX_FIFO_DATA_REQ		(1<<1)
- #define I2C_INT_RX_FIFO_DATA_REQ		(1<<0)
- #define I2C_CLK_DIVISOR				0x06c
-+#define I2C_CLK_DIVISOR_STD_FAST_MODE_SHIFT	16
-+#define I2C_CLK_MULTIPLIER_STD_FAST_MODE	8
- 
- #define DVC_CTRL_REG1				0x000
- #define DVC_CTRL_REG1_INTR_EN			(1<<10)
-@@ -117,10 +119,23 @@ enum msg_end_type {
- /**
-  * struct tegra_i2c_hw_feature : Different HW support on Tegra
-  * @has_continue_xfer_support: Continue transfer supports.
-+ * @has_per_pkt_xfer_complete_irq: Has enable/disable capability for transfer
-+ *		complete interrupt per packet basis.
-+ * @has_single_clk_source: The i2c controller has single clock source. Tegra30
-+ *		and earlier Socs has two clock sources i.e. div-clk and
-+ *		fast-clk.
-+ * @clk_divisor_hs_mode: Clock divisor in HS mode.
-+ * @clk_divisor_std_fast_mode: Clock divisor in standard/fast mode. It is
-+ *		applicable if there is no fast clock source i.e. single clock
-+ *		source.
-  */
- 
- struct tegra_i2c_hw_feature {
- 	bool has_continue_xfer_support;
-+	bool has_per_pkt_xfer_complete_irq;
-+	bool has_single_clk_source;
-+	int clk_divisor_hs_mode;
-+	int clk_divisor_std_fast_mode;
- };
- 
- /**
-@@ -366,11 +381,13 @@ static void tegra_dvc_init(struct tegra_i2c_dev *i2c_dev)
- static inline int tegra_i2c_clock_enable(struct tegra_i2c_dev *i2c_dev)
- {
- 	int ret;
--	ret = clk_prepare_enable(i2c_dev->fast_clk);
--	if (ret < 0) {
--		dev_err(i2c_dev->dev,
--			"Enabling fast clk failed, err %d\n", ret);
--		return ret;
-+	if (!i2c_dev->hw->has_single_clk_source) {
-+		ret = clk_prepare_enable(i2c_dev->fast_clk);
-+		if (ret < 0) {
-+			dev_err(i2c_dev->dev,
-+				"Enabling fast clk failed, err %d\n", ret);
-+			return ret;
-+		}
- 	}
- 	ret = clk_prepare_enable(i2c_dev->div_clk);
- 	if (ret < 0) {
-@@ -384,13 +401,16 @@ static inline int tegra_i2c_clock_enable(struct tegra_i2c_dev *i2c_dev)
- static inline void tegra_i2c_clock_disable(struct tegra_i2c_dev *i2c_dev)
- {
- 	clk_disable_unprepare(i2c_dev->div_clk);
--	clk_disable_unprepare(i2c_dev->fast_clk);
-+	if (!i2c_dev->hw->has_single_clk_source)
-+		clk_disable_unprepare(i2c_dev->fast_clk);
- }
- 
- static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
- {
- 	u32 val;
- 	int err = 0;
-+	int clk_multiplier = I2C_CLK_MULTIPLIER_STD_FAST_MODE;
-+	u32 clk_divisor;
- 
- 	tegra_i2c_clock_enable(i2c_dev);
- 
-@@ -405,7 +425,15 @@ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
- 		(0x2 << I2C_CNFG_DEBOUNCE_CNT_SHIFT);
- 	i2c_writel(i2c_dev, val, I2C_CNFG);
- 	i2c_writel(i2c_dev, 0, I2C_INT_MASK);
--	clk_set_rate(i2c_dev->div_clk, i2c_dev->bus_clk_rate * 8);
-+
-+	clk_multiplier *= (i2c_dev->hw->clk_divisor_std_fast_mode + 1);
-+	clk_set_rate(i2c_dev->div_clk, i2c_dev->bus_clk_rate * clk_multiplier);
-+
-+	/* Make sure clock divisor programmed correctly */
-+	clk_divisor = i2c_dev->hw->clk_divisor_hs_mode;
-+	clk_divisor |= i2c_dev->hw->clk_divisor_std_fast_mode <<
-+					I2C_CLK_DIVISOR_STD_FAST_MODE_SHIFT;
-+	i2c_writel(i2c_dev, clk_divisor, I2C_CLK_DIVISOR);
- 
- 	if (!i2c_dev->is_dvc) {
- 		u32 sl_cfg = i2c_readl(i2c_dev, I2C_SL_CNFG);
-@@ -547,6 +575,8 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
- 		tegra_i2c_fill_tx_fifo(i2c_dev);
- 
- 	int_mask = I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST;
-+	if (i2c_dev->hw->has_per_pkt_xfer_complete_irq)
-+		int_mask |= I2C_INT_PACKET_XFER_COMPLETE;
- 	if (msg->flags & I2C_M_RD)
- 		int_mask |= I2C_INT_RX_FIFO_DATA_REQ;
- 	else if (i2c_dev->msg_buf_remaining)
-@@ -634,15 +664,32 @@ static const struct i2c_algorithm tegra_i2c_algo = {
- 
- static const struct tegra_i2c_hw_feature tegra20_i2c_hw = {
- 	.has_continue_xfer_support = false,
-+	.has_per_pkt_xfer_complete_irq = false,
-+	.has_single_clk_source = false,
-+	.clk_divisor_hs_mode = 3,
-+	.clk_divisor_std_fast_mode = 0,
- };
- 
- static const struct tegra_i2c_hw_feature tegra30_i2c_hw = {
- 	.has_continue_xfer_support = true,
-+	.has_per_pkt_xfer_complete_irq = false,
-+	.has_single_clk_source = false,
-+	.clk_divisor_hs_mode = 3,
-+	.clk_divisor_std_fast_mode = 0,
-+};
-+
-+static const struct tegra_i2c_hw_feature tegra114_i2c_hw = {
-+	.has_continue_xfer_support = true,
-+	.has_per_pkt_xfer_complete_irq = true,
-+	.has_single_clk_source = true,
-+	.clk_divisor_hs_mode = 1,
-+	.clk_divisor_std_fast_mode = 0x19,
- };
- 
- #if defined(CONFIG_OF)
- /* Match table for of_platform binding */
- static const struct of_device_id tegra_i2c_of_match[] = {
-+	{ .compatible = "nvidia,tegra114-i2c", .data = &tegra114_i2c_hw, },
- 	{ .compatible = "nvidia,tegra30-i2c", .data = &tegra30_i2c_hw, },
- 	{ .compatible = "nvidia,tegra20-i2c", .data = &tegra20_i2c_hw, },
- 	{ .compatible = "nvidia,tegra20-i2c-dvc", .data = &tegra20_i2c_hw, },
-@@ -688,12 +735,6 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 		return PTR_ERR(div_clk);
- 	}
- 
--	fast_clk = devm_clk_get(&pdev->dev, "fast-clk");
--	if (IS_ERR(fast_clk)) {
--		dev_err(&pdev->dev, "missing bus clock");
--		return PTR_ERR(fast_clk);
--	}
--
- 	i2c_dev = devm_kzalloc(&pdev->dev, sizeof(*i2c_dev), GFP_KERNEL);
- 	if (!i2c_dev) {
- 		dev_err(&pdev->dev, "Could not allocate struct tegra_i2c_dev");
-@@ -702,7 +743,6 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 
- 	i2c_dev->base = base;
- 	i2c_dev->div_clk = div_clk;
--	i2c_dev->fast_clk = fast_clk;
- 	i2c_dev->adapter.algo = &tegra_i2c_algo;
- 	i2c_dev->irq = irq;
- 	i2c_dev->cont_id = pdev->id;
-@@ -733,6 +773,15 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 	}
- 	init_completion(&i2c_dev->msg_complete);
- 
-+	if (!i2c_dev->hw->has_single_clk_source) {
-+		fast_clk = devm_clk_get(&pdev->dev, "fast-clk");
-+		if (IS_ERR(fast_clk)) {
-+			dev_err(&pdev->dev, "missing fast clock");
-+			return PTR_ERR(fast_clk);
-+		}
-+		i2c_dev->fast_clk = fast_clk;
-+	}
-+
- 	platform_set_drvdata(pdev, i2c_dev);
- 
- 	ret = tegra_i2c_init(i2c_dev);
--- 
-1.7.1.1
-
+regards,
+-roger
