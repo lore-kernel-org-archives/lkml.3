@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286Ab3AUISQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 03:18:16 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2760 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab3AUISO (ORCPT
+	id S1752336Ab3AUIUP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 03:20:15 -0500
+Received: from relay.parallels.com ([195.214.232.42]:44843 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833Ab3AUIUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 03:18:14 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 21 Jan 2013 00:18:02 -0800
-From: Alex Courbot <acourbot@nvidia.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Mark Zhang <markz@nvidia.com>, "gnurou@gmail.com" <gnurou@gmail.com>
-Subject: Re: [PATCH 0/3] pwm-backlight: add subdrivers & Tegra support
-Date: Mon, 21 Jan 2013 17:18:11 +0900
-Message-ID: <6871054.sK10m5bePf@percival>
-Organization: NVIDIA
-User-Agent: KMail/4.9.5 (Linux/3.6.11-1-ARCH; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130121074928.GE15508@avionic-0098.adnet.avionic-design.de>
-References: <1358591420-7790-1-git-send-email-acourbot@nvidia.com> <20130121074928.GE15508@avionic-0098.adnet.avionic-design.de>
+	Mon, 21 Jan 2013 03:20:13 -0500
+Message-ID: <50FCFA24.6090109@parallels.com>
+Date: Mon, 21 Jan 2013 12:19:48 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Mark Lord <kernel@teksavvy.com>, <linux-nfs@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
+References: <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org> <50F63882.8000607@parallels.com> <50F72F03.5070806@teksavvy.com> <50F786AF.4070107@parallels.com> <20130117130335.GD6598@fieldses.org> <50F7FB7E.2020503@parallels.com> <50F88C14.7030903@teksavvy.com> <50F8DF7E.8080107@parallels.com> <50F96EB2.3090605@teksavvy.com> <20130118155631.GA5227@fieldses.org>
+In-Reply-To: <20130118155631.GA5227@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.18.163]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+18.01.2013 19:56, J. Bruce Fields пишет:
+> On Fri, Jan 18, 2013 at 10:48:02AM -0500, Mark Lord wrote:
+>> On 13-01-18 12:37 AM, Stanislav Kinsbursky wrote:
+>>>
+>>> You have more than one NFS mount in different network namespaces, haven't you?
+>>>
+>>
+>> No, I don't (knowingly) use (multiple) namespaces at all.
+>
+> Right, I don't think that's necessary.  Stanislav, look at
+> nfs_callback_down:
+>
+> 	nfs_callback_down_net(minorversion, cb_info->serv, net);
+>          cb_info->users--;
+> 	if (cb_info->users == 0 && cb_info->task != NULL) {
+> 		kthread_stop(cb_info->task);
+> 		...
+>
+> It's first destroying the service, then destroying the thread.  That's
+> the wrong order.  So we could still have the thread running svc_recv()
+> after the rpc service is destroyed.
+>
 
-On Monday 21 January 2013 15:49:28 Thierry Reding wrote:
-> Eventually this should all be covered by the CDF, but since that's not
-> ready yet we want something ad-hoc to get the hardware supported. As
-> such I would like to see this go into some sort of minimalistic, Tegra-
-> specific display/panel framework. I'd prefer to keep the pwm-backlight
-> driver as simple and generic as possible, that is, a driver for a PWM-
-> controlled backlight.
-> 
-> Another advantage of moving this into a sort of display framework is
-> that it may help in defining the requirements for a CDF and that moving
-> the code to the CDF should be easier once it is done.
-> 
-> Last but not least, abstracting away the panel allows other things such
-> as physical dimensions and display modes to be properly encapsulated. I
-> think that power-on/off timing requirements for panels also belong to
-> this set since they are usually specific to a given panel.
-> 
-> Maybe adding these drivers to tegra-drm for now would be a good option.
-> That way the corresponding glue can be added without a need for inter-
-> tree dependencies.
+Sad, but no, this can't be done that easy in the way you are proposing. Have a look at lock_down_net() - it works in the same manner.
+Moreover, service shutdown was significantly reworked to support work across multiple namespaces. We, actually, came to this solution in one of our previous 
+discussions in the past because we were trying to reduce number of running threads and used memory for such non-heavily used services like lockd and nfs 
+callback. And existent approach works good enough except in-progress transports.
 
-IIRC (because that was a while ago already) having a Tegra-only display 
-framework is exactly what we wanted to avoid in the first place. This series 
-does nothing but leverage the callbacks mechanism that already exists in pwm-
-backlight and make it available to DT systems. If we start making a Tegra-
-specific solution, then other architectures will have to reinvent the wheel 
-again. I really don't think we want to go that way.
+Now we can't just move  shutdown thread after transports because other problems will arise (BUG_ON() in svc_destroy will trigger and that's just the beginning). 
+I.e. to make it possible to shutdown service before transports, service should be rewritten to work in network namespace context (but not across all namespaces).
 
-These patches only makes slight changes to pwm_bl.c and do not extend its 
-capabilities. I agree that a suitable solution will require the CDF, but by 
-the meantime, let's go for the practical route instead of repeating the same 
-mistakes (i.e. architecture-specific frameworks) again.
 
-There are certainly better ways to do this, but I'm not convinced at all that 
-a Tegra-only solution is one of them.
+> --b.
+>
+>> Usually I disable them in the kernel .config,
+>> though it appears the currently running kernel has this:
+>>
+>> CONFIG_NAMESPACES=y
+>> # CONFIG_UTS_NS is not set
+>> # CONFIG_IPC_NS is not set
+>> # CONFIG_PID_NS is not set
+>> # CONFIG_NET_NS is not set
+>>
+>> The full .config was attached to the first post in this thread.
+>>
+>> Cheers
+>>
 
-Alex.
 
+-- 
+Best regards,
+Stanislav Kinsbursky
