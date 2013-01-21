@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab3AUCJS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 21:09:18 -0500
-Received: from mail-da0-f53.google.com ([209.85.210.53]:61660 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab3AUCJQ (ORCPT
+	id S1752667Ab3AUCMp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 21:12:45 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:38821 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab3AUCMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 21:09:16 -0500
-Message-ID: <50FCA346.2070608@gmail.com>
-Date: Mon, 21 Jan 2013 10:09:10 +0800
-From: Mark Zhang <nvmarkzhang@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Mark Zhang <markz@nvidia.com>, gnurou@gmail.com
-Subject: Re: [PATCH 0/3] pwm-backlight: add subdrivers & Tegra support
-References: <1358591420-7790-1-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1358591420-7790-1-git-send-email-acourbot@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 20 Jan 2013 21:12:43 -0500
+Date: Mon, 21 Jan 2013 13:12:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Morris <jmorris@namei.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Subject: linux-next: manual merge of the security tree with Linus' tree
+Message-Id: <20130121131230.9f79cf5dcd8a8ac069594111@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_Jan_2013_13_12_30_+1100_ZZLU9HpXdIcywDSR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+--Signature=_Mon__21_Jan_2013_13_12_30_+1100_ZZLU9HpXdIcywDSR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch set applies failed on tot linux-next(0118). Here is the log:
+Hi James,
 
-markz@markz-hp6200:~/tegradrm/official-upstream-kernel$ git am
-~/Desktop/*.eml
-Applying: pwm-backlight: add subdriver mechanism
-error: patch failed: drivers/video/backlight/pwm_bl.c:35
-error: drivers/video/backlight/pwm_bl.c: patch does not apply
-Patch failed at 0001 pwm-backlight: add subdriver mechanism
-When you have resolved this problem run "git am --resolved".
-If you would prefer to skip this patch, instead run "git am --skip".
-To restore the original branch and stop patching run "git am --abort".
+Today's linux-next merge of the security tree got a conflict in
+security/integrity/ima/ima_main.c between commit a7f2a366f623 ("ima:
+fallback to MODULE_SIG_ENFORCE for existing kernel module syscall") from
+Linus' tree and commit 750943a30714 ("ima: remove enforce checking
+duplication") from the security tree.
 
-Anyway, I'll try to apply this on 3.8-rc4.
+I think I fixed it up (see below).
 
-Mark
-On 01/19/2013 06:30 PM, Alexandre Courbot wrote:
-> This series introduces a way to use pwm-backlight hooks with platforms
-> that use the device tree through a subdriver system. It also adds support
-> for the Tegra-based Ventana board, adding the last missing block to enable
-> its panel. Support for other Tegra board can thus be easily added.
-> 
-> I have something else in mind to properly support this (power
-> sequences), but this work relies on the GPIO subsystem redesign which will
-> take some time. The pwm-backlight subdrivers can do the job by the meantime.
-> 
-> There are a few design points that might need to be discussed:
-> 1) Link order is important: subdrivers register themselves in their
-> module_init function, which must be called before pwm-backlight's probe.
-> This forbids linking subdrivers as separate modules from pwm-backlight.
-> 2) The subdriver's data is temporarily passed through the backlight
-> device's driver data. This should not hurt, but maybe there is a better way
-> to do this.
-> 3) Subdrivers must add themselves into pwm-backlight's own of_device_id
-> table. It would be cleaner to not have to list subdrivers into
-> pwm-backlight's main file, but I cannot think of a way to do otherwise.
-> 
-> Suggestions for the 3 points listed above are very welcome - in any case,
-> I hope to make this converge into something mergeable quickly.
-> 
-> Note that these patches are the last missing block to get a functional
-> panel on Tegra boards. Using 3.8rc4 and these patches, the internal panel
-> on Ventana is usable out-of-the-box. Yay.
-> 
-> Alexandre Courbot (3):
->   pwm-backlight: add subdriver mechanism
->   tegra: pwm-backlight: add tegra pwm-bl driver
->   tegra: ventana: of: add host1x device to DT
-> 
->  arch/arm/boot/dts/tegra20-ventana.dts  |  29 +++++-
->  arch/arm/configs/tegra_defconfig       |   1 +
->  drivers/video/backlight/Kconfig        |   7 ++
->  drivers/video/backlight/Makefile       |   4 +
->  drivers/video/backlight/pwm_bl.c       |  70 ++++++++++++++-
->  drivers/video/backlight/pwm_bl_tegra.c | 159 +++++++++++++++++++++++++++++++++
->  include/linux/pwm_backlight.h          |  15 ++++
->  7 files changed, 281 insertions(+), 4 deletions(-)
->  create mode 100644 drivers/video/backlight/pwm_bl_tegra.c
-> 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc security/integrity/ima/ima_main.c
+index dba965d,cd00ba3..0000000
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@@ -291,18 -275,10 +275,18 @@@ EXPORT_SYMBOL_GPL(ima_file_check)
+   */
+  int ima_module_check(struct file *file)
+  {
+- 	int rc =3D 0;
+-=20
+ -	if (!file)
+ +	if (!file) {
+ +		if (ima_appraise & IMA_APPRAISE_MODULES) {
+ +#ifndef CONFIG_MODULE_SIG_FORCE
+- 			rc =3D -EACCES;	/* INTEGRITY_UNKNOWN */
+++			return -EACCES;	/* INTEGRITY_UNKNOWN */
+++#else
+++			return 0;
+ +#endif
+ +		}
+- 	} else
+- 		rc =3D process_measurement(file, file->f_dentry->d_name.name,
+- 					 MAY_EXEC, MODULE_CHECK);
+- 	return (ima_appraise & IMA_APPRAISE_ENFORCE) ? rc : 0;
++ 		return -EACCES;	/* INTEGRITY_UNKNOWN */
+++	}
++ 	return process_measurement(file, file->f_dentry->d_name.name,
++ 				   MAY_EXEC, MODULE_CHECK);
+  }
+ =20
+  static int __init init_ima(void)
+
+--Signature=_Mon__21_Jan_2013_13_12_30_+1100_ZZLU9HpXdIcywDSR
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ/KQOAAoJEECxmPOUX5FEwAMQAImZ8LdFFDOxwtvRgIwTEa8H
+Brg6vMWmm6rSXESspIBob4UGI3VI1pB7J27x28K4Tl4Xpa4GJmbkiNqnedmrA+Js
+lEXpY1v2tcU+9uFTgjSOJrVkpY9ERCwCfwfi923J5230RGlkemW9xHFoMXPx+XvV
+Pd6kEC08ivSjCwMPitC1ZuNw0dI1RcNu5uEmPlQ0D9M/x7RdpMitsSspc4kU/ZuC
+scZvzDXj1sOVwf5kx4bKhOuQMoFpgMidhhvfXaeRNc8q9olXiQ+hQ/c2zMd6c/k2
+IuZICj5wwt1hhmF1bl+WIup2NrT9qnJgY/6WppeDUzyzDs3EfIdY8QerMwy2eHje
+mac/ATddYM9IHmymhNmqtyxoC08Rhpdt7Rx/js3Q2Q5CC0Dv5QZLDqrS/bs9X7+h
+ZJWH7e99IBWN6wSewwUKPdjU/+a9wLAMZygsUB5eboj0GV7xi18cjU3Xf5iUSl/C
+jBRIT17ZDI4laS7LlnHG2bGDN9QIeoj04z2nhmerox5+4YQWMpjBs9Tfbx0CClcn
+QV5lEw3rK2EZmM7QrTyJgRPrS/mbZGKNpg8BERrj+TcL+zdU8vKz5PGo11SrIJtA
+k9VSUELoMKaSgqjAFH2zZE8aoVx0npPCnVOXUFrouYIvJpI7kNp1vjqN4a0Pg7iH
+Wg+88C2E0mznqmQbT2qL
+=MsA6
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__21_Jan_2013_13_12_30_+1100_ZZLU9HpXdIcywDSR--
