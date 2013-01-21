@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab3AUMDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 07:03:19 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:56523
+	id S1753668Ab3AUMDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 07:03:18 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:41316
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753194Ab3AUMDM (ORCPT
+	by vger.kernel.org with ESMTP id S1752866Ab3AUMDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 07:03:12 -0500
+	Mon, 21 Jan 2013 07:03:13 -0500
 X-IronPort-AV: E=Sophos;i="4.84,506,1355094000"; 
-   d="scan'208";a="169187839"
+   d="scan'208";a="169187840"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Kumar Gala <galak@kernel.crashing.org>
+To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 Cc: kernel-janitors@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 8/15] arch/powerpc/platforms/85xx/p1022_ds.c: adjust duplicate test
-Date: Mon, 21 Jan 2013 14:02:52 +0100
-Message-Id: <1358773378-4700-9-git-send-email-Julia.Lawall@lip6.fr>
+        Jens Taprogge <jens.taprogge@taprogge.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH 9/14] drivers/ipack/devices/ipoctal.c: adjust duplicate test
+Date: Mon, 21 Jan 2013 14:02:53 +0100
+Message-Id: <1358773378-4700-10-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -28,8 +28,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
 Delete successive tests to the same location.  The code tested the result
-of a previous call, that itself was already tested.  It is changed to test
-the result of the most recent call.
+of a previous allocation, that itself was already tested.  It is changed to
+test the result of the most recent allocation.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -53,20 +53,20 @@ expression x,e;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- arch/powerpc/platforms/85xx/p1022_ds.c |    2 +-
+ drivers/ipack/devices/ipoctal.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/platforms/85xx/p1022_ds.c b/arch/powerpc/platforms/85xx/p1022_ds.c
-index e346edf..af5853c 100644
---- a/arch/powerpc/platforms/85xx/p1022_ds.c
-+++ b/arch/powerpc/platforms/85xx/p1022_ds.c
-@@ -302,7 +302,7 @@ static void p1022ds_set_monitor_port(enum fsl_diu_monitor_port port)
- 		goto exit;
- 	}
- 	cs1_addr = lbc_br_to_phys(ecm, num_laws, br1);
--	if (!cs0_addr) {
-+	if (!cs1_addr) {
- 		pr_err("p1022ds: could not determine physical address for CS1"
- 		       " (BR1=%08x)\n", br1);
- 		goto exit;
+diff --git a/drivers/ipack/devices/ipoctal.c b/drivers/ipack/devices/ipoctal.c
+index 8fb2e34..f3a83b1 100644
+--- a/drivers/ipack/devices/ipoctal.c
++++ b/drivers/ipack/devices/ipoctal.c
+@@ -282,7 +282,7 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
+ 	ipoctal->mem8_space =
+ 		devm_ioremap_nocache(&ipoctal->dev->dev,
+ 				     region->start, 0x8000);
+-	if (!addr) {
++	if (!ipoctal->mem8_space) {
+ 		dev_err(&ipoctal->dev->dev,
+ 			"Unable to map slot [%d:%d] MEM8 space!\n",
+ 			bus_nr, slot);
 
