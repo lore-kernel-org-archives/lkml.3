@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab3AUKyu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:54:50 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:36862 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874Ab3AUKys (ORCPT
+	id S1753059Ab3AUKy4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:54:56 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:39065 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752986Ab3AUKyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:54:48 -0500
+	Mon, 21 Jan 2013 05:54:50 -0500
 From: Hideki EIRAKU <hdk@igel.co.jp>
 To: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
         Russell King <linux@arm.linux.org.uk>,
@@ -18,9 +18,9 @@ Cc: linux-sh@vger.kernel.org, iommu@lists.linux-foundation.org,
         Katsuya MATSUBARA <matsu@igel.co.jp>,
         Damian Hobson-Garcia <dhobsong@igel.co.jp>,
         Hideki EIRAKU <hdk@igel.co.jp>
-Subject: [PATCH v6 3/4] ARM: mach-shmobile: sh73a0: Add IPMMU device
-Date: Mon, 21 Jan 2013 19:54:28 +0900
-Message-Id: <1358765669-14567-4-git-send-email-hdk@igel.co.jp>
+Subject: [PATCH v6 4/4] ARM: mach-shmobile: r8a7740: Add IPMMU device
+Date: Mon, 21 Jan 2013 19:54:29 +0900
+Message-Id: <1358765669-14567-5-git-send-email-hdk@igel.co.jp>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1358765669-14567-1-git-send-email-hdk@igel.co.jp>
 References: <1358765669-14567-1-git-send-email-hdk@igel.co.jp>
@@ -36,29 +36,29 @@ while the IPMMU module's MMU function is enabled.
 
 Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
 ---
- arch/arm/mach-shmobile/setup-sh73a0.c | 31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+ arch/arm/mach-shmobile/setup-r8a7740.c | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-diff --git a/arch/arm/mach-shmobile/setup-sh73a0.c b/arch/arm/mach-shmobile/setup-sh73a0.c
-index db99a4a..36c2b2e 100644
---- a/arch/arm/mach-shmobile/setup-sh73a0.c
-+++ b/arch/arm/mach-shmobile/setup-sh73a0.c
-@@ -30,6 +30,7 @@
+diff --git a/arch/arm/mach-shmobile/setup-r8a7740.c b/arch/arm/mach-shmobile/setup-r8a7740.c
+index 0952224..b85bea5 100644
+--- a/arch/arm/mach-shmobile/setup-r8a7740.c
++++ b/arch/arm/mach-shmobile/setup-r8a7740.c
+@@ -28,6 +28,7 @@
  #include <linux/sh_dma.h>
- #include <linux/sh_intc.h>
  #include <linux/sh_timer.h>
+ #include <linux/dma-mapping.h>
 +#include <linux/platform_data/sh_ipmmu.h>
  #include <mach/dma-register.h>
- #include <mach/hardware.h>
- #include <mach/irqs.h>
-@@ -754,6 +755,35 @@ static struct platform_device pmu_device = {
- 	.resource	= pmu_resources,
+ #include <mach/r8a7740.h>
+ #include <mach/pm-rmobile.h>
+@@ -262,6 +263,37 @@ static struct platform_device cmt10_device = {
+ 	.num_resources	= ARRAY_SIZE(cmt10_resources),
  };
  
-+/* an IPMMU module for ICB */
++/* IPMMUI (an IPMMU module for ICB/LMB) */
 +static struct resource ipmmu_resources[] = {
 +	[0] = {
-+		.name	= "IPMMU",
++		.name	= "IPMMUI",
 +		.start	= 0xfe951000,
 +		.end	= 0xfe9510ff,
 +		.flags	= IORESOURCE_MEM,
@@ -67,6 +67,8 @@ index db99a4a..36c2b2e 100644
 +
 +static const char * const ipmmu_dev_names[] = {
 +	"sh_mobile_lcdc_fb.0",
++	"sh_mobile_lcdc_fb.1",
++	"sh_mobile_ceu.0",
 +};
 +
 +static struct shmobile_ipmmu_platform_data ipmmu_platform_data = {
@@ -84,17 +86,17 @@ index db99a4a..36c2b2e 100644
 +	.num_resources  = ARRAY_SIZE(ipmmu_resources),
 +};
 +
- static struct platform_device *sh73a0_early_devices[] __initdata = {
+ static struct platform_device *r8a7740_early_devices[] __initdata = {
  	&scif0_device,
  	&scif1_device,
-@@ -767,6 +797,7 @@ static struct platform_device *sh73a0_early_devices[] __initdata = {
+@@ -273,6 +305,7 @@ static struct platform_device *r8a7740_early_devices[] __initdata = {
+ 	&scif7_device,
+ 	&scifb_device,
  	&cmt10_device,
- 	&tmu00_device,
- 	&tmu01_device,
 +	&ipmmu_device,
  };
  
- static struct platform_device *sh73a0_late_devices[] __initdata = {
+ /* DMA */
 -- 
 1.8.0
 
