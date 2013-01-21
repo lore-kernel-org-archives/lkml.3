@@ -1,48 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab3AUOug (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 09:50:36 -0500
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:45439 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935Ab3AUOue (ORCPT
+	id S1756049Ab3AUOvG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 09:51:06 -0500
+Received: from mx.scalarmail.ca ([98.158.95.75]:3581 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935Ab3AUOvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 09:50:34 -0500
+	Mon, 21 Jan 2013 09:51:04 -0500
+Date: Mon, 21 Jan 2013 09:51:02 -0500 (EST)
+From: Tom St Denis <tstdenis@elliptictech.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Dillow <dave@thedillows.org>, Borislav Petkov <bp@alien8.de>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Message-ID: <1731098824.95194.1358779862449.JavaMail.root@elliptictech.com>
+In-Reply-To: <1358779061.21576.19.camel@gandalf.local.home>
+Subject: Re: IPsec AH use of ahash
 MIME-Version: 1.0
-In-Reply-To: <1358509214-22407-1-git-send-email-fabio.baltieri@linaro.org>
-References: <1358509214-22407-1-git-send-email-fabio.baltieri@linaro.org>
-Date: Mon, 21 Jan 2013 15:50:34 +0100
-Message-ID: <CACRpkdY-VChUeSsb8QppnVjj46EnQ=zv5cWnphoRvZveAvEeDg@mail.gmail.com>
-Subject: Re: [PATCH 0/4] add ux500_wdt support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>,
-        Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-watchdog@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.17.19.111]
+X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC24 (Linux)/7.2.1_GA_2790)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 12:40 PM, Fabio Baltieri
-<fabio.baltieri@linaro.org> wrote:
 
-> this set adds support for the ux500_wdt timer, implemented in the PRCMU
-> unit of ST-Ericsson ux500 architecture.
->
-> The first two patches add the necessary definitions and function export
-> to the PRCMU driver currently in mainline, while the third an fourth
-> patches add the actual watchdog driver and mfd_cell definition to make
-> it probe when PRCMU is compiled in.
->
-> As the patches touches files in both mfd and watchdog subsystems, what do
-> you think is the best way to handle this set?
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+----- Original Message -----
+> From: "Steven Rostedt" <rostedt@goodmis.org>
+> To: "Tom St Denis" <tstdenis@elliptictech.com>
+> Cc: "David Dillow" <dave@thedillows.org>, "Borislav Petkov" <bp@alien8.de>, linux-kernel@vger.kernel.org,
+> netdev@vger.kernel.org
+> Sent: Monday, 21 January, 2013 9:37:41 AM
+> Subject: Re: IPsec AH use of ahash
+> > 
+> > I find that 73% of all stats are made up.
+> 
+> I was only talking about my own experience. I gave no numbers.
 
-As the majority touch the MFD parts, can Wim ack this so Sam can
-take it through the MFD tree?
+That was a joke.  You assumed that because I don't trim whitespace from multi-line comments [among other asinine code style issues] that I'm a bad developer.  Yet what actually happened was a build configuration error in which the file wasn't being compiled fully.
 
-Yours,
-Linus Walleij
+Let it go.
+
+> I was just giving examples of what I use. As those usually apply to
+> what
+> I do. If your code is affected by any configs, you should compile
+> with
+> them on and off to make sure you didn't break them. This is a bit
+> more
+> extensive testing, and not always required. But it does help to do
+> so,
+> as it becomes embarrassing if your code breaks on a config you didn't
+> test.
+> 
+> That's coming from my own experience too ;-)
+
+Yup, I missed the self-test flag in the menu.  That's full on my bad.  
+
+That said, it should be the opposite [default on] since self-testing should be relatively cheap and easy.  Generally unless it's prohibitive you want as much self-test code-path testing in the default build as possible.  Users who are tight on memory can turn it off if it suits their platform.
+
+> > I actually did resubmit this morning with most of the checkpatch
+> > issues fixed.
+> 
+> Thank you.
+
+Like I said I'm not trying to force everyone else to adopt to how we do things.  I was just airing out a complaint from the point of view of a new submitter.
+
+I still think checkpatch rules are full of sh!t but I know now to run code I submit through it regardless of where the code came from.  :-)
+
+> Your boss micro manages your time that much? And 45 mintes to do
+> that?
+
+Strictly speaking I haven't actually tried the code out in the lab yet.  I was hoping that testmgr would run but it hasn't.
+
+Realistically speaking none of the changes I made this morning should have any bearing on the correctness of the code.  I'd be surprised if it failed in the lab.
+
+> > Seriously, no spaces on the trailing edge of multi line comments?
+> >  :-/
+> 
+> Some of checkpatch'es complaints are annoying. I'll grant you that.
+> And
+> checkpatch is more of a guideline than a strict rule. It's up to the
+> maintainer of the code to determine how much checkpatch should be
+> enforced.
+
+That's not the impression I got from this weekends exchange.  
+
+> For example, checkpatch complains on code like:
+> 
+> +       asm volatile (
+> +#ifdef CONFIG_X86_64
+> +                       "       xchg   %%rbx,%%rsp      \n"
+> +#else
+> +                       "       xchgl   %%ebx,%%esp     \n"
+> +#endif
+> +                       "       int3                    \n"
+> +                       "       .globl jprobe_return_end\n"
+> +                       "       jprobe_return_end:      \n"
+> +                       "       nop                     \n"::"b"
+> +                       (kcb->jprobe_saved_sp):"memory");
+> 
+> Because the white space before the '\n' is not needed. But adding
+> that
+> whitespace makes it easier to read the assembly.
+
+So who gets to decide when/where to deviate from the rules?  
+ 
+> When enforcing checkpatch makes the code less readable, that's when
+> it
+> should be ignored. But again, that's really up to the maintainer of
+> the
+> code to decide.
+
+So we divine what the maintainer wants and doesn't want when we submit patches?  I think for me I'm going to follow them literally for now to avoid issues. 
+
+> > Anyways, I did re-submit.  I still have no idea how testmgr works
+> > but hopefully someone can pick it up from there.
+> 
+> Well thank you again. This is the way the kernel community works.
+> Just
+> state you're not familiar with testmgr, and someone who is should
+> check
+> it out.
+
+Hopefully :-)
+
+Tom
