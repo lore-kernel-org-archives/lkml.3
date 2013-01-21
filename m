@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab3AUNGq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 08:06:46 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:39087 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab3AUNGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 08:06:44 -0500
-Date: Mon, 21 Jan 2013 14:09:42 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
-Cc: Udo van den Heuvel <udovdh@xs4all.nl>, linux-kernel@vger.kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Jacob Shin <jacob.shin@amd.com>
-Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
-Message-ID: <20130121130942.GB4445@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	=?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>,
-	Udo van den Heuvel <udovdh@xs4all.nl>, linux-kernel@vger.kernel.org,
-	Boris Ostrovsky <boris.ostrovsky@amd.com>,
-	Jacob Shin <jacob.shin@amd.com>
-References: <50FBC7EF.6040207@xs4all.nl>
- <20130120103652.GB16800@pd.tnic>
- <50FBC994.8020409@xs4all.nl>
- <20130120111920.GL25591@8bytes.org>
- <50FBD413.1000406@xs4all.nl>
- <20130120114011.GN25591@8bytes.org>
- <20130120114828.GB16519@pd.tnic>
- <20130120115755.GO25591@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130120115755.GO25591@8bytes.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754696Ab3AUNII (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 08:08:08 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:54285 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736Ab3AUNIG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 08:08:06 -0500
+From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+To: mturquette@linaro.org
+Cc: patches@linaro.org, linaro-dev@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Subject: [PATCH] clk: allow reparenting of a clock to the orphan list
+Date: Mon, 21 Jan 2013 18:33:57 +0530
+Message-Id: <1358773437-21163-1-git-send-email-rajagopal.venkat@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 12:57:55PM +0100, Jörg Rödel wrote:
-> BorisO is no longer with AMD afaik.
+Allow reparenting of a clock(multiple and single parent)
+to the orphan list when new parent clock is NULL.
 
-Why am I not surprised...
+Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+---
+ drivers/clk/clk.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
-> I wrote an email to Sherry and Suravee and asked them to either send
-> me hardware to write the fix on my own or to send a fix for the issue.
-> Let's see what happens...
-
-Btw, while we're at it, here's some more h0rkage from my PD box:
-
-[    0.220022] [Firmware Bug]: AMD-Vi: IOAPIC[9] not in IVRS table
-[    0.220078] [Firmware Bug]: AMD-Vi: IOAPIC[10] not in IVRS table
-[    0.220132] [Firmware Bug]: AMD-Vi: No southbridge IOAPIC found in IVRS table
-[    0.220187] AMD-Vi: Disabling interrupt remapping due to BIOS Bug(s)
-
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index e964994..5c9277a 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1102,7 +1102,7 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+ 	struct dentry *new_parent_d;
+ #endif
+ 
+-	if (!clk || !new_parent)
++	if (!clk)
+ 		return;
+ 
+ 	hlist_del(&clk->child_node);
+@@ -1140,11 +1140,14 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
+ {
+ 	struct clk *old_parent;
+ 	unsigned long flags;
+-	int ret = -EINVAL;
+-	u8 i;
++	int ret = 0;
++	u8 i = 0;
+ 
+ 	old_parent = clk->parent;
+ 
++	if (clk->num_parents == 1 || !parent)
++		goto migrate;
++
+ 	if (!clk->parents)
+ 		clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
+ 								GFP_KERNEL);
+@@ -1165,11 +1168,13 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
+ 	}
+ 
+ 	if (i == clk->num_parents) {
++		ret = -EINVAL;
+ 		pr_debug("%s: clock %s is not a possible parent of clock %s\n",
+ 				__func__, parent->name, clk->name);
+ 		goto out;
+ 	}
+ 
++migrate:
+ 	/* migrate prepare and enable */
+ 	if (clk->prepare_count)
+ 		__clk_prepare(parent);
+@@ -1181,7 +1186,8 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
+ 	spin_unlock_irqrestore(&enable_lock, flags);
+ 
+ 	/* change clock input source */
+-	ret = clk->ops->set_parent(clk->hw, i);
++	if (clk->ops->set_parent)
++		ret = clk->ops->set_parent(clk->hw, i);
+ 
+ 	/* clean up old prepare and enable */
+ 	spin_lock_irqsave(&enable_lock, flags);
+@@ -1215,7 +1221,7 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
+ 	if (!clk || !clk->ops)
+ 		return -EINVAL;
+ 
+-	if (!clk->ops->set_parent)
++	if (clk->num_parents > 1 && !clk->ops->set_parent)
+ 		return -ENOSYS;
+ 
+ 	/* prevent racing with updates to the clock topology */
+@@ -1226,7 +1232,7 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
+ 
+ 	/* propagate PRE_RATE_CHANGE notifications */
+ 	if (clk->notifier_count)
+-		ret = __clk_speculate_rates(clk, parent->rate);
++		ret = __clk_speculate_rates(clk, parent ? parent->rate : 0);
+ 
+ 	/* abort if a driver objects */
+ 	if (ret == NOTIFY_STOP)
 -- 
-Regards/Gruss,
-    Boris.
+1.7.10.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
