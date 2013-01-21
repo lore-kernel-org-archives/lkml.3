@@ -1,162 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782Ab3AUHeO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 02:34:14 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:60020 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab3AUHeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 02:34:13 -0500
-Message-ID: <50FCEF6C.6010801@linux.vnet.ibm.com>
-Date: Mon, 21 Jan 2013 15:34:04 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1751976Ab3AUHfp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 02:35:45 -0500
+Received: from mga02.intel.com ([134.134.136.20]:28694 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751365Ab3AUHfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 02:35:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,504,1355126400"; 
+   d="asc'?scan'208";a="274544626"
+Date: Mon, 21 Jan 2013 02:25:56 -0500
+From: Chen Gong <gong.chen@linux.intel.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 4/5] clocksource: Enlarge the maxim time interval
+ when configuring the scale and shift
+Message-ID: <20130121072556.GA11915@gchen.bj.intel.com>
+Mail-Followup-To: Feng Tang <feng.tang@intel.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+	"H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
+	Len Brown <lenb@kernel.org>,
+	"Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+	linux-kernel@vger.kernel.org
+References: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
+ <1358750325-21217-5-git-send-email-feng.tang@intel.com>
 MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
-        mingo@kernel.org, a.p.zijlstra@chello.nl
-Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
-References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com> <50ED384C.1030301@linux.vnet.ibm.com> <1357977704.6796.47.camel@marge.simpson.net> <1357985943.6796.55.camel@marge.simpson.net> <1358155290.5631.19.camel@marge.simpson.net> <50F79256.1010900@linux.vnet.ibm.com> <1358654997.5743.17.camel@marge.simpson.net> <50FCACE3.5000706@linux.vnet.ibm.com> <1358743128.4994.33.camel@marge.simpson.net> <50FCCCF5.30504@linux.vnet.ibm.com> <1358750523.4994.55.camel@marge.simpson.net>
-In-Reply-To: <1358750523.4994.55.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012107-2674-0000-0000-0000078A34CB
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
+Content-Disposition: inline
+In-Reply-To: <1358750325-21217-5-git-send-email-feng.tang@intel.com>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 02:42 PM, Mike Galbraith wrote:
-> On Mon, 2013-01-21 at 13:07 +0800, Michael Wang wrote:
-> 
->> That seems like the default one, could you please show me the numbers in
->> your datapoint file?
-> 
-> Yup, I do not touch the workfile.  Datapoints is what you see in the
-> tabulated result...
-> 
-> 1
-> 1
-> 1
-> 5
-> 5
-> 5
-> 10
-> 10
-> 10
-> ...
-> 
-> so it does three consecutive runs at each load level.  I quiesce the
-> box, set governor to performance, echo 250 32000 32 4096
->> /proc/sys/kernel/sem, then ./multitask -nl -f, and point it
-> at ./datapoints.
 
-I have changed the "/proc/sys/kernel/sem" to:
+--uAKRQypu60I7Lcqm
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-2000    2048000 256     1024
+On Mon, Jan 21, 2013 at 02:38:44PM +0800, Feng Tang wrote:
+> Date:	Mon, 21 Jan 2013 14:38:44 +0800
+> From: Feng Tang <feng.tang@intel.com>
+> To: Thomas Gleixner <tglx@linutronix.de>, John Stultz
+>  <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin"
+>  <hpa@linux.intel.com>, x86@kernel.org, Len Brown <lenb@kernel.org>,
+>  "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+>  linux-kernel@vger.kernel.org
+> Cc: Feng Tang <feng.tang@intel.com>
+> Subject: [RFC PATCH 4/5] clocksource: Enlarge the maxim time interval when
+>  configuring the scale and shift
+> X-Mailer: git-send-email 1.7.9.5
+>=20
+> On our x86 platform, we see a failure case of calling clocksource_cyc2ns(=
+),
+> which return a negative value. The reason is the time interval was large
+> (more than 1000 seconds), while its TSC frequency is 2GHz, so the followi=
+ng
+> fomular overflowed:
+> 	((u64) cycles * mult) >> shift
+>=20
+> So enlarge the time interval from 10 mins to 40 mins to fix the bug.
+>=20
+> Another solution may be adding a "max_interval" in struct clocksource, and
+> use a default value (like current 10 minutes) when clocksource driver
+> doesn't set it.
+>=20
+As you said, it looks like it is a littleb it arbitrary from 10m -> 40m, I
+think max_interval is a better choice, if timer guys not minding too many
+control knobs :-).
 
-and run few rounds, seems like I can't reproduce this issue on my 12 cpu
-X86 server:
-
-	prev		post
-Tasks    jobs/min  	jobs/min
-    1      508.39    	506.69
-    5     2792.63   	2792.63
-   10     5454.55   	5449.64
-   20    10262.49  	10271.19
-   40    18089.55  	18184.55
-   80    28995.22  	28960.57
-  160    41365.19  	41613.73
-  320    53099.67  	52767.35
-  640    61308.88  	61483.83
- 1280    66707.95  	66484.96
- 2560    69736.58  	69350.02
-
-Almost nothing changed...I would like to find another machine and do the
-test again later.
-
-> 
->> I'm not familiar with this benchmark, but I'd like to have a try on my
->> server, to make sure whether it is a generic issue.
-> 
-> One thing I didn't like about your changes is that you don't ask
-> wake_affine() if it's ok to pull cross node or not, which I though might
-> induce imbalance, but twiddling that didn't fix up the collapse, pretty
-> much leaving only the balance path.
-
-wake_affine() will be asked before trying to use the idle sibling
-selected from current cpu's domain, doesn't it? It's just been delayed
-since it's cost is too high.
-
-But you notified me that I missed the case when prev == current, not
-sure whether it's the killer, but will correct it.
-
-> 
->>>> And I'm confusing about how those new parameter value was figured out
->>>> and how could them help solve the possible issue?
->>>
->>> Oh, that's easy.  I set sched_min_granularity_ns such that last_buddy
->>> kicks in when a third task arrives on a runqueue, and set
->>> sched_wakeup_granularity_ns near minimum that still allows wakeup
->>> preemption to occur.  Combined effect is reduced over-scheduling.
->>
->> That sounds very hard, to catch the timing, whatever, it could be an
->> important clue for analysis.
-> 
-> (Play with the knobs with a bunch of different loads, I think you'll
-> find that those settings work well)
-> 
->>>> Do you have any idea about which part in this patch set may cause the issue?
->>>
->>> Nope, I'm as puzzled by that as you are.  When the box had 40 cores,
->>> both virgin and patched showed over-scheduling effects, but not like
->>> this.  With 20 cores, symptoms changed in a most puzzling way, and I
->>> don't see how you'd be directly responsible.
->>
->> Hmm...
->>
->>>
->>>> One change by designed is that, for old logical, if it's a wake up and
->>>> we found affine sd, the select func will never go into the balance path,
->>>> but the new logical will, in some cases, do you think this could be a
->>>> problem?
->>>
->>> Since it's the high load end, where looking for an idle core is most
->>> likely to be a waste of time, it makes sense that entering the balance
->>> path would hurt _some_, it isn't free.. except for twiddling preemption
->>> knobs making the collapse just go away.  We're still going to enter that
->>> path if all cores are busy, no matter how I twiddle those knobs.
->>
->> May be we could try change this back to the old way later, after the aim
->> 7 test on my server.
-> 
-> Yeah, something funny is going on.  I'd like select_idle_sibling() to
-> just go away, that task be integrated into one and only one short and
-> sweet balance path.  I don't see why fine_idlest* needs to continue
-> traversal after seeing a zero.  
-It should be just fine to say gee, we're
-> done.  
-
-Yes, that's true :)
-
-Hohum, so much for pure test and report, twiddle twiddle tweak,
-> bend spindle mutilate ;-) 
-
-Scheduler is impossible to be analysis some time, the only way to prove
-is the painful endless testing...and usually, we still missed some thing
-in the end...
-
-Regards,
-Michael Wang
-
-
->    
-> -Mike
-> 
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
+> ---
+>  kernel/time/clocksource.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+> index c958338..48fbfcb 100644
+> --- a/kernel/time/clocksource.c
+> +++ b/kernel/time/clocksource.c
+> @@ -663,7 +663,7 @@ void __clocksource_updatefreq_scale(struct clocksourc=
+e *cs, u32 scale, u32 freq)
+>  	 * Calc the maximum number of seconds which we can run before
+>  	 * wrapping around. For clocksources which have a mask > 32bit
+>  	 * we need to limit the max sleep time to have a good
+> -	 * conversion precision. 10 minutes is still a reasonable
+> +	 * conversion precision. 40 minutes is still a reasonable
+>  	 * amount. That results in a shift value of 24 for a
+>  	 * clocksource with mask >=3D 40bit and f >=3D 4GHz. That maps to
+>  	 * ~ 0.06ppm granularity for NTP. We apply the same 12.5%
+> @@ -674,8 +674,8 @@ void __clocksource_updatefreq_scale(struct clocksourc=
+e *cs, u32 scale, u32 freq)
+>  	do_div(sec, scale);
+>  	if (!sec)
+>  		sec =3D 1;
+> -	else if (sec > 600 && cs->mask > UINT_MAX)
+> -		sec =3D 600;
+> +	else if (sec > 2400 && cs->mask > UINT_MAX)
+> +		sec =3D 2400;
+> =20
+>  	clocks_calc_mult_shift(&cs->mult, &cs->shift, freq,
+>  			       NSEC_PER_SEC / scale, sec * scale);
+> --=20
+> 1.7.9.5
+>=20
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
+--uAKRQypu60I7Lcqm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ/O2DAAoJEI01n1+kOSLH/HYP/jluhyitLpJVOBsk3OKC0Uxi
+RLKPRODwZSdaR+Y+7w/xPySPFdOmWJd0DD2VJzmBdO6L5NldSv0iOwE0zihOoM98
+RM/xDniLpk3SEjAOC+EzorbNz2xdJn0h3URBxMs73geHarW3+WF30h2ou5Y4X9WN
+V0Tb6htlD7uRErCf7lbWn/HR0NdZkji7n2k3MU+7kYtaTCv5278TMjRSMCSRN5R4
+f0BSVBOcq6+3mm6zlosCS+6aBi86p0zkpyY8E3t3WL6xjbs+U2kqCY+rwgGgZ2Uk
+uQE8A82r0yB2NtGhIPgD9YBTZ9dG0uoAi59qH9FpCszNo4qntOM910bdFR4AKGlR
+7dWo4uL0hPGq8tFvKfXTx6Ja1LicHc7SSAs4P3zBiSbYqsOno0jgh2BL8y4hMITy
+E2M2hDBr3VRdmZTV0na8FVaFxQjYIsdjC8k3wTlJfGEPRqAEqPkbi6IZUPeQ1Qkx
+1d4Wk33ob9c450MXR6v8kNy691c0osO9z0aPYPdiiteb9ymVzwBPuOkoMAIqt2+i
+p6RdO+F2suh2+uBcjzURx0u/LgKdB+Me/f4UTeZgwmAng95cdFfXbtWPnIZWohac
+90whRbVBJq78QtX3NLqtM/SFn11m30Q9KsPr13v23I2bBXDypJ8l4jLWv99tz1it
+JAkzCosA+K6f2ePuTn7D
+=Q1W3
+-----END PGP SIGNATURE-----
+
+--uAKRQypu60I7Lcqm--
