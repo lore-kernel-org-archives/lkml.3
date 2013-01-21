@@ -1,136 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab3AULEs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 06:04:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46900 "EHLO mx2.suse.de"
+	id S1753000Ab3AULFM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 06:05:12 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:58516 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752015Ab3AULEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 06:04:47 -0500
-Date: Mon, 21 Jan 2013 12:04:42 +0100
-From: Jan Kara <jack@suse.cz>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: jack@suse.cz, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>,
-        Bonggil Bak <bgbak@samsung.com>
-Subject: Re: [PATCH] udf: add extent cache support in case of file reading
-Message-ID: <20130121110442.GF5588@quack.suse.cz>
-References: <1358561834-8108-1-git-send-email-linkinjeon@gmail.com>
+	id S1752717Ab3AULFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 06:05:10 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <sameo@linux.intel.com>, <balbi@ti.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>
+CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <rogerq@ti.com>
+Subject: [PATCH v9 05/22] mfd: omap-usb-tll: Clean up clock handling
+Date: Mon, 21 Jan 2013 13:04:46 +0200
+Message-ID: <1358766286-5425-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <20130118145906.GE23505@n2100.arm.linux.org.uk>
+References: <20130118145906.GE23505@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358561834-8108-1-git-send-email-linkinjeon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 19-01-13 11:17:14, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
-> 
-> This patch implements extent caching in case of file reading.
-> While reading a file, currently, UDF reads metadata serially
-> which takes a lot of time depending on the number of extents present
-> in the file. Caching last accessd extent improves metadata read time.
-> Instead of reading file metadata from start, now we read from
-> the cached extent.
-> 
-> This patch considerably improves the time spent by CPU in kernel mode.
-> For example, while reading a 10.9 GB file using dd:
-> Time before applying patch:
-> 11677022208 bytes (10.9GB) copied, 1529.748921 seconds, 7.3MB/s
-> real    25m 29.85s
-> user    0m 12.41s
-> sys     15m 34.75s
-> 
-> Time after applying patch:
-> 11677022208 bytes (10.9GB) copied, 1469.338231 seconds, 7.6MB/s
-> real    24m 29.44s
-> user    0m 15.73s
-> sys     3m 27.61s
-> 
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-> Signed-off-by: Bonggil Bak <bgbak@samsung.com>
-  Thanks for the patch Namjae. I did a few more changes to the patch.
-Please check them whether you think they are OK.
+Every channel has a functional clock that is similarly named.
+It makes sense to use a for loop to manage these clocks as OMAPs
+can come with up to 3 channels.
 
-diff --git a/fs/udf/ialloc.c b/fs/udf/ialloc.c
-index 0cb208e..7e5aae4 100644
---- a/fs/udf/ialloc.c
-+++ b/fs/udf/ialloc.c
-@@ -117,10 +117,6 @@ struct inode *udf_new_inode(struct inode *dir, umode_t mode, int *err)
- 	iinfo->i_lenAlloc = 0;
- 	iinfo->i_use = 0;
- 	iinfo->i_checkpoint = 1;
--	memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
--	spin_lock_init(&(iinfo->i_extent_cache_lock));
--	/* Mark extent cache as invalid for now */
--	iinfo->cached_extent.lstart = -1;
- 	if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_USE_AD_IN_ICB))
- 		iinfo->i_alloc_type = ICBTAG_FLAG_AD_IN_ICB;
- 	else if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_USE_SHORT_AD))
-diff --git a/fs/udf/inode.c b/fs/udf/inode.c
-index 8494b8c..fb0c4c4 100644
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -1305,9 +1305,6 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
- 	iinfo->i_lenAlloc = 0;
- 	iinfo->i_next_alloc_block = 0;
- 	iinfo->i_next_alloc_goal = 0;
--	memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
--	spin_lock_init(&(iinfo->i_extent_cache_lock));
--	iinfo->cached_extent.lstart = -1;
- 	if (fe->descTag.tagIdent == cpu_to_le16(TAG_IDENT_EFE)) {
- 		iinfo->i_efe = 1;
- 		iinfo->i_use = 0;
+Dynamically allocate and get channel clocks depending on the
+number of clocks avaiable on the platform.
 
-  Initialization now happens in udf_alloc_inode(). Also it's not necessary
-to initialized cached_extent.epos when lstart == -1 - noone should look at
-that.
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/mfd/omap-usb-tll.c |   87 +++++++++++++++++++++++++++-----------------
+ 1 files changed, 54 insertions(+), 33 deletions(-)
 
-@@ -2222,6 +2219,8 @@ int udf_read_extent_cache(struct inode *inode, loff_t bcount,
- 		*lbcount = iinfo->cached_extent.lstart;
- 		memcpy(pos, &iinfo->cached_extent.epos,
- 		       sizeof(struct extent_position));
-+		if (pos->bh)
-+			get_bh(pos->bh);
- 		spin_unlock(&iinfo->i_extent_cache_lock);
- 		return 1;
- 	} else
-  This is the most important - we should give buffer reference to pos->bh.
-Caller will eventually free it right?
-
-@@ -2236,8 +2235,7 @@ void udf_update_extent_cache(struct inode *inode, loff_t estart,
- 	struct udf_inode_info *iinfo = UDF_I(inode);
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index 9a19cc7..bf7355e 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -96,10 +96,9 @@
+ #define is_ehci_tll_mode(x)	(x == OMAP_EHCI_PORT_MODE_TLL)
  
- 	spin_lock(&iinfo->i_extent_cache_lock);
--	if (pos->bh != NULL)
--		/* Increase ref count */
-+	if (pos->bh)
- 		get_bh(pos->bh);
- 	memcpy(&iinfo->cached_extent.epos, pos,
- 	       sizeof(struct extent_position));
-@@ -2266,4 +2264,3 @@ void udf_clear_extent_cache(struct udf_inode_info *iinfo)
- 		iinfo->cached_extent.lstart = -1;
- 	}
- }
+ struct usbtll_omap {
+-	struct clk				*usbtll_p1_fck;
+-	struct clk				*usbtll_p2_fck;
+ 	int					nch;	/* num. of channels */
+ 	struct usbhs_omap_platform_data		*pdata;
++	struct clk				**ch_clk;
+ 	/* secure the register updates */
+ 	spinlock_t				lock;
+ };
+@@ -225,26 +224,12 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 
+ 	tll->pdata = pdata;
+ 
+-	tll->usbtll_p1_fck = clk_get(dev, "usb_tll_hs_usb_ch0_clk");
+-	if (IS_ERR(tll->usbtll_p1_fck)) {
+-		ret = PTR_ERR(tll->usbtll_p1_fck);
+-		dev_err(dev, "usbtll_p1_fck failed error:%d\n", ret);
+-		return ret;
+-	}
 -
-diff --git a/fs/udf/super.c b/fs/udf/super.c
-index 186adbf..da8ce9f 100644
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -134,6 +134,8 @@ static struct inode *udf_alloc_inode(struct super_block *sb)
- 	ei->i_next_alloc_goal = 0;
- 	ei->i_strat4096 = 0;
- 	init_rwsem(&ei->i_data_sem);
-+	ei->cached_extent.lstart = -1;
-+	spin_lock_init(&ei->i_extent_cache_lock);
+-	tll->usbtll_p2_fck = clk_get(dev, "usb_tll_hs_usb_ch1_clk");
+-	if (IS_ERR(tll->usbtll_p2_fck)) {
+-		ret = PTR_ERR(tll->usbtll_p2_fck);
+-		dev_err(dev, "usbtll_p2_fck failed error:%d\n", ret);
+-		goto err_p2_fck;
+-	}
+-
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	base = devm_request_and_ioremap(dev, res);
+ 	if (!base) {
+ 		ret = -EADDRNOTAVAIL;
+ 		dev_err(dev, "Resource request/ioremap failed:%d\n", ret);
+-		goto err_res;
++		return ret;
+ 	}
  
- 	return &ei->vfs_inode;
+ 	platform_set_drvdata(pdev, tll);
+@@ -270,6 +255,29 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 		break;
+ 	}
+ 
++	spin_unlock_irqrestore(&tll->lock, flags);
++
++	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
++						GFP_KERNEL);
++	if (!tll->ch_clk) {
++		ret = -ENOMEM;
++		dev_err(dev, "Couldn't allocate memory for channel clocks\n");
++		goto err_clk_alloc;
++	}
++
++	for (i = 0; i < tll->nch; i++) {
++		char clkname[] = "usb_tll_hs_usb_chx_clk";
++
++		snprintf(clkname, sizeof(clkname),
++					"usb_tll_hs_usb_ch%d_clk", i);
++		tll->ch_clk[i] = clk_get(dev, clkname);
++
++		if (IS_ERR(tll->ch_clk[i]))
++			dev_dbg(dev, "can't get clock : %s\n", clkname);
++	}
++
++	spin_lock_irqsave(&tll->lock, flags);
++
+ 	if (is_ehci_tll_mode(pdata->port_mode[0]) ||
+ 	    is_ehci_tll_mode(pdata->port_mode[1]) ||
+ 	    is_ehci_tll_mode(pdata->port_mode[2]) ||
+@@ -321,11 +329,9 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+-err_res:
+-	clk_put(tll->usbtll_p2_fck);
+-
+-err_p2_fck:
+-	clk_put(tll->usbtll_p1_fck);
++err_clk_alloc:
++	pm_runtime_put_sync(dev);
++	pm_runtime_disable(dev);
+ 
+ 	return ret;
  }
-
-								Honza
+@@ -339,9 +345,12 @@ err_p2_fck:
+ static int usbtll_omap_remove(struct platform_device *pdev)
+ {
+ 	struct usbtll_omap *tll = platform_get_drvdata(pdev);
++	int i;
++
++	for (i = 0; i < tll->nch; i++)
++		if (!IS_ERR(tll->ch_clk[i]))
++			clk_put(tll->ch_clk[i]);
+ 
+-	clk_put(tll->usbtll_p2_fck);
+-	clk_put(tll->usbtll_p1_fck);
+ 	pm_runtime_disable(&pdev->dev);
+ 	return 0;
+ }
+@@ -351,6 +360,7 @@ static int usbtll_runtime_resume(struct device *dev)
+ 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
+ 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
+ 	unsigned long				flags;
++	int i;
+ 
+ 	dev_dbg(dev, "usbtll_runtime_resume\n");
+ 
+@@ -361,11 +371,20 @@ static int usbtll_runtime_resume(struct device *dev)
+ 
+ 	spin_lock_irqsave(&tll->lock, flags);
+ 
+-	if (is_ehci_tll_mode(pdata->port_mode[0]))
+-		clk_enable(tll->usbtll_p1_fck);
++	for (i = 0; i < tll->nch; i++) {
++		if (is_ehci_tll_mode(pdata->port_mode[i])) {
++			int r;
+ 
+-	if (is_ehci_tll_mode(pdata->port_mode[1]))
+-		clk_enable(tll->usbtll_p2_fck);
++			if (IS_ERR(tll->ch_clk[i]))
++				continue;
++
++			r = clk_enable(tll->ch_clk[i]);
++			if (r) {
++				dev_err(dev,
++				 "Error enabling ch %d clock: %d\n", i, r);
++			}
++		}
++	}
+ 
+ 	spin_unlock_irqrestore(&tll->lock, flags);
+ 
+@@ -377,6 +396,7 @@ static int usbtll_runtime_suspend(struct device *dev)
+ 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
+ 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
+ 	unsigned long				flags;
++	int i;
+ 
+ 	dev_dbg(dev, "usbtll_runtime_suspend\n");
+ 
+@@ -387,11 +407,12 @@ static int usbtll_runtime_suspend(struct device *dev)
+ 
+ 	spin_lock_irqsave(&tll->lock, flags);
+ 
+-	if (is_ehci_tll_mode(pdata->port_mode[0]))
+-		clk_disable(tll->usbtll_p1_fck);
+-
+-	if (is_ehci_tll_mode(pdata->port_mode[1]))
+-		clk_disable(tll->usbtll_p2_fck);
++	for (i = 0; i < tll->nch; i++) {
++		if (is_ehci_tll_mode(pdata->port_mode[i])) {
++			if (!IS_ERR(tll->ch_clk[i]))
++				clk_disable(tll->ch_clk[i]);
++		}
++	}
+ 
+ 	spin_unlock_irqrestore(&tll->lock, flags);
+ 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.4.1
+
