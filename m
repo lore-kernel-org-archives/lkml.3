@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab3AURV1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:21:27 -0500
-Received: from exprod7og108.obsmtp.com ([64.18.2.169]:43706 "EHLO
-	exprod7og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755947Ab3AURVY (ORCPT
+	id S1756323Ab3AURVp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:21:45 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:59142 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754632Ab3AURRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:21:24 -0500
-X-Greylist: delayed 5479 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jan 2013 12:21:24 EST
-Message-ID: <50FD637F.2080604@genband.com>
-Date: Mon, 21 Jan 2013 09:49:19 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Tom St Denis <tstdenis@elliptictech.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, David Dillow <dave@thedillows.org>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: IPsec AH use of ahash
-References: <1161725580.95543.1358782288077.JavaMail.root@elliptictech.com>
-In-Reply-To: <1161725580.95543.1358782288077.JavaMail.root@elliptictech.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Jan 2013 15:49:20.0950 (UTC) FILETIME=[E0CE3560:01CDF7EE]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19572.000
-X-TM-AS-Result: No--9.927900-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+	Mon, 21 Jan 2013 12:17:02 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>
+Subject: [PATCH 14/15] samples/seccomp: be less stupid about cross compiling
+Date: Mon, 21 Jan 2013 17:16:07 +0000
+Message-Id: <1358788568-11137-15-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:bz5MEDaE5cFCRcootqhtm0c6UiBIII2qUA4+t1jZo11
+ 2LlkdAyeAjSAYvMa1xSfzXjnTdG3w2JoUmjbzirJ0qGz+h1JIt
+ FzpVqpt7x7r/Zytq6QdrjYFYhMume3VJr7pRO1ShRPpocFUNte
+ 1THV8yFZOo/Csi0gtBJQf2gCL607LG90qKC1PneVQbMCbaVExc
+ 28rwNYKWmoNhp7CSyhog13fnvjMn6hIw1+xCJsQ4F4xtVHEKQQ
+ 5+5dtXgs3jZp5nAo8nuGEpeXlBBD5ee2XtRK4JsXbT4okBppXe
+ sC6JVr6tRE3j5uuJ6VZp/NVSj46odRp6AX69zuGQ7cbzVZo+Py
+ 2H6J89uRhEMCuwJXL9NSdfItKHNV5OZHqDvPO7F8I
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 09:31 AM, Tom St Denis wrote:
-> ----- Original Message -----
->> From: "Steven Rostedt"<rostedt@goodmis.org> To: "Tom St
->> Denis"<tstdenis@elliptictech.com> Cc: "David
->> Dillow"<dave@thedillows.org>, "Borislav Petkov"<bp@alien8.de>,
->> linux-kernel@vger.kernel.org, netdev@vger.kernel.org Sent: Monday,
->> 21 January, 2013 10:28:33 AM Subject: Re: IPsec AH use of ahash
->>
->> When I send a patch to another maintainer, and they tell me to fix
->> the way I did the comments, I don't complain. I fix the comments
->> and resend.
->
-> Which is less of a problem when there is a timeliness factor.  In the
-> business world people move on and don't work at that pace.
+The seccomp filters are currently built for the build
+host, not for the machine that they are going to run
+on, but they are also built for with the -m32 flag
+if the kernel is built for a 32 bit machine, both
+of which seems rather odd.
 
-There can be an impedance mismatch between the "get it done to hit a 
-deadline" business world and the "get it right no matter how long it 
-takes" world of some open-source projects.
+It broke allyesconfig on my machine, which is x86-64, but
+building for 32 bit ARM, with this error message:
 
-However, many businesses have recognized that they get far more benefit 
-from dealing with open-source than it costs them in designer time.
+In file included from /usr/include/stdio.h:28:0,
+                 from samples/seccomp/bpf-fancy.c:15:
+/usr/include/features.h:324:26: fatal error: bits/predefs.h: No such file or directory
 
- From the point of view of my employer (I work in telecom) the choices 
-are either:
+because there are no 32 bit libc headers installed on
+this machine. We should really be building all the
+samples for the target machine rather than the build
+host, but since the infrastructure for that appears
+to be missing right now, let's be a little bit smarter
+and not pass the '-m32' flag to the HOSTCC when cross-
+compiling.
 
-a) work with the kernel to get the code submitted into mainline
-b) keep the changes private and port them every time we upgrade
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: James Morris <james.l.morris@oracle.com>
+---
+ samples/seccomp/Makefile |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Over a decade or more my management has come to realize that option "a" 
-is generally better in the long term, even if it's a bit more effort in 
-the short term.
+diff --git a/samples/seccomp/Makefile b/samples/seccomp/Makefile
+index bbbd276..7203e66 100644
+--- a/samples/seccomp/Makefile
++++ b/samples/seccomp/Makefile
+@@ -19,6 +19,7 @@ bpf-direct-objs := bpf-direct.o
+ 
+ # Try to match the kernel target.
+ ifndef CONFIG_64BIT
++ifndef CROSS_COMPILE
+ 
+ # s390 has -m31 flag to build 31 bit binaries
+ ifndef CONFIG_S390
+@@ -35,6 +36,7 @@ HOSTLOADLIBES_bpf-direct += $(MFLAG)
+ HOSTLOADLIBES_bpf-fancy += $(MFLAG)
+ HOSTLOADLIBES_dropper += $(MFLAG)
+ endif
++endif
+ 
+ # Tell kbuild to always build the programs
+ always := $(hostprogs-y)
+-- 
+1.7.10.4
 
-There are exceptions of course, and sometimes we just need to do a 
-quick-and-dirty solution to get something out the door.
-
-Chris
