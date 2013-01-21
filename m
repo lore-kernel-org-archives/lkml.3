@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab3AUDmT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 22:42:19 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:46203 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643Ab3AUDmS (ORCPT
+	id S1752707Ab3AUDqR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 22:46:17 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:48731 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642Ab3AUDqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 22:42:18 -0500
-From: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
-        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
-        "Yili (Neil)" <neil.yi@huawei.com>,
-        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
-        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
-        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
-        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>
-Subject: RE: USB: storage: optimize the matching rules and support new
- switch command for Huawei USB storage devices
-Thread-Topic: USB: storage: optimize the matching rules and support new
- switch command for Huawei USB storage devices
-Thread-Index: AQHN9dV9RQ2hZuXEpkGIic+AV6y7wZhTJZOA
-Date: Mon, 21 Jan 2013 03:41:20 +0000
-Message-ID: <910F9D9E13B84F4C8FA771DC9BDE99F327016D43@szxeml546-mbx.china.huawei.com>
-References: <fe8c85797e7f.7e7ffe8c8579@huawei.com>
- <20130118234226.GA30704@kroah.com>
-In-Reply-To: <20130118234226.GA30704@kroah.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.11.34.182]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+	Sun, 20 Jan 2013 22:46:15 -0500
+Date: Mon, 21 Jan 2013 14:46:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: linux-next: manual merge of the tty tree with Linus' tree
+Message-Id: <20130121144604.3c2f94e93ce6252aa43d3d9e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_Jan_2013_14_46_04_+1100_Sr3YSJBcdFakWMeY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0L3gLfo017757
 
-Dear Greg:
+--Signature=_Mon__21_Jan_2013_14_46_04_+1100_Sr3YSJBcdFakWMeY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Saturday, January 19, 2013 7:42 AM
-> To: Fangxiaozhi (Franko)
-> Cc: linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Xueguiying (Zihan);
-> Linlei (Lei Lin); Yili (Neil); Wangyuhua (Roger, Credit); Huqiao (C); balbi@ti.com;
-> mdharm-usb@one-eyed-alien.net; sebastian@breakpoint.cc
-> Subject: Re: USB: storage: optimize the matching rules and support new switch
-> command for Huawei USB storage devices
-> 
-> On Mon, Jan 14, 2013 at 10:55:48AM +0800, fangxiaozhi 00110321 wrote:
-> >
-> > From: fangxiaozhi <huananhu@huawei.com>
-> >
-> > 1. Optimize the matching rules with new macro for Huawei USB storage
-> >    devices, to avoid to load USB storage driver for the modem interface
-> >    with Huawei devices.
-> > 2. Add to support new switch command for new Huawei USB dongles.
-> >
-> > Signed-off-by: fangxiaozhi <huananhu@huawei.com>
-> 
-> Next time, please always use the scripts/checkpatch.pl tool to find any
-> problems you might have made in your patch (you had trailing whitespace in
-> this one, which I have fixed.)
-> 
------Yes, I have checked my patch with scripts/checkpatch.pl tool before submitting.
------For this trailing whitespace error, I think that it is better readable to leave whitespace in our patch code. Isn't it?
+Hi Greg,
 
-> Also, you might want to use git, it makes creating the patches easier, that way
-> you don't end up with lines in the patch like this one:
-> 
-> > Binary files linux-3.8-rc3_orig/drivers/usb/storage/initializers.o and
-> > linux-3.8-rc3/drivers/usb/storage/initializers.o differ
-> 
-> thanks,
-> 
-> greg k-h
+Today's linux-next merge of the tty tree got a conflict in
+drivers/tty/serial/vt8500_serial.c between commit a6dd114e16cb ("tty:
+serial: vt8500: fix return value check in vt8500_serial_probe()") from
+Linus' tree and commit 12faa35ae5cb ("serial: vt8500: UART uses gated
+clock rather than 24Mhz reference") from the tty tree.
 
-Best Regards,
-Franko Fang
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+I fixed it up (I just used the tty tree version - which included the
+former fix) and can carry the fix as necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__21_Jan_2013_14_46_04_+1100_Sr3YSJBcdFakWMeY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ/Ln8AAoJEECxmPOUX5FE6sMP/0tiEJPx0XAAE1rfizLbYl5k
+5rZVHMvunt6LK3kwnaHpY2PSaje9Pq2zvOtBHRTnGU3IQvbw1Xg7FF8GsLYYHj8t
+LuFz1mVhRTL9RgMcu7E9qV5yB1GyudlIAbBaWkE7YjquTSqELrEWS2Q7fWNvPvkd
+RLyy8S4ot3umAZF4VaQcPn1CMdaZ2Q9lZrMTRKqsYhK8av6HRjQahyMsTl6AeJVt
+OY8lDP5PPjjop7IgNyUHhW7jdA2zDzMc0lpT+3o6h42+cQhy0F1LD/xL3tZC8thV
+m77Dqnv3BjxJurmFS36+EwzkZ78l95AiT5Z3E4wHZUWcpWjG8UHnSBXIfXyHWfY1
+pi5sWhXrwPSNtj/ImdVPxu7pGLfN3ler2rfmxp5FodPvWqQbUXSGG6jRyGuYIadU
+gUegJVGvAzXBhBX1VMd6z8Gd0uu02IGBPlQHv70EaYVfvli2dtn63/Ws5jeYFfCy
+MUbIky/jCuVm72koO+vQK6qB4YW/1D62z1CBnwjNkUq2QTatG5YRKPZL4HMeYu+r
+E4rAdbDeV0XIXyiUwFg1ac1R7BlihjW1XfybHDY2HuoCZU6zck/bpIFitbXoEarI
+dGh4LxqqAQ2henoYB877CGMaCaSZiRTrMO16E0XqkR2O36WMncsNDkdYEZunTAPb
+hHvsUK3hOgq69/PA+sA7
+=1p53
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__21_Jan_2013_14_46_04_+1100_Sr3YSJBcdFakWMeY--
