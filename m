@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3AUBsL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 20:48:11 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:49835 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752544Ab3AUBsJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 20:48:09 -0500
-Date: Mon, 21 Jan 2013 01:48:07 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
-        John Kacur <jkacur@gmail.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Subject: Re: [RFC][PATCH v2] slub: Keep page and object in sync in
- slab_alloc_node()
-In-Reply-To: <1358535129.7383.25.camel@gandalf.local.home>
-Message-ID: <0000013c5aca8571-a7262239-40b0-401e-982f-29d2e5ad4416-000000@email.amazonses.com>
-References: <1358446258.23211.32.camel@gandalf.local.home> <1358447864.23211.34.camel@gandalf.local.home> <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com> <1358458996.23211.46.camel@gandalf.local.home>
- <0000013c4a7e7fbf-c51fd42a-2455-4fec-bb37-915035956f05-000000@email.amazonses.com> <1358462763.23211.57.camel@gandalf.local.home> <1358464245.23211.62.camel@gandalf.local.home> <1358464837.23211.66.camel@gandalf.local.home> <1358468598.23211.67.camel@gandalf.local.home>
- <1358468924.23211.69.camel@gandalf.local.home> <0000013c4e1ea131-b8ab56b9-bfca-44fe-b5da-f030551194c9-000000@email.amazonses.com> <1358521484.7383.8.camel@gandalf.local.home> <1358524501.7383.17.camel@gandalf.local.home>
- <0000013c4eec1cbd-fb392b9f-b39e-4bcf-a043-2fa76fb8d35a-000000@email.amazonses.com> <1358535129.7383.25.camel@gandalf.local.home>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752631Ab3AUBv2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 20:51:28 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:31292 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752497Ab3AUBv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 20:51:27 -0500
+X-IronPort-AV: E=Sophos;i="4.84,503,1355068800"; 
+   d="scan'208";a="6617621"
+Message-ID: <50FC9EDB.7060105@cn.fujitsu.com>
+Date: Mon, 21 Jan 2013 09:50:19 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+To: Michal Hocko <mhocko@suse.cz>
+CC: akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memory-hotplug: mm/Kconfig: move auto selects from MEMORY_HOTPLUG
+ to MEMORY_HOTREMOVE as needed
+References: <1358495676-4488-1-git-send-email-linfeng@cn.fujitsu.com> <20130118135828.GD10701@dhcp22.suse.cz>
+In-Reply-To: <20130118135828.GD10701@dhcp22.suse.cz>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/21 09:50:33,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/21 09:50:33,
+	Serialize complete at 2013/01/21 09:50:33
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jan 2013, Steven Rostedt wrote:
+Hi Michal,
 
-> I'm curious to why not just add the preempt disable? It's rather quick
-> and avoids all this complex trickery, which is just prone to bugs. It
-> would make it much easier for others to review as well, and also keeps
-> the setting of page, objects and cpu_slab consistent with everything
-> else (which is assigned under preempt(irq)_disable).
+On 01/18/2013 09:58 PM, Michal Hocko wrote:
+> On Fri 18-01-13 15:54:36, Lin Feng wrote:
+>> Besides page_isolation.c selected by MEMORY_ISOLATION under MEMORY_HOTPLUG
+>> is also such case, move it too.
+> 
+> Yes, it seems that only HOTREMOVE needs MEMORY_ISOLATION but that should
+> be done in a separate patch as this change is already upstream and
+> should be merged separately. It would also be nice to mention which
+I didn't notice such rules before, I will take care next time :)
 
-Because this_cpu_read does not need the code to do a preempt disable on
-x86 and on any other arch that will support this_cpu_read. this_cpu_read()
-is implementable on many platform with a register  / offset in the same
-way as on x86.
+> functions are we talking about. AFAICS:
+> alloc_migrate_target, test_pages_isolated, start_isolate_page_range and
+> undo_isolate_page_range.
+> 
+Anyway, thanks all your good suggestions for the fixes in this series.
 
-> > Well, the consequence would be that an object from another node than
-> > desired will be allocated. Not that severe of an issue.
->
-> Yes, it's not that severe of an issue, but it is still incorrect code.
-> Why not just allocate on whatever node you want then? Why bother with
-> the check at all?
-
-The check so far has worked correctly for all tests.
-Just because a rare race condition has been detected that may cause an
-incorrect allocation does not mean that the check has no purpose at all.
-And of course it needs to be fixed.
-
-My patch with the check for page = NULL is enough to fix the potential
-NULL pointer deref (which also is another case of a rare race that has
-survived lots of tests so far).
-
-The other issue with the wrong node needs some more thought and some tests
-on the impact on the instruction overhead.
-
+thanks again,
+linfeng 
