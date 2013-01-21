@@ -1,67 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab3AUR5o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:57:44 -0500
-Received: from mga09.intel.com ([134.134.136.24]:49111 "EHLO mga09.intel.com"
+	id S1754225Ab3AUSIm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 13:08:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53521 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755473Ab3AUR5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:57:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,508,1355126400"; 
-   d="scan'208";a="274754091"
-Date: Mon, 21 Jan 2013 10:57:41 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH 15/21] NTB: Update Version
-Message-ID: <20130121175740.GF22208@jonmason-lab>
-References: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
- <1358586155-23322-16-git-send-email-jon.mason@intel.com>
- <20130120234714.GA21708@kroah.com>
+	id S1751635Ab3AUSIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 13:08:41 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130121175249.AFE9EAD7@kernel.stglabs.ibm.com>
+References: <20130121175244.E5839E06@kernel.stglabs.ibm.com> <20130121175249.AFE9EAD7@kernel.stglabs.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130120234714.GA21708@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 4/5] create slow_virt_to_phys()
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 21 Jan 2013 12:08:18 -0600
+To: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+CC: linux-mm@kvack.org, Gleb Natapov <gleb@redhat.com>, x86@kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>
+Message-ID: <2ad09c09-98c3-4b2d-9b3f-f16fbcce4edf@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 03:47:14PM -0800, Greg KH wrote:
-> On Sat, Jan 19, 2013 at 02:02:29AM -0700, Jon Mason wrote:
-> > Update NTB version to 0.25
-> > 
-> > Signed-off-by: Jon Mason <jon.mason@intel.com>
-> > ---
-> >  drivers/ntb/ntb_hw.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-> > index b792ccd..df86882 100644
-> > --- a/drivers/ntb/ntb_hw.c
-> > +++ b/drivers/ntb/ntb_hw.c
-> > @@ -56,7 +56,7 @@
-> >  #include "ntb_regs.h"
-> >  
-> >  #define NTB_NAME	"Intel(R) PCI-E Non-Transparent Bridge Driver"
-> > -#define NTB_VER		"0.24"
-> > +#define NTB_VER		"0.25"
-> 
-> I'm not objecting to this, but in the end, does it really matter?  Why
-> not just stick with whatever kernel version you are using?  Keeping this
-> up to date is going to be hard over the long haul, right?
+Why are you initializing psize/pmask?
 
-Currently, it is a convenient way to verify the people testing the
-code are running the latest version, since they are usually running
-their tests on a stable kernel.  As the code becomes more stable, I
-can see this becoming unnecessary and I will remove it then.
+Dave Hansen <dave@linux.vnet.ibm.com> wrote:
 
-Thanks,
-Jon
+>
+>This is necessary because __pa() does not work on some kinds of
+>memory, like vmalloc() or the alloc_remap() areas on 32-bit
+>NUMA systems.  We have some functions to do conversions _like_
+>this in the vmalloc() code (like vmalloc_to_page()), but they
+>do not work on sizes other than 4k pages.  We would potentially
+>need to be able to handle all the page sizes that we use for
+>the kernel linear mapping (4k, 2M, 1G).
+>
+>In practice, on 32-bit NUMA systems, the percpu areas get stuck
+>in the alloc_remap() area.  Any __pa() call on them will break
+>and basically return garbage.
+>
+>This patch introduces a new function slow_virt_to_phys(), which
+>walks the kernel page tables on x86 and should do precisely
+>the same logical thing as __pa(), but actually work on a wider
+>range of memory.  It should work on the normal linear mapping,
+>vmalloc(), kmap(), etc...
+>
+>Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+>Acked-by: Rik van Riel <riel@redhat.com>
+>---
+>
+> linux-2.6.git-dave/arch/x86/include/asm/pgtable_types.h |    1 
+>linux-2.6.git-dave/arch/x86/mm/pageattr.c               |   31
+>++++++++++++++++
+> 2 files changed, 32 insertions(+)
+>
+>diff -puN arch/x86/include/asm/pgtable_types.h~create-slow_virt_to_phys
+>arch/x86/include/asm/pgtable_types.h
+>---
+>linux-2.6.git/arch/x86/include/asm/pgtable_types.h~create-slow_virt_to_phys	2013-01-17
+>10:22:26.590434129 -0800
+>+++ linux-2.6.git-dave/arch/x86/include/asm/pgtable_types.h	2013-01-17
+>10:22:26.598434199 -0800
+>@@ -352,6 +352,7 @@ static inline void update_page_count(int
+>  * as a pte too.
+>  */
+>extern pte_t *lookup_address(unsigned long address, unsigned int
+>*level);
+>+extern phys_addr_t slow_virt_to_phys(void *__address);
+> 
+> #endif	/* !__ASSEMBLY__ */
+> 
+>diff -puN arch/x86/mm/pageattr.c~create-slow_virt_to_phys
+>arch/x86/mm/pageattr.c
+>---
+>linux-2.6.git/arch/x86/mm/pageattr.c~create-slow_virt_to_phys	2013-01-17
+>10:22:26.594434163 -0800
+>+++ linux-2.6.git-dave/arch/x86/mm/pageattr.c	2013-01-17
+>10:22:26.598434199 -0800
+>@@ -364,6 +364,37 @@ pte_t *lookup_address(unsigned long addr
+> EXPORT_SYMBOL_GPL(lookup_address);
+> 
+> /*
+>+ * This is necessary because __pa() does not work on some
+>+ * kinds of memory, like vmalloc() or the alloc_remap()
+>+ * areas on 32-bit NUMA systems.  The percpu areas can
+>+ * end up in this kind of memory, for instance.
+>+ *
+>+ * This could be optimized, but it is only intended to be
+>+ * used at inititalization time, and keeping it
+>+ * unoptimized should increase the testing coverage for
+>+ * the more obscure platforms.
+>+ */
+>+phys_addr_t slow_virt_to_phys(void *__virt_addr)
+>+{
+>+	unsigned long virt_addr = (unsigned long)__virt_addr;
+>+	phys_addr_t phys_addr;
+>+	unsigned long offset;
+>+	unsigned int level = -1;
+>+	unsigned long psize = 0;
+>+	unsigned long pmask = 0;
+>+	pte_t *pte;
+>+
+>+	pte = lookup_address(virt_addr, &level);
+>+	BUG_ON(!pte);
+>+	psize = page_level_size(level);
+>+	pmask = page_level_mask(level);
+>+	offset = virt_addr & ~pmask;
+>+	phys_addr = pte_pfn(*pte) << PAGE_SHIFT;
+>+	return (phys_addr | offset);
+>+}
+>+EXPORT_SYMBOL_GPL(slow_virt_to_phys);
+>+
+>+/*
+>  * Set the new pmd in all the pgds we know about:
+>  */
+>static void __set_pmd_pte(pte_t *kpte, unsigned long address, pte_t
+>pte)
+>_
 
-> 
-> thanks,
-> 
-> greg k-h
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
