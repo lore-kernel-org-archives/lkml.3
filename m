@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab3AURHB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:07:01 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:65124 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab3AURG7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:06:59 -0500
-Message-ID: <50FD75AE.7000109@gmail.com>
-Date: Tue, 22 Jan 2013 01:06:54 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1752782Ab3AURLC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:11:02 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59367 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751915Ab3AURLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 12:11:00 -0500
+Date: Mon, 21 Jan 2013 09:12:19 -0800
+From: Greg KH <greg@kroah.com>
+To: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
+        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
+        "Yili (Neil)" <neil.yi@huawei.com>,
+        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
+        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
+        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
+        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>
+Subject: Re: USB: storage: optimize the matching rules and support new switch
+ command for Huawei USB storage devices
+Message-ID: <20130121171219.GB4997@kroah.com>
+References: <fe8c85797e7f.7e7ffe8c8579@huawei.com>
+ <20130118234359.GA2160@kroah.com>
+ <910F9D9E13B84F4C8FA771DC9BDE99F327016D33@szxeml546-mbx.china.huawei.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [RFC PATCH v5 8/8] PCI/PCIe: only claim PME from firmware when
- CONFIG_PCIE_PME is enabled
-References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com> <1358525267-14268-9-git-send-email-jiang.liu@huawei.com> <2580359.lck5YacT35@vostro.rjw.lan>
-In-Reply-To: <2580359.lck5YacT35@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <910F9D9E13B84F4C8FA771DC9BDE99F327016D33@szxeml546-mbx.china.huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 07:43 AM, Rafael J. Wysocki wrote:
-> On Saturday, January 19, 2013 12:07:46 AM Jiang Liu wrote:
->> If CONFIG_PCIE_PME is not defined, system should avoid claiming PME from
->> firmware so firmware could still manage PME events for those devices.
->> Also don't create PCIe port device for PME service if CONFIG_PCIE_PME
->> is not defined.
-> 
-> No, this isn't correct.
-> 
-> We know from experience that it is in fact necessary to request control of
-> either all PCIe native features or none of them.  Anything else leads to
-> very "interesting" failure modes on some systems.
-> 
-> I think we should just remove CONFIG_PCIE_PME instead.
-Hi Rafael,
-	Thanks for reminder, don't know these tricky things about BIOS:)
-Seems we can't easily remove CONFIG_PCIE_PME currently, so I will just
-drop this patch.
-Regards!
-Gerry
+On Mon, Jan 21, 2013 at 03:37:15AM +0000, Fangxiaozhi (Franko) wrote:
+> Dear Greg:
+> 	
+> > I get the following errors:
+> > 
+> > drivers/usb/storage/unusual_devs.h:1530:1: error: implicit declaration of
+> > function ‘UNUSUAL_VENDOR_INTF’ [-Werror=implicit-function-declaration]
+> > drivers/usb/storage/unusual_devs.h:1534:3: warning: missing braces around
+> > initializer [-Wmissing-braces]
+> > drivers/usb/storage/unusual_devs.h:1534:3: warning: (near initialization for
+> > ‘us_unusual_dev_list[186]’) [-Wmissing-braces]
+> > drivers/usb/storage/unusual_devs.h:1534:3: error: initializer element is not
+> > constant
+> > drivers/usb/storage/unusual_devs.h:1534:3: error: (near initialization for
+> > ‘us_unusual_dev_list[186].vendorName’)
+> > drivers/usb/storage/unusual_devs.h:1537:1: warning: braces around scalar
+> > initializer [enabled by default]
+> > 
+> > And it goes on and on...
+> ----------The macro define, please see another patch: 
+> 	[PATCH 1/1]linux-usb:Define a new macro for USB storage match rules
+> 	http://www.spinics.net/lists/linux-usb/msg76629.html
 
-> 
-> Thanks,
-> Rafael
-> 
-> 
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> ---
->>  drivers/acpi/pci_root.c         |    5 +++--
->>  drivers/pci/pcie/portdrv_core.c |    4 +++-
->>  2 files changed, 6 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
->> index c37eedb..7f7e464 100644
->> --- a/drivers/acpi/pci_root.c
->> +++ b/drivers/acpi/pci_root.c
->> @@ -550,8 +550,9 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
->>  
->>  	if (!pcie_ports_disabled
->>  	    && (flags & ACPI_PCIE_REQ_SUPPORT) == ACPI_PCIE_REQ_SUPPORT) {
->> -		flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
->> -			| OSC_PCI_EXPRESS_PME_CONTROL;
->> +		flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL;
->> +		if (IS_ENABLED(CONFIG_PCIE_PME))
->> +			flags |= OSC_PCI_EXPRESS_PME_CONTROL;
->>  		if (!pcie_native_hotplug_disabled)
->>  			flags |= OSC_PCI_EXPRESS_NATIVE_HP_CONTROL;
->>  
->> diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
->> index e7e1679..7e6546f 100644
->> --- a/drivers/pci/pcie/portdrv_core.c
->> +++ b/drivers/pci/pcie/portdrv_core.c
->> @@ -263,7 +263,9 @@ static int get_port_device_capability(struct pci_dev *dev)
->>  
->>  	err = pcie_port_platform_notify(dev, &cap_mask);
->>  	if (!pcie_ports_auto) {
->> -		cap_mask = PCIE_PORT_SERVICE_PME | PCIE_PORT_SERVICE_VC;
->> +		cap_mask = PCIE_PORT_SERVICE_VC;
->> +		if (IS_ENABLED(CONFIG_PCIE_PME))
->> +			cap_mask |= PCIE_PORT_SERVICE_PME;
->>  		if (!pcie_native_hotplug_disabled)
->>  			cap_mask |= PCIE_PORT_SERVICE_HP;
->>  		if (pci_aer_available())
->>
+Please resend it, I do not have this patch anymore in my queue.
+Remember, I asked you to resend everything that was needed, with the
+proper ordering.
 
+Please resend all patches, properly fixed up, that you wish to see
+applied.
+
+thanks,
+
+greg k-h
