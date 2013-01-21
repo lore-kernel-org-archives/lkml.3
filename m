@@ -1,195 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab3AUKSH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:18:07 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62780 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752940Ab3AUKJj (ORCPT
+	id S1753131Ab3AUKSl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:18:41 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:62801 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752990Ab3AUKSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:09:39 -0500
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 08/33] gpio: Convert to devm_ioremap_resource()
-Date: Mon, 21 Jan 2013 11:09:01 +0100
-Message-Id: <1358762966-20791-9-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:8ILsCZVZA2Soa2gON5OMwTmmNjR2Dqv797X4INOKNsO
- X/Yut6cIzs/mVO5xIor0zfHunzD2Ry0QLSUFExInP90lVVH5OB
- mJEJ50ZNk8yUFkX7cadHZs8xaGClqtWrGNRxUqCS/qgBDMPB5q
- L0cRdvyzcJGTcDRm8H6doHi8REhnF6YOM9ZUkIuDTCL4qwj/is
- bzcjkFWOHWuD6InWNlPahmUZufgZTIlLAVT/XSMNVeugbzuPF0
- n3EGvd8Yu6NGObrsXHNlLvrKrHFrebs7Xrwbiub23ffpaGFJq8
- A6lqouHyfe0C1woUT8IUPSZqNJQMXB4Tt3C2syECSNGhIIjWO+
- 6oJL5yUBp2bkJ/AEbWb0Xy5pJX1ab8dQp3nMLEoW8uhH42qY52
- vHSB5fQq9WZDBQdlcIZ4BlJuTYCMejvOosW40toVEzNoCWNWXT
- J7liE
+	Mon, 21 Jan 2013 05:18:39 -0500
+Message-ID: <50FD15F9.1090701@huawei.com>
+Date: Mon, 21 Jan 2013 18:18:33 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH] cgroup: fix bogus kernel warnings when cgroup_create() failed
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert all uses of devm_request_and_ioremap() to the newly introduced
-devm_ioremap_resource() which provides more consistent error handling.
+If cgroup_create() failed and cgroup_destroy_locked() is called to
+do cleanup, we'll see a bunch of warnings:
 
-devm_ioremap_resource() provides its own error messages so all explicit
-error messages can be removed from the failure code paths.
+cgroup_addrm_files: failed to remove 2MB.limit_in_bytes, err=-2
+cgroup_addrm_files: failed to remove 2MB.usage_in_bytes, err=-2
+cgroup_addrm_files: failed to remove 2MB.max_usage_in_bytes, err=-2
+cgroup_addrm_files: failed to remove 2MB.failcnt, err=-2
+cgroup_addrm_files: failed to remove prioidx, err=-2
+cgroup_addrm_files: failed to remove ifpriomap, err=-2
+...
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@linaro.org>
+We failed to remove those files, because cgroup_create() has failed
+before creating those cgroup files.
+
+To fix this, we simply don't warn if cgroup_rm_file() can't find the
+cft entry.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- drivers/gpio/gpio-mvebu.c       | 16 ++++++++--------
- drivers/gpio/gpio-mxs.c         |  9 ++++++---
- drivers/gpio/gpio-spear-spics.c |  8 +++-----
- drivers/gpio/gpio-stp-xway.c    |  9 ++++-----
- drivers/gpio/gpio-tegra.c       |  9 ++++-----
- 5 files changed, 25 insertions(+), 26 deletions(-)
+ kernel/cgroup.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
-index 7d9bd94..bf6c7c9 100644
---- a/drivers/gpio/gpio-mvebu.c
-+++ b/drivers/gpio/gpio-mvebu.c
-@@ -33,6 +33,7 @@
-  *   interrupts.
-  */
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 77ab520..1db2438 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -928,13 +928,17 @@ static void remove_dir(struct dentry *d)
+ 	dput(parent);
+ }
  
-+#include <linux/err.h>
- #include <linux/module.h>
- #include <linux/gpio.h>
- #include <linux/irq.h>
-@@ -544,11 +545,10 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
- 	mvchip->chip.of_node = np;
+-static int cgroup_rm_file(struct cgroup *cgrp, const struct cftype *cft)
++static void cgroup_rm_file(struct cgroup *cgrp, const struct cftype *cft)
+ {
+ 	struct cfent *cfe;
  
- 	spin_lock_init(&mvchip->lock);
--	mvchip->membase = devm_request_and_ioremap(&pdev->dev, res);
--	if (! mvchip->membase) {
--		dev_err(&pdev->dev, "Cannot ioremap\n");
-+	mvchip->membase = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(mvchip->membase)) {
- 		kfree(mvchip->chip.label);
--		return -ENOMEM;
-+		return PTR_ERR(mvchip->membase);
+ 	lockdep_assert_held(&cgrp->dentry->d_inode->i_mutex);
+ 	lockdep_assert_held(&cgroup_mutex);
+ 
++	/*
++	 * If we're doing cleanup due to failure of cgroup_create(),
++	 * the corresponding @cfe may not exist.
++	 */
+ 	list_for_each_entry(cfe, &cgrp->files, node) {
+ 		struct dentry *d = cfe->dentry;
+ 
+@@ -947,9 +951,8 @@ static int cgroup_rm_file(struct cgroup *cgrp, const struct cftype *cft)
+ 		list_del_init(&cfe->node);
+ 		dput(d);
+ 
+-		return 0;
++		break;
  	}
+-	return -ENOENT;
+ }
  
- 	/* The Armada XP has a second range of registers for the
-@@ -561,11 +561,11 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
- 			return -ENODEV;
+ /**
+@@ -2765,14 +2768,14 @@ static int cgroup_addrm_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+ 		if ((cft->flags & CFTYPE_ONLY_ON_ROOT) && cgrp->parent)
+ 			continue;
+ 
+-		if (is_add)
++		if (is_add) {
+ 			err = cgroup_add_file(cgrp, subsys, cft);
+-		else
+-			err = cgroup_rm_file(cgrp, cft);
+-		if (err) {
+-			pr_warning("cgroup_addrm_files: failed to %s %s, err=%d\n",
+-				   is_add ? "add" : "remove", cft->name, err);
++			if (err)
++				pr_warn("cgroup_addrm_files: failed to add %s, err=%d\n",
++					cft->name, err);
+ 			ret = err;
++		} else {
++			cgroup_rm_file(cgrp, cft);
  		}
- 
--		mvchip->percpu_membase = devm_request_and_ioremap(&pdev->dev, res);
--		if (! mvchip->percpu_membase) {
--			dev_err(&pdev->dev, "Cannot ioremap\n");
-+		mvchip->percpu_membase = devm_ioremap_resource(&pdev->dev,
-+							       res);
-+		if (IS_ERR(mvchip->percpu_membase)) {
- 			kfree(mvchip->chip.label);
--			return -ENOMEM;
-+			return PTR_ERR(mvchip->percpu_membase);
- 		}
  	}
- 
-diff --git a/drivers/gpio/gpio-mxs.c b/drivers/gpio/gpio-mxs.c
-index fa2a63c..45d97c4 100644
---- a/drivers/gpio/gpio-mxs.c
-+++ b/drivers/gpio/gpio-mxs.c
-@@ -20,6 +20,7 @@
-  * MA  02110-1301, USA.
-  */
- 
-+#include <linux/err.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
-@@ -253,12 +254,14 @@ static int mxs_gpio_probe(struct platform_device *pdev)
- 			parent = of_get_parent(np);
- 			base = of_iomap(parent, 0);
- 			of_node_put(parent);
-+			if (!base)
-+				return -EADDRNOTAVAIL;
- 		} else {
- 			iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--			base = devm_request_and_ioremap(&pdev->dev, iores);
-+			base = devm_ioremap_resource(&pdev->dev, iores);
-+			if (IS_ERR(base))
-+				return PTR_ERR(base);
- 		}
--		if (!base)
--			return -EADDRNOTAVAIL;
- 	}
- 	port->base = base;
- 
-diff --git a/drivers/gpio/gpio-spear-spics.c b/drivers/gpio/gpio-spear-spics.c
-index 5f45fc4..7a4bf7c 100644
---- a/drivers/gpio/gpio-spear-spics.c
-+++ b/drivers/gpio/gpio-spear-spics.c
-@@ -140,11 +140,9 @@ static int spics_gpio_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	spics->base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!spics->base) {
--		dev_err(&pdev->dev, "request and ioremap fail\n");
--		return -ENOMEM;
--	}
-+	spics->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(spics->base))
-+		return PTR_ERR(spics->base);
- 
- 	if (of_property_read_u32(np, "st-spics,peripcfg-reg",
- 				&spics->perip_cfg))
-diff --git a/drivers/gpio/gpio-stp-xway.c b/drivers/gpio/gpio-stp-xway.c
-index 85841ee7..c20e051 100644
---- a/drivers/gpio/gpio-stp-xway.c
-+++ b/drivers/gpio/gpio-stp-xway.c
-@@ -214,11 +214,10 @@ static int xway_stp_probe(struct platform_device *pdev)
- 	if (!chip)
- 		return -ENOMEM;
- 
--	chip->virt = devm_request_and_ioremap(&pdev->dev, res);
--	if (!chip->virt) {
--		dev_err(&pdev->dev, "failed to remap STP memory\n");
--		return -ENOMEM;
--	}
-+	chip->virt = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(chip->virt))
-+		return PTR_ERR(chip->virt);
-+	
- 	chip->gc.dev = &pdev->dev;
- 	chip->gc.label = "stp-xway";
- 	chip->gc.direction_output = xway_stp_dir_out;
-diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
-index 63cb643..414ad91 100644
---- a/drivers/gpio/gpio-tegra.c
-+++ b/drivers/gpio/gpio-tegra.c
-@@ -17,6 +17,7 @@
-  *
-  */
- 
-+#include <linux/err.h>
- #include <linux/init.h>
- #include <linux/irq.h>
- #include <linux/interrupt.h>
-@@ -450,11 +451,9 @@ static int tegra_gpio_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (!regs) {
--		dev_err(&pdev->dev, "Couldn't ioremap regs\n");
--		return -ENODEV;
--	}
-+	regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(regs))
-+		return PTR_ERR(regs);
- 
- 	for (i = 0; i < tegra_gpio_bank_count; i++) {
- 		for (j = 0; j < 4; j++) {
+ 	return ret;
 -- 
-1.8.1.1
-
+1.8.0.2
