@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab3AUIkB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 03:40:01 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:57863 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab3AUIkA (ORCPT
+	id S1752214Ab3AUIno (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 03:43:44 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:47752 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459Ab3AUInm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 03:40:00 -0500
-Date: Mon, 21 Jan 2013 03:39:07 -0500 (EST)
-From: Zhouping Liu <zliu@redhat.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, Li Zefan <lizefan@huawei.com>,
-        CAI Qian <caiqian@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Message-ID: <389106003.8637801.1358757547754.JavaMail.root@redhat.com>
-In-Reply-To: <4FEE7665.6020409@jp.fujitsu.com>
-Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
+	Mon, 21 Jan 2013 03:43:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.16.255.10]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <20130121164336.9edf1179a8e5c91baea8571a@canb.auug.org.au>
+References: <20130121164336.9edf1179a8e5c91baea8571a@canb.auug.org.au>
+Date: Mon, 21 Jan 2013 09:43:40 +0100
+Message-ID: <CAKMK7uHJf6C99kNFybBhv3kXKze8x+YRDSHNycOfbY_QiSC7HA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the akpm tree with the drm tree
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dave Airlie <airlied@linux.ie>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
+
+I'm working on some follow-up patches for the drm fb helper library
+already, and fixing up the panic handling is on the plan already. And
+since the fb helper has its own panic notifier anyway (simply
+unblanking is not good enough to display an oops on a kms device) I
+think we should simply return without doing anything from our
+->fb_blank if an oops is in progress.
+
+So please drop the patch from the akpm tree, I'll take care of this
+(and reply to the original patch submission with my plan).
+
+Thanks, Daniel
+
+On Mon, Jan 21, 2013 at 6:43 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Andrew,
+>
+> Today's linux-next merge of the akpm tree got a conflict in
+> drivers/gpu/drm/drm_fb_helper.c between commit 848499032504 ("drm: add
+> drm_modeset_lock|unlock_all") from the drm tree and commit
+> "drivers/gpu/drm/drm_fb_helper.c: avoid sleeping in unblank_screen() if
+> oops in progress" from the akpm tree.
+>
+> I can't see an easy way to resolve these, so I just dropped the akpm tree
+> patch.
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
 
------ Original Message -----
-> From: "Kamezawa Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
-> To: "Tejun Heo" <tj@kernel.org>
-> Cc: "David Rientjes" <rientjes@google.com>, "Michal Hocko" <mhocko@suse.cz>, "Zhouping Liu" <zliu@redhat.com>,
-> linux-mm@kvack.org, "Li Zefan" <lizefan@huawei.com>, "CAI Qian" <caiqian@redhat.com>, "LKML"
-> <linux-kernel@vger.kernel.org>, "Andrew Morton" <akpm@linux-foundation.org>
-> Sent: Saturday, June 30, 2012 11:45:41 AM
-> Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
-> 
-> (2012/06/29 3:31), Tejun Heo wrote:
-> > Hello, KAME.
-> >
-> > On Thu, Jun 28, 2012 at 01:04:16PM +0900, Kamezawa Hiroyuki wrote:
-> >>> I still wish it's folded into CONFIG_MEMCG and conditionalized
-> >>> just on
-> >>> CONFIG_SWAP tho.
-> >>>
-> >>
-> >> In old days, memsw controller was not very stable. So, we devided
-> >> the config.
-> >> And, it makes size of memory for swap-device double (adds 2bytes
-> >> per swapent.)
-> >> That is the problem.
-> >
-> > I see.  Do you think it's now reasonable to drop the separate
-> > config
-> > option?  Having memcg enabled but swap unaccounted sounds
-> > half-broken
-> > to me.
-> >
-> 
-> Hmm. Maybe it's ok if we can keep boot option. I'll cook a patch in
-> the next week.
-
-Hello Kame and All,
-
-Sorry for so delay to open the thread. (please open the link https://lkml.org/lkml/2012/6/26/547 if you don't remember the topic)
-
-do you have any updates for the issue?
-
-I checked the latest version, if we don't open CONFIG_MEMCG_SWAP_ENABLED(commit c255a458055e changed
-CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED as CONFIG_MEMCG_SWAP_ENABLED), the issue still exist:
-
-[root@dhcp-8-128 ~] cat .config  | grep -i memcg
-CONFIG_MEMCG=y
-CONFIG_MEMCG_SWAP=y
-# CONFIG_MEMCG_SWAP_ENABLED is not set
-CONFIG_MEMCG_KMEM=y
-[root@dhcp-8-128 ~] uname -r
-3.8.0-rc4+
-[root@dhcp-8-128 ~] cat memory.memsw.*
-cat: memory.memsw.failcnt: Operation not supported
-cat: memory.memsw.limit_in_bytes: Operation not supported
-cat: memory.memsw.max_usage_in_bytes: Operation not supported
-cat: memory.memsw.usage_in_bytes: Operation not supported
-
-As David said, we should not export memory.memsw.* files if we disable CONFIG_MEMCG_SWAP_ENABLED, or return -EINVAL, right?
-(please correct me if I'm wrong)
 
 -- 
-Thanks,
-Zhouping
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
