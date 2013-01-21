@@ -1,55 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab3AUKwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:52:23 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:61919 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab3AUKwW (ORCPT
+	id S1752534Ab3AUKyn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:54:43 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:55073 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015Ab3AUKyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:52:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <1358762966-20791-9-git-send-email-thierry.reding@avionic-design.de>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-	<1358762966-20791-9-git-send-email-thierry.reding@avionic-design.de>
-Date: Mon, 21 Jan 2013 16:22:21 +0530
-X-Google-Sender-Auth: ym3qKvSMU9QAbBawGY2aqfKF4Tk
-Message-ID: <CAOh2x=ne_Oe7V=BzjQJtuPv20syorLTq-C89aKQDo4JK78Y8YA@mail.gmail.com>
-Subject: Re: [PATCH 08/33] gpio: Convert to devm_ioremap_resource()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 21 Jan 2013 05:54:41 -0500
+From: Hideki EIRAKU <hdk@igel.co.jp>
+To: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-sh@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Katsuya MATSUBARA <matsu@igel.co.jp>,
+        Damian Hobson-Garcia <dhobsong@igel.co.jp>,
+        Hideki EIRAKU <hdk@igel.co.jp>
+Subject: [PATCH v6 0/4] Renesas IPMMU driver for sh7372, sh73a0 and r8a7740
+Date: Mon, 21 Jan 2013 19:54:25 +0900
+Message-Id: <1358765669-14567-1-git-send-email-hdk@igel.co.jp>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 3:39 PM, Thierry Reding
-<thierry.reding@avionic-design.de> wrote:
-> diff --git a/drivers/gpio/gpio-spear-spics.c b/drivers/gpio/gpio-spear-spics.c
-> index 5f45fc4..7a4bf7c 100644
-> --- a/drivers/gpio/gpio-spear-spics.c
-> +++ b/drivers/gpio/gpio-spear-spics.c
-> @@ -140,11 +140,9 @@ static int spics_gpio_probe(struct platform_device *pdev)
->                 return -ENOMEM;
->         }
->
-> -       spics->base = devm_request_and_ioremap(&pdev->dev, res);
-> -       if (!spics->base) {
-> -               dev_err(&pdev->dev, "request and ioremap fail\n");
+This is the Renesas IPMMU driver, IOMMU API implementation and IPMMU
+device support for sh7372 (AP4EVB and Mackerel), sh73a0 and r8a7740.
 
-can we keep it as is?
+The IPMMU module supports the MMU function and the PMB function.  The
+MMU function provides address translation by pagetable compatible with
+ARMv6.  The PMB function provides address translation including
+tile-linear translation.  This is implementation of the MMU function.
 
-> -               return -ENOMEM;
-> -       }
-> +       spics->base = devm_ioremap_resource(&pdev->dev, res);
-> +       if (IS_ERR(spics->base))
-> +               return PTR_ERR(spics->base);
->
+Note: The IPMMU module translates DMA memory address from all of the
+IP blocks on the ICB.  The IOMMU API has iommu_attach_device() which
+attaches one device to one domain, but the IPMMU module cannot attach
+only one device.  The IPMMU module only can attach all devices to one
+domain.
 
+Tested on:
+- armadillo800eva
+- kzma9
+- mackerel (I could not make it boot the v3.8-rc4 with Device Tree, so
+  I tested a kernel without Device Tree support, reverting
+  3b7b70552afe351a8bd8fff1eb2d60aab2206576 and
+  0ce53cdc5c7e28f378e480363a0b0c2ed7e7eaf9)
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+How to test:
+1. Boot a kernel built with CONFIG_SHMOBILE_IOMMU=y.
+2. Check whether a display on the board shows console normally.
+3. Check whether the IMCTR1 register is 1 which means the MMU function enabled.
+   To read the IMCTR1 register:
+   # peekpoke 0xfe951000
+4. Change the IMCTR1 to 0 to disable the MMU function.
+   To change the IMCTR1 register to 0:
+   # peekpoke 0xfe951000 0
+5. Check whether the display shows broken data.
+6. Change the IMCTR1 to 1 to enable the MMU function.
+   To change the IMCTR1 register to 1:
+   # peekpoke 0xfe951000 1
+7. Check whether a display on the board shows console normally.
+8. Capture and check the framebuffer contents via memory mapped by mmap().
+   To capture the framebuffer contents and save the image to a file "filename":
+   # fbcat /dev/fb0 > filename
+   To look at the contents saved by fbcat on a PC:
+   $ display filename
+- fbcat can be downloaded from https://code.google.com/p/fbcat/.
+- display is one of the ImageMagick tools.
+- peekpoke is:
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <err.h>
+int main(int argc,char**argv){
+  uint32_t*p,addr;
+  int fd=open("/dev/mem",O_RDWR);
+  if(fd<0)err(1,"open");
+  addr=strtoul(argv[1],NULL,0);
+  p=mmap(NULL,0x1000,PROT_READ|PROT_WRITE,MAP_SHARED,fd,addr&~0xfff);
+  if(p==MAP_FAILED)err(1,"mmap");
+  if(argc<=2)printf("0x%08x\n",p[addr/4&0x3ff]);
+  else printf("wrote 0x%08x\n",p[addr/4&0x3ff]=strtoul(argv[2],NULL,0));
+}
+
+TODO:
+- Multiple IPMMU device initialization support.
+  The ipmmu_iommu_init function and the shmobile_iommu_add_device
+  function currently do not support multiple IPMMU instances.
+- Device Tree support.
+
+Changelog:
+v6:
+- Rebased on 3.8-rc4.
+- Use cached memory for IPMMU page tables.
+- Use macros defined in linux/sizes.h.
+- Fix a memory leak of page tables when the domain is not attached.
+- Use GFP_ATOMIC for allocating page tables.
+v5:
+- Rebased on 3.8-rc1.
+- Add sh73a0 and r8a7740 support.
+- CONFIG_SHMOBILE_IOMMU is now selectable only for arm shmobile
+  architecture.
+- Fix "defined but not used" warnings when CONFIG_SHMOBILE_IOMMU is
+  not set.
+- Add help text of CONFIG_SHMOBILE_IOMMU.
+- Apply some of Laurent Pinchart's rework patches: Move the driver to
+  drivers/iommu/.
+- Use platform_data to specify attaching devices instead of
+  ipmmu_add_device() API.
+v4:
+- Rebased on 3.7-rc1.
+- Use address space size instead of page table size in config.
+- Use Kconfig default value instead of #ifdef-#define-#endif.
+v3:
+- Rebased on 3.6-rc5.
+- Simplify configs.  SHMOBILE_IPMMU is now selected by setting
+  SHMOBILE_IOMMU.
+- Remove weak symbols.
+- Use drvdata to store private driver data.
+- Make a function for writing to a register of IPMMU.
+- Add a lock to accessing the tlb_enabled member.
+- Make unmap work correctly with size larger than map size.
+- Free L2 page table when 1MiB page is mapped or unmapped.
+- Add VEU devices as IP blocks on the ICB.
+v2:
+- Rebased on v3.6-rc1.
+- Make variable names clear.
+- Page table size can now be selected by config.
+
+Hideki EIRAKU (4):
+  iommu/shmobile: Add iommu driver for Renesas IPMMU modules
+  ARM: mach-shmobile: sh7372: Add IPMMU device
+  ARM: mach-shmobile: sh73a0: Add IPMMU device
+  ARM: mach-shmobile: r8a7740: Add IPMMU device
+
+ arch/arm/mach-shmobile/setup-r8a7740.c |  33 +++
+ arch/arm/mach-shmobile/setup-sh7372.c  |  39 ++++
+ arch/arm/mach-shmobile/setup-sh73a0.c  |  31 +++
+ drivers/iommu/Kconfig                  |  74 ++++++
+ drivers/iommu/Makefile                 |   2 +
+ drivers/iommu/shmobile-iommu.c         | 395 +++++++++++++++++++++++++++++++++
+ drivers/iommu/shmobile-ipmmu.c         | 136 ++++++++++++
+ drivers/iommu/shmobile-ipmmu.h         |  34 +++
+ include/linux/platform_data/sh_ipmmu.h |  18 ++
+ 9 files changed, 762 insertions(+)
+ create mode 100644 drivers/iommu/shmobile-iommu.c
+ create mode 100644 drivers/iommu/shmobile-ipmmu.c
+ create mode 100644 drivers/iommu/shmobile-ipmmu.h
+ create mode 100644 include/linux/platform_data/sh_ipmmu.h
+
+-- 
+1.8.0
+
