@@ -1,111 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab3AUByU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 20:54:20 -0500
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:60871 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab3AUByP (ORCPT
+	id S1752682Ab3AUB4h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 20:56:37 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:53789 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab3AUB4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 20:54:15 -0500
+	Sun, 20 Jan 2013 20:56:35 -0500
 MIME-Version: 1.0
-In-Reply-To: <2123353.z1dtQmXUNo@vostro.rjw.lan>
-References: <1358495602-22867-1-git-send-email-yinghai@kernel.org>
-	<1358495602-22867-7-git-send-email-yinghai@kernel.org>
-	<2123353.z1dtQmXUNo@vostro.rjw.lan>
-Date: Sun, 20 Jan 2013 17:54:14 -0800
-X-Google-Sender-Auth: yuhccHu4junSLE6SXMZqNGcLmeA
-Message-ID: <CAE9FiQVxwm43bkpRYEkSy5sL-FAkE49NE5nFQvXKWPSfoY+oEw@mail.gmail.com>
-Subject: Re: [PATCH v9 06/11] PCI, ACPI, acpiphp: Rename alloc_acpiphp_hp_work()
- to alloc_acpi_hp_work
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+In-Reply-To: <87ip6rwcvz.fsf@rustcorp.com.au>
+References: <20130118074309.GB31793@elgon.mountain> <87ip6rwcvz.fsf@rustcorp.com.au>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 20 Jan 2013 17:56:14 -0800
+X-Google-Sender-Auth: qwLzCFHXh6PHU52D9LIJ1DCDWoI
+Message-ID: <CA+55aFzEkSOWL13cX2xaYttPF5=Qpvya9Yapk-RC8KQ5=QJk+w@mail.gmail.com>
+Subject: Re: [patch] module: potential deadlock in error path
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kernel-janitors <kernel-janitors@vger.kernel.org>,
+        Alexander Graf <agraf@suse.de>, Prarit Bhargava <prarit@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 2:38 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, January 17, 2013 11:53:17 PM Yinghai Lu wrote:
->> Will need to use it for pci root bridge hotplug support, rename
->> *acpiphp* to *acpi* and move to osc.c.
->> Also make kacpi_hotplug_wq static after that.
+On Sun, Jan 20, 2013 at 5:20 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Dan Carpenter <dan.carpenter@oracle.com> writes:
+>> We take the lock twice if we hit this goto.
 >>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> Cc: Len Brown <lenb@kernel.org>
->> Cc: linux-acpi@vger.kernel.org
->> ---
->>  drivers/acpi/osl.c                 |   24 +++++++++++++++++++--
->>  drivers/pci/hotplug/acpiphp_glue.c |   42 ++++++------------------------------
->>  include/acpi/acpiosxf.h            |    9 +++++++-
->>  3 files changed, 36 insertions(+), 39 deletions(-)
->>
->> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
->> index 3ff2678..afcce46 100644
->> --- a/drivers/acpi/osl.c
->> +++ b/drivers/acpi/osl.c
->> @@ -84,8 +84,7 @@ static acpi_osd_handler acpi_irq_handler;
->>  static void *acpi_irq_context;
->>  static struct workqueue_struct *kacpid_wq;
->>  static struct workqueue_struct *kacpi_notify_wq;
->> -struct workqueue_struct *kacpi_hotplug_wq;
->> -EXPORT_SYMBOL(kacpi_hotplug_wq);
->> +static struct workqueue_struct *kacpi_hotplug_wq;
->>
->>  /*
->>   * This list of permanent mappings is for memory that may be accessed from
->> @@ -1778,3 +1777,24 @@ void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
->>  {
->>       __acpi_os_prepare_sleep = func;
->>  }
->> +
->> +void alloc_acpi_hp_work(acpi_handle handle, u32 type, void *context,
->> +                     void (*func)(struct work_struct *work))
->> +{
->> +     struct acpi_hp_work *hp_work;
->> +     int ret;
->> +
->> +     hp_work = kmalloc(sizeof(*hp_work), GFP_KERNEL);
->> +     if (!hp_work)
->> +             return;
->> +
->> +     hp_work->handle = handle;
->> +     hp_work->type = type;
->> +     hp_work->context = context;
->> +
->> +     INIT_WORK(&hp_work->work, func);
->> +     ret = queue_work(kacpi_hotplug_wq, &hp_work->work);
->> +     if (!ret)
->> +             kfree(hp_work);
->> +}
->> +EXPORT_SYMBOL(alloc_acpi_hp_work);
+>> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 >
-> That should be EXPORT_SYMBOL_GPL().
-
-Ok.
-
-Chose that because kacpi_hotplug_wq does not have _GPL.
-
+> Damn, just pushed that to Linus: should have read mail first.
 >
-...
->> diff --git a/include/acpi/acpiosxf.h b/include/acpi/acpiosxf.h
->> index 4315274..adab63c 100644
->> --- a/include/acpi/acpiosxf.h
->> +++ b/include/acpi/acpiosxf.h
->> @@ -193,7 +193,14 @@ void acpi_os_fixed_event_count(u32 fixed_event_number);
->>  /*
->>   * Threads and Scheduling
->>   */
->> -extern struct workqueue_struct *kacpi_hotplug_wq;
->
-> include/acpi/acpiosxf.h is related to ACPICA, so while removing kacpi_hotplug_wq
-> from it should be OK, please put the rest into acpi_bus.h, preferably next to the
-> definition of acpi_eject_event.
->
+> I've added this, thanks.
 
-Ok.
+I'm not pulling this. It seems stupid.
 
-Thanks
+Why isn't the fix just this (whitespace-damaged, cut-and-pasted)
+one-liner instead? I may be blind, but as far as I cal tell, there's
+exactly one single place we do that "giti ddebug_cleanup", and it
+wants to unlock the mutex, so we should just move the unlock down one
+line instead.
+
+Hmm? Is there some hidden magic going on that I can't see?
+
+                  Linus
+
+---
+diff --git a/kernel/module.c b/kernel/module.c
+index d25e359279ae..eab08274ec9b 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3274,8 +3274,8 @@ again:
+        /* module_bug_cleanup needs module_mutex protection */
+        mutex_lock(&module_mutex);
+        module_bug_cleanup(mod);
+-       mutex_unlock(&module_mutex);
+  ddebug_cleanup:
++       mutex_unlock(&module_mutex);
+        dynamic_debug_remove(info->debug);
+        synchronize_sched();
+        kfree(mod->args);
