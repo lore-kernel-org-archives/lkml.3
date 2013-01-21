@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab3AUAHV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 19:07:21 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:47891 "EHLO hydra.sisk.pl"
+	id S1752717Ab3AUAO2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 19:14:28 -0500
+Received: from ozlabs.org ([203.10.76.45]:34204 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752509Ab3AUAHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 19:07:19 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Borislav Petkov <bp@alien8.de>
-Cc: =?ISO-8859-1?Q?Andr=E9?= Przywara <andre@andrep.de>,
-        Leonid Isaev <lisaev@umail.iu.edu>, Tom Gundersen <teg@jklm.no>,
-        cpufreq@vger.kernel.org, linux-acpi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 0/6] acpi-cpufreq and powernow-k8 fixes
-Date: Mon, 21 Jan 2013 01:13:18 +0100
-Message-ID: <7556596.NKy4LTm5hO@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130121000402.GA19343@pd.tnic>
-References: <1358677470-17394-1-git-send-email-bp@alien8.de> <1838903.lYvY4Nk4I1@vostro.rjw.lan> <20130121000402.GA19343@pd.tnic>
+	id S1752629Ab3AUAO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 19:14:26 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "LKML" <linux-kernel@vger.kernel.org>
+Cc: Alexander Graf <agraf@suse.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Subject: [PULL] Module fixes, and a virtio block fix.
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 21 Jan 2013 10:38:08 +1030
+Message-ID: <87zk03wg7r.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 21, 2013 01:04:02 AM Borislav Petkov wrote:
-> On Sun, Jan 20, 2013 at 03:18:11PM +0100, Rafael J. Wysocki wrote:
-> > Well, it all looks reasonable to me.
-> >
-> > I suppose you'd like it to go into v3.8 plus v3.7-stable, right?
-> 
-> Well, sort of.
-> 
-> Patch 0001 which you've already taken and tagged for 3.7-stable and is
-> on its way to 3.8 is fine since it fixes a bug.
-> 
-> The rest are, IMHO, more or less annoyances fixes which could easily
-> wait for 3.9 and maybe be backported if there really is an issue. Also,
-> they'd see a lot more testing this way. Because in at least 99% of the
-> cases, acpi-cpufreq and powernow-k8 are modules and the handoff works
-> there.
-> 
-> This is at least how I see it, you tell me whether it makes sense or
-> not.
+The following changes since commit a7f2a366f62319dfebf8d4dfe8b211f631c78457:
 
-Yes, it does.
+  ima: fallback to MODULE_SIG_ENFORCE for existing kernel module syscall (2012-12-24 09:35:48 -0500)
 
-I will take [2-6/6] for v3.9, then, if there are no objections.
+are available in the git repository at:
 
-Thanks,
-Rafael
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git fixes
 
+for you to fetch changes up to 1fb9341ac34825aa40354e74d9a2c69df7d2c304:
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+  module: put modules in list much earlier. (2013-01-12 13:27:46 +1030)
+
+----------------------------------------------------------------
+Various minor fixes, but a slightly more complex one to fix the per-cpu overload
+problem introduced recently by kvm id changes.
+
+----------------------------------------------------------------
+Alexander Graf (1):
+      virtio-blk: Don't free ida when disk is in use
+
+Rusty Russell (2):
+      module: add new state MODULE_STATE_UNFORMED.
+      module: put modules in list much earlier.
+
+Sasha Levin (1):
+      module: prevent warning when finit_module a 0 sized file
+
+ drivers/block/virtio_blk.c  |    7 +-
+ include/linux/module.h      |   10 +--
+ kernel/debug/kdb/kdb_main.c |    2 +
+ kernel/module.c             |  154 ++++++++++++++++++++++++++++++-------------
+ lib/bug.c                   |    1 +
+ 5 files changed, 122 insertions(+), 52 deletions(-)
