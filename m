@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab3AURS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:18:27 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:56991 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755253Ab3AURRJ (ORCPT
+	id S1756250Ab3AURSj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:18:39 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:19848 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756049Ab3AURSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:17:09 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 06/15] clk: export __clk_get_name
-Date: Mon, 21 Jan 2013 17:15:59 +0000
-Message-Id: <1358788568-11137-7-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1358788568-11137-1-git-send-email-arnd@arndb.de>
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:nPuXb1qozlm61jfxlHWBhUVdvNgge9C/7CIayRxxisU
- r5Mjc4WEHbVrTn0pjESmG109yyWxNtNZt4Z9sKrjogpXGppCL2
- NzLFxvhSg7jZiaYAFnbBXK7BdXJi/rUsRCmBqYZl3s+4FQ1IyW
- auooAc+GjujNAK47duMXaKz3qKeYqET9LLKQj1JPgVfXPOKcuj
- C5W0bm2QZ+4dijI2uEC0V21un9kOrGD7UBwmuMCZwpfDx5J6SF
- 8qghv986eQa5YxgxUUVuqYAbQLhXl5IFZU23Q8DC31IsVyp2tb
- lUEyZEFigxnpyf+N/0Rw5EpQl7FKJDP+/exIftVaybhDg11C8U
- xQEr1HWR6WdDzBXgeAtCy1unUCxCcq7VnW7WauJ0V
+	Mon, 21 Jan 2013 12:18:37 -0500
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>
+Subject: [PATCH v4 08/13] scripts/gdb: Add helper and convenience function to look up tasks
+Date: Mon, 21 Jan 2013 18:06:15 +0100
+Message-Id: <047ba5f47f3829523c577717ffa0d29fcc65ea6c.1358787929.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
+References: <cover.1358787929.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
+References: <cover.1358787929.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __clk_get_name is used by drivers that provide their
-own clocks, which have traditionally all been built-in.
-The new imx drm driver however provides clocks but can
-be built as a module, so we need to export __clk_get_name.
+Add the helper task_by_pid that can look up a task by its PID. Also
+export it as a convenience function.
 
-While this is only a staging driver, it's likely that
-there will be others like it in the future.
-
-Without this patch, building ARM allmodconfig results in:
-
-ERROR: "__clk_get_name" [drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.ko] undefined!
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- drivers/clk/clk.c |    1 +
- 1 file changed, 1 insertion(+)
+ scripts/gdb/task.py        |   29 +++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |    1 +
+ 2 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 251e45d..13b793e 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -263,6 +263,7 @@ inline const char *__clk_get_name(struct clk *clk)
- {
- 	return !clk ? NULL : clk->name;
- }
-+EXPORT_SYMBOL_GPL(__clk_get_name);
- 
- inline struct clk_hw *__clk_get_hw(struct clk *clk)
- {
+diff --git a/scripts/gdb/task.py b/scripts/gdb/task.py
+index ff05aa5..93e6c0c 100644
+--- a/scripts/gdb/task.py
++++ b/scripts/gdb/task.py
+@@ -38,3 +38,32 @@ def for_each_task(func, arg = None):
+ 					 get_task_ptr_type(), "thread_group")
+ 			if t == g:
+ 				break
++
++def get_task_by_pid(pid):
++	def match_pid(t, arg):
++		if int(t['pid']) == arg['pid']:
++			arg['task'] = t
++
++	arg = { 'pid': pid, 'task': None }
++	for_each_task(match_pid, arg)
++
++	return arg['task']
++
++
++class LxTaskByPidFunc(gdb.Function):
++	__doc__ = "Find Linux task by PID and return the task_struct variable.\n" \
++		  "\n" \
++		  "$lx_task_by_pid(PID): Given PID, iterate over all tasks of the target and\n" \
++		  "return that task_struct variable which PID matches.\n"
++
++	def __init__(self):
++		super(LxTaskByPidFunc, self).__init__("lx_task_by_pid")
++
++	def invoke(self, pid):
++		task = get_task_by_pid(pid)
++		if task:
++			return task.dereference()
++		else:
++			raise gdb.GdbError("No task of PID " + str(pid))
++
++LxTaskByPidFunc()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index 47f296d..e78b353 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -24,3 +24,4 @@ else:
+ 	import utils
+ 	import symbols
+ 	import dmesg
++	import task
 -- 
-1.7.10.4
+1.7.3.4
 
