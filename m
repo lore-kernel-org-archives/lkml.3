@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab3AUKDe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 05:03:34 -0500
-Received: from smtp-vbr19.xs4all.nl ([194.109.24.39]:3806 "EHLO
-	smtp-vbr19.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223Ab3AUKDd (ORCPT
+	id S1752787Ab3AUKDl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 05:03:41 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:61166 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223Ab3AUKDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 05:03:33 -0500
-X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jan 2013 05:03:33 EST
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH] media: tvp514x: remove field description
-Date: Mon, 21 Jan 2013 10:56:09 +0100
-User-Agent: KMail/1.13.7 (Linux/3.8.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>
-References: <1358236540-2091-1-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1358236540-2091-1-git-send-email-prabhakar.lad@ti.com>
+	Mon, 21 Jan 2013 05:03:38 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301211056.09244.hverkuil@xs4all.nl>
+In-Reply-To: <20130118150732.GP4672@arwen.pp.htv.fi>
+References: <1357916550-11421-3-git-send-email-gautam.vivek@samsung.com>
+	<1358166135-22073-1-git-send-email-gautam.vivek@samsung.com>
+	<20130118131633.GJ4672@arwen.pp.htv.fi>
+	<CAFp+6iF9H+n1Fwr89es-jtDAN=ht1PuXQER9vQ=jG2RZQTceWw@mail.gmail.com>
+	<20130118142251.GL4672@arwen.pp.htv.fi>
+	<CAFp+6iE5gU5QrheYyHLV2yfO=d3j3fVA7qq8CQ4KLysjXFRh3w@mail.gmail.com>
+	<20130118150732.GP4672@arwen.pp.htv.fi>
+Date: Mon, 21 Jan 2013 15:33:36 +0530
+Message-ID: <CAFp+6iFN47wTbGPwL4qeU6eUWNfB9zU7qrDjsZ272nq9rmq9aA@mail.gmail.com>
+Subject: Re: [PATCH v7 2/4] usb: phy: samsung: Add host phy support to
+ samsung-phy driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: kgene.kim@samsung.com
+Cc: balbi@ti.com, Vivek Gautam <gautam.vivek@samsung.com>, jg1.han@samsung.com,
+        linux-samsung-soc@vger.kernel.org, p.paneri@samsung.com,
+        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, sylvester.nawrocki@gmail.com,
+        Doug Anderson <dianders@chromium.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue January 15 2013 08:55:40 Lad, Prabhakar wrote:
-> This patch removes the field description of fields that no
-> longer exists, along side aligns the field description of
-> fields.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Hi Kukjin,
 
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
 
-Regards,
+On Fri, Jan 18, 2013 at 8:37 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Fri, Jan 18, 2013 at 07:59:52PM +0530, Vivek Gautam wrote:
+>> HI Balbi,
+>>
+>>
+>> On Fri, Jan 18, 2013 at 7:52 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> > On Fri, Jan 18, 2013 at 07:51:08PM +0530, Vivek Gautam wrote:
+>> >> Hi Felipe,
+>> >>
+>> >>
+>> >> On Fri, Jan 18, 2013 at 6:46 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> >> > Hi,
+>> >> >
+>> >> > On Mon, Jan 14, 2013 at 05:52:15PM +0530, Vivek Gautam wrote:
+>> >> >> This patch adds host phy support to samsung-usbphy driver and
+>> >> >> further adds support for samsung's exynos5250 usb-phy.
+>> >> >>
+>> >> >> Signed-off-by: Praveen Paneri <p.paneri@samsung.com>
+>> >> >> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> >> >
+>> >> > Missing Kukjim's Acked-by here
+>> >> >
+>> >>
+>> >> Hope you are fine with the changes happened after discussion in thread:
+>> >> [PATCH v5 2/4] usb: phy: samsung: Add host phy support to samsung-phy driver
+>> >>
+>> >> Is it something you want me to modify in this patch ?
+>> >
+>> > please send the final patch and we shall see. After quickly browsing
+>> > that thread, I didn't see anything scary, but I'd like to see your final
+>> > version before giving my final answer ;-)
+>> >
+>>
+>> this series of patch is the final version from my side unless Doug or
+>> you have any further comments
+>> on the thread :
+>> https://lkml.org/lkml/2013/1/14/481
+>>
+>> Seems like Doug wanted to know your opinion in this regard. ;-)
+>
+> only Kukjim's Acked-by missing ;-)
+>
 
-	Hans
+Any comments on this patch-series please ?
 
-> ---
->  include/media/tvp514x.h |    7 ++-----
->  1 files changed, 2 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/media/tvp514x.h b/include/media/tvp514x.h
-> index 74387e8..86ed7e8 100644
-> --- a/include/media/tvp514x.h
-> +++ b/include/media/tvp514x.h
-> @@ -96,12 +96,9 @@ enum tvp514x_output {
->  
->  /**
->   * struct tvp514x_platform_data - Platform data values and access functions.
-> - * @power_set: Power state access function, zero is off, non-zero is on.
-> - * @ifparm: Interface parameters access function.
-> - * @priv_data_set: Device private data (pointer) access function.
->   * @clk_polarity: Clock polarity of the current interface.
-> - * @ hs_polarity: HSYNC Polarity configuration for current interface.
-> - * @ vs_polarity: VSYNC Polarity configuration for current interface.
-> + * @hs_polarity: HSYNC Polarity configuration for current interface.
-> + * @vs_polarity: VSYNC Polarity configuration for current interface.
->   */
->  struct tvp514x_platform_data {
->  	/* Interface control params */
-> 
+
+-- 
+Thanks & Regards
+Vivek
