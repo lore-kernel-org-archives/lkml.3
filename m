@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab3AUTCk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 14:02:40 -0500
-Received: from host171.canaca.com ([67.55.55.225]:44882 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756395Ab3AUTCh (ORCPT
+	id S1756472Ab3AUTDL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 14:03:11 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:56116 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752599Ab3AUTDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 14:02:37 -0500
-X-Greylist: delayed 1354 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jan 2013 14:02:37 EST
-Message-ID: <d76e4c014234c2f0e8ef1328f0e7572a.squirrel@mungewell.org>
-In-Reply-To: <1358792314-24596-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-References: <1358792314-24596-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-Date: Mon, 21 Jan 2013 13:40:01 -0500
-Subject: Re: [PATCH v2] HID: add ThingM blink(1) USB RGB LED support
-From: simon@mungewell.org
-To: "Vivien Didelot" <vivien.didelot@savoirfairelinux.com>
-Cc: linux-input@vger.kernel.org,
-        "Vivien Didelot" <vivien.didelot@savoirfairelinux.com>,
-        "Jiri Kosina" <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22
+	Mon, 21 Jan 2013 14:03:09 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+QelTHoE77aeP/mlt6S1Q0
+Date: Mon, 21 Jan 2013 11:03:03 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH 02/15] ARM: mvebu: build coherency_ll.S for arch=armv7-a
+Message-ID: <20130121190302.GN22517@atomide.com>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+ <1358788568-11137-3-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358788568-11137-3-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Arnd Bergmann <arnd@arndb.de> [130121 09:23]:
+> In a multiplatform kernel, one can enable mach-mvebu
+> together with one or more ARMv6 platforms, which leads
+> to all files being built for v6. The coherency_ll.S
+> uses the "dsb" instruction that is only available for
+> v7, causing a build error in this case. Since the
+> file is only used on v7 based machines, it is safe
+> to build it using an ".arch armv7-a" statement.
+> 
+> Without this patch, building allyesconfig results in:
+> 
+> arch/arm/mach-mvebu/coherency_ll.S: Assembler messages:
+> arch/arm/mach-mvebu/coherency_ll.S:45: Error: selected processor does not support ARM mode `dsb'
 
-> +++ b/Documentation/ABI/testing/sysfs-driver-hid-blink1
-> @@ -0,0 +1,23 @@
-> +What:		/sys/class/leds/blink(1)::<serial>/rgb
-> +Date:		January 2013
-> +Contact:	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-> +Description:	The ThingM blink(1) is an USB RGB LED. The color notation is
-> +		3-byte hexadecimal. Read this attribute to get the last set
-> +		color. Write the 24-bit hexadecimal color to change the current
-> +		LED color. The default color is full white (0xFFFFFF).
-> +		For instance, set the color to green with: echo 00FF00 > rgb
-> +
+This should be already fixed by 72533b (arm: mvebu: Fix compile for
+multiplatform when ARMv6 is selected) in arm-soc fixes branch.
 
-Shouldn't the name presented in the sys/class/leds directories change
-appropriately too?
+Regards,
 
-Simon
-
+Tony
+ 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> ---
+>  arch/arm/mach-mvebu/coherency_ll.S |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/mach-mvebu/coherency_ll.S b/arch/arm/mach-mvebu/coherency_ll.S
+> index 53e8391..7648bda 100644
+> --- a/arch/arm/mach-mvebu/coherency_ll.S
+> +++ b/arch/arm/mach-mvebu/coherency_ll.S
+> @@ -25,6 +25,7 @@
+>   * r0: Coherency fabric base register address
+>   * r1: HW CPU id
+>   */
+> +	.arch armv7-a
+>  ENTRY(ll_set_cpu_coherent)
+>  	/* Create bit by cpu index */
+>  	mov	r3, #(1 << 24)
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
