@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021Ab3AUQCD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 11:02:03 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51205 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755662Ab3AUQCA (ORCPT
+	id S1756250Ab3AUQDk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 11:03:40 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:49103 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753780Ab3AUQDh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 11:02:00 -0500
-Date: Mon, 21 Jan 2013 16:01:33 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Roger Quadros <rogerq@ti.com>
-Cc: sameo@linux.intel.com, balbi@ti.com, tony@atomide.com, kishon@ti.com,
-        sshtylyov@mvista.com, bjorn@mork.no, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v9 05/22] mfd: omap-usb-tll: Clean up clock handling
-Message-ID: <20130121160133.GP23505@n2100.arm.linux.org.uk>
-References: <20130118145906.GE23505@n2100.arm.linux.org.uk> <1358766286-5425-1-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358766286-5425-1-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 21 Jan 2013 11:03:37 -0500
+Message-ID: <1358784212.6590.30.camel@hornet>
+Subject: Re: [PATCH 7/7] clk: vexpress: Use common of_clk_init() function
+From: Pawel Moll <pawel.moll@arm.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "linux@prisktech.co.nz" <linux@prisktech.co.nz>,
+        "josh.cartwright@ni.com" <josh.cartwright@ni.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 21 Jan 2013 16:03:32 +0000
+In-Reply-To: <20130118175827.3982.65450@quantum>
+References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
+	 <1357282858-2112-7-git-send-email-pgaikwad@nvidia.com>
+	 <20130118175827.3982.65450@quantum>
+X-Mailer: Evolution 3.6.2-0ubuntu0.1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 21 Jan 2013 16:03:33.0039 (UTC) FILETIME=[DCB0ABF0:01CDF7F0]
+X-MC-Unique: 113012116033505201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 01:04:46PM +0200, Roger Quadros wrote:
-> Every channel has a functional clock that is similarly named.
-> It makes sense to use a for loop to manage these clocks as OMAPs
-> can come with up to 3 channels.
+On Fri, 2013-01-18 at 17:58 +0000, Mike Turquette wrote:
+> Quoting Prashant Gaikwad (2013-01-03 23:00:58)
+> > Use common of_clk_init() function for clock initialization.
+> > 
+> > Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
 > 
-> Dynamically allocate and get channel clocks depending on the
-> number of clocks avaiable on the platform.
+> Pawel or Linus,
 > 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
+> Can I get a Tested-by before I take this series into clk-next?
 
-Much better from the clk API usage, thanks.
+I'll just got back to work and will test it soon, most likely tomorrow.
 
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cheers!
+
+Pawel
+
+
