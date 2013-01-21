@@ -1,120 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab3AULMQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 06:12:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54540 "EHLO mx2.suse.de"
+	id S1753128Ab3AULNk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 06:13:40 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34262 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753097Ab3AULMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 06:12:10 -0500
-Date: Mon, 21 Jan 2013 12:12:06 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Zhouping Liu <zliu@redhat.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        Li Zefan <lizefan@huawei.com>, CAI Qian <caiqian@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
-Message-ID: <20130121111206.GG7798@dhcp22.suse.cz>
-References: <4FEE7665.6020409@jp.fujitsu.com>
- <389106003.8637801.1358757547754.JavaMail.root@redhat.com>
- <20130121105624.GF7798@dhcp22.suse.cz>
+	id S1752670Ab3AULNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 06:13:39 -0500
+From: Luciano Coelho <coelho@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <tony@atomide.com>, <peter.ujfalusi@ti.com>, <balbi@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Revert "drivers/misc/ti-st: remove gpio handling"
+Date: Mon, 21 Jan 2013 13:12:42 +0200
+Message-ID: <1358766762-24405-1-git-send-email-coelho@ti.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130121105624.GF7798@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And we can put another clean up patch on top of the fix:
+This reverts commit eccf2979b2c034b516e01b8a104c3739f7ef07d1.
+
+The reason is that it broke TI WiLink shared transport on Panda.
+Also, callback functions should not be added to board files anymore,
+so revert to implementing the power functions in the driver itself.
+
+Additionally, changed a variable name ('status' to 'err') so that this
+revert compiles properly.
+
+Cc: stable <stable@vger.kernel.org> [3.7]
+Signed-off-by: Luciano Coelho <coelho@ti.com>
 ---
->From a81d36002e7dbd976b617d5eadf32265f36038a4 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Mon, 21 Jan 2013 12:05:29 +0100
-Subject: [PATCH] memcg: clean up swap accounting initialization code
+ drivers/misc/ti-st/st_kim.c |   37 ++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 36 insertions(+), 1 deletion(-)
 
-Memcg swap accounting is currently enabled by enable_swap_cgroup when
-the root cgroup is created. mem_cgroup_init acts as a memcg subsystem
-initializer which sounds like a much better place for enable_swap_cgroup
-as well. We already register memsw files from there so it makes a lot of
-sense to merge those two into a single enable_swap_cgroup function.
-
-This patch doesn't introduce any semantical changes.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c |   30 ++++++++++++------------------
- 1 file changed, 12 insertions(+), 18 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a2800db..878d62c 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6221,18 +6221,6 @@ struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg)
- }
- EXPORT_SYMBOL(parent_mem_cgroup);
+diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
+index 9ff942a..83269f1 100644
+--- a/drivers/misc/ti-st/st_kim.c
++++ b/drivers/misc/ti-st/st_kim.c
+@@ -468,6 +468,11 @@ long st_kim_start(void *kim_data)
+ 		if (pdata->chip_enable)
+ 			pdata->chip_enable(kim_gdata);
  
--#ifdef CONFIG_MEMCG_SWAP
--static void __init enable_swap_cgroup(void)
--{
--	if (!mem_cgroup_disabled() && really_do_swap_account)
--		do_swap_account = 1;
--}
--#else
--static void __init enable_swap_cgroup(void)
--{
--}
--#endif
--
- static int mem_cgroup_soft_limit_tree_init(void)
++		/* Configure BT nShutdown to HIGH state */
++		gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
++		mdelay(5);	/* FIXME: a proper toggle */
++		gpio_set_value(kim_gdata->nshutdown, GPIO_HIGH);
++		mdelay(100);
+ 		/* re-initialize the completion */
+ 		INIT_COMPLETION(kim_gdata->ldisc_installed);
+ 		/* send notification to UIM */
+@@ -509,7 +514,8 @@ long st_kim_start(void *kim_data)
+  *	(b) upon failure to either install ldisc or download firmware.
+  *	The function is responsible to (a) notify UIM about un-installation,
+  *	(b) flush UART if the ldisc was installed.
+- *	(c) invoke platform's chip disabling routine.
++ *	(c) reset BT_EN - pull down nshutdown at the end.
++ *	(d) invoke platform's chip disabling routine.
+  */
+ long st_kim_stop(void *kim_data)
  {
- 	struct mem_cgroup_tree_per_node *rtpn;
-@@ -6286,7 +6274,6 @@ mem_cgroup_css_alloc(struct cgroup *cont)
- 	/* root ? */
- 	if (cont->parent == NULL) {
- 		int cpu;
--		enable_swap_cgroup();
- 		parent = NULL;
- 		if (mem_cgroup_soft_limit_tree_init())
- 			goto free_out;
-@@ -6976,12 +6963,19 @@ __setup("swapaccount=", enable_swap_account);
+@@ -541,6 +547,13 @@ long st_kim_stop(void *kim_data)
+ 		err = -ETIMEDOUT;
+ 	}
  
- static void __init memsw_file_init(void)
- {
--	if (really_do_swap_account)
--		WARN_ON(cgroup_add_cftypes(&mem_cgroup_subsys,
--					memsw_cgroup_files));
-+	WARN_ON(cgroup_add_cftypes(&mem_cgroup_subsys, memsw_cgroup_files));
-+}
++	/* By default configure BT nShutdown to LOW state */
++	gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
++	mdelay(1);
++	gpio_set_value(kim_gdata->nshutdown, GPIO_HIGH);
++	mdelay(1);
++	gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
 +
-+static void __init enable_swap_cgroup(void)
-+{
-+	if (!mem_cgroup_disabled() && really_do_swap_account) {
-+		do_swap_account = 1;
-+		memsw_file_init();
+ 	/* platform specific disable */
+ 	if (pdata->chip_disable)
+ 		pdata->chip_disable(kim_gdata);
+@@ -733,6 +746,20 @@ static int kim_probe(struct platform_device *pdev)
+ 	/* refer to itself */
+ 	kim_gdata->core_data->kim_data = kim_gdata;
+ 
++	/* Claim the chip enable nShutdown gpio from the system */
++	kim_gdata->nshutdown = pdata->nshutdown_gpio;
++	err = gpio_request(kim_gdata->nshutdown, "kim");
++	if (unlikely(err)) {
++		pr_err(" gpio %ld request failed ", kim_gdata->nshutdown);
++		return err;
 +	}
- }
 +
- #else
--static void __init memsw_file_init(void)
-+static void __init enable_swap_cgroup(void)
++	/* Configure nShutdown GPIO as output=0 */
++	err = gpio_direction_output(kim_gdata->nshutdown, 0);
++	if (unlikely(err)) {
++		pr_err(" unable to configure gpio %ld", kim_gdata->nshutdown);
++		return err;
++	}
+ 	/* get reference of pdev for request_firmware
+ 	 */
+ 	kim_gdata->kim_pdev = pdev;
+@@ -779,10 +806,18 @@ err_core_init:
+ 
+ static int kim_remove(struct platform_device *pdev)
  {
- }
- #endif
-@@ -6995,7 +6989,7 @@ static void __init memsw_file_init(void)
- static int __init mem_cgroup_init(void)
- {
- 	hotcpu_notifier(memcg_cpu_hotplug_callback, 0);
--	memsw_file_init();
-+	enable_swap_cgroup();
- 	return 0;
- }
- subsys_initcall(mem_cgroup_init);
++	/* free the GPIOs requested */
++	struct ti_st_plat_data	*pdata = pdev->dev.platform_data;
+ 	struct kim_data_s	*kim_gdata;
+ 
+ 	kim_gdata = dev_get_drvdata(&pdev->dev);
+ 
++	/* Free the Bluetooth/FM/GPIO
++	 * nShutdown gpio from the system
++	 */
++	gpio_free(pdata->nshutdown_gpio);
++	pr_info("nshutdown GPIO Freed");
++
+ 	debugfs_remove_recursive(kim_debugfs_dir);
+ 	sysfs_remove_group(&pdev->dev.kobj, &uim_attr_grp);
+ 	pr_info("sysfs entries removed");
 -- 
 1.7.10.4
 
--- 
-Michal Hocko
-SUSE Labs
