@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab3AUROK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:14:10 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:47482 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab3AUROH (ORCPT
+	id S1753135Ab3AURQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:16:17 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:60645 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752537Ab3AURQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:14:07 -0500
-Date: Mon, 21 Jan 2013 12:14:01 -0500 (EST)
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <1329559360.389477.1358788441066.JavaMail.root@mail.savoirfairelinux.com>
-In-Reply-To: <alpine.LNX.2.00.1301211714520.8266@pobox.suse.cz>
-Subject: Re: [PATCH] HID: add ThingM blink(1) USB LED support
+	Mon, 21 Jan 2013 12:16:16 -0500
+Date: Mon, 21 Jan 2013 12:16:15 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Thierry Reding <thierry.reding@avionic-design.de>
+cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
+        Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 29/33] usb: Convert to devm_ioremap_resource()
+In-Reply-To: <1358762966-20791-30-git-send-email-thierry.reding@avionic-design.de>
+Message-ID: <Pine.LNX.4.44L0.1301211215360.19920-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [208.88.110.46]
-X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - FF3.0 (Linux)/7.1.4_GA_2555)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Mon, 21 Jan 2013, Thierry Reding wrote:
 
-> hid-blink sounds too generic to me, taking into account that this is
-> not
-> 'generic HID blinking' framework, but rather a specific device driver
-> for
-> a particular device.
+> Convert all uses of devm_request_and_ioremap() to the newly introduced
+> devm_ioremap_resource() which provides more consistent error handling.
 > 
-> So something like hid-thingm-blink sounds more reasonable to me.
+> devm_ioremap_resource() provides its own error messages so all explicit
+> error messages can be removed from the failure code paths.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: linux-usb@vger.kernel.org
 
-Ok, I'll name the file hid-thingm-blink1.c instead.
-Should I keep the Kconfig macro CONFIG_BLINK1 or CONFIG_THINGM_BLINK1
-sounds better?
+For the EHCI and OHCI changes:
 
-> Linux Kernel is being shipped under GPL v2, without "or any later"
-> clause
-> added. So I am afraid I can't merge the code with this license.
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-No problem, I'll change the clause.
-
-Thanks,
-Vivien
