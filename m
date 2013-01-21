@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668Ab3AUOJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 09:09:17 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:37262 "EHLO bear.ext.ti.com"
+	id S1755607Ab3AUOJP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 09:09:15 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:37261 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754606Ab3AUOJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752923Ab3AUOJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Jan 2013 09:09:10 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <rob.herring@calxeda.com>, <rob@landley.net>, <tony@atomide.com>,
@@ -14,79 +14,55 @@ To: <rob.herring@calxeda.com>, <rob@landley.net>, <tony@atomide.com>,
         <devicetree-discuss@lists.ozlabs.org>
 CC: <grant.likely@secretlab.ca>, <linux@arm.linux.org.uk>,
         <gregkh@linuxfoundation.org>, <kishon@ti.com>
-Subject: [PATCH v2 0/4] usb: musb: add driver for control module
-Date: Mon, 21 Jan 2013 19:38:24 +0530
-Message-ID: <1358777308-2409-1-git-send-email-kishon@ti.com>
+Subject: [PATCH v2 3/4] ARM: OMAP2: MUSB: Specify omap4 has mailbox
+Date: Mon, 21 Jan 2013 19:38:27 +0530
+Message-ID: <1358777308-2409-4-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358777308-2409-1-git-send-email-kishon@ti.com>
+References: <1358777308-2409-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a new driver for the usb part of control module. This has an API
-to power on the USB2 phy and an API to write to the mailbox depending on
-whether MUSB has to act in host mode or in device mode.
+Added has_mailbox to the musb platform data to specify that omap uses
+an external mailbox (in control module) to communicate with the musb
+core during device connect and disconnect.
 
-Writing to control module registers for doing the above task which was
-previously done in omap glue and in omap-usb2 phy is removed.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/mach-omap2/usb-musb.c |    3 +++
+ include/linux/usb/musb.h       |    2 ++
+ 2 files changed, 5 insertions(+)
 
-Changes from v1:
-* renamed get_omap_control_dev to omap_get_control_dev
-
-* created and exported a single API (omap_control_usb_set_mode) to change
-  the usb mode
-
-* Before writing to the otghs_control regster, the value from
-  otghs_control regster is read and only the appropriate bits are set.
-
-* In omap_init_control_usb, the indentation is now reduced as per Felipe's
-  suggestion.
-
-Changes from RFC:
-* Used "#if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)" instead of 
-  "#if (defined(CONFIG_OMAP_CONTROL_USB) || \
-				defined(CONFIG_OMAP_CONTROL_USB_MODULE))"
-
-* return "-EADDRNOTAVAIL" if devm_request_and_ioremap fails.
-
-* Removed the dt data from this patch series (I'll send that as a separate
-series).
-
-* added "ctrl_module" binding to usb otg glue and usb phy in the Documentaion.
-  This binding is not planned to be used until an actual requirement for
-  it arises.
-
-This series was developed on
-git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git xceiv
-
-Did basic enumeration testing in omap4 panda and omap3 beagle.
-
-Kishon Vijay Abraham I (4):
-  drivers: usb: phy: add a new driver for usb part of control module
-  ARM: OMAP: devices: create device for usb part of control module
-  ARM: OMAP2: MUSB: Specify omap4 has mailbox
-  drivers: usb: start using the control module driver
-
- Documentation/devicetree/bindings/usb/omap-usb.txt |   30 ++-
- Documentation/devicetree/bindings/usb/usb-phy.txt  |   12 +-
- arch/arm/mach-omap2/devices.c                      |   45 ++++
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |   13 --
- arch/arm/mach-omap2/usb-musb.c                     |    3 +
- drivers/usb/musb/Kconfig                           |    1 +
- drivers/usb/musb/omap2430.c                        |   64 ++----
- drivers/usb/musb/omap2430.h                        |    9 -
- drivers/usb/phy/Kconfig                            |   10 +
- drivers/usb/phy/Makefile                           |    1 +
- drivers/usb/phy/omap-control-usb.c                 |  238 ++++++++++++++++++++
- drivers/usb/phy/omap-usb2.c                        |   38 +---
- include/linux/usb/musb.h                           |    2 +
- include/linux/usb/omap_control_usb.h               |   71 ++++++
- include/linux/usb/omap_usb.h                       |    4 +-
- 15 files changed, 439 insertions(+), 102 deletions(-)
- create mode 100644 drivers/usb/phy/omap-control-usb.c
- create mode 100644 include/linux/usb/omap_control_usb.h
-
+diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
+index 7b33b37..9d27e3f 100644
+--- a/arch/arm/mach-omap2/usb-musb.c
++++ b/arch/arm/mach-omap2/usb-musb.c
+@@ -85,6 +85,9 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
+ 	musb_plat.mode = board_data->mode;
+ 	musb_plat.extvbus = board_data->extvbus;
+ 
++	if (cpu_is_omap44xx())
++		musb_plat.has_mailbox = true;
++
+ 	if (soc_is_am35xx()) {
+ 		oh_name = "am35x_otg_hs";
+ 		name = "musb-am35x";
+diff --git a/include/linux/usb/musb.h b/include/linux/usb/musb.h
+index eb50525..053c268 100644
+--- a/include/linux/usb/musb.h
++++ b/include/linux/usb/musb.h
+@@ -99,6 +99,8 @@ struct musb_hdrc_platform_data {
+ 	/* MUSB_HOST, MUSB_PERIPHERAL, or MUSB_OTG */
+ 	u8		mode;
+ 
++	u8		has_mailbox:1;
++
+ 	/* for clk_get() */
+ 	const char	*clock;
+ 
 -- 
 1.7.9.5
 
