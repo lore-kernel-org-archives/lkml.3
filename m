@@ -1,119 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab3AUA7v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 19:59:51 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:35388 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab3AUA7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 19:59:49 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Carlos O'Donell" <carlos@systemhalted.org>
-Cc: Eric Paris <eparis@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
-        libc-alpha@sourceware.org, dwalsh@redhat.com, dmalcolm@redhat.com,
-        sds@tycho.nsa.gov, segoon@openwall.com,
-        linux-security-module@vger.kernel.org
-References: <1357747463.2593.28.camel@localhost>
-	<1357760637.2593.55.camel@localhost>
-	<50EDCFC0.3010401@schaufler-ca.com>
-	<1357763560.1342.7.camel@localhost> <50EDD8D4.60003@schaufler-ca.com>
-	<20130109205947.GE26036@sunsite.ms.mff.cuni.cz>
-	<1357765795.1342.21.camel@localhost>
-	<50EDEC85.5060802@systemhalted.org> <871udfmmkx.fsf@xmission.com>
-Date: Sun, 20 Jan 2013 16:59:35 -0800
-In-Reply-To: <871udfmmkx.fsf@xmission.com> (Eric W. Biederman's message of
-	"Sun, 20 Jan 2013 16:00:46 -0800")
-Message-ID: <871udfl5ag.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19mzEE2Y5Q/HNcjiDQ1lXgPysvPm6MsFWk=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4980]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Carlos O'Donell <carlos@systemhalted.org>
-X-Spam-Relay-Country: 
+	id S1752693Ab3AUBFY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 20:05:24 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:54937 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752574Ab3AUBFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 20:05:22 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: libc-alpha@sourceware.org
 Subject: Re: Friendlier EPERM - Request for input
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Date: Sun, 20 Jan 2013 20:09:14 -0500
+User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Carlos O'Donell" <carlos@systemhalted.org>,
+        Eric Paris <eparis@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
+        dwalsh@redhat.com, dmalcolm@redhat.com, sds@tycho.nsa.gov,
+        segoon@openwall.com, linux-security-module@vger.kernel.org
+References: <1357747463.2593.28.camel@localhost> <50EDEC85.5060802@systemhalted.org> <871udfmmkx.fsf@xmission.com>
+In-Reply-To: <871udfmmkx.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart11444090.qxFYdlmvCa";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301202009.17647.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ebiederm@xmission.com (Eric W. Biederman) writes:
+--nextPart11444090.qxFYdlmvCa
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Carlos O'Donell <carlos@systemhalted.org> writes:
->
->> On 01/09/2013 04:09 PM, Eric Paris wrote:
->>> On Wed, 2013-01-09 at 21:59 +0100, Jakub Jelinek wrote:
->>>> On Wed, Jan 09, 2013 at 12:53:40PM -0800, Casey Schaufler wrote:
->>>>> I'm suggesting that the string returned by get_extended_error_info()
->>>>> ought to be the audit record the system call would generate, regardless
->>>>> of whether the audit system would emit it or not.
->>>>
->>>> What system call would that info be for and would it be reset on next
->>>> syscall that succeeded, or also failed?
->>>>
->>>> The thing is, various functions e.g. perform some syscall, save errno, do
->>>> some other syscall, and if they decide that the first syscall should be what
->>>> determines the whole function's errno, just restore errno from the saved
->>>> value and return.  Similarly, various functions just set errno upon
->>>> detecting some error condition in userspace.
->>>> There is no 1:1 mapping between many libc library calls and syscalls.
->>>> So, when would it be safe to call this new get_extended_error_info function
->>>> and how to determine to which syscall it was relevant?
->>
->> I asked the same questions as Jakub asked but in a slightly different
->> formulation (http://cygwin.com/ml/libc-alpha/2013-01/msg00267.html).
->>  
->>> I was thinking of it to be the last kernel error.  So if the first and
->>> that second operation caused the kernel to want to make available
->>> extended errno information you would end up with the second.  I see this
->>> is an informative piece of information, not normative.  Not a
->>> replacement for errno.  I'm hoping for a best effort way to provide
->>> extended errno information.
->>
->> IMO Casey's answer is the right solution i.e. whatever the errno
->> behaviour was.
->
+On Sunday 20 January 2013 19:00:46 Eric W. Biederman wrote:
+> Carlos O'Donell writes:
+> > On 01/09/2013 04:09 PM, Eric Paris wrote:
+> >> On Wed, 2013-01-09 at 21:59 +0100, Jakub Jelinek wrote:
+> >>> On Wed, Jan 09, 2013 at 12:53:40PM -0800, Casey Schaufler wrote:
+> >>>> I'm suggesting that the string returned by get_extended_error_info()
+> >>>> ought to be the audit record the system call would generate,
+> >>>> regardless of whether the audit system would emit it or not.
+> >>>=20
+> >>> What system call would that info be for and would it be reset on next
+> >>> syscall that succeeded, or also failed?
+> >>>=20
+> >>> The thing is, various functions e.g. perform some syscall, save errno,
+> >>> do some other syscall, and if they decide that the first syscall
+> >>> should be what determines the whole function's errno, just restore
+> >>> errno from the saved value and return.  Similarly, various functions
+> >>> just set errno upon detecting some error condition in userspace.
+> >>> There is no 1:1 mapping between many libc library calls and syscalls.
+> >>> So, when would it be safe to call this new get_extended_error_info
+> >>> function and how to determine to which syscall it was relevant?
+> >=20
+> > I asked the same questions as Jakub asked but in a slightly different
+> > formulation (http://cygwin.com/ml/libc-alpha/2013-01/msg00267.html).
+> >=20
+> >> I was thinking of it to be the last kernel error.  So if the first and
+> >> that second operation caused the kernel to want to make available
+> >> extended errno information you would end up with the second.  I see th=
+is
+> >> is an informative piece of information, not normative.  Not a
+> >> replacement for errno.  I'm hoping for a best effort way to provide
+> >> extended errno information.
+> >=20
+> > IMO Casey's answer is the right solution i.e. whatever the errno
+> > behaviour was.
+>=20
 > Let me propose a different mechanism for getting this to user space
 > that gives you a save/restore ability.
->
+>=20
 > When a system call returns with an error we return the error code
 > in one register and leave the rest of the registers that calling
 > conventions allow us to stomp unchanged.
->
-> On i386 (probabaly our most constraint architecture) that gives us
-> 4 32bit registers or 16 bytes/characters to play with.
->
-> Returning either an exteneded error number or a short
-> string in those extra bytes should be very doable, and largely
-> backwards compatible.
->
-> Then in userspace for those applications who care you can
-> have a "struct exteneded_error" that holds the extra information.
->
-> To use that information I expect you want something like:
->
-> char *explain_error(int (*failed_func)(...), int errno, struct extended_error *error);
 
-Hmm.  It seems it seems someone else has already written libexplain.
-http://libexplain.sourceforge.net/
+the syscall ABI is not the same as the calling convention.  pretty much all=
+ C=20
+libraries use inline asm to do syscalls.  a few applications do too, but fo=
+r=20
+the most part those have converted to the syscall() library function nowada=
+ys=20
+since the kernel stopped exporting _syscall[1-6]() macros for apps to use=20
+directly.
 
-Certainly I would suggest starting there for better explanaitions of why
-things fail.
+basically, that means you can't change the syscall ABI w/out breaking=20
+userspace especially on i386 as it is the most constrained architecture.  y=
+ou=20
+might get away with it with others which have a lot of spare regs that pret=
+ty=20
+much no one uses, but that can be dicey too since you're relying on how cod=
+e=20
+just happens to be generated by gcc.
 
-If you want good error messages certainly some amount of help from user
-space appears necessary.
+the inline asm declares the syscall args only as inputs.  the only output i=
+s=20
+the return register, and memory/cc are the only clobbers.
 
-Eric
+you could do this in a backwards compatible way by setting a bit in the=20
+syscall NR to indicate that userland knows it will get back two values.  th=
+e=20
+kernel will check & clear that bit first before looking up the syscall tabl=
+e. =20
+somewhat like how the x32 ABI is handled.
+
+not saying i like that idea at all, just providing an alternative that woul=
+d=20
+work w/out breaking userspace.
+=2Dmike
+
+--nextPart11444090.qxFYdlmvCa
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJQ/JU9AAoJEEFjO5/oN/WB5IQQAK2KcCUBddkngS5PsbXAixEu
+HRdXV2NH1Pkh87tH6YaVAkSuJ89Kbep5wgppX7PLJcF9xNRiqhCZ3tb84pQLHhsT
+TKZqNDs7Q0Kz7DUQGQnk0+QCQJ76DAWEvywJc0zb/A4NKyACDthyhyWqj0ZV1S90
+tEXbZ11zS1l7iF9KqA1yhVYEy4v168+4DiCfCMqSCmTMgQno7x4kTXyfFUfMfyFu
+Q0+LajI3rsnsTdo7s386Xj2OY3Ewd5DKSddcT/MT7M8TaePqWHw1dGkVghY8EsmW
+Fj4lzlAZ4ZfxsxaoeLl5GTwYCKoE5JqYmubMRkQ9yth4qssq2DkZpn0a/uQtIi76
+Oyp6zpzbDzLZpol9Ycv5Vd7auxgsoNBqsrcvv7mwQZ2PLca4GRQxLzbMq77EPliY
+4ricpxLbEwfrZ63nYz6E0bnxNwokvPai9g+qCsb2kfC5yEuk2qKtGZYkqfzgYve4
+fvZnd5SJY27Nqk3twcS3FD8kDtlOh7jt0kc8pqNYXw0pBvH6L2GRmtq1ZSm2oD1p
+VKwZUg6ZWDQjU8S/QIwj//ZU1pwuCD0S3Kg+rZKTOyg9/VyxqBJvKCbn58CPe09D
+WuiXr65qRB2HHwrOFm0uxXxC95gqWpD7B0DoU4MLS+Ut8Lq61cwk95hYR8KtDyZX
+PxiDpq22qds4BDxeOkDV
+=+V9S
+-----END PGP SIGNATURE-----
+
+--nextPart11444090.qxFYdlmvCa--
