@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab3AUVhY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 16:37:24 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:53922 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab3AUVhX (ORCPT
+	id S1752548Ab3AUViB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 16:38:01 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:36608 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712Ab3AUViA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 16:37:23 -0500
-Date: Mon, 21 Jan 2013 13:37:19 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jon Mason <jon.mason@intel.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH 14/21] NTB: Fix Sparse Warnings
-Message-ID: <20130121213719.GA20506@kroah.com>
-References: <1358586155-23322-1-git-send-email-jon.mason@intel.com>
- <1358586155-23322-15-git-send-email-jon.mason@intel.com>
- <20130120234534.GD14196@kroah.com>
- <20130121211350.GH22208@jonmason-lab>
+	Mon, 21 Jan 2013 16:38:00 -0500
+Date: Mon, 21 Jan 2013 13:38:23 -0800
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@ghostprotocols.net, Anton Blanchard <anton@au1.ibm.com>,
+        paulus@samba.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH] perf: Fix compile warnings in tests/attr.c
+Message-ID: <20130121213823.GA4774@us.ibm.com>
+References: <20130119013052.GA24693@us.ibm.com>
+ <20130121135906.GD1995@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130121211350.GH22208@jonmason-lab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130121135906.GD1995@krava.brq.redhat.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012121-7408-0000-0000-00000C15DCD5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 02:13:50PM -0700, Jon Mason wrote:
-> On Sun, Jan 20, 2013 at 03:45:34PM -0800, Greg KH wrote:
-> > On Sat, Jan 19, 2013 at 02:02:28AM -0700, Jon Mason wrote:
-> > > Address the sparse warnings and resulting fallout
-> > > 
-> > > Signed-off-by: Jon Mason <jon.mason@intel.com>
-> > > ---
-> > >  drivers/ntb/ntb_hw.c        |    7 ++++---
-> > >  drivers/ntb/ntb_hw.h        |    4 ++--
-> > >  drivers/ntb/ntb_transport.c |   32 ++++++++++++++++----------------
-> > >  3 files changed, 22 insertions(+), 21 deletions(-)
-> > > 
-> > > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-> > > index 18cb5dc..b792ccd 100644
-> > > --- a/drivers/ntb/ntb_hw.c
-> > > +++ b/drivers/ntb/ntb_hw.c
-> > > @@ -104,8 +104,9 @@ MODULE_DEVICE_TABLE(pci, ntb_pci_tbl);
-> > >   *
-> > >   * RETURNS: An appropriate -ERRNO error value on error, or zero for success.
-> > >   */
-> > > -int ntb_register_event_callback(struct ntb_device *ndev,
-> > > -				void (*func)(void *handle, unsigned int event))
-> > > +int
-> > > +ntb_register_event_callback(struct ntb_device *ndev,
-> > > +			    void (*func)(void *handle, enum ntb_hw_event event))
-> > 
-> > What is sparse complaining about here that moving the function name to
-> > the start of the line fixes?  That shouldn't be necessary at all.  Ah,
-> > the enum?  If so, why change the first line at all?
-> 
-> All an effort to get it to fit in under 80 chars.
+Jiri Olsa [jolsa@redhat.com] wrote:
+| On Fri, Jan 18, 2013 at 05:30:52PM -0800, Sukadev Bhattiprolu wrote:
+| > From 4d266e5040c33103f5d226b0d16b89f8ef79e3ad Mon Sep 17 00:00:00 2001
+| > From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+| > Date: Fri, 18 Jan 2013 11:14:28 -0800
+| > Subject: [PATCH] perf: Fix compile warnings in tests/attr.c
+| > 
+| > Replace '%llu' in printf()s with 'PRIu64' in 'tools/perf/tests/attr.c'
+| > to fix compile warnings (which become errors due to -Werror).
+| 
+| i386 and x86_64 compiles fine for me with gcc versions 4.6.3-2 and 4.7.2-2
 
-The original lines were less than 80 characters :)
+But is broken on Power for 64bit :-( I am trying to fix that and thought
+that use of format specifiers like 'PRIu64' was the way to go.
 
-> > > --- a/drivers/ntb/ntb_transport.c
-> > > +++ b/drivers/ntb/ntb_transport.c
-> > > @@ -58,7 +58,7 @@
-> > >  #include <linux/ntb.h>
-> > >  #include "ntb_hw.h"
-> > >  
-> > > -#define NTB_TRANSPORT_VERSION	1
-> > > +#define NTB_TRANSPORT_VERSION	2
-> > 
-> > How is this a sparse fix?
-> 
-> I changed the format of the header below.
+| 
+| with your patch for x86_64 I'm getting following warnings/errors:
 
-Ah, ok.
+| 
+|     CC tests/attr.o
+| tests/attr.c: In function ‘store_event’:
+| tests/attr.c:69:4: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 6 has type ‘__u64’ [-Werror=format]
 
-Care to resend this without the first chunk?
+Here is what I see on an x86_64 box, RHEL6.2 box:
 
-thanks,
+	$ rpm -qf /usr/include/linux/types.h
+	kernel-headers-2.6.32-220.4.2.el6.x86_64
 
-greg k-h
+	$ cat foo.c
+	#include <linux/types.h>
+
+	$ cc -Werror -Wall foo.c
+	In file included from /usr/include/asm-generic/types.h:7,
+			 from /usr/include/asm/types.h:6,
+			 from /usr/include/linux/types.h:4,
+			 from foo5.c:1:
+	/usr/include/asm-generic/int-ll64.h:31:2: error: #error __u64 defined as unsigned long long
+
+where the #error is my debug message.
+
+<snip>
+
+| make: *** [tests/attr.o] Error 1
+| 
+| i386 compiles fine
+
+__u64 is 'unsigned long long' on x86 and PRIu64 is 'llu' which is fine.
+
+__u64 is 'unsigned long' on Power and PRIu64 is 'lu' which is again fine.
+
+But __u64 is 'unsigned long long' on x86_64, but PRIu64 is '%lu' bc __WORDSIZE
+is 64.
+
+On x86_64, shouldn't __u64, be defined as 'unsigned long' rather than
+'unsigned long long' - ie include 'int-l64.h' rather than 'int-ll64.h' ?
+
+BTW, does 'perf' with my patch compile, (with warnings) for you on x86_64
+with 'WERROR=0 make' ?
+
+Sukadev
+
