@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab3AURzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:55:51 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:56231 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753779Ab3AURye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756419Ab3AURzu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:55:50 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:54635 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755931Ab3AURye (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Jan 2013 12:54:34 -0500
-Subject: [PATCH 3/5] use new pagetable helpers in try_preserve_large_page()
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, Gleb Natapov <gleb@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Mon, 21 Jan 2013 09:52:47 -0800
-References: <20130121175244.E5839E06@kernel.stglabs.ibm.com>
-In-Reply-To: <20130121175244.E5839E06@kernel.stglabs.ibm.com>
-Message-Id: <20130121175247.76641034@kernel.stglabs.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012117-9360-0000-0000-00000F8012A5
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 4/6] arm: mvebu: update defconfig with local timer support
+Date: Mon, 21 Jan 2013 18:54:00 +0100
+Message-Id: <1358790842-2986-5-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358790842-2986-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1358790842-2986-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Now that we have support for local timers, enable it by default
 
-try_preserve_large_page() can be slightly simplified by using
-the new page_level_*() helpers.
-
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
+ arch/arm/configs/mvebu_defconfig |    1 -
+ 1 file changed, 1 deletion(-)
 
- linux-2.6.git-dave/arch/x86/mm/pageattr.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
-
-diff -puN arch/x86/mm/pageattr.c~use-new-pagetable-helpers arch/x86/mm/pageattr.c
---- linux-2.6.git/arch/x86/mm/pageattr.c~use-new-pagetable-helpers	2013-01-17 10:22:26.282431407 -0800
-+++ linux-2.6.git-dave/arch/x86/mm/pageattr.c	2013-01-17 10:22:26.286431442 -0800
-@@ -412,15 +412,12 @@ try_preserve_large_page(pte_t *kpte, uns
- 
- 	switch (level) {
- 	case PG_LEVEL_2M:
--		psize = PMD_PAGE_SIZE;
--		pmask = PMD_PAGE_MASK;
--		break;
- #ifdef CONFIG_X86_64
- 	case PG_LEVEL_1G:
--		psize = PUD_PAGE_SIZE;
--		pmask = PUD_PAGE_MASK;
--		break;
- #endif
-+		psize = page_level_size(level);
-+		pmask = page_level_mask(level);
-+		break;
- 	default:
- 		do_split = -EINVAL;
- 		goto out_unlock;
-_
+diff --git a/arch/arm/configs/mvebu_defconfig b/arch/arm/configs/mvebu_defconfig
+index b5bc96c..28c1e38 100644
+--- a/arch/arm/configs/mvebu_defconfig
++++ b/arch/arm/configs/mvebu_defconfig
+@@ -14,7 +14,6 @@ CONFIG_MACH_ARMADA_XP=y
+ # CONFIG_CACHE_L2X0 is not set
+ # CONFIG_SWP_EMULATE is not set
+ CONFIG_SMP=y
+-# CONFIG_LOCAL_TIMERS is not set
+ CONFIG_AEABI=y
+ CONFIG_HIGHMEM=y
+ # CONFIG_COMPACTION is not set
+-- 
+1.7.9.5
 
