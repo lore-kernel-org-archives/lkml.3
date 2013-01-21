@@ -1,286 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab3AUTsx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 14:48:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41150 "EHLO mx1.redhat.com"
+	id S932076Ab3AUTtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 14:49:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10904 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755848Ab3AUTsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 14:48:46 -0500
-Message-ID: <50FD9B50.4090802@redhat.com>
-Date: Mon, 21 Jan 2013 20:47:28 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1751488Ab3AUTtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 14:49:06 -0500
+Date: Mon, 21 Jan 2013 20:48:17 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Kernel Security <security@kernel.org>,
+        Michael Davidson <md@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Julien Tinnes <jln@google.com>,
+        Aaron Durbin <adurbin@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Roland McGrath <roland@hack.frob.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v3 3/3] wake_up_process() should be never used to wakeup a
+	TASK_STOPPED/TRACED task
+Message-ID: <20130121194817.GD18775@redhat.com>
+References: <20130118175224.GA520@redhat.com> <CA+55aFyEsU-pkX557A-m+xoGkA_v+fXEyA8z8HbJ5J8K1jObeg@mail.gmail.com> <20130118185559.GA3773@redhat.com> <CA+55aFy=newnMbx53HipyWbRs2mUUPSqXXCpSfDLW78gkro37g@mail.gmail.com> <20130120192448.GA6771@redhat.com> <20130120192527.GC6771@redhat.com> <CA+55aFx1+hFSCa4nX80C30BkEOugXRvBZ=7LA+u+KOq_qSaJsg@mail.gmail.com> <20130121172151.GA4691@redhat.com> <CA+55aFwRkvEP5YJy+a=TFgDX==YuU7CJ+D_U+B2s4e1LX-nz3g@mail.gmail.com> <20130121194723.GA18775@redhat.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 3/4] zram: get rid of lockdep warning
-References: <1358745691-4556-1-git-send-email-minchan@kernel.org> <1358745691-4556-3-git-send-email-minchan@kernel.org>
-In-Reply-To: <1358745691-4556-3-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130121194723.GA18775@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 06:21 AM, Minchan Kim wrote:
-> Lockdep complains about recursive deadlock of zram->init_lock.
-> [1] made it false positive because we can't request IO to zram
-> before setting disksize. Anyway, we should shut lockdep up to
-> avoid many reporting from user.
-> 
-> Cc: Jerome Marchand <jmarchan@redhat.com>
-> Cc: Nitin Gupta <ngupta@vflare.org>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/staging/zram/zram_drv.c   |  115 +++++++++++++++++++------------------
->  drivers/staging/zram/zram_drv.h   |   12 +++-
->  drivers/staging/zram/zram_sysfs.c |   10 +++-
->  3 files changed, 79 insertions(+), 58 deletions(-)
-> 
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index e95e37c..1f6938a 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -462,19 +462,12 @@ error:
->  void __zram_reset_device(struct zram *zram)
->  {
->  	size_t index;
-> +	struct zram_meta meta;
->  
->  	if (!zram->init_done)
->  		goto out;
->  
->  	zram->init_done = 0;
-> -
-> -	/* Free various per-device buffers */
-> -	kfree(zram->compress_workmem);
-> -	free_pages((unsigned long)zram->compress_buffer, 1);
-> -
-> -	zram->compress_workmem = NULL;
-> -	zram->compress_buffer = NULL;
-> -
->  	/* Free all pages that are still in this zram device */
->  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
->  		unsigned long handle = zram->table[index].handle;
-> @@ -484,11 +477,11 @@ void __zram_reset_device(struct zram *zram)
->  		zs_free(zram->mem_pool, handle);
->  	}
->  
-> -	vfree(zram->table);
-> -	zram->table = NULL;
-> -
-> -	zs_destroy_pool(zram->mem_pool);
-> -	zram->mem_pool = NULL;
-> +	meta.compress_workmem = zram->compress_workmem;
-> +	meta.compress_buffer = zram->compress_buffer;
-> +	meta.table = zram->table;
-> +	meta.mem_pool = zram->mem_pool;
-> +	zram_meta_free(&meta);
->  
->  	/* Reset stats */
->  	memset(&zram->stats, 0, sizeof(zram->stats));
-> @@ -505,12 +498,59 @@ void zram_reset_device(struct zram *zram)
->  	up_write(&zram->init_lock);
->  }
->  
-> -/* zram->init_lock should be held */
-> -int zram_init_device(struct zram *zram)
-> +void zram_meta_free(struct zram_meta *meta)
-> +{
-> +	zs_destroy_pool(meta->mem_pool);
-> +	kfree(meta->compress_workmem);
-> +	free_pages((unsigned long)meta->compress_buffer, 1);
-> +	vfree(meta->table);
-> +	kfree(meta);
+wake_up_process() should never wakeup a TASK_STOPPED/TRACED task.
+Change it to use TASK_NORMAL and add the WARN_ON().
 
-At all callsite, meta is a local variable. We don't want to free it.
+TASK_ALL has no other users, probably can be killed.
 
-> +}
-> +
-> +int zram_meta_alloc(struct zram_meta *meta, u64 disksize)
->  {
-> -	int ret;
->  	size_t num_pages;
->  
-> +	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
-> +	if (!meta->compress_workmem) {
-> +		pr_err("Error allocating compressor working memory!\n");
-> +		goto out;
-> +	}
-> +
-> +	meta->compress_buffer =
-> +			(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO, 1);
-> +	if (!meta->compress_buffer) {
-> +		pr_err("Error allocating compressor buffer space\n");
-> +		goto free_workmem;
-> +	}
-> +
-> +	num_pages = disksize >> PAGE_SHIFT;
-> +	meta->table = vzalloc(num_pages * sizeof(*meta->table));
-> +	if (!meta->table) {
-> +		pr_err("Error allocating zram address table\n");
-> +		goto free_buffer;
-> +	}
-> +
-> +	meta->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
-> +	if (!meta->mem_pool) {
-> +		pr_err("Error creating memory pool\n");
-> +		goto free_table;
-> +	}
-> +
-> +	return 0;
-> +
-> +free_table:
-> +	vfree(meta->table);
-> +free_buffer:
-> +	free_pages((unsigned long)meta->compress_buffer, 1);
-> +free_workmem:
-> +	kfree(meta->compress_workmem);
-> +out:
-> +	return -ENOMEM;
-> +}
-> +
-> +void zram_init_device(struct zram *zram, struct zram_meta *meta)
-> +{
->  	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
->  		pr_info(
->  		"There is little point creating a zram of greater than "
-> @@ -525,51 +565,16 @@ int zram_init_device(struct zram *zram)
->  		);
->  	}
->  
-> -	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
-> -	if (!zram->compress_workmem) {
-> -		pr_err("Error allocating compressor working memory!\n");
-> -		ret = -ENOMEM;
-> -		goto fail_no_table;
-> -	}
-> -
-> -	zram->compress_buffer =
-> -		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
-> -	if (!zram->compress_buffer) {
-> -		pr_err("Error allocating compressor buffer space\n");
-> -		ret = -ENOMEM;
-> -		goto fail_no_table;
-> -	}
-> -
-> -	num_pages = zram->disksize >> PAGE_SHIFT;
-> -	zram->table = vzalloc(num_pages * sizeof(*zram->table));
-> -	if (!zram->table) {
-> -		pr_err("Error allocating zram address table\n");
-> -		ret = -ENOMEM;
-> -		goto fail_no_table;
-> -	}
-> -
->  	/* zram devices sort of resembles non-rotational disks */
->  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
->  
-> -	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
-> -	if (!zram->mem_pool) {
-> -		pr_err("Error creating memory pool\n");
-> -		ret = -ENOMEM;
-> -		goto fail;
-> -	}
-> -
-> +	zram->mem_pool = meta->mem_pool;
-> +	zram->compress_workmem = meta->compress_workmem;
-> +	zram->compress_buffer = meta->compress_buffer;
-> +	zram->table = meta->table;
->  	zram->init_done = 1;
->  
->  	pr_debug("Initialization done!\n");
-> -	return 0;
-> -
-> -fail_no_table:
-> -	/* To prevent accessing table entries during cleanup */
-> -	zram->disksize = 0;
-> -fail:
-> -	__zram_reset_device(zram);
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/sched/core.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Here goes the last call to __zram_reset_device() outside of zram_reset_device().
-I guess we should get rid of it.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 257002c..26058d0 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1523,7 +1523,8 @@ out:
+  */
+ int wake_up_process(struct task_struct *p)
+ {
+-	return try_to_wake_up(p, TASK_ALL, 0);
++	WARN_ON(task_is_stopped_or_traced(p));
++	return try_to_wake_up(p, TASK_NORMAL, 0);
+ }
+ EXPORT_SYMBOL(wake_up_process);
+ 
+-- 
+1.5.5.1
 
-Jerome
-
-> -	pr_err("Initialization failed: err=%d\n", ret);
-> -	return ret;
->  }
->  
->  static void zram_slot_free_notify(struct block_device *bdev,
-> diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-> index 5b671d1..fbe7db0 100644
-> --- a/drivers/staging/zram/zram_drv.h
-> +++ b/drivers/staging/zram/zram_drv.h
-> @@ -83,11 +83,19 @@ struct zram_stats {
->  	u32 bad_compress;	/* % of pages with compression ratio>=75% */
->  };
->  
-> +struct zram_meta {
-> +	void *compress_workmem;
-> +	void *compress_buffer;
-> +	struct table *table;
-> +	struct zs_pool *mem_pool;
-> +};
-> +
->  struct zram {
->  	struct zs_pool *mem_pool;
->  	void *compress_workmem;
->  	void *compress_buffer;
->  	struct table *table;
-> +
->  	spinlock_t stat64_lock;	/* protect 64-bit stats */
->  	struct rw_semaphore lock; /* protect compression buffers and table
->  				   * against concurrent read and writes */
-> @@ -111,7 +119,9 @@ unsigned int zram_get_num_devices(void);
->  extern struct attribute_group zram_disk_attr_group;
->  #endif
->  
-> -extern int zram_init_device(struct zram *zram);
->  extern void zram_reset_device(struct zram *zram);
-> +extern int zram_meta_alloc(struct zram_meta *meta, u64 disksize);
-> +extern void zram_meta_free(struct zram_meta *meta);
-> +extern void zram_init_device(struct zram *zram, struct zram_meta *meta);
->  
->  #endif
-> diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-> index 369db12..31433ef 100644
-> --- a/drivers/staging/zram/zram_sysfs.c
-> +++ b/drivers/staging/zram/zram_sysfs.c
-> @@ -56,22 +56,28 @@ static ssize_t disksize_store(struct device *dev,
->  		struct device_attribute *attr, const char *buf, size_t len)
->  {
->  	u64 disksize;
-> +	struct zram_meta meta;
->  	struct zram *zram = dev_to_zram(dev);
->  
->  	disksize = memparse(buf, NULL);
->  	if (!disksize)
->  		return -EINVAL;
->  
-> +	disksize = PAGE_ALIGN(disksize);
-> +	if (zram_meta_alloc(&meta, disksize))
-> +		return -ENOMEM;
-> +
->  	down_write(&zram->init_lock);
->  	if (zram->init_done) {
->  		up_write(&zram->init_lock);
-> +		zram_meta_free(&meta);
->  		pr_info("Cannot change disksize for initialized device\n");
->  		return -EBUSY;
->  	}
->  
-> -	zram->disksize = PAGE_ALIGN(disksize);
-> +	zram->disksize = disksize;
->  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-> -	zram_init_device(zram);
-> +	zram_init_device(zram, &meta);
->  	up_write(&zram->init_lock);
->  
->  	return len;
-> 
 
