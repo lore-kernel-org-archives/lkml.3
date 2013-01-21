@@ -1,174 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab3AUFzp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 00:55:45 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65531 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab3AUFzn (ORCPT
+	id S1752694Ab3AUGCe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 01:02:34 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39490 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885Ab3AUGCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 00:55:43 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-a7-50fcd85d1573
-Date: Mon, 21 Jan 2013 14:55:41 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Matt Sealey <matt@genesi-usa.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
-        devel <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: Re: Compilation problem with drivers/staging/zsmalloc when !SMP on
- ARM
-Message-ID: <20130121055541.GD3666@blaptop>
-References: <CAKGA1b=ACTQHo9=B7EAG5nrFCO9u-J+sy7dXtYk3Rk6OUcW3cQ@mail.gmail.com>
- <20130118210859.GH23505@n2100.arm.linux.org.uk>
- <CAKGA1bmJ6c4LC=NAD4MU_rBZ2hZjf6qH=C+dqMCf0eP+2vSFdA@mail.gmail.com>
- <20130119044602.GC5391@phenom.dumpdata.com>
+	Mon, 21 Jan 2013 01:02:33 -0500
+Date: Mon, 21 Jan 2013 06:02:29 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Issues with "x86, um: switch to generic fork/vfork/clone" commit
+Message-ID: <20130121060229.GT4939@ZenIV.linux.org.uk>
+References: <50F3D2F2.3080200@6wind.com>
+ <20130119063808.GN4939@ZenIV.linux.org.uk>
+ <20130120031253.GO4939@ZenIV.linux.org.uk>
+ <CA+55aFyRMC43_H1hL5goAQxX4EdTuXOu5A9CoBk9fpGoJT_nig@mail.gmail.com>
+ <20130121012217.GQ4939@ZenIV.linux.org.uk>
+ <CA+55aFwG2j_+2pjUJuZqT1yk0xDEyeFMgCxHmxAzfGXHO5qCXQ@mail.gmail.com>
+ <20130121023010.GR4939@ZenIV.linux.org.uk>
+ <CA+55aFwPM3qWE7F7nwUVKphVTJb7WE7zPF5artdVw7Xq5Z1UgQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130119044602.GC5391@phenom.dumpdata.com>
+In-Reply-To: <CA+55aFwPM3qWE7F7nwUVKphVTJb7WE7zPF5artdVw7Xq5Z1UgQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 11:46:02PM -0500, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jan 18, 2013 at 07:11:32PM -0600, Matt Sealey wrote:
-> > On Fri, Jan 18, 2013 at 3:08 PM, Russell King - ARM Linux
-> > <linux@arm.linux.org.uk> wrote:
-> > > On Fri, Jan 18, 2013 at 02:24:15PM -0600, Matt Sealey wrote:
-> > >> Hello all,
-> > >>
-> > >> I wonder if anyone can shed some light on this linking problem I have
-> > >> right now. If I configure my kernel without SMP support (it is a very
-> > >> lean config for i.MX51 with device tree support only) I hit this error
-> > >> on linking:
-> > >
-> > > Yes, I looked at this, and I've decided that I will _not_ fix this export,
-> > > neither will I accept a patch to add an export.
-> > 
-> > Understood..
-> > 
-> > > As far as I can see, this code is buggy in a SMP environment.  There's
-> > > apparantly no guarantee that:
-> > >
-> > > 1. the mapping will be created on a particular CPU.
-> > > 2. the mapping will then be used only on this specific CPU.
-> > > 3. no guarantee that another CPU won't speculatively prefetch from this
-> > >    region.
-> > > 4. when the mapping is torn down, no guarantee that it's the same CPU that
-> > >    used the happing.
-> > >
-> > > So, the use of the local TLB flush leaves all the other CPUs potentially
-> > > containing TLB entries for this mapping.
-> > 
-> > I'm gonna put this out to the maintainers (Konrad, and Seth since he
-> > committed it) that if this code is buggy it gets taken back out, even
-> > if it makes zsmalloc "slow" on ARM, for the following reasons:
-> 
-> Just to make sure I understand, you mean don't use page table
-> mapping but instead use copying?
-> 
-> > 
-> > * It's buggy on SMP as Russell describes above
-> > * It might not be buggy on UP (opposite to Russell's description above
-> > as the restrictions he states do not exist), but that would imply an
-> > export for a really core internal MM function nobody should be using
-> > anyway
-> > * By that assessment, using that core internal MM function on SMP is
-> > also bad voodoo that zsmalloc should not be doing
-> 
->  'local_tlb_flush' is bad voodoo?
-> 
-> > 
-> > It also either smacks of a lack of comprehensive testing or defiance
-> > of logic that nobody ever built the code without CONFIG_SMP, which
-> > means it was only tested on a bunch of SMP ARM systems (I'm guessing..
-> > Pandaboard? :) or UP systems with SMP/SMP_ON_UP enabled (to expand on
-> > that guess, maybe Beagleboard in some multiplatform Beagle/Panda
-> > hybrid kernel). I am sure I was reading the mailing lists when that
-> > patch was discussed, coded and committed and my guess is correct. In
-> > this case, what we have here anyway is code which when PROPERLY
-> > configured as so..
-> 
-> The initial patch were done on x86. Then Seth did the work to make sure
-> it worked on PPC. Munchin looked on ARM and that is it.
+On Sun, Jan 20, 2013 at 06:39:09PM -0800, Linus Torvalds wrote:
 
-s/Munchin/Minchan
+> And right now, that HAVE_SYSCALL_WRAPPERS does make it much harder to
+> think about the header file changes.
 
+Agreed.
+
+> > FWIW, there's another bit of ugliness around that area - all these
+> > #define __SC_BLAH3, etc., all of the same form.  This stuff begs for
+> > something like
+> > #define __MAP1(m,t,a) m(t,a)
+> > #define __MAP2(m,t,a,...) m(t,a) __MAP1(m,__VA_ARGS__)
+> > #define __MAP3(m,t,a,...) m(t,a) __MAP2(m,__VA_ARGS__)
+> > #define __MAP4(m,t,a,...) m(t,a) __MAP3(m,__VA_ARGS__)
+> > #define __MAP5(m,t,a,...) m(t,a) __MAP4(m,__VA_ARGS__)
+> > #define __MAP6(m,t,a,...) m(t,a) __MAP5(m,__VA_ARGS__)
+> > #define __MAP(n,...) __MAP##n(__VA_ARGS__)
+> > with __MAP(x,__SC_DECL,__VA_ARGS__) instead of __SC_DECL##x(__VA_ARGS__)
+> > etc. in users...
+
+... with missing commas added, of course.
+
+> Well, I can see both sides. The above is the nice and dense
+> declaration model with less duplication, but christ, it's hard for
+> people to wrap their minds around unless they've seen it a million
+> times. It really does take some getting used to, and the long-form can
+> be easier to understand.
+
+Umm...  Even with
+/*
+ * __MAP - apply a given macro to all syscall arguments.
+ * __MAP(n, m, t1, a1, ..., tn, an) will expand to
+ *      m(t1,a1), m(t2,a2), ..., m(tn, an)
+ * Note that the first argument of __MAP must be equal to the number of
+ * type, name pairs in the list.  The list itself (all arguments of __MAP
+ * starting with the 3rd one) is in the form we pass to SYSCALL_DEFINE<n>.
+ */
+slapped on top of it?
+
+> That said, we have so many of those things now when it comes to the
+> syscall stuff that the dense form seems to be called for just to be
+> consistent.
 > 
-> If you have an ARM server that you would be willing to part with I would
-> be thrilled to look at it.
-> 
-> > 
-> > diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c
-> > b/drivers/staging/zsmalloc/zsmalloc-main.c
-> > index 09a9d35..ecf75fb 100644
-> 	> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> > +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> > @@ -228,7 +228,7 @@ struct zs_pool {
-> >   * mapping rather than copying
-> >   * for object mapping.
-> >  */
-> > -#if defined(CONFIG_ARM)
-> > +#if defined(CONFIG_ARM) && defined(CONFIG_SMP)
-> >  #define USE_PGTABLE_MAPPING
+> So go wild if you have the energy for it. I'm not going to pull that
+> for 3.8, though.
 
-I don't get it. How to prevent the problem Russel described?
-The problem is that other CPU can prefetch _speculatively_ under us.
+No, that's obviously next cycle fodder, along with the sick tricks for
+generating compat wrappers on s390 if Martin can live with those.
 
-> >  #endif
-> > 
-> > .. such that it even compiles in both "guess" configurations, the
-> > slower Cortex-A8 600MHz single core system gets to use the slow copy
-> > path and the dual-core 1GHz+ Cortex-A9 (with twice the RAM..) gets to
-> > use the fast mapping path. Essentially all the patch does is "improve
-> > performance" on the fastest, best-configured, large-amounts-of-RAM,
-> > lots-of-CPU-performance ARM systems (OMAP4+, Snapdragon, Exynos4+,
-> > marvell armada, i.MX6..) while introducing the problems Russell
-> > describes, and leave performance exactly the same and potentially far
-> > more stable on the slower, memory-limited ARM machines.
-> 
-> Any ideas on how to detect that?
-> > 
-> > Given the purpose of zsmalloc, zram, zcache etc. this somewhat defies
-> > logic. If it's not making the memory-limited, slow ARM systems run
-> > better, what's the point?
-> > 
-> > So in summary I suggest "we" (Greg? or is it Seth's responsibility?)
-> > should just back out that whole USE_PGTABLE_MAPPING chunk of code
-> > introduced with f553646. Then Russell can carry on randconfiging and I
-> > can build for SMP and UP and get the same code.. with less bugs.
-> 
-> I get that you want to have this fixed right now. I think having it
-> fixed the right way is a better choice. Lets discuss that first
-> before we start tossing patches to disable parts of it.
+BTW, grep for asmlinkage; it's amazing how much cargo-culting is going
+on with it ;-/  Some of the instances are syscalls yet to be converted
+to SYSCALL_DEFINE<n>; even more of COMPAT_SYSCALL_DEFINE<n>-to-be.  We
+also have a bunch of declarations in syscalls.h and compat.h - those
+are fine.  _Some_ of the rest might be legitimate - ia64 and i386 have
+non-trivial asmlinkage expansion and some (but not all) of arch/{x86,ia64}
+instances do make sense.  Not all of those - e.g. things like
+FPU_divide_by_zero() have no business being regparm(0); they are only called
+from C code and forcing their arguments on stack is a pure pessimization for
+no reason whatsoever.  Everything else in arch/* is magic green marker,
+AFAICS...
 
-If I don't miss something, we could have 2 choice.
-
-1) use flush_tlb_kernel_range instead of local_flush_tlb_kernel_range
-Or
-2) use only memory copy
-
-I guess everybody want 2 because it makes code very simple and maintainable.
-Even, rencently Joonsoo sent optimize patch.
-Look at https://lkml.org/lkml/2013/1/16/68 so zram/zcache effect caused by 2
-would be minimized.
-
-But please give me the time and I will borrow quad-core embedded target board
-and test 1 on the phone with Seth's benchmark.
-
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Kind regards,
-Minchan Kim
+There are some borderline cases - e.g. I'm not sure if having sys_recv
+done *not* via SYSCALL_DEFINE() is deliberate; it might cut down on
+some overhead (the sucker's calling sys_recvfrom(), which does normalizations,
+which make normalizing in sys_recv() pointless).  OTOH, sys_send *is*
+done as SYSCALL_DEFINE, even though it ends up calling sys_sendto()...
