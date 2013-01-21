@@ -1,49 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab3AUWOA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 17:14:00 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:48044 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948Ab3AUWN4 (ORCPT
+	id S1753605Ab3AUWN6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 17:13:58 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:49418 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525Ab3AUWN4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Jan 2013 17:13:56 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "x86@kernel.org" <x86@kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "H. Peter Anvin (hpa@zytor.com)" <hpa@zytor.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+Subject: [RFC][PATCH v8 1/3] tracing: Add DEFINE_EVENT_FN() macro
+Thread-Topic: [RFC][PATCH v8 1/3] tracing: Add DEFINE_EVENT_FN() macro
+Thread-Index: Ac34JIJP5yTiNoBxQzmg232oa/IyfQ==
+Date: Mon, 21 Jan 2013 22:13:25 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A508B8@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1358544639-14761-7-git-send-email-maxime.ripard@free-electrons.com>
-References: <1358544639-14761-1-git-send-email-maxime.ripard@free-electrons.com>
-	<1358544639-14761-7-git-send-email-maxime.ripard@free-electrons.com>
-Date: Mon, 21 Jan 2013 23:13:55 +0100
-Message-ID: <CACRpkdYNOTcTVNMqD-q8sJ50nuwoXZLUJZpMXWa=mrZGnGY9+g@mail.gmail.com>
-Subject: Re: [PATCH 6/7] tty: of_serial: Add pinctrl support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Stefan Roese <sr@denx.de>, Alejandro Mery <amery@geeks.cl>,
-        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-01-21_05:2013-01-21,2013-01-21,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1301210253
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 10:30 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
+Each TRACE_EVENT() adds several helper functions. If two or more trace events
+share the same structure and print format, they can also share most of these
+helper functions and save a lot of space from duplicate code. This is why the
+DECLARE_EVENT_CLASS() and DEFINE_EVENT() were created.
 
-> Use pinctrl to configure the SoCs pins directly from the driver.
->
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Some events require a trigger to be called at registering and unregistering of
+the event and to do so they use TRACE_EVENT_FN().
 
-You can poke Greg about this which is fun because it does become
-superfluous with the patch titled
-"[PATCH v4] drivers/pinctrl: grab default handles from device core"
-http://marc.info/?l=linux-kernel&m=135879594515932&w=2
+If multiple events require a trigger, they currently have no choice but to use
+TRACE_EVENT_FN() as there's no DEFINE_EVENT_FN() available. This unfortunately
+causes a lot of wasted duplicate code created.
 
-Which will auto-grab the default state on any device.
+By adding a DEFINE_EVENT_FN(), these events can still use a
+DECLARE_EVENT_CLASS() and then define their own triggers.
 
-Greg, can I have your ACK on that device core grab patch
-so you don't have to merge this patch but can point out that
-it solves the boilerplate problem?
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/tracepoint.h   |    2 ++
+ include/trace/define_trace.h |    5 +++++
+ include/trace/ftrace.h       |    4 ++++
+ 3 files changed, 11 insertions(+), 0 deletions(-)
 
-Yours,
-Linus Walleij
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index 2f322c3..9bf59e5 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -378,6 +378,8 @@ static inline void tracepoint_synchronize_unregister(void)
+ #define DECLARE_EVENT_CLASS(name, proto, args, tstruct, assign, print)
+ #define DEFINE_EVENT(template, name, proto, args)		\
+ 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
++#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)\
++	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
+ #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+ 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
+ #define DEFINE_EVENT_CONDITION(template, name, proto,		\
+diff --git a/include/trace/define_trace.h b/include/trace/define_trace.h
+index 1905ca8..02e1003 100644
+--- a/include/trace/define_trace.h
++++ b/include/trace/define_trace.h
+@@ -44,6 +44,10 @@
+ #define DEFINE_EVENT(template, name, proto, args) \
+ 	DEFINE_TRACE(name)
+ 
++#undef DEFINE_EVENT_FN
++#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg) \
++	DEFINE_TRACE_FN(name, reg, unreg)
++
+ #undef DEFINE_EVENT_PRINT
+ #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+ 	DEFINE_TRACE(name)
+@@ -91,6 +95,7 @@
+ #undef TRACE_EVENT_CONDITION
+ #undef DECLARE_EVENT_CLASS
+ #undef DEFINE_EVENT
++#undef DEFINE_EVENT_FN
+ #undef DEFINE_EVENT_PRINT
+ #undef DEFINE_EVENT_CONDITION
+ #undef TRACE_HEADER_MULTI_READ
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 40dc5e8..7bab676 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -71,6 +71,10 @@
+ 	static struct ftrace_event_call	__used		\
+ 	__attribute__((__aligned__(4))) event_##name
+ 
++#undef DEFINE_EVENT_FN
++#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)	\
++	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
++
+ #undef DEFINE_EVENT_PRINT
+ #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+ 	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
+-- 
+1.7.1
+
