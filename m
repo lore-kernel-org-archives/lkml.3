@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab3AUN67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 08:58:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30216 "EHLO mx1.redhat.com"
+	id S1754412Ab3AUN7l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 08:59:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12590 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab3AUN65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 08:58:57 -0500
-Date: Mon, 21 Jan 2013 13:58:21 +0000
-From: thornber@redhat.com
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Amit Kale <akale@stec-inc.com>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
-        "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "lsf-pc@lists.linux-foundation.org" 
-	<lsf-pc@lists.linux-foundation.org>,
-        Joe Thornber <ejt@redhat.com>
-Subject: Re: [LSF/MM TOPIC] Re: [dm-devel] Announcement: STEC EnhanceIO SSD
- caching software for Linux kernel
-Message-ID: <20130121135821.GB4919@raspberrypi>
-Mail-Followup-To: Mike Snitzer <snitzer@redhat.com>,
-	Amit Kale <akale@stec-inc.com>,
-	"Darrick J. Wong" <darrick.wong@oracle.com>,
-	device-mapper development <dm-devel@redhat.com>,
-	"linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
-	"kent.overstreet@gmail.com" <kent.overstreet@gmail.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"lsf-pc@lists.linux-foundation.org" <lsf-pc@lists.linux-foundation.org>,
-	Joe Thornber <ejt@redhat.com>
-References: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D72F1@MYMBX.MY.STEC-INC.AD>
- <50F970A3.4000403@warr.net>
- <20130118161135.GA3118@raspberrypi>
- <50F97C0F.9010405@warr.net>
- <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7345@MYMBX.MY.STEC-INC.AD>
- <50F9963A.2080608@warr.net>
- <20130118212543.GB6425@blackbox.djwong.org>
- <20130118213759.GA30278@redhat.com>
- <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D5D4D@MYMBX.MY.STEC-INC.AD>
- <20130121130951.GA16574@redhat.com>
+	id S1751273Ab3AUN7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 08:59:40 -0500
+Date: Mon, 21 Jan 2013 14:59:06 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: acme@ghostprotocols.net, Anton Blanchard <anton@au1.ibm.com>,
+        paulus@samba.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH] perf: Fix compile warnings in tests/attr.c
+Message-ID: <20130121135906.GD1995@krava.brq.redhat.com>
+References: <20130119013052.GA24693@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130121130951.GA16574@redhat.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130119013052.GA24693@us.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 08:09:51AM -0500, Mike Snitzer wrote:
-> dm-cache is under active review for upstream inclusion.  I wouldn't
-> categorize the chances of dm-cache going upstream when the v3.9 merge
-> window opens as "very low".  But even if dm-cache does go upstream it
-> doesn't preclude bcache and/or enhanceio from going upstream too.
+On Fri, Jan 18, 2013 at 05:30:52PM -0800, Sukadev Bhattiprolu wrote:
+> From 4d266e5040c33103f5d226b0d16b89f8ef79e3ad Mon Sep 17 00:00:00 2001
+> From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+> Date: Fri, 18 Jan 2013 11:14:28 -0800
+> Subject: [PATCH] perf: Fix compile warnings in tests/attr.c
+> 
+> Replace '%llu' in printf()s with 'PRIu64' in 'tools/perf/tests/attr.c'
+> to fix compile warnings (which become errors due to -Werror).
 
-As I understand it bcache is being reviewed too.
+i386 and x86_64 compiles fine for me with gcc versions 4.6.3-2 and 4.7.2-2
+
+with your patch for x86_64 I'm getting following warnings/errors:
+
+    CC tests/attr.o
+tests/attr.c: In function ‘store_event’:
+tests/attr.c:69:4: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 6 has type ‘__u64’ [-Werror=format]
+tests/attr.c:69:4: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 6 has type ‘__u64’ [-Werror=format]
+tests/attr.c:78:7: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:94:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:94:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:95:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:95:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:96:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:96:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:97:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:97:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:122:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:122:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:123:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:123:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:124:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:124:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:125:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+tests/attr.c:125:2: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘__u64’ [-Werror=format]
+cc1: all warnings being treated as errors
+make: *** [tests/attr.o] Error 1
+
+i386 compiles fine
+
+jirka
