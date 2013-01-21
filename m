@@ -1,82 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033Ab3AUVrj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 16:47:39 -0500
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:52901
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752165Ab3AUVri convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 16:47:38 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI9371Id6eah542Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1155h)
-X-WSS-ID: 0MGZWJ4-02-46V-02
-X-M-MSG: 
-From: "Kinney, Steven" <Steven.Kinney@amd.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Myron Stowe <myron.stowe@redhat.com>, Hiroshi DOYU <hdoyu@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Jiri Kosina <jkosina@suse.cz>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Renninger <trenn@suse.de>, Andi Kleen <ak@linux.intel.com>
-Subject: RE: [PATCH 2/3] AMD IOMMUv2 PC resource management hooks
-Thread-Topic: [PATCH 2/3] AMD IOMMUv2 PC resource management hooks
-Thread-Index: AQHN+BTe2RleD7oETU2JWWt2TEs+9ZhUsf4A//+fDOA=
-Date: Mon, 21 Jan 2013 21:47:30 +0000
-Message-ID: <57D41218901B4442B4AFF404D21591163B9FAD@sausexdag02.amd.com>
-References: <1358799658-6236-1-git-send-email-steven.kinney@amd.com>
- <1358799658-6236-3-git-send-email-steven.kinney@amd.com>
- <20130121213218.GI25252@moon>
-In-Reply-To: <20130121213218.GI25252@moon>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.236.70.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753016Ab3AUVsf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 16:48:35 -0500
+Received: from dedicated.warp2.biz ([69.64.68.236]:47888 "EHLO
+	dedicated.warp2.biz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab3AUVsd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 16:48:33 -0500
+X-Greylist: delayed 2134 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jan 2013 16:48:33 EST
+Message-ID: <50FDAF5A.9010602@warp2biz.com>
+Date: Mon, 21 Jan 2013 13:12:58 -0800
+From: James Lamanna <james@warp2biz.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+To: linux-kernel@vger.kernel.org
+Subject: [BUG] 3w-9xxx BUG in 2.6.32
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - dedicated.warp2.biz
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - warp2biz.com
+X-Get-Message-Sender-Via: dedicated.warp2.biz: authenticated_id: james@warp2biz.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cyrill,
+Hi,
+I have a Quanta S45 motherboard that I'm trying to install Debian 6.0 on
+with a 3Ware 9650-4LPML RAID card.
+When the Debian installer inserts the 3w-9xxx module, I get the following
+kernel BUG.
+I've tried a different 9650 card and booting with acpi=off to no avail so
+far. I'm assuming it's a weird MB issue. Does anyone know of a fix/workaround?
 
-                 Agree, will clean this up.
+Please CC me for I am not subscribed.
 
-Thanks
+Thanks.
 
------Original Message-----
-From: Cyrill Gorcunov [mailto:gorcunov@gmail.com] On Behalf Of Cyrill Gorcunov
-Sent: Monday, January 21, 2013 3:32 PM
-To: Kinney, Steven
-Cc: Thomas Gleixner; Ingo Molnar; H. Peter Anvin; x86@kernel.org; Joerg Roedel; Bjorn Helgaas; Greg Kroah-Hartman; Sebastian Andrzej Siewior; Myron Stowe; Hiroshi DOYU; Stephen Warren; Jiri Kosina; Kukjin Kim; linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org; Peter Zijlstra; Paul Mackerras; Arnaldo Carvalho de Melo; Thomas Renninger; Andi Kleen
-Subject: Re: [PATCH 2/3] AMD IOMMUv2 PC resource management hooks
+-- James
 
-On Mon, Jan 21, 2013 at 02:20:57PM -0600, Steven L. Kinney wrote:
-> +u8 amd_iommu_v2_get_max_pc_banks(u16 devid) {
-> +	struct amd_iommu *iommu;
-> +
-> +	/* locate the iommu governing the devid */
-> +	iommu = amd_iommu_rlookup_table[devid];
-> +
-> +	if (iommu)
-> +		return iommu->max_banks;
-> +
-> +	return -ENODEV;
-> +}
-> +EXPORT_SYMBOL(amd_iommu_v2_get_max_pc_banks);
+Jan 21 20:31:26 kernel: [   31.609437] 3ware 9000 Storage Controller device driver for Linux v2.26.02.013.
+Jan 21 20:31:26 kernel: [   31.609479] 3w-9xxx 0000:03:00.0: PCI->APIC IRQ transform: INT A -> IRQ 16
+Jan 21 20:31:26 kernel: [   31.609484] 3w-9xxx 0000:03:00.0: setting latency timer to 64
+...
 
-Hi Steven, may not it be better to return int here, instead of u8?
-
-
+Jan 21 20:31:57 kernel: [   61.868012] 3w-9xxx: scsi7: ERROR: (0x06:0x0003): No valid response while draining AEN queue.
+Jan 21 20:31:57 kernel: [   61.868016] 3w-9xxx: scsi7: ERROR: (0x06:0x0022): AEN drain failed during reset sequence.
+Jan 21 20:32:07 kernel: [   72.208012] 3w-9xxx: scsi7: AEN: INFO (0x04:0x0053): Battery capacity test is overdue:.
+Jan 21 20:32:07 kernel: [   72.320014] 3w-9xxx: scsi7: AEN: INFO (0x04:0x0053): Battery capacity test is overdue:.
+Jan 21 20:32:07 kernel: [   72.432014] 3w-9xxx: scsi7: AEN: INFO (0x04:0x0001): Controller reset occurred:resets=1.
+Jan 21 20:32:07 kernel: [   72.544007] scsi7 : 3ware 9000 Storage Controller
+Jan 21 20:32:07 kernel: [   72.544082] 3w-9xxx: scsi7: Found a 3ware 9000 Storage Controller at 0xdf5ff000, IRQ: 16.
+Jan 21 20:32:38 kernel: [  102.568007] 3w-9xxx: scsi7: ERROR: (0x06:0x0013): No valid response during get param.
+Jan 21 20:32:38 kernel: [  102.568018] BUG: unable to handle kernel NULL pointer dereference at (null)
+Jan 21 20:32:38 kernel: [  102.572002] IP: [<ffffffffa00fd525>] twa_probe+0x541/0x714 [3w_9xxx]
+Jan 21 20:32:38 kernel: [  102.572002] PGD 43a17f067 PUD 43c6c0067 PMD 0
+Jan 21 20:32:38 kernel: [  102.572002] Oops: 0000 [#1] SMP
+Jan 21 20:32:38 kernel: [  102.572002] last sysfs file: /sys/devices/pci0000:00/0000:00:19.0/net/eth0/uevent
+Jan 21 20:32:38 kernel: [  102.572002] CPU 0
+Jan 21 20:32:38 kernel: [  102.744014] Modules linked in: e1000e 3w_9xxx(+) nls_utf8 isofs sg sr_mod cdrom hid_microsoft usbhid hid 
+thermal_sys usb_storage uhci_hcd ehci_hcd ahci li
+Jan 21 20:32:38 kernel: [  102.744014] Pid: 3265, comm: modprobe Not tainted 2.6.32-5-amd64 #1 S45
+Jan 21 20:32:38 kernel: [  102.744014] RIP: 0010:[<ffffffffa00fd525>]  [<ffffffffa00fd525>] twa_probe+0x541/0x714 [3w_9xxx]
+Jan 21 20:32:38 kernel: [  102.744014] RSP: 0018:ffff880437cdfd98  EFLAGS: 00010292
+Jan 21 20:32:38 udevd-work[3259]: '/sbin/modprobe -b pci:v000013C1d00001004sv000013C1sd00001004bc01sc04i00' unexpected exit with status 0x0009
+Jan 21 20:32:38 kernel: [  102.744014] RAX: 0000000000000000 RBX: ffff88043e601090 RCX: 0000000000000004
+Jan 21 20:32:38 kernel: [  102.744014] RDX: 0000000000000402 RSI: 0000000000000001 RDI: ffff8804370445a0
+Jan 21 20:32:38 kernel: [  102.744014] RBP: ffff8804370445a0 R08: 0000000000000010 R09: ffffffff813b0932
+Jan 21 20:32:38 kernel: [  102.744014] R10: 0000000000000000 R11: 00000000000186a0 R12: 00000000df5ff000
+Jan 21 20:32:38 kernel: [  102.744014] R13: ffff88043e601000 R14: ffff880437044000 R15: 0000000000000000
+Jan 21 20:32:38 kernel: [  102.744014] FS:  00007f64f8eb9700(0000) GS:ffff88000fa00000(0000) knlGS:0000000000000000
+Jan 21 20:32:38 kernel: [  102.744014] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+Jan 21 20:32:38 kernel: [  102.744014] CR2: 0000000000000000 CR3: 000000043989d000 CR4: 00000000000006f0
+Jan 21 20:32:38 kernel: [  102.744014] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Jan 21 20:32:38 kernel: [  102.744014] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Jan 21 20:32:38 kernel: [  102.744014] Process modprobe (pid: 3265, threadinfo ffff880437cde000, task ffff88043c6adbd0)
+Jan 21 20:32:38 kernel: [  102.744014] Stack:
+Jan 21 20:32:38 kernel: [  102.744014]  0000000000000000 00000000ffffffff ffff88043e601000 ffff88043e601090
+Jan 21 20:32:38 kernel: [  102.744014] <0> ffffffffa00ff970 0000000000000000 0000000000405047 ffffffff811a2d46
+Jan 21 20:32:38 kernel: [  102.744014] <0> ffff88043e601000 ffffffff811a3996 ffffffffa00ff970 ffff88043e601000
+Jan 21 20:32:38 kernel: [  102.744014] Call Trace:
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffff811a2d46>] ? local_pci_probe+0x12/0x16
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffff811a3996>] ? pci_device_probe+0xc0/0xe9
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffff81221520>] ? driver_probe_device+0xa3/0x14b
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffff81221617>] ? __driver_attach+0x4f/0x6f
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffff812215c8>] ? __driver_attach+0x0/0x6f
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffff81220def>] ? bus_for_each_dev+0x43/0x74
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffff812207af>] ? bus_add_driver+0xaf/0x1f8
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffff812218cf>] ? driver_register+0xa7/0x111
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffffa0004000>] ? twa_init+0x0/0x35 [3w_9xxx]
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffff811a3bdc>] ? __pci_register_driver+0x50/0xb8
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffffa0004000>] ? twa_init+0x0/0x35 [3w_9xxx]
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffff8100a065>] ? do_one_initcall+0x64/0x174
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffff8107ab54>] ? sys_init_module+0xc5/0x21a
+Jan 21 20:32:38 kernel: [  102.744014]  [<ffffffff81010b42>] ? system_call_fastpath+0x16/0x1b
+Jan 21 20:32:38 kernel: [  102.744014] Code: 00 ba 03 04 00 00 be 02 00 00 00 48 89 ef e8 e1 d3 ff ff 41 b8 10 00 00 00 b9 04 00 00 00 ba 02 
+04 00 00 be 01 00 00 00 48 89 ef <44> 8b
+Jan 21 20:32:38 kernel: [  102.744014] RIP  [<ffffffffa00fd525>] twa_probe+0x541/0x714 [3w_9xxx]
+Jan 21 20:32:38 kernel: [  102.744014]  RSP <ffff880437cdfd98>
+Jan 21 20:32:38 kernel: [  102.744014] CR2: 0000000000000000
+Jan 21 20:32:38 kernel: [  102.748574] ---[ end trace 97d7904a50c0f684 ]---
