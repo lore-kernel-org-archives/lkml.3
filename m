@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab3AUMrl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 07:47:41 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:48192 "EHLO hydra.sisk.pl"
+	id S1754309Ab3AUMxI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 07:53:08 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:48195 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752291Ab3AUMrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 07:47:40 -0500
+	id S1752621Ab3AUMxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 07:53:06 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Stefan Bader <stefan.bader@canonical.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andre Przywara <andre@andrep.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: kernel 3.7+ cpufreq regression on AMD system running as dom0
-Date: Mon, 21 Jan 2013 13:53:38 +0100
-Message-ID: <2554137.GLUGe7mQDl@vostro.rjw.lan>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        "Kristen C. Accardi" <kristen.c.accardi@intel.com>
+Subject: Re: [Update][PATCH] ACPI / PM: Export power states of ACPI devices via sysfs
+Date: Mon, 21 Jan 2013 13:59:05 +0100
+Message-ID: <2154175.hki2a10WqW@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130121124255.GB4823@pd.tnic>
-References: <50F42B3E.7090602@canonical.com> <50FD32FA.7010306@canonical.com> <20130121124255.GB4823@pd.tnic>
+In-Reply-To: <1982172.z1FZmGBJNL@vostro.rjw.lan>
+References: <2311196.icSMDvAsYg@vostro.rjw.lan> <6722291.GNv0dQuq4j@vostro.rjw.lan> <1982172.z1FZmGBJNL@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,97 +23,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 21, 2013 01:42:55 PM Borislav Petkov wrote:
-> On Mon, Jan 21, 2013 at 12:22:18PM +0000, Stefan Bader wrote:
-> > So for having the "check for sensible BIOS" in mainline I refreshed
-> > the patch (fixed the bit test, and actually tested it this time) and
-> > also added some hopefully sensible explanation to it (attached
-> > below).
-> > 
-> > Should I send it to acpi lists or would that have to go via an Andre?
+On Saturday, January 19, 2013 09:53:32 PM Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: ACPI / PM: Export power states of ACPI devices via sysfs
 > 
-> Maybe Rafael could pick it up?
+> Make it possible to retrieve the current power state of a device with
+> ACPI power management from user space via sysfs by adding a new
+> attribute power_state to the sysfs directory associated with the
+> struct acpi_device object representing the device's ACPI node.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+> 
+> I've changed my mind here.  It looks like it's more convenient to put the
+> power_state attribute directly into the ACPI device node's directory in sysfs
+> rather than into its power subdirectory.
 
-I can, if you ACK it for me. :-)
+Well, please scratch this, I'm dropping it for now.
+
+I'll send a new version shortly along with the patches that export power
+resources information.
 
 Thanks,
 Rafael
 
- 
-> > From 6e2fc8291c91339123a37162382d8b08b50867ba Mon Sep 17 00:00:00 2001
-> > From: Stefan Bader <stefan.bader@canonical.com>
-> > Date: Mon, 14 Jan 2013 16:17:00 +0100
-> > Subject: [PATCH] ACPI: Check MSR valid bit before using P-state frequencies
-> > 
-> > To fix incorrect P-state frequencies which can happen on
-> > some AMD systems f594065faf4f9067c2283a34619fc0714e79a98d
-> >   "ACPI: Add fixups for AMD P-state figures"
-> > introduced a quirk to obtain the correct values by reading
-> > from AMD specific MSRs.
-> > 
-> > This did cause a regression when running a kernel using that
-> > quirk under Xen which does (currently) not pass on the contents
-> > of the HW but 0.
+
+> ---
+>  Documentation/ABI/testing/sysfs-devices-power |   13 +++++++++++++
+>  drivers/acpi/scan.c                           |   25 ++++++++++++++++++++++++-
+>  2 files changed, 37 insertions(+), 1 deletion(-)
 > 
-> Actually this should say "does not currently pass through MSR accesses
-> to baremetal" or similar.
+> Index: linux-pm/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/scan.c
+> +++ linux-pm/drivers/acpi/scan.c
+> @@ -184,6 +184,19 @@ err_out:
+>  }
+>  EXPORT_SYMBOL(acpi_bus_hot_remove_device);
+>  
+> +static ssize_t power_state_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	struct acpi_device *adev = to_acpi_device(dev);
+> +	int state;
+> +	int ret;
+> +
+> +	ret = acpi_device_get_power(adev, &state);
+> +	return ret ? ret : sprintf(buf, "%s\n", acpi_power_state_string(state));
+> +}
+> +
+> +static DEVICE_ATTR(power_state, 0444, power_state_show, NULL);
+> +
+>  static ssize_t
+>  acpi_eject_store(struct device *d, struct device_attribute *attr,
+>  		const char *buf, size_t count)
+> @@ -375,8 +388,15 @@ static int acpi_device_setup_files(struc
+>           * hot-removal function from userland.
+>           */
+>  	status = acpi_get_handle(dev->handle, "_EJ0", &temp);
+> -	if (ACPI_SUCCESS(status))
+> +	if (ACPI_SUCCESS(status)) {
+>  		result = device_create_file(&dev->dev, &dev_attr_eject);
+> +		if (result)
+> +			goto end;
+> +	}
+> +
+> +	if (dev->flags.power_manageable)
+> +		result = device_create_file(&dev->dev, &dev_attr_power_state);
+> +
+>  end:
+>  	return result;
+>  }
+> @@ -386,6 +406,9 @@ static void acpi_device_remove_files(str
+>  	acpi_status status;
+>  	acpi_handle temp;
+>  
+> +	if (dev->flags.power_manageable)
+> +		device_remove_file(&dev->dev, &dev_attr_power_state);
+> +
+>  	/*
+>  	 * If device has _STR, remove 'description' file
+>  	 */
 > 
-> And this bit you mean is actually bit 63:
-> 
-> "63: PstateEn. Read-write. 1=The P-state specified by this MSR is valid.
-> 0=The P-state specified by this MSR is not valid. The purpose of this
-> register is to indicate if the rest of the P-state information in the
-> register is valid after a reset; it controls no hardware."
-> 
-> in the MSRC001_00[68:64] P-State [4:0] Registers.
-> 
-> > And this seems to cause a failure to initialize
-> > the ondemand governour (hard to say for sure as all P-states
-> > appear to run at the same frequency).
-> > 
-> > While this should also be fixed in the hypervisor (to allow
-> > a guest to read that MSR), this patch is intended to work
-> > around the issue in the meantime. In discussion it turned out
-> > that indeed real HW/BIOSes may choose to not set the valid bit
-> > and thus mark the P-state as invalid. So this could be considered
-> > a fix for broken BIOSes that also works around the issue on Xen.
-> > 
-> > Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-> > Cc: stable@vger.kernel.org # v3.7..
-> > ---
-> >  drivers/acpi/processor_perflib.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
-> > index 836bfe0..41f4bdac 100644
-> > --- a/drivers/acpi/processor_perflib.c
-> > +++ b/drivers/acpi/processor_perflib.c
-> > @@ -340,6 +340,9 @@ static void amd_fixup_frequency(struct
-> > acpi_processor_px *px, int i)
-> >  	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
-> >  	    || boot_cpu_data.x86 == 0x11) {
-> >  		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
-> > +		/* Bit 63 indicates whether contents are valid */
-> > +		if (!(hi & 0x80000000))
-> 
-> You can make this a lot more explicit:
-> 
-> 		if (!(hi & BIT(31)))
-> 			return;
-> 
-> This way
-> 
-> 1) you're sure you're testing the correct bit and
-> 2) any reviewer can know on the spot which bit it is about.
-> 
-> > +			return;
-> >  		fid = lo & 0x3f;
-> >  		did = (lo >> 6) & 7;
-> >  		if (boot_cpu_data.x86 == 0x10)
-> 
-> Thanks.
-> 
-> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
