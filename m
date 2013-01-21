@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab3AUMDS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 07:03:18 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:41316
+	id S1753958Ab3AUMMy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 07:12:54 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:56528
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752866Ab3AUMDN (ORCPT
+	by vger.kernel.org with ESMTP id S1753457Ab3AUMDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 07:03:13 -0500
+	Mon, 21 Jan 2013 07:03:17 -0500
 X-IronPort-AV: E=Sophos;i="4.84,506,1355094000"; 
-   d="scan'208";a="169187840"
+   d="scan'208";a="169187843"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Jens Taprogge <jens.taprogge@taprogge.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH 9/14] drivers/ipack/devices/ipoctal.c: adjust duplicate test
-Date: Mon, 21 Jan 2013 14:02:53 +0100
-Message-Id: <1358773378-4700-10-git-send-email-Julia.Lawall@lip6.fr>
+To: Jeff Dike <jdike@addtoit.com>
+Cc: kernel-janitors@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 12/15] fs/hostfs/hostfs_kern.c: adjust duplicate test
+Date: Mon, 21 Jan 2013 14:02:56 +0100
+Message-Id: <1358773378-4700-13-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -27,9 +27,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Delete successive tests to the same location.  The code tested the result
-of a previous allocation, that itself was already tested.  It is changed to
-test the result of the most recent allocation.
+Delete successive tests to the same location.  This looks like simple code
+duplication.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -53,20 +52,20 @@ expression x,e;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/ipack/devices/ipoctal.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/hostfs/hostfs_kern.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/ipack/devices/ipoctal.c b/drivers/ipack/devices/ipoctal.c
-index 8fb2e34..f3a83b1 100644
---- a/drivers/ipack/devices/ipoctal.c
-+++ b/drivers/ipack/devices/ipoctal.c
-@@ -282,7 +282,7 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
- 	ipoctal->mem8_space =
- 		devm_ioremap_nocache(&ipoctal->dev->dev,
- 				     region->start, 0x8000);
--	if (!addr) {
-+	if (!ipoctal->mem8_space) {
- 		dev_err(&ipoctal->dev->dev,
- 			"Unable to map slot [%d:%d] MEM8 space!\n",
- 			bus_nr, slot);
+diff --git a/fs/hostfs/hostfs_kern.c b/fs/hostfs/hostfs_kern.c
+index 457addc..909fc21 100644
+--- a/fs/hostfs/hostfs_kern.c
++++ b/fs/hostfs/hostfs_kern.c
+@@ -727,8 +727,6 @@ static int hostfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 	__putname(name);
+ 	if (err)
+ 		goto out_put;
+-	if (err)
+-		goto out_put;
+ 
+ 	d_instantiate(dentry, inode);
+ 	return 0;
 
