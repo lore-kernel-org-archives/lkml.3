@@ -1,42 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab3AUQQX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 11:16:23 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51224 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab3AUQQW (ORCPT
+	id S1754667Ab3AUQTD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 11:19:03 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52561 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753958Ab3AUQTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 11:16:22 -0500
-Date: Mon, 21 Jan 2013 16:16:11 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 02/33] ARM: Convert to devm_ioremap_resource()
-Message-ID: <20130121161611.GS23505@n2100.arm.linux.org.uk>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de> <1358762966-20791-3-git-send-email-thierry.reding@avionic-design.de> <20130121155846.GN23505@n2100.arm.linux.org.uk> <20130121160547.GA10790@avionic-0098.adnet.avionic-design.de>
+	Mon, 21 Jan 2013 11:19:00 -0500
+Message-ID: <50FD6A6F.1080408@gmail.com>
+Date: Tue, 22 Jan 2013 00:18:55 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130121160547.GA10790@avionic-0098.adnet.avionic-design.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [RFC PATCH v5 3/8] PCI: add a blocking notifier chain for PCI
+ bus addition/removal
+References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com> <1358525267-14268-4-git-send-email-jiang.liu@huawei.com> <3583141.yG8QGivRYt@vostro.rjw.lan>
+In-Reply-To: <3583141.yG8QGivRYt@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 05:05:47PM +0100, Thierry Reding wrote:
-> On Mon, Jan 21, 2013 at 03:58:46PM +0000, Russell King - ARM Linux wrote:
-> > On Mon, Jan 21, 2013 at 11:08:55AM +0100, Thierry Reding wrote:
-> > > Convert all uses of devm_request_and_ioremap() to the newly introduced
-> > > devm_ioremap_resource() which provides more consistent error handling.
-> > 
-> > Does this include the resource part of the handling too?
+On 01/21/2013 07:54 AM, Rafael J. Wysocki wrote:
+> On Saturday, January 19, 2013 12:07:41 AM Jiang Liu wrote:
+>> When adding/removing a PCI bus, some other components want to be
+snip
+>> +
+>> +void pci_bus_call_notifier(struct pci_bus *bus, unsigned long code)
+>> +{
+>> +	int ret;
+>> +
+>> +	ret = blocking_notifier_call_chain(&pci_bus_notifier_chain,
+>> +					   code, bus);
+>> +	WARN_ON(ret != NOTIFY_DONE && ret != NOTIFY_OK);
 > 
-> I'm not sure I understand your question. devm_ioremap_resource() does a
-> devm_request_mem_region() internally if that's what you were asking.
+> I'm not sure if this is a good idea.  WARN_ON() is quite a heavy tool.
+Hi Rafael,
+	How about WARN_ONCE() here?
 
-Ah, that's fine then.  The function name is a little misleading, and as
-it doesn't exist in mainline at present, it is not something I know about.
+> 
+>> +}
+>> +
+>>  void pci_add_resource_offset(struct list_head *resources, struct resource *res,
+>>  			     resource_size_t offset)
+>>  {
+>> diff --git a/include/linux/pci.h b/include/linux/pci.h
+>> index ee21795..12e5447 100644
+>> --- a/include/linux/pci.h
+>> +++ b/include/linux/pci.h
+>> @@ -1033,6 +1033,18 @@ const struct pci_device_id *pci_match_id(const struct pci_device_id *ids,
+>>  int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
+>>  		    int pass);
+>>  
+>> +/*
+>> + * All notifiers below get called with the target struct pci_bus *bus as
+>> + * an argument.
+>> + * Note: all PCI bus notifier must return success. Currently there's no
+>> + * error handling if any notifier returns error code.
+>> + */
+>> +#define	PCI_NOTIFY_POST_BUS_ADD		0x00000001 /* PCI bus has been added */
+>> +#define	PCI_NOTIFY_PRE_BUS_DEL		0x00000002 /* PCI bus will be deleted */
+> 
+> I would call them PCI_EVENT_BUS_ADDED and PCI_EVENT_BUS_REMOVE, respectively.
+Sure, will use them in next version.
+
+> 
+>> +
+>> +int pci_bus_register_notifier(struct notifier_block *nb);
+>> +int pci_bus_unregister_notifier(struct notifier_block *nb);
+>> +
+>>  void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
+>>  		  void *userdata);
+>>  int pci_cfg_space_size_ext(struct pci_dev *dev);
+> 
+> Apart from the nitpicks above, looks good.
+Thanks for review!
+
+Regards!
+Gerry
+> 
+> Thanks,
+> Rafael
+> 
+> 
+
