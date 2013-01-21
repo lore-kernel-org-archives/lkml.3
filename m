@@ -1,63 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522Ab3AUX5X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 18:57:23 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:32990 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab3AUX5V (ORCPT
+	id S1752757Ab3AUX7X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 18:59:23 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:37031 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752351Ab3AUX7W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 18:57:21 -0500
-Date: Mon, 21 Jan 2013 15:57:18 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        NeilBrown <neilb@suse.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [RFC PATCH] Input: gpio_keys: Fix suspend/resume press event lost
-Message-ID: <20130121235718.GB16638@core.coreip.homeip.net>
-References: <1358774114-8281-1-git-send-email-ivan.khoronzhuk@ti.com>
+	Mon, 21 Jan 2013 18:59:22 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Axel Lin <axel.lin@ingics.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Subject: RE: [PATCH 2/3] regulator-core: update all enable GPIO state in
+	_enable/disable
+Thread-Topic: [PATCH 2/3] regulator-core: update all enable GPIO state in
+	_enable/disable
+Thread-Index: AQHN8fhzdUVzsipdnka7A7zmYXiw6phIDtuA//+K5oCADOVkUA==
+Date: Mon, 21 Jan 2013 23:59:11 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E1BD93@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F69E122AA@DQHE02.ent.ti.com>
+ <20130113224220.GE5041@opensource.wolfsonmicro.com>
+ <A874F61F95741C4A9BA573A70FE3998F69E12A0D@DQHE02.ent.ti.com>
+ <20130114014239.GA29909@opensource.wolfsonmicro.com>
+ <A874F61F95741C4A9BA573A70FE3998F69E12A43@DQHE02.ent.ti.com>
+ <20130114025025.GA30179@opensource.wolfsonmicro.com>
+In-Reply-To: <20130114025025.GA30179@opensource.wolfsonmicro.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.185.78]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358774114-8281-1-git-send-email-ivan.khoronzhuk@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ivan,
-
-On Mon, Jan 21, 2013 at 03:15:14PM +0200, Ivan Khoronzhuk wrote:
-> Rebased on linux_omap/master.
+> > OK, the consumer just cares about the regulator(s) which is(are)
+> obtained.
+> > However it doesn't show exact state of regulator in case that enable
+> GPIOs are
+> > shared.
 > 
-> During suspend/resume the key press can be lost if time of resume
-> sequence is significant.
+> It would do if my suggestion that we use a shared state for the GPIO
+> were implemented!
 > 
-> If press event cannot be remembered then the driver can read the
-> current button state only in time of interrupt handling. But in some
-> cases when time between IRQ and IRQ handler is significant we can
-> read incorrect state. As a particular case, when device is in suspend
-> we press wakupable key and up it back in a jiffy, the interrupt
-> handler read the state of up but the interrupt source is press indeed.
-> As a result, in a OS like android, we resume then suspend right away
-> because the key state is not changed.
+> > (6) CB tries to get the state of LDO3 before disabling it,
+> > regulator_is_enabled() returns 1, but real state is 0.
 > 
-> This patch add to gpio_keys framework opportunity to recover lost of
-> press key event at resuming. The variable "key_pressed" from
-> gpio_button_data structure is not used for gpio keys, it is only used
-> for gpio irq keys, so it is logically used to remember press lost
-> while resuming.
+> > 	if(!regulator_is_enabled(rdev))
+> > 		regulator_disable(rdev);
+> 
+> > 	Therefore CB never disables LDO3, use_count is always 1.
+> 
+> > This patch solves this unmatched situation.
+> 
+> This is just a buggy consumer - the consumer would also break if there
+> were a single regulator shared by two consumers.  There's almost no
+> case
+> outside of bootstrapping where it makes sense to check if the regulator
+> is enabled for anything other than diagnostics.
+> 
+> > Regulator APIs may show unmatched value, but it can be handled in
+> each consumer
+> > driver *separately*.
+> > Therefore, we should not update 'ena_gpio_state' of other regulators.
+> > This patch should be ignored.
+> > Is that correct?
+> 
+> No, we need to reference count over all the regualtors sharing the
+> enable line.  Otherwise we won't pay attention to references held by
+> anything other than the regulator currently being enabled or disabled.
 
-The same could happen if you delay processing of interrupt long enough
-during normal operation. If key is released by the time you get around
-to reading it you will not see a key press.
+Updated patch-set was sent recently.
 
-To me this sounds like you need to speed up your resume process so that
-you can start serving interrupts quicker.
+  [PATCH v2 1/4] regulator-core: support shared enable GPIO concept
+  https://lkml.org/lkml/2013/1/14/564
 
-Thanks.
+  [PATCH v2 2/4] regulator-core: manage enable GPIO list
+  https://lkml.org/lkml/2013/1/14/565
 
--- 
-Dmitry
+  [PATCH v2 3/4] regulator-core: free requested GPIOs and manage the enable list
+  https://lkml.org/lkml/2013/1/14/567
+
+  [PATCH v2 4/4] lp8788-ldo: use ena_pin of regulator-core for external control
+  https://lkml.org/lkml/2013/1/14/566
+
+I'd like to get some feedback from you.
+Thank you.
+
+Best Regards,
+Milo
