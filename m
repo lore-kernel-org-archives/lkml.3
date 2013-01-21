@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab3AUSni (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 13:43:38 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:39319 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752768Ab3AUSnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 13:43:37 -0500
-Date: Mon, 21 Jan 2013 20:42:38 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <arm@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>,
-        Manjunath Goudar <manjunath.goudar@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH 13/15] USB: ehci: make orion and mxc bus glues coexist
-Message-ID: <20130121184237.GC10106@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
- <1358788568-11137-14-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zCKi3GIZzVBPywwA"
-Content-Disposition: inline
-In-Reply-To: <1358788568-11137-14-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755938Ab3AUSpA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 13:45:00 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:33191 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752768Ab3AUSo6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 13:44:58 -0500
+Message-ID: <1358793893.2406.143.camel@falcor1.watson.ibm.com>
+Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, pjones@redhat.com,
+        hpa@zytor.com, dhowells@redhat.com, jwboyer@redhat.com
+Date: Mon, 21 Jan 2013 13:44:53 -0500
+In-Reply-To: <20130121154501.GA27617@redhat.com>
+References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
+	 <1358285695-26173-3-git-send-email-vgoyal@redhat.com>
+	 <1358437021.2689.52.camel@falcor1> <20130117155154.GC12165@redhat.com>
+	 <1358440365.2689.72.camel@falcor1> <20130117173605.GB2237@redhat.com>
+	 <1358702400.2406.103.camel@falcor1.watson.ibm.com>
+	 <20130121154501.GA27617@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012118-4834-0000-0000-000002D546F7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---zCKi3GIZzVBPywwA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2013-01-21 at 10:45 -0500, Vivek Goyal wrote:
+> On Sun, Jan 20, 2013 at 12:20:00PM -0500, Mimi Zohar wrote:
+> > On Thu, 2013-01-17 at 12:36 -0500, Vivek Goyal wrote:
+> > > On Thu, Jan 17, 2013 at 11:32:45AM -0500, Mimi Zohar wrote:
+> > > 
+> > > [..]
+> > > > > > At this point, why would you want yet another method for signing files?
+> > > > > 
+> > > > > Are you saying that append signature instead of putting them in a section
+> > > > > or are you saying that just use IMA.
+> > > > > 
+> > > > > - For the first, I am fine with appending too if that works better. So
+> > > > >   what's wrong with current implementation. Just because we append the
+> > > > >   signatures in case of modules, we should follow the same thing for
+> > > > >   executables too?
+> > > > 
+> > > > No, I was saying that if this patch set were to be upstreamed, then the
+> > > > signature verification, at least for ELF modules and ELF executables,
+> > > > should be the same.  The patch would then be a lot smaller.
+> > > 
+> > > I don't think that patch is lot smaller. Initially I had written code
+> > > where signatures were appended. Parsing the signature is little different
+> > > from module. In case of modules, whole file is already in memory and
+> > > in case of executables, we are reading selected portions of file in
+> > > buffer. 
+> > 
+> > Have you looked at the original kernel module signature verification
+> > code as posted by David?  It did something similar, but was not
+> > upstreamed.
+> 
+> I have. I think keeping code in a section makes stripping of section
+> easy. Anyway, these sections are not loaded in memory at file exec
+> time so it should be fine.
+> 
+> So appending signature is easy and I can change the implementation to
+> do it like modules.
+> 
+> But please give a more stronger reason that why it should be appened
+> to executable then put in a section.
 
-On Mon, Jan 21, 2013 at 05:16:06PM +0000, Arnd Bergmann wrote:
-> In linux-3.8-rc1 it became possible to build the imx and
-> mvebu platforms together in a single kernel, which clashes
-> in the ehci driver.
->=20
-> Manjunath Goudar is already working on a patch to convert
-> both the imx and the mvebu glue drivers (along with all
-> the other ARM specific ones) to the new probing method,
-> but that will be too late to fix v3.8. This patch instead
-> adds yet another hack like the existing ones to allow
-> the ehci driver to load both back-ends.
->=20
-> Without this patch, building allyesconfig results in:
->=20
-> drivers/usb/host/ehci-hcd.c:1285:0: error: "PLATFORM_DRIVER" redefined
-> drivers/usb/host/ehci-hcd.c:1255:0: note: this is the location of the pre=
-vious definition
-> In file included from drivers/usb/host/ehci-hcd.c:1254:0:
-> drivers/usb/host/ehci-mxc.c:280:31: warning: 'ehci_mxc_driver' defined bu=
-t not used
->=20
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-usb@vger.kernel.org
-> Cc: Manjunath Goudar <manjunath.goudar@linaro.org>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+There are two existing upstreamed methods for verifying the integrity of
+files.  One uses a file descriptor, the other is memory based, for the
+specific use case, where a file descriptor is not available.  The real
+question is what benefit there is to adding another method?  That
+question needs to be addressed in the patch description.
 
-NAK, should be converted to the new usage of ehci library driver. Alan
-Stern already implemented for a few drivers, help is very welcome.
+thanks,
 
---=20
-balbi
+Mimi
 
---zCKi3GIZzVBPywwA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ/YwdAAoJEIaOsuA1yqREUS8P/2BDBKzJdefYwZLfjQhnDKLq
-Av85tWu1dbyivkX2pU0EbStE1H7SzSXafASL4BArT4b+9C1NJfj46xWE/Cefl/B+
-em1UjC3q2nbhRxsVxy8kKJGXJe3tRheUCgju9cWgumpSfOjC3sJHpBCatGVYTIlX
-1Z5O3D7t1K7+TcOu24mFHZogcJrH3IL4jVXujiUyQ1klB6wVQo1H/cw/tJCM09E1
-oGWOVLqps3H1ozrIMx0EyfkboGrVLo4s7f/nhLLZjDTu5QGUEINRqFhOFWUheexS
-SW8dXkd7fPhTlTFREjlBGcdUzfTjSG5wv3co+6cmMLM1rOZD0c4XzT1GHGZiODlw
-qWvm/AY43GNcFxferygItAS4EWBxe26clr7TMFaKHoWvX35pc7KCC3Ds+0WRbjc9
-rVAx4aIEeGCoGW+w3nOnBabh3zYGLbbxlIzWp0TN25+/B4GQCVHfu4c7GMob9f7t
-1JD7f5CQFno3xOth6HNsm+tKsZo5EEJUWgiz/TLdvmhtP7D4XDEU2r85R5S/ske5
-ptKQTASa5Ib3YaYpjP+Ud9jAHXCzOywdnF8z8HwpdnrTcuqmIpeKjlme93q5UZj+
-dI3uELgM/AqV1xSXmsqsni2Ilndl2Q3V1mgBEjtlsK8/72m6NpCfusqqazdE3olX
-fZPO7uTIOOxTWRgifq/O
-=d98Z
------END PGP SIGNATURE-----
-
---zCKi3GIZzVBPywwA--
