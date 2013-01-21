@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab3AUNpw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 08:45:52 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:38631 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab3AUNpu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 08:45:50 -0500
-Date: Mon, 21 Jan 2013 08:45:49 -0500 (EST)
-From: Tom St Denis <tstdenis@elliptictech.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Dillow <dave@thedillows.org>, Borislav Petkov <bp@alien8.de>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Message-ID: <1924594099.94729.1358775949651.JavaMail.root@elliptictech.com>
-In-Reply-To: <1358775534.21576.8.camel@gandalf.local.home>
-Subject: Re: IPsec AH use of ahash
+	id S1753331Ab3AUNqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 08:46:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56263 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751993Ab3AUNqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 08:46:50 -0500
+Date: Mon, 21 Jan 2013 14:46:46 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Zhouping Liu <zliu@redhat.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        Li Zefan <lizefan@huawei.com>, CAI Qian <caiqian@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
+Message-ID: <20130121134646.GL7798@dhcp22.suse.cz>
+References: <4FEE7665.6020409@jp.fujitsu.com>
+ <389106003.8637801.1358757547754.JavaMail.root@redhat.com>
+ <20130121105624.GF7798@dhcp22.suse.cz>
+ <50FD4245.3070402@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.17.19.111]
-X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC24 (Linux)/7.2.1_GA_2790)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FD4245.3070402@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "Tom St Denis" <tstdenis@elliptictech.com>
-> Cc: "David Dillow" <dave@thedillows.org>, "Borislav Petkov" <bp@alien8.de>, linux-kernel@vger.kernel.org,
-> netdev@vger.kernel.org
-> Sent: Monday, 21 January, 2013 8:38:54 AM
-> Subject: Re: IPsec AH use of ahash
-
-> > The missing semi-colon is in fact missing and for that I apologize.
-> >  This btw is the first legitimate gripe with the code thus far.
+On Mon 21-01-13 21:27:33, Zhouping Liu wrote:
+> On 01/21/2013 06:56 PM, Michal Hocko wrote:
+[...]
+> > From 5f8141bf7d27014cfbc7b450f13f6146b5ab099d Mon Sep 17 00:00:00 2001
+> >From: Michal Hocko <mhocko@suse.cz>
+> >Date: Mon, 21 Jan 2013 11:33:26 +0100
+> >Subject: [PATCH] memcg: Do not create memsw files if swap accounting is
+> >  disabled
+> >
+> >Zhouping Liu has reported that memsw files are exported even though
+> >swap accounting is runtime disabled if CONFIG_MEMCG_SWAP is enabled.
+> >This behavior has been introduced by af36f906 (memcg: always create
+> >memsw files if CONFIG_CGROUP_MEM_RES_CTLR_SWAP) and it causes any
+> >attempt to open the file to return EOPNOTSUPP. Although EOPNOTSUPP
+> >should say be clear that memsw operations are not supported in the given
+> >configuration it is fair to say that this behavior could be quite
+> >confusing.
+> >
+> >Let's tear memsw files out of default cgroup files and add
+> >them only if the swap accounting is really enabled (either by
+> >CONFIG_MEMCG_SWAP_ENABLED or swapaccount=1 boot parameter). We can
+> >hook into mem_cgroup_init which is called when the memcg subsystem is
+> >initialized and which happens after boot command line is processed.
 > 
-> I've also found that those that have poor coding styles also have
-> more
-> of these "legitimate" problems too. Which is another reason not to
-> accept patches with coding style issues.
-
-I find that 73% of all stats are made up.
-
-What actually happened was testmgr.h was being #ifdef'ed out so despite the fact I saw "testmgr.o" on the build process it wasn't actually doing anything.  Not blaming anyone here .. just missed a build option.
-
-I wouldn't have submitted it if the code failed to compile.
-
-> > Though I must say this code has "compiled" in 3.6, 3.6.7, 3.7, and
-> > 3.8 without error so it's not surprising it wasn't caught.  After
-> > having consulted the "documentation" I never really did figure out
-> > how to get testmgr to run so I took a bit of leap of faith there
-> > that everything was fine.  Not really an excuse but it is at least
-> > an observable hole in the build documentation.
+> Thanks for your quick patch, your patch looks good for me.
 > 
-> Did you try different configs? Before submitting my code, I run under
-> 8
-> different configs. SMP, non-SMP, PREEMPT, non PREEMPT, etc. also I
-> run a
-> few random configs before submitting.
-
-None of course apply to this code [or shouldn't at least].  
-
-> Until you can play by the rules, don't bother playing. Feel free to
-> dump
-> code on LKML. Maybe someone that knows how to play the game will take
-> it. But leave your gripes to your managers. No one here, but you,
-> thinks
-> there's a problem with the frame work.
-
-I actually did resubmit this morning with most of the checkpatch issues fixed. 
-
-I'll avoid beating the dead horse though I'd like to move forward.
-
-> > At least the testmgr errors are something I can work on whenever
-> > without setting up a lab so likely that'll be something I can
-> > tackle today actually.
+> I tested it with or without CONFIG_MEMCG_SWAP_ENABLED=y,
+> and also tested it with swapaccount=1 kernel parameters, all are okay.
 > 
-> While you're at it. You could spend an extra 5 minutes cleaning up
-> the
-> coding style ;-)
+> Tested-by: Zhouping Liu <zliu@redhat.com>
 
-It actually took me about 45 minutes and about 5 revisions of the patches to clean up all the random coding style gripes from checkpatch.  The only reason I worked on it though is that there were build errors.  That way I can justify it to my boss.
+Thanks for testing!
 
-Seriously, no spaces on the trailing edge of multi line comments?  :-/
-
-Anyways, I did re-submit.  I still have no idea how testmgr works but hopefully someone can pick it up from there.
-
-Tom
+-- 
+Michal Hocko
+SUSE Labs
