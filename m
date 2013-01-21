@@ -1,152 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab3AUUCV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 15:02:21 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:48702 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756001Ab3AUUCU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 15:02:20 -0500
+	id S1756071Ab3AUUJo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 15:09:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9227 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752666Ab3AUUJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 15:09:43 -0500
+Message-ID: <50FD9954.7000303@redhat.com>
+Date: Mon, 21 Jan 2013 20:39:00 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-From: Matt Sealey <matt@genesi-usa.com>
-Date: Mon, 21 Jan 2013 14:01:57 -0600
-Message-ID: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com>
-Subject: One of these things (CONFIG_HZ) is not like the others..
-To: Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 1/4] zram: force disksize setting before using zram
+References: <1358745691-4556-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1358745691-4556-1-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+On 01/21/2013 06:21 AM, Minchan Kim wrote:
+> Now zram document syas "set disksize is optional"
+> but partly it's wrong. When you try to use zram firstly after
+> booting, you must set disksize, otherwise zram can't work because
+> zram gendisk's size is 0. But once you do it, you can use zram freely
+> after reset because reset doesn't reset to zero paradoxically.
+> So in this time, disksize setting is optional.:(
+> It's inconsitent for user behavior and not straightforward.
+> 
+> This patch forces always setting disksize firstly before using zram.
+> Yes. It changes current behavior so someone could complain when
+> he upgrades zram. Apparently it could be a problem if zram is mainline
+> but it still lives in staging so behavior could be changed for right
+> way to go. Let them excuse.
+> 
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/staging/zram/zram.txt     |   27 +++++++++----------
+>  drivers/staging/zram/zram_drv.c   |   52 ++++++++++++++-----------------------
+>  drivers/staging/zram/zram_drv.h   |    5 +---
+>  drivers/staging/zram/zram_sysfs.c |    6 +----
+>  4 files changed, 35 insertions(+), 55 deletions(-)
+> 
+> diff --git a/drivers/staging/zram/zram.txt b/drivers/staging/zram/zram.txt
+> index 5f75d29..765d790 100644
+> --- a/drivers/staging/zram/zram.txt
+> +++ b/drivers/staging/zram/zram.txt
+> @@ -23,17 +23,17 @@ Following shows a typical sequence of steps for using zram.
+>  	This creates 4 devices: /dev/zram{0,1,2,3}
+>  	(num_devices parameter is optional. Default: 1)
+>  
+> -2) Set Disksize (Optional):
+> -	Set disk size by writing the value to sysfs node 'disksize'
+> -	(in bytes). If disksize is not given, default value of 25%
+> -	of RAM is used.
+> -
+> -	# Initialize /dev/zram0 with 50MB disksize
+> -	echo $((50*1024*1024)) > /sys/block/zram0/disksize
+> -
+> -	NOTE: disksize cannot be changed if the disk contains any
+> -	data. So, for such a disk, you need to issue 'reset' (see below)
+> -	before you can change its disksize.
+> +2) Set Disksize
+> +        Set disk size by writing the value to sysfs node 'disksize'.
+> +        The value can be either in bytes or you can use mem suffixes.
+> +        Examples:
+> +            # Initialize /dev/zram0 with 50MB disksize
+> +            echo $((50*1024*1024)) > /sys/block/zram0/disksize
+> +
+> +            # Using mem suffixes
+> +            echo 256K > /sys/block/zram0/disksize
+> +            echo 512M > /sys/block/zram0/disksize
+> +            echo 1G > /sys/block/zram0/disksize
+>  
+>  3) Activate:
+>  	mkswap /dev/zram0
+> @@ -65,8 +65,9 @@ Following shows a typical sequence of steps for using zram.
+>  	echo 1 > /sys/block/zram0/reset
+>  	echo 1 > /sys/block/zram1/reset
+>  
+> -	(This frees all the memory allocated for the given device).
+> -
+> +	This frees all the memory allocated for the given device and
+> +	resets the disksize to zero. You must set the disksize again
+> +	before reusing the device.
+>  
+>  Please report any problems at:
+>   - Mailing list: linux-mm-cc at laptop dot org
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index 61fb8f1..1d45401 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -94,34 +94,6 @@ static int page_zero_filled(void *ptr)
+>  	return 1;
+>  }
+>  
+> -static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
+> -{
+> -	if (!zram->disksize) {
+> -		pr_info(
+> -		"disk size not provided. You can use disksize_kb module "
+> -		"param to specify size.\nUsing default: (%u%% of RAM).\n",
+> -		default_disksize_perc_ram
+> -		);
+> -		zram->disksize = default_disksize_perc_ram *
+> -					(totalram_bytes / 100);
+> -	}
+> -
+> -	if (zram->disksize > 2 * (totalram_bytes)) {
+> -		pr_info(
+> -		"There is little point creating a zram of greater than "
+> -		"twice the size of memory since we expect a 2:1 compression "
+> -		"ratio. Note that zram uses about 0.1%% of the size of "
+> -		"the disk when not in use so a huge zram is "
+> -		"wasteful.\n"
+> -		"\tMemory Size: %zu kB\n"
+> -		"\tSize you selected: %llu kB\n"
+> -		"Continuing anyway ...\n",
+> -		totalram_bytes >> 10, zram->disksize >> 10);
+> -	}
+> -
+> -	zram->disksize &= PAGE_MASK;
+> -}
+> -
+>  static void zram_free_page(struct zram *zram, size_t index)
+>  {
+>  	unsigned long handle = zram->table[index].handle;
+> @@ -495,6 +467,9 @@ void __zram_reset_device(struct zram *zram)
+>  {
+>  	size_t index;
+>  
+> +	if (!zram->init_done)
+> +		goto out;
 
-Understanding that this is a bit of a digression, I have a related
-nitpick to discussion of the patch "arm: kconfig: don't select TWD
-with local timer for Armada 370/XP" which is allowing me to explain
-myself a little better given Arnd's recommendation for it, since I was
-looking for a really good way to describe it without seeming too
-focused on a particular configuration item..
+In that case, the device has not been initialized yet or has been
+reset already. zram->disksize and disk capacity should already been
+zero in that case. Why don't we just return here?
 
-So, to recap, there is a discussion going on about where HAVE_ lives
-and what ARCH_MULTIPLATFORM breakes when using HAVE_. I think this is
-related, at least, to configuration reworks to make ARCH_MULTIPLATFORM
-a truly "inclusive" place..
+Jerome
 
-ARM seems to be the only "major" platform not using the
-kernel/Kconfig.hz definitions, instead rolling it's own and setting
-what could be described as both reasonable and unreasonable defaults
-for platforms. If we're going wholesale for multiplatform on ARM then
-having CONFIG_HZ be selected dependent on platform options seems
-rather curious since building a kernel for Exynos, OMAP or so will
-force the default to a value which is not truly desired by the
-maintainers.
+> +
+>  	zram->init_done = 0;
+>  
+>  	/* Free various per-device buffers */
+> @@ -522,7 +497,9 @@ void __zram_reset_device(struct zram *zram)
+>  	/* Reset stats */
+>  	memset(&zram->stats, 0, sizeof(zram->stats));
+>  
+> +out:
+>  	zram->disksize = 0;
+> +	set_capacity(zram->disk, 0);
+>  }
+>  
+>  void zram_reset_device(struct zram *zram)
+> @@ -544,7 +521,19 @@ int zram_init_device(struct zram *zram)
+>  		return 0;
+>  	}
+>  
+> -	zram_set_disksize(zram, totalram_pages << PAGE_SHIFT);
+> +	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
+> +		pr_info(
+> +		"There is little point creating a zram of greater than "
+> +		"twice the size of memory since we expect a 2:1 compression "
+> +		"ratio. Note that zram uses about 0.1%% of the size of "
+> +		"the disk when not in use so a huge zram is "
+> +		"wasteful.\n"
+> +		"\tMemory Size: %zu kB\n"
+> +		"\tSize you selected: %llu kB\n"
+> +		"Continuing anyway ...\n",
+> +		(totalram_pages << PAGE_SHIFT) >> 10, zram->disksize >> 10
+> +		);
+> +	}
+>  
+>  	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+>  	if (!zram->compress_workmem) {
+> @@ -569,8 +558,6 @@ int zram_init_device(struct zram *zram)
+>  		goto fail_no_table;
+>  	}
+>  
+> -	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+> -
+>  	/* zram devices sort of resembles non-rotational disks */
+>  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+>  
+> @@ -749,8 +736,7 @@ static void __exit zram_exit(void)
+>  		zram = &zram_devices[i];
+>  
+>  		destroy_device(zram);
+> -		if (zram->init_done)
+> -			zram_reset_device(zram);
+> +		zram_reset_device(zram);
+>  	}
+>  
+>  	unregister_blkdev(zram_major, "zram");
+> diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+> index df2eec4..5b671d1 100644
+> --- a/drivers/staging/zram/zram_drv.h
+> +++ b/drivers/staging/zram/zram_drv.h
+> @@ -28,9 +28,6 @@ static const unsigned max_num_devices = 32;
+>  
+>  /*-- Configurable parameters */
+>  
+> -/* Default zram disk size: 25% of total RAM */
+> -static const unsigned default_disksize_perc_ram = 25;
+> -
+>  /*
+>   * Pages that compress to size greater than this are stored
+>   * uncompressed in memory.
+> @@ -115,6 +112,6 @@ extern struct attribute_group zram_disk_attr_group;
+>  #endif
+>  
+>  extern int zram_init_device(struct zram *zram);
+> -extern void __zram_reset_device(struct zram *zram);
+> +extern void zram_reset_device(struct zram *zram);
+>  
+>  #endif
+> diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+> index de1eacf..4143af9 100644
+> --- a/drivers/staging/zram/zram_sysfs.c
+> +++ b/drivers/staging/zram/zram_sysfs.c
+> @@ -110,11 +110,7 @@ static ssize_t reset_store(struct device *dev,
+>  	if (bdev)
+>  		fsync_bdev(bdev);
+>  
+> -	down_write(&zram->init_lock);
+> -	if (zram->init_done)
+> -		__zram_reset_device(zram);
+> -	up_write(&zram->init_lock);
+> -
+> +	zram_reset_device(zram);
+>  	return len;
+>  }
+>  
+> 
 
-config HZ
-        int
-        default 200 if ARCH_EBSA110 || ARCH_S3C24XX || ARCH_S5P64X0 || \
-                ARCH_S5PV210 || ARCH_EXYNOS4
-        default OMAP_32K_TIMER_HZ if ARCH_OMAP && OMAP_32K_TIMER
-        default AT91_TIMER_HZ if ARCH_AT91
-        default SHMOBILE_TIMER_HZ if ARCH_SHMOBILE
-        default 100
-
-There is a patch floating around ("ARM: OMAP2+: timer: remove
-CONFIG_OMAP_32K_TIMER")
-which modifies the OMAP line, so I'll ignore that for my below
-example, and I saw a patch for adding Exynos5 processors to the top
-default somewhere around here.
-
-So, based on those getting in, in my case here, I can see a situation where;
-
-* I build multiplatform for i.MX6 and Exynos4/5 ARCH_MULTIPLATFORM, I
-will get CONFIG_HZ=200.
-
-* If I built for just i.MX6, I will get CONFIG_HZ=100.
-
-Either way, if I boot a kernel on i.MX6, CONFIG_HZ depends on the
-other ARM platforms I also want to boot on it.. this is not exactly
-multiplatform compliant, right?
-
-In fact, if I want any other value without meeting any of the other
-defaults I am *forced* to have a CONFIG_HZ value of 100 (running
-oldconfig will set any value back to this), because none of the
-standard (100/300/1000 as I see on x86 and PPC) selection entries or
-the override control are present or sourced in the main
-arch/arm/Kconfig.
-
-This seems infuriatingly inconsistent - and I am absolutely sure that
-the default for Samsung platforms is basically totally unreasonable
-(and definitely not multiplatform-aware) behavior in forcing some
-default setting.
-
-For AT91 and SHMOBILE, I am not sure at all.. given the need for the
-OMAP platform to know what it's timer frequency is, maybe they can be
-worked around the same way as the OMAP patch so the dependencies get
-removed, but I also don't understand why the actual value CONFIG_HZ
-would really matter in these cases (except that it would stop the
-kernel trying to check or queue timer events more often than the timer
-is capable of running.. surely this is a runtime issue and proper use
-of the sched_clock implementation handles this?)
-
-This could in theory be resolved by having the arch-specific Kconfigs
-add for example CONFIG_HZ_MY_ARCH (similar to kernel/Kconfig.hz's
-CONFIG_HZ_1000 which selects 1000 as the "default") and selecting it
-if !ARCH_MULTIPLATFORM, which keeps these special little "my arch is
-different to your arch" quirks out of a core configuration file. That
-way Exynos-only kernels keep their 200, and AT91 keeps it's.. whatever
-that config item resolves to (128 I think), and they would pop up in
-the list with 100/300/1000. Also, on ARCH_MULTIPLATFORM kernels, the
-default-setting behavior is turned off, so all you'd see is
-100/300/1000 and an opportunity to set your own value.
-
-This is, I think, what should be the case - that rather than
-"magically" selecting CONFIG_HZ's value, it should be up to the
-configurator (individual, maintainer shipping a defconfig,
-distribution) of the kernel. And, why not document that "foo" arch
-runs better with "CONFIG_HZ_MY_ARCH" and instruct configurators of the
-kernel to do the right thing, or pick the average value, or specific
-lowest-common-denominator value, instead of forcing the value to the
-default for the highest/lowest/random arch that met the dependency of
-the "default" directive? The Kconfig system isn't smart enough to
-handle this automatically for multiplatform.
-
-Additionally, using kernel/Kconfig.hz is a predicate for enabling
-(forced enabling, even) CONFIG_SCHED_HRTICK which is defined nowhere
-else. I don't know how many ARM systems here benefit from this, if
-there is a benefit, or what this really means.. if you really have a
-high resolution timer (and hrtimers enabled) that would assist the
-scheduler this way, is it supposed to make a big difference to the way
-the scheduler works for the better or worse? Is this actually
-overridden by ARM sched_clock handling or so? Shouldn't there be a
-help entry or some documentation for what this option does? I have
-CC'd the scheduler maintainers because I'd really like to know what I
-am doing here before I venture into putting patches out which could
-potentially rip open spacetime and have us all sucked in..
-
-And I guess I have one more question before I do attempt to open that
-tear, what really is the effect of CONFIG_HZ vs. CONFIG_NO_HZ vs. ARM
-sched_clock, and usage of the new hooks to register a real timer as
-ARM delay_timer? I have patches I can modify for upstream that add
-both device tree implementation and probing of i.MX highres
-clocksources (GPT and EPIT) and registration of sched_clock and delay
-timer implementations based on these clocks, but while the code
-compiles and seems to work, the ACTUAL effect of these (and the
-fundamental requirements for the clocks being used) seems to be
-information only in the minds of the people who wrote the code. It's
-not that obvious to me what the true effect of using a non-architected
-ARM core timer for at least the delay_timer is, and I have some really
-odd lpj values and very strange re-calibrations popping out (with
-constant rate for the timer, lpj goes down.. when using the
-delay_timer implementation, shouldn't lpj be still relative to the
-timer rate and NOT cpu frequency?) when using cpufreq on i.MX5 when I
-do it, and whether CONFIG_SCHED_HRTICK is a good or bad idea..
-
-Apologies for the insane number of questions here, but fully
-appreciative of any answers,
-
---
-Matt Sealey <matt@genesi-usa.com>
-Product Development Analyst, Genesi USA, Inc.
