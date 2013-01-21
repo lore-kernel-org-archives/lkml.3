@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab3AUJJp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 04:09:45 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:61583 "EHLO
+	id S1752670Ab3AUJLe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 04:11:34 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:50383 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368Ab3AUJJn (ORCPT
+	with ESMTP id S1752479Ab3AUJLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 04:09:43 -0500
-Message-ID: <1358759355.4994.108.camel@marge.simpson.net>
+	Mon, 21 Jan 2013 04:11:32 -0500
+Message-ID: <1358759476.4994.110.camel@marge.simpson.net>
 Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
 From: Mike Galbraith <bitbucket@online.de>
 To: Michael Wang <wangyun@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
         mingo@kernel.org, a.p.zijlstra@chello.nl
-Date: Mon, 21 Jan 2013 10:09:15 +0100
-In-Reply-To: <50FCF212.3010504@linux.vnet.ibm.com>
+Date: Mon, 21 Jan 2013 10:11:16 +0100
+In-Reply-To: <50FD005C.8040402@linux.vnet.ibm.com>
 References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com>
 	 <50ED384C.1030301@linux.vnet.ibm.com>
 	 <1357977704.6796.47.camel@marge.simpson.net>
@@ -26,96 +26,92 @@ References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com>
 	 <1358743128.4994.33.camel@marge.simpson.net>
 	 <50FCCCF5.30504@linux.vnet.ibm.com>
 	 <1358750523.4994.55.camel@marge.simpson.net>
-	 <1358752180.4994.65.camel@marge.simpson.net>
-	 <50FCF212.3010504@linux.vnet.ibm.com>
+	 <50FCEF6C.6010801@linux.vnet.ibm.com>
+	 <1358756780.4994.104.camel@marge.simpson.net>
+	 <50FD005C.8040402@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-Provags-ID: V02:K0:ixGVPqaBTdQvEEgZYKXC0CnUUrpIkz1SQUctRqE3YpG
- v+YcnUvmt8y1MbZN+LyWx61SPo8GL25lIbRq443sTAKap0anyJ
- OF89QOrg9FloUV+XfcwLSzQP9PSXUVmAfnyPtTH5qwkOnUl3t7
- cwlVEFg1kHwCsSzzUbLGQdCB263GEPFDuQL/FVA4mAoHLb8Hi2
- 7QwvsarDOnF81TojOMlCNATE2w2SjFi1o/gM+ff+Yk/it2trBv
- w9eLjCsp3daYAJ9NnZX+muS3/jJrs5YdblYbVONfRMrBNHzGFz
- GXEnGRlLwLxgkqIBlsR0B7CWYIfWruUUp53LPVnDcgp9W4MIfl
- WdkNt8xec/Twuob3dSj+PgC5SafKq0RMi7J+8R0xo26u5qriV9
- aAij+qrOh7nPg==
+X-Provags-ID: V02:K0:nKDOq5X2HC9yK10zMRDQhWdOZc3ci+juqyUwstF2Mbk
+ de4fQtCXsVY//Yzl/ZSzS1F1ZoMCn8UPoRwB3JQXI7cALmhWKJ
+ 266BksLWi1JpSwPB0LpJSW/RUBXr1cneryK8gQf855yFnYSHFO
+ 797Xr2o++PY4n7pWvwEXypRCAlxFy+MrOkEQAPCHZoEnXakimU
+ PgAeVlO3UPVekScieKlqRePFKcPIz/RBL5lYZs+iIePtwK+FlO
+ vs4WfMhFE6vQtuMd4gTyEEY/yDGvTAWzdrpFmQ4Q/LTS/yl0W3
+ 86K+tVyEN+LgRXqdMk/P15GCrkSju7hhYVOJKNLPh5cGsKK9tj
+ j4Zg15V4qr5JIRpzMN/YhJemiw7pVwuNejJ7vhHqBViSdGG0HB
+ xOn1C8jV6xC2g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-21 at 15:45 +0800, Michael Wang wrote: 
-> On 01/21/2013 03:09 PM, Mike Galbraith wrote:
-> > On Mon, 2013-01-21 at 07:42 +0100, Mike Galbraith wrote: 
-> >> On Mon, 2013-01-21 at 13:07 +0800, Michael Wang wrote:
-> > 
-> >>> May be we could try change this back to the old way later, after the aim
-> >>> 7 test on my server.
+On Mon, 2013-01-21 at 16:46 +0800, Michael Wang wrote: 
+> On 01/21/2013 04:26 PM, Mike Galbraith wrote:
+> > On Mon, 2013-01-21 at 15:34 +0800, Michael Wang wrote: 
+> >> On 01/21/2013 02:42 PM, Mike Galbraith wrote:
+> >>> On Mon, 2013-01-21 at 13:07 +0800, Michael Wang wrote:
+> >>>
+> >>>> That seems like the default one, could you please show me the numbers in
+> >>>> your datapoint file?
+> >>>
+> >>> Yup, I do not touch the workfile.  Datapoints is what you see in the
+> >>> tabulated result...
+> >>>
+> >>> 1
+> >>> 1
+> >>> 1
+> >>> 5
+> >>> 5
+> >>> 5
+> >>> 10
+> >>> 10
+> >>> 10
+> >>> ...
+> >>>
+> >>> so it does three consecutive runs at each load level.  I quiesce the
+> >>> box, set governor to performance, echo 250 32000 32 4096
+> >>>> /proc/sys/kernel/sem, then ./multitask -nl -f, and point it
+> >>> at ./datapoints.
 > >>
-> >> Yeah, something funny is going on.
+> >> I have changed the "/proc/sys/kernel/sem" to:
+> >>
+> >> 2000    2048000 256     1024
+> >>
+> >> and run few rounds, seems like I can't reproduce this issue on my 12 cpu
+> >> X86 server:
+> >>
+> >> 	prev		post
+> >> Tasks    jobs/min  	jobs/min
+> >>     1      508.39    	506.69
+> >>     5     2792.63   	2792.63
+> >>    10     5454.55   	5449.64
+> >>    20    10262.49  	10271.19
+> >>    40    18089.55  	18184.55
+> >>    80    28995.22  	28960.57
+> >>   160    41365.19  	41613.73
+> >>   320    53099.67  	52767.35
+> >>   640    61308.88  	61483.83
+> >>  1280    66707.95  	66484.96
+> >>  2560    69736.58  	69350.02
+> >>
+> >> Almost nothing changed...I would like to find another machine and do the
+> >> test again later.
 > > 
-> > Never entering balance path kills the collapse.  Asking wake_affine()
-> > wrt the pull as before, but allowing us to continue should no idle cpu
-> > be found, still collapsed.  So the source of funny behavior is indeed in
-> > balance_path.
+> > Hm.  Those numbers look odd.  Ok, I've got 8 more cores, but your hefty
+> > load throughput is low.  When I look low end numbers, seems your cores
+> > are more macho than my 2.27 GHz EX cores, so it should have been a lot
+> > closer.  Oh wait, you said "12 cpu".. so 1 6 core package + HT?  This
+> > box is 2 NUMA nodes (was 4), 2 (was 4) 10 core packages + HT.
 > 
-> Below patch based on the patch set could help to avoid enter balance path
-> if affine_sd could be found, just like the old logical, would you like to
-> take a try and see whether it could help fix the collapse?
+> It's a 12 core package, and only 1 physical cpu:
+> 
+> Intel(R) Xeon(R) CPU           X5690  @ 3.47GHz
+> 
+> So does that means the issue was related to the case when there are
+> multiple nodes?
 
-No, it does not.
+Seems likely.  I had 4 nodes earlier though, and did NOT see collapse.
 
-> 
-> Regards,
-> Michael Wang
-> 
-> ---
->  kernel/sched/fair.c |   14 ++++++++------
->  1 files changed, 8 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index d600708..4e95bb0 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3297,6 +3297,8 @@ next:
->                         sg = sg->next;
->                 } while (sg != sd->groups);
->         }
-> +
-> +       return -1;
->  done:
->         return target;
->  }
-> @@ -3349,7 +3351,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
->                  * some cases.
->                  */
->                 new_cpu = select_idle_sibling(p, prev_cpu);
-> -               if (idle_cpu(new_cpu))
-> +               if (new_cpu != -1)
->                         goto unlock;
-> 
->                 /*
-> @@ -3363,15 +3365,15 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
->                         goto balance_path;
-> 
->                 new_cpu = select_idle_sibling(p, cpu);
-> -               if (!idle_cpu(new_cpu))
-> -                       goto balance_path;
-> -
->                 /*
->                  * Invoke wake_affine() finally since it is no doubt a
->                  * performance killer.
->                  */
-> -               if (wake_affine(sbm->affine_map[prev_cpu], p, sync))
-> -                       goto unlock;
-> +               if (new_cpu == -1 ||
-> +                       !wake_affine(sbm->affine_map[prev_cpu], p, sync))
-> +                       new_cpu = prev_cpu;
-> +
-> +               goto unlock;
->         }
-> 
->  balance_path:
-
+-Mike
 
