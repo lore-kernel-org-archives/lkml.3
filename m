@@ -1,83 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab3AUFx1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 00:53:27 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:36277 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab3AUFx0 (ORCPT
+	id S1752218Ab3AUFzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 00:55:45 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65531 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885Ab3AUFzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 00:53:26 -0500
-Date: Mon, 21 Jan 2013 16:53:24 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the gpio-lw tree
-Message-Id: <20130121165324.84199b6341090d4bc0836534@canb.auug.org.au>
-In-Reply-To: <20130121062011.GC2272@S2100-06.ap.freescale.net>
-References: <20130118140346.3f9b182aa7daa175b4f136bf@canb.auug.org.au>
-	<20130118080211.GA8706@S2101-09.ap.freescale.net>
-	<20130119104045.80e588ed651f40d8c567b7d6@canb.auug.org.au>
-	<20130121062011.GC2272@S2100-06.ap.freescale.net>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_Jan_2013_16_53_24_+1100_jlPb4YmeQu38z+7S"
+	Mon, 21 Jan 2013 00:55:43 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-a7-50fcd85d1573
+Date: Mon, 21 Jan 2013 14:55:41 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Matt Sealey <matt@genesi-usa.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
+        devel <devel@driverdev.osuosl.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: Re: Compilation problem with drivers/staging/zsmalloc when !SMP on
+ ARM
+Message-ID: <20130121055541.GD3666@blaptop>
+References: <CAKGA1b=ACTQHo9=B7EAG5nrFCO9u-J+sy7dXtYk3Rk6OUcW3cQ@mail.gmail.com>
+ <20130118210859.GH23505@n2100.arm.linux.org.uk>
+ <CAKGA1bmJ6c4LC=NAD4MU_rBZ2hZjf6qH=C+dqMCf0eP+2vSFdA@mail.gmail.com>
+ <20130119044602.GC5391@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130119044602.GC5391@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_Jan_2013_16_53_24_+1100_jlPb4YmeQu38z+7S
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Shawn,
-
-On Mon, 21 Jan 2013 14:20:13 +0800 Shawn Guo <shawn.guo@linaro.org> wrote:
->
-> On Sat, Jan 19, 2013 at 10:40:45AM +1100, Stephen Rothwell wrote:
-> >=20
-> > On Fri, 18 Jan 2013 16:02:13 +0800 Shawn Guo <shawn.guo@linaro.org> wro=
-te:
+On Fri, Jan 18, 2013 at 11:46:02PM -0500, Konrad Rzeszutek Wilk wrote:
+> On Fri, Jan 18, 2013 at 07:11:32PM -0600, Matt Sealey wrote:
+> > On Fri, Jan 18, 2013 at 3:08 PM, Russell King - ARM Linux
+> > <linux@arm.linux.org.uk> wrote:
+> > > On Fri, Jan 18, 2013 at 02:24:15PM -0600, Matt Sealey wrote:
+> > >> Hello all,
+> > >>
+> > >> I wonder if anyone can shed some light on this linking problem I have
+> > >> right now. If I configure my kernel without SMP support (it is a very
+> > >> lean config for i.MX51 with device tree support only) I hit this error
+> > >> on linking:
 > > >
-> > > My bad, sorry for that.  I just sent a v2 in reply to this message
-> > > for fixing the error.  I spent some time trying to install a ppc64
-> > > toolchain for testing, but unfortunately with on luck.  So Stephen,
-> > > I have to rely on linux-next to give it a test again.  Thanks.
-> >=20
-> > Cross compilers suitable for building kernels are available at
-> > http://www.kernel.org/pub/tools/crosstool/ .
->=20
-> Thanks for the link, Stephen.  I installed the compiler and verified
-> that the v2 fixes the error.
+> > > Yes, I looked at this, and I've decided that I will _not_ fix this export,
+> > > neither will I accept a patch to add an export.
+> > 
+> > Understood..
+> > 
+> > > As far as I can see, this code is buggy in a SMP environment.  There's
+> > > apparantly no guarantee that:
+> > >
+> > > 1. the mapping will be created on a particular CPU.
+> > > 2. the mapping will then be used only on this specific CPU.
+> > > 3. no guarantee that another CPU won't speculatively prefetch from this
+> > >    region.
+> > > 4. when the mapping is torn down, no guarantee that it's the same CPU that
+> > >    used the happing.
+> > >
+> > > So, the use of the local TLB flush leaves all the other CPUs potentially
+> > > containing TLB entries for this mapping.
+> > 
+> > I'm gonna put this out to the maintainers (Konrad, and Seth since he
+> > committed it) that if this code is buggy it gets taken back out, even
+> > if it makes zsmalloc "slow" on ARM, for the following reasons:
+> 
+> Just to make sure I understand, you mean don't use page table
+> mapping but instead use copying?
+> 
+> > 
+> > * It's buggy on SMP as Russell describes above
+> > * It might not be buggy on UP (opposite to Russell's description above
+> > as the restrictions he states do not exist), but that would imply an
+> > export for a really core internal MM function nobody should be using
+> > anyway
+> > * By that assessment, using that core internal MM function on SMP is
+> > also bad voodoo that zsmalloc should not be doing
+> 
+>  'local_tlb_flush' is bad voodoo?
+> 
+> > 
+> > It also either smacks of a lack of comprehensive testing or defiance
+> > of logic that nobody ever built the code without CONFIG_SMP, which
+> > means it was only tested on a bunch of SMP ARM systems (I'm guessing..
+> > Pandaboard? :) or UP systems with SMP/SMP_ON_UP enabled (to expand on
+> > that guess, maybe Beagleboard in some multiplatform Beagle/Panda
+> > hybrid kernel). I am sure I was reading the mailing lists when that
+> > patch was discussed, coded and committed and my guess is correct. In
+> > this case, what we have here anyway is code which when PROPERLY
+> > configured as so..
+> 
+> The initial patch were done on x86. Then Seth did the work to make sure
+> it worked on PPC. Munchin looked on ARM and that is it.
 
-Thanks.
+s/Munchin/Minchan
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> If you have an ARM server that you would be willing to part with I would
+> be thrilled to look at it.
+> 
+> > 
+> > diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c
+> > b/drivers/staging/zsmalloc/zsmalloc-main.c
+> > index 09a9d35..ecf75fb 100644
+> 	> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+> > +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+> > @@ -228,7 +228,7 @@ struct zs_pool {
+> >   * mapping rather than copying
+> >   * for object mapping.
+> >  */
+> > -#if defined(CONFIG_ARM)
+> > +#if defined(CONFIG_ARM) && defined(CONFIG_SMP)
+> >  #define USE_PGTABLE_MAPPING
 
---Signature=_Mon__21_Jan_2013_16_53_24_+1100_jlPb4YmeQu38z+7S
-Content-Type: application/pgp-signature
+I don't get it. How to prevent the problem Russel described?
+The problem is that other CPU can prefetch _speculatively_ under us.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> >  #endif
+> > 
+> > .. such that it even compiles in both "guess" configurations, the
+> > slower Cortex-A8 600MHz single core system gets to use the slow copy
+> > path and the dual-core 1GHz+ Cortex-A9 (with twice the RAM..) gets to
+> > use the fast mapping path. Essentially all the patch does is "improve
+> > performance" on the fastest, best-configured, large-amounts-of-RAM,
+> > lots-of-CPU-performance ARM systems (OMAP4+, Snapdragon, Exynos4+,
+> > marvell armada, i.MX6..) while introducing the problems Russell
+> > describes, and leave performance exactly the same and potentially far
+> > more stable on the slower, memory-limited ARM machines.
+> 
+> Any ideas on how to detect that?
+> > 
+> > Given the purpose of zsmalloc, zram, zcache etc. this somewhat defies
+> > logic. If it's not making the memory-limited, slow ARM systems run
+> > better, what's the point?
+> > 
+> > So in summary I suggest "we" (Greg? or is it Seth's responsibility?)
+> > should just back out that whole USE_PGTABLE_MAPPING chunk of code
+> > introduced with f553646. Then Russell can carry on randconfiging and I
+> > can build for SMP and UP and get the same code.. with less bugs.
+> 
+> I get that you want to have this fixed right now. I think having it
+> fixed the right way is a better choice. Lets discuss that first
+> before we start tossing patches to disable parts of it.
 
-iQIcBAEBCAAGBQJQ/NfUAAoJEECxmPOUX5FERuMP/jpePHUierAuYPEAS87YwBzE
-h2SaA5G17KXnb8yULT0p7eRJE9rweujBjKvIBHHN+McWlo0o/0t0yB6pyp6D2iid
-rzC5Hvr7axaxrTSdrtZuvT8oCsBux0uVqDvG+k0ihdjRrQteLB1qkGACWd6P5vI1
-iwVywY9d88aInst9bMN2Hcme91wNhIshUmFaupvqMEIVGqXXtsadL6othw/+D/4Q
-TVxC6CWzt3MBQCP7WfvmjBWTY+vNAgpH8T3kNhIeuZJ64c9yggafp5sf7yqUn0Ep
-M+m8kmuXuxaP9kGF3VPw6NNo75UOU0Nzp9/OlCMoRgQghNF4IVFwX0Bcb4Ym2jiO
-CJENO1OyhV7JfWr2v7eQ1e6heOzhHN5H09I9mTweDO+hTtf1KmKzRwduQCOtihS5
-sNcFvwytgoJIemqUo4ND23aBLO7tMuZeM7BpcMLi4gxgoRm4z2Irw84CzPMm130i
-OPhQamOhB+iRwHXiU0dhLd2A6dpCI+IZrQmTtPA+fm4kkxvhqBS2Y3kNUvuzXzLN
-zrFTk4L8rMPPlI8IXictC4Y3mRZ4kJz/Nhf3QWfKLqEgN/QJ+7cDGbqipG3OrYGe
-4cvAW2ABFoYUsW7TzL3jTTeTRJ78MmgLhpQDzZfwURmXy96ESDxmWS1VPh/Nu/gP
-xFN9Lhsf23UW4CfgQC7W
-=ILra
------END PGP SIGNATURE-----
+If I don't miss something, we could have 2 choice.
 
---Signature=_Mon__21_Jan_2013_16_53_24_+1100_jlPb4YmeQu38z+7S--
+1) use flush_tlb_kernel_range instead of local_flush_tlb_kernel_range
+Or
+2) use only memory copy
+
+I guess everybody want 2 because it makes code very simple and maintainable.
+Even, rencently Joonsoo sent optimize patch.
+Look at https://lkml.org/lkml/2013/1/16/68 so zram/zcache effect caused by 2
+would be minimized.
+
+But please give me the time and I will borrow quad-core embedded target board
+and test 1 on the phone with Seth's benchmark.
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Kind regards,
+Minchan Kim
