@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab3AURUl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 12:20:41 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:53686 "EHLO
+	id S1756387Ab3AURU5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 12:20:57 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:54378 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755226Ab3AURRI (ORCPT
+	with ESMTP id S1754202Ab3AURRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 12:17:08 -0500
+	Mon, 21 Jan 2013 12:17:07 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Shawn Guo <shawn.guo@linaro.org>, alsa-devel@alsa-project.org
-Subject: [PATCH 05/15] ASoC: fsl: fiq and dma cannot both be modules
-Date: Mon, 21 Jan 2013 17:15:58 +0000
-Message-Id: <1358788568-11137-6-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Rob Clark <rob@ti.com>,
+        Inki Dae <inki.dae@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>
+Subject: [PATCH 07/15] drm/exynos: don't include plat/gpio-cfg.h
+Date: Mon, 21 Jan 2013 17:16:00 +0000
+Message-Id: <1358788568-11137-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1358788568-11137-1-git-send-email-arnd@arndb.de>
 References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:XEGaj0ETPUirJfOPrioqed44CWbhVE+Bos28ft9EbLc
- PJiv2XUkP31ruzJiEjx7GU4BzQGM4TqeaPF2ycb/qvKn0H9qYi
- yZ/bObS/VD9y1cFi0CWDzhVai11SZFAsYXy5OPdUqUlcmJILaw
- swqVXJWYezdfAGNSA3ZdILdYWX2LMH+8Cf6T0RucEG6gFVS+Ct
- pL7v1ZUrgEULMBV1JO3mmRSrTLH6U16Wj+gFVHwqoPkMXlp85w
- ryyEusVvLAPBvIv/3KVuFGEk0NywXY2YqMr9c9jCQrBXb6XnjK
- lTILIoBeiK6dJK3IwUL/df0Fj06GfDpP8TMMg1x3L37NH4Ek+E
- PnsXC9i9mtbIEeg5I5DQ0QLdPcN6HAtiRBmUc6DjB
+X-Provags-ID: V02:K0:BFtiBXXVtGzO7N4XFgfhRjcH2w6fF1t8SM1oYuZPioR
+ OyF+DHJSGJKTPekXejgyDI5V1tWz1D0nc5JnD6ap2uPyuL7NQj
+ E3rilpBFDolA+yg9tj1rJftnCfkBVC7FezvY5ytzNts8KKtbu1
+ h8bCW+2VmOzcyPwbQdD34hgtZKUqZMBQsYd0lK05TsxAjYDOB9
+ gTBoXCYMvJv5ne58p0m/0pqQOjETXKG7ye4ptL6AKHFegTiHEc
+ lscJw3m24tmuuZzLpK73pmzJR8aCD0DBGsLoZiWGKJGQuLyf5j
+ GKxezeNIwRuL/XGyo4PdqqQi62SAkJdJt6x2bY7/UVGON1KquW
+ ZNTcaLC6J4SnPvtMrhTEjqsSk/ON7nP24jNLct9Dj
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dma and fiq portions of the imx-pcm driver both
-have a module_init() call, of which there can be only
-one in any given module. This changes Kconfig to enforce
-either the driver to be built-in in the kernel, or
-to have only one of the two when building imx-pcm as
-a module.
+Patch  9eb3e9e6f3 "drm/exynos: add support for ARCH_MULTIPLATFORM"
+allowed building the exynos hdmi driver on non-samsung platforms,
+which unfortunately broke compilation in combination with 22c4f42897
+"drm: exynos: hdmi: add support for exynos5 hdmi", which added
+an inclusion of the samsung-specific plat/gpio-cfg.h header file.
 
-Without this patch, we cannot build the ARM 'allmodconfig', or
-we get this error:
+Fortunately, that header file is not required any more here, so
+we can simply revert the inclusion in order to build the ARM
+allyesconfig again without getting this error:
 
-sound/soc/fsl/imx-pcm-dma.o: In function `init_module':
-sound/soc/fsl/imx-pcm-dma.c:177: multiple definition of `init_module'
-sound/soc/fsl/imx-pcm-fiq.o:sound/soc/fsl/imx-pcm-fiq.c:334: first defined here
-sound/soc/fsl/imx-pcm-dma.o: In function `cleanup_module':
-sound/soc/fsl/imx-pcm-dma.c:177: multiple definition of `cleanup_module'
-sound/soc/fsl/imx-pcm-fiq.o:sound/soc/fsl/imx-pcm-fiq.c:334: first defined here
+drivers/gpu/drm/exynos/exynos_hdmi.c:37:27: fatal error: plat/gpio-cfg.h: No such file or directory
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Liam Girdwood <lrg@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: alsa-devel@alsa-project.org
+Cc: Rob Clark <rob@ti.com>
+Cc: Inki Dae <inki.dae@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Rahul Sharma <rahul.sharma@samsung.com>
 ---
- sound/soc/fsl/Kconfig |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/exynos/exynos_hdmi.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/sound/soc/fsl/Kconfig b/sound/soc/fsl/Kconfig
-index 3b98159..282b08e 100644
---- a/sound/soc/fsl/Kconfig
-+++ b/sound/soc/fsl/Kconfig
-@@ -127,6 +127,7 @@ config SND_SOC_IMX_AUDMUX
- config SND_MXC_SOC_WM1133_EV1
- 	tristate "Audio on the i.MX31ADS with WM1133-EV1 fitted"
- 	depends on MACH_MX31ADS_WM1133_EV1
-+	depends on !SND_SOC_IMX_PCM_DMA || SND_IMX_SOC=y
- 	select SND_SOC_WM8350
- 	select SND_SOC_IMX_PCM_FIQ
- 	select SND_SOC_IMX_AUDMUX
-@@ -149,6 +150,7 @@ config SND_SOC_MX27VIS_AIC32X4
- config SND_SOC_PHYCORE_AC97
- 	tristate "SoC Audio support for Phytec phyCORE (and phyCARD) boards"
- 	depends on MACH_PCM043 || MACH_PCA100
-+	depends on !SND_SOC_IMX_PCM_DMA || SND_IMX_SOC=y
- 	select SND_SOC_AC97_BUS
- 	select SND_SOC_WM9712
- 	select SND_SOC_IMX_PCM_FIQ
-@@ -165,6 +167,7 @@ config SND_SOC_EUKREA_TLV320
- 		|| MACH_EUKREA_MBIMXSD35_BASEBOARD \
- 		|| MACH_EUKREA_MBIMXSD51_BASEBOARD
- 	depends on I2C
-+	depends on !SND_SOC_IMX_PCM_DMA || SND_IMX_SOC=y
- 	select SND_SOC_TLV320AIC23
- 	select SND_SOC_IMX_PCM_FIQ
- 	select SND_SOC_IMX_AUDMUX
+diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+index 41ff79d..b5f5119 100644
+--- a/drivers/gpu/drm/exynos/exynos_hdmi.c
++++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
+@@ -34,7 +34,6 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/io.h>
+ #include <linux/of_gpio.h>
+-#include <plat/gpio-cfg.h>
+ 
+ #include <drm/exynos_drm.h>
+ 
 -- 
 1.7.10.4
 
