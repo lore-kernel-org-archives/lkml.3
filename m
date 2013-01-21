@@ -1,145 +1,717 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab3AUT4j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 14:56:39 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:60627 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699Ab3AUT4i (ORCPT
+	id S1756066Ab3AUT4t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 14:56:49 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:38609 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756107Ab3AUT4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 14:56:38 -0500
-Date: Mon, 21 Jan 2013 11:56:34 -0800
+	Mon, 21 Jan 2013 14:56:45 -0500
+Date: Mon, 21 Jan 2013 11:56:42 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.0.60
-Message-ID: <20130121195634.GB6665@kroah.com>
+Subject: Re: Linux 3.0.60
+Message-ID: <20130121195642.GC6665@kroah.com>
+References: <20130121195634.GB6665@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130121195634.GB6665@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---5vNYLRcllDrimb99
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-I'm announcing the release of the 3.0.60 kernel.
-
-All users of the 3.0 kernel series must upgrade.
-
-The updated 3.0.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
-it linux-3.0.y
-and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
-;a=3Dsummary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                 |    2=20
- arch/powerpc/platforms/embedded6xx/wii.c |    6 +-
- arch/s390/include/asm/timex.h            |   28 +++++++++++
- arch/s390/kernel/time.c                  |    2=20
- arch/s390/kvm/interrupt.c                |    2=20
- arch/sh/include/asm/elf.h                |    4 -
- arch/x86/kernel/entry_32.S               |    1=20
- arch/x86/kernel/setup.c                  |   78 ++++++++++++++++++++++++++=
-+++++
- drivers/block/drbd/drbd_req.c            |    1=20
- drivers/pci/intel-iommu.c                |   31 ++++++++++++
- drivers/staging/vt6656/bssdb.h           |    1=20
- drivers/staging/vt6656/int.h             |    1=20
- drivers/staging/vt6656/iocmd.h           |   33 ++++++-------
- drivers/staging/vt6656/iowpa.h           |    8 +--
- drivers/target/tcm_fc/tfc_sess.c         |   12 +++-
- drivers/tty/serial/ifx6x60.c             |    1=20
- drivers/usb/core/message.c               |   53 ++++++++++++---------
- drivers/usb/host/xhci-mem.c              |   11 +++-
- drivers/usb/serial/option.c              |    9 +++
- fs/ext4/inode.c                          |    2=20
- 20 files changed, 226 insertions(+), 60 deletions(-)
-
-Alan Stern (1):
-      USB: fix endpoint-disabling for failed config changes
-
-Ben Hutchings (1):
-      staging: vt6656: Fix inconsistent structure packing
-
-Bj=F8rn Mork (2):
-      USB: option: add TP-LINK HSUPA Modem MA180
-      USB: option: blacklist network interface on ONDA MT8205 4G LTE
-
-Eric Sandeen (1):
-      ext4: init pagevec in ext4_da_block_invalidatepages
-
-Frediano Ziglio (1):
-      xen: Fix stack corruption in xen_failsafe_callback for 32bit PVOPS gu=
-ests.
-
-Greg Kroah-Hartman (1):
-      Linux 3.0.60
-
-Heiko Carstens (1):
-      s390/time: fix sched_clock() overflow
-
-Jesse Barnes (1):
-      x86/Sandy Bridge: reserve pages when integrated graphics is present
-
-Julius Werner (1):
-      xhci: fix null-pointer dereference when destroying half-built segment=
- rings
-
-Mark Rustad (2):
-      tcm_fc: Do not indicate retry capability to initiators
-      tcm_fc: Do not report target role when target is not defined
-
-Philipp Reisner (1):
-      drbd: add missing part_round_stats to _drbd_start_io_acct
-
-Shuah Khan (1):
-      powerpc: fix wii_memory_fixups() compile error on 3.0.y tree
-
-Thomas Schwinge (1):
-      sh: Fix FDPIC binary loader
-
-Tom Mingarelli (1):
-      intel-iommu: Prevent devices with RMRRs from being placed into SI Dom=
-ain
-
-chao bi (1):
-      serial:ifx6x60:Delete SPI timer when shut down port
-
-
---5vNYLRcllDrimb99
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ/Z1yAAoJEDjbvchgkmk+ugoP/A2wuTXaU2JbqmNfI7wG2+BE
-e2jOcEhM2YpmymWEepxFmjK5CefQ2X/V654Z6Q1b2tRekt1hHcZj7n1ugovBzivl
-QWNkdCna4is0Zz2EfvbIJNMXLUfavab83UQxLBEPdHOmHuO9Z3aWcRMLPJKEGOu/
-6Lnj/i6I/wdawHBTv94AP1EgTKVrVOaDQXH4jUZ3z63PEzP/YllCyL52tf854koZ
-0VnkLblNhHWWq49DxqugjMMLGtuvrZ4USfkey+LMDwk5xf5IcPvTommFXoqiLBZI
-lR53f4XOGWWn2xlpgt5A1dJ8QiQoPqsJ3rslU76YphxInsTKtLBSepCoTO4znzmF
-ETgZ/1Mm9GFG/Ut/O4+c/W5nf3kdLbU14nEfSwHvIw/k80b90A5dGMt9PP2r/IhH
-Ev/UR1y1++na09lCjSSEyHKpMl9HUxhh7hBR5rHwAuqfYPhdpwJDcWMZ+IRlIw6O
-ye4m8bm7pvaeWhLgshsGQiSLxauJaE0lXEasR9Gt9PhO0THqBN3o9CVEQyNqx8Jf
-9l+95YTfifaTYf8hDkwIrT8pKHODJQhjtwyE8V2/95fcg7ZxpG/5BwI+dhFzt9Z4
-q9sHPcuzNhROr1XDLFQ/N4EhnwKcOacDQwjRna+buIZ5DXF4gLsSJoN+aH/a+Ky/
-Pz5CTjBvuLDdFyNQYY+V
-=r76S
------END PGP SIGNATURE-----
-
---5vNYLRcllDrimb99--
+diff --git a/Makefile b/Makefile
+index d1b37fc..3359fcf 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 0
+-SUBLEVEL = 59
++SUBLEVEL = 60
+ EXTRAVERSION =
+ NAME = Sneaky Weasel
+ 
+diff --git a/arch/powerpc/platforms/embedded6xx/wii.c b/arch/powerpc/platforms/embedded6xx/wii.c
+index 1b5dc1a..daf793b 100644
+--- a/arch/powerpc/platforms/embedded6xx/wii.c
++++ b/arch/powerpc/platforms/embedded6xx/wii.c
+@@ -85,9 +85,11 @@ void __init wii_memory_fixups(void)
+ 	wii_hole_start = p[0].base + p[0].size;
+ 	wii_hole_size = p[1].base - wii_hole_start;
+ 
+-	pr_info("MEM1: <%08llx %08llx>\n", p[0].base, p[0].size);
++	pr_info("MEM1: <%08llx %08llx>\n",
++		(unsigned long long) p[0].base, (unsigned long long) p[0].size);
+ 	pr_info("HOLE: <%08lx %08lx>\n", wii_hole_start, wii_hole_size);
+-	pr_info("MEM2: <%08llx %08llx>\n", p[1].base, p[1].size);
++	pr_info("MEM2: <%08llx %08llx>\n",
++		(unsigned long long) p[1].base, (unsigned long long) p[1].size);
+ 
+ 	p[0].size += wii_hole_size + p[1].size;
+ 
+diff --git a/arch/s390/include/asm/timex.h b/arch/s390/include/asm/timex.h
+index 88829a4..a4b8f60 100644
+--- a/arch/s390/include/asm/timex.h
++++ b/arch/s390/include/asm/timex.h
+@@ -126,4 +126,32 @@ static inline unsigned long long get_clock_monotonic(void)
+ 	return get_clock_xt() - sched_clock_base_cc;
+ }
+ 
++/**
++ * tod_to_ns - convert a TOD format value to nanoseconds
++ * @todval: to be converted TOD format value
++ * Returns: number of nanoseconds that correspond to the TOD format value
++ *
++ * Converting a 64 Bit TOD format value to nanoseconds means that the value
++ * must be divided by 4.096. In order to achieve that we multiply with 125
++ * and divide by 512:
++ *
++ *    ns = (todval * 125) >> 9;
++ *
++ * In order to avoid an overflow with the multiplication we can rewrite this.
++ * With a split todval == 2^32 * th + tl (th upper 32 bits, tl lower 32 bits)
++ * we end up with
++ *
++ *    ns = ((2^32 * th + tl) * 125 ) >> 9;
++ * -> ns = (2^23 * th * 125) + ((tl * 125) >> 9);
++ *
++ */
++static inline unsigned long long tod_to_ns(unsigned long long todval)
++{
++	unsigned long long ns;
++
++	ns = ((todval >> 32) << 23) * 125;
++	ns += ((todval & 0xffffffff) * 125) >> 9;
++	return ns;
++}
++
+ #endif
+diff --git a/arch/s390/kernel/time.c b/arch/s390/kernel/time.c
+index dff9330..943ea0e 100644
+--- a/arch/s390/kernel/time.c
++++ b/arch/s390/kernel/time.c
+@@ -63,7 +63,7 @@ static DEFINE_PER_CPU(struct clock_event_device, comparators);
+  */
+ unsigned long long notrace __kprobes sched_clock(void)
+ {
+-	return (get_clock_monotonic() * 125) >> 9;
++	return tod_to_ns(get_clock_monotonic());
+ }
+ 
+ /*
+diff --git a/arch/s390/kvm/interrupt.c b/arch/s390/kvm/interrupt.c
+index 35c21bf..a3db4c8 100644
+--- a/arch/s390/kvm/interrupt.c
++++ b/arch/s390/kvm/interrupt.c
+@@ -358,7 +358,7 @@ int kvm_s390_handle_wait(struct kvm_vcpu *vcpu)
+ 		return 0;
+ 	}
+ 
+-	sltime = ((vcpu->arch.sie_block->ckc - now)*125)>>9;
++	sltime = tod_to_ns(vcpu->arch.sie_block->ckc - now);
+ 
+ 	hrtimer_start(&vcpu->arch.ckc_timer, ktime_set (0, sltime) , HRTIMER_MODE_REL);
+ 	VCPU_EVENT(vcpu, 5, "enabled wait via clock comparator: %llx ns", sltime);
+diff --git a/arch/sh/include/asm/elf.h b/arch/sh/include/asm/elf.h
+index f38112b..978b7fd 100644
+--- a/arch/sh/include/asm/elf.h
++++ b/arch/sh/include/asm/elf.h
+@@ -202,9 +202,9 @@ extern void __kernel_vsyscall;
+ 	if (vdso_enabled)					\
+ 		NEW_AUX_ENT(AT_SYSINFO_EHDR, VDSO_BASE);	\
+ 	else							\
+-		NEW_AUX_ENT(AT_IGNORE, 0);
++		NEW_AUX_ENT(AT_IGNORE, 0)
+ #else
+-#define VSYSCALL_AUX_ENT
++#define VSYSCALL_AUX_ENT	NEW_AUX_ENT(AT_IGNORE, 0)
+ #endif /* CONFIG_VSYSCALL */
+ 
+ #ifdef CONFIG_SH_FPU
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 268b40d..2df1252 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1078,7 +1078,6 @@ ENTRY(xen_failsafe_callback)
+ 	lea 16(%esp),%esp
+ 	CFI_ADJUST_CFA_OFFSET -16
+ 	jz 5f
+-	addl $16,%esp
+ 	jmp iret_exc
+ 5:	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
+ 	SAVE_ALL
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index af19a61..eb9eb8b 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -631,6 +631,81 @@ static __init void reserve_ibft_region(void)
+ 
+ static unsigned reserve_low = CONFIG_X86_RESERVE_LOW << 10;
+ 
++static bool __init snb_gfx_workaround_needed(void)
++{
++	int i;
++	u16 vendor, devid;
++	static const u16 snb_ids[] = {
++		0x0102,
++		0x0112,
++		0x0122,
++		0x0106,
++		0x0116,
++		0x0126,
++		0x010a,
++	};
++
++	/* Assume no if something weird is going on with PCI */
++	if (!early_pci_allowed())
++		return false;
++
++	vendor = read_pci_config_16(0, 2, 0, PCI_VENDOR_ID);
++	if (vendor != 0x8086)
++		return false;
++
++	devid = read_pci_config_16(0, 2, 0, PCI_DEVICE_ID);
++	for (i = 0; i < ARRAY_SIZE(snb_ids); i++)
++		if (devid == snb_ids[i])
++			return true;
++
++	return false;
++}
++
++/*
++ * Sandy Bridge graphics has trouble with certain ranges, exclude
++ * them from allocation.
++ */
++static void __init trim_snb_memory(void)
++{
++	static const unsigned long bad_pages[] = {
++		0x20050000,
++		0x20110000,
++		0x20130000,
++		0x20138000,
++		0x40004000,
++	};
++	int i;
++
++	if (!snb_gfx_workaround_needed())
++		return;
++
++	printk(KERN_DEBUG "reserving inaccessible SNB gfx pages\n");
++
++	/*
++	 * Reserve all memory below the 1 MB mark that has not
++	 * already been reserved.
++	 */
++	memblock_reserve(0, 1<<20);
++
++	for (i = 0; i < ARRAY_SIZE(bad_pages); i++) {
++		if (memblock_reserve(bad_pages[i], PAGE_SIZE))
++			printk(KERN_WARNING "failed to reserve 0x%08lx\n",
++			       bad_pages[i]);
++	}
++}
++
++/*
++ * Here we put platform-specific memory range workarounds, i.e.
++ * memory known to be corrupt or otherwise in need to be reserved on
++ * specific platforms.
++ *
++ * If this gets used more widely it could use a real dispatch mechanism.
++ */
++static void __init trim_platform_memory_ranges(void)
++{
++	trim_snb_memory();
++}
++
+ static void __init trim_bios_range(void)
+ {
+ 	/*
+@@ -651,6 +726,7 @@ static void __init trim_bios_range(void)
+ 	 * take them out.
+ 	 */
+ 	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
++
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+ }
+ 
+@@ -929,6 +1005,8 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	setup_trampolines();
+ 
++	trim_platform_memory_ranges();
++
+ 	init_gbpages();
+ 
+ 	/* max_pfn_mapped is updated here */
+diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
+index 3424d67..e59f536 100644
+--- a/drivers/block/drbd/drbd_req.c
++++ b/drivers/block/drbd/drbd_req.c
+@@ -37,6 +37,7 @@ static void _drbd_start_io_acct(struct drbd_conf *mdev, struct drbd_request *req
+ 	const int rw = bio_data_dir(bio);
+ 	int cpu;
+ 	cpu = part_stat_lock();
++	part_round_stats(cpu, &mdev->vdisk->part0);
+ 	part_stat_inc(cpu, &mdev->vdisk->part0, ios[rw]);
+ 	part_stat_add(cpu, &mdev->vdisk->part0, sectors[rw], bio_sectors(bio));
+ 	part_inc_in_flight(&mdev->vdisk->part0, rw);
+diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
+index 3f9a891..ae762ec 100644
+--- a/drivers/pci/intel-iommu.c
++++ b/drivers/pci/intel-iommu.c
+@@ -2289,8 +2289,39 @@ static int domain_add_dev_info(struct dmar_domain *domain,
+ 	return 0;
+ }
+ 
++static bool device_has_rmrr(struct pci_dev *dev)
++{
++	struct dmar_rmrr_unit *rmrr;
++	int i;
++
++	for_each_rmrr_units(rmrr) {
++		for (i = 0; i < rmrr->devices_cnt; i++) {
++			/*
++			 * Return TRUE if this RMRR contains the device that
++			 * is passed in.
++			 */
++			if (rmrr->devices[i] == dev)
++				return true;
++		}
++	}
++	return false;
++}
++
+ static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
+ {
++
++	/*
++	 * We want to prevent any device associated with an RMRR from
++	 * getting placed into the SI Domain. This is done because
++	 * problems exist when devices are moved in and out of domains
++	 * and their respective RMRR info is lost. We exempt USB devices
++	 * from this process due to their usage of RMRRs that are known
++	 * to not be needed after BIOS hand-off to OS.
++	 */
++	if (device_has_rmrr(pdev) &&
++	    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
++		return 0;
++
+ 	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
+ 		return 1;
+ 
+diff --git a/drivers/staging/vt6656/bssdb.h b/drivers/staging/vt6656/bssdb.h
+index a8f97eb..991ce3e 100644
+--- a/drivers/staging/vt6656/bssdb.h
++++ b/drivers/staging/vt6656/bssdb.h
+@@ -92,7 +92,6 @@ typedef struct tagSRSNCapObject {
+ } SRSNCapObject, *PSRSNCapObject;
+ 
+ // BSS info(AP)
+-#pragma pack(1)
+ typedef struct tagKnownBSS {
+     // BSS info
+     BOOL            bActive;
+diff --git a/drivers/staging/vt6656/int.h b/drivers/staging/vt6656/int.h
+index 3176c8d..c731b12 100644
+--- a/drivers/staging/vt6656/int.h
++++ b/drivers/staging/vt6656/int.h
+@@ -34,7 +34,6 @@
+ #include "device.h"
+ 
+ /*---------------------  Export Definitions -------------------------*/
+-#pragma pack(1)
+ typedef struct tagSINTData {
+     BYTE    byTSR0;
+     BYTE    byPkt0;
+diff --git a/drivers/staging/vt6656/iocmd.h b/drivers/staging/vt6656/iocmd.h
+index 22710ce..ae6e2d2 100644
+--- a/drivers/staging/vt6656/iocmd.h
++++ b/drivers/staging/vt6656/iocmd.h
+@@ -95,13 +95,12 @@ typedef enum tagWZONETYPE {
+ // Ioctl interface structure
+ // Command structure
+ //
+-#pragma pack(1)
+ typedef struct tagSCmdRequest {
+ 	u8 name[16];
+ 	void	*data;
+ 	u16	    wResult;
+ 	u16     wCmdCode;
+-} SCmdRequest, *PSCmdRequest;
++} __packed SCmdRequest, *PSCmdRequest;
+ 
+ //
+ // Scan
+@@ -111,7 +110,7 @@ typedef struct tagSCmdScan {
+ 
+     u8	    ssid[SSID_MAXLEN + 2];
+ 
+-} SCmdScan, *PSCmdScan;
++} __packed SCmdScan, *PSCmdScan;
+ 
+ //
+ // BSS Join
+@@ -126,7 +125,7 @@ typedef struct tagSCmdBSSJoin {
+     BOOL    bPSEnable;
+     BOOL    bShareKeyAuth;
+ 
+-} SCmdBSSJoin, *PSCmdBSSJoin;
++} __packed SCmdBSSJoin, *PSCmdBSSJoin;
+ 
+ //
+ // Zonetype Setting
+@@ -137,7 +136,7 @@ typedef struct tagSCmdZoneTypeSet {
+  BOOL       bWrite;
+  WZONETYPE  ZoneType;
+ 
+-} SCmdZoneTypeSet, *PSCmdZoneTypeSet;
++} __packed SCmdZoneTypeSet, *PSCmdZoneTypeSet;
+ 
+ typedef struct tagSWPAResult {
+          char	ifname[100];
+@@ -145,7 +144,7 @@ typedef struct tagSWPAResult {
+ 	u8 key_mgmt;
+ 	u8 eap_type;
+          BOOL authenticated;
+-} SWPAResult, *PSWPAResult;
++} __packed SWPAResult, *PSWPAResult;
+ 
+ typedef struct tagSCmdStartAP {
+ 
+@@ -157,7 +156,7 @@ typedef struct tagSCmdStartAP {
+     BOOL    bShareKeyAuth;
+     u8      byBasicRate;
+ 
+-} SCmdStartAP, *PSCmdStartAP;
++} __packed SCmdStartAP, *PSCmdStartAP;
+ 
+ typedef struct tagSCmdSetWEP {
+ 
+@@ -167,7 +166,7 @@ typedef struct tagSCmdSetWEP {
+     BOOL    bWepKeyAvailable[WEP_NKEYS];
+     u32     auWepKeyLength[WEP_NKEYS];
+ 
+-} SCmdSetWEP, *PSCmdSetWEP;
++} __packed SCmdSetWEP, *PSCmdSetWEP;
+ 
+ typedef struct tagSBSSIDItem {
+ 
+@@ -180,14 +179,14 @@ typedef struct tagSBSSIDItem {
+     BOOL    bWEPOn;
+     u32     uRSSI;
+ 
+-} SBSSIDItem;
++} __packed SBSSIDItem;
+ 
+ 
+ typedef struct tagSBSSIDList {
+ 
+ 	u32		    uItem;
+ 	SBSSIDItem	sBSSIDList[0];
+-} SBSSIDList, *PSBSSIDList;
++} __packed SBSSIDList, *PSBSSIDList;
+ 
+ 
+ typedef struct tagSNodeItem {
+@@ -208,7 +207,7 @@ typedef struct tagSNodeItem {
+     u32            uTxAttempts;
+     u16            wFailureRatio;
+ 
+-} SNodeItem;
++} __packed SNodeItem;
+ 
+ 
+ typedef struct tagSNodeList {
+@@ -216,7 +215,7 @@ typedef struct tagSNodeList {
+ 	u32		    uItem;
+ 	SNodeItem	sNodeList[0];
+ 
+-} SNodeList, *PSNodeList;
++} __packed SNodeList, *PSNodeList;
+ 
+ 
+ typedef struct tagSCmdLinkStatus {
+@@ -229,7 +228,7 @@ typedef struct tagSCmdLinkStatus {
+     u32     uChannel;
+     u32     uLinkRate;
+ 
+-} SCmdLinkStatus, *PSCmdLinkStatus;
++} __packed SCmdLinkStatus, *PSCmdLinkStatus;
+ 
+ //
+ // 802.11 counter
+@@ -247,7 +246,7 @@ typedef struct tagSDot11MIBCount {
+     u32 ReceivedFragmentCount;
+     u32 MulticastReceivedFrameCount;
+     u32 FCSErrorCount;
+-} SDot11MIBCount, *PSDot11MIBCount;
++} __packed SDot11MIBCount, *PSDot11MIBCount;
+ 
+ 
+ 
+@@ -355,13 +354,13 @@ typedef struct tagSStatMIBCount {
+     u32   ullTxBroadcastBytes[2];
+     u32   ullTxMulticastBytes[2];
+     u32   ullTxDirectedBytes[2];
+-} SStatMIBCount, *PSStatMIBCount;
++} __packed SStatMIBCount, *PSStatMIBCount;
+ 
+ typedef struct tagSCmdValue {
+ 
+     u32     dwValue;
+ 
+-} SCmdValue,  *PSCmdValue;
++} __packed SCmdValue,  *PSCmdValue;
+ 
+ //
+ // hostapd & viawget ioctl related
+@@ -431,7 +430,7 @@ struct viawget_hostapd_param {
+ 			u8 ssid[32];
+ 		} scan_req;
+ 	} u;
+-};
++} __packed;
+ 
+ /*---------------------  Export Classes  ----------------------------*/
+ 
+diff --git a/drivers/staging/vt6656/iowpa.h b/drivers/staging/vt6656/iowpa.h
+index 959c886..2522dde 100644
+--- a/drivers/staging/vt6656/iowpa.h
++++ b/drivers/staging/vt6656/iowpa.h
+@@ -67,12 +67,11 @@ enum {
+ 
+ 
+ 
+-#pragma pack(1)
+ typedef struct viawget_wpa_header {
+ 	u8 type;
+ 	u16 req_ie_len;
+ 	u16 resp_ie_len;
+-} viawget_wpa_header;
++} __packed viawget_wpa_header;
+ 
+ struct viawget_wpa_param {
+ 	u32 cmd;
+@@ -113,9 +112,8 @@ struct viawget_wpa_param {
+ 			u8 *buf;
+ 		} scan_results;
+ 	} u;
+-};
++} __packed;
+ 
+-#pragma pack(1)
+ struct viawget_scan_result {
+ 	u8 bssid[6];
+ 	u8 ssid[32];
+@@ -130,7 +128,7 @@ struct viawget_scan_result {
+ 	int noise;
+ 	int level;
+ 	int maxrate;
+-};
++} __packed;
+ 
+ /*---------------------  Export Classes  ----------------------------*/
+ 
+diff --git a/drivers/target/tcm_fc/tfc_sess.c b/drivers/target/tcm_fc/tfc_sess.c
+index 087af19..9a084b8 100644
+--- a/drivers/target/tcm_fc/tfc_sess.c
++++ b/drivers/target/tcm_fc/tfc_sess.c
+@@ -393,11 +393,11 @@ static int ft_prli_locked(struct fc_rport_priv *rdata, u32 spp_len,
+ 
+ 	tport = ft_tport_create(rdata->local_port);
+ 	if (!tport)
+-		return 0;	/* not a target for this local port */
++		goto not_target;	/* not a target for this local port */
+ 
+ 	acl = ft_acl_get(tport->tpg, rdata);
+ 	if (!acl)
+-		return 0;
++		goto not_target;	/* no target for this remote */
+ 
+ 	if (!rspp)
+ 		goto fill;
+@@ -434,12 +434,18 @@ static int ft_prli_locked(struct fc_rport_priv *rdata, u32 spp_len,
+ 
+ 	/*
+ 	 * OR in our service parameters with other provider (initiator), if any.
+-	 * TBD XXX - indicate RETRY capability?
+ 	 */
+ fill:
+ 	fcp_parm = ntohl(spp->spp_params);
++	fcp_parm &= ~FCP_SPPF_RETRY;
+ 	spp->spp_params = htonl(fcp_parm | FCP_SPPF_TARG_FCN);
+ 	return FC_SPP_RESP_ACK;
++
++not_target:
++	fcp_parm = ntohl(spp->spp_params);
++	fcp_parm &= ~FCP_SPPF_TARG_FCN;
++	spp->spp_params = htonl(fcp_parm);
++	return 0;
+ }
+ 
+ /**
+diff --git a/drivers/tty/serial/ifx6x60.c b/drivers/tty/serial/ifx6x60.c
+index 5315525..5d0d4f6 100644
+--- a/drivers/tty/serial/ifx6x60.c
++++ b/drivers/tty/serial/ifx6x60.c
+@@ -551,6 +551,7 @@ static void ifx_port_shutdown(struct tty_port *port)
+ 		container_of(port, struct ifx_spi_device, tty_port);
+ 
+ 	mrdy_set_low(ifx_dev);
++	del_timer(&ifx_dev->spi_timer);
+ 	clear_bit(IFX_SPI_STATE_TIMER_PENDING, &ifx_dev->flags);
+ 	tasklet_kill(&ifx_dev->io_work_tasklet);
+ }
+diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
+index 806060c..3c84a03 100644
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -1770,28 +1770,8 @@ free_interfaces:
+ 		goto free_interfaces;
+ 	}
+ 
+-	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+-			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
+-			      NULL, 0, USB_CTRL_SET_TIMEOUT);
+-	if (ret < 0) {
+-		/* All the old state is gone, so what else can we do?
+-		 * The device is probably useless now anyway.
+-		 */
+-		cp = NULL;
+-	}
+-
+-	dev->actconfig = cp;
+-	if (!cp) {
+-		usb_set_device_state(dev, USB_STATE_ADDRESS);
+-		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
+-		mutex_unlock(hcd->bandwidth_mutex);
+-		usb_autosuspend_device(dev);
+-		goto free_interfaces;
+-	}
+-	mutex_unlock(hcd->bandwidth_mutex);
+-	usb_set_device_state(dev, USB_STATE_CONFIGURED);
+-
+-	/* Initialize the new interface structures and the
++	/*
++	 * Initialize the new interface structures and the
+ 	 * hc/hcd/usbcore interface/endpoint state.
+ 	 */
+ 	for (i = 0; i < nintf; ++i) {
+@@ -1835,6 +1815,35 @@ free_interfaces:
+ 	}
+ 	kfree(new_interfaces);
+ 
++	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
++			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
++			      NULL, 0, USB_CTRL_SET_TIMEOUT);
++	if (ret < 0 && cp) {
++		/*
++		 * All the old state is gone, so what else can we do?
++		 * The device is probably useless now anyway.
++		 */
++		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
++		for (i = 0; i < nintf; ++i) {
++			usb_disable_interface(dev, cp->interface[i], true);
++			put_device(&cp->interface[i]->dev);
++			cp->interface[i] = NULL;
++		}
++		cp = NULL;
++	}
++
++	dev->actconfig = cp;
++	mutex_unlock(hcd->bandwidth_mutex);
++
++	if (!cp) {
++		usb_set_device_state(dev, USB_STATE_ADDRESS);
++
++		/* Leave LPM disabled while the device is unconfigured. */
++		usb_autosuspend_device(dev);
++		return ret;
++	}
++	usb_set_device_state(dev, USB_STATE_CONFIGURED);
++
+ 	if (cp->string == NULL &&
+ 			!(dev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
+ 		cp->string = usb_cache_string(dev, cp->desc.iConfiguration);
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index a2b20fe..af65322 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -180,8 +180,15 @@ static struct xhci_ring *xhci_ring_alloc(struct xhci_hcd *xhci,
+ 		struct xhci_segment	*next;
+ 
+ 		next = xhci_segment_alloc(xhci, flags);
+-		if (!next)
++		if (!next) {
++			prev = ring->first_seg;
++			while (prev) {
++				next = prev->next;
++				xhci_segment_free(xhci, prev);
++				prev = next;
++			}
+ 			goto fail;
++		}
+ 		xhci_link_segments(xhci, prev, next, link_trbs, isoc);
+ 
+ 		prev = next;
+@@ -201,7 +208,7 @@ static struct xhci_ring *xhci_ring_alloc(struct xhci_hcd *xhci,
+ 	return ring;
+ 
+ fail:
+-	xhci_ring_free(xhci, ring);
++	kfree(ring);
+ 	return NULL;
+ }
+ 
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index f233bbb..9db3e23 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -449,6 +449,10 @@ static void option_instat_callback(struct urb *urb);
+ #define PETATEL_VENDOR_ID			0x1ff4
+ #define PETATEL_PRODUCT_NP10T			0x600e
+ 
++/* TP-LINK Incorporated products */
++#define TPLINK_VENDOR_ID			0x2357
++#define TPLINK_PRODUCT_MA180			0x0201
++
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -930,7 +934,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0254, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0257, 0xff, 0xff, 0xff), /* ZTE MF821 */
+ 	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0265, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0265, 0xff, 0xff, 0xff), /* ONDA MT8205 */
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0284, 0xff, 0xff, 0xff), /* ZTE MF880 */
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0317, 0xff, 0xff, 0xff) },
+@@ -1311,6 +1316,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x00, 0x00) },
+ 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
+ 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
++	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 1dbf758..7e56946 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2199,6 +2199,8 @@ static void ext4_da_block_invalidatepages(struct mpage_da_data *mpd)
+ 
+ 	index = mpd->first_page;
+ 	end   = mpd->next_page - 1;
++
++	pagevec_init(&pvec, 0);
+ 	while (index <= end) {
+ 		nr_pages = pagevec_lookup(&pvec, mapping, index, PAGEVEC_SIZE);
+ 		if (nr_pages == 0)
