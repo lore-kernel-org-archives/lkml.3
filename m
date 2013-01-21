@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055Ab3AUSjj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 13:39:39 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:39134 "EHLO comal.ext.ti.com"
+	id S1755690Ab3AUSmU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 13:42:20 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54203 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752398Ab3AUSji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 13:39:38 -0500
-Message-ID: <50FD8B63.1060506@ti.com>
-Date: Mon, 21 Jan 2013 12:39:31 -0600
-From: Rob Clark <rob@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
+	id S1752403Ab3AUSmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 13:42:19 -0500
+Date: Mon, 21 Jan 2013 20:41:38 +0200
+From: Felipe Balbi <balbi@ti.com>
 To: Arnd Bergmann <arnd@arndb.de>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <arm@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 15/15] staging/omapdrm: don't build on multiplatform
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <1358788568-11137-16-git-send-email-arnd@arndb.de> <50FD7A5F.9020702@ti.com> <201301211741.11875.arnd@arndb.de>
-In-Reply-To: <201301211741.11875.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        <arm@kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 12/15] USB: gadget/freescale: disable non-multiplatform
+ drivers
+Message-ID: <20130121184138.GB10106@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+ <1358788568-11137-13-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bCsyhTFzCvuiizWE"
+Content-Disposition: inline
+In-Reply-To: <1358788568-11137-13-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 11:41 AM, Arnd Bergmann wrote:
-> On Monday 21 January 2013, Rob Clark wrote:
->> Are you sure OMAP2_DSS requires ARCH_OMAP2PLUS?  I don't see this, and
->> it at least used to not depend on ARCH_OMAP2PLUS.  If it does now, I
->> think the correct fix would be to remove the dependency in OMAP2_DSS.  I
->> don't think removing ARCH_MULTIPLATFORM support in omapdrm is the
->> correct solution.
-> At least it says so in drivers/video/omap2/Kconfig, which contains
->
-> if ARCH_OMAP2PLUS
-> source drivers/video/omap2/dss/Kconfig
-> endif
+--bCsyhTFzCvuiizWE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ahh, ok, I see.. the if ARCH_OMAP2PLUS bit looks like it came in 
-recently (770b6cb)
+Hi,
 
-what about changing this to 'if ARCH_OMAP2PLUS || ARCH_MULTIPLATFORM'?
+On Mon, Jan 21, 2013 at 05:16:05PM +0000, Arnd Bergmann wrote:
+> Both the fsl_mxc gadget and the imx_udc gadget drivers fail to build
+> without the mach/hardware.h file that is not available when building
+> for multiplatform. Let's disable these drivers for v3.8 in combination
+> with CONFIG_ARCH_MULTIPLATFORM, and fix them properly in v3.9 unless
+> someone has an better solution.
+>=20
+> Without this patch, building allyesconfig results in:
+>=20
+> drivers/usb/gadget/fsl_mxc_udc.c:21:27: fatal error: mach/hardware.h: No =
+such file or directory
+>=20
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: linux-usb@vger.kernel.org
 
-BR,
--R
+NAK, I prefer to see a real fix for the problem (which in fact is
+already in my fixes branch).
 
-> We can probably change this, but until we do, we should not select
-> OMAP2_DSS from something that doesn't also depend on ARCH_OMAP2PLUS.
->   
->>> drivers/video/omap2/dss/dss.c: In function 'dss_calc_clock_div':
->>> drivers/video/omap2/dss/dss.c:572:20: error: 'CONFIG_OMAP2_DSS_MIN_FCK_PER_PCK' undeclared (first use in this function)
->>> drivers/video/omap2/dss/dss.c:572:20: note: each undeclared identifier is reported only once for each function it appears in
->>> drivers/staging/omapdrm/omap_connector.c: In function 'omap_connector_dpms':
->>> drivers/staging/omapdrm/omap_connector.c:116:8: error: 'OMAP_DSS_DISPLAY_SUSPENDED' undeclared (first use in this function)
->>> drivers/staging/omapdrm/omap_connector.c:116:8: note: each undeclared identifier is reported only once for each function it appears in
->>
->> This was an unrelated build break which should be fixed in latest master
->> after 'staging: drm/omap: use omapdss low level API'
-> Ok, it seems the message is stale then, I created the patch some time ago, but
-> only today wrote rest of the explanation for the changeset text.
->
-> With all the other patches from my series applied, allyesconfig still gives me
->
-> drivers/video/omap2/dss/dss.c:572:20: error: 'CONFIG_OMAP2_DSS_MIN_FCK_PER_PCK' undeclared
->
-> because that symbol is only defined when OMAP2_DSS is enabled rather than
-> selected. Changing drivers/video/omap2/Kconfig to not depend on OMAP seems
-> to work as well, but that seems a little intrusive for v3.8, because it would
-> let a lot of people build that code that have no use for it.
->
-> 	Arnd
+Next time, before enabling something by default, check that
+allyesconfig, allmodconfig and allnoconfig builds fine, please.
 
+--=20
+balbi
+
+--bCsyhTFzCvuiizWE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ/YviAAoJEIaOsuA1yqRENAIP/jTKidIGyfJoyGOH/PFtHwPm
+wM+wVmS9U53pn/2iQgfLHZFkdJZDedzb44yYv5UGGTzJM/yCP+vdbWOVfBMfpoGi
+uvnH6HJuPhoTfHH9q0S7qeSTe5fJXagDXQp+R1G2FXV6xJc1PLP83Lp7FgfzxSZY
+Xc20il5UW4Ag+6w7WgYoTanY+oHp3duwMoFCF7kEdokZm9HLIwVlgacqEAkGyGIP
+gs7wT5vQN/0XamgYHGAZJr0Mbq4GM/vKrR0s8IdzlcIGrOAwHXowhJ3gg/i+gW5A
+JRGOa8xsJ2FIUOt07Ck4BxduTYSGloXcmMM7EIJPppiEjtght3ZWyYuNjAdDd4Ro
+V2Z5rtanp8veNNuj0pQrWJEvOAO4TsKJ2O3NtJABC3XFRfp4nwDHTFbT3mEaQ8LM
+9OIn4chtDZmKz5FL4s+ysCjcLxowuf/jgXMqc9VJ+b9C9gxjDJ/Rn0RMtauGrm4M
+AEt2piwKD6kC8hDHQOFVvnpR15VagMh2LWypfI0PbLGVaAXLfldThq99k2LsUXHU
+f7SApsi2MbGmtiqw08myilPav9iWhTm8HL6SZL1g0hAKm4gByc1vEWVY4Hqyy9ie
+fGhKWLoZh1g32YqBopTwU/dsNQTu8W8x8aV3/BrDEIOJQfieOEXHanMq3tO7oeu7
+MRE+4DX4A5BL1tbZcuPk
+=Bhzy
+-----END PGP SIGNATURE-----
+
+--bCsyhTFzCvuiizWE--
