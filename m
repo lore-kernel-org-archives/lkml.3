@@ -1,41 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab3AUATz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jan 2013 19:19:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54185 "EHLO mx1.redhat.com"
+	id S1752690Ab3AUAb7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jan 2013 19:31:59 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:42086 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752608Ab3AUATx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jan 2013 19:19:53 -0500
-Date: Sun, 20 Jan 2013 19:19:39 -0500
-From: "Frank Ch. Eigler" <fche@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Dave Jones <davej@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        dhowells@redhat.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, mingo@redhat.com, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] MODSIGN: Add TAINT_NOKEY_MODULE
-Message-ID: <20130121001939.GB25509@redhat.com>
-References: <20130104191205.GD27554@hansolo.jdub.homelinux.org> <87bod14x44.fsf@rustcorp.com.au> <20130107145832.GA12363@hansolo.jdub.homelinux.org> <20130115190911.GA6964@hansolo.jdub.homelinux.org> <87y5ftyf51.fsf@rustcorp.com.au> <20130116193724.GF6964@hansolo.jdub.homelinux.org> <87pq14y6bs.fsf@rustcorp.com.au> <20130117150202.GB32586@redhat.com> <8738xvxv55.fsf@rustcorp.com.au>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752495Ab3AUAb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jan 2013 19:31:57 -0500
+Date: Mon, 21 Jan 2013 01:34:41 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Tom St Denis <tstdenis@elliptictech.com>,
+        David Dillow <dave@thedillows.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: IPsec AH use of ahash
+Message-ID: <20130121003441.GA19447@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Tom St Denis <tstdenis@elliptictech.com>,
+	David Dillow <dave@thedillows.org>, linux-kernel@vger.kernel.org,
+	netdev@vger.kernel.org
+References: <1358705471.2494.51.camel@obelisk.thedillows.org>
+ <391440283.93368.1358707621420.JavaMail.root@elliptictech.com>
+ <20130120225407.GB5434@home.goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <8738xvxv55.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20130120225407.GB5434@home.goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi -
+On Sun, Jan 20, 2013 at 05:54:07PM -0500, Steven Rostedt wrote:
+> My God, you sound like a 2 year old.
+> 
+> Suck it up, and do the fixes. It's not the time you are worried about,
+> as you most definitely spent more time bitching to everyone than it
+> would have taken you to clean up your work.
 
-> [...]
-> -	add_taint(TAINT_DIE);
-> +	add_taint(TAINT_DIE, LOCKDEP_NOW_UNRELIABLE);
-> [...]
+It's like you're reading my mind... :-)
 
-If "UNRELIABLE" a good way to describe it - not DANGEROUS or
-COUNTERPRODUCTIVE or something, then maybe lockdep *can* produce
-reasonable results following such a taint.  If the results are merely
-suspect, could lockdep reports include the taint report, but otherwise
-keep working?
+-- 
+Regards/Gruss,
+    Boris.
 
-- FChE
+Sent from a fat crate under my desk. Formatting is fine.
+--
