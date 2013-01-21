@@ -1,125 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053Ab3AUXal (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 18:30:41 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:56410 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351Ab3AUXak (ORCPT
+	id S1756282Ab3AUXax (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 18:30:53 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:59271 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754584Ab3AUXav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 18:30:40 -0500
-Message-ID: <50FDCF98.7080702@free-electrons.com>
-Date: Tue, 22 Jan 2013 00:30:32 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 21 Jan 2013 18:30:51 -0500
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
-        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 1/3] gpio: pca953x: make the register access by GPIO
- bank
-References: <1357599097-19053-1-git-send-email-gregory.clement@free-electrons.com> <1357599097-19053-2-git-send-email-gregory.clement@free-electrons.com> <50EBD9B6.3090601@free-electrons.com> <50EBDFAD.2090903@free-electrons.com>
-In-Reply-To: <50EBDFAD.2090903@free-electrons.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130121231318.GC23505@n2100.arm.linux.org.uk>
+References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com>
+ <201301212041.17951.arnd@arndb.de> <50FDAC5F.4040605@linaro.org>
+ <CAKGA1b=D5CNikijoOAk5xP6TC-nB_gEGtS05ncrPR68sQTMrxw@mail.gmail.com>
+ <50FDC2DD.7090406@linaro.org> <CAKGA1bmtTH1N8nx79MGiMighdQROpNtpvAZXhHKT+mT3kcazBQ@mail.gmail.com>
+ <20130121231318.GC23505@n2100.arm.linux.org.uk>
+From: Matt Sealey <matt@genesi-usa.com>
+Date: Mon, 21 Jan 2013 17:30:31 -0600
+Message-ID: <CAKGA1b=wDE9ujby_gcoHJudsG=JbWDdNRo+thCe8BhoJLi+B5Q@mail.gmail.com>
+Subject: Re: One of these things (CONFIG_HZ) is not like the others..
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2013 09:58 AM, Gregory CLEMENT wrote:
-> On 01/08/2013 09:32 AM, Maxime Ripard wrote:
->> Hi Gregory,
-> 
-> Hi Maxime,
-> 
-> thanks for testing
->>
->> On 07/01/2013 23:51, Gregory CLEMENT wrote:
->>> -static int pca953x_write_reg(struct pca953x_chip *chip, int reg, u32 val)
->>> +static int pca953x_read_single(struct pca953x_chip *chip, int reg, u32 *val,
->>> +				int off)
->>> +{
->>> +	int ret;
->>> +	int bank_shift = fls((chip->gpio_chip.ngpio - 1) / BANK_SZ);
->>> +	int offset = off / BANK_SZ;
->>> +
->>> +	ret = i2c_smbus_read_byte_data(chip->client,
->>> +				(reg << bank_shift) + offset);
->>> +	*val = ret;
->>> +
->>> +	if (ret < 0) {
->>> +		dev_err(&chip->client->dev, "failed reading register\n", reg);
->>
->> This triggers a warning, since you have an argument but nothing corresponding to it in your format string.
-> 
-> OK this one is easy, I didn't finished to clean up the message.
-> 
->>
->>>  static irqreturn_t pca953x_irq_handler(int irq, void *devid)
->>>  {
->>>  	struct pca953x_chip *chip = devid;
->>> -	u32 pending;
->>> -	u32 level;
->>> +	u8 pending[MAX_BANK];
->>> +	u8 level;
->>> +	int i;
->>>  
->>> -	pending = pca953x_irq_pending(chip);
->>> -
->>> -	if (!pending)
->>> +	if (!pca953x_irq_pending(chip, pending))
->>>  		return IRQ_HANDLED;
->>>  
->>> -	do {
->>> -		level = __ffs(pending);
->>> -		handle_nested_irq(irq_find_mapping(chip->domain, level));
->>> -
->>> -		pending &= ~(1 << level);
->>> -	} while (pending);
->>> +	for (i = 0; i < NBANK(chip); i++) {
->>> +		do {
->>> +			level = __ffs(pending[i]);
->>> +			handle_nested_irq(irq_find_mapping(chip->domain,
->>> +							level + (BANK_SZ * i)));
->>> +			pending[i] &= ~(1 << level);
->>> +		} while (pending[i]);
->>> +	}
->>>  
->>>  	return IRQ_HANDLED;
->>>  }
->>
->> This triggers the following warning when an interrupt is raised:
->>
->> [   30.773500] ------------[ cut here ]------------
->> [   30.778843] WARNING: at /home/tmp/linux/kernel/irq/irqdomain.c:137 irq_domain_legacy_revmap+0x2c/0x48()
->> [   30.788375] Modules linked in:
->> [   30.791531] [<c0014100>] (unwind_backtrace+0x0/0xf0) from [<c001c878>] (warn_slowpath_common+0x4c/0x64)
->> [   30.801125] [<c001c878>] (warn_slowpath_common+0x4c/0x64) from [<c001c8ac>] (warn_slowpath_null+0x1c/0x24)
->> [   30.810968] [<c001c8ac>] (warn_slowpath_null+0x1c/0x24) from [<c006b5e0>] (irq_domain_legacy_revmap+0x2c/0x48)
->> [   30.821187] [<c006b5e0>] (irq_domain_legacy_revmap+0x2c/0x48) from [<c01c3734>] (pca953x_irq_handler+0x16c/0x1ac)
->> [   30.831656] [<c01c3734>] (pca953x_irq_handler+0x16c/0x1ac) from [<c0068688>] (irq_thread+0xd0/0x124)
->> [   30.841000] [<c0068688>] (irq_thread+0xd0/0x124) from [<c003c238>] (kthread+0xa4/0xb0)
->> [   30.849125] [<c003c238>] (kthread+0xa4/0xb0) from [<c000ed48>] (ret_from_fork+0x14/0x2c)
->> [   30.857375] ---[ end trace 09584b7a73100a49 ]---
->>
-> 
-> Humm it seems that this warning is caused by attempting to use an out of range hwirq.
-> I need to investigate it more in details.
+On Mon, Jan 21, 2013 at 5:13 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Mon, Jan 21, 2013 at 04:54:31PM -0600, Matt Sealey wrote:
+>> Hmm, I think it might be appreciated for people looking at this stuff
+>> (same as I stumbled into it) for a little comment on WHY the default
+>> is 200. That way you don't wonder even if you know why EBSA110 has a
+>> HZ=200 default, why Exynos is lumped in there too (to reduce the
+>> number of interrupts firing?
+>
+> Err, _reduce_ ?
+>
+> Can you please explain why changing HZ from 100 to 200 is a reduction?
 
-Unfortunately I didn't receive information on Mirabox to be able to use
-interrupt. So I will need you help to debug this part.
+We were talking about HZ=1000 at the time, sorry...
 
-Could you try the branch gpio-pca9505-debug  at
-https://github.com/MISL-EBU-System-SW/mainline-public.git ?
+>> Maybe the Exynos timer interrupt is kind
+>> of a horrid core NMI kind of thing and it's desirable for it not to be
+>> every millisecond,
+>
+> Huh?  HZ=100 is centisecond intervals...
 
-I suspect that we use a GPIO above 8 to generate the interrupt, am I right?
+See above..
 
-Thanks,
+> I think you're understanding is just waaaayyyyy off.  That default is
+> there because that is the _architecture_ _default_ and there _has_ to
+> be a default.  No, including kernel/Kconfig.hz won't give us any kind
+> of non-specified default because, as I've already said in one of my
+> other mails, you can't supplement Kconfig symbol definitions by
+> declaring it multiple times.
 
-Gregory
+Okay, so the real
+
+
+
+>> I know where the 60Hz clocksource might come from, the old Amiga
+>> platforms have one based on the PSU frequency (50Hz in Europe, 60Hz
+>> US/Japan). Even a 60Hz clocksource is useful though (on the Amiga, at
+>> least, it is precisely the vsync clock for synchronizing your display
+>> output on TV-out, which makes it completely useful for the framebuffer
+>> driver), but.. you just won't expect to assign it as sched_clock or
+>> your delay timer. And if anyone does I'd expect they'd know full well
+>> it'd not run so well.
+>
+> Except in the UK where it'd be 50Hz for the TV out.  (Lengthy irrelevant
+> explanation why this is so for UK cut.)
+
+Read again: "50Hz in Europe".
+
+Australia too. I'm British and I used to have more EU-manufactured
+Amigas than I knew what to do with.. so.. just like your NTP story, I
+definitely know this already.
+
+>> >From that description, we are booting with standard HZ on ARM, and the
+>> core sched_clock (as in we can call setup_sched_clock)
+>> and/or/both/optionally using a real delay_timer switch to HRT mode if
+>> we have the right equipment available in the kernel and at runtime on
+>> the SoC.. but the process scheduler isn't compiled with the means to
+>> actually take advantage of us being in HRT mode?
+>
+> Don't mix sched_clock() into this; it has nothing to do with HZ at all.
+> You're confusing your apples with your oranges.
+
+Okay..
+
+>> A simple BUILD_BUG_ON and a BUG_ON right after each other in the
+>> appropriate clocksource driver solves that.. if there's an insistence
+>> on having at least some rope, we can put them in a field and tell them
+>> they have to use the moon to actually hang themselves...
+>
+> No it doesn't - it introduces a whole load of new ways to make the
+> kernel build or boot fail for pointless reasons - more failures, more
+> regressions.
+>
+> No thank you.
+
+But it would effectively stop users drinking kool-aid.. if you set
+your HZ to something stupid, you don't even get a kernel to build, and
+certainly don't get to boot past the first 40 lines of boot messages..
+I think most people would rather a build error, or a runtime
+unmistakable, unmissable warning than a subtle and almost
+imperceptible skew in NTP synchronization, to use your example.
+
+-- 
+Matt Sealey <matt@genesi-usa.com>
+Product Development Analyst, Genesi USA, Inc.
