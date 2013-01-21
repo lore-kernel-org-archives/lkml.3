@@ -1,61 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab3AUI4K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 03:56:10 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5574 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab3AUI4I (ORCPT
+	id S1752579Ab3AUI5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 03:57:40 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:64149 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752408Ab3AUI5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 03:56:08 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 21 Jan 2013 00:54:42 -0800
-Message-ID: <50FD0299.2090408@nvidia.com>
-Date: Mon, 21 Jan 2013 16:55:53 +0800
-From: Mark Zhang <markz@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 21 Jan 2013 03:57:39 -0500
 MIME-Version: 1.0
-To: Marc Dietrich <marvin24@gmx.de>
-CC: Mark Zhang <nvmarkzhang@gmail.com>, Alex Courbot <acourbot@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "gnurou@gmail.com" <gnurou@gmail.com>
-Subject: Re: [PATCH 2/3] tegra: pwm-backlight: add tegra pwm-bl driver
-References: <1358591420-7790-1-git-send-email-acourbot@nvidia.com> <1358591420-7790-3-git-send-email-acourbot@nvidia.com> <50FCEFDE.8000705@gmail.com> <2440319.UsvGAcXXBp@fb07-iapwap2>
-In-Reply-To: <2440319.UsvGAcXXBp@fb07-iapwap2>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <20121214110100.7836.65250.stgit@zurg>
+References: <20121214110100.7836.65250.stgit@zurg>
+Date: Mon, 21 Jan 2013 09:57:37 +0100
+X-Google-Sender-Auth: 1DslHtsLwTXJH8VRLgEf8R6mrAY
+Message-ID: <CAKMK7uGaEo89cZv7heqJ78omzcsKvOJZXP97rshdge0B=WXNhw@mail.gmail.com>
+Subject: Re: [PATCH] drm/fb: avoid sleeping in unblank_screen() if oops in progress
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 04:52 PM, Marc Dietrich wrote:
-> Hi,
-> 
->>> diff --git a/drivers/video/backlight/pwm_bl_tegra.c
->>> b/drivers/video/backlight/pwm_bl_tegra.c new file mode 100644
->>> index 0000000..8f2195b
->>> --- /dev/null
->>> +++ b/drivers/video/backlight/pwm_bl_tegra.c
->>
->> So according to the filename, I think we can put all tegra boards codes
->> here, right? Just like what you do for Ventana, if I wanna add support
->> for cardhu, I can define similar functions -- let's say "init_cardhu",
->> "exit_cardhu", "notify_cardhu" and "notify_after_cardhu", right?
->>
->> But I think if we do in this way, the file will become very long soon.
->> And there are a lot of redundant codes in it. So do you have any
->> suggestions?
-> 
-> I think we (for PAZ00) will just reuse the ventana code which is sufficient 
-> for us. But adding "pwm-backlight-ventana" to our DTS may look a bit strange. 
-> On the other hand, I guess that's why the property is called "compatible".
-> 
+On Fri, Dec 14, 2012 at 12:01 PM, Konstantin Khlebnikov
+<khlebnikov@openvz.org> wrote:
+> unblank_screen() can be called from interrupt context during oops.
+> thus all ->fb_blank handlers should avoid sleeping in this situation.
+>
+> callstack:
+> panic()
+> bust_spinlocks(1)
+> unblank_screen()
+> vc->vc_sw->con_blank()
+> fbcon_blank()
+> fb_blank()
+> info->fbops->fb_blank()
+> drm_fb_helper_blank()
+> drm_fb_helper_dpms()
+> mutex_lock(&dev->mode_config.mutex)
+>
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: dri-devel@lists.freedesktop.org
 
-Ah, yeah, that looks strange. :)
-Okay, so I know why Alex wants to use panel name while not board name...
+Since the fb helper already has its own panic notifier it's imo better
+to just bail out if there's an oops in progress. The panic notifier
+itself completely lacks locking though. I'm working on some fb helper
+cleanups, so I'll take care of this mess.
+-Daniel
 
-> Marc
-> 
+> ---
+>  drivers/gpu/drm/drm_fb_helper.c |   25 +++++++++++++------------
+>  1 file changed, 13 insertions(+), 12 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
+> index 954d175..2c9f49f 100644
+> --- a/drivers/gpu/drm/drm_fb_helper.c
+> +++ b/drivers/gpu/drm/drm_fb_helper.c
+> @@ -326,7 +326,7 @@ static struct sysrq_key_op sysrq_drm_fb_helper_restore_op = {
+>  static struct sysrq_key_op sysrq_drm_fb_helper_restore_op = { };
+>  #endif
+>
+> -static void drm_fb_helper_dpms(struct fb_info *info, int dpms_mode)
+> +static int drm_fb_helper_dpms(struct fb_info *info, int dpms_mode)
+>  {
+>         struct drm_fb_helper *fb_helper = info->par;
+>         struct drm_device *dev = fb_helper->dev;
+> @@ -334,10 +334,15 @@ static void drm_fb_helper_dpms(struct fb_info *info, int dpms_mode)
+>         struct drm_connector *connector;
+>         int i, j;
+>
+> +       if (oops_in_progress) {
+> +               if (!mutex_trylock(&dev->mode_config.mutex))
+> +                       return -EBUSY;
+> +       } else
+> +               mutex_lock(&dev->mode_config.mutex);
+> +
+>         /*
+>          * For each CRTC in this fb, turn the connectors on/off.
+>          */
+> -       mutex_lock(&dev->mode_config.mutex);
+>         for (i = 0; i < fb_helper->crtc_count; i++) {
+>                 crtc = fb_helper->crtc_info[i].mode_set.crtc;
+>
+> @@ -353,6 +358,7 @@ static void drm_fb_helper_dpms(struct fb_info *info, int dpms_mode)
+>                 }
+>         }
+>         mutex_unlock(&dev->mode_config.mutex);
+> +       return 0;
+>  }
+>
+>  int drm_fb_helper_blank(int blank, struct fb_info *info)
+> @@ -360,24 +366,19 @@ int drm_fb_helper_blank(int blank, struct fb_info *info)
+>         switch (blank) {
+>         /* Display: On; HSync: On, VSync: On */
+>         case FB_BLANK_UNBLANK:
+> -               drm_fb_helper_dpms(info, DRM_MODE_DPMS_ON);
+> -               break;
+> +               return drm_fb_helper_dpms(info, DRM_MODE_DPMS_ON);
+>         /* Display: Off; HSync: On, VSync: On */
+>         case FB_BLANK_NORMAL:
+> -               drm_fb_helper_dpms(info, DRM_MODE_DPMS_STANDBY);
+> -               break;
+> +               return drm_fb_helper_dpms(info, DRM_MODE_DPMS_STANDBY);
+>         /* Display: Off; HSync: Off, VSync: On */
+>         case FB_BLANK_HSYNC_SUSPEND:
+> -               drm_fb_helper_dpms(info, DRM_MODE_DPMS_STANDBY);
+> -               break;
+> +               return drm_fb_helper_dpms(info, DRM_MODE_DPMS_STANDBY);
+>         /* Display: Off; HSync: On, VSync: Off */
+>         case FB_BLANK_VSYNC_SUSPEND:
+> -               drm_fb_helper_dpms(info, DRM_MODE_DPMS_SUSPEND);
+> -               break;
+> +               return drm_fb_helper_dpms(info, DRM_MODE_DPMS_SUSPEND);
+>         /* Display: Off; HSync: Off, VSync: Off */
+>         case FB_BLANK_POWERDOWN:
+> -               drm_fb_helper_dpms(info, DRM_MODE_DPMS_OFF);
+> -               break;
+> +               return drm_fb_helper_dpms(info, DRM_MODE_DPMS_OFF);
+>         }
+>         return 0;
+>  }
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+
+
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
