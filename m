@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410Ab3AVKZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 05:25:50 -0500
-Received: from mga14.intel.com ([143.182.124.37]:25668 "EHLO mga14.intel.com"
+	id S1754529Ab3AVKZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 05:25:57 -0500
+Received: from mga11.intel.com ([192.55.52.93]:34881 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754241Ab3AVKZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 05:25:43 -0500
+	id S1753737Ab3AVKZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 05:25:54 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,513,1355126400"; 
-   d="scan'208";a="246947103"
+   d="scan'208";a="276908513"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: Grant Likely <grant.likely@secretlab.ca>,
@@ -20,57 +20,47 @@ Cc: Grant Likely <grant.likely@secretlab.ca>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, chao.bi@intel.com,
         Andy Shevchenko <andriy.shevchenko@linux.intel.com>, cxie4@marvell.com,
         ytang5@marvell.com, Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v3 02/10] spi/pxa2xx: fix warnings when compiling a 64-bit kernel
-Date: Tue, 22 Jan 2013 12:26:25 +0200
-Message-Id: <1358850393-23111-3-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH v3 08/10] spi/pxa2xx: add support for SPI_LOOP
+Date: Tue, 22 Jan 2013 12:26:31 +0200
+Message-Id: <1358850393-23111-9-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1358850393-23111-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1358850393-23111-1-git-send-email-mika.westerberg@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix following warnings seen when compiling 64-bit:
-
-drivers/spi/spi-pxa2xx.c: In function ‘map_dma_buffers’: drivers/spi/spi-pxa2xx.c:384:7: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-drivers/spi/spi-pxa2xx.c:384:40: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-drivers/spi/spi-pxa2xx.c: In function ‘pxa2xx_spi_probe’:
-drivers/spi/spi-pxa2xx.c:1572:34: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-drivers/spi/spi-pxa2xx.c:1572:34: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-drivers/spi/spi-pxa2xx.c:1572:34: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-drivers/spi/spi-pxa2xx.c:1572:27: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+This is useful when testing the functionality of the controller from userspace
+and there aren't any real SPI slave devices connected to the bus.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/spi/spi-pxa2xx.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/spi/spi-pxa2xx.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
-index 54097ad..ef0a786 100644
+index 7f8f939..8a5ba0a 100644
 --- a/drivers/spi/spi-pxa2xx.c
 +++ b/drivers/spi/spi-pxa2xx.c
-@@ -47,7 +47,7 @@ MODULE_ALIAS("platform:pxa2xx-spi");
+@@ -846,6 +846,9 @@ static int setup(struct spi_device *spi)
+ 	chip->cr1 |= (((spi->mode & SPI_CPHA) != 0) ? SSCR1_SPH : 0)
+ 			| (((spi->mode & SPI_CPOL) != 0) ? SSCR1_SPO : 0);
  
- #define DMA_INT_MASK		(DCSR_ENDINTR | DCSR_STARTINTR | DCSR_BUSERR)
- #define RESET_DMA_CHANNEL	(DCSR_NODESC | DMA_INT_MASK)
--#define IS_DMA_ALIGNED(x)	((((u32)(x)) & 0x07) == 0)
-+#define IS_DMA_ALIGNED(x)	IS_ALIGNED((unsigned long)(x), DMA_ALIGNMENT)
- #define MAX_DMA_LEN		8191
- #define DMA_ALIGNMENT		8
++	if (spi->mode & SPI_LOOP)
++		chip->cr1 |= SSCR1_LBM;
++
+ 	/* NOTE:  PXA25x_SSP _could_ use external clocking ... */
+ 	if (!pxa25x_ssp_comp(drv_data))
+ 		dev_dbg(&spi->dev, "%ld Hz actual, %s\n",
+@@ -939,7 +942,7 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
+ 	master->dev.parent = &pdev->dev;
+ 	master->dev.of_node = pdev->dev.of_node;
+ 	/* the spi->mode bits understood by this driver: */
+-	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
++	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH | SPI_LOOP;
  
-@@ -1576,8 +1576,7 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
- 	master->transfer = transfer;
- 
- 	drv_data->ssp_type = ssp->type;
--	drv_data->null_dma_buf = (u32 *)ALIGN((u32)(drv_data +
--						sizeof(struct driver_data)), 8);
-+	drv_data->null_dma_buf = (u32 *)PTR_ALIGN(&drv_data[1], DMA_ALIGNMENT);
- 
- 	drv_data->ioaddr = ssp->mmio_base;
- 	drv_data->ssdr_physical = ssp->phys_base + SSDR;
+ 	master->bus_num = ssp->port_id;
+ 	master->num_chipselect = platform_info->num_chipselect;
 -- 
 1.7.10.4
 
