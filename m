@@ -1,88 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab3AVB0S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 20:26:18 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:42988 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab3AVB0R (ORCPT
+	id S1752768Ab3AVB1v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 20:27:51 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:57676 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab3AVB1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 20:26:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <1358788568-11137-9-git-send-email-arnd@arndb.de>
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
-	<1358788568-11137-9-git-send-email-arnd@arndb.de>
-Date: Tue, 22 Jan 2013 10:26:16 +0900
-X-Google-Sender-Auth: MC0sE807yvYuqtPJfGCKb4N-zcs
-Message-ID: <CAAQKjZPh_bAAXoA91hLGygmCFpbtWyOq4GYP-PQvBf6Rk806ig@mail.gmail.com>
-Subject: Re: [PATCH 08/15] drm/exynos: fimd and ipp are broken on multiplatform
-From: Inki Dae <inki.dae@samsung.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Seung-Woo Kim <sw0312.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org,
-        Kyungmin Park <kyungmin.park@samsung.com>, arm@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 21 Jan 2013 20:27:49 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-aa-50fdeb139a8b
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'amit kachhap'" <amit.kachhap@gmail.com>,
+        "'Zhang Rui'" <rui.zhang@intel.com>
+Cc: linux-pm@vger.kernel.org, jonghwa3.lee@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Durgadoss'" <durgadoss.r@intel.com>
+References: <1357517296-31402-1-git-send-email-amit.daniel@samsung.com>
+ <1358321601.2252.36.camel@rzhang1-mobl4>
+ <CADGdYn4CWscQf0y6dmgYUsKB8u25BOmLYq+T64haBKpwnZ3KBQ@mail.gmail.com>
+In-reply-to: <CADGdYn4CWscQf0y6dmgYUsKB8u25BOmLYq+T64haBKpwnZ3KBQ@mail.gmail.com>
+Subject: RE: [PATCH 1/2] thermal: sysfs: Add a new sysfs node emul_temp
+Date: Mon, 21 Jan 2013 17:27:30 -0800
+Message-id: <04ce01cdf83f$a7352b00$f59f8100$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQKB50j123ZjViHYyJJFpr1ugh0hbwJyuXVyAjuG2vqWxz3e8A==
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t8zfV3h138DDLYtNLG4vGsOm8Xn3iOM
+	FjPO72NyYPb4vEkugDGKyyYlNSezLLVI3y6BK2PjmQWMBbe4Kiat38PUwLiPo4uRk0NCwERi
+	1YndbBC2mMSFe+uBbC4OIYFljBJbu26zwxRdfnaJBSKxiFGiac0hVgjnL6PEqmN7WECq2AQ0
+	JA6/fwbUwcEhIuAnMf93BEgNs8ACRolpS3ZDNexklLh54hAbSBGnQLBExyUfkF5hAXeJW9+e
+	M4HYLAKqEvPPTWYFsXkFLCV+7JzFBmELSvyYfA9sF7OAlsTmbU2sELa8xOY1b5khLlWQ2HH2
+	NSOILSLgJPFt5jc2iBpxiUkPHrKD3CAhsI1dYtOpC2wQywQkvk0+xAJyj4SArMSmA1BzJCUO
+	rrjBMoFRYhaS1bOQrJ6FZPUsJCsWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiJOKkd
+	jCsbLA4xCnAwKvHwWjz6GyDEmlhWXJl7iFGCg1lJhHdGFFCINyWxsiq1KD++qDQntfgQYzLQ
+	sROZpUST84HJIK8k3tDY2MTMxNTE3NLU3JQ0YSVxXsZTTwKEBNITS1KzU1MLUotgtjBxcEo1
+	MPLXrEhVmhBXV+LxedHDFS8itzJcnHD8ieACzkLBJ/MPWYfcDF6RcyNE8ce50tnb5nydxaR6
+	+EnWomkW+R16fMwl2srvex0OpsdN6NvOX2Dmd5upsyP70Yf1a8pedi3asYNp3zG7vtTN7VfX
+	PM+NcTI4KaZz+dp/Xkm/nSJruQTXmvOf6lOb2KjEUpyRaKjFXFScCAB99m6V/AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jAV3h138DDCb91be4vGsOm8Xn3iOM
+	FjPO72NyYPb4vEkugDGqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE3
+	1VbJxSdA1y0zB2i+kkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwjjFj45kF
+	jAW3uComrd/D1MC4j6OLkZNDQsBE4vKzSywQtpjEhXvr2boYuTiEBBYxSjStOcQK4fxllFh1
+	bA9YFZuAhsTh98/Yuxg5OEQE/CTm/44AqWEWWMAoMW3JbqiGnYwSN08cYgMp4hQIlui45APS
+	KyzgLnHr23MmEJtFQFVi/rnJrCA2r4ClxI+ds9ggbEGJH5Pvge1iFtCS2LytiRXClpfYvOYt
+	M8SlChI7zr5mBLFFBJwkvs38xgZRIy4x6cFD9gmMQrOQjJqFZNQsJKNmIWlZwMiyilE0tSC5
+	oDgpPddQrzgxt7g0L10vOT93EyM4np9J7WBc2WBxiFGAg1GJh9fi0d8AIdbEsuLK3EOMEhzM
+	SiK8M6KAQrwpiZVVqUX58UWlOanFhxiTgT6dyCwlmpwPTDV5JfGGxiZmRpZGZhZGJubmpAkr
+	ifMynnoSICSQnliSmp2aWpBaBLOFiYNTqoFx/kH/OVGV/2p3uizPmztvymIVy9SznDnbeKzv
+	nJC5NtV10aql95hifVt0d3L8mSvGONPliKKLtEmjWU75r5hAX7sVLfFaYqe6QlmsFTf5vhZY
+	2qu58+3+72zfPeU97qTu/F14IOlL7qrDD1fvYj44t7E1siqtbumZ9XcUzzb1sW0qX3VdyXC2
+	EktxRqKhFnNRcSIAIRpUoSsDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checked it out and applied. For ARCH_MULTIPLATFORM support, Such
-header files shouldn't be included. And for this, we are planning on
-supporting device tree for ipp driver.
+amit kachhap wrote:
+> 
+> Hi Rui,
+> 
+> Thanks for the review comments,
+> On Tue, Jan 15, 2013 at 11:33 PM, Zhang Rui <rui.zhang@intel.com> wrote:
+> > Hi, Amit,
+> >
+> > On Sun, 2013-01-06 at 16:08 -0800, Amit Daniel Kachhap wrote:
+> >> This patch adds support to set the emulated temperature method in
+> >> thermal zone (sensor). After setting this feature thermal zone must
+> >> report this temperature and not the actual temperature. The actual
+> >> implementation of this emulated temperature is based on sensor
+> >> capability or platform specific. This is useful in debugging different
+> >> temperature threshold and its associated cooling action. Writing 0 on
+> >> this node should disable emulation.
+> >
+> > Question:
+> > will this bring hardware issue? Say, critical temperature reached while
+> > in emulation mode?
+> No emulation does cause any h/w issue.
+> >
+> > As this is for debug purpose, I'd prefer to have a seperate Kconfig
+> > option for this feature.
+> Yes agreed. Will re-submit with kconfig option.
+> >
+> >> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
-Thanks,
-Inki Dae
+Hi Zhang,
 
-2013/1/22 Arnd Bergmann <arnd@arndb.de>:
-> While the exynos DRM support in principle can work on
-> multiplatform, the FIMD and IPP sections of it both
-> include the plat/map-base.h header file, which is
-> not available on multiplatform. Rather than disabling
-> the entire driver, we can just conditionally build
-> these two parts.
->
-> Without this patch, building allyesconfig results in:
->
-> drivers/gpu/drm/exynos/exynos_drm_fimc.c:19:27: fatal error: plat/map-base.h: No such file or directory
-> drivers/gpu/drm/exynos/exynos_drm_ipp.c:20:27: fatal error: plat/map-base.h: No such file or directory
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Joonyoung Shim <jy0922.shim@samsung.com>
-> Cc: Inki Dae <inki.dae@samsung.com>
-> Cc: Seung-Woo Kim <sw0312.kim@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: dri-devel@lists.freedesktop.org
-> ---
->  drivers/gpu/drm/exynos/Kconfig |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/gpu/drm/exynos/Kconfig b/drivers/gpu/drm/exynos/Kconfig
-> index 1d1f1e5..046bcda 100644
-> --- a/drivers/gpu/drm/exynos/Kconfig
-> +++ b/drivers/gpu/drm/exynos/Kconfig
-> @@ -24,7 +24,7 @@ config DRM_EXYNOS_DMABUF
->
->  config DRM_EXYNOS_FIMD
->         bool "Exynos DRM FIMD"
-> -       depends on DRM_EXYNOS && !FB_S3C
-> +       depends on DRM_EXYNOS && !FB_S3C && !ARCH_MULTIPLATFORM
->         help
->           Choose this option if you want to use Exynos FIMD for DRM.
->
-> @@ -48,7 +48,7 @@ config DRM_EXYNOS_G2D
->
->  config DRM_EXYNOS_IPP
->         bool "Exynos DRM IPP"
-> -       depends on DRM_EXYNOS
-> +       depends on DRM_EXYNOS && !ARCH_MULTIPLATFORM
->         help
->           Choose this option if you want to use IPP feature for DRM.
->
-> --
-> 1.7.10.4
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+Once Amit addresses comments from you, I think, this looks good to Exynos
+SoCs. And this is _really_ needed.
+
+Feel free to add my ack on this 1st and 2nd patches:
+
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+
+Thanks.
+
+- Kukjin
+
