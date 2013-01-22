@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab3AVKBI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 05:01:08 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35254 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752308Ab3AVJ6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 04:58:45 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <tony@atomide.com>, <balbi@ti.com>, <linux@arm.linux.org.uk>,
-        <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
-CC: <kishon@ti.com>
-Subject: [PATCH v1 6/6] USB: MUSB: OMAP: get PHY by phandle for dt boot
-Date: Tue, 22 Jan 2013 15:28:14 +0530
-Message-ID: <1358848694-20145-7-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358848694-20145-1-git-send-email-kishon@ti.com>
-References: <1358848694-20145-1-git-send-email-kishon@ti.com>
+	id S1752903Ab3AVKDH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 05:03:07 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:46410 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465Ab3AVKDE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 05:03:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <201301221817.IDD95831.HVOOFMFJOLFSQt@I-love.SAKURA.ne.jp>
+References: <201301202124.BFJ81722.SFOHtJFOLQFVOM@I-love.SAKURA.ne.jp>
+	<CACRpkdY1sJPkPJx8zFbYOsvHFUM4S_6_eLWjifBpNyqH7cCrDA@mail.gmail.com>
+	<201301221817.IDD95831.HVOOFMFJOLFSQt@I-love.SAKURA.ne.jp>
+Date: Tue, 22 Jan 2013 11:03:04 +0100
+Message-ID: <CACRpkdYRM9MDt92juV+x9w9BUnHpCSd2KCkZ5F7zwPfhn939ZQ@mail.gmail.com>
+Subject: Re: [3.8-rc4 arm] SCSI_SYM53C8XX_2 module cannot register IRQ
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        rmk+kernel@arm.linux.org.uk, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The OMAP glue has been modified to get PHY by phandle for dt boot.
+On Tue, Jan 22, 2013 at 10:17 AM, Tetsuo Handa
+<penguin-kernel@i-love.sakura.ne.jp> wrote:
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/usb/musb/omap2430.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+>> 1.  Get hold of the patch fixing the boot regression:
+>>     git format-patch
+>> f5565295892eb93c3191aa241405fe8b685542d6^..f5565295892eb93c3191aa241405fe8b685542d6
+>
+> Thanks, but sorry, I couldn't understand how this command line works.
+>
+> Which one ("blank console bug" or "IRQ registration failure bug") does
+> "the boot regression" refer?
 
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 1a8cf6d..e43faeb 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -345,7 +345,12 @@ static int omap2430_musb_init(struct musb *musb)
- 	 * up through ULPI.  TWL4030-family PMICs include one,
- 	 * which needs a driver, drivers aren't always needed.
- 	 */
--	musb->xceiv = devm_usb_get_phy_dev(dev, 0);
-+	if (dev->parent->of_node)
-+		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
-+		    "usb_phy", 0);
-+	else
-+		musb->xceiv = devm_usb_get_phy_dev(dev, 0);
-+
- 	if (IS_ERR_OR_NULL(musb->xceiv)) {
- 		pr_err("HS USB OTG: no transceiver configured\n");
- 		return -ENODEV;
--- 
-1.7.9.5
+They are likely one and the same bug? The only regression on
+the versatile I have caused came from commit
+f5565295892eb93c3191aa241405fe8b685542d6.
 
+> Your command line generated only one patch but you say "iterate".
+
+I mean you should iterate the process, not the patch generation.
+
+>   $ git format-patch f5565295^..f5565295
+>   0001-ARM-7610-1-versatile-bump-IRQ-numbers.patch
+>
+> If I use 5c49985c^..5c49985c (the patch which the blank console bug was fixed),
+> it generated 8 patches.
+
+This is because you have made git format-patch in a merge commit
+which contains several patches.
+
+You can probably actually apply all of them at each step like
+that if  you prefer: patch -p1 < *.patch
+
+> Since the IRQ registration failure bug message contains IRQ number "27",
+> I suspect f5565295 "ARM: 7610/1: versatile: bump IRQ numbers"
+
+Me too :-) Atleast Grant told me that that one patch fixed the
+boot regression.
+
+And that is why I mentioned that patch specifically above,
+I think it's the only one you need.
+
+> and 5ced33bc06 "ARM: 7611/1: VIC: fix bug in VIC irqdomain code"
+
+I don't think you need this patch.
+
+> but how can I test them?
+
+Apply/compile/boot?
+
+Sorry I don't quite get the question?
+
+>> 2. At each iterative step using git bisect:
+>>    patch -p1 < 0001-ARM-7610-1-versatile-bump-IRQ-numbers.patch
+>>
+>> 3. Boot/trial-and-horror
+>>
+>> 4. git reset --hard HEAD
+>>    To nullify the effects of the patch.
+>>
+>> 5. git bisect [good|bad]
+>>
+> Excuse me, what range do I need to pass to "git bisect start" command line?
+
+Same as you mentioned in your first mail I suppose?
+
+>> 6. Iterate from (2) until you find the bug.
+
+When you cannot proceed because you need a patch unrelated to the
+problem you want to solve, you apply that patch on top of the
+bisection HEAD with patch -p1 < foo.patch, test, reset HEAD,
+git bisect <result> etc....
+
+I'm sorry if this is a bit complicated but bisection down several
+regressions is one of the more advanced forms of regression
+bug hunt... You're quite cool if you can handle it :-)
+
+Yours,
+Linus Walleij
