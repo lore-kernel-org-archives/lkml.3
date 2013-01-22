@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab3AVSoG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 13:44:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12945 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753898Ab3AVSoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 13:44:02 -0500
-Date: Tue, 22 Jan 2013 13:43:57 -0500
-From: Kyle McMartin <kyle@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: dhowells@redhat.com, rusty@rustcorp.com.au, jstancek@redhat.com
-Subject: [PATCH] MODSIGN: only panic in fips mode if sig_enforce is set
-Message-ID: <20130122184357.GD6538@redacted.bos.redhat.com>
+	id S1755310Ab3AVSpN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 13:45:13 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:37963 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753780Ab3AVSpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 13:45:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <02F0A27B-B16B-42F8-A0BC-29726732226D@dominion.thruhere.net>
+References: <cover.1358871750.git.afzal@ti.com>
+	<02F0A27B-B16B-42F8-A0BC-29726732226D@dominion.thruhere.net>
+Date: Tue, 22 Jan 2013 12:45:09 -0600
+Message-ID: <CAF6AEGuyb26EZ_9=GP9gs0TZqUtiFv3D_7+wcDOHuKn2qUcytQ@mail.gmail.com>
+Subject: Re: [PATCH v3 00/12] video: da8xx-fb: am335x DT support
+From: Rob Clark <robdclark@gmail.com>
+To: Koen Kooi <koen@dominion.thruhere.net>
+Cc: Afzal Mohammed <afzal@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Mike Turquette <mturquette@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 1d0059f3a added a test to check if the system is booted in fips
-mode, and if so, panic the system if an unsigned module is loaded.
-However the wording of the changelog "in signature enforcing mode" leads
-one to assume that sig_enforce should be set for the panic to occur and
-that these two tests are transposed.
+On Tue, Jan 22, 2013 at 11:03 AM, Koen Kooi <koen@dominion.thruhere.net> wrote:
+>
+> Op 22 jan. 2013, om 17:51 heeft Afzal Mohammed <afzal@ti.com> het volgende geschreven:
+>
+>> Hi,
+>>
+>> This series adds DT support to da8xx-fb driver (device found on
+>> DaVinci and AM335x SoC's). It does certain cleanup's in the process.
+>>
+>> This series as compared to previous version handles configuration of
+>> the LCDC clock rate by modelling as a clock divider of CCF. This would
+>> take effect only if CCF is selected, if not, no change to  existing
+>> method.
+>>
+>> This makes use of Steffen Trumtrar's v16 of display timing DT support.
+>
+> Wouldn't it be better to delete da8xx-fb.* and switch to Rob Clarks DRM based driver for this IP block?
 
-Move the test for -ENOKEY && !sig_enforce before the test of fips_mode,
-so that err will be 0, and the panic will not trigger unless we've
-explicitly disabled unsigned modules with sig_enforce set, so that
-systemtap and 3rd party modules will work in fips mode. (This also
-matches the behaviour by Red Hat Enterprise Linux 6.)
+we probably can't delete da8xx-fb, but I think it would be ok to only
+use it for legacy platforms not yet ported to DT.
 
-Things which need to deny module loading such as secure boot already set
-sig_enforce, so there's no issue here.
+BR,
+-R
 
-Reported-by: Jan Stancek <jstancek@redhat.com>
-Signed-off-by: Kyle McMartin <kyle@redhat.com>
-
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2460,11 +2460,11 @@ static int module_sig_check(struct load_info *info)
- 	}
- 
- 	/* Not having a signature is only an error if we're strict. */
-+	if (err == -ENOKEY && !sig_enforce)
-+		err = 0;
- 	if (err < 0 && fips_enabled)
- 		panic("Module verification failed with error %d in FIPS mode\n",
- 		      err);
--	if (err == -ENOKEY && !sig_enforce)
--		err = 0;
- 
- 	return err;
- }
+> regards,
+>
+> Koen--
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
