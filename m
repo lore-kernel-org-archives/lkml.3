@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab3AVQMg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 11:12:36 -0500
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:31837
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754021Ab3AVQMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 11:12:35 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VPS-6(z21eIzbb2dI98dI9371I936eI1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1155h)
-X-WSS-ID: 0MH1BOQ-01-4CH-02
-X-M-MSG: 
-Message-ID: <50FEBA69.60106@amd.com>
-Date: Tue, 22 Jan 2013 11:12:25 -0500
-From: Boris Ostrovsky <boris.ostrovsky@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754717Ab3AVQOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 11:14:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45051 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754021Ab3AVQOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 11:14:37 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>
+Subject: Re: [PATCH V5 00/30] loop: Issue O_DIRECT aio using bio_vec
+References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
+	<x49obgmif7w.fsf@segfault.boston.devel.redhat.com>
+	<x49k3raidd6.fsf@segfault.boston.devel.redhat.com>
+	<50F98D29.6050701@oracle.com>
+	<x4938xyi2mm.fsf@segfault.boston.devel.redhat.com>
+	<50F9CD9E.1050902@oracle.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 22 Jan 2013 11:14:27 -0500
+In-Reply-To: <50F9CD9E.1050902@oracle.com> (Dave Kleikamp's message of "Fri,
+	18 Jan 2013 16:33:02 -0600")
+Message-ID: <x49622pb3fg.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-CC: <suravee.suthikulpanit@amd.com>, Jacob Shin <jacob.shin@amd.com>,
-        Borislav Petkov <bp@alien8.de>,
-        =?UTF-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
-References: <50FBC7EF.6040207@xs4all.nl> <20130120103652.GB16800@pd.tnic>  <50FBC994.8020409@xs4all.nl> <20130120111920.GL25591@8bytes.org>  <50FBD413.1000406@xs4all.nl> <20130120114011.GN25591@8bytes.org>  <20130120114828.GB16519@pd.tnic> <20130121160450 <50FE9E76.30702@xs4all.nl> <50FEA3F2.1070408@amd.com> <50FEAFEB.7020103@xs4all.nl>
-In-Reply-To: <50FEAFEB.7020103@xs4all.nl>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dave Kleikamp <dave.kleikamp@oracle.com> writes:
 
-
-On 01/22/2013 10:27 AM, Udo van den Heuvel wrote:
-> On 2013-01-22 15:36, Boris Ostrovsky wrote:
->>> Gigabyte demonstrate that using ESX 5i IOMMU works fine. (with pictures
->>> attached).
->>
->> There are no attachments to your message.
+> On 01/18/2013 03:48 PM, Jeff Moyer wrote:
+>> Dave Kleikamp <dave.kleikamp@oracle.com> writes:
+>> 
+>>> On 01/18/2013 11:56 AM, Jeff Moyer wrote:
+>>>> Jeff Moyer <jmoyer@redhat.com> writes:
+>>>>
+>>>>> ./check -g aio
+>>>>>
+>>>>> and here is the summary:
+>>>>>
+>>>>> Ran: 112 113 198 207 208 209 210 211 212 239 240
+>>>>> Failures: 112 198 207 239 240
+>>>>> Failed 5 of 11 tests
+>>>>>
+>>>>> To be fair, I have not yet run this on a kernel without your changes.
+>>>>
+>>>> I re-ran the same test against a vanilla 3.8.0-rc4 kernel and it passed:
+>>>>
+>>>> Ran: 112 113 198 207 208 209 210 211 212 239 240
+>>>> Passed all 11 tests
+>>>>
+>>>> I'll start digging into the failures.
+>>>
+>>> Thanks, I'll take a look at it too.
+>> 
+>> Note that the failures occur on regular block devices, too;  this isn't
+>> restricted to loop.  The fix I mentioned in reply to patch 17 actually
+>> fixes all of the failures reported in the aio group.  I'm going to do
+>> some more thorough testing over the weekend.
 >
-> Correct, gigabyte did send them via their support web-interface.
-> Do yo uneed to see them? They just show IOMMU enabled or similar.
+> Thanks much. I'll definitely add this to my testing.
 
-No, I thought you ran this yourself.
+After fixing up that thinko, a full run of xfstests on an xfs file
+system backed by a loop device (which itself is a file on an xfs file
+system) shows no regressions.
 
->
->>> What can we bring against that?
->>
->> How reproducible is the problem that you are seeing?
->
-> Seen once over here. Correlated with raid-check.
-
-Then the answer from Gigabyte doesn't prove anything. You can also boot 
-Linux without seeing this problem in most cases.
-
-Your BIOS does not have the required erratum workaround. We will provide 
-a patch to close that hole but since the problem is not easily 
-reproducible (and the erratum is also not easy to trigger) it may be 
-difficult to say whether it really helped with your problem.
-
--boris
-
+Cheers,
+Jeff
