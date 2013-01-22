@@ -1,90 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab3AVUE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 15:04:27 -0500
-Received: from mout.gmx.net ([212.227.15.19]:54880 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755655Ab3AVUEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 15:04:25 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19ByTQtkohBNcsgRpV8E5CXprnpEl0d9t6kgkk6BS
-	KN9aaUuFhTWTYc
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>,
-        YAMANE Toshiaki <yamanetoshi@gmail.com>,
-        Peter Huewe <peterhuewe@gmx.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging/comedi: use comedi_usb_driver_(un)register for init/deinit
-Date: Tue, 22 Jan 2013 21:07:32 +0100
-Message-Id: <1358885252-4507-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-X-Y-GMX-Trusted: 0
+	id S1755945Ab3AVUGv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 15:06:51 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:32786 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754370Ab3AVUGt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 15:06:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <50FEBF35.6010502@zytor.com>
+References: <1358868049-19884-1-git-send-email-trenn@suse.de>
+	<1358868049-19884-3-git-send-email-trenn@suse.de>
+	<50FEB620.3020805@zytor.com>
+	<201301221723.03863.trenn@suse.de>
+	<50FEBF35.6010502@zytor.com>
+Date: Tue, 22 Jan 2013 12:06:47 -0800
+X-Google-Sender-Auth: F0z-ftXOiEJ66JNxgQWYDmebBtU
+Message-ID: <CAE9FiQWJqWQJhoJb2dBn=iAsKjxuf3MJro-jz+6k+WNZor8-xQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86 e820: Introduce memmap=resetusablemap for kdump usage
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Renninger <trenn@suse.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        vgoyal@redhat.com, horms@verge.net.au
+Content-Type: multipart/mixed; boundary=14dae9340faf175e1c04d3e61e2f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of coding calling comedi_driver_(un)register and
-usb_(de)register directly we can use the comedi_usb_driver_(un)register
-wrapper.
-This removes some boilerplate and is less error prone.
+--14dae9340faf175e1c04d3e61e2f
+Content-Type: text/plain; charset=ISO-8859-1
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/staging/comedi/drivers/dt9812.c |   25 ++++---------------------
- 1 files changed, 4 insertions(+), 21 deletions(-)
+On Tue, Jan 22, 2013 at 8:32 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> Again: Please explain what is bad with this solution.
+>> I cannot see a better and more robust way for kdump other than
+>> reserving the original reserved memory areas as declared by the BIOS.
+>
+> It is bad because it creates more complexity than is needed.
+>
+> The whole point is that what we want is simply to switch type 1 to type
+> X, with the sole exceptions being the areas explicitly reserved for the
+> kdump kernel.
 
-diff --git a/drivers/staging/comedi/drivers/dt9812.c b/drivers/staging/comedi/drivers/dt9812.c
-index 1767998..fc5b30c 100644
---- a/drivers/staging/comedi/drivers/dt9812.c
-+++ b/drivers/staging/comedi/drivers/dt9812.c
-@@ -1133,7 +1133,7 @@ static struct comedi_driver dt9812_comedi_driver = {
- 
- static int __init usb_dt9812_init(void)
- {
--	int result, i;
-+	int i;
- 
- 	/* Initialize all driver slots */
- 	for (i = 0; i < DT9812_NUM_SLOTS; i++) {
-@@ -1144,30 +1144,13 @@ static int __init usb_dt9812_init(void)
- 	}
- 	dt9812[12].serial = 0x0;
- 
--	/* register with the USB subsystem */
--	result = usb_register(&dt9812_usb_driver);
--	if (result) {
--		pr_err("usb_register failed. Error number %d\n", result);
--		return result;
--	}
--	/* register with comedi */
--	result = comedi_driver_register(&dt9812_comedi_driver);
--	if (result) {
--		usb_deregister(&dt9812_usb_driver);
--		pr_err("comedi_driver_register failed. Error number %d\n",
--		       result);
--	}
--
--	return result;
-+	return comedi_usb_driver_register(&dt9812_comedi_driver,
-+						&dt9812_usb_driver);
- }
- 
- static void __exit usb_dt9812_exit(void)
- {
--	/* unregister with comedi */
--	comedi_driver_unregister(&dt9812_comedi_driver);
--
--	/* deregister this driver with the USB subsystem */
--	usb_deregister(&dt9812_usb_driver);
-+	comedi_usb_driver_unregister(&dt9812_comedi_driver, &dt9812_usb_driver);
- }
- 
- module_init(usb_dt9812_init);
--- 
-1.7.8.6
+Do you prefer to  "reserveram" way in attached patch?
 
+Thanks
+
+Yinghai
+
+--14dae9340faf175e1c04d3e61e2f
+Content-Type: application/octet-stream; name="e820_reserveram.patch"
+Content-Disposition: attachment; filename="e820_reserveram.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hc9h2svn0
+
+LS0tCiBhcmNoL3g4Ni9rZXJuZWwvZTgyMC5jIHwgICAxOCArKysrKysrKysrKysrKysrLS0KIDEg
+ZmlsZSBjaGFuZ2VkLCAxNiBpbnNlcnRpb25zKCspLCAyIGRlbGV0aW9ucygtKQoKSW5kZXg6IGxp
+bnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvZTgyMC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5v
+cmlnL2FyY2gveDg2L2tlcm5lbC9lODIwLmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwv
+ZTgyMC5jCkBAIC04MzYsNiArODM2LDcgQEAgc3RhdGljIGludCBfX2luaXQgcGFyc2VfbWVtb3B0
+KGNoYXIgKnApCiBlYXJseV9wYXJhbSgibWVtIiwgcGFyc2VfbWVtb3B0KTsKIAogc3RhdGljIGJv
+b2wgX19pbml0ZGF0YSBleGFjdG1hcF9wYXJzZWQ7CitzdGF0aWMgYm9vbCBfX2luaXRkYXRhIHJl
+c2VydmVyYW1fcGFyc2VkOwogCiBzdGF0aWMgaW50IF9faW5pdCBwYXJzZV9tZW1tYXBfb25lKGNo
+YXIgKnApCiB7CkBAIC04NDUsNyArODQ2LDcgQEAgc3RhdGljIGludCBfX2luaXQgcGFyc2VfbWVt
+bWFwX29uZShjaGFyCiAJaWYgKCFwKQogCQlyZXR1cm4gLUVJTlZBTDsKIAotCWlmICghc3RybmNt
+cChwLCAiZXhhY3RtYXAiLCA4KSkgeworCWlmICghc3RybmNtcChwLCAiZXhhY3RtYXAiLCA4KSB8
+fCAhc3RybmNtcChwLCAicmVzZXJ2ZXJhbSIsIDEwKSkgewogCQlpZiAoZXhhY3RtYXBfcGFyc2Vk
+KQogCQkJcmV0dXJuIDA7CiAKQEAgLTg1OCw3ICs4NTksMTEgQEAgc3RhdGljIGludCBfX2luaXQg
+cGFyc2VfbWVtbWFwX29uZShjaGFyCiAJCSAqLwogCQlzYXZlZF9tYXhfcGZuID0gZTgyMF9lbmRf
+b2ZfcmFtX3BmbigpOwogI2VuZGlmCi0JCWU4MjAubnJfbWFwID0gMDsKKwkJaWYgKCFzdHJuY21w
+KHAsICJyZXNlcnZlcmFtIiwgMTApKSB7CisJCQllODIwX3VwZGF0ZV9yYW5nZSgwLCBVTExPTkdf
+TUFYLCBFODIwX1JBTSwgRTgyMF9SRVNFUlZFRCk7CisJCQlyZXNlcnZlcmFtX3BhcnNlZCA9IHRy
+dWU7CisJCX0gZWxzZQorCQkJZTgyMC5ucl9tYXAgPSAwOwogCQl1c2VyZGVmID0gMTsKIAkJcmV0
+dXJuIDA7CiAJfQpAQCAtODcxLDYgKzg3NiwxMCBAQCBzdGF0aWMgaW50IF9faW5pdCBwYXJzZV9t
+ZW1tYXBfb25lKGNoYXIKIAl1c2VyZGVmID0gMTsKIAlpZiAoKnAgPT0gJ0AnKSB7CiAJCXN0YXJ0
+X2F0ID0gbWVtcGFyc2UocCsxLCAmcCk7CisJCWlmIChyZXNlcnZlcmFtX3BhcnNlZCkgeworCQkJ
+LyogcmVtb3ZlIG9sZCByZXNlcnZlZCBzbyBuZXcgcmFtIGNvdWxkIHRha2Ugb3ZlciAqLworCQkJ
+ZTgyMF9yZW1vdmVfcmFuZ2Uoc3RhcnRfYXQsIG1lbV9zaXplLCBFODIwX1JFU0VSVkVELCAwKTsK
+KwkJfQogCQllODIwX2FkZF9yZWdpb24oc3RhcnRfYXQsIG1lbV9zaXplLCBFODIwX1JBTSk7CiAJ
+fSBlbHNlIGlmICgqcCA9PSAnIycpIHsKIAkJc3RhcnRfYXQgPSBtZW1wYXJzZShwKzEsICZwKTsK
+QEAgLTg5MCw2ICs4OTksMTEgQEAgc3RhdGljIGludCBfX2luaXQgcGFyc2VfbWVtbWFwX29wdChj
+aGFyCiAJcCA9IHN0cnN0cihwLCAiZXhhY3RtYXAiKTsKIAlpZiAocCkKIAkJcGFyc2VfbWVtbWFw
+X29uZSgiZXhhY3RtYXAiKTsKKwllbHNlIHsKKwkJcCA9IHN0cnN0cihib290X2NvbW1hbmRfbGlu
+ZSwgInJlc2VydmVyYW0iKTsKKwkJaWYgKHApCisJCQlwYXJzZV9tZW1tYXBfb25lKCJyZXNlcnZl
+cmFtIik7CisJfQogCiAJd2hpbGUgKHN0cikgewogCQljaGFyICprID0gc3RyY2hyKHN0ciwgJywn
+KTsK
+--14dae9340faf175e1c04d3e61e2f--
