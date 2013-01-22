@@ -1,33 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab3AVCh7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 21:37:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44930 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752708Ab3AVCh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 21:37:57 -0500
-Date: Mon, 21 Jan 2013 22:59:33 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 1/3] KVM: x86: clean up reexecute_instruction
-Message-ID: <20130122005933.GA28298@amt.cnet>
-References: <50F2D64C.4030804@linux.vnet.ibm.com>
+	id S1755195Ab3AVCsO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 21:48:14 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:36641 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752447Ab3AVCsN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 21:48:13 -0500
+Message-ID: <50FDFDBC.7000006@huawei.com>
+Date: Tue, 22 Jan 2013 10:47:24 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F2D64C.4030804@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vinson Lee <vlee@twitter.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Subject: Re: [PATCH] perf tools: Fix build with older versions of bison.
+References: <1352843407-30618-1-git-send-email-vlee@twitter.com>
+In-Reply-To: <1352843407-30618-1-git-send-email-vlee@twitter.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 13, 2013 at 11:44:12PM +0800, Xiao Guangrong wrote:
-> Little cleanup for reexecute_instruction, also use gpa_to_gfn in
-> retry_instruction
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+I encountered this build error, and found this patch, but it has been
+ignored?
 
-Applied series, thanks.
+On 2012/11/14 5:50, Vinson Lee wrote:
+> This patch fixes this build error with older versions of bison.
+> 
+>     CC util/sysfs.o
+>     BISON util/pmu-bison.c
+> util/pmu.y:2.14-24: syntax error, unexpected string, expecting =
+> make: *** [util/pmu-bison.c] Error 1
+> 
+> Signed-off-by: Vinson Lee <vlee@twitter.com>
+> Cc: stable@vger.kernel.org # 3.4+
+> ---
+>  tools/perf/Makefile            |    4 ++--
+>  tools/perf/util/parse-events.y |    1 -
+>  tools/perf/util/pmu.y          |    1 -
+>  3 files changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 00deed4..c2fb5bc 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -241,13 +241,13 @@ $(OUTPUT)util/parse-events-flex.c: util/parse-events.l $(OUTPUT)util/parse-event
+>  	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
+>  
+>  $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
+> -	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
+> +	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c -p parse_events_
+>  
+>  $(OUTPUT)util/pmu-flex.c: util/pmu.l $(OUTPUT)util/pmu-bison.c
+>  	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
+>  
+>  $(OUTPUT)util/pmu-bison.c: util/pmu.y
+> -	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
+> +	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c -p perf_pmu_
+>  
+>  $(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
+>  $(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
+> diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+> index cd88209..85cdaed 100644
+> --- a/tools/perf/util/parse-events.y
+> +++ b/tools/perf/util/parse-events.y
+> @@ -1,5 +1,4 @@
+>  %pure-parser
+> -%name-prefix "parse_events_"
+>  %parse-param {void *_data}
+>  %parse-param {void *scanner}
+>  %lex-param {void* scanner}
+> diff --git a/tools/perf/util/pmu.y b/tools/perf/util/pmu.y
+> index ec89804..bfd7e85 100644
+> --- a/tools/perf/util/pmu.y
+> +++ b/tools/perf/util/pmu.y
+> @@ -1,5 +1,4 @@
+>  
+> -%name-prefix "perf_pmu_"
+>  %parse-param {struct list_head *format}
+>  %parse-param {char *name}
+>  
+> 
 
