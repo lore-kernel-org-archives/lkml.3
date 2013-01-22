@@ -1,39 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab3AVVak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 16:30:40 -0500
-Received: from mail-da0-f43.google.com ([209.85.210.43]:41920 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab3AVVai (ORCPT
+	id S1756131Ab3AVVch (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 16:32:37 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:38643 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab3AVVcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 16:30:38 -0500
-Date: Tue, 22 Jan 2013 13:30:30 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib: devres: Fix build breakage
-Message-ID: <20130122213030.GA5285@kroah.com>
-References: <1358889886-8502-1-git-send-email-thierry.reding@avionic-design.de>
+	Tue, 22 Jan 2013 16:32:36 -0500
+Message-ID: <1358890299.6252.166.camel@cumari.coelho.fi>
+Subject: Re: [PATCH] Revert "drivers/misc/ti-st: remove gpio handling"
+From: Luciano Coelho <coelho@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: <gregkh@linuxfoundation.org>, <peter.ujfalusi@ti.com>, <balbi@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Date: Tue, 22 Jan 2013 23:31:39 +0200
+In-Reply-To: <20130122201453.GR22517@atomide.com>
+References: <1358766762-24405-1-git-send-email-coelho@ti.com>
+	 <20130122201453.GR22517@atomide.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358889886-8502-1-git-send-email-thierry.reding@avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 10:24:46PM +0100, Thierry Reding wrote:
-> The ERR_PTR() and IS_ERR() macros used by the devm_ioremap_resource()
-> function are defined in the linux/err.h header. On ARM this seems to be
-> pulled in by one of the other headers but the build fails at least on
-> OpenRISC.
+On Tue, 2013-01-22 at 12:14 -0800, Tony Lindgren wrote:
+> * Luciano Coelho <coelho@ti.com> [130121 03:16]:
+> > This reverts commit eccf2979b2c034b516e01b8a104c3739f7ef07d1.
+> > 
+> > The reason is that it broke TI WiLink shared transport on Panda.
+> > Also, callback functions should not be added to board files anymore,
+> > so revert to implementing the power functions in the driver itself.
+> > 
+> > Additionally, changed a variable name ('status' to 'err') so that this
+> > revert compiles properly.
+> > 
+> > Cc: stable <stable@vger.kernel.org> [3.7]
+> > Signed-off-by: Luciano Coelho <coelho@ti.com>
 > 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> This also makes sense from converting to DT based boot as the GPIO
+> calls should happen in the driver. Those mdelays probably can be fixed,
+> but since this is a revert to a known working version:
 
-You forgot to put a "reported-by:" field in here, which I've now done
-for you.  Please be more considerate in the future.
+I thought about checking exactly what we need as delays and whether we
+really need to do all that toggling.  At least in some boards, the
+toggles are not needed, but I don't know for sure whether it works in
+all different variations of the chip, so I kept them to be safe.  Also,
+I tried to deviate as little as possible from a plain revert, since I'd
+like to get this into stable as well.
 
-thanks,
 
-greg k-h
+> Acked-by: Tony Lindgren <tony@atomide.com>
+
+Thanks!
+
+--
+Luca.
+
