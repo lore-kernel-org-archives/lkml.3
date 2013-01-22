@@ -1,50 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab3AVI5t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 03:57:49 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3441 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab3AVI5r (ORCPT
+	id S1754552Ab3AVJJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 04:09:41 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:6119 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462Ab3AVJJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 03:57:47 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 22 Jan 2013 00:57:40 -0800
-Message-ID: <50FE55D8.6090804@nvidia.com>
-Date: Tue, 22 Jan 2013 11:03:20 +0200
-From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 22 Jan 2013 04:09:39 -0500
+From: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
+To: <linux-usb@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <zihan@huawei.com>, <Lin.Lei@huawei.com>,
+        <greg@kroah.com>, <neil.yi@huawei.com>, <wangyuhua@huawei.com>,
+        <huqiao36@huawei.com>, <balbi@ti.com>, <mdharm-usb@one-eyed-alien.net>,
+        <sebastian@breakpoint.cc>
+Message-ID: <fe6c9918241c.241cfe6c9918@huawei.com>
+Date: Tue, 22 Jan 2013 17:09:24 +0800
+X-Mailer: iPlanet Messenger Express 5.2 HotFix 2.14 (built Aug  8 2006)
 MIME-Version: 1.0
-To: Terje Bergstrom <tbergstrom@nvidia.com>
-CC: Arto Merilainen <amerilainen@nvidia.com>,
-        "airlied@linux.ie" <airlied@linux.ie>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv5,RESEND 0/8] Support for Tegra 2D hardware
-References: <1358250244-9678-1-git-send-email-tbergstrom@nvidia.com>
-In-Reply-To: <1358250244-9678-1-git-send-email-tbergstrom@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Language: zh-CN
+Subject: [PATCH 1/2]linux-usb:define new macro and add new match rules
+ for Huawei USB storage devices
+X-Accept-Language: zh-CN
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.01.2013 13:43, Terje Bergstrom wrote:
-> This set of patches adds support for Tegra20 and Tegra30 host1x and
-> 2D. It is based on linux-next-20130114. The set was regenerated with
-> git format-patch -M.
+From: fangxiaozhi <huananhu@huawei.com>
 
-I have pushed both the kernel patches and libdrm changes to
-git@gitorious.org:linux-host1x/linux-host1x.git and
-git@gitorious.org:linux-host1x/libdrm-host1x.git.
+1. Define a new macro for USB storage match rules: 
+    matching with Vendor ID and interface descriptors.
 
-They're not intended to compete with any other repository - I just
-wanted to have one place where people can download the kernel patches,
-libdrm changes and test suite. I'll remove them once they've served
-their purpose.
+Signed-off-by: fangxiaozhi <huananhu@huawei.com>
+--------------------------------------------------------------------
 
-I'd appreciate feedback on the patches. So far the only feedback has
-been from Stephen about clock changes.
+ diff -uprN linux-3.8-rc4_orig/drivers/usb/storage/usb.c linux-3.8-rc4/drivers/usb/storage/usb.c
+--- linux-3.8-rc4_orig/drivers/usb/storage/usb.c	2013-01-22 14:12:42.595238727 +0800
++++ linux-3.8-rc4/drivers/usb/storage/usb.c	2013-01-22 14:16:01.398250305 +0800
+@@ -120,6 +120,17 @@ MODULE_PARM_DESC(quirks, "supplemental l
+ 	.useTransport = use_transport,	\
+ }
+ 
++#define UNUSUAL_VENDOR_INTF(idVendor, cl, sc, pr, \
++		vendor_name, product_name, use_protocol, use_transport, \
++		init_function, Flags) \
++{ \
++	.vendorName = vendor_name,	\
++	.productName = product_name,	\
++	.useProtocol = use_protocol,	\
++	.useTransport = use_transport,	\
++	.initFunction = init_function,	\
++}
++
+ static struct us_unusual_dev us_unusual_dev_list[] = {
+ #	include "unusual_devs.h"
+ 	{ }		/* Terminating entry */
+@@ -131,6 +142,7 @@ static struct us_unusual_dev for_dynamic
+ #undef UNUSUAL_DEV
+ #undef COMPLIANT_DEV
+ #undef USUAL_DEV
++#undef UNUSUAL_VENDOR_INTF
+ 
+ #ifdef CONFIG_LOCKDEP
+ 
+diff -uprN linux-3.8-rc4_orig/drivers/usb/storage/usual-tables.c linux-3.8-rc4/drivers/usb/storage/usual-tables.c
+--- linux-3.8-rc4_orig/drivers/usb/storage/usual-tables.c	2013-01-22 14:12:42.594238726 +0800
++++ linux-3.8-rc4/drivers/usb/storage/usual-tables.c	2013-01-22 14:16:01.426250199 +0800
+@@ -41,6 +41,19 @@
+ #define USUAL_DEV(useProto, useTrans) \
+ { USB_INTERFACE_INFO(USB_CLASS_MASS_STORAGE, useProto, useTrans) }
+ 
++/* Define the device is matched with Vendor ID and interface descriptors */
++#define UNUSUAL_VENDOR_INTF(id_vendor, cl, sc, pr, \
++			vendorName, productName, useProtocol, useTransport, \
++			initFunction, flags) \
++{ \
++	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
++				| USB_DEVICE_ID_MATCH_VENDOR, \
++	.idVendor    = (id_vendor), \
++	.bInterfaceClass = (cl), \
++	.bInterfaceSubClass = (sc), \
++	.bInterfaceProtocol = (pr), \
++	.driver_info = (flags) }
++
+ struct usb_device_id usb_storage_usb_ids[] = {
+ #	include "unusual_devs.h"
+ 	{ }		/* Terminating entry */
+@@ -50,6 +63,7 @@ MODULE_DEVICE_TABLE(usb, usb_storage_usb
+ #undef UNUSUAL_DEV
+ #undef COMPLIANT_DEV
+ #undef USUAL_DEV
++#undef UNUSUAL_VENDOR_INTF
+ 
+ /*
+  * The table of devices to ignore
 
-Terje
+
