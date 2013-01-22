@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab3AVNyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 08:54:52 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:49893 "EHLO hydra.sisk.pl"
+	id S1752710Ab3AVN6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 08:58:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51090 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751737Ab3AVNys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 08:54:48 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Borislav Petkov <bp@alien8.de>
-Cc: =?ISO-8859-1?Q?Andr=E9?= Przywara <andre@andrep.de>,
-        Leonid Isaev <lisaev@umail.iu.edu>, Tom Gundersen <teg@jklm.no>,
-        cpufreq@vger.kernel.org, linux-acpi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 0/6] acpi-cpufreq and powernow-k8 fixes
-Date: Tue, 22 Jan 2013 15:00:49 +0100
-Message-ID: <2072518.dOpbznWpGj@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1358677470-17394-1-git-send-email-bp@alien8.de>
-References: <1358677470-17394-1-git-send-email-bp@alien8.de>
+	id S1751737Ab3AVN6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 08:58:03 -0500
+Date: Tue, 22 Jan 2013 14:57:26 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: acme@ghostprotocols.net, Anton Blanchard <anton@au1.ibm.com>,
+        paulus@samba.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH] perf: Fix compile warnings in tests/attr.c
+Message-ID: <20130122135726.GD1037@krava.brq.redhat.com>
+References: <20130119013052.GA24693@us.ibm.com>
+ <20130121135906.GD1995@krava.brq.redhat.com>
+ <20130121213823.GA4774@us.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130121213823.GA4774@us.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, January 20, 2013 11:24:24 AM Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> Hi all,
-> 
-> here are a couple of patches fixing acpi-cpufreq and powernow-k8 loading
-> sequence and handoff.
-> 
-> Patch 0001 should be in Rafael's tree already but I'm adding it here for
-> the sake of completeness. Basically, we want to address all possible
-> cases of powernow-k8 and acpi-cpufreq:
-> 
-> (M: module, Y: built-in)
-> 
-> powernow-k8		acpi-cpufreq
-> M			M		- powernow-k8 requests acpi-cpufreq
-> M			Y		- powernow-k8 sees already loaded acpi-cpufreq
-> Y			M		- impossible after patch 0001
-> Y			Y		- patches 2,3 fix that
-> 
-> Anyway, please take a look and let me know.
-> 
-> Thanks.
-> 
-> 
-> 
-> 
-> Borislav Petkov (5):
->   powernow-k8: Add a kconfig dependency on acpi-cpufreq
->   cpufreq: Make acpi-cpufreq link first
->   cpufreq: Add a get_current_driver helper
->   powernow-k8: Cleanup module request
->   powernow-k8: Cleanup init function
-> 
-> Matthew Garrett (1):
->   acpi-cpufreq: Do not load on K8
+On Mon, Jan 21, 2013 at 01:38:23PM -0800, Sukadev Bhattiprolu wrote:
+> Jiri Olsa [jolsa@redhat.com] wrote:
+> | On Fri, Jan 18, 2013 at 05:30:52PM -0800, Sukadev Bhattiprolu wrote:
 
-Applied.
+SNIP
 
-They are in linux-pm/bleeding-edge for now, I'll move them to linux-pm/linux-next
-after build testing.
+> __u64 is 'unsigned long long' on x86 and PRIu64 is 'llu' which is fine.
+> 
+> __u64 is 'unsigned long' on Power and PRIu64 is 'lu' which is again fine.
+> 
+> But __u64 is 'unsigned long long' on x86_64, but PRIu64 is '%lu' bc __WORDSIZE
+> is 64.
+> 
+> On x86_64, shouldn't __u64, be defined as 'unsigned long' rather than
+> 'unsigned long long' - ie include 'int-l64.h' rather than 'int-ll64.h' ?
 
-Thanks,
-Rafael
+hum, not sure ;-) will try to find some time to look on that
 
+> 
+> BTW, does 'perf' with my patch compile, (with warnings) for you on x86_64
+> with 'WERROR=0 make' ?
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+this one passes with warnings
+
+jirka
