@@ -1,81 +1,450 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080Ab3AVLGC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 06:06:02 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4871 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab3AVLF7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 06:05:59 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 22 Jan 2013 03:05:59 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: "balbi@ti.com" <balbi@ti.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 22 Jan 2013 16:35:52 +0530
-Subject: RE: [PATCH] usb: phy: moving all PHY API definitions to usb/phy
- directory
-Thread-Topic: [PATCH] usb: phy: moving all PHY API definitions to usb/phy
- directory
-Thread-Index: Ac34j8O2DF9tC5KAQla1P90p98iWSgAABJ9g
-Message-ID: <D958900912E20642BCBC71664EFECE3E6E1B13B6F0@BGMAIL02.nvidia.com>
-References: <1358852210-27814-1-git-send-email-vbyravarasu@nvidia.com>
- <20130122110038.GA685@arwen.pp.htv.fi>
-In-Reply-To: <20130122110038.GA685@arwen.pp.htv.fi>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
+	id S1753504Ab3AVLG2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 06:06:28 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:54419 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751531Ab3AVLGZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 06:06:25 -0500
+Subject: Re: [PATCH 5/6] OF: Introduce Device Tree resolve support.
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20130122040524.GG23500@truffula.fritz.box>
+Date: Tue, 22 Jan 2013 13:06:09 +0200
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jon Loeliger <jdl@jdl.com>, Tony Lindgren <tony@atomide.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
+        Alan Tull <atull@altera.com>, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
+        Joel A Fernandes <agnel.joel@gmail.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Matt Ranostay <mranostay@gmail.com>
 Content-Transfer-Encoding: 8BIT
+Message-Id: <AB11FABF-6A45-493D-869D-7549FD758DD2@antoniou-consulting.com>
+References: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com> <1357327870-13615-6-git-send-email-panto@antoniou-consulting.com> <20130121044836.GB24829@truffula.fritz.box> <EEEDB0B2-7410-456B-BED7-89FD5E407553@antoniou-consulting.com> <20130122040524.GG23500@truffula.fritz.box>
+To: David Gibson <david@gibson.dropbear.id.au>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Felipe Balbi [mailto:balbi@ti.com]
-> Sent: Tuesday, January 22, 2013 4:31 PM
-> To: Venu Byravarasu
-> Cc: balbi@ti.com; gregkh@linuxfoundation.org; linux-usb@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] usb: phy: moving all PHY API definitions to usb/phy
-> directory
-> 
-> * PGP Signed by an unknown key
-> 
-> HI,
-> 
-> On Tue, Jan 22, 2013 at 04:26:50PM +0530, Venu Byravarasu wrote:
-> > As drivers/usb/otg/otg.c contains most of the PHY related APIs
-> > which are not OTG specific, moving them to more logical place
-> > under driver/usb/phy.
-> >
-> > Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> > ---
-> >  drivers/usb/otg/otg.c    |  184 ----------------------------------------------
-> >  drivers/usb/phy/Makefile |    1 +
-> 
-> missed git add of the new file, but hey, let's call it phy.c and place
-> it on drivers/usb/phy/phy.c
+Hi
 
-Yeah, I used "git commit -a" & missed adding new file.
-Just few min back, sent a patch update.
+On Jan 22, 2013, at 6:05 AM, David Gibson wrote:
+
+> On Mon, Jan 21, 2013 at 12:59:15PM +0200, Pantelis Antoniou wrote:
+>> Hi David
+>> 
+>> On Jan 21, 2013, at 6:48 AM, David Gibson wrote:
+>> 
+>>> On Fri, Jan 04, 2013 at 09:31:09PM +0200, Pantelis Antoniou wrote:
+>>>> Introduce support for dynamic device tree resolution.
+>>>> Using it, it is possible to prepare a device tree that's
+>>>> been loaded on runtime to be modified and inserted at the kernel
+>>>> live tree.
+>>>> 
+>>>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+>>>> ---
+>>>> .../devicetree/dynamic-resolution-notes.txt        |  25 ++
+>>>> drivers/of/Kconfig                                 |   9 +
+>>>> drivers/of/Makefile                                |   1 +
+>>>> drivers/of/resolver.c                              | 394 +++++++++++++++++++++
+>>>> include/linux/of.h                                 |  17 +
+>>>> 5 files changed, 446 insertions(+)
+>>>> create mode 100644 Documentation/devicetree/dynamic-resolution-notes.txt
+>>>> create mode 100644 drivers/of/resolver.c
+>>>> 
+>>>> diff --git a/Documentation/devicetree/dynamic-resolution-notes.txt b/Documentation/devicetree/dynamic-resolution-notes.txt
+>>>> new file mode 100644
+>>>> index 0000000..0b396c4
+>>>> --- /dev/null
+>>>> +++ b/Documentation/devicetree/dynamic-resolution-notes.txt
+>>>> @@ -0,0 +1,25 @@
+>>>> +Device Tree Dynamic Resolver Notes
+>>>> +----------------------------------
+>>>> +
+>>>> +This document describes the implementation of the in-kernel
+>>>> +Device Tree resolver, residing in drivers/of/resolver.c and is a
+>>>> +companion document to Documentation/devicetree/dt-object-internal.txt[1]
+>>>> +
+>>>> +How the resolver works
+>>>> +----------------------
+>>>> +
+>>>> +The resolver is given as an input an arbitrary tree compiled with the
+>>>> +proper dtc option and having a /plugin/ tag. This generates the
+>>>> +appropriate __fixups__ & __local_fixups__ nodes as described in [1].
+>>>> +
+>>>> +In sequence the resolver works by the following steps:
+>>>> +
+>>>> +1. Get the maximum device tree phandle value from the live tree + 1.
+>>>> +2. Adjust all the local phandles of the tree to resolve by that amount.
+>>>> +3. Using the __local__fixups__ node information adjust all local references
+>>>> +   by the same amount.
+>>>> +4. For each property in the __fixups__ node locate the node it references
+>>>> +   in the live tree. This is the label used to tag the node.
+>>>> +5. Retrieve the phandle of the target of the fixup.
+>>>> +5. For each fixup in the property locate the node:property:offset location
+>>>> +   and replace it with the phandle value.
+>>> 
+>>> Hrm.  So, I'm really still not convinced by this approach.
+>>> 
+>>> 	First, I think it's unwise to allow overlays to change
+>>> essentially anything in the base tree, rather than having the base
+>>> tree define sockets of some sort where things can be attached.
+>>> 
+>> 
+>> One could say that the labels define the sockets. It's not just things
+>> to be attached, properties might have to change, or something more complex,
+>> as we've found out in practice.
+> 
+> Hrm.  I know a number of these have come up previously in that big
+> thread, but can you summarise some of these cases here.  If things
+> need modification in the base tree that still seems to me like the
+> base tree hasn't properly described the socket arrangement (I realise
+> that allowing such descriptions may require extensions to some of our
+> device tree conventions).
+> 
+
+It would be pointless to number all the use-cases that Grant put in that
+long document, but I can summarize the cases that we've seen on the bone.
+
+* Addition of child device nodes to the ocp node, creates new platform
+devices of various kind (audio/video/pwms/timers) - almost any kind of
+platform device that the SoC supports. Removing the overlay unregisters
+the devices (but precious few drivers support that cleanly ATM). Since
+the capes don't support hotplug that's not a big deal.
+
+* Addition of pinctrl configuration nodes.
+
+* Addition of i2c/spi etc device nodes and modification of the parent's
+node status property to "okay", creates the bus platform device & registers
+the devices on the bus. Slight complication with i2c client devices which
+are not platform devices need special handling.
+
+* Modification of configuration parameters of a disabled device and subsequent
+enablement. 
+
+>> As far as the unwise part, a good deal of care has been taken so that 
+>> people that don't use the overlay functionality have absolutely no
+>> overhead, or anything modified in the way they use DT.
+> 
+> Yeah, that's not what I'm concerned about.  I'm concerned about hard
+> to debug problems because some subtle change in the base tree or the
+> overlay or both causes the overlay to alter something in the base tree
+> it really shouldn't.
+> 
+
+Define shouldn't. Let's say someone inserts a bogus overlay that makes the system
+fail, or misbehave in some other manner. What is the different between 
+using the overlay and inserting kernel module that fails in a similar manner?
+
+As far as supporting arbitrary overlays, that is not the case, and never will
+be. Now since the beaglebone is for hobbyists too, we can't restrict what
+a user can do in any way; but that person is free to do whatever he wants.
+
+>>> 	Second, even allowing overlays to change anything, I don't see
+>>> a lot of reason to do this kind of resolution within the kernel and
+>>> with data stored in the dtb itself, rather than doing the resolution
+>>> in userspace from an annotated overlay dts or dtb, then inserting the
+>>> fully resolved product into the kernel.  In either case, the overlay
+>>> needs to be constructed with pretty intimate knowledge of the base
+>>> tree.
+>> 
+>> Fair enough, but that's one more thing of user-space crud to drag along, which
+>> will get enabled pretty late in the boot sequence. Meaning a whole bunch of devices,
+>> like consoles, and root filesystems on the devices that need an overlay to operate
+>> won't work easily enough.
+> 
+> Hrm.  But doesn't your scheme already require userspace to identify
+> the hardware and load the overlay?  So why is having it resolve the
+> overlay significantly harder?
+> 
+
+There is no user-space involved what so ever. The only place where
+user-space might be involved is supplying the dtbo firmware image as a
+result of the loader driver issuing request_firmware().  
+
+> AFAICT devices wanted early can be handled in several possible ways
+> without having the resolved in kernel: an initramfs is the most
+> obvious, but for things you want really early, it should be possible
+> to do the resolution from the platform's bootloader update tool - so
+> the pre-resolved overlay gets bundled with the kernel/initrd/whatever
+> to get fired up from the bootloader.
+> 
+
+No. Just no. It is a support nightmare when dealing with the hobbyist market.
+Something similar has been tried before. While I don't have an exact figure, 
+having users tinker with any part of the bootloader/init sequence in order to 
+add some new cape lead to an unacceptable number of RMAed boards, which
+had absolutely nothing wrong with them, besides the fact that the person tinkering
+with it couldn't get it booting after screwing it.
+This wiped off any amount of profit for the board maker; possibly even made the
+whole operation a loss.
+
+>> 
+>>> That said, I have some implementation comments below.
+>>> 
+>>> [snip]
+>>>> +/**
+>>>> + * Find a subtree's maximum phandle value.
+>>>> + */
+>>>> +static phandle __of_get_tree_max_phandle(struct device_node *node,
+>>>> +		phandle max_phandle)
+>>>> +{
+>>>> +	struct device_node *child;
+>>>> +
+>>>> +	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL &&
+>>>> +			node->phandle > max_phandle)
+>>>> +		max_phandle = node->phandle;
+>>>> +
+>>>> +	__for_each_child_of_node(node, child)
+>>>> +		max_phandle = __of_get_tree_max_phandle(child, max_phandle);
+>>> 
+>>> Recursion is best avoided given the kernel's limited stack space.
+>>> This is also trivial to implement non-recursively, using the allnext
+>>> pointer.
+>> 
+>> The caller passes a tree that's not yet been inserted in the live
+>> tree.
+> 
+> Um.. isn't this used to find the max phandle in the base tree, so how
+> is it not inserted in the live tree yet?
+> 
+
+We have a use case (for devices that must be inserted very early in the boot
+process) that the overlay is stored in a part of the base tree, not in a
+different dtbo file. Some phandle juggling there uses this function.
+This patchset only uses it on the base tree.
+
+>> So there's no allnodes pointer yet. 
+> 
+> I would strongly suggest populating that in the subtree as you build
+> it, then.  Except that I don't think it is a detached subtree in this
+> case, though it is in some of the cases below.
+> 
+>> Care has been taken for the function
+>> to not have excessive local variables. I would guess about 20-32 bytes for
+>> the stack frame + the local variables, so with a 4K stack we would overflow at a 
+>> nest level of 128, which has a pretty slim chance for a real system.
+> 
+> Hrm.  Recursion still makes me nervous.  I believe there are platforms
+> that have a non-trivial lower-bound on stack usage per frame, even
+> with few local variables.
+
+How about having a recursion limit argument set to something sane like 10?
 
 > 
-> Also, you will have to rebase on top of Kishon's latest work which I'll
-> apply first.
+>>>> +
+>>>> +	return max_phandle;
+>>>> +}
+>>>> +
+>>>> +/**
+>>>> + * Find live tree's maximum phandle value.
+>>>> + */
+>>>> +static phandle of_get_tree_max_phandle(void)
+>>>> +{
+>>>> +	struct device_node *node;
+>>>> +	phandle phandle;
+>>>> +
+>>>> +	/* get root node */
+>>>> +	node = of_find_node_by_path("/");
+>>>> +	if (node == NULL)
+>>>> +		return OF_PHANDLE_ILLEGAL;
+>>>> +
+>>>> +	/* now search recursively */
+>>>> +	read_lock(&devtree_lock);
+>>>> +	phandle = __of_get_tree_max_phandle(node, 0);
+>>>> +	read_unlock(&devtree_lock);
+>>>> +
+>>>> +	of_node_put(node);
+>>>> +
+>>>> +	return phandle;
+>>>> +}
+>>>> +
+>>>> +/**
+>>>> + * Adjust a subtree's phandle values by a given delta.
+>>>> + * Makes sure not to just adjust the device node's phandle value,
+>>>> + * but modify the phandle properties values as well.
+>>>> + */
+>>>> +static void __of_adjust_tree_phandles(struct device_node *node,
+>>>> +		int phandle_delta)
+>>>> +{
+>>>> +	struct device_node *child;
+>>>> +	struct property *prop;
+>>>> +	phandle phandle;
+>>>> +
+>>>> +	/* first adjust the node's phandle direct value */
+>>>> +	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL)
+>>>> +		node->phandle += phandle_delta;
+>>> 
+>>> You need to have some kind of check for overflow here, or the adjusted
+>>> phandle could be one of the illegal values (0 or -1) - or wrap around
+>>> and colllide with existing phandle values in the base tree.  dtc
+>>> (currently) allocates phandles from the bottom, but there's no
+>>> guarantee that a base tree will only have low phandle values - it only
+>>> takes one node with phandle set to 0xfffffffe in the base tree to have
+>>> this function make a mess of things.
+>> 
+>> Correct, I'll take care of handling the overflow.
+>> 
+>>> 
+>>> 
+>>>> +	/* now adjust phandle & linux,phandle values */
+>>>> +	for_each_property_of_node(node, prop) {
+>>>> +
+>>>> +		/* only look for these two */
+>>>> +		if (of_prop_cmp(prop->name, "phandle") != 0 &&
+>>>> +		    of_prop_cmp(prop->name, "linux,phandle") != 0)
+>>>> +			continue;
+>>>> +
+>>>> +		/* must be big enough */
+>>>> +		if (prop->length < 4)
+>>>> +			continue;
+>>> 
+>>> If prop->length != 4 (including > 4) something is pretty wrong, and
+>>> you should probably bail with an error message.
+>> 
+>> OK, just playing it safe here.
+>> 
+>>> 
+>>>> +
+>>>> +		/* read phandle value */
+>>>> +		phandle = be32_to_cpu(*(uint32_t *)prop->value);
+>>>> +		if (phandle == OF_PHANDLE_ILLEGAL)	/* unresolved */
+>>>> +			continue;
+>>>> +
+>>>> +		/* adjust */
+>>>> +		*(uint32_t *)prop->value = cpu_to_be32(node->phandle);
+>>>> +	}
+>>>> +
+>>>> +	/* now do the children recursively */
+>>>> +	__for_each_child_of_node(node, child)
+>>>> +		__of_adjust_tree_phandles(child, phandle_delta);
+>>> 
+>>> Again, recursion is not a good idea.
+>>> 
+>> 
+>> No other way to handle it. This is not a node that's in the live
+>> tree yet.
+> 
+> There's always another way to handle it, although it may be less
+> elegant.  In this case it should be easy though - populate the allnext
+> pointers when you unflatten the tree.  Or, have the offset applied
+> when you actually apply the overlay rather than as a separate pass.
+> 
 
-That's fine.
-I'll rebase on top of Kishon's latest work and send v3.  
-In that v3 patch, will rename the file as phy.c, as you suggested above.
+Previous comment applies here too. Recursion limit counter?
+
+>>>> +}
+>>>> +
+>>>> +/**
+>>>> + * Adjust the local phandle references by the given phandle delta.
+>>>> + * Assumes the existances of a __local_fixups__ node at the root
+>>>> + * of the tree. Does not take any devtree locks so make sure you
+>>>> + * call this on a tree which is at the detached state.
+>>>> + */
+>>>> +static int __of_adjust_tree_phandle_references(struct device_node *node,
+>>>> +		int phandle_delta)
+>>>> +{
+>>>> +	phandle phandle;
+>>>> +	struct device_node *refnode, *child;
+>>>> +	struct property *rprop, *sprop;
+>>>> +	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
+>>>> +	int offset, propcurlen;
+>>>> +	int err;
+>>>> +
+>>>> +	/* locate the symbols & fixups nodes on resolve */
+>>>> +	__for_each_child_of_node(node, child)
+>>>> +		if (of_node_cmp(child->name, "__local_fixups__") == 0)
+>>>> +			break;
+>>>> +
+>>>> +	/* no local fixups */
+>>>> +	if (child == NULL)
+>>>> +		return 0;
+>>>> +
+>>>> +	/* find the local fixups property */
+>>>> +	for_each_property_of_node(child, rprop) {
+>>>> +
+>>>> +		/* skip properties added automatically */
+>>>> +		if (of_prop_cmp(rprop->name, "name") == 0)
+>>>> +			continue;
+>>> 
+>>> Ok, so you're interpreting any property except name in the
+>>> __local_fixups__ node in exactly the same way?  That's a bit strange.
+>>> Why not just have a single property rather than a node's worth in that
+>>> case.
+>> 
+>> It saves space. For example you might have to resolve a label reference
+>> more than once. So instead of doing:
+>> 
+>> 	label = "/foo:bar:0";
+>> 	label = "/bar:foo:4";
+>> 
+>> You can do this:
+>> 
+>> 	label = "/foo:bar:0", "/bar/foo:4";
+> 
+> Um.. you seem to have read me as saying the exact opposite of what I
+> said.  I'm _suggesting_ that you use:
+> 	__local_fixups__ = "/foo:bar:0", "/bar/foo:4";
+> Since the 'label' name has no meaning in the case of local fixups.
+
+Err, I misread that.
+
+At first I tried to do it the way you suggested but run into the following
+problem: The DTC enforces the properties to always precede the child nodes.
+I wasn't able to find a way to insert the __local_fixups__ property easily.
+Perhaps you can suggest where would you put it? 
 
 > 
-> --
-> balbi
+>>>> +		/* make a copy */
+>>>> +		propval = kmalloc(rprop->length, GFP_KERNEL);
+>>>> +		if (propval == NULL) {
+>>>> +			pr_err("%s: Could not copy value of '%s'\n",
+>>>> +					__func__, rprop->name);
+>>>> +			return -ENOMEM;
+>>>> +		}
+>>>> +		memcpy(propval, rprop->value, rprop->length);
+>>>> +
+>>>> +		propend = propval + rprop->length;
+>>>> +		for (propcur = propval; propcur < propend;
+>>>> +				propcur += propcurlen + 1) {
+>>>> +
+>>>> +			propcurlen = strlen(propcur);
+>>>> +
+>>>> +			nodestr = propcur;
+>>>> +			s = strchr(propcur, ':');
+>>> 
+>>> So, using strings with separators like this doesn't sit will with
+>>> existing device tree practice.  More similar to existing things would
+>>> have NUL separators and the integer values in binary, rather than
+>>> text (and yes, there is precedent for mixed string and integer content
+>>> in properties).
+>>> 
+>> 
+>> Hmm, I guess it can be done, but I wouldn't expect any space savings.
 > 
-> * Unknown Key
-> * 0x35CAA444
+> I'm not after space savings, just least-surprise by matching existing
+> common practices.
+
+Maybe. You also lose the ability to print the contents of the node and
+easily inspect. It's your call really, I don't mind that much.
+
+Regards
+
+-- Pantelis
+
+> 
+> -- 
+> David Gibson			| I'll have my music baroque, and my code
+> david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+> 				| _way_ _around_!
+> http://www.ozlabs.org/~dgibson
+
