@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab3AVQkt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 11:40:49 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:44896 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753539Ab3AVQks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 11:40:48 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] clk: divider: handle minimum divider
-Date: Tue, 22 Jan 2013 22:10:43 +0530
-Message-ID: <6723eb0c815bab677aac508dcdc5c15ef1d279a5.1358870920.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <d20165dfc67970c3429b9d95ac9631015f8b2396.1358870920.git.afzal@ti.com>
-References: <d20165dfc67970c3429b9d95ac9631015f8b2396.1358870920.git.afzal@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754781Ab3AVQmp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 11:42:45 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:43233 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754671Ab3AVQmn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 11:42:43 -0500
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: bp@alien8.de
+Cc: rjw@sisk.pl, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [PATCH] Add module aliases for acpi-cpufreq
+Date: Tue, 22 Jan 2013 11:42:24 -0500
+Message-Id: <1358872944-7676-1-git-send-email-matthew.garrett@nebula.com>
+X-Mailer: git-send-email 1.8.0.2
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:6267:20ff:fec3:2318
+X-SA-Exim-Mail-From: matthew.garrett@nebula.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of clocks can have a limit on minimum divider value that can be
-programmed. Modify basic clock divider to take care of this aspect.
+The acpi core will call request_module("acpi-cpufreq") on subsystem init,
+but this will fail if the module isn't available at that stage of boot.
+Add some module aliases to ensure that udev can load the module on Intel
+and AMD systems with the appropriate feature bits - I /think/ that this
+will also work on VIA systems, but haven't verified that.
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- drivers/clk/clk-divider.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ drivers/cpufreq/acpi-cpufreq.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-index 0b34992..2de9ff5 100644
---- a/drivers/clk/clk-divider.c
-+++ b/drivers/clk/clk-divider.c
-@@ -32,6 +32,11 @@
- #define div_mask(d)	((1 << (d->width)) - 1)
- #define is_power_of_two(i)	!(i & ~i)
+diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+index 0d048f6..7b0d49d 100644
+--- a/drivers/cpufreq/acpi-cpufreq.c
++++ b/drivers/cpufreq/acpi-cpufreq.c
+@@ -1030,4 +1030,11 @@ MODULE_PARM_DESC(acpi_pstate_strict,
+ late_initcall(acpi_cpufreq_init);
+ module_exit(acpi_cpufreq_exit);
  
-+static unsigned int _get_mindiv(struct clk_divider *divider)
-+{
-+	return divider->min_div;
-+}
++static const struct x86_cpu_id acpi_cpufreq_ids[] = {
++	X86_FEATURE_MATCH(X86_FEATURE_ACPI),
++	X86_FEATURE_MATCH(X86_FEATURE_HW_PSTATE),
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, acpi_cpufreq_ids);
 +
- static unsigned int _get_table_maxdiv(const struct clk_div_table *table)
- {
- 	unsigned int maxdiv = 0;
-@@ -148,17 +153,18 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
- {
- 	struct clk_divider *divider = to_clk_divider(hw);
- 	int i, bestdiv = 0;
--	unsigned long parent_rate, best = 0, now, maxdiv;
-+	unsigned long parent_rate, best = 0, now, maxdiv, mindiv;
- 
- 	if (!rate)
- 		rate = 1;
- 
- 	maxdiv = _get_maxdiv(divider);
-+	mindiv = _get_mindiv(divider);
- 
- 	if (!(__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT)) {
- 		parent_rate = *best_parent_rate;
- 		bestdiv = DIV_ROUND_UP(parent_rate, rate);
--		bestdiv = bestdiv == 0 ? 1 : bestdiv;
-+		bestdiv = bestdiv == 0 ? mindiv : bestdiv;
- 		bestdiv = bestdiv > maxdiv ? maxdiv : bestdiv;
- 		return bestdiv;
- 	}
-@@ -169,7 +175,7 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
- 	 */
- 	maxdiv = min(ULONG_MAX / rate, maxdiv);
- 
--	for (i = 1; i <= maxdiv; i++) {
-+	for (i = mindiv; i <= maxdiv; i++) {
- 		if (!_is_valid_div(divider, i))
- 			continue;
- 		parent_rate = __clk_round_rate(__clk_get_parent(hw->clk),
+ MODULE_ALIAS("acpi");
 -- 
-1.7.12
+1.8.0.2
 
