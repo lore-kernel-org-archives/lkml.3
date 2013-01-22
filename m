@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab3AVNTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 08:19:11 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:52971 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998Ab3AVNTI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 08:19:08 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v6 0/2] perf stat: add interval counter printing
-Date: Tue, 22 Jan 2013 14:18:50 +0100
-Message-Id: <1358860732-4435-1-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752895Ab3AVNVI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 08:21:08 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:13053 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750998Ab3AVNVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 08:21:03 -0500
+Message-ID: <50FE923D.5060108@imgtec.com>
+Date: Tue, 22 Jan 2013 13:21:01 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>
+Subject: Re: [PATCH v2 64/76] ARC: Add self to MAINTAINERS
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-65-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1358511930-7424-65-git-send-email-vgupta@synopsys.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_01_22_13_21_02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This small patchset extends perf stat with the -I option.
+On 18/01/13 12:25, Vineet Gupta wrote:
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> ---
+>  MAINTAINERS |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 3105c48..05cdc99 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7418,6 +7418,12 @@ F:	lib/swiotlb.c
+>  F:	arch/*/kernel/pci-swiotlb.c
+>  F:	include/linux/swiotlb.h
+>  
+> +SYNOPSYS ARC ARCHITECTURE
+> +M:	Vineet Gupta <vgupta@synopsys.com>
+> +L:	linux-snps-arc@vger.kernel.org
 
-The -I option enables interval printing. It expects
-an interval duration in milliseconds. Minimum is
-100ms. Once, activated perf stat prints events deltas
-since last printout. All modes are supported.
+Is this set up? I don't see it at
+http://vger.kernel.org/vger-lists.html
 
-$ perf stat -I 1000 -e cycles noploop 10
-noploop for 10 seconds
- #           time             counts events
-      1.000109853      2,388,560,546 cycles
-      2.000262846      2,393,332,358 cycles
-      3.000354131      2,393,176,537 cycles
-      4.000439503      2,393,203,790 cycles
-      5.000527075      2,393,167,675 cycles
-      6.000609052      2,393,203,670 cycles
-      7.000691082      2,393,175,678 cycles
+Incidentally, anybody know who to ask about setting up a new list?
 
-The output format makes it easy to feed into a plotting program
-such as gnuplot when the -I option is used in combination with the -x
-option:
+Cheers
+James
 
-$ perf stat -x, -I 1000 -e cycles noploop 10
-noploop for 10 seconds
-1.000084113,2378775498,cycles
-2.000245798,2391056897,cycles
-3.000354445,2392089414,cycles
-4.000459115,2390936603,cycles
-5.000565341,2392108173,cycles
-
-The first patch adds the code to keep previous counts. The second
-is the actual extension of perf stat.
-
-In v2, we changed the option from -T to -I based on feedback
-from Andi Kleen (who is using -T in an upcoming patch).
-
-In v3, added compute_deltas() to evsel.c to factorize
-deltas computation based on Jiri's comments.
-
-In v4, we made sure that counts are printed in case
-the run is interrupted by CTRL-C based on Andi Kleen's
-feedback.
-
-In v5, we added the column headings printed every 25 lines.
-Cleaned up the code some more based on Namhyung's comments.
-
-In v6, we simplify print_stat() by dropping the useless
-check for interval as noted by Namhyung Kim. We also
-rebase to 3.8.0-rc4.
-
-Stephane Eranian (2):
-  perf tools: add evsel prev_raw_count field
-  perf stat: add interval printing
-
- tools/perf/Documentation/perf-stat.txt |    4 +
- tools/perf/builtin-stat.c              |  157 +++++++++++++++++++++++++++++---
- tools/perf/util/evsel.c                |   26 ++++++
- tools/perf/util/evsel.h                |    1 +
- 4 files changed, 173 insertions(+), 15 deletions(-)
-
--- 
-1.7.9.5
+> +S:	Supported
+> +F:	arch/arc/
+> +
+>  SYSV FILESYSTEM
+>  M:	Christoph Hellwig <hch@infradead.org>
+>  S:	Maintained
+> 
 
