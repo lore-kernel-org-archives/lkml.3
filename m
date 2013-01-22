@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab3AVHk7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:40:59 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:53694 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754307Ab3AVHk4 (ORCPT
+	id S1754847Ab3AVHlR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:41:17 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:34462 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312Ab3AVHlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:40:56 -0500
+	Tue, 22 Jan 2013 02:41:12 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5 21/45] crypto: pcrypt - Protect access to cpu_online_mask
- with get/put_online_cpus()
+Subject: [PATCH v5 22/45] infiniband: ehca: Use get/put_online_cpus_atomic()
+ to prevent CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -20,8 +20,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 22 Jan 2013 13:08:52 +0530
-Message-ID: <20130122073848.13822.35451.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 22 Jan 2013 13:09:13 +0530
+Message-ID: <20130122073909.13822.6220.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,44 +29,77 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012207-5140-0000-0000-000002A8FA51
+x-cbid: 13012207-2674-0000-0000-0000078F6293
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pcrypt_aead_init_tfm() function access the cpu_online_mask without
-disabling CPU hotplug. And it looks like it can afford to sleep, so use
-the get/put_online_cpus() APIs to protect against CPU hotplug.
+Once stop_machine() is gone from the CPU offline path, we won't be able to
+depend on preempt_disable() or local_irq_disable() to prevent CPUs from
+going offline from under us.
 
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-crypto@vger.kernel.org
+Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
+while invoking from atomic context.
+
+Cc: Roland Dreier <roland@kernel.org>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- crypto/pcrypt.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/infiniband/hw/ehca/ehca_irq.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/crypto/pcrypt.c b/crypto/pcrypt.c
-index b2c99dc..10f64e2 100644
---- a/crypto/pcrypt.c
-+++ b/crypto/pcrypt.c
-@@ -280,12 +280,16 @@ static int pcrypt_aead_init_tfm(struct crypto_tfm *tfm)
+diff --git a/drivers/infiniband/hw/ehca/ehca_irq.c b/drivers/infiniband/hw/ehca/ehca_irq.c
+index 8615d7c..d61936c 100644
+--- a/drivers/infiniband/hw/ehca/ehca_irq.c
++++ b/drivers/infiniband/hw/ehca/ehca_irq.c
+@@ -43,6 +43,7 @@
  
- 	ictx->tfm_count++;
+ #include <linux/slab.h>
+ #include <linux/smpboot.h>
++#include <linux/cpu.h>
  
-+	get_online_cpus();
-+
- 	cpu_index = ictx->tfm_count % cpumask_weight(cpu_online_mask);
+ #include "ehca_classes.h"
+ #include "ehca_irq.h"
+@@ -653,6 +654,9 @@ void ehca_tasklet_eq(unsigned long data)
+ 	ehca_process_eq((struct ehca_shca*)data, 1);
+ }
  
- 	ctx->cb_cpu = cpumask_first(cpu_online_mask);
- 	for (cpu = 0; cpu < cpu_index; cpu++)
- 		ctx->cb_cpu = cpumask_next(ctx->cb_cpu, cpu_online_mask);
++/*
++ * Must be called under get_online_cpus_atomic() and put_online_cpus_atomic().
++ */
+ static int find_next_online_cpu(struct ehca_comp_pool *pool)
+ {
+ 	int cpu;
+@@ -703,6 +707,7 @@ static void queue_comp_task(struct ehca_cq *__cq)
+ 	int cq_jobs;
+ 	unsigned long flags;
  
-+	put_online_cpus();
-+
- 	cipher = crypto_spawn_aead(crypto_instance_ctx(inst));
++	get_online_cpus_atomic();
+ 	cpu_id = find_next_online_cpu(pool);
+ 	BUG_ON(!cpu_online(cpu_id));
  
- 	if (IS_ERR(cipher))
+@@ -720,6 +725,7 @@ static void queue_comp_task(struct ehca_cq *__cq)
+ 		BUG_ON(!cct || !thread);
+ 	}
+ 	__queue_comp_task(__cq, cct, thread);
++	put_online_cpus_atomic();
+ }
+ 
+ static void run_comp_task(struct ehca_cpu_comp_task *cct)
+@@ -759,6 +765,7 @@ static void comp_task_park(unsigned int cpu)
+ 	list_splice_init(&cct->cq_list, &list);
+ 	spin_unlock_irq(&cct->task_lock);
+ 
++	get_online_cpus_atomic();
+ 	cpu = find_next_online_cpu(pool);
+ 	target = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
+ 	thread = *per_cpu_ptr(pool->cpu_comp_threads, cpu);
+@@ -768,6 +775,7 @@ static void comp_task_park(unsigned int cpu)
+ 		__queue_comp_task(cq, target, thread);
+ 	}
+ 	spin_unlock_irq(&target->task_lock);
++	put_online_cpus_atomic();
+ }
+ 
+ static void comp_task_stop(unsigned int cpu, bool online)
 
