@@ -1,195 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab3AVV5k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 16:57:40 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:52043 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754287Ab3AVV5h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 16:57:37 -0500
-Subject: Re: [PATCH] x86, Allow x2apic without IR on VMware platform.
-From: Alok Kataria <akataria@vmware.com>
-Reply-To: Alok Kataria <akataria@vmware.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        the arch/x86 maintainers <x86@kernel.org>, konrad.wilk@oracle.com,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dan Hecht <dhecht@vmware.com>,
-        Doug Covelli <dcovelli@vmware.com>,
-        virtualization@lists.linux-foundation.org
-In-Reply-To: <1358466282.423.60.camel@akataria-dtop.eng.vmware.com>
-References: <1358466282.423.60.camel@akataria-dtop.eng.vmware.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Jan 2013 13:57:36 -0800
-Message-ID: <1358891856.28018.205.camel@akataria-dtop.eng.vmware.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754679Ab3AVV55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 16:57:57 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:50665 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752619Ab3AVV5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 16:57:50 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [PATCH] ACPI: Remove useless type argument of driver .remove() operation
+Date: Tue, 22 Jan 2013 23:03:51 +0100
+Message-ID: <4046863.eHD8RPonGC@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQV1N0hrUui1rGrs1=kFJFiuOhZ6tT-wGfK-B25it5feLQ@mail.gmail.com>
+References: <1518653.CUpDmbmCI3@vostro.rjw.lan> <6850002.DtnUIhsRE7@vostro.rjw.lan> <CAE9FiQV1N0hrUui1rGrs1=kFJFiuOhZ6tT-wGfK-B25it5feLQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter, Ingo,
+On Tuesday, January 22, 2013 01:54:47 PM Yinghai Lu wrote:
+> On Sun, Jan 20, 2013 at 2:06 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Sunday, January 20, 2013 11:04:47 PM Rafael J. Wysocki wrote:
+> >> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >>
+> >> The second argument of ACPI driver .remove() operation is only used
+> >> by the ACPI processor driver and the value passed to that driver
+> >> through it is always available from the given struct acpi_device
+> >> object's removal_type field.  For this reason, the second ACPI driver
+> >> .remove() argument is in fact useless, so drop it.
+> >>
+> >> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > Forgot to say: This is on top of the linux-next branch of the linux-pm.git tree.
+> >
+> > Thanks,
+> > Rafael
+> >
+> >
+> >> ---
+> >>  drivers/acpi/ac.c                        |    4 ++--
+> >>  drivers/acpi/acpi_memhotplug.c           |    4 ++--
+> >>  drivers/acpi/acpi_pad.c                  |    3 +--
+> >>  drivers/acpi/battery.c                   |    2 +-
+> >>  drivers/acpi/button.c                    |    4 ++--
+> >>  drivers/acpi/container.c                 |    4 ++--
+> >>  drivers/acpi/ec.c                        |    2 +-
+> >>  drivers/acpi/fan.c                       |    4 ++--
+> >>  drivers/acpi/hed.c                       |    2 +-
+> >>  drivers/acpi/pci_link.c                  |    4 ++--
+> >>  drivers/acpi/pci_root.c                  |    4 ++--
+> >>  drivers/acpi/processor_driver.c          |    6 +++---
+> >>  drivers/acpi/sbs.c                       |    6 +++---
+> >>  drivers/acpi/sbshc.c                     |    4 ++--
+> >>  drivers/acpi/scan.c                      |    5 ++---
+> >>  drivers/acpi/thermal.c                   |    4 ++--
+> >>  drivers/acpi/video.c                     |    4 ++--
+> >>  drivers/char/hpet.c                      |    2 +-
+> >>  drivers/char/sonypi.c                    |    2 +-
+> >>  drivers/hwmon/acpi_power_meter.c         |    2 +-
+> >>  drivers/hwmon/asus_atk0110.c             |    4 ++--
+> >>  drivers/i2c/busses/i2c-scmi.c            |    2 +-
+> >>  drivers/input/misc/atlas_btns.c          |    2 +-
+> >>  drivers/platform/x86/asus-laptop.c       |    2 +-
+> >>  drivers/platform/x86/classmate-laptop.c  |    8 ++++----
+> >>  drivers/platform/x86/eeepc-laptop.c      |    2 +-
+> >>  drivers/platform/x86/fujitsu-laptop.c    |    4 ++--
+> >>  drivers/platform/x86/fujitsu-tablet.c    |    2 +-
+> >>  drivers/platform/x86/hp_accel.c          |    2 +-
+> >>  drivers/platform/x86/ideapad-laptop.c    |    2 +-
+> >>  drivers/platform/x86/intel_menlow.c      |    2 +-
+> >>  drivers/platform/x86/panasonic-laptop.c  |    4 ++--
+> >>  drivers/platform/x86/sony-laptop.c       |    4 ++--
+> >>  drivers/platform/x86/topstar-laptop.c    |    2 +-
+> >>  drivers/platform/x86/toshiba_acpi.c      |    4 ++--
+> >>  drivers/platform/x86/toshiba_bluetooth.c |    4 ++--
+> >>  drivers/platform/x86/wmi.c               |    4 ++--
+> >>  drivers/platform/x86/xo15-ebook.c        |    2 +-
+> >>  drivers/staging/quickstart/quickstart.c  |    2 +-
+> >>  drivers/video/backlight/apple_bl.c       |    2 +-
+> >>  drivers/xen/xen-acpi-pad.c               |    3 +--
+> >>  include/acpi/acpi_bus.h                  |    2 +-
+> >>  42 files changed, 67 insertions(+), 70 deletions(-)
+> >>
+> >> Index: linux-pm/include/acpi/acpi_bus.h
+> >> ===================================================================
+> >> --- linux-pm.orig/include/acpi/acpi_bus.h
+> >> +++ linux-pm/include/acpi/acpi_bus.h
+> >> @@ -89,7 +89,7 @@ struct acpi_device;
+> >>   */
+> >>
+> >>  typedef int (*acpi_op_add) (struct acpi_device * device);
+> >> -typedef int (*acpi_op_remove) (struct acpi_device * device, int type);
+> >> +typedef int (*acpi_op_remove) (struct acpi_device * device);
+> >>  typedef int (*acpi_op_start) (struct acpi_device * device);
+> >>  typedef void (*acpi_op_notify) (struct acpi_device * device, u32 event);
+> 
+> Acked-by: Yinghai Lu <yinghai@kernel.org>
 
-Can you please consider this patch, it allows linux guests to use x2apic
-when running on VMware platform. 
+Thanks!
+
+> Also can you remove acpi_op_start ? there is no user with it.
+
+Sure, I will.
 
 Thanks,
-Alok
-
-On Thu, 2013-01-17 at 15:44 -0800, Alok Kataria wrote:
-> Please consider this patch to allow x2apic without IR support when
-> running on VMware platform. Tested on top of 3.8-rc3.
-> 
-> Thanks,
-> Alok
-> 
-> --
-> Allow x2apic without IR on VMware platform.
-> 
-> From: Alok N Kataria <akataria@vmware.com>
-> 
-> This patch updates x2apic initializaition code to allow x2apic on VMware
-> platform even without interrupt remapping support.
-> The hypervisor_x2apic_available hook was added in x2apic initialization code
-> and used by KVM and XEN, before this.
-> I have also cleaned up that code to export this hook through the
-> hypervisor_x86 structure.
-> 
-> Compile tested for KVM and XEN configs, this patch doesn't have any functional
-> effect on those two platforms.
-> 
-> On VMware platform, verified that x2apic is used in physical mode on products that
-> support this.
-> 
-> Signed-off-by: Alok N Kataria <akataria@vmware.com>
-> Reviewed-by: Doug Covelli <dcovelli@vmware.com>
-> Reviewed-by: Dan Hecht <dhecht@vmware.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> Cc: Avi Kivity <avi@redhat.com>
-> 
-> ---
-> 
->  arch/x86/include/asm/hypervisor.h |   13 ++++---------
->  arch/x86/kernel/cpu/hypervisor.c  |    7 +++++++
->  arch/x86/kernel/cpu/vmware.c      |   13 +++++++++++++
->  arch/x86/kernel/kvm.c             |    1 +
->  arch/x86/xen/enlighten.c          |    1 +
->  5 files changed, 26 insertions(+), 9 deletions(-)
-> 
-> 
-> diff --git a/arch/x86/include/asm/hypervisor.h b/arch/x86/include/asm/hypervisor.h
-> index b518c75..86095ed 100644
-> --- a/arch/x86/include/asm/hypervisor.h
-> +++ b/arch/x86/include/asm/hypervisor.h
-> @@ -25,6 +25,7 @@
->  
->  extern void init_hypervisor(struct cpuinfo_x86 *c);
->  extern void init_hypervisor_platform(void);
-> +extern bool hypervisor_x2apic_available(void);
->  
->  /*
->   * x86 hypervisor information
-> @@ -41,6 +42,9 @@ struct hypervisor_x86 {
->  
->  	/* Platform setup (run once per boot) */
->  	void		(*init_platform)(void);
-> +
-> +	/* X2APIC detection (run once per boot) */
-> +	bool		(*x2apic_available)(void);
->  };
->  
->  extern const struct hypervisor_x86 *x86_hyper;
-> @@ -51,13 +55,4 @@ extern const struct hypervisor_x86 x86_hyper_ms_hyperv;
->  extern const struct hypervisor_x86 x86_hyper_xen_hvm;
->  extern const struct hypervisor_x86 x86_hyper_kvm;
->  
-> -static inline bool hypervisor_x2apic_available(void)
-> -{
-> -	if (kvm_para_available())
-> -		return true;
-> -	if (xen_x2apic_para_available())
-> -		return true;
-> -	return false;
-> -}
-> -
->  #endif
-> diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
-> index a8f8fa9..1e7e84a 100644
-> --- a/arch/x86/kernel/cpu/hypervisor.c
-> +++ b/arch/x86/kernel/cpu/hypervisor.c
-> @@ -79,3 +79,10 @@ void __init init_hypervisor_platform(void)
->  	if (x86_hyper->init_platform)
->  		x86_hyper->init_platform();
->  }
-> +
-> +bool __init hypervisor_x2apic_available(void)
-> +{
-> +	return x86_hyper                   &&
-> +	       x86_hyper->x2apic_available &&
-> +	       x86_hyper->x2apic_available();
-> +}
-> diff --git a/arch/x86/kernel/cpu/vmware.c b/arch/x86/kernel/cpu/vmware.c
-> index d22d0c4..03a3632 100644
-> --- a/arch/x86/kernel/cpu/vmware.c
-> +++ b/arch/x86/kernel/cpu/vmware.c
-> @@ -33,6 +33,9 @@
->  
->  #define VMWARE_PORT_CMD_GETVERSION	10
->  #define VMWARE_PORT_CMD_GETHZ		45
-> +#define VMWARE_PORT_CMD_GETVCPU_INFO	68
-> +#define VMWARE_PORT_CMD_LEGACY_X2APIC	3
-> +#define VMWARE_PORT_CMD_VCPU_RESERVED	31
->  
->  #define VMWARE_PORT(cmd, eax, ebx, ecx, edx)				\
->  	__asm__("inl (%%dx)" :						\
-> @@ -125,10 +128,20 @@ static void __cpuinit vmware_set_cpu_features(struct cpuinfo_x86 *c)
->  	set_cpu_cap(c, X86_FEATURE_TSC_RELIABLE);
->  }
->  
-> +/* Checks if hypervisor supports x2apic without VT-D interrupt remapping. */
-> +static bool __init vmware_legacy_x2apic_available(void)
-> +{
-> +	uint32_t eax, ebx, ecx, edx;
-> +	VMWARE_PORT(GETVCPU_INFO, eax, ebx, ecx, edx);
-> +	return (eax & (1 << VMWARE_PORT_CMD_VCPU_RESERVED)) == 0 &&
-> +	       (eax & (1 << VMWARE_PORT_CMD_LEGACY_X2APIC)) != 0;
-> +}
-> +
->  const __refconst struct hypervisor_x86 x86_hyper_vmware = {
->  	.name			= "VMware",
->  	.detect			= vmware_platform,
->  	.set_cpu_features	= vmware_set_cpu_features,
->  	.init_platform		= vmware_platform_setup,
-> +	.x2apic_available	= vmware_legacy_x2apic_available,
->  };
->  EXPORT_SYMBOL(x86_hyper_vmware);
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index 9c2bd8b..2b44ea5 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -505,6 +505,7 @@ static bool __init kvm_detect(void)
->  const struct hypervisor_x86 x86_hyper_kvm __refconst = {
->  	.name			= "KVM",
->  	.detect			= kvm_detect,
-> +	.x2apic_available	= kvm_para_available,
->  };
->  EXPORT_SYMBOL_GPL(x86_hyper_kvm);
->  
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 138e566..8b4c56d 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1668,6 +1668,7 @@ const struct hypervisor_x86 x86_hyper_xen_hvm __refconst = {
->  	.name			= "Xen HVM",
->  	.detect			= xen_hvm_platform,
->  	.init_platform		= xen_hvm_guest_init,
-> +	.x2apic_available	= xen_x2apic_para_available,
->  };
->  EXPORT_SYMBOL(x86_hyper_xen_hvm);
->  #endif
-> 
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
