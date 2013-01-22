@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab3AVMMH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 07:12:07 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:49681 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752314Ab3AVMME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 07:12:04 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH 1/2] ACPI / PM: Use string "D3cold" to represent ACPI_STATE_D3_COLD
-Date: Tue, 22 Jan 2013 13:16:06 +0100
-Message-ID: <1491985.dA1TUFB41J@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <4115893.XLRCUukpRD@vostro.rjw.lan>
-References: <4115893.XLRCUukpRD@vostro.rjw.lan>
+	id S1754306Ab3AVMM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 07:12:28 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48363 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987Ab3AVMMY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 07:12:24 -0500
+Message-ID: <50FE8226.5050209@kernel.org>
+Date: Tue, 22 Jan 2013 12:12:22 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
+        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org
+Subject: Re: [PATCH 11/33] iio: Convert to devm_ioremap_resource()
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de> <1358762966-20791-12-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1358762966-20791-12-git-send-email-thierry.reding@avionic-design.de>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On 01/21/2013 10:09 AM, Thierry Reding wrote:
+> Convert all uses of devm_request_and_ioremap() to the newly introduced
+> devm_ioremap_resource() which provides more consistent error handling.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: Jonathan Cameron <jic23@cam.ac.uk>
+> Cc: linux-iio@vger.kernel.org
+Looks fine to me.
 
-Make acpi_power_state_string() return "D3cold" as the string
-representation of ACPI power state D3cold instead of "D3" returned
-currently, which is confusing.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/device_pm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-pm/drivers/acpi/device_pm.c
-===================================================================
---- linux-pm.orig/drivers/acpi/device_pm.c
-+++ linux-pm/drivers/acpi/device_pm.c
-@@ -115,7 +115,7 @@ const char *acpi_power_state_string(int
- 	case ACPI_STATE_D3_HOT:
- 		return "D3hot";
- 	case ACPI_STATE_D3_COLD:
--		return "D3";
-+		return "D3cold";
- 	default:
- 		return "(unknown)";
- 	}
-
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+> ---
+>  drivers/iio/adc/at91_adc.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
+> index a526c0e..83c836b 100644
+> --- a/drivers/iio/adc/at91_adc.c
+> +++ b/drivers/iio/adc/at91_adc.c
+> @@ -557,9 +557,9 @@ static int at91_adc_probe(struct platform_device *pdev)
+>  
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  
+> -	st->reg_base = devm_request_and_ioremap(&pdev->dev, res);
+> -	if (!st->reg_base) {
+> -		ret = -ENOMEM;
+> +	st->reg_base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(st->reg_base)) {
+> +		ret = PTR_ERR(st->reg_base);
+>  		goto error_free_device;
+>  	}
+>  
+> 
