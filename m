@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab3AVNRL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 08:17:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24649 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750955Ab3AVNRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 08:17:07 -0500
-Date: Tue, 22 Jan 2013 14:16:47 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] tools lib traceevent: Handle dynamic array's element
- size properly
-Message-ID: <20130122131646.GB1037@krava.brq.redhat.com>
-References: <1358772251-4411-1-git-send-email-jolsa@redhat.com>
- <1358829942.21576.49.camel@gandalf.local.home>
+	id S1752788Ab3AVNSV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 08:18:21 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:58314 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955Ab3AVNSS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 08:18:18 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH 20/33] net: Convert to devm_ioremap_resource()
+Date: Tue, 22 Jan 2013 13:17:54 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com,
+        w.sang@pengutronix.de, netdev@vger.kernel.org
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de> <201301221303.06785.arnd@arndb.de> <20130122130957.GA18165@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20130122130957.GA18165@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358829942.21576.49.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301221317.55097.arnd@arndb.de>
+X-Provags-ID: V02:K0:7mOI9LQLlEa9tnOv9F0aPLNgwXrV6BU/Crjfe+dVy6U
+ rlskY9oi0SI0h/z0+GZ8kvJ/fQ0bZS4Ws4LYrWSAcmDxfloRQ3
+ whCkIysQU/BsAdj34wzOLLEr4aaS5bCQp1xAouws7LDCGNqp9n
+ bhVqeDxWlziXVBJ4dKbsS5jZfOI/n4G5hPS+DGNXYSoKdpNseW
+ +QYZiMKw6+Tf2kUu5no1UuLygBupYxVSGtGDMIrc1zvwVfmbId
+ lyTUcjieADYKPDqeQh7WEcoIR4vePaXG3EHNrTE9uABierkOi6
+ 3AxPB1CbHU+OsbisjQWX1ImU+WY3yLOCjkmVS5SBAnLxmHHzkt
+ sbfuvbnDtVjJfTpiHots=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 11:45:42PM -0500, Steven Rostedt wrote:
-> On Mon, 2013-01-21 at 13:44 +0100, Jiri Olsa wrote:
-
-SNIP
-
-> > +	for (i = 0; table[i].type; i++) {
-> > +		if (!strcmp(table[i].type, field->type_dyn))
-> > +			return table[i].size;
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> > +
-> >  static int event_read_fields(struct event_format *event, struct format_field **fields)
-> >  {
-> >  	struct format_field *field = NULL;
-> > @@ -1390,7 +1418,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
-> >  				field->type = new_type;
-> >  				strcat(field->type, " ");
-> >  				strcat(field->type, field->name);
-> > -				free_token(field->name);
-> > +				field->type_dyn = field->name;
+On Tuesday 22 January 2013, Thierry Reding wrote:
+> > I've had the same problem a couple of times. The best compromise seems
+> > to be to Cc only the top-level subsystem maintainers and mailing lists
+> > on the first email.
 > 
-> This is only used in this function (the field_dynamic_elem_size() is
-> only called here). Can we not add the field->type_dyn, and just use a
-> local variable here. You just need to make sure you free it correctly.
+> Even that would have been about 50 addresses IIRC. But perhaps that's
+> still the best compromise to avoid any confusion.
 
-ook, will send v2
+Be careful though that the Cc list must not exceed 1024 characters or
+it will get rejected by some of the mailing list servers.
 
-thanks,
-jirka
+	Arnd
