@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab3AVDb1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 22:31:27 -0500
-Received: from mga11.intel.com ([192.55.52.93]:40255 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756020Ab3AVDbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 22:31:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,511,1355126400"; 
-   d="scan'208";a="276780182"
-Date: Tue, 22 Jan 2013 04:31:15 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: wwang <wei_wang@realsil.com.cn>
-Cc: "cjb@laptop.org" <cjb@laptop.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "oakad@yahoo.com" <oakad@yahoo.com>,
-        "bp@alien8.de" <bp@alien8.de>
-Subject: Re: [PATCH v4 0/8] rtsx patchset for MFD and MMC tree
-Message-ID: <20130122033115.GY7409@sortiz-mobl>
-References: <cover.1357638064.git.wei_wang@realsil.com.cn>
- <50F66CAD.6090003@realsil.com.cn>
+	id S1753397Ab3AVDjd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 22:39:33 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:54345 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752933Ab3AVDjc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 22:39:32 -0500
+Date: Mon, 21 Jan 2013 22:39:31 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Arnd Bergmann <arnd@arndb.de>
+cc: balbi@ti.com, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <arm@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        Manjunath Goudar <manjunath.goudar@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH 13/15] USB: ehci: make orion and mxc bus glues coexist
+In-Reply-To: <201301212149.15139.arnd@arndb.de>
+Message-ID: <Pine.LNX.4.44L0.1301212227020.32663-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50F66CAD.6090003@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wei,
+On Mon, 21 Jan 2013, Arnd Bergmann wrote:
 
-On Wed, Jan 16, 2013 at 05:02:37PM +0800, wwang wrote:
-> 于 2013年01月08日 17:57, 王炜 写道:
-> > From: Wei WANG <wei_wang@realsil.com.cn>
-> >
-> > v2:
-> > 1. Add commit message for patch 2
-> > 2. Move pci_set_dma_mask before the pci_enable_device(pcidev) call
-> >
-> > v3:
-> > 1. Add commit message for patch 3
-> > 2. Add patch 8: Use macro defines to replace some variables
-> >
-> > v4:
-> > 1. Describe why patch 3 is needed
-> > 2. Modify a comment character in patch 7
-> >
-> > Wei WANG (8):
-> >   MFD:rtsx: Fix typo in comment
-> >   MFD:rtsx: Remove redundant code
-> >   MFD:rtsx: Declare that the DMA address limitation is 32bit explicitly
-> >   MFD:rtsx: Add callback function switch_output_voltage
-> >   MMC:rtsx: Using callback function to switch output voltage
-> >   MFD:rtsx: Add callback function conv_clk_and_div_n
-> >   MFD:rtsx: Fix checkpatch warning
-> >   MFD:rtsx: Use macro defines to replace some variables
-> >
-> >  drivers/mfd/rtl8411.c             |   29 ++++++++++++++++++++++++
-> >  drivers/mfd/rts5209.c             |   21 +++++++++++++++++
-> >  drivers/mfd/rts5229.c             |   21 +++++++++++++++++
-> >  drivers/mfd/rtsx_pcr.c            |   45 +++++++++++++++++++++++++------------
-> >  drivers/mfd/rtsx_pcr.h            |    3 +++
-> >  drivers/mmc/host/rtsx_pci_sdmmc.c |   30 +++++--------------------
-> >  include/linux/mfd/rtsx_common.h   |    3 +++
-> >  include/linux/mfd/rtsx_pci.h      |   27 +++++++++++++++++-----
-> >  8 files changed, 135 insertions(+), 44 deletions(-)
-> >
-> Hi Chris and Samuel:
-> 
-> This patchset is trying to fix some bugs and some coding style issues.
-> Would you please help to merge it to v3.8 kernel?
-I'll only take bug fixes for 3.8, even minor ones, and I don't see real bug
-fixes here. Am I missing something ?
+> Alan, one comment about your version: You keep maintaining the
+> '#if IS_ENABLED' list in the main driver, which I think can actually
+> get removed now.
 
-Cheers,
-Samuel.
+I considered doing that.  The benefit of keeping it is that it warns 
+about configs where the main driver is built but can never be used.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Still, you're right that its purpose is becoming less important.  I had 
+planned to remove it when all the glue driver had been converted, but 
+in fact it could be removed at any time.
+
+>  Since the base driver can be built independent of
+> the presence of platform glue drivers, there is no need to forbid
+> it any more, and the #if block will cause merge conflicts for each
+> patch that converts or adds another platform.
+
+If the patches are done independently.  There are likely to be some
+context conflicts anyway.
+
+>  I think we can actually
+> get the same results by turning the Kconfig logic around and making
+> the platform glue drivers 'select USB_EHCI_HCD' than depending on
+> it.
+
+That's a good idea.  The Kconfig changes would have to be done 
+carefully to make sure that the dependency on USB_ARCH_HAS_EHCI still 
+applies to all the platform drivers.
+
+Manjunath, would you like to send a patch to do this?
+
+Alan Stern
+
