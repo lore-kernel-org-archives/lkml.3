@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab3AVLfV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 06:35:21 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:2174 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752747Ab3AVLfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 06:35:15 -0500
-Message-ID: <50FE796D.5070608@imgtec.com>
-Date: Tue, 22 Jan 2013 11:35:09 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752824Ab3AVLjN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 06:39:13 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:58908 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab3AVLjM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 06:39:12 -0500
+Message-ID: <50FE7A57.4010205@free-electrons.com>
+Date: Tue, 22 Jan 2013 12:39:03 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-kernel@vger.kernel.org>,
-        <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v3 00/44] Meta Linux Kernel Port
-References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com> <20130111103442.b80ddbfb11ef322ed28ca3b3@canb.auug.org.au> <50EFD824.3010502@imgtec.com> <20130112000336.1f24c42237fab4fe0c305ff6@canb.auug.org.au> <50F0296E.2000704@imgtec.com> <20130112120957.36df3412c9d6cca089a0340a@canb.auug.org.au> <20130112095507.GA1738@balrog> <20130119055501.GA2802@ZenIV.linux.org.uk>
-In-Reply-To: <20130119055501.GA2802@ZenIV.linux.org.uk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 08/33] gpio: Convert to devm_ioremap_resource()
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de> <1358762966-20791-9-git-send-email-thierry.reding@avionic-design.de> <CACRpkdb8VEUENBD8nSexYYPekDp082mK-A07hw7e8VmVSxZS3A@mail.gmail.com>
+In-Reply-To: <CACRpkdb8VEUENBD8nSexYYPekDp082mK-A07hw7e8VmVSxZS3A@mail.gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_01_22_11_35_10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/01/13 05:55, Al Viro wrote:
-> On Sat, Jan 12, 2013 at 09:55:07AM +0000, James Hogan wrote:
->> Hi Stephen, Al,
->>
->> On Sat, Jan 12, 2013 at 12:09:57PM +1100, Stephen Rothwell wrote:
->>> On Fri, 11 Jan 2013 15:02:06 +0000 James Hogan <james.hogan@imgtec.com> wrote:
->>>>
->>>> Okay, I've rebased the metag tree from linux-next onto the master branch
->>>> of Al's signal tree (to get Vineet's GENERIC_SIGALTSTACK fix and
->>>> GENERIC_SIGALTSTACK's eventual removal).
->>>
->>> OK, but I hope you mentioned not rebasing to Al.
->>
->> I'm still rebasing the metag tree, and it's not quite ready for -next so
->> I don't mind if Al's tree rebases at this stage tbh.
->>
->> Al: I don't know if you normally rebase your tree, but if it's okay with
->> you I'll let you know when I need it not to be rebased.
+On 01/22/2013 11:15 AM, Linus Walleij wrote:
+> On Mon, Jan 21, 2013 at 11:09 AM, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
 > 
-> Umm...  
-> 	1) #master is definitely bad for base; #for-linus is much safer (and
-> sufficient for your case)
+>> Convert all uses of devm_request_and_ioremap() to the newly introduced
+>> devm_ioremap_resource() which provides more consistent error handling.
+>>
+>> devm_ioremap_resource() provides its own error messages so all explicit
+>> error messages can be removed from the failure code paths.
+>>
+>> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+>> Cc: Grant Likely <grant.likely@secretlab.ca>
+>> Cc: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Is the interface already in-kernel so I should apply this or is it
+> added as part of this series so you're searching an ACK?
 
-Thanks for that, and I see it's now merged into Linus' tree so I'll
-rebase onto that instead.
+I don't know if I was really the one you were looking for (either
+you wanted to send it to an other Greg(ory) or to Thomas Petazzoni who
+wrote the gpio-mvebu.c driver). However, that's fortunate because
+Thomas is currently in on vacations, so I apply this patch and the
+first of the series, I built, compiled and tested it on an Aramda XP DB
+board. Everything is OK for me.
 
-Cheers
-James
+So for sure you can have my
+Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
+and as the code looks good, so for what it's worth, you can even get my
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+
+
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
