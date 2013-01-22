@@ -1,84 +1,380 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064Ab3AVWnI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 17:43:08 -0500
-Received: from mga02.intel.com ([134.134.136.20]:65086 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753097Ab3AVWnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 17:43:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,517,1355126400"; 
-   d="scan'208";a="250896894"
-Date: Tue, 22 Jan 2013 23:42:32 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: wwang <wei_wang@realsil.com.cn>
-Cc: "cjb@laptop.org" <cjb@laptop.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "oakad@yahoo.com" <oakad@yahoo.com>,
-        "bp@alien8.de" <bp@alien8.de>
-Subject: Re: [PATCH v4 0/8] rtsx patchset for MFD and MMC tree
-Message-ID: <20130122224232.GC5151@sortiz-mobl>
-References: <cover.1357638064.git.wei_wang@realsil.com.cn>
- <50F66CAD.6090003@realsil.com.cn>
- <20130122033115.GY7409@sortiz-mobl>
- <50FE09DD.6070102@realsil.com.cn>
+	id S1754347Ab3AVWok (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 17:44:40 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43966 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582Ab3AVWoi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 17:44:38 -0500
+From: John Kacur <jkacur@redhat.com>
+To: Ben Hutchings <ben@decadent.org.uk>, stable@vger.kernel.org
+Cc: lkml <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Clark Williams <williams@redhat.com>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH] x86: Use enum instead of literals for trap values
+Date: Tue, 22 Jan 2013 23:44:32 +0100
+Message-Id: <1358894672-10914-1-git-send-email-jkacur@redhat.com>
+X-Mailer: git-send-email 1.7.2.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FE09DD.6070102@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 11:39:09AM +0800, wwang wrote:
-> >>>Wei WANG (8):
-> >>>   MFD:rtsx: Fix typo in comment
-> >>>   MFD:rtsx: Remove redundant code
-> >>>   MFD:rtsx: Declare that the DMA address limitation is 32bit explicitly
-> >>>   MFD:rtsx: Add callback function switch_output_voltage
-> >>>   MMC:rtsx: Using callback function to switch output voltage
-> >>>   MFD:rtsx: Add callback function conv_clk_and_div_n
-> >>>   MFD:rtsx: Fix checkpatch warning
-> >>>   MFD:rtsx: Use macro defines to replace some variables
-> >>>
-> >>>  drivers/mfd/rtl8411.c             |   29 ++++++++++++++++++++++++
-> >>>  drivers/mfd/rts5209.c             |   21 +++++++++++++++++
-> >>>  drivers/mfd/rts5229.c             |   21 +++++++++++++++++
-> >>>  drivers/mfd/rtsx_pcr.c            |   45 +++++++++++++++++++++++++------------
-> >>>  drivers/mfd/rtsx_pcr.h            |    3 +++
-> >>>  drivers/mmc/host/rtsx_pci_sdmmc.c |   30 +++++--------------------
-> >>>  include/linux/mfd/rtsx_common.h   |    3 +++
-> >>>  include/linux/mfd/rtsx_pci.h      |   27 +++++++++++++++++-----
-> >>>  8 files changed, 135 insertions(+), 44 deletions(-)
-> >>>
-> >>Hi Chris and Samuel:
-> >>
-> >>This patchset is trying to fix some bugs and some coding style issues.
-> >>Would you please help to merge it to v3.8 kernel?
-> >I'll only take bug fixes for 3.8, even minor ones, and I don't see real bug
-> >fixes here. Am I missing something ?
-> >
-> >Cheers,
-> >Samuel.
-> >
-> Hi Samuel:
-> 
-> The commits below are all bug fix ( fix rtl8411 specifically)
-> 
->   MFD:rtsx: Add callback function switch_output_voltage
->   MMC:rtsx: Using callback function to switch output voltage
->   MFD:rtsx: Add callback function conv_clk_and_div_n
-Would you mind building a separate patchset for those 3, against e.g. a
-vanilla 3.8-rc4 kernel ? Otherwise they won't apply cleanly against my
-for-linus tree.
+From: Kees Cook <keescook@chromium.org>
 
-Cheers,
-Samuel.
+commit c94082656dac74257f63e91f78d5d458ac781fa5 upstream
 
+The traps are referred to by their numbers and it can be difficult to
+understand them while reading the code without context. This patch adds
+enumeration of the trap numbers and replaces the numbers with the correct
+enum for x86.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: http://lkml.kernel.org/r/20120310000710.GA32667@www.outflux.net
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cherry-picked-for: v2.3.37
+
+This fixes the following build error
+make O=/bld/v3.2.37
+make[2]: Nothing to be done for `relocs'.
+  Using /home/jkacur/linux-rt as source for kernel
+  GEN     /bld/v3.2.37/Makefile
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    /home/jkacur/linux-rt/scripts/checksyscalls.sh
+  CHK     include/generated/compile.h
+  CHK     kernel/config_data.h
+  CC [M]  drivers/misc/sgi-xp/xpc_main.o
+/home/jkacur/linux-rt/drivers/misc/sgi-xp/xpc_main.c: In function ‘xpc_system_die’:
+/home/jkacur/linux-rt/drivers/misc/sgi-xp/xpc_main.c:1208: error: ‘X86_TRAP_DF’ undeclared (first use in this function)
+/home/jkacur/linux-rt/drivers/misc/sgi-xp/xpc_main.c:1208: error: (Each undeclared identifier is reported only once
+/home/jkacur/linux-rt/drivers/misc/sgi-xp/xpc_main.c:1208: error: for each function it appears in.)
+/home/jkacur/linux-rt/drivers/misc/sgi-xp/xpc_main.c:1211: error: ‘X86_TRAP_MF’ undeclared (first use in this function)
+/home/jkacur/linux-rt/drivers/misc/sgi-xp/xpc_main.c:1212: error: ‘X86_TRAP_XF’ undeclared (first use in this function)
+make[4]: *** [drivers/misc/sgi-xp/xpc_main.o] Error 1
+make[3]: *** [drivers/misc/sgi-xp] Error 2
+make[2]: *** [drivers/misc] Error 2
+make[1]: *** [drivers] Error 2
+make: *** [sub-make] Error 2
+
+Conflicts:
+	arch/x86/kernel/traps.c
+Signed-off-by: John Kacur <jkacur@redhat.com>
+---
+ arch/x86/include/asm/traps.h |   25 +++++++++
+ arch/x86/kernel/irqinit.c    |    2 +-
+ arch/x86/kernel/traps.c      |  120 ++++++++++++++++++++++-------------------
+ 3 files changed, 90 insertions(+), 57 deletions(-)
+
+diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
+index 0012d09..88eae2a 100644
+--- a/arch/x86/include/asm/traps.h
++++ b/arch/x86/include/asm/traps.h
+@@ -89,4 +89,29 @@ asmlinkage void smp_thermal_interrupt(void);
+ asmlinkage void mce_threshold_interrupt(void);
+ #endif
+ 
++/* Interrupts/Exceptions */
++enum {
++	X86_TRAP_DE = 0,	/*  0, Divide-by-zero */
++	X86_TRAP_DB,		/*  1, Debug */
++	X86_TRAP_NMI,		/*  2, Non-maskable Interrupt */
++	X86_TRAP_BP,		/*  3, Breakpoint */
++	X86_TRAP_OF,		/*  4, Overflow */
++	X86_TRAP_BR,		/*  5, Bound Range Exceeded */
++	X86_TRAP_UD,		/*  6, Invalid Opcode */
++	X86_TRAP_NM,		/*  7, Device Not Available */
++	X86_TRAP_DF,		/*  8, Double Fault */
++	X86_TRAP_OLD_MF,	/*  9, Coprocessor Segment Overrun */
++	X86_TRAP_TS,		/* 10, Invalid TSS */
++	X86_TRAP_NP,		/* 11, Segment Not Present */
++	X86_TRAP_SS,		/* 12, Stack Segment Fault */
++	X86_TRAP_GP,		/* 13, General Protection Fault */
++	X86_TRAP_PF,		/* 14, Page Fault */
++	X86_TRAP_SPURIOUS,	/* 15, Spurious Interrupt */
++	X86_TRAP_MF,		/* 16, x87 Floating-Point Exception */
++	X86_TRAP_AC,		/* 17, Alignment Check */
++	X86_TRAP_MC,		/* 18, Machine Check */
++	X86_TRAP_XF,		/* 19, SIMD Floating-Point Exception */
++	X86_TRAP_IRET = 32,	/* 32, IRET Exception */
++};
++
+ #endif /* _ASM_X86_TRAPS_H */
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index b3300e6..e328f69 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -61,7 +61,7 @@ static irqreturn_t math_error_irq(int cpl, void *dev_id)
+ 	outb(0, 0xF0);
+ 	if (ignore_fpu_irq || !boot_cpu_data.hard_math)
+ 		return IRQ_NONE;
+-	math_error(get_irq_regs(), 0, 16);
++	math_error(get_irq_regs(), 0, X86_TRAP_MF);
+ 	return IRQ_HANDLED;
+ }
+ 
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 31d9d0f..e6fbb94 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -119,7 +119,7 @@ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
+ 		 * traps 0, 1, 3, 4, and 5 should be forwarded to vm86.
+ 		 * On nmi (interrupt 2), do_trap should not be called.
+ 		 */
+-		if (trapnr < 6)
++		if (trapnr < X86_TRAP_UD)
+ 			goto vm86_trap;
+ 		goto trap_signal;
+ 	}
+@@ -203,27 +203,31 @@ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
+ 	do_trap(trapnr, signr, str, regs, error_code, &info);		\
+ }
+ 
+-DO_ERROR_INFO(0, SIGFPE, "divide error", divide_error, FPE_INTDIV, regs->ip)
+-DO_ERROR(4, SIGSEGV, "overflow", overflow)
+-DO_ERROR(5, SIGSEGV, "bounds", bounds)
+-DO_ERROR_INFO(6, SIGILL, "invalid opcode", invalid_op, ILL_ILLOPN, regs->ip)
+-DO_ERROR(9, SIGFPE, "coprocessor segment overrun", coprocessor_segment_overrun)
+-DO_ERROR(10, SIGSEGV, "invalid TSS", invalid_TSS)
+-DO_ERROR(11, SIGBUS, "segment not present", segment_not_present)
++DO_ERROR_INFO(X86_TRAP_DE, SIGFPE, "divide error", divide_error, FPE_INTDIV,
++		regs->ip)
++DO_ERROR(X86_TRAP_OF, SIGSEGV, "overflow", overflow)
++DO_ERROR(X86_TRAP_BR, SIGSEGV, "bounds", bounds)
++DO_ERROR_INFO(X86_TRAP_UD, SIGILL, "invalid opcode", invalid_op, ILL_ILLOPN,
++		regs->ip)
++DO_ERROR(X86_TRAP_OLD_MF, SIGFPE, "coprocessor segment overrun",
++		coprocessor_segment_overrun)
++DO_ERROR(X86_TRAP_TS, SIGSEGV, "invalid TSS", invalid_TSS)
++DO_ERROR(X86_TRAP_NP, SIGBUS, "segment not present", segment_not_present)
+ #ifdef CONFIG_X86_32
+-DO_ERROR(12, SIGBUS, "stack segment", stack_segment)
++DO_ERROR(X86_TRAP_SS, SIGBUS, "stack segment", stack_segment)
+ #endif
+-DO_ERROR_INFO(17, SIGBUS, "alignment check", alignment_check, BUS_ADRALN, 0)
++DO_ERROR_INFO(X86_TRAP_AC, SIGBUS, "alignment check", alignment_check,
++		BUS_ADRALN, 0)
+ 
+ #ifdef CONFIG_X86_64
+ /* Runs on IST stack */
+ dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
+ {
+ 	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
+-			12, SIGBUS) == NOTIFY_STOP)
++			X86_TRAP_SS, SIGBUS) == NOTIFY_STOP)
+ 		return;
+ 	preempt_conditional_sti(regs);
+-	do_trap(12, SIGBUS, "stack segment", regs, error_code, NULL);
++	do_trap(X86_TRAP_SS, SIGBUS, "stack segment", regs, error_code, NULL);
+ 	preempt_conditional_cli(regs);
+ }
+ 
+@@ -233,10 +237,10 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
+ 	struct task_struct *tsk = current;
+ 
+ 	/* Return not checked because double check cannot be ignored */
+-	notify_die(DIE_TRAP, str, regs, error_code, 8, SIGSEGV);
++	notify_die(DIE_TRAP, str, regs, error_code, X86_TRAP_DF, SIGSEGV);
+ 
+ 	tsk->thread.error_code = error_code;
+-	tsk->thread.trap_no = 8;
++	tsk->thread.trap_no = X86_TRAP_DF;
+ 
+ 	/*
+ 	 * This is always a kernel trap and never fixable (and thus must
+@@ -264,7 +268,7 @@ do_general_protection(struct pt_regs *regs, long error_code)
+ 		goto gp_in_kernel;
+ 
+ 	tsk->thread.error_code = error_code;
+-	tsk->thread.trap_no = 13;
++	tsk->thread.trap_no = X86_TRAP_GP;
+ 
+ 	if (show_unhandled_signals && unhandled_signal(tsk, SIGSEGV) &&
+ 			printk_ratelimit()) {
+@@ -291,9 +295,9 @@ gp_in_kernel:
+ 		return;
+ 
+ 	tsk->thread.error_code = error_code;
+-	tsk->thread.trap_no = 13;
+-	if (notify_die(DIE_GPF, "general protection fault", regs,
+-				error_code, 13, SIGSEGV) == NOTIFY_STOP)
++	tsk->thread.trap_no = X86_TRAP_GP;
++	if (notify_die(DIE_GPF, "general protection fault", regs, error_code,
++			X86_TRAP_GP, SIGSEGV) == NOTIFY_STOP)
+ 		return;
+ 	die("general protection fault", regs, error_code);
+ }
+@@ -302,13 +306,14 @@ gp_in_kernel:
+ dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
+ {
+ #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
+-	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP)
+-			== NOTIFY_STOP)
++	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
++				SIGTRAP) == NOTIFY_STOP)
+ 		return;
+ #endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
+ #ifdef CONFIG_KPROBES
+-	if (notify_die(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP)
+-			== NOTIFY_STOP)
++
++	if (notify_die(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
++			SIGTRAP) == NOTIFY_STOP)
+ 		return;
+ #else
+ 	if (notify_die(DIE_TRAP, "int3", regs, error_code, 3, SIGTRAP)
+@@ -317,7 +322,7 @@ dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
+ #endif
+ 
+ 	preempt_conditional_sti(regs);
+-	do_trap(3, SIGTRAP, "int3", regs, error_code, NULL);
++	do_trap(X86_TRAP_BP, SIGTRAP, "int3", regs, error_code, NULL);
+ 	preempt_conditional_cli(regs);
+ }
+ 
+@@ -415,8 +420,8 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 	preempt_conditional_sti(regs);
+ 
+ 	if (regs->flags & X86_VM_MASK) {
+-		handle_vm86_trap((struct kernel_vm86_regs *) regs,
+-				error_code, 1);
++		handle_vm86_trap((struct kernel_vm86_regs *) regs, error_code,
++					X86_TRAP_DB);
+ 		preempt_conditional_cli(regs);
+ 		return;
+ 	}
+@@ -451,7 +456,8 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
+ 	struct task_struct *task = current;
+ 	siginfo_t info;
+ 	unsigned short err;
+-	char *str = (trapnr == 16) ? "fpu exception" : "simd exception";
++	char *str = (trapnr == X86_TRAP_MF) ? "fpu exception" :
++						"simd exception";
+ 
+ 	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, SIGFPE) == NOTIFY_STOP)
+ 		return;
+@@ -476,7 +482,7 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
+ 	info.si_signo = SIGFPE;
+ 	info.si_errno = 0;
+ 	info.si_addr = (void __user *)regs->ip;
+-	if (trapnr == 16) {
++	if (trapnr == X86_TRAP_MF) {
+ 		unsigned short cwd, swd;
+ 		/*
+ 		 * (~cwd & swd) will mask out exceptions that are not set to unmasked
+@@ -520,10 +526,11 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
+ 		info.si_code = FPE_FLTRES;
+ 	} else {
+ 		/*
+-		 * If we're using IRQ 13, or supposedly even some trap 16
+-		 * implementations, it's possible we get a spurious trap...
++		 * If we're using IRQ 13, or supposedly even some trap
++		 * X86_TRAP_MF implementations, it's possible
++		 * we get a spurious trap, which is not an error.
+ 		 */
+-		return;		/* Spurious trap, no error */
++		return;
+ 	}
+ 	force_sig_info(SIGFPE, &info, task);
+ }
+@@ -534,13 +541,13 @@ dotraplinkage void do_coprocessor_error(struct pt_regs *regs, long error_code)
+ 	ignore_fpu_irq = 1;
+ #endif
+ 
+-	math_error(regs, error_code, 16);
++	math_error(regs, error_code, X86_TRAP_MF);
+ }
+ 
+ dotraplinkage void
+ do_simd_coprocessor_error(struct pt_regs *regs, long error_code)
+ {
+-	math_error(regs, error_code, 19);
++	math_error(regs, error_code, X86_TRAP_XF);
+ }
+ 
+ dotraplinkage void
+@@ -658,20 +665,21 @@ dotraplinkage void do_iret_error(struct pt_regs *regs, long error_code)
+ 	info.si_errno = 0;
+ 	info.si_code = ILL_BADSTK;
+ 	info.si_addr = NULL;
+-	if (notify_die(DIE_TRAP, "iret exception",
+-			regs, error_code, 32, SIGILL) == NOTIFY_STOP)
++	if (notify_die(DIE_TRAP, "iret exception", regs, error_code,
++			X86_TRAP_IRET, SIGILL) == NOTIFY_STOP)
+ 		return;
+-	do_trap(32, SIGILL, "iret exception", regs, error_code, &info);
++	do_trap(X86_TRAP_IRET, SIGILL, "iret exception", regs, error_code,
++		&info);
+ }
+ #endif
+ 
+ /* Set of traps needed for early debugging. */
+ void __init early_trap_init(void)
+ {
+-	set_intr_gate_ist(1, &debug, DEBUG_STACK);
++	set_intr_gate_ist(X86_TRAP_DB, &debug, DEBUG_STACK);
+ 	/* int3 can be called from all */
+-	set_system_intr_gate_ist(3, &int3, DEBUG_STACK);
+-	set_intr_gate(14, &page_fault);
++	set_system_intr_gate_ist(X86_TRAP_BP, &int3, DEBUG_STACK);
++	set_intr_gate(X86_TRAP_PF, &page_fault);
+ 	load_idt(&idt_descr);
+ }
+ 
+@@ -687,30 +695,30 @@ void __init trap_init(void)
+ 	early_iounmap(p, 4);
+ #endif
+ 
+-	set_intr_gate(0, &divide_error);
+-	set_intr_gate_ist(2, &nmi, NMI_STACK);
++	set_intr_gate(X86_TRAP_DE, &divide_error);
++	set_intr_gate_ist(X86_TRAP_NMI, &nmi, NMI_STACK);
+ 	/* int4 can be called from all */
+-	set_system_intr_gate(4, &overflow);
+-	set_intr_gate(5, &bounds);
+-	set_intr_gate(6, &invalid_op);
+-	set_intr_gate(7, &device_not_available);
++	set_system_intr_gate(X86_TRAP_OF, &overflow);
++	set_intr_gate(X86_TRAP_BR, &bounds);
++	set_intr_gate(X86_TRAP_UD, &invalid_op);
++	set_intr_gate(X86_TRAP_NM, &device_not_available);
+ #ifdef CONFIG_X86_32
+-	set_task_gate(8, GDT_ENTRY_DOUBLEFAULT_TSS);
++	set_task_gate(X86_TRAP_DF, GDT_ENTRY_DOUBLEFAULT_TSS);
+ #else
+-	set_intr_gate_ist(8, &double_fault, DOUBLEFAULT_STACK);
++	set_intr_gate_ist(X86_TRAP_DF, &double_fault, DOUBLEFAULT_STACK);
+ #endif
+-	set_intr_gate(9, &coprocessor_segment_overrun);
+-	set_intr_gate(10, &invalid_TSS);
+-	set_intr_gate(11, &segment_not_present);
+-	set_intr_gate_ist(12, &stack_segment, STACKFAULT_STACK);
+-	set_intr_gate(13, &general_protection);
+-	set_intr_gate(15, &spurious_interrupt_bug);
+-	set_intr_gate(16, &coprocessor_error);
+-	set_intr_gate(17, &alignment_check);
++	set_intr_gate(X86_TRAP_OLD_MF, &coprocessor_segment_overrun);
++	set_intr_gate(X86_TRAP_TS, &invalid_TSS);
++	set_intr_gate(X86_TRAP_NP, &segment_not_present);
++	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
++	set_intr_gate(X86_TRAP_GP, &general_protection);
++	set_intr_gate(X86_TRAP_SPURIOUS, &spurious_interrupt_bug);
++	set_intr_gate(X86_TRAP_MF, &coprocessor_error);
++	set_intr_gate(X86_TRAP_AC, &alignment_check);
+ #ifdef CONFIG_X86_MCE
+-	set_intr_gate_ist(18, &machine_check, MCE_STACK);
++	set_intr_gate_ist(X86_TRAP_MC, &machine_check, MCE_STACK);
+ #endif
+-	set_intr_gate(19, &simd_coprocessor_error);
++	set_intr_gate(X86_TRAP_XF, &simd_coprocessor_error);
+ 
+ 	/* Reserve all the builtin and the syscall vector: */
+ 	for (i = 0; i < FIRST_EXTERNAL_VECTOR; i++)
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.2.3
+
