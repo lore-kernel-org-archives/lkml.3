@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378Ab3AVPaN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 10:30:13 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:34891 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753383Ab3AVPaL (ORCPT
+	id S1753929Ab3AVPeC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 10:34:02 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:52424 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752986Ab3AVPeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 10:30:11 -0500
-Date: Tue, 22 Jan 2013 10:30:10 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Shawn Guo <shawn.guo@linaro.org>
-cc: Arnd Bergmann <arnd@arndb.de>, Felipe Balbi <balbi@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <arm@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>,
-        Manjunath Goudar <manjunath.goudar@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH 13/15] USB: ehci: make orion and mxc bus glues coexist
-In-Reply-To: <20130122061116.GD29677@S2100-06.ap.freescale.net>
-Message-ID: <Pine.LNX.4.44L0.1301221028580.1510-100000@iolanthe.rowland.org>
+	Tue, 22 Jan 2013 10:34:00 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC] making HAVE_SYSCALL_WRAPPERS universal (Re: Issues with "x86, um: switch to generic fork/vfork/clone" commit)
+Date: Tue, 22 Jan 2013 15:33:50 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>
+References: <50F3D2F2.3080200@6wind.com> <20130121023010.GR4939@ZenIV.linux.org.uk> <20130121225517.GV4939@ZenIV.linux.org.uk>
+In-Reply-To: <20130121225517.GV4939@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301221533.50965.arnd@arndb.de>
+X-Provags-ID: V02:K0:NBmFFaZ45VwTfdqE+rj8gyQL5fZMiY5dRQRGhfz3lcB
+ hW8ARFqAY+5tKzypFB8h6j7lH5FVYvc8+mfTVVgDacF+bjj+NA
+ k5uuBfedZ+1CFEvaQ/z3ASIf/mJ43h5seRa/8C8eJkFpCp0dQ8
+ kRWvAKg6Tr0anQvzaEG3Y7Dh4spaHZcno0iZeHeY80QAAekz+y
+ Hwi8PEgFEQrpoLDag/rfPqIR25gOXF+XjCeQpDQqYOBjGiu17i
+ RSweLWHsdonbz5Lc36HeUaRWJntjeyjG4QdHW9f3kvVhxmDv60
+ C7SHA+Wg9wppFAoVl/wAwuyruj0izkU0H7U7scubw9MXipn/D3
+ NbK+55MXYEsybk24LzUs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jan 2013, Shawn Guo wrote:
+On Monday 21 January 2013, Al Viro wrote:
+>         1) alpha, mips
+> .weak foo
+> foo = sys_ni_syscall
+>         2) itanic, ppc
+> asmlinkage long x (void) __attribute__((weak,alias("sys_ni_syscall")))
+>         3) very common - most of the architectures
+> .weak foo
+> .set foo sys_ni_syscall
+>         3a) blackfin, h8300 - same as (3), except that asm symbols get
+> underscore prepended.
+> .weak _foo
+> .set _foo _sys_ni_syscall
 
-> On Mon, Jan 21, 2013 at 09:37:42PM +0000, Arnd Bergmann wrote:
-> > > Arnd, please take a look at
-> > > 
-> > >         http://marc.info/?l=linux-usb&amp;m=135843716515529&amp;w=2
-> > > 
-> > > I can't test it easily, not being set up for cross compilation.  I'm 
-> > > waiting to hear from anybody whether it works before submitting it.
-> > > (There's also a report of memory corruption involving a similar patch 
-> > > for ehci-omap; it hasn't been tracked down yet.)
-> > 
-> > Your patch looks good to me, but it also seems to do some other
-> > changes that are not required to fix the problem but could wait
-> > for 3.9 instead. You definitely have my Ack if you are willing
-> > to take it for 3.8 though.
+One question here: Is there still a reason why we can't use method 2 on
+all architectures now? The comment in a lot of architectures says
 
-I think it's not too late to submit this for 3.8.  Thanks for the Ack.
+ * What we want is __attribute__((weak,alias("sys_ni_syscall")))
+ * but it doesn't work on all toolchains, so we just do it by hand
 
-> > Shawn or Sascha should be able to test it.
-> > 
-> Alan,
-> 
-> Thanks for the patch.  I just gave it try.  The USB Host port still
-> works for me with a couple of fixes on your changes integrated (one
-> for compiling and the other for probing).  So you have my ACK with
-> the changes below rolled into your patch.
+and my guess is that all toolchains we support at this point actually
+do allow it, and turn it into the appropriate assembler syntax.
 
-Right, I have merged your changes into the patch.  Will submit shortly.
-
-Alan Stern
-
+	Arnd
