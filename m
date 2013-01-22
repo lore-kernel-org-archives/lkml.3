@@ -1,238 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab3AVRNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 12:13:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33346 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755143Ab3AVRMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 12:12:43 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Simon Jeons <simon.jeons@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/6] mm: Move page flags layout to separate header
-Date: Tue, 22 Jan 2013 17:12:40 +0000
-Message-Id: <1358874762-19717-5-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1358874762-19717-1-git-send-email-mgorman@suse.de>
-References: <1358874762-19717-1-git-send-email-mgorman@suse.de>
+	id S1755480Ab3AVRN3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 12:13:29 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41492 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755377Ab3AVRNY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 12:13:24 -0500
+Subject: Re: Doubts about listen backlog and tcp_max_syn_backlog
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Leandro Lucarella <leandro.lucarella@sociomantic.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20130122165929.GH4608@sociomantic.com>
+References: <20130122161038.GG4608@sociomantic.com>
+	 <1358873142.3464.3964.camel@edumazet-glaptop>
+	 <20130122165929.GH4608@sociomantic.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Jan 2013 09:13:20 -0800
+Message-ID: <1358874800.3464.4002.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+On Tue, 2013-01-22 at 17:59 +0100, Leandro Lucarella wrote:
 
-This is a preparation patch for moving page->_last_nid into page->flags
-that moves page flag layout information to a separate header. This patch
-is necessary because otherwise there would be a circular dependency
-between mm_types.h and mm.h.
+> What I'm seeing are clients taking either useconds to connect, or 3
+> seconds, which suggest SYNs are getting lost, but the network doesn't
+> seem to be the problem. I'm still investigating this, so unfortunately
+> I'm not really sure.
+> 
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/mm.h                |   40 ---------------------
- include/linux/mm_types.h          |    1 +
- include/linux/mmzone.h            |   22 +-----------
- include/linux/page-flags-layout.h |   71 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 73 insertions(+), 61 deletions(-)
- create mode 100644 include/linux/page-flags-layout.h
+A SYN packet or a SYN-ACK packet can be lost in the network.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 66e2f7c..87420e6 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -580,52 +580,12 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
-  * sets it, so none of the operations on it need to be atomic.
-  */
- 
--
--/*
-- * page->flags layout:
-- *
-- * There are three possibilities for how page->flags get
-- * laid out.  The first is for the normal case, without
-- * sparsemem.  The second is for sparsemem when there is
-- * plenty of space for node and section.  The last is when
-- * we have run out of space and have to fall back to an
-- * alternate (slower) way of determining the node.
-- *
-- * No sparsemem or sparsemem vmemmap: |       NODE     | ZONE | ... | FLAGS |
-- * classic sparse with space for node:| SECTION | NODE | ZONE | ... | FLAGS |
-- * classic sparse no space for node:  | SECTION |     ZONE    | ... | FLAGS |
-- */
--#if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
--#define SECTIONS_WIDTH		SECTIONS_SHIFT
--#else
--#define SECTIONS_WIDTH		0
--#endif
--
--#define ZONES_WIDTH		ZONES_SHIFT
--
--#if SECTIONS_WIDTH+ZONES_WIDTH+NODES_SHIFT <= BITS_PER_LONG - NR_PAGEFLAGS
--#define NODES_WIDTH		NODES_SHIFT
--#else
--#ifdef CONFIG_SPARSEMEM_VMEMMAP
--#error "Vmemmap: No space for nodes field in page flags"
--#endif
--#define NODES_WIDTH		0
--#endif
--
- /* Page flags: | [SECTION] | [NODE] | ZONE | ... | FLAGS | */
- #define SECTIONS_PGOFF		((sizeof(unsigned long)*8) - SECTIONS_WIDTH)
- #define NODES_PGOFF		(SECTIONS_PGOFF - NODES_WIDTH)
- #define ZONES_PGOFF		(NODES_PGOFF - ZONES_WIDTH)
- 
- /*
-- * We are going to use the flags for the page to node mapping if its in
-- * there.  This includes the case where there is no node, so it is implicit.
-- */
--#if !(NODES_WIDTH > 0 || NODES_SHIFT == 0)
--#define NODE_NOT_IN_PAGE_FLAGS
--#endif
--
--/*
-  * Define the bit shifts to access each section.  For non-existent
-  * sections we define the shift as 0; that plus a 0 mask ensures
-  * the compiler will optimise away reference to them.
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 47047cb..d05d632 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -12,6 +12,7 @@
- #include <linux/cpumask.h>
- #include <linux/page-debug-flags.h>
- #include <linux/uprobes.h>
-+#include <linux/page-flags-layout.h>
- #include <asm/page.h>
- #include <asm/mmu.h>
- 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 73b64a3..5e6a814 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -15,7 +15,7 @@
- #include <linux/seqlock.h>
- #include <linux/nodemask.h>
- #include <linux/pageblock-flags.h>
--#include <generated/bounds.h>
-+#include <linux/page-flags-layout.h>
- #include <linux/atomic.h>
- #include <asm/page.h>
- 
-@@ -308,24 +308,6 @@ enum zone_type {
- 
- #ifndef __GENERATING_BOUNDS_H
- 
--/*
-- * When a memory allocation must conform to specific limitations (such
-- * as being suitable for DMA) the caller will pass in hints to the
-- * allocator in the gfp_mask, in the zone modifier bits.  These bits
-- * are used to select a priority ordered list of memory zones which
-- * match the requested limits. See gfp_zone() in include/linux/gfp.h
-- */
--
--#if MAX_NR_ZONES < 2
--#define ZONES_SHIFT 0
--#elif MAX_NR_ZONES <= 2
--#define ZONES_SHIFT 1
--#elif MAX_NR_ZONES <= 4
--#define ZONES_SHIFT 2
--#else
--#error ZONES_SHIFT -- too many zones configured adjust calculation
--#endif
--
- struct zone {
- 	/* Fields commonly accessed by the page allocator */
- 
-@@ -1053,8 +1035,6 @@ static inline unsigned long early_pfn_to_nid(unsigned long pfn)
-  * PA_SECTION_SHIFT		physical address to/from section number
-  * PFN_SECTION_SHIFT		pfn to/from section number
-  */
--#define SECTIONS_SHIFT		(MAX_PHYSMEM_BITS - SECTION_SIZE_BITS)
--
- #define PA_SECTION_SHIFT	(SECTION_SIZE_BITS)
- #define PFN_SECTION_SHIFT	(SECTION_SIZE_BITS - PAGE_SHIFT)
- 
-diff --git a/include/linux/page-flags-layout.h b/include/linux/page-flags-layout.h
-new file mode 100644
-index 0000000..316805d
---- /dev/null
-+++ b/include/linux/page-flags-layout.h
-@@ -0,0 +1,71 @@
-+#ifndef PAGE_FLAGS_LAYOUT_H
-+#define PAGE_FLAGS_LAYOUT_H
-+
-+#include <linux/numa.h>
-+#include <generated/bounds.h>
-+
-+/*
-+ * When a memory allocation must conform to specific limitations (such
-+ * as being suitable for DMA) the caller will pass in hints to the
-+ * allocator in the gfp_mask, in the zone modifier bits.  These bits
-+ * are used to select a priority ordered list of memory zones which
-+ * match the requested limits. See gfp_zone() in include/linux/gfp.h
-+ */
-+#if MAX_NR_ZONES < 2
-+#define ZONES_SHIFT 0
-+#elif MAX_NR_ZONES <= 2
-+#define ZONES_SHIFT 1
-+#elif MAX_NR_ZONES <= 4
-+#define ZONES_SHIFT 2
-+#else
-+#error ZONES_SHIFT -- too many zones configured adjust calculation
-+#endif
-+
-+#ifdef CONFIG_SPARSEMEM
-+#include <asm/sparsemem.h>
-+
-+/* SECTION_SHIFT	#bits space required to store a section # */
-+#define SECTIONS_SHIFT	(MAX_PHYSMEM_BITS - SECTION_SIZE_BITS)
-+
-+#endif /* CONFIG_SPARSEMEM */
-+
-+/*
-+ * page->flags layout:
-+ *
-+ * There are three possibilities for how page->flags get
-+ * laid out.  The first is for the normal case, without
-+ * sparsemem.  The second is for sparsemem when there is
-+ * plenty of space for node and section.  The last is when
-+ * we have run out of space and have to fall back to an
-+ * alternate (slower) way of determining the node.
-+ *
-+ * No sparsemem or sparsemem vmemmap: |       NODE     | ZONE | ... | FLAGS |
-+ * classic sparse with space for node:| SECTION | NODE | ZONE | ... | FLAGS |
-+ * classic sparse no space for node:  | SECTION |     ZONE    | ... | FLAGS |
-+ */
-+#if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
-+#define SECTIONS_WIDTH		SECTIONS_SHIFT
-+#else
-+#define SECTIONS_WIDTH		0
-+#endif
-+
-+#define ZONES_WIDTH		ZONES_SHIFT
-+
-+#if SECTIONS_WIDTH+ZONES_WIDTH+NODES_SHIFT <= BITS_PER_LONG - NR_PAGEFLAGS
-+#define NODES_WIDTH		NODES_SHIFT
-+#else
-+#ifdef CONFIG_SPARSEMEM_VMEMMAP
-+#error "Vmemmap: No space for nodes field in page flags"
-+#endif
-+#define NODES_WIDTH		0
-+#endif
-+
-+/*
-+ * We are going to use the flags for the page to node mapping if its in
-+ * there.  This includes the case where there is no node, so it is implicit.
-+ */
-+#if !(NODES_WIDTH > 0 || NODES_SHIFT == 0)
-+#define NODE_NOT_IN_PAGE_FLAGS
-+#endif
-+
-+#endif /* _LINUX_PAGE_FLAGS_LAYOUT */
--- 
-1.7.9.2
+> > A serious rewrite of LISTEN code is needed, because the current
+> > implementation doesn't scale :
+> > 
+> > The SYNACK retransmits are done by a single timer wheel, holding the
+> > socket lock for too long. So increasing the backlog to 2^16 or 2^17 is
+> > not really an option.
+> > 
+> > Hash table are nice, but if we have to scan them, holding a single lock,
+> > they are not so nice.
+> 
+> So, the queue is really a hash table, then? So using any (2^n)-1 would
+> be a bad idea because when the backlog is next to full, the hash table
+> will be really slow? Is that why the + 1 is there? Is assuming everyone
+> will use a power of 2 an thus having a load factor of 0.5 at most?
+> 
+
+The kind of hash tables we use are power of two.
+
+The size of hash table has little effect, its automatic, to try to get
+an average of one item per hash slot, or less. Even if we had 10 items
+per slot, it would not be a big deal.
+
+What is important is the backlog, and I guess you didn't increase it
+properly. The somaxconn default is quite low (128)
+
+# sysctl -w net/ipv4/tcp_max_syn_backlog=4096
+net.ipv4.tcp_max_syn_backlog = 4096
+# sysctl -w net.core.somaxconn=4096
+net.core.somaxconn = 4096
+
+Then make sure your server use a big enough listen(..., backlog)
+parameter.
+
+
 
