@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab3AVRWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 12:22:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33940 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751972Ab3AVRWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 12:22:47 -0500
-Date: Tue, 22 Jan 2013 18:22:42 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Brad Tilley <brad@16s.us>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: PROBLEM: 3.8.0-rc4 keyboard failure at boot
-In-Reply-To: <20130122134658.GA27683@16s.us>
-Message-ID: <alpine.LNX.2.00.1301221821160.20374@pobox.suse.cz>
-References: <20130121213604.GA31225@16s.us> <20130122001346.GD16638@core.coreip.homeip.net> <alpine.LNX.2.00.1301221122380.20374@pobox.suse.cz> <20130122121947.GB27072@16s.us> <alpine.LNX.2.00.1301221341550.20374@pobox.suse.cz>
- <20130122134658.GA27683@16s.us>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754558Ab3AVRYl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 12:24:41 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29937 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622Ab3AVRYj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 12:24:39 -0500
+X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Yx4KJSfXDHoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=XVkAhMFrrdMA:10 a=3wD4zJs4LYkSwtiEOXQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358875477.21576.53.camel@gandalf.local.home>
+Subject: Re: [PATCH RT] Fix v3.2.37-rt55 build break
+From: Steven Rostedt <rostedt@goodmis.org>
+To: John Kacur <jkacur@redhat.com>
+Cc: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+Date: Tue, 22 Jan 2013 12:24:37 -0500
+In-Reply-To: <alpine.LFD.2.03.1301221804320.14732@tycho>
+References: <alpine.LFD.2.03.1301221804320.14732@tycho>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jan 2013, Brad Tilley wrote:
+On Tue, 2013-01-22 at 18:15 +0100, John Kacur wrote:
 
-> See attached. Two dmesgs from the same machine. One from 3.7.3, the 
-> other from 3.8-rc4 (with a ps2 keyboard). USB keyboards on this machine 
-> never work with 3.8, but always works with 3.7.
-> 
-> I used an old ps2 keyboard to enter the dm-crypt password. After that, 
-> the boot process continues and the USB keyboard and mouse become active 
-> and begin to work. However, USB keyboards do not work when the user is 
-> prompted to enter the dm-crypt decryption password early in the boot 
-> process. That's the primary issue.
+> The following is my fix applied to the rt-kernel, but it's fine with
+> me if you want to do the cherry-pick against the stable kernel,
+> and then respin fix-rt-int3-x86_32-3.2-rt.patch
 
-Are you sure that HID modules are loaded at the time you are being asked 
-for the dmcrypt password?
+Does this fail on vanilla 3.2.37 as well? If so, we need to push it to
+mainline stable, and then wait for it to be included for -rt.
 
-In the provided dmesg, I can see
+-- Steve
 
-[   17.106371] usb 2-1.2: New USB device found, idVendor=413c, idProduct=2106
-[   17.106376] usb 2-1.2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
-[   17.106380] usb 2-1.2: Product: Dell QuietKey Keyboard
-[   17.106382] usb 2-1.2: Manufacturer: Dell
-[   17.115713] input: Dell Dell QuietKey Keyboard as /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/input/input11
-[   17.115968] hid-generic 0003:413C:2106.0002: input,hidraw1: USB HID v1.10 Keyboard [Dell Dell QuietKey Keyboard] onusb-0000:00:1d.0-1.2/input0
 
-i.e. the keyboard gets properly autodeteted, but I have no idea whether 
-this was before or after dm-crypt password prompt.
-
--- 
-Jiri Kosina
-SUSE Labs
