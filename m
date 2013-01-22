@@ -1,328 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab3AVLAu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 06:00:50 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4549 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab3AVLAt (ORCPT
+	id S1753102Ab3AVLDS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 06:03:18 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:35767 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab3AVLDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 06:00:49 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 22 Jan 2013 03:00:36 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH v2] usb: phy: moving all PHY API definitions to usb/phy directory
-Date: Tue, 22 Jan 2013 16:31:11 +0530
-Message-ID: <1358852471-28260-1-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Tue, 22 Jan 2013 06:03:17 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: balbi@ti.com
+Subject: Re: [PATCH] usb: gadget: nokia: Add mass storage driver to g_nokia
+Date: Tue, 22 Jan 2013 12:03:09 +0100
+User-Agent: KMail/1.13.7 (Linux/3.5.0-22-generic; KDE/4.9.4; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1358650693-29971-1-git-send-email-pali.rohar@gmail.com> <201301201117.32096@pali> <20130121080506.GA8777@arwen.pp.htv.fi>
+In-Reply-To: <20130121080506.GA8777@arwen.pp.htv.fi>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed;
+  boundary="nextPart2852207.8fKV1q5sr4";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301221203.09264@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As drivers/usb/otg/otg.c contains most of the PHY related APIs
-which are not OTG specific, moving them to more logical place
-under driver/usb/phy.
+--nextPart2852207.8fKV1q5sr4
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
----
-delta from v1:
-Missed adding newly created file usb_phy.c with previous patch.
-hence sending v2, after adding that.
+On Monday 21 January 2013 09:05:06 Felipe Balbi wrote:
+> Hi,
+>=20
+> On Sun, Jan 20, 2013 at 11:17:31AM +0100, Pali Roh=C3=A1r wrote:
+> > On Sunday 20 January 2013 10:25:37 Felipe Balbi wrote:
+> > > On Sun, Jan 20, 2013 at 03:58:13AM +0100, Pali Roh=C3=A1r wrote:
+> > > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > >=20
+> > > NAK for two reasons:
+> > >=20
+> > > a) the original Nokia kernel used a separate
+> > > g_file_storage gadget to use Mass Storage mode, use that
+> > >=20
+> > > b) there is no commit log
+> >=20
+> > Reason why add mass storage mode to g_nokia is to avoid
+> > switching between g_{file,mass}_storage and g_nokia and to
+> > have one gadget driver for Nokia N900. It is better to have
+> > usb network and mass storage mode in one driver (and not to
+> > unload & load another).
+> >=20
+> > I tested this patch with 3.8-rc3 kernel on Nokia N900 and
+> > usb network with mass storage mode working without
+> > problems.
+>=20
+> Doesn't matter, in this case this is something which nokia
+> wrote to carry on their Maemo/MeeGo devices so unless someone
+> from Nokia says this is how they want to use nokia.c from now
+> on, I can't simply risk breaking all other users for your own
+> convenience.
+>=20
 
- drivers/usb/otg/otg.c                    |  184 ------------------------------
- drivers/usb/phy/Makefile                 |    1 +
- drivers/usb/{otg/otg.c => phy/usb_phy.c} |   45 +-------
- 3 files changed, 6 insertions(+), 224 deletions(-)
- copy drivers/usb/{otg/otg.c => phy/usb_phy.c} (82%)
+Hello,
 
-diff --git a/drivers/usb/otg/otg.c b/drivers/usb/otg/otg.c
-index a30c041..95561b9 100644
---- a/drivers/usb/otg/otg.c
-+++ b/drivers/usb/otg/otg.c
-@@ -17,190 +17,6 @@
- 
- #include <linux/usb/otg.h>
- 
--static LIST_HEAD(phy_list);
--static DEFINE_SPINLOCK(phy_lock);
--
--static struct usb_phy *__usb_find_phy(struct list_head *list,
--	enum usb_phy_type type)
--{
--	struct usb_phy  *phy = NULL;
--
--	list_for_each_entry(phy, list, head) {
--		if (phy->type != type)
--			continue;
--
--		return phy;
--	}
--
--	return ERR_PTR(-ENODEV);
--}
--
--static void devm_usb_phy_release(struct device *dev, void *res)
--{
--	struct usb_phy *phy = *(struct usb_phy **)res;
--
--	usb_put_phy(phy);
--}
--
--static int devm_usb_phy_match(struct device *dev, void *res, void *match_data)
--{
--	return res == match_data;
--}
--
--/**
-- * devm_usb_get_phy - find the USB PHY
-- * @dev - device that requests this phy
-- * @type - the type of the phy the controller requires
-- *
-- * Gets the phy using usb_get_phy(), and associates a device with it using
-- * devres. On driver detach, release function is invoked on the devres data,
-- * then, devres data is freed.
-- *
-- * For use by USB host and peripheral drivers.
-- */
--struct usb_phy *devm_usb_get_phy(struct device *dev, enum usb_phy_type type)
--{
--	struct usb_phy **ptr, *phy;
--
--	ptr = devres_alloc(devm_usb_phy_release, sizeof(*ptr), GFP_KERNEL);
--	if (!ptr)
--		return NULL;
--
--	phy = usb_get_phy(type);
--	if (!IS_ERR(phy)) {
--		*ptr = phy;
--		devres_add(dev, ptr);
--	} else
--		devres_free(ptr);
--
--	return phy;
--}
--EXPORT_SYMBOL(devm_usb_get_phy);
--
--/**
-- * usb_get_phy - find the USB PHY
-- * @type - the type of the phy the controller requires
-- *
-- * Returns the phy driver, after getting a refcount to it; or
-- * -ENODEV if there is no such phy.  The caller is responsible for
-- * calling usb_put_phy() to release that count.
-- *
-- * For use by USB host and peripheral drivers.
-- */
--struct usb_phy *usb_get_phy(enum usb_phy_type type)
--{
--	struct usb_phy	*phy = NULL;
--	unsigned long	flags;
--
--	spin_lock_irqsave(&phy_lock, flags);
--
--	phy = __usb_find_phy(&phy_list, type);
--	if (IS_ERR(phy)) {
--		pr_err("unable to find transceiver of type %s\n",
--			usb_phy_type_string(type));
--		goto err0;
--	}
--
--	get_device(phy->dev);
--
--err0:
--	spin_unlock_irqrestore(&phy_lock, flags);
--
--	return phy;
--}
--EXPORT_SYMBOL(usb_get_phy);
--
--/**
-- * devm_usb_put_phy - release the USB PHY
-- * @dev - device that wants to release this phy
-- * @phy - the phy returned by devm_usb_get_phy()
-- *
-- * destroys the devres associated with this phy and invokes usb_put_phy
-- * to release the phy.
-- *
-- * For use by USB host and peripheral drivers.
-- */
--void devm_usb_put_phy(struct device *dev, struct usb_phy *phy)
--{
--	int r;
--
--	r = devres_destroy(dev, devm_usb_phy_release, devm_usb_phy_match, phy);
--	dev_WARN_ONCE(dev, r, "couldn't find PHY resource\n");
--}
--EXPORT_SYMBOL(devm_usb_put_phy);
--
--/**
-- * usb_put_phy - release the USB PHY
-- * @x: the phy returned by usb_get_phy()
-- *
-- * Releases a refcount the caller received from usb_get_phy().
-- *
-- * For use by USB host and peripheral drivers.
-- */
--void usb_put_phy(struct usb_phy *x)
--{
--	if (x)
--		put_device(x->dev);
--}
--EXPORT_SYMBOL(usb_put_phy);
--
--/**
-- * usb_add_phy - declare the USB PHY
-- * @x: the USB phy to be used; or NULL
-- * @type - the type of this PHY
-- *
-- * This call is exclusively for use by phy drivers, which
-- * coordinate the activities of drivers for host and peripheral
-- * controllers, and in some cases for VBUS current regulation.
-- */
--int usb_add_phy(struct usb_phy *x, enum usb_phy_type type)
--{
--	int		ret = 0;
--	unsigned long	flags;
--	struct usb_phy	*phy;
--
--	if (x->type != USB_PHY_TYPE_UNDEFINED) {
--		dev_err(x->dev, "not accepting initialized PHY %s\n", x->label);
--		return -EINVAL;
--	}
--
--	spin_lock_irqsave(&phy_lock, flags);
--
--	list_for_each_entry(phy, &phy_list, head) {
--		if (phy->type == type) {
--			ret = -EBUSY;
--			dev_err(x->dev, "transceiver type %s already exists\n",
--						usb_phy_type_string(type));
--			goto out;
--		}
--	}
--
--	x->type = type;
--	list_add_tail(&x->head, &phy_list);
--
--out:
--	spin_unlock_irqrestore(&phy_lock, flags);
--	return ret;
--}
--EXPORT_SYMBOL(usb_add_phy);
--
--/**
-- * usb_remove_phy - remove the OTG PHY
-- * @x: the USB OTG PHY to be removed;
-- *
-- * This reverts the effects of usb_add_phy
-- */
--void usb_remove_phy(struct usb_phy *x)
--{
--	unsigned long	flags;
--
--	spin_lock_irqsave(&phy_lock, flags);
--	if (x)
--		list_del(&x->head);
--	spin_unlock_irqrestore(&phy_lock, flags);
--}
--EXPORT_SYMBOL(usb_remove_phy);
--
- const char *otg_state_string(enum usb_otg_state state)
- {
- 	switch (state) {
-diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
-index 1a579a8..5a21017 100644
---- a/drivers/usb/phy/Makefile
-+++ b/drivers/usb/phy/Makefile
-@@ -4,6 +4,7 @@
- 
- ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
- 
-+obj-y							+= usb_phy.o
- obj-$(CONFIG_OMAP_USB2)			+= omap-usb2.o
- obj-$(CONFIG_USB_ISP1301)		+= isp1301.o
- obj-$(CONFIG_MV_U3D_PHY)		+= mv_u3d_phy.o
-diff --git a/drivers/usb/otg/otg.c b/drivers/usb/phy/usb_phy.c
-similarity index 82%
-copy from drivers/usb/otg/otg.c
-copy to drivers/usb/phy/usb_phy.c
-index a30c041..1c74261 100644
---- a/drivers/usb/otg/otg.c
-+++ b/drivers/usb/phy/usb_phy.c
-@@ -1,7 +1,7 @@
- /*
-- * otg.c -- USB OTG utility code
-+ * usb_phy.c -- USB PHY utility code
-  *
-- * Copyright (C) 2004 Texas Instruments
-+ * Copyright (C) 200 Texas Instruments
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-@@ -15,7 +15,7 @@
- #include <linux/device.h>
- #include <linux/slab.h>
- 
--#include <linux/usb/otg.h>
-+#include <linux/usb/phy.h>
- 
- static LIST_HEAD(phy_list);
- static DEFINE_SPINLOCK(phy_lock);
-@@ -185,8 +185,8 @@ out:
- EXPORT_SYMBOL(usb_add_phy);
- 
- /**
-- * usb_remove_phy - remove the OTG PHY
-- * @x: the USB OTG PHY to be removed;
-+ * usb_remove_phy - remove PHY
-+ * @x: the USB PHY to be removed;
-  *
-  * This reverts the effects of usb_add_phy
-  */
-@@ -200,38 +200,3 @@ void usb_remove_phy(struct usb_phy *x)
- 	spin_unlock_irqrestore(&phy_lock, flags);
- }
- EXPORT_SYMBOL(usb_remove_phy);
--
--const char *otg_state_string(enum usb_otg_state state)
--{
--	switch (state) {
--	case OTG_STATE_A_IDLE:
--		return "a_idle";
--	case OTG_STATE_A_WAIT_VRISE:
--		return "a_wait_vrise";
--	case OTG_STATE_A_WAIT_BCON:
--		return "a_wait_bcon";
--	case OTG_STATE_A_HOST:
--		return "a_host";
--	case OTG_STATE_A_SUSPEND:
--		return "a_suspend";
--	case OTG_STATE_A_PERIPHERAL:
--		return "a_peripheral";
--	case OTG_STATE_A_WAIT_VFALL:
--		return "a_wait_vfall";
--	case OTG_STATE_A_VBUS_ERR:
--		return "a_vbus_err";
--	case OTG_STATE_B_IDLE:
--		return "b_idle";
--	case OTG_STATE_B_SRP_INIT:
--		return "b_srp_init";
--	case OTG_STATE_B_PERIPHERAL:
--		return "b_peripheral";
--	case OTG_STATE_B_WAIT_ACON:
--		return "b_wait_acon";
--	case OTG_STATE_B_HOST:
--		return "b_host";
--	default:
--		return "UNDEFINED";
--	}
--}
--EXPORT_SYMBOL(otg_state_string);
--- 
-1.7.0.4
+you may know that Nokia not working on any linux Maemo/MeeGo=20
+systems anymore. And also that Nokia devices needs own patched=20
+kernel. Also g_nokia gadget is for Nokia N900 and this device=20
+with original Maemo 5 system which was supported by Nokia is=20
+locked for patched 2.6.28 kernel. More drivers in 2.6.28 was not=20
+upstreamed, so running other kernels will not work without=20
+problems. And waiting what Nokia say is now irrelevant, because=20
+N900 is at end-of-live cycle and Nokia not doing with linux=20
+devices anymore. So I do not understand why current code cannot=20
+be extended for more functionality. Because patch is not signed=20
+by Nokia?
 
+There are more developers which playing with upstream kernel on=20
+Nokia N900 and trying to use some modern linux distribution on=20
+it. And who using upstream kernels on N900 also want some=20
+additional functionality which was not in 2.6.28. And having mass=20
+storage in g_nokia is usefull.
+
+Also you can see that this patch simply adding new composite=20
+gadget to exisitng driver. Nothing is removed, so original code=20
+is compatible with these changes. If somebody still want (for=20
+some reason) to switching between g_nokia and g_file_storage (ops,=20
+it was renamed to g_mass_storage, so now it is broken on old=20
+Nokia systems...) it is still possible.
+
+And when I looked into nokia 2.6.28 kernel, they also patched=20
+g_file_storage, so I think it is incompatible with upstream too.=20
+So why to care about current API implementation in upstream=20
+kernel (do not allow to add new functionality) which is=20
+incompatible with Nokia patched kernel?
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2852207.8fKV1q5sr4
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlD+ce0ACgkQi/DJPQPkQ1KimACcCvMpObAw6rEAaBMHVlLuYJG+
+b9MAoKHmMd9JfIp7izVBL7aGPXH0rwKp
+=77P3
+-----END PGP SIGNATURE-----
+
+--nextPart2852207.8fKV1q5sr4--
