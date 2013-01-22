@@ -1,177 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab3AVFUD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 00:20:03 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:43981 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab3AVFUB (ORCPT
+	id S1752346Ab3AVFXu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 00:23:50 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:11765 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab3AVFXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 00:20:01 -0500
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH v2] media: adv7343: accept configuration through platform data
-Date: Tue, 22 Jan 2013 10:49:50 +0530
-Message-Id: <1358831990-17616-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 22 Jan 2013 00:23:48 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-82-50fe2263e71d
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
+        balbi@ti.com, thomas.abraham@linaro.org, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, sylvester.nawrocki@gmail.com,
+        dianders@chromium.org, jg1.han@samsung.com, p.paneri@samsung.com,
+        cpgs@samsung.com
+References: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
+Subject: RE: [PATCH v6 0/4] Adding usb2.0 host-phy support for exynos5250
+Date: Mon, 21 Jan 2013 21:23:28 -0800
+Message-id: <053c01cdf860$9e98df20$dbca9d60$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQJl+CDGWU+ThpKKeozp1tuXzSNA+pckz+BA
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t8zfd1kpX8BBjd7pCwu75rDZjHj/D4m
+	i0XLWpkdmD0+b5ILYIzisklJzcksSy3St0vgypg74xRTwSfBij+N11gbGOfzdjFyckgImEhs
+	mHWEBcIWk7hwbz1bFyMXh5DAMkaJZ/fuMcEULX5/mhEisYhR4te35ywQzl9GiT+zV7ODVLEJ
+	aEgcfv8MzBYR8JC4e2w5O0gRs8BtJonpd7eD7RACSiycuIoVxOYU8JRYv2kmI4gtDGTfX7YH
+	bB2LgKrEyTNLweK8ApYSR1ZvYYOwBSV+TL4HNodZQEti87YmVghbXmLzmrfMEKcqSOw4+5oR
+	4ggjiTUPd7FB1IhLTHrwEOwgCYFN7BLT3i1mhVgmIPFt8iGgoRxACVmJTQeg5khKHFxxg2UC
+	o8QsJKtnIVk9C8nqWUhWLGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kREnNSOxhXNlgc
+	YhTgYFTi4bV49DdAiDWxrLgy9xCjBAezkghv/z+gEG9KYmVValF+fFFpTmrxIcZkoGMnMkuJ
+	JucD00FeSbyhsbGJmYmpibmlqbkpacJK4ryMp54ECAmkJ5akZqemFqQWwWxh4uCUamBklkni
+	+Wys3c/3YFu3Cb/A1ZUXl4eJ6P49W/fo7Pf2/2VzfwgfDn64bW5AXsBOJ68bpw+xBHyJ8HPl
+	XdDh+j+dN2zJsWeFKgzBO3yC3ty5nq2f/oYtiWHuLwvFDdNVVS/M4Lu4R7Jpa8a+zNwpzjZS
+	suvP6ZdZL14Wd+CP7QcH7XyjPW3Z/hlKLMUZiYZazEXFiQDxQTR//QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jAd1kpX8BBg/Xilhc3jWHzWLG+X1M
+	FouWtTI7MHt83iQXwBjVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
+	aqvk4hOg65aZAzRfSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYx5gxd8Yp
+	poJPghV/Gq+xNjDO5+1i5OSQEDCRWPz+NCOELSZx4d56ti5GLg4hgUWMEr++PWeBcP4ySvyZ
+	vZodpIpNQEPi8PtnYLaIgIfE3WPL2UGKmAVuM0lMv7udBSQhBJRYOHEVK4jNKeApsX7TTLAV
+	wkD2/WV7mEBsFgFViZNnloLFeQUsJY6s3sIGYQtK/Jh8D2wOs4CWxOZtTawQtrzE5jVvmSFO
+	VZDYcfY1I8QRRhJrHu5ig6gRl5j04CH7BEahWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSe
+	a6hXnJhbXJqXrpecn7uJERzRz6R2MK5ssDjEKMDBqMTDa/Hob4AQa2JZcWXuIUYJDmYlEd7+
+	f0Ah3pTEyqrUovz4otKc1OJDjMlAn05klhJNzgcmm7ySeENjEzMjSyMzCyMTc3PShJXEeRlP
+	PQkQEkhPLEnNTk0tSC2C2cLEwSnVwNiep3TemttPImuy3KJbhnknJjyy8+js3b7hTTjfgb/S
+	97//nWuW/HnP9Le9RfFP/hzkSfB6MmG1R9/VB1XRF34t0q5U6nQorVjodO68zdW9s+6v2Ra1
+	0O7VwZQ+dhmFwnDJaXfsjHiE3AO/RO3iX8grNZkrISVxf175hz1JKmd+VFdIearNTlBiKc5I
+	NNRiLipOBADtsXx5LAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+Vivek Gautam wrote:
+> 
+> Changes from v5:
+>  - Rebased on top of latest patches:
+>         usb: phy: samsung: Introducing usb phy driver for hsotg (v9)
+>         usb: phy: samsung: Add support to set pmu isolation (v6)
+>    As a result adding hostphy enable mask and hostphy register offsets
+>    to driver data in order to access the HOSTPHY CONTROL register.
+> 
+>  - Adding member 'otg' to struct samsung-usbphy so that its consumers
+>    can call otg->set_host so as to make 'phy' aware of the consumer type:
+> 	HOST/DEVICE
+> 
+>  - Adding 'otg' to 'struct s5p_ehci_hcd' and 'struct exynos_ohci_hcd'
+>    which keeps track of 'otg' of the controllers' phy. This then sets
+>    the host.
+> 
+>  - Moved samsung_usbphy_set_type() calls from ehci-s5p and ohci-exynos
+>    to phy driver itself where based on phy_type it is called.
+> 
+>  - Added separate macro definition for USB20PHY_CFG register to select
+>    between host/device type usb link.
+> 
+>  - Removing unnecessary argument 'phy_type' from
+> samsung_usbphy_set_type()
+>    and samsung_usbphy_cfg_sel().
+> 
+>  - Addressed few nits:
+> 	-- added macro for 'KHZ'
+> 	-- removing useless 'if' from samsung_usbphy_cfg_sel()
+> 	-- keeping the place of clk_get intact and requesting driver
+> 	   data before that.
+> 
+> Vivek Gautam (4):
+>   ARM: EXYNOS: Update & move usb-phy types to generic include layer
+>   usb: phy: samsung: Add host phy support to samsung-phy driver
+>   USB: ehci-s5p: Add phy driver support
+>   USB: ohci-exynos: Add phy driver support
+> 
+>  .../devicetree/bindings/usb/samsung-usbphy.txt     |   12 +-
+>  drivers/usb/host/ehci-s5p.c                        |   81 +++-
+>  drivers/usb/host/ohci-exynos.c                     |   85 +++-
+>  drivers/usb/phy/Kconfig                            |    2 +-
+>  drivers/usb/phy/samsung-usbphy.c                   |  512
+++++++++++++++++++--
+>  include/linux/usb/samsung_usb_phy.h                |   16 +
+>  6 files changed, 635 insertions(+), 73 deletions(-)
+>  create mode 100644 include/linux/usb/samsung_usb_phy.h
+> 
+> --
+> 1.7.6.5
 
-The current code was implemented with some default configurations,
-this default configuration works on board and doesn't work on other.
+Looks good to me,
 
-This patch accepts the configuration through platform data and configures
-the encoder depending on the data passed.
+Felipe and Greg, I don't know who should take this series anyway, feel free
+to add  my ack:
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
----
-  Changes for v2:
-  1: Fixed review comments pointed by Hans.
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
- drivers/media/i2c/adv7343.c |   36 +++++++++++++++++++++++++----
- include/media/adv7343.h     |   52 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 83 insertions(+), 5 deletions(-)
+Thanks.
 
-diff --git a/drivers/media/i2c/adv7343.c b/drivers/media/i2c/adv7343.c
-index 2b5aa67..a058058 100644
---- a/drivers/media/i2c/adv7343.c
-+++ b/drivers/media/i2c/adv7343.c
-@@ -43,6 +43,7 @@ MODULE_PARM_DESC(debug, "Debug level 0-1");
- struct adv7343_state {
- 	struct v4l2_subdev sd;
- 	struct v4l2_ctrl_handler hdl;
-+	const struct adv7343_platform_data *pdata;
- 	u8 reg00;
- 	u8 reg01;
- 	u8 reg02;
-@@ -215,12 +216,23 @@ static int adv7343_setoutput(struct v4l2_subdev *sd, u32 output_type)
- 	/* Enable Appropriate DAC */
- 	val = state->reg00 & 0x03;
- 
--	if (output_type == ADV7343_COMPOSITE_ID)
--		val |= ADV7343_COMPOSITE_POWER_VALUE;
--	else if (output_type == ADV7343_COMPONENT_ID)
--		val |= ADV7343_COMPONENT_POWER_VALUE;
-+	/* configure default configuration */
-+	if (!state->pdata)
-+		if (output_type == ADV7343_COMPOSITE_ID)
-+			val |= ADV7343_COMPOSITE_POWER_VALUE;
-+		else if (output_type == ADV7343_COMPONENT_ID)
-+			val |= ADV7343_COMPONENT_POWER_VALUE;
-+		else
-+			val |= ADV7343_SVIDEO_POWER_VALUE;
- 	else
--		val |= ADV7343_SVIDEO_POWER_VALUE;
-+		val = state->pdata->mode_config.sleep_mode << 0 |
-+		      state->pdata->mode_config.pll_control << 1 |
-+		      state->pdata->mode_config.dac_3 << 2 |
-+		      state->pdata->mode_config.dac_2 << 3 |
-+		      state->pdata->mode_config.dac_1 << 4 |
-+		      state->pdata->mode_config.dac_6 << 5 |
-+		      state->pdata->mode_config.dac_5 << 6 |
-+		      state->pdata->mode_config.dac_4 << 7;
- 
- 	err = adv7343_write(sd, ADV7343_POWER_MODE_REG, val);
- 	if (err < 0)
-@@ -238,6 +250,17 @@ static int adv7343_setoutput(struct v4l2_subdev *sd, u32 output_type)
- 
- 	/* configure SD DAC Output 2 and SD DAC Output 1 bit to zero */
- 	val = state->reg82 & (SD_DAC_1_DI & SD_DAC_2_DI);
-+
-+	if (state->pdata && state->pdata->sd_config.sd_dac_out1)
-+		val = val | (state->pdata->sd_config.sd_dac_out1 << 1);
-+	else if (state->pdata && !state->pdata->sd_config.sd_dac_out1)
-+		val = val & ~(state->pdata->sd_config.sd_dac_out1 << 1);
-+
-+	if (state->pdata && state->pdata->sd_config.sd_dac_out2)
-+		val = val | (state->pdata->sd_config.sd_dac_out2 << 2);
-+	else if (state->pdata && !state->pdata->sd_config.sd_dac_out2)
-+		val = val & ~(state->pdata->sd_config.sd_dac_out2 << 2);
-+
- 	err = adv7343_write(sd, ADV7343_SD_MODE_REG2, val);
- 	if (err < 0)
- 		goto setoutput_exit;
-@@ -401,6 +424,9 @@ static int adv7343_probe(struct i2c_client *client,
- 	if (state == NULL)
- 		return -ENOMEM;
- 
-+	/* Copy board specific information here */
-+	state->pdata = client->dev.platform_data;
-+
- 	state->reg00	= 0x80;
- 	state->reg01	= 0x00;
- 	state->reg02	= 0x20;
-diff --git a/include/media/adv7343.h b/include/media/adv7343.h
-index d6f8a4e..944757b 100644
---- a/include/media/adv7343.h
-+++ b/include/media/adv7343.h
-@@ -20,4 +20,56 @@
- #define ADV7343_COMPONENT_ID	(1)
- #define ADV7343_SVIDEO_ID	(2)
- 
-+/**
-+ * adv7343_power_mode - power mode configuration.
-+ * @sleep_mode: on enable the current consumption is reduced to micro ampere
-+ *		level. All DACs and the internal PLL circuit are disabled.
-+ *		Registers can be read from and written in sleep mode.
-+ * @pll_control: PLL and oversampling control. This control allows internal
-+ *		 PLL 1 circuit to be powered down and the oversampling to be
-+ *		 switched off.
-+ * @dac_1: power on/off DAC 1.
-+ * @dac_2: power on/off DAC 2.
-+ * @dac_3: power on/off DAC 3.
-+ * @dac_4: power on/off DAC 4.
-+ * @dac_5: power on/off DAC 5.
-+ * @dac_6: power on/off DAC 6.
-+ *
-+ * Power mode register (Register 0x0), for more info refer REGISTER MAP ACCESS
-+ * section of datasheet[1], table 17 page no 30.
-+ *
-+ * [1] http://www.analog.com/static/imported-files/data_sheets/ADV7342_7343.pdf
-+ */
-+struct adv7343_power_mode {
-+	bool sleep_mode;
-+	bool pll_control;
-+	bool dac_1;
-+	bool dac_2;
-+	bool dac_3;
-+	bool dac_4;
-+	bool dac_5;
-+	bool dac_6;
-+};
-+
-+/**
-+ * struct adv7343_sd_config - SD Only Output Configuration.
-+ * @sd_dac_out1: Configure SD DAC Output 1.
-+ * @sd_dac_out2: Configure SD DAC Output 2.
-+ */
-+struct adv7343_sd_config {
-+	/* SD only Output Configuration */
-+	bool sd_dac_out1;
-+	bool sd_dac_out2;
-+};
-+
-+/**
-+ * struct adv7343_platform_data - Platform data values and access functions.
-+ * @mode_config: Configuration for power mode.
-+ * @sd_config: SD Only Configuration.
-+ */
-+struct adv7343_platform_data {
-+	struct adv7343_power_mode mode_config;
-+	struct adv7343_sd_config sd_config;
-+};
-+
- #endif				/* End of #ifndef ADV7343_H */
--- 
-1.7.4.1
+- Kukjin
 
