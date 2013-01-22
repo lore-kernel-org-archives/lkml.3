@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813Ab3AVA3y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 19:29:54 -0500
-Received: from mga02.intel.com ([134.134.136.20]:20893 "EHLO mga02.intel.com"
+	id S1752162Ab3AVAcq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 19:32:46 -0500
+Received: from mga03.intel.com ([143.182.124.21]:41767 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751090Ab3AVA3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 19:29:53 -0500
+	id S1751090Ab3AVAcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 19:32:45 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,510,1355126400"; 
-   d="scan'208";a="250457397"
-From: Sathish Kuppuswamy <sathish.kuppuswamy@intel.com>
-To: linux-kernel@vger.kernel.org, len.brown@intel.com
-Cc: josh.triplett@intel.com, Sathish Kuppuswamy <sathish.kuppuswamy@intel.com>
-Subject: turbostat:add support for DESTDIR in make install
-Date: Mon, 21 Jan 2013 16:28:17 -0800
-Message-Id: <1358814497-8112-1-git-send-email-sathish.kuppuswamy@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+   d="scan'208";a="246752789"
+Date: Tue, 22 Jan 2013 01:32:40 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH v2 2/2] backlight: add new lp8788 backlight driver
+Message-ID: <20130122003240.GD7409@sortiz-mobl>
+References: <A874F61F95741C4A9BA573A70FE3998F69E108D2@DQHE02.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E108D2@DQHE02.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding DESTDIR makes it easier for distributions to create and build packages of turbostat 
-as normal user. It also provides space for choosing target directory to deploy the packages
+Hi,
 
-Signed-off-by: Sathish Kuppuswamy <sathish.kuppuswamy@intel.com>
----
- tools/power/x86/turbostat/Makefile |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+On Fri, Dec 21, 2012 at 07:55:23AM +0000, Kim, Milo wrote:
+> TI LP8788 PMU supports regulators, battery charger, RTC, ADC, backlight driver
+> and current sinks.
+> This patch enables LP8788 backlight module.
+> 
+> (Brightness mode)
+> The brightness is controlled by PWM input or I2C register.
+> All modes are supported in the driver.
+> 
+> (Platform data)
+> Configurable data can be defined in the platform side.
+>  name                  : backlight driver name. (default: "lcd-backlight")
+>  initial_brightness    : initial value of backlight brightness
+>  bl_mode               : brightness control by PWM or lp8788 register
+>  dim_mode              : dimming mode selection
+>  full_scale            : full scale current setting
+>  rise_time             : brightness ramp up step time
+>  fall_time             : brightness ramp down step time
+>  pwm_pol               : PWM polarity setting when bl_mode is PWM based
+>  period_ns             : platform specific PWM period value. unit is nano.
+> 
+> The default values are set in case no platform data is defined.
+> 
+> Patch v2.
+>  use generic PWM functions rather than lp8788 platform data function calls.
+>  add configurable PWM period in the platform data.
+>  replace module_init() and module_exit() with module_platform_driver().
+> 
+> Patch v1.
+>  initial patch
+> 
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
+>  drivers/video/backlight/Kconfig     |    6 +
+>  drivers/video/backlight/Makefile    |    1 +
+>  drivers/video/backlight/lp8788_bl.c |  350 +++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/lp8788.h          |   16 +-
+For the MFD parts:
 
-diff --git a/tools/power/x86/turbostat/Makefile b/tools/power/x86/turbostat/Makefile
-index fd8e1f1..d5eedfb 100644
---- a/tools/power/x86/turbostat/Makefile
-+++ b/tools/power/x86/turbostat/Makefile
-@@ -3,6 +3,8 @@ turbostat : turbostat.c
- clean :
- 	rm -f turbostat
- 
--install :
--	install turbostat /usr/bin/turbostat
--	install turbostat.8 /usr/share/man/man8
-+install : 
-+	mkdir -p ${DESTDIR}/usr/bin
-+	mkdir -p ${DESTDIR}/usr/share/man/man8
-+	install turbostat ${DESTDIR}/usr/bin/turbostat
-+	install turbostat.8 ${DESTDIR}/usr/share/man/man8
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+
+Cheers,
+Samuel.
+
 -- 
-1.7.9.5
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
