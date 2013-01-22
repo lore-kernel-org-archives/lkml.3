@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab3AVPir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 10:38:47 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40114 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753725Ab3AVPiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 10:38:46 -0500
-Message-ID: <50FEB275.80504@ti.com>
-Date: Tue, 22 Jan 2013 16:38:29 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
+	id S1754343Ab3AVPjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 10:39:43 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:54525 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383Ab3AVPjm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 10:39:42 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 13/15] USB: ehci: make orion and mxc bus glues coexist
+Date: Tue, 22 Jan 2013 15:38:55 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Manjunath Goudar <manjunath.goudar@linaro.org>, balbi@ti.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+References: <Pine.LNX.4.44L0.1301221011190.1510-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1301221011190.1510-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: kishon <kishon@ti.com>
-CC: Roger Quadros <rogerq@ti.com>, <linux@arm.linux.org.uk>,
-        <tony@atomide.com>, <gregkh@linuxfoundation.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <balbi@ti.com>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v1 6/6] USB: MUSB: OMAP: get PHY by phandle for dt boot
-References: <1358848694-20145-1-git-send-email-kishon@ti.com> <1358848694-20145-7-git-send-email-kishon@ti.com> <50FE9F5C.2010501@ti.com> <50FEA447.1090701@ti.com> <50FEA696.8000506@ti.com> <50FEAE96.30706@ti.com>
-In-Reply-To: <50FEAE96.30706@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301221538.55975.arnd@arndb.de>
+X-Provags-ID: V02:K0:jiKTpi7jQ23Y30Dev74QwWh4BLgJMebiSUc/j/ASSXV
+ 3W6KKsS8hjFmcQClKU+AYXvuDXwK8jsjqSa0htkxiEPSrQ0//y
+ y81mp18SsW5C7NmWqgd/rYmJ70xdTESkMnfNPmz3IkpuaunoaL
+ fIZkivQocgW+qhnpmohWVQoz7ChOta69sZce7eNqw+gWoqLzl0
+ uuZ99GlTmgMCZ9cpkQCYvXPsS3x9RfmpL32T8jSD9u1rIJPOyh
+ jUl2zokLQ6SwRSL/EUvqedbBhm6M9fo9cz3H/ViRrrlNBS70oA
+ OHjQfYiqoInnHpiscqiHyZsYGVCwk8T6fVaNLp1WTj8f3zbD6+
+ /z14p9jKoVzqxwy8g6Q8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2013 04:21 PM, kishon wrote:
-> But it's better to check if deferred probing
-> takes place whenever a new driver is bound to a device as you just mentioned.
+On Tuesday 22 January 2013, Alan Stern wrote:
+> In order to prevent this, you have to make sure that each glue driver
+> depends on USB_ARCH_HAS_EHCI.  A simple way to do this is to surround
+> the Kconfig entries for those drivers with "if USB && 
+> USB_ARCH_HAS_EHCI" ... "endif".
 
-Whenever you load (might be also when you unload) a driver the deferred
-modules will try to probe again. This is to check back if the dependency of
-the deferred modules has been fulfilled by the new driver or not.
+I was actually thinking we could remove the use of USB_ARCH_HAS_EHCI
+as well once we have inverted the logic for selecting USB_EHCI_HCD,
+but there is another problem with that, because then we still need
+something to select USB_ARCH_HAS_HCD, or kill that symbol as well.
 
--- 
-Péter
+	Arnd
