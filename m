@@ -1,47 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab3AVXhi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 18:37:38 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:57121 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241Ab3AVXhe (ORCPT
+	id S1756080Ab3AVXiK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 18:38:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47111 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab3AVXiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 18:37:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121121211529.GA27696@obsidianresearch.com>
-References: <20121121211529.GA27696@obsidianresearch.com>
-Date: Tue, 22 Jan 2013 17:29:23 -0600
-Message-ID: <CAM0nabE9qORsD1bMDm6EUZogPqb2m-X8rZ-xVqJecM7oJyaciw@mail.gmail.com>
-Subject: Re: [tpmdd-devel] [PATCH] TPM: Work around buggy TPMs that block
- during continue self test
-From: Kent Yoder <shpedoikal@gmail.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Jan 2013 18:38:04 -0500
+Date: Tue, 22 Jan 2013 15:38:03 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: paul.szabo@sydney.edu.au
+Cc: linux-mm@kvack.org, 695182@bugs.debian.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Subtract min_free_kbytes from dirtyable memory
+Message-Id: <20130122153803.550ddb14.akpm@linux-foundation.org>
+In-Reply-To: <201301210315.r0L3FnGV021298@como.maths.usyd.edu.au>
+References: <201301210315.r0L3FnGV021298@como.maths.usyd.edu.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+On Mon, 21 Jan 2013 14:15:49 +1100
+paul.szabo@sydney.edu.au wrote:
 
-On Wed, Nov 21, 2012 at 3:15 PM, Jason Gunthorpe
-<jgunthorpe@obsidianresearch.com> wrote:
-> We've been testing an alternative TPM for our embedded products and
-> found random kernel boot failures due to time outs after the continue
-> self test command.
->
-> This was happening randomly, and has been *very* hard to track down, but it
-> looks like with this chip there is some kind of race with the tpm_tis_status()
-> check of TPM_STS_COMMAND_READY. If things get there 'too fast' then
-> it sees the chip is ready, or tpm_tis_ready() works. Otherwise it takes
-> somewhere over 400ms before the chip will return TPM_STS_COMMAND_READY.
->
-> Adding some delay after tpm_continue_selftest() makes things reliably
-> hit the failure path, otherwise it is a crapshot.
+> When calculating amount of dirtyable memory, min_free_kbytes should be
+> subtracted because it is not intended for dirty pages.
 
-  I've staged this patch here, please test:
+Makes sense.
 
-https://github.com/shpedoikal/linux.git tpmdd-01-22-13
+> Using an "extern int" because that is the only interface to some such
+> sysctl values.
 
-Thanks,
-Kent
+urgh, not that way.  Let's do it properly:
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix
+
+fix up min_free_kbytes extern declarations
+
+Cc: Paul Szabo <psz@maths.usyd.edu.au>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ include/linux/mm.h  |    3 +++
+ kernel/sysctl.c     |    1 -
+ mm/huge_memory.c    |    1 -
+ mm/page-writeback.c |    1 -
+ 4 files changed, 3 insertions(+), 3 deletions(-)
+
+--- a/mm/page-writeback.c~page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix
++++ a/mm/page-writeback.c
+@@ -233,7 +233,6 @@ static unsigned long highmem_dirtyable_m
+ static unsigned long global_dirtyable_memory(void)
+ {
+ 	unsigned long x;
+-	extern int min_free_kbytes;
+ 
+ 	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
+ 	x -= min(x, dirty_balance_reserve);
+--- a/include/linux/mm.h~page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix
++++ a/include/linux/mm.h
+@@ -1387,6 +1387,9 @@ extern void setup_per_cpu_pageset(void);
+ extern void zone_pcp_update(struct zone *zone);
+ extern void zone_pcp_reset(struct zone *zone);
+ 
++/* page_alloc.c */
++extern int min_free_kbytes;
++
+ /* nommu.c */
+ extern atomic_long_t mmap_pages_allocated;
+ extern int nommu_shrink_inode_mappings(struct inode *, size_t, size_t);
+--- a/mm/huge_memory.c~page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix
++++ a/mm/huge_memory.c
+@@ -105,7 +105,6 @@ static int set_recommended_min_free_kbyt
+ 	struct zone *zone;
+ 	int nr_zones = 0;
+ 	unsigned long recommended_min;
+-	extern int min_free_kbytes;
+ 
+ 	if (!khugepaged_enabled())
+ 		return 0;
+--- a/kernel/sysctl.c~page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix
++++ a/kernel/sysctl.c
+@@ -104,7 +104,6 @@ extern char core_pattern[];
+ extern unsigned int core_pipe_limit;
+ #endif
+ extern int pid_max;
+-extern int min_free_kbytes;
+ extern int pid_max_min, pid_max_max;
+ extern int sysctl_drop_caches;
+ extern int percpu_pagelist_fraction;
+_
+
+
+> (This patch does not solve the PAE OOM issue.)
+> 
+> Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
+> School of Mathematics and Statistics   University of Sydney    Australia
+> 
+> Reported-by: Paul Szabo <psz@maths.usyd.edu.au>
+
+Reported-by isn't needed in such cases.  It is assumed that finder==fixer.
+
+> Reference: http://bugs.debian.org/695182
+> Signed-off-by: Paul Szabo <psz@maths.usyd.edu.au>
+> 
+> --- mm/page-writeback.c.old	2012-12-06 22:20:40.000000000 +1100
+> +++ mm/page-writeback.c	2013-01-21 13:57:05.000000000 +1100
+
+Please prepare patches in `patch -p1' form.  This should be covered in
+Documentation/SubmittingPatches, but isn't. 
+Documentation/applying-patches.txt mentions it.
+
+> @@ -343,12 +343,16 @@
+>  unsigned long determine_dirtyable_memory(void)
+
+You appear to be patching an old kernel.  But the change is still
+applicable, to global_dirtyable_memory().
+
+>  {
+>  	unsigned long x;
+> +	extern int min_free_kbytes;
+>  
+>  	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
+>  
+>  	if (!vm_highmem_is_dirtyable)
+>  		x -= highmem_dirtyable_memory(x);
+>  
+> +	/* Subtract min_free_kbytes */
+> +	x -= min(x, min_free_kbytes >> (PAGE_SHIFT - 10));
+
+Generates
+
+mm/page-writeback.c:244: warning: comparison of distinct pointer types lacks a cast
+
+because of the problematic min(int, unsigned long).  min_free_kbytes
+should have an unsigned (long?) type, but I can't be bothered fixing
+that right now..
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix-fix
+
+fix min() warning
+
+Cc: Paul Szabo <psz@maths.usyd.edu.au>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ mm/page-writeback.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/mm/page-writeback.c~page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix-fix
++++ a/mm/page-writeback.c
+@@ -241,7 +241,7 @@ static unsigned long global_dirtyable_me
+ 		x -= highmem_dirtyable_memory(x);
+ 
+ 	/* Subtract min_free_kbytes */
+-	x -= min(x, min_free_kbytes >> (PAGE_SHIFT - 10));
++	x -= min_t(unsigned long, x, min_free_kbytes >> (PAGE_SHIFT - 10));
+ 
+ 	return x + 1;	/* Ensure that we never return 0 */
+ }
+_
+
