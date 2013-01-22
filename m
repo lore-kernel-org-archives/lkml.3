@@ -1,125 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab3AVXr0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 18:47:26 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52646 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab3AVXrW (ORCPT
+	id S1756156Ab3AVXti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 18:49:38 -0500
+Received: from mail-da0-f54.google.com ([209.85.210.54]:58295 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241Ab3AVXtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 18:47:22 -0500
-Date: Tue, 22 Jan 2013 15:47:18 -0800
+	Tue, 22 Jan 2013 18:49:32 -0500
+Date: Tue, 22 Jan 2013 15:49:28 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
         Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 1/4] ACPI / PM: Expose power states of ACPI devices to
- user space
-Message-ID: <20130122234718.GC694@kroah.com>
+Subject: Re: [PATCH 2/4] ACPI / PM: Expose current status of ACPI power
+ resources
+Message-ID: <20130122234928.GD694@kroah.com>
 References: <3307415.pdOY6ovZLa@vostro.rjw.lan>
  <4247313.2G7Z3nCgM0@vostro.rjw.lan>
  <2760421.6nE3tkh92K@vostro.rjw.lan>
- <4706454.hY2fLkUfhN@vostro.rjw.lan>
+ <4550268.C8GqG2xqOO@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4706454.hY2fLkUfhN@vostro.rjw.lan>
+In-Reply-To: <4550268.C8GqG2xqOO@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 03:25:15AM +0100, Rafael J. Wysocki wrote:
+On Tue, Jan 22, 2013 at 03:26:29AM +0100, Rafael J. Wysocki wrote:
 > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> Make it possible to retrieve the current power state of a device with
-> ACPI power management from user space via sysfs by adding two new
-> attributes, power_state and real_power_state, to the sysfs directory
-> associated with the struct acpi_device object representing the
-> device's ACPI node.
+> Since ACPI power resources are going to be used more extensively on
+> new hardware platforms, it becomes necessary for user space (powertop
+> in particular) to observe some properties of those resources for
+> diagnostics purposes.
+> 
+> For this reason, expose the current status of each ACPI power
+> resource to user space via sysfs by adding a new resource_in_use
+> attribute to the sysfs directory representing the given power
+> resource.
 > 
 > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  Documentation/ABI/testing/sysfs-devices-power_state      |   20 ++++++
->  Documentation/ABI/testing/sysfs-devices-real_power_state |   23 +++++++
->  drivers/acpi/scan.c                                      |   49 ++++++++++++++-
->  3 files changed, 91 insertions(+), 1 deletion(-)
-> 
-> Index: linux-pm/drivers/acpi/scan.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/scan.c
-> +++ linux-pm/drivers/acpi/scan.c
-> @@ -178,6 +178,32 @@ err_out:
->  }
->  EXPORT_SYMBOL(acpi_bus_hot_remove_device);
+
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+But, as with patch 1/4, this is racy:
+
+> @@ -723,6 +744,9 @@ int acpi_add_power_resource(acpi_handle
+>  	if (result)
+>  		goto err;
 >  
-> +static ssize_t real_power_state_show(struct device *dev,
-> +				     struct device_attribute *attr, char *buf)
-> +{
-> +	struct acpi_device *adev = to_acpi_device(dev);
-> +	int state;
-> +	int ret;
-> +
-> +	ret = acpi_device_get_power(adev, &state);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return sprintf(buf, "%s\n", acpi_power_state_string(state));
-> +}
-> +
-> +static DEVICE_ATTR(real_power_state, 0444, real_power_state_show, NULL);
-> +
-> +static ssize_t power_state_show(struct device *dev,
-> +				struct device_attribute *attr, char *buf)
-> +{
-> +	struct acpi_device *adev = to_acpi_device(dev);
-> +
-> +	return sprintf(buf, "%s\n", acpi_power_state_string(adev->power.state));
-> +}
-> +
-> +static DEVICE_ATTR(power_state, 0444, power_state_show, NULL);
-> +
->  static ssize_t
->  acpi_eject_store(struct device *d, struct device_attribute *attr,
->  		const char *buf, size_t count)
-> @@ -369,8 +395,22 @@ static int acpi_device_setup_files(struc
->           * hot-removal function from userland.
->           */
->  	status = acpi_get_handle(dev->handle, "_EJ0", &temp);
-> -	if (ACPI_SUCCESS(status))
-> +	if (ACPI_SUCCESS(status)) {
->  		result = device_create_file(&dev->dev, &dev_attr_eject);
-> +		if (result)
-> +			return result;
-> +	}
-> +
-> +	if (dev->flags.power_manageable) {
-> +		result = device_create_file(&dev->dev, &dev_attr_power_state);
-> +		if (result)
-> +			return result;
-> +
-> +		if (dev->power.flags.power_resources)
-> +			result = device_create_file(&dev->dev,
-> +						    &dev_attr_real_power_state);
-> +	}
+> +	if (!device_create_file(&device->dev, &dev_attr_resource_in_use))
+> +		device->remove = acpi_power_sysfs_remove;
 > +
 
-It isn't your fault, but I just noticed this when reading patch 2/4, but
-I think you are racing userspace here.  The device is registered,
-userspace is notified that the device is present, and _then_ the acpi
-core creates the sysfs files for the device.
+You are creating the file after userspace has been told that the device
+is present.
 
-That's not good, and needs to be fixed, especially now that you are
-adding more and more sysfs files for these ACPI devices.
+As this looks like the first file this type of device has, maybe you
+should just fix this up "properly" here, and not wait to do it later?
 
-To do that, you need to set up "default" files for ACPI devices, they
-can be enabled or not by the driver core, and will be created before the
-event that the device is created is sent to userspace.
-
-Care to fix that all up in a follow-on patchset before some tools start
-to get confused?
-
-thanks,
+Your choice,
 
 greg k-h
