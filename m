@@ -1,338 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab3AVOVT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 09:21:19 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:44644 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410Ab3AVOVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 09:21:17 -0500
-Message-ID: <50FEA059.7080903@ti.com>
-Date: Tue, 22 Jan 2013 16:21:13 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1752861Ab3AVOWs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 09:22:48 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:65049 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab3AVOWp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 09:22:45 -0500
 MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] usb: phy: moving all PHY API definitions to usb/phy
- directory
-References: <1358852471-28260-1-git-send-email-vbyravarasu@nvidia.com>
-In-Reply-To: <1358852471-28260-1-git-send-email-vbyravarasu@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130118225940.GH4051@tassilo.jf.intel.com>
+References: <1358264386-24633-1-git-send-email-eranian@google.com>
+	<1358264386-24633-4-git-send-email-eranian@google.com>
+	<20130118225940.GH4051@tassilo.jf.intel.com>
+Date: Tue, 22 Jan 2013 15:22:43 +0100
+Message-ID: <CABPqkBQ4c1x7KQ5j4uTP9Tnz41esc2iGnWgnYxidezmZp=Hhww@mail.gmail.com>
+Subject: Re: [PATCH v6 03/18] perf/x86: add flags to event constraints
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2013 01:01 PM, Venu Byravarasu wrote:
-> As drivers/usb/otg/otg.c contains most of the PHY related APIs
-> which are not OTG specific, moving them to more logical place
-> under driver/usb/phy.
-> 
-> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> ---
-> delta from v1:
-> Missed adding newly created file usb_phy.c with previous patch.
-> hence sending v2, after adding that.
-> 
->  drivers/usb/otg/otg.c                    |  184 ------------------------------
->  drivers/usb/phy/Makefile                 |    1 +
->  drivers/usb/{otg/otg.c => phy/usb_phy.c} |   45 +-------
->  3 files changed, 6 insertions(+), 224 deletions(-)
->  copy drivers/usb/{otg/otg.c => phy/usb_phy.c} (82%)
+On Fri, Jan 18, 2013 at 11:59 PM, Andi Kleen <ak@linux.intel.com> wrote:
+>> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+>> @@ -1367,8 +1367,10 @@ x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+>>
+>>       if (x86_pmu.event_constraints) {
+>>               for_each_event_constraint(c, x86_pmu.event_constraints) {
+>> -                     if ((event->hw.config & c->cmask) == c->code)
+>> +                     if ((event->hw.config & c->cmask) == c->code) {
+>> +                             event->hw.flags |= c->flags;
+>>                               return c;
+>> +                     }
+>
+> It's not fully clear where that hw.flags field gets initially zeroed. Is that implicit
+> in the allocation? Some comments would be good about its live cycle.
+>
+Yes, this is by allocation.
+I used |= in case we need to add more flags in the future.
+I will add a comment.
 
-what about updating
-drivers/usb/otg/Makefile and Kconfig?
-
-i.e. remove CONFIG_USB_OTG_UTILS and otg.o there?
-
---
-cheers,
--roger
-
-> 
-> diff --git a/drivers/usb/otg/otg.c b/drivers/usb/otg/otg.c
-> index a30c041..95561b9 100644
-> --- a/drivers/usb/otg/otg.c
-> +++ b/drivers/usb/otg/otg.c
-> @@ -17,190 +17,6 @@
->  
->  #include <linux/usb/otg.h>
->  
-> -static LIST_HEAD(phy_list);
-> -static DEFINE_SPINLOCK(phy_lock);
-> -
-> -static struct usb_phy *__usb_find_phy(struct list_head *list,
-> -	enum usb_phy_type type)
-> -{
-> -	struct usb_phy  *phy = NULL;
-> -
-> -	list_for_each_entry(phy, list, head) {
-> -		if (phy->type != type)
-> -			continue;
-> -
-> -		return phy;
-> -	}
-> -
-> -	return ERR_PTR(-ENODEV);
-> -}
-> -
-> -static void devm_usb_phy_release(struct device *dev, void *res)
-> -{
-> -	struct usb_phy *phy = *(struct usb_phy **)res;
-> -
-> -	usb_put_phy(phy);
-> -}
-> -
-> -static int devm_usb_phy_match(struct device *dev, void *res, void *match_data)
-> -{
-> -	return res == match_data;
-> -}
-> -
-> -/**
-> - * devm_usb_get_phy - find the USB PHY
-> - * @dev - device that requests this phy
-> - * @type - the type of the phy the controller requires
-> - *
-> - * Gets the phy using usb_get_phy(), and associates a device with it using
-> - * devres. On driver detach, release function is invoked on the devres data,
-> - * then, devres data is freed.
-> - *
-> - * For use by USB host and peripheral drivers.
-> - */
-> -struct usb_phy *devm_usb_get_phy(struct device *dev, enum usb_phy_type type)
-> -{
-> -	struct usb_phy **ptr, *phy;
-> -
-> -	ptr = devres_alloc(devm_usb_phy_release, sizeof(*ptr), GFP_KERNEL);
-> -	if (!ptr)
-> -		return NULL;
-> -
-> -	phy = usb_get_phy(type);
-> -	if (!IS_ERR(phy)) {
-> -		*ptr = phy;
-> -		devres_add(dev, ptr);
-> -	} else
-> -		devres_free(ptr);
-> -
-> -	return phy;
-> -}
-> -EXPORT_SYMBOL(devm_usb_get_phy);
-> -
-> -/**
-> - * usb_get_phy - find the USB PHY
-> - * @type - the type of the phy the controller requires
-> - *
-> - * Returns the phy driver, after getting a refcount to it; or
-> - * -ENODEV if there is no such phy.  The caller is responsible for
-> - * calling usb_put_phy() to release that count.
-> - *
-> - * For use by USB host and peripheral drivers.
-> - */
-> -struct usb_phy *usb_get_phy(enum usb_phy_type type)
-> -{
-> -	struct usb_phy	*phy = NULL;
-> -	unsigned long	flags;
-> -
-> -	spin_lock_irqsave(&phy_lock, flags);
-> -
-> -	phy = __usb_find_phy(&phy_list, type);
-> -	if (IS_ERR(phy)) {
-> -		pr_err("unable to find transceiver of type %s\n",
-> -			usb_phy_type_string(type));
-> -		goto err0;
-> -	}
-> -
-> -	get_device(phy->dev);
-> -
-> -err0:
-> -	spin_unlock_irqrestore(&phy_lock, flags);
-> -
-> -	return phy;
-> -}
-> -EXPORT_SYMBOL(usb_get_phy);
-> -
-> -/**
-> - * devm_usb_put_phy - release the USB PHY
-> - * @dev - device that wants to release this phy
-> - * @phy - the phy returned by devm_usb_get_phy()
-> - *
-> - * destroys the devres associated with this phy and invokes usb_put_phy
-> - * to release the phy.
-> - *
-> - * For use by USB host and peripheral drivers.
-> - */
-> -void devm_usb_put_phy(struct device *dev, struct usb_phy *phy)
-> -{
-> -	int r;
-> -
-> -	r = devres_destroy(dev, devm_usb_phy_release, devm_usb_phy_match, phy);
-> -	dev_WARN_ONCE(dev, r, "couldn't find PHY resource\n");
-> -}
-> -EXPORT_SYMBOL(devm_usb_put_phy);
-> -
-> -/**
-> - * usb_put_phy - release the USB PHY
-> - * @x: the phy returned by usb_get_phy()
-> - *
-> - * Releases a refcount the caller received from usb_get_phy().
-> - *
-> - * For use by USB host and peripheral drivers.
-> - */
-> -void usb_put_phy(struct usb_phy *x)
-> -{
-> -	if (x)
-> -		put_device(x->dev);
-> -}
-> -EXPORT_SYMBOL(usb_put_phy);
-> -
-> -/**
-> - * usb_add_phy - declare the USB PHY
-> - * @x: the USB phy to be used; or NULL
-> - * @type - the type of this PHY
-> - *
-> - * This call is exclusively for use by phy drivers, which
-> - * coordinate the activities of drivers for host and peripheral
-> - * controllers, and in some cases for VBUS current regulation.
-> - */
-> -int usb_add_phy(struct usb_phy *x, enum usb_phy_type type)
-> -{
-> -	int		ret = 0;
-> -	unsigned long	flags;
-> -	struct usb_phy	*phy;
-> -
-> -	if (x->type != USB_PHY_TYPE_UNDEFINED) {
-> -		dev_err(x->dev, "not accepting initialized PHY %s\n", x->label);
-> -		return -EINVAL;
-> -	}
-> -
-> -	spin_lock_irqsave(&phy_lock, flags);
-> -
-> -	list_for_each_entry(phy, &phy_list, head) {
-> -		if (phy->type == type) {
-> -			ret = -EBUSY;
-> -			dev_err(x->dev, "transceiver type %s already exists\n",
-> -						usb_phy_type_string(type));
-> -			goto out;
-> -		}
-> -	}
-> -
-> -	x->type = type;
-> -	list_add_tail(&x->head, &phy_list);
-> -
-> -out:
-> -	spin_unlock_irqrestore(&phy_lock, flags);
-> -	return ret;
-> -}
-> -EXPORT_SYMBOL(usb_add_phy);
-> -
-> -/**
-> - * usb_remove_phy - remove the OTG PHY
-> - * @x: the USB OTG PHY to be removed;
-> - *
-> - * This reverts the effects of usb_add_phy
-> - */
-> -void usb_remove_phy(struct usb_phy *x)
-> -{
-> -	unsigned long	flags;
-> -
-> -	spin_lock_irqsave(&phy_lock, flags);
-> -	if (x)
-> -		list_del(&x->head);
-> -	spin_unlock_irqrestore(&phy_lock, flags);
-> -}
-> -EXPORT_SYMBOL(usb_remove_phy);
-> -
->  const char *otg_state_string(enum usb_otg_state state)
->  {
->  	switch (state) {
-> diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
-> index 1a579a8..5a21017 100644
-> --- a/drivers/usb/phy/Makefile
-> +++ b/drivers/usb/phy/Makefile
-> @@ -4,6 +4,7 @@
->  
->  ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
->  
-> +obj-y							+= usb_phy.o
->  obj-$(CONFIG_OMAP_USB2)			+= omap-usb2.o
->  obj-$(CONFIG_USB_ISP1301)		+= isp1301.o
->  obj-$(CONFIG_MV_U3D_PHY)		+= mv_u3d_phy.o
-> diff --git a/drivers/usb/otg/otg.c b/drivers/usb/phy/usb_phy.c
-> similarity index 82%
-> copy from drivers/usb/otg/otg.c
-> copy to drivers/usb/phy/usb_phy.c
-> index a30c041..1c74261 100644
-> --- a/drivers/usb/otg/otg.c
-> +++ b/drivers/usb/phy/usb_phy.c
-> @@ -1,7 +1,7 @@
->  /*
-> - * otg.c -- USB OTG utility code
-> + * usb_phy.c -- USB PHY utility code
->   *
-> - * Copyright (C) 2004 Texas Instruments
-> + * Copyright (C) 200 Texas Instruments
->   *
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License as published by
-> @@ -15,7 +15,7 @@
->  #include <linux/device.h>
->  #include <linux/slab.h>
->  
-> -#include <linux/usb/otg.h>
-> +#include <linux/usb/phy.h>
->  
->  static LIST_HEAD(phy_list);
->  static DEFINE_SPINLOCK(phy_lock);
-> @@ -185,8 +185,8 @@ out:
->  EXPORT_SYMBOL(usb_add_phy);
->  
->  /**
-> - * usb_remove_phy - remove the OTG PHY
-> - * @x: the USB OTG PHY to be removed;
-> + * usb_remove_phy - remove PHY
-> + * @x: the USB PHY to be removed;
->   *
->   * This reverts the effects of usb_add_phy
->   */
-> @@ -200,38 +200,3 @@ void usb_remove_phy(struct usb_phy *x)
->  	spin_unlock_irqrestore(&phy_lock, flags);
->  }
->  EXPORT_SYMBOL(usb_remove_phy);
-> -
-> -const char *otg_state_string(enum usb_otg_state state)
-> -{
-> -	switch (state) {
-> -	case OTG_STATE_A_IDLE:
-> -		return "a_idle";
-> -	case OTG_STATE_A_WAIT_VRISE:
-> -		return "a_wait_vrise";
-> -	case OTG_STATE_A_WAIT_BCON:
-> -		return "a_wait_bcon";
-> -	case OTG_STATE_A_HOST:
-> -		return "a_host";
-> -	case OTG_STATE_A_SUSPEND:
-> -		return "a_suspend";
-> -	case OTG_STATE_A_PERIPHERAL:
-> -		return "a_peripheral";
-> -	case OTG_STATE_A_WAIT_VFALL:
-> -		return "a_wait_vfall";
-> -	case OTG_STATE_A_VBUS_ERR:
-> -		return "a_vbus_err";
-> -	case OTG_STATE_B_IDLE:
-> -		return "b_idle";
-> -	case OTG_STATE_B_SRP_INIT:
-> -		return "b_srp_init";
-> -	case OTG_STATE_B_PERIPHERAL:
-> -		return "b_peripheral";
-> -	case OTG_STATE_B_WAIT_ACON:
-> -		return "b_wait_acon";
-> -	case OTG_STATE_B_HOST:
-> -		return "b_host";
-> -	default:
-> -		return "UNDEFINED";
-> -	}
-> -}
-> -EXPORT_SYMBOL(otg_state_string);
-> 
-
+> Or just use a = instead of |=? Why would you have multiple flags in different places?
+>
+> -Andi
