@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab3AVHio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:38:44 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:49613 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab3AVHik (ORCPT
+	id S1754717Ab3AVHjF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:39:05 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:41171 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754339Ab3AVHjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:38:40 -0500
+	Tue, 22 Jan 2013 02:39:00 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5 14/45] rcu,
- CPU hotplug: Fix comment referring to stop_machine()
+Subject: [PATCH v5 15/45] tick: Use get/put_online_cpus_atomic() to prevent
+ CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -20,8 +20,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 22 Jan 2013 13:06:34 +0530
-Message-ID: <20130122073630.13822.99359.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 22 Jan 2013 13:06:55 +0530
+Message-ID: <20130122073653.13822.14127.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,46 +29,42 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012207-0260-0000-0000-0000026FFDDA
+x-cbid: 13012207-6102-0000-0000-000002E62AE9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't refer to stop_machine() in the CPU hotplug path, since we are going
-to get rid of it. Also, move the comment referring to callback adoption
-to the CPU_DEAD case, because that's where it happens now.
+Once stop_machine() is gone from the CPU offline path, we won't be able to
+depend on preempt_disable() or local_irq_disable() to prevent CPUs from
+going offline from under us.
+
+Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
+while invoking from atomic context.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- kernel/rcutree.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ kernel/time/tick-broadcast.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e441b77..ac94474 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -2827,11 +2827,6 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 		break;
- 	case CPU_DYING:
- 	case CPU_DYING_FROZEN:
--		/*
--		 * The whole machine is "stopped" except this CPU, so we can
--		 * touch any data without introducing corruption. We send the
--		 * dying CPU's callbacks to an arbitrarily chosen online CPU.
--		 */
- 		for_each_rcu_flavor(rsp)
- 			rcu_cleanup_dying_cpu(rsp);
- 		rcu_cleanup_after_idle(cpu);
-@@ -2840,6 +2835,10 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 	case CPU_DEAD_FROZEN:
- 	case CPU_UP_CANCELED:
- 	case CPU_UP_CANCELED_FROZEN:
-+		/*
-+		 * We send the dead CPU's callbacks to an arbitrarily chosen
-+		 * online CPU.
-+		 */
- 		for_each_rcu_flavor(rsp)
- 			rcu_cleanup_dead_cpu(cpu, rsp);
- 		break;
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index f113755..d123a2c 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -160,6 +160,7 @@ static void tick_do_broadcast(struct cpumask *mask)
+  */
+ static void tick_do_periodic_broadcast(void)
+ {
++	get_online_cpus_atomic();
+ 	raw_spin_lock(&tick_broadcast_lock);
+ 
+ 	cpumask_and(to_cpumask(tmpmask),
+@@ -167,6 +168,7 @@ static void tick_do_periodic_broadcast(void)
+ 	tick_do_broadcast(to_cpumask(tmpmask));
+ 
+ 	raw_spin_unlock(&tick_broadcast_lock);
++	put_online_cpus_atomic();
+ }
+ 
+ /*
 
