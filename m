@@ -1,104 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab3AVJRV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 04:17:21 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:28290 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388Ab3AVJRP (ORCPT
+	id S1754709Ab3AVJKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 04:10:33 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60773 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754407Ab3AVJK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 04:17:15 -0500
-From: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
-To: Greg KH <greg@kroah.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
-        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
-        "Yili (Neil)" <neil.yi@huawei.com>,
-        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
-        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
-        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
-        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>
-Subject: RE: USB: storage: optimize the matching rules and support new
- switch command for Huawei USB storage devices
-Thread-Topic: USB: storage: optimize the matching rules and support new
- switch command for Huawei USB storage devices
-Thread-Index: AQHN9dWvRQ2hZuXEpkGIic+AV6y7wZhTJJRQgABelICAAZJQ0A==
-Date: Tue, 22 Jan 2013 09:16:08 +0000
-Message-ID: <910F9D9E13B84F4C8FA771DC9BDE99F32701CC26@szxeml546-mbx.china.huawei.com>
-References: <fe8c85797e7f.7e7ffe8c8579@huawei.com>
- <20130118234359.GA2160@kroah.com>
- <910F9D9E13B84F4C8FA771DC9BDE99F327016D33@szxeml546-mbx.china.huawei.com>
- <20130121171219.GB4997@kroah.com>
-In-Reply-To: <20130121171219.GB4997@kroah.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.11.34.182]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+	Tue, 22 Jan 2013 04:10:28 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-d3-50fe576a377f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 02/19] perf tests: Add group test conditions
+Date: Tue, 22 Jan 2013 18:09:30 +0900
+Message-Id: <1358845787-1350-3-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1358845787-1350-1-git-send-email-namhyung@kernel.org>
+References: <1358845787-1350-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0M9HQ4L027083
 
-Dear Greg:
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-	OK, I have fixed up and resend the patches based on linux-3.8-rc4 today.
+As some new fields for handling groups added, check them to be sure to
+have valid values in test__group* cases.
 
-	Email subjects:
-		1. [PATCH 1/2]linux-usb:define new macro and add new match rules for Huawei USB storage devices
-		2. [PATCH 2/2]linux-usb:define new macro and add new match rules for Huawei USB storage devices
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1355726345-29553-3-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/tests/parse-events.c | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-	Please apply them, thank you very much.
+diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
+index 337424d02e53..09c5d1e9bb7b 100644
+--- a/tools/perf/tests/parse-events.c
++++ b/tools/perf/tests/parse-events.c
+@@ -23,6 +23,7 @@ static int test__checkevent_tracepoint(struct perf_evlist *evlist)
+ 	struct perf_evsel *evsel = perf_evlist__first(evlist);
+ 
+ 	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong number of groups", 0 == evlist->nr_groups);
+ 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_TRACEPOINT == evsel->attr.type);
+ 	TEST_ASSERT_VAL("wrong sample_type",
+ 		PERF_TP_SAMPLE_TYPE == evsel->attr.sample_type);
+@@ -35,6 +36,7 @@ static int test__checkevent_tracepoint_multi(struct perf_evlist *evlist)
+ 	struct perf_evsel *evsel;
+ 
+ 	TEST_ASSERT_VAL("wrong number of entries", evlist->nr_entries > 1);
++	TEST_ASSERT_VAL("wrong number of groups", 0 == evlist->nr_groups);
+ 
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+ 		TEST_ASSERT_VAL("wrong type",
+@@ -510,6 +512,7 @@ static int test__group1(struct perf_evlist *evlist)
+ 	struct perf_evsel *evsel, *leader;
+ 
+ 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
+ 
+ 	/* instructions:k */
+ 	evsel = leader = perf_evlist__first(evlist);
+@@ -523,6 +526,8 @@ static int test__group1(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
++	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
+ 
+ 	/* cycles:upp */
+ 	evsel = perf_evsel__next(evsel);
+@@ -537,6 +542,7 @@ static int test__group1(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
+ 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 2);
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
+ 
+ 	return 0;
+ }
+@@ -546,6 +552,7 @@ static int test__group2(struct perf_evlist *evlist)
+ 	struct perf_evsel *evsel, *leader;
+ 
+ 	TEST_ASSERT_VAL("wrong number of entries", 3 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
+ 
+ 	/* faults + :ku modifier */
+ 	evsel = leader = perf_evlist__first(evlist);
+@@ -559,6 +566,8 @@ static int test__group2(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
++	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
+ 
+ 	/* cache-references + :u modifier */
+ 	evsel = perf_evsel__next(evsel);
+@@ -572,6 +581,7 @@ static int test__group2(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
+ 
+ 	/* cycles:k */
+ 	evsel = perf_evsel__next(evsel);
+@@ -594,6 +604,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
+ 	struct perf_evsel *evsel, *leader;
+ 
+ 	TEST_ASSERT_VAL("wrong number of entries", 5 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong number of groups", 2 == evlist->nr_groups);
+ 
+ 	/* group1 syscalls:sys_enter_open:H */
+ 	evsel = leader = perf_evlist__first(evlist);
+@@ -610,6 +621,8 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
+ 	TEST_ASSERT_VAL("wrong group name",
+ 		!strcmp(leader->group_name, "group1"));
++	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
+ 
+ 	/* group1 cycles:kppp */
+ 	evsel = perf_evsel__next(evsel);
+@@ -625,6 +638,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 3);
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
+ 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
+ 
+ 	/* group2 cycles + G modifier */
+ 	evsel = leader = perf_evsel__next(evsel);
+@@ -640,6 +654,8 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
+ 	TEST_ASSERT_VAL("wrong group name",
+ 		!strcmp(leader->group_name, "group2"));
++	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
+ 
+ 	/* group2 1:3 + G modifier */
+ 	evsel = perf_evsel__next(evsel);
+@@ -652,6 +668,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
+ 
+ 	/* instructions:u */
+ 	evsel = perf_evsel__next(evsel);
+@@ -674,6 +691,7 @@ static int test__group4(struct perf_evlist *evlist __maybe_unused)
+ 	struct perf_evsel *evsel, *leader;
+ 
+ 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
+ 
+ 	/* cycles:u + p */
+ 	evsel = leader = perf_evlist__first(evlist);
+@@ -689,6 +707,8 @@ static int test__group4(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 1);
+ 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
++	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
+ 
+ 	/* instructions:kp + p */
+ 	evsel = perf_evsel__next(evsel);
+@@ -703,6 +723,7 @@ static int test__group4(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
+ 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 2);
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
+ 
+ 	return 0;
+ }
+@@ -712,6 +733,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
+ 	struct perf_evsel *evsel, *leader;
+ 
+ 	TEST_ASSERT_VAL("wrong number of entries", 5 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong number of groups", 2 == evlist->nr_groups);
+ 
+ 	/* cycles + G */
+ 	evsel = leader = perf_evlist__first(evlist);
+@@ -726,6 +748,8 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
++	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
+ 
+ 	/* instructions + G */
+ 	evsel = perf_evsel__next(evsel);
+@@ -739,6 +763,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
+ 
+ 	/* cycles:G */
+ 	evsel = leader = perf_evsel__next(evsel);
+@@ -753,6 +778,8 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
++	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
+ 
+ 	/* instructions:G */
+ 	evsel = perf_evsel__next(evsel);
+@@ -766,6 +793,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
+ 
+ 	/* cycles */
+ 	evsel = perf_evsel__next(evsel);
+-- 
+1.7.11.7
 
-Best Regards,
-Franko Fang
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Tuesday, January 22, 2013 1:12 AM
-> To: Fangxiaozhi (Franko)
-> Cc: linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Xueguiying (Zihan);
-> Linlei (Lei Lin); Yili (Neil); Wangyuhua (Roger, Credit); Huqiao (C); balbi@ti.com;
-> mdharm-usb@one-eyed-alien.net; sebastian@breakpoint.cc
-> Subject: Re: USB: storage: optimize the matching rules and support new switch
-> command for Huawei USB storage devices
-> 
-> On Mon, Jan 21, 2013 at 03:37:15AM +0000, Fangxiaozhi (Franko) wrote:
-> > Dear Greg:
-> >
-> > > I get the following errors:
-> > >
-> > > drivers/usb/storage/unusual_devs.h:1530:1: error: implicit
-> > > declaration of function â€˜UNUSUAL_VENDOR_INTFâ€™
-> > > [-Werror=implicit-function-declaration]
-> > > drivers/usb/storage/unusual_devs.h:1534:3: warning: missing braces
-> > > around initializer [-Wmissing-braces]
-> > > drivers/usb/storage/unusual_devs.h:1534:3: warning: (near
-> > > initialization for
-> > > â€˜us_unusual_dev_list[186]â€™) [-Wmissing-braces]
-> > > drivers/usb/storage/unusual_devs.h:1534:3: error: initializer
-> > > element is not constant
-> > > drivers/usb/storage/unusual_devs.h:1534:3: error: (near
-> > > initialization for
-> > > â€˜us_unusual_dev_list[186].vendorNameâ€™)
-> > > drivers/usb/storage/unusual_devs.h:1537:1: warning: braces around
-> > > scalar initializer [enabled by default]
-> > >
-> > > And it goes on and on...
-> > ----------The macro define, please see another patch:
-> > 	[PATCH 1/1]linux-usb:Define a new macro for USB storage match rules
-> > 	http://www.spinics.net/lists/linux-usb/msg76629.html
-> 
-> Please resend it, I do not have this patch anymore in my queue.
-> Remember, I asked you to resend everything that was needed, with the proper
-> ordering.
-> 
-> Please resend all patches, properly fixed up, that you wish to see applied.
-> 
-> thanks,
-> 
-> greg k-h
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
