@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab3AVIVV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 03:21:21 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:60649 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867Ab3AVIVU (ORCPT
+	id S1753485Ab3AVIWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 03:22:11 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42134 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867Ab3AVIWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 03:21:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 05/15] ASoC: fsl: fiq and dma cannot both be modules
-Date: Tue, 22 Jan 2013 08:21:05 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arm@kernel.org,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <20130122035028.GB29677@S2100-06.ap.freescale.net> <20130122063331.GA1766@opensource.wolfsonmicro.com>
-In-Reply-To: <20130122063331.GA1766@opensource.wolfsonmicro.com>
+	Tue, 22 Jan 2013 03:22:10 -0500
+Date: Tue, 22 Jan 2013 09:21:58 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Javier Martin <javier.martin@vista-silicon.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH 09/15] media: coda: don't build on multiplatform
+Message-ID: <20130122082158.GC9414@pengutronix.de>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+ <1358788568-11137-10-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301220821.05252.arnd@arndb.de>
-X-Provags-ID: V02:K0:G7jIRJtMLmfX0w13HTGDql06w/RzY4RRRZ1gsuih7u6
- KMv723/xe0+vTlXDElpndjFeJBh/sJPkEr7zlMFMPFuwa4Adie
- AiZ/lvZ1d2hU0swgQmrB3JsV1Nt1Nc2f60a69ri0zDIkl7AK/t
- Xm6b6/grAjxxWZl9iitLfffzsuWYmlUbHk7yZscUlAJExwpV4p
- DsY9a2cinJg49RCMFb+NCklx/DA0gXEsbq3G4nIny9LhwIk9Qk
- CfxiRskFQPkPNIbw2+6/MjJhYqlMkNI5N8HfAoM/CDE+lcpkaV
- WKTwot1J8NhXFtW8zllMT0s6LDFf+13R+MRePQWk0UIST1w2zh
- +RZ9cNPXtrVCkMe8r28o=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358788568-11137-10-git-send-email-arnd@arndb.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:17:21 up 212 days, 23:29, 47 users,  load average: 3.12, 3.87,
+ 4.81
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 January 2013, Mark Brown wrote:
-> On Tue, Jan 22, 2013 at 11:50:30AM +0800, Shawn Guo wrote:
-> > I sent a fix [1] for that queued by Mark.
-
-Right, that patch looks good, too.
-
-> > Is the patch on the way to 3.8-rc?
+On Mon, Jan 21, 2013 at 05:16:02PM +0000, Arnd Bergmann wrote:
+> The coda video codec driver depends on a mach-imx or mach-mxs specific
+> header file "mach/iram.h". This is not available when building for
+> multiplatform, so let us disable this driver for v3.8 when building
+> multiplatform, and hopefully find a proper fix for v3.9.
 > 
-> Yes, should be.
+> drivers/media/platform/coda.c:27:23: fatal error: mach/iram.h: No such file or directory
 
-Ok, thanks!
+I just sent a pull request for this with a proper fix.
 
-	Arnd
+> 
+> diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
+> index 3dcfea6..049d2b2 100644
+> --- a/drivers/media/platform/Kconfig
+> +++ b/drivers/media/platform/Kconfig
+> @@ -142,7 +142,7 @@ if V4L_MEM2MEM_DRIVERS
+>  
+>  config VIDEO_CODA
+>  	tristate "Chips&Media Coda multi-standard codec IP"
+> -	depends on VIDEO_DEV && VIDEO_V4L2 && ARCH_MXC
+> +	depends on VIDEO_DEV && VIDEO_V4L2 && ARCH_MXC && !ARCH_MULTIPLATFORM
+
+This breakage is not multiplatform related at all, it won't compile
+without multiplatform support either. So depends on BROKEN would be
+more appropriate if you want to go this way.
+
+Sascha
+
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
