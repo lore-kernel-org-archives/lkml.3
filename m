@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab3AVLoD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 06:44:03 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:15778 "EHLO song.cn.fujitsu.com"
+	id S1753612Ab3AVLop (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 06:44:45 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:25292 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750723Ab3AVLn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 06:43:58 -0500
+	id S1752430Ab3AVLoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 06:44:02 -0500
 X-IronPort-AV: E=Sophos;i="4.84,514,1355068800"; 
-   d="scan'208";a="6628470"
+   d="scan'208";a="6628473"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
         benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
@@ -19,128 +19,296 @@ To: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
         sfr@canb.auug.org.au
 Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
-Subject: [PATCH Bug fix 1/5] Bug fix: consider compound pages when free memmap
-Date: Tue, 22 Jan 2013 19:43:00 +0800
-Message-Id: <1358854984-6073-2-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH Bug fix 3/5] Bug fix: Do not split pages when freeing pagetable pages.
+Date: Tue, 22 Jan 2013 19:43:02 +0800
+Message-Id: <1358854984-6073-4-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/01/22 19:42:58,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/22 19:43:00,
-	Serialize complete at 2013/01/22 19:43:00
+ 2013/01/22 19:43:01,
+	Serialize complete at 2013/01/22 19:43:01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+The old way we free pagetable pages was wrong.
 
-usemap could also be allocated as compound pages. Should also
-consider compound pages when freeing memmap.
+The old way is:
+When we got a hugepage, we split it into smaller pages. And sometimes,
+we only need to free some of the smaller pages because the others are
+still in use. And the whole larger page will be freed if all the smaller
+pages are not in use. All these were done in remove_pmd/pud_table().
 
-If we don't fix it, there could be problems when we free vmemmap
-pagetables which are stored in compound pages. The old pagetables
-will not be freed properly, and when we add the memory again,
-no new pagetable will be created. And the old pagetable entry is
-used, than the kernel will panic.
+But there is no way to know if the larger page has been split. As a result,
+there is no way to decide when to split.
 
-The call trace is like the following:
+Actually, there is no need to split larger pages into smaller ones.
 
-[  691.175487] BUG: unable to handle kernel paging request at ffffea0040000000
-[  691.258872] IP: [<ffffffff816a483f>] sparse_add_one_section+0xef/0x166
-[  691.336971] PGD 7ff7d4067 PUD 78e035067 PMD 78e11d067 PTE 0
-[  691.403952] Oops: 0002 [#1] SMP
-[  691.442695] Modules linked in: ip6table_filter ip6_tables ebtable_nat ebtables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle iptable_filter ip_tables bridge stp llc sunrpc binfmt_misc dm_mirror dm_region_hash dm_log dm_mod vhost_net macvtap macvlan tun uinput iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crc32c_intel microcode pcspkr sg lpc_ich mfd_core i2c_i801 i2c_core i7core_edac edac_core ioatdma e1000e igb dca ptp pps_core sd_mod crc_t10dif megaraid_sas mptsas mptscsih mptbase scsi_transport_sas scsi_mod
-[  692.042726] CPU 0
-[  692.064641] Pid: 4, comm: kworker/0:0 Tainted: G        W 3.8.0-rc3-phy-hot-remove+ #3 FUJITSU-SV PRIMEQUEST 1800E/SB
-[  692.196723] RIP: 0010:[<ffffffff816a483f>]  [<ffffffff816a483f>] sparse_add_one_section+0xef/0x166
-[  692.303885] RSP: 0018:ffff8807bdcb35d8  EFLAGS: 00010006
-[  692.367331] RAX: 0000000000000000 RBX: 0000000000000200 RCX: 0000000000200000
-[  692.452578] RDX: ffff88078df01148 RSI: 0000000000000282 RDI: ffffea0040000000
-[  692.537822] RBP: ffff8807bdcb3618 R08: 4cf05005b019467a R09: 0cd98fa09631467a
-[  692.623071] R10: 0000000000000000 R11: 0000000000030e20 R12: 0000000000008000
-[  692.708319] R13: ffffea0040000000 R14: ffff88078df66248 R15: ffff88078ea13b10
-[  692.793562] FS:  0000000000000000(0000) GS:ffff8807c1a00000(0000) knlGS:0000000000000000
-[  692.890233] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  692.958870] CR2: ffffea0040000000 CR3: 0000000001c0c000 CR4: 00000000000007f0
-[  693.044119] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  693.129367] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  693.214617] Process kworker/0:0 (pid: 4, threadinfo ffff8807bdcb2000, task ffff8807bde18000)
-[  693.315437] Stack:
-[  693.339421]  0000000000000000 0000000000000282 0000000000000000 ffff88078df40f00
-[  693.428208]  0000000000000001 0000000000000200 00000000000002ff 0000000000000200
-[  693.516981]  ffff8807bdcb3668 ffffffff816940e5 0000000000000000 0000000001000000
-[  693.605761] Call Trace:
-[  693.634949]  [<ffffffff816940e5>] __add_pages+0x85/0x120
-[  693.698398]  [<ffffffff8104f1d1>] arch_add_memory+0x71/0xf0
-[  693.764960]  [<ffffffff81079bff>] ? request_resource_conflict+0x8f/0xa0
-[  693.843982]  [<ffffffff81694796>] add_memory+0xd6/0x1f0
-[  693.906393]  [<ffffffff814044df>] acpi_memory_device_add+0x170/0x20c
-[  693.982302]  [<ffffffff813c1de2>] acpi_device_probe+0x50/0x18a
-[  694.051977]  [<ffffffff8125a9d3>] ? sysfs_create_link+0x13/0x20
-[  694.122691]  [<ffffffff8146c31c>] really_probe+0x6c/0x320
-[  694.187170]  [<ffffffff8146c617>] driver_probe_device+0x47/0xa0
-[  694.257885]  [<ffffffff8146c720>] ? __driver_attach+0xb0/0xb0
-[  694.326521]  [<ffffffff8146c720>] ? __driver_attach+0xb0/0xb0
-[  694.395157]  [<ffffffff8146c773>] __device_attach+0x53/0x60
-[  694.461719]  [<ffffffff8146a34c>] bus_for_each_drv+0x6c/0xa0
-[  694.529316]  [<ffffffff8146c298>] device_attach+0xa8/0xc0
-[  694.593799]  [<ffffffff8146af70>] bus_probe_device+0xb0/0xe0
-[  694.661398]  [<ffffffff814699c1>] device_add+0x301/0x570
-[  694.724842]  [<ffffffff81469c4e>] device_register+0x1e/0x30
-[  694.791403]  [<ffffffff813c354a>] acpi_device_register+0x1d8/0x27c
-[  694.865230]  [<ffffffff813c37cd>] acpi_add_single_object+0x1df/0x2b9
-[  694.941140]  [<ffffffff813fa078>] ? acpi_ut_release_mutex+0xac/0xb5
-[  695.016009]  [<ffffffff813c39b9>] acpi_bus_check_add+0x112/0x18f
-[  695.087764]  [<ffffffff810df61d>] ? trace_hardirqs_on+0xd/0x10
-[  695.157445]  [<ffffffff810a1b0f>] ? up+0x2f/0x50
-[  695.212585]  [<ffffffff813bdddb>] ? acpi_os_signal_semaphore+0x6b/0x74
-[  695.290573]  [<ffffffff813ec519>] acpi_ns_walk_namespace+0x105/0x255
-[  695.366478]  [<ffffffff813c38a7>] ? acpi_add_single_object+0x2b9/0x2b9
-[  695.444459]  [<ffffffff813c38a7>] ? acpi_add_single_object+0x2b9/0x2b9
-[  695.522439]  [<ffffffff813ecb6c>] acpi_walk_namespace+0xcf/0x118
-[  695.594190]  [<ffffffff813c3a91>] acpi_bus_scan+0x5b/0x7c
-[  695.658676]  [<ffffffff813c3b1e>] acpi_bus_add+0x2a/0x2c
-[  695.722121]  [<ffffffff81402905>] container_notify_cb+0x112/0x1a9
-[  695.794914]  [<ffffffff813d5859>] acpi_ev_notify_dispatch+0x46/0x61
-[  695.869781]  [<ffffffff813be072>] acpi_os_execute_deferred+0x27/0x34
-[  695.945687]  [<ffffffff81091c6e>] process_one_work+0x20e/0x5c0
-[  696.015361]  [<ffffffff81091bff>] ? process_one_work+0x19f/0x5c0
-[  696.087113]  [<ffffffff813be04b>] ? acpi_os_wait_events_complete+0x23/0x23
-[  696.169248]  [<ffffffff81093d0e>] worker_thread+0x12e/0x370
-[  696.235807]  [<ffffffff81093be0>] ? manage_workers+0x180/0x180
-[  696.305485]  [<ffffffff81099e4e>] kthread+0xee/0x100
-[  696.364773]  [<ffffffff810e1179>] ? __lock_release+0x129/0x190
-[  696.434450]  [<ffffffff81099d60>] ? __init_kthread_worker+0x70/0x70
-[  696.509317]  [<ffffffff816b34ac>] ret_from_fork+0x7c/0xb0
-[  696.573799]  [<ffffffff81099d60>] ? __init_kthread_worker+0x70/0x70
-[  696.648662] Code: 00 00 48 89 df 48 89 45 c8 e8 3e 71 b1 ff 48 89 c2 48 8b 75 c8 b8 ef ff ff ff f6 02 01 75 4b 49 63 cc 31 c0 4c 89 ef 48 c1 e1 06 <f3> aa 48 8b 02 48 83 c8 01 48 85 d2 48 89 02 74 29 a8 01 74 25
-[  696.880997] RIP  [<ffffffff816a483f>] sparse_add_one_section+0xef/0x166
-[  696.960128]  RSP <ffff8807bdcb35d8>
-[  697.001768] CR2: ffffea0040000000
-[  697.041336] ---[ end trace e7f94e3a34c442d4 ]---
-[  697.096474] Kernel panic - not syncing: Fatal exception
+We do it in the following new way:
+1) For direct mapped pages, all the pages were freed when they were offlined.
+   And since menmory offline is done section by section, all the memory ranges
+   being removed are aligned to PAGE_SIZE. So only need to deal with unaligned
+   pages when freeing vmemmap pages.
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+2) For vmemmap pages being used to store page_struct, if part of the larger
+   page is still in use, just fill the unused part with 0xFD. And when the
+   whole page is fulfilled with 0xFD, then free the larger page.
+
+This problem is caused by the following related patch:
+memory-hotplug-common-apis-to-support-page-tables-hot-remove.patch
+memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix.patch
+memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix.patch
+memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix.patch
+memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix.patch
+
+This patch will fix the problem based on the above patches.
+
+Reported-by: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- mm/sparse.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/mm/init_64.c |  148 +++++++++++++++---------------------------------
+ 1 files changed, 46 insertions(+), 102 deletions(-)
 
-diff --git a/mm/sparse.c b/mm/sparse.c
-index ef29496..7ca6dc8 100644
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -698,7 +698,7 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
- 	/*
- 	 * Check to see if allocation came from hot-plug-add
- 	 */
--	if (PageSlab(usemap_page)) {
-+	if (PageSlab(usemap_page) || PageCompound(usemap_page)) {
- 		kfree(usemap);
- 		if (memmap)
- 			__kfree_section_memmap(memmap, PAGES_PER_SECTION);
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 6d1a768..9fbed24 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -777,7 +777,7 @@ static bool __meminit free_pud_table(pud_t *pud_start, pgd_t *pgd)
+ 
+ static void __meminit
+ remove_pte_table(pte_t *pte_start, unsigned long addr, unsigned long end,
+-		 bool direct, bool split)
++		 bool direct)
+ {
+ 	unsigned long next, pages = 0;
+ 	pte_t *pte;
+@@ -807,23 +807,9 @@ remove_pte_table(pte_t *pte_start, unsigned long addr, unsigned long end,
+ 			/*
+ 			 * Do not free direct mapping pages since they were
+ 			 * freed when offlining, or simplely not in use.
+-			 *
+-			 * Do not free pages split from larger page since only
+-			 * the _count of the 1st page struct is available.
+-			 * Free the larger page when it is fulfilled with 0xFD.
+ 			 */
+-			if (!direct) {
+-				if (split) {
+-					/*
+-					 * Fill the split 4KB page with 0xFD.
+-					 * When the whole 2MB page is fulfilled
+-					 * with 0xFD, it could be freed.
+-					 */
+-					memset((void *)addr, PAGE_INUSE,
+-						PAGE_SIZE);
+-				} else
+-					free_pagetable(pte_page(*pte), 0);
+-			}
++			if (!direct)
++				free_pagetable(pte_page(*pte), 0);
+ 
+ 			spin_lock(&init_mm.page_table_lock);
+ 			pte_clear(&init_mm, addr, pte);
+@@ -833,26 +819,24 @@ remove_pte_table(pte_t *pte_start, unsigned long addr, unsigned long end,
+ 			pages++;
+ 		} else {
+ 			/*
++			 * If we are here, we are freeing vmemmap pages since
++			 * direct mapped memory ranges to be freed are aligned.
++			 *
+ 			 * If we are not removing the whole page, it means
+-			 * other ptes in this page are being used and we cannot
+-			 * remove them. So fill the unused ptes with 0xFD, and
+-			 * remove the page when it is wholly filled with 0xFD.
++			 * other page structs in this page are being used and
++			 * we canot remove them. So fill the unused page_structs
++			 * with 0xFD, and remove the page when it is wholly
++			 * filled with 0xFD.
+ 			 */
+ 			memset((void *)addr, PAGE_INUSE, next - addr);
+ 
+-			/*
+-			 * If the range is not aligned to PAGE_SIZE, then the
+-			 * page is definitely not split from larger page.
+-			 */
+ 			page_addr = page_address(pte_page(*pte));
+ 			if (!memchr_inv(page_addr, PAGE_INUSE, PAGE_SIZE)) {
+-				if (!direct)
+-					free_pagetable(pte_page(*pte), 0);
++				free_pagetable(pte_page(*pte), 0);
+ 
+ 				spin_lock(&init_mm.page_table_lock);
+ 				pte_clear(&init_mm, addr, pte);
+ 				spin_unlock(&init_mm.page_table_lock);
+-				pages++;
+ 			}
+ 		}
+ 	}
+@@ -865,13 +849,12 @@ remove_pte_table(pte_t *pte_start, unsigned long addr, unsigned long end,
+ 
+ static void __meminit
+ remove_pmd_table(pmd_t *pmd_start, unsigned long addr, unsigned long end,
+-		 bool direct, bool split)
++		 bool direct)
+ {
+-	unsigned long pte_phys, next, pages = 0;
++	unsigned long next, pages = 0;
+ 	pte_t *pte_base;
+ 	pmd_t *pmd;
+ 	void *page_addr;
+-	bool split_pmd = split, split_pte = false;
+ 
+ 	pmd = pmd_start + pmd_index(addr);
+ 	for (; addr < end; addr = next, pmd++) {
+@@ -883,63 +866,35 @@ remove_pmd_table(pmd_t *pmd_start, unsigned long addr, unsigned long end,
+ 		if (pmd_large(*pmd)) {
+ 			if (IS_ALIGNED(addr, PMD_SIZE) &&
+ 			    IS_ALIGNED(next, PMD_SIZE)) {
+-				if (!direct) {
+-					if (split_pmd) {
+-						/*
+-						 * Fill the split 2MB page with
+-						 * 0xFD. When the whole 1GB page
+-						 * is fulfilled with 0xFD, it
+-						 * could be freed.
+-						 */
+-						memset((void *)addr, PAGE_INUSE,
+-							PMD_SIZE);
+-					} else {
+-						free_pagetable(pmd_page(*pmd),
++				if (!direct)
++					free_pagetable(pmd_page(*pmd),
+ 						       get_order(PMD_SIZE));
+-					}
+-				}
+ 
+ 				spin_lock(&init_mm.page_table_lock);
+ 				pmd_clear(pmd);
+ 				spin_unlock(&init_mm.page_table_lock);
+-
+-				/*
+-				 * For non-direct mapping, pages means
+-				 * nothing.
+-				 */
+ 				pages++;
++			} else {
++				/* If here, we are freeing vmemmap pages. */
++				memset((void *)addr, PAGE_INUSE, next - addr);
++
++				page_addr = page_address(pmd_page(*pmd));
++				if (!memchr_inv(page_addr, PAGE_INUSE,
++						PMD_SIZE)) {
++					free_pagetable(pmd_page(*pmd),
++						       get_order(PMD_SIZE));
+ 
+-				continue;
++					spin_lock(&init_mm.page_table_lock);
++					pmd_clear(pmd);
++					spin_unlock(&init_mm.page_table_lock);
++				}
+ 			}
+ 
+-			/*
+-			 * We use 2M page, but we need to remove part of them,
+-			 * so split 2M page to 4K page.
+-			 */
+-			pte_base = (pte_t *)alloc_low_page(&pte_phys);
+-			BUG_ON(!pte_base);
+-			__split_large_page((pte_t *)pmd, addr,
+-					   (pte_t *)pte_base);
+-			split_pte = true;
+-
+-			spin_lock(&init_mm.page_table_lock);
+-			pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
+-			spin_unlock(&init_mm.page_table_lock);
+-
+-			flush_tlb_all();
++			continue;
+ 		}
+ 
+ 		pte_base = (pte_t *)map_low_page((pte_t *)pmd_page_vaddr(*pmd));
+-		remove_pte_table(pte_base, addr, next, direct, split_pte);
+-
+-		if (!direct && split_pte) {
+-			page_addr = page_address(pmd_page(*pmd));
+-			if (!memchr_inv(page_addr, PAGE_INUSE, PMD_SIZE)) {
+-				free_pagetable(pmd_page(*pmd),
+-					       get_order(PMD_SIZE));
+-			}
+-		}
+-
++		remove_pte_table(pte_base, addr, next, direct);
+ 		free_pte_table(pte_base, pmd);
+ 		unmap_low_page(pte_base);
+ 	}
+@@ -953,11 +908,10 @@ static void __meminit
+ remove_pud_table(pud_t *pud_start, unsigned long addr, unsigned long end,
+ 		 bool direct)
+ {
+-	unsigned long pmd_phys, next, pages = 0;
++	unsigned long next, pages = 0;
+ 	pmd_t *pmd_base;
+ 	pud_t *pud;
+ 	void *page_addr;
+-	bool split_pmd = false;
+ 
+ 	pud = pud_start + pud_index(addr);
+ 	for (; addr < end; addr = next, pud++) {
+@@ -977,37 +931,27 @@ remove_pud_table(pud_t *pud_start, unsigned long addr, unsigned long end,
+ 				pud_clear(pud);
+ 				spin_unlock(&init_mm.page_table_lock);
+ 				pages++;
+-				continue;
+-			}
++			} else {
++				/* If here, we are freeing vmemmap pages. */
++				memset((void *)addr, PAGE_INUSE, next - addr);
+ 
+-			/*
+-			 * We use 1G page, but we need to remove part of them,
+-			 * so split 1G page to 2M page.
+-			 */
+-			pmd_base = (pmd_t *)alloc_low_page(&pmd_phys);
+-			BUG_ON(!pmd_base);
+-			__split_large_page((pte_t *)pud, addr,
+-					   (pte_t *)pmd_base);
+-			split_pmd = true;
++				page_addr = page_address(pud_page(*pud));
++				if (!memchr_inv(page_addr, PAGE_INUSE,
++						PUD_SIZE)) {
++					free_pagetable(pud_page(*pud),
++						       get_order(PUD_SIZE));
+ 
+-			spin_lock(&init_mm.page_table_lock);
+-			pud_populate(&init_mm, pud, __va(pmd_phys));
+-			spin_unlock(&init_mm.page_table_lock);
++					spin_lock(&init_mm.page_table_lock);
++					pud_clear(pud);
++					spin_unlock(&init_mm.page_table_lock);
++				}
++			}
+ 
+-			flush_tlb_all();
++			continue;
+ 		}
+ 
+ 		pmd_base = (pmd_t *)map_low_page((pmd_t *)pud_page_vaddr(*pud));
+-		remove_pmd_table(pmd_base, addr, next, direct, split_pmd);
+-
+-		if (!direct && split_pmd) {
+-			page_addr = page_address(pud_page(*pud));
+-			if (!memchr_inv(page_addr, PAGE_INUSE, PUD_SIZE)) {
+-				free_pagetable(pud_page(*pud),
+-					       get_order(PUD_SIZE));
+-			}
+-		}
+-
++		remove_pmd_table(pmd_base, addr, next, direct);
+ 		free_pmd_table(pmd_base, pud);
+ 		unmap_low_page(pmd_base);
+ 	}
 -- 
 1.7.1
 
