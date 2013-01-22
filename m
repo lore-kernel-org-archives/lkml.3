@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755712Ab3AVTxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 14:53:00 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:65121 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755373Ab3AVTw5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 14:52:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130119102719.GA12013@gmail.com>
-References: <1358298456-18377-1-git-send-email-dinggnu@gmail.com>
-	<20130116113522.GR11529@redhat.com>
-	<20130116165239.GB18593@gmail.com>
-	<CAOJsxLFHhKLxNcjwUO-tFrjZ5MYFhWdgBX-LHSkh28-SX1cE4Q@mail.gmail.com>
-	<20130119102719.GA12013@gmail.com>
-Date: Tue, 22 Jan 2013 21:52:56 +0200
-X-Google-Sender-Auth: h0MmoykBJkM8bpGrqaXuuhSUNnY
-Message-ID: <CAOJsxLFA4zWT7FnqPpq7o=GBfy830MsJ6h6js-_fMsHQyAAueA@mail.gmail.com>
-Subject: Re: [PATCH v2] kvm tools: remove redundant "if" condition
-From: Pekka Enberg <penberg@kernel.org>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Asias He <asias.hejun@gmail.com>, kvm@vger.kernel.org,
+	id S1755604Ab3AVT5N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 14:57:13 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:60732 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753899Ab3AVT5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 14:57:09 -0500
+Date: Tue, 22 Jan 2013 12:57:01 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [RFC PATCH 0/5] Add support for S3 non-stop TSC support.
+Message-ID: <20130122195701.GH30647@obsidianresearch.com>
+References: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
+ <50FD8D07.5030908@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FD8D07.5030908@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 19, 2013 at 12:27 PM, Cong Ding <dinggnu@gmail.com> wrote:
-> On Sat, Jan 19, 2013 at 10:58:33AM +0200, Pekka Enberg wrote:
->> On Wed, Jan 16, 2013 at 6:52 PM, Cong Ding <dinggnu@gmail.com> wrote:
->> > After we check (state.kcount != 0), state.kcount has to be 0 in all the "else"
->> > branchs.
->> >
->> > Signed-off-by: Cong Ding <dinggnu@gmail.com>
->> > ---
->> >  tools/kvm/hw/i8042.c |    2 +-
->> >  1 file changed, 1 insertion(+), 1 deletion(-)
->> >
->> > diff --git a/tools/kvm/hw/i8042.c b/tools/kvm/hw/i8042.c
->> > index 9f8be6a..9035732 100644
->> > --- a/tools/kvm/hw/i8042.c
->> > +++ b/tools/kvm/hw/i8042.c
->> > @@ -189,7 +189,7 @@ static u32 kbd_read_data(void)
->> >                 state.mcount--;
->> >                 kvm__irq_line(state.kvm, AUX_IRQ, 0);
->> >                 kbd_update_irq();
->> > -       } else if (state.kcount == 0) {
->> > +       } else {
->> >                 i = state.kread - 1;
->> >                 if (i < 0)
->> >                         i = QUEUE_SIZE;
->>
->> This doesn't look right. The 'kcount' field is an int so the value can
->> be negative.
-> But the former check is "state.kcount != 0" as I described in the commit
-> message. Notice the difference between variable names in the "if" condition: the
-> first one is kcount, the second one is mcount, and the third one is same as the
-> first one kcount.
->
-> Ok, the original code is
->         if (state.kcount != 0) {
->                 /* do something when (state.kcount != 0) */
->         } else if (state.mcount > 0) {
->                 /* do something when (state.kcount == 0 && state.mount > 0) */
->         } else if (state.kcount == 0) {
->                 /* do something when (state.kcount == 0 && state.mount <= 0) */
->         }
-> For the third branch, it runs when state.kcount == 0 and state.mount <= 0,
-> it's not necessary to ensure state.kcount == 0 again.
+On Mon, Jan 21, 2013 at 10:46:31AM -0800, John Stultz wrote:
+ 
+> What I'd propose is that we break the read_persistent_clock()
+> functionality up. So we need two interfaces:
+> 1) An interface to access a time value we used to initialize the
+> system's CLOCK_REALTIME time.
+> 2) An interface to measure the length of suspend.
 
-Right you are. Applied, thanks!
+> Interface #1 could be possibly just replaced with the RTCTOSYS
+> functionality. Although the downside there is that for some time at
+> bootup between the timekeeping_init() function running (prior to
+> interrupts being enabled) and the RTC driver being available (after
+> interrupts are enabled), where we'd have an incorrect system clock.
+> So we may want to preserve something like the existing
+> read_persistent_clock() interface, but as Jason suggested, we could
+> push that access into the RTC driver itself.
+
+How big of an issue is this? Could the RTCTOSYS function be moved to
+the moment the RTC driver is registered rather than using a
+late_initcall?
+ 
+> Interface #2 could then be either RTC based, or countinuous counter
+> based. Since we still want to do this measurement with interrupts
+> off, we still would need that interrupt-free RTC method like
+> read_persistent_clock() where supported (falling back to the RTC
+> driver's suspend/resume handler to try to fix things up as best it
+> can if that's not available).
+
+Could the counter version of this be bundled into the clocksource
+framework? It already has generic APIs for handling cycle counters and
+things. Isn't there a TSC driver for clocksource already? Is all that
+is missing is a way to tell if the counter survived suspend?
+
+clocksource already has suspend/resume callbacks stuff, so the counter
+driver could sense if the sleep was too deep and mark itself as
+invalid.
+
+This would help solve the problem on ARM with muxing persistent clock
+on multi-platform.
+
+A RTC device flag 'readable with interrupts off' still seems like a
+good idea for the RTC case..
+
+Cheers,
+Jason
