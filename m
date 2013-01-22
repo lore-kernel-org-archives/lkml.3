@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab3AVSgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 13:36:49 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:37974 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755357Ab3AVSbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 13:31:00 -0500
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+	id S1756052Ab3AVShA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 13:37:00 -0500
+Received: from sabertooth01.qualcomm.com ([65.197.215.72]:10441 "EHLO
+	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755254Ab3AVSg4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 13:36:56 -0500
+X-IronPort-AV: E=Sophos;i="4.84,515,1355126400"; 
+   d="scan'208";a="17437626"
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+To: Kees Cook <keescook@chromium.org>
+CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jes Sorensen <jes@trained-monkey.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 08/20] drivers/net/hippi: remove depends on CONFIG_EXPERIMENTAL
-Date: Tue, 22 Jan 2013 10:30:32 -0800
-Message-Id: <1358879444-25834-9-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358879444-25834-1-git-send-email-keescook@chromium.org>
+Subject: Re: [PATCH 12/20] drivers/net/wireless/ath/ath6kl: remove depends on CONFIG_EXPERIMENTAL
 References: <1358879444-25834-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	<1358879444-25834-13-git-send-email-keescook@chromium.org>
+Date: Tue, 22 Jan 2013 20:36:48 +0200
+In-Reply-To: <1358879444-25834-13-git-send-email-keescook@chromium.org> (Kees
+	Cook's message of "Tue, 22 Jan 2013 10:30:36 -0800")
+Message-ID: <87r4ldcben.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
-while now and is almost always enabled by default. As agreed during the
-Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
+Kees Cook <keescook@chromium.org> writes:
 
-CC: Jes Sorensen <jes@trained-monkey.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: NetDev <netdev@vger.kernel.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- drivers/net/hippi/Kconfig |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+> while now and is almost always enabled by default. As agreed during the
+> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-diff --git a/drivers/net/hippi/Kconfig b/drivers/net/hippi/Kconfig
-index 95eb34f..f71515d 100644
---- a/drivers/net/hippi/Kconfig
-+++ b/drivers/net/hippi/Kconfig
-@@ -3,8 +3,8 @@
- #
- 
- config HIPPI
--	bool "HIPPI driver support (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && INET && PCI
-+	bool "HIPPI driver support"
-+	depends on INET && PCI
- 	---help---
- 	  HIgh Performance Parallel Interface (HIPPI) is a 800Mbit/sec and
- 	  1600Mbit/sec dual-simplex switched or point-to-point network. HIPPI
-@@ -18,7 +18,7 @@ config HIPPI
- if HIPPI
- 
- config ROADRUNNER
--	tristate "Essential RoadRunner HIPPI PCI adapter support (EXPERIMENTAL)"
-+	tristate "Essential RoadRunner HIPPI PCI adapter support"
- 	depends on PCI
- 	---help---
- 	  Say Y here if this is your PCI HIPPI network card.
-@@ -27,7 +27,7 @@ config ROADRUNNER
- 	  will be called rrunner.  If unsure, say N.
- 
- config ROADRUNNER_LARGE_RINGS
--	bool "Use large TX/RX rings (EXPERIMENTAL)"
-+	bool "Use large TX/RX rings"
- 	depends on ROADRUNNER
- 	---help---
- 	  If you say Y here, the RoadRunner driver will preallocate up to 2 MB
+Do you want me to apply this to ath6kl.git (the normal route for ath6kl
+patches) or what's the plan?
+
 -- 
-1.7.9.5
-
+Kalle Valo
