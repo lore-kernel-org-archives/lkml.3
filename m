@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab3AVRfo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 12:35:44 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:52263 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752145Ab3AVRfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 12:35:42 -0500
-Date: Tue, 22 Jan 2013 18:38:36 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: rjw@sisk.pl, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, Leonid Isaev <lisaev@umail.iu.edu>
-Subject: Re: [PATCH] Add module aliases for acpi-cpufreq
-Message-ID: <20130122173835.GB6431@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Matthew Garrett <matthew.garrett@nebula.com>, rjw@sisk.pl,
-	linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-	cpufreq@vger.kernel.org, Leonid Isaev <lisaev@umail.iu.edu>
-References: <1358872944-7676-1-git-send-email-matthew.garrett@nebula.com>
+	id S1754656Ab3AVRhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 12:37:14 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:49472 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145Ab3AVRhM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 12:37:12 -0500
+Date: Tue, 22 Jan 2013 09:37:07 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 02/33] ARM: Convert to devm_ioremap_resource()
+Message-ID: <20130122173707.GA25022@kroah.com>
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
+ <1358762966-20791-3-git-send-email-thierry.reding@avionic-design.de>
+ <20130121155846.GN23505@n2100.arm.linux.org.uk>
+ <20130121160547.GA10790@avionic-0098.adnet.avionic-design.de>
+ <20130121161611.GS23505@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1358872944-7676-1-git-send-email-matthew.garrett@nebula.com>
+In-Reply-To: <20130121161611.GS23505@n2100.arm.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 11:42:24AM -0500, Matthew Garrett wrote:
-> The acpi core will call request_module("acpi-cpufreq") on subsystem init,
-> but this will fail if the module isn't available at that stage of boot.
-> Add some module aliases to ensure that udev can load the module on Intel
-> and AMD systems with the appropriate feature bits - I /think/ that this
-> will also work on VIA systems, but haven't verified that.
+On Mon, Jan 21, 2013 at 04:16:11PM +0000, Russell King - ARM Linux wrote:
+> On Mon, Jan 21, 2013 at 05:05:47PM +0100, Thierry Reding wrote:
+> > On Mon, Jan 21, 2013 at 03:58:46PM +0000, Russell King - ARM Linux wrote:
+> > > On Mon, Jan 21, 2013 at 11:08:55AM +0100, Thierry Reding wrote:
+> > > > Convert all uses of devm_request_and_ioremap() to the newly introduced
+> > > > devm_ioremap_resource() which provides more consistent error handling.
+> > > 
+> > > Does this include the resource part of the handling too?
+> > 
+> > I'm not sure I understand your question. devm_ioremap_resource() does a
+> > devm_request_mem_region() internally if that's what you were asking.
 > 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+> Ah, that's fine then.  The function name is a little misleading, and as
+> it doesn't exist in mainline at present, it is not something I know about.
 
-Let's add some more tags:
+Can I assume this is an Acked-by: from you for this patch so that I can
+take this through my driver-core tree?
 
-Link: http://lkml.kernel.org/r/1448223.sdUJnNSRz4@vostro.rjw.lan
-Tested-by: Leonid Isaev <lisaev@umail.iu.edu>
-Acked-by: Borislav Petkov <bp@suse.de>
+thanks,
 
-Rafael, this is all yours. :-)
-
-Thanks.
-
-> ---
->  drivers/cpufreq/acpi-cpufreq.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-> index 0d048f6..7b0d49d 100644
-> --- a/drivers/cpufreq/acpi-cpufreq.c
-> +++ b/drivers/cpufreq/acpi-cpufreq.c
-> @@ -1030,4 +1030,11 @@ MODULE_PARM_DESC(acpi_pstate_strict,
->  late_initcall(acpi_cpufreq_init);
->  module_exit(acpi_cpufreq_exit);
->  
-> +static const struct x86_cpu_id acpi_cpufreq_ids[] = {
-> +	X86_FEATURE_MATCH(X86_FEATURE_ACPI),
-> +	X86_FEATURE_MATCH(X86_FEATURE_HW_PSTATE),
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(x86cpu, acpi_cpufreq_ids);
-> +
->  MODULE_ALIAS("acpi");
-> -- 
-> 1.8.0.2
-> 
-> 
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+greg k-h
