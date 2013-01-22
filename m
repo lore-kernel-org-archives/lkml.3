@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab3AVPQi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 10:16:38 -0500
-Received: from 8bytes.org ([85.214.48.195]:44179 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752949Ab3AVPQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 10:16:36 -0500
-Date: Tue, 22 Jan 2013 16:16:32 +0100
-From: =?iso-8859-1?Q?J=F6rg_R=F6del?= <joro@8bytes.org>
-To: Boris Ostrovsky <boris.ostrovsky@amd.com>
-Cc: Udo van den Heuvel <udovdh@xs4all.nl>, suravee.suthikulpanit@amd.com,
-        Jacob Shin <jacob.shin@amd.com>, Borislav Petkov <bp@alien8.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
-Message-ID: <20130122151632.GS25591@8bytes.org>
-References: <50FBC7EF.6040207@xs4all.nl>
- <20130120103652.GB16800@pd.tnic>
- <50FBC994.8020409@xs4all.nl>
- <20130120111920.GL25591@8bytes.org>
- <50FBD413.1000406@xs4all.nl>
- <20130120114011.GN25591@8bytes.org>
- <20130120114828.GB16519@pd.tnic>
- <50FE9E76.30702@xs4all.nl>
- <50FEA3F2.1070408@amd.com>
+	id S1753890Ab3AVPTK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 10:19:10 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:34823 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753073Ab3AVPTH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 10:19:07 -0500
+Date: Tue, 22 Jan 2013 10:19:06 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Manjunath Goudar <manjunath.goudar@linaro.org>
+cc: Arnd Bergmann <arnd@arndb.de>, <balbi@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <arm@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH 13/15] USB: ehci: make orion and mxc bus glues coexist
+In-Reply-To: <CAJFYCKFb8F1k5Y6+Q4x5WgTsLO_xh1AFB1mgyRc0xK5m1ABbwA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1301221011190.1510-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FEA3F2.1070408@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Jan 22 16:16:34 2013
-X-DSPAM-Confidence: 0.9980
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 50fead5222975526618350
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 09:36:34AM -0500, Boris Ostrovsky wrote:
-> 
-> 
-> On 01/22/2013 09:13 AM, Udo van den Heuvel wrote:
-> >Gigabyte demonstrate that using ESX 5i IOMMU works fine. (with pictures
-> >attached).
-> 
-> There are no attachments to your message.
-> 
-> I am not sure that 5i supports IOMMU (but I may well be wrong).
+On Tue, 22 Jan 2013, Manjunath Goudar wrote:
 
-Virtualization use-cases don't change the page-tables for the IOMMU very
-often. So there is less need to flush the IO-TLB and IOMMU command
-processing is utilized only from time to time.
+> > >  I think we can actually
+> > > get the same results by turning the Kconfig logic around and making
+> > > the platform glue drivers 'select USB_EHCI_HCD' than depending on
+> > > it.
+> >
+> > That's a good idea.  The Kconfig changes would have to be done
+> > carefully to make sure that the dependency on USB_ARCH_HAS_EHCI still
+> > applies to all the platform drivers.
+> >
+> > Manjunath, would you like to send a patch to do this?
+> >
+> > Alan Stern
+> >
+> > Ya sure,could you explain little bit  briefly about the Kconfig changes.
 
-In Linux however the page-tables change all the time and there is a much
-higher load on the IOMMU command buffer which makes it much more likely
-to trigger the hardware problem.
+Suppose you do exactly what Arnd proposed: add "select USB_EHCI_HCD" to
+the Kconfig entries for each of the platform glue drivers.  Then
+consider what would happen in a build where USB_ARCH_HAS_EHCI is "n"
+but one of those glue drivers is enabled.  There would be conflicting
+requirements on USB_EHCI_HCD: The new "select" would force it to be on,
+but the existing "depends on USB && USB_ARCH_HAS_EHCI" would force it
+to be off.  The build would fail.
 
+In order to prevent this, you have to make sure that each glue driver
+depends on USB_ARCH_HAS_EHCI.  A simple way to do this is to surround
+the Kconfig entries for those drivers with "if USB && 
+USB_ARCH_HAS_EHCI" ... "endif".
 
-	Joerg
+Come to think of it, the "if USB" part really should protect the entire 
+file.
 
+Alan Stern
 
