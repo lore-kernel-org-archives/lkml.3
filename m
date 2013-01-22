@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab3AVJ7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 04:59:51 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:52080 "EHLO comal.ext.ti.com"
+	id S1752744Ab3AVJ6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 04:58:47 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35250 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752981Ab3AVJ6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 04:58:50 -0500
+	id S1750723Ab3AVJ6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 04:58:44 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <tony@atomide.com>, <balbi@ti.com>, <linux@arm.linux.org.uk>,
         <eballetbo@gmail.com>, <javier@dowhile0.org>,
@@ -13,9 +13,9 @@ To: <tony@atomide.com>, <balbi@ti.com>, <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
 CC: <kishon@ti.com>
-Subject: [PATCH v1 1/6] usb: otg: Add an API to bind the USB controller and PHY
-Date: Tue, 22 Jan 2013 15:28:09 +0530
-Message-ID: <1358848694-20145-2-git-send-email-kishon@ti.com>
+Subject: [PATCH v1 4/6] drivers: usb: musb: omap: make use of the new PHY lib APIs
+Date: Tue, 22 Jan 2013 15:28:12 +0530
+Message-ID: <1358848694-20145-5-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358848694-20145-1-git-send-email-kishon@ti.com>
 References: <1358848694-20145-1-git-send-email-kishon@ti.com>
@@ -25,120 +25,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to support platforms which has multiple PHY's (of same type) and
-which has multiple USB controllers, a new design is adopted wherin the binding
-information (between the PHY and the USB controller) should be passed to the
-PHY library from platform specific file (board file). 
-So added a new API to pass the binding information.
+New PHY lib APIs like usb_add_phy_dev() and devm_usb_get_phy_dev() are
+used in MUSB (OMAP), in order to make use of the binding information
+provided in the board file (of OMAP platforms).
+All the platforms should be modified similar to this to add and get the
+PHY.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/usb/otg/otg.c   |   37 +++++++++++++++++++++++++++++++++++++
- include/linux/usb/phy.h |   22 ++++++++++++++++++++++
- 2 files changed, 59 insertions(+)
+ drivers/usb/musb/omap2430.c   |    2 +-
+ drivers/usb/otg/twl4030-usb.c |    3 ++-
+ drivers/usb/phy/omap-usb2.c   |    3 ++-
+ 3 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/otg/otg.c b/drivers/usb/otg/otg.c
-index a30c041..492ba2f 100644
---- a/drivers/usb/otg/otg.c
-+++ b/drivers/usb/otg/otg.c
-@@ -18,6 +18,7 @@
- #include <linux/usb/otg.h>
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index bf6cfe0..1a8cf6d 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -345,7 +345,7 @@ static int omap2430_musb_init(struct musb *musb)
+ 	 * up through ULPI.  TWL4030-family PMICs include one,
+ 	 * which needs a driver, drivers aren't always needed.
+ 	 */
+-	musb->xceiv = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
++	musb->xceiv = devm_usb_get_phy_dev(dev, 0);
+ 	if (IS_ERR_OR_NULL(musb->xceiv)) {
+ 		pr_err("HS USB OTG: no transceiver configured\n");
+ 		return -ENODEV;
+diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
+index 0a70193..a994715 100644
+--- a/drivers/usb/otg/twl4030-usb.c
++++ b/drivers/usb/otg/twl4030-usb.c
+@@ -610,6 +610,7 @@ static int twl4030_usb_probe(struct platform_device *pdev)
+ 	twl->phy.dev		= twl->dev;
+ 	twl->phy.label		= "twl4030";
+ 	twl->phy.otg		= otg;
++	twl->phy.type		= USB_PHY_TYPE_USB2;
+ 	twl->phy.set_suspend	= twl4030_set_suspend;
  
- static LIST_HEAD(phy_list);
-+static LIST_HEAD(phy_bind_list);
- static DEFINE_SPINLOCK(phy_lock);
+ 	otg->phy		= &twl->phy;
+@@ -624,7 +625,7 @@ static int twl4030_usb_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "ldo init failed\n");
+ 		return err;
+ 	}
+-	usb_add_phy(&twl->phy, USB_PHY_TYPE_USB2);
++	usb_add_phy_dev(&twl->phy);
  
- static struct usb_phy *__usb_find_phy(struct list_head *list,
-@@ -201,6 +202,42 @@ void usb_remove_phy(struct usb_phy *x)
- }
- EXPORT_SYMBOL(usb_remove_phy);
+ 	platform_set_drvdata(pdev, twl);
+ 	if (device_create_file(&pdev->dev, &dev_attr_vbus))
+diff --git a/drivers/usb/phy/omap-usb2.c b/drivers/usb/phy/omap-usb2.c
+index 4b59b39..b5c759c 100644
+--- a/drivers/usb/phy/omap-usb2.c
++++ b/drivers/usb/phy/omap-usb2.c
+@@ -143,6 +143,7 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 	phy->phy.label		= "omap-usb2";
+ 	phy->phy.set_suspend	= omap_usb2_suspend;
+ 	phy->phy.otg		= otg;
++	phy->phy.type		= USB_PHY_TYPE_USB2;
  
-+/**
-+ * usb_bind_phy - bind the phy and the controller that uses the phy
-+ * @dev_name: the device name of the device that will bind to the phy
-+ * @index: index to specify the port number
-+ * @phy_dev_name: the device name of the phy
-+ *
-+ * Fills the phy_bind structure with the dev_name and phy_dev_name. This will
-+ * be used when the phy driver registers the phy and when the controller
-+ * requests this phy.
-+ *
-+ * To be used by platform specific initialization code.
-+ */
-+struct usb_phy_bind __init *usb_bind_phy(const char *dev_name, u8 index,
-+				const char *phy_dev_name)
-+{
-+	struct usb_phy_bind *phy_bind;
-+	unsigned long flags;
-+
-+	phy_bind = kzalloc(sizeof(*phy_bind), GFP_KERNEL);
-+	if (!phy_bind) {
-+		pr_err("phy_bind(): No memory for phy_bind");
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	phy_bind->dev_name = dev_name;
-+	phy_bind->phy_dev_name = phy_dev_name;
-+	phy_bind->index = index;
-+
-+	spin_lock_irqsave(&phy_lock, flags);
-+	list_add_tail(&phy_bind->list, &phy_bind_list);
-+	spin_unlock_irqrestore(&phy_lock, flags);
-+
-+	return phy_bind;
-+}
-+EXPORT_SYMBOL_GPL(usb_bind_phy);
-+
- const char *otg_state_string(enum usb_otg_state state)
- {
- 	switch (state) {
-diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-index a29ae1e..fbeab1a 100644
---- a/include/linux/usb/phy.h
-+++ b/include/linux/usb/phy.h
-@@ -106,6 +106,21 @@ struct usb_phy {
- 			enum usb_device_speed speed);
- };
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
  
-+/**
-+ * struct usb_phy_bind - represent the binding for the phy
-+ * @dev_name: the device name of the device that will bind to the phy
-+ * @phy_dev_name: the device name of the phy
-+ * @index: used if a single controller uses multiple phys
-+ * @phy: reference to the phy
-+ * @list: to maintain a linked list of the binding information
-+ */
-+struct usb_phy_bind {
-+	const char	*dev_name;
-+	const char	*phy_dev_name;
-+	u8		index;
-+	struct usb_phy	*phy;
-+	struct list_head list;
-+};
+@@ -168,7 +169,7 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 	}
+ 	clk_prepare(phy->wkupclk);
  
- /* for board-specific init logic */
- extern int usb_add_phy(struct usb_phy *, enum usb_phy_type type);
-@@ -151,6 +166,8 @@ extern struct usb_phy *devm_usb_get_phy(struct device *dev,
- 	enum usb_phy_type type);
- extern void usb_put_phy(struct usb_phy *);
- extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
-+extern struct usb_phy_bind *usb_bind_phy(const char *dev_name, u8 index,
-+				const char *phy_dev_name);
- #else
- static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
- {
-@@ -171,6 +188,11 @@ static inline void devm_usb_put_phy(struct device *dev, struct usb_phy *x)
- {
- }
+-	usb_add_phy(&phy->phy, USB_PHY_TYPE_USB2);
++	usb_add_phy_dev(&phy->phy);
  
-+static inline struct usb_phy_bind *usb_bind_phy(const char *dev_name, u8 index,
-+				const char *phy_dev_name)
-+{
-+	return NULL;
-+}
- #endif
+ 	platform_set_drvdata(pdev, phy);
  
- static inline int
 -- 
 1.7.9.5
 
