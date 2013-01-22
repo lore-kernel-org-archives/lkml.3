@@ -1,86 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab3AVXUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 18:20:45 -0500
-Received: from [216.32.180.184] ([216.32.180.184]:12999 "EHLO
-	co1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752283Ab3AVXUo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 18:20:44 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1155h)
-X-WSS-ID: 0MH1VG8-01-DO7-02
-X-M-MSG: 
-From: <suravee.suthikulpanit@amd.com>
-To: <iommu@lists.linux-foundation.org>, <joro@8bytes.org>
-CC: <bp@alian8.de>, <linux-kernel@vger.kernel.org>, <udovdh@xs4all.nl>,
-        <ssg.sos.patches@amd.com>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Subject: [PATCH 1/1] AMD Family15h Model10-1Fh erratum 746 Workaround
-Date: Tue, 22 Jan 2013 17:19:10 -0600
-Message-ID: <1358896750-5199-1-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754120Ab3AVXWW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 18:22:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38034 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab3AVXWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 18:22:21 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130122222056.GC14503@phenom.dumpdata.com>
+References: <1358469577-8794-1-git-send-email-kys@microsoft.com> <20130118131056.GA14550@pd.tnic> <794a590acf1a47408a87e95f095e6b1b@SN2PR03MB061.namprd03.prod.outlook.com> <20130122222056.GC14503@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 1/1] X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 22 Jan 2013 17:19:37 -0600
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        KY Srinivasan <kys@microsoft.com>
+CC: Borislav Petkov <bp@alien8.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, "jeremy@goop.org" <jeremy@goop.org>,
+        "Jan Beulich (JBeulich@suse.com)" <JBeulich@suse.com>
+Message-ID: <2bd8c994-3e70-413b-85de-caec46428b1e@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Yes, how about we rename this the hypervisor vector...
 
-This patch implements workaround for the AMD Family15h Model10-1Fh erratum 746.
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-(http://support.amd.com/us/Processor_TechDocs/48931_15h_Mod_10h-1Fh_Rev_Guide.pdf)
+>On Fri, Jan 18, 2013 at 03:27:33PM +0000, KY Srinivasan wrote:
+>> 
+>> 
+>> > -----Original Message-----
+>> > From: Borislav Petkov [mailto:bp@alien8.de]
+>> > Sent: Friday, January 18, 2013 8:11 AM
+>> > To: KY Srinivasan
+>> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+>> > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+>> > jasowang@redhat.com; tglx@linutronix.de; H. Peter Anvin; Ingo
+>Molnar
+>> > Subject: Re: [PATCH 1/1] X86: Handle Hyper-V vmbus interrupts as
+>special
+>> > hypervisor interrupts
+>> > 
+>> > On Thu, Jan 17, 2013 at 04:39:37PM -0800, K. Y. Srinivasan wrote:
+>> > >
+>> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+>> > > ---
+>> > >  arch/x86/include/asm/irq_vectors.h |    2 +
+>> > >  arch/x86/include/asm/mshyperv.h    |    4 +++
+>> > >  arch/x86/kernel/cpu/mshyperv.c     |   39
+>> > ++++++++++++++++++++++++++++++++++++
+>> > >  arch/x86/kernel/entry_32.S         |    7 ++++++
+>> > >  arch/x86/kernel/entry_64.S         |    5 ++++
+>> > >  5 files changed, 57 insertions(+), 0 deletions(-)
+>> > >
+>> > > diff --git a/arch/x86/include/asm/irq_vectors.h
+>> > b/arch/x86/include/asm/irq_vectors.h
+>> > > index 1508e51..c2ff239 100644
+>> > > --- a/arch/x86/include/asm/irq_vectors.h
+>> > > +++ b/arch/x86/include/asm/irq_vectors.h
+>> > > @@ -112,6 +112,8 @@
+>> > >  /* Xen vector callback to receive events in a HVM domain */
+>> > >  #define XEN_HVM_EVTCHN_CALLBACK		0xf3
+>> > >
+>> > > +/* Hyper-V vector callback to receive vmbus interrupts*/
+>> > > +#define HYPER_V_CALLBACK_VECTOR		0xf2
+>> > 
+>> > Btw, could those hypervisor vectors be merged into one
+>VIRT_INTR_VECTOR
+>> > and be shared between the hypervisors? I mean, you can't have a xen
+>and
+>> > hyperv hypervisor running next to each other and fihgting over that
+>> > vector, right?
+>> 
+>> You are right; we could just have one vector for this. Let me wait
+>for other comments and
+>> input from Xen maintainers before I make this change.
+>> 
+>> Regards,
+>> 
+>
+>Looks OK to me.
+>
+>> K. Y
+>> > 
+>> > --
+>> > Regards/Gruss,
+>> >     Boris.
+>> > 
+>> > Sent from a fat crate under my desk. Formatting is fine.
+>> > --
+>> > 
+>> 
 
-Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index 81837b0..26c0448 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -975,6 +975,30 @@ static void __init free_iommu_all(void)
- }
- 
- /*
-+ * AMD family15h Model 10h-1fh  erratum 746 (IOMMU Logging May Stall Translations)
-+ * Workaround:
-+ *     BIOS should disable L2B micellaneous clock gating by setting
-+ *     L2_L2B_CK_GATE_CONTROL[CKGateL2BMiscDisable](D0F2xF4_x90[2]) = 1b
-+ */
-+static void __init amd_iommu_apply_erratum_746(struct amd_iommu *iommu)
-+{
-+	u32 value;
-+
-+	if ((boot_cpu_data.x86 != 0x15) || !(boot_cpu_data.x86_model & 0x10))
-+		return;
-+	
-+	/* Select Northbridge indirect register 0x90 and enable writing */
-+	pci_write_config_dword(iommu->dev, 0xf0, 0x90 | (1 << 8));
-+	pci_read_config_dword(iommu->dev, 0xf4, &value); 
-+
-+	if (!(value & 0x4)) {
-+		pci_write_config_dword(iommu->dev, 0xf4, value | 0x4);
-+		pr_info("AMD-Vi: Applying erratum 746 for IOMMU at %s\n",
-+		 dev_name(&iommu->dev->dev));
-+	}
-+}
-+
-+/*
-  * This function clues the initialization function for one IOMMU
-  * together and also allocates the command buffer and programs the
-  * hardware. It does NOT enable the IOMMU. This is done afterwards.
-@@ -1171,6 +1195,8 @@ static int iommu_init_pci(struct amd_iommu *iommu)
- 		for (i = 0; i < 0x83; i++)
- 			iommu->stored_l2[i] = iommu_read_l2(iommu, i);
- 	}
-+	
-+	amd_iommu_apply_erratum_746(iommu);
- 
- 	return pci_enable_device(iommu->dev);
- }
 -- 
-1.7.10.4
-
-
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
