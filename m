@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab3AVVch (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 16:32:37 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:38643 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab3AVVcg (ORCPT
+	id S1756119Ab3AVVe2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 16:34:28 -0500
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:5216 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab3AVVe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 16:32:36 -0500
-Message-ID: <1358890299.6252.166.camel@cumari.coelho.fi>
-Subject: Re: [PATCH] Revert "drivers/misc/ti-st: remove gpio handling"
-From: Luciano Coelho <coelho@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: <gregkh@linuxfoundation.org>, <peter.ujfalusi@ti.com>, <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>
-Date: Tue, 22 Jan 2013 23:31:39 +0200
-In-Reply-To: <20130122201453.GR22517@atomide.com>
-References: <1358766762-24405-1-git-send-email-coelho@ti.com>
-	 <20130122201453.GR22517@atomide.com>
+	Tue, 22 Jan 2013 16:34:26 -0500
+Message-ID: <1358889867.14145.354.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI: Remove useless type argument of driver .remove()
+ operation
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Date: Tue, 22 Jan 2013 14:24:27 -0700
+In-Reply-To: <1518653.CUpDmbmCI3@vostro.rjw.lan>
+References: <1518653.CUpDmbmCI3@vostro.rjw.lan>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-MIME-Version: 1.0
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-22 at 12:14 -0800, Tony Lindgren wrote:
-> * Luciano Coelho <coelho@ti.com> [130121 03:16]:
-> > This reverts commit eccf2979b2c034b516e01b8a104c3739f7ef07d1.
-> > 
-> > The reason is that it broke TI WiLink shared transport on Panda.
-> > Also, callback functions should not be added to board files anymore,
-> > so revert to implementing the power functions in the driver itself.
-> > 
-> > Additionally, changed a variable name ('status' to 'err') so that this
-> > revert compiles properly.
-> > 
-> > Cc: stable <stable@vger.kernel.org> [3.7]
-> > Signed-off-by: Luciano Coelho <coelho@ti.com>
+On Sun, 2013-01-20 at 23:04 +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> This also makes sense from converting to DT based boot as the GPIO
-> calls should happen in the driver. Those mdelays probably can be fixed,
-> but since this is a revert to a known working version:
+> The second argument of ACPI driver .remove() operation is only used
+> by the ACPI processor driver and the value passed to that driver
+> through it is always available from the given struct acpi_device
+> object's removal_type field.  For this reason, the second ACPI driver
+> .remove() argument is in fact useless, so drop it.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I thought about checking exactly what we need as delays and whether we
-really need to do all that toggling.  At least in some boards, the
-toggles are not needed, but I don't know for sure whether it works in
-all different variations of the chip, so I kept them to be safe.  Also,
-I tried to deviate as little as possible from a plain revert, since I'd
-like to get this into stable as well.
+Thanks for the clean-up!  It looks good. 
 
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-> Acked-by: Tony Lindgren <tony@atomide.com>
+-Toshi
 
-Thanks!
-
---
-Luca.
 
