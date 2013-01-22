@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103Ab3AVMMG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 07:12:06 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:49679 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752264Ab3AVMMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 07:12:03 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH 2/2] ACPI / PM: Fix device power state value after transitions to D3cold
-Date: Tue, 22 Jan 2013 13:18 +0100
-Message-ID: <3543306.ZHWZyu77Fs@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <4115893.XLRCUukpRD@vostro.rjw.lan>
-References: <4115893.XLRCUukpRD@vostro.rjw.lan>
+	id S1753242Ab3AVMTw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 07:19:52 -0500
+Received: from mxout-07.mxes.net ([216.86.168.182]:18506 "EHLO
+	mxout-07.mxes.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752976Ab3AVMTt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 07:19:49 -0500
+Date: Tue, 22 Jan 2013 07:19:47 -0500
+From: Brad Tilley <brad@16s.us>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: PROBLEM: 3.8.0-rc4 keyboard failure at boot
+Message-ID: <20130122121947.GB27072@16s.us>
+References: <20130121213604.GA31225@16s.us>
+ <20130122001346.GD16638@core.coreip.homeip.net>
+ <alpine.LNX.2.00.1301221122380.20374@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1301221122380.20374@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Tue, Jan 22, 2013 at 11:23:27AM +0100, Jiri Kosina wrote:
+> On Mon, 21 Jan 2013, Dmitry Torokhov wrote:
+> 
+> > > Here is info from a computer where the keyboard works occasionally at
+> > > boot (about 50% of the time). Users reboot until the keyboard works.
+> > > 
+> > 
+> > Hmm, this is a USB keyboard so let's CC Jiri in addition to
+> > linux-input...
+> 
+> Thanks for the report.
+> 
+> First question before we start any further analysis -- what is the latest 
+> known-good version of the kernel, where this problem didn't happen on this 
+> particular computer?
 
-When a transition to the D3cold power state is requested,
-acpi_device_set_power() first carries out a transition to D3hot and
-then turns off the device's power resources.  However, it fails to
-update the device's power.state field appropriately and D3hot is
-stored in it as a result.
+Kernels 3.7.3 and 3.7.4 do not have this issue. It began with the 3.8 rcs.
 
-Fix this, but make sure that the device's power.state value will be
-D3hot if its power resources cannot be turned off in the final step.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/device_pm.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-Index: linux-pm/drivers/acpi/device_pm.c
-===================================================================
---- linux-pm.orig/drivers/acpi/device_pm.c
-+++ linux-pm/drivers/acpi/device_pm.c
-@@ -264,8 +264,11 @@ int acpi_device_set_power(struct acpi_de
- 	if (result)
- 		goto end;
- 
--	if (cut_power)
--		result = acpi_power_transition(device, ACPI_STATE_D3_COLD);
-+	if (cut_power) {
-+		device->power.state = state;
-+		state = ACPI_STATE_D3_COLD;
-+		result = acpi_power_transition(device, state);
-+	}
- 
-  end:
- 	if (result) {
+Brad
 
