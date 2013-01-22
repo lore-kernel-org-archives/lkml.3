@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab3AVVIR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 16:08:17 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:57688 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752395Ab3AVVIK (ORCPT
+	id S1756122Ab3AVVLC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 16:11:02 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:33518 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756021Ab3AVVK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 16:08:10 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Clark <rob@ti.com>
-Subject: Re: [PATCH 15/15] staging/omapdrm: don't build on multiplatform
-Date: Tue, 22 Jan 2013 21:07:55 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+	Tue, 22 Jan 2013 16:10:58 -0500
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
+        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Tomi Valkeinen <tomi.valkeinen@ti.com>
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <201301221747.24618.arnd@arndb.de> <50FED76B.10801@ti.com>
-In-Reply-To: <50FED76B.10801@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301222107.55437.arnd@arndb.de>
-X-Provags-ID: V02:K0:CV4j7gJRoVEdTCh+IkbBf94/+5DRiDOpERGTPfXleCZ
- tBEqk+QbA5RTdWZHP+4XjSiEXDuVBCSWQiXSA72GtUmGNOU6No
- wxwLBvlXY+5/R5a5dIhhibBqICgwCJQx0t88/sP8s3fwOenCBF
- AStDdDs7/zl3+ZHrFDFHySbT2nrVD/W/jCefSJE/P4hUFJlO/n
- ibprnjLJs31RCfOqIZI/FixNu+WYvORSUhjTtPv3o8xdsKhORm
- oA49GEQMQd1FE7jmzWHUEVYqr9l/wTwzlPo2PpxvBJo4FBpdWq
- bsT7ABfGd17tu+AUQDlRnJkXIYrEKAg4eY1wVY4uvvBqsWnFpW
- D3zPSpl4L/nchhQ35a4E=
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: [PATCH v3 3/3] arm: mvebu: enable gpio expander over i2c on Mirabox platform
+Date: Tue, 22 Jan 2013 22:10:25 +0100
+Message-Id: <1358889025-8530-4-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358889025-8530-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1358889025-8530-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 January 2013, Rob Clark wrote:
-> I think it should be safe.. or at least it built fine for multi-plat in 
-> the recent past and shouldn't really do anything if there is no omapdss 
-> platform device.
-> 
-> Do you want me to make a patch or are you already doing this?
+The Globalscale Mirabox platform can be connected to the JTAG/GPIO box
+through the Multi-IO port. The GPIO box use the NXP PCA9505 I/O port
+expansion IC to provide 40-bit parallel input/output GPIOs. This patch
+enable the use of this expander on the Mirabox.
 
-Please make one. Feel free to reuse my changeset description if needed.
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ arch/arm/boot/dts/armada-370-mirabox.dts |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-	Arnd
+diff --git a/arch/arm/boot/dts/armada-370-mirabox.dts b/arch/arm/boot/dts/armada-370-mirabox.dts
+index 3b40713..d9b32d3 100644
+--- a/arch/arm/boot/dts/armada-370-mirabox.dts
++++ b/arch/arm/boot/dts/armada-370-mirabox.dts
+@@ -52,5 +52,15 @@
+ 			phy = <&phy1>;
+ 			phy-mode = "rgmii-id";
+ 		};
++		i2c@d0011000 {
++			status = "okay";
++			clock-frequency = <100000>;
++			pca9505: pca9505@25 {
++				compatible = "nxp,pca9505";
++				gpio-controller;
++				#gpio-cells = <2>;
++				reg = <0x25>;
++			};
++		};
+ 	};
+ };
+-- 
+1.7.9.5
+
