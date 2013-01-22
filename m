@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab3AVSgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 13:36:06 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50625 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754512Ab3AVSf6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 13:35:58 -0500
-Message-ID: <50FEDC0B.7050604@wwwdotorg.org>
-Date: Tue, 22 Jan 2013 11:35:55 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>, Will Deacon <will.deacon@arm.com>
-CC: linux-arm-kernel@lists.infradead.org, arnd@arndb.de, olof@lixom.net,
-        santosh.shilimkar@ti.com, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [v3 2/2] ARM: tegra: Skip scu_enable(scu_base) if not Cortex
- A9
-References: <1358833924-24535-1-git-send-email-hdoyu@nvidia.com> <1358833924-24535-2-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1358833924-24535-2-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755923Ab3AVSgS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 13:36:18 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:55629 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755295Ab3AVSgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 13:36:14 -0500
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 20/20] drivers/net/wireless/rtlwifi: remove depends on CONFIG_EXPERIMENTAL
+Date: Tue, 22 Jan 2013 10:30:44 -0800
+Message-Id: <1358879444-25834-21-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358879444-25834-1-git-send-email-keescook@chromium.org>
+References: <1358879444-25834-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 10:52 PM, Hiroshi Doyu wrote:
-> Skip scu_enable(scu_base) if CPU is not Cortex A9 with SCU.
+The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+while now and is almost always enabled by default. As agreed during the
+Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-Will, is your for-next/perf branch stable; can I pull it into a branch
-destined for arm-soc? Background below:
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Chaoming Li <chaoming_li@realsil.com.cn>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: NetDev <netdev@vger.kernel.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ drivers/net/wireless/rtlwifi/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Uggh.
+diff --git a/drivers/net/wireless/rtlwifi/Kconfig b/drivers/net/wireless/rtlwifi/Kconfig
+index 21b1bbb..a60a031 100644
+--- a/drivers/net/wireless/rtlwifi/Kconfig
++++ b/drivers/net/wireless/rtlwifi/Kconfig
+@@ -34,7 +34,7 @@ config RTL8192DE
+ 
+ config RTL8723AE
+ 	tristate "Realtek RTL8723AE PCIe Wireless Network Adapter"
+-	depends on MAC80211 && PCI && EXPERIMENTAL
++	depends on MAC80211 && PCI
+ 	select FW_LOADER
+ 	select RTLWIFI
+ 	---help---
+-- 
+1.7.9.5
 
-This patch (2/2) depends on "ARM: tegra: Use DT /cpu node to detect
-number of CPU core" from your Tegra114 series, since that patch removes
-the other use of scu_base, thus allowing this patch to remove that variable.
-
-Then, that patch depends on "ARM: Define CPU part numbers and
-implementors" from Will Deacon's ARM perf tree at:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/will/linux.git for-next/perf
-
-That means that in order to put this series into arm-soc, we would have
-to pull in Will's perf branch first, then the following Tegra patches,
-the latter two of which are already in Tegra's for-next, so I'd have to
-pull them out:
-
-0bb7bd9 ARM: tegra: Use DT /cpu node to detect number of CPU core
-a8f5f25 ARM: tegra: Add CPU nodes to Tegra30 device tree
-9975516 ARM: tegra: Add CPU nodes to Tegra20 device tree
-
-Hiroshi, it would be extremely useful if you could explicitly specify
-the dependencies of your series when posting them; it took me a long
-time and a lot of searching to track all the dependencies down. :-(
