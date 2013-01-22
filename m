@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab3AVPlU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 10:41:20 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40318 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754113Ab3AVPlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 10:41:14 -0500
-Message-ID: <50FEB309.9040709@ti.com>
-Date: Tue, 22 Jan 2013 21:10:57 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: Roger Quadros <rogerq@ti.com>, <linux@arm.linux.org.uk>,
-        <tony@atomide.com>, <gregkh@linuxfoundation.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <balbi@ti.com>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v1 6/6] USB: MUSB: OMAP: get PHY by phandle for dt boot
-References: <1358848694-20145-1-git-send-email-kishon@ti.com> <1358848694-20145-7-git-send-email-kishon@ti.com> <50FE9F5C.2010501@ti.com> <50FEA447.1090701@ti.com> <50FEA696.8000506@ti.com> <50FEAE96.30706@ti.com> <50FEB275.80504@ti.com>
-In-Reply-To: <50FEB275.80504@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754726Ab3AVPl3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 10:41:29 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40563 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754660Ab3AVPlW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 10:41:22 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+Subject: Re: [PATCH v1 0/6] USB: Add support for multiple PHYs of same type
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <1358848694-20145-1-git-send-email-kishon@ti.com>
+Date: Tue, 22 Jan 2013 16:41:18 +0100
+Cc: tony@atomide.com, balbi@ti.com, linux@arm.linux.org.uk,
+        eballetbo@gmail.com, javier@dowhile0.org, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "linux-omap@vger.kernel.org List" <linux-omap@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Jason Kridner <jkridner@beagleboard.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <2D906ABA-71F2-4843-9DBE-F82527A1240A@dominion.thruhere.net>
+References: <1358848694-20145-1-git-send-email-kishon@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Tuesday 22 January 2013 09:08 PM, Peter Ujfalusi wrote:
-> On 01/22/2013 04:21 PM, kishon wrote:
->> But it's better to check if deferred probing
->> takes place whenever a new driver is bound to a device as you just mentioned.
->
-> Whenever you load (might be also when you unload) a driver the deferred
-> modules will try to probe again. This is to check back if the dependency of
-> the deferred modules has been fulfilled by the new driver or not.
+Op 22 jan. 2013, om 10:58 heeft Kishon Vijay Abraham I <kishon@ti.com> het volgende geschreven:
 
-Thanks Peter.
+> This patch series adds support for adding multiple PHY's (of same type).
+> The binding information has to be present in the PHY library (otg.c) in
+> order for it to return the appropriate PHY whenever the USB controller
+> request for the PHY. So added a new API usb_bind_phy() to pass the binding
+> information. This API should be called by platform specific initialization
+> code.
+> 
+> So the binding should be done something like
+> usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto"); specifying the USB
+> controller device name, index, and the PHY device name.
+> I have done this binding for OMAP platforms, but it should be done for
+> all the platforms.
+> 
+> After this design, the phy can be got by passing the USB controller device
+> pointer and the index.
+> 
+> Developed this patch series on
+> git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git xceiv
+> after applying "usb: musb: add driver for control module" patch series
+> and "ARM: dts: omap: add dt data for MUSB"
+> 
+> Did basic enumeration testing in omap4 panda and omap3 beagle.
 
--Kishon
+With this patchset USB completely breaks on am33xx beaglebone, is that intended?
+
+
