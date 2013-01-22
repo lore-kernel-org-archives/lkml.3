@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab3AVVYs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 16:24:48 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:43872 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754734Ab3AVVYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 16:24:42 -0500
-Subject: [PATCH 3/5] use new pagetable helpers in try_preserve_large_page()
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, Gleb Natapov <gleb@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Tue, 22 Jan 2013 13:24:32 -0800
-References: <20130122212428.8DF70119@kernel.stglabs.ibm.com>
-In-Reply-To: <20130122212428.8DF70119@kernel.stglabs.ibm.com>
-Message-Id: <20130122212432.14F3D993@kernel.stglabs.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012221-5806-0000-0000-00001E9C4A94
+	id S1756167Ab3AVVYw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 16:24:52 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:55841 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754734Ab3AVVYu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 16:24:50 -0500
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] lib: devres: Fix build breakage
+Date: Tue, 22 Jan 2013 22:24:46 +0100
+Message-Id: <1358889886-8502-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.8.1.1
+X-Provags-ID: V02:K0:/jXv7gzjlni9UqeU85ISwvQERXIUkNbGaVokqVACcq6
+ cmMRRABASSKsEeaJjQ5Li7xDbz4B6EwtetlZoQM/9NMQJ5Be2r
+ 7LZu0gjjcMSH29MHw4oN1Jh5ZbQ7+XSwQa89S2GXvO7FqT9Igh
+ KBsERFLazA0JQeAXsJLSZxPUVKJMqqmJOhf3Tr4uZACD3hB31T
+ 6XtVXnqwX3wYuA2xdfcb2gt3oOopY6FSLgdhnMx/DDAZHNLqG6
+ Ite72bx79uY4MqWrSolLd/WK1ZK0J+dWFnpavxBVr9R7Oycg3r
+ zMLxEVqA1m7gh2lilByQo8VT0AlI6pLqXIoM9glxwb6kWHy9A0
+ /cx5pqu8qoa6187AOGXdENgh3XUQLg6cKnEBeXxdWP4xd0Rsh0
+ Xz/7QytoD1XHQnd3DvYG6E1jX8kao3m20Wh2BXil9y9cWcmoxT
+ 9rod+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The ERR_PTR() and IS_ERR() macros used by the devm_ioremap_resource()
+function are defined in the linux/err.h header. On ARM this seems to be
+pulled in by one of the other headers but the build fails at least on
+OpenRISC.
 
-try_preserve_large_page() can be slightly simplified by using
-the new page_level_*() helpers.  This also moves the 'level'
-over to the new pg_level enum type.
-
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 ---
+ lib/devres.c | 1 +
+ 1 file changed, 1 insertion(+)
 
- linux-2.6.git-dave/arch/x86/mm/pageattr.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
-
-diff -puN arch/x86/mm/pageattr.c~use-new-pagetable-helpers arch/x86/mm/pageattr.c
---- linux-2.6.git/arch/x86/mm/pageattr.c~use-new-pagetable-helpers	2013-01-22 13:17:15.792312210 -0800
-+++ linux-2.6.git-dave/arch/x86/mm/pageattr.c	2013-01-22 13:17:15.796312243 -0800
-@@ -396,7 +396,7 @@ try_preserve_large_page(pte_t *kpte, uns
- 	pte_t new_pte, old_pte, *tmp;
- 	pgprot_t old_prot, new_prot, req_prot;
- 	int i, do_split = 1;
--	unsigned int level;
-+	enum pg_level level;
- 
- 	if (cpa->force_split)
- 		return 1;
-@@ -412,15 +412,12 @@ try_preserve_large_page(pte_t *kpte, uns
- 
- 	switch (level) {
- 	case PG_LEVEL_2M:
--		psize = PMD_PAGE_SIZE;
--		pmask = PMD_PAGE_MASK;
--		break;
- #ifdef CONFIG_X86_64
- 	case PG_LEVEL_1G:
--		psize = PUD_PAGE_SIZE;
--		pmask = PUD_PAGE_MASK;
--		break;
- #endif
-+		psize = page_level_size(level);
-+		pmask = page_level_mask(level);
-+		break;
- 	default:
- 		do_split = -EINVAL;
- 		goto out_unlock;
-_
+diff --git a/lib/devres.c b/lib/devres.c
+index 9c76b3a..88ad759 100644
+--- a/lib/devres.c
++++ b/lib/devres.c
+@@ -1,3 +1,4 @@
++#include <linux/err.h>
+ #include <linux/pci.h>
+ #include <linux/io.h>
+ #include <linux/gfp.h>
+-- 
+1.8.1.1
 
