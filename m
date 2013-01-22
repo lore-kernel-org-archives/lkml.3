@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127Ab3AVLJI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 06:09:08 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:35684 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279Ab3AVLJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 06:09:06 -0500
-Date: Tue, 22 Jan 2013 13:08:56 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH v2] usb: phy: moving all PHY API definitions to usb/phy
- directory
-Message-ID: <20130122110856.GB685@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1358852471-28260-1-git-send-email-vbyravarasu@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jho1yZJdad60DJr+"
+	id S1752836Ab3AVLYS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 06:24:18 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:45601 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988Ab3AVLYR convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Tue, 22 Jan 2013 06:24:17 -0500
+Message-Id: <50FE84EC02000078000B83B7@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Tue, 22 Jan 2013 11:24:12 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <roland@hack.frob.com>, <linux-kernel@vger.kernel.org>,
+        <viro@zeniv.linux.org.uk>
+Subject: [PATCH] ix86: tighten asmlinkage_protect()
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1358852471-28260-1-git-send-email-vbyravarasu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---jho1yZJdad60DJr+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+While the description of the commit that originally introduced
+asmlinkage_protect() validly says that this doesn't guarantee
+clobbering of the function arguments, using "m" constraints rather
+than "g" ones reduces the risk (by making it less attractive to the
+compiler to move those variables into registers) and generally results
+in better code (because we know the arguments are in memory anyway,
+and are frequently - if not always - used just once, with the second
+[compiler visible] use in asmlinkage_protect() itself being a fake
+one).
 
-Hi,
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-On Tue, Jan 22, 2013 at 04:31:11PM +0530, Venu Byravarasu wrote:
-> As drivers/usb/otg/otg.c contains most of the PHY related APIs
-> which are not OTG specific, moving them to more logical place
-> under driver/usb/phy.
->=20
-> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> ---
-> delta from v1:
-> Missed adding newly created file usb_phy.c with previous patch.
-> hence sending v2, after adding that.
->=20
->  drivers/usb/otg/otg.c                    |  184 ------------------------=
-------
->  drivers/usb/phy/Makefile                 |    1 +
->  drivers/usb/{otg/otg.c =3D> phy/usb_phy.c} |   45 +-------
+---
+ arch/x86/include/asm/linkage.h |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-let's call this file phy.c or phy-core.c.
+--- 3.8-rc4/arch/x86/include/asm/linkage.h
++++ 3.8-rc4-ix86-asmlinkage-protect/arch/x86/include/asm/linkage.h
+@@ -27,20 +27,20 @@
+ #define __asmlinkage_protect0(ret) \
+ 	__asmlinkage_protect_n(ret)
+ #define __asmlinkage_protect1(ret, arg1) \
+-	__asmlinkage_protect_n(ret, "g" (arg1))
++	__asmlinkage_protect_n(ret, "m" (arg1))
+ #define __asmlinkage_protect2(ret, arg1, arg2) \
+-	__asmlinkage_protect_n(ret, "g" (arg1), "g" (arg2))
++	__asmlinkage_protect_n(ret, "m" (arg1), "m" (arg2))
+ #define __asmlinkage_protect3(ret, arg1, arg2, arg3) \
+-	__asmlinkage_protect_n(ret, "g" (arg1), "g" (arg2), "g" (arg3))
++	__asmlinkage_protect_n(ret, "m" (arg1), "m" (arg2), "m" (arg3))
+ #define __asmlinkage_protect4(ret, arg1, arg2, arg3, arg4) \
+-	__asmlinkage_protect_n(ret, "g" (arg1), "g" (arg2), "g" (arg3), \
+-			      "g" (arg4))
++	__asmlinkage_protect_n(ret, "m" (arg1), "m" (arg2), "m" (arg3), \
++			      "m" (arg4))
+ #define __asmlinkage_protect5(ret, arg1, arg2, arg3, arg4, arg5) \
+-	__asmlinkage_protect_n(ret, "g" (arg1), "g" (arg2), "g" (arg3), \
+-			      "g" (arg4), "g" (arg5))
++	__asmlinkage_protect_n(ret, "m" (arg1), "m" (arg2), "m" (arg3), \
++			      "m" (arg4), "m" (arg5))
+ #define __asmlinkage_protect6(ret, arg1, arg2, arg3, arg4, arg5, arg6) \
+-	__asmlinkage_protect_n(ret, "g" (arg1), "g" (arg2), "g" (arg3), \
+-			      "g" (arg4), "g" (arg5), "g" (arg6))
++	__asmlinkage_protect_n(ret, "m" (arg1), "m" (arg2), "m" (arg3), \
++			      "m" (arg4), "m" (arg5), "m" (arg6))
+ 
+ #endif /* CONFIG_X86_32 */
+ 
 
---=20
-balbi
 
---jho1yZJdad60DJr+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ/nNIAAoJEIaOsuA1yqRED0YQAKd7TVrUXi7jxJEwRJXHNfpY
-AbnCtux+K0fUIJkvJftrpzo9KLfxOH/4G1MPJs7SUEdb7HPg5Uaks6B2uqBXTx1e
-HXNIAp+oKjRwAWkqoARyrOjsXcjDgD+MAFv2q1wgYSGbfNj/X2dc3nzGrnm1YBSx
-VvwG2kkFY2jB/JacxeyQs0+5ZytPbqI7sZloo/26T663w9I+VXJd1bP3Oh7QC8JV
-eh+5GQ6VsWHJN1CyjTXxW8IqTcjETaDIsOyr+J1GtKOOJeHeg8Q0JLJc7qqlkIxb
-sqIb/KwU3o4J2FFs9Tdlz8WpSBVUSYJenL/FsIeKCmLLkaaY8cRXiFX1vcZVd23f
-ct/Q7o+b53pwR72jBk26XJk+Fxtr7+u0OLAVbtNkylwpQC7eLWRKbpahQU9qOqo7
-fgx8IZPKtbQaQx2WOmt5rEFoPyVEXa2SWfua9FUL51knndv89VlEoqYTC/lNYsT5
-sPVNdLR++HgRBsv3LyoFFhXpSeAIUB/4fRkE467fFshhUYw2jL/DCBlwMumqv1FF
-mo8JNgFTuBSXDc/lBGue84c6V45106tFLD1cWyrk/bcFlA6RS24+PjQbpykLLSSk
-M7/c1nB+8DpZmEAZGYgrJslnax5P0o5hB5nkVqrd3yiiYFfCyTL0k/pq7CbQh7gD
-w68R6b/O8xFo5KdhwEvo
-=+iyz
------END PGP SIGNATURE-----
-
---jho1yZJdad60DJr+--
