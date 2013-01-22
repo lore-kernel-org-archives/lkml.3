@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab3AVJLg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 04:11:36 -0500
+	id S1756247Ab3AVJMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 04:12:09 -0500
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60773 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755901Ab3AVJLc (ORCPT
+	with ESMTP id S1754629Ab3AVJL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 04:11:32 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-b4-50fe57be6b09
+	Tue, 22 Jan 2013 04:11:28 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-96-50fe57b95d03
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 19/19] perf evlist: Add --group option
-Date: Tue, 22 Jan 2013 18:09:47 +0900
-Message-Id: <1358845787-1350-20-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 18/19] perf report: Add report.group config option
+Date: Tue, 22 Jan 2013 18:09:46 +0900
+Message-Id: <1358845787-1350-19-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1358845787-1350-1-git-send-email-namhyung@kernel.org>
 References: <1358845787-1350-1-git-send-email-namhyung@kernel.org>
@@ -27,106 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Add '-g/--group' option for showing event groups.  For simplicity it
-is currently not compatible with other options.
+Add report.group config option for setting default value of event
+group view.  It affects the report output only if perf.data contains
+event group info.
 
-  $ perf evlist --group
-  {ref-cycles,cycles}
+A user can write .perfconfig file like below to enable group view by
+default:
 
-  $ perf evlist
-  ref-cycles
-  cycles
+  $ cat ~/.perfconfig
+  [report]
+  group = true
+
+And it can be disabled through command line:
+
+  $ perf report --no-group
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-evlist.txt |  4 ++++
- tools/perf/builtin-evlist.c              |  7 +++++++
- tools/perf/util/evsel.c                  | 24 ++++++++++++++++++++++--
- 3 files changed, 33 insertions(+), 2 deletions(-)
+ tools/perf/builtin-report.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/tools/perf/Documentation/perf-evlist.txt b/tools/perf/Documentation/perf-evlist.txt
-index 15217345c2fa..1ceb3700ffbb 100644
---- a/tools/perf/Documentation/perf-evlist.txt
-+++ b/tools/perf/Documentation/perf-evlist.txt
-@@ -28,6 +28,10 @@ OPTIONS
- --verbose=::
- 	Show all fields.
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 9ef38424f7c3..0d221870561a 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -8,6 +8,7 @@
+ #include "builtin.h"
  
-+-g::
-+--group::
-+	Show event group information.
+ #include "util/util.h"
++#include "util/cache.h"
+ 
+ #include "util/annotate.h"
+ #include "util/color.h"
+@@ -54,6 +55,16 @@ struct perf_report {
+ 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+ };
+ 
++static int perf_report_config(const char *var, const char *value, void *cb)
++{
++	if (!strcmp(var, "report.group")) {
++		symbol_conf.event_group = perf_config_bool(var, value);
++		return 0;
++	}
 +
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-list[1],
-diff --git a/tools/perf/builtin-evlist.c b/tools/perf/builtin-evlist.c
-index 1312a5e03ec7..85a5e35dd147 100644
---- a/tools/perf/builtin-evlist.c
-+++ b/tools/perf/builtin-evlist.c
-@@ -39,6 +39,8 @@ int cmd_evlist(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN('F', "freq", &details.freq, "Show the sample frequency"),
- 	OPT_BOOLEAN('v', "verbose", &details.verbose,
- 		    "Show all event attr details"),
-+	OPT_BOOLEAN('g', "group", &symbol_conf.event_group,
-+		    "Show event group information"),
++	return perf_default_config(var, value, cb);
++}
++
+ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
+ 					struct addr_location *al,
+ 					struct perf_sample *sample,
+@@ -677,6 +688,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
  	OPT_END()
  	};
- 	const char * const evlist_usage[] = {
-@@ -50,5 +52,10 @@ int cmd_evlist(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (argc)
- 		usage_with_options(evlist_usage, options);
  
-+	if (symbol_conf.event_group && (details.verbose || details.freq)) {
-+		pr_err("--group option is not compatible with other options\n");
-+		usage_with_options(evlist_usage, options);
-+	}
++	perf_config(perf_report_config, NULL);
 +
- 	return __cmd_evlist(input_name, &details);
- }
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 35b2a0a0a490..93d723bf996c 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1358,7 +1358,27 @@ int perf_evsel__fprintf(struct perf_evsel *evsel,
- 			struct perf_attr_details *details, FILE *fp)
- {
- 	bool first = true;
--	int printed = fprintf(fp, "%s", perf_evsel__name(evsel));
-+	int printed = 0;
-+
-+	if (symbol_conf.event_group) {
-+		struct perf_evsel *pos;
-+
-+		if (!perf_evsel__is_group_leader(evsel))
-+			return 0;
-+
-+		if (evsel->nr_members > 1)
-+			printed += fprintf(fp, "%s{", evsel->group_name ?: "");
-+
-+		printed += fprintf(fp, "%s", perf_evsel__name(evsel));
-+		for_each_group_member(pos, evsel)
-+			printed += fprintf(fp, ",%s", perf_evsel__name(pos));
-+
-+		if (evsel->nr_members > 1)
-+			printed += fprintf(fp, "}");
-+		goto out;
-+	}
-+
-+	printed += fprintf(fp, "%s", perf_evsel__name(evsel));
+ 	argc = parse_options(argc, argv, options, report_usage, 0);
  
- 	if (details->verbose || details->freq) {
- 		printed += comma_fprintf(fp, &first, " sample_freq=%" PRIu64,
-@@ -1399,7 +1419,7 @@ int perf_evsel__fprintf(struct perf_evsel *evsel,
- 		if_print(bp_type);
- 		if_print(branch_sample_type);
- 	}
--
-+out:
- 	fputc('\n', fp);
- 	return ++printed;
- }
+ 	if (report.use_stdio)
 -- 
 1.7.11.7
 
