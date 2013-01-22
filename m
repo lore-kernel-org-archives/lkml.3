@@ -1,235 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab3AVKbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 05:31:48 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:44933 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965Ab3AVKbq (ORCPT
+	id S1753697Ab3AVKcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 05:32:13 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51342 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752782Ab3AVKcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 05:31:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <87r4lgxgee.fsf@devron.myhome.or.jp>
-References: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
-	<878v9f5ugn.fsf@devron.myhome.or.jp>
-	<CAKYAXd-ydXkwDq6vkECEKPUQiNgg2+GKbL+ah9sn+uqr8BT1kQ@mail.gmail.com>
-	<87k3sy17vk.fsf@devron.myhome.or.jp>
-	<CAKYAXd8=7BG8NsVyvUP5xW48Y9FJpD7M95_MiJVGcwYOfYsrLA@mail.gmail.com>
-	<87txs0x45r.fsf@devron.myhome.or.jp>
-	<CAKYAXd8OP_FXxJWHESW_bCY1hGQuZPMJYOkLkmQ4fOkDhGO8xw@mail.gmail.com>
-	<CAKYAXd9NXVsBTMpTUWxN_10z1Ozt47f6Ghvsv9rbp_Y8tVMg2A@mail.gmail.com>
-	<87623ydnvq.fsf@devron.myhome.or.jp>
-	<CAKYAXd8GgrG+cMN_wQDFLiuXoBPbR7c6N9eZqGCrK-OH3HpuZA@mail.gmail.com>
-	<CAKYAXd9OhKDh5r6O=ACyDez1B2S=DB0Eo2-cSNuM1vaURmFNoQ@mail.gmail.com>
-	<877gobn7fy.fsf@devron.myhome.or.jp>
-	<CAKYAXd8SB7tz82Y57TKcngZC8vzvy1S=SAhzurA92jyobaVtNg@mail.gmail.com>
-	<87obhnlmkt.fsf@devron.myhome.or.jp>
-	<87k3sblmj2.fsf@devron.myhome.or.jp>
-	<CAKYAXd-7kq9EoBE7e5sGXBeA8u914moz15-ubFimczGyiznUCA@mail.gmail.com>
-	<87r4lgxgee.fsf@devron.myhome.or.jp>
-Date: Tue, 22 Jan 2013 19:31:45 +0900
-Message-ID: <CAKYAXd_Lg8twC3XVX8S3Ncm0ghicvXD0Q75-8amuO2Lz40v8Rw@mail.gmail.com>
-Subject: Re: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if
- fat_dget() fails
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 22 Jan 2013 05:32:11 -0500
+Message-ID: <1358850727.2387.21.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [Linux-c6x-dev] [PATCH 3/9] c6x: Provide dma_mmap_coherent()
+ and dma_get_sgtable()
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Salter <msalter@redhat.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>, linux-arch@vger.kernel.org,
+        linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org
+Date: Tue, 22 Jan 2013 10:32:07 +0000
+In-Reply-To: <1358849808.2387.13.camel@dabdike.int.hansenpartnership.com>
+References: <1358073890-3610-1-git-send-email-geert@linux-m68k.org>
+	 <1358073890-3610-3-git-send-email-geert@linux-m68k.org>
+	 <1358177872.4357.53.camel@t520.localdomain> <50F4D83A.7020803@synopsys.com>
+	 <CAMuHMdWjZAY19GPpjoXKfWb3pOp2RbZXDvb4nr5pMmjEMFuB4w@mail.gmail.com>
+	 <50F56286.8070200@samsung.com>
+	 <1358269008.10591.11.camel@dabdike.int.hansenpartnership.com>
+	 <CAMuHMdXk1mdkMViYqypvnXO0_1LdjbH8S7z8FNe97yDUW6BYRA@mail.gmail.com>
+	 <1358809159.3975.63.camel@dabdike.int.hansenpartnership.com>
+	 <1358849633.2387.11.camel@dabdike.int.hansenpartnership.com>
+	 <1358849808.2387.13.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/20, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> We rewrite patch as your suggestion using dummy inode. Would please
->> you review below patch code ?
->
-> Looks like good as initial. Clean and shorter.
->
-> Next is, we have to think about race. I.e. if real inode was made, what
-> happens? Is there no race?
-Hi OGAWA.
+On Tue, 2013-01-22 at 10:16 +0000, James Bottomley wrote:
+> [adding Mauro and v4l since they're the only non-arm consumers]
+> On Tue, 2013-01-22 at 10:13 +0000, James Bottomley wrote:
+> > On Mon, 2013-01-21 at 22:59 +0000, James Bottomley wrote:
+> > > On Mon, 2013-01-21 at 21:00 +0100, Geert Uytterhoeven wrote:
+> > > > On Tue, Jan 15, 2013 at 5:56 PM, James Bottomley
+> > > > <James.Bottomley@hansenpartnership.com> wrote:
+> > > > > On Tue, 2013-01-15 at 15:07 +0100, Marek Szyprowski wrote:
+> > > > >> On 1/15/2013 10:13 AM, Geert Uytterhoeven wrote:
+> > > > >> > Marek?
+> > > > >> >
+> > > > >> > On Tue, Jan 15, 2013 at 5:16 AM, Vineet Gupta
+> > > > >> > <Vineet.Gupta1@synopsys.com> wrote:
+> > > > >> > > On Monday 14 January 2013 09:07 PM, Mark Salter wrote:
+> > > > >> > >> On Sun, 2013-01-13 at 11:44 +0100, Geert Uytterhoeven wrote:
+> > > > >> > >>> c6x/allmodconfig (assumed):
+> > > > >> > >>>
+> > > > >> > >>> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_mmap’:
+> > > > >> > >>> drivers/media/v4l2-core/videobuf2-dma-contig.c:204: error: implicit declaration of function ‘dma_mmap_coherent’
+> > > > >> > >>> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_get_base_sgt’:
+> > > > >> > >>> drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function ‘dma_get_sgtable’
+> > > > >> > >>>
+> > > > >> > >>> For architectures using dma_map_ops, dma_mmap_coherent() and
+> > > > >> > >>> dma_get_sgtable() are provided in <asm-generic/dma-mapping-common.h>.
+> > > > >> > >>>
+> > > > >> > >>> C6x does not use dma_map_ops, hence it should implement them as inline
+> > > > >> > >>> stubs using dma_common_mmap() and dma_common_get_sgtable().
+> > > > >> > >>>
+> > > > >> > >> So are dma_mmap_coherent() and dma_get_sgtable() part of the DMA API
+> > > > >> > >> now? I don't them in Documentation/DMA*.txt anywhere.
+> > > > >> > >>
+> > > > >> > >> Why does the default dma_common_mmap() for !CONFIG_MMU return an
+> > > > >> > >> error?
+> > > > >> > >>
+> > > > >> > >> Wouldn't it be better to provide default implementations that an arch
+> > > > >> > >> could override rather than having to patch all "no dma_map_ops"
+> > > > >> > >> architectures?
+> > > > >> > >>
+> > > > >> > > Speaking for the still-reviewed ARC Port, I completely agree with Mark.
+> > > > >>
+> > > > >> dma_mmap_coherent() was partially in the DMA mapping API for some time, but
+> > > > >> it was available only on a few architectures (afair ARM, powerpc and avr32).
+> > > > >> This caused significant problems for writing unified device drivers or some
+> > > > >> device helper modules which were aimed to work on more than one
+> > > > >> architecture.
+> > > > >>
+> > > > >> dma_get_sgtable() is an extension discussed during the Linaro meetings. It
+> > > > >> is required to correctly implement buffer sharing between device driver
+> > > > >> without hacks or any assumptions about memory layout in the device drivers.
+> > > > >>
+> > > > >> I have implemented some generic code for both of those two functions,
+> > > > >> keeping
+> > > > >> in mind that on some hardware architectures (like already mentioned VIVT)
+> > > > >> it might be not possible to provide coherent mapping to userspace. It is
+> > > > >> perfectly fine for those functions to return an error in such case.
+> > > > >
+> > > > > It's not possible on VIPT either.  This means that the API is unusable
+> > > > > on quite a large number of architectures.  Surely, if we're starting to
+> > > > > write drivers using this, we need to fix the API before more people try
+> > > > > to use it.
+> > > > >
+> > > > > For PA-RISC (and all other VIPT, I assume) I need an API which allows me
+> > > > > to remap the virtual address of the kernel component (probably using the
+> > > > > kmap area) so the user space and kernel space addresses are congruent.
+> > > > 
+> > > > So what are we gonna do for 3.8? I'd like to get my allmodconfig build
+> > > > green again ;-)
+> > > > 
+> > > > Change the API?
+> > > 
+> > > Well, if we want the API to work universally, we have to.  As I said,
+> > > for VIPT systems, the only coherency mechanism we have is the virtual
+> > > address ... we have to fix that in the kernel to be congruent with the
+> > > userspace virtual address if we want coherency between the kernel and
+> > > userspace.
+> > > 
+> > > However, if it only needs to work on ARM and x86, it can stay the way it
+> > > is and we could just pull it out of the generic core.
+> > > 
+> > > Who actually wants to use this API, and what for?
+> > > 
+> > > > Keep the API but do a best-effort fix to unbreak the builds?
+> > > >   - Apply my patches that got acks (avr32/blackfin/cris/m68k),
+> > > >   - Use static inlines that return -EINVAL for the rest
+> > > > (c6x/frv/mn10300/parisc/xtensa).
+> > > > I still have a few m68k fixes queued for 3.8, for which I've been postponing the
+> > > > pull request to get this sorted out, so I could include the above.
+> > > > 
+> > > > Any other solution?
+> > > 
+> > > If it's an API that only works on ARM and x86, there's not much point
+> > > pretending it's universal, so we should remove it from the generic arch
+> > > code and allow only those architectures which can use it.
+> > 
+> > There might be a simple solution:  just replace void *cpu_addr with void
+> > **cpu_addr in the API.  This is a bit nasty since compilers think that
+> > void ** to void * conversion is quite legal, so it would be hard to pick
+> > up misuse of this (uint8_t ** would be better).  That way VIPT could
+> > remap the kernel pages to a coherent address.  This would probably have
+> > to change in the dma_mmap_attr() and dma_ops structures.
+> > 
+> > All consumers would have to expect cpu_addr might change, but that seems
+> > doable.
+> 
+> Mauro, will this work for you and the v4l guys?  You've got a use
+> embedded in 
+> 
+> drivers/media/v4l2-core/videobuf2-dma-contig.c
+> 
+> Which I can't tell how extensive it might be.
 
-Although checking several routines to check hang case you said, I
-didn't find anything.
-And There is no any race on test result also. Am I missing something ?
-Let me know your opinion.
+Also, this implementation is really not done well.
 
-Thanks.
->
-> Thanks.
->
->> Subject: [PATCH] fat (exportfs): rebuild directory-inode if fat_dget()
->>  fails
->>
->> This patch enables rebuilding of directory inodes which are not present
->> in the cache.This is done by traversing the disk clusters to find the
->> directory entry of the parent directory and using its i_pos to build the
->> inode.
->>
->> Do this only if the "nostale_ro" nfs mount option is specified.
->>
->> ---
->>  fs/fat/dir.c   |   23 +++++++++++++++++++++++
->>  fs/fat/fat.h   |    3 +++
->>  fs/fat/inode.c |    2 +-
->>  fs/fat/nfs.c   |   52
->> +++++++++++++++++++++++++++++++++++++++++++++++++++-
->>  4 files changed, 78 insertions(+), 2 deletions(-)
->>
->> diff --git a/fs/fat/dir.c b/fs/fat/dir.c
->> index 695c15c..ac97f34 100644
->> --- a/fs/fat/dir.c
->> +++ b/fs/fat/dir.c
->> @@ -975,6 +975,29 @@ int fat_scan(struct inode *dir, const unsigned char
->> *name,
->>
->>  EXPORT_SYMBOL_GPL(fat_scan);
->>
->> +/*
->> + * Scans a directory for a given logstart.
->> + * Returns an error code or zero.
->> + */
->> +int fat_scan_logstart(struct inode *dir, int i_logstart,
->> +		      struct fat_slot_info *sinfo)
->> +{
->> +	struct super_block *sb = dir->i_sb;
->> +
->> +	sinfo->slot_off = 0;
->> +	sinfo->bh = NULL;
->> +	while (fat_get_short_entry(dir, &sinfo->slot_off, &sinfo->bh,
->> +				   &sinfo->de) >= 0) {
->> +		if (fat_get_start(MSDOS_SB(sb), sinfo->de) == i_logstart) {
->> +			sinfo->slot_off -= sizeof(*sinfo->de);
->> +			sinfo->nr_slots = 1;
->> +			sinfo->i_pos = fat_make_i_pos(sb, sinfo->bh, sinfo->de);
->> +			return 0;
->> +		}
->> +	}
->> +	return -ENOENT;
->> +}
->> +
->>  static int __fat_remove_entries(struct inode *dir, loff_t pos, int
->> nr_slots)
->>  {
->>  	struct super_block *sb = dir->i_sb;
->> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
->> index 73f15b8..d882c01 100644
->> --- a/fs/fat/fat.h
->> +++ b/fs/fat/fat.h
->> @@ -291,6 +291,8 @@ extern int fat_dir_empty(struct inode *dir);
->>  extern int fat_subdirs(struct inode *dir);
->>  extern int fat_scan(struct inode *dir, const unsigned char *name,
->>  		    struct fat_slot_info *sinfo);
->> +extern int fat_scan_logstart(struct inode *dir, int i_logstart,
->> +			     struct fat_slot_info *sinfo);
->>  extern int fat_get_dotdot_entry(struct inode *dir, struct buffer_head
->> **bh,
->>  				struct msdos_dir_entry **de);
->>  extern int fat_alloc_new_dir(struct inode *dir, struct timespec *ts);
->> @@ -370,6 +372,7 @@ extern int fat_fill_super(struct super_block *sb,
->> void *data, int silent,
->>
->>  extern int fat_flush_inodes(struct super_block *sb, struct inode *i1,
->>  		            struct inode *i2);
->> +extern int fat_fill_inode(struct inode *inode, struct msdos_dir_entry
->> *de);
->>  static inline unsigned long fat_dir_hash(int logstart)
->>  {
->>  	return hash_32(logstart, FAT_HASH_BITS);
->> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
->> index 491320b..c4c286a 100644
->> --- a/fs/fat/inode.c
->> +++ b/fs/fat/inode.c
->> @@ -384,7 +384,7 @@ static int fat_calc_dir_size(struct inode *inode)
->>  }
->>
->>  /* doesn't deal with root inode */
->> -static int fat_fill_inode(struct inode *inode, struct msdos_dir_entry
->> *de)
->> +int fat_fill_inode(struct inode *inode, struct msdos_dir_entry *de)
->>  {
->>  	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
->>  	int error;
->> diff --git a/fs/fat/nfs.c b/fs/fat/nfs.c
->> index 08ff9fa..e94da33 100644
->> --- a/fs/fat/nfs.c
->> +++ b/fs/fat/nfs.c
->> @@ -213,6 +213,53 @@ static struct dentry
->> *fat_fh_to_parent_nostale(struct super_block *sb,
->>  }
->>
->>  /*
->> + * Rebuild the parent for a directory that is not connected
->> + *  to the filesystem root
->> + */
->> +static
->> +struct inode *fat_rebuild_parent(struct super_block *sb, int
->> parent_logstart)
->> +{
->> +	int search_clus, clus_to_match;
->> +	struct msdos_dir_entry *de;
->> +	struct inode *parent = NULL;
->> +	struct inode *dummy_grand_parent = NULL;
->> +	struct fat_slot_info sinfo;
->> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
->> +	sector_t blknr = fat_clus_to_blknr(sbi, parent_logstart);
->> +	struct buffer_head *parent_bh = sb_bread(sb, blknr);
->> +	if (!parent_bh) {
->> +		fat_msg(sb, KERN_ERR,
->> +			"unable to read cluster of parent directory");
->> +		return NULL;
->> +	}
->> +
->> +	de = (struct msdos_dir_entry *) parent_bh->b_data;
->> +	clus_to_match = fat_get_start(sbi, &de[0]);
->> +	search_clus = fat_get_start(sbi, &de[1]);
->> +
->> +	dummy_grand_parent = fat_dget(sb, search_clus);
->> +	if (!dummy_grand_parent) {
->> +		dummy_grand_parent = new_inode(sb);
->> +		if (!dummy_grand_parent) {
->> +			brelse(parent_bh);
->> +			return parent;
->> +		}
->> +
->> +		dummy_grand_parent->i_ino = iunique(sb, MSDOS_ROOT_INO);
->> +		fat_fill_inode(dummy_grand_parent, &de[1]);
->> +		MSDOS_I(dummy_grand_parent)->i_pos = -1;
->> +	}
->> +
->> +	if (!fat_scan_logstart(dummy_grand_parent, clus_to_match, &sinfo))
->> +		parent = fat_build_inode(sb, sinfo.de, sinfo.i_pos);
->> +
->> +	brelse(parent_bh);
->> +	iput(dummy_grand_parent);
->> +
->> +	return parent;
->> +}
->> +
->> +/*
->>   * Find the parent for a directory that is not currently connected to
->>   * the filesystem root.
->>   *
->> @@ -224,10 +271,13 @@ static struct dentry *fat_get_parent(struct
->> dentry *child_dir)
->>  	struct buffer_head *bh = NULL;
->>  	struct msdos_dir_entry *de;
->>  	struct inode *parent_inode = NULL;
->> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
->>
->>  	if (!fat_get_dotdot_entry(child_dir->d_inode, &bh, &de)) {
->> -		int parent_logstart = fat_get_start(MSDOS_SB(sb), de);
->> +		int parent_logstart = fat_get_start(sbi, de);
->>  		parent_inode = fat_dget(sb, parent_logstart);
->> +		if (!parent_inode && sbi->options.nfs == FAT_NFS_NOSTALE_RO)
->> +			parent_inode = fat_rebuild_parent(sb, parent_logstart);
->>  	}
->>  	brelse(bh);
->
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+ppc has this:
+
+arch/powerpc/include/asm/dma-mapping.h:#define ARCH_HAS_DMA_MMAP_COHERENT
+
+But no other architecture does.
+
+Nothing is gated on this except pcm_native.c which has this wonderful
+snippet:
+
+#ifndef ARCH_HAS_DMA_MMAP_COHERENT
+/* This should be defined / handled globally! */
+#ifdef CONFIG_ARM
+#define ARCH_HAS_DMA_MMAP_COHERENT
+#endif
+#endif
+
+Since there's no documentation at all, it's hard to tell what's going
+on.
+
+However, I'd suggest
+
+     1. Move to an API that is at least capable of implementation on all
+        architectures
+     2. Utilize ARCH_HAS_DMA_MMAP_COHERENT to fix the compile problems
+        within the architectures
+     3. Document whatever is chosen so we don't end up in this mess
+        again.
+
+James
+
+
