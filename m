@@ -1,112 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab3AVWI6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 17:08:58 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53561 "EHLO e9.ny.us.ibm.com"
+	id S1752636Ab3AVWTI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 17:19:08 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:50703 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752621Ab3AVWIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 17:08:53 -0500
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Subject: [PATCH v2 4/4] ima: differentiate appraise status only for hook specific rules
-Date: Tue, 22 Jan 2013 17:07:34 -0500
-Message-Id: <1358892454-25045-5-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.rc3
-In-Reply-To: <1358892454-25045-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1358892454-25045-1-git-send-email-zohar@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012222-7182-0000-0000-000004A1D5F3
+	id S1752226Ab3AVWTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 17:19:06 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH] ACPI: Drop device start operation that is not used
+Date: Tue, 22 Jan 2013 23:25:05 +0100
+Message-ID: <1726547.g8rCOVpa6k@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <4046863.eHD8RPonGC@vostro.rjw.lan>
+References: <1518653.CUpDmbmCI3@vostro.rjw.lan> <CAE9FiQV1N0hrUui1rGrs1=kFJFiuOhZ6tT-wGfK-B25it5feLQ@mail.gmail.com> <4046863.eHD8RPonGC@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Different hooks can require different methods for appraising a
-file's integrity.  As a result, an integrity appraisal status is
-cached on a per hook basis.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Only a hook specific rule, requires the inode to be re-appraised.
-This patch eliminates unnecessary appraisals.
+The ACPI device start operation, acpi_op_start, is never used, so
+drop it.
 
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- security/integrity/ima/ima_main.c   | 9 ++++++---
- security/integrity/ima/ima_policy.c | 9 ++++++---
- 2 files changed, 12 insertions(+), 6 deletions(-)
+ include/acpi/acpi_bus.h |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 66b7f40..3e751a9 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -146,7 +146,7 @@ static int process_measurement(struct file *file, const char *filename,
- 	struct integrity_iint_cache *iint;
- 	char *pathbuf = NULL;
- 	const char *pathname = NULL;
--	int rc = -ENOMEM, action, must_appraise;
-+	int rc = -ENOMEM, action, must_appraise, _func;
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -90,13 +90,11 @@ struct acpi_device;
  
- 	if (!ima_initialized || !S_ISREG(inode->i_mode))
- 		return 0;
-@@ -161,6 +161,9 @@ static int process_measurement(struct file *file, const char *filename,
+ typedef int (*acpi_op_add) (struct acpi_device * device);
+ typedef int (*acpi_op_remove) (struct acpi_device * device);
+-typedef int (*acpi_op_start) (struct acpi_device * device);
+ typedef void (*acpi_op_notify) (struct acpi_device * device, u32 event);
  
- 	must_appraise = action & IMA_APPRAISE;
+ struct acpi_device_ops {
+ 	acpi_op_add add;
+ 	acpi_op_remove remove;
+-	acpi_op_start start;
+ 	acpi_op_notify notify;
+ };
  
-+	/*  Is the appraise rule hook specific?  */
-+	_func = (action & IMA_FILE_APPRAISE) ? FILE_CHECK : function;
-+
- 	mutex_lock(&inode->i_mutex);
- 
- 	iint = integrity_inode_get(inode);
-@@ -178,7 +181,7 @@ static int process_measurement(struct file *file, const char *filename,
- 	/* Nothing to do, just return existing appraised status */
- 	if (!action) {
- 		if (must_appraise)
--			rc = ima_get_cache_status(iint, function);
-+			rc = ima_get_cache_status(iint, _func);
- 		goto out_digsig;
- 	}
- 
-@@ -195,7 +198,7 @@ static int process_measurement(struct file *file, const char *filename,
- 	if (action & IMA_MEASURE)
- 		ima_store_measurement(iint, file, pathname);
- 	if (action & IMA_APPRAISE_SUBMASK)
--		rc = ima_appraise_measurement(function, iint, file, pathname);
-+		rc = ima_appraise_measurement(_func, iint, file, pathname);
- 	if (action & IMA_AUDIT)
- 		ima_audit_measurement(iint, pathname);
- 	kfree(pathbuf);
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 4d7c0ae..4adcd0f 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -220,10 +220,13 @@ retry:
- 
- /*
-  * In addition to knowing that we need to appraise the file in general,
-- * we need to differentiate between calling hooks.
-+ * we need to differentiate between calling hooks, for hook specific rules.
-  */
--static int get_subaction(int func)
-+static int get_subaction(struct ima_rule_entry *rule, int func)
- {
-+	if (!(rule->flags & IMA_FUNC))
-+		return IMA_FILE_APPRAISE;
-+
- 	switch(func) {
- 	case MMAP_CHECK:
- 		return IMA_MMAP_APPRAISE;
-@@ -268,7 +271,7 @@ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask,
- 
- 		action |= entry->action & IMA_DO_MASK;
- 		if (entry->action & IMA_APPRAISE)
--			action |= get_subaction(func);
-+			action |= get_subaction(entry, func);
- 
- 		if (entry->action & IMA_DO_MASK)
- 			actmask &= ~(entry->action | entry->action << 1);
--- 
-1.8.1.rc3
 
