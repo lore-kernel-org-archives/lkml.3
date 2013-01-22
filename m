@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab3AVLpU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 06:45:20 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:15778 "EHLO song.cn.fujitsu.com"
+	id S1753079Ab3AVLqu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 06:46:50 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:61946 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752264Ab3AVLoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 06:44:01 -0500
+	id S1752264Ab3AVLqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 06:46:49 -0500
 X-IronPort-AV: E=Sophos;i="4.84,514,1355068800"; 
-   d="scan'208";a="6628472"
+   d="scan'208";a="6628483"
 From: Tang Chen <tangchen@cn.fujitsu.com>
-To: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+To: akpm@linux-foundation.org, rjw@sisk.pl, len.brown@intel.com,
+        mingo@redhat.com, tglx@linutronix.de, minchan.kim@gmail.com,
+        rientjes@google.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, kosaki.motohiro@jp.fujitsu.com,
         isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
         wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
         laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
@@ -19,101 +20,41 @@ To: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
         sfr@canb.auug.org.au
 Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
-Subject: [PATCH Bug fix 2/5] Bug-fix: mempolicy: fix is_valid_nodemask()
-Date: Tue, 22 Jan 2013 19:43:01 +0800
-Message-Id: <1358854984-6073-3-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH Bug fix 0/5] Bug fix for node offline
+Date: Tue, 22 Jan 2013 19:45:51 +0800
+Message-Id: <1358855156-6126-1-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/22 19:42:58,
+ 2013/01/22 19:45:51,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/22 19:43:01,
-	Serialize complete at 2013/01/22 19:43:01
+ 2013/01/22 19:45:52,
+	Serialize complete at 2013/01/22 19:45:52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Based on physical memory hot-remove functionality, we can implement
+node hot-remove. But there are some problems in cpu driver when offlining
+a node. This patch-set will fix them.
 
-is_valid_nodemask() is introduced by 19770b32. but it does not match
-its comments, because it does not check the zone which > policy_zone.
+All these patches are based on the latest -mm tree.
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
 
-Also in b377fd, this commits told us, if highest zone is ZONE_MOVABLE,
-we should also apply memory policies to it. so ZONE_MOVABLE should be valid zone
-for policies. is_valid_nodemask() need to be changed to match it.
+Tang Chen (1):
+  Do not use cpu_to_node() to find an offlined cpu's node.
 
-Fix: check all zones, even its zoneid > policy_zone.
-Use nodes_intersects() instead open code to check it.
+Wen Congyang (4):
+  cpu_hotplug: clear apicid to node when the cpu is hotremoved
+  memory-hotplug: export the function try_offline_node()
+  cpu-hotplug, memory-hotplug: try offline the node when hotremoving a
+    cpu
+  cpu-hotplug,memory-hotplug: clear cpu_to_node() when offlining the
+    node
 
-Reported-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- mm/mempolicy.c |   36 ++++++++++++++++++++++--------------
- 1 files changed, 22 insertions(+), 14 deletions(-)
-
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index af8a121..6f7979c 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -161,19 +161,7 @@ static const struct mempolicy_operations {
- /* Check that the nodemask contains at least one populated zone */
- static int is_valid_nodemask(const nodemask_t *nodemask)
- {
--	int nd, k;
--
--	for_each_node_mask(nd, *nodemask) {
--		struct zone *z;
--
--		for (k = 0; k <= policy_zone; k++) {
--			z = &NODE_DATA(nd)->node_zones[k];
--			if (z->managed_pages > 0)
--				return 1;
--		}
--	}
--
--	return 0;
-+	return nodes_intersects(*nodemask, node_states[N_MEMORY]);
- }
- 
- static inline int mpol_store_user_nodemask(const struct mempolicy *pol)
-@@ -1644,6 +1632,26 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
- 	return pol;
- }
- 
-+static int apply_policy_zone(struct mempolicy *policy, enum zone_type zone)
-+{
-+	enum zone_type dynamic_policy_zone = policy_zone;
-+
-+	BUG_ON(dynamic_policy_zone == ZONE_MOVABLE);
-+
-+	/*
-+	 * if policy->v.nodes has movable memory only,
-+	 * we apply policy when gfp_zone(gfp) = ZONE_MOVABLE only.
-+	 *
-+	 * policy->v.nodes is intersect with node_states[N_MEMORY].
-+	 * so if the following test faile, it implies
-+	 * policy->v.nodes has movable memory only.
-+	 */
-+	if (!nodes_intersects(policy->v.nodes, node_states[N_HIGH_MEMORY]))
-+		dynamic_policy_zone = ZONE_MOVABLE;
-+
-+	return zone >= dynamic_policy_zone;
-+}
-+
- /*
-  * Return a nodemask representing a mempolicy for filtering nodes for
-  * page allocation
-@@ -1652,7 +1660,7 @@ static nodemask_t *policy_nodemask(gfp_t gfp, struct mempolicy *policy)
- {
- 	/* Lower zones don't get a nodemask applied for MPOL_BIND */
- 	if (unlikely(policy->mode == MPOL_BIND) &&
--			gfp_zone(gfp) >= policy_zone &&
-+			apply_policy_zone(policy, gfp_zone(gfp)) &&
- 			cpuset_nodemask_valid_mems_allowed(&policy->v.nodes))
- 		return &policy->v.nodes;
- 
--- 
-1.7.1
+ arch/x86/kernel/acpi/boot.c     |    4 ++++
+ drivers/acpi/processor_driver.c |    2 ++
+ include/linux/memory_hotplug.h  |    2 ++
+ kernel/sched/core.c             |   28 +++++++++++++++++++---------
+ mm/memory_hotplug.c             |   33 +++++++++++++++++++++++++++++++--
+ 5 files changed, 58 insertions(+), 11 deletions(-)
 
