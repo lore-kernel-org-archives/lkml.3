@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202Ab3AVRvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 12:51:10 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:55350 "EHLO
+	id S1755373Ab3AVRvR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 12:51:17 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:55402 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030Ab3AVRvG (ORCPT
+	with ESMTP id S1755275Ab3AVRvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 12:51:06 -0500
+	Tue, 22 Jan 2013 12:51:15 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
@@ -15,9 +15,9 @@ To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Josh Wu <josh.wu@atmel.com>, Bo Shen <voice.shen@atmel.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 2/6] ARM: at91/at91sam9x5 DTS: correct wrong PIO BANK values on u(s)arts
-Date: Tue, 22 Jan 2013 18:50:42 +0100
-Message-ID: <00a5bed9a86a226db150ea52742197df3807bd44.1358876553.git.nicolas.ferre@atmel.com>
+Subject: [PATCH 4/6] ARM: at91: fix gpios on i2c-gpio for RM9200 DT
+Date: Tue, 22 Jan 2013 18:50:44 +0100
+Message-ID: <dd3ef494b69eac0a9dba9f88a22126bb7cf05066.1358876553.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <cover.1358876553.git.nicolas.ferre@atmel.com>
 References: <cover.1358876553.git.nicolas.ferre@atmel.com>
@@ -27,93 +27,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Genoud <richard.genoud@gmail.com>
+From: Joachim Eastwood <manabian@gmail.com>
 
-The PIN_BANK 3 is for PDxx pins, not PCxx pins.
-And PIN_BANK 1 is for PBxx, not PIN_BANK 0.
-
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Signed-off-by: Joachim Eastwood <manabian@gmail.com>
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/boot/dts/at91sam9x5.dtsi | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ arch/arm/boot/dts/at91rm9200.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-index 3a47cf9..e9c4290 100644
---- a/arch/arm/boot/dts/at91sam9x5.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-@@ -154,12 +154,12 @@
+diff --git a/arch/arm/boot/dts/at91rm9200.dtsi b/arch/arm/boot/dts/at91rm9200.dtsi
+index e154f24..222047f 100644
+--- a/arch/arm/boot/dts/at91rm9200.dtsi
++++ b/arch/arm/boot/dts/at91rm9200.dtsi
+@@ -336,8 +336,8 @@
  
- 					pinctrl_usart1_rts: usart1_rts-0 {
- 						atmel,pins =
--							<3 27 0x3 0x0>;	/* PC27 periph C */
-+							<2 27 0x3 0x0>;	/* PC27 periph C */
- 					};
- 
- 					pinctrl_usart1_cts: usart1_cts-0 {
- 						atmel,pins =
--							<3 28 0x3 0x0>;	/* PC28 periph C */
-+							<2 28 0x3 0x0>;	/* PC28 periph C */
- 					};
- 				};
- 
-@@ -172,46 +172,46 @@
- 
- 					pinctrl_uart2_rts: uart2_rts-0 {
- 						atmel,pins =
--							<0 0 0x2 0x0>;	/* PB0 periph B */
-+							<1 0 0x2 0x0>;	/* PB0 periph B */
- 					};
- 
- 					pinctrl_uart2_cts: uart2_cts-0 {
- 						atmel,pins =
--							<0 1 0x2 0x0>;	/* PB1 periph B */
-+							<1 1 0x2 0x0>;	/* PB1 periph B */
- 					};
- 				};
- 
- 				usart3 {
- 					pinctrl_uart3: usart3-0 {
- 						atmel,pins =
--							<3 23 0x2 0x1	/* PC22 periph B with pullup */
--							 3 23 0x2 0x0>;	/* PC23 periph B */
-+							<2 23 0x2 0x1	/* PC22 periph B with pullup */
-+							 2 23 0x2 0x0>;	/* PC23 periph B */
- 					};
- 
- 					pinctrl_usart3_rts: usart3_rts-0 {
- 						atmel,pins =
--							<3 24 0x2 0x0>;	/* PC24 periph B */
-+							<2 24 0x2 0x0>;	/* PC24 periph B */
- 					};
- 
- 					pinctrl_usart3_cts: usart3_cts-0 {
- 						atmel,pins =
--							<3 25 0x2 0x0>;	/* PC25 periph B */
-+							<2 25 0x2 0x0>;	/* PC25 periph B */
- 					};
- 				};
- 
- 				uart0 {
- 					pinctrl_uart0: uart0-0 {
- 						atmel,pins =
--							<3 8 0x3 0x0	/* PC8 periph C */
--							 3 9 0x3 0x1>;	/* PC9 periph C with pullup */
-+							<2 8 0x3 0x0	/* PC8 periph C */
-+							 2 9 0x3 0x1>;	/* PC9 periph C with pullup */
- 					};
- 				};
- 
- 				uart1 {
- 					pinctrl_uart1: uart1-0 {
- 						atmel,pins =
--							<3 16 0x3 0x0	/* PC16 periph C */
--							 3 17 0x3 0x1>;	/* PC17 periph C with pullup */
-+							<2 16 0x3 0x0	/* PC16 periph C */
-+							 2 17 0x3 0x1>;	/* PC17 periph C with pullup */
- 					};
- 				};
- 
+ 	i2c@0 {
+ 		compatible = "i2c-gpio";
+-		gpios = <&pioA 23 0 /* sda */
+-			 &pioA 24 0 /* scl */
++		gpios = <&pioA 25 0 /* sda */
++			 &pioA 26 0 /* scl */
+ 			>;
+ 		i2c-gpio,sda-open-drain;
+ 		i2c-gpio,scl-open-drain;
 -- 
 1.8.0
 
