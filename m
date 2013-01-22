@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab3AVQ4U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 11:56:20 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:54122 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754877Ab3AVQw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 11:52:29 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: <linux-fbdev@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v3 03/12] video: da8xx-fb: enable sync lost intr for v2 ip
-Date: Tue, 22 Jan 2013 22:22:19 +0530
-Message-ID: <25c3f28d978cca6396f8eab953a07a70383bb4d7.1358871750.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <cover.1358871750.git.afzal@ti.com>
-References: <cover.1358871750.git.afzal@ti.com>
+	id S1754929Ab3AVQ5p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 11:57:45 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56917 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547Ab3AVQ5n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 11:57:43 -0500
+Message-ID: <50FEC503.2080602@wwwdotorg.org>
+Date: Tue, 22 Jan 2013 09:57:39 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>
+CC: linux-arm-kernel@lists.infradead.org, arnd@arndb.de, olof@lixom.net,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [v3 2/2] ARM: tegra: Skip scu_enable(scu_base) if not Cortex
+ A9
+References: <1358833924-24535-1-git-send-email-hdoyu@nvidia.com> <1358833924-24535-2-git-send-email-hdoyu@nvidia.com> <50FE2CA8.20100@ti.com>
+In-Reply-To: <50FE2CA8.20100@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-interrupt handler is checking for sync lost interrupt, but it was not
-enabled, enable it.
+On 01/21/2013 11:07 PM, Santosh Shilimkar wrote:
+> On Tuesday 22 January 2013 11:22 AM, Hiroshi Doyu wrote:
+>> Skip scu_enable(scu_base) if CPU is not Cortex A9 with SCU.
+>>
+>> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+>> ---
+> Looks fine. I will also update OMAP code with the new
+> interface. Thanks.
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
----
- drivers/video/da8xx-fb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+OK, so patch 1/2 at least needs to get into a stable arm-soc branch
+then. Unless there are violent objections, I'll forward patch 1/2 to
+arm-soc and request it be added into a branch so that Tegra and OMAP can
+both merge it into their branches as a dependency. I guess patch 2/2
+could also be included; I don't think it has any complex dependencies
+that'd prevent that, and would help to show how patch 1/2 gets used.
 
-diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index 7f92f37..ca69e01 100644
---- a/drivers/video/da8xx-fb.c
-+++ b/drivers/video/da8xx-fb.c
-@@ -318,7 +318,7 @@ static void lcd_blit(int load_mode, struct da8xx_fb_par *par)
- 			reg_int = lcdc_read(LCD_INT_ENABLE_SET_REG) |
- 				LCD_V2_END_OF_FRAME0_INT_ENA |
- 				LCD_V2_END_OF_FRAME1_INT_ENA |
--				LCD_FRAME_DONE;
-+				LCD_FRAME_DONE | LCD_SYNC_LOST;
- 			lcdc_write(reg_int, LCD_INT_ENABLE_SET_REG);
- 		}
- 		reg_dma |= LCD_DUAL_FRAME_BUFFER_ENABLE;
--- 
-1.7.12
+Hiroshi, is this series the only dependency you need for your Tegra114
+series? So, I could merge your Tegra114 series once this series is applied?
 
+> For the patch,
+> Acked-by: Santosh Shilimkar<santosh.shilimkar@ti.com>
+
+Thanks.
