@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab3AVRMt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 12:12:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33352 "EHLO mx2.suse.de"
+	id S1755357Ab3AVRMq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 12:12:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33328 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209Ab3AVRMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 12:12:44 -0500
+	id S1754740Ab3AVRMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 12:12:41 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -14,9 +14,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/6] mm: Fold page->_last_nid into page->flags where possible
-Date: Tue, 22 Jan 2013 17:12:41 +0000
-Message-Id: <1358874762-19717-6-git-send-email-mgorman@suse.de>
+Subject: [PATCH 2/6] mm: numa: Take THP into account when migrating pages for NUMA balancing
+Date: Tue, 22 Jan 2013 17:12:38 +0000
+Message-Id: <1358874762-19717-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1358874762-19717-1-git-send-email-mgorman@suse.de>
 References: <1358874762-19717-1-git-send-email-mgorman@suse.de>
@@ -24,183 +24,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Wanpeng Li pointed out that numamigrate_isolate_page() assumes that only one
+base page is being migrated when in fact it can also be checking THP. The
+consequences are that a migration will be attempted when a target node
+is nearly full and fail later. It's unlikely to be user-visible but it
+should be fixed. While we are there, migrate_balanced_pgdat() should treat
+nr_migrate_pages as an unsigned long as it is treated as a watermark.
 
-page->_last_nid fits into page->flags on 64-bit. The unlikely 32-bit NUMA
-configuration with NUMA Balancing will still need an extra page field.
-As Peter notes "Completely dropping 32bit support for CONFIG_NUMA_BALANCING
-would simplify things, but it would also remove the warning if we grow
-enough 64bit only page-flags to push the last-cpu out."
-
-[mgorman@suse.de: Minor modifications]
+Suggested-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/mm.h                |   33 ++++++++++++++++++++++++++++++++-
- include/linux/mm_types.h          |    2 +-
- include/linux/page-flags-layout.h |   33 +++++++++++++++++++++++++--------
- mm/memory.c                       |    4 ++++
- 4 files changed, 62 insertions(+), 10 deletions(-)
+ mm/migrate.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 87420e6..e25d47f 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -580,10 +580,11 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
-  * sets it, so none of the operations on it need to be atomic.
+diff --git a/mm/migrate.c b/mm/migrate.c
+index c387786..73e432d 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1459,7 +1459,7 @@ int migrate_vmas(struct mm_struct *mm, const nodemask_t *to,
+  * pages. Currently it only checks the watermarks which crude
   */
- 
--/* Page flags: | [SECTION] | [NODE] | ZONE | ... | FLAGS | */
-+/* Page flags: | [SECTION] | [NODE] | ZONE | [LAST_NID] | ... | FLAGS | */
- #define SECTIONS_PGOFF		((sizeof(unsigned long)*8) - SECTIONS_WIDTH)
- #define NODES_PGOFF		(SECTIONS_PGOFF - NODES_WIDTH)
- #define ZONES_PGOFF		(NODES_PGOFF - ZONES_WIDTH)
-+#define LAST_NID_PGOFF		(ZONES_PGOFF - LAST_NID_WIDTH)
- 
- /*
-  * Define the bit shifts to access each section.  For non-existent
-@@ -593,6 +594,7 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
- #define SECTIONS_PGSHIFT	(SECTIONS_PGOFF * (SECTIONS_WIDTH != 0))
- #define NODES_PGSHIFT		(NODES_PGOFF * (NODES_WIDTH != 0))
- #define ZONES_PGSHIFT		(ZONES_PGOFF * (ZONES_WIDTH != 0))
-+#define LAST_NID_PGSHIFT	(LAST_NID_PGOFF * (LAST_NID_WIDTH != 0))
- 
- /* NODE:ZONE or SECTION:ZONE is used to ID a zone for the buddy allocator */
- #ifdef NODE_NOT_IN_PAGE_FLAGS
-@@ -614,6 +616,7 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
- #define ZONES_MASK		((1UL << ZONES_WIDTH) - 1)
- #define NODES_MASK		((1UL << NODES_WIDTH) - 1)
- #define SECTIONS_MASK		((1UL << SECTIONS_WIDTH) - 1)
-+#define LAST_NID_MASK		((1UL << LAST_NID_WIDTH) - 1)
- #define ZONEID_MASK		((1UL << ZONEID_SHIFT) - 1)
- 
- static inline enum zone_type page_zonenum(const struct page *page)
-@@ -653,6 +656,7 @@ static inline int page_to_nid(const struct page *page)
- #endif
- 
- #ifdef CONFIG_NUMA_BALANCING
-+#ifdef LAST_NID_NOT_IN_PAGE_FLAGS
- static inline int page_xchg_last_nid(struct page *page, int nid)
+ static bool migrate_balanced_pgdat(struct pglist_data *pgdat,
+-				   int nr_migrate_pages)
++				   unsigned long nr_migrate_pages)
  {
- 	return xchg(&page->_last_nid, nid);
-@@ -667,6 +671,33 @@ static inline void reset_page_last_nid(struct page *page)
- 	page->_last_nid = -1;
- }
- #else
-+static inline int page_last_nid(struct page *page)
-+{
-+	return (page->flags >> LAST_NID_PGSHIFT) & LAST_NID_MASK;
-+}
-+
-+static inline int page_xchg_last_nid(struct page *page, int nid)
-+{
-+	unsigned long old_flags, flags;
-+	int last_nid;
-+
-+	do {
-+		old_flags = flags = page->flags;
-+		last_nid = page_last_nid(page);
-+
-+		flags &= ~(LAST_NID_MASK << LAST_NID_PGSHIFT);
-+		flags |= (nid & LAST_NID_MASK) << LAST_NID_PGSHIFT;
-+	} while (unlikely(cmpxchg(&page->flags, old_flags, flags) != old_flags));
-+
-+	return last_nid;
-+}
-+
-+static inline void reset_page_last_nid(struct page *page)
-+{
-+	page_xchg_last_nid(page, (1 << LAST_NID_SHIFT) - 1);
-+}
-+#endif /* LAST_NID_NOT_IN_PAGE_FLAGS */
-+#else
- static inline int page_xchg_last_nid(struct page *page, int nid)
+ 	int z;
+ 	for (z = pgdat->nr_zones - 1; z >= 0; z--) {
+@@ -1557,8 +1557,10 @@ int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
  {
- 	return page_to_nid(page);
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index d05d632..ace9a5f 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -174,7 +174,7 @@ struct page {
- 	void *shadow;
- #endif
+ 	int ret = 0;
  
--#ifdef CONFIG_NUMA_BALANCING
-+#ifdef LAST_NID_NOT_IN_PAGE_FLAGS
- 	int _last_nid;
- #endif
- }
-diff --git a/include/linux/page-flags-layout.h b/include/linux/page-flags-layout.h
-index 316805d..93506a1 100644
---- a/include/linux/page-flags-layout.h
-+++ b/include/linux/page-flags-layout.h
-@@ -32,15 +32,16 @@
- /*
-  * page->flags layout:
-  *
-- * There are three possibilities for how page->flags get
-- * laid out.  The first is for the normal case, without
-- * sparsemem.  The second is for sparsemem when there is
-- * plenty of space for node and section.  The last is when
-- * we have run out of space and have to fall back to an
-- * alternate (slower) way of determining the node.
-+ * There are five possibilities for how page->flags get laid out.  The first
-+ * pair is for the normal case without sparsemem. The second pair is for
-+ * sparsemem when there is plenty of space for node and section information.
-+ * The last is when there is insufficient space in page->flags and a separate
-+ * lookup is necessary.
-  *
-- * No sparsemem or sparsemem vmemmap: |       NODE     | ZONE | ... | FLAGS |
-- * classic sparse with space for node:| SECTION | NODE | ZONE | ... | FLAGS |
-+ * No sparsemem or sparsemem vmemmap: |       NODE     | ZONE |          ... | FLAGS |
-+ *         " plus space for last_nid: |       NODE     | ZONE | LAST_NID ... | FLAGS |
-+ * classic sparse with space for node:| SECTION | NODE | ZONE |          ... | FLAGS |
-+ *         " plus space for last_nid: | SECTION | NODE | ZONE | LAST_NID ... | FLAGS |
-  * classic sparse no space for node:  | SECTION |     ZONE    | ... | FLAGS |
-  */
- #if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
-@@ -60,6 +61,18 @@
- #define NODES_WIDTH		0
- #endif
- 
-+#ifdef CONFIG_NUMA_BALANCING
-+#define LAST_NID_SHIFT NODES_SHIFT
-+#else
-+#define LAST_NID_SHIFT 0
-+#endif
++	VM_BUG_ON(compound_order(page) && !PageTransHuge(page));
 +
-+#if SECTIONS_WIDTH+ZONES_WIDTH+NODES_SHIFT+LAST_NID_SHIFT <= BITS_PER_LONG - NR_PAGEFLAGS
-+#define LAST_NID_WIDTH LAST_NID_SHIFT
-+#else
-+#define LAST_NID_WIDTH 0
-+#endif
-+
- /*
-  * We are going to use the flags for the page to node mapping if its in
-  * there.  This includes the case where there is no node, so it is implicit.
-@@ -68,4 +81,8 @@
- #define NODE_NOT_IN_PAGE_FLAGS
- #endif
+ 	/* Avoid migrating to a node that is nearly full */
+-	if (migrate_balanced_pgdat(pgdat, 1)) {
++	if (migrate_balanced_pgdat(pgdat, 1UL << compound_order(page))) {
+ 		int page_lru;
  
-+#if defined(CONFIG_NUMA_BALANCING) && LAST_NID_WIDTH == 0
-+#define LAST_NID_NOT_IN_PAGE_FLAGS
-+#endif
-+
- #endif /* _LINUX_PAGE_FLAGS_LAYOUT */
-diff --git a/mm/memory.c b/mm/memory.c
-index bb1369f..16e697c 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -69,6 +69,10 @@
- 
- #include "internal.h"
- 
-+#ifdef LAST_NID_NOT_IN_PAGE_FLAGS
-+#warning Unfortunate NUMA and NUMA Balancing config, growing page-frame for last_nid.
-+#endif
-+
- #ifndef CONFIG_NEED_MULTIPLE_NODES
- /* use the per-pgdat data instead for discontigmem - mbligh */
- unsigned long max_mapnr;
+ 		if (isolate_lru_page(page)) {
 -- 
 1.7.9.2
 
