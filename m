@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab3AVWuA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 17:50:00 -0500
-Received: from mail1.bemta8.messagelabs.com ([216.82.243.50]:28322 "EHLO
-	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752888Ab3AVWt6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 17:49:58 -0500
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-131.messagelabs.com!1358894994!22185746!2
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Received: 
-X-StarScan-Version: 6.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Peter Huewe <peterhuewe@gmx.de>, Ian Abbott <abbotti@mev.co.uk>
-CC: Mori Hess <fmhess@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 22 Jan 2013 16:49:53 -0600
-Subject: RE: [PATCH] staging/comedi: Use comedi_pci_auto_unconfig directly
- for pci_driver.remove
-Thread-Topic: [PATCH] staging/comedi: Use comedi_pci_auto_unconfig directly
- for pci_driver.remove
-Thread-Index: Ac348P/ct/oeSCysRVagRa5nArZ60wAAWRfQ
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00207A6F697BB@AUSP01VMBX24.collaborationhost.net>
-References: <1358894403-26181-1-git-send-email-peterhuewe@gmx.de>
-In-Reply-To: <1358894403-26181-1-git-send-email-peterhuewe@gmx.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754409Ab3AVWxg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 17:53:36 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:51149 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729Ab3AVWxe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 17:53:34 -0500
+Date: Tue, 22 Jan 2013 23:53:22 +0100
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: linux-can@vger.kernel.org, Kurt Van Dijck <kurt.van.dijck@eia.be>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Bernd Krumboeck <b.krumboeck@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/10] tx/rx LED trigger support
+Message-ID: <20130122225322.GA13211@balto.lan>
+References: <1355853064-18144-1-git-send-email-fabio.baltieri@gmail.com>
+ <50F5BEEF.1060208@pengutronix.de>
+ <50FF0ACB.6000702@pengutronix.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FF0ACB.6000702@pengutronix.de>
+X-Operating-System: Linux balto 3.8.0-rc3-00293-g406089d x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 22, 2013 3:40 PM, Peter Huewe wrote:
->  (Almost) all comedi pci drivers have some wrapper for their
-> pci_driver.remove function which simply calls comedi_pci_auto_unconfig
-> which has the same function prototype as the wrapper.
->
-> -> we can remove these wrappers and call comedi_pci_auto_unconfig
-> directly. This removes a lot some boilerplate code and saves some bytes.
->
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
-> Maybe we should move the implementation now to drivers.c,
-> because now it cannot be inlined anymore. 
-> This would save some more bytes in the .kos but comedi_pci_auto_unconfig
-> then has to become an exported symbol.
+Hi Marc,
 
-Did you build this?
+On Tue, Jan 22, 2013 at 10:55:23PM +0100, Marc Kleine-Budde wrote:
+> On 01/15/2013 09:41 PM, Marc Kleine-Budde wrote:
+> 
+> I've tweaked some comments in some of these patches, too.
 
-As you mention above, the inlined comedi_pci_auto_unconfig() will not
-work as a function pointer in the pci_driver structs.
+Of course it looks fine to me.  Networking style block comment check in
+checkpatch was not in place when I originally wrote this code! :-)
 
-This cannot work until/if comedi_pci_auto_unconfig() is made an exported
-symbol. I'll leave that decision up to Ian.
+Thanks,
+Fabio
 
-Regards,
-Hartley
-
+-- 
+Fabio Baltieri
