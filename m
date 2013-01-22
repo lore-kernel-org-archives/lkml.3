@@ -1,111 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab3AVJPg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 04:15:36 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:54946 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398Ab3AVJPb (ORCPT
+	id S1754901Ab3AVJKm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 04:10:42 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42753 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754646Ab3AVJKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 04:15:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130122085004.GD16143@arwen.pp.htv.fi>
-References: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
-	<053c01cdf860$9e98df20$dbca9d60$@samsung.com>
-	<20130122085004.GD16143@arwen.pp.htv.fi>
-Date: Tue, 22 Jan 2013 14:45:26 +0530
-Message-ID: <CAFp+6iEoCF91HiDbixqsKX5XS_UQrN=+2O7puPqN1MvjY_eHBg@mail.gmail.com>
-Subject: Re: [PATCH v6 0/4] Adding usb2.0 host-phy support for exynos5250
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: balbi@ti.com
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
-        thomas.abraham@linaro.org, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, sylvester.nawrocki@gmail.com,
-        dianders@chromium.org, jg1.han@samsung.com, p.paneri@samsung.com,
-        cpgs@samsung.com, Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Jan 2013 04:10:40 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-82-50fe578801d9
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 08/19] perf gtk/browser: Convert hpp helpers to a function
+Date: Tue, 22 Jan 2013 18:09:36 +0900
+Message-Id: <1358845787-1350-9-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1358845787-1350-1-git-send-email-namhyung@kernel.org>
+References: <1358845787-1350-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
+The hpp helpers do same job for each field so it was implemented as
+macro in order to access those fields easily.  But it gets cumbersome
+to maintain a large function in a macro as the function grows. Factor
+it out to a function with a little helper macro to access field.
 
-On Tue, Jan 22, 2013 at 2:20 PM, Felipe Balbi <balbi@ti.com> wrote:
-> HI,
->
-> On Mon, Jan 21, 2013 at 09:23:28PM -0800, Kukjin Kim wrote:
->> Vivek Gautam wrote:
->> >
->> > Changes from v5:
->> >  - Rebased on top of latest patches:
->> >         usb: phy: samsung: Introducing usb phy driver for hsotg (v9)
->> >         usb: phy: samsung: Add support to set pmu isolation (v6)
->> >    As a result adding hostphy enable mask and hostphy register offsets
->> >    to driver data in order to access the HOSTPHY CONTROL register.
->> >
->> >  - Adding member 'otg' to struct samsung-usbphy so that its consumers
->> >    can call otg->set_host so as to make 'phy' aware of the consumer type:
->> >     HOST/DEVICE
->> >
->> >  - Adding 'otg' to 'struct s5p_ehci_hcd' and 'struct exynos_ohci_hcd'
->> >    which keeps track of 'otg' of the controllers' phy. This then sets
->> >    the host.
->> >
->> >  - Moved samsung_usbphy_set_type() calls from ehci-s5p and ohci-exynos
->> >    to phy driver itself where based on phy_type it is called.
->> >
->> >  - Added separate macro definition for USB20PHY_CFG register to select
->> >    between host/device type usb link.
->> >
->> >  - Removing unnecessary argument 'phy_type' from
->> > samsung_usbphy_set_type()
->> >    and samsung_usbphy_cfg_sel().
->> >
->> >  - Addressed few nits:
->> >     -- added macro for 'KHZ'
->> >     -- removing useless 'if' from samsung_usbphy_cfg_sel()
->> >     -- keeping the place of clk_get intact and requesting driver
->> >        data before that.
->> >
->> > Vivek Gautam (4):
->> >   ARM: EXYNOS: Update & move usb-phy types to generic include layer
->> >   usb: phy: samsung: Add host phy support to samsung-phy driver
->> >   USB: ehci-s5p: Add phy driver support
->> >   USB: ohci-exynos: Add phy driver support
->> >
->> >  .../devicetree/bindings/usb/samsung-usbphy.txt     |   12 +-
->> >  drivers/usb/host/ehci-s5p.c                        |   81 +++-
->> >  drivers/usb/host/ohci-exynos.c                     |   85 +++-
->> >  drivers/usb/phy/Kconfig                            |    2 +-
->> >  drivers/usb/phy/samsung-usbphy.c                   |  512
->> ++++++++++++++++++--
->> >  include/linux/usb/samsung_usb_phy.h                |   16 +
->> >  6 files changed, 635 insertions(+), 73 deletions(-)
->> >  create mode 100644 include/linux/usb/samsung_usb_phy.h
->> >
->> > --
->> > 1.7.6.5
->>
->> Looks good to me,
->>
->> Felipe and Greg, I don't know who should take this series anyway, feel free
->> to add  my ack:
->>
->> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
->
-> I will take care of it. But I need Alan's Acked-by for EHCI and OHCI
-> parts.
->
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/ui/gtk/hists.c | 68 ++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 47 insertions(+), 21 deletions(-)
 
-We got Alan's ACK for:
-USB: ehci-s5p: Add phy driver support
-USB: ohci-exynos: Add phy driver support
-
-
-
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index c03da79d524f..38be79d4b5c6 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -8,32 +8,58 @@
+ 
+ #define MAX_COLUMNS			32
+ 
+-#define HPP__COLOR_FN(_name, _field)						\
+-static int perf_gtk__hpp_color_ ## _name(struct perf_hpp *hpp,			\
+-					 struct hist_entry *he)			\
++static int perf_gtk__percent_color_snprintf(char *buf, size_t size,
++					    double percent)
++{
++	int ret = 0;
++	const char *markup;
++
++	markup = perf_gtk__get_percent_color(percent);
++	if (markup)
++		ret += scnprintf(buf, size, markup);
++
++	ret += scnprintf(buf + ret, size - ret, "%6.2f%%", percent);
++
++	if (markup)
++		ret += scnprintf(buf + ret, size - ret, "</span>");
++
++	return ret;
++}
++
++
++static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
++			    u64 (*get_field)(struct hist_entry *))
++{
++	int ret;
++	double percent = 0.0;
++	struct hists *hists = he->hists;
++
++	if (hists->stats.total_period)
++		percent = 100.0 * get_field(he) / hists->stats.total_period;
++
++	ret = perf_gtk__percent_color_snprintf(hpp->buf, hpp->size, percent);
++	return ret;
++}
++
++#define __HPP_COLOR_PERCENT_FN(_type, _field)					\
++static u64 he_get_##_field(struct hist_entry *he)				\
+ {										\
+-	struct hists *hists = he->hists;					\
+-	double percent = 100.0 * he->stat._field / hists->stats.total_period;	\
+-	const char *markup;							\
+-	int ret = 0;								\
+-										\
+-	markup = perf_gtk__get_percent_color(percent);				\
+-	if (markup)								\
+-		ret += scnprintf(hpp->buf, hpp->size, "%s", markup);		\
+-	ret += scnprintf(hpp->buf + ret, hpp->size - ret, "%6.2f%%", percent); 	\
+-	if (markup)								\
+-		ret += scnprintf(hpp->buf + ret, hpp->size - ret, "</span>"); 	\
++	return he->stat._field;							\
++}										\
+ 										\
+-	return ret;								\
++static int perf_gtk__hpp_color_##_type(struct perf_hpp *hpp,			\
++				       struct hist_entry *he)			\
++{										\
++	return __hpp__color_fmt(hpp, he, he_get_##_field);			\
+ }
+ 
+-HPP__COLOR_FN(overhead, period)
+-HPP__COLOR_FN(overhead_sys, period_sys)
+-HPP__COLOR_FN(overhead_us, period_us)
+-HPP__COLOR_FN(overhead_guest_sys, period_guest_sys)
+-HPP__COLOR_FN(overhead_guest_us, period_guest_us)
++__HPP_COLOR_PERCENT_FN(overhead, period)
++__HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
++__HPP_COLOR_PERCENT_FN(overhead_us, period_us)
++__HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
++__HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
+ 
+-#undef HPP__COLOR_FN
++#undef __HPP_COLOR_PERCENT_FN
+ 
+ 
+ void perf_gtk__init_hpp(void)
 -- 
-Thanks & Regards
-Vivek
+1.7.11.7
+
