@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523Ab3AVXav (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 18:30:51 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:53530 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517Ab3AVXau convert rfc822-to-8bit (ORCPT
+	id S1756043Ab3AVXbL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 18:31:11 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:58731 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389Ab3AVXbJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 18:30:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <201301092041.18888.PeterHuewe@gmx.de>
-References: <1353363322-2923-1-git-send-email-mathias.leblanc@st.com>
-	<20130108172053.GA11223@ennui.austin.ibm.com>
-	<35286B1AE75A7C47BFF0870081A31B4B3A9E2CB82D@SAFEX1MAIL4.st.com>
-	<201301092041.18888.PeterHuewe@gmx.de>
-Date: Tue, 22 Jan 2013 17:30:48 -0600
-Message-ID: <CAM0nabFLTXRgpjw+ZUFUmRaD5rxwdde791Xk115jxBZrMyDJBw@mail.gmail.com>
-Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics ST33 I2C KERNEL
- 3.x.x OOPS!
-From: Kent Yoder <shpedoikal@gmail.com>
-To: =?ISO-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
-Cc: tpmdd-devel@lists.sourceforge.net,
-        Mathias LEBLANC <Mathias.LEBLANC@st.com>,
-        Kent Yoder <key@linux.vnet.ibm.com>,
-        Jean-Luc BLANC <jean-luc.blanc@st.com>,
-        "Sirrix@jasper.es" <Sirrix@jasper.es>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Jan 2013 18:31:09 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Huang, Ying (ying.huang@intel.com)" <ying.huang@intel.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "H. Peter Anvin (hpa@zytor.com)" <hpa@zytor.com>,
+        "robert.moore@intel.com" <robert.moore@intel.com>,
+        "trenn@suse.de" <trenn@suse.de>,
+        "myron.stowe@redhat.com" <myron.stowe@redhat.com>
+Subject: ERST: how to avoid a dynamic memory allocation in panic case
+Thread-Topic: ERST: how to avoid a dynamic memory allocation in panic case
+Thread-Index: Ac349nJDZpYrCzzbTuW1wPMkV8nEDQ==
+Date: Tue, 22 Jan 2013 23:30:08 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A51F3D@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-01-22_10:2013-01-22,2013-01-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=11 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1301220243
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 1:41 PM, Peter Hüwe <PeterHuewe@gmx.de> wrote:
-> In my opinion a driver should never ever oops, even if the user does something
-> stupid (e.g. like probing from userspace ;)
+[Issue]
 
-  Exactly...  I've coded up a fix for the oops and staged it here, please test:
+Current erst driver is kicked in panic case.
+On the other hand, a dynamic memory allocation seems to run in it
+with a following code path.
 
-https://github.com/shpedoikal/linux.git tpmdd-01-22-13
+erst_writer -> erst_write -> __erst_write_to_storage -> many of apei_exec_run -> 
+ctx->ins_table[entry->instruction].run()
 
-Thanks,
-Kent
+which are functions defined in erst_ins_type table i.e:
 
-> The fix is as simple as adding a simple
-> if (!platform_data) return -ENODEV;
-> or something similar.
->
-> Thanks,
-> Peter
->
+apei_exec_read_register -> apei_read -> acpi_os_read_memory64 -> acpi_os_ioremap -> ioremap_cache
+
+which possibly involve IOMMU allocator.
+
+I may cause a failure of  an erst driver if the panic happens in an interrupt context.
+
+[Idea]
+
+If we can remove ioremap_cache() from acpi_os_read_memory() as follows,
+It is easy to fix this issue.
+But I'm not sure if it is feasible because I can't see the reason of tying acpi_os_ioremap()  from a git log...
+
+Any comment?
+
+<snip>
+@@ -918,10 +918,7 @@ acpi_os_read_memory(acpi_physical_address phys_addr, u64 *value, u32 width)
+ 	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
+ 	if (!virt_addr) {
+ 		rcu_read_unlock();
+-		virt_addr = acpi_os_ioremap(phys_addr, size);
+-		if (!virt_addr)
+-			return AE_BAD_ADDRESS;
+-		unmap = true;
++		return AE_BAD_ADDRESS;
+ 	}
+ 
+ 	if (!value)
+<snip>
+
+Seiji
