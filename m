@@ -1,94 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab3AVQxb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 11:53:31 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54993 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755499Ab3AVQxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 11:53:17 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: <linux-fbdev@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v3 11/12] video: da8xx-fb: setup struct lcd_ctrl_config for dt
-Date: Tue, 22 Jan 2013 22:23:05 +0530
-Message-ID: <dc47adb437c3668c1378a20dd724a5b8ff4c73c4.1358871750.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <cover.1358871750.git.afzal@ti.com>
-References: <cover.1358871750.git.afzal@ti.com>
+	id S1755593Ab3AVQxj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 11:53:39 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:56422 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601Ab3AVQxe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 11:53:34 -0500
+Date: Tue, 22 Jan 2013 08:53:30 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rob Clark <rob@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org
+Subject: Re: [PATCH 15/15] staging/omapdrm: don't build on multiplatform
+Message-ID: <20130122165330.GA28152@kroah.com>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+ <1358788568-11137-16-git-send-email-arnd@arndb.de>
+ <50FD7A5F.9020702@ti.com>
+ <201301211741.11875.arnd@arndb.de>
+ <50FD8B63.1060506@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FD8B63.1060506@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-strcut lcd_ctrl_config information required for driver is currently
-obtained via platform data. To handle DT probing, create
-lcd_ctrl_config and populate it with default values, these values are
-sufficient for the panels so far used with this controller to work.
+On Mon, Jan 21, 2013 at 12:39:31PM -0600, Rob Clark wrote:
+> On 01/21/2013 11:41 AM, Arnd Bergmann wrote:
+> >On Monday 21 January 2013, Rob Clark wrote:
+> >>Are you sure OMAP2_DSS requires ARCH_OMAP2PLUS?  I don't see this, and
+> >>it at least used to not depend on ARCH_OMAP2PLUS.  If it does now, I
+> >>think the correct fix would be to remove the dependency in OMAP2_DSS.  I
+> >>don't think removing ARCH_MULTIPLATFORM support in omapdrm is the
+> >>correct solution.
+> >At least it says so in drivers/video/omap2/Kconfig, which contains
+> >
+> >if ARCH_OMAP2PLUS
+> >source drivers/video/omap2/dss/Kconfig
+> >endif
+> 
+> ahh, ok, I see.. the if ARCH_OMAP2PLUS bit looks like it came in
+> recently (770b6cb)
+> 
+> what about changing this to 'if ARCH_OMAP2PLUS || ARCH_MULTIPLATFORM'?
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
----
- drivers/video/da8xx-fb.c | 34 +++++++++++++++++++++++++++++++++-
- 1 file changed, 33 insertions(+), 1 deletion(-)
+That's what Arnd's patch did.
 
-diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index 1c1a616..5455682 100644
---- a/drivers/video/da8xx-fb.c
-+++ b/drivers/video/da8xx-fb.c
-@@ -1254,6 +1254,35 @@ static struct fb_ops da8xx_fb_ops = {
- 	.fb_blank = cfb_blank,
- };
- 
-+static struct lcd_ctrl_config *da8xx_fb_create_cfg(struct platform_device *dev)
-+{
-+	struct lcd_ctrl_config *cfg;
-+
-+	cfg = devm_kzalloc(&dev->dev, sizeof(struct fb_videomode), GFP_KERNEL);
-+	if (!cfg) {
-+		dev_err(&dev->dev, "memory allocation failed\n");
-+		return NULL;
-+	}
-+
-+	/* default values */
-+
-+	if (lcd_revision == LCD_VERSION_1)
-+		cfg->bpp = 16;
-+	else
-+		cfg->bpp = 32;
-+
-+	/*
-+	 * For panels so far used with this LCDC, below statement is sufficient.
-+	 * For new panels, if required, struct lcd_ctrl_cfg fields to be updated
-+	 * with additional/modified values. Those values would have to be then
-+	 * obtained from dt(requiring new dt bindings).
-+	 */
-+
-+	cfg->panel_shade = COLOR_ACTIVE;
-+
-+	return cfg;
-+}
-+
- static struct fb_videomode *da8xx_fb_get_videomode(struct platform_device *dev)
- {
- 	struct da8xx_lcdc_platform_data *fb_pdata = dev->dev.platform_data;
-@@ -1345,7 +1374,10 @@ static int fb_probe(struct platform_device *device)
- 		break;
- 	}
- 
--	lcd_cfg = (struct lcd_ctrl_config *)fb_pdata->controller_data;
-+	if (device->dev.of_node)
-+		lcd_cfg = da8xx_fb_create_cfg(device);
-+	else
-+		lcd_cfg = (struct lcd_ctrl_config *)fb_pdata->controller_data;
- 
- 	if (!lcd_cfg) {
- 		ret = -EINVAL;
--- 
-1.7.12
+totally confused,
 
+greg k-h
