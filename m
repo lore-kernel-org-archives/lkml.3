@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab3AVG4t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 01:56:49 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:61029 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752548Ab3AVG4s (ORCPT
+	id S1752980Ab3AVHBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:01:09 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:46168 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab3AVHBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 01:56:48 -0500
-Date: Tue, 22 Jan 2013 07:56:29 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        dmitry.torokhov@gmail.com, arnd@arndb.de, w.sang@pengutronix.de,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 20/33] net: Convert to devm_ioremap_resource()
-Message-ID: <20130122065629.GA14523@avionic-0098.adnet.avionic-design.de>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
- <1358762966-20791-21-git-send-email-thierry.reding@avionic-design.de>
- <20130121.152913.1377695352860141642.davem@davemloft.net>
+	Tue, 22 Jan 2013 02:01:07 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
-Content-Disposition: inline
-In-Reply-To: <20130121.152913.1377695352860141642.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:iDsSi7E1lwVVugvZSWCCVRNNNaj7JWAc1A0O+JPOEJQ
- dFcQ9Remda/Cp6GXsQUqrjXTf0noqbWmViOHy9FP9vVf7CCH4X
- nCq27mohlqGWbyYcuLp0r2C07RFe2L4q/r8vQkfSQk4eYQ3re0
- aguZwb3A6saG5885E/JXshgltYPSaR+CFDlWlXvJJdGlFD1VkZ
- aE/R6LwYRlXm+HakA2tXxjnbAf1e+3MKgwETR/w8S+YXHTQGAy
- D4sudVH7NeFvyG1R9d9k/l7q1C2DPl4rm8oNNU2B67J+kgy08Z
- l8qZ7TfoKPByuVY65XnZy/+EGxNmASzZ3wl/dnw43NwbR4Jbc7
- gy/l27pdDNqlkKD48PerftOlUruNlTJFStNumZF+3hBwXGQgpv
- ugmJFe2Nh+yqFDkEj9YCrtNdtwck/Nu5N5/Fy9wO5XRT8Lwr6+
- r/v+9
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <1358825006.21576.47.camel@gandalf.local.home>
+References: <1358825006.21576.47.camel@gandalf.local.home>
+Date: Mon, 21 Jan 2013 23:01:06 -0800
+Message-ID: <CAOesGMibLJWXmjRtd4u-RBZoQq1swhFYfRD=KYT0cVg2A93Adg@mail.gmail.com>
+Subject: Re: [PATCH] powerpc/pasemi: Fix crash on reboot
+From: Olof Johansson <olof@lixom.net>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---xHFwDpU9dbj6ez1V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jan 21, 2013 at 7:23 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> commit f96972f2dc "kernel/sys.c: call disable_nonboot_cpus() in
+> kernel_restart()"
+>
+> added a call to disable_nonboot_cpus() on kernel_restart(), which tries
+> to shutdown all the CPUs except the first one. The issue with the PA
+> Semi, is that it does not support CPU hotplug.
+>
+> When the call is made to __cpu_down(), it calls the notifiers
+> CPU_DOWN_PREPARE, and then tries to take the CPU down.
+>
+> One of the notifiers to the CPU hotplug code, is the cpufreq. The
+> DOWN_PREPARE will call __cpufreq_remove_dev() which calls
+> cpufreq_driver->exit. The PA Semi exit handler unmaps regions of I/O
+> that is used by an interrupt that goes off constantly
+> (system_reset_common, but it goes off during normal system operations
+> too). I'm not sure exactly what this interrupt does.
 
-On Mon, Jan 21, 2013 at 03:29:13PM -0500, David Miller wrote:
-> From: Thierry Reding <thierry.reding@avionic-design.de>
-> Date: Mon, 21 Jan 2013 11:09:13 +0100
->=20
-> > Convert all uses of devm_request_and_ioremap() to the newly introduced
-> > devm_ioremap_resource() which provides more consistent error handling.
-> >=20
-> > devm_ioremap_resource() provides its own error messages so all explicit
-> > error messages can be removed from the failure code paths.
-> >=20
-> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
->=20
-> This won't compile if I apply it.
->=20
-> You really have to be clear when you submit patches like this.
->=20
-> Since you only CC:'d the networking developers for this one
-> patch, there is _ZERO_ context for us to work with to understand
-> what's going on.
->=20
-> You have to also CC: us on the other relevant changes and your
-> "[PATCH 00/33]" posting that explains what is happening.
+On this version of the power architecture, the system comes back
+through the reset vector when returning from some of the lower-power
+idle states, which should be why you see those exceptions go off.
 
-I planned to do so initially, but that yielded a Cc list of 156 people
-and mailing lists, which I thought wasn't going to go down so well
-either. In general I like Cc'ing everyone concerned on all patches of
-the series, specifically for reasons of context. Some people have been
-annoyed when I did so. Still, for small series where only a few dozen
-people are concerned that seems to me to be the best way. But 156 email
-addresses is a different story.
+Thanks for catching this. I have a system that I try booting a few
+times every release cycle, but I must have missed checking if reboots
+still work. Glad to see you're keeping yours alive, it's becoming a
+collectible. :-)
 
-Either you add to many people or you don't add enough. Where do we draw
-the line?
+[...]
 
-Thierry
+> Cc: Olof Johansson <olof@lixom.net>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
---xHFwDpU9dbj6ez1V
-Content-Type: application/pgp-signature
+Acked-by: Olof Johansson <olof@lixom.net>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Ben, please apply for 3.8.
 
-iQIcBAEBAgAGBQJQ/jgdAAoJEN0jrNd/PrOhetQQAJ7YTGZWK9SThwX+tLwCJYm0
-HGCA0iqQHN3BQKWtthOweYlqi7cWiDvSabKuPzPAIpdGbIRMuhdL3eU9O0d6ixoD
-R6mPhbVBVIL/bGxAgfk6g+lZpzmuPnmw1Ey8DL/H4voOIrSK5tG05LZRUxTkVT4u
-2FidzNE8xIiVYrkH0kJSGVe8ZdalM5nGmVgd8vsAJNoSl26co7/rHTI7APQrdC3w
-4u+fkxqxgPsNzFzhzaHL88IhYTM7nKAo22w/QqM7puZg4sdtwKOwv4a4jzAmgLNs
-0xOcMXojDIlsSLAUlvAU3LrqPj7DC+M8wtjtBiJnb+bMOsoyvhWiC3LzOOi1moqx
-2lJge/7tV4EAj0HQgpYJtvSJMsz5wShgH8vFDgRCXPekvd7kHXmCfb6P5Rm4US/E
-pCoWA6Jgpb5kDL9Vid0f9DLeXOF4/hp8JkzedAiTivJgIsbhc7glL4ioxz7M6d/B
-tIXouLQ1nhBfGJ+8cZLQzD8C9GaArDIHbA0EArHdu394eP15gxqzbHhaVxf0nc2O
-hNAYykp0kzTToCp1v3bw6bLmHtqMv/7bGKEURRX1Go+SQA3Ew9KYozTXRxrlRJ0+
-negtlgcspRJnPHNf28d/pL6FpYr0jAn5RN4QrcPmw7HATT6XJ33yqwZXRN0dlPIi
-xiQwvgmsCxxuwpQ8yZ2W
-=gLke
------END PGP SIGNATURE-----
 
---xHFwDpU9dbj6ez1V--
+-Olof
