@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab3AVQOj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 11:14:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45051 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754021Ab3AVQOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 11:14:37 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>
-Subject: Re: [PATCH V5 00/30] loop: Issue O_DIRECT aio using bio_vec
-References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
-	<x49obgmif7w.fsf@segfault.boston.devel.redhat.com>
-	<x49k3raidd6.fsf@segfault.boston.devel.redhat.com>
-	<50F98D29.6050701@oracle.com>
-	<x4938xyi2mm.fsf@segfault.boston.devel.redhat.com>
-	<50F9CD9E.1050902@oracle.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 22 Jan 2013 11:14:27 -0500
-In-Reply-To: <50F9CD9E.1050902@oracle.com> (Dave Kleikamp's message of "Fri,
-	18 Jan 2013 16:33:02 -0600")
-Message-ID: <x49622pb3fg.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754750Ab3AVQOw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 11:14:52 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:45470 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754021Ab3AVQOv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 11:14:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D02DC30FE7@sausexdag04.amd.com>
+References: <CA+55aFx5ZyFtd59ygn6ja5X-3ZyRvhfJLqtNKyF_mH3+-kSjKg@mail.gmail.com>
+	<CAKocOOPr4wddCmDEWKmsKsKeTc3m779opuN_qRb4yiL63KVZ8A@mail.gmail.com>
+	<CAKocOOPp1PA-n_=xdPuBSBKaKiREqhgeo02QqWpP-oX7vnN_YA@mail.gmail.com>
+	<CAKocOOOpDb=0XgX-uhDbBjOF7qK_M5MA31q9ScD0yTat0QRquQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC30FE7@sausexdag04.amd.com>
+Date: Tue, 22 Jan 2013 09:14:49 -0700
+Message-ID: <CAKocOONuFvcik229+1B0oeaBnQG7seZPeYf99xqduFa6kBZhOw@mail.gmail.com>
+Subject: Re: Linux 3.8-rc4
+From: Shuah Khan <shuahkhan@gmail.com>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Kleikamp <dave.kleikamp@oracle.com> writes:
-
-> On 01/18/2013 03:48 PM, Jeff Moyer wrote:
->> Dave Kleikamp <dave.kleikamp@oracle.com> writes:
->> 
->>> On 01/18/2013 11:56 AM, Jeff Moyer wrote:
->>>> Jeff Moyer <jmoyer@redhat.com> writes:
->>>>
->>>>> ./check -g aio
->>>>>
->>>>> and here is the summary:
->>>>>
->>>>> Ran: 112 113 198 207 208 209 210 211 212 239 240
->>>>> Failures: 112 198 207 239 240
->>>>> Failed 5 of 11 tests
->>>>>
->>>>> To be fair, I have not yet run this on a kernel without your changes.
->>>>
->>>> I re-ran the same test against a vanilla 3.8.0-rc4 kernel and it passed:
->>>>
->>>> Ran: 112 113 198 207 208 209 210 211 212 239 240
->>>> Passed all 11 tests
->>>>
->>>> I'll start digging into the failures.
->>>
->>> Thanks, I'll take a look at it too.
->> 
->> Note that the failures occur on regular block devices, too;  this isn't
->> restricted to loop.  The fix I mentioned in reply to patch 17 actually
->> fixes all of the failures reported in the aio group.  I'm going to do
->> some more thorough testing over the weekend.
+On Sat, Jan 19, 2013 at 9:44 AM, Deucher, Alexander
+<Alexander.Deucher@amd.com> wrote:
+>> -----Original Message-----
+>> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+>> Sent: Friday, January 18, 2013 7:40 PM
+>> To: Linus Torvalds; Deucher, Alexander
+>> Cc: Linux Kernel Mailing List
+>> Subject: Re: Linux 3.8-rc4
+>>
+>> On Fri, Jan 18, 2013 at 3:37 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
+>> > On Fri, Jan 18, 2013 at 10:51 AM, Shuah Khan <shuahkhan@gmail.com>
+>> wrote:
+>>
+>> >
+>> > ok. I bisected the DMAR faults and it points to the following commit:
+>> >
+>> > 909d9eb67f1e4e39f2ea88e96bde03d560cde3eb
+>> >
+>> > This commit as I recall, fixed the crash problem I was seeing back in
+>> > 3.8-rc1. Reverting to see if crash problem reappears.
+>>
+>> Confirming that with this commit reverted crash problem re-appeared.
+>> With this commit, DMAR faults show up.
 >
-> Thanks much. I'll definitely add this to my testing.
+> I'm not quite sure what's going on with your system.   At this point it's probably best to just disable the DMA ring on these cards until we sort out what's going on.  The attached patch disables the use of the DMA ring.  Let me know if it fixes the issues you are seeing.
+>
 
-After fixing up that thinko, a full run of xfstests on an xfs file
-system backed by a loop device (which itself is a file on an xfs file
-system) shows no regressions.
+I applied this patch to 3.8-rc4 and didn't fix the DMAR faults.
 
-Cheers,
-Jeff
+-- Shuah
