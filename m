@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab3AVIAn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 03:00:43 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:33107 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753047Ab3AVIAm (ORCPT
+	id S1753906Ab3AVIB1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 03:01:27 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56887 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752346Ab3AVIB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 03:00:42 -0500
-Message-ID: <50FE477D.7060401@metafoo.de>
-Date: Tue, 22 Jan 2013 09:02:05 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Peter Huewe <peterhuewe@gmx.de>, Jonathan Cameron <jic23@cam.ac.uk>,
-        linux-iio@vger.kernel.org,
+	Tue, 22 Jan 2013 03:01:26 -0500
+Date: Tue, 22 Jan 2013 16:01:06 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/iio: Use correct argument for sizeof
-References: <1358802842-27614-1-git-send-email-peterhuewe@gmx.de> <20130122064351.GV4584@mwanda>
-In-Reply-To: <20130122064351.GV4584@mwanda>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 33/33] ASoC: Convert to devm_ioremap_resource()
+Message-ID: <20130122080105.GG1766@opensource.wolfsonmicro.com>
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
+ <1358762966-20791-34-git-send-email-thierry.reding@avionic-design.de>
+ <20130122074824.GE1766@opensource.wolfsonmicro.com>
+ <20130122075552.GA28158@avionic-0098.adnet.avionic-design.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zq44+AAfm4giZpo5"
+Content-Disposition: inline
+In-Reply-To: <20130122075552.GA28158@avionic-0098.adnet.avionic-design.de>
+X-Cookie: You have taken yourself too seriously.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2013 07:43 AM, Dan Carpenter wrote:
-> On Mon, Jan 21, 2013 at 10:14:02PM +0100, Peter Huewe wrote:
->> found with coccicheck
->> sizeof when applied to a pointer typed expression gives the size of
->> the pointer
->>
-> 
-> The original code is correct, in this case.  We're storing an array
-> of pointers and the last element in the array is a NULL.
-> 
 
-The patch changed sizeof(st->attrs) to sizeof(*st->attrs). The type of
-st->attrs is struct attribute **, so both sizeofs return the same value (the
-size of an pointer) and the code happens to work, still the later is
-semantically more correct.
+--zq44+AAfm4giZpo5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Tue, Jan 22, 2013 at 08:55:52AM +0100, Thierry Reding wrote:
 
->> The semantic patch that makes this output is available
->> in scripts/coccinelle/misc/noderef.cocci.
->>
->> More information about semantic patching is available at
->> http://coccinelle.lip6.fr/
-> 
-> Can you remove those two boiler plate lines?  We all have google.
+> It's probably too early to apply this yet since the first patch in the
+> series, which introduces the new function, hasn't been merged yet. I
+> seem to have handled this poorly, as David Miller already pointed out,
+> by not Cc'ing everyone involved on the first patch.
 
-It would be nice to have a pointer to the specific cocci script used to
-generate the patch though.
+Oh, well.  Dropped then.  Acked-by instead.
 
-- Lars
+--zq44+AAfm4giZpo5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ/kckAAoJELSic+t+oim99D4P+wbeTHschG8CAbN819VyFiAY
+YPz5XUexd9wKrDP0DQcThW4hp+hYGqCq4UsYBeq9Q9xoASGuWTJaI+TEGvelhN01
+046mOAai88f6+kWkaC4/VCxV5VFia96q+SGgUJbQ2O95yEY0n7b0Q63d1YOm8p3F
+j/q3B18rmNqQkigu9BYzNcCM//j9PAngp537+HG7JTTzedwDCQYY+V7bS45/gsOo
+0D0uojKMj1Omx+eNOgFHJjTcNsqKHyOXNodg6a0pNRQcKuDm3aQaJeQSAvsqhYUS
+SrgAzWLtbCPLiCFdnAy0Lo/qp3r88KRHpHyOu1QTACa1KWT+Wz8NWUfQdRQYTCRX
+c3XBtroT5heZiU1HCiLUfpxghLQVoIMbnfeC2AKsJzGU/CpESMLF5rBMkM5szIpR
+pKleJZsZw7Si2og+bHuoASR6VbEwyIg7BFvi6KAtpdLtOFW1vVSwWPG3RnoSJEgo
+0mqAXpcTp3y/kV3nn4TDlf+/Yy0P9z4bUqvnkk8juYgXjBt+mAkyyvDgdYjNgDvo
+tZMsfCeSowtRvzMuC6I3tOxyV6ClHboka1dOrnC4j1g2lHhCxv3EM8cVPumqgAIn
+tAeMOBrsl10UcJ0qUzQAQr2SiRQlCbSgTpftPWB6L9m4eefpOXv2tSr1XfWBwW+0
+7q8r56xp3qQl3JdB0Z+j
+=PPyf
+-----END PGP SIGNATURE-----
+
+--zq44+AAfm4giZpo5--
