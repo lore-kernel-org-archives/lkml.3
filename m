@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab3AVF6E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 00:58:04 -0500
-Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:33120 "EHLO
-	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426Ab3AVF6C (ORCPT
+	id S1753796Ab3AVF6k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 00:58:40 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64253 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752710Ab3AVF6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 00:58:02 -0500
-Message-ID: <50FE2A34.3050607@lab.ntt.co.jp>
-Date: Tue, 22 Jan 2013 14:57:08 +0900
-From: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 22 Jan 2013 00:58:39 -0500
+X-AuditID: 9c930179-b7d01ae000004006-4c-50fe2a8ded28
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 08/13] perf gtk/browser: Add support for event group view
+References: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
+	<1358235117-12803-9-git-send-email-namhyung@kernel.org>
+	<20130115183405.GD5826@ghostprotocols.net>
+	<87a9s9mnlt.fsf@sejong.aot.lge.com>
+	<20130116182859.GO5826@ghostprotocols.net>
+Date: Tue, 22 Jan 2013 14:58:36 +0900
+In-Reply-To: <20130116182859.GO5826@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Wed, 16 Jan 2013 15:28:59 -0300")
+Message-ID: <87pq0xkbcj.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Antonio Ospite <ospite@studenti.unina.it>
-Subject: Re: [PATCH v2] HID: add support for Sony RF receiver with USB product
- id 0x0374
-References: <1358221428.9926.1.camel@nexus.lab.ntt.co.jp>  <20130115103638.be566e39f0f5ad7186362dd8@studenti.unina.it>  <50F52986.2080002@lab.ntt.co.jp>  <1358246448.4897.3.camel@nexus.lab.ntt.co.jp>  <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz>  <50F637D1.8070302@lab.ntt.co.jp>  <alpine.LNX.2.00.1301161141250.14768@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1301161141250.14768@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-16 at 11:44 +0100, Jiri Kosina wrote:
-> On Wed, 16 Jan 2013, Fernando Luis Vazquez Cao wrote:
+Hi Arnaldo,
+
+On Wed, 16 Jan 2013 15:28:59 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Jan 16, 2013 at 07:25:02PM +0900, Namhyung Kim escreveu:
+>> Adding current header name to event name will fix the problem but it
+>> probably occupies too much screen width especially for long named
+>> tracepoint or PMU-specific events like
+>> "compaction:mm_compaction_isolate_migratepages".
+>> 
+>>   Overhead/branches  Overhead/branch-misses  sys/branches  sys/branch-misses  usr/branches  usr/branch-misses  Command  Shared Object   Symbol
+>>   .................  ......................  ............  .................  ............  .................  .......  .............  .......
+>>              98.32%                  31.16%         0.00%              0.00%        98.32%             31.16%    a.out          a.out  [.] foo
+>> 
+>> 
+>> If you have a better idea or other way to place the cursor without
+>> printing bogus 0.00% on GTK, please let me know.
 >
-> > I noticed that the patch was tagged "for-3.9". Does this mean
-> > that it is too late to get it merged during the current release
-> > cycle?
+> Compacting it using an extra line:
 >
-> I currently don't have anything queued for 3.8, and this particular patch
-> doesn't justify a separate pull request.
+>  Overhead...............  sys....................  usr....................
+>  branches  branch-misses  branches  branch-misses  branches  branch-misses  Command  Shared Object   Symbol
+>  ........  .............  ........  .............  ........  .............  .......  .............  .......
+>    98.32%         31.16%     0.00%          0.00%    98.32%         31.16%    a.out          a.out  [.] foo
 >
-> Once it's in Linus' tree, it can be easily pushed out to all existing
-> -stable branches (including 3.8-stable, once it's created).
+> It could even use some reference:
 >
-> If I am gfoing to be sending pull request for 3.8 to Linus still due to
-> some important bugfix, I will be including this.
-
-Ok, thank you for the explanation. I really appreciate it.
-
-
-> > If possible, I would like to get it backported to 3.7-stable (and
-> > possibly 3.2 stable), since without it a whole family of Sony desktop
-> > computers is unusable under Linux out of the box. Should I do it myself
-> > or do you have a process in place for HID stable patches?
+>  Overhead.....................  sys.........  usr...........
+>  branches(1)  branch-misses(2)  (1)    (2)    (1)     (2)     Command  Shared Object   Symbol
+>  ...........  ................  .....  .....  ......  ......  .......  .............  .......
+>       98.32%            31.16%  0.00%  0.00%  98.32%  31.16%    a.out          a.out  [.] foo
 >
-> If the patch had
+> The (1) could be done with a superscript number or even just using a
+> different fore/background color, to use fewer columns.
 >
-> 	Cc: stable@vger.kernel.org
+> One other way, that would scale for really long event names, would be to
+> have the event list in the first few lines and then:
 >
-> in it, it'd be picked for -stable queue automatically.
+> Events:
+> 1. branches
+> 2. branch-misses
+>
+>  Overhead......  sys.........  usr...........
+>  (1)     (2)     (1)    (2)    (1)     (2)     Command  Shared Object   Symbol
+>  ......  ......  .....  .....  ......  ......  .......  .............  .......
+>  98.32%  31.16%  0.00%  0.00%  98.32%  31.16%   a.out           a.out  [.] foo
+>
+> I think you could switch to/from each of these forms using a hotkey,
+> that would influence how the hist_entry__snprintf() routine would work,
+> either using perf_evsel__name() or evsel->idx :-)
+>
+> This way if at some point the user wants to expand/compress the lines,
+> it will be possible to do so quickly, just pressing the hotkey.
 
-I considered doing that but I thought and upstream commit
-ID was needed.
+By saying hotkey, I guess you meant to use it for TUI.  However TUI
+doesn't provide those header lines. ;-)
 
-
-> Otherwise, anyone is free to take it once it's in Linus' tree and sent
-> to to stable@vger.kernel.org for inclusion.
-
-
-So it is the standard procedure. I just wanted to make
-sure whether you wanted to have all the -stable patches
-funnelled through you. I will send the patch to -stable
-directly and Cc you as soon as it makes it into Linus'
-tree.
-
-
-By the way, I will be replying to this email with a
-follow-up patch that I forgot to send the last time
-around. It is just documentation for the quirk.
+As this extra line (and hotkey) thing might add complexity to the
+patchset, I'd like to separate it to a different work and to focus on
+the basic feature with current behavior.  Is it acceptable for you?
 
 Thanks,
-Fernando
+Namhyung
