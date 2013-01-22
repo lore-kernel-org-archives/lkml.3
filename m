@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab3AVHnL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:43:11 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:59452 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755480Ab3AVHnA (ORCPT
+	id S932135Ab3AVHnS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:43:18 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:54346 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523Ab3AVHnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:43:00 -0500
+	Tue, 22 Jan 2013 02:43:11 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5 29/45] x86/xen: Use get/put_online_cpus_atomic() to prevent
- CPU offline
+Subject: [PATCH v5 30/45] alpha/smp: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -20,8 +20,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 22 Jan 2013 13:10:51 +0530
-Message-ID: <20130122074046.13822.61950.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 22 Jan 2013 13:11:18 +0530
+Message-ID: <20130122074113.13822.3018.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,7 +29,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012207-0260-0000-0000-0000026FFEE6
+x-cbid: 13012207-9574-0000-0000-000006489C20
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -41,120 +41,104 @@ going offline from under us.
 Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
 while invoking from atomic context.
 
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: xen-devel@lists.xensource.com
-Cc: virtualization@lists.linux-foundation.org
+Also, remove the non-ASCII character present in this file!
+
+Cc: linux-alpha@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/xen/mmu.c |   11 +++++++++--
- arch/x86/xen/smp.c |    9 +++++++++
- 2 files changed, 18 insertions(+), 2 deletions(-)
+ arch/alpha/kernel/smp.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 01de35c..6a95a15 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -39,6 +39,7 @@
-  * Jeremy Fitzhardinge <jeremy@xensource.com>, XenSource Inc, 2007
-  */
- #include <linux/sched.h>
-+#include <linux/cpu.h>
- #include <linux/highmem.h>
- #include <linux/debugfs.h>
- #include <linux/bug.h>
-@@ -1163,9 +1164,13 @@ static void xen_drop_mm_ref(struct mm_struct *mm)
-  */
- static void xen_exit_mmap(struct mm_struct *mm)
- {
--	get_cpu();		/* make sure we don't move around */
-+	/*
-+	 * Make sure we don't move around, and prevent CPUs from going
-+	 * offline.
-+	 */
-+	get_online_cpus_atomic();
- 	xen_drop_mm_ref(mm);
--	put_cpu();
-+	put_online_cpus_atomic();
- 
- 	spin_lock(&mm->page_table_lock);
- 
-@@ -1371,6 +1376,7 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
- 	args->op.arg2.vcpumask = to_cpumask(args->mask);
- 
- 	/* Remove us, and any offline CPUS. */
-+	get_online_cpus_atomic();
- 	cpumask_and(to_cpumask(args->mask), cpus, cpu_online_mask);
- 	cpumask_clear_cpu(smp_processor_id(), to_cpumask(args->mask));
- 
-@@ -1383,6 +1389,7 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
- 	MULTI_mmuext_op(mcs.mc, &args->op, 1, NULL, DOMID_SELF);
- 
- 	xen_mc_issue(PARAVIRT_LAZY_MMU);
-+	put_online_cpus_atomic();
+diff --git a/arch/alpha/kernel/smp.c b/arch/alpha/kernel/smp.c
+index 9603bc2..9213d5d 100644
+--- a/arch/alpha/kernel/smp.c
++++ b/arch/alpha/kernel/smp.c
+@@ -498,7 +498,6 @@ smp_cpus_done(unsigned int max_cpus)
+ 	       ((bogosum + 2500) / (5000/HZ)) % 100);
  }
  
- static unsigned long xen_read_cr3(void)
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 4f7d259..7d753ae 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -16,6 +16,7 @@
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <linux/smp.h>
-+#include <linux/cpu.h>
- #include <linux/irq_work.h>
- 
- #include <asm/paravirt.h>
-@@ -487,8 +488,10 @@ static void __xen_send_IPI_mask(const struct cpumask *mask,
+-
+ void
+ smp_percpu_timer_interrupt(struct pt_regs *regs)
  {
- 	unsigned cpu;
- 
+@@ -682,7 +681,7 @@ ipi_flush_tlb_mm(void *x)
+ void
+ flush_tlb_mm(struct mm_struct *mm)
+ {
+-	preempt_disable();
 +	get_online_cpus_atomic();
- 	for_each_cpu_and(cpu, mask, cpu_online_mask)
- 		xen_send_IPI_one(cpu, vector);
+ 
+ 	if (mm == current->active_mm) {
+ 		flush_tlb_current(mm);
+@@ -694,7 +693,7 @@ flush_tlb_mm(struct mm_struct *mm)
+ 				if (mm->context[cpu])
+ 					mm->context[cpu] = 0;
+ 			}
+-			preempt_enable();
++			put_online_cpus_atomic();
+ 			return;
+ 		}
+ 	}
+@@ -703,7 +702,7 @@ flush_tlb_mm(struct mm_struct *mm)
+ 		printk(KERN_CRIT "flush_tlb_mm: timed out\n");
+ 	}
+ 
+-	preempt_enable();
 +	put_online_cpus_atomic();
  }
+ EXPORT_SYMBOL(flush_tlb_mm);
  
- static void xen_smp_send_call_function_ipi(const struct cpumask *mask)
-@@ -551,8 +554,10 @@ void xen_send_IPI_all(int vector)
- {
- 	int xen_vector = xen_map_vector(vector);
+@@ -731,7 +730,7 @@ flush_tlb_page(struct vm_area_struct *vma, unsigned long addr)
+ 	struct flush_tlb_page_struct data;
+ 	struct mm_struct *mm = vma->vm_mm;
  
+-	preempt_disable();
 +	get_online_cpus_atomic();
- 	if (xen_vector >= 0)
- 		__xen_send_IPI_mask(cpu_online_mask, xen_vector);
+ 
+ 	if (mm == current->active_mm) {
+ 		flush_tlb_current_page(mm, vma, addr);
+@@ -743,7 +742,7 @@ flush_tlb_page(struct vm_area_struct *vma, unsigned long addr)
+ 				if (mm->context[cpu])
+ 					mm->context[cpu] = 0;
+ 			}
+-			preempt_enable();
++			put_online_cpus_atomic();
+ 			return;
+ 		}
+ 	}
+@@ -756,7 +755,7 @@ flush_tlb_page(struct vm_area_struct *vma, unsigned long addr)
+ 		printk(KERN_CRIT "flush_tlb_page: timed out\n");
+ 	}
+ 
+-	preempt_enable();
 +	put_online_cpus_atomic();
  }
+ EXPORT_SYMBOL(flush_tlb_page);
  
- void xen_send_IPI_self(int vector)
-@@ -572,20 +577,24 @@ void xen_send_IPI_mask_allbutself(const struct cpumask *mask,
- 	if (!(num_online_cpus() > 1))
+@@ -787,7 +786,7 @@ flush_icache_user_range(struct vm_area_struct *vma, struct page *page,
+ 	if ((vma->vm_flags & VM_EXEC) == 0)
  		return;
  
+-	preempt_disable();
 +	get_online_cpus_atomic();
- 	for_each_cpu_and(cpu, mask, cpu_online_mask) {
- 		if (this_cpu == cpu)
- 			continue;
  
- 		xen_smp_send_call_function_single_ipi(cpu);
+ 	if (mm == current->active_mm) {
+ 		__load_new_mm_context(mm);
+@@ -799,7 +798,7 @@ flush_icache_user_range(struct vm_area_struct *vma, struct page *page,
+ 				if (mm->context[cpu])
+ 					mm->context[cpu] = 0;
+ 			}
+-			preempt_enable();
++			put_online_cpus_atomic();
+ 			return;
+ 		}
  	}
+@@ -808,5 +807,5 @@ flush_icache_user_range(struct vm_area_struct *vma, struct page *page,
+ 		printk(KERN_CRIT "flush_icache_page: timed out\n");
+ 	}
+ 
+-	preempt_enable();
 +	put_online_cpus_atomic();
  }
- 
- void xen_send_IPI_allbutself(int vector)
- {
- 	int xen_vector = xen_map_vector(vector);
- 
-+	get_online_cpus_atomic();
- 	if (xen_vector >= 0)
- 		xen_send_IPI_mask_allbutself(cpu_online_mask, xen_vector);
-+	put_online_cpus_atomic();
- }
- 
- static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id)
 
