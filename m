@@ -1,109 +1,435 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab3AVQ7f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 11:59:35 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:54842 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622Ab3AVQ7e (ORCPT
+	id S1755280Ab3AVRBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 12:01:35 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:60129 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754296Ab3AVRBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 11:59:34 -0500
-Date: Tue, 22 Jan 2013 17:59:29 +0100
-From: Leandro Lucarella <leandro.lucarella@sociomantic.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Doubts about listen backlog and tcp_max_syn_backlog
-Message-ID: <20130122165929.GH4608@sociomantic.com>
-References: <20130122161038.GG4608@sociomantic.com>
- <1358873142.3464.3964.camel@edumazet-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358873142.3464.3964.camel@edumazet-glaptop>
-X-Paranoid: Just because you're paranoid, don't mean they're not after you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:tV8Uu3PTZXO9KEA1jV8bZk922G9mdJHfMPLkkROTg6j
- +AstJF1qPFq67aGpgwHaxPfeM55jRvtddFn1F8UIuKFFZzp2hU
- iCnTGyf3WaCwXYKmsLXg54PdWxffU5Bb/ml5yQzOM/jwKK92Dh
- jiziRiJPLlRCRVeiHnvN0xMTUuLnlaEIJHBMsh1QNG9d7TLrXH
- Qesj0HgmWFTMJRqRzGCLTC4axpIZaL9Fbe8tR4AvZDMKe2qQQv
- V2Q+uG8HeFTPVzaSDwJayuPMtlFqrlvnwXSH/GzxbalXV274MV
- Z9rByKQkx3DuuCOYdRSXfU+FOjlCiqrb+jY+IrEPQPP9KSvTEo
- dgKFBfe1fJajIGYF1E/JCAdOsBHU/MwFw81PVaUsvM0CvfgNr0
- ONASpM6XVrHHg==
+	Tue, 22 Jan 2013 12:01:32 -0500
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: linux-input@vger.kernel.org
+Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH v3] HID: add ThingM blink(1) USB RGB LED support
+Date: Tue, 22 Jan 2013 12:01:21 -0500
+Message-Id: <1358874081-7286-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 08:45:42AM -0800, Eric Dumazet wrote:
-> On Tue, 2013-01-22 at 17:10 +0100, Leandro Lucarella wrote:
-> > Hi, I'm having some problems with missing SYNs in a server with a high
-> > rate of incoming connections and, even when far from understanding the
-> > kernel,  I ended up looking at the kernel's source to try to understand
-> > better what's going on, because some stuff doesn't make a lot of sense
-> > to me.
-[snip]
-> > 1. What's the relation between the socket backlog and the queue created
-> >    by reqsk_queue_alloc()? Because the backlog is only adjusted not to
-> >    be grater than sysctl_somaxconn, but the queue size can be quite
-> >    different.
-> > 2. The comment just above the definition of reqsk_queue_alloc() about
-> >    sysctl_max_syn_backlog says "Maximum number of SYN_RECV sockets in
-> >    queue per LISTEN socket.". But then nr_table_entries is not only
-> >    rounded up to the next power of 2, is incremented by one before that,
-> >    so a backlog of, for example, 128, would end up with 256 table
-> >    entries even if sysctl_max_syn_backlog is 128.
-> > 3. Why is there a nr_table_entries + 1 at all in there? Looking at the
-> >    commit that introduced this[1] I can't find any explanation and I've
-> >    read some big projects are using backlogs of 511 because of this[2].
-> >    (which BTW, ff the queue is really a hash table, looks like an awful
-> >    idea).
-> > 4. I found some places sk->sk_ack_backlog is checked against
-> >    sk->sk_max_ack_backlog to see if new requests should be dropped, but
-> >    I also saw checks like inet_csk_reqsk_queue_young(sk) > 1 or
-> >    inet_csk_reqsk_queue_is_full(sk), so I guess the queue is used too.
-[snip]
-> 
-> What particular problem do you have ?
+The ThingM blink(1) is an open source hardware USB RGB LED. It contains
+an internal EEPROM, allowing to configure up to 12 light patterns. A
+light pattern is a RGB color plus a fade time. This driver registers a
+LED class instance with additional sysfs attributes to support basic
+functions such as setting RGB colors, fade and playing. Other functions
+are still accessible through the hidraw interface.
 
-What I'm seeing are clients taking either useconds to connect, or 3
-seconds, which suggest SYNs are getting lost, but the network doesn't
-seem to be the problem. I'm still investigating this, so unfortunately
-I'm not really sure.
+At this time, the only documentation for the device is the firmware
+source code from ThingM, plus a few schematics. They are available at:
 
-> A serious rewrite of LISTEN code is needed, because the current
-> implementation doesn't scale :
-> 
-> The SYNACK retransmits are done by a single timer wheel, holding the
-> socket lock for too long. So increasing the backlog to 2^16 or 2^17 is
-> not really an option.
-> 
-> Hash table are nice, but if we have to scan them, holding a single lock,
-> they are not so nice.
+https://github.com/todbot/blink1
 
-So, the queue is really a hash table, then? So using any (2^n)-1 would
-be a bad idea because when the backlog is next to full, the hash table
-will be really slow? Is that why the + 1 is there? Is assuming everyone
-will use a power of 2 an thus having a load factor of 0.5 at most?
+This patch is version 3. It updates the name of the source file, the
+driver and the led sysfs entry, according to comments from Jiri Kosina
+and Simon Wood.
 
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+---
+ Documentation/ABI/testing/sysfs-driver-hid-thingm |  23 ++
+ MAINTAINERS                                       |   5 +
+ drivers/hid/Kconfig                               |  10 +
+ drivers/hid/Makefile                              |   1 +
+ drivers/hid/hid-core.c                            |   1 +
+ drivers/hid/hid-ids.h                             |   3 +
+ drivers/hid/hid-thingm.c                          | 272 ++++++++++++++++++++++
+ 7 files changed, 315 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-thingm
+ create mode 100644 drivers/hid/hid-thingm.c
+
+diff --git a/Documentation/ABI/testing/sysfs-driver-hid-thingm b/Documentation/ABI/testing/sysfs-driver-hid-thingm
+new file mode 100644
+index 0000000..abcffee
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-driver-hid-thingm
+@@ -0,0 +1,23 @@
++What:		/sys/class/leds/blink1::<serial>/rgb
++Date:		January 2013
++Contact:	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
++Description:	The ThingM blink1 is an USB RGB LED. The color notation is
++		3-byte hexadecimal. Read this attribute to get the last set
++		color. Write the 24-bit hexadecimal color to change the current
++		LED color. The default color is full white (0xFFFFFF).
++		For instance, set the color to green with: echo 00FF00 > rgb
++
++What:		/sys/class/leds/blink1::<serial>/fade
++Date:		January 2013
++Contact:	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
++Description:	This attribute allows to set a fade time in milliseconds for
++		the next color change. Read the attribute to know the current
++		fade time. The default value is set to 0 (no fade time). For
++		instance, set a fade time of 2 seconds with: echo 2000 > fade
++
++What:		/sys/class/leds/blink1::<serial>/play
++Date:		January 2013
++Contact:	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
++Description:	This attribute is used to play/pause the light patterns. Write 1
++		to start playing, 0 to stop. Reading this attribute returns the
++		current playing status.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b0b880d..10a4a36 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7306,6 +7306,11 @@ S:      Supported
+ F:      drivers/thermal/
+ F:      include/linux/thermal.h
+ 
++THINGM BLINK(1) USB RGB LED DRIVER
++M:	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
++S:	Maintained
++F:	drivers/hid/hid-thingm.c
++
+ THINKPAD ACPI EXTRAS DRIVER
+ M:	Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>
+ L:	ibm-acpi-devel@lists.sourceforge.net
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index e7d6a13..d353669 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -655,6 +655,16 @@ config HID_TOPSEED
+ 	Say Y if you have a TopSeed Cyberlink or BTC Emprex or Conceptronic
+ 	CLLRCMCE remote control.
+ 
++config HID_THINGM
++	tristate "ThingM blink(1) USB RGB LED"
++	depends on USB_HID
++	depends on LEDS_CLASS
++	---help---
++	Support for the ThingM blink(1) USB RGB LED. This driver registers a
++	Linux LED class instance, plus additional sysfs attributes to control
++	RGB colors, fade time and playing. The device is exposed through hidraw
++	to access other functions.
++
+ config HID_THRUSTMASTER
+ 	tristate "ThrustMaster devices support"
+ 	depends on USB_HID
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index b622157..9301704 100644
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -103,6 +103,7 @@ obj-$(CONFIG_HID_SONY)		+= hid-sony.o
+ obj-$(CONFIG_HID_SPEEDLINK)	+= hid-speedlink.o
+ obj-$(CONFIG_HID_SUNPLUS)	+= hid-sunplus.o
+ obj-$(CONFIG_HID_GREENASIA)	+= hid-gaff.o
++obj-$(CONFIG_HID_THINGM)	+= hid-thingm.o
+ obj-$(CONFIG_HID_THRUSTMASTER)	+= hid-tmff.o
+ obj-$(CONFIG_HID_TIVO)		+= hid-tivo.o
+ obj-$(CONFIG_HID_TOPSEED)	+= hid-topseed.o
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 5ae2cb1..b14cbf4 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1700,6 +1700,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGX_MOUSE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGP_MOUSE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SUNPLUS, USB_DEVICE_ID_SUNPLUS_WDESKTOP) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_THINGM, USB_DEVICE_ID_BLINK1) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb300) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb304) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb323) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index dad56aa..3503003 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -748,6 +748,9 @@
+ #define USB_DEVICE_ID_SYNAPTICS_WTP	0x0010
+ #define USB_DEVICE_ID_SYNAPTICS_DPAD	0x0013
+ 
++#define USB_VENDOR_ID_THINGM		0x27b8
++#define USB_DEVICE_ID_BLINK1		0x01ed
++
+ #define USB_VENDOR_ID_THRUSTMASTER	0x044f
+ 
+ #define USB_VENDOR_ID_TIVO		0x150a
+diff --git a/drivers/hid/hid-thingm.c b/drivers/hid/hid-thingm.c
+new file mode 100644
+index 0000000..2055a52
+--- /dev/null
++++ b/drivers/hid/hid-thingm.c
+@@ -0,0 +1,272 @@
++/*
++ * ThingM blink(1) USB RGB LED driver
++ *
++ * Copyright 2013 Savoir-faire Linux Inc.
++ *	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation, version 2.
++ */
++
++#include <linux/hid.h>
++#include <linux/leds.h>
++#include <linux/module.h>
++#include <linux/usb.h>
++
++#include "hid-ids.h"
++
++#define BLINK1_CMD_SIZE		9
++
++#define blink1_rgb_to_r(rgb)	((rgb & 0xFF0000) >> 16)
++#define blink1_rgb_to_g(rgb)	((rgb & 0x00FF00) >> 8)
++#define blink1_rgb_to_b(rgb)	((rgb & 0x0000FF) >> 0)
++
++/**
++ * struct blink1_data - blink(1) device specific data
++ * @hdev:		HID device.
++ * @led_cdev:		LED class instance.
++ * @rgb:		8-bit per channel RGB notation.
++ * @fade:		fade time in hundredths of a second.
++ * @brightness:		brightness coefficient.
++ * @play:		play/pause in-memory patterns.
++ */
++struct blink1_data {
++	struct hid_device *hdev;
++	struct led_classdev led_cdev;
++	u32 rgb;
++	u16 fade;
++	u8 brightness;
++	bool play;
++};
++
++static int blink1_send_command(struct blink1_data *data,
++		u8 buf[BLINK1_CMD_SIZE])
++{
++	int ret;
++
++	hid_dbg(data->hdev, "command: %d%c%.2x%.2x%.2x%.2x%.2x%.2x%.2x\n",
++			buf[0], buf[1], buf[2], buf[3], buf[4],
++			buf[5], buf[6], buf[7], buf[8]);
++
++	ret = data->hdev->hid_output_raw_report(data->hdev, buf,
++			BLINK1_CMD_SIZE, HID_FEATURE_REPORT);
++
++	return ret < 0 ? ret : 0;
++}
++
++static int blink1_update_color(struct blink1_data *data)
++{
++	u8 buf[BLINK1_CMD_SIZE] = { 1, 'n', 0, 0, 0, 0, 0, 0, 0 };
++
++	if (data->brightness) {
++		unsigned int coef = DIV_ROUND_CLOSEST(255, data->brightness);
++
++		buf[2] = DIV_ROUND_CLOSEST(blink1_rgb_to_r(data->rgb), coef);
++		buf[3] = DIV_ROUND_CLOSEST(blink1_rgb_to_g(data->rgb), coef);
++		buf[4] = DIV_ROUND_CLOSEST(blink1_rgb_to_b(data->rgb), coef);
++	}
++
++	if (data->fade) {
++		buf[1] = 'c';
++		buf[5] = (data->fade & 0xFF00) >> 8;
++		buf[6] = (data->fade & 0x00FF);
++	}
++
++	return blink1_send_command(data, buf);
++}
++
++static void blink1_led_set(struct led_classdev *led_cdev,
++		enum led_brightness brightness)
++{
++	struct blink1_data *data = dev_get_drvdata(led_cdev->dev->parent);
++
++	data->brightness = brightness;
++	if (blink1_update_color(data))
++		hid_err(data->hdev, "failed to update color\n");
++}
++
++static enum led_brightness blink1_led_get(struct led_classdev *led_cdev)
++{
++	struct blink1_data *data = dev_get_drvdata(led_cdev->dev->parent);
++
++	return data->brightness;
++}
++
++static ssize_t blink1_show_rgb(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct blink1_data *data = dev_get_drvdata(dev->parent);
++
++	return sprintf(buf, "%.6X\n", data->rgb);
++}
++
++static ssize_t blink1_store_rgb(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct blink1_data *data = dev_get_drvdata(dev->parent);
++	long unsigned int rgb;
++	int ret;
++
++	ret = kstrtoul(buf, 16, &rgb);
++	if (ret)
++		return ret;
++
++	/* RGB triplet notation is 24-bit hexadecimal */
++	if (rgb > 0xFFFFFF)
++		return -EINVAL;
++
++	data->rgb = rgb;
++	ret = blink1_update_color(data);
++
++	return ret ? ret : count;
++}
++
++static DEVICE_ATTR(rgb, S_IRUGO | S_IWUSR, blink1_show_rgb, blink1_store_rgb);
++
++static ssize_t blink1_show_fade(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct blink1_data *data = dev_get_drvdata(dev->parent);
++
++	return sprintf(buf, "%d\n", data->fade * 10);
++}
++
++static ssize_t blink1_store_fade(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct blink1_data *data = dev_get_drvdata(dev->parent);
++	long unsigned int fade;
++	int ret;
++
++	ret = kstrtoul(buf, 10, &fade);
++	if (ret)
++		return ret;
++
++	/* blink(1) accepts 16-bit fade time, number of 10ms ticks */
++	fade = DIV_ROUND_CLOSEST(fade, 10);
++	if (fade > 65535)
++		return -EINVAL;
++
++	data->fade = fade;
++
++	return count;
++}
++
++static DEVICE_ATTR(fade, S_IRUGO | S_IWUSR,
++		blink1_show_fade, blink1_store_fade);
++
++static ssize_t blink1_show_play(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct blink1_data *data = dev_get_drvdata(dev->parent);
++
++	return sprintf(buf, "%d\n", data->play);
++}
++
++static ssize_t blink1_store_play(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct blink1_data *data = dev_get_drvdata(dev->parent);
++	u8 cmd[BLINK1_CMD_SIZE] = { 1, 'p', 0, 0, 0, 0, 0, 0, 0 };
++	long unsigned int play;
++	int ret;
++
++	ret = kstrtoul(buf, 10, &play);
++	if (ret)
++		return ret;
++
++	data->play = !!play;
++	cmd[2] = data->play;
++	ret = blink1_send_command(data, cmd);
++
++	return ret ? ret : count;
++}
++
++static DEVICE_ATTR(play, S_IRUGO | S_IWUSR,
++		blink1_show_play, blink1_store_play);
++
++static const struct attribute_group blink1_sysfs_group = {
++	.attrs = (struct attribute *[]) {
++		&dev_attr_rgb.attr,
++		&dev_attr_fade.attr,
++		&dev_attr_play.attr,
++		NULL
++	},
++};
++
++static int thingm_probe(struct hid_device *hdev, const struct hid_device_id *id)
++{
++	struct blink1_data *data;
++	struct led_classdev *led;
++	char led_name[13];
++	int ret;
++
++	data = devm_kzalloc(&hdev->dev, sizeof(struct blink1_data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	hid_set_drvdata(hdev, data);
++	data->hdev = hdev;
++	data->rgb = 0xFFFFFF; /* set a default white color */
++
++	ret = hid_parse(hdev);
++	if (ret)
++		goto error;
++
++	ret = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
++	if (ret)
++		goto error;
++
++	/* blink(1) serial numbers range is 0x1A001000 to 0x1A002FFF */
++	led = &data->led_cdev;
++	snprintf(led_name, sizeof(led_name), "blink1::%s", hdev->uniq + 4);
++	led->name = led_name;
++	led->brightness_set = blink1_led_set;
++	led->brightness_get = blink1_led_get;
++	ret = led_classdev_register(&hdev->dev, led);
++	if (ret)
++		goto stop;
++
++	ret = sysfs_create_group(&led->dev->kobj, &blink1_sysfs_group);
++	if (ret)
++		goto remove_led;
++
++	return 0;
++
++remove_led:
++	led_classdev_unregister(led);
++stop:
++	hid_hw_stop(hdev);
++error:
++	return ret;
++}
++
++static void thingm_remove(struct hid_device *hdev)
++{
++	struct blink1_data *data = hid_get_drvdata(hdev);
++	struct led_classdev *led = &data->led_cdev;
++
++	sysfs_remove_group(&led->dev->kobj, &blink1_sysfs_group);
++	led_classdev_unregister(led);
++	hid_hw_stop(hdev);
++}
++
++static const struct hid_device_id thingm_table[] = {
++	{ HID_USB_DEVICE(USB_VENDOR_ID_THINGM, USB_DEVICE_ID_BLINK1) },
++	{ }
++};
++MODULE_DEVICE_TABLE(hid, thingm_table);
++
++static struct hid_driver thingm_driver = {
++	.name = "thingm",
++	.probe = thingm_probe,
++	.remove = thingm_remove,
++	.id_table = thingm_table,
++};
++
++module_hid_driver(thingm_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Vivien Didelot <vivien.didelot@savoirfairelinux.com>");
++MODULE_DESCRIPTION("ThingM blink(1) USB RGB LED driver");
 -- 
-Leandro Lucarella
-Senior R&D Developer
------------------------------------------------------------
-sociomantic labs GmbH
-Paul-Lincke-Ufer 39/40
-10999 Berlin
-DEUTSCHLAND
------------------------------------------------------------
-http://www.sociomantic.com
------------------------------------------------------------
-Fon:       +49 (0) 30 3087 4615
-Fax:       +49 (0) 30 3087 4619
-Mobile:    +49 (0)157 3636 7373
-Skype:     llucarella
-Twitter:   http://www.twitter.com/sociomantic
-Facebook:  http://bit.ly/labsfacebook
------------------------------------------------------------
-sociomantic labs GmbH, Location: Berlin
-Commercial Register - AG Charlottenburg: HRB 121302 B
-VAT No. - USt-ID: DE 266262100
-Managing Directors: Thomas Nicolai, Thomas Brandhoff
+1.8.1.1
+
