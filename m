@@ -1,435 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab3AVRBf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 12:01:35 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:60129 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754296Ab3AVRBc (ORCPT
+	id S1755028Ab3AVRDH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 12:03:07 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44857 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab3AVRDC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 12:01:32 -0500
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: linux-input@vger.kernel.org
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] HID: add ThingM blink(1) USB RGB LED support
-Date: Tue, 22 Jan 2013 12:01:21 -0500
-Message-Id: <1358874081-7286-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-X-Mailer: git-send-email 1.8.1.1
+	Tue, 22 Jan 2013 12:03:02 -0500
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+Subject: Re: [PATCH v1 0/6] USB: Add support for multiple PHYs of same type
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <50FEBB61.9000707@ti.com>
+Date: Tue, 22 Jan 2013 18:02:56 +0100
+Cc: <tony@atomide.com>, <balbi@ti.com>, <linux@arm.linux.org.uk>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org List" <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Jason Kridner <jkridner@beagleboard.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <B9531499-0746-44DA-BDBB-999D4CA31E63@dominion.thruhere.net>
+References: <1358848694-20145-1-git-send-email-kishon@ti.com> <2D906ABA-71F2-4843-9DBE-F82527A1240A@dominion.thruhere.net> <50FEB3FD.3050001@ti.com> <50FEBB61.9000707@ti.com>
+To: kishon <kishon@ti.com>
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ThingM blink(1) is an open source hardware USB RGB LED. It contains
-an internal EEPROM, allowing to configure up to 12 light patterns. A
-light pattern is a RGB color plus a fade time. This driver registers a
-LED class instance with additional sysfs attributes to support basic
-functions such as setting RGB colors, fade and playing. Other functions
-are still accessible through the hidraw interface.
 
-At this time, the only documentation for the device is the firmware
-source code from ThingM, plus a few schematics. They are available at:
+Op 22 jan. 2013, om 17:16 heeft kishon <kishon@ti.com> het volgende geschreven:
 
-https://github.com/todbot/blink1
+> Hi,
+> 
+> On Tuesday 22 January 2013 09:15 PM, kishon wrote:
+>> On Tuesday 22 January 2013 09:11 PM, Koen Kooi wrote:
+>>> 
+>>> Op 22 jan. 2013, om 10:58 heeft Kishon Vijay Abraham I <kishon@ti.com>
+>>> het volgende geschreven:
+>>> 
+>>>> This patch series adds support for adding multiple PHY's (of same type).
+>>>> The binding information has to be present in the PHY library (otg.c) in
+>>>> order for it to return the appropriate PHY whenever the USB controller
+>>>> request for the PHY. So added a new API usb_bind_phy() to pass the
+>>>> binding
+>>>> information. This API should be called by platform specific
+>>>> initialization
+>>>> code.
+>>>> 
+>>>> So the binding should be done something like
+>>>> usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto"); specifying
+>>>> the USB
+>>>> controller device name, index, and the PHY device name.
+>>>> I have done this binding for OMAP platforms, but it should be done for
+>>>> all the platforms.
+>>>> 
+>>>> After this design, the phy can be got by passing the USB controller
+>>>> device
+>>>> pointer and the index.
+>>>> 
+>>>> Developed this patch series on
+>>>> git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git xceiv
+>>>> after applying "usb: musb: add driver for control module" patch series
+>>>> and "ARM: dts: omap: add dt data for MUSB"
+>>>> 
+>>>> Did basic enumeration testing in omap4 panda and omap3 beagle.
+>>> 
+>>> With this patchset USB completely breaks on am33xx beaglebone, is that
+>>> intended?
+>> Not really.
+>> Does am33xx makes use of omap2430.c? Which PHY does am33xx uses?
+> 
+> I figured out it uses drivers/usb/musb/musb_dsps.c (So it doesn't use omap2430.c). I think it uses TWL4030_USB (TPS659x0) as PHY.
 
-This patch is version 3. It updates the name of the source file, the
-driver and the led sysfs entry, according to comments from Jiri Kosina
-and Simon Wood.
+Actually it uses nop-phy as a phy, which is missing from arch/arm/boot/dts/am33xx.dtsi, so mainline is already broken. But adding the nop-phy to the DT is easy enough to patch in locally.
 
-Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
----
- Documentation/ABI/testing/sysfs-driver-hid-thingm |  23 ++
- MAINTAINERS                                       |   5 +
- drivers/hid/Kconfig                               |  10 +
- drivers/hid/Makefile                              |   1 +
- drivers/hid/hid-core.c                            |   1 +
- drivers/hid/hid-ids.h                             |   3 +
- drivers/hid/hid-thingm.c                          | 272 ++++++++++++++++++++++
- 7 files changed, 315 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-thingm
- create mode 100644 drivers/hid/hid-thingm.c
+regards,
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-hid-thingm b/Documentation/ABI/testing/sysfs-driver-hid-thingm
-new file mode 100644
-index 0000000..abcffee
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-driver-hid-thingm
-@@ -0,0 +1,23 @@
-+What:		/sys/class/leds/blink1::<serial>/rgb
-+Date:		January 2013
-+Contact:	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-+Description:	The ThingM blink1 is an USB RGB LED. The color notation is
-+		3-byte hexadecimal. Read this attribute to get the last set
-+		color. Write the 24-bit hexadecimal color to change the current
-+		LED color. The default color is full white (0xFFFFFF).
-+		For instance, set the color to green with: echo 00FF00 > rgb
-+
-+What:		/sys/class/leds/blink1::<serial>/fade
-+Date:		January 2013
-+Contact:	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-+Description:	This attribute allows to set a fade time in milliseconds for
-+		the next color change. Read the attribute to know the current
-+		fade time. The default value is set to 0 (no fade time). For
-+		instance, set a fade time of 2 seconds with: echo 2000 > fade
-+
-+What:		/sys/class/leds/blink1::<serial>/play
-+Date:		January 2013
-+Contact:	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-+Description:	This attribute is used to play/pause the light patterns. Write 1
-+		to start playing, 0 to stop. Reading this attribute returns the
-+		current playing status.
-diff --git a/MAINTAINERS b/MAINTAINERS
-index b0b880d..10a4a36 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7306,6 +7306,11 @@ S:      Supported
- F:      drivers/thermal/
- F:      include/linux/thermal.h
- 
-+THINGM BLINK(1) USB RGB LED DRIVER
-+M:	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-+S:	Maintained
-+F:	drivers/hid/hid-thingm.c
-+
- THINKPAD ACPI EXTRAS DRIVER
- M:	Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>
- L:	ibm-acpi-devel@lists.sourceforge.net
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index e7d6a13..d353669 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -655,6 +655,16 @@ config HID_TOPSEED
- 	Say Y if you have a TopSeed Cyberlink or BTC Emprex or Conceptronic
- 	CLLRCMCE remote control.
- 
-+config HID_THINGM
-+	tristate "ThingM blink(1) USB RGB LED"
-+	depends on USB_HID
-+	depends on LEDS_CLASS
-+	---help---
-+	Support for the ThingM blink(1) USB RGB LED. This driver registers a
-+	Linux LED class instance, plus additional sysfs attributes to control
-+	RGB colors, fade time and playing. The device is exposed through hidraw
-+	to access other functions.
-+
- config HID_THRUSTMASTER
- 	tristate "ThrustMaster devices support"
- 	depends on USB_HID
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index b622157..9301704 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -103,6 +103,7 @@ obj-$(CONFIG_HID_SONY)		+= hid-sony.o
- obj-$(CONFIG_HID_SPEEDLINK)	+= hid-speedlink.o
- obj-$(CONFIG_HID_SUNPLUS)	+= hid-sunplus.o
- obj-$(CONFIG_HID_GREENASIA)	+= hid-gaff.o
-+obj-$(CONFIG_HID_THINGM)	+= hid-thingm.o
- obj-$(CONFIG_HID_THRUSTMASTER)	+= hid-tmff.o
- obj-$(CONFIG_HID_TIVO)		+= hid-tivo.o
- obj-$(CONFIG_HID_TOPSEED)	+= hid-topseed.o
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 5ae2cb1..b14cbf4 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1700,6 +1700,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGX_MOUSE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGP_MOUSE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_SUNPLUS, USB_DEVICE_ID_SUNPLUS_WDESKTOP) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_THINGM, USB_DEVICE_ID_BLINK1) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb300) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb304) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb323) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index dad56aa..3503003 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -748,6 +748,9 @@
- #define USB_DEVICE_ID_SYNAPTICS_WTP	0x0010
- #define USB_DEVICE_ID_SYNAPTICS_DPAD	0x0013
- 
-+#define USB_VENDOR_ID_THINGM		0x27b8
-+#define USB_DEVICE_ID_BLINK1		0x01ed
-+
- #define USB_VENDOR_ID_THRUSTMASTER	0x044f
- 
- #define USB_VENDOR_ID_TIVO		0x150a
-diff --git a/drivers/hid/hid-thingm.c b/drivers/hid/hid-thingm.c
-new file mode 100644
-index 0000000..2055a52
---- /dev/null
-+++ b/drivers/hid/hid-thingm.c
-@@ -0,0 +1,272 @@
-+/*
-+ * ThingM blink(1) USB RGB LED driver
-+ *
-+ * Copyright 2013 Savoir-faire Linux Inc.
-+ *	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2.
-+ */
-+
-+#include <linux/hid.h>
-+#include <linux/leds.h>
-+#include <linux/module.h>
-+#include <linux/usb.h>
-+
-+#include "hid-ids.h"
-+
-+#define BLINK1_CMD_SIZE		9
-+
-+#define blink1_rgb_to_r(rgb)	((rgb & 0xFF0000) >> 16)
-+#define blink1_rgb_to_g(rgb)	((rgb & 0x00FF00) >> 8)
-+#define blink1_rgb_to_b(rgb)	((rgb & 0x0000FF) >> 0)
-+
-+/**
-+ * struct blink1_data - blink(1) device specific data
-+ * @hdev:		HID device.
-+ * @led_cdev:		LED class instance.
-+ * @rgb:		8-bit per channel RGB notation.
-+ * @fade:		fade time in hundredths of a second.
-+ * @brightness:		brightness coefficient.
-+ * @play:		play/pause in-memory patterns.
-+ */
-+struct blink1_data {
-+	struct hid_device *hdev;
-+	struct led_classdev led_cdev;
-+	u32 rgb;
-+	u16 fade;
-+	u8 brightness;
-+	bool play;
-+};
-+
-+static int blink1_send_command(struct blink1_data *data,
-+		u8 buf[BLINK1_CMD_SIZE])
-+{
-+	int ret;
-+
-+	hid_dbg(data->hdev, "command: %d%c%.2x%.2x%.2x%.2x%.2x%.2x%.2x\n",
-+			buf[0], buf[1], buf[2], buf[3], buf[4],
-+			buf[5], buf[6], buf[7], buf[8]);
-+
-+	ret = data->hdev->hid_output_raw_report(data->hdev, buf,
-+			BLINK1_CMD_SIZE, HID_FEATURE_REPORT);
-+
-+	return ret < 0 ? ret : 0;
-+}
-+
-+static int blink1_update_color(struct blink1_data *data)
-+{
-+	u8 buf[BLINK1_CMD_SIZE] = { 1, 'n', 0, 0, 0, 0, 0, 0, 0 };
-+
-+	if (data->brightness) {
-+		unsigned int coef = DIV_ROUND_CLOSEST(255, data->brightness);
-+
-+		buf[2] = DIV_ROUND_CLOSEST(blink1_rgb_to_r(data->rgb), coef);
-+		buf[3] = DIV_ROUND_CLOSEST(blink1_rgb_to_g(data->rgb), coef);
-+		buf[4] = DIV_ROUND_CLOSEST(blink1_rgb_to_b(data->rgb), coef);
-+	}
-+
-+	if (data->fade) {
-+		buf[1] = 'c';
-+		buf[5] = (data->fade & 0xFF00) >> 8;
-+		buf[6] = (data->fade & 0x00FF);
-+	}
-+
-+	return blink1_send_command(data, buf);
-+}
-+
-+static void blink1_led_set(struct led_classdev *led_cdev,
-+		enum led_brightness brightness)
-+{
-+	struct blink1_data *data = dev_get_drvdata(led_cdev->dev->parent);
-+
-+	data->brightness = brightness;
-+	if (blink1_update_color(data))
-+		hid_err(data->hdev, "failed to update color\n");
-+}
-+
-+static enum led_brightness blink1_led_get(struct led_classdev *led_cdev)
-+{
-+	struct blink1_data *data = dev_get_drvdata(led_cdev->dev->parent);
-+
-+	return data->brightness;
-+}
-+
-+static ssize_t blink1_show_rgb(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct blink1_data *data = dev_get_drvdata(dev->parent);
-+
-+	return sprintf(buf, "%.6X\n", data->rgb);
-+}
-+
-+static ssize_t blink1_store_rgb(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct blink1_data *data = dev_get_drvdata(dev->parent);
-+	long unsigned int rgb;
-+	int ret;
-+
-+	ret = kstrtoul(buf, 16, &rgb);
-+	if (ret)
-+		return ret;
-+
-+	/* RGB triplet notation is 24-bit hexadecimal */
-+	if (rgb > 0xFFFFFF)
-+		return -EINVAL;
-+
-+	data->rgb = rgb;
-+	ret = blink1_update_color(data);
-+
-+	return ret ? ret : count;
-+}
-+
-+static DEVICE_ATTR(rgb, S_IRUGO | S_IWUSR, blink1_show_rgb, blink1_store_rgb);
-+
-+static ssize_t blink1_show_fade(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct blink1_data *data = dev_get_drvdata(dev->parent);
-+
-+	return sprintf(buf, "%d\n", data->fade * 10);
-+}
-+
-+static ssize_t blink1_store_fade(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct blink1_data *data = dev_get_drvdata(dev->parent);
-+	long unsigned int fade;
-+	int ret;
-+
-+	ret = kstrtoul(buf, 10, &fade);
-+	if (ret)
-+		return ret;
-+
-+	/* blink(1) accepts 16-bit fade time, number of 10ms ticks */
-+	fade = DIV_ROUND_CLOSEST(fade, 10);
-+	if (fade > 65535)
-+		return -EINVAL;
-+
-+	data->fade = fade;
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(fade, S_IRUGO | S_IWUSR,
-+		blink1_show_fade, blink1_store_fade);
-+
-+static ssize_t blink1_show_play(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct blink1_data *data = dev_get_drvdata(dev->parent);
-+
-+	return sprintf(buf, "%d\n", data->play);
-+}
-+
-+static ssize_t blink1_store_play(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct blink1_data *data = dev_get_drvdata(dev->parent);
-+	u8 cmd[BLINK1_CMD_SIZE] = { 1, 'p', 0, 0, 0, 0, 0, 0, 0 };
-+	long unsigned int play;
-+	int ret;
-+
-+	ret = kstrtoul(buf, 10, &play);
-+	if (ret)
-+		return ret;
-+
-+	data->play = !!play;
-+	cmd[2] = data->play;
-+	ret = blink1_send_command(data, cmd);
-+
-+	return ret ? ret : count;
-+}
-+
-+static DEVICE_ATTR(play, S_IRUGO | S_IWUSR,
-+		blink1_show_play, blink1_store_play);
-+
-+static const struct attribute_group blink1_sysfs_group = {
-+	.attrs = (struct attribute *[]) {
-+		&dev_attr_rgb.attr,
-+		&dev_attr_fade.attr,
-+		&dev_attr_play.attr,
-+		NULL
-+	},
-+};
-+
-+static int thingm_probe(struct hid_device *hdev, const struct hid_device_id *id)
-+{
-+	struct blink1_data *data;
-+	struct led_classdev *led;
-+	char led_name[13];
-+	int ret;
-+
-+	data = devm_kzalloc(&hdev->dev, sizeof(struct blink1_data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	hid_set_drvdata(hdev, data);
-+	data->hdev = hdev;
-+	data->rgb = 0xFFFFFF; /* set a default white color */
-+
-+	ret = hid_parse(hdev);
-+	if (ret)
-+		goto error;
-+
-+	ret = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
-+	if (ret)
-+		goto error;
-+
-+	/* blink(1) serial numbers range is 0x1A001000 to 0x1A002FFF */
-+	led = &data->led_cdev;
-+	snprintf(led_name, sizeof(led_name), "blink1::%s", hdev->uniq + 4);
-+	led->name = led_name;
-+	led->brightness_set = blink1_led_set;
-+	led->brightness_get = blink1_led_get;
-+	ret = led_classdev_register(&hdev->dev, led);
-+	if (ret)
-+		goto stop;
-+
-+	ret = sysfs_create_group(&led->dev->kobj, &blink1_sysfs_group);
-+	if (ret)
-+		goto remove_led;
-+
-+	return 0;
-+
-+remove_led:
-+	led_classdev_unregister(led);
-+stop:
-+	hid_hw_stop(hdev);
-+error:
-+	return ret;
-+}
-+
-+static void thingm_remove(struct hid_device *hdev)
-+{
-+	struct blink1_data *data = hid_get_drvdata(hdev);
-+	struct led_classdev *led = &data->led_cdev;
-+
-+	sysfs_remove_group(&led->dev->kobj, &blink1_sysfs_group);
-+	led_classdev_unregister(led);
-+	hid_hw_stop(hdev);
-+}
-+
-+static const struct hid_device_id thingm_table[] = {
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_THINGM, USB_DEVICE_ID_BLINK1) },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(hid, thingm_table);
-+
-+static struct hid_driver thingm_driver = {
-+	.name = "thingm",
-+	.probe = thingm_probe,
-+	.remove = thingm_remove,
-+	.id_table = thingm_table,
-+};
-+
-+module_hid_driver(thingm_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Vivien Didelot <vivien.didelot@savoirfairelinux.com>");
-+MODULE_DESCRIPTION("ThingM blink(1) USB RGB LED driver");
--- 
-1.8.1.1
-
+Koen
