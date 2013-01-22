@@ -1,181 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab3AVIMB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 03:12:01 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:39630 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab3AVIL7 (ORCPT
+	id S1753170Ab3AVIVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 03:21:21 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:60649 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867Ab3AVIVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 03:11:59 -0500
+	Tue, 22 Jan 2013 03:21:20 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 05/15] ASoC: fsl: fiq and dma cannot both be modules
+Date: Tue, 22 Jan 2013 08:21:05 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <20130122035028.GB29677@S2100-06.ap.freescale.net> <20130122063331.GA1766@opensource.wolfsonmicro.com>
+In-Reply-To: <20130122063331.GA1766@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <1358758844-24711-2-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1358758844-24711-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1358758844-24711-2-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Tue, 22 Jan 2013 13:41:58 +0530
-X-Google-Sender-Auth: 8jbC_1p-gUgYi5Wj0fJ8YVsDBK0
-Message-ID: <CAOh2x==FoW5Sh5KFt9iO+_04dEbwsQHJX3rsTWNqFiZqTbPn6A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] dw_dmac: return proper residue value
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301220821.05252.arnd@arndb.de>
+X-Provags-ID: V02:K0:G7jIRJtMLmfX0w13HTGDql06w/RzY4RRRZ1gsuih7u6
+ KMv723/xe0+vTlXDElpndjFeJBh/sJPkEr7zlMFMPFuwa4Adie
+ AiZ/lvZ1d2hU0swgQmrB3JsV1Nt1Nc2f60a69ri0zDIkl7AK/t
+ Xm6b6/grAjxxWZl9iitLfffzsuWYmlUbHk7yZscUlAJExwpV4p
+ DsY9a2cinJg49RCMFb+NCklx/DA0gXEsbq3G4nIny9LhwIk9Qk
+ CfxiRskFQPkPNIbw2+6/MjJhYqlMkNI5N8HfAoM/CDE+lcpkaV
+ WKTwot1J8NhXFtW8zllMT0s6LDFf+13R+MRePQWk0UIST1w2zh
+ +RZ9cNPXtrVCkMe8r28o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 2:30 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> Currently the driver returns full length of the active descriptor which is
-> wrong. We have to go throught the active descriptor and sum up the length of
-> unsent children in the chain along with the actual data in the DMA channel
-> registers.
->
-> The cyclic case is not handled by this patch due to len field in the descriptor
-> structure is left untouched by the original code.
->
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  drivers/dma/dw_dmac.c |   93 ++++++++++++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 92 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> index d1b9ba2..4325c68 100644
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-> @@ -941,6 +941,97 @@ err_desc_get:
->         return NULL;
->  }
->
-> +/* --------------------- Calculate residue ---------------------------- */
-> +
-> +static inline size_t dwc_get_rest(struct dw_dma_chan *dwc, struct dw_desc *desc)
-> +{
-> +       enum dma_transfer_direction direction = dwc->direction;
-> +
-> +       if (direction == DMA_MEM_TO_DEV || direction == DMA_MEM_TO_MEM)
-> +               return desc->len - (channel_readl(dwc, SAR) - desc->lli.sar);
-> +       else if (direction == DMA_DEV_TO_MEM)
-> +               return desc->len - (channel_readl(dwc, DAR) - desc->lli.dar);
-> +
-> +       return 0;
-> +}
+On Tuesday 22 January 2013, Mark Brown wrote:
+> On Tue, Jan 22, 2013 at 11:50:30AM +0800, Shawn Guo wrote:
+> > I sent a fix [1] for that queued by Mark.
 
-I agree with Vinod on this routine.
+Right, that patch looks good, too.
 
-> +static inline size_t dwc_get_residue_in_llp(struct dw_dma_chan *dwc,
-> +                                           struct list_head *active,
-> +                                           struct list_head *head)
-> +{
-> +       size_t residue = dwc_get_rest(dwc, to_dw_desc(active));
-> +
-> +       do {
-> +               active = active->next;
-> +               if (active == head)
-> +                       break;
-> +               residue += to_dw_desc(active)->len;
-> +       } while (true);
-> +
-> +       return residue;
-> +}
-> +
-> +static size_t dwc_calc_residue_llp_hw(struct dw_dma_chan *dwc)
-> +{
-> +       struct dw_desc *desc = dwc_first_active(dwc);
-> +       struct list_head *head = &desc->tx_list, *active;
-> +       dma_addr_t llp = channel_readl(dwc, LLP);
-> +
-> +       /* The transfer didn't start yet */
-> +       if (unlikely(desc->txd.phys == llp))
-> +               return desc->len;
-> +
-> +       /* First descriptor is active */
-> +       if (desc->lli.llp == llp)
-> +               return dwc_get_rest(dwc, desc);
-> +
-> +       /* Somewhere in the middle */
-> +       list_for_each(active, head)
-> +               if (to_dw_desc(active)->lli.llp == llp)
-> +                       return dwc_get_residue_in_llp(dwc, active, head);
-> +
-> +       return 0;
-> +}
-> +
-> +static size_t dwc_calc_residue_llp_sw(struct dw_dma_chan *dwc)
-> +{
-> +       struct dw_desc *desc = dwc_first_active(dwc);
-> +       struct list_head *head = dwc->tx_list, *active;
-> +
-> +       active = dwc->tx_node_active;
-> +
-> +       /* First node is active */
-> +       if (active == head->next)
-> +               return dwc_get_rest(dwc, desc);
-> +
-> +       /* Last node is active */
-> +       if (active == head)
-> +               return dwc_get_rest(dwc, to_dw_desc(active->prev));
-> +
-> +       /* Somewhere in the middle */
-> +       return dwc_get_residue_in_llp(dwc, active, head);
-> +}
-> +
-> +static size_t dwc_get_residue(struct dw_dma_chan *dwc)
+> > Is the patch on the way to 3.8-rc?
+> 
+> Yes, should be.
 
-return u32, that's the type of residue field.
+Ok, thanks!
 
-> +{
-> +       unsigned long flags;
-> +       size_t residue = 0;
-
-ditto.
-
-> +
-> +       spin_lock_irqsave(&dwc->lock, flags);
-> +       if (list_empty(&dwc->active_list)) {
-
-can this every happen?
-
-> +               spin_unlock_irqrestore(&dwc->lock, flags);
-> +               return 0;
-> +       }
-> +
-> +       if (test_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags))
-> +               residue = dwc_calc_residue_llp_sw(dwc);
-> +       else if (!test_bit(DW_DMA_IS_CYCLIC, &dwc->flags))
-> +               residue = dwc_calc_residue_llp_hw(dwc);
-
-Hmm. you return zero for cyclic transfers, shouldn't that be the total
-length instead?
-
-Over that, cyclic case can be handled before taking any locks.
-
-> +
-> +       spin_unlock_irqrestore(&dwc->lock, flags);
-> +       return residue;
-> +}
-> +
->  /*
->   * Fix sconfig's burst size according to dw_dmac. We need to convert them as:
->   * 1 -> 0, 4 -> 1, 8 -> 2, 16 -> 3.
-> @@ -1062,7 +1153,7 @@ dwc_tx_status(struct dma_chan *chan,
->         }
->
->         if (ret != DMA_SUCCESS)
-> -               dma_set_residue(txstate, dwc_first_active(dwc)->len);
-> +               dma_set_residue(txstate, dwc_get_residue(dwc));
-
-Hmm.. After thinking a bit more on this, i am not sure if what u have done is
-the best way of doing it :(
-
-Just before above line got executed, we called dwc_scan_descriptors(), which
-also scans through the llis to see where we are.. What about updating
-first->residue
-there, so that we don't traverse it twice?
-
->
->         if (dwc->paused)
->                 return DMA_PAUSED;
-> --
-> 1.7.10.4
->
+	Arnd
