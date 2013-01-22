@@ -1,100 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab3AVKUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 05:20:53 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:21157 "EHLO relay.sw.ru"
+	id S1753776Ab3AVKVk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 05:21:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41223 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753122Ab3AVKUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 05:20:51 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: criu@openvz.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Oleg Nesterov <oleg@redhat.com>,
+	id S1752577Ab3AVKVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 05:21:38 -0500
+Date: Tue, 22 Jan 2013 11:21:34 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tony Lu <zlu@tilera.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: [PATCH 1/3] signal: add a helper for dequeuing signals from a specified queue
-Date: Tue, 22 Jan 2013 14:15:39 +0400
-Message-Id: <1358849741-9611-2-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1358849741-9611-1-git-send-email-avagin@openvz.org>
-References: <1358849741-9611-1-git-send-email-avagin@openvz.org>
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH 1/1] mm/hugetlb: Set PTE as huge in
+ hugetlb_change_protection
+Message-ID: <20130122102130.GA28525@dhcp22.suse.cz>
+References: <BAB94DBB0E89D8409949BC28AC95914C47B123D2@USMAExch1.tad.internal.tilera.com>
+ <20130121100410.GE7798@dhcp22.suse.cz>
+ <BAB94DBB0E89D8409949BC28AC95914C47B12789@USMAExch1.tad.internal.tilera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BAB94DBB0E89D8409949BC28AC95914C47B12789@USMAExch1.tad.internal.tilera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- include/linux/sched.h | 13 ++++++++++++-
- kernel/signal.c       | 10 ++++++----
- 2 files changed, 18 insertions(+), 5 deletions(-)
+On Tue 22-01-13 02:37:15, Tony Lu wrote:
+> >-----Original Message-----
+> >From: Michal Hocko [mailto:mhocko@suse.cz]
+> >Sent: Monday, January 21, 2013 6:04 PM
+> >To: Tony Lu
+> >Cc: linux-kernel@vger.kernel.org; linux-mm@kvack.org; Andrew Morton; Aneesh
+> >Kumar K.V; Hillf Danton; KAMEZAWA Hiroyuki; Chris Metcalf
+> >Subject: Re: [PATCH 1/1] mm/hugetlb: Set PTE as huge in
+> >hugetlb_change_protection
+> >
+> >On Mon 21-01-13 04:13:07, Tony Lu wrote:
+> >> From da8432aafd231e7cdcda9d15484829def4663cb0 Mon Sep 17 00:00:00 2001
+> >> From: Zhigang Lu <zlu@tilera.com>
+> >> Date: Mon, 21 Jan 2013 11:23:26 +0800
+> >> Subject: [PATCH 1/1] mm/hugetlb: Set PTE as huge in hugetlb_change_protection
+> >>
+> >> When setting a huge PTE, besides calling pte_mkhuge(), we also need
+> >> to call arch_make_huge_pte(), which we indeed do in make_huge_pte(),
+> >> but we forget to do in hugetlb_change_protection().
+> >
+> >I guess you also need it in remove_migration_pte. This calls for a
+> >helper which would do both pte_mkhuge() and arch_make_huge_pte.
+> >
+> >Besides that, tile seem to be the only arch which implements this arch
+> >hook (introduced by 621b1955 in 3.5) so this should be considered for
+> >stable.
+> 
+> Thank you. Yes, remove_migration_pte also needs it. Here is the updated patch.
+> 
+> From 44045d672aa72eb2e76be89f95ab720952b4b09c Mon Sep 17 00:00:00 2001
+> From: Zhigang Lu <zlu@tilera.com>
+> Date: Tue, 22 Jan 2013 09:58:58 +0800
+> Subject: [PATCH 1/1] mm/hugetlb: Set PTE as huge in hugetlb_change_protection
+>  and remove_migration_pte
+> 
+> When setting a huge PTE, besides calling pte_mkhuge(), we also need
+> to call arch_make_huge_pte(), which we indeed do in make_huge_pte(),
+> but we forget to do in hugetlb_change_protection() and
+> remove_migration_pte().
+> 
+> Signed-off-by: Zhigang Lu <zlu@tilera.com>
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 206bb08..45871f1 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2221,7 +2221,18 @@ extern void flush_signals(struct task_struct *);
- extern void __flush_signals(struct task_struct *);
- extern void ignore_signals(struct task_struct *);
- extern void flush_signal_handlers(struct task_struct *, int force_default);
--extern int dequeue_signal(struct task_struct *tsk, sigset_t *mask, siginfo_t *info);
-+
-+#define SIGQUEUE_SHARED		1
-+#define SIGQUEUE_PRIVATE	2
-+extern int do_dequeue_signal(struct task_struct *tsk,
-+				sigset_t *mask, siginfo_t *info, int qmask);
-+
-+static inline int dequeue_signal(struct task_struct *tsk,
-+					sigset_t *mask, siginfo_t *info)
-+{
-+	return do_dequeue_signal(tsk, mask, info,
-+					SIGQUEUE_SHARED | SIGQUEUE_PRIVATE);
-+}
- 
- static inline int dequeue_signal_lock(struct task_struct *tsk, sigset_t *mask, siginfo_t *info)
- {
-diff --git a/kernel/signal.c b/kernel/signal.c
-index ac5f5e7..1412f6a 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -600,15 +600,17 @@ static int __dequeue_signal(struct sigpending *pending, sigset_t *mask,
-  *
-  * All callers have to hold the siglock.
-  */
--int dequeue_signal(struct task_struct *tsk, sigset_t *mask, siginfo_t *info)
-+int do_dequeue_signal(struct task_struct *tsk, sigset_t *mask,
-+					siginfo_t *info, int qmask)
- {
--	int signr;
-+	int signr = 0;
- 
- 	/* We only dequeue private signals from ourselves, we don't let
- 	 * signalfd steal them
- 	 */
--	signr = __dequeue_signal(&tsk->pending, mask, info);
--	if (!signr) {
-+	if (qmask & SIGQUEUE_PRIVATE)
-+		signr = __dequeue_signal(&tsk->pending, mask, info);
-+	if (!signr && (qmask & SIGQUEUE_SHARED)) {
- 		signr = __dequeue_signal(&tsk->signal->shared_pending,
- 					 mask, info);
- 		/*
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/hugetlb.c |    1 +
+>  mm/migrate.c |    4 +++-
+>  2 files changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 4f3ea0b..546db81 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -3033,6 +3033,7 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+>                 if (!huge_pte_none(huge_ptep_get(ptep))) {
+>                         pte = huge_ptep_get_and_clear(mm, address, ptep);
+>                         pte = pte_mkhuge(pte_modify(pte, newprot));
+> +                       pte = arch_make_huge_pte(pte, vma, NULL, 0);
+>                         set_huge_pte_at(mm, address, ptep, pte);
+>                         pages++;
+>                 }
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index c387786..2fd8b4a 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -160,8 +160,10 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
+>         if (is_write_migration_entry(entry))
+>                 pte = pte_mkwrite(pte);
+>  #ifdef CONFIG_HUGETLB_PAGE
+> -       if (PageHuge(new))
+> +       if (PageHuge(new)) {
+>                 pte = pte_mkhuge(pte);
+> +               pte = arch_make_huge_pte(pte, vma, new, 0);
+> +       }
+>  #endif
+>         flush_cache_page(vma, addr, pte_pfn(pte));
+>         set_pte_at(mm, addr, ptep, pte);
+> -- 
+> 1.7.10.3
+
 -- 
-1.7.11.7
-
+Michal Hocko
+SUSE Labs
