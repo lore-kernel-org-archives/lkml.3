@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668Ab3AVCWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 21:22:54 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:49004 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753242Ab3AVCWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 21:22:36 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
-        Len Brown <lenb@kernel.org>
-Subject: [PATCH 0/4] ACPI / PM: Export power information to user space
-Date: Tue, 22 Jan 2013 03:15:52 +0100
-Message-ID: <2760421.6nE3tkh92K@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <4247313.2G7Z3nCgM0@vostro.rjw.lan>
-References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <2096792.ELJ8WGVaaz@vostro.rjw.lan> <4247313.2G7Z3nCgM0@vostro.rjw.lan>
+	id S1755408Ab3AVC0t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 21:26:49 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:54274
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754755Ab3AVC0s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 21:26:48 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1155h)
+From: Huang Shijie <b32955@freescale.com>
+To: <dwmw2@infradead.org>
+CC: <dedekind1@gmail.com>, <matthieu.castet@parrot.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Huang Shijie <b32955@freescale.com>
+Subject: [PATCH v2] mtd: fix the wrong timeo for panic_nand_wait()
+Date: Tue, 22 Jan 2013 09:30:30 +0800
+Message-ID: <1358818230-27037-1-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <CAMiH66HWn5PtjX20=WT7GMMV=J72rg3jx64iACSBiExjoD+X7A@mail.gmail.com>
+References: <CAMiH66HWn5PtjX20=WT7GMMV=J72rg3jx64iACSBiExjoD+X7A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 21, 2013 02:03:03 PM Rafael J. Wysocki wrote:
-> On Monday, January 21, 2013 01:48:55 AM Rafael J. Wysocki wrote:
-> > On Sunday, January 20, 2013 03:51:40 PM Rafael J. Wysocki wrote:
-> > > Hi Greg,
-> > > 
-> > > The following patch series is about exporting ACPI power resources to user
-> > > space that will be necessary for PM diagnostics on new platforms (powertop is
-> > > the target).  Still, existing systems can also benefit from that, like my
-> > > oldish HP nx6325 on which the patches have been tested.
-> > > 
-> > > Patch [1/3] shouldn't be really controverisal, as it only makes it possible
-> > > to read power resources' reference counters from user space in a quite
-> > > straightforward way.
-> > > 
-> > > Patch [3/3], however, exposes lists of power resources associated with
-> > > different power states of devices using ACPI PM as sysfs subdirectories
-> > > containing symbolic links and that requires some sysfs changes made by
-> > > patch [2/3].
-> > > 
-> > > Admittedly, my sysfs skills are limited so please let me know if those
-> > > changes make sense and are acceptable from your perspective.  If not, then
-> > > please kindly advise what I can do instead of them.
-> > > 
-> > > The patches apply on top of the current linux-next branch of the linux-pm.git
-> > > tree.
-> > 
-> > Refreshed with Documentation/ABI files as requested.
-> 
-> Well, that version wasn't really a good one, due to mistakes in the docs
-> mostly, so a new one follows (with better docs hopefully).
-> 
-> Besides, I thought I'd include a patch that exposes ACPI power state
-> information, because it kind of belongs to the lot.  It goes as the new [1/4].
-> 
-> [2/4] is the previous [1/3] and so on.
+In nand_wait(), the timeo for panic_nand_wait() is assigned with
+wrong value(jiffies + some delay). The timeo should be set like the
+panic_nand_write() does.
 
-Here it goes again after the changes we discussed earlier today.
+This patch fixes it, and also uses the msecs_to_jiffies() to make the
+code more readable.
 
-I think I've addressed all of the comments, but if I overlooked something,
-please let me know.
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+fix the compiler error in version 1, and add some commits.
 
-Thanks,
-Rafael
+---
+ drivers/mtd/nand/nand_base.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index 8323ac9..a8c1fb4 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -825,13 +825,8 @@ static void panic_nand_wait(struct mtd_info *mtd, struct nand_chip *chip,
+ static int nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
+ {
+ 
+-	unsigned long timeo = jiffies;
+ 	int status, state = chip->state;
+-
+-	if (state == FL_ERASING)
+-		timeo += (HZ * 400) / 1000;
+-	else
+-		timeo += (HZ * 20) / 1000;
++	unsigned long timeo = (state == FL_ERASING ? 400 : 20);
+ 
+ 	led_trigger_event(nand_led_trigger, LED_FULL);
+ 
+@@ -849,6 +844,7 @@ static int nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
+ 	if (in_interrupt() || oops_in_progress)
+ 		panic_nand_wait(mtd, chip, timeo);
+ 	else {
++		timeo = jiffies + msecs_to_jiffies(timeo);
+ 		while (time_before(jiffies, timeo)) {
+ 			if (chip->dev_ready) {
+ 				if (chip->dev_ready(mtd))
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.0.4
+
+
