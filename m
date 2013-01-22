@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab3AVACE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 19:02:04 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:10354 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751693Ab3AVACC (ORCPT
+	id S1752624Ab3AVAHj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 19:07:39 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49907 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706Ab3AVAHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 19:02:02 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h1155h)
-X-WSS-ID: 0MH02R3-02-5CW-02
-X-M-MSG: 
-Message-ID: <50FDD6F1.5030208@amd.com>
-Date: Mon, 21 Jan 2013 19:01:53 -0500
-From: Boris Ostrovsky <boris.ostrovsky@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Borislav Petkov <bp@alien8.de>, Stefan Bader <stefan.bader@canonical.com>,
-        Andre Przywara <andre@andrep.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [Xen-devel] kernel 3.7+ cpufreq regression on AMD system running
- as dom0
-References: <50F42B3E.7090602@canonical.com> <20130114163445.GA4867@liondog.tnic> <20130115175305.GA12449@phenom.dumpdata.com> <20130115181839.GC8101@liondog.tnic> <20130118190015.GC11351@phenom.dumpdata.com>
-In-Reply-To: <20130118190015.GC11351@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+	Mon, 21 Jan 2013 19:07:37 -0500
+X-AuditID: 9c930179-b7d01ae000004006-f1-50fdd8489197
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+        stable@vger.kernel.org
+Subject: [PATCH v4 1/4] zram: Fix deadlock bug in partial write
+Date: Tue, 22 Jan 2013 09:07:30 +0900
+Message-Id: <1358813253-20913-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Now zram allocates new page with GFP_KERNEL in zram I/O path
+if IO is partial. Unfortunately, It may cuase deadlock with
+reclaim path so this patch solves the problem.
 
+Cc: Nitin Gupta <ngupta@vflare.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
 
-On 01/18/2013 02:00 PM, Konrad Rzeszutek Wilk wrote:
->
-> So something like this in the hypervisor maybe (not even tested):
->
-> diff --git a/xen/arch/x86/acpi/cpufreq/powernow.c b/xen/arch/x86/acpi/cpufreq/powernow.c
-> index a9b7792..54e7808 100644
-> --- a/xen/arch/x86/acpi/cpufreq/powernow.c
-> +++ b/xen/arch/x86/acpi/cpufreq/powernow.c
-> @@ -146,7 +146,40 @@ static int powernow_cpufreq_target(struct cpufreq_policy *policy,
->
->       return 0;
->   }
-> +#define MSR_AMD_PSTATE_DEF_BASE     0xc0010064
-> +static void amd_fixup_frequency(struct xen_processor_px *px, int i)
-> +{
-> +	u32 hi, lo, fid, did;
-> +	int index = px->control & 0x00000007;
-> +
-> +	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
-> +		return;
-> +
-> +	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
-> +	    || boot_cpu_data.x86 == 0x11) {
-> +		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
-> +        /* Bit 63 indicates whether contents are valid */
-> +        if (!(hi & 0x80000000))
-> +            return;
-> +
-> +		fid = lo & 0x3f;
-> +		did = (lo >> 6) & 7;
-> +		if (boot_cpu_data.x86 == 0x10)
-> +			px->core_frequency = (100 * (fid + 0x10)) >> did;
-> +		else
-> +			px->core_frequency = (100 * (fid + 8)) >> did;
-> +	}
-> +}
-> +
-> +static void amd_fixup_freq(struct processor_performance *perf)
-> +{
->
-> +    int i;
-> +
-> +    for (i = 0; i < perf->state_count; i++)
-> +        amd_fixup_frequency(perf->states, i);
+We could use GFP_IO instead of GFP_ATOMIC in zram_bvec_read with
+some modification related to buffer allocation in case of partial IO.
+But it needs more churn and prevent merge this patch into stable
+if we should send this to stable so I'd like to keep it as simple
+as possbile. GFP_IO usage could be separate patch after we merge it.
+Thanks.
 
-amd_fixup_frequency(&perf->states[i]) will walk P-states.
+ drivers/staging/zram/zram_drv.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> +
-> +}
->   static int powernow_cpufreq_verify(struct cpufreq_policy *policy)
->   {
->       struct acpi_cpufreq_data *data;
-> @@ -158,6 +191,8 @@ static int powernow_cpufreq_verify(struct cpufreq_policy *policy)
->
->       perf = &processor_pminfo[policy->cpu]->perf;
->
-> +    amd_fixup_freq(perf);
-
-Maybe move to powernow_cpufreq_cpu_init(), although this works too.
-
-
--boris
-
-
-> +
->       cpufreq_verify_within_limits(policy, 0,
->           perf->states[perf->platform_limit].core_frequency * 1000);
->
->
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
->
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 61fb8f1..b285b3a 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -220,7 +220,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 	user_mem = kmap_atomic(page);
+ 	if (is_partial_io(bvec))
+ 		/* Use  a temporary buffer to decompress the page */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		uncmem = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+ 	else
+ 		uncmem = user_mem;
+ 
+@@ -268,7 +268,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		 * This is a partial IO. We need to read the full page
+ 		 * before to write the changes.
+ 		 */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+ 		if (!uncmem) {
+ 			pr_info("Error allocating temp memory!\n");
+ 			ret = -ENOMEM;
+-- 
+1.7.9.5
 
