@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab3AVGTi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 01:19:38 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53766 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750813Ab3AVGTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 01:19:36 -0500
-Message-ID: <50FE2F71.5080503@ti.com>
-Date: Tue, 22 Jan 2013 11:49:29 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1753071Ab3AVGU3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 01:20:29 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:25012 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438Ab3AVGU1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 01:20:27 -0500
+Date: Tue, 22 Jan 2013 09:20:10 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mark Einon <mark.einon@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        sfr@canb.auug.org.au, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [RFC PATCH linux-next] et131x: Promote staging et131x driver to
+ drivers/net
+Message-ID: <20130122062010.GA16282@mwanda>
+References: <1358541648-29922-1-git-send-email-mark.einon@gmail.com>
+ <20130118225706.GA22140@kroah.com>
+ <20130119110328.GO4584@mwanda>
+ <CANK3SE2p3C38YrvCxWqvoRRz7=q7oAYyE=b0c7+ppBd3yzVrpw@mail.gmail.com>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: musb: core: Add missing newline character
-References: <1358779955-4916-1-git-send-email-kishon@ti.com> <50FD7950.3010209@mvista.com>
-In-Reply-To: <50FD7950.3010209@mvista.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANK3SE2p3C38YrvCxWqvoRRz7=q7oAYyE=b0c7+ppBd3yzVrpw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Jan 21, 2013 at 11:44:55PM +0000, Mark Einon wrote:
+> On 19 January 2013 11:03, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> <snip>
+> >
+> > et131x_get_regs() has endian bugs calling et131x_mii_read().
+> >
+> </snip>
+> 
+> Hi Dan,
+> 
+> Could you be a bit more descriptive about the issues you think there
+> are with these calls?
+> 
 
-On Monday 21 January 2013 10:52 PM, Sergei Shtylyov wrote:
-> Hello.
->
-> On 01/21/2013 05:52 PM, Kishon Vijay Abraham I wrote:
->
->> No functional change. Just added a missing newline character.
->
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>   drivers/usb/musb/musb_core.c |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->
->> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
->> index f1c6c54..c534131 100644
->> --- a/drivers/usb/musb/musb_core.c
->> +++ b/drivers/usb/musb/musb_core.c
->> @@ -2301,7 +2301,7 @@ static int __init musb_init(void)
->>   	pr_info("%s: version " MUSB_VERSION ", "
->>   		"?dma?"
->>   		", "
->> -		"otg (peripheral+host)",
->> +		"otg (peripheral+host)\n",
->>   		musb_driver_name);
->>   	return platform_driver_register(&musb_driver);
->>   }
->
->     Refresh your tree, alike patch is already upstream. :-)
+Sorry, that was sloppy on my part.  Here's what I meant:
 
-Cool. Missed that one.
+	et131x_mii_read(adapter, MII_BMCR, (u16 *)&regs_buff[num++]);
 
-Thanks
-Kishon
+That puts the number in the 2 high bits which works for little
+endian systems but not for big endian.  It should be something like:
+
+	u16 tmp;
+
+	et131x_mii_read(adapter, MII_BMCR, &tmp);
+	regs_buff[num++] = tmp;
+
+regards,
+dan carpenter
+
