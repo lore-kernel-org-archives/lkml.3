@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab3AVHsH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:48:07 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:50606 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755220Ab3AVHsC (ORCPT
+	id S1756501Ab3AVHsn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:48:43 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54433 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754743Ab3AVHsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:48:02 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5 45/45] Documentation/cpu-hotplug: Remove references to
- stop_machine()
-To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org
-Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
-        fweisbec@gmail.com, linux@arm.linux.org.uk, nikunj@linux.vnet.ibm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 22 Jan 2013 13:15:48 +0530
-Message-ID: <20130122074543.13822.44724.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Tue, 22 Jan 2013 02:48:39 -0500
+Date: Tue, 22 Jan 2013 16:48:26 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 33/33] ASoC: Convert to devm_ioremap_resource()
+Message-ID: <20130122074824.GE1766@opensource.wolfsonmicro.com>
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
+ <1358762966-20791-34-git-send-email-thierry.reding@avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012207-5140-0000-0000-000002A8FC55
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xkXJwpr35CY/Lc3I"
+Content-Disposition: inline
+In-Reply-To: <1358762966-20791-34-git-send-email-thierry.reding@avionic-design.de>
+X-Cookie: You have taken yourself too seriously.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since stop_machine() is no longer used in the CPU offline path, we cannot
-disable CPU hotplug using preempt_disable()/local_irq_disable() etc. We
-need to use the newly introduced get/put_online_cpus_atomic() APIs.
-Reflect this in the documentation.
 
-Cc: Rob Landley <rob@landley.net>
-Cc: linux-doc@vger.kernel.org
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+--xkXJwpr35CY/Lc3I
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
- Documentation/cpu-hotplug.txt |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+On Mon, Jan 21, 2013 at 11:09:26AM +0100, Thierry Reding wrote:
+> Convert all uses of devm_request_and_ioremap() to the newly introduced
+> devm_ioremap_resource() which provides more consistent error handling.
 
-diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
-index 9f40135..7f907ec 100644
---- a/Documentation/cpu-hotplug.txt
-+++ b/Documentation/cpu-hotplug.txt
-@@ -113,13 +113,15 @@ Never use anything other than cpumask_t to represent bitmap of CPUs.
- 	#include <linux/cpu.h>
- 	get_online_cpus() and put_online_cpus():
- 
--The above calls are used to inhibit cpu hotplug operations. While the
-+The above calls are used to inhibit cpu hotplug operations, when invoked from
-+non-atomic context (because the above functions can sleep). While the
- cpu_hotplug.refcount is non zero, the cpu_online_mask will not change.
--If you merely need to avoid cpus going away, you could also use
--preempt_disable() and preempt_enable() for those sections.
--Just remember the critical section cannot call any
--function that can sleep or schedule this process away. The preempt_disable()
--will work as long as stop_machine_run() is used to take a cpu down.
-+
-+However, if you are executing in atomic context (ie., you can't afford to
-+sleep), and you merely need to avoid cpus going offline, you can use
-+get_online_cpus_atomic() and put_online_cpus_atomic() for those sections.
-+Just remember the critical section cannot call any function that can sleep or
-+schedule this process away.
- 
- CPU Hotplug - Frequently Asked Questions.
- 
-@@ -360,6 +362,9 @@ A: There are two ways.  If your code can be run in interrupt context, use
- 		return err;
- 	}
- 
-+   If my_func_on_cpu() itself cannot block, use get/put_online_cpus_atomic()
-+   instead of get/put_online_cpus() to prevent CPUs from going offline.
-+
- Q: How do we determine how many CPUs are available for hotplug.
- A: There is no clear spec defined way from ACPI that can give us that
-    information today. Based on some input from Natalie of Unisys,
+Applied, thanks.
 
+--xkXJwpr35CY/Lc3I
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ/kQ/AAoJELSic+t+oim9+lgP/RtT2ZaN2eqUjZNYvk28lze2
+DyqZeuuk3YeAQuOwlgAvyhPIwWjb/JQFlsti1msIvFP2IdJAIqWlH4ej8cRynh3z
+qYcdpYRXJdvntFJHFyRBhJ+LmL6dnhqt3yQssvLChl3Dw3axs/yOFmgWxjUIxU0I
+T4kqkLENT8xES/gvqg09rEeEaEkXT4/7iRrUV1CvG2IMfaUKkfmuJKGqypbjjZ/z
+GkTLcIVWAXoQOEMNsXc0z1Fntz3budhVpg2XycBKD2OwNI74h91gLv/XL0ahZSV7
+A2iz+RqcUlWdMWmY+688owz71bPun2+hOpgM0bC/nqUlD3gd0ritW7YQnrSbxvBA
+2Mh+dyt/LwiaAbBXE1nMbk432VkFnwv0M3+tz0uJ7Mew/0eL5BEKpVORS21o1Inu
+o+HpA8at6X+AFOBbhhsxk7bFr8NYg/yI7m+U56o1uxs4TjY3tNBcHK+p7DX2uIs0
+ZPM93BDwDTSWpqgopJ72p8Zgy2+3pPJ4Kr8IA1QSnyUkqHc2HPe+9AhbOzMAz5xo
+bJtTLlKWxoPV9aCtcdPUXiX8Pyev0fKDMd+aYVJNfq+YF0vCMW3NdnwfFSKtAsct
+njE4qIuRiyIIqn7xHi7EXR0s7q5jwPYjO3DxpPp073xiC1kT8nrju7lknRLpjAyG
+t4s1ciaHCpekeoGJytAF
+=l7Ak
+-----END PGP SIGNATURE-----
+
+--xkXJwpr35CY/Lc3I--
