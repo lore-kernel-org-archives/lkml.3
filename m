@@ -1,64 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab3AVPTK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 10:19:10 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:34823 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753073Ab3AVPTH (ORCPT
+	id S1754005Ab3AVPUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 10:20:31 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:43437 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753474Ab3AVPU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 10:19:07 -0500
-Date: Tue, 22 Jan 2013 10:19:06 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Manjunath Goudar <manjunath.goudar@linaro.org>
-cc: Arnd Bergmann <arnd@arndb.de>, <balbi@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <arm@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH 13/15] USB: ehci: make orion and mxc bus glues coexist
-In-Reply-To: <CAJFYCKFb8F1k5Y6+Q4x5WgTsLO_xh1AFB1mgyRc0xK5m1ABbwA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1301221011190.1510-100000@iolanthe.rowland.org>
+	Tue, 22 Jan 2013 10:20:29 -0500
+Date: Wed, 23 Jan 2013 00:20:20 +0900
+From: Minchan Kim <minchan.kernel.2@gmail.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH v4 1/4] zram: Fix deadlock bug in partial write
+Message-ID: <20130122151808.GA3757@blaptop>
+References: <1358813253-20913-1-git-send-email-minchan@kernel.org>
+ <50FE6025.2080609@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FE6025.2080609@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jan 2013, Manjunath Goudar wrote:
+On Tue, Jan 22, 2013 at 10:47:17AM +0100, Jerome Marchand wrote:
+> On 01/22/2013 01:07 AM, Minchan Kim wrote:
+> > Now zram allocates new page with GFP_KERNEL in zram I/O path
+> > if IO is partial. Unfortunately, It may cuase deadlock with
+> > reclaim path so this patch solves the problem.
+> > 
+> > Cc: Nitin Gupta <ngupta@vflare.org>
+> > Cc: Jerome Marchand <jmarchan@redhat.com>
+> > Cc: stable@vger.kernel.org
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> > 
+> > We could use GFP_IO instead of GFP_ATOMIC in zram_bvec_read with
+> > some modification related to buffer allocation in case of partial IO.
+> > But it needs more churn and prevent merge this patch into stable
+> > if we should send this to stable so I'd like to keep it as simple
+> > as possbile. GFP_IO usage could be separate patch after we merge it.
+> > Thanks.
+> 
+> I'd rather have a preallocated buffer for that. It would make
+> zram_bvec_read/write() simpler (no need to deal with an allocation
+> failure or to free the buffer) and it would be consistent with the way
+> other similar buffer works (compress_workmem/buffer).
 
-> > >  I think we can actually
-> > > get the same results by turning the Kconfig logic around and making
-> > > the platform glue drivers 'select USB_EHCI_HCD' than depending on
-> > > it.
-> >
-> > That's a good idea.  The Kconfig changes would have to be done
-> > carefully to make sure that the dependency on USB_ARCH_HAS_EHCI still
-> > applies to all the platform drivers.
-> >
-> > Manjunath, would you like to send a patch to do this?
-> >
-> > Alan Stern
-> >
-> > Ya sure,could you explain little bit  briefly about the Kconfig changes.
+Consistent? Other buffers are MUST for zram working while the buffer
+for partial I/O is supplement. Although partial I/O might be common in your config,
+it doesn't match with my usecase. I didn't see any partial IO in my usecase.
+Nontheless, why should I pay free 4K? Because of just making code SIMPLE?
+I don't think current alloc/free handling about partial I/O is mess at the cost
+of 4K. And we could use a few zram(a swap and a 2-compressed tmpfs) in system
+so the cost is n*4K. Please keep in mind that ZRAM's goal is memory efficiency
+and have used in many embedded system which they are always trying to save
+just hundred byte.
 
-Suppose you do exactly what Arnd proposed: add "select USB_EHCI_HCD" to
-the Kconfig entries for each of the platform glue drivers.  Then
-consider what would happen in a build where USB_ARCH_HAS_EHCI is "n"
-but one of those glue drivers is enabled.  There would be conflicting
-requirements on USB_EHCI_HCD: The new "select" would force it to be on,
-but the existing "depends on USB && USB_ARCH_HAS_EHCI" would force it
-to be off.  The build would fail.
+> 
+> Jerome
+> 
+> > 
+> >  drivers/staging/zram/zram_drv.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> > index 61fb8f1..b285b3a 100644
+> > --- a/drivers/staging/zram/zram_drv.c
+> > +++ b/drivers/staging/zram/zram_drv.c
+> > @@ -220,7 +220,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+> >  	user_mem = kmap_atomic(page);
+> >  	if (is_partial_io(bvec))
+> >  		/* Use  a temporary buffer to decompress the page */
+> > -		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> > +		uncmem = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+> >  	else
+> >  		uncmem = user_mem;
+> >  
+> > @@ -268,7 +268,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> >  		 * This is a partial IO. We need to read the full page
+> >  		 * before to write the changes.
+> >  		 */
+> > -		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> > +		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+> >  		if (!uncmem) {
+> >  			pr_info("Error allocating temp memory!\n");
+> >  			ret = -ENOMEM;
+> > 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-In order to prevent this, you have to make sure that each glue driver
-depends on USB_ARCH_HAS_EHCI.  A simple way to do this is to surround
-the Kconfig entries for those drivers with "if USB && 
-USB_ARCH_HAS_EHCI" ... "endif".
-
-Come to think of it, the "if USB" part really should protect the entire 
-file.
-
-Alan Stern
-
+-- 
+Kind regards,
+Minchan Kim
