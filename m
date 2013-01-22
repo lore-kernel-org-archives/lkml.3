@@ -1,137 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105Ab3AVGzw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 01:55:52 -0500
-Received: from mout.gmx.net ([212.227.17.20]:57583 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329Ab3AVGzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 01:55:51 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/8xShAY+f87U+ED+tUdDTP+/vk7GF5iLcbuyDsXg
-	A5E1UhAVDRpjBu
-Message-ID: <1358837740.5782.209.camel@marge.simpson.net>
-Subject: Re: [PATCH v3 09/22] sched: compute runnable load avg in cpu_load
- and cpu_avg_load_per_task
-From: Mike Galbraith <efault@gmx.de>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>, namhyung@kernel.org,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        preeti@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 22 Jan 2013 07:55:40 +0100
-In-Reply-To: <50FE0575.6090005@intel.com>
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
-	 <1357375071-11793-10-git-send-email-alex.shi@intel.com>
-	 <50E7EAB1.6020302@intel.com> <50E92DC3.4050906@intel.com>
-	 <CA+55aFxbS-u1Zfwg2oKOmHq6FBF+dRRhrdssqc9PpC_gXoV3+g@mail.gmail.com>
-	 <50EFB1DB.7090804@intel.com> <50FD54EA.4060804@intel.com>
-	 <50FE0575.6090005@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1753251Ab3AVG4t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 01:56:49 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:61029 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab3AVG4s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 01:56:48 -0500
+Date: Tue, 22 Jan 2013 07:56:29 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        dmitry.torokhov@gmail.com, arnd@arndb.de, w.sang@pengutronix.de,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 20/33] net: Convert to devm_ioremap_resource()
+Message-ID: <20130122065629.GA14523@avionic-0098.adnet.avionic-design.de>
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
+ <1358762966-20791-21-git-send-email-thierry.reding@avionic-design.de>
+ <20130121.152913.1377695352860141642.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
+Content-Disposition: inline
+In-Reply-To: <20130121.152913.1377695352860141642.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:iDsSi7E1lwVVugvZSWCCVRNNNaj7JWAc1A0O+JPOEJQ
+ dFcQ9Remda/Cp6GXsQUqrjXTf0noqbWmViOHy9FP9vVf7CCH4X
+ nCq27mohlqGWbyYcuLp0r2C07RFe2L4q/r8vQkfSQk4eYQ3re0
+ aguZwb3A6saG5885E/JXshgltYPSaR+CFDlWlXvJJdGlFD1VkZ
+ aE/R6LwYRlXm+HakA2tXxjnbAf1e+3MKgwETR/w8S+YXHTQGAy
+ D4sudVH7NeFvyG1R9d9k/l7q1C2DPl4rm8oNNU2B67J+kgy08Z
+ l8qZ7TfoKPByuVY65XnZy/+EGxNmASzZ3wl/dnw43NwbR4Jbc7
+ gy/l27pdDNqlkKD48PerftOlUruNlTJFStNumZF+3hBwXGQgpv
+ ugmJFe2Nh+yqFDkEj9YCrtNdtwck/Nu5N5/Fy9wO5XRT8Lwr6+
+ r/v+9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-22 at 11:20 +0800, Alex Shi wrote: 
-> >>>>
-> >>>> I just looked into the aim9 benchmark, in this case it forks 2000 tasks,
-> >>>> after all tasks ready, aim9 give a signal than all tasks burst waking up
-> >>>> and run until all finished.
-> >>>> Since each of tasks are finished very quickly, a imbalanced empty cpu
-> >>>> may goes to sleep till a regular balancing give it some new tasks. That
-> >>>> causes the performance dropping. cause more idle entering.
-> >>>
-> >>> Sounds like for AIM (and possibly for other really bursty loads), we
-> >>> might want to do some load-balancing at wakeup time by *just* looking
-> >>> at the number of running tasks, rather than at the load average. Hmm?
-> >>>
-> >>> The load average is fundamentally always going to run behind a bit,
-> >>> and while you want to use it for long-term balancing, a short-term you
-> >>> might want to do just a "if we have a huge amount of runnable
-> >>> processes, do a load balancing *now*". Where "huge amount" should
-> >>> probably be relative to the long-term load balancing (ie comparing the
-> >>> number of runnable processes on this CPU right *now* with the load
-> >>> average over the last second or so would show a clear spike, and a
-> >>> reason for quick action).
-> >>>
-> >>
-> >> Sorry for response late!
-> >>
-> >> Just written a patch following your suggestion, but no clear improvement for this case.
-> >> I also tried change the burst checking interval, also no clear help.
-> >>
-> >> If I totally give up runnable load in periodic balancing, the performance can recover 60%
-> >> of lose.
-> >>
-> >> I will try to optimize wake up balancing in weekend.
-> >>
-> > 
-> > (btw, the time for runnable avg to accumulate to 100%, needs 345ms; to
-> > 50% needs 32 ms)
-> > 
-> > I have tried some tuning in both wake up balancing and regular
-> > balancing. Yes, when using instant load weight (without runnable avg
-> > engage), both in waking up, and regular balance, the performance recovered.
-> > 
-> > But with per_cpu nr_running tracking, it's hard to find a elegant way to
-> > detect the burst whenever in waking up or in regular balance.
-> > In waking up, the whole sd_llc domain cpus are candidates, so just
-> > checking this_cpu is not enough.
-> > In regular balance, this_cpu is the migration destination cpu, checking
-> > if the burst on the cpu is not useful. Instead, we need to check whole
-> > domains' increased task number.
-> > 
-> > So, guess 2 solutions for this issue.
-> > 1, for quick waking up, we need use instant load(same as current
-> > balancing) to do balance; and for regular balance, we can record both
-> > instant load and runnable load data for whole domain, then decide which
-> > one to use according to task number increasing in the domain after
-> > tracking done the whole domain.
-> > 
-> > 2, we can keep current instant load balancing as performance balance
-> > policy, and using runnable load balancing in power friend policy.
-> > Since, none of us find performance benefit with runnable load balancing
-> > on benchmark hackbench/kbuild/aim9/tbench/specjbb etc.
-> > I prefer the 2nd.
-> 
-> 3, On the other hand, Considering the aim9 testing scenario is rare in
-> real life(prepare thousands tasks and then wake up them at the same
-> time). And the runnable load avg includes useful running history info.
-> Only aim9 5~7% performance dropping is not unacceptable.
-> (kbuild/hackbench/tbench/specjbb have no clear performance change)
-> 
-> So we can let this drop be with a reminder in code. Any comments?
 
-Hm.  Burst of thousands of tasks may be rare and perhaps even silly, but
-what about few task bursts?   History is useless for bursts, they live
-or die now: modest gaggle of worker threads (NR_CPUS) for say video
-encoding job wake in parallel, each is handed a chunk of data to chew up
-in parallel.  Double scheduler latency of one worker (stack workers
-because individuals don't historically fill a cpu), you double latency
-for the entire job every time.
+--xHFwDpU9dbj6ez1V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think 2 is mandatory, keep both, and user picks his poison.
+On Mon, Jan 21, 2013 at 03:29:13PM -0500, David Miller wrote:
+> From: Thierry Reding <thierry.reding@avionic-design.de>
+> Date: Mon, 21 Jan 2013 11:09:13 +0100
+>=20
+> > Convert all uses of devm_request_and_ioremap() to the newly introduced
+> > devm_ioremap_resource() which provides more consistent error handling.
+> >=20
+> > devm_ioremap_resource() provides its own error messages so all explicit
+> > error messages can be removed from the failure code paths.
+> >=20
+> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+>=20
+> This won't compile if I apply it.
+>=20
+> You really have to be clear when you submit patches like this.
+>=20
+> Since you only CC:'d the networking developers for this one
+> patch, there is _ZERO_ context for us to work with to understand
+> what's going on.
+>=20
+> You have to also CC: us on the other relevant changes and your
+> "[PATCH 00/33]" posting that explains what is happening.
 
-If you want max burst performance, you care about the here and now
-reality the burst is waking into.  If you're running a google freight
-train farm otoh, you may want some hysteresis so trains don't over-rev
-the electric meter on every microscopic spike.  Both policies make
-sense, but you can't have both performance profiles with either metric,
-so choosing one seems doomed to failure.
+I planned to do so initially, but that yielded a Cc list of 156 people
+and mailing lists, which I thought wasn't going to go down so well
+either. In general I like Cc'ing everyone concerned on all patches of
+the series, specifically for reasons of context. Some people have been
+annoyed when I did so. Still, for small series where only a few dozen
+people are concerned that seems to me to be the best way. But 156 email
+addresses is a different story.
 
-Case in point: tick skew.  It was removed because synchronized ticking
-saves power.. and then promptly returned under user control because the
-power saving gain also inflicted serious latency pain.
+Either you add to many people or you don't add enough. Where do we draw
+the line?
 
--Mike
+Thierry
 
+--xHFwDpU9dbj6ez1V
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ/jgdAAoJEN0jrNd/PrOhetQQAJ7YTGZWK9SThwX+tLwCJYm0
+HGCA0iqQHN3BQKWtthOweYlqi7cWiDvSabKuPzPAIpdGbIRMuhdL3eU9O0d6ixoD
+R6mPhbVBVIL/bGxAgfk6g+lZpzmuPnmw1Ey8DL/H4voOIrSK5tG05LZRUxTkVT4u
+2FidzNE8xIiVYrkH0kJSGVe8ZdalM5nGmVgd8vsAJNoSl26co7/rHTI7APQrdC3w
+4u+fkxqxgPsNzFzhzaHL88IhYTM7nKAo22w/QqM7puZg4sdtwKOwv4a4jzAmgLNs
+0xOcMXojDIlsSLAUlvAU3LrqPj7DC+M8wtjtBiJnb+bMOsoyvhWiC3LzOOi1moqx
+2lJge/7tV4EAj0HQgpYJtvSJMsz5wShgH8vFDgRCXPekvd7kHXmCfb6P5Rm4US/E
+pCoWA6Jgpb5kDL9Vid0f9DLeXOF4/hp8JkzedAiTivJgIsbhc7glL4ioxz7M6d/B
+tIXouLQ1nhBfGJ+8cZLQzD8C9GaArDIHbA0EArHdu394eP15gxqzbHhaVxf0nc2O
+hNAYykp0kzTToCp1v3bw6bLmHtqMv/7bGKEURRX1Go+SQA3Ew9KYozTXRxrlRJ0+
+negtlgcspRJnPHNf28d/pL6FpYr0jAn5RN4QrcPmw7HATT6XJ33yqwZXRN0dlPIi
+xiQwvgmsCxxuwpQ8yZ2W
+=gLke
+-----END PGP SIGNATURE-----
+
+--xHFwDpU9dbj6ez1V--
