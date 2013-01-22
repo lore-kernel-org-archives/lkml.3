@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab3AVPl3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 10:41:29 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40563 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754660Ab3AVPlW convert rfc822-to-8bit (ORCPT
+	id S1754701Ab3AVPl1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 10:41:27 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:58651 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754664Ab3AVPlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 10:41:22 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: [PATCH v1 0/6] USB: Add support for multiple PHYs of same type
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <1358848694-20145-1-git-send-email-kishon@ti.com>
-Date: Tue, 22 Jan 2013 16:41:18 +0100
-Cc: tony@atomide.com, balbi@ti.com, linux@arm.linux.org.uk,
-        eballetbo@gmail.com, javier@dowhile0.org, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "linux-omap@vger.kernel.org List" <linux-omap@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Jason Kridner <jkridner@beagleboard.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2D906ABA-71F2-4843-9DBE-F82527A1240A@dominion.thruhere.net>
-References: <1358848694-20145-1-git-send-email-kishon@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-X-Mailer: Apple Mail (2.1499)
+	Tue, 22 Jan 2013 10:41:23 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH 09/15] media: coda: don't build on multiplatform
+Date: Tue, 22 Jan 2013 15:41:05 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Javier Martin <javier.martin@vista-silicon.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <1358788568-11137-10-git-send-email-arnd@arndb.de> <20130122082158.GC9414@pengutronix.de>
+In-Reply-To: <20130122082158.GC9414@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301221541.05636.arnd@arndb.de>
+X-Provags-ID: V02:K0:qHh0FiZpWfW2nqKG4nUiGKcg/b9bOHK77Cag+qOFRKy
+ yFWHb1O5JnP8tI51fqrKMD++cYvZ2nhW5pGYHEoS4kS+V7byeB
+ xkGk+s3OVYKuwAxaGZ4a9DN0kaeFvwfckX7lgRh7u30NU54GiN
+ 9Nf9cdOJvykLoi1ZNsp0hnuAou0efPONKQrMf6kze0rjmIxqkY
+ g5yV84a6TBxnLPW4MHI0FpuSgL7pJaLuy6s6zZ5xiOEnzkRPfj
+ 9NIanr6dkH962JHZPiVEV91hxDW43hFmtDhFFG9HW8CKcFAmaM
+ WHZIcGFLy8ZJbUxRQqm00QxWfg92NbSo6iWKhxAZmFuOQZWKM/
+ 2BwOiY5FFqSYgP9TEBh0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Op 22 jan. 2013, om 10:58 heeft Kishon Vijay Abraham I <kishon@ti.com> het volgende geschreven:
-
-> This patch series adds support for adding multiple PHY's (of same type).
-> The binding information has to be present in the PHY library (otg.c) in
-> order for it to return the appropriate PHY whenever the USB controller
-> request for the PHY. So added a new API usb_bind_phy() to pass the binding
-> information. This API should be called by platform specific initialization
-> code.
+On Tuesday 22 January 2013, Sascha Hauer wrote:
+> On Mon, Jan 21, 2013 at 05:16:02PM +0000, Arnd Bergmann wrote:
+> > The coda video codec driver depends on a mach-imx or mach-mxs specific
+> > header file "mach/iram.h". This is not available when building for
+> > multiplatform, so let us disable this driver for v3.8 when building
+> > multiplatform, and hopefully find a proper fix for v3.9.
+> > 
+> > drivers/media/platform/coda.c:27:23: fatal error: mach/iram.h: No such file or directory
 > 
-> So the binding should be done something like
-> usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto"); specifying the USB
-> controller device name, index, and the PHY device name.
-> I have done this binding for OMAP platforms, but it should be done for
-> all the platforms.
-> 
-> After this design, the phy can be got by passing the USB controller device
-> pointer and the index.
-> 
-> Developed this patch series on
-> git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git xceiv
-> after applying "usb: musb: add driver for control module" patch series
-> and "ARM: dts: omap: add dt data for MUSB"
-> 
-> Did basic enumeration testing in omap4 panda and omap3 beagle.
+> I just sent a pull request for this with a proper fix.
 
-With this patchset USB completely breaks on am33xx beaglebone, is that intended?
+Ok, even better. Thanks for taking care of it!
 
-
+	Arnd
