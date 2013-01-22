@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459Ab3AVO6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 09:58:50 -0500
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:55236 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab3AVO6s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 09:58:48 -0500
-From: Xi Wang <xi.wang@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Xi Wang <xi.wang@gmail.com>,
-        stable@vger.kernel.org
-Subject: [PATCH] sysctl: fix null checking in bin_dn_node_address()
-Date: Tue, 22 Jan 2013 09:58:25 -0500
-Message-Id: <1358866705-30690-1-git-send-email-xi.wang@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753531Ab3AVPC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 10:02:26 -0500
+Received: from mail.kernel.org ([198.145.19.201]:37113 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753346Ab3AVPCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 10:02:24 -0500
+Date: Tue, 22 Jan 2013 07:03:40 -0800
+From: Greg KH <greg@kroah.com>
+To: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
+        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
+        "Yili (Neil)" <neil.yi@huawei.com>,
+        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
+        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
+        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
+        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>
+Subject: Re: USB: storage: optimize the matching rules and support new switch
+ command for Huawei USB storage devices
+Message-ID: <20130122150340.GA10105@kroah.com>
+References: <fe8c85797e7f.7e7ffe8c8579@huawei.com>
+ <20130118234359.GA2160@kroah.com>
+ <910F9D9E13B84F4C8FA771DC9BDE99F327016D33@szxeml546-mbx.china.huawei.com>
+ <20130121171219.GB4997@kroah.com>
+ <910F9D9E13B84F4C8FA771DC9BDE99F32701CC26@szxeml546-mbx.china.huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <910F9D9E13B84F4C8FA771DC9BDE99F32701CC26@szxeml546-mbx.china.huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The null check of `strchr() + 1' is broken, which is always non-null,
-leading to OOB read.  Instead, check the result of strchr().
+On Tue, Jan 22, 2013 at 09:16:08AM +0000, Fangxiaozhi (Franko) wrote:
+> Dear Greg:
+> 
+> 	OK, I have fixed up and resend the patches based on linux-3.8-rc4 today.
+> 
+> 	Email subjects:
+> 		1. [PATCH 1/2]linux-usb:define new macro and add new match rules for Huawei USB storage devices
+> 		2. [PATCH 2/2]linux-usb:define new macro and add new match rules for Huawei USB storage devices
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Cc: stable@vger.kernel.org
----
- kernel/sysctl_binary.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+You sent me two patches, both with the same exact Subject: line.  That's
+not ok, please be descriptive in the subject lines as to what each
+individual patch does, as obviously they both don't do the same thing,
+right?
 
-diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
-index 5a63844..0ddf3a0 100644
---- a/kernel/sysctl_binary.c
-+++ b/kernel/sysctl_binary.c
-@@ -1194,9 +1194,10 @@ static ssize_t bin_dn_node_address(struct file *file,
- 
- 		/* Convert the decnet address to binary */
- 		result = -EIO;
--		nodep = strchr(buf, '.') + 1;
-+		nodep = strchr(buf, '.');
- 		if (!nodep)
- 			goto out;
-+		++nodep;
- 
- 		area = simple_strtoul(buf, NULL, 10);
- 		node = simple_strtoul(nodep, NULL, 10);
--- 
-1.7.10.4
+Please fix that up and resend the two patches.
 
+thanks,
+
+greg k-h
