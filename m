@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab3AVND1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 08:03:27 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:52259 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132Ab3AVND0 (ORCPT
+	id S1752917Ab3AVNEM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 08:04:12 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:49756 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab3AVNEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 08:03:26 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH 20/33] net: Convert to devm_ioremap_resource()
-Date: Tue, 22 Jan 2013 13:03:06 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com,
-        w.sang@pengutronix.de, netdev@vger.kernel.org
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de> <20130121.152913.1377695352860141642.davem@davemloft.net> <20130122065629.GA14523@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20130122065629.GA14523@avionic-0098.adnet.avionic-design.de>
+	Tue, 22 Jan 2013 08:04:07 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301221303.06785.arnd@arndb.de>
-X-Provags-ID: V02:K0:PwJuxv6YSE02pPLuXZW0rx0C86jUqN85KqSxHvbKAxP
- 7mjytG418PPs8xG48S45BzEKbbWUVgn8+yswW8qHzmJvWM5FHi
- BDOc+fGCu1GVk5utBfMB3kxCC2+8QDNf8L7N5TCjbpCuiscxq6
- rqEQUW11OMnqCY/BzniitfoWSshcsn/xB0ks5l1L4Y2MFiqT1m
- 7a2p1QhwpLAc89+xlaf/PIbkmBphfFqES7m9RCmuejK287x8ul
- 9yoWOqfusQ937xlgoj8ziRaOQ/yzOV9K6CXx3nFc+bLfgq92qg
- H3D5EAUR5pD6u8gCCH7A/qKH72oKwD6t0tUkYMv1LHx5CdxQ/c
- oVAGr2zbwE3fCwig8Mqs=
+In-Reply-To: <CAMuHMdUJq-CWeYqrQMdxeb4WXrHRRZn05npWxRGYnGX=V+7OEQ@mail.gmail.com>
+References: <201301202124.BFJ81722.SFOHtJFOLQFVOM@I-love.SAKURA.ne.jp>
+	<CACRpkdY1sJPkPJx8zFbYOsvHFUM4S_6_eLWjifBpNyqH7cCrDA@mail.gmail.com>
+	<CAMuHMdUJq-CWeYqrQMdxeb4WXrHRRZn05npWxRGYnGX=V+7OEQ@mail.gmail.com>
+Date: Tue, 22 Jan 2013 14:04:06 +0100
+Message-ID: <CACRpkdanK7J8wXZ_UqFUEKdAt-veTFLVoSHqa9F1Xdzdoa1pNg@mail.gmail.com>
+Subject: Re: [3.8-rc4 arm] SCSI_SYM53C8XX_2 module cannot register IRQ
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, rmk+kernel@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 January 2013, Thierry Reding wrote:
-> I planned to do so initially, but that yielded a Cc list of 156 people
-> and mailing lists, which I thought wasn't going to go down so well
-> either. In general I like Cc'ing everyone concerned on all patches of
-> the series, specifically for reasons of context. Some people have been
-> annoyed when I did so. Still, for small series where only a few dozen
-> people are concerned that seems to me to be the best way. But 156 email
-> addresses is a different story.
-> 
-> Either you add to many people or you don't add enough. Where do we draw
-> the line?
+On Tue, Jan 22, 2013 at 1:25 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Tue, Jan 22, 2013 at 9:03 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> 1.  Get hold of the patch fixing the boot regression:
+>>     git format-patch
+>> f5565295892eb93c3191aa241405fe8b685542d6^..f5565295892eb93c3191aa241405fe8b685542d6
+>
+> git format-patch -1 f5565295892eb93c3191aa241405fe8b685542d6
 
-I've had the same problem a couple of times. The best compromise seems
-to be to Cc only the top-level subsystem maintainers and mailing lists
-on the first email.
+Ah, I always wondered if there was a better way to do that,
+thanks Geert!
 
-	Arnd
+Yours,
+Linus Walleij
