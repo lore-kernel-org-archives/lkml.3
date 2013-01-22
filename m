@@ -1,72 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab3AVNSb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 08:18:31 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:49063 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab3AVNS1 (ORCPT
+	id S1753118Ab3AVNTO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 08:19:14 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:64461 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750Ab3AVNTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 08:18:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAOAMb1C=b2fXqKJKx1ZR7UD7n=c7qQoLnMgMmy2FXEubyP=dtw@mail.gmail.com>
-References: <50efad8d.84fc440a.589e.ffff9546SMTPIN_ADDED_BROKEN@mx.google.com>
-	<CACRpkdYSaFsastx-WWC7sBu8NteAc2hCDZMz4-yMc8+=2dyBVw@mail.gmail.com>
-	<50f107aa.894e420a.596a.ffffe3f6SMTPIN_ADDED_BROKEN@mx.google.com>
-	<CACRpkdaJd48WOzP_iURATb=c+V6==2-AB2Y9oFyh=E3oe1eT0Q@mail.gmail.com>
-	<20130114002608.GV23505@n2100.arm.linux.org.uk>
-	<CACRpkdbVPeva08nL_FP7qw0MeKLz6h40kPHAz_W95ZBGraOnpg@mail.gmail.com>
-	<CAOAMb1BgcvBb6KHaZbwbh0rq8r1WfAtdCeZJexfaYoOwGfU7Sg@mail.gmail.com>
-	<CAOAMb1BS6gvezeSrUTNJ--gGxCRL17AO8PHJ_eLrxzjOex7w1g@mail.gmail.com>
-	<CAOAMb1C=b2fXqKJKx1ZR7UD7n=c7qQoLnMgMmy2FXEubyP=dtw@mail.gmail.com>
-Date: Tue, 22 Jan 2013 14:18:27 +0100
-Message-ID: <CACRpkdYt8CoF0_yrMkNE20fhKnRuG-=yxr2XsQKPgMWD=ehUNA@mail.gmail.com>
-Subject: Re: [PATCH v2] ARM: PL011: Add support for Rx DMA buffer polling
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Chanho Min <chanho.min@lge.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>, Chanho Min <chanho0207@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Jan 2013 08:19:11 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH v6 1/2] perf tools: add evsel prev_raw_count field
+Date: Tue, 22 Jan 2013 14:18:51 +0100
+Message-Id: <1358860732-4435-2-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358860732-4435-1-git-send-email-eranian@google.com>
+References: <1358860732-4435-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 1:45 PM, Chanho Min <chanho.min@lge.com> wrote:
+This field will be used by commands which print
+counter deltas on regular timer intervals,
+such as perf stat -I.
 
-> In DMA support, The received data is not pushed to tty until the DMA buffer
-> is filled. But some megabyte rate chips such as BT expect fast response and
-> data should be pushed immediately. In order to fix this issue, We suggest
-> the use of the timer for polling DMA buffer.
-> In our test, no data loss occurred at high-baudrate as compared with interrupt-
-> driven (We tested with 3Mbps).
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/util/evsel.c |   26 ++++++++++++++++++++++++++
+ tools/perf/util/evsel.h |    1 +
+ 2 files changed, 27 insertions(+)
 
-So to enable this you put a poll rate > 0 into the new variable,
-OK seems like it could work...
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 1b16dd1..371e93d 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -631,6 +631,28 @@ void perf_evsel__delete(struct perf_evsel *evsel)
+ 	free(evsel);
+ }
+ 
++static inline void compute_deltas(struct perf_evsel *evsel,
++				  int cpu,
++				  struct perf_counts_values *count)
++{
++	struct perf_counts_values tmp;
++
++	if (!evsel->prev_raw_counts)
++		return;
++
++	if (cpu == -1) {
++		tmp = evsel->prev_raw_counts->aggr;
++		evsel->prev_raw_counts->aggr = *count;
++	} else {
++		tmp = evsel->prev_raw_counts->cpu[cpu];
++		evsel->prev_raw_counts->cpu[cpu] = *count;
++	}
++
++	count->val = count->val - tmp.val;
++	count->ena = count->ena - tmp.ena;
++	count->run = count->run - tmp.run;
++}
++
+ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
+ 			      int cpu, int thread, bool scale)
+ {
+@@ -646,6 +668,8 @@ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
+ 	if (readn(FD(evsel, cpu, thread), &count, nv * sizeof(u64)) < 0)
+ 		return -errno;
+ 
++	compute_deltas(evsel, cpu, &count);
++
+ 	if (scale) {
+ 		if (count.run == 0)
+ 			count.val = 0;
+@@ -684,6 +708,8 @@ int __perf_evsel__read(struct perf_evsel *evsel,
+ 		}
+ 	}
+ 
++	compute_deltas(evsel, -1, aggr);
++
+ 	evsel->counts->scaled = 0;
+ 	if (scale) {
+ 		if (aggr->run == 0) {
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 3d2b801..63ea570 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -53,6 +53,7 @@ struct perf_evsel {
+ 	struct xyarray		*sample_id;
+ 	u64			*id;
+ 	struct perf_counts	*counts;
++	struct perf_counts	*prev_raw_counts;
+ 	int			idx;
+ 	u32			ids;
+ 	struct hists		hists;
+-- 
+1.7.9.5
 
-> - If poll timer is activated, We use consistent DMA mappings to avoid from
->   the frequent cache operation of the timer function. sg->coherency is used
->   to check if buffer is coherent.
-
-Hm. We can begin like this but maybe we should later patch it to
-make this the default unless it has performance impacts on our
-systems.
-
-> +++ b/include/linux/amba/serial.h
-> @@ -203,6 +203,8 @@ struct amba_pl011_data {
->         bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
->         void *dma_rx_param;
->         void *dma_tx_param;
-> +       unsigned int dma_rx_poll_rate;
-> +       unsigned int dma_rx_poll_timeout;
->          void (*init) (void);
->         void (*exit) (void);
->  };
-
-Maybe this is a good opportunity to add some kerneldoc above
-this struct so as to help platform implementers. It will invariably
-be reused by Device Tree binding authors later on...
-
-Yours,
-Linus Walleij
