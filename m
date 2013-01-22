@@ -1,74 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308Ab3AVPWZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 10:22:25 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:47868 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753972Ab3AVPWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 10:22:23 -0500
-Message-ID: <50FEAE96.30706@ti.com>
-Date: Tue, 22 Jan 2013 20:51:58 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1754530Ab3AVPWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 10:22:45 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40974
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753972Ab3AVPWo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 10:22:44 -0500
+Date: Tue, 22 Jan 2013 08:22:31 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Philipp Reisner <philipp.reisner@linbit.com>
+Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+Subject: Re: [GIT PULL] drbd regression fix
+Message-ID: <20130122152231.GQ1300@kernel.dk>
+References: <30887993.uQFo99UF9h@quad>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: <tony@atomide.com>, <balbi@ti.com>, <linux@arm.linux.org.uk>,
-        <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v1 6/6] USB: MUSB: OMAP: get PHY by phandle for dt boot
-References: <1358848694-20145-1-git-send-email-kishon@ti.com> <1358848694-20145-7-git-send-email-kishon@ti.com> <50FE9F5C.2010501@ti.com> <50FEA447.1090701@ti.com> <50FEA696.8000506@ti.com>
-In-Reply-To: <50FEA696.8000506@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <30887993.uQFo99UF9h@quad>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 January 2013 08:17 PM, Roger Quadros wrote:
-> On 01/22/2013 04:37 PM, kishon wrote:
->> On Tuesday 22 January 2013 07:47 PM, Roger Quadros wrote:
->>> On 01/22/2013 11:58 AM, Kishon Vijay Abraham I wrote:
->>>> The OMAP glue has been modified to get PHY by phandle for dt boot.
->>>>
->>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>> ---
->>>>    drivers/usb/musb/omap2430.c |    7 ++++++-
->>>>    1 file changed, 6 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
->>>> index 1a8cf6d..e43faeb 100644
->>>> --- a/drivers/usb/musb/omap2430.c
->>>> +++ b/drivers/usb/musb/omap2430.c
->>>> @@ -345,7 +345,12 @@ static int omap2430_musb_init(struct musb *musb)
->>>>         * up through ULPI.  TWL4030-family PMICs include one,
->>>>         * which needs a driver, drivers aren't always needed.
->>>>         */
->>>> -    musb->xceiv = devm_usb_get_phy_dev(dev, 0);
->>>> +    if (dev->parent->of_node)
->>>> +        musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
->>>> +            "usb_phy", 0);
->>>> +    else
->>>> +        musb->xceiv = devm_usb_get_phy_dev(dev, 0);
->>>> +
->>>>        if (IS_ERR_OR_NULL(musb->xceiv)) {
->>>>            pr_err("HS USB OTG: no transceiver configured\n");
->>>>            return -ENODEV;
->>>
->>> This will not work with PHY driver as a module. You need to use deferred probing mechanism here
->>> after you have addressed my comment in patch 2 and also devm_usb_get_phy_by_phandle()
->>
->> IIUC, even using -EPROBE_DEFER might not help if we are making the PHY driver as module, since the kernel will try to probe only till the prompt comes.
->>
-> Oh really? I thought deferred probing takes place whenever a new driver is bound to a device.
-You might also be right. I'm not so sure.
+On Mon, Jan 21 2013, Philipp Reisner wrote:
+> Hi Jens,
+> 
+> Here is a single fix I want to hand in for Linux-3.8.
+> 
+> The following changes since commit d2ec180c23a5a1bfe34d8638b0342a47c00cf70f:
+> 
+>   drbd: update Kconfig to match current dependencies (2012-12-06 13:08:29 +0100)
+> 
+> are available in the git repository at:
+> 
+>   git://git.drbd.org/linux-drbd for-jens
 
-What does "prompt comes" have to do with it?
+Thanks, pulled.
 
-I just meant end of boot process. But it's better to check if deferred 
-probing takes place whenever a new driver is bound to a device as you 
-just mentioned.
+-- 
+Jens Axboe
 
-Thanks
-Kishon
