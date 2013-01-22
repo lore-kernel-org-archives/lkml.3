@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab3AVTuC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 14:50:02 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:53081 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753876Ab3AVTuB (ORCPT
+	id S1755712Ab3AVTxA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 14:53:00 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:65121 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755373Ab3AVTw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 14:50:01 -0500
-Message-ID: <50FEED65.6050107@linaro.org>
-Date: Tue, 22 Jan 2013 11:49:57 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 22 Jan 2013 14:52:57 -0500
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] timekeeping: Add CONFIG_HAS_PERSISTENT_CLOCK option
-References: <1358266189-8812-1-git-send-email-feng.tang@intel.com> <1358266189-8812-3-git-send-email-feng.tang@intel.com> <50F5B2FA.6030006@linaro.org> <20130122194433.GG30647@obsidianresearch.com>
-In-Reply-To: <20130122194433.GG30647@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130119102719.GA12013@gmail.com>
+References: <1358298456-18377-1-git-send-email-dinggnu@gmail.com>
+	<20130116113522.GR11529@redhat.com>
+	<20130116165239.GB18593@gmail.com>
+	<CAOJsxLFHhKLxNcjwUO-tFrjZ5MYFhWdgBX-LHSkh28-SX1cE4Q@mail.gmail.com>
+	<20130119102719.GA12013@gmail.com>
+Date: Tue, 22 Jan 2013 21:52:56 +0200
+X-Google-Sender-Auth: h0MmoykBJkM8bpGrqaXuuhSUNnY
+Message-ID: <CAOJsxLFA4zWT7FnqPpq7o=GBfy830MsJ6h6js-_fMsHQyAAueA@mail.gmail.com>
+Subject: Re: [PATCH v2] kvm tools: remove redundant "if" condition
+From: Pekka Enberg <penberg@kernel.org>
+To: Cong Ding <dinggnu@gmail.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Asias He <asias.hejun@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2013 11:44 AM, Jason Gunthorpe wrote:
-> On Tue, Jan 15, 2013 at 11:50:18AM -0800, John Stultz wrote:
->> On 01/15/2013 08:09 AM, Feng Tang wrote:
->>> Make the persistent clock check a kernel config option, so that some
->>> platform can explicitely select it, also make CONFIG_RTC_HCTOSYS depends
->>> on its non-existence, which could prevent the persistent clock and RTC
->>> code from doing similar thing twice during system's init/suspend/resume
->>> phases.
->>>
->>> If the CONFIG_HAS_PERSISTENT_CLOCK=n, then no change happens for kernel
->>> which still does the persistent clock check in timekeeping_init().
->>>
->>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>> Suggested-by: John Stultz <john.stultz@linaro.org>
->>> Signed-off-by: Feng Tang <feng.tang@intel.com>
->> Applied. I also added a dependency for Jason's CONFIG_RTC_SYSTOHC.
-> Sort of an ugly config name, since I gather ARM should always set this
-> to 'n'...
+On Sat, Jan 19, 2013 at 12:27 PM, Cong Ding <dinggnu@gmail.com> wrote:
+> On Sat, Jan 19, 2013 at 10:58:33AM +0200, Pekka Enberg wrote:
+>> On Wed, Jan 16, 2013 at 6:52 PM, Cong Ding <dinggnu@gmail.com> wrote:
+>> > After we check (state.kcount != 0), state.kcount has to be 0 in all the "else"
+>> > branchs.
+>> >
+>> > Signed-off-by: Cong Ding <dinggnu@gmail.com>
+>> > ---
+>> >  tools/kvm/hw/i8042.c |    2 +-
+>> >  1 file changed, 1 insertion(+), 1 deletion(-)
+>> >
+>> > diff --git a/tools/kvm/hw/i8042.c b/tools/kvm/hw/i8042.c
+>> > index 9f8be6a..9035732 100644
+>> > --- a/tools/kvm/hw/i8042.c
+>> > +++ b/tools/kvm/hw/i8042.c
+>> > @@ -189,7 +189,7 @@ static u32 kbd_read_data(void)
+>> >                 state.mcount--;
+>> >                 kvm__irq_line(state.kvm, AUX_IRQ, 0);
+>> >                 kbd_update_irq();
+>> > -       } else if (state.kcount == 0) {
+>> > +       } else {
+>> >                 i = state.kread - 1;
+>> >                 if (i < 0)
+>> >                         i = QUEUE_SIZE;
+>>
+>> This doesn't look right. The 'kcount' field is an int so the value can
+>> be negative.
+> But the former check is "state.kcount != 0" as I described in the commit
+> message. Notice the difference between variable names in the "if" condition: the
+> first one is kcount, the second one is mcount, and the third one is same as the
+> first one kcount.
 >
-> CONFIG_USE_ONLY_PERSISTENT_CLOCK ?
-(Sigh. I got this seemingly microseconds after I sent the pull request :)
+> Ok, the original code is
+>         if (state.kcount != 0) {
+>                 /* do something when (state.kcount != 0) */
+>         } else if (state.mcount > 0) {
+>                 /* do something when (state.kcount == 0 && state.mount > 0) */
+>         } else if (state.kcount == 0) {
+>                 /* do something when (state.kcount == 0 && state.mount <= 0) */
+>         }
+> For the third branch, it runs when state.kcount == 0 and state.mount <= 0,
+> it's not necessary to ensure state.kcount == 0 again.
 
-So yea, fair point, there could be some confusion. But 
-ONLY_PERSISTENT_CLOCK isn't quite right either,  more like 
-CONFIG_HAS_PERSISTENT_CLOCK_ALWAYS or something.
-
-Hrm. Let me think on it for a bit, and feel free to suggest further 
-improvements.
-
-thanks
--john
+Right you are. Applied, thanks!
