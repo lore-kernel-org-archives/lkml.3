@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab3AVAmj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 19:42:39 -0500
-Received: from mga01.intel.com ([192.55.52.88]:51535 "EHLO mga01.intel.com"
+	id S1752825Ab3AVAms (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 19:42:48 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:48811 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751687Ab3AVAmi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 19:42:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,510,1355126400"; 
-   d="scan'208";a="276729284"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>
-Subject: RE: [PATCH] mfd, TWL4030: TWL4030 need select REGMAP_I2C
-Thread-Topic: [PATCH] mfd, TWL4030: TWL4030 need select REGMAP_I2C
-Thread-Index: AQHN+Di7cinxLKLtkUKx6vdeiH1/EJhUggaA
-Date: Tue, 22 Jan 2013 00:42:34 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A215629@SHSMSX101.ccr.corp.intel.com>
-References: <1356358796.1688.3.camel@cliu38-desktop-build>
- <50E162F8.8030403@ti.com>
- <27240C0AC20F114CBF8149A2696CBE4A203154@SHSMSX101.ccr.corp.intel.com>
- <20130122003720.GE7409@sortiz-mobl>
-In-Reply-To: <20130122003720.GE7409@sortiz-mobl>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751706Ab3AVAmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 19:42:46 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [RFC][Update 2][PATCH 1/4] ACPI / PM: Export power states of ACPI devices via sysfs
+Date: Tue, 22 Jan 2013 01:48:44 +0100
+Message-ID: <10085280.Wkhjb8Frfb@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130121230804.GA24169@kroah.com>
+References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <1534168.00CkYCbeHv@vostro.rjw.lan> <20130121230804.GA24169@kroah.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Samuel and Linus' help.
+On Monday, January 21, 2013 03:08:04 PM Greg Kroah-Hartman wrote:
+> On Mon, Jan 21, 2013 at 11:59:12PM +0100, Rafael J. Wysocki wrote:
+> > On Monday, January 21, 2013 02:26:47 PM Greg Kroah-Hartman wrote:
+> > > On Mon, Jan 21, 2013 at 11:27:32PM +0100, Rafael J. Wysocki wrote:
+> > > > On Monday, January 21, 2013 12:53:05 PM Greg Kroah-Hartman wrote:
+> > > > > On Mon, Jan 21, 2013 at 02:04:32PM +0100, Rafael J. Wysocki wrote:
+> > > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > > > 
+> > > > > > Make it possible to retrieve the current power state of a device with
+> > > > > > ACPI power management from user space via sysfs by adding a new
+> > > > > > attribute power_state to the sysfs directory associated with the
+> > > > > > struct acpi_device object representing the device's ACPI node.
+> > > > > > 
+> > > > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > > > ---
+> > > > > >  Documentation/ABI/testing/sysfs-devices-power_state |   21 ++++++++++++++
+> > > > > >  drivers/acpi/scan.c                                 |   29 +++++++++++++++++++-
+> > > > > >  2 files changed, 49 insertions(+), 1 deletion(-)
+> > > > > > 
+> > > > > > Index: linux-pm/drivers/acpi/scan.c
+> > > > > > ===================================================================
+> > > > > > --- linux-pm.orig/drivers/acpi/scan.c
+> > > > > > +++ linux-pm/drivers/acpi/scan.c
+> > > > > > @@ -178,6 +178,23 @@ err_out:
+> > > > > >  }
+> > > > > >  EXPORT_SYMBOL(acpi_bus_hot_remove_device);
+> > > > > >  
+> > > > > > +static ssize_t power_state_show(struct device *dev,
+> > > > > > +				struct device_attribute *attr, char *buf)
+> > > > > > +{
+> > > > > > +	struct acpi_device *adev = to_acpi_device(dev);
+> > > > > > +	int state;
+> > > > > > +	int ret;
+> > > > > > +
+> > > > > > +	ret = acpi_device_get_power(adev, &state);
+> > > > > > +	if (ret)
+> > > > > > +		return ret;
+> > > > > > +
+> > > > > > +	return sprintf(buf, "%s %s\n", acpi_power_state_string(state),
+> > > > > > +		       acpi_power_state_string(adev->power.state));
+> > > > > > +}
+> > > > > 
+> > > > > You are showing 2 different things here in a single sysfs file, which is
+> > > > > really frowned apon.  Any chance to split this up into two different
+> > > > > sysfs files instead?
+> > > > 
+> > > > Well, I can, but I'm not sure how to call the other one.  "sw_power_state"
+> > > > perhaps?
+> > > 
+> > > I don't know, as I'm not quite sure what it is supposed to represent :)
+> > 
+> > The first one is power state as read using _PSC or inferred from power
+> > resources on/off configuration.  That's easy.
+> > 
+> > Now, if power resources are shared between two or more devices, it is possible
+> > that one device will be in, say, D3hot from the software point of view, but its
+> > real ("physical") power state will be different, because the other devices
+> > still keep the shared resource "on".  In that case, if the "software" power
+> > state of a device is lower-power (higher-number) than its real power state,
+> > we know that that particular device doesn't prevent the shared resource from
+> > being turned off.  This is good to know, I think. :-)
+> 
+> I agree that it's good to know, just what to call it.  I think you just
+> named it with "real_power_state", right?
 
-> -----Original Message-----
-> From: Samuel Ortiz [mailto:sameo@linux.intel.com]
-> Sent: Tuesday, January 22, 2013 8:37 AM
-> To: Liu, Chuansheng
-> Cc: Peter Ujfalusi; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> torvalds@linux-foundation.org; Omar Ramirez Luna
-> Subject: Re: [PATCH] mfd, TWL4030: TWL4030 need select REGMAP_I2C
-> 
-> Hi Liu,
-> 
-> On Mon, Jan 14, 2013 at 02:18:04AM +0000, Liu, Chuansheng wrote:
-> > Hi maintainers,
-> >
-> > Could you help to push this patch?
-> > Every time syncing the latest code, always meet this build error.
-> > Sorry to disturb.
-> I was going to take this one when I saw Linus already applied it directly.
-> Sorry for the latency.
-> 
-> Cheers,
-> Samuel.
-> 
-> --
-> Intel Open Source Technology Centre
-> http://oss.intel.com/
+Yes, I think I'll just call them "power_state" and "real_power_state".  That
+should be clear enough.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
