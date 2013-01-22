@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab3AVRNM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 12:13:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33360 "EHLO mx2.suse.de"
+	id S1755521Ab3AVRNb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 12:13:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33346 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754655Ab3AVRMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 12:12:45 -0500
+	id S1755143Ab3AVRMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 12:12:43 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -14,9 +14,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/6] mm: numa: Cleanup flow of transhuge page migration
-Date: Tue, 22 Jan 2013 17:12:42 +0000
-Message-Id: <1358874762-19717-7-git-send-email-mgorman@suse.de>
+Subject: [PATCH 4/6] mm: Move page flags layout to separate header
+Date: Tue, 22 Jan 2013 17:12:40 +0000
+Message-Id: <1358874762-19717-5-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1358874762-19717-1-git-send-email-mgorman@suse.de>
 References: <1358874762-19717-1-git-send-email-mgorman@suse.de>
@@ -24,273 +24,215 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hugh Dickins <hughd@google.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-When correcting commit 04fa5d6a (mm: migrate: check page_count of
-THP before migrating) Hugh Dickins noted that the control flow for
-transhuge migration was difficult to follow. Unconditionally calling
-put_page() in numamigrate_isolate_page() made the failure paths of both
-migrate_misplaced_transhuge_page() and migrate_misplaced_page() more complex
-that they should be. Further, he was extremely wary that an unlock_page()
-should ever happen after a put_page() even if the put_page() should never
-be the final put_page.
+This is a preparation patch for moving page->_last_nid into page->flags
+that moves page flag layout information to a separate header. This patch
+is necessary because otherwise there would be a circular dependency
+between mm_types.h and mm.h.
 
-Hugh implemented the following cleanup to simplify the path by
-calling putback_lru_page() inside numamigrate_isolate_page()
-if it failed to isolate and always calling unlock_page() within
-migrate_misplaced_transhuge_page(). There is no functional change after
-this patch is applied but the code is easier to follow and unlock_page()
-always happens before put_page().
-
-[mgorman@suse.de: changelog only]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/huge_memory.c |   28 ++++++----------
- mm/migrate.c     |   95 ++++++++++++++++++++++++------------------------------
- 2 files changed, 52 insertions(+), 71 deletions(-)
+ include/linux/mm.h                |   40 ---------------------
+ include/linux/mm_types.h          |    1 +
+ include/linux/mmzone.h            |   22 +-----------
+ include/linux/page-flags-layout.h |   71 +++++++++++++++++++++++++++++++++++++
+ 4 files changed, 73 insertions(+), 61 deletions(-)
+ create mode 100644 include/linux/page-flags-layout.h
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 6001ee6..648c102 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1298,7 +1298,6 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	int target_nid;
- 	int current_nid = -1;
- 	bool migrated;
--	bool page_locked = false;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 66e2f7c..87420e6 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -580,52 +580,12 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
+  * sets it, so none of the operations on it need to be atomic.
+  */
  
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(pmd, *pmdp)))
-@@ -1320,7 +1319,6 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	/* Acquire the page lock to serialise THP migrations */
- 	spin_unlock(&mm->page_table_lock);
- 	lock_page(page);
--	page_locked = true;
- 
- 	/* Confirm the PTE did not while locked */
- 	spin_lock(&mm->page_table_lock);
-@@ -1333,34 +1331,26 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- 	/* Migrate the THP to the requested node */
- 	migrated = migrate_misplaced_transhuge_page(mm, vma,
--				pmdp, pmd, addr,
--				page, target_nid);
--	if (migrated)
--		current_nid = target_nid;
--	else {
--		spin_lock(&mm->page_table_lock);
--		if (unlikely(!pmd_same(pmd, *pmdp))) {
--			unlock_page(page);
--			goto out_unlock;
--		}
--		goto clear_pmdnuma;
--	}
-+				pmdp, pmd, addr, page, target_nid);
-+	if (!migrated)
-+		goto check_same;
- 
--	task_numa_fault(current_nid, HPAGE_PMD_NR, migrated);
-+	task_numa_fault(target_nid, HPAGE_PMD_NR, true);
- 	return 0;
- 
-+check_same:
-+	spin_lock(&mm->page_table_lock);
-+	if (unlikely(!pmd_same(pmd, *pmdp)))
-+		goto out_unlock;
- clear_pmdnuma:
- 	pmd = pmd_mknonnuma(pmd);
- 	set_pmd_at(mm, haddr, pmdp, pmd);
- 	VM_BUG_ON(pmd_numa(*pmdp));
- 	update_mmu_cache_pmd(vma, addr, pmdp);
--	if (page_locked)
--		unlock_page(page);
 -
- out_unlock:
- 	spin_unlock(&mm->page_table_lock);
- 	if (current_nid != -1)
--		task_numa_fault(current_nid, HPAGE_PMD_NR, migrated);
-+		task_numa_fault(current_nid, HPAGE_PMD_NR, false);
- 	return 0;
- }
- 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 73e432d..8ef1cbf 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1555,41 +1555,40 @@ bool numamigrate_update_ratelimit(pg_data_t *pgdat, unsigned long nr_pages)
- 
- int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
- {
--	int ret = 0;
-+	int page_lru;
- 
- 	VM_BUG_ON(compound_order(page) && !PageTransHuge(page));
- 
- 	/* Avoid migrating to a node that is nearly full */
--	if (migrate_balanced_pgdat(pgdat, 1UL << compound_order(page))) {
--		int page_lru;
-+	if (!migrate_balanced_pgdat(pgdat, 1UL << compound_order(page)))
-+		return 0;
- 
--		if (isolate_lru_page(page)) {
--			put_page(page);
--			return 0;
--		}
-+	if (isolate_lru_page(page))
-+		return 0;
- 
--		/* Page is isolated */
--		ret = 1;
--		page_lru = page_is_file_cache(page);
--		if (!PageTransHuge(page))
--			inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
--		else
--			mod_zone_page_state(page_zone(page),
--					NR_ISOLATED_ANON + page_lru,
--					HPAGE_PMD_NR);
-+	/*
-+	 * migrate_misplaced_transhuge_page() skips page migration's usual
-+	 * check on page_count(), so we must do it here, now that the page
-+	 * has been isolated: a GUP pin, or any other pin, prevents migration.
-+	 * The expected page count is 3: 1 for page's mapcount and 1 for the
-+	 * caller's pin and 1 for the reference taken by isolate_lru_page().
-+	 */
-+	if (PageTransHuge(page) && page_count(page) != 3) {
-+		putback_lru_page(page);
-+		return 0;
- 	}
- 
-+	page_lru = page_is_file_cache(page);
-+	mod_zone_page_state(page_zone(page), NR_ISOLATED_ANON + page_lru,
-+				hpage_nr_pages(page));
-+
- 	/*
--	 * Page is either isolated or there is not enough space on the target
--	 * node. If isolated, then it has taken a reference count and the
--	 * callers reference can be safely dropped without the page
--	 * disappearing underneath us during migration. Otherwise the page is
--	 * not to be migrated but the callers reference should still be
--	 * dropped so it does not leak.
-+	 * Isolating the page has taken another reference, so the
-+	 * caller's reference can be safely dropped without the page
-+	 * disappearing underneath us during migration.
- 	 */
- 	put_page(page);
+-/*
+- * page->flags layout:
+- *
+- * There are three possibilities for how page->flags get
+- * laid out.  The first is for the normal case, without
+- * sparsemem.  The second is for sparsemem when there is
+- * plenty of space for node and section.  The last is when
+- * we have run out of space and have to fall back to an
+- * alternate (slower) way of determining the node.
+- *
+- * No sparsemem or sparsemem vmemmap: |       NODE     | ZONE | ... | FLAGS |
+- * classic sparse with space for node:| SECTION | NODE | ZONE | ... | FLAGS |
+- * classic sparse no space for node:  | SECTION |     ZONE    | ... | FLAGS |
+- */
+-#if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
+-#define SECTIONS_WIDTH		SECTIONS_SHIFT
+-#else
+-#define SECTIONS_WIDTH		0
+-#endif
 -
--	return ret;
-+	return 1;
- }
+-#define ZONES_WIDTH		ZONES_SHIFT
+-
+-#if SECTIONS_WIDTH+ZONES_WIDTH+NODES_SHIFT <= BITS_PER_LONG - NR_PAGEFLAGS
+-#define NODES_WIDTH		NODES_SHIFT
+-#else
+-#ifdef CONFIG_SPARSEMEM_VMEMMAP
+-#error "Vmemmap: No space for nodes field in page flags"
+-#endif
+-#define NODES_WIDTH		0
+-#endif
+-
+ /* Page flags: | [SECTION] | [NODE] | ZONE | ... | FLAGS | */
+ #define SECTIONS_PGOFF		((sizeof(unsigned long)*8) - SECTIONS_WIDTH)
+ #define NODES_PGOFF		(SECTIONS_PGOFF - NODES_WIDTH)
+ #define ZONES_PGOFF		(NODES_PGOFF - ZONES_WIDTH)
  
  /*
-@@ -1600,7 +1599,7 @@ int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
- int migrate_misplaced_page(struct page *page, int node)
- {
- 	pg_data_t *pgdat = NODE_DATA(node);
--	int isolated = 0;
-+	int isolated;
- 	int nr_remaining;
- 	LIST_HEAD(migratepages);
- 
-@@ -1608,20 +1607,16 @@ int migrate_misplaced_page(struct page *page, int node)
- 	 * Don't migrate pages that are mapped in multiple processes.
- 	 * TODO: Handle false sharing detection instead of this hammer
- 	 */
--	if (page_mapcount(page) != 1) {
--		put_page(page);
-+	if (page_mapcount(page) != 1)
- 		goto out;
--	}
- 
- 	/*
- 	 * Rate-limit the amount of data that is being migrated to a node.
- 	 * Optimal placement is no good if the memory bus is saturated and
- 	 * all the time is being spent migrating!
- 	 */
--	if (numamigrate_update_ratelimit(pgdat, 1)) {
--		put_page(page);
-+	if (numamigrate_update_ratelimit(pgdat, 1))
- 		goto out;
--	}
- 
- 	isolated = numamigrate_isolate_page(pgdat, page);
- 	if (!isolated)
-@@ -1638,12 +1633,19 @@ int migrate_misplaced_page(struct page *page, int node)
- 	} else
- 		count_vm_numa_event(NUMA_PAGE_MIGRATE);
- 	BUG_ON(!list_empty(&migratepages));
--out:
- 	return isolated;
-+
-+out:
-+	put_page(page);
-+	return 0;
- }
- #endif /* CONFIG_NUMA_BALANCING */
- 
- #if defined(CONFIG_NUMA_BALANCING) && defined(CONFIG_TRANSPARENT_HUGEPAGE)
-+/*
-+ * Migrates a THP to a given target node. page must be locked and is unlocked
-+ * before returning.
-+ */
- int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 				struct vm_area_struct *vma,
- 				pmd_t *pmd, pmd_t entry,
-@@ -1674,29 +1676,15 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 
- 	new_page = alloc_pages_node(node,
- 		(GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT, HPAGE_PMD_ORDER);
--	if (!new_page) {
--		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
--		goto out_dropref;
--	}
-+	if (!new_page)
-+		goto out_fail;
-+
- 	page_xchg_last_nid(new_page, page_last_nid(page));
- 
- 	isolated = numamigrate_isolate_page(pgdat, page);
+- * We are going to use the flags for the page to node mapping if its in
+- * there.  This includes the case where there is no node, so it is implicit.
+- */
+-#if !(NODES_WIDTH > 0 || NODES_SHIFT == 0)
+-#define NODE_NOT_IN_PAGE_FLAGS
+-#endif
 -
--	/*
--	 * Failing to isolate or a GUP pin prevents migration. The expected
--	 * page count is 2. 1 for anonymous pages without a mapping and 1
--	 * for the callers pin. If the page was isolated, the page will
--	 * need to be put back on the LRU.
--	 */
--	if (!isolated || page_count(page) != 2) {
--		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
-+	if (!isolated) {
- 		put_page(new_page);
--		if (isolated) {
--			putback_lru_page(page);
--			isolated = 0;
--			goto out;
--		}
--		goto out_keep_locked;
-+		goto out_fail;
- 	}
+-/*
+  * Define the bit shifts to access each section.  For non-existent
+  * sections we define the shift as 0; that plus a 0 mask ensures
+  * the compiler will optimise away reference to them.
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 47047cb..d05d632 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -12,6 +12,7 @@
+ #include <linux/cpumask.h>
+ #include <linux/page-debug-flags.h>
+ #include <linux/uprobes.h>
++#include <linux/page-flags-layout.h>
+ #include <asm/page.h>
+ #include <asm/mmu.h>
  
- 	/* Prepare a page as a migration target */
-@@ -1728,6 +1716,7 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 		putback_lru_page(page);
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 73b64a3..5e6a814 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -15,7 +15,7 @@
+ #include <linux/seqlock.h>
+ #include <linux/nodemask.h>
+ #include <linux/pageblock-flags.h>
+-#include <generated/bounds.h>
++#include <linux/page-flags-layout.h>
+ #include <linux/atomic.h>
+ #include <asm/page.h>
  
- 		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
-+		isolated = 0;
- 		goto out;
- 	}
+@@ -308,24 +308,6 @@ enum zone_type {
  
-@@ -1772,9 +1761,11 @@ out:
- 			-HPAGE_PMD_NR);
- 	return isolated;
+ #ifndef __GENERATING_BOUNDS_H
  
-+out_fail:
-+	count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
- out_dropref:
-+	unlock_page(page);
- 	put_page(page);
--out_keep_locked:
- 	return 0;
- }
- #endif /* CONFIG_NUMA_BALANCING */
+-/*
+- * When a memory allocation must conform to specific limitations (such
+- * as being suitable for DMA) the caller will pass in hints to the
+- * allocator in the gfp_mask, in the zone modifier bits.  These bits
+- * are used to select a priority ordered list of memory zones which
+- * match the requested limits. See gfp_zone() in include/linux/gfp.h
+- */
+-
+-#if MAX_NR_ZONES < 2
+-#define ZONES_SHIFT 0
+-#elif MAX_NR_ZONES <= 2
+-#define ZONES_SHIFT 1
+-#elif MAX_NR_ZONES <= 4
+-#define ZONES_SHIFT 2
+-#else
+-#error ZONES_SHIFT -- too many zones configured adjust calculation
+-#endif
+-
+ struct zone {
+ 	/* Fields commonly accessed by the page allocator */
+ 
+@@ -1053,8 +1035,6 @@ static inline unsigned long early_pfn_to_nid(unsigned long pfn)
+  * PA_SECTION_SHIFT		physical address to/from section number
+  * PFN_SECTION_SHIFT		pfn to/from section number
+  */
+-#define SECTIONS_SHIFT		(MAX_PHYSMEM_BITS - SECTION_SIZE_BITS)
+-
+ #define PA_SECTION_SHIFT	(SECTION_SIZE_BITS)
+ #define PFN_SECTION_SHIFT	(SECTION_SIZE_BITS - PAGE_SHIFT)
+ 
+diff --git a/include/linux/page-flags-layout.h b/include/linux/page-flags-layout.h
+new file mode 100644
+index 0000000..316805d
+--- /dev/null
++++ b/include/linux/page-flags-layout.h
+@@ -0,0 +1,71 @@
++#ifndef PAGE_FLAGS_LAYOUT_H
++#define PAGE_FLAGS_LAYOUT_H
++
++#include <linux/numa.h>
++#include <generated/bounds.h>
++
++/*
++ * When a memory allocation must conform to specific limitations (such
++ * as being suitable for DMA) the caller will pass in hints to the
++ * allocator in the gfp_mask, in the zone modifier bits.  These bits
++ * are used to select a priority ordered list of memory zones which
++ * match the requested limits. See gfp_zone() in include/linux/gfp.h
++ */
++#if MAX_NR_ZONES < 2
++#define ZONES_SHIFT 0
++#elif MAX_NR_ZONES <= 2
++#define ZONES_SHIFT 1
++#elif MAX_NR_ZONES <= 4
++#define ZONES_SHIFT 2
++#else
++#error ZONES_SHIFT -- too many zones configured adjust calculation
++#endif
++
++#ifdef CONFIG_SPARSEMEM
++#include <asm/sparsemem.h>
++
++/* SECTION_SHIFT	#bits space required to store a section # */
++#define SECTIONS_SHIFT	(MAX_PHYSMEM_BITS - SECTION_SIZE_BITS)
++
++#endif /* CONFIG_SPARSEMEM */
++
++/*
++ * page->flags layout:
++ *
++ * There are three possibilities for how page->flags get
++ * laid out.  The first is for the normal case, without
++ * sparsemem.  The second is for sparsemem when there is
++ * plenty of space for node and section.  The last is when
++ * we have run out of space and have to fall back to an
++ * alternate (slower) way of determining the node.
++ *
++ * No sparsemem or sparsemem vmemmap: |       NODE     | ZONE | ... | FLAGS |
++ * classic sparse with space for node:| SECTION | NODE | ZONE | ... | FLAGS |
++ * classic sparse no space for node:  | SECTION |     ZONE    | ... | FLAGS |
++ */
++#if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
++#define SECTIONS_WIDTH		SECTIONS_SHIFT
++#else
++#define SECTIONS_WIDTH		0
++#endif
++
++#define ZONES_WIDTH		ZONES_SHIFT
++
++#if SECTIONS_WIDTH+ZONES_WIDTH+NODES_SHIFT <= BITS_PER_LONG - NR_PAGEFLAGS
++#define NODES_WIDTH		NODES_SHIFT
++#else
++#ifdef CONFIG_SPARSEMEM_VMEMMAP
++#error "Vmemmap: No space for nodes field in page flags"
++#endif
++#define NODES_WIDTH		0
++#endif
++
++/*
++ * We are going to use the flags for the page to node mapping if its in
++ * there.  This includes the case where there is no node, so it is implicit.
++ */
++#if !(NODES_WIDTH > 0 || NODES_SHIFT == 0)
++#define NODE_NOT_IN_PAGE_FLAGS
++#endif
++
++#endif /* _LINUX_PAGE_FLAGS_LAYOUT */
 -- 
 1.7.9.2
 
