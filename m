@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab3AVXus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 18:50:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47314 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752361Ab3AVXuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 18:50:44 -0500
-Date: Wed, 23 Jan 2013 00:50:41 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>, Jan Kara <jack@suse.cz>,
-        Eric Sandeen <sandeen@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+	id S1756221Ab3AVXvK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 18:51:10 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:48582 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474Ab3AVXvG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 18:51:06 -0500
+Date: Tue, 22 Jan 2013 15:51:01 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
-Subject: Re: jbd2: don't wake kjournald unnecessarily
-Message-ID: <20130122235041.GA7497@quack.suse.cz>
-References: <CA+icZUWOvk5i+XY22xdZYuxu=Vy3fG2QxJStEgNFQVS4u55y-w@mail.gmail.com>
- <CA+icZUUzNYE9QAh_p7=ZNuvZbxRPCb9zd4k7+aW-hv34mQWz=A@mail.gmail.com>
- <20130121104733.GE5588@quack.suse.cz>
- <CA+icZUVy-=jJkRsEKmX+ZGRjiGr4wwp3pqdxuLCRHeqW_H0x9Q@mail.gmail.com>
- <CA+icZUVAP4ArN+j34GTUwMxte5DtLPJSrLmK9T6Na8Qy+aM0Rg@mail.gmail.com>
- <20130121140738.GI5588@quack.suse.cz>
- <CA+icZUXLcdnNPvA9o8d5msOQ0MkMci8mPXujLZ3zcYjYcVZ7JQ@mail.gmail.com>
- <20130121231130.GB12410@thunk.org>
+        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH 3/4] sysfs: Functions for adding/removing symlinks
+ to/from attribute groups
+Message-ID: <20130122235101.GE694@kroah.com>
+References: <3307415.pdOY6ovZLa@vostro.rjw.lan>
+ <4247313.2G7Z3nCgM0@vostro.rjw.lan>
+ <2760421.6nE3tkh92K@vostro.rjw.lan>
+ <3401016.osGyQ9N4xP@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130121231130.GB12410@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <3401016.osGyQ9N4xP@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 21-01-13 18:11:30, Ted Tso wrote:
-> On Tue, Jan 22, 2013 at 12:04:32AM +0100, Sedat Dilek wrote:
-> > 
-> > Beyond the FUSE/LOOP fun, will you apply this patch to your linux-next GIT tree?
-> > 
-> > Feel free to add...
-> > 
-> >      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-> > 
-> > A similiar patch for JBD went through your tree into mainline (see [1] and [2]).
-> 
-> I'm not at all convinced that this patch has anything to do with your
-> problem.  I don't see how it could affect things, and I believe you
-> mentioned that you saw the problem even with this patch applied?  (I'm
-> not sure; some of your messages which you sent were hard to
-> understand, and you mentioned something about trying to send messages
-> when low on sleep :-).
-> 
-> In any case, the reason why I haven't pulled this patch into the ext4
-> tree is because I was waiting for Eric and some of the performance
-> team folks at Red Hat to supply some additional information about why
-> this commit was making a difference in performance for a particular
-> proprietary, closed source benchmark.
-  Just a small correction - it was aim7 AFAIK which isn't closed source
-(anymore). You can download it from SourceForge
-(http://sourceforge.net/projects/aimbench/files/aim-suite7/Initial%20release/).
-Now I have some reservations about what the benchmark does but historically
-it has found quite a few issues for us as well.
+On Tue, Jan 22, 2013 at 03:27:12AM +0100, Rafael J. Wysocki wrote:
+> --- linux-pm.orig/include/linux/sysfs.h
+> +++ linux-pm/include/linux/sysfs.h
+> @@ -154,6 +154,8 @@ int __must_check sysfs_create_bin_file(s
+>  void sysfs_remove_bin_file(struct kobject *kobj,
+>  			   const struct bin_attribute *attr);
+>  
+> +int sysfs_create_link_sd(struct sysfs_dirent *sd, struct kobject *target,
+> +			 const char *name);
 
-> I'm very suspicious about applying patches under the "cargo cult"
-> school of programming.  ("We don't understand why it makes a
-> difference, but it seems to be good, so bombs away!" :-)
-  Well, neither am I ;) But it is obvious the patch speeds up
-log_start_commit() by 'a bit' (taking spinlock, disabling irqs, ...). And
-apparently 'a bit' is noticeable for particular workload on a particular
-machine - commit statistics Eric provided showed that clearly. I'd still be
-happier if Eric also told us how much log_start_commit() calls there were
-so that one could verify that 'a bit' could indeed multiply to a measurable
-difference. But given how simple the patch is, I gave away after a while
-and just merged it...
+This should go into fs/sysfs/sysfs.h not include/linux/sysfs.h as it's
+an "internal" sysfs function.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+thanks,
+
+greg k-h
