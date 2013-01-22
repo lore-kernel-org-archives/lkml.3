@@ -1,148 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab3AVJSF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 04:18:05 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42753 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654Ab3AVJKc (ORCPT
+	id S1752408Ab3AVJSE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 04:18:04 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:52632 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab3AVJR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 04:10:32 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-2d-50fe577a0083
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/19] perf hists: Resort hist entries using group members for output
-Date: Tue, 22 Jan 2013 18:09:33 +0900
-Message-Id: <1358845787-1350-6-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1358845787-1350-1-git-send-email-namhyung@kernel.org>
-References: <1358845787-1350-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 22 Jan 2013 04:17:59 -0500
+X-Nat-Received: from [202.181.97.72]:63924 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1358846259.4293
+To: linus.walleij@linaro.org
+Cc: rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        rmk+kernel@arm.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [3.8-rc4 arm] SCSI_SYM53C8XX_2 module cannot register IRQ
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201301202124.BFJ81722.SFOHtJFOLQFVOM@I-love.SAKURA.ne.jp>
+	<CACRpkdY1sJPkPJx8zFbYOsvHFUM4S_6_eLWjifBpNyqH7cCrDA@mail.gmail.com>
+In-Reply-To: <CACRpkdY1sJPkPJx8zFbYOsvHFUM4S_6_eLWjifBpNyqH7cCrDA@mail.gmail.com>
+Message-Id: <201301221817.IDD95831.HVOOFMFJOLFSQt@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 22 Jan 2013 18:17:33 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 22012013 #9160241, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Linus Walleij wrote:
+> > While (1) was fixed by now, I can't bisect (2) since (1) is preventing (2) from
+> > printing messages.
+> 
+> I usually bisect like this:
+> 
+> 1.  Get hold of the patch fixing the boot regression:
+>     git format-patch
+> f5565295892eb93c3191aa241405fe8b685542d6^..f5565295892eb93c3191aa241405fe8b685542d6
 
-When event group is enabled, sorting hist entries on periods for output
-should consider groups members' period also.  To do that, build period
-table using link/pair information and compare the table.
+Thanks, but sorry, I couldn't understand how this command line works.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1355726345-29553-7-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evsel.h |  2 ++
- tools/perf/util/hist.c  | 59 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 60 insertions(+), 1 deletion(-)
+Which one ("blank console bug" or "IRQ registration failure bug") does
+"the boot regression" refer?
 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index f5d22f12ccd8..24225d728ba4 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -78,6 +78,8 @@ struct perf_evsel {
- 	char			*group_name;
- };
- 
-+#define hists_to_evsel(h) container_of(h, struct perf_evsel, hists)
-+
- struct cpu_map;
- struct thread_map;
- struct perf_evlist;
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 8170a3d11ffa..f855941bebea 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -4,6 +4,7 @@
- #include "hist.h"
- #include "session.h"
- #include "sort.h"
-+#include "evsel.h"
- #include <math.h>
- 
- static bool hists__filter_entry_by_dso(struct hists *hists,
-@@ -540,6 +541,62 @@ void hists__collapse_resort_threaded(struct hists *hists)
-  * reverse the map, sort on period.
-  */
- 
-+static int period_cmp(u64 period_a, u64 period_b)
-+{
-+	if (period_a > period_b)
-+		return 1;
-+	if (period_a < period_b)
-+		return -1;
-+	return 0;
-+}
-+
-+static int hist_entry__sort_on_period(struct hist_entry *a,
-+				      struct hist_entry *b)
-+{
-+	int ret;
-+	int i, nr_members;
-+	struct perf_evsel *evsel;
-+	struct hist_entry *pair;
-+	u64 *periods_a, *periods_b;
-+
-+	ret = period_cmp(a->stat.period, b->stat.period);
-+	if (ret || !symbol_conf.event_group)
-+		return ret;
-+
-+	evsel = hists_to_evsel(a->hists);
-+	nr_members = evsel->nr_members;
-+	if (nr_members <= 1)
-+		return ret;
-+
-+	periods_a = zalloc(sizeof(periods_a) * nr_members);
-+	periods_b = zalloc(sizeof(periods_b) * nr_members);
-+
-+	if (!periods_a || !periods_b)
-+		goto out;
-+
-+	list_for_each_entry(pair, &a->pairs.head, pairs.node) {
-+		evsel = hists_to_evsel(pair->hists);
-+		periods_a[perf_evsel__group_idx(evsel)] = pair->stat.period;
-+	}
-+
-+	list_for_each_entry(pair, &b->pairs.head, pairs.node) {
-+		evsel = hists_to_evsel(pair->hists);
-+		periods_b[perf_evsel__group_idx(evsel)] = pair->stat.period;
-+	}
-+
-+	for (i = 1; i < nr_members; i++) {
-+		ret = period_cmp(periods_a[i], periods_b[i]);
-+		if (ret)
-+			break;
-+	}
-+
-+out:
-+	free(periods_a);
-+	free(periods_b);
-+
-+	return ret;
-+}
-+
- static void __hists__insert_output_entry(struct rb_root *entries,
- 					 struct hist_entry *he,
- 					 u64 min_callchain_hits)
-@@ -556,7 +613,7 @@ static void __hists__insert_output_entry(struct rb_root *entries,
- 		parent = *p;
- 		iter = rb_entry(parent, struct hist_entry, rb_node);
- 
--		if (he->stat.period > iter->stat.period)
-+		if (hist_entry__sort_on_period(he, iter) > 0)
- 			p = &(*p)->rb_left;
- 		else
- 			p = &(*p)->rb_right;
--- 
-1.7.11.7
+Your command line generated only one patch but you say "iterate".
 
+  $ git format-patch f5565295^..f5565295
+  0001-ARM-7610-1-versatile-bump-IRQ-numbers.patch
+
+If I use 5c49985c^..5c49985c (the patch which the blank console bug was fixed),
+it generated 8 patches.
+
+  $ git format-patch 5c49985c^..5c49985c
+  0001-ARM-7608-1-l2x0-Only-set-.set_debug-on-PL310-r3p0-an.patch
+  0002-ARM-7609-1-disable-errata-work-arounds-which-access-.patch
+  0003-ARM-7610-1-versatile-bump-IRQ-numbers.patch
+  0004-ARM-7611-1-VIC-fix-bug-in-VIC-irqdomain-code.patch
+  0005-ARM-7612-1-imx-Do-not-select-some-errata-that-depend.patch
+  0006-ARM-7614-1-mm-fix-wrong-branch-from-Cortex-A9-to-PJ4.patch
+  0007-ARM-7615-1-cache-l2x0-aurora-Invalidate-during-clean.patch
+  0008-ARM-7616-1-cache-l2x0-aurora-Use-writel_relaxed-inst.patch
+  $ grep -il irq 000*
+  0003-ARM-7610-1-versatile-bump-IRQ-numbers.patch
+  0004-ARM-7611-1-VIC-fix-bug-in-VIC-irqdomain-code.patch
+  0008-ARM-7616-1-cache-l2x0-aurora-Use-writel_relaxed-inst.patch
+
+Since the IRQ registration failure bug message contains IRQ number "27",
+I suspect f5565295 "ARM: 7610/1: versatile: bump IRQ numbers"
+
+  The Versatile starts to register Linux IRQ numbers from offset 0
+  which is illegal, since this is NO_IRQ. Bump all hard-coded IRQs
+  by 32 to get rid of the problem.
+
+and 5ced33bc06 "ARM: 7611/1: VIC: fix bug in VIC irqdomain code"
+
+  The VIC irqdomain code added in commit
+  07c9249f1fa90cc8189bed44c0bcece664596a72
+  "ARM: 7554/1: VIC: use irq_domain_add_simple()"
+
+  Had two bugs:
+
+  1) It didn't call irq_create_mapping() once on each
+     valid irq source in the slowpath when registering
+     the controller.
+
+  2) It passed a -1 as IRQ offset for the DT case, whereas
+     0 should be passed as invalid IRQ instead.
+
+but how can I test them?
+
+> 
+> 2. At each iterative step using git bisect:
+>    patch -p1 < 0001-ARM-7610-1-versatile-bump-IRQ-numbers.patch
+> 
+> 3. Boot/trial-and-horror
+> 
+> 4. git reset --hard HEAD
+>    To nullify the effects of the patch.
+> 
+> 5. git bisect [good|bad]
+> 
+Excuse me, what range do I need to pass to "git bisect start" command line?
+
+> 6. Iterate from (2) until you find the bug.
