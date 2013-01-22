@@ -1,44 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab3AVMb3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 07:31:29 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:42640 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab3AVMb2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 07:31:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdY1sJPkPJx8zFbYOsvHFUM4S_6_eLWjifBpNyqH7cCrDA@mail.gmail.com>
-References: <201301202124.BFJ81722.SFOHtJFOLQFVOM@I-love.SAKURA.ne.jp>
-	<CACRpkdY1sJPkPJx8zFbYOsvHFUM4S_6_eLWjifBpNyqH7cCrDA@mail.gmail.com>
-Date: Tue, 22 Jan 2013 13:25:17 +0100
-X-Google-Sender-Auth: QXgHPAwoiLNnWuZDdoqwjx3QM_w
-Message-ID: <CAMuHMdUJq-CWeYqrQMdxeb4WXrHRRZn05npWxRGYnGX=V+7OEQ@mail.gmail.com>
-Subject: Re: [3.8-rc4 arm] SCSI_SYM53C8XX_2 module cannot register IRQ
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, rmk+kernel@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1752346Ab3AVMdQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 07:33:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3349 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750713Ab3AVMdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 07:33:15 -0500
+Date: Tue, 22 Jan 2013 10:32:22 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <arm@kernel.org>,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>, <linux-media@vger.kernel.org>
+Subject: Re: [PATCH 09/15] media: coda: don't build on multiplatform
+Message-ID: <20130122103222.27b615d7@redhat.com>
+In-Reply-To: <20130122035402.GC29677@S2100-06.ap.freescale.net>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+	<1358788568-11137-10-git-send-email-arnd@arndb.de>
+	<20130122035402.GC29677@S2100-06.ap.freescale.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 9:03 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> 1.  Get hold of the patch fixing the boot regression:
->     git format-patch
-> f5565295892eb93c3191aa241405fe8b685542d6^..f5565295892eb93c3191aa241405fe8b685542d6
+Em Tue, 22 Jan 2013 11:54:04 +0800
+Shawn Guo <shawn.guo@linaro.org> escreveu:
 
-git format-patch -1 f5565295892eb93c3191aa241405fe8b685542d6
+> On Mon, Jan 21, 2013 at 05:16:02PM +0000, Arnd Bergmann wrote:
+> > The coda video codec driver depends on a mach-imx or mach-mxs specific
+> > header file "mach/iram.h". This is not available when building for
+> > multiplatform, so let us disable this driver for v3.8 when building
+> > multiplatform, and hopefully find a proper fix for v3.9.
+> > 
+> > drivers/media/platform/coda.c:27:23: fatal error: mach/iram.h: No such file or directory
+> > 
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Javier Martin <javier.martin@vista-silicon.com>
+> > Cc: Fabio Estevam <fabio.estevam@freescale.com>
+> > Cc: Sascha Hauer <kernel@pengutronix.de>
+> > Cc: Shawn Guo <shawn.guo@linaro.org>
+> 
+> Acked-by: Shawn Guo <shawn.guo@linaro.org>
+> 
+> > Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-Gr{oetje,eeting}s,
+Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-                        Geert
+> > Cc: linux-media@vger.kernel.org
+> > ---
+> >  drivers/media/platform/Kconfig |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
+> > index 3dcfea6..049d2b2 100644
+> > --- a/drivers/media/platform/Kconfig
+> > +++ b/drivers/media/platform/Kconfig
+> > @@ -142,7 +142,7 @@ if V4L_MEM2MEM_DRIVERS
+> >  
+> >  config VIDEO_CODA
+> >  	tristate "Chips&Media Coda multi-standard codec IP"
+> > -	depends on VIDEO_DEV && VIDEO_V4L2 && ARCH_MXC
+> > +	depends on VIDEO_DEV && VIDEO_V4L2 && ARCH_MXC && !ARCH_MULTIPLATFORM
+> >  	select VIDEOBUF2_DMA_CONTIG
+> >  	select V4L2_MEM2MEM_DEV
+> >  	select IRAM_ALLOC if SOC_IMX53
+> > -- 
+> > 1.7.10.4
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+
+Cheers,
+Mauro
