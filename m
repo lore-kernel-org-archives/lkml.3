@@ -1,58 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab3AVJOk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 04:14:40 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60773 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391Ab3AVJLH (ORCPT
+	id S1752892Ab3AVJPg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 04:15:36 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:54946 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398Ab3AVJPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 04:11:07 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-16-50fe57a5dea2
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 14/19] perf gtk/browser: Trim column header string when event group enabled
-Date: Tue, 22 Jan 2013 18:09:42 +0900
-Message-Id: <1358845787-1350-15-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1358845787-1350-1-git-send-email-namhyung@kernel.org>
-References: <1358845787-1350-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 22 Jan 2013 04:15:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130122085004.GD16143@arwen.pp.htv.fi>
+References: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
+	<053c01cdf860$9e98df20$dbca9d60$@samsung.com>
+	<20130122085004.GD16143@arwen.pp.htv.fi>
+Date: Tue, 22 Jan 2013 14:45:26 +0530
+Message-ID: <CAFp+6iEoCF91HiDbixqsKX5XS_UQrN=+2O7puPqN1MvjY_eHBg@mail.gmail.com>
+Subject: Re: [PATCH v6 0/4] Adding usb2.0 host-phy support for exynos5250
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: balbi@ti.com
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
+        thomas.abraham@linaro.org, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, sylvester.nawrocki@gmail.com,
+        dianders@chromium.org, jg1.han@samsung.com, p.paneri@samsung.com,
+        cpgs@samsung.com, Alan Stern <stern@rowland.harvard.edu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hi Felipe,
 
-When event group feature is enabled, each column header is expanded to
-match with the whole group column width.  But this is not needed for
-GTK+ browser since ti usually use variable-width fonts.  So trim it.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/gtk/hists.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Tue, Jan 22, 2013 at 2:20 PM, Felipe Balbi <balbi@ti.com> wrote:
+> HI,
+>
+> On Mon, Jan 21, 2013 at 09:23:28PM -0800, Kukjin Kim wrote:
+>> Vivek Gautam wrote:
+>> >
+>> > Changes from v5:
+>> >  - Rebased on top of latest patches:
+>> >         usb: phy: samsung: Introducing usb phy driver for hsotg (v9)
+>> >         usb: phy: samsung: Add support to set pmu isolation (v6)
+>> >    As a result adding hostphy enable mask and hostphy register offsets
+>> >    to driver data in order to access the HOSTPHY CONTROL register.
+>> >
+>> >  - Adding member 'otg' to struct samsung-usbphy so that its consumers
+>> >    can call otg->set_host so as to make 'phy' aware of the consumer type:
+>> >     HOST/DEVICE
+>> >
+>> >  - Adding 'otg' to 'struct s5p_ehci_hcd' and 'struct exynos_ohci_hcd'
+>> >    which keeps track of 'otg' of the controllers' phy. This then sets
+>> >    the host.
+>> >
+>> >  - Moved samsung_usbphy_set_type() calls from ehci-s5p and ohci-exynos
+>> >    to phy driver itself where based on phy_type it is called.
+>> >
+>> >  - Added separate macro definition for USB20PHY_CFG register to select
+>> >    between host/device type usb link.
+>> >
+>> >  - Removing unnecessary argument 'phy_type' from
+>> > samsung_usbphy_set_type()
+>> >    and samsung_usbphy_cfg_sel().
+>> >
+>> >  - Addressed few nits:
+>> >     -- added macro for 'KHZ'
+>> >     -- removing useless 'if' from samsung_usbphy_cfg_sel()
+>> >     -- keeping the place of clk_get intact and requesting driver
+>> >        data before that.
+>> >
+>> > Vivek Gautam (4):
+>> >   ARM: EXYNOS: Update & move usb-phy types to generic include layer
+>> >   usb: phy: samsung: Add host phy support to samsung-phy driver
+>> >   USB: ehci-s5p: Add phy driver support
+>> >   USB: ohci-exynos: Add phy driver support
+>> >
+>> >  .../devicetree/bindings/usb/samsung-usbphy.txt     |   12 +-
+>> >  drivers/usb/host/ehci-s5p.c                        |   81 +++-
+>> >  drivers/usb/host/ohci-exynos.c                     |   85 +++-
+>> >  drivers/usb/phy/Kconfig                            |    2 +-
+>> >  drivers/usb/phy/samsung-usbphy.c                   |  512
+>> ++++++++++++++++++--
+>> >  include/linux/usb/samsung_usb_phy.h                |   16 +
+>> >  6 files changed, 635 insertions(+), 73 deletions(-)
+>> >  create mode 100644 include/linux/usb/samsung_usb_phy.h
+>> >
+>> > --
+>> > 1.7.6.5
+>>
+>> Looks good to me,
+>>
+>> Felipe and Greg, I don't know who should take this series anyway, feel free
+>> to add  my ack:
+>>
+>> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+>
+> I will take care of it. But I need Alan's Acked-by for EHCI and OHCI
+> parts.
+>
 
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index c87a98c7efaa..caa554bdbfe7 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -170,7 +170,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- 		fmt->header(&hpp);
- 
- 		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
--							    -1, s,
-+							    -1, ltrim(s),
- 							    renderer, "markup",
- 							    col_idx++, NULL);
- 	}
+We got Alan's ACK for:
+USB: ehci-s5p: Add phy driver support
+USB: ohci-exynos: Add phy driver support
+
+
+
 -- 
-1.7.11.7
-
+Thanks & Regards
+Vivek
