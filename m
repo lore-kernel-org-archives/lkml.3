@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab3AVCW5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 21:22:57 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:48996 "EHLO hydra.sisk.pl"
+	id S1755890Ab3AVCWz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 21:22:55 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:49000 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752940Ab3AVCWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753196Ab3AVCWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Jan 2013 21:22:35 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
         Len Brown <lenb@kernel.org>
-Subject: [PATCH 2/4] ACPI / PM: Expose current status of ACPI power resources
-Date: Tue, 22 Jan 2013 03:26:29 +0100
-Message-ID: <4550268.C8GqG2xqOO@vostro.rjw.lan>
+Subject: [PATCH 1/4] ACPI / PM: Expose power states of ACPI devices to user space
+Date: Tue, 22 Jan 2013 03:25:15 +0100
+Message-ID: <4706454.hY2fLkUfhN@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <2760421.6nE3tkh92K@vostro.rjw.lan>
 References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <4247313.2G7Z3nCgM0@vostro.rjw.lan> <2760421.6nE3tkh92K@vostro.rjw.lan>
@@ -27,123 +27,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Since ACPI power resources are going to be used more extensively on
-new hardware platforms, it becomes necessary for user space (powertop
-in particular) to observe some properties of those resources for
-diagnostics purposes.
-
-For this reason, expose the current status of each ACPI power
-resource to user space via sysfs by adding a new resource_in_use
-attribute to the sysfs directory representing the given power
-resource.
+Make it possible to retrieve the current power state of a device with
+ACPI power management from user space via sysfs by adding two new
+attributes, power_state and real_power_state, to the sysfs directory
+associated with the struct acpi_device object representing the
+device's ACPI node.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- Documentation/ABI/testing/sysfs-devices-resource_in_use |   12 +++++++
- drivers/acpi/power.c                                    |   26 +++++++++++++++-
- drivers/acpi/scan.c                                     |    3 +
- include/acpi/acpi_bus.h                                 |    1 
- 4 files changed, 41 insertions(+), 1 deletion(-)
+ Documentation/ABI/testing/sysfs-devices-power_state      |   20 ++++++
+ Documentation/ABI/testing/sysfs-devices-real_power_state |   23 +++++++
+ drivers/acpi/scan.c                                      |   49 ++++++++++++++-
+ 3 files changed, 91 insertions(+), 1 deletion(-)
 
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -280,6 +280,7 @@ struct acpi_device {
- 	struct mutex physical_node_lock;
- 	DECLARE_BITMAP(physical_node_id_bitmap, ACPI_MAX_PHYSICAL_NODE);
- 	struct list_head power_dependent;
-+	void (*remove)(struct acpi_device *);
- };
- 
- static inline void *acpi_driver_data(struct acpi_device *d)
 Index: linux-pm/drivers/acpi/scan.c
 ===================================================================
 --- linux-pm.orig/drivers/acpi/scan.c
 +++ linux-pm/drivers/acpi/scan.c
-@@ -790,6 +790,9 @@ static void acpi_device_unregister(struc
+@@ -178,6 +178,32 @@ err_out:
+ }
+ EXPORT_SYMBOL(acpi_bus_hot_remove_device);
  
- 	acpi_power_add_remove_device(device, false);
- 	acpi_device_remove_files(device);
-+	if (device->remove)
-+		device->remove(device);
++static ssize_t real_power_state_show(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	struct acpi_device *adev = to_acpi_device(dev);
++	int state;
++	int ret;
 +
- 	device_unregister(&device->dev);
++	ret = acpi_device_get_power(adev, &state);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%s\n", acpi_power_state_string(state));
++}
++
++static DEVICE_ATTR(real_power_state, 0444, real_power_state_show, NULL);
++
++static ssize_t power_state_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct acpi_device *adev = to_acpi_device(dev);
++
++	return sprintf(buf, "%s\n", acpi_power_state_string(adev->power.state));
++}
++
++static DEVICE_ATTR(power_state, 0444, power_state_show, NULL);
++
+ static ssize_t
+ acpi_eject_store(struct device *d, struct device_attribute *attr,
+ 		const char *buf, size_t count)
+@@ -369,8 +395,22 @@ static int acpi_device_setup_files(struc
+          * hot-removal function from userland.
+          */
+ 	status = acpi_get_handle(dev->handle, "_EJ0", &temp);
+-	if (ACPI_SUCCESS(status))
++	if (ACPI_SUCCESS(status)) {
+ 		result = device_create_file(&dev->dev, &dev_attr_eject);
++		if (result)
++			return result;
++	}
++
++	if (dev->flags.power_manageable) {
++		result = device_create_file(&dev->dev, &dev_attr_power_state);
++		if (result)
++			return result;
++
++		if (dev->power.flags.power_resources)
++			result = device_create_file(&dev->dev,
++						    &dev_attr_real_power_state);
++	}
++
+ end:
+ 	return result;
+ }
+@@ -380,6 +420,13 @@ static void acpi_device_remove_files(str
+ 	acpi_status status;
+ 	acpi_handle temp;
+ 
++	if (dev->flags.power_manageable) {
++		device_remove_file(&dev->dev, &dev_attr_power_state);
++		if (dev->power.flags.power_resources)
++			device_remove_file(&dev->dev,
++					   &dev_attr_real_power_state);
++	}
++
  	/*
- 	 * Drop the reference counts of all power resources the device depends
-Index: linux-pm/drivers/acpi/power.c
-===================================================================
---- linux-pm.orig/drivers/acpi/power.c
-+++ linux-pm/drivers/acpi/power.c
-@@ -87,6 +87,12 @@ static DEFINE_MUTEX(power_resource_list_
-                              Power Resource Management
-    -------------------------------------------------------------------------- */
- 
-+static inline
-+struct acpi_power_resource *to_power_resource(struct acpi_device *device)
-+{
-+	return container_of(device, struct acpi_power_resource, device);
-+}
-+
- static struct acpi_power_resource *acpi_power_get_context(acpi_handle handle)
- {
- 	struct acpi_device *device;
-@@ -94,7 +100,7 @@ static struct acpi_power_resource *acpi_
- 	if (acpi_bus_get_device(handle, &device))
- 		return NULL;
- 
--	return container_of(device, struct acpi_power_resource, device);
-+	return to_power_resource(device);
- }
- 
- static int acpi_power_resources_list_add(acpi_handle handle,
-@@ -676,6 +682,21 @@ static void acpi_release_power_resource(
- 	kfree(resource);
- }
- 
-+static ssize_t acpi_power_in_use_show(struct device *dev,
-+				      struct device_attribute *attr,
-+				      char *buf) {
-+	struct acpi_power_resource *resource;
-+
-+	resource = to_power_resource(to_acpi_device(dev));
-+	return sprintf(buf, "%u\n", !!resource->ref_count);
-+}
-+static DEVICE_ATTR(resource_in_use, 0444, acpi_power_in_use_show, NULL);
-+
-+static void acpi_power_sysfs_remove(struct acpi_device *device)
-+{
-+	device_remove_file(&device->dev, &dev_attr_resource_in_use);
-+}
-+
- int acpi_add_power_resource(acpi_handle handle)
- {
- 	struct acpi_power_resource *resource;
-@@ -723,6 +744,9 @@ int acpi_add_power_resource(acpi_handle
- 	if (result)
- 		goto err;
- 
-+	if (!device_create_file(&device->dev, &dev_attr_resource_in_use))
-+		device->remove = acpi_power_sysfs_remove;
-+
- 	mutex_lock(&power_resource_list_lock);
- 	list_add(&resource->list_node, &acpi_power_resource_list);
- 	mutex_unlock(&power_resource_list_lock);
-Index: linux-pm/Documentation/ABI/testing/sysfs-devices-resource_in_use
+ 	 * If device has _STR, remove 'description' file
+ 	 */
+Index: linux-pm/Documentation/ABI/testing/sysfs-devices-power_state
 ===================================================================
 --- /dev/null
-+++ linux-pm/Documentation/ABI/testing/sysfs-devices-resource_in_use
-@@ -0,0 +1,12 @@
-+What:		/sys/devices/.../resource_in_use
++++ linux-pm/Documentation/ABI/testing/sysfs-devices-power_state
+@@ -0,0 +1,20 @@
++What:		/sys/devices/.../power_state
 +Date:		January 2013
 +Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 +Description:
-+		The /sys/devices/.../resource_in_use attribute is only present
-+		for device objects representing ACPI power resources.
++		The /sys/devices/.../power_state attribute is only present for
++		device objects representing ACPI device nodes that provide power
++		management methods.
 +
-+		If present, it contains a number (0 or 1) representing the
-+		current status of the given power resource (0 means that the
-+		resource is not in use and therefore it has been turned off).
++		If present, it contains a string representing the current ACPI
++		power state of the given device node.  Its possible values,
++		"D0", "D1", "D2", "D3hot", and "D3cold", reflect the power state
++		names defined by the ACPI specification (ACPI 4 and above).
++
++		If the device node uses shared ACPI power resources, this state
++		determines a list of power resources required not to be turned
++		off.  However, some power resources needed by the device node in
++		higher-power (lower-number) states may also be ON because of
++		some other devices using them at the moment.
++
++		This attribute is read-only.
+Index: linux-pm/Documentation/ABI/testing/sysfs-devices-real_power_state
+===================================================================
+--- /dev/null
++++ linux-pm/Documentation/ABI/testing/sysfs-devices-real_power_state
+@@ -0,0 +1,23 @@
++What:		/sys/devices/.../real_power_state
++Date:		January 2013
++Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++Description:
++		The /sys/devices/.../real_power_state attribute is only present
++		for device objects representing ACPI device nodes that provide
++		power management methods and use ACPI power resources for power
++		management.
++
++		If present, it contains a string representing the real ACPI
++		power state of the given device node as returned by the _PSC
++		control method or inferred from the configuration of power
++		resources.  Its possible values, "D0", "D1", "D2", "D3hot", and
++		"D3cold", reflect the power state names defined by the ACPI
++		specification (ACPI 4 and above).
++
++		In some situations the value of this attribute may be different
++		from the value of the /sys/devices/.../power_state attribute for
++		the same device object.  If that happens, some shared power
++		resources used by the device node are only ON because of some
++		other devices using them at the moment.
 +
 +		This attribute is read-only.
 
