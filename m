@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab3AVHVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:21:53 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:38030 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab3AVHVv (ORCPT
+	id S1753101Ab3AVHZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:25:26 -0500
+Received: from mga02.intel.com ([134.134.136.20]:35465 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003Ab3AVHZZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:21:51 -0500
-Date: Mon, 21 Jan 2013 23:21:56 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@lists.infradead.org, arm@kernel.org
-Subject: Re: [PATCH] dts: vt8500: Add initial dts support for WM8850
-Message-ID: <20130122072156.GC25783@quad.lixom.net>
-References: <1358577868-29042-1-git-send-email-linux@prisktech.co.nz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358577868-29042-1-git-send-email-linux@prisktech.co.nz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 22 Jan 2013 02:25:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,512,1355126400"; 
+   d="scan'208";a="250574924"
+Message-ID: <1358839491.12502.41.camel@smile>
+Subject: Re: [PATCH 2/2] dw_dmac: return proper residue value
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        Viresh Kumar <viresh.linux@gmail.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Date: Tue, 22 Jan 2013 09:24:51 +0200
+In-Reply-To: <20130121142205.GB26562@intel.com>
+References: <1358758844-24711-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1358758844-24711-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <20130121084924.GA26562@intel.com> <1358761551.12502.39.camel@smile>
+	 <20130121142205.GB26562@intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 19, 2013 at 07:44:28PM +1300, Tony Prisk wrote:
-> This patch adds a soc dtsi for the Wondermedia WM8850.
+On Mon, 2013-01-21 at 06:22 -0800, Vinod Koul wrote: 
+> On Mon, Jan 21, 2013 at 11:45:51AM +0200, Andy Shevchenko wrote:
+> > > > +	return 0;
+> > > hmmm, why not use BLOCK_TS value. That way you dont need to look at direction
+> > > and along with burst can easily calculate residue...
+> > 
+> > Do you mean to read CTL hi/lo and do
+> > 
+> > desc->len - ctlhi.block_ts * ctllo.src_tr_width?
+> > 
+> Yes
+> > I think it could be not precise when memory-to-peripheral transfer is
+> > going on. In that case you probably will have src_tr_width like 32 bits,
+> > meanwhile peripheral may receive only byte stream.
+> Nope that is not the case.
+> SAR/DAR is always incremented in src/dstn_tr_width granularity. For example if
+> you are using MEM to DMA, then SAR will always increment in case of x86 in 4byte
+> granularity as we will read bursts not singles.
 > 
-> A board dts file is also included for the W70v2 tablet, with support
-> for all the drivers currently in mainline.
+> Also if check the spec, it says "Once the transfer starts, the read-back value is the
+> total number of data items already read from the source peripheral, regardless of
+> what is the flow controller"
 > 
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> ---
-> Hi Olof,
-> 
-> Sorry this is a bit late.
+> So basically you get what is read from buffer in case of MEM->PER and get what
+> is read from FIFO in case of PER->MEM which IMO gives you better or equal results
+> than your calulation.
 
-For 3.9? No worries, not late yet.
+I will try this. Indeed I don't like usage of direction as well, and
+your solution seems much clear in that sense.
 
-I've applied this to the same branch as the other wm8x50 patches. I also fixed
-up three <space><tab> occurrances in the dtsi that git am complained about.
-
-
--Olof
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
