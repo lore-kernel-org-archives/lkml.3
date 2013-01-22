@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab3AVBTz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 20:19:55 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51819 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655Ab3AVBTy (ORCPT
+	id S1752768Ab3AVB0S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 20:26:18 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:42988 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab3AVB0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 20:19:54 -0500
-Date: Tue, 22 Jan 2013 01:18:08 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: One of these things (CONFIG_HZ) is not like the others..
-Message-ID: <20130122011808.GF23505@n2100.arm.linux.org.uk>
-References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com> <201301212041.17951.arnd@arndb.de> <50FDAC5F.4040605@linaro.org> <CAKGA1b=D5CNikijoOAk5xP6TC-nB_gEGtS05ncrPR68sQTMrxw@mail.gmail.com> <50FDC2DD.7090406@linaro.org> <CAKGA1bmtTH1N8nx79MGiMighdQROpNtpvAZXhHKT+mT3kcazBQ@mail.gmail.com> <50FDE2AE.8030608@linaro.org> <CAKGA1bkXx2qn+c6sKqXsty-aFe1r-W79uyem0O8p6JNeeq6zxQ@mail.gmail.com>
+	Mon, 21 Jan 2013 20:26:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKGA1bkXx2qn+c6sKqXsty-aFe1r-W79uyem0O8p6JNeeq6zxQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1358788568-11137-9-git-send-email-arnd@arndb.de>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+	<1358788568-11137-9-git-send-email-arnd@arndb.de>
+Date: Tue, 22 Jan 2013 10:26:16 +0900
+X-Google-Sender-Auth: MC0sE807yvYuqtPJfGCKb4N-zcs
+Message-ID: <CAAQKjZPh_bAAXoA91hLGygmCFpbtWyOq4GYP-PQvBf6Rk806ig@mail.gmail.com>
+Subject: Re: [PATCH 08/15] drm/exynos: fimd and ipp are broken on multiplatform
+From: Inki Dae <inki.dae@samsung.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Seung-Woo Kim <sw0312.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, arm@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 07:06:59PM -0600, Matt Sealey wrote:
-> On Mon, Jan 21, 2013 at 6:51 PM, John Stultz <john.stultz@linaro.org> wrote:
-> > On 01/21/2013 02:54 PM, Matt Sealey wrote:
-> >>
-> >> On Mon, Jan 21, 2013 at 4:36 PM, John Stultz <john.stultz@linaro.org>
-> >> wrote:
-> >>>
-> >>> On 01/21/2013 01:14 PM, Matt Sealey wrote:
-> >
-> > As far as jiffies rating, from jiffies.c:
-> >     .rating        = 1, /* lowest valid rating*/
-> >
-> > So I'm not sure what you mean by "the debug on the kernel log is telling me
-> > it has a higher resolution".
-> 
-> Oh, it is just if I actually don't run setup_sched_clock on my
-> platform, it gives a little message (with #define DEBUG 1 in
-> sched_clock.c)
+Checked it out and applied. For ARCH_MULTIPLATFORM support, Such
+header files shouldn't be included. And for this, we are planning on
+supporting device tree for ipp driver.
 
-sched_clock() has nothing to do with time keeping, and that
-HZ/NO_HZ/HRTIMERS don't affect it (when it isn't being derived from
-jiffies).
+Thanks,
+Inki Dae
 
-Now, sched_clock() is there to give the scheduler a _fast_ to access,
-higher resolution clock than is available from other sources, so that
-there's ways of accurately measuring the amount of time processes run
-for, and other such measurements - and it uses that to determine how
-to schedule a particular task and when to preempt it.
-
-Not providing it means you get those measurements at HZ-based resolution,
-which is suboptimal for tasks which run often for sub-HZ periods (which
-can end up accumulating zero run time.)
+2013/1/22 Arnd Bergmann <arnd@arndb.de>:
+> While the exynos DRM support in principle can work on
+> multiplatform, the FIMD and IPP sections of it both
+> include the plat/map-base.h header file, which is
+> not available on multiplatform. Rather than disabling
+> the entire driver, we can just conditionally build
+> these two parts.
+>
+> Without this patch, building allyesconfig results in:
+>
+> drivers/gpu/drm/exynos/exynos_drm_fimc.c:19:27: fatal error: plat/map-base.h: No such file or directory
+> drivers/gpu/drm/exynos/exynos_drm_ipp.c:20:27: fatal error: plat/map-base.h: No such file or directory
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Joonyoung Shim <jy0922.shim@samsung.com>
+> Cc: Inki Dae <inki.dae@samsung.com>
+> Cc: Seung-Woo Kim <sw0312.kim@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: dri-devel@lists.freedesktop.org
+> ---
+>  drivers/gpu/drm/exynos/Kconfig |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/exynos/Kconfig b/drivers/gpu/drm/exynos/Kconfig
+> index 1d1f1e5..046bcda 100644
+> --- a/drivers/gpu/drm/exynos/Kconfig
+> +++ b/drivers/gpu/drm/exynos/Kconfig
+> @@ -24,7 +24,7 @@ config DRM_EXYNOS_DMABUF
+>
+>  config DRM_EXYNOS_FIMD
+>         bool "Exynos DRM FIMD"
+> -       depends on DRM_EXYNOS && !FB_S3C
+> +       depends on DRM_EXYNOS && !FB_S3C && !ARCH_MULTIPLATFORM
+>         help
+>           Choose this option if you want to use Exynos FIMD for DRM.
+>
+> @@ -48,7 +48,7 @@ config DRM_EXYNOS_G2D
+>
+>  config DRM_EXYNOS_IPP
+>         bool "Exynos DRM IPP"
+> -       depends on DRM_EXYNOS
+> +       depends on DRM_EXYNOS && !ARCH_MULTIPLATFORM
+>         help
+>           Choose this option if you want to use IPP feature for DRM.
+>
+> --
+> 1.7.10.4
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
