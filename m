@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab3AVHHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:07:10 -0500
-Received: from mga01.intel.com ([192.55.52.88]:36799 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752548Ab3AVHHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:07:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,512,1355126400"; 
-   d="scan'208";a="280372043"
-Date: Tue, 22 Jan 2013 09:10:56 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>
-Subject: Re: [PATCH 1/4] ACPI / PM: Make acpi_bus_init_power() more robust
-Message-ID: <20130122071056.GB2239@intel.com>
-References: <1792467.qHBR6KraFh@vostro.rjw.lan>
- <24285515.9Jp3KUo9Px@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <24285515.9Jp3KUo9Px@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753643Ab3AVHJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:09:05 -0500
+Received: from hotel311.server4you.de ([85.25.146.15]:44967 "EHLO
+	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab3AVHJD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 02:09:03 -0500
+From: Daniel Wagner <wagi@monom.org>
+To: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Cc: lizefan@huawei.com, Daniel Wagner <daniel.wagner@bmw-carit.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Neil Horman <nhorman@tuxdriver.com>, netdev@vger.kernel.org
+Subject: [PATCH v1] net: net_cls: fd passed in SCM_RIGHTS datagram not set correctly
+Date: Tue, 22 Jan 2013 08:09:00 +0100
+Message-Id: <1358838540-2910-1-git-send-email-wagi@monom.org>
+X-Mailer: git-send-email 1.8.0.rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 03:09:01AM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> The ACPI specification requires the _PSC method to be present under
-> a device object if its power state cannot be inferred from the states
-> of power resources used by it (ACPI 5, Section 7.6.2).  However, it
-> also requires that (for power states D0-D2 and D3hot) if the _PSn
-> (n = 0, 1, 2, 3) method is present under the device object, it also
-> must be executed after the power resources have been set
-> appropriately for the device to go into power state Dn (D3 means
-> D3hot in this case).  Thus it is not clear from the specification
-> whether or not the _PSn method should be executed if the initial
-> configuraion of power resources used by the device indicates power
-> state Dn and the _PSC method is not present.
-> 
-> The current implementation of acpi_bus_init_power() is based on the
-> assumption that it should not be necessary to execute _PSn in the
-> above situation, but experience shows that in fact that assumption
-> need not be satisfied.  For this reason, make acpi_bus_init_power()
-> always execute _PSn if the initial configuration of device power
-> resources indicates power state Dn.
-> 
-> Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: Daniel Wagner <daniel.wagner@bmw-carit.de>
 
-You can add also,
+Commit 6a328d8c6f03501657ad580f6f98bf9a42583ff7 changed the update
+logic for the socket but it does not update the SCM_RIGHTS update
+as well. This patch is based on the net_prio fix commit
 
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+48a87cc26c13b68f6cce4e9d769fcb17a6b3e4b8
 
-if you like. Thanks for fixing this.
+    net: netprio: fd passed in SCM_RIGHTS datagram not set correctly
+
+    A socket fd passed in a SCM_RIGHTS datagram was not getting
+    updated with the new tasks cgrp prioidx. This leaves IO on
+    the socket tagged with the old tasks priority.
+
+    To fix this add a check in the scm recvmsg path to update the
+    sock cgrp prioidx with the new tasks value.
+
+Let's apply the same fix for net_cls.
+
+Signed-off-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+Reported-by: Li Zefan <lizefan@huawei.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: John Fastabend <john.r.fastabend@intel.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: netdev@vger.kernel.org
+Cc: cgroups@vger.kernel.org
+---
+
+v1: missing Sob added (d'oh)
+
+ net/core/scm.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/net/core/scm.c b/net/core/scm.c
+index 57fb1ee..905dcc6 100644
+--- a/net/core/scm.c
++++ b/net/core/scm.c
+@@ -35,6 +35,7 @@
+ #include <net/sock.h>
+ #include <net/compat.h>
+ #include <net/scm.h>
++#include <net/cls_cgroup.h>
+ 
+ 
+ /*
+@@ -302,8 +303,10 @@ void scm_detach_fds(struct msghdr *msg, struct scm_cookie *scm)
+ 		}
+ 		/* Bump the usage count and install the file. */
+ 		sock = sock_from_file(fp[i], &err);
+-		if (sock)
++		if (sock) {
+ 			sock_update_netprioidx(sock->sk, current);
++			sock_update_classid(sock->sk, current);
++		}
+ 		fd_install(new_fd, get_file(fp[i]));
+ 	}
+ 
+-- 
+1.8.0.rc0
+
