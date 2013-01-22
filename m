@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157Ab3AVQ6L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 11:58:11 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:54516 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752547Ab3AVQ6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 11:58:06 -0500
-Message-ID: <50FEC508.50004@ti.com>
-Date: Tue, 22 Jan 2013 10:57:44 -0600
-From: Rob Clark <rob@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755149Ab3AVQ7f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 11:59:35 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:54842 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622Ab3AVQ7e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 11:59:34 -0500
+Date: Tue, 22 Jan 2013 17:59:29 +0100
+From: Leandro Lucarella <leandro.lucarella@sociomantic.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Doubts about listen backlog and tcp_max_syn_backlog
+Message-ID: <20130122165929.GH4608@sociomantic.com>
+References: <20130122161038.GG4608@sociomantic.com>
+ <1358873142.3464.3964.camel@edumazet-glaptop>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <arm@kernel.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: Re: [PATCH 15/15] staging/omapdrm: don't build on multiplatform
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <1358788568-11137-16-git-send-email-arnd@arndb.de> <50FD7A5F.9020702@ti.com> <201301211741.11875.arnd@arndb.de> <50FD8B63.1060506@ti.com> <20130122165330.GA28152@kroah.com>
-In-Reply-To: <20130122165330.GA28152@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358873142.3464.3964.camel@edumazet-glaptop>
+X-Paranoid: Just because you're paranoid, don't mean they're not after you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:tV8Uu3PTZXO9KEA1jV8bZk922G9mdJHfMPLkkROTg6j
+ +AstJF1qPFq67aGpgwHaxPfeM55jRvtddFn1F8UIuKFFZzp2hU
+ iCnTGyf3WaCwXYKmsLXg54PdWxffU5Bb/ml5yQzOM/jwKK92Dh
+ jiziRiJPLlRCRVeiHnvN0xMTUuLnlaEIJHBMsh1QNG9d7TLrXH
+ Qesj0HgmWFTMJRqRzGCLTC4axpIZaL9Fbe8tR4AvZDMKe2qQQv
+ V2Q+uG8HeFTPVzaSDwJayuPMtlFqrlvnwXSH/GzxbalXV274MV
+ Z9rByKQkx3DuuCOYdRSXfU+FOjlCiqrb+jY+IrEPQPP9KSvTEo
+ dgKFBfe1fJajIGYF1E/JCAdOsBHU/MwFw81PVaUsvM0CvfgNr0
+ ONASpM6XVrHHg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2013 10:53 AM, Greg Kroah-Hartman wrote:
-> On Mon, Jan 21, 2013 at 12:39:31PM -0600, Rob Clark wrote:
->> On 01/21/2013 11:41 AM, Arnd Bergmann wrote:
->>> On Monday 21 January 2013, Rob Clark wrote:
->>>> Are you sure OMAP2_DSS requires ARCH_OMAP2PLUS?  I don't see this, and
->>>> it at least used to not depend on ARCH_OMAP2PLUS.  If it does now, I
->>>> think the correct fix would be to remove the dependency in OMAP2_DSS.  I
->>>> don't think removing ARCH_MULTIPLATFORM support in omapdrm is the
->>>> correct solution.
->>> At least it says so in drivers/video/omap2/Kconfig, which contains
->>>
->>> if ARCH_OMAP2PLUS
->>> source drivers/video/omap2/dss/Kconfig
->>> endif
->> ahh, ok, I see.. the if ARCH_OMAP2PLUS bit looks like it came in
->> recently (770b6cb)
->>
->> what about changing this to 'if ARCH_OMAP2PLUS || ARCH_MULTIPLATFORM'?
-> That's what Arnd's patch did.
+On Tue, Jan 22, 2013 at 08:45:42AM -0800, Eric Dumazet wrote:
+> On Tue, 2013-01-22 at 17:10 +0100, Leandro Lucarella wrote:
+> > Hi, I'm having some problems with missing SYNs in a server with a high
+> > rate of incoming connections and, even when far from understanding the
+> > kernel,  I ended up looking at the kernel's source to try to understand
+> > better what's going on, because some stuff doesn't make a lot of sense
+> > to me.
+[snip]
+> > 1. What's the relation between the socket backlog and the queue created
+> >    by reqsk_queue_alloc()? Because the backlog is only adjusted not to
+> >    be grater than sysctl_somaxconn, but the queue size can be quite
+> >    different.
+> > 2. The comment just above the definition of reqsk_queue_alloc() about
+> >    sysctl_max_syn_backlog says "Maximum number of SYN_RECV sockets in
+> >    queue per LISTEN socket.". But then nr_table_entries is not only
+> >    rounded up to the next power of 2, is incremented by one before that,
+> >    so a backlog of, for example, 128, would end up with 256 table
+> >    entries even if sysctl_max_syn_backlog is 128.
+> > 3. Why is there a nr_table_entries + 1 at all in there? Looking at the
+> >    commit that introduced this[1] I can't find any explanation and I've
+> >    read some big projects are using backlogs of 511 because of this[2].
+> >    (which BTW, ff the queue is really a hash table, looks like an awful
+> >    idea).
+> > 4. I found some places sk->sk_ack_backlog is checked against
+> >    sk->sk_max_ack_backlog to see if new requests should be dropped, but
+> >    I also saw checks like inet_csk_reqsk_queue_young(sk) > 1 or
+> >    inet_csk_reqsk_queue_is_full(sk), so I guess the queue is used too.
+[snip]
+> 
+> What particular problem do you have ?
 
-sorry, I was talking about in drivers/video/omap2/Kconfig
+What I'm seeing are clients taking either useconds to connect, or 3
+seconds, which suggest SYNs are getting lost, but the network doesn't
+seem to be the problem. I'm still investigating this, so unfortunately
+I'm not really sure.
 
-Ie. I'd prefer to re-enable omapdss on multi-plat rather than disabling 
-omapdrm.  With changes in drm core, it is a bit of a pain to compile 
-test all the arm drivers by doing N different builds, so we've been 
-trying to get to the point of all arm drm drivers supporting multi-plat
+> A serious rewrite of LISTEN code is needed, because the current
+> implementation doesn't scale :
+> 
+> The SYNACK retransmits are done by a single timer wheel, holding the
+> socket lock for too long. So increasing the backlog to 2^16 or 2^17 is
+> not really an option.
+> 
+> Hash table are nice, but if we have to scan them, holding a single lock,
+> they are not so nice.
 
-BR,
--R
+So, the queue is really a hash table, then? So using any (2^n)-1 would
+be a bad idea because when the backlog is next to full, the hash table
+will be really slow? Is that why the + 1 is there? Is assuming everyone
+will use a power of 2 an thus having a load factor of 0.5 at most?
 
-> totally confused,
->
-> greg k-h
-
+-- 
+Leandro Lucarella
+Senior R&D Developer
+-----------------------------------------------------------
+sociomantic labs GmbH
+Paul-Lincke-Ufer 39/40
+10999 Berlin
+DEUTSCHLAND
+-----------------------------------------------------------
+http://www.sociomantic.com
+-----------------------------------------------------------
+Fon:       +49 (0) 30 3087 4615
+Fax:       +49 (0) 30 3087 4619
+Mobile:    +49 (0)157 3636 7373
+Skype:     llucarella
+Twitter:   http://www.twitter.com/sociomantic
+Facebook:  http://bit.ly/labsfacebook
+-----------------------------------------------------------
+sociomantic labs GmbH, Location: Berlin
+Commercial Register - AG Charlottenburg: HRB 121302 B
+VAT No. - USt-ID: DE 266262100
+Managing Directors: Thomas Nicolai, Thomas Brandhoff
