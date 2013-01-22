@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab3AVHnB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:43:01 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:55295 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755255Ab3AVHlz (ORCPT
+	id S932108Ab3AVHnL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:43:11 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:59452 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755480Ab3AVHnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:41:55 -0500
+	Tue, 22 Jan 2013 02:43:00 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5 26/45] perf/x86: Use get/put_online_cpus_atomic() to
- prevent CPU offline
+Subject: [PATCH v5 29/45] x86/xen: Use get/put_online_cpus_atomic() to prevent
+ CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -20,8 +20,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 22 Jan 2013 13:09:52 +0530
-Message-ID: <20130122073948.13822.43399.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 22 Jan 2013 13:10:51 +0530
+Message-ID: <20130122074046.13822.61950.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,64 +29,132 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012207-3568-0000-0000-0000030FFEC7
+x-cbid: 13012207-0260-0000-0000-0000026FFEE6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CPU_DYING notifier modifies the per-cpu pointer pmu->box, and this can
-race with functions such as uncore_pmu_to_box() and uncore_pci_remove() when
-we remove stop_machine() from the CPU offline path. So protect them using
-get/put_online_cpus_atomic().
+Once stop_machine() is gone from the CPU offline path, we won't be able to
+depend on preempt_disable() or local_irq_disable() to prevent CPUs from
+going offline from under us.
 
+Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
+while invoking from atomic context.
+
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: xen-devel@lists.xensource.com
+Cc: virtualization@lists.linux-foundation.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/x86/xen/mmu.c |   11 +++++++++--
+ arch/x86/xen/smp.c |    9 +++++++++
+ 2 files changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index b43200d..6faae53 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -1,3 +1,4 @@
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 01de35c..6a95a15 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -39,6 +39,7 @@
+  * Jeremy Fitzhardinge <jeremy@xensource.com>, XenSource Inc, 2007
+  */
+ #include <linux/sched.h>
 +#include <linux/cpu.h>
- #include "perf_event_intel_uncore.h"
- 
- static struct intel_uncore_type *empty_uncore[] = { NULL, };
-@@ -1965,6 +1966,7 @@ uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
- 	if (box)
- 		return box;
- 
+ #include <linux/highmem.h>
+ #include <linux/debugfs.h>
+ #include <linux/bug.h>
+@@ -1163,9 +1164,13 @@ static void xen_drop_mm_ref(struct mm_struct *mm)
+  */
+ static void xen_exit_mmap(struct mm_struct *mm)
+ {
+-	get_cpu();		/* make sure we don't move around */
++	/*
++	 * Make sure we don't move around, and prevent CPUs from going
++	 * offline.
++	 */
 +	get_online_cpus_atomic();
- 	raw_spin_lock(&uncore_box_lock);
- 	list_for_each_entry(box, &pmu->box_list, list) {
- 		if (box->phys_id == topology_physical_package_id(cpu)) {
-@@ -1974,6 +1976,7 @@ uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
- 		}
- 	}
- 	raw_spin_unlock(&uncore_box_lock);
+ 	xen_drop_mm_ref(mm);
+-	put_cpu();
 +	put_online_cpus_atomic();
  
- 	return *per_cpu_ptr(pmu->box, cpu);
+ 	spin_lock(&mm->page_table_lock);
+ 
+@@ -1371,6 +1376,7 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
+ 	args->op.arg2.vcpumask = to_cpumask(args->mask);
+ 
+ 	/* Remove us, and any offline CPUS. */
++	get_online_cpus_atomic();
+ 	cpumask_and(to_cpumask(args->mask), cpus, cpu_online_mask);
+ 	cpumask_clear_cpu(smp_processor_id(), to_cpumask(args->mask));
+ 
+@@ -1383,6 +1389,7 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
+ 	MULTI_mmuext_op(mcs.mc, &args->op, 1, NULL, DOMID_SELF);
+ 
+ 	xen_mc_issue(PARAVIRT_LAZY_MMU);
++	put_online_cpus_atomic();
  }
-@@ -2556,6 +2559,7 @@ static void uncore_pci_remove(struct pci_dev *pdev)
- 	if (WARN_ON_ONCE(phys_id != box->phys_id))
+ 
+ static unsigned long xen_read_cr3(void)
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 4f7d259..7d753ae 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -16,6 +16,7 @@
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/smp.h>
++#include <linux/cpu.h>
+ #include <linux/irq_work.h>
+ 
+ #include <asm/paravirt.h>
+@@ -487,8 +488,10 @@ static void __xen_send_IPI_mask(const struct cpumask *mask,
+ {
+ 	unsigned cpu;
+ 
++	get_online_cpus_atomic();
+ 	for_each_cpu_and(cpu, mask, cpu_online_mask)
+ 		xen_send_IPI_one(cpu, vector);
++	put_online_cpus_atomic();
+ }
+ 
+ static void xen_smp_send_call_function_ipi(const struct cpumask *mask)
+@@ -551,8 +554,10 @@ void xen_send_IPI_all(int vector)
+ {
+ 	int xen_vector = xen_map_vector(vector);
+ 
++	get_online_cpus_atomic();
+ 	if (xen_vector >= 0)
+ 		__xen_send_IPI_mask(cpu_online_mask, xen_vector);
++	put_online_cpus_atomic();
+ }
+ 
+ void xen_send_IPI_self(int vector)
+@@ -572,20 +577,24 @@ void xen_send_IPI_mask_allbutself(const struct cpumask *mask,
+ 	if (!(num_online_cpus() > 1))
  		return;
  
 +	get_online_cpus_atomic();
- 	raw_spin_lock(&uncore_box_lock);
- 	list_del(&box->list);
- 	raw_spin_unlock(&uncore_box_lock);
-@@ -2569,6 +2573,7 @@ static void uncore_pci_remove(struct pci_dev *pdev)
+ 	for_each_cpu_and(cpu, mask, cpu_online_mask) {
+ 		if (this_cpu == cpu)
+ 			continue;
  
- 	WARN_ON_ONCE(atomic_read(&box->refcnt) != 1);
- 	kfree(box);
+ 		xen_smp_send_call_function_single_ipi(cpu);
+ 	}
 +	put_online_cpus_atomic();
  }
  
- static int uncore_pci_probe(struct pci_dev *pdev,
+ void xen_send_IPI_allbutself(int vector)
+ {
+ 	int xen_vector = xen_map_vector(vector);
+ 
++	get_online_cpus_atomic();
+ 	if (xen_vector >= 0)
+ 		xen_send_IPI_mask_allbutself(cpu_online_mask, xen_vector);
++	put_online_cpus_atomic();
+ }
+ 
+ static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id)
 
