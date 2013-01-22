@@ -1,184 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab3AVQqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 11:46:51 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:44542 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab3AVQqs (ORCPT
+	id S1754792Ab3AVQvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 11:51:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34975 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752603Ab3AVQvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 11:46:48 -0500
-Message-ID: <50FEC28F.3090100@gmail.com>
-Date: Tue, 22 Jan 2013 17:47:11 +0100
-From: Francesco Lavra <francescolavra.fl@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Tue, 22 Jan 2013 11:51:09 -0500
+Date: Tue, 22 Jan 2013 08:49:48 -0800
+From: tip-bot for Daniel J Blueman <daniel@numascale-asia.com>
+Message-ID: <tip-772c3ff385eda0d0b4744596f87b79a17f8c9282@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, bp@alien8.de, daniel@numascale-asia.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bp@alien8.de, daniel@numascale-asia.com
+In-Reply-To: <1353997932-8475-1-git-send-email-daniel@numascale-asia.com>
+References: <1353997932-8475-1-git-send-email-daniel@numascale-asia.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86, AMD, NB: Add multi-domain support
+Git-Commit-ID: 772c3ff385eda0d0b4744596f87b79a17f8c9282
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Subject: Re: [Linaro-mm-sig] [PATCH 6/7] reservation: cross-device reservation
- support
-References: <1358253244-11453-1-git-send-email-maarten.lankhorst@canonical.com> <1358253244-11453-7-git-send-email-maarten.lankhorst@canonical.com>
-In-Reply-To: <1358253244-11453-7-git-send-email-maarten.lankhorst@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 22 Jan 2013 08:49:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2013 01:34 PM, Maarten Lankhorst wrote:
-> This adds support for a generic reservations framework that can be
-> hooked up to ttm and dma-buf and allows easy sharing of reservations
-> across devices.
-> 
-> The idea is that a dma-buf and ttm object both will get a pointer
-> to a struct reservation_object, which has to be reserved before
-> anything is done with the contents of the dma-buf.
-> 
-> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-> ---
->  Documentation/DocBook/device-drivers.tmpl |   2 +
->  drivers/base/Makefile                     |   2 +-
->  drivers/base/reservation.c                | 251 ++++++++++++++++++++++++++++++
->  include/linux/reservation.h               | 182 ++++++++++++++++++++++
->  4 files changed, 436 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/base/reservation.c
->  create mode 100644 include/linux/reservation.h
-[...]
-> diff --git a/include/linux/reservation.h b/include/linux/reservation.h
-> new file mode 100644
-> index 0000000..fc2349d
-> --- /dev/null
-> +++ b/include/linux/reservation.h
-> @@ -0,0 +1,182 @@
-> +/*
-> + * Header file for reservations for dma-buf and ttm
-> + *
-> + * Copyright(C) 2011 Linaro Limited. All rights reserved.
-> + * Copyright (C) 2012 Canonical Ltd
-> + * Copyright (C) 2012 Texas Instruments
-> + *
-> + * Authors:
-> + * Rob Clark <rob.clark@linaro.org>
-> + * Maarten Lankhorst <maarten.lankhorst@canonical.com>
-> + * Thomas Hellstrom <thellstrom-at-vmware-dot-com>
-> + *
-> + * Based on bo.c which bears the following copyright notice,
-> + * but is dual licensed:
-> + *
-> + * Copyright (c) 2006-2009 VMware, Inc., Palo Alto, CA., USA
-> + * All Rights Reserved.
-> + *
-> + * Permission is hereby granted, free of charge, to any person obtaining a
-> + * copy of this software and associated documentation files (the
-> + * "Software"), to deal in the Software without restriction, including
-> + * without limitation the rights to use, copy, modify, merge, publish,
-> + * distribute, sub license, and/or sell copies of the Software, and to
-> + * permit persons to whom the Software is furnished to do so, subject to
-> + * the following conditions:
-> + *
-> + * The above copyright notice and this permission notice (including the
-> + * next paragraph) shall be included in all copies or substantial portions
-> + * of the Software.
-> + *
-> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-> + * FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
-> + * THE COPYRIGHT HOLDERS, AUTHORS AND/OR ITS SUPPLIERS BE LIABLE FOR ANY CLAIM,
-> + * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-> + * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-> + * USE OR OTHER DEALINGS IN THE SOFTWARE.
-> + */
-> +#ifndef _LINUX_RESERVATION_H
-> +#define _LINUX_RESERVATION_H
-> +
-> +#include <linux/spinlock.h>
-> +#include <linux/mutex.h>
-> +#include <linux/fence.h>
-> +
-> +#define BUF_MAX_SHARED_FENCE 8
-> +
-> +struct fence;
-> +
-> +extern atomic_long_t reservation_counter;
-> +extern const char reservation_object_name[];
-> +extern struct lock_class_key reservation_object_class;
-> +extern const char reservation_ticket_name[];
-> +extern struct lock_class_key reservation_ticket_class;
-> +
-> +struct reservation_object {
-> +	struct ticket_mutex lock;
-> +
-> +	u32 fence_shared_count;
-> +	struct fence *fence_excl;
-> +	struct fence *fence_shared[BUF_MAX_SHARED_FENCE];
-> +};
-> +
-> +struct reservation_ticket {
-> +	unsigned long seqno;
-> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
-> +	struct lockdep_map dep_map;
-> +#endif
-> +};
-> +
-> +/**
-> + * struct reservation_entry - reservation structure for a
-> + * reservation_object
-> + * @head:	list entry
-> + * @obj_shared:	pointer to a reservation_object to reserve
-> + *
-> + * Bit 0 of obj_shared is set to bool shared, as such pointer has to be
-> + * converted back, which can be done with reservation_entry_get.
-> + */
-> +struct reservation_entry {
-> +	struct list_head head;
-> +	unsigned long obj_shared;
-> +};
-> +
-> +
-> +static inline void
-> +reservation_object_init(struct reservation_object *obj)
-> +{
-> +	obj->fence_shared_count = 0;
-> +	obj->fence_excl = NULL;
-> +
-> +	__ticket_mutex_init(&obj->lock, reservation_object_name,
-> +			    &reservation_object_class);
-> +}
-> +
-> +static inline void
-> +reservation_object_fini(struct reservation_object *obj)
-> +{
-> +	int i;
-> +
-> +	if (obj->fence_excl)
-> +		fence_put(obj->fence_excl);
-> +	for (i = 0; i < obj->fence_shared_count; ++i)
-> +		fence_put(obj->fence_shared[i]);
-> +
-> +	mutex_destroy(&obj->lock.base);
-> +}
-> +
-> +static inline void
-> +reservation_ticket_init(struct reservation_ticket *t)
-> +{
-> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
-> +	/*
-> +	 * Make sure we are not reinitializing a held ticket:
-> +	 */
-> +
-> +	debug_check_no_locks_freed((void *)t, sizeof(*t));
-> +	lockdep_init_map(&t->dep_map, reservation_ticket_name,
-> +			 &reservation_ticket_class, 0);
-> +#endif
-> +	mutex_acquire(&t->dep_map, 0, 0, _THIS_IP_);
+Commit-ID:  772c3ff385eda0d0b4744596f87b79a17f8c9282
+Gitweb:     http://git.kernel.org/tip/772c3ff385eda0d0b4744596f87b79a17f8c9282
+Author:     Daniel J Blueman <daniel@numascale-asia.com>
+AuthorDate: Tue, 27 Nov 2012 14:32:09 +0800
+Committer:  Borislav Petkov <bp@suse.de>
+CommitDate: Thu, 10 Jan 2013 16:17:58 +0100
 
-If CONFIG_DEBUG_LOCK_ALLOC is not defined, t->dep_map is not there.
+x86, AMD, NB: Add multi-domain support
 
-> +	do {
-> +		t->seqno = atomic_long_inc_return(&reservation_counter);
-> +	} while (unlikely(!t->seqno));
-> +}
+Fix get_node_id to match northbridge IDs from the array of detected
+ones, allowing multi-server support such as with Numascale's
+NumaConnect, renaming to 'amd_get_node_id' for consistency.
 
---
-Francesco
+Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+Link: http://lkml.kernel.org/r/1353997932-8475-1-git-send-email-daniel@numascale-asia.com
+[Boris: shorten lines to fit 80 cols]
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+---
+ arch/x86/include/asm/amd_nb.h | 17 +++++++++++++++++
+ drivers/edac/amd64_edac.c     |  6 +++---
+ drivers/edac/amd64_edac.h     |  6 ------
+ 3 files changed, 20 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+index b3341e9..a54ee1d 100644
+--- a/arch/x86/include/asm/amd_nb.h
++++ b/arch/x86/include/asm/amd_nb.h
+@@ -81,6 +81,23 @@ static inline struct amd_northbridge *node_to_amd_nb(int node)
+ 	return (node < amd_northbridges.num) ? &amd_northbridges.nb[node] : NULL;
+ }
+ 
++static inline u16 amd_get_node_id(struct pci_dev *pdev)
++{
++	struct pci_dev *misc;
++	int i;
++
++	for (i = 0; i != amd_nb_num(); i++) {
++		misc = node_to_amd_nb(i)->misc;
++
++		if (pci_domain_nr(misc->bus) == pci_domain_nr(pdev->bus) &&
++		    PCI_SLOT(misc->devfn) == PCI_SLOT(pdev->devfn))
++			return i;
++	}
++
++	WARN(1, "Unable to find AMD Northbridge id for %s\n", pci_name(pdev));
++	return 0;
++}
++
+ #else
+ 
+ #define amd_nb_num(x)		0
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index ad8bf2a..a3fe39b 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -2474,7 +2474,7 @@ static int amd64_init_one_instance(struct pci_dev *F2)
+ 	struct mem_ctl_info *mci = NULL;
+ 	struct edac_mc_layer layers[2];
+ 	int err = 0, ret;
+-	u8 nid = get_node_id(F2);
++	u16 nid = amd_get_node_id(F2);
+ 
+ 	ret = -ENOMEM;
+ 	pvt = kzalloc(sizeof(struct amd64_pvt), GFP_KERNEL);
+@@ -2566,7 +2566,7 @@ err_ret:
+ static int amd64_probe_one_instance(struct pci_dev *pdev,
+ 				    const struct pci_device_id *mc_type)
+ {
+-	u8 nid = get_node_id(pdev);
++	u16 nid = amd_get_node_id(pdev);
+ 	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
+ 	struct ecc_settings *s;
+ 	int ret = 0;
+@@ -2616,7 +2616,7 @@ static void amd64_remove_one_instance(struct pci_dev *pdev)
+ {
+ 	struct mem_ctl_info *mci;
+ 	struct amd64_pvt *pvt;
+-	u8 nid = get_node_id(pdev);
++	u16 nid = amd_get_node_id(pdev);
+ 	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
+ 	struct ecc_settings *s = ecc_stngs[nid];
+ 
+diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
+index e864f40..cd7845f 100644
+--- a/drivers/edac/amd64_edac.h
++++ b/drivers/edac/amd64_edac.h
+@@ -292,12 +292,6 @@
+ /* MSRs */
+ #define MSR_MCGCTL_NBE			BIT(4)
+ 
+-/* AMD sets the first MC device at device ID 0x18. */
+-static inline u8 get_node_id(struct pci_dev *pdev)
+-{
+-	return PCI_SLOT(pdev->devfn) - 0x18;
+-}
+-
+ enum amd_families {
+ 	K8_CPUS = 0,
+ 	F10_CPUS,
