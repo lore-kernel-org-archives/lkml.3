@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab3AVWHa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 17:07:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:52690 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955Ab3AVWH2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 17:07:28 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Avi Kivity <avi@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        arnaldo.melo@gmail.com, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 0/2] perf/urgent fixes
-Date: Tue, 22 Jan 2013 19:07:15 -0300
-Message-Id: <1358892435-21945-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-Content-Type: text/plain; charset="utf-8"
+	id S1752931Ab3AVWIB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 17:08:01 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:40984 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752226Ab3AVWHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 17:07:53 -0500
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-security-module@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/4] ima: enforcing appraise type
+Date: Tue, 22 Jan 2013 17:07:30 -0500
+Message-Id: <1358892454-25045-1-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.rc3
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012222-5806-0000-0000-00001E9CD0AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+The IMA-appraisal extension added local integrity validation and
+enforcement of the measurement against a "good" value stored as an
+extended attribute 'security.ima'.  The initial methods for validating
+'security.ima' were hash and digital signature based.
 
-	Please consider pulling, reusing the perf-urgent-for-mingo signed tag
-I used when requesting Ingo to pull this a week or so ago,
+Missing is the ability to specify the validation method required. This
+patch set addresses this omission, by defining a new policy option
+'appraise_type='.
 
-Best Regards,
+As a result of this change, appraisal rules can now be written on a
+per hook basis, resulting in different appraisal status results.  The
+'ima_appraise_tcb' policy appraises all files owned by root.  A new
+hook specific rule could specify that all kernel modules, for example,
+require a digital signature.
 
-- Arnaldo
+This patchset defines the 'appraise_type' option and caches the
+appraisal result on a per hook basis.
 
-The following changes since commit 5c49985c21bba4d2f899e3a97121868a5c58a876:
+Changelog v2:
+- Minor cleanup as described in patch descriptions
 
-  Merge branch 'fixes' of git://git.linaro.org/people/rmk/linux-arm (2013-01-09 08:58:57 -0800)
+Mimi
 
-are available in the git repository at:
+Dmitry Kasatkin (1):
+  ima: added policy support for 'security.ima' type
 
+Mimi Zohar (3):
+  ima: increase iint flag size
+  ima: per hook cache integrity appraisal status
+  ima: differentiate appraise status only for hook specific rules
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+ Documentation/ABI/testing/ima_policy  |  4 +-
+ security/integrity/iint.c             | 10 ++++-
+ security/integrity/ima/ima.h          | 13 +++++-
+ security/integrity/ima/ima_appraise.c | 76 ++++++++++++++++++++++++++++++-----
+ security/integrity/ima/ima_main.c     | 25 +++++++-----
+ security/integrity/ima/ima_policy.c   | 43 +++++++++++++++++++-
+ security/integrity/integrity.h        | 48 +++++++++++++++-------
+ 7 files changed, 181 insertions(+), 38 deletions(-)
 
-for you to fetch changes up to acb8fb04b74e1c26117b89945dc058b52b28ccb9:
+-- 
+1.8.1.rc3
 
-  perf tools: Fix building from 'make perf-*-src-pkg' tarballs (2013-01-10 16:03:26 -0300)
-
-----------------------------------------------------------------
-perf/urgent fixes:
-
-. revert 20b279 - require exclude_guest to use PEBS - kernel side,
-  now older binaries will continue working for things like cycles:pp
-  without needing to pass extra modifiers, from David Ahern.
-
-. Fix building from 'make perf-*-src-pkg' tarballs, broken by UAPI, from
-  Sebastian Andrzej Siewior
-
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-----------------------------------------------------------------
-David Ahern (1):
-      perf x86: revert 20b279 - require exclude_guest to use PEBS - kernel side
-
-Sebastian Andrzej Siewior (1):
-      perf tools: Fix building from 'make perf-*-src-pkg' tarballs
-
- arch/x86/kernel/cpu/perf_event.c |    6 ------
- tools/perf/MANIFEST              |   10 ++++++++++
- 2 files changed, 10 insertions(+), 6 deletions(-)
