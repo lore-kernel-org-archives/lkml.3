@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127Ab3AVVUc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 16:20:32 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:58044 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756102Ab3AVVU2 (ORCPT
+	id S1755522Ab3AVVYQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 16:24:16 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:57211 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904Ab3AVVYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 16:20:28 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH 3/6] arm: kconfig: don't select TWD with local timer for Armada 370/XP
-Date: Tue, 22 Jan 2013 21:19:23 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Matt Sealey <matt@genesi-usa.com>, Lior Amsalem <alior@marvell.com>,
-        Andrew Lunn <andrew@lunn.ch>, Ike Pan <ike.pan@canonical.com>,
-        John Stultz <johnstul@us.ibm.com>, David Marlin <dmarlin@redhat.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        "Eran Ben-Avi" <benavi@marvell.com>,
-        Leif Lindholm <leif.lindholm@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>, Nadav Haklai <nadavh@marvell.com>,
-        Jon Masters <jcm@redhat.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        LKML <linux-kernel@vger.kernel.org>, Maen Suleiman <maen@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>
-References: <1358790842-2986-1-git-send-email-gregory.clement@free-electrons.com> <201301212044.41865.arnd@arndb.de> <50FEFAB9.4030503@gmail.com>
-In-Reply-To: <50FEFAB9.4030503@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Tue, 22 Jan 2013 16:24:15 -0500
+Date: Tue, 22 Jan 2013 16:24:10 -0500 (EST)
+Message-Id: <20130122.162410.201366520574331812.davem@davemloft.net>
+To: ncardwell@google.com
+Cc: avagin@openvz.org, netdev@vger.kernel.org, criu@openvz.org,
+        linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, edumazet@google.com,
+        ycheng@google.com, xemul@parallels.com, davej@redhat.com,
+        mtk.manpages@gmail.com
+Subject: Re: [PATCH net-next] tcp: add ability to set a timestamp offset
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CADVnQynxigC7wSW6D1WQNZwxoBd7fpySa8eGN0W4wrh7WtHV4Q@mail.gmail.com>
+References: <1358887953-28665-1-git-send-email-avagin@openvz.org>
+	<CADVnQynxigC7wSW6D1WQNZwxoBd7fpySa8eGN0W4wrh7WtHV4Q@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201301222119.23750.arnd@arndb.de>
-X-Provags-ID: V02:K0:vdBG95xlEwyWv+saLGaJ6DN2SLFr9y9xhYvogZ4jJ4p
- tGwuQpO2Lr6Yp8KCXqXL4izbA6YzSi/ADTt9EOq3P1CsVl7KL+
- abj3/HkfSHqve4THvwzxG7JQZ4lp1H3ziai2Ios3FQVksMt7/0
- HthWFwjW1ydeJGY8+yl+pHgB9Bo3OWow7mydq6rtr4FEE7Mlg4
- 0xPxhs/Np30wivkNEgVd4H/NrLbB0W4axI6rcWJTa5rGnNowrD
- oiFg36uGKg4nRbpv84AO2VRdVZQaO/2ph9CLs4q4XZYWQZ802F
- QEJJHPbvSdTevhnz1NH+t4x0hAACsDMXnCwr4SRbstyPXkf1Y0
- TVe+eb+BGSwhzttrTpsA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 January 2013, Rob Herring wrote:
-> No, I expect all future platforms will have architected timers. TWD is
-> pretty much A9 and A5 only I believe. Same with SCU. I've probably
-> missed some in my list.
+From: Neal Cardwell <ncardwell@google.com>
+Date: Tue, 22 Jan 2013 16:18:04 -0500
 
-Ah, I was incorrectly assuming that TWD was referring to the architected
-timers, sorry about that.
+> On Tue, Jan 22, 2013 at 3:52 PM, Andrey Vagin <avagin@openvz.org> wrote:
+>> If a TCP socket will get live-migrated from one box to another the
+>> timestamps (which are typically ON) will get screwed up -- the new
+>> kernel will generate TS values that has nothing to do with what they
+>> were on dump. The solution is to yet again fix the kernel and put a
+>> "timestamp offset" on a socket.
+> 
+> One serious issue with this patch is that outgoing timestamp values
+> will no longer correspond to tcp_time_stamp, so echoed timestamp
+> values will also no longer have a meaningful relationship to
+> tcp_time_stamp. That violates assumptions made in several places in
+> the code, which assumes that we can compare echoed timestamp values to
+> tcp_time_stamp; for example, there are several places where we do
+> things like subtracting:
+>    tcp_time_stamp - tp->rx_opt.rcv_tsecr
+> to find the estimated RTT for a segment.
 
-Maybe we should do this differently then and do the more logical
-
-config LOCAL_TIMERS
-	bool
-
-config ARM_TWD
-	bool "ARM TWD local timer"
-	depends on SMP && CPU_V7
-	select LOCAL_TIMERS
-
-config EXYNOS4_MCT
-	bool "Samsung Exynos4 MCT Timer"
-	depends on SMP && ARCH_EXYNOS
-	select LOCAL_TIMERS
-
-config MSM_LOCAL_TIMER
-	bool "Qualcomm MSM Local Timer"
-	depends on SMP && ARCH_MSM
-	select LOCAL_TIMERS
-
-That way we have no implicit assumptions. Everything will still work if you
-disable local timers, but of course we will enable them in the defconfigs.
-
-	Arnd
+Right, this change seems pretty bogus as-is.
