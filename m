@@ -1,61 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab3AVSpN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 13:45:13 -0500
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:37963 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780Ab3AVSpK (ORCPT
+	id S1755499Ab3AVSpV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 13:45:21 -0500
+Received: from mail-da0-f54.google.com ([209.85.210.54]:47354 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755160Ab3AVSpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 13:45:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <02F0A27B-B16B-42F8-A0BC-29726732226D@dominion.thruhere.net>
-References: <cover.1358871750.git.afzal@ti.com>
-	<02F0A27B-B16B-42F8-A0BC-29726732226D@dominion.thruhere.net>
-Date: Tue, 22 Jan 2013 12:45:09 -0600
-Message-ID: <CAF6AEGuyb26EZ_9=GP9gs0TZqUtiFv3D_7+wcDOHuKn2qUcytQ@mail.gmail.com>
-Subject: Re: [PATCH v3 00/12] video: da8xx-fb: am335x DT support
-From: Rob Clark <robdclark@gmail.com>
-To: Koen Kooi <koen@dominion.thruhere.net>
-Cc: Afzal Mohammed <afzal@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Mike Turquette <mturquette@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Jan 2013 13:45:13 -0500
+Date: Tue, 22 Jan 2013 10:45:06 -0800
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 01/45] percpu_rwlock: Introduce the global
+ reader-writer lock backend
+Message-ID: <20130122104506.32b4e581@nehalam.linuxnetplumber.net>
+In-Reply-To: <20130122073315.13822.27093.stgit@srivatsabhat.in.ibm.com>
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
+	<20130122073315.13822.27093.stgit@srivatsabhat.in.ibm.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 11:03 AM, Koen Kooi <koen@dominion.thruhere.net> wrote:
->
-> Op 22 jan. 2013, om 17:51 heeft Afzal Mohammed <afzal@ti.com> het volgende geschreven:
->
->> Hi,
->>
->> This series adds DT support to da8xx-fb driver (device found on
->> DaVinci and AM335x SoC's). It does certain cleanup's in the process.
->>
->> This series as compared to previous version handles configuration of
->> the LCDC clock rate by modelling as a clock divider of CCF. This would
->> take effect only if CCF is selected, if not, no change to  existing
->> method.
->>
->> This makes use of Steffen Trumtrar's v16 of display timing DT support.
->
-> Wouldn't it be better to delete da8xx-fb.* and switch to Rob Clarks DRM based driver for this IP block?
+On Tue, 22 Jan 2013 13:03:22 +0530
+"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
 
-we probably can't delete da8xx-fb, but I think it would be ok to only
-use it for legacy platforms not yet ported to DT.
+> A straight-forward (and obvious) algorithm to implement Per-CPU Reader-Writer
+> locks can also lead to too many deadlock possibilities which can make it very
+> hard/impossible to use. This is explained in the example below, which helps
+> justify the need for a different algorithm to implement flexible Per-CPU
+> Reader-Writer locks.
+> 
+> We can use global rwlocks as shown below safely, without fear of deadlocks:
+> 
+> Readers:
+> 
+>          CPU 0                                CPU 1
+>          ------                               ------
+> 
+> 1.    spin_lock(&random_lock);             read_lock(&my_rwlock);
+> 
+> 
+> 2.    read_lock(&my_rwlock);               spin_lock(&random_lock);
+> 
+> 
+> Writer:
+> 
+>          CPU 2:
+>          ------
+> 
+>        write_lock(&my_rwlock);
+> 
+> 
+> We can observe that there is no possibility of deadlocks or circular locking
+> dependencies here. Its perfectly safe.
+> 
+> Now consider a blind/straight-forward conversion of global rwlocks to per-CPU
+> rwlocks like this:
+> 
+> The reader locks its own per-CPU rwlock for read, and proceeds.
+> 
+> Something like: read_lock(per-cpu rwlock of this cpu);
+> 
+> The writer acquires all per-CPU rwlocks for write and only then proceeds.
+> 
+> Something like:
+> 
+>   for_each_online_cpu(cpu)
+> 	write_lock(per-cpu rwlock of 'cpu');
+> 
+> 
+> Now let's say that for performance reasons, the above scenario (which was
+> perfectly safe when using global rwlocks) was converted to use per-CPU rwlocks.
+> 
+> 
+>          CPU 0                                CPU 1
+>          ------                               ------
+> 
+> 1.    spin_lock(&random_lock);             read_lock(my_rwlock of CPU 1);
+> 
+> 
+> 2.    read_lock(my_rwlock of CPU 0);       spin_lock(&random_lock);
+> 
+> 
+> Writer:
+> 
+>          CPU 2:
+>          ------
+> 
+>       for_each_online_cpu(cpu)
+>         write_lock(my_rwlock of 'cpu');
+> 
+> 
+> Consider what happens if the writer begins his operation in between steps 1
+> and 2 at the reader side. It becomes evident that we end up in a (previously
+> non-existent) deadlock due to a circular locking dependency between the 3
+> entities, like this:
+> 
+> 
+> (holds              Waiting for
+>  random_lock) CPU 0 -------------> CPU 2  (holds my_rwlock of CPU 0
+>                                                for write)
+>                ^                   |
+>                |                   |
+>         Waiting|                   | Waiting
+>           for  |                   |  for
+>                |                   V
+>                 ------ CPU 1 <------
+> 
+>                 (holds my_rwlock of
+>                  CPU 1 for read)
+> 
+> 
+> 
+> So obviously this "straight-forward" way of implementing percpu rwlocks is
+> deadlock-prone. One simple measure for (or characteristic of) safe percpu
+> rwlock should be that if a user replaces global rwlocks with per-CPU rwlocks
+> (for performance reasons), he shouldn't suddenly end up in numerous deadlock
+> possibilities which never existed before. The replacement should continue to
+> remain safe, and perhaps improve the performance.
+> 
+> Observing the robustness of global rwlocks in providing a fair amount of
+> deadlock safety, we implement per-CPU rwlocks as nothing but global rwlocks,
+> as a first step.
+> 
+> 
+> Cc: David Howells <dhowells@redhat.com>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-BR,
--R
+We got rid of brlock years ago, do we have to reintroduce it like this?
+The problem was that brlock caused starvation.
 
-> regards,
->
-> Koen--
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
