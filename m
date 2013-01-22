@@ -1,52 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343Ab3AVPjn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 10:39:43 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:54525 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383Ab3AVPjm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 10:39:42 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 13/15] USB: ehci: make orion and mxc bus glues coexist
-Date: Tue, 22 Jan 2013 15:38:55 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Manjunath Goudar <manjunath.goudar@linaro.org>, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-References: <Pine.LNX.4.44L0.1301221011190.1510-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1301221011190.1510-100000@iolanthe.rowland.org>
+	id S1754003Ab3AVPlI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 10:41:08 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49825 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752548Ab3AVPlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 10:41:05 -0500
+Message-ID: <50FEB2D6.50300@ti.com>
+Date: Tue, 22 Jan 2013 21:10:06 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Matt Porter <mporter@ti.com>
+CC: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH v3 02/16] ARM: davinci: move private EDMA API to arm/common
+References: <1350566815-409-1-git-send-email-mporter@ti.com> <1350566815-409-3-git-send-email-mporter@ti.com> <508CEA05.8060200@ti.com> <20130110235157.GU14660@beef>
+In-Reply-To: <20130110235157.GU14660@beef>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201301221538.55975.arnd@arndb.de>
-X-Provags-ID: V02:K0:jiKTpi7jQ23Y30Dev74QwWh4BLgJMebiSUc/j/ASSXV
- 3W6KKsS8hjFmcQClKU+AYXvuDXwK8jsjqSa0htkxiEPSrQ0//y
- y81mp18SsW5C7NmWqgd/rYmJ70xdTESkMnfNPmz3IkpuaunoaL
- fIZkivQocgW+qhnpmohWVQoz7ChOta69sZce7eNqw+gWoqLzl0
- uuZ99GlTmgMCZ9cpkQCYvXPsS3x9RfmpL32T8jSD9u1rIJPOyh
- jUl2zokLQ6SwRSL/EUvqedbBhm6M9fo9cz3H/ViRrrlNBS70oA
- OHjQfYiqoInnHpiscqiHyZsYGVCwk8T6fVaNLp1WTj8f3zbD6+
- /z14p9jKoVzqxwy8g6Q8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 January 2013, Alan Stern wrote:
-> In order to prevent this, you have to make sure that each glue driver
-> depends on USB_ARCH_HAS_EHCI.  A simple way to do this is to surround
-> the Kconfig entries for those drivers with "if USB && 
-> USB_ARCH_HAS_EHCI" ... "endif".
+Matt,
 
-I was actually thinking we could remove the use of USB_ARCH_HAS_EHCI
-as well once we have inverted the logic for selecting USB_EHCI_HCD,
-but there is another problem with that, because then we still need
-something to select USB_ARCH_HAS_HCD, or kill that symbol as well.
+Sorry about the late reply. I noticed this mail only after I started to
+look at v5 of your series :(
 
-	Arnd
+On 1/11/2013 5:21 AM, Matt Porter wrote:
+> On Sun, Oct 28, 2012 at 01:47:09PM +0530, Sekhar Nori wrote:
+>> On 10/18/2012 6:56 PM, Matt Porter wrote:
+>>> Move mach-davinci/dma.c to common/edma.c so it can be used
+>>> by OMAP (specifically AM33xx) as well. This just moves the
+>>> private EDMA API but does not support OMAP.
+>>>
+>>> Signed-off-by: Matt Porter <mporter@ti.com>
+>>> ---
+>>
+>>> diff --git a/arch/arm/mach-davinci/devices.c b/arch/arm/mach-davinci/devices.c
+>>> index 4c48a36..f45d591 100644
+>>> --- a/arch/arm/mach-davinci/devices.c
+>>> +++ b/arch/arm/mach-davinci/devices.c
+>>> @@ -19,9 +19,10 @@
+>>>  #include <mach/irqs.h>
+>>>  #include <mach/cputype.h>
+>>>  #include <mach/mux.h>
+>>> -#include <mach/edma.h>
+>>>  #include <linux/platform_data/mmc-davinci.h>
+>>>  #include <mach/time.h>
+>>> +#include <linux/platform_data/edma.h>
+>>
+>> Can you please introduce a patch to clean this mixture of linux/ and
+>> mach/ includes?
+> 
+> Yeah, are you ok with a follow on series to clean all these files? I
+> don't want to make this series longer with something not dma related
+> that's purely cleanup from the great header reorg of 2012.
+
+Okay. I agree doing this sort of change now will cause merge issues.
+
+> 
+>>> +
+>>>  
+>>>  #include "davinci.h"
+>>>  #include "clock.h"
+>>> @@ -141,10 +142,10 @@ static struct resource mmcsd0_resources[] = {
+>>>  	},
+>>>  	/* DMA channels: RX, then TX */
+>>>  	{
+>>> -		.start = EDMA_CTLR_CHAN(0, DAVINCI_DMA_MMCRXEVT),
+>>> +		.start = EDMA_CTLR_CHAN(0, 26),
+>>
+>> Instead of just replacing the event #defines with plain numbers, can you
+>> introduce a mach-davinci local edma.h which can then be included in the
+>> davinci platform files which refer to edma channel numbers?
+> 
+> Ok, so when I removed the old edma.h it was full of unused defines and
+> we are left with just this one. If I introduced something like that it
+> would be used in just one place here. and only for these two values.
+> How about we just add a comment?
+
+I prefer adding a local #define in this file. This will keep it
+consistent with what is done in arch/arm/mach-davinci/dm365.c for
+example. Same for the change in sound/soc/davinci/davinci-sffsdr.c
+
+> 
+>>
+>>> diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
+>>> index 7cd56ed..153fab8 100644
+>>> --- a/arch/arm/plat-omap/Kconfig
+>>> +++ b/arch/arm/plat-omap/Kconfig
+>>> @@ -28,6 +28,7 @@ config ARCH_OMAP2PLUS
+>>>  	select OMAP_DM_TIMER
+>>>  	select PROC_DEVICETREE if PROC_FS
+>>>  	select SPARSE_IRQ
+>>> +	select TI_PRIV_EDMA
+>>
+>> This hunk does not seem to belong to subject of this patch.
+> 
+> Let me reword the subject/description. The idea of this logical
+> chunk was to put everything in place to make it build on OMAP,
+> with the expectation that the build fails without the next patch
+> in the series.
+
+But this will break bisect. With just this patch applied, omap build
+breaks. Looks like it will be more logical to merge this hunk with 3/14
+since that's when you really start using the private DMA support on OMAP
+platforms.
+
+This issue is a must fix IMO.
+
+I am ok with the patch otherwise. With these changes done, you can add:
+
+Acked-by: Sekhar Nori <nsekhar@ti.com>
+
+Thanks,
+Sekhar
