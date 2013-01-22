@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab3AVQGr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 11:06:47 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39052 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753636Ab3AVQGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 11:06:46 -0500
-Date: Tue, 22 Jan 2013 08:08:09 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 08/33] gpio: Convert to devm_ioremap_resource()
-Message-ID: <20130122160809.GE10396@kroah.com>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
- <1358762966-20791-9-git-send-email-thierry.reding@avionic-design.de>
- <CACRpkdb8VEUENBD8nSexYYPekDp082mK-A07hw7e8VmVSxZS3A@mail.gmail.com>
- <20130122102558.GA10716@avionic-0098.adnet.avionic-design.de>
+	id S1754685Ab3AVQKn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 11:10:43 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:36573 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753643Ab3AVQKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 11:10:38 -0500
+Date: Tue, 22 Jan 2013 10:10:37 -0600
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: Randy Dunlap <rdunlap@infradead.org>, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, Nathan Zimmer <nzimmer@sgi.com>
+Subject: Re: mmotm 2013-01-18-15-48 uploaded (sched/stats.c)
+Message-ID: <20130122161037.GA24669@gulag1.americas.sgi.com>
+References: <20130118234944.5C99C31C240@corp2gmr1-1.hot.corp.google.com> <50FAF661.4070801@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130122102558.GA10716@avionic-0098.adnet.avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50FAF661.4070801@infradead.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 11:25:59AM +0100, Thierry Reding wrote:
-> On Tue, Jan 22, 2013 at 11:15:11AM +0100, Linus Walleij wrote:
-> > On Mon, Jan 21, 2013 at 11:09 AM, Thierry Reding
-> > <thierry.reding@avionic-design.de> wrote:
+On Sat, Jan 19, 2013 at 11:39:13AM -0800, Randy Dunlap wrote:
+> On 01/18/13 15:49, akpm@linux-foundation.org wrote:
+> > The mm-of-the-moment snapshot 2013-01-18-15-48 has been uploaded to
 > > 
-> > > Convert all uses of devm_request_and_ioremap() to the newly introduced
-> > > devm_ioremap_resource() which provides more consistent error handling.
-> > >
-> > > devm_ioremap_resource() provides its own error messages so all explicit
-> > > error messages can be removed from the failure code paths.
-> > >
-> > > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > > Cc: Linus Walleij <linus.walleij@linaro.org>
+> >    http://www.ozlabs.org/~akpm/mmotm/
 > > 
-> > Is the interface already in-kernel so I should apply this or is it
-> > added as part of this series so you're searching an ACK?
+> > mmotm-readme.txt says
+> > 
+> > README for mm-of-the-moment:
+> > 
+> > http://www.ozlabs.org/~akpm/mmotm/
+> > 
+> > This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+> > more than once a week.
+> > 
 > 
-> It is part of this series, so your Acked-by would be great. Other
-> maintainers have done the same. Initially I had thought that it might be
-> easier if the patches went in through individual trees, but since the
-> first patch is a dependency, maybe it'd be better to take them all
-> through a single tree.
+> on i386 or x86_64:
 > 
-> Greg, any comments? Would you be willing to take the series through your
-> driver-core tree once all Acked-bys are there? Alternatively I guess we
-> could take the first patch into linux-next, at which point maintainers
-> could take this through the individual trees.
+> kernel/sched/stats.c:31:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+> 
+> 
+> 
+> -- 
+> ~Randy
 
-Yes, I'll take the first patch through my driver-core tree, and add all
-of the patches that the subsystem maintainers have acked as well.
+Sorry about that.
+Here is the correction.
 
-As subsystem trees can't depend on linux-next, it makes it easier that
-way.
+>From c832132ade12e28cd09d3c13d412fc14a7b9ab87 Mon Sep 17 00:00:00 2001
+From: Nathan Zimmer <nzimmer@sgi.com>
+Date: Tue, 22 Jan 2013 09:09:17 -0600
+Subject: [PATCH] on i386 or x86_64:
 
-thanks,
+kernel/sched/stats.c:31:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
 
-greg k-h
+Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+---
+ kernel/sched/stats.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/sched/stats.c b/kernel/sched/stats.c
+index bae2757..3cbfc46 100644
+--- a/kernel/sched/stats.c
++++ b/kernel/sched/stats.c
+@@ -25,14 +25,13 @@ static int show_schedstat(struct seq_file *seq, void *v)
+ 		seq_printf(seq, "version %d\n", SCHEDSTAT_VERSION);
+ 		seq_printf(seq, "timestamp %lu\n", jiffies);
+ 	} else {
+-
+-		cpu = (unsigned long)(v - 2);
+-
+-		struct rq *rq = cpu_rq(cpu);
++		struct rq *rq; 
+ #ifdef CONFIG_SMP
+ 		struct sched_domain *sd;
+ 		int dcount = 0;
+ #endif
++		cpu = (unsigned long)(v - 2);
++		rq = cpu_rq(cpu);
+ 
+ 		/* runqueue-specific stats */
+ 		seq_printf(seq,
+-- 
+1.6.0.2
+
+
