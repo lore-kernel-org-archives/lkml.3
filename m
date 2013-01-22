@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab3AVN16 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 08:27:58 -0500
-Received: from hermes.synopsys.com ([198.182.44.81]:50507 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998Ab3AVN1y (ORCPT
+	id S1752823Ab3AVNel (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 08:34:41 -0500
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:34299 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab3AVNej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 08:27:54 -0500
-Message-ID: <50FE93CD.7040601@synopsys.com>
-Date: Tue, 22 Jan 2013 18:57:41 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 22 Jan 2013 08:34:39 -0500
+Subject: [PATCH 1/2] coccicheck: Allow the user to give a VERBOSE= argument
+To: linux-kernel@vger.kernel.org
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, Nicolas Palix <nicolas.palix@imag.fr>,
+        cocci@systeme.lip6.fr
+Date: Tue, 22 Jan 2013 14:34:34 +0100
+Message-ID: <20130122133434.2543274.86646.stgit@fsdevel3>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>
-Subject: Re: [PATCH v2 64/76] ARC: Add self to MAINTAINERS
-References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-65-git-send-email-vgupta@synopsys.com> <50FE923D.5060108@imgtec.com>
-In-Reply-To: <50FE923D.5060108@imgtec.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+X-ITWM-CharSet: utf-8
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 January 2013 06:51 PM, James Hogan wrote:
-> On 18/01/13 12:25, Vineet Gupta wrote:
->> ...
->>  
->> +SYNOPSYS ARC ARCHITECTURE
->> +M:	Vineet Gupta <vgupta@synopsys.com>
->> +L:	linux-snps-arc@vger.kernel.org
-> Is this set up? I don't see it at
-> http://vger.kernel.org/vger-lists.html
+Simply running "make coccicheck" returns very verbose output and warnings
+might not be noticed.  Allow the user to set the verbosity level.
 
-Nope, I just added it as a placeholder - I presume when the logistics are sorted
-out (say the maintainer's branch on LF servers), then this would be set up as well.
 
-> Incidentally, anybody know who to ask about setting up a new list?
+Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+CC: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Nicolas Palix <nicolas.palix@imag.fr>
+CC: cocci@systeme.lip6.fr
+---
+ scripts/coccicheck |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-Some existing maintainer would know !
+diff --git a/scripts/coccicheck b/scripts/coccicheck
+index 1a49d1c..eab0b00 100755
+--- a/scripts/coccicheck
++++ b/scripts/coccicheck
+@@ -2,6 +2,12 @@
+ 
+ SPATCH="`which ${SPATCH:=spatch}`"
+ 
++if [ -z "$VERBOSE" ] ; then
++	RUN_VERBOSE=0
++else
++	RUN_VERBOSE=$VERBOSE
++fi
++
+ if [ "$C" = "1" -o "$C" = "2" ]; then
+     ONLINE=1
+ 
+@@ -55,7 +61,7 @@ coccinelle () {
+ #
+ #    $SPATCH -D $MODE $FLAGS -parse_cocci $COCCI $OPT > /dev/null
+ 
+-    if [ "$ONLINE" = "0" ] ; then
++    if [ "$RUN_VERBOSE" != "0" ] ; then
+ 
+ 	FILE=`echo $COCCI | sed "s|$srctree/||"`
+ 
 
-Thx,
--Vineet
