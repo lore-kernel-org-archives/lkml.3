@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab3AVSuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 13:50:06 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59499 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753898Ab3AVSuD (ORCPT
+	id S1755250Ab3AVSwF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 13:52:05 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:35760 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889Ab3AVSwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 13:50:03 -0500
-Message-ID: <50FEDF57.1060204@wwwdotorg.org>
-Date: Tue, 22 Jan 2013 11:49:59 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 22 Jan 2013 13:52:02 -0500
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [v3 2/2] ARM: tegra: Skip scu_enable(scu_base) if not Cortex
- A9
-References: <1358833924-24535-1-git-send-email-hdoyu@nvidia.com> <1358833924-24535-2-git-send-email-hdoyu@nvidia.com> <50FEDC0B.7050604@wwwdotorg.org> <20130122184633.GI2153@mudshark.cambridge.arm.com>
-In-Reply-To: <20130122184633.GI2153@mudshark.cambridge.arm.com>
-X-Enigmail-Version: 1.4.6
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <50FED729.8020405@ionic.de>
+References: <50F9DF53.4090601@ionic.de>
+	<CAKMK7uExHc=PEBpn2vPrX+sQcv=U7VuvsJHRxc-SSOh=_G_1Dg@mail.gmail.com>
+	<50FC6731.3020209@ionic.de>
+	<CAKMK7uEX0CG4LaVr3jkcPeQYTYFseG-G5f0_2zKTuCcfVfhF2g@mail.gmail.com>
+	<50FD84E0.2090901@ionic.de>
+	<50FED729.8020405@ionic.de>
+Date: Tue, 22 Jan 2013 19:52:00 +0100
+Message-ID: <CAKMK7uGEaNb3o0jBNRLUN_=Mv7m1KXx28bEFTva3B_3H8_BWng@mail.gmail.com>
+Subject: Re: i915-related and general system freezes with specific kernel
+ config // IOMMU
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Mihai Moldovan <ionic@ionic.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2013 11:46 AM, Will Deacon wrote:
-> Hi Stephan,
-> 
-> On Tue, Jan 22, 2013 at 06:35:55PM +0000, Stephen Warren wrote:
->> On 01/21/2013 10:52 PM, Hiroshi Doyu wrote:
->>> Skip scu_enable(scu_base) if CPU is not Cortex A9 with SCU.
->>
->> Will, is your for-next/perf branch stable; can I pull it into a branch
->> destined for arm-soc? Background below:
-> 
-> I'm going to send a pull request to Russell tomorrow using my for-rmk/perf
-> branch, so *that* is stable. You might, however, want to wait for Russell to
-> push that out because it's also needed for kvm and, as such, will need to
-> be published anyway.
-> 
-> Sound ok?
+On Tue, Jan 22, 2013 at 7:15 PM, Mihai Moldovan <ionic@ionic.de> wrote:
+> * On 21.01.2013 07:11 PM, Mihai Moldovan wrote:
+>> I'm also currently testing a kernel without the Intel IOMMU feature
+>> [CONFIG_INTEL_IOMMU=n, but CONFIG_IOMMU_SUPPORT=y]. [...] At least
+>> not seeing USB and PCI(e) issues. I'll leave the box running for some
+>> more [time] [...]
+>
+> No freezes for >22h, seems to be fine.
+>
+>
+>> [...] and will afterwards disable IOMMU as a whole to see if I hit
+>> USB and PCI(e) issues again with that combination.
+>
+> The systems seems to run stable with CONFIG_IOMMU_SUPPORT=n set, too. This is
+> expected.
+> However: unlike during earlier tests when I disabled IOMMU and Intel IOMMU via
+> kernel/boot parameters, I am not seeing any DMA mapping errors.
+>
+> There seems to be a difference between disabling IOMMU/Intel IOMMU statically in
+> the kernel compared to disabling it via kernel parameter. Is this another bug?
 
-I'm assuming rmk's branch will be a stable base, so that sounds great,
-thanks.
+Behaviour should be the same for the actual dma access at the hw
+layer, but if you disable things at compile-time at least drm/i915
+selects different paths. We've recently killed those though since it's
+not worth the complexity at all. But dunno why you still get dma
+errors, that shouldn't be possible. Maybe David has an idea.
+
+> I've attached both kernel ring buffer logs (minus the timings for easier diffing.)
+>
+>   [*] kern-new-iommu_off.log.bz2 disables IOMMU and Intel IOMMU via boot parameter
+>   [*] kern-iommu_static_off.log.bz2 has CONFIG_IOMMU_SUPPORT=n set and any IOMMU
+> support statically disabled (also consequently DMAR)
+
+In any case I'll ping David about my 2nd quirk patch and whether
+that's something which makes sense and could be merged. Thanks a lot
+for all the testing you've done.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
