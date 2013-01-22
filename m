@@ -1,62 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab3AVAH7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 19:07:59 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51775 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab3AVAH5 (ORCPT
+	id S1755255Ab3AVAIX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 19:08:23 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49907 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887Ab3AVAHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 19:07:57 -0500
-Date: Tue, 22 Jan 2013 00:02:41 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: One of these things (CONFIG_HZ) is not like the others..
-Message-ID: <20130122000241.GE23505@n2100.arm.linux.org.uk>
-References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com> <201301212041.17951.arnd@arndb.de> <50FDAC5F.4040605@linaro.org> <CAKGA1b=D5CNikijoOAk5xP6TC-nB_gEGtS05ncrPR68sQTMrxw@mail.gmail.com> <50FDC2DD.7090406@linaro.org> <CAKGA1bmtTH1N8nx79MGiMighdQROpNtpvAZXhHKT+mT3kcazBQ@mail.gmail.com> <20130121231318.GC23505@n2100.arm.linux.org.uk> <CAKGA1b=wDE9ujby_gcoHJudsG=JbWDdNRo+thCe8BhoJLi+B5Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKGA1b=wDE9ujby_gcoHJudsG=JbWDdNRo+thCe8BhoJLi+B5Q@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 21 Jan 2013 19:07:38 -0500
+X-AuditID: 9c930179-b7d01ae000004006-f3-50fdd8485fc0
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v4 3/4] zram: give up lazy initialization of zram metadata
+Date: Tue, 22 Jan 2013 09:07:32 +0900
+Message-Id: <1358813253-20913-3-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358813253-20913-1-git-send-email-minchan@kernel.org>
+References: <1358813253-20913-1-git-send-email-minchan@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 05:30:31PM -0600, Matt Sealey wrote:
-> But it would effectively stop users drinking kool-aid.. if you set
-> your HZ to something stupid, you don't even get a kernel to build, and
-> certainly don't get to boot past the first 40 lines of boot messages..
-> I think most people would rather a build error, or a runtime
-> unmistakable, unmissable warning than a subtle and almost
-> imperceptible skew in NTP synchronization, to use your example.
+1) User of zram normally do mkfs.xxx or mkswap before using
+   the zram block device(ex, normally, do it at booting time)
+   It ends up allocating such metadata of zram before real usage so
+   benefit of lazy initialzation would be mitigated.
 
-1. a kernel which doesn't build.  What do you think both Arnd and myself
-   have been doing for the last few years, building such things as
-   random configurations and such like, finding stuff that doesn't work
-   and fixing the kernel so that we end up with _NO_ configuration which
-   fails to build.
+2) Some user want to use zram when memory pressure is high.(ie, load zram
+   dynamically, NOT booting time). It does make sense because people don't
+   want to waste memory until memory pressure is high(ie, where zram is really
+   helpful time). In this case, lazy initialzation could be failed easily
+   because we will use GFP_NOIO instead of GFP_KERNEL for avoiding deadlock.
+   So the benefit of lazy initialzation would be mitigated, too.
 
-   Are you seriously about to tell us that we're wasting our time and we
-   should just let the kernel build fail in all horrid sorts of ways?
+3) Metadata overhead is not critical and Nitin has a plan to diet it.
+   4K : 12 byte(64bit machine) -> 64G : 192M so 0.3% isn't big overhead
+   If insane user use such big zram device up to 20, it could consume 6% of ram
+   but efficieny of zram will cover the waste.
 
-2. As for NTP behaviour... well, have you ever experienced a system where
-   NTP has to keep doing step corrections on the time of day, where some
-   steps (eg, backwards) cause services to quit because time of day must
-   be monotonic...
+So this patch gives up lazy initialization and instead we initialize metadata
+at disksize setting time.
 
-What you're proposing is that we litter the ARM arch with all sorts of
-tests for CONFIG_HZ and #error out on ones that don't make sense.  I
-think you're smoking crack.
+Cc: Jerome Marchand <jmarchan@redhat.com>
+Cc: Nitin Gupta <ngupta@vflare.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/staging/zram/zram_drv.c   |   20 ++++----------------
+ drivers/staging/zram/zram_sysfs.c |    1 +
+ 2 files changed, 5 insertions(+), 16 deletions(-)
 
-What I think is that we should _not_ allow CONFIG_HZ to be set to
-anything which isn't appropriate for the platforms - or indeed the
-reverse.  That's going to be extremely difficult to do with multi-arch
-because it's effectively a two-way dependency.
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index f8ae1bf..4264121 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -440,16 +440,13 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+ {
+ 	struct zram *zram = queue->queuedata;
+ 
+-	if (unlikely(!zram->init_done) && zram_init_device(zram))
+-		goto error;
+-
+ 	down_read(&zram->init_lock);
+ 	if (unlikely(!zram->init_done))
+-		goto error_unlock;
++		goto error;
+ 
+ 	if (!valid_io_request(zram, bio)) {
+ 		zram_stat64_inc(zram, &zram->stats.invalid_io);
+-		goto error_unlock;
++		goto error;
+ 	}
+ 
+ 	__zram_make_request(zram, bio, bio_data_dir(bio));
+@@ -457,9 +454,8 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+ 
+ 	return;
+ 
+-error_unlock:
+-	up_read(&zram->init_lock);
+ error:
++	up_read(&zram->init_lock);
+ 	bio_io_error(bio);
+ }
+ 
+@@ -508,18 +504,12 @@ void zram_reset_device(struct zram *zram)
+ 	up_write(&zram->init_lock);
+ }
+ 
++/* zram->init_lock should be held */
+ int zram_init_device(struct zram *zram)
+ {
+ 	int ret;
+ 	size_t num_pages;
+ 
+-	down_write(&zram->init_lock);
+-
+-	if (zram->init_done) {
+-		up_write(&zram->init_lock);
+-		return 0;
+-	}
+-
+ 	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
+ 		pr_info(
+ 		"There is little point creating a zram of greater than "
+@@ -568,7 +558,6 @@ int zram_init_device(struct zram *zram)
+ 	}
+ 
+ 	zram->init_done = 1;
+-	up_write(&zram->init_lock);
+ 
+ 	pr_debug("Initialization done!\n");
+ 	return 0;
+@@ -578,7 +567,6 @@ fail_no_table:
+ 	zram->disksize = 0;
+ fail:
+ 	__zram_reset_device(zram);
+-	up_write(&zram->init_lock);
+ 	pr_err("Initialization failed: err=%d\n", ret);
+ 	return ret;
+ }
+diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+index 4143af9..369db12 100644
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -71,6 +71,7 @@ static ssize_t disksize_store(struct device *dev,
+ 
+ 	zram->disksize = PAGE_ALIGN(disksize);
+ 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
++	zram_init_device(zram);
+ 	up_write(&zram->init_lock);
+ 
+ 	return len;
+-- 
+1.7.9.5
 
-I don't think we can do that with kernel/Kconfig.hz unless we introduce
-another layer of permissive configurations for the HZ_1000... etc, but
-I'm not sure that anyone outside ARM would like even that.
