@@ -1,135 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab3AVJhc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 04:37:32 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:56548 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab3AVJh1 (ORCPT
+	id S1752408Ab3AVJk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 04:40:56 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:42216 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab3AVJky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 04:37:27 -0500
+	Tue, 22 Jan 2013 04:40:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130122093214.GK16143@arwen.pp.htv.fi>
-References: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
-	<053c01cdf860$9e98df20$dbca9d60$@samsung.com>
-	<20130122085004.GD16143@arwen.pp.htv.fi>
-	<CAFp+6iEoCF91HiDbixqsKX5XS_UQrN=+2O7puPqN1MvjY_eHBg@mail.gmail.com>
-	<20130122092947.GJ16143@arwen.pp.htv.fi>
-	<20130122093214.GK16143@arwen.pp.htv.fi>
-Date: Tue, 22 Jan 2013 15:07:25 +0530
-Message-ID: <CAFp+6iGEZMKv+6QvrdfZ1z5o0QGzunxyxiJL_8YjnyGr0pJTKw@mail.gmail.com>
-Subject: Re: [PATCH v6 0/4] Adding usb2.0 host-phy support for exynos5250
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: balbi@ti.com
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
-        thomas.abraham@linaro.org, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, sylvester.nawrocki@gmail.com,
-        dianders@chromium.org, jg1.han@samsung.com, p.paneri@samsung.com,
-        cpgs@samsung.com, Alan Stern <stern@rowland.harvard.edu>
+In-Reply-To: <1358846546.12502.57.camel@smile>
+References: <1358758844-24711-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1358758844-24711-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x==FoW5Sh5KFt9iO+_04dEbwsQHJX3rsTWNqFiZqTbPn6A@mail.gmail.com>
+	<1358846546.12502.57.camel@smile>
+Date: Tue, 22 Jan 2013 15:10:53 +0530
+Message-ID: <CAKohpo=m-s4+q+4v2v+8nzC32FRzJAb58no2hZLV_5QqTj4wig@mail.gmail.com>
+Subject: Re: [PATCH 2/2] dw_dmac: return proper residue value
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
-
-
-On Tue, Jan 22, 2013 at 3:02 PM, Felipe Balbi <balbi@ti.com> wrote:
-> HI,
->
-> On Tue, Jan 22, 2013 at 11:29:47AM +0200, Felipe Balbi wrote:
->> On Tue, Jan 22, 2013 at 02:45:26PM +0530, Vivek Gautam wrote:
->> > Hi Felipe,
->> >
->> >
->> > On Tue, Jan 22, 2013 at 2:20 PM, Felipe Balbi <balbi@ti.com> wrote:
->> > > HI,
->> > >
->> > > On Mon, Jan 21, 2013 at 09:23:28PM -0800, Kukjin Kim wrote:
->> > >> Vivek Gautam wrote:
->> > >> >
->> > >> > Changes from v5:
->> > >> >  - Rebased on top of latest patches:
->> > >> >         usb: phy: samsung: Introducing usb phy driver for hsotg (v9)
->> > >> >         usb: phy: samsung: Add support to set pmu isolation (v6)
->> > >> >    As a result adding hostphy enable mask and hostphy register offsets
->> > >> >    to driver data in order to access the HOSTPHY CONTROL register.
->> > >> >
->> > >> >  - Adding member 'otg' to struct samsung-usbphy so that its consumers
->> > >> >    can call otg->set_host so as to make 'phy' aware of the consumer type:
->> > >> >     HOST/DEVICE
->> > >> >
->> > >> >  - Adding 'otg' to 'struct s5p_ehci_hcd' and 'struct exynos_ohci_hcd'
->> > >> >    which keeps track of 'otg' of the controllers' phy. This then sets
->> > >> >    the host.
->> > >> >
->> > >> >  - Moved samsung_usbphy_set_type() calls from ehci-s5p and ohci-exynos
->> > >> >    to phy driver itself where based on phy_type it is called.
->> > >> >
->> > >> >  - Added separate macro definition for USB20PHY_CFG register to select
->> > >> >    between host/device type usb link.
->> > >> >
->> > >> >  - Removing unnecessary argument 'phy_type' from
->> > >> > samsung_usbphy_set_type()
->> > >> >    and samsung_usbphy_cfg_sel().
->> > >> >
->> > >> >  - Addressed few nits:
->> > >> >     -- added macro for 'KHZ'
->> > >> >     -- removing useless 'if' from samsung_usbphy_cfg_sel()
->> > >> >     -- keeping the place of clk_get intact and requesting driver
->> > >> >        data before that.
->> > >> >
->> > >> > Vivek Gautam (4):
->> > >> >   ARM: EXYNOS: Update & move usb-phy types to generic include layer
->> > >> >   usb: phy: samsung: Add host phy support to samsung-phy driver
->> > >> >   USB: ehci-s5p: Add phy driver support
->> > >> >   USB: ohci-exynos: Add phy driver support
->> > >> >
->> > >> >  .../devicetree/bindings/usb/samsung-usbphy.txt     |   12 +-
->> > >> >  drivers/usb/host/ehci-s5p.c                        |   81 +++-
->> > >> >  drivers/usb/host/ohci-exynos.c                     |   85 +++-
->> > >> >  drivers/usb/phy/Kconfig                            |    2 +-
->> > >> >  drivers/usb/phy/samsung-usbphy.c                   |  512
->> > >> ++++++++++++++++++--
->> > >> >  include/linux/usb/samsung_usb_phy.h                |   16 +
->> > >> >  6 files changed, 635 insertions(+), 73 deletions(-)
->> > >> >  create mode 100644 include/linux/usb/samsung_usb_phy.h
->> > >> >
->> > >> > --
->> > >> > 1.7.6.5
->> > >>
->> > >> Looks good to me,
->> > >>
->> > >> Felipe and Greg, I don't know who should take this series anyway, feel free
->> > >> to add  my ack:
->> > >>
->> > >> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
->> > >
->> > > I will take care of it. But I need Alan's Acked-by for EHCI and OHCI
->> > > parts.
->> > >
->> >
->> > We got Alan's ACK for:
->> > USB: ehci-s5p: Add phy driver support
->> > USB: ohci-exynos: Add phy driver support
+On 22 January 2013 14:52, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> On Tue, 2013-01-22 at 13:41 +0530, Viresh Kumar wrote:
+>> > +       spin_lock_irqsave(&dwc->lock, flags);
+>> > +       if (list_empty(&dwc->active_list)) {
 >>
->> Ok, then as soon as I get back to the office (in a few hours), I'll
->> start queueing those.
+>> can this every happen?
 >
-> Actually, if you want to make my life a little easier today, you could
-> resend the series with all Acks in place ;-)
+> In the same way as in dwc_scan_descriptors().
+> For example when transfer is done.
+
+My point was, because scan_descriptor() is just called, if the transfer
+is over by now, we must have returned back, else we reach this place
+and so this may never be true.
+
+>> Over that, cyclic case can be handled before taking any locks.
 >
+> Does the user is responsible to follow specific workflow for cyclic API?
 
-Sure, will resend the patches with proper Acks and version :-)
+not sure.
 
-> ps: hehe, I'm about to go a little nuts today, too many things happening
-> at once ;-)
+>> Just before above line got executed, we called dwc_scan_descriptors(), which
+>> also scans through the llis to see where we are.. What about updating
+>> first->residue
+>> there, so that we don't traverse it twice?
 >
-:-)
+> The dwc_scan_descriptors traverses the chain and returns immediately if
+> it found a match. But to calculate residue we have to traverse from that
+> point to the end of the chain along with current DMA register check.
 
-
--- 
-Thanks & Regards
-Vivek
+Hey, you can start subtracting individual lengths of descriptors from
+total length
+in scan descriptors() and that should give you what you want.
