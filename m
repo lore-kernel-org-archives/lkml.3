@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101Ab3AVHZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:25:26 -0500
-Received: from mga02.intel.com ([134.134.136.20]:35465 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003Ab3AVHZZ convert rfc822-to-8bit (ORCPT
+	id S1753454Ab3AVH3L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:29:11 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:52176 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab3AVH3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:25:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,512,1355126400"; 
-   d="scan'208";a="250574924"
-Message-ID: <1358839491.12502.41.camel@smile>
-Subject: Re: [PATCH 2/2] dw_dmac: return proper residue value
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        Viresh Kumar <viresh.linux@gmail.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Date: Tue, 22 Jan 2013 09:24:51 +0200
-In-Reply-To: <20130121142205.GB26562@intel.com>
-References: <1358758844-24711-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1358758844-24711-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <20130121084924.GA26562@intel.com> <1358761551.12502.39.camel@smile>
-	 <20130121142205.GB26562@intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Tue, 22 Jan 2013 02:29:08 -0500
+Date: Mon, 21 Jan 2013 23:29:12 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] ARM: shmobile: sh73a0: Use generic irqchip_init()
+Message-ID: <20130122072912.GD25783@quad.lixom.net>
+References: <1358493373-28722-1-git-send-email-thierry.reding@avionic-design.de>
+ <20130121005439.GF19062@verge.net.au>
+ <20130121070301.GB15508@avionic-0098.adnet.avionic-design.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130121070301.GB15508@avionic-0098.adnet.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-21 at 06:22 -0800, Vinod Koul wrote: 
-> On Mon, Jan 21, 2013 at 11:45:51AM +0200, Andy Shevchenko wrote:
-> > > > +	return 0;
-> > > hmmm, why not use BLOCK_TS value. That way you dont need to look at direction
-> > > and along with burst can easily calculate residue...
+On Mon, Jan 21, 2013 at 08:03:01AM +0100, Thierry Reding wrote:
+> On Mon, Jan 21, 2013 at 09:54:39AM +0900, Simon Horman wrote:
+> > On Fri, Jan 18, 2013 at 08:16:12AM +0100, Thierry Reding wrote:
+> > > The asm/hardware/gic.h header does no longer exist and the corresponding
+> > > functionality was moved to linux/irqchip.h and linux/irqchip/arm-gic.h
+> > > respectively. gic_handle_irq() and of_irq_init() are no longer available
+> > > either and have been replaced by irqchip_init().
 > > 
-> > Do you mean to read CTL hi/lo and do
-> > 
-> > desc->len - ctlhi.block_ts * ctllo.src_tr_width?
-> > 
-> Yes
-> > I think it could be not precise when memory-to-peripheral transfer is
-> > going on. In that case you probably will have src_tr_width like 32 bits,
-> > meanwhile peripheral may receive only byte stream.
-> Nope that is not the case.
-> SAR/DAR is always incremented in src/dstn_tr_width granularity. For example if
-> you are using MEM to DMA, then SAR will always increment in case of x86 in 4byte
-> granularity as we will read bursts not singles.
+> > asm/hardware/gic.h Seems to still exist in Linus's tree.
+> > Could you let me know which tree of which branch I should depend on
+> > in order to apply this change?
 > 
-> Also if check the spec, it says "Once the transfer starts, the read-back value is the
-> total number of data items already read from the source peripheral, regardless of
-> what is the flow controller"
+> I found this when doing an automated build over all ARM defconfigs on
+> linux-next.
 > 
-> So basically you get what is read from buffer in case of MEM->PER and get what
-> is read from FIFO in case of PER->MEM which IMO gives you better or equal results
-> than your calulation.
+> Commit 520f7bd73354f003a9a59937b28e4903d985c420 "irqchip: Move ARM gic.h
+> to include/linux/irqchip/arm-gic.h" moved the file and was merged
+> through Olof Johansson's next/cleanup and for-next branches.
+> 
+> Adding Olof on Cc since I'm not quite sure myself about how this is
+> handled.
 
-I will try this. Indeed I don't like usage of direction as well, and
-your solution seems much clear in that sense.
+The way to handle this is to base the branch you are adding new shmobile code
+in, on top of the cleanup branches that changes the underlying infrastructure.
+This is why we merge it early during the release, so that new code for various
+platforms can be based on it to avoid a bunch of conflicts in the end.
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+In this case, you might need to base your branch onto a merge of both
+the irqchip/gic-vic-move and timer/cleanup branches from arm-soc.
+
+
+-Olof
+
