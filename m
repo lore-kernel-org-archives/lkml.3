@@ -1,95 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab3AUX7X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 18:59:23 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:37031 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752351Ab3AUX7W convert rfc822-to-8bit (ORCPT
+	id S1752678Ab3AVACE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 19:02:04 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:10354 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751693Ab3AVACC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 18:59:22 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Axel Lin <axel.lin@ingics.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Subject: RE: [PATCH 2/3] regulator-core: update all enable GPIO state in
-	_enable/disable
-Thread-Topic: [PATCH 2/3] regulator-core: update all enable GPIO state in
-	_enable/disable
-Thread-Index: AQHN8fhzdUVzsipdnka7A7zmYXiw6phIDtuA//+K5oCADOVkUA==
-Date: Mon, 21 Jan 2013 23:59:11 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E1BD93@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F69E122AA@DQHE02.ent.ti.com>
- <20130113224220.GE5041@opensource.wolfsonmicro.com>
- <A874F61F95741C4A9BA573A70FE3998F69E12A0D@DQHE02.ent.ti.com>
- <20130114014239.GA29909@opensource.wolfsonmicro.com>
- <A874F61F95741C4A9BA573A70FE3998F69E12A43@DQHE02.ent.ti.com>
- <20130114025025.GA30179@opensource.wolfsonmicro.com>
-In-Reply-To: <20130114025025.GA30179@opensource.wolfsonmicro.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.185.78]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 Jan 2013 19:02:02 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h1155h)
+X-WSS-ID: 0MH02R3-02-5CW-02
+X-M-MSG: 
+Message-ID: <50FDD6F1.5030208@amd.com>
+Date: Mon, 21 Jan 2013 19:01:53 -0500
+From: Boris Ostrovsky <boris.ostrovsky@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Borislav Petkov <bp@alien8.de>, Stefan Bader <stefan.bader@canonical.com>,
+        Andre Przywara <andre@andrep.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [Xen-devel] kernel 3.7+ cpufreq regression on AMD system running
+ as dom0
+References: <50F42B3E.7090602@canonical.com> <20130114163445.GA4867@liondog.tnic> <20130115175305.GA12449@phenom.dumpdata.com> <20130115181839.GC8101@liondog.tnic> <20130118190015.GC11351@phenom.dumpdata.com>
+In-Reply-To: <20130118190015.GC11351@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > OK, the consumer just cares about the regulator(s) which is(are)
-> obtained.
-> > However it doesn't show exact state of regulator in case that enable
-> GPIOs are
-> > shared.
-> 
-> It would do if my suggestion that we use a shared state for the GPIO
-> were implemented!
-> 
-> > (6) CB tries to get the state of LDO3 before disabling it,
-> > regulator_is_enabled() returns 1, but real state is 0.
-> 
-> > 	if(!regulator_is_enabled(rdev))
-> > 		regulator_disable(rdev);
-> 
-> > 	Therefore CB never disables LDO3, use_count is always 1.
-> 
-> > This patch solves this unmatched situation.
-> 
-> This is just a buggy consumer - the consumer would also break if there
-> were a single regulator shared by two consumers.  There's almost no
-> case
-> outside of bootstrapping where it makes sense to check if the regulator
-> is enabled for anything other than diagnostics.
-> 
-> > Regulator APIs may show unmatched value, but it can be handled in
-> each consumer
-> > driver *separately*.
-> > Therefore, we should not update 'ena_gpio_state' of other regulators.
-> > This patch should be ignored.
-> > Is that correct?
-> 
-> No, we need to reference count over all the regualtors sharing the
-> enable line.  Otherwise we won't pay attention to references held by
-> anything other than the regulator currently being enabled or disabled.
 
-Updated patch-set was sent recently.
 
-  [PATCH v2 1/4] regulator-core: support shared enable GPIO concept
-  https://lkml.org/lkml/2013/1/14/564
+On 01/18/2013 02:00 PM, Konrad Rzeszutek Wilk wrote:
+>
+> So something like this in the hypervisor maybe (not even tested):
+>
+> diff --git a/xen/arch/x86/acpi/cpufreq/powernow.c b/xen/arch/x86/acpi/cpufreq/powernow.c
+> index a9b7792..54e7808 100644
+> --- a/xen/arch/x86/acpi/cpufreq/powernow.c
+> +++ b/xen/arch/x86/acpi/cpufreq/powernow.c
+> @@ -146,7 +146,40 @@ static int powernow_cpufreq_target(struct cpufreq_policy *policy,
+>
+>       return 0;
+>   }
+> +#define MSR_AMD_PSTATE_DEF_BASE     0xc0010064
+> +static void amd_fixup_frequency(struct xen_processor_px *px, int i)
+> +{
+> +	u32 hi, lo, fid, did;
+> +	int index = px->control & 0x00000007;
+> +
+> +	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
+> +		return;
+> +
+> +	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
+> +	    || boot_cpu_data.x86 == 0x11) {
+> +		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
+> +        /* Bit 63 indicates whether contents are valid */
+> +        if (!(hi & 0x80000000))
+> +            return;
+> +
+> +		fid = lo & 0x3f;
+> +		did = (lo >> 6) & 7;
+> +		if (boot_cpu_data.x86 == 0x10)
+> +			px->core_frequency = (100 * (fid + 0x10)) >> did;
+> +		else
+> +			px->core_frequency = (100 * (fid + 8)) >> did;
+> +	}
+> +}
+> +
+> +static void amd_fixup_freq(struct processor_performance *perf)
+> +{
+>
+> +    int i;
+> +
+> +    for (i = 0; i < perf->state_count; i++)
+> +        amd_fixup_frequency(perf->states, i);
 
-  [PATCH v2 2/4] regulator-core: manage enable GPIO list
-  https://lkml.org/lkml/2013/1/14/565
+amd_fixup_frequency(&perf->states[i]) will walk P-states.
 
-  [PATCH v2 3/4] regulator-core: free requested GPIOs and manage the enable list
-  https://lkml.org/lkml/2013/1/14/567
+> +
+> +}
+>   static int powernow_cpufreq_verify(struct cpufreq_policy *policy)
+>   {
+>       struct acpi_cpufreq_data *data;
+> @@ -158,6 +191,8 @@ static int powernow_cpufreq_verify(struct cpufreq_policy *policy)
+>
+>       perf = &processor_pminfo[policy->cpu]->perf;
+>
+> +    amd_fixup_freq(perf);
 
-  [PATCH v2 4/4] lp8788-ldo: use ena_pin of regulator-core for external control
-  https://lkml.org/lkml/2013/1/14/566
+Maybe move to powernow_cpufreq_cpu_init(), although this works too.
 
-I'd like to get some feedback from you.
-Thank you.
 
-Best Regards,
-Milo
+-boris
+
+
+> +
+>       cpufreq_verify_within_limits(policy, 0,
+>           perf->states[perf->platform_limit].core_frequency * 1000);
+>
+>
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
+>
+
