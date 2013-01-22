@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab3AVGVa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 01:21:30 -0500
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:52966 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab3AVGV2 (ORCPT
+	id S1753405Ab3AVGXa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 01:23:30 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:51647 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab3AVGX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 01:21:28 -0500
-Message-ID: <1358835638.6336.1.camel@nexus.lab.ntt.co.jp>
-Subject: HID: clean up quirk for Sony RF receivers
-From: Fernando Luis =?ISO-8859-1?Q?V=E1zquez?= Cao 
-	<fernando_b1@lab.ntt.co.jp>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Antonio Ospite <ospite@studenti.unina.it>
-Date: Tue, 22 Jan 2013 15:20:38 +0900
-In-Reply-To: <50FE2A34.3050607@lab.ntt.co.jp>
-References: <1358221428.9926.1.camel@nexus.lab.ntt.co.jp>
-	  <20130115103638.be566e39f0f5ad7186362dd8@studenti.unina.it>
-	  <50F52986.2080002@lab.ntt.co.jp>
-	  <1358246448.4897.3.camel@nexus.lab.ntt.co.jp>
-	  <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz>
-	  <50F637D1.8070302@lab.ntt.co.jp>
-	  <alpine.LNX.2.00.1301161141250.14768@pobox.suse.cz>
-	 <50FE2A34.3050607@lab.ntt.co.jp>
-Organization: NTT Open Source Software Center
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Tue, 22 Jan 2013 01:23:29 -0500
+Message-ID: <50FE307F.9000701@ti.com>
+Date: Tue, 22 Jan 2013 11:53:59 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Peter Zijlstra <peterz@infradead.org>,
+        Matt Sealey <matt@genesi-usa.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ben Dooks <ben@simtec.co.uk>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: One of these things (CONFIG_HZ) is not like the others..
+References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com> <201301212041.17951.arnd@arndb.de> <20130121210341.GW23505@n2100.arm.linux.org.uk> <20130121232322.GK15361@atomide.com>
+In-Reply-To: <20130121232322.GK15361@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document what the fix-up is does and make it more robust by ensuring
-that it is only applied to the USB interface that corresponds to the
-mouse (sony_report_fixup() is called once per interface during probing).
+On Tuesday 22 January 2013 04:53 AM, Tony Lindgren wrote:
+> * Russell King - ARM Linux <linux@arm.linux.org.uk> [130121 13:07]:
+>>
+>> As for Samsung and the rest I can't comment.  The original reason OMAP
+>> used this though was because the 32768Hz counter can't produce 100Hz
+>> without a .1% error - too much error under pre-clocksource
+>> implementations for timekeeping.  Whether that's changed with the
+>> clocksource/clockevent support needs to be checked.
+>
+> Yes that's why HZ was originally set to 128. That value (or some multiple)
+> still makes sense when the 32 KiHZ clock source is being used. Of course
+> we should rely on the local timer when running for the SoCs that have
+> them.
+>
+This is right. It was only because of the drift associated when clocked
+with 32KHz. Even on SOCs where local timers are available for power
+management reasons we need to switch to 32KHz clocked device in
+low power states. Hence the HZ value should be multiple of 32 on
+OMAP.
 
-Cc: linux-input@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
-
-diff -urNp linux-3.8-rc4-orig/drivers/hid/hid-sony.c linux-3.8-rc4/drivers/hid/hid-sony.c
---- linux-3.8-rc4-orig/drivers/hid/hid-sony.c	2013-01-22 14:21:13.380552283 +0900
-+++ linux-3.8-rc4/drivers/hid/hid-sony.c	2013-01-22 14:41:56.316934002 +0900
-@@ -43,9 +43,19 @@ static __u8 *sony_report_fixup(struct hi
- {
- 	struct sony_sc *sc = hid_get_drvdata(hdev);
- 
--	if ((sc->quirks & VAIO_RDESC_CONSTANT) &&
--			*rsize >= 56 && rdesc[54] == 0x81 && rdesc[55] == 0x07) {
-+	/*
-+	 * Some Sony RF receivers wrongly declare the mouse pointer as a
-+	 * a constant non-data variable.
-+	 */
-+	if ((sc->quirks & VAIO_RDESC_CONSTANT) && *rsize >= 56 &&
-+	    /* usage page: generic desktop controls */
-+	    /* rdesc[0] == 0x05 && rdesc[1] == 0x01 && */
-+	    /* usage: mouse */
-+	    rdesc[2] == 0x09 && rdesc[3] == 0x02 &&
-+	    /* input (usage page for x,y axes): constant, variable, relative */
-+	    rdesc[54] == 0x81 && rdesc[55] == 0x07) {
- 		hid_info(hdev, "Fixing up Sony RF Receiver report descriptor\n");
-+		/* input: data, variable, relative */
- 		rdesc[55] = 0x06;
- 	}
- 
-
+Regards
+Santosh
 
