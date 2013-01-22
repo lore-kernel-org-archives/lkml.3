@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab3AVW7k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 17:59:40 -0500
-Received: from mout.gmx.net ([212.227.17.20]:54476 "EHLO mout.gmx.net"
+	id S1754696Ab3AVXAY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 18:00:24 -0500
+Received: from mout.gmx.net ([212.227.17.20]:65216 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752465Ab3AVW7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 17:59:38 -0500
+	id S1752959Ab3AVXAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 18:00:23 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19RcU1VTMpRYQQ2rI/BotL0mEnS9hBDhaM4k2nrS/
-	ACfG6UVItKrPgO
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Subject: Re: [PATCH] staging/comedi: Use comedi_pci_auto_unconfig directly for pci_driver.remove
-Date: Wed, 23 Jan 2013 00:02:48 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.4; KDE/4.9.3; x86_64; ; )
-Cc: Ian Abbott <abbotti@mev.co.uk>, Mori Hess <fmhess@users.sourceforge.net>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1358894403-26181-1-git-send-email-peterhuewe@gmx.de> <ADE657CA350FB648AAC2C43247A983F00207A6F697BB@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00207A6F697BB@AUSP01VMBX24.collaborationhost.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301230002.48551.PeterHuewe@gmx.de>
+X-Provags-ID: V01U2FsdGVkX1/uOp02aDnudnEI07eoT8HYNPGC3cjKNWJJvcEloW
+	RNRHIg5qwZV5op
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH] staging/comedi: Move comedi_pci_auto_unconfig to drivers.c
+Date: Wed, 23 Jan 2013 00:03:30 +0100
+Message-Id: <1358895810-27115-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1358894403-26181-1-git-send-email-peterhuewe@gmx.de>
+References: <1358894403-26181-1-git-send-email-peterhuewe@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 22. Januar 2013, 23:49:53 schrieb H Hartley Sweeten:
-> On Tuesday, January 22, 2013 3:40 PM, Peter Huewe wrote:
-> >  (Almost) all comedi pci drivers have some wrapper for their
-> > 
-> > pci_driver.remove function which simply calls comedi_pci_auto_unconfig
-> > which has the same function prototype as the wrapper.
-> > 
-> > -> we can remove these wrappers and call comedi_pci_auto_unconfig
-> > directly. This removes a lot some boilerplate code and saves some bytes.
-> > 
-> > Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> > ---
-> > Maybe we should move the implementation now to drivers.c,
-> > because now it cannot be inlined anymore.
-> > This would save some more bytes in the .kos but comedi_pci_auto_unconfig
-> > then has to become an exported symbol.
-> 
-> Did you build this?
-> 
-> As you mention above, the inlined comedi_pci_auto_unconfig() will not
-> work as a function pointer in the pci_driver structs.
-> 
-> This cannot work until/if comedi_pci_auto_unconfig() is made an exported
-> symbol. I'll leave that decision up to Ian.
-> 
-> Regards,
-> Hartley
+Since comedi_pci_auto_unconfig cannot be inlined anymore after
+ staging/comedi: Use comedi_pci_auto_unconfig directly for
+ pci_driver.remove
+is applied, it makes sense to move it drivers.c
 
-Hi,
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/comedi/comedidev.h |    5 +----
+ drivers/staging/comedi/drivers.c   |    6 ++++++
+ 2 files changed, 7 insertions(+), 4 deletions(-)
 
-yes I did build it - and it did build fine.
-That's how I could find out about the size of the .kos 
-
-On my machine all comedi .kos before the patch sum up to 9828 bytes.
-After applying this patch it comes down to 9812 bytes
-If I put the comedi_pci_auto_unconfig into drivers.c and export it, it comes 
-down to 9752 bytes.
-
-
-The gcc probably simply does not inline it anymore - inline is just a 
-suggestion to the compiler.
-
-I did some google searching before submitting it, and it seems that is indeed 
-possible.
-e.g.:
-http://stackoverflow.com/questions/8885665/c-pointer-to-inline-function
-
-Nevertheless I'll send a patch which moves the  comedi_pci_auto_unconfig to 
-drivers.c
-
-Thanks,
-Peter
-
-
+diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+index 6211d44..e2b7d60 100644
+--- a/drivers/staging/comedi/comedidev.h
++++ b/drivers/staging/comedi/comedidev.h
+@@ -484,10 +484,7 @@ static inline int comedi_pci_auto_config(struct pci_dev *pcidev,
+ 	return comedi_auto_config(&pcidev->dev, driver, 0);
+ }
+ 
+-static inline void comedi_pci_auto_unconfig(struct pci_dev *pcidev)
+-{
+-	comedi_auto_unconfig(&pcidev->dev);
+-}
++void comedi_pci_auto_unconfig(struct pci_dev *pcidev);
+ 
+ static inline int comedi_usb_auto_config(struct usb_interface *intf,
+ 					 struct comedi_driver *driver)
+diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
+index 1c7d4da..87eeee5 100644
+--- a/drivers/staging/comedi/drivers.c
++++ b/drivers/staging/comedi/drivers.c
+@@ -558,6 +558,12 @@ void comedi_pci_driver_unregister(struct comedi_driver *comedi_driver,
+ }
+ EXPORT_SYMBOL_GPL(comedi_pci_driver_unregister);
+ 
++void comedi_pci_auto_unconfig(struct pci_dev *pcidev)
++{
++	comedi_auto_unconfig(&pcidev->dev);
++}
++EXPORT_SYMBOL_GPL(comedi_pci_auto_unconfig);
++
+ #if IS_ENABLED(CONFIG_PCMCIA)
+ int comedi_pcmcia_driver_register(struct comedi_driver *comedi_driver,
+ 		struct pcmcia_driver *pcmcia_driver)
+-- 
+1.7.8.6
 
