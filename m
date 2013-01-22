@@ -1,116 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab3AVQQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 11:16:21 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:50777 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753559Ab3AVQQS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 11:16:18 -0500
-Date: Tue, 22 Jan 2013 17:15:59 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 08/33] gpio: Convert to devm_ioremap_resource()
-Message-ID: <20130122161558.GA11898@avionic-0098.adnet.avionic-design.de>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
- <1358762966-20791-9-git-send-email-thierry.reding@avionic-design.de>
- <CACRpkdb8VEUENBD8nSexYYPekDp082mK-A07hw7e8VmVSxZS3A@mail.gmail.com>
- <20130122102558.GA10716@avionic-0098.adnet.avionic-design.de>
- <20130122160809.GE10396@kroah.com>
+	id S1754692Ab3AVQRJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 11:17:09 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:43244 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753936Ab3AVQRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 11:17:04 -0500
+Message-ID: <50FEBB61.9000707@ti.com>
+Date: Tue, 22 Jan 2013 21:46:33 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="45Z9DzgjV8m4Oswq"
-Content-Disposition: inline
-In-Reply-To: <20130122160809.GE10396@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:FZ3PGgMYo3JZXlyihrU6WrxVhpLqlGEto+IgB5m+srQ
- O/sR2Y9RI0Ir9Q4WmSPEd+zbkJOvvSUaeOsRkajMQhbLXxqnp8
- 1RQ8Pt1NV1PmLZSKsLh1Adc6G4pdo+PJQEoTvPpURZeLXFkb/1
- V2znzkBRd78jl2xiruelH6bDiIVPvJ9mN1jCTn2YfxRhnQflWY
- giV4mekXVf/3inZnFAPhkccAtozkyaPmpFSK67dJ7p9cIMs02/
- n64p8n5XNgQRw0ZLK7u54y+/t44Yxuid+Mpg67gczjo0cs4adY
- z0ZSBKlCkPC4Q24kDqfHEySg7REt0cbQsEn/u1gdSvq2EF3ib1
- yV7T8NbAkKQzHZK3PVYkXA9v9rfOd3rjzkxTQUzq674zqE1AlR
- AxkdOEcQVdxF82+wFwbJSbDObIPw6E8GTk=
+To: Koen Kooi <koen@dominion.thruhere.net>
+CC: <tony@atomide.com>, <balbi@ti.com>, <linux@arm.linux.org.uk>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org List" <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Jason Kridner <jkridner@beagleboard.org>
+Subject: Re: [PATCH v1 0/6] USB: Add support for multiple PHYs of same type
+References: <1358848694-20145-1-git-send-email-kishon@ti.com> <2D906ABA-71F2-4843-9DBE-F82527A1240A@dominion.thruhere.net> <50FEB3FD.3050001@ti.com>
+In-Reply-To: <50FEB3FD.3050001@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---45Z9DzgjV8m4Oswq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 22 January 2013 09:15 PM, kishon wrote:
+> On Tuesday 22 January 2013 09:11 PM, Koen Kooi wrote:
+>>
+>> Op 22 jan. 2013, om 10:58 heeft Kishon Vijay Abraham I <kishon@ti.com>
+>> het volgende geschreven:
+>>
+>>> This patch series adds support for adding multiple PHY's (of same type).
+>>> The binding information has to be present in the PHY library (otg.c) in
+>>> order for it to return the appropriate PHY whenever the USB controller
+>>> request for the PHY. So added a new API usb_bind_phy() to pass the
+>>> binding
+>>> information. This API should be called by platform specific
+>>> initialization
+>>> code.
+>>>
+>>> So the binding should be done something like
+>>> usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto"); specifying
+>>> the USB
+>>> controller device name, index, and the PHY device name.
+>>> I have done this binding for OMAP platforms, but it should be done for
+>>> all the platforms.
+>>>
+>>> After this design, the phy can be got by passing the USB controller
+>>> device
+>>> pointer and the index.
+>>>
+>>> Developed this patch series on
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git xceiv
+>>> after applying "usb: musb: add driver for control module" patch series
+>>> and "ARM: dts: omap: add dt data for MUSB"
+>>>
+>>> Did basic enumeration testing in omap4 panda and omap3 beagle.
+>>
+>> With this patchset USB completely breaks on am33xx beaglebone, is that
+>> intended?
+> Not really.
+> Does am33xx makes use of omap2430.c? Which PHY does am33xx uses?
 
-On Tue, Jan 22, 2013 at 08:08:09AM -0800, Greg Kroah-Hartman wrote:
-> On Tue, Jan 22, 2013 at 11:25:59AM +0100, Thierry Reding wrote:
-> > On Tue, Jan 22, 2013 at 11:15:11AM +0100, Linus Walleij wrote:
-> > > On Mon, Jan 21, 2013 at 11:09 AM, Thierry Reding
-> > > <thierry.reding@avionic-design.de> wrote:
-> > >=20
-> > > > Convert all uses of devm_request_and_ioremap() to the newly introdu=
-ced
-> > > > devm_ioremap_resource() which provides more consistent error handli=
-ng.
-> > > >
-> > > > devm_ioremap_resource() provides its own error messages so all expl=
-icit
-> > > > error messages can be removed from the failure code paths.
-> > > >
-> > > > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > > > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > > > Cc: Linus Walleij <linus.walleij@linaro.org>
-> > >=20
-> > > Is the interface already in-kernel so I should apply this or is it
-> > > added as part of this series so you're searching an ACK?
-> >=20
-> > It is part of this series, so your Acked-by would be great. Other
-> > maintainers have done the same. Initially I had thought that it might be
-> > easier if the patches went in through individual trees, but since the
-> > first patch is a dependency, maybe it'd be better to take them all
-> > through a single tree.
-> >=20
-> > Greg, any comments? Would you be willing to take the series through your
-> > driver-core tree once all Acked-bys are there? Alternatively I guess we
-> > could take the first patch into linux-next, at which point maintainers
-> > could take this through the individual trees.
->=20
-> Yes, I'll take the first patch through my driver-core tree, and add all
-> of the patches that the subsystem maintainers have acked as well.
->=20
-> As subsystem trees can't depend on linux-next, it makes it easier that
-> way.
+I figured out it uses drivers/usb/musb/musb_dsps.c (So it doesn't use 
+omap2430.c). I think it uses TWL4030_USB (TPS659x0) as PHY.
 
-Most excellent. Thanks!
+Then we need to adapt am33xx to use devm_usb_get_phy_by_phandle.
+I'll see how to do it.
 
-Thierry
+Thank you for testing and reporting it :-)
 
---45Z9DzgjV8m4Oswq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ/rs+AAoJEN0jrNd/PrOhaN4P/2+GjNEoDOkdtWZML41xJuNI
-dM0BbVtXQViczTAuPfkS+BpevI+Fx0t7lB7DLghMnhEno60x1aMHQpCXm7PEN6Mk
-6cA3N3jxoCyi0hZ1iOxsnD5OyI8+YBD9L+Wa5GyQf/a4KQ03DCKw97Ai+lNNLxzV
-6fZgDBeio8IF5uGXR3D4AnBhc1CG+Qd+o5sqcdQB+M0HTQlQ5G9x+kHBHa6W30cn
-mJCL20AP/svTdPbVlz9IYOH1hXee0dfNnDcvenFbiSny71L7+91llsch6qXGz7D3
-i+GcaSIg3ytydJV5AX2wBzCPRvaB+xhiIQuJv3hcdBKAXMXW2C7uoDJf1S8Mp9aR
-l7fJkCBHcRWj5zz0y1hJnGBYWpsGyqFibCoM32URaGbUeR3Bw84uw+mk17IDrsXy
-jISqknyodT8qNMpjKUMQg/kZAEcwfUKbJP/SSd/hy1oKt8VFy9rNIjtGAnkJh4ha
-lcQ/XkX7NVJUqzT82NBZdb4VixgsGGWVODp3Z3/UKTjeEph0zwmDtZLXhydRRvSp
-taDL1YK6LPH4hz7fEVfjuiPEbAJsw6O4ZgyHKQ8SZIRktUy9xi7bZlK4Y49nIql9
-/+e6253b54BZ3Rq170E5TZCb5X2QsjwdskH7zmG1W/xODRN1UtlRJRhgX3iDfvpg
-WtcRfIEvm6XVMeKdn0/v
-=BRzF
------END PGP SIGNATURE-----
-
---45Z9DzgjV8m4Oswq--
+Thanks
+Kishon
