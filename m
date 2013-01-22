@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab3AVWDl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 17:03:41 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:50687 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837Ab3AVWDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 17:03:39 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v10 00/11] PCI, ACPI: pci root bus hotplug support / pci match_driver
-Date: Tue, 22 Jan 2013 23:09:40 +0100
-Message-ID: <2072996.JYmST9orI6@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1358803252-20639-1-git-send-email-yinghai@kernel.org>
-References: <1358803252-20639-1-git-send-email-yinghai@kernel.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S1752267Ab3AVWHa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 17:07:30 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52690 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955Ab3AVWH2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 17:07:28 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Avi Kivity <avi@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        arnaldo.melo@gmail.com, Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 0/2] perf/urgent fixes
+Date: Tue, 22 Jan 2013 19:07:15 -0300
+Message-Id: <1358892435-21945-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
 Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 21, 2013 01:20:41 PM Yinghai Lu wrote:
-> It includes
-> 1. preparing patches for pci root bus hotadd/hotremove support
-> 2. move root bus hotadd from acpiphp to pci_root.c
-> 3. add hot-remove support
-> 4. add acpi_hp_work to be shared with acpiphp and root-bus hotplug
-> 5. add match_driver to add pci device to device tree early but
->    not attach driver for hotplug path.
-> 
-> based on pci/next + pm/acpi-scan
-> 
-> could get from
->         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-root-bus-hotplug
-> 
-> -v9: merges several patches together for easy review, requested by Rafael.
-> -v10: address comments from Rafael.
-> 
-> Jiang Liu (2):
->   PCI: Fix a device reference count leakage issue in pci_dev_present()
->   PCI: make PCI device create/destroy logic symmetric
-> 
-> Tang Chen (1):
->   PCI, ACPI: debug print for installation of acpi root bridge's
->     notifier
-> 
-> Yinghai Lu (8):
->   PCI, acpiphp: Add is_hotplug_bridge detection
->   PCI: Add root bus children dev's res to fail list
->   PCI: Set dev_node early for pci_dev
->   PCI, ACPI, acpiphp: Rename alloc_acpiphp_hp_work() to alloc_acpi_hp_work
->   PCI, acpiphp: Move and enhance hotplug support of pci host bridge
->   PCI, acpiphp: Don't bailout even no slots found yet.
->   PCI: Skip attaching driver in device_add()
->   PCI: Put pci dev to device tree as early as possible
+Hi Linus,
 
-OK
+	Please consider pulling, reusing the perf-urgent-for-mingo signed tag
+I used when requesting Ingo to pull this a week or so ago,
 
-Please feel free to add
+Best Regards,
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+- Arnaldo
 
-to all of the patches in this series I haven't acked already.
+The following changes since commit 5c49985c21bba4d2f899e3a97121868a5c58a876:
 
-Thanks,
-Rafael
+  Merge branch 'fixes' of git://git.linaro.org/people/rmk/linux-arm (2013-01-09 08:58:57 -0800)
+
+are available in the git repository at:
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+
+for you to fetch changes up to acb8fb04b74e1c26117b89945dc058b52b28ccb9:
+
+  perf tools: Fix building from 'make perf-*-src-pkg' tarballs (2013-01-10 16:03:26 -0300)
+
+----------------------------------------------------------------
+perf/urgent fixes:
+
+. revert 20b279 - require exclude_guest to use PEBS - kernel side,
+  now older binaries will continue working for things like cycles:pp
+  without needing to pass extra modifiers, from David Ahern.
+
+. Fix building from 'make perf-*-src-pkg' tarballs, broken by UAPI, from
+  Sebastian Andrzej Siewior
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+David Ahern (1):
+      perf x86: revert 20b279 - require exclude_guest to use PEBS - kernel side
+
+Sebastian Andrzej Siewior (1):
+      perf tools: Fix building from 'make perf-*-src-pkg' tarballs
+
+ arch/x86/kernel/cpu/perf_event.c |    6 ------
+ tools/perf/MANIFEST              |   10 ++++++++++
+ 2 files changed, 10 insertions(+), 6 deletions(-)
