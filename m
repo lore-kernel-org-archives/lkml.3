@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab3AVWYp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 17:24:45 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:43618 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab3AVWYn (ORCPT
+	id S1753148Ab3AVW0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 17:26:19 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:40614 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537Ab3AVW0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 17:24:43 -0500
-Message-ID: <1358892886.14145.355.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI: Drop device start operation that is not used
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 22 Jan 2013 15:14:46 -0700
-In-Reply-To: <1726547.g8rCOVpa6k@vostro.rjw.lan>
-References: <1518653.CUpDmbmCI3@vostro.rjw.lan>
-	 <CAE9FiQV1N0hrUui1rGrs1=kFJFiuOhZ6tT-wGfK-B25it5feLQ@mail.gmail.com>
-	 <4046863.eHD8RPonGC@vostro.rjw.lan> <1726547.g8rCOVpa6k@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Jan 2013 17:26:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <1358833677-15611-1-git-send-email-stepanm@codeaurora.org>
+References: <1358833677-15611-1-git-send-email-stepanm@codeaurora.org>
+Date: Tue, 22 Jan 2013 23:26:16 +0100
+X-Google-Sender-Auth: SBafmQayxgLAszpeGwsBmdUvXi0
+Message-ID: <CAMuHMdWedqgvrSCfpmDFdM=ww-6+8v39sz+92CQaYHO4x5jNNQ@mail.gmail.com>
+Subject: Re: [PATCH] lib: vsprintf: Add %pa format specifier for phys_addr_t types
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
+        George Spelvin <linux@horizon.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Andrei Emeltchenko <andrei.emeltchenko@intel.com>, mingo@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-22 at 23:25 +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> The ACPI device start operation, acpi_op_start, is never used, so
-> drop it.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Tue, Jan 22, 2013 at 6:47 AM, Stepan Moskovchenko
+<stepanm@codeaurora.org> wrote:
+> Add the %pa format specifier for printing a phys_addr_t
+> type, since the physical address size on some platforms
+> can vary based on build options, regardless of the native
+> integer type.
 
-Acked-by: Toshi Kani <toshi.kani@hp.com>
+I'm not so sure it's a good idea to start using %p for integer types.
+For structures like MAC addresses, it makes life easier.
 
-Thanks,
--Toshi
+%p offers very minimal support from the compiler for checking the argument type.
+At least with casting to "unsigned long long" and using %llu not much can go
+wrong if there are no compiler warnings.
 
-> ---
->  include/acpi/acpi_bus.h |    2 --
->  1 file changed, 2 deletions(-)
-> 
-> Index: linux-pm/include/acpi/acpi_bus.h
-> ===================================================================
-> --- linux-pm.orig/include/acpi/acpi_bus.h
-> +++ linux-pm/include/acpi/acpi_bus.h
-> @@ -90,13 +90,11 @@ struct acpi_device;
->  
->  typedef int (*acpi_op_add) (struct acpi_device * device);
->  typedef int (*acpi_op_remove) (struct acpi_device * device);
-> -typedef int (*acpi_op_start) (struct acpi_device * device);
->  typedef void (*acpi_op_notify) (struct acpi_device * device, u32 event);
->  
->  struct acpi_device_ops {
->  	acpi_op_add add;
->  	acpi_op_remove remove;
-> -	acpi_op_start start;
->  	acpi_op_notify notify;
->  };
->  
-> 
+Also variables holding MAC address typically don't change, while there's been
+lots of churn in variables changing type from unsigned long to phys_addr_t or
+unsigned long long or void *. Without help of the compiler to catch
+incorrect format
+specifiers, it will become much more difficult to get and keep all of
+them correct.
 
+Just my two (euro)cents...
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
