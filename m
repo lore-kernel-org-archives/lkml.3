@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab3AVATB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 19:19:01 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:44265 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab3AVATA (ORCPT
+	id S1752465Ab3AVA0g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 19:26:36 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:42197 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706Ab3AVA0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 19:19:00 -0500
-Date: Tue, 22 Jan 2013 09:18:54 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v2 1/2] ARM: shmobile: sh73a0: Use generic irqchip_init()
-Message-ID: <20130122001854.GB16757@verge.net.au>
-References: <1358493373-28722-1-git-send-email-thierry.reding@avionic-design.de>
- <20130121005439.GF19062@verge.net.au>
- <20130121070301.GB15508@avionic-0098.adnet.avionic-design.de>
+	Mon, 21 Jan 2013 19:26:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130121070301.GB15508@avionic-0098.adnet.avionic-design.de>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKGA1bk-K=D6EDBfJ7LggpTroj1sFC8VStctqGi=NacLEu95cA@mail.gmail.com>
+References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com>
+ <201301212041.17951.arnd@arndb.de> <50FDAC5F.4040605@linaro.org>
+ <20130121211218.GX23505@n2100.arm.linux.org.uk> <CAKGA1bkZ4sN_eXAk1nUzvGE6cvvQ+b+jnTezTM863qFNL8NqWg@mail.gmail.com>
+ <20130121224252.GY23505@n2100.arm.linux.org.uk> <CAKGA1b=AG_a=KCi6qoeoRoG+5bcYkn3gAVb4S2dbaFzu4ioJdQ@mail.gmail.com>
+ <20130121234908.GD23505@n2100.arm.linux.org.uk> <CAKGA1bk-K=D6EDBfJ7LggpTroj1sFC8VStctqGi=NacLEu95cA@mail.gmail.com>
+From: Matt Sealey <matt@genesi-usa.com>
+Date: Mon, 21 Jan 2013 18:26:14 -0600
+Message-ID: <CAKGA1bndiQkVSFh=Fpk8WjLe4L_EFyRa1mHyVUF9PFine-Wpcg@mail.gmail.com>
+Subject: Re: One of these things (CONFIG_HZ) is not like the others..
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-samsung-soc@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 08:03:01AM +0100, Thierry Reding wrote:
-> On Mon, Jan 21, 2013 at 09:54:39AM +0900, Simon Horman wrote:
-> > On Fri, Jan 18, 2013 at 08:16:12AM +0100, Thierry Reding wrote:
-> > > The asm/hardware/gic.h header does no longer exist and the corresponding
-> > > functionality was moved to linux/irqchip.h and linux/irqchip/arm-gic.h
-> > > respectively. gic_handle_irq() and of_irq_init() are no longer available
-> > > either and have been replaced by irqchip_init().
-> > 
-> > asm/hardware/gic.h Seems to still exist in Linus's tree.
-> > Could you let me know which tree of which branch I should depend on
-> > in order to apply this change?
-> 
-> I found this when doing an automated build over all ARM defconfigs on
-> linux-next.
-> 
-> Commit 520f7bd73354f003a9a59937b28e4903d985c420 "irqchip: Move ARM gic.h
-> to include/linux/irqchip/arm-gic.h" moved the file and was merged
-> through Olof Johansson's next/cleanup and for-next branches.
-> 
-> Adding Olof on Cc since I'm not quite sure myself about how this is
-> handled.
+On Mon, Jan 21, 2013 at 6:09 PM, Matt Sealey <matt@genesi-usa.com> wrote:
 
-Thanks, I'm not quite sure either.
+[LAKML: about lack of SCHED_HRTICK because we don't use
+kernel/Kconfig.hz on ARM)]
 
+> kind of leaves ARM in the doghouse.. who knows what weirdo scheduler
+> reactions are related to it not being enabled. Maybe when it is, HZ
+> *would* need to be allowed to be bumped when using this code path?
 
+Or conversely maybe this is exactly why the Samsung maintainers
+decided they need HZ=200, because SCHED_HRTICK isn't being enabled and
+they're experiencing some multimedia lag because of it?
+
+-- 
+Matt Sealey <matt@genesi-usa.com>
+Product Development Analyst, Genesi USA, Inc.
