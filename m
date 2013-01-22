@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab3AVD0U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 22:26:20 -0500
-Received: from mga09.intel.com ([134.134.136.24]:21788 "EHLO mga09.intel.com"
+	id S1756258Ab3AVD0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 22:26:43 -0500
+Received: from mga09.intel.com ([134.134.136.24]:6524 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754269Ab3AVD0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 22:26:16 -0500
+	id S1755255Ab3AVD0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 22:26:42 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,511,1355126400"; 
-   d="scan'208";a="250508530"
-Date: Tue, 22 Jan 2013 04:26:11 +0100
+   d="scan'208";a="250508619"
+Date: Tue, 22 Jan 2013 04:26:34 +0100
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 1/3] mfd: Fix compile errors and warnings when
- !CONFIG_AB8500_BM
-Message-ID: <20130122032611.GK7409@sortiz-mobl>
-References: <1357725965-27342-1-git-send-email-lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 3/4] pinctrl: add abx500 pinctrl driver core
+Message-ID: <20130122032634.GM7409@sortiz-mobl>
+References: <1358242984-5160-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1357725965-27342-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1358242984-5160-1-git-send-email-linus.walleij@stericsson.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+Hi Linus,
 
-On Wed, Jan 09, 2013 at 10:06:03AM +0000, Lee Jones wrote:
-> drivers/mfd/ab8500-core.c:1015:21: error: ‘ab8500_bm_data’ undeclared here
+On Tue, Jan 15, 2013 at 10:43:04AM +0100, Linus Walleij wrote:
+> From: Patrice Chotard <patrice.chotard@st.com>
 > 
-> include/linux/mfd/abx500/ab8500-bm.h:445:13: warning: ‘ab8500_fg_reinit’ defined but not used
-> include/linux/mfd/abx500/ab8500-bm.h:448:13: warning: ‘ab8500_charger_usb_state_changed’ defined but not used
-> include/linux/mfd/abx500/ab8500-bm.h:451:29: warning: ‘ab8500_btemp_get’ defined but not used
-> include/linux/mfd/abx500/ab8500-bm.h:455:12: warning: ‘ab8500_btemp_get_batctrl_temp’ defined but not used
-> include/linux/mfd/abx500/ab8500-bm.h:463:12: warning: ‘ab8500_fg_inst_curr_blocking’ defined but not used
-> include/linux/mfd/abx500/ab8500-bm.h:442:12: warning: ‘ab8500_fg_inst_curr_done’ defined but not used
-> include/linux/mfd/abx500/ab8500-bm.h:447:26: warning: ‘ab8500_fg_get’ defined but not used
+> This adds the AB8500 core driver, which will be utilized by
+> the follow-on drivers for different ABx500 variants.
+> Sselect the driver from the DBX500_SOC, as this chip is
+> powering and clocking that SoC.
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 > ---
->  drivers/mfd/ab8500-core.c            |    1 +
->  include/linux/mfd/abx500.h           |    2 --
->  include/linux/mfd/abx500/ab8500-bm.h |   29 ++++-------------------------
->  3 files changed, 5 insertions(+), 27 deletions(-)
-Applied to my for-linus branch, thanks.
+> Hi Sam, it'd be great if you could ACK this so we could proceed
+> with rewriting the GPIO driver.
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
 Cheers,
 Samuel.
