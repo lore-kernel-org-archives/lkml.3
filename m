@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab3AVRYl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 12:24:41 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29937 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622Ab3AVRYj (ORCPT
+	id S1754424Ab3AVRaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 12:30:19 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:41348 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145Ab3AVRaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 12:24:39 -0500
-X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Yx4KJSfXDHoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=XVkAhMFrrdMA:10 a=3wD4zJs4LYkSwtiEOXQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358875477.21576.53.camel@gandalf.local.home>
-Subject: Re: [PATCH RT] Fix v3.2.37-rt55 build break
-From: Steven Rostedt <rostedt@goodmis.org>
-To: John Kacur <jkacur@redhat.com>
-Cc: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>
-Date: Tue, 22 Jan 2013 12:24:37 -0500
-In-Reply-To: <alpine.LFD.2.03.1301221804320.14732@tycho>
-References: <alpine.LFD.2.03.1301221804320.14732@tycho>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Jan 2013 12:30:17 -0500
+Date: Tue, 22 Jan 2013 09:30:13 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rob Clark <rob@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: Re: [PATCH 15/15] staging/omapdrm: don't build on multiplatform
+Message-ID: <20130122173013.GA17212@kroah.com>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
+ <1358788568-11137-16-git-send-email-arnd@arndb.de>
+ <50FD7A5F.9020702@ti.com>
+ <201301211741.11875.arnd@arndb.de>
+ <50FD8B63.1060506@ti.com>
+ <20130122165330.GA28152@kroah.com>
+ <50FEC508.50004@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FEC508.50004@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-22 at 18:15 +0100, John Kacur wrote:
+On Tue, Jan 22, 2013 at 10:57:44AM -0600, Rob Clark wrote:
+> On 01/22/2013 10:53 AM, Greg Kroah-Hartman wrote:
+> >On Mon, Jan 21, 2013 at 12:39:31PM -0600, Rob Clark wrote:
+> >>On 01/21/2013 11:41 AM, Arnd Bergmann wrote:
+> >>>On Monday 21 January 2013, Rob Clark wrote:
+> >>>>Are you sure OMAP2_DSS requires ARCH_OMAP2PLUS?  I don't see this, and
+> >>>>it at least used to not depend on ARCH_OMAP2PLUS.  If it does now, I
+> >>>>think the correct fix would be to remove the dependency in OMAP2_DSS.  I
+> >>>>don't think removing ARCH_MULTIPLATFORM support in omapdrm is the
+> >>>>correct solution.
+> >>>At least it says so in drivers/video/omap2/Kconfig, which contains
+> >>>
+> >>>if ARCH_OMAP2PLUS
+> >>>source drivers/video/omap2/dss/Kconfig
+> >>>endif
+> >>ahh, ok, I see.. the if ARCH_OMAP2PLUS bit looks like it came in
+> >>recently (770b6cb)
+> >>
+> >>what about changing this to 'if ARCH_OMAP2PLUS || ARCH_MULTIPLATFORM'?
+> >That's what Arnd's patch did.
+> 
+> sorry, I was talking about in drivers/video/omap2/Kconfig
 
-> The following is my fix applied to the rt-kernel, but it's fine with
-> me if you want to do the cherry-pick against the stable kernel,
-> and then respin fix-rt-int3-x86_32-3.2-rt.patch
+Ah, ok.
 
-Does this fail on vanilla 3.2.37 as well? If so, we need to push it to
-mainline stable, and then wait for it to be included for -rt.
+> Ie. I'd prefer to re-enable omapdss on multi-plat rather than
+> disabling omapdrm.  With changes in drm core, it is a bit of a pain
+> to compile test all the arm drivers by doing N different builds, so
+> we've been trying to get to the point of all arm drm drivers
+> supporting multi-plat
 
--- Steve
+Ok, I'll let you and Arnd fight it out and drop this patch from my
+to-apply queue for now...
 
-
+greg k-h
