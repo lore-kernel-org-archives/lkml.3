@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab3AVRks (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 12:40:48 -0500
-Received: from mail-da0-f43.google.com ([209.85.210.43]:59542 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145Ab3AVRkr (ORCPT
+	id S1754794Ab3AVRrb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 12:47:31 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:53833 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754030Ab3AVRra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 12:40:47 -0500
-Date: Tue, 22 Jan 2013 09:40:43 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH 01/33] lib: devres: Introduce devm_ioremap_resource()
-Message-ID: <20130122174043.GA1411@kroah.com>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
- <1358762966-20791-2-git-send-email-thierry.reding@avionic-design.de>
+	Tue, 22 Jan 2013 12:47:30 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 15/15] staging/omapdrm: don't build on multiplatform
+Date: Tue, 22 Jan 2013 17:47:24 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Rob Clark <rob@ti.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <50FEC508.50004@ti.com> <20130122173013.GA17212@kroah.com>
+In-Reply-To: <20130122173013.GA17212@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358762966-20791-2-git-send-email-thierry.reding@avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301221747.24618.arnd@arndb.de>
+X-Provags-ID: V02:K0:bmLjG2+iT7VtOYkdtDE/AOP/6zj/VFrW3rllSdXczTO
+ BLgnJO3VMy0z9ODoLXwkuNRIkdHVsTGrM3wCHJKqbndDXT4rUB
+ MVyBmKDCbW1G70cJuZ+V3uMswQtcmz+YFZwplZqhKdkWyTXAKU
+ YBlMag4VClWiQcw05AbB5hrCKAlmKZYz9YrbQV4YUH7bTMnR+5
+ Rj2ceZsb1Qvw88TPmmTu5mdAXp1B9VWhkoeDbbkA6bbZYnHhUq
+ 0LqutC9lB3qoEAHda9MoM2q3k2/pyPHvkHFzcwChnRHNcD45W/
+ zB1WZHpZF7MUZcWDQ+SkR1XNZcANr0XKsy6xAIu78zEV6XP670
+ 6eEq/ioHEbjsCCDxRu3c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 11:08:54AM +0100, Thierry Reding wrote:
-> The devm_request_and_ioremap() function is very useful and helps avoid a
-> whole lot of boilerplate. However, one issue that keeps popping up is
-> its lack of a specific error code to determine which of the steps that
-> it performs failed. Furthermore, while the function gives an example and
-> suggests what error code to return on failure, a wide variety of error
-> codes are used throughout the tree.
+On Tuesday 22 January 2013, Greg Kroah-Hartman wrote:
+> > Ie. I'd prefer to re-enable omapdss on multi-plat rather than
+> > disabling omapdrm.  With changes in drm core, it is a bit of a pain
+> > to compile test all the arm drivers by doing N different builds, so
+> > we've been trying to get to the point of all arm drm drivers
+> > supporting multi-plat
 > 
-> In an attempt to fix these problems, this patch adds a new function that
-> drivers can transition to. The devm_ioremap_resource() returns a pointer
-> to the remapped I/O memory on success or an ERR_PTR() encoded error code
-> on failure. Callers can check for failure using IS_ERR() and determine
-> its cause by extracting the error code using PTR_ERR().
-> 
-> devm_request_and_ioremap() is implemented as a wrapper around the new
-> API and return NULL on failure as before. This ensures that backwards
-> compatibility is maintained until all users have been converted to the
-> new API, at which point the old devm_request_and_ioremap() function
-> should be removed. To help prevent new users from being added in the
-> meantime, devm_request_and_ioremap() is marked __deprecated.
+> Ok, I'll let you and Arnd fight it out and drop this patch from my
+> to-apply queue for now...
 
-I've edited the patch and removed the __depreciated line as that's just
-going to cause a whole lot of noise in the kernel.  I'd recommend just
-watching to ensure that we catch all users of the current function and
-convert them to the new one, and then we can drop it, no need to use
-__deprecated at all.
+If Rob thinks there is no danger in allowing omap2_dss to be built
+on all platforms, and Tomi has no objections, I'm fine with that, too.
+In general, that is the right solution, I was just trying to be
+conservative for the 3.8 cycle.
 
-thanks,
-
-greg k-h
+	Arnd
