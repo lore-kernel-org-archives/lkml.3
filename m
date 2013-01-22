@@ -1,146 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab3AVCLL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 21:11:11 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:39987 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752678Ab3AVCLK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 21:11:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <50FDEBF8.3090902@linaro.org>
-References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com>
- <201301212041.17951.arnd@arndb.de> <50FDAC5F.4040605@linaro.org>
- <CAKGA1b=D5CNikijoOAk5xP6TC-nB_gEGtS05ncrPR68sQTMrxw@mail.gmail.com>
- <50FDC2DD.7090406@linaro.org> <CAKGA1bmtTH1N8nx79MGiMighdQROpNtpvAZXhHKT+mT3kcazBQ@mail.gmail.com>
- <50FDE2AE.8030608@linaro.org> <CAKGA1bkXx2qn+c6sKqXsty-aFe1r-W79uyem0O8p6JNeeq6zxQ@mail.gmail.com>
- <50FDEBF8.3090902@linaro.org>
-From: Matt Sealey <matt@genesi-usa.com>
-Date: Mon, 21 Jan 2013 20:10:48 -0600
-Message-ID: <CAKGA1bmpL-PyyMENmwgH9WNmdQ=+1oXrtDo+0OLffdvTChpLFQ@mail.gmail.com>
-Subject: Re: One of these things (CONFIG_HZ) is not like the others..
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
+	id S1753850Ab3AVCWg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 21:22:36 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:48986 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752894Ab3AVCWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 21:22:34 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
+        Len Brown <lenb@kernel.org>
+Subject: [PATCH 4/4] ACPI / PM: Expose lists of device power resources to user space
+Date: Tue, 22 Jan 2013 03:28:23 +0100
+Message-ID: <1477263.uvKKInuF7l@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <2760421.6nE3tkh92K@vostro.rjw.lan>
+References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <4247313.2G7Z3nCgM0@vostro.rjw.lan> <2760421.6nE3tkh92K@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt Sealey <matt@genesi-usa.com>
-Product Development Analyst, Genesi USA, Inc.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
+Since ACPI power resources are going to be used more extensively on
+new hardware platforms, it is necessary to allow user space (powertop
+in particular) to look at the lists of power resources corresponding
+to different power states of devices for diagnostics and control
+purposes.
 
-On Mon, Jan 21, 2013 at 7:31 PM, John Stultz <john.stultz@linaro.org> wrote:
-> On 01/21/2013 05:06 PM, Matt Sealey wrote:
->>
->> On Mon, Jan 21, 2013 at 6:51 PM, John Stultz <john.stultz@linaro.org>
->> wrote:
->>>
->>> On 01/21/2013 02:54 PM, Matt Sealey wrote:
->>>>
->>>> On Mon, Jan 21, 2013 at 4:36 PM, John Stultz <john.stultz@linaro.org>
->>>> wrote:
->>>>>
->>>>> On 01/21/2013 01:14 PM, Matt Sealey wrote:
->>>
->>> As far as jiffies rating, from jiffies.c:
->>>      .rating        = 1, /* lowest valid rating*/
->>>
->>> So I'm not sure what you mean by "the debug on the kernel log is telling
->>> me
->>> it has a higher resolution".
->>
->> Oh, it is just if I actually don't run setup_sched_clock on my
->> platform, it gives a little message (with #define DEBUG 1 in
->> sched_clock.c) about who setup the last sched_clock. Since you only
->> get one chance, and I was fiddling with setup_sched_clock being probed
->> from multiple possible timers from device tree (i.MX3 has a crapload
->> of valid timers, which one you use right now is basically forced by
->> the not-quite-fully-DT-only code and some funky iomap tricks).
->>
->> And what I got was, if I use the real hardware timer, it runs at 66MHz
->> and says it has 15ns resolution and wraps every 500 seconds or so. The
->> jiffies timer says it's 750MHz, with a 2ns resoluton.. you get the
->> drift. The generic reporting of how "good" the sched_clock source is
->> kind of glosses over the quality rating of the clock source and at
->> first glance (if you're not paying that much attention), it is a
->> little bit misleading..
->
->
-> I've got no clue on this. sched_clock is arch specific, and while ARM does
-> use clocksources for sched_clock, what you're seeing is a detail of the ARM
-> implementation and not the clocksource code (one complication is that
-> clocksources rating values are for the requirements of timekeeping, which
-> are different then the requirements for sched_clock - so the confusion is
-> understandable).
->
->
->
->>> Yes, in the case I was remembering, the 60HZ was driven by the electrical
->>> line.
->>
->> While I have your attention, what would be the minimum "good" speed to
->> run the sched_clock or delay timer implementation from? My rudimentary
->> scribblings in my notebook give me a value of "don't bother" with less
->> than 10KHz based on HZ=100, so I'm wondering if a direct 32.768KHz
->> clock would do (i.MX osc clock input if I can supply it to one of the
->> above myriad timers) since this would be low-power compared to a 66MHz
->> one (by a couple mA anyway). I also have a bunch of questions about
->> the delay timer requirements.. I might mail you personally.. or would
->> you prefer on-list?
->
-> So there are probably other folks who could better comment on sched_clock()
-> or the delay timer (I'm guessing the delay() implementation is what you mean
-> by that) design trade-offs.
+For this reason, for each power state of an ACPI device node using
+power resources create a special attribute group under the device
+node's directory in sysfs containing links to sysfs directories
+representing the power resources in that list.  The names of the
+new attribute groups are "power_resources_<state>", where <state>
+is the state name i.e. "D0", "D1", "D2", or "D3hot".
 
-I'm specifically talking about if I do
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ Documentation/ABI/testing/sysfs-devices-power_resources_D0    |   13 +
+ Documentation/ABI/testing/sysfs-devices-power_resources_D1    |   14 +
+ Documentation/ABI/testing/sysfs-devices-power_resources_D2    |   14 +
+ Documentation/ABI/testing/sysfs-devices-power_resources_D3hot |   14 +
+ drivers/acpi/power.c                                          |   96 ++++++++--
+ 5 files changed, 138 insertions(+), 13 deletions(-)
 
-static struct delay_timer imx_gpt_delay_timer = {
-        .read_current_timer = imx_gpt_read_current_timer,
-};
+Index: linux-pm/drivers/acpi/power.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/power.c
++++ linux-pm/drivers/acpi/power.c
+@@ -417,24 +417,94 @@ static void acpi_power_remove_dependent(
+ 	}
+ }
+ 
+-void acpi_power_add_remove_device(struct acpi_device *adev, bool add)
++static struct attribute *attrs[] = {
++	NULL,
++};
++
++static void acpi_power_hide_list(struct acpi_device *adev,
++				 struct acpi_device_power_state *ps,
++				 const char *group_name)
+ {
+-	if (adev->power.flags.power_resources) {
+-		struct acpi_device_power_state *ps;
+-		struct acpi_power_resource_entry *entry;
+-
+-		ps = &adev->power.states[ACPI_STATE_D0];
+-		list_for_each_entry(entry, &ps->resources, node) {
+-			struct acpi_power_resource *resource = entry->resource;
+-
+-			if (add)
+-				acpi_power_add_dependent(resource, adev);
+-			else
+-				acpi_power_remove_dependent(resource, adev);
++	struct attribute_group attr_group = {
++		.name	= group_name,
++		.attrs	= attrs,
++	};
++	struct acpi_power_resource_entry *entry;
++
++	list_for_each_entry_reverse(entry, &ps->resources, node) {
++		struct acpi_device *res_dev = &entry->resource->device;
++
++		sysfs_remove_link_from_group(&adev->dev.kobj, group_name,
++					     dev_name(&res_dev->dev));
++	}
++	sysfs_remove_group(&adev->dev.kobj, &attr_group);
++}
++
++static void acpi_power_expose_list(struct acpi_device *adev,
++				   struct acpi_device_power_state *ps,
++				   const char *group_name)
++{
++	struct attribute_group attr_group = {
++		.name	= group_name,
++		.attrs	= attrs,
++	};
++	struct acpi_power_resource_entry *entry;
++	int ret;
++
++	ret = sysfs_create_group(&adev->dev.kobj, &attr_group);
++	if (ret)
++		return;
++
++	list_for_each_entry(entry, &ps->resources, node) {
++		struct acpi_device *res_dev = &entry->resource->device;
++
++		ret = sysfs_add_link_to_group(&adev->dev.kobj, group_name,
++					      &res_dev->dev.kobj,
++					      dev_name(&res_dev->dev));
++		if (ret) {
++			acpi_power_hide_list(adev, ps, group_name);
++			break;
+ 		}
+ 	}
+ }
+ 
++void acpi_power_add_remove_device(struct acpi_device *adev, bool add)
++{
++	static const char *group_names[ACPI_D_STATE_COUNT] = {
++		[ACPI_STATE_D0] = "power_resources_D0",
++		[ACPI_STATE_D1] = "power_resources_D1",
++		[ACPI_STATE_D2] = "power_resources_D2",
++		[ACPI_STATE_D3_HOT] = "power_resources_D3hot",
++	};
++	struct acpi_device_power_state *ps;
++	struct acpi_power_resource_entry *entry;
++	int state;
++
++	if (!adev->power.flags.power_resources)
++		return;
++
++	ps = &adev->power.states[ACPI_STATE_D0];
++	list_for_each_entry(entry, &ps->resources, node) {
++		struct acpi_power_resource *resource = entry->resource;
++
++		if (add)
++			acpi_power_add_dependent(resource, adev);
++		else
++			acpi_power_remove_dependent(resource, adev);
++	}
++
++	for (state = ACPI_STATE_D0; state <= ACPI_STATE_D3_HOT; state++) {
++		ps = &adev->power.states[state];
++		if (list_empty(&ps->resources))
++			continue;
++
++		if (add)
++			acpi_power_expose_list(adev, ps, group_names[state]);
++		else
++			acpi_power_hide_list(adev, ps, group_names[state]);
++	}
++}
++
+ int acpi_power_min_system_level(struct list_head *list)
+ {
+ 	struct acpi_power_resource_entry *entry;
+Index: linux-pm/Documentation/ABI/testing/sysfs-devices-power_resources_D0
+===================================================================
+--- /dev/null
++++ linux-pm/Documentation/ABI/testing/sysfs-devices-power_resources_D0
+@@ -0,0 +1,13 @@
++What:		/sys/devices/.../power_resources_D0/
++Date:		January 2013
++Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++Description:
++		The /sys/devices/.../power_resources_D0/ directory is only
++		present for device objects representing ACPI device nodes that
++		use ACPI power resources for power management.
++
++		If present, it contains symbolic links to device directories
++		representing ACPI power resources that need to be turned on for
++		the given device node to be in ACPI power state D0.  The names
++		of the links are the same as the names of the directories they
++		point to.
+Index: linux-pm/Documentation/ABI/testing/sysfs-devices-power_resources_D1
+===================================================================
+--- /dev/null
++++ linux-pm/Documentation/ABI/testing/sysfs-devices-power_resources_D1
+@@ -0,0 +1,14 @@
++What:		/sys/devices/.../power_resources_D1/
++Date:		January 2013
++Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++Description:
++		The /sys/devices/.../power_resources_D1/ directory is only
++		present for device objects representing ACPI device nodes that
++		use ACPI power resources for power management and support ACPI
++		power state D1.
++
++		If present, it contains symbolic links to device directories
++		representing ACPI power resources that need to be turned on for
++		the given device node to be in ACPI power state D1.  The names
++		of the links are the same as the names of the directories they
++		point to.
+Index: linux-pm/Documentation/ABI/testing/sysfs-devices-power_resources_D2
+===================================================================
+--- /dev/null
++++ linux-pm/Documentation/ABI/testing/sysfs-devices-power_resources_D2
+@@ -0,0 +1,14 @@
++What:		/sys/devices/.../power_resources_D2/
++Date:		January 2013
++Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++Description:
++		The /sys/devices/.../power_resources_D2/ directory is only
++		present for device objects representing ACPI device nodes that
++		use ACPI power resources for power management and support ACPI
++		power state D2.
++
++		If present, it contains symbolic links to device directories
++		representing ACPI power resources that need to be turned on for
++		the given device node to be in ACPI power state D2.  The names
++		of the links are the same as the names of the directories they
++		point to.
+Index: linux-pm/Documentation/ABI/testing/sysfs-devices-power_resources_D3hot
+===================================================================
+--- /dev/null
++++ linux-pm/Documentation/ABI/testing/sysfs-devices-power_resources_D3hot
+@@ -0,0 +1,14 @@
++What:		/sys/devices/.../power_resources_D3hot/
++Date:		January 2013
++Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++Description:
++		The /sys/devices/.../power_resources_D3hot/ directory is only
++		present for device objects representing ACPI device nodes that
++		use ACPI power resources for power management and support ACPI
++		power state D3hot.
++
++		If present, it contains symbolic links to device directories
++		representing ACPI power resources that need to be turned on for
++		the given device node to be in ACPI power state D3hot.  The
++		names of the links are the same as the names of the directories
++		they point to.
 
-and then something like:
-
-imx_gpt_delay_timer.freq = clk_get_rate(clk_per);
-register_current_timer_delay(&imx_gpt_delay_timer);
-
-In the sense that now (as of kernel 3.7 iirc), I have an ability to
-have the delay implementation use this awesome fast accessor (which is
-nothing to do with a 'clocksource' as in the subsystem..) to get to my
-(here at least) 66.5MHz counter (up or down, i.MX has both, but I
-dunno if you can use a down counter for delay_timer, or if that's
-preferred, or what.. there are no examples of it.. but it seems to
-work.. that said I can't imagine what would be an immediately visible
-and not totally random effect of doing it "wrong", maybe that delays
-are instantly returned, that could be very hard or impossible to ever
-notice compared to not being able to browse the internet on the target
-device.. it might pop up on some randomly-not-resetting platform
-device or so, though..)
-
-And I can also put sched_clock on a completely different timer. Does
-that make any sense at all? I wouldn't know, it's not documented.
-
-And if I wanted to I could register 8 more timers. That seems rather
-excessive, but the ability to use those extra 8 as clock outputs from
-the SoC or otherwise directly use comparators is useful to some
-people, does Linux in general really give a damn about having 8 timers
-of the same quality being available when most systems barely have two
-clocksources anyway (on x86, tsc and hpet - on ARM I guess twd and
-some SoC-specific timer). I dunno how many people might actually want
-to define in a device tree, but I figure every single one is not a bad
-thing and which ones end up as sched_clock, delay_timer or just plain
-registered clocksources, or not registered as a clocksource and
-accessed as some kind of comparator through some kooky ioctl API, is
-something you would also configure...
-
-> But again, someone more familiar with the scheduler and driver requirements
-> would probably be more informational.
-
-Okay. I assume that's a combination of Russell and Thomas..
-
--- 
-Matt Sealey
