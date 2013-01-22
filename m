@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab3AVJpv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 04:45:51 -0500
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:35921 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373Ab3AVJpr (ORCPT
+	id S1752850Ab3AVJqP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 04:46:15 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:35473 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752373Ab3AVJqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 04:45:47 -0500
+	Tue, 22 Jan 2013 04:46:11 -0500
 MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-Date: Tue, 22 Jan 2013 10:45:46 +0100
-Message-ID: <CAJfpegsca9Dv0HdubPnQBe0njCewnMuAfRfBzhP7GsHuMRyWQw@mail.gmail.com>
-Subject: [GIT PULL] fuse bugfixes for 3.8
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130122151048.e47ecfe9432b747f79544c25@canb.auug.org.au>
+References: <20130122151048.e47ecfe9432b747f79544c25@canb.auug.org.au>
+Date: Tue, 22 Jan 2013 10:46:11 +0100
+Message-ID: <CACRpkdaiBd5iYj=dgaCtd2sy_pS=YHbEMQy7Gbk4J2mGmbm6=w@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (gpio-lw
+ tree related)
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Jan 22, 2013 at 5:10 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Please pull the following fixes for fuse:
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+>
+> drivers/gpio/gpio-palmas.c: In function 'palmas_gpio_get':
+> drivers/gpio/gpio-palmas.c:46:2: error: implicit declaration of function 'palmas_read' [-Werror=implicit-function-declaration]
+> drivers/gpio/gpio-palmas.c: In function 'palmas_gpio_set':
+> drivers/gpio/gpio-palmas.c:62:3: error: implicit declaration of function 'palmas_write' [-Werror=implicit-function-declaration]
+> drivers/gpio/gpio-palmas.c: In function 'palmas_gpio_output':
+> drivers/gpio/gpio-palmas.c:83:2: error: implicit declaration of function 'palmas_update_bits' [-Werror=implicit-function-declaration]
+> drivers/gpio/gpio-palmas.c: In function 'palmas_gpio_to_irq':
+> drivers/gpio/gpio-palmas.c:108:2: error: implicit declaration of function 'palmas_irq_get_virq' [-Werror=implicit-function-declaration]
+>
+> Caused by commit 4bb49f0dc999 ("gpio: palmas: Add support for Palams
+> GPIO").
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
+I have dropped this commit from my tree for now.
 
-This contain a bugfix for CUSE and miscellaneous small fixes.
+Thanks Stephen!
 
-Thanks,
-Miklos
-----
-
-David Herrmann (2):
-      cuse: use mutex as registration lock instead of spinlocks
-      cuse: do not register multiple devices with identical names
-
-Miklos Szeredi (2):
-      cuse: fix uninitialized variable warnings
-      fuse: make fuse_file_fallocate() static
-
-Robert P. J. Day (1):
-      fuse: Move CUSE Kconfig entry from fs/Kconfig into fs/fuse/Kconfig
-
-Wei Yongjun (1):
-      fuse: remove unused variable in fuse_try_move_page()
-
----
- fs/Kconfig      |   10 ----------
- fs/fuse/Kconfig |   16 ++++++++++++++--
- fs/fuse/cuse.c  |   36 ++++++++++++++++++++++--------------
- fs/fuse/dev.c   |    5 -----
- fs/fuse/file.c  |    5 ++---
- 5 files changed, 38 insertions(+), 34 deletions(-)
+Yours,
+Linus Walleij
