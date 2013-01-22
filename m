@@ -1,210 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab3AVWx5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 17:53:57 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:37802 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab3AVWxx (ORCPT
+	id S1754567Ab3AVW5B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 17:57:01 -0500
+Received: from mail-vb0-f74.google.com ([209.85.212.74]:57047 "EHLO
+	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959Ab3AVW46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 17:53:53 -0500
-Message-ID: <1358895228.2408.14.camel@falcor1>
-Subject: Re: [RFC 1/1] ima: digital signature verification using asymmetric
- keys
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: dhowells@redhat.com, jmorris@namei.org,
-        linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 22 Jan 2013 17:53:48 -0500
-In-Reply-To: <53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
-References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
-	 <53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012222-2876-0000-0000-00000465BE41
+	Tue, 22 Jan 2013 17:56:58 -0500
+Date: Tue, 22 Jan 2013 15:56:57 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kees Cook <keescook@chromium.org>,
+        Colin Ian King <colin.king@canonical.com>,
+        Betty Dall <betty.dall@hp.com>, Yijing Wang <wangyijing@huawei.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] PCI updates for v3.8
+Message-ID: <20130122225657.GA14800@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-15 at 12:34 +0200, Dmitry Kasatkin wrote:
-> Asymmetric keys were introduced in linux-3.7 to verify the signature on
-> signed kernel modules.  The asymmetric keys infrastructure abstracts the
-> signature verification from the crypto details.  This patch adds IMA/EVM
-> signature verification using asymmetric keys.  Support for additional
-> signature verification methods can now be delegated to the asymmetric
-> key infrastructure.
-> 
-> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> ---
->  security/integrity/Kconfig  |   12 +++++
->  security/integrity/digsig.c |  103 ++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 114 insertions(+), 1 deletion(-)
-> 
-> diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
-> index 5bd1cc1..19c4187 100644
-> --- a/security/integrity/Kconfig
-> +++ b/security/integrity/Kconfig
-> @@ -17,5 +17,17 @@ config INTEGRITY_SIGNATURE
->  	  This is useful for evm and module keyrings, when keys are
->  	  usually only added from initramfs.
-> 
-> +config INTEGRITY_ASYMMETRIC_KEYS
-> +	boolean "Digital signature verification using asymmetric keys"
-> +	depends on INTEGRITY_SIGNATURE
-> +	default n
-> +        select ASYMMETRIC_KEY_TYPE
-> +        select ASYMMETRIC_PUBLIC_KEY_SUBTYPE
-> +        select PUBLIC_KEY_ALGO_RSA
-> +        select X509_CERTIFICATE_PARSER
-> +	help
-> +	  This option enables digital signature verification support
-> +	  using asymmetric keys.
-> +
->  source security/integrity/ima/Kconfig
->  source security/integrity/evm/Kconfig
-> diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-> index 2dc167d..1896537 100644
-> --- a/security/integrity/digsig.c
-> +++ b/security/integrity/digsig.c
-> @@ -15,10 +15,22 @@
->  #include <linux/err.h>
->  #include <linux/rbtree.h>
->  #include <linux/key-type.h>
-> +#include <crypto/public_key.h>
-> +#include <keys/asymmetric-type.h>
->  #include <linux/digsig.h>
-> 
->  #include "integrity.h"
-> 
-> +/*
-> + * signature format v2 - for using with asymmetric keys
-> + */
-> +struct signature_v2_hdr {
-> +	uint8_t version;	/* signature format version */
-> +	uint8_t	hash_algo;	/* Digest algorithm [enum pkey_hash_algo] */
-> +	uint8_t keyid[8];	/* IMA key identifier - not X509/PGP specific*/
-> +	uint8_t payload[0];	/* signature payload */
-> +} __packed;
-> +
->  static struct key *keyring[INTEGRITY_KEYRING_MAX];
-> 
->  static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
-> @@ -27,6 +39,91 @@ static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
->  	"_ima",
->  };
-> 
-> +#ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
-> +
-> +/*
-> + * Request an asymmetric key.
-> + */
-> +static struct key *request_asymmetric_key(struct key *keyring, uint8_t *keyid)
-> +{
-> +	struct key *key;
-> +	char name[20];
-> +
-> +	sprintf(name, "%llX", __be64_to_cpup((uint64_t *)keyid));
-> +
-> +	pr_debug("key search: \"%s\"\n", name);
-> +
-> +	if (keyring) {
-> +		/* search in specific keyring */
-> +		key_ref_t kref;
-> +		kref = keyring_search(make_key_ref(keyring, 1),
-> +				      &key_type_asymmetric, name);
-> +		if (IS_ERR(kref))
-> +			key = ERR_CAST(kref);
-> +		else
-> +			key = key_ref_to_ptr(kref);
-> +	} else {
-> +		key = request_key(&key_type_asymmetric, name, NULL);
-> +	}
-> +
-> +	if (IS_ERR(key)) {
-> +		pr_warn("Request for unknown key '%s' err %ld\n",
-> +			name, PTR_ERR(key));
-> +		switch (PTR_ERR(key)) {
-> +			/* Hide some search errors */
-> +		case -EACCES:
-> +		case -ENOTDIR:
-> +		case -EAGAIN:
-> +			return ERR_PTR(-ENOKEY);
-> +		default:
-> +			return key;
-> +		}
-> +	}
-> +
-> +	pr_debug("%s() = 0 [%x]\n", __func__, key_serial(key));
-> +
-> +	return key;
-> +}
-> +
-> +static int asymmetric_verify(struct key *keyring, const char *sig,
-> +			     size_t siglen, const char *data, int datalen)
-> +{
-> +	struct public_key_signature pks;
-> +	struct signature_v2_hdr *hdr = (struct signature_v2_hdr *)sig;
-> +	struct key *key;
-> +	int ret = -ENOMEM;
-> +
-> +	if (siglen <= sizeof(*hdr))
-> +		return -EBADMSG;
-> +
-> +	siglen -= sizeof(*hdr);
-> +
-> +	if (hdr->hash_algo >= PKEY_HASH__LAST)
-> +		return -ENOPKG;
-> +
-> +	key = request_asymmetric_key(keyring, hdr->keyid);
-> +	if (IS_ERR(key))
-> +		return PTR_ERR(key);
-> +
-> +	memset(&pks, 0, sizeof(pks));
-> +
-> +	pks.pkey_hash_algo = hdr->hash_algo;
-> +	pks.digest = (u8 *)data;
-> +	pks.digest_size = datalen;
-> +	pks.nr_mpi = 1;
-> +	pks.rsa.s = mpi_read_from_buffer(hdr->payload, &siglen);
-> +
-> +	if (pks.rsa.s)
-> +		ret = verify_signature(key, &pks);
-> +
-> +	mpi_free(pks.rsa.s);
-> +	key_put(key);
-> +	pr_debug("%s() = %d\n", __func__, ret);
-> +	return ret;
-> +}
-> +
-> +#endif /* CONFIG_INTEGRITY_ASYMMETRIC_KEYS */
-> +
->  int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
->  					const char *digest, int digestlen)
->  {
-> @@ -43,6 +140,10 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
->  			return err;
->  		}
->  	}
-> -
-> +#ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
-> +	if (sig[0] == 2)
-> +		return asymmetric_verify(keyring[id], sig, siglen,
-> +					 digest, digestlen);
-> +#endif
->  	return digsig_verify(keyring[id], sig, siglen, digest, digestlen);
->  }
+Hi Linus,
 
-Thanks Dmitry for the patch!  According to
-Documentation/SubmittingPatches: section 2.2, #ifdefs are ugly.  I
-realize this is a really small '.c' file, and doesn't really hurt
-readability, but could you remove the ifdefs anyway?
+Here are some more fixes for v3.8.  The most important is a fix for a
+pciehp deadlock that occurs when unplugging a Thunderbolt adapter.  We also
+applied the same fix to shpchp, removed CONFIG_EXPERIMENTAL dependencies,
+fixed a pcie_aspm=force problem, and fixed a refcount leak.
 
-thanks,
-
-Mimi
+Bjorn
 
 
+The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
 
+  Linux 3.8-rc2 (2013-01-02 18:13:21 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/3.8-pci-fixes-2
+
+for you to fetch changes up to 444ee9bd3d0fa78317c6127c961af5accf50038b:
+
+  PCI: remove depends on CONFIG_EXPERIMENTAL (2013-01-17 16:22:05 -0700)
+
+----------------------------------------------------------------
+PCI updates for v3.8:
+
+  Hotplug
+      PCI: pciehp: Use per-slot workqueues to avoid deadlock
+      PCI: shpchp: Make shpchp_wq non-ordered
+      PCI: shpchp: Handle push button event asynchronously
+      PCI: shpchp: Use per-slot workqueues to avoid deadlock
+  Power management
+      PCI: Allow pcie_aspm=force even when FADT indicates it is unsupported
+  Misc
+      PCI/AER: pci_get_domain_bus_and_slot() call missing required pci_dev_put()
+      PCI: remove depends on CONFIG_EXPERIMENTAL
+
+----------------------------------------------------------------
+Betty Dall (1):
+      PCI/AER: pci_get_domain_bus_and_slot() call missing required pci_dev_put()
+
+Bjorn Helgaas (4):
+      PCI: shpchp: Make shpchp_wq non-ordered
+      PCI: shpchp: Handle push button event asynchronously
+      PCI: shpchp: Use per-slot workqueues to avoid deadlock
+      Merge branch 'pci/yijing-hotplug-workqueues' into for-linus
+
+Colin Ian King (1):
+      PCI: Allow pcie_aspm=force even when FADT indicates it is unsupported
+
+Kees Cook (1):
+      PCI: remove depends on CONFIG_EXPERIMENTAL
+
+Yijing Wang (1):
+      PCI: pciehp: Use per-slot workqueues to avoid deadlock
+
+ drivers/pci/hotplug/pciehp.h       |  2 +-
+ drivers/pci/hotplug/pciehp_core.c  | 11 ++---------
+ drivers/pci/hotplug/pciehp_ctrl.c  |  8 ++++----
+ drivers/pci/hotplug/pciehp_hpc.c   | 11 ++++++++++-
+ drivers/pci/hotplug/shpchp.h       |  3 +--
+ drivers/pci/hotplug/shpchp_core.c  | 36 ++++++++++++++----------------------
+ drivers/pci/hotplug/shpchp_ctrl.c  |  6 +++---
+ drivers/pci/pcie/Kconfig           |  2 +-
+ drivers/pci/pcie/aer/aerdrv_core.c |  1 +
+ drivers/pci/pcie/aspm.c            |  3 +++
+ 10 files changed, 40 insertions(+), 43 deletions(-)
