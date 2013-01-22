@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab3AVVUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 16:20:16 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:59528 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab3AVVUN (ORCPT
+	id S1756127Ab3AVVUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 16:20:32 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:58044 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756102Ab3AVVU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 16:20:13 -0500
+	Tue, 22 Jan 2013 16:20:28 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH 3/6] arm: kconfig: don't select TWD with local timer for Armada 370/XP
+Date: Tue, 22 Jan 2013 21:19:23 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Matt Sealey <matt@genesi-usa.com>, Lior Amsalem <alior@marvell.com>,
+        Andrew Lunn <andrew@lunn.ch>, Ike Pan <ike.pan@canonical.com>,
+        John Stultz <johnstul@us.ibm.com>, David Marlin <dmarlin@redhat.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        "Eran Ben-Avi" <benavi@marvell.com>,
+        Leif Lindholm <leif.lindholm@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>, Nadav Haklai <nadavh@marvell.com>,
+        Jon Masters <jcm@redhat.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        LKML <linux-kernel@vger.kernel.org>, Maen Suleiman <maen@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>
+References: <1358790842-2986-1-git-send-email-gregory.clement@free-electrons.com> <201301212044.41865.arnd@arndb.de> <50FEFAB9.4030503@gmail.com>
+In-Reply-To: <50FEFAB9.4030503@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1358788568-11137-15-git-send-email-arnd@arndb.de>
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
-	<1358788568-11137-15-git-send-email-arnd@arndb.de>
-Date: Tue, 22 Jan 2013 13:20:12 -0800
-X-Google-Sender-Auth: EPkEZN7-Q-eJv5m4-hT7kXetbRI
-Message-ID: <CAGXu5j+mXCj-cy0Kww4DdeGKOW9qkrL1X92nVJ82Z5q2P8tGpw@mail.gmail.com>
-Subject: Re: [PATCH 14/15] samples/seccomp: be less stupid about cross compiling
-From: Kees Cook <keescook@chromium.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, arm@kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301222119.23750.arnd@arndb.de>
+X-Provags-ID: V02:K0:vdBG95xlEwyWv+saLGaJ6DN2SLFr9y9xhYvogZ4jJ4p
+ tGwuQpO2Lr6Yp8KCXqXL4izbA6YzSi/ADTt9EOq3P1CsVl7KL+
+ abj3/HkfSHqve4THvwzxG7JQZ4lp1H3ziai2Ios3FQVksMt7/0
+ HthWFwjW1ydeJGY8+yl+pHgB9Bo3OWow7mydq6rtr4FEE7Mlg4
+ 0xPxhs/Np30wivkNEgVd4H/NrLbB0W4axI6rcWJTa5rGnNowrD
+ oiFg36uGKg4nRbpv84AO2VRdVZQaO/2ph9CLs4q4XZYWQZ802F
+ QEJJHPbvSdTevhnz1NH+t4x0hAACsDMXnCwr4SRbstyPXkf1Y0
+ TVe+eb+BGSwhzttrTpsA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 9:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> The seccomp filters are currently built for the build
-> host, not for the machine that they are going to run
-> on, but they are also built for with the -m32 flag
-> if the kernel is built for a 32 bit machine, both
-> of which seems rather odd.
->
-> It broke allyesconfig on my machine, which is x86-64, but
-> building for 32 bit ARM, with this error message:
->
-> In file included from /usr/include/stdio.h:28:0,
->                  from samples/seccomp/bpf-fancy.c:15:
-> /usr/include/features.h:324:26: fatal error: bits/predefs.h: No such file or directory
->
-> because there are no 32 bit libc headers installed on
-> this machine. We should really be building all the
-> samples for the target machine rather than the build
-> host, but since the infrastructure for that appears
-> to be missing right now, let's be a little bit smarter
-> and not pass the '-m32' flag to the HOSTCC when cross-
-> compiling.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: James Morris <james.l.morris@oracle.com>
+On Tuesday 22 January 2013, Rob Herring wrote:
+> No, I expect all future platforms will have architected timers. TWD is
+> pretty much A9 and A5 only I believe. Same with SCU. I've probably
+> missed some in my list.
 
-I'm fine with this. Thanks!
+Ah, I was incorrectly assuming that TWD was referring to the architected
+timers, sorry about that.
 
-Acked-by: Kees Cook <keescook@chromium.org>
+Maybe we should do this differently then and do the more logical
 
--Kees
+config LOCAL_TIMERS
+	bool
 
-> ---
->  samples/seccomp/Makefile |    2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/samples/seccomp/Makefile b/samples/seccomp/Makefile
-> index bbbd276..7203e66 100644
-> --- a/samples/seccomp/Makefile
-> +++ b/samples/seccomp/Makefile
-> @@ -19,6 +19,7 @@ bpf-direct-objs := bpf-direct.o
->
->  # Try to match the kernel target.
->  ifndef CONFIG_64BIT
-> +ifndef CROSS_COMPILE
->
->  # s390 has -m31 flag to build 31 bit binaries
->  ifndef CONFIG_S390
-> @@ -35,6 +36,7 @@ HOSTLOADLIBES_bpf-direct += $(MFLAG)
->  HOSTLOADLIBES_bpf-fancy += $(MFLAG)
->  HOSTLOADLIBES_dropper += $(MFLAG)
->  endif
-> +endif
->
->  # Tell kbuild to always build the programs
->  always := $(hostprogs-y)
-> --
-> 1.7.10.4
->
+config ARM_TWD
+	bool "ARM TWD local timer"
+	depends on SMP && CPU_V7
+	select LOCAL_TIMERS
 
+config EXYNOS4_MCT
+	bool "Samsung Exynos4 MCT Timer"
+	depends on SMP && ARCH_EXYNOS
+	select LOCAL_TIMERS
 
+config MSM_LOCAL_TIMER
+	bool "Qualcomm MSM Local Timer"
+	depends on SMP && ARCH_MSM
+	select LOCAL_TIMERS
 
---
-Kees Cook
-Chrome OS Security
+That way we have no implicit assumptions. Everything will still work if you
+disable local timers, but of course we will enable them in the defconfigs.
+
+	Arnd
