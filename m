@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab3AVOgl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 09:36:41 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:38556
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752372Ab3AVOgj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 09:36:39 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(z21eIzbb2dI98dI9371I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h1155h)
-X-WSS-ID: 0MH178X-02-CA9-02
-X-M-MSG: 
-Message-ID: <50FEA3F2.1070408@amd.com>
-Date: Tue, 22 Jan 2013 09:36:34 -0500
-From: Boris Ostrovsky <boris.ostrovsky@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753087Ab3AVOiZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 09:38:25 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45516 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752058Ab3AVOiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 09:38:24 -0500
+Message-ID: <50FEA447.1090701@ti.com>
+Date: Tue, 22 Jan 2013 20:07:59 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-CC: <suravee.suthikulpanit@amd.com>, Jacob Shin <jacob.shin@amd.com>,
-        Borislav Petkov <bp@alien8.de>,
-        =?UTF-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
-References: <50FBC7EF.6040207@xs4all.nl> <20130120103652.GB16800@pd.tnic>  <50FBC994.8020409@xs4all.nl> <20130120111920.GL25591@8bytes.org>  <50FBD413.1000406@xs4all.nl> <20130120114011.GN25591@8bytes.org>  <20130120114828.GB16519@pd.tnic> <20130121160450 <50FE9E76.30702@xs4all.nl>
-In-Reply-To: <50FE9E76.30702@xs4all.nl>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Roger Quadros <rogerq@ti.com>
+CC: <tony@atomide.com>, <balbi@ti.com>, <linux@arm.linux.org.uk>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v1 6/6] USB: MUSB: OMAP: get PHY by phandle for dt boot
+References: <1358848694-20145-1-git-send-email-kishon@ti.com> <1358848694-20145-7-git-send-email-kishon@ti.com> <50FE9F5C.2010501@ti.com>
+In-Reply-To: <50FE9F5C.2010501@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 01/22/2013 09:13 AM, Udo van den Heuvel wrote:
-> Gigabyte demonstrate that using ESX 5i IOMMU works fine. (with pictures
-> attached).
-
-There are no attachments to your message.
-
-I am not sure that 5i supports IOMMU (but I may well be wrong).
-
+On Tuesday 22 January 2013 07:47 PM, Roger Quadros wrote:
+> On 01/22/2013 11:58 AM, Kishon Vijay Abraham I wrote:
+>> The OMAP glue has been modified to get PHY by phandle for dt boot.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>   drivers/usb/musb/omap2430.c |    7 ++++++-
+>>   1 file changed, 6 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+>> index 1a8cf6d..e43faeb 100644
+>> --- a/drivers/usb/musb/omap2430.c
+>> +++ b/drivers/usb/musb/omap2430.c
+>> @@ -345,7 +345,12 @@ static int omap2430_musb_init(struct musb *musb)
+>>   	 * up through ULPI.  TWL4030-family PMICs include one,
+>>   	 * which needs a driver, drivers aren't always needed.
+>>   	 */
+>> -	musb->xceiv = devm_usb_get_phy_dev(dev, 0);
+>> +	if (dev->parent->of_node)
+>> +		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
+>> +		    "usb_phy", 0);
+>> +	else
+>> +		musb->xceiv = devm_usb_get_phy_dev(dev, 0);
+>> +
+>>   	if (IS_ERR_OR_NULL(musb->xceiv)) {
+>>   		pr_err("HS USB OTG: no transceiver configured\n");
+>>   		return -ENODEV;
 >
-> What can we bring against that?
+> This will not work with PHY driver as a module. You need to use deferred probing mechanism here
+> after you have addressed my comment in patch 2 and also devm_usb_get_phy_by_phandle()
 
-How reproducible is the problem that you are seeing?
+IIUC, even using -EPROBE_DEFER might not help if we are making the PHY 
+driver as module, since the kernel will try to probe only till the 
+prompt comes.
 
+And having -EPROBE_DEFER instead of -ENODEV might also not help since, 
+the gadget driver wont be able to bind to UDC (usb_gadget_probe_driver 
+will fail).
 
--boris
+A lot of things need to be changed before we change to -EPROBE_DEFER IMO.
 
+Thanks
+Kishon
