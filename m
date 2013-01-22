@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab3AVSsi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 13:48:38 -0500
-Received: from casper.infradead.org ([85.118.1.10]:32936 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022Ab3AVSsg (ORCPT
+	id S1755529Ab3AVSuG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 13:50:06 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59499 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898Ab3AVSuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 13:48:36 -0500
-Message-ID: <50FEDF43.1000703@infradead.org>
-Date: Tue, 22 Jan 2013 10:49:39 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	Tue, 22 Jan 2013 13:50:03 -0500
+Message-ID: <50FEDF57.1060204@wwwdotorg.org>
+Date: Tue, 22 Jan 2013 11:49:59 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Nathan Zimmer <nzimmer@sgi.com>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: mmotm 2013-01-18-15-48 uploaded (sched/stats.c)
-References: <20130118234944.5C99C31C240@corp2gmr1-1.hot.corp.google.com> <50FAF661.4070801@infradead.org> <20130122161037.GA24669@gulag1.americas.sgi.com>
-In-Reply-To: <20130122161037.GA24669@gulag1.americas.sgi.com>
+To: Will Deacon <will.deacon@arm.com>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [v3 2/2] ARM: tegra: Skip scu_enable(scu_base) if not Cortex
+ A9
+References: <1358833924-24535-1-git-send-email-hdoyu@nvidia.com> <1358833924-24535-2-git-send-email-hdoyu@nvidia.com> <50FEDC0B.7050604@wwwdotorg.org> <20130122184633.GI2153@mudshark.cambridge.arm.com>
+In-Reply-To: <20130122184633.GI2153@mudshark.cambridge.arm.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/13 08:10, Nathan Zimmer wrote:
-> On Sat, Jan 19, 2013 at 11:39:13AM -0800, Randy Dunlap wrote:
->> On 01/18/13 15:49, akpm@linux-foundation.org wrote:
->>> The mm-of-the-moment snapshot 2013-01-18-15-48 has been uploaded to
->>>
->>>    http://www.ozlabs.org/~akpm/mmotm/
->>>
->>> mmotm-readme.txt says
->>>
->>> README for mm-of-the-moment:
->>>
->>> http://www.ozlabs.org/~akpm/mmotm/
->>>
->>> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
->>> more than once a week.
->>>
+On 01/22/2013 11:46 AM, Will Deacon wrote:
+> Hi Stephan,
+> 
+> On Tue, Jan 22, 2013 at 06:35:55PM +0000, Stephen Warren wrote:
+>> On 01/21/2013 10:52 PM, Hiroshi Doyu wrote:
+>>> Skip scu_enable(scu_base) if CPU is not Cortex A9 with SCU.
 >>
->> on i386 or x86_64:
->>
->> kernel/sched/stats.c:31:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
->>
->>
->>
->> -- 
->> ~Randy
+>> Will, is your for-next/perf branch stable; can I pull it into a branch
+>> destined for arm-soc? Background below:
 > 
-> Sorry about that.
-> Here is the correction.
+> I'm going to send a pull request to Russell tomorrow using my for-rmk/perf
+> branch, so *that* is stable. You might, however, want to wait for Russell to
+> push that out because it's also needed for kvm and, as such, will need to
+> be published anyway.
 > 
-> From c832132ade12e28cd09d3c13d412fc14a7b9ab87 Mon Sep 17 00:00:00 2001
-> From: Nathan Zimmer <nzimmer@sgi.com>
-> Date: Tue, 22 Jan 2013 09:09:17 -0600
-> Subject: [PATCH] on i386 or x86_64:
-> 
-> kernel/sched/stats.c:31:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-> 
-> Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+> Sound ok?
 
-Thanks.
-
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-
-> ---
->  kernel/sched/stats.c |    7 +++----
->  1 files changed, 3 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/sched/stats.c b/kernel/sched/stats.c
-> index bae2757..3cbfc46 100644
-> --- a/kernel/sched/stats.c
-> +++ b/kernel/sched/stats.c
-> @@ -25,14 +25,13 @@ static int show_schedstat(struct seq_file *seq, void *v)
->  		seq_printf(seq, "version %d\n", SCHEDSTAT_VERSION);
->  		seq_printf(seq, "timestamp %lu\n", jiffies);
->  	} else {
-> -
-> -		cpu = (unsigned long)(v - 2);
-> -
-> -		struct rq *rq = cpu_rq(cpu);
-> +		struct rq *rq; 
->  #ifdef CONFIG_SMP
->  		struct sched_domain *sd;
->  		int dcount = 0;
->  #endif
-> +		cpu = (unsigned long)(v - 2);
-> +		rq = cpu_rq(cpu);
->  
->  		/* runqueue-specific stats */
->  		seq_printf(seq,
-> 
-
-
--- 
-~Randy
+I'm assuming rmk's branch will be a stable base, so that sounds great,
+thanks.
