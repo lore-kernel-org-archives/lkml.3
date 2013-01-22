@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156Ab3AVXti (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 18:49:38 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:58295 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241Ab3AVXtc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 18:49:32 -0500
-Date: Tue, 22 Jan 2013 15:49:28 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+	id S1756192Ab3AVXus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 18:50:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47314 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752361Ab3AVXuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 18:50:44 -0500
+Date: Wed, 23 Jan 2013 00:50:41 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>, Jan Kara <jack@suse.cz>,
+        Eric Sandeen <sandeen@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 2/4] ACPI / PM: Expose current status of ACPI power
- resources
-Message-ID: <20130122234928.GD694@kroah.com>
-References: <3307415.pdOY6ovZLa@vostro.rjw.lan>
- <4247313.2G7Z3nCgM0@vostro.rjw.lan>
- <2760421.6nE3tkh92K@vostro.rjw.lan>
- <4550268.C8GqG2xqOO@vostro.rjw.lan>
+        linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
+Subject: Re: jbd2: don't wake kjournald unnecessarily
+Message-ID: <20130122235041.GA7497@quack.suse.cz>
+References: <CA+icZUWOvk5i+XY22xdZYuxu=Vy3fG2QxJStEgNFQVS4u55y-w@mail.gmail.com>
+ <CA+icZUUzNYE9QAh_p7=ZNuvZbxRPCb9zd4k7+aW-hv34mQWz=A@mail.gmail.com>
+ <20130121104733.GE5588@quack.suse.cz>
+ <CA+icZUVy-=jJkRsEKmX+ZGRjiGr4wwp3pqdxuLCRHeqW_H0x9Q@mail.gmail.com>
+ <CA+icZUVAP4ArN+j34GTUwMxte5DtLPJSrLmK9T6Na8Qy+aM0Rg@mail.gmail.com>
+ <20130121140738.GI5588@quack.suse.cz>
+ <CA+icZUXLcdnNPvA9o8d5msOQ0MkMci8mPXujLZ3zcYjYcVZ7JQ@mail.gmail.com>
+ <20130121231130.GB12410@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4550268.C8GqG2xqOO@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130121231130.GB12410@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 03:26:29AM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon 21-01-13 18:11:30, Ted Tso wrote:
+> On Tue, Jan 22, 2013 at 12:04:32AM +0100, Sedat Dilek wrote:
+> > 
+> > Beyond the FUSE/LOOP fun, will you apply this patch to your linux-next GIT tree?
+> > 
+> > Feel free to add...
+> > 
+> >      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+> > 
+> > A similiar patch for JBD went through your tree into mainline (see [1] and [2]).
 > 
-> Since ACPI power resources are going to be used more extensively on
-> new hardware platforms, it becomes necessary for user space (powertop
-> in particular) to observe some properties of those resources for
-> diagnostics purposes.
+> I'm not at all convinced that this patch has anything to do with your
+> problem.  I don't see how it could affect things, and I believe you
+> mentioned that you saw the problem even with this patch applied?  (I'm
+> not sure; some of your messages which you sent were hard to
+> understand, and you mentioned something about trying to send messages
+> when low on sleep :-).
 > 
-> For this reason, expose the current status of each ACPI power
-> resource to user space via sysfs by adding a new resource_in_use
-> attribute to the sysfs directory representing the given power
-> resource.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> In any case, the reason why I haven't pulled this patch into the ext4
+> tree is because I was waiting for Eric and some of the performance
+> team folks at Red Hat to supply some additional information about why
+> this commit was making a difference in performance for a particular
+> proprietary, closed source benchmark.
+  Just a small correction - it was aim7 AFAIK which isn't closed source
+(anymore). You can download it from SourceForge
+(http://sourceforge.net/projects/aimbench/files/aim-suite7/Initial%20release/).
+Now I have some reservations about what the benchmark does but historically
+it has found quite a few issues for us as well.
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> I'm very suspicious about applying patches under the "cargo cult"
+> school of programming.  ("We don't understand why it makes a
+> difference, but it seems to be good, so bombs away!" :-)
+  Well, neither am I ;) But it is obvious the patch speeds up
+log_start_commit() by 'a bit' (taking spinlock, disabling irqs, ...). And
+apparently 'a bit' is noticeable for particular workload on a particular
+machine - commit statistics Eric provided showed that clearly. I'd still be
+happier if Eric also told us how much log_start_commit() calls there were
+so that one could verify that 'a bit' could indeed multiply to a measurable
+difference. But given how simple the patch is, I gave away after a while
+and just merged it...
 
-But, as with patch 1/4, this is racy:
-
-> @@ -723,6 +744,9 @@ int acpi_add_power_resource(acpi_handle
->  	if (result)
->  		goto err;
->  
-> +	if (!device_create_file(&device->dev, &dev_attr_resource_in_use))
-> +		device->remove = acpi_power_sysfs_remove;
-> +
-
-You are creating the file after userspace has been told that the device
-is present.
-
-As this looks like the first file this type of device has, maybe you
-should just fix this up "properly" here, and not wait to do it later?
-
-Your choice,
-
-greg k-h
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
