@@ -1,147 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab3AVIoo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 03:44:44 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:45324 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754349Ab3AVIom (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 03:44:42 -0500
-Date: Tue, 22 Jan 2013 08:44:36 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 23/24] ab8500-bm: Fix minor niggles experienced during
- testing
-Message-ID: <20130122084436.GE6857@gmail.com>
-References: <1358769840-4763-1-git-send-email-lee.jones@linaro.org>
- <1358769840-4763-24-git-send-email-lee.jones@linaro.org>
- <20130121191324.GA15037@lizard.mcd01528.sjc.wayport.net>
+	id S1754399Ab3AVIpT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 03:45:19 -0500
+Received: from david.siemens.de ([192.35.17.14]:32452 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752525Ab3AVIpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 03:45:16 -0500
+Message-ID: <50FE5157.7070309@siemens.com>
+Date: Tue, 22 Jan 2013 09:44:07 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130121191324.GA15037@lizard.mcd01528.sjc.wayport.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andi Kleen <andi@firstfloor.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "kgdb-bugreport@lists.sourceforge.net" 
+	<kgdb-bugreport@lists.sourceforge.net>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>,
+        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH v4 00/13] Add gdb python scripts as kernel debugging helpers
+References: <cover.1358787929.git.jan.kiszka@siemens.com> <20130121221558.GS30577@one.firstfloor.org>
+In-Reply-To: <20130121221558.GS30577@one.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jan 2013, Anton Vorontsov wrote:
+On 2013-01-21 23:15, Andi Kleen wrote:
+>>
+>>  o Install that kernel on the guest
+> 
+> If you use a static kernel you can also do 
+> 
+> - copy the initrd out of the guest once
+> 
+> qemu...  -bzImage kernel -initrd initrd
 
-> On Mon, Jan 21, 2013 at 12:03:59PM +0000, Lee Jones wrote:
-> > When compile testing the new AB8500 Battery Management changes
-> > due for inclusion into upstream, there were a few minor niggles
-> > which required repairing, or adapting for use against the
-> > Mainline kernel. This patch is a collection of them all.
-> 
-> No. This is the third time I'm saying it: the last time I checked, this is
-> not how we do development in the mainline.
-> 
-> 1. One logical change at a time;
-> 2. Every patch in a sequence must be bisectable, compilable;
-> 3. The patches must not "break things temporary" 'because it is easier to
->    do development that way'. If you introduce a new feature, make all
->    possible to not introduce regressions.
+-kernel/append/initrd, of course.
 
-Okay, I'll fix them up instead.
+> 
+> This saves the step of getting the kernel into the kernel.
+> Doesn't work with modules unfortunately.
 
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  drivers/power/ab8500_fg.h       |    6 ++++--
-> >  drivers/power/abx500_chargalg.c |    4 ++--
-> >  drivers/power/pm2301_charger.c  |    4 ++--
-> >  3 files changed, 8 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/drivers/power/ab8500_fg.h b/drivers/power/ab8500_fg.h
-> > index 946840b..bb78dc9 100644
-> > --- a/drivers/power/ab8500_fg.h
-> > +++ b/drivers/power/ab8500_fg.h
-> > @@ -182,6 +182,7 @@ struct ab8500_fg_test {
-> >   * @fg_check_hw_failure_work:	Work for checking HW state
-> >   * @cc_lock:		Mutex for locking the CC
-> >   * @fg_kobject:		Structure of type kobject
-> > + * @test:		Structure of type ab8500_fg_test for test purpose
-> >   */
-> >  struct ab8500_fg {
-> >  	struct device *dev;
-> > @@ -224,6 +225,7 @@ struct ab8500_fg {
-> >  	struct delayed_work fg_check_hw_failure_work;
-> >  	struct mutex cc_lock;
-> >  	struct kobject fg_kobject;
-> > +	struct ab8500_fg_test test;
-> 
-> You are introducing it, but I don't see any users.
-> 
-> >  };
-> >  
-> >  extern char *discharge_state[];
-> > @@ -232,8 +234,8 @@ extern char *charge_state[];
-> >  int ab8500_fg_coulomb_counter(struct ab8500_fg *di, bool enable);
-> >  void ab8500_fg_charge_state_to(struct ab8500_fg *di,
-> >  		enum ab8500_fg_charge_state new_state);
-> > -void ab8500_fg_discharge_state_to(struct ab8500_fg *di,
-> > -		enum ab8500_fg_charge_state new_state);
-> > +static void ab8500_fg_discharge_state_to(struct ab8500_fg *di,
-> > +		enum ab8500_fg_discharge_state new_state);
-> >  /* test initialization */
-> >  #ifdef CONFIG_AB8500_BM_DEEP_DEBUG
-> >  void ab8500_fg_test_init(struct ab8500_fg *di);
-> > diff --git a/drivers/power/abx500_chargalg.c b/drivers/power/abx500_chargalg.c
-> > index 694f592..cacf512 100644
-> > --- a/drivers/power/abx500_chargalg.c
-> > +++ b/drivers/power/abx500_chargalg.c
-> > @@ -1664,8 +1664,8 @@ static int abx500_chargalg_get_property(struct power_supply *psy,
-> >  static ssize_t ab8500_chargalg_sysfs_show(struct kobject *kobj,
-> >  					  struct attribute *attr, char *buf)
-> >  {
-> > -	struct ab8500_chargalg *di = container_of(kobj,
-> > -               struct ab8500_chargalg, chargalg_kobject);
-> > +	struct abx500_chargalg *di = container_of(kobj,
-> > +               struct abx500_chargalg, chargalg_kobject);
-> 
-> Spaces.
-> 
-> >  
-> >  	return sprintf(buf, "%d\n",
-> >  		       di->susp_status.ac_suspended &&
-> > diff --git a/drivers/power/pm2301_charger.c b/drivers/power/pm2301_charger.c
-> > index 14e37b2..5ebae88 100644
-> > --- a/drivers/power/pm2301_charger.c
-> > +++ b/drivers/power/pm2301_charger.c
-> > @@ -22,8 +22,8 @@
-> >  #include <linux/i2c.h>
-> >  #include <linux/workqueue.h>
-> >  #include <linux/kobject.h>
-> > -#include <linux/mfd/ab8500.h>
-> >  #include <linux/mfd/abx500.h>
-> > +#include <linux/mfd/abx500/ab8500.h>
-> >  #include <linux/mfd/abx500/ab8500-bm.h>
-> >  #include <linux/mfd/abx500/ab8500-gpadc.h>
-> >  #include <linux/mfd/abx500/ux500_chargalg.h>
-> > @@ -867,7 +867,7 @@ static int __devinit pm2xxx_wall_charger_probe(struct i2c_client *i2c_client,
-> >  
-> >  	/* get parent data */
-> >  	pm2->dev = &i2c_client->dev;
-> > -	pm2->gpadc = ab8500_gpadc_get();
-> > +	pm2->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
-> 
-> Was the driver even compilable before? You've just introduced the new
-> driver in this exact series. :-/
-> 
-> Since pm2301 is a new driver, please merge all pm2301 stuff into one
-> patch.
-> 
-> Or, if you want to preserve the development history of the new driver,
-> this is also fine, but then I'd prefer to take it via a pull-request with
-> only this driver.
-> 
-> Thanks,
-> Anton
+True. An alternative can be nfsroot. Or root on virtfs.
+
+Jan
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
