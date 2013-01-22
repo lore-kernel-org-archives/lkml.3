@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab3AVPeC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 10:34:02 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:52424 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752986Ab3AVPeA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 10:34:00 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC] making HAVE_SYSCALL_WRAPPERS universal (Re: Issues with "x86, um: switch to generic fork/vfork/clone" commit)
-Date: Tue, 22 Jan 2013 15:33:50 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>
-References: <50F3D2F2.3080200@6wind.com> <20130121023010.GR4939@ZenIV.linux.org.uk> <20130121225517.GV4939@ZenIV.linux.org.uk>
-In-Reply-To: <20130121225517.GV4939@ZenIV.linux.org.uk>
+	id S1754202Ab3AVPiY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 10:38:24 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:48781 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753224Ab3AVPiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 10:38:21 -0500
+Message-ID: <50FEB248.5090701@ti.com>
+Date: Tue, 22 Jan 2013 21:07:44 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "tony@atomide.com" <tony@atomide.com>, "balbi@ti.com" <balbi@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "eballetbo@gmail.com" <eballetbo@gmail.com>,
+        "javier@dowhile0.org" <javier@dowhile0.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: Re: [PATCH v1 5/6] usb: otg: add device tree support to otg library
+References: <1358848694-20145-1-git-send-email-kishon@ti.com> <1358848694-20145-6-git-send-email-kishon@ti.com> <20130122103650.GB18876@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130122103650.GB18876@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201301221533.50965.arnd@arndb.de>
-X-Provags-ID: V02:K0:NBmFFaZ45VwTfdqE+rj8gyQL5fZMiY5dRQRGhfz3lcB
- hW8ARFqAY+5tKzypFB8h6j7lH5FVYvc8+mfTVVgDacF+bjj+NA
- k5uuBfedZ+1CFEvaQ/z3ASIf/mJ43h5seRa/8C8eJkFpCp0dQ8
- kRWvAKg6Tr0anQvzaEG3Y7Dh4spaHZcno0iZeHeY80QAAekz+y
- Hwi8PEgFEQrpoLDag/rfPqIR25gOXF+XjCeQpDQqYOBjGiu17i
- RSweLWHsdonbz5Lc36HeUaRWJntjeyjG4QdHW9f3kvVhxmDv60
- C7SHA+Wg9wppFAoVl/wAwuyruj0izkU0H7U7scubw9MXipn/D3
- NbK+55MXYEsybk24LzUs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 21 January 2013, Al Viro wrote:
->         1) alpha, mips
-> .weak foo
-> foo = sys_ni_syscall
->         2) itanic, ppc
-> asmlinkage long x (void) __attribute__((weak,alias("sys_ni_syscall")))
->         3) very common - most of the architectures
-> .weak foo
-> .set foo sys_ni_syscall
->         3a) blackfin, h8300 - same as (3), except that asm symbols get
-> underscore prepended.
-> .weak _foo
-> .set _foo _sys_ni_syscall
+Hi,
 
-One question here: Is there still a reason why we can't use method 2 on
-all architectures now? The comment in a lot of architectures says
+On Tuesday 22 January 2013 04:06 PM, Mark Rutland wrote:
+>> +struct usb_phy *devm_usb_get_phy_by_phandle(struct device *dev,
+>> +	const char *phandle, u8 index)
+>> +{
+>> +	struct usb_phy	*phy = NULL, **ptr;
+>> +	unsigned long	flags;
+>> +	struct device_node *node;
+>> +
+>> +	if (!dev->of_node) {
+>> +		dev_dbg(dev, "device does not have a device node entry\n");
+>> +		return ERR_PTR(-EINVAL);
+>> +	}
+>> +
+>> +	node = of_parse_phandle(dev->of_node, phandle, index);
+>> +	if (!node) {
+>> +		dev_dbg(dev, "failed to get %s phandle in %s node\n", phandle,
+>> +			dev->of_node->full_name);
+>> +		return ERR_PTR(-ENODEV);
+>> +	}
+>
+> At any point past this, node's refcount is incremented (done automatically by
+> of_parse_phandle => of_find_node_by_phandle).
+>
+>> +
+>> +	ptr = devres_alloc(devm_usb_phy_release, sizeof(*ptr), GFP_KERNEL);
+>> +	if (!ptr) {
+>> +		dev_dbg(dev, "failed to allocate memory for devres\n");
+>> +		return ERR_PTR(-ENOMEM);
+>> +	}
+>> +
+>> +	spin_lock_irqsave(&phy_lock, flags);
+>> +
+>> +	phy = __of_usb_find_phy(node);
+>> +	if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
+>> +		phy = ERR_PTR(-EPROBE_DEFER);
+>> +		devres_free(ptr);
+>> +		goto err0;
+>> +	}
+>> +
+>> +	*ptr = phy;
+>> +	devres_add(dev, ptr);
+>> +
+>> +	get_device(phy->dev);
+>> +
+>> +err0:
+>> +	spin_unlock_irqrestore(&phy_lock, flags);
+>> +
+>> +	return phy;
+>> +}
+>
+> This means that on all of the exit paths, node's refcount is left incremented
+> incorrectly. You'll need an of_node_put(node) on each exit path.
 
- * What we want is __attribute__((weak,alias("sys_ni_syscall")))
- * but it doesn't work on all toolchains, so we just do it by hand
+Ok. Will fix it.
 
-and my guess is that all toolchains we support at this point actually
-do allow it, and turn it into the appropriate assembler syntax.
-
-	Arnd
+Thanks
+Kishon
