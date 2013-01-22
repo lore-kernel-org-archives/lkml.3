@@ -1,164 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab3AVQxm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 11:53:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35005 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755499Ab3AVQxg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 11:53:36 -0500
-Date: Tue, 22 Jan 2013 08:52:08 -0800
-From: tip-bot for Daniel J Blueman <daniel@numascale-asia.com>
-Message-ID: <tip-e2c0bffea2574c088d86a9f1f661a84bc8fea2fd@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, bp@alien8.de, daniel@numascale-asia.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@alien8.de, daniel@numascale-asia.com
-In-Reply-To: <1354265060-22956-1-git-send-email-daniel@numascale-asia.com>
-References: <1354265060-22956-1-git-send-email-daniel@numascale-asia.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] amd64_edac: Fix PCI function lookup
-Git-Commit-ID: e2c0bffea2574c088d86a9f1f661a84bc8fea2fd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1755534Ab3AVQxa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 11:53:30 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:45862 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754346Ab3AVQxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 11:53:25 -0500
+From: Afzal Mohammed <afzal@ti.com>
+To: <linux-fbdev@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH v3 12/12] video: da8xx-fb: CCF clock divider handling
+Date: Tue, 22 Jan 2013 22:23:10 +0530
+Message-ID: <6532be60dcb9b1754fb600ec7267927e49ea6af5.1358871750.git.afzal@ti.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <cover.1358871750.git.afzal@ti.com>
+References: <cover.1358871750.git.afzal@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 22 Jan 2013 08:52:18 -0800 (PST)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e2c0bffea2574c088d86a9f1f661a84bc8fea2fd
-Gitweb:     http://git.kernel.org/tip/e2c0bffea2574c088d86a9f1f661a84bc8fea2fd
-Author:     Daniel J Blueman <daniel@numascale-asia.com>
-AuthorDate: Fri, 30 Nov 2012 16:44:19 +0800
-Committer:  Borislav Petkov <bp@suse.de>
-CommitDate: Thu, 10 Jan 2013 16:17:59 +0100
+Common clock framework provides a basic clock divider. Make use of it
+to handle clock configuration in the LCDC IP, wherever applicable;
+out of two platforms having this IP, only am335x is converted to use
+CCF, DaVinci is not yet converted. Hence wrap the modification such
+that it will come into effect only if CCF is selected, otherwise,
+prgram dividers as earlier. Once DaVinci is converted to use CCF,
+this ifdef'ery can be removed.
 
-amd64_edac: Fix PCI function lookup
+Divider clock instantiated is made as a one that allows the rate
+propogation to it's parent, that provides more options w.r.t pixel
+clock rates that could be configured.
 
-Fix locating sibling memory controller PCI functions by using the
-correct PCI domain and use a northbridge descriptor only if found. We
-need to at least warn if it wasn't found so that it gets fixed and we
-don't go off with wrong results.
-
-Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
-Link: http://lkml.kernel.org/r/1354265060-22956-1-git-send-email-daniel@numascale-asia.com
-[Boris: remove wrong comment, sanitize code and warn if NB desc lookup fails]
-Signed-off-by: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
- drivers/edac/amd64_edac.c | 72 +++++++++++++++++++++++++----------------------
- 1 file changed, 38 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index 29be39d..da76912 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -980,10 +980,29 @@ static u64 get_error_address(struct mce *m)
- 	return addr;
- }
+v3: model CCF clock divider with parent propogation if CCF selected
+v2: new patch
+
+ drivers/video/da8xx-fb.c | 67 ++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 65 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
+index 5455682..3c9db1d 100644
+--- a/drivers/video/da8xx-fb.c
++++ b/drivers/video/da8xx-fb.c
+@@ -36,6 +36,7 @@
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+ #include <linux/lcm.h>
++#include <linux/clk-provider.h>
+ #include <video/of_display_timing.h>
+ #include <video/da8xx-fb.h>
+ #include <asm/div64.h>
+@@ -133,6 +134,10 @@
+ #define WSI_TIMEOUT	50
+ #define PALETTE_SIZE	256
  
-+static struct pci_dev *pci_get_related_function(unsigned int vendor,
-+						unsigned int device,
-+						struct pci_dev *related)
-+{
-+	struct pci_dev *dev = NULL;
++#define	LCD_CLK_SHIFT	8
++#define	LCD_CLK_WIDTH	8
++#define	LCD_CLK_MIN_DIV	2
 +
-+	while ((dev = pci_get_device(vendor, device, dev))) {
-+		if (pci_domain_nr(dev->bus) == pci_domain_nr(related->bus) &&
-+		    (dev->bus->number == related->bus->number) &&
-+		    (PCI_SLOT(dev->devfn) == PCI_SLOT(related->devfn)))
-+			break;
-+	}
-+
-+	return dev;
-+}
-+
- static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
- {
-+	struct amd_northbridge *nb;
-+	struct pci_dev *misc, *f1 = NULL;
- 	struct cpuinfo_x86 *c = &boot_cpu_data;
- 	int off = range << 3;
-+	u32 llim;
- 
- 	amd64_read_pci_cfg(pvt->F1, DRAM_BASE_LO + off,  &pvt->ranges[range].base.lo);
- 	amd64_read_pci_cfg(pvt->F1, DRAM_LIMIT_LO + off, &pvt->ranges[range].lim.lo);
-@@ -997,30 +1016,32 @@ static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
- 	amd64_read_pci_cfg(pvt->F1, DRAM_BASE_HI + off,  &pvt->ranges[range].base.hi);
- 	amd64_read_pci_cfg(pvt->F1, DRAM_LIMIT_HI + off, &pvt->ranges[range].lim.hi);
- 
--	/* Factor in CC6 save area by reading dst node's limit reg */
--	if (c->x86 == 0x15) {
--		struct pci_dev *f1 = NULL;
--		u8 nid = dram_dst_node(pvt, range);
--		u32 llim;
-+	/* F15h: factor in CC6 save area by reading dst node's limit reg */
-+	if (c->x86 != 0x15)
-+		return;
- 
--		f1 = pci_get_domain_bus_and_slot(0, 0, PCI_DEVFN(0x18 + nid, 1));
--		if (WARN_ON(!f1))
--			return;
-+	nb = node_to_amd_nb(dram_dst_node(pvt, range));
-+	if (WARN_ON(!nb))
-+		return;
- 
--		amd64_read_pci_cfg(f1, DRAM_LOCAL_NODE_LIM, &llim);
-+	misc = nb->misc;
-+	f1 = pci_get_related_function(misc->vendor, PCI_DEVICE_ID_AMD_15H_NB_F1, misc);
-+	if (WARN_ON(!f1))
-+		return;
- 
--		pvt->ranges[range].lim.lo &= GENMASK(0, 15);
-+	amd64_read_pci_cfg(f1, DRAM_LOCAL_NODE_LIM, &llim);
- 
--					    /* {[39:27],111b} */
--		pvt->ranges[range].lim.lo |= ((llim & 0x1fff) << 3 | 0x7) << 16;
-+	pvt->ranges[range].lim.lo &= GENMASK(0, 15);
- 
--		pvt->ranges[range].lim.hi &= GENMASK(0, 7);
-+				    /* {[39:27],111b} */
-+	pvt->ranges[range].lim.lo |= ((llim & 0x1fff) << 3 | 0x7) << 16;
- 
--					    /* [47:40] */
--		pvt->ranges[range].lim.hi |= llim >> 13;
-+	pvt->ranges[range].lim.hi &= GENMASK(0, 7);
- 
--		pci_dev_put(f1);
--	}
-+				    /* [47:40] */
-+	pvt->ranges[range].lim.hi |= llim >> 13;
-+
-+	pci_dev_put(f1);
- }
- 
- static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
-@@ -1673,23 +1694,6 @@ static struct amd64_family_type amd64_family_types[] = {
- 	},
+ static void __iomem *da8xx_fb_reg_base;
+ static struct resource *lcdc_regs;
+ static unsigned int lcd_revision;
+@@ -181,6 +186,9 @@ struct da8xx_fb_par {
+ 	u32 pseudo_palette[16];
+ 	struct fb_videomode	mode;
+ 	struct lcd_ctrl_config	cfg;
++#ifdef CONFIG_COMMON_CLK
++	struct clk		*child_clk;
++#endif
  };
  
--static struct pci_dev *pci_get_related_function(unsigned int vendor,
--						unsigned int device,
--						struct pci_dev *related)
--{
--	struct pci_dev *dev = NULL;
--
--	dev = pci_get_device(vendor, device, dev);
--	while (dev) {
--		if ((dev->bus->number == related->bus->number) &&
--		    (PCI_SLOT(dev->devfn) == PCI_SLOT(related->devfn)))
--			break;
--		dev = pci_get_device(vendor, device, dev);
--	}
--
--	return dev;
--}
--
- /*
-  * These are tables of eigenvectors (one per line) which can be used for the
-  * construction of the syndrome tables. The modified syndrome search algorithm
+ static struct fb_var_screeninfo da8xx_fb_var;
+@@ -689,6 +697,19 @@ static inline unsigned da8xx_fb_calc_clk_divider(struct da8xx_fb_par *par,
+ 	return par->lcd_fck_rate / (PICOS2KHZ(pixclock) * 1000);
+ }
+ 
++#ifdef	CONFIG_COMMON_CLK
++static inline unsigned da8xx_fb_round_clk(struct da8xx_fb_par *par,
++					  unsigned pixclock)
++{
++	unsigned long rate;
++
++	rate = PICOS2KHZ(pixclock) * 1000;
++	rate = clk_round_rate(par->child_clk, rate);
++	rate = KHZ2PICOS(rate / 1000);
++
++	return rate;
++}
++#else
+ static inline unsigned da8xx_fb_round_clk(struct da8xx_fb_par *par,
+ 					  unsigned pixclock)
+ {
+@@ -697,25 +718,49 @@ static inline unsigned da8xx_fb_round_clk(struct da8xx_fb_par *par,
+ 	div = da8xx_fb_calc_clk_divider(par, pixclock);
+ 	return KHZ2PICOS(par->lcd_fck_rate / (1000 * div));
+ }
++#endif
+ 
+ static inline void da8xx_fb_config_clk_divider(unsigned div)
+ {
+ 	/* Configure the LCD clock divisor. */
+ 	lcdc_write(LCD_CLK_DIVISOR(div) |
+ 			(LCD_RASTER_MODE & 0x1), LCD_CTRL_REG);
++}
+ 
++static inline void da8xx_fb_clkc_enable(void)
++{
+ 	if (lcd_revision == LCD_VERSION_2)
+ 		lcdc_write(LCD_V2_DMA_CLK_EN | LCD_V2_LIDD_CLK_EN |
+ 				LCD_V2_CORE_CLK_EN, LCD_CLK_ENABLE_REG);
+ }
+ 
+-static inline void da8xx_fb_calc_config_clk_divider(struct da8xx_fb_par *par,
++#ifdef	CONFIG_COMMON_CLK
++static inline int da8xx_fb_calc_config_clk_divider(struct da8xx_fb_par *par,
++						    struct fb_videomode *mode)
++{
++	int ret;
++
++	ret = clk_set_rate(par->child_clk, PICOS2KHZ(mode->pixclock) * 1000);
++	if (IS_ERR_VALUE(ret)) {
++		dev_err(par->dev, "unable to setup pixel clock of %u ps",
++			mode->pixclock);
++		return ret;
++	}
++	da8xx_fb_clkc_enable();
++	return 0;
++}
++#else
++static inline int da8xx_fb_calc_config_clk_divider(struct da8xx_fb_par *par,
+ 						    struct fb_videomode *mode)
+ {
+ 	unsigned div = da8xx_fb_calc_clk_divider(par, mode->pixclock);
+ 
+ 	da8xx_fb_config_clk_divider(div);
++	da8xx_fb_clkc_enable();
++
++	return 0;
+ }
++#endif
+ 
+ static int lcd_init(struct da8xx_fb_par *par, const struct lcd_ctrl_config *cfg,
+ 		struct fb_videomode *panel)
+@@ -723,7 +768,9 @@ static int lcd_init(struct da8xx_fb_par *par, const struct lcd_ctrl_config *cfg,
+ 	u32 bpp;
+ 	int ret = 0;
+ 
+-	da8xx_fb_calc_config_clk_divider(par, panel);
++	ret = da8xx_fb_calc_config_clk_divider(par, panel);
++	if (IS_ERR_VALUE(ret))
++		return ret;
+ 
+ 	if (panel->sync & FB_SYNC_CLK_INVERT)
+ 		lcdc_write((lcdc_read(LCD_RASTER_TIMING_2_REG) |
+@@ -1406,6 +1453,22 @@ static int fb_probe(struct platform_device *device)
+ 
+ 	da8xx_fb_lcd_reset();
+ 
++#ifdef	CONFIG_COMMON_CLK
++	lcdc_write(LCD_RASTER_MODE | LCD_CLK_DIVISOR(0x2), LCD_CTRL_REG);
++	par->child_clk = clk_register_divider(NULL, "da8xx_fb_clk",
++					      __clk_get_name(fb_clk),
++					      CLK_SET_RATE_PARENT,
++					      da8xx_fb_reg_base + LCD_CTRL_REG,
++					      LCD_CLK_SHIFT, LCD_CLK_WIDTH,
++					      LCD_CLK_MIN_DIV,
++					      CLK_DIVIDER_ONE_BASED, NULL);
++	if (IS_ERR(par->child_clk)) {
++		dev_err(&device->dev, "error registering clk\n");
++		ret = -ENODEV;
++		goto err_release_fb;
++	}
++#endif
++
+ 	/* allocate frame buffer */
+ 	par->vram_size = lcdc_info->xres * lcdc_info->yres * lcd_cfg->bpp;
+ 	ulcm = lcm((lcdc_info->xres * lcd_cfg->bpp)/8, PAGE_SIZE);
+-- 
+1.7.12
+
