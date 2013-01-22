@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab3AVUgO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 15:36:14 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:36873 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab3AVUgL (ORCPT
+	id S1755841Ab3AVUqy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 15:46:54 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:62580 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567Ab3AVUqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 15:36:11 -0500
-Date: Tue, 22 Jan 2013 15:33:52 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Sealey <matt@genesi-usa.com>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
-        devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: Re: Compilation problem with drivers/staging/zsmalloc when !SMP on
- ARM
-Message-ID: <20130122203352.GC12371@phenom.dumpdata.com>
-References: <CAKGA1b=ACTQHo9=B7EAG5nrFCO9u-J+sy7dXtYk3Rk6OUcW3cQ@mail.gmail.com>
- <20130118210859.GH23505@n2100.arm.linux.org.uk>
- <20130118214527.GA913@kroah.com>
- <20130119043725.GB5391@phenom.dumpdata.com>
- <20130121152440.GJ23505@n2100.arm.linux.org.uk>
+	Tue, 22 Jan 2013 15:46:53 -0500
+Message-ID: <50FEFAB9.4030503@gmail.com>
+Date: Tue, 22 Jan 2013 14:46:49 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130121152440.GJ23505@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Matt Sealey <matt@genesi-usa.com>, Lior Amsalem <alior@marvell.com>,
+        Andrew Lunn <andrew@lunn.ch>, Ike Pan <ike.pan@canonical.com>,
+        John Stultz <johnstul@us.ibm.com>, David Marlin <dmarlin@redhat.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Eran Ben-Avi <benavi@marvell.com>,
+        Leif Lindholm <leif.lindholm@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>, Nadav Haklai <nadavh@marvell.com>,
+        Jon Masters <jcm@redhat.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        LKML <linux-kernel@vger.kernel.org>, Maen Suleiman <maen@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>
+Subject: Re: [PATCH 3/6] arm: kconfig: don't select TWD with local timer for
+ Armada 370/XP
+References: <1358790842-2986-1-git-send-email-gregory.clement@free-electrons.com> <201301211831.45947.arnd@arndb.de> <CAKGA1b=9WQNwHOz=k13XVc=MyZT1UrcaYj8muF2A5B4eJA5+MA@mail.gmail.com> <201301212044.41865.arnd@arndb.de>
+In-Reply-To: <201301212044.41865.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 03:24:40PM +0000, Russell King - ARM Linux wrote:
-> On Fri, Jan 18, 2013 at 11:37:25PM -0500, Konrad Rzeszutek Wilk wrote:
-> > On Fri, Jan 18, 2013 at 01:45:27PM -0800, Greg Kroah-Hartman wrote:
-> > > On Fri, Jan 18, 2013 at 09:08:59PM +0000, Russell King - ARM Linux wrote:
-> > > > On Fri, Jan 18, 2013 at 02:24:15PM -0600, Matt Sealey wrote:
-> > > > > Hello all,
-> > > > > 
-> > > > > I wonder if anyone can shed some light on this linking problem I have
-> > > > > right now. If I configure my kernel without SMP support (it is a very
-> > > > > lean config for i.MX51 with device tree support only) I hit this error
-> > > > > on linking:
-> > > > 
-> > > > Yes, I looked at this, and I've decided that I will _not_ fix this export,
-> > > > neither will I accept a patch to add an export.
-> > > > 
-> > > > As far as I can see, this code is buggy in a SMP environment.  There's
-> > > > apparantly no guarantee that:
-> > > > 
-> > > > 1. the mapping will be created on a particular CPU.
-> > > > 2. the mapping will then be used only on this specific CPU.
-> > > > 3. no guarantee that another CPU won't speculatively prefetch from this
-> > > >    region.
-> > 
-> > I thought the code had per_cpu for it - so that you wouldn't do that unless
-> > you really went out the way to do it.
-> 
-> Actually, yes, you're right - that negates point (4) and possibly (2),
-> but (3) is still a concern.  (3) shouldn't be that much of an issue
-> _provided_ that the virtual addresses aren't explicitly made use of by
-> other CPUs.  Is that guaranteed by the zsmalloc code?  (IOW, does it
-> own the virtual region it places these mappings in?)
+On 01/21/2013 02:44 PM, Arnd Bergmann wrote:
 
-It does own them but it does also hand them off. So the users of it
-might be put on a different CPU. I think, I need to trace the call-chain.
+>> On multiplatform kernels where at least one arch has TWD support, it
+>> will be included, and where not, it will not.
+>>
+>> It doesn't seem logical for a feature descriptor (HAVE_ARM_TWD) to
+>> rely on greater knowledge of what platforms may or may not support it.
+>> If we had to include every platform in that list it would be unwieldy.
 > 
-> What is the performance difference between having and not having this
-> optimization?  Can you provide some measurements please?
+> I would expect that all future platforms have ARM_TWD, so the list
+> of the platforms that don't is not going to grow much, but the list
+> of platforms that do will keep growing.
 
-Oh boy, there were somewhere.
-> 
-> Lastly, as you hold per_cpu stuff across this, that means preemption
-> is disabled - and any kind of scheduling is also a bug.  Is there
-> any reason the kmap stuff can't be used?  Has this been tried?  How
-> does it compare numerically with the existing solutions?
+No, I expect all future platforms will have architected timers. TWD is
+pretty much A9 and A5 only I believe. Same with SCU. I've probably
+missed some in my list.
 
-It was really dependent on the architecture. On x86 the copying
-was superior, but on ARM it was sllow.
+Rob
+
