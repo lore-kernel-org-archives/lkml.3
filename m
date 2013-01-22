@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab3AVD0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 22:26:43 -0500
-Received: from mga09.intel.com ([134.134.136.24]:6524 "EHLO mga09.intel.com"
+	id S1756324Ab3AVD1E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 22:27:04 -0500
+Received: from mga09.intel.com ([134.134.136.24]:29141 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755255Ab3AVD0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 22:26:42 -0500
+	id S1755585Ab3AVD1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 22:27:01 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,511,1355126400"; 
-   d="scan'208";a="250508619"
-Date: Tue, 22 Jan 2013 04:26:34 +0100
+   d="scan'208";a="250508726"
+Date: Tue, 22 Jan 2013 04:26:56 +0100
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 3/4] pinctrl: add abx500 pinctrl driver core
-Message-ID: <20130122032634.GM7409@sortiz-mobl>
-References: <1358242984-5160-1-git-send-email-linus.walleij@stericsson.com>
+To: Lars Poeschel <poeschel@lemonage.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH for-next] mfd: tps65910: add REGMAP_IRQ to Kconfig
+Message-ID: <20130122032656.GN7409@sortiz-mobl>
+References: <201301081139.03471.poeschel@lemonage.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1358242984-5160-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <201301081139.03471.poeschel@lemonage.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Lars,
 
-On Tue, Jan 15, 2013 at 10:43:04AM +0100, Linus Walleij wrote:
-> From: Patrice Chotard <patrice.chotard@st.com>
+On Tue, Jan 08, 2013 at 11:39:03AM +0100, Lars Poeschel wrote:
+> From: Lars Poeschel <poeschel@lemonage.de>
 > 
-> This adds the AB8500 core driver, which will be utilized by
-> the follow-on drivers for different ABx500 variants.
-> Sselect the driver from the DBX500_SOC, as this chip is
-> powering and clocking that SoC.
+> tps65910 driver is using regmap irq, so selecting it in
+> Kconfig to honor this.
 > 
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
 > ---
-> Hi Sam, it'd be great if you could ACK this so we could proceed
-> with rewriting the GPIO driver.
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+>  drivers/mfd/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+Anilkumar already sent a similar patch for this build error.
 
 Cheers,
 Samuel.
