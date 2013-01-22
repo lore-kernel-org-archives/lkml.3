@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab3AVHwc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:52:32 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:39855 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754307Ab3AVHw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:52:27 -0500
-Message-ID: <1358841145.23968.28.camel@joe-AO722>
-Subject: Re: [PATCH] lib: vsprintf: Add %pa format specifier for phys_addr_t
- types
-From: Joe Perches <joe@perches.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        George Spelvin <linux@horizon.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Andrei Emeltchenko <andrei.emeltchenko@intel.com>, mingo@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Date: Mon, 21 Jan 2013 23:52:25 -0800
-In-Reply-To: <1358839767.12502.44.camel@smile>
-References: <1358833677-15611-1-git-send-email-stepanm@codeaurora.org>
-	 <1358839767.12502.44.camel@smile>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1754847Ab3AVHwb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:52:31 -0500
+Received: from sd-mail-sa-02.sanoma.fi ([158.127.18.162]:58928 "EHLO
+	sd-mail-sa-02.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754187Ab3AVHw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 02:52:26 -0500
+X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jan 2013 02:52:26 EST
+Message-ID: <20130122094614.79031aq5ddrgr2zo@www.dalek.fi>
+Date: Tue, 22 Jan 2013 09:46:14 +0200
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+To: Matt Sealey <matt@genesi-usa.com>
+Cc: Nicolas Pitre <nico@fluxnic.net>, LKML <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
+        Dave Martin <dave.martin@linaro.org>,
+        David McCullough <david_mccullough@mcafee.com>
+Subject: Re: [PATCH] crypto: fix FTBFS with ARM SHA1-asm and THUMB2_KERNEL
+References: <1358787763-1226-1-git-send-email-matt@genesi-usa.com>
+ <alpine.LFD.2.02.1301211739470.6300@xanadu.home>
+ <CAKGA1bkQ9e8gmSPz_4csJWjEOKj3ZVqSLijSTRWxgDSaZoYqCA@mail.gmail.com>
+In-Reply-To: <CAKGA1bkQ9e8gmSPz_4csJWjEOKj3ZVqSLijSTRWxgDSaZoYqCA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-22 at 09:29 +0200, Andy Shevchenko wrote:
-> On Mon, 2013-01-21 at 21:47 -0800, Stepan Moskovchenko wrote: 
-> > Add the %pa format specifier for printing a phys_addr_t
-> > type, since the physical address size on some platforms
-> > can vary based on build options, regardless of the native
-> > integer type.
-[]
-> > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-[]
->  @@ -1112,6 +1113,12 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
-> >  			return netdev_feature_string(buf, end, ptr, spec);
-> >  		}
-> >  		break;
-> > +	case 'a':
-> > +		spec.flags |= SPECIAL | SMALL | ZEROPAD;
-> > +		spec.field_width = sizeof(phys_addr_t) * 2;
+Quoting Matt Sealey <matt@genesi-usa.com>:
 
-I believe this should be:
+> This question is to the implementor/committer (Dave McCullough), how
+> exactly did you measure the benchmark and can we reproduce it on some
+> other ARM box?
+>
+> If it's long and laborious and not so important to test the IPsec
+> tunnel use-case, what would be the simplest possible benchmark to see
+> if the C vs. assembly version is faster for a particular ARM device? I
+> can get hold of pretty much any Cortex-A8 or Cortex-A9 that matters, I
+> have access to a Chromebook for A15, and maybe an i.MX27 or i.MX35 and
+> a couple Marvell boards (ARMv6) if I set my mind to it... that much
+> testing implies we find a pretty concise benchmark though with a
+> fairly common kernel version we can spread around (i.MX, OMAP and the
+> Chromebook, I can handle, the rest I'm a little wary of bothering to
+> spend too much time on). I think that could cover a good swath of
+> not-ARMv5 use cases from lower speeds to quad core monsters.. but I
+> might stick to i.MX to start with..
 
-	spec.field_width = sizeof(phys_addr_t) * 2 + 2;
+There is 'tcrypt' module in crypto/ for quick benchmarking. 'modprobe  
+tcrypt mode=500 sec=1' tests AES in various cipher-modes, using  
+different buffer sizes and outputs results to kernel log.
+
+-Jussi
 
