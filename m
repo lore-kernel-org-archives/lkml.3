@@ -1,80 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab3AVHlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:41:37 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41101 "EHLO
+	id S1755179Ab3AVHlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:41:42 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41196 "EHLO
 	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754927Ab3AVHl2 (ORCPT
+	with ESMTP id S1755098Ab3AVHlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:41:28 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5 24/45] staging: octeon: Use get/put_online_cpus_atomic() to
- prevent CPU offline
-To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org
-Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
-        fweisbec@gmail.com, linux@arm.linux.org.uk, nikunj@linux.vnet.ibm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 22 Jan 2013 13:09:31 +0530
-Message-ID: <20130122073928.13822.79334.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Jan 2013 02:41:39 -0500
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi.kivity@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>
+Cc: Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Jiannan Ouyang <ouyang@cs.pitt.edu>, Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Date: Tue, 22 Jan 2013 13:09:13 +0530
+Message-Id: <20130122073913.24731.65118.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20130122073854.24731.9426.sendpatchset@codeblue.in.ibm.com>
+References: <20130122073854.24731.9426.sendpatchset@codeblue.in.ibm.com>
+Subject: [PATCH V3 RESEND RFC 1/2] sched: Bail out of yield_to when source and target runqueue has one task
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012207-2000-0000-0000-00000AB0630F
+x-cbid: 13012207-2000-0000-0000-00000AB06340
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once stop_machine() is gone from the CPU offline path, we won't be able to
-depend on preempt_disable() or local_irq_disable() to prevent CPUs from
-going offline from under us.
+From: Peter Zijlstra <peterz@infradead.org>
 
-Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
-while invoking from atomic context.
+In case of undercomitted scenarios, especially in large guests
+yield_to overhead is significantly high. when run queue length of
+source and target is one, take an opportunity to bail out and return
+-ESRCH. This return condition can be further exploited to quickly come
+out of PLE handler.
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: David Daney <david.daney@cavium.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+(History: Raghavendra initially worked on break out of kvm ple handler upon
+ seeing source runqueue length = 1, but it had to export rq length).
+ Peter came up with the elegant idea of return -ESRCH in scheduler core.
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Raghavendra, Checking the rq length of target vcpu condition added.(thanks Avi)
+Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Acked-by: Andrew Jones <drjones@redhat.com>
+Tested-by: Chegu Vinod <chegu_vinod@hp.com>
 ---
 
- drivers/staging/octeon/ethernet-rx.c |    3 +++
- 1 file changed, 3 insertions(+)
+ kernel/sched/core.c |   25 +++++++++++++++++++------
+ 1 file changed, 19 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
-index 34afc16..8588b4d 100644
---- a/drivers/staging/octeon/ethernet-rx.c
-+++ b/drivers/staging/octeon/ethernet-rx.c
-@@ -36,6 +36,7 @@
- #include <linux/prefetch.h>
- #include <linux/ratelimit.h>
- #include <linux/smp.h>
-+#include <linux/cpu.h>
- #include <linux/interrupt.h>
- #include <net/dst.h>
- #ifdef CONFIG_XFRM
-@@ -97,6 +98,7 @@ static void cvm_oct_enable_one_cpu(void)
- 		return;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2d8927f..fc219a5 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
+  * It's the caller's job to ensure that the target task struct
+  * can't go away on us before we can do any checks.
+  *
+- * Returns true if we indeed boosted the target task.
++ * Returns:
++ *	true (>0) if we indeed boosted the target task.
++ *	false (0) if we failed to boost the target.
++ *	-ESRCH if there's no task to yield to.
+  */
+ bool __sched yield_to(struct task_struct *p, bool preempt)
+ {
+@@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
  
- 	/* ... if a CPU is available, Turn on NAPI polling for that CPU.  */
-+	get_online_cpus_atomic();
- 	for_each_online_cpu(cpu) {
- 		if (!cpu_test_and_set(cpu, core_state.cpu_state)) {
- 			v = smp_call_function_single(cpu, cvm_oct_enable_napi,
-@@ -106,6 +108,7 @@ static void cvm_oct_enable_one_cpu(void)
- 			break;
- 		}
+ again:
+ 	p_rq = task_rq(p);
++	/*
++	 * If we're the only runnable task on the rq and target rq also
++	 * has only one task, there's absolutely no point in yielding.
++	 */
++	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
++		yielded = -ESRCH;
++		goto out_irq;
++	}
++
+ 	double_rq_lock(rq, p_rq);
+ 	while (task_rq(p) != p_rq) {
+ 		double_rq_unlock(rq, p_rq);
+@@ -4310,13 +4322,13 @@ again:
  	}
-+	put_online_cpus_atomic();
- }
  
- static void cvm_oct_no_more_work(void)
+ 	if (!curr->sched_class->yield_to_task)
+-		goto out;
++		goto out_unlock;
+ 
+ 	if (curr->sched_class != p->sched_class)
+-		goto out;
++		goto out_unlock;
+ 
+ 	if (task_running(p_rq, p) || p->state)
+-		goto out;
++		goto out_unlock;
+ 
+ 	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+ 	if (yielded) {
+@@ -4329,11 +4341,12 @@ again:
+ 			resched_task(p_rq->curr);
+ 	}
+ 
+-out:
++out_unlock:
+ 	double_rq_unlock(rq, p_rq);
++out_irq:
+ 	local_irq_restore(flags);
+ 
+-	if (yielded)
++	if (yielded > 0)
+ 		schedule();
+ 
+ 	return yielded;
 
