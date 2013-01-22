@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab3AVNk2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 08:40:28 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42816 "EHLO bear.ext.ti.com"
+	id S1752949Ab3AVNkx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 08:40:53 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33719 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752265Ab3AVNkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 08:40:21 -0500
+	id S1753079Ab3AVNk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 08:40:28 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Richard Purdie <rpurdie@rpsys.net>
 CC: Grant Likely <grant.likely@secretlab.ca>, Rob Landley <rob@landley.net>,
@@ -14,9 +14,9 @@ CC: Grant Likely <grant.likely@secretlab.ca>, Rob Landley <rob@landley.net>,
         Andrew Morton <akpm@linux-foundation.org>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
-Subject: [PATCH 1/4] pwm_backlight: Fix PWM levels support in non DT case
-Date: Tue, 22 Jan 2013 14:39:53 +0100
-Message-ID: <1358861996-27194-2-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 3/4] pwm_backlight: Refactor the DT parsing code
+Date: Tue, 22 Jan 2013 14:39:55 +0100
+Message-ID: <1358861996-27194-4-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1358861996-27194-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1358861996-27194-1-git-send-email-peter.ujfalusi@ti.com>
@@ -26,45 +26,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is expected that board files would have:
-static unsigned int bl_levels[] = { 0, 50, 100, 150, 200, 250, };
-
-static struct platform_pwm_backlight_data bl_data = {
-	.levels = bl_levels,
-	.max_brightness = ARRAY_SIZE(bl_levels),
-	.dft_brightness = 4,
-	.pwm_period_ns = 7812500,
-};
-
-In this case the max_brightness would be out of range in the levels array.
-Decrement the received max_brightness in every case (DT or non DT) when the
-levels has been provided.
+In preparation to support the whole range of the PWM device in a similar way
+it is possible when we boot in legacy mode (non DT mode).
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/video/backlight/pwm_bl.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/video/backlight/pwm_bl.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index 069983c..f0d6854 100644
+index 2a81c24..df2d115 100644
 --- a/drivers/video/backlight/pwm_bl.c
 +++ b/drivers/video/backlight/pwm_bl.c
-@@ -142,7 +142,6 @@ static int pwm_backlight_parse_dt(struct device *dev,
- 		}
+@@ -100,7 +100,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
+ {
+ 	struct device_node *node = dev->of_node;
+ 	struct property *prop;
+-	int length;
++	int num_levels = 0;
+ 	u32 value;
+ 	int ret;
  
- 		data->dft_brightness = value;
--		data->max_brightness--;
- 	}
+@@ -110,26 +110,27 @@ static int pwm_backlight_parse_dt(struct device *dev,
+ 	memset(data, 0, sizeof(*data));
  
- 	/*
-@@ -202,6 +201,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 	}
+ 	/* determine the number of brightness levels */
+-	prop = of_find_property(node, "brightness-levels", &length);
++	prop = of_find_property(node, "brightness-levels", &num_levels);
+ 	if (!prop)
+ 		return -EINVAL;
  
- 	if (data->levels) {
-+		data->max_brightness--;
- 		max = data->levels[data->max_brightness];
- 		pb->levels = data->levels;
- 	} else
+-	data->max_brightness = length / sizeof(u32);
++	num_levels /= sizeof(u32);
+ 
+ 	/* read brightness levels from DT property */
+-	if (data->max_brightness > 0) {
+-		size_t size = sizeof(*data->levels) * data->max_brightness;
++	if (num_levels > 0) {
++		size_t size = sizeof(*data->levels) * num_levels;
+ 
+ 		data->levels = devm_kzalloc(dev, size, GFP_KERNEL);
+ 		if (!data->levels)
+ 			return -ENOMEM;
+ 
+ 		ret = of_property_read_u32_array(node, "brightness-levels",
+-						 data->levels,
+-						 data->max_brightness);
++						 data->levels, num_levels);
+ 		if (ret < 0)
+ 			return ret;
+ 
++		data->max_brightness = num_levels;
++
+ 		ret = of_property_read_u32(node, "default-brightness-level",
+ 					   &value);
+ 		if (ret < 0)
 -- 
 1.8.1.1
 
