@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab3AVVCp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 16:02:45 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:46944 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751789Ab3AVVCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 16:02:43 -0500
-Date: Tue, 22 Jan 2013 13:01:19 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] arch/x86 cpu hotplug: remove depends on CONFIG_EXPERIMENTAL
-Message-ID: <20130122210119.GA311@www.outflux.net>
+	id S1755661Ab3AVVHr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 16:07:47 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:48116 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136Ab3AVVHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 16:07:44 -0500
+X-IronPort-AV: E=Sophos;i="4.84,516,1355126400"; 
+   d="scan'208";a="21507537"
+Message-ID: <50FEFF9F.1060305@codeaurora.org>
+Date: Tue, 22 Jan 2013 13:07:43 -0800
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+To: Joe Perches <joe@perches.com>
+CC: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        George Spelvin <linux@horizon.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Andrei Emeltchenko <andrei.emeltchenko@intel.com>, mingo@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH] lib: vsprintf: Add %pa format specifier for phys_addr_t
+ types
+References: <1358833677-15611-1-git-send-email-stepanm@codeaurora.org>  <1358839767.12502.44.camel@smile> <1358841145.23968.28.camel@joe-AO722>
+In-Reply-To: <1358841145.23968.28.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
-while now and is almost always enabled by default. As agreed during the
-Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
+On 1/21/2013 11:52 PM, Joe Perches wrote:
+> I believe this should be:
+>
+> 	spec.field_width = sizeof(phys_addr_t) * 2 + 2;
+>
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- arch/x86/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 3ac0e64..f5f937a 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1697,7 +1697,7 @@ config HOTPLUG_CPU
- config BOOTPARAM_HOTPLUG_CPU0
- 	bool "Set default setting of cpu0_hotpluggable"
- 	default n
--	depends on HOTPLUG_CPU && EXPERIMENTAL
-+	depends on HOTPLUG_CPU
- 	---help---
- 	  Set whether default state of cpu0_hotpluggable is on or off.
- 
-@@ -1726,7 +1726,7 @@ config BOOTPARAM_HOTPLUG_CPU0
- config DEBUG_HOTPLUG_CPU0
- 	def_bool n
- 	prompt "Debug CPU0 hotplug"
--	depends on HOTPLUG_CPU && EXPERIMENTAL
-+	depends on HOTPLUG_CPU
- 	---help---
- 	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
- 	  soon as possible and boots up userspace with CPU0 offlined. User
--- 
-1.7.9.5
+Ah yes, I believe you are right. I had only added the SPECIAL flag after 
+writing this. Will fix in v2.
 
 -- 
-Kees Cook
-Chrome OS Security
+  The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+  hosted by The Linux Foundation
