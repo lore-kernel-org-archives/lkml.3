@@ -1,124 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346Ab3AVFXu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 00:23:50 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:11765 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813Ab3AVFXs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 00:23:48 -0500
-X-AuditID: cbfee61a-b7f7d6d000000f4e-82-50fe2263e71d
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
-        balbi@ti.com, thomas.abraham@linaro.org, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, sylvester.nawrocki@gmail.com,
-        dianders@chromium.org, jg1.han@samsung.com, p.paneri@samsung.com,
-        cpgs@samsung.com
-References: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
-In-reply-to: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
-Subject: RE: [PATCH v6 0/4] Adding usb2.0 host-phy support for exynos5250
-Date: Mon, 21 Jan 2013 21:23:28 -0800
-Message-id: <053c01cdf860$9e98df20$dbca9d60$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQJl+CDGWU+ThpKKeozp1tuXzSNA+pckz+BA
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t8zfd1kpX8BBjd7pCwu75rDZjHj/D4m
-	i0XLWpkdmD0+b5ILYIzisklJzcksSy3St0vgypg74xRTwSfBij+N11gbGOfzdjFyckgImEhs
-	mHWEBcIWk7hwbz1bFyMXh5DAMkaJZ/fuMcEULX5/mhEisYhR4te35ywQzl9GiT+zV7ODVLEJ
-	aEgcfv8MzBYR8JC4e2w5O0gRs8BtJonpd7eD7RACSiycuIoVxOYU8JRYv2kmI4gtDGTfX7YH
-	bB2LgKrEyTNLweK8ApYSR1ZvYYOwBSV+TL4HNodZQEti87YmVghbXmLzmrfMEKcqSOw4+5oR
-	4ggjiTUPd7FB1IhLTHrwEOwgCYFN7BLT3i1mhVgmIPFt8iGgoRxACVmJTQeg5khKHFxxg2UC
-	o8QsJKtnIVk9C8nqWUhWLGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kREnNSOxhXNlgc
-	YhTgYFTi4bV49DdAiDWxrLgy9xCjBAezkghv/z+gEG9KYmVValF+fFFpTmrxIcZkoGMnMkuJ
-	JucD00FeSbyhsbGJmYmpibmlqbkpacJK4ryMp54ECAmkJ5akZqemFqQWwWxh4uCUamBklkni
-	+Wys3c/3YFu3Cb/A1ZUXl4eJ6P49W/fo7Pf2/2VzfwgfDn64bW5AXsBOJ68bpw+xBHyJ8HPl
-	XdDh+j+dN2zJsWeFKgzBO3yC3ty5nq2f/oYtiWHuLwvFDdNVVS/M4Lu4R7Jpa8a+zNwpzjZS
-	suvP6ZdZL14Wd+CP7QcH7XyjPW3Z/hlKLMUZiYZazEXFiQDxQTR//QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jAd1kpX8BBg/Xilhc3jWHzWLG+X1M
-	FouWtTI7MHt83iQXwBjVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
-	aqvk4hOg65aZAzRfSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYx5gxd8Yp
-	poJPghV/Gq+xNjDO5+1i5OSQEDCRWPz+NCOELSZx4d56ti5GLg4hgUWMEr++PWeBcP4ySvyZ
-	vZodpIpNQEPi8PtnYLaIgIfE3WPL2UGKmAVuM0lMv7udBSQhBJRYOHEVK4jNKeApsX7TTLAV
-	wkD2/WV7mEBsFgFViZNnloLFeQUsJY6s3sIGYQtK/Jh8D2wOs4CWxOZtTawQtrzE5jVvmSFO
-	VZDYcfY1I8QRRhJrHu5ig6gRl5j04CH7BEahWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSe
-	a6hXnJhbXJqXrpecn7uJERzRz6R2MK5ssDjEKMDBqMTDa/Hob4AQa2JZcWXuIUYJDmYlEd7+
-	f0Ah3pTEyqrUovz4otKc1OJDjMlAn05klhJNzgcmm7ySeENjEzMjSyMzCyMTc3PShJXEeRlP
-	PQkQEkhPLEnNTk0tSC2C2cLEwSnVwNiep3TemttPImuy3KJbhnknJjyy8+js3b7hTTjfgb/S
-	97//nWuW/HnP9Le9RfFP/hzkSfB6MmG1R9/VB1XRF34t0q5U6nQorVjodO68zdW9s+6v2Ra1
-	0O7VwZQ+dhmFwnDJaXfsjHiE3AO/RO3iX8grNZkrISVxf175hz1JKmd+VFdIearNTlBiKc5I
-	NNRiLipOBADtsXx5LAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752605Ab3AVFYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 00:24:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60311 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab3AVFYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 00:24:52 -0500
+Date: Tue, 22 Jan 2013 16:24:34 +1100
+From: NeilBrown <neilb@suse.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: [RFC PATCH] Input: gpio_keys: Fix suspend/resume press event
+ lost
+Message-ID: <20130122162434.5bcf3e14@notabene.brown>
+In-Reply-To: <20130121235718.GB16638@core.coreip.homeip.net>
+References: <1358774114-8281-1-git-send-email-ivan.khoronzhuk@ti.com>
+	<20130121235718.GB16638@core.coreip.homeip.net>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/vXaF_GlJqM7.9kyn9AqXu+A"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Gautam wrote:
-> 
-> Changes from v5:
->  - Rebased on top of latest patches:
->         usb: phy: samsung: Introducing usb phy driver for hsotg (v9)
->         usb: phy: samsung: Add support to set pmu isolation (v6)
->    As a result adding hostphy enable mask and hostphy register offsets
->    to driver data in order to access the HOSTPHY CONTROL register.
-> 
->  - Adding member 'otg' to struct samsung-usbphy so that its consumers
->    can call otg->set_host so as to make 'phy' aware of the consumer type:
-> 	HOST/DEVICE
-> 
->  - Adding 'otg' to 'struct s5p_ehci_hcd' and 'struct exynos_ohci_hcd'
->    which keeps track of 'otg' of the controllers' phy. This then sets
->    the host.
-> 
->  - Moved samsung_usbphy_set_type() calls from ehci-s5p and ohci-exynos
->    to phy driver itself where based on phy_type it is called.
-> 
->  - Added separate macro definition for USB20PHY_CFG register to select
->    between host/device type usb link.
-> 
->  - Removing unnecessary argument 'phy_type' from
-> samsung_usbphy_set_type()
->    and samsung_usbphy_cfg_sel().
-> 
->  - Addressed few nits:
-> 	-- added macro for 'KHZ'
-> 	-- removing useless 'if' from samsung_usbphy_cfg_sel()
-> 	-- keeping the place of clk_get intact and requesting driver
-> 	   data before that.
-> 
-> Vivek Gautam (4):
->   ARM: EXYNOS: Update & move usb-phy types to generic include layer
->   usb: phy: samsung: Add host phy support to samsung-phy driver
->   USB: ehci-s5p: Add phy driver support
->   USB: ohci-exynos: Add phy driver support
-> 
->  .../devicetree/bindings/usb/samsung-usbphy.txt     |   12 +-
->  drivers/usb/host/ehci-s5p.c                        |   81 +++-
->  drivers/usb/host/ohci-exynos.c                     |   85 +++-
->  drivers/usb/phy/Kconfig                            |    2 +-
->  drivers/usb/phy/samsung-usbphy.c                   |  512
-++++++++++++++++++--
->  include/linux/usb/samsung_usb_phy.h                |   16 +
->  6 files changed, 635 insertions(+), 73 deletions(-)
->  create mode 100644 include/linux/usb/samsung_usb_phy.h
-> 
-> --
-> 1.7.6.5
+--Sig_/vXaF_GlJqM7.9kyn9AqXu+A
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Looks good to me,
+On Mon, 21 Jan 2013 15:57:18 -0800 Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
 
-Felipe and Greg, I don't know who should take this series anyway, feel free
-to add  my ack:
+> Hi Ivan,
+>=20
+> On Mon, Jan 21, 2013 at 03:15:14PM +0200, Ivan Khoronzhuk wrote:
+> > Rebased on linux_omap/master.
+> >=20
+> > During suspend/resume the key press can be lost if time of resume
+> > sequence is significant.
+> >=20
+> > If press event cannot be remembered then the driver can read the
+> > current button state only in time of interrupt handling. But in some
+> > cases when time between IRQ and IRQ handler is significant we can
+> > read incorrect state. As a particular case, when device is in suspend
+> > we press wakupable key and up it back in a jiffy, the interrupt
+> > handler read the state of up but the interrupt source is press indeed.
+> > As a result, in a OS like android, we resume then suspend right away
+> > because the key state is not changed.
+> >=20
+> > This patch add to gpio_keys framework opportunity to recover lost of
+> > press key event at resuming. The variable "key_pressed" from
+> > gpio_button_data structure is not used for gpio keys, it is only used
+> > for gpio irq keys, so it is logically used to remember press lost
+> > while resuming.
+>=20
+> The same could happen if you delay processing of interrupt long enough
+> during normal operation. If key is released by the time you get around
+> to reading it you will not see a key press.
+>=20
+> To me this sounds like you need to speed up your resume process so that
+> you can start serving interrupts quicker.
+>=20
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Agreed.  When I was looking at this I found that any genuine button press
+would have at least 70msec between press and release, while the device could
+wake up to the point of being able to handle interrupts in about 14msec.
+That is enough of a gap to make it pointless to try to 'fix' the code.
 
-Thanks.
+With enough verbose debugging enabled that 14msec can easily grow to
+hundreds, but then if  you have debugging enabled to can discipline yourself
+to hold the button for longer.
 
-- Kukjin
+Ivan: What sort of delay are you seeing between the button press and the
+interrupt routine running?  And can you measure how long the button is
+typically down for?
 
+NeilBrown
+
+--Sig_/vXaF_GlJqM7.9kyn9AqXu+A
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUP4ikjnsnt1WYoG5AQLovhAAuBtOrL0nol96GN+AHuxQt4PM1SrYlEMC
+cLjSBx0Yj/brBp3eoRKKfaOs+MFDVzNzf8WLt5zomI84tMQ7L98jKHne3CBMkdVc
+nttYhALNCMqnRzxDKA/TRZg2MYXqSlwl4Vj76HzTLxUvRvuWDw7umCWHwbeVVB+8
+Y60ahWbX9oDI+s2UhOwdpB2wT0H9Aq8cMOaEwwGM3bwXRvJnkm+o0ZXmIbzoMfRh
+ZVgemaJw121D6ixoj0QsnwuDvqCI+U7cNSnUef+jPVP3tqbwJ8eZJE36tBGRc6kP
+dbIN+x565kmz7UwN+Cnn7zDtNTz6EjaWaG+qeh0Q3aQ+U298wtFLQTuL7mfvwUMr
++6wM1UOJi2MVzVdwHuhGRm3B+lBqUqWtGHfP9P5QEHAgJ6Jcy4+WOFs1ws3/A3nu
+EMiO8k8N3GDxufFKltXJ3B2Ff6LxCUdae2rHI9AafZEBElxdorrbf0Pl40RL4nJi
+YZ7oPByrafmM0DGWDy+AePxZdcHFGrokKfW9almBPILUOn/xK3n4x5A83YuQXyFd
+NkRKbKucu249p391sxuRbE0jIWe/ksK660PIxmvTPONSDtznby++9tOFocvbY60M
+eu6vCXRej8q32Uv3gylhLZ9TCWwBddvoqZAM+k8im75EwRBvSe3fI2cJFJ1tDtwQ
+F9DcoMGJx74=
+=TEVN
+-----END PGP SIGNATURE-----
+
+--Sig_/vXaF_GlJqM7.9kyn9AqXu+A--
