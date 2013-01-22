@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab3AVIWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 03:22:11 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42134 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867Ab3AVIWK (ORCPT
+	id S1753796Ab3AVIXu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 03:23:50 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:40684 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751867Ab3AVIXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 03:22:10 -0500
-Date: Tue, 22 Jan 2013 09:21:58 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Javier Martin <javier.martin@vista-silicon.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 09/15] media: coda: don't build on multiplatform
-Message-ID: <20130122082158.GC9414@pengutronix.de>
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
- <1358788568-11137-10-git-send-email-arnd@arndb.de>
+	Tue, 22 Jan 2013 03:23:48 -0500
+X-Sasl-enc: MGqE5AQbtFXjOzFI4VWYMaJ1Ik2njXom6yYYrHdHYAG5 1358843028
+Message-ID: <50FE4C92.3060103@imap.cc>
+Date: Tue, 22 Jan 2013 09:23:46 +0100
+From: Tilman Schmidt <tilman@imap.cc>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358788568-11137-10-git-send-email-arnd@arndb.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:17:21 up 212 days, 23:29, 47 users,  load average: 3.12, 3.87,
- 4.81
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: David Miller <davem@davemloft.net>
+CC: isdn@linux-pingi.de, hjlipp@web.de, keil@b1-systems.de,
+        i4ldeveloper@listserv.isdn4linux.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] ISDN patches for net-next
+References: <20130121-patch-isdn-00.tilman@imap.cc> <20130121.173810.2229077237480842007.davem@davemloft.net>
+In-Reply-To: <20130121.173810.2229077237480842007.davem@davemloft.net>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 05:16:02PM +0000, Arnd Bergmann wrote:
-> The coda video codec driver depends on a mach-imx or mach-mxs specific
-> header file "mach/iram.h". This is not available when building for
-> multiplatform, so let us disable this driver for v3.8 when building
-> multiplatform, and hopefully find a proper fix for v3.9.
-> 
-> drivers/media/platform/coda.c:27:23: fatal error: mach/iram.h: No such file or directory
+Am 21.01.2013 23:38, schrieb David Miller:
+> Patches 1-5 applied to net-next, patch 6 applied to 'net' and queued
+> up for -stable.
 
-I just sent a pull request for this with a proper fix.
+Thanks.
 
-> 
-> diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
-> index 3dcfea6..049d2b2 100644
-> --- a/drivers/media/platform/Kconfig
-> +++ b/drivers/media/platform/Kconfig
-> @@ -142,7 +142,7 @@ if V4L_MEM2MEM_DRIVERS
->  
->  config VIDEO_CODA
->  	tristate "Chips&Media Coda multi-standard codec IP"
-> -	depends on VIDEO_DEV && VIDEO_V4L2 && ARCH_MXC
-> +	depends on VIDEO_DEV && VIDEO_V4L2 && ARCH_MXC && !ARCH_MULTIPLATFORM
+> We don't have changes bypass 'net' and go into stable from net-next
+> like you intended.  We also don't use CC: stable for networking
+> patches, you ask me to queue them up into my -stable patch queue
+> for networking instead.
 
-This breakage is not multiplatform related at all, it won't compile
-without multiplatform support either. So depends on BROKEN would be
-more appropriate if you want to go this way.
+I see. Is there somewhere I can read up on the workflow for networking
+patches and how it fits in with the general plan of things?
 
-Sascha
-
+Thanks,
+Tilman
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Tilman Schmidt                    E-Mail: tilman@imap.cc
+Bonn, Germany
+Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
+Ungeöffnet mindestens haltbar bis: (siehe Rückseite)
+
+
