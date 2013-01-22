@@ -1,126 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383Ab3AVIqT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 03:46:19 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:44013 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994Ab3AVIqR (ORCPT
+	id S1754464Ab3AVIuY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 03:50:24 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:57507 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab3AVIuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 03:46:17 -0500
-Date: Tue, 22 Jan 2013 08:46:11 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Chris Ball <cjb@laptop.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [PATCH 1/8] mmc: mmci: Move ios_handler functionality into the
- driver
-Message-ID: <20130122084611.GF6857@gmail.com>
-References: <1355404930-5691-1-git-send-email-lee.jones@linaro.org>
- <1355404930-5691-2-git-send-email-lee.jones@linaro.org>
- <20130121140626.GB6857@gmail.com>
- <CAPDyKFoNXNj=9mG0sR7=g12MJ1xLuRMLqReY7mCEVSBYGvRPhQ@mail.gmail.com>
+	Tue, 22 Jan 2013 03:50:23 -0500
+Date: Tue, 22 Jan 2013 10:50:04 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+CC: "'Vivek Gautam'" <gautam.vivek@samsung.com>, <linux-usb@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <balbi@ti.com>, <thomas.abraham@linaro.org>, <rob.herring@calxeda.com>,
+        <grant.likely@secretlab.ca>, <sylvester.nawrocki@gmail.com>,
+        <dianders@chromium.org>, <jg1.han@samsung.com>, <p.paneri@samsung.com>,
+        <cpgs@samsung.com>, Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH v6 0/4] Adding usb2.0 host-phy support for exynos5250
+Message-ID: <20130122085004.GD16143@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
+ <053c01cdf860$9e98df20$dbca9d60$@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fXStkuK2IQBfcDe+"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPDyKFoNXNj=9mG0sR7=g12MJ1xLuRMLqReY7mCEVSBYGvRPhQ@mail.gmail.com>
+In-Reply-To: <053c01cdf860$9e98df20$dbca9d60$@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jan 2013, Ulf Hansson wrote:
+--fXStkuK2IQBfcDe+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 21 January 2013 15:06, Lee Jones <lee.jones@linaro.org> wrote:
-> > On Thu, 13 Dec 2012, Lee Jones wrote:
-> >
-> >> There are currently two instances of the ios_handler being used.
-> >> Both of which mearly toy with some regulator settings. Now there
-> >> is a GPIO regulator API, we can use that instead, and lessen the
-> >> per platform burden. By doing this, we also become more Device
-> >> Tree compatible.
-> >>
-> >> Cc: Chris Ball <cjb@laptop.org>
-> >> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> >> Acked-by: Ulf Hansson <ulf.hansson@stericsson.com>
-> >> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> >
-> > Any more news on this one?
-> 
-> Not exactly this version of the patch, but another one has has been
-> merged through Russell's patch tracker. Available for 3.9.
+HI,
 
-Nice. Thanks for the update.
+On Mon, Jan 21, 2013 at 09:23:28PM -0800, Kukjin Kim wrote:
+> Vivek Gautam wrote:
+> >=20
+> > Changes from v5:
+> >  - Rebased on top of latest patches:
+> >         usb: phy: samsung: Introducing usb phy driver for hsotg (v9)
+> >         usb: phy: samsung: Add support to set pmu isolation (v6)
+> >    As a result adding hostphy enable mask and hostphy register offsets
+> >    to driver data in order to access the HOSTPHY CONTROL register.
+> >=20
+> >  - Adding member 'otg' to struct samsung-usbphy so that its consumers
+> >    can call otg->set_host so as to make 'phy' aware of the consumer typ=
+e:
+> > 	HOST/DEVICE
+> >=20
+> >  - Adding 'otg' to 'struct s5p_ehci_hcd' and 'struct exynos_ohci_hcd'
+> >    which keeps track of 'otg' of the controllers' phy. This then sets
+> >    the host.
+> >=20
+> >  - Moved samsung_usbphy_set_type() calls from ehci-s5p and ohci-exynos
+> >    to phy driver itself where based on phy_type it is called.
+> >=20
+> >  - Added separate macro definition for USB20PHY_CFG register to select
+> >    between host/device type usb link.
+> >=20
+> >  - Removing unnecessary argument 'phy_type' from
+> > samsung_usbphy_set_type()
+> >    and samsung_usbphy_cfg_sel().
+> >=20
+> >  - Addressed few nits:
+> > 	-- added macro for 'KHZ'
+> > 	-- removing useless 'if' from samsung_usbphy_cfg_sel()
+> > 	-- keeping the place of clk_get intact and requesting driver
+> > 	   data before that.
+> >=20
+> > Vivek Gautam (4):
+> >   ARM: EXYNOS: Update & move usb-phy types to generic include layer
+> >   usb: phy: samsung: Add host phy support to samsung-phy driver
+> >   USB: ehci-s5p: Add phy driver support
+> >   USB: ohci-exynos: Add phy driver support
+> >=20
+> >  .../devicetree/bindings/usb/samsung-usbphy.txt     |   12 +-
+> >  drivers/usb/host/ehci-s5p.c                        |   81 +++-
+> >  drivers/usb/host/ohci-exynos.c                     |   85 +++-
+> >  drivers/usb/phy/Kconfig                            |    2 +-
+> >  drivers/usb/phy/samsung-usbphy.c                   |  512
+> ++++++++++++++++++--
+> >  include/linux/usb/samsung_usb_phy.h                |   16 +
+> >  6 files changed, 635 insertions(+), 73 deletions(-)
+> >  create mode 100644 include/linux/usb/samsung_usb_phy.h
+> >=20
+> > --
+> > 1.7.6.5
+>=20
+> Looks good to me,
+>=20
+> Felipe and Greg, I don't know who should take this series anyway, feel fr=
+ee
+> to add  my ack:
+>=20
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-> >>  drivers/mmc/host/mmci.c |   22 ++++++++++++++++++++++
-> >>  drivers/mmc/host/mmci.h |    1 +
-> >>  2 files changed, 23 insertions(+)
-> >>
-> >> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-> >> index edc3e9b..d45c931 100644
-> >> --- a/drivers/mmc/host/mmci.c
-> >> +++ b/drivers/mmc/host/mmci.c
-> >> @@ -1091,6 +1091,16 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
-> >>       case MMC_POWER_OFF:
-> >>               if (host->vcc)
-> >>                       ret = mmc_regulator_set_ocr(mmc, host->vcc, 0);
-> >> +
-> >> +             if (host->vqmmc) {
-> >> +                     if (regulator_is_enabled(host->vqmmc)) {
-> >> +                             ret = regulator_disable(host->vqmmc);
-> >> +                             if (ret < 0)
-> >> +                                     dev_warn(mmc_dev(mmc),
-> >> +                                              "unable to disable vmmc-ios\n");
-> >> +                     }
-> >> +             }
-> >> +
-> >>               break;
-> >>       case MMC_POWER_UP:
-> >>               if (host->vcc) {
-> >> @@ -1115,6 +1125,14 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
-> >>
-> >>               break;
-> >>       case MMC_POWER_ON:
-> >> +             if (host->vqmmc)
-> >> +                     if (!regulator_is_enabled(host->vqmmc)) {
-> >> +                             ret = regulator_enable(host->vqmmc);
-> >> +                             if (ret < 0)
-> >> +                                     dev_warn(mmc_dev(mmc),
-> >> +                                              "unable to enable vmmc-ios\n");
-> >> +                     }
-> >> +
-> >>               pwr |= MCI_PWR_ON;
-> >>               break;
-> >>       }
-> >> @@ -1379,6 +1397,10 @@ static int __devinit mmci_probe(struct amba_device *dev,
-> >>                                "(using regulator instead)\n");
-> >>               }
-> >>       }
-> >> +
-> >> +     host->vqmmc = regulator_get(&dev->dev, "vqmmc");
-> >> +     if (IS_ERR(host->vqmmc))
-> >> +             host->vqmmc = NULL;
-> >>  #endif
-> >>       /* Fall back to platform data if no regulator is found */
-> >>       if (host->vcc == NULL)
-> >> diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
-> >> index d437ccf..b87d9e2 100644
-> >> --- a/drivers/mmc/host/mmci.h
-> >> +++ b/drivers/mmc/host/mmci.h
-> >> @@ -194,6 +194,7 @@ struct mmci_host {
-> >>       struct sg_mapping_iter  sg_miter;
-> >>       unsigned int            size;
-> >>       struct regulator        *vcc;
-> >> +     struct regulator        *vqmmc;
-> >>
-> >>  #ifdef CONFIG_DMA_ENGINE
-> >>       /* DMA stuff */
-> >
+I will take care of it. But I need Alan's Acked-by for EHCI and OHCI
+parts.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--=20
+balbi
+
+--fXStkuK2IQBfcDe+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ/lK7AAoJEIaOsuA1yqREY+cQAKG7OfsZ9AuSFPy95plICRni
+zh2KSmmr17QaLjW74ifH826RsR0fe9Htt+GiqVEcONNV/9WaNRWm4EP6ZFWCY+/5
+CNya6MySxQeSpbajzeLx8ziiUmPmAIN4kSUFq43Oimj8+s6qJn/pgx99wjfIlAEs
+3j2KpbDVnjooxHDXLtPNg7poJOkpE1LSGy61hdqA6huT1UlmOuD06q1kBtjFbkc6
+88wJrvZZXDDdULfy7KsNEUnXASHpiCkpH87a2Xn4wGEa4qqPOUqRGCbzO+s0hNRV
+0i8FTrhg0WwcCbozoFS+XzbTlBPQxD7HWn/9J5kbRpHw45F6qGlEFXE0dNWfQJYW
+esPJ49qs+gNjPDgriI+0lvEN7jB/d9JWWGaWmT2+2ksZvVLThBQFEg/r2lND8HPc
+O21DVdUfkke5tu4c9+NHVLy8ZeVT/lEHQBi7dewdWoPm8X3c68jWVNAIZCnP13XF
+zihiXlED3X/161ivnR0aU6SrvDzJZtaSghK3KhCCZRy5lTC2vdvJ6kJqTSgrcom5
+20Uh3CV61m6tFqtDqoTrvzdw6FeZhNzBbOC4TlGFMK5nATSTRmXL7MWWaBl3WwHf
+3DpjOXmasvpktlfjDF6+y884OseQciNcqgf/pgaPraiH1slnlGVNZFjkzAY9Ray0
+Wz6DVMrXCE5zSigYNwBG
+=0HyY
+-----END PGP SIGNATURE-----
+
+--fXStkuK2IQBfcDe+--
