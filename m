@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab3AVGU3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 01:20:29 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:25012 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438Ab3AVGU1 (ORCPT
+	id S1753367Ab3AVGVa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 01:21:30 -0500
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:52966 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467Ab3AVGV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 01:20:27 -0500
-Date: Tue, 22 Jan 2013 09:20:10 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        sfr@canb.auug.org.au, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [RFC PATCH linux-next] et131x: Promote staging et131x driver to
- drivers/net
-Message-ID: <20130122062010.GA16282@mwanda>
-References: <1358541648-29922-1-git-send-email-mark.einon@gmail.com>
- <20130118225706.GA22140@kroah.com>
- <20130119110328.GO4584@mwanda>
- <CANK3SE2p3C38YrvCxWqvoRRz7=q7oAYyE=b0c7+ppBd3yzVrpw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANK3SE2p3C38YrvCxWqvoRRz7=q7oAYyE=b0c7+ppBd3yzVrpw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 22 Jan 2013 01:21:28 -0500
+Message-ID: <1358835638.6336.1.camel@nexus.lab.ntt.co.jp>
+Subject: HID: clean up quirk for Sony RF receivers
+From: Fernando Luis =?ISO-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Antonio Ospite <ospite@studenti.unina.it>
+Date: Tue, 22 Jan 2013 15:20:38 +0900
+In-Reply-To: <50FE2A34.3050607@lab.ntt.co.jp>
+References: <1358221428.9926.1.camel@nexus.lab.ntt.co.jp>
+	  <20130115103638.be566e39f0f5ad7186362dd8@studenti.unina.it>
+	  <50F52986.2080002@lab.ntt.co.jp>
+	  <1358246448.4897.3.camel@nexus.lab.ntt.co.jp>
+	  <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz>
+	  <50F637D1.8070302@lab.ntt.co.jp>
+	  <alpine.LNX.2.00.1301161141250.14768@pobox.suse.cz>
+	 <50FE2A34.3050607@lab.ntt.co.jp>
+Organization: NTT Open Source Software Center
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 11:44:55PM +0000, Mark Einon wrote:
-> On 19 January 2013 11:03, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> <snip>
-> >
-> > et131x_get_regs() has endian bugs calling et131x_mii_read().
-> >
-> </snip>
-> 
-> Hi Dan,
-> 
-> Could you be a bit more descriptive about the issues you think there
-> are with these calls?
-> 
+Document what the fix-up is does and make it more robust by ensuring
+that it is only applied to the USB interface that corresponds to the
+mouse (sony_report_fixup() is called once per interface during probing).
 
-Sorry, that was sloppy on my part.  Here's what I meant:
+Cc: linux-input@vger.kernel.org
+Cc: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
 
-	et131x_mii_read(adapter, MII_BMCR, (u16 *)&regs_buff[num++]);
+diff -urNp linux-3.8-rc4-orig/drivers/hid/hid-sony.c linux-3.8-rc4/drivers/hid/hid-sony.c
+--- linux-3.8-rc4-orig/drivers/hid/hid-sony.c	2013-01-22 14:21:13.380552283 +0900
++++ linux-3.8-rc4/drivers/hid/hid-sony.c	2013-01-22 14:41:56.316934002 +0900
+@@ -43,9 +43,19 @@ static __u8 *sony_report_fixup(struct hi
+ {
+ 	struct sony_sc *sc = hid_get_drvdata(hdev);
+ 
+-	if ((sc->quirks & VAIO_RDESC_CONSTANT) &&
+-			*rsize >= 56 && rdesc[54] == 0x81 && rdesc[55] == 0x07) {
++	/*
++	 * Some Sony RF receivers wrongly declare the mouse pointer as a
++	 * a constant non-data variable.
++	 */
++	if ((sc->quirks & VAIO_RDESC_CONSTANT) && *rsize >= 56 &&
++	    /* usage page: generic desktop controls */
++	    /* rdesc[0] == 0x05 && rdesc[1] == 0x01 && */
++	    /* usage: mouse */
++	    rdesc[2] == 0x09 && rdesc[3] == 0x02 &&
++	    /* input (usage page for x,y axes): constant, variable, relative */
++	    rdesc[54] == 0x81 && rdesc[55] == 0x07) {
+ 		hid_info(hdev, "Fixing up Sony RF Receiver report descriptor\n");
++		/* input: data, variable, relative */
+ 		rdesc[55] = 0x06;
+ 	}
+ 
 
-That puts the number in the 2 high bits which works for little
-endian systems but not for big endian.  It should be something like:
-
-	u16 tmp;
-
-	et131x_mii_read(adapter, MII_BMCR, &tmp);
-	regs_buff[num++] = tmp;
-
-regards,
-dan carpenter
 
