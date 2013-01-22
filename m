@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab3AVKZr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 05:25:47 -0500
-Received: from mga14.intel.com ([143.182.124.37]:25668 "EHLO mga14.intel.com"
+	id S1754521Ab3AVK0w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 05:26:52 -0500
+Received: from mga14.intel.com ([143.182.124.37]:61597 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754246Ab3AVKZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 05:25:44 -0500
+	id S1753830Ab3AVKZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 05:25:45 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,513,1355126400"; 
-   d="scan'208";a="246947109"
+   d="scan'208";a="246947104"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: Grant Likely <grant.likely@secretlab.ca>,
@@ -20,9 +20,9 @@ Cc: Grant Likely <grant.likely@secretlab.ca>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, chao.bi@intel.com,
         Andy Shevchenko <andriy.shevchenko@linux.intel.com>, cxie4@marvell.com,
         ytang5@marvell.com, Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v3 10/10] spi/pxa2xx: add support for Lynxpoint SPI controllers
-Date: Tue, 22 Jan 2013 12:26:33 +0200
-Message-Id: <1358850393-23111-11-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH v3 03/10] spi/pxa2xx: convert to the pump message infrastructure
+Date: Tue, 22 Jan 2013 12:26:26 +0200
+Message-Id: <1358850393-23111-4-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1358850393-23111-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1358850393-23111-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -30,185 +30,352 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel Lynxpoint PCH Low Power Subsystem has two general purpose SPI
-controllers that are LPSS_SSP compatible. These controllers are enumerated
-from ACPI namespace with ACPI IDs INT33C0 and INT33C1.
+The SPI core provides infrastructure for standard message queueing so use
+that instead of handling everything in the driver. This simplifies the
+driver.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/spi/Kconfig      |    2 +-
- drivers/spi/spi-pxa2xx.c |  110 +++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 109 insertions(+), 3 deletions(-)
+ drivers/spi/spi-pxa2xx.c |  212 +++-------------------------------------------
+ 1 file changed, 12 insertions(+), 200 deletions(-)
 
-diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index 8913d3d..e79884e9 100644
---- a/drivers/spi/Kconfig
-+++ b/drivers/spi/Kconfig
-@@ -310,7 +310,7 @@ config SPI_PXA2XX_DMA
- 
- config SPI_PXA2XX
- 	tristate "PXA2xx SSP SPI master"
--	depends on ARCH_PXA || PCI
-+	depends on ARCH_PXA || PCI || ACPI
- 	select PXA_SSP if ARCH_PXA
- 	help
- 	  This enables using a PXA2xx or Sodaville SSP port as a SPI master
 diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
-index 4bd6b72..90b27a3 100644
+index ef0a786..a241891 100644
 --- a/drivers/spi/spi-pxa2xx.c
 +++ b/drivers/spi/spi-pxa2xx.c
-@@ -32,6 +32,7 @@
- #include <linux/slab.h>
- #include <linux/clk.h>
- #include <linux/pm_runtime.h>
-+#include <linux/acpi.h>
+@@ -85,9 +85,6 @@ DEFINE_SSP_REG(SSPSP, 0x2c)
+ #define DONE_STATE ((void*)2)
+ #define ERROR_STATE ((void*)-1)
  
- #include <asm/io.h>
- #include <asm/irq.h>
-@@ -933,6 +934,13 @@ static int setup(struct spi_device *spi)
- 		chip->dma_threshold = 0;
- 		if (chip_info->enable_loopback)
- 			chip->cr1 = SSCR1_LBM;
-+	} else if (ACPI_HANDLE(&spi->dev)) {
-+		/*
-+		 * Slave devices enumerated from ACPI namespace don't
-+		 * usually have chip_info but we still might want to use
-+		 * DMA with them.
-+		 */
-+		chip->enable_dma = drv_data->master_info->enable_dma;
+-#define QUEUE_RUNNING 0
+-#define QUEUE_STOPPED 1
+-
+ struct driver_data {
+ 	/* Driver model hookup */
+ 	struct platform_device *pdev;
+@@ -117,14 +114,6 @@ struct driver_data {
+ 	u32 clear_sr;
+ 	u32 mask_sr;
+ 
+-	/* Driver message queue */
+-	struct workqueue_struct	*workqueue;
+-	struct work_struct pump_messages;
+-	spinlock_t lock;
+-	struct list_head queue;
+-	int busy;
+-	int run;
+-
+ 	/* Message Transfer pump */
+ 	struct tasklet_struct pump_transfers;
+ 
+@@ -173,8 +162,6 @@ struct chip_data {
+ 	void (*cs_control)(u32 command);
+ };
+ 
+-static void pump_messages(struct work_struct *work);
+-
+ static void cs_assert(struct driver_data *drv_data)
+ {
+ 	struct chip_data *chip = drv_data->cur_chip;
+@@ -444,15 +431,11 @@ static void unmap_dma_buffers(struct driver_data *drv_data)
+ static void giveback(struct driver_data *drv_data)
+ {
+ 	struct spi_transfer* last_transfer;
+-	unsigned long flags;
+ 	struct spi_message *msg;
+ 
+-	spin_lock_irqsave(&drv_data->lock, flags);
+ 	msg = drv_data->cur_msg;
+ 	drv_data->cur_msg = NULL;
+ 	drv_data->cur_transfer = NULL;
+-	queue_work(drv_data->workqueue, &drv_data->pump_messages);
+-	spin_unlock_irqrestore(&drv_data->lock, flags);
+ 
+ 	last_transfer = list_entry(msg->transfers.prev,
+ 					struct spi_transfer,
+@@ -481,13 +464,7 @@ static void giveback(struct driver_data *drv_data)
+ 		 */
+ 
+ 		/* get a pointer to the next message, if any */
+-		spin_lock_irqsave(&drv_data->lock, flags);
+-		if (list_empty(&drv_data->queue))
+-			next_msg = NULL;
+-		else
+-			next_msg = list_entry(drv_data->queue.next,
+-					struct spi_message, queue);
+-		spin_unlock_irqrestore(&drv_data->lock, flags);
++		next_msg = spi_get_next_queued_message(drv_data->master);
+ 
+ 		/* see if the next and current messages point
+ 		 * to the same chip
+@@ -498,10 +475,7 @@ static void giveback(struct driver_data *drv_data)
+ 			cs_deassert(drv_data);
  	}
  
- 	chip->threshold = (SSCR1_RxTresh(rx_thres) & SSCR1_RFT) |
-@@ -1025,6 +1033,99 @@ static void cleanup(struct spi_device *spi)
+-	msg->state = NULL;
+-	if (msg->complete)
+-		msg->complete(msg->context);
+-
++	spi_finalize_current_message(drv_data->master);
+ 	drv_data->cur_chip = NULL;
+ }
+ 
+@@ -1176,31 +1150,12 @@ static void pump_transfers(unsigned long data)
+ 	write_SSCR1(cr1, reg);
+ }
+ 
+-static void pump_messages(struct work_struct *work)
++static int pxa2xx_spi_transfer_one_message(struct spi_master *master,
++					   struct spi_message *msg)
+ {
+-	struct driver_data *drv_data =
+-		container_of(work, struct driver_data, pump_messages);
+-	unsigned long flags;
+-
+-	/* Lock queue and check for queue work */
+-	spin_lock_irqsave(&drv_data->lock, flags);
+-	if (list_empty(&drv_data->queue) || drv_data->run == QUEUE_STOPPED) {
+-		drv_data->busy = 0;
+-		spin_unlock_irqrestore(&drv_data->lock, flags);
+-		return;
+-	}
+-
+-	/* Make sure we are not already running a message */
+-	if (drv_data->cur_msg) {
+-		spin_unlock_irqrestore(&drv_data->lock, flags);
+-		return;
+-	}
+-
+-	/* Extract head of queue */
+-	drv_data->cur_msg = list_entry(drv_data->queue.next,
+-					struct spi_message, queue);
+-	list_del_init(&drv_data->cur_msg->queue);
++	struct driver_data *drv_data = spi_master_get_devdata(master);
+ 
++	drv_data->cur_msg = msg;
+ 	/* Initial message state*/
+ 	drv_data->cur_msg->state = START_STATE;
+ 	drv_data->cur_transfer = list_entry(drv_data->cur_msg->transfers.next,
+@@ -1213,34 +1168,6 @@ static void pump_messages(struct work_struct *work)
+ 
+ 	/* Mark as busy and launch transfers */
+ 	tasklet_schedule(&drv_data->pump_transfers);
+-
+-	drv_data->busy = 1;
+-	spin_unlock_irqrestore(&drv_data->lock, flags);
+-}
+-
+-static int transfer(struct spi_device *spi, struct spi_message *msg)
+-{
+-	struct driver_data *drv_data = spi_master_get_devdata(spi->master);
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&drv_data->lock, flags);
+-
+-	if (drv_data->run == QUEUE_STOPPED) {
+-		spin_unlock_irqrestore(&drv_data->lock, flags);
+-		return -ESHUTDOWN;
+-	}
+-
+-	msg->actual_length = 0;
+-	msg->status = -EINPROGRESS;
+-	msg->state = START_STATE;
+-
+-	list_add_tail(&msg->queue, &drv_data->queue);
+-
+-	if (drv_data->run == QUEUE_RUNNING && !drv_data->busy)
+-		queue_work(drv_data->workqueue, &drv_data->pump_messages);
+-
+-	spin_unlock_irqrestore(&drv_data->lock, flags);
+-
+ 	return 0;
+ }
+ 
+@@ -1438,94 +1365,6 @@ static void cleanup(struct spi_device *spi)
  	kfree(chip);
  }
  
-+#ifdef CONFIG_ACPI
-+static int pxa2xx_spi_acpi_add_dma(struct acpi_resource *res, void *data)
-+{
-+	struct pxa2xx_spi_master *pdata = data;
-+
-+	if (res->type == ACPI_RESOURCE_TYPE_FIXED_DMA) {
-+		const struct acpi_resource_fixed_dma *dma;
-+
-+		dma = &res->data.fixed_dma;
-+		if (pdata->tx_slave_id < 0) {
-+			pdata->tx_slave_id = dma->request_lines;
-+			pdata->tx_chan_id = dma->channels;
-+		} else if (pdata->rx_slave_id < 0) {
-+			pdata->rx_slave_id = dma->request_lines;
-+			pdata->rx_chan_id = dma->channels;
-+		}
-+	}
-+
-+	/* Tell the ACPI core to skip this resource */
-+	return 1;
-+}
-+
-+static struct pxa2xx_spi_master *
-+pxa2xx_spi_acpi_get_pdata(struct platform_device *pdev)
-+{
-+	struct pxa2xx_spi_master *pdata;
-+	struct list_head resource_list;
-+	struct acpi_device *adev;
-+	struct ssp_device *ssp;
-+	struct resource *res;
-+	int devid;
-+
-+	if (!ACPI_HANDLE(&pdev->dev) ||
-+	    acpi_bus_get_device(ACPI_HANDLE(&pdev->dev), &adev))
-+		return NULL;
-+
-+	pdata = devm_kzalloc(&pdev->dev, sizeof(*ssp), GFP_KERNEL);
-+	if (!pdata) {
-+		dev_err(&pdev->dev,
-+			"failed to allocate memory for platform data\n");
-+		return NULL;
-+	}
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return NULL;
-+
-+	ssp = &pdata->ssp;
-+
-+	ssp->phys_base = res->start;
-+	ssp->mmio_base = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!ssp->mmio_base) {
-+		dev_err(&pdev->dev, "failed to ioremap mmio_base\n");
-+		return NULL;
-+	}
-+
-+	ssp->clk = devm_clk_get(&pdev->dev, NULL);
-+	ssp->irq = platform_get_irq(pdev, 0);
-+	ssp->type = LPSS_SSP;
-+	ssp->pdev = pdev;
-+
-+	ssp->port_id = -1;
-+	if (adev->pnp.unique_id && !kstrtoint(adev->pnp.unique_id, 0, &devid))
-+		ssp->port_id = devid;
-+
-+	pdata->num_chipselect = 1;
-+	pdata->rx_slave_id = -1;
-+	pdata->tx_slave_id = -1;
-+
-+	INIT_LIST_HEAD(&resource_list);
-+	acpi_dev_get_resources(adev, &resource_list, pxa2xx_spi_acpi_add_dma,
-+			       pdata);
-+	acpi_dev_free_resource_list(&resource_list);
-+
-+	pdata->enable_dma = pdata->rx_slave_id >= 0 && pdata->tx_slave_id >= 0;
-+
-+	return pdata;
-+}
-+
-+static struct acpi_device_id pxa2xx_spi_acpi_match[] = {
-+	{ "INT33C0", 0 },
-+	{ "INT33C1", 0 },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(acpi, pxa2xx_spi_acpi_match);
-+#else
-+static inline struct pxa2xx_spi_master *
-+pxa2xx_spi_acpi_get_pdata(struct platform_device *pdev)
-+{
-+	return NULL;
-+}
-+#endif
-+
+-static int init_queue(struct driver_data *drv_data)
+-{
+-	INIT_LIST_HEAD(&drv_data->queue);
+-	spin_lock_init(&drv_data->lock);
+-
+-	drv_data->run = QUEUE_STOPPED;
+-	drv_data->busy = 0;
+-
+-	tasklet_init(&drv_data->pump_transfers,
+-			pump_transfers,	(unsigned long)drv_data);
+-
+-	INIT_WORK(&drv_data->pump_messages, pump_messages);
+-	drv_data->workqueue = create_singlethread_workqueue(
+-				dev_name(drv_data->master->dev.parent));
+-	if (drv_data->workqueue == NULL)
+-		return -EBUSY;
+-
+-	return 0;
+-}
+-
+-static int start_queue(struct driver_data *drv_data)
+-{
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&drv_data->lock, flags);
+-
+-	if (drv_data->run == QUEUE_RUNNING || drv_data->busy) {
+-		spin_unlock_irqrestore(&drv_data->lock, flags);
+-		return -EBUSY;
+-	}
+-
+-	drv_data->run = QUEUE_RUNNING;
+-	drv_data->cur_msg = NULL;
+-	drv_data->cur_transfer = NULL;
+-	drv_data->cur_chip = NULL;
+-	spin_unlock_irqrestore(&drv_data->lock, flags);
+-
+-	queue_work(drv_data->workqueue, &drv_data->pump_messages);
+-
+-	return 0;
+-}
+-
+-static int stop_queue(struct driver_data *drv_data)
+-{
+-	unsigned long flags;
+-	unsigned limit = 500;
+-	int status = 0;
+-
+-	spin_lock_irqsave(&drv_data->lock, flags);
+-
+-	/* This is a bit lame, but is optimized for the common execution path.
+-	 * A wait_queue on the drv_data->busy could be used, but then the common
+-	 * execution path (pump_messages) would be required to call wake_up or
+-	 * friends on every SPI message. Do this instead */
+-	drv_data->run = QUEUE_STOPPED;
+-	while ((!list_empty(&drv_data->queue) || drv_data->busy) && limit--) {
+-		spin_unlock_irqrestore(&drv_data->lock, flags);
+-		msleep(10);
+-		spin_lock_irqsave(&drv_data->lock, flags);
+-	}
+-
+-	if (!list_empty(&drv_data->queue) || drv_data->busy)
+-		status = -EBUSY;
+-
+-	spin_unlock_irqrestore(&drv_data->lock, flags);
+-
+-	return status;
+-}
+-
+-static int destroy_queue(struct driver_data *drv_data)
+-{
+-	int status;
+-
+-	status = stop_queue(drv_data);
+-	/* we are unloading the module or failing to load (only two calls
+-	 * to this routine), and neither call can handle a return value.
+-	 * However, destroy_workqueue calls flush_workqueue, and that will
+-	 * block until all work is done.  If the reason that stop_queue
+-	 * timed out is that the work will never finish, then it does no
+-	 * good to call destroy_workqueue, so return anyway. */
+-	if (status != 0)
+-		return status;
+-
+-	destroy_workqueue(drv_data->workqueue);
+-
+-	return 0;
+-}
+-
  static int pxa2xx_spi_probe(struct platform_device *pdev)
  {
  	struct device *dev = &pdev->dev;
-@@ -1036,8 +1137,11 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
+@@ -1573,7 +1412,7 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
+ 	master->dma_alignment = DMA_ALIGNMENT;
+ 	master->cleanup = cleanup;
+ 	master->setup = setup;
+-	master->transfer = transfer;
++	master->transfer_one_message = pxa2xx_spi_transfer_one_message;
  
- 	platform_info = dev_get_platdata(dev);
- 	if (!platform_info) {
--		dev_err(&pdev->dev, "missing platform data\n");
--		return -ENODEV;
-+		platform_info = pxa2xx_spi_acpi_get_pdata(pdev);
-+		if (!platform_info) {
-+			dev_err(&pdev->dev, "missing platform data\n");
-+			return -ENODEV;
-+		}
+ 	drv_data->ssp_type = ssp->type;
+ 	drv_data->null_dma_buf = (u32 *)PTR_ALIGN(&drv_data[1], DMA_ALIGNMENT);
+@@ -1646,31 +1485,19 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
+ 		write_SSTO(0, drv_data->ioaddr);
+ 	write_SSPSP(0, drv_data->ioaddr);
+ 
+-	/* Initial and start queue */
+-	status = init_queue(drv_data);
+-	if (status != 0) {
+-		dev_err(&pdev->dev, "problem initializing queue\n");
+-		goto out_error_clock_enabled;
+-	}
+-	status = start_queue(drv_data);
+-	if (status != 0) {
+-		dev_err(&pdev->dev, "problem starting queue\n");
+-		goto out_error_clock_enabled;
+-	}
++	tasklet_init(&drv_data->pump_transfers, pump_transfers,
++		     (unsigned long)drv_data);
+ 
+ 	/* Register with the SPI framework */
+ 	platform_set_drvdata(pdev, drv_data);
+ 	status = spi_register_master(master);
+ 	if (status != 0) {
+ 		dev_err(&pdev->dev, "problem registering spi master\n");
+-		goto out_error_queue_alloc;
++		goto out_error_clock_enabled;
  	}
  
- 	ssp = pxa_ssp_request(pdev->id, pdev->name);
-@@ -1064,6 +1168,7 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
+ 	return status;
  
- 	master->dev.parent = &pdev->dev;
- 	master->dev.of_node = pdev->dev.of_node;
-+	ACPI_HANDLE_SET(&master->dev, ACPI_HANDLE(&pdev->dev));
- 	/* the spi->mode bits understood by this driver: */
- 	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH | SPI_LOOP;
+-out_error_queue_alloc:
+-	destroy_queue(drv_data);
+-
+ out_error_clock_enabled:
+ 	clk_disable(ssp->clk);
  
-@@ -1272,6 +1377,7 @@ static struct platform_driver driver = {
- 		.name	= "pxa2xx-spi",
- 		.owner	= THIS_MODULE,
- 		.pm	= &pxa2xx_spi_pm_ops,
-+		.acpi_match_table = ACPI_PTR(pxa2xx_spi_acpi_match),
- 	},
- 	.probe = pxa2xx_spi_probe,
- 	.remove = pxa2xx_spi_remove,
+@@ -1693,26 +1520,11 @@ static int pxa2xx_spi_remove(struct platform_device *pdev)
+ {
+ 	struct driver_data *drv_data = platform_get_drvdata(pdev);
+ 	struct ssp_device *ssp;
+-	int status = 0;
+ 
+ 	if (!drv_data)
+ 		return 0;
+ 	ssp = drv_data->ssp;
+ 
+-	/* Remove the queue */
+-	status = destroy_queue(drv_data);
+-	if (status != 0)
+-		/* the kernel does not check the return status of this
+-		 * this routine (mod->exit, within the kernel).  Therefore
+-		 * nothing is gained by returning from here, the module is
+-		 * going away regardless, and we should not leave any more
+-		 * resources allocated than necessary.  We cannot free the
+-		 * message memory in drv_data->queue, but we can release the
+-		 * resources below.  I think the kernel should honor -EBUSY
+-		 * returns but... */
+-		dev_err(&pdev->dev, "pxa2xx_spi_remove: workqueue will not "
+-			"complete, message memory not freed\n");
+-
+ 	/* Disable the SSP at the peripheral and SOC level */
+ 	write_SSCR0(0, drv_data->ioaddr);
+ 	clk_disable(ssp->clk);
+@@ -1755,7 +1567,7 @@ static int pxa2xx_spi_suspend(struct device *dev)
+ 	struct ssp_device *ssp = drv_data->ssp;
+ 	int status = 0;
+ 
+-	status = stop_queue(drv_data);
++	status = spi_master_suspend(drv_data->master);
+ 	if (status != 0)
+ 		return status;
+ 	write_SSCR0(0, drv_data->ioaddr);
+@@ -1781,7 +1593,7 @@ static int pxa2xx_spi_resume(struct device *dev)
+ 	clk_enable(ssp->clk);
+ 
+ 	/* Start the queue running */
+-	status = start_queue(drv_data);
++	status = spi_master_resume(drv_data->master);
+ 	if (status != 0) {
+ 		dev_err(dev, "problem starting queue (%d)\n", status);
+ 		return status;
 -- 
 1.7.10.4
 
