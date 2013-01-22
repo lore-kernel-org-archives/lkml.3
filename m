@@ -1,56 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab3AVKLC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 05:11:02 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:45207 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab3AVKLA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 05:11:00 -0500
-Date: Tue, 22 Jan 2013 10:10:53 +0000
-From: Cong Ding <dinggnu@gmail.com>
-To: Rob Herring <robherring2@gmail.com>, Vinod Koul <vinod.koul@intel.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of: dma.c: fix memory leakage
-Message-ID: <20130122101053.GA2427@gmail.com>
-References: <1358600805-20193-1-git-send-email-dinggnu@gmail.com>
- <50FC6EB1.4050704@gmail.com>
+	id S1753361Ab3AVKNa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 05:13:30 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36085 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752668Ab3AVKN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 05:13:28 -0500
+Message-ID: <50FE666B.10902@ti.com>
+Date: Tue, 22 Jan 2013 15:44:03 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FC6EB1.4050704@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Matt Sealey <matt@genesi-usa.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ben Dooks <ben@simtec.co.uk>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: One of these things (CONFIG_HZ) is not like the others..
+References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com> <20130121232322.GK15361@atomide.com> <50FE307F.9000701@ti.com> <201301220931.24570.arnd@arndb.de>
+In-Reply-To: <201301220931.24570.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 04:24:49PM -0600, Rob Herring wrote:
-> On 01/19/2013 07:06 AM, Cong Ding wrote:
-> > The memory allocated to ofdma might be a leakage when error occurs.
-> > 
-> > Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> 
-> You need to send this to whomever is working on DMA bindings.
-Thank you bob, I added Vinod the the receiver list.
+On Tuesday 22 January 2013 03:01 PM, Arnd Bergmann wrote:
+> On Tuesday 22 January 2013, Santosh Shilimkar wrote:
+>> On Tuesday 22 January 2013 04:53 AM, Tony Lindgren wrote:
+>>> * Russell King - ARM Linux <linux@arm.linux.org.uk> [130121 13:07]:
+>>>>
+>>>> As for Samsung and the rest I can't comment.  The original reason OMAP
+>>>> used this though was because the 32768Hz counter can't produce 100Hz
+>>>> without a .1% error - too much error under pre-clocksource
+>>>> implementations for timekeeping.  Whether that's changed with the
+>>>> clocksource/clockevent support needs to be checked.
+>>>
+>>> Yes that's why HZ was originally set to 128. That value (or some multiple)
+>>> still makes sense when the 32 KiHZ clock source is being used. Of course
+>>> we should rely on the local timer when running for the SoCs that have
+>>> them.
+>>>
+>> This is right. It was only because of the drift associated when clocked
+>> with 32KHz. Even on SOCs where local timers are available for power
+>> management reasons we need to switch to 32KHz clocked device in
+>> low power states. Hence the HZ value should be multiple of 32 on
+>> OMAP.
+>
+> I need some help understanding what the two of you are saying, because
+> it sounds to me that you imply we cannot have a multiplatform kernel
+> that includes OMAP and another platform that needs (or wants) a different
+> HZ value.
+>
+Sorry for not being clear enough. On OMAP, 32KHz is the only clock which
+is always running(even during low power states) and hence the clock
+source and clock event have been clocked using 32KHz clock. As mentioned
+by RMK, with 32768 Hz clock and HZ = 100, there will be always an
+error of 0.1 %. This accuracy also impacts the timer tick interval.
+This was the reason, OMAP has been using the HZ = 128.
 
-- cong
+There is a hardware feature to implement 1 ms correction on the timer
+to overcome such an issue but it was not supported on OMAP2 devices.
+OMAP3/4/5 does support it. Though one attempt [1] was made to support
+it in kernel. This will ofcourse will address the tick interval
+corrections.
 
-> 
-> > ---
-> >  drivers/of/dma.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/drivers/of/dma.c b/drivers/of/dma.c
-> > index 59631b2..583e50e3 100644
-> > --- a/drivers/of/dma.c
-> > +++ b/drivers/of/dma.c
-> > @@ -107,6 +107,7 @@ int of_dma_controller_register(struct device_node *np,
-> >  	if (!nbcells) {
-> >  		pr_err("%s: #dma-cells property is missing or invalid\n",
-> >  		       __func__);
-> > +		kfree(ofdma);
-> >  		return -EINVAL;
-> >  	}
-> >  
-> > 
+> However, I also thought that when using a proper clocksource driver,
+> the HZ setting has absolutely no impact on the drift of the wall clock,
+> because those two are decoupled.
+>
+I am not too sure about this. I was under impression that tick (clock
+event) ticking accuracy does impact the kernel time keeping as well.
+
+> Even when using the HZ based clocksource (for whatever reason you
+> would want to do that), I thought there should be no drift as long
+> as the CLOCK_TICK_RATE (in older kernels) or the register_refined_jiffies()
+> (in older kernels) setting matches the hardware timer frequency.
+>
+> What am I missing?
+>
+The issue is with hardware timer frequency itself since with HZ = 100 or
+200, the timer tick will not be accurate. Hope this gives bit more info.
+
+Regards,
+Santosh
+[1] https://patchwork.kernel.org/patch/107364/
