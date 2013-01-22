@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab3AVBLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 20:11:48 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:50392 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab3AVBLr (ORCPT
+	id S1752794Ab3AVBTz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 20:19:55 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51819 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab3AVBTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 20:11:47 -0500
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        linux-kernel@vger.kernel.org
-Cc: Sedat Dilek <sedat.dilek@gmail.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH loop_2013_01_04] fs: Fix a typo in aio_rw_vect_retry()
-Date: Tue, 22 Jan 2013 02:11:20 +0100
-Message-Id: <1358817080-20678-1-git-send-email-sedat.dilek@gmail.com>
-X-Mailer: git-send-email 1.8.1.1
+	Mon, 21 Jan 2013 20:19:54 -0500
+Date: Tue, 22 Jan 2013 01:18:08 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Matt Sealey <matt@genesi-usa.com>
+Cc: John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: One of these things (CONFIG_HZ) is not like the others..
+Message-ID: <20130122011808.GF23505@n2100.arm.linux.org.uk>
+References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com> <201301212041.17951.arnd@arndb.de> <50FDAC5F.4040605@linaro.org> <CAKGA1b=D5CNikijoOAk5xP6TC-nB_gEGtS05ncrPR68sQTMrxw@mail.gmail.com> <50FDC2DD.7090406@linaro.org> <CAKGA1bmtTH1N8nx79MGiMighdQROpNtpvAZXhHKT+mT3kcazBQ@mail.gmail.com> <50FDE2AE.8030608@linaro.org> <CAKGA1bkXx2qn+c6sKqXsty-aFe1r-W79uyem0O8p6JNeeq6zxQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKGA1bkXx2qn+c6sKqXsty-aFe1r-W79uyem0O8p6JNeeq6zxQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave confirmed Jeff's suspicion in [1]:
+On Mon, Jan 21, 2013 at 07:06:59PM -0600, Matt Sealey wrote:
+> On Mon, Jan 21, 2013 at 6:51 PM, John Stultz <john.stultz@linaro.org> wrote:
+> > On 01/21/2013 02:54 PM, Matt Sealey wrote:
+> >>
+> >> On Mon, Jan 21, 2013 at 4:36 PM, John Stultz <john.stultz@linaro.org>
+> >> wrote:
+> >>>
+> >>> On 01/21/2013 01:14 PM, Matt Sealey wrote:
+> >
+> > As far as jiffies rating, from jiffies.c:
+> >     .rating        = 1, /* lowest valid rating*/
+> >
+> > So I'm not sure what you mean by "the debug on the kernel log is telling me
+> > it has a higher resolution".
+> 
+> Oh, it is just if I actually don't run setup_sched_clock on my
+> platform, it gives a little message (with #define DEBUG 1 in
+> sched_clock.c)
 
-> That wants to be rw_op = do_aio_write in the else clause.  How did you
-> test this patch set?
+sched_clock() has nothing to do with time keeping, and that
+HZ/NO_HZ/HRTIMERS don't affect it (when it isn't being derived from
+jiffies).
 
-Yep, that's certainly a bug. I concentrated on testing on loop mounts,
-running some fio and ltp testcases, but I'm at a loss to explain how
-things seem to work as well as they do. Let's see how where fixing this
-leads.
+Now, sched_clock() is there to give the scheduler a _fast_ to access,
+higher resolution clock than is available from other sources, so that
+there's ways of accurately measuring the amount of time processes run
+for, and other such measurements - and it uses that to determine how
+to schedule a particular task and when to preempt it.
 
-This is a fixup to commit daf0f6142dd5 ("fs: use read_iter and write_iter
-rather than aio_read and aio_write") from Dave Kleiklamp's GIT tree in [2].
-
-[1] http://www.spinics.net/lists/linux-fsdevel/msg61587.html
-[2] https://github.com/kleikamp/linux-shaggy/commits/loop_2013_01_04
-
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
----
- fs/aio.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/aio.c b/fs/aio.c
-index 08f550a..9635e7a 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1320,7 +1320,7 @@ static ssize_t aio_rw_vect_retry(struct kiocb *iocb)
- 		rw_op = do_aio_read;
- 		opcode = IOCB_CMD_PREADV;
- 	} else {
--		rw_op = do_aio_read;
-+		rw_op = do_aio_write;
- 		opcode = IOCB_CMD_PWRITEV;
- 	}
- 
--- 
-1.8.1.1
-
+Not providing it means you get those measurements at HZ-based resolution,
+which is suboptimal for tasks which run often for sub-HZ periods (which
+can end up accumulating zero run time.)
