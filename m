@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab3AVVK5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 16:10:57 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:33489 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861Ab3AVVKz (ORCPT
+	id S1756152Ab3AVVLp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 16:11:45 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:46675 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861Ab3AVVK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 16:10:55 -0500
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
-        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH v3 0/3] Add support for gpio expander pca9505 used on Mirabox
-Date: Tue, 22 Jan 2013 22:10:22 +0100
-Message-Id: <1358889025-8530-1-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 22 Jan 2013 16:10:58 -0500
+X-Auth-Info: YxXqL1szkM0XbgcE2kW4+0P6IUgPefFPHJqE2u4TTMY=
+Date: Tue, 22 Jan 2013 22:10:49 +0100
+From: Anatolij Gustschin <agust@denx.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 1/2] powerpc/5200: Fix size to request_mem_region() call
+Message-ID: <20130122221049.0bc73953@crub>
+In-Reply-To: <1358473200-17886-1-git-send-email-grant.likely@secretlab.ca>
+References: <1358473200-17886-1-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Grant,
 
-This patch set adds the support for the i2c gpio expander pca9505 used
-on the JTAG/GPIO box which can be connected to the Mirabox.
+On Fri, 18 Jan 2013 01:39:59 +0000
+Grant Likely <grant.likely@secretlab.ca> wrote:
 
-To be able to use the pca9505 I had to do several changes in the
-driver. Indeed, until now the pca953x driver accessed all the bank of
-a given register in a single command using only a 32 bits
-variable. This expander comes with 40 GPIOs which no more fits in a 32
-variable. This patch set makes the accesses to the registers more
-generic by relying on an array of u8 variables. This fits exactly the
-way the registers are represented in the hardware.
+> The Bestcomm driver requests a memory region larger than the one
+> described in the device tree. This is due to an extra undocumented field
+> in the bestcomm register structure. This hasn't been a problem up to
+> now, but there is a patch pending to make the DT platform_bus support
+> code use platform_device_add() which tightens the rules and provides
+> extra checks for drivers to stay within the specified register regions.
+> 
+> Alternately, I could have removed the extra field from the structure,
+> but I'm not sure if it is still needed for resume to work. Better be
+> safe and leave it in.
+> 
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Anatolij Gustschin <agust@denx.de>
+> ---
+>  arch/powerpc/sysdev/bestcomm/bestcomm.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Once the per-bank representation was added, it was easier to introduce
-helpers to access to a single register of a bank instead of reading or
-writing all the banks for a given register. As the GPIO API allows
-only the accesses to a single GPIO at a time there was no point to read
-and write all the other banks. Hence it should help to decrease the
-latency especially for the pca9505.
+There is a patch moving this driver to drivers/dma,
 
-However as the block GPIO API from Roland Stigge is incoming I kept
-the helpers used to access all the banks in the same time. I had to
-make some modifications in the arguments that these functions
-received, so it will have a conflict here. Currently my patch set is
-based on v3.8-rc4, but I am willing to rebase onto gpio-for-next once
-the GPIO block will be merged into it.
+http://patchwork.ozlabs.org/patch/191153/
 
-After the feedback from Maxime Ripard on the second version, I
-continue to abuse of his good will as I didn't get any information on
-the Mirabox about the interrupt pin. Thanks to him I managed to fix
-the bug related to the interrupt part. Now the IRQ part have been also
-validated! Thanks again to Maxime for his help.
+I've applied it to my 5xxx next branch.
 
-I have also updated the branch gpio-pca9505 available at:
-https://github.com/MISL-EBU-System-SW/mainline-public.git
+> diff --git a/arch/powerpc/sysdev/bestcomm/bestcomm.c b/arch/powerpc/sysdev/bestcomm/bestcomm.c
+> index d913063..81c3314 100644
+> --- a/arch/powerpc/sysdev/bestcomm/bestcomm.c
+> +++ b/arch/powerpc/sysdev/bestcomm/bestcomm.c
+> @@ -414,7 +414,7 @@ static int mpc52xx_bcom_probe(struct platform_device *op)
+>  		goto error_sramclean;
+>  	}
+>  
+> -	if (!request_mem_region(res_bcom.start, sizeof(struct mpc52xx_sdma),
+> +	if (!request_mem_region(res_bcom.start, resource_size(&res_bcom),
+>  				DRIVER_NAME)) {
+>  		printk(KERN_ERR DRIVER_NAME ": "
+>  			"Can't request registers region\n");
 
-Linus, now you can apply the first two patches on your git tree. I
-kept your acked-by for the 3rd one, as I didn't change anything for
-this one.
+similar change is needed for release_mem_region() in error path
+and in driver's remove() function.
 
 Thanks,
 
-Changelog:
-V1->V2:
-
-- Fix the way to calculate the shift used to apply to register to
-  access a given bank.
-- Fix all the pending issue in the IRQ part which appeared once I have
-  enable CONFIG_GPIO_PCA953X_IRQ!
-
-V2->V3:
-
-- Rebased on v3.8-rc4
-- Fix the interrupt handler and not try to call an handler if there is
-  no irq pending on a gpio bank
-
-
-Gregory CLEMENT (3):
-  gpio: pca953x: make the register access by GPIO bank
-  gpio: pca953x: add support for pca9505
-  arm: mvebu: enable gpio expander over i2c on Mirabox platform
-
- arch/arm/boot/dts/armada-370-mirabox.dts |   10 ++
- drivers/gpio/gpio-pca953x.c              |  283 +++++++++++++++++++-----------
- 2 files changed, 187 insertions(+), 106 deletions(-)
-
--- 
-1.7.9.5
-
+Anatolij
