@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab3AVJrO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 04:47:14 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:57004 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752389Ab3AVJrM (ORCPT
+	id S1752939Ab3AVJra (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 04:47:30 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:49849 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752389Ab3AVJrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 04:47:12 -0500
-Date: Tue, 22 Jan 2013 09:45:17 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zij@mx0.arm.com>
-Subject: Re: [RFC 0/4] perf tool: Adding ratios support
-Message-ID: <20130122094517.GD12295@mudshark.cambridge.arm.com>
-References: <1358257194-8204-1-git-send-email-jolsa@redhat.com>
- <20130116131318.GF16543@mudshark.cambridge.arm.com>
- <20130116133033.GC1042@krava.brq.redhat.com>
- <20130117102325.GA3699@mudshark.cambridge.arm.com>
- <20130121191325.GB24859@krava.brq.redhat.com>
+	Tue, 22 Jan 2013 04:47:25 -0500
+X-IronPort-AV: E=Sophos;i="4.84,513,1355094000"; 
+   d="scan'208";a="191051686"
+Date: Tue, 22 Jan 2013 10:47:08 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION FIXED] i915 KMS dual head broken on DELL latitude
+ E6420 in 3.1-rc*
+Message-ID: <20130122094708.GA10038@type.bordeaux.inria.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org
+References: <20110914232717.GA5410@type.famille.thibault.fr>
+ <yunobym743b.fsf@aiko.keithp.com>
+ <20110915074106.GA4544@type.famille.thibault.fr>
+ <20110915081259.GB4877@type.bordeaux.inria.fr>
+ <yunlitp7umf.fsf@aiko.keithp.com>
+ <20110916163050.GT4891@type.bordeaux.inria.fr>
+ <20120105021646.GA4099@type.famille.thibault.fr>
+ <20120105095301.GA4504@type.bordeaux.inria.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130121191325.GB24859@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120105095301.GA4504@type.bordeaux.inria.fr>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 07:13:25PM +0000, Jiri Olsa wrote:
-> On Thu, Jan 17, 2013 at 10:23:26AM +0000, Will Deacon wrote:
-> > On Wed, Jan 16, 2013 at 01:30:33PM +0000, Jiri Olsa wrote:
-> > > On Wed, Jan 16, 2013 at 01:13:18PM +0000, Will Deacon wrote:
-> > > > On Tue, Jan 15, 2013 at 01:39:50PM +0000, Jiri Olsa wrote:
-> > > > > The formula can currently contain any event from the set::events
-> > > > > plus any number (int). There'll be support in future for outside
-> > > > > values runtime and other if needed.
+Hello,
+
+Samuel Thibault, le Thu 05 Jan 2012 10:53:01 +0100, a écrit :
+> Samuel Thibault, le Thu 05 Jan 2012 03:16:46 +0100, a écrit :
+> > Samuel Thibault, le Fri 16 Sep 2011 18:30:50 +0200, a écrit :
+> > > Keith Packard, le Thu 15 Sep 2011 09:22:48 -0500, a écrit :
+> > > > On Thu, 15 Sep 2011 10:12:59 +0200, Samuel Thibault <samuel.thibault@ens-lyon.org> wrote:
 > > > > 
-> > > > Just to say that I *really* like this idea! If we extended it to include
-> > > > other operators then it would help us on ARM, where we often have events
-> > > > like 'cache accesses' and 'cache misses' but not 'cache hits'.
+> > > > > At home only. At work, with a different VGA screen, I'm still getting
+> > > > > the issue.
+> > > > 
+> > > > You're still having a problem with the LVDS screen at work with FBC
+> > > > disabled?
 > > > 
-> > > great, thanks for sharing this
-> > > 
-> > > The current operators set is just basic one to show the idea,
-> > > it can/will be expanded.
+> > > Yes, though it now seems random, sometimes it works, sometimes not.
 > > 
-> > Makes sense.
+> > I have just tried a fresh 3.2 once, without problem. Within a few days,
+> > I'll know whether it's luck or magical-fixup.
 > 
-> any particular operators you'd like to see in?
+> It didn't take long. I'm still randomly getting the issue.
 
-I think the basic: add, subtract, divide operators are the most useful to
-start with.
+I have tried 3.7, I don't have the issue any more (tested for a month
+now). Perhaps it was already fixed in 3.6, but not much before.
 
-Cheers,
-
-Will
+Samuel
