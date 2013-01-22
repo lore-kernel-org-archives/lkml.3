@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab3AVXvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 18:51:10 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:48582 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab3AVXvG (ORCPT
+	id S1756213Ab3AVXwd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 18:52:33 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43696 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361Ab3AVXw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 18:51:06 -0500
-Date: Tue, 22 Jan 2013 15:51:01 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 3/4] sysfs: Functions for adding/removing symlinks
- to/from attribute groups
-Message-ID: <20130122235101.GE694@kroah.com>
-References: <3307415.pdOY6ovZLa@vostro.rjw.lan>
- <4247313.2G7Z3nCgM0@vostro.rjw.lan>
- <2760421.6nE3tkh92K@vostro.rjw.lan>
- <3401016.osGyQ9N4xP@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3401016.osGyQ9N4xP@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 22 Jan 2013 18:52:28 -0500
+X-AuditID: 9c930179-b7d01ae000004006-dd-50ff263ac693
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, jmarchan@redhat.com,
+        Minchan Kim <minchan@kernel.org>, stable@vger.kernel.org
+Subject: [PATCH v5 1/4] zram: Fix deadlock bug in partial write
+Date: Wed, 23 Jan 2013 08:52:22 +0900
+Message-Id: <1358898745-4873-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 03:27:12AM +0100, Rafael J. Wysocki wrote:
-> --- linux-pm.orig/include/linux/sysfs.h
-> +++ linux-pm/include/linux/sysfs.h
-> @@ -154,6 +154,8 @@ int __must_check sysfs_create_bin_file(s
->  void sysfs_remove_bin_file(struct kobject *kobj,
->  			   const struct bin_attribute *attr);
->  
-> +int sysfs_create_link_sd(struct sysfs_dirent *sd, struct kobject *target,
-> +			 const char *name);
+Now zram allocates new page with GFP_KERNEL in zram I/O path
+if IO is partial. Unfortunately, It may cuase deadlock with
+reclaim path so this patch solves the problem.
 
-This should go into fs/sysfs/sysfs.h not include/linux/sysfs.h as it's
-an "internal" sysfs function.
+Cc: Jerome Marchand <jmarchan@redhat.com>
+Cc: stable@vger.kernel.org
+Acked-by: Nitin Gupta <ngupta@vflare.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/staging/zram/zram_drv.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-thanks,
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 61fb8f1..b285b3a 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -220,7 +220,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 	user_mem = kmap_atomic(page);
+ 	if (is_partial_io(bvec))
+ 		/* Use  a temporary buffer to decompress the page */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		uncmem = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+ 	else
+ 		uncmem = user_mem;
+ 
+@@ -268,7 +268,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		 * This is a partial IO. We need to read the full page
+ 		 * before to write the changes.
+ 		 */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+ 		if (!uncmem) {
+ 			pr_info("Error allocating temp memory!\n");
+ 			ret = -ENOMEM;
+-- 
+1.7.9.5
 
-greg k-h
