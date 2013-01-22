@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab3AVGXa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 01:23:30 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51647 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697Ab3AVGX3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 01:23:29 -0500
-Message-ID: <50FE307F.9000701@ti.com>
-Date: Tue, 22 Jan 2013 11:53:59 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752945Ab3AVG1c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 01:27:32 -0500
+Received: from ozlabs.org ([203.10.76.45]:44954 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab3AVG1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 01:27:30 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Chris Samuel <chris@csamuel.org>
+Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com,
+        Josh Boyer <jwboyer@gmail.com>
+Subject: Re: [PATCH] MODSIGN: Warn when module signature checking fails
+In-Reply-To: <50FDC712.1030908@csamuel.org>
+References: <50F67D75.9080508@csamuel.org> <87a9s3xw9g.fsf@rustcorp.com.au> <50FDC712.1030908@csamuel.org>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 22 Jan 2013 14:54:03 +1030
+Message-ID: <87d2wxhml8.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Peter Zijlstra <peterz@infradead.org>,
-        Matt Sealey <matt@genesi-usa.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben@simtec.co.uk>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: One of these things (CONFIG_HZ) is not like the others..
-References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com> <201301212041.17951.arnd@arndb.de> <20130121210341.GW23505@n2100.arm.linux.org.uk> <20130121232322.GK15361@atomide.com>
-In-Reply-To: <20130121232322.GK15361@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 January 2013 04:53 AM, Tony Lindgren wrote:
-> * Russell King - ARM Linux <linux@arm.linux.org.uk> [130121 13:07]:
->>
->> As for Samsung and the rest I can't comment.  The original reason OMAP
->> used this though was because the 32768Hz counter can't produce 100Hz
->> without a .1% error - too much error under pre-clocksource
->> implementations for timekeeping.  Whether that's changed with the
->> clocksource/clockevent support needs to be checked.
+Chris Samuel <chris@csamuel.org> writes:
+> /* Please CC me, I'm not on LKML */
 >
-> Yes that's why HZ was originally set to 128. That value (or some multiple)
-> still makes sense when the 32 KiHZ clock source is being used. Of course
-> we should rely on the local timer when running for the SoCs that have
-> them.
+> On 21/01/13 10:36, Rusty Russell wrote:
 >
-This is right. It was only because of the drift associated when clocked
-with 32KHz. Even on SOCs where local timers are available for power
-management reasons we need to switch to 32KHz clocked device in
-low power states. Hence the HZ value should be multiple of 32 on
-OMAP.
+>> We have errnos for a reason; let's not pollute the kernel logs.  That's
+>> a userspace job.
+>
+> Fair enough.
+>
+>> This part is OK, but I'll add mod->name to the printk.
+>
+> Sounds good.
+>
+>> How's this:
+>
+> Looks fine, modulo the lack of mod->name as Stephen mentioned.
 
-Regards
-Santosh
+Yeah, here's what is now in Linus' tree:
 
+commit 64748a2c9062da0c32b59c1b368a86fc4613b1e1
+Author: Rusty Russell <rusty@rustcorp.com.au>
+Date:   Mon Jan 21 17:03:02 2013 +1030
+
+    module: printk message when module signature fail taints kernel.
+    
+    Reported-by: Chris Samuel <chris@csamuel.org>
+    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+diff --git a/kernel/module.c b/kernel/module.c
+index eab0827..e69a5a6 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3192,8 +3192,13 @@ again:
+ 
+ #ifdef CONFIG_MODULE_SIG
+ 	mod->sig_ok = info->sig_ok;
+-	if (!mod->sig_ok)
++	if (!mod->sig_ok) {
++		printk_once(KERN_NOTICE
++			    "%s: module verification failed: signature and/or"
++			    " required key missing - tainting kernel\n",
++			    mod->name);
+ 		add_taint_module(mod, TAINT_FORCED_MODULE);
++	}
+ #endif
+ 
+ 	/* Now module is in final location, initialize linked lists, etc. */
