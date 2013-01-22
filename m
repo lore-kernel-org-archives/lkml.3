@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab3AVUR7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 15:17:59 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:16245 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755579Ab3AVUR6 (ORCPT
+	id S1755925Ab3AVUVh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 15:21:37 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38234 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754661Ab3AVUVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 15:17:58 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19XdRxmcR1OinlkFZeuKtA/
-Date: Tue, 22 Jan 2013 12:17:53 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Cong Ding <dinggnu@gmail.com>, Joerg Roedel <joro@8bytes.org>,
-        Omar Ramirez Luna <omar.luna@linaro.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] iommu: omap-iommu.c: remove unnecessary null pointer
- check
-Message-ID: <20130122201752.GS22517@atomide.com>
-References: <1358541741-20708-1-git-send-email-dinggnu@gmail.com>
- <CAK=WgbbW+Kje8fMNmSAy+qM6sLcoqZcLcev8w115BfGrQzHk2A@mail.gmail.com>
+	Tue, 22 Jan 2013 15:21:36 -0500
+Date: Tue, 22 Jan 2013 15:21:29 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Matt Wilson <msw@amazon.com>
+Cc: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
+        netdev@vger.kernel.org, xen-devel@lists.xen.org
+Subject: Re: [PATCH v2] xen-netback: allow changing the MAC address of the
+ interface
+Message-ID: <20130122202129.GB11982@phenom.dumpdata.com>
+References: <1358878105-7890-1-git-send-email-msw@amazon.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAK=WgbbW+Kje8fMNmSAy+qM6sLcoqZcLcev8w115BfGrQzHk2A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1358878105-7890-1-git-send-email-msw@amazon.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ohad Ben-Cohen <ohad@wizery.com> [130118 12:58]:
-> On Fri, Jan 18, 2013 at 10:42 PM, Cong Ding <dinggnu@gmail.com> wrote:
-> > The pointer obj is dereferenced in line 146 and 149 respectively, so it is not
-> > necessary to check null again in line 149 and 175. And I have checked that all
-> > the callers of these two functions guarantee the parameter obj passed is not
-> > null.
-> >
-> > Signed-off-by: Cong Ding <dinggnu@gmail.com>
+On Tue, Jan 22, 2013 at 06:08:25PM +0000, Matt Wilson wrote:
+> Sometimes it is useful to be able to change the MAC address of the
+> interface for netback devices. For example, when using ebtables it may
+> be useful to be able to distinguish traffic from different interfaces
+> without depending on the interface name.
 > 
-> Acked-by: Ohad Ben-Cohen <ohad@wizery.com>
+> Reported-by: Nikita Borzykh <sample.n@gmail.com>
+> Reported-by: Paul Harvey <stockingpaul@hotmail.com>
+> Cc: netdev@vger.kernel.org
+> Cc: xen-devel@lists.xen.org
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Yes looks like that's a pointless check and would already obj being NULL would
-fail earlier in those functions:
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+> Acked-by: Ian Campbell <ian.campbell@citrix.com>
+> Signed-off-by: Matt Wilson <msw@amazon.com>
+> 
+> ---
+> Changes since v1:
+>  * No code changes, only updated commit message
+> ---
+>  drivers/net/xen-netback/interface.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+> index b7d41f8..f733cae 100644
+> --- a/drivers/net/xen-netback/interface.c
+> +++ b/drivers/net/xen-netback/interface.c
+> @@ -238,6 +238,8 @@ static const struct net_device_ops xenvif_netdev_ops = {
+>  	.ndo_stop	= xenvif_close,
+>  	.ndo_change_mtu	= xenvif_change_mtu,
+>  	.ndo_fix_features = xenvif_fix_features,
+> +	.ndo_set_mac_address = eth_mac_addr,
+> +	.ndo_validate_addr   = eth_validate_addr,
+>  };
+>  
+>  struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
+> -- 
+> 1.7.4.5
+> 
