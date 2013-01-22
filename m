@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab3AVX4b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 18:56:31 -0500
-Received: from mail-da0-f52.google.com ([209.85.210.52]:60065 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752805Ab3AVX42 (ORCPT
+	id S1756268Ab3AVX5Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 18:57:16 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:54269 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752211Ab3AVX5I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 18:56:28 -0500
-Date: Tue, 22 Jan 2013 15:56:24 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 4/4] ACPI / PM: Expose lists of device power resources to
- user space
-Message-ID: <20130122235624.GF694@kroah.com>
-References: <3307415.pdOY6ovZLa@vostro.rjw.lan>
- <4247313.2G7Z3nCgM0@vostro.rjw.lan>
- <2760421.6nE3tkh92K@vostro.rjw.lan>
- <1477263.uvKKInuF7l@vostro.rjw.lan>
+	Tue, 22 Jan 2013 18:57:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1477263.uvKKInuF7l@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKocOOOYKAZPH1+W3usfRUh68594e8YKqBUORo2c5bCCCYDh0A@mail.gmail.com>
+References: <CA+55aFx5ZyFtd59ygn6ja5X-3ZyRvhfJLqtNKyF_mH3+-kSjKg@mail.gmail.com>
+	<CAKocOOPr4wddCmDEWKmsKsKeTc3m779opuN_qRb4yiL63KVZ8A@mail.gmail.com>
+	<CAKocOOPp1PA-n_=xdPuBSBKaKiREqhgeo02QqWpP-oX7vnN_YA@mail.gmail.com>
+	<CAKocOOOpDb=0XgX-uhDbBjOF7qK_M5MA31q9ScD0yTat0QRquQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC30FE7@sausexdag04.amd.com>
+	<CAKocOONuFvcik229+1B0oeaBnQG7seZPeYf99xqduFa6kBZhOw@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF083DE@sausexdag04.amd.com>
+	<CAKocOOMxAYw-XO-6XGteKb8NyHDq4_BdZn2njUNBh+a73wrFGA@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF084EA@sausexdag04.amd.com>
+	<CAKocOOOYKAZPH1+W3usfRUh68594e8YKqBUORo2c5bCCCYDh0A@mail.gmail.com>
+Date: Tue, 22 Jan 2013 16:57:06 -0700
+Message-ID: <CAKocOOOaWSvWZkhLNBx9u6M5nOu39wUgnS-a9Srsbp5BTcdh1A@mail.gmail.com>
+Subject: Re: Linux 3.8-rc4
+From: Shuah Khan <shuahkhan@gmail.com>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 03:28:23AM +0100, Rafael J. Wysocki wrote:
-> +static struct attribute *attrs[] = {
-> +	NULL,
-> +};
+On Tue, Jan 22, 2013 at 11:55 AM, Shuah Khan <shuahkhan@gmail.com> wrote:
 
-That's "odd"...
+>>> init:
+>>
+>> Does the attached patch stop them?  It basically skips all initialization of the DMA ring on your system.  What I don't understand is why you still get them with the previous patch, but not with 909d9eb67f1e4e39f2ea88e96bde03d560cde3eb reverted.  909d9eb67f1e4e39f2ea88e96bde03d560cde3eb only affects the use of the DMA ring for buffer migration and the patch I previously attached disables the use of the DMA ring for buffer migration.  Does the latest batch of drm-fixes from Dave that Linus just merged help?
+>>
+>> Alex
+>
+> Will try your latest patch. Will also try the latest git - I am
+> currently on Jan 17th. However, in the meantime, I found that these
+> messages might not be new and getting printed now with the
+> eaaa6983ab2ccdf826c90838eb584211e0cadb76 [PATCH] drm/radeon: print dma
+> status reg on lockup (v2) commit that introduced debug messages in
+> r600_gpu_soft_reset(). I couldn't revert this commit, but doing a
+> compile with these messages commented out. Will update you on the
+> results and then test the new git
+>
+> -- Shuah
 
-> +static void acpi_power_hide_list(struct acpi_device *adev,
-> +				 struct acpi_device_power_state *ps,
-> +				 const char *group_name)
->  {
-> -	if (adev->power.flags.power_resources) {
-> -		struct acpi_device_power_state *ps;
-> -		struct acpi_power_resource_entry *entry;
-> -
-> -		ps = &adev->power.states[ACPI_STATE_D0];
-> -		list_for_each_entry(entry, &ps->resources, node) {
-> -			struct acpi_power_resource *resource = entry->resource;
-> -
-> -			if (add)
-> -				acpi_power_add_dependent(resource, adev);
-> -			else
-> -				acpi_power_remove_dependent(resource, adev);
-> +	struct attribute_group attr_group = {
-> +		.name	= group_name,
-> +		.attrs	= attrs,
-> +	};
+Here is what I tried:
 
-This is on the stack, which seems like it would not be good...
+1. Applied your latest disable_dma_ring_on_6xx-2.diff and still see messages.
+2. Tried intel_iommu=igfx_off to see if that changes anything. The
+reason for trying this option is, I noticed this message: (this is not
+a new message, I see this all the time)
 
-> +	struct acpi_power_resource_entry *entry;
-> +
-> +	list_for_each_entry_reverse(entry, &ps->resources, node) {
-> +		struct acpi_device *res_dev = &entry->resource->device;
-> +
-> +		sysfs_remove_link_from_group(&adev->dev.kobj, group_name,
-> +					     dev_name(&res_dev->dev));
-> +	}
-> +	sysfs_remove_group(&adev->dev.kobj, &attr_group);
+[    1.337112] DMAR: Disabling IOMMU for graphics on this chipset
 
-You aren't removing the same group that you created.  Well, kind of, but
-that's strange, it really works?
+No change with or without option - still see the same messages.
 
-> +static void acpi_power_expose_list(struct acpi_device *adev,
-> +				   struct acpi_device_power_state *ps,
-> +				   const char *group_name)
-> +{
-> +	struct attribute_group attr_group = {
-> +		.name	= group_name,
-> +		.attrs	= attrs,
-> +	};
+Next steps:
 
-again a structure on the stack.
+1. One big difference between 3.7 and 3.8 is in the
+r600_gpu_soft_reset() - I started with 3.7 to see the differences if
+any of these differences is causing this to be logged. In 3.7
+r600_gpu_soft_reset() is called with no reset_mask. I am going to
+first verify if softreset happens on 3.7. Does this give you any ideas
+of whether this could cause a problem?
 
-Why not just create the attribute groups as static, instead of
-"pseudo-dynamically" like you are doing here?  I have no idea if sysfs
-can properly cope with an attribute group pointer that disappears after
-it has been registered with the sysfs core.  That seems ripe for
-problems, don't you agree?
+2. Another angle I am looking at is the newly added
 
-Oh, and same question about racing userspace, you will have problems
-here in that the symlinks will be showing up after the device is
-created.  Perhaps, to make the whole thing easier, you just change the
-acpi core code to hold off on the notification until you get all of
-these links and files set up and then tell userspace.  That's probably
-an easier fix.
+dev_info(rdev->dev, "  R_00D034_DMA_STATUS_REG   = 0x%08X\n",
+                RREG32(DMA_STATUS_REG));
 
-thanks,
+messages in r600_gpu_soft_reset_dma().
 
-greg k-h
+Could it be that these newly added debug messages are now showing this
+old condition that always existed on my test system. From what I have
+observed so far, this is very likely.
+
+Please let me know if you want to me try anything else or if you don't
+think these steps won't help.
+
+-- Shuah
