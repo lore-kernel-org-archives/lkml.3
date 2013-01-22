@@ -1,100 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192Ab3AVDqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 22:46:39 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:64187 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab3AVDqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 22:46:38 -0500
+	id S1753840Ab3AVECu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jan 2013 23:02:50 -0500
+Received: from ozlabs.org ([203.10.76.45]:46737 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752226Ab3AVECs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jan 2013 23:02:48 -0500
+Date: Tue, 22 Jan 2013 14:50:56 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jon Loeliger <jdl@jdl.com>, Tony Lindgren <tony@atomide.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
+        Alan Tull <atull@altera.com>, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
+        Joel A Fernandes <agnel.joel@gmail.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Matt Ranostay <mranostay@gmail.com>
+Subject: Re: [PATCH 6/6] OF: Introduce DT overlay support.
+Message-ID: <20130122035056.GF23500@truffula.fritz.box>
+References: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
+ <1357327870-13615-7-git-send-email-panto@antoniou-consulting.com>
 MIME-Version: 1.0
-In-Reply-To: <1354869489-4054-1-git-send-email-sachin.kamat@linaro.org>
-References: <1354869489-4054-1-git-send-email-sachin.kamat@linaro.org>
-Date: Tue, 22 Jan 2013 09:16:37 +0530
-Message-ID: <CAK9yfHyHWieyXSrYnfhNciciJRJwmFn4gdj21D-w_AnAK=noFA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] mfd: 88pm80x: Remove unnecessary exit APIs
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: sameo@linux.intel.com
-Cc: sachin.kamat@linaro.org, linux-kernel@vger.kernel.org,
-        Qiao Zhou <zhouqiao@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Pql/uPZNXIm1JCle"
+Content-Disposition: inline
+In-Reply-To: <1357327870-13615-7-git-send-email-panto@antoniou-consulting.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
 
-Could you please check this patch which is pending since some time.
+--Pql/uPZNXIm1JCle
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 7 December 2012 14:08, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> This driver uses devm_* APIs.
-> Thus explicit exit calls (regmap_exit and devm_kfree) are not needed
-> as they are device managed APIs.
->
-> Cc: Qiao Zhou <zhouqiao@marvell.com>
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+On Fri, Jan 04, 2013 at 09:31:10PM +0200, Pantelis Antoniou wrote:
+> Introduce DT overlay support.
+> Using this functionality it is possible to dynamically overlay a part of
+> the kernel's tree with another tree that's been dynamically loaded.
+> It is also possible to remove node and properties.
+>=20
+> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 > ---
->  drivers/mfd/88pm80x.c |   19 +++----------------
->  1 files changed, 3 insertions(+), 16 deletions(-)
->
-> diff --git a/drivers/mfd/88pm80x.c b/drivers/mfd/88pm80x.c
-> index 1adb355..3288a4a 100644
-> --- a/drivers/mfd/88pm80x.c
-> +++ b/drivers/mfd/88pm80x.c
-> @@ -48,14 +48,12 @@ int pm80x_init(struct i2c_client *client,
->                 ret = PTR_ERR(map);
->                 dev_err(&client->dev, "Failed to allocate register map: %d\n",
->                         ret);
-> -               goto err_regmap_init;
-> +               return ret;
->         }
->
->         chip->id = id->driver_data;
-> -       if (chip->id < CHIP_PM800 || chip->id > CHIP_PM805) {
-> -               ret = -EINVAL;
-> -               goto err_chip_id;
-> -       }
-> +       if (chip->id < CHIP_PM800 || chip->id > CHIP_PM805)
-> +               return -EINVAL;
->
->         chip->client = client;
->         chip->regmap = map;
-> @@ -82,19 +80,11 @@ int pm80x_init(struct i2c_client *client,
->         }
->
->         return 0;
-> -
-> -err_chip_id:
-> -       regmap_exit(map);
-> -err_regmap_init:
-> -       devm_kfree(&client->dev, chip);
-> -       return ret;
->  }
->  EXPORT_SYMBOL_GPL(pm80x_init);
->
->  int pm80x_deinit(struct i2c_client *client)
->  {
-> -       struct pm80x_chip *chip = i2c_get_clientdata(client);
-> -
->         /*
->          * workaround: clear the dependency between pm800 and pm805.
->          * would remove it after HW chip fixes the issue.
-> @@ -104,9 +94,6 @@ int pm80x_deinit(struct i2c_client *client)
->         else
->                 g_pm80x_chip = NULL;
->
-> -       regmap_exit(chip->regmap);
-> -       devm_kfree(&client->dev, chip);
-> -
->         return 0;
->  }
->  EXPORT_SYMBOL_GPL(pm80x_deinit);
-> --
-> 1.7.4.1
->
+>  Documentation/devicetree/overlay-notes.txt | 179 +++++++
+>  drivers/of/Kconfig                         |  10 +
+>  drivers/of/Makefile                        |   1 +
+>  drivers/of/overlay.c                       | 831 +++++++++++++++++++++++=
+++++++
+>  include/linux/of.h                         | 107 ++++
+>  5 files changed, 1128 insertions(+)
+>  create mode 100644 Documentation/devicetree/overlay-notes.txt
+>  create mode 100644 drivers/of/overlay.c
+>=20
+> diff --git a/Documentation/devicetree/overlay-notes.txt b/Documentation/d=
+evicetree/overlay-notes.txt
+> new file mode 100644
+> index 0000000..5289cbb
+> --- /dev/null
+> +++ b/Documentation/devicetree/overlay-notes.txt
+> @@ -0,0 +1,179 @@
+> +Device Tree Overlay Notes
+> +-------------------------
+> +
+> +This document describes the implementation of the in-kernel
+> +device tree overlay functionality residing in drivers/of/overlay.c and i=
+s a
+> +companion document to Documentation/devicetree/dt-object-internal.txt[1]=
+ &
+> +Documentation/devicetree/dynamic-resolution-notes.txt[2]
+> +
+> +How overlays work
+> +-----------------
+> +
+> +A Device Tree's overlay purpose is to modify the kernel's live tree, and
+> +have the modification affecting the state of the the kernel in a way that
+> +is reflecting the changes.
 
+Um.. I'm having a great deal of trouble parsing that sentence.
 
+> +Since the kernel mainly deals with devices, any new device node that res=
+ult
+> +in an active device should have it created while if the device node is e=
+ither
+> +disabled or removed all together, the affected device should be deregist=
+ered.
+> +
+> +Lets take an example where we have a foo board with the following base t=
+ree
+> +which is taken from [1].
+> +
+> +---- foo.dts -----------------------------------------------------------=
+------
+> +	/* FOO platform */
+> +	/ {
+> +		compatible =3D "corp,foo";
+> +
+> +		/* shared resources */
+> +		res: res {
+> +		};
+> +
+> +		/* On chip peripherals */
+> +		ocp: ocp {
+> +			/* peripherals that are always instantiated */
+> +			peripheral1 { ... };
+> +		}
+> +	};
+> +---- foo.dts -----------------------------------------------------------=
+------
+> +
+> +The overlay bar.dts, when loaded (and resolved as described in [2]) shou=
+ld
+> +
+> +---- bar.dts -----------------------------------------------------------=
+------
+> +/plugin/;	/* allow undefined label references and record them */
+> +/ {
+> +	....	/* various properties for loader use; i.e. part id etc. */
+> +	fragment@0 {
+> +		target =3D <&ocp>;
+> +		__overlay__ {
+> +			/* bar peripheral */
+> +			bar {
+> +				compatible =3D "corp,bar";
+> +				... /* various properties and child nodes */
+> +			}
+> +		};
+> +	};
+> +};
+> +---- bar.dts -----------------------------------------------------------=
+------
+> +
+> +result in foo+bar.dts
+> +
+> +---- foo+bar.dts -------------------------------------------------------=
+------
+> +	/* FOO platform + bar peripheral */
+> +	/ {
+> +		compatible =3D "corp,foo";
+> +
+> +		/* shared resources */
+> +		res: res {
+> +		};
+> +
+> +		/* On chip peripherals */
+> +		ocp: ocp {
+> +			/* peripherals that are always instantiated */
+> +			peripheral1 { ... };
+> +
+> +			/* bar peripheral */
+> +			bar {
+> +				compatible =3D "corp,bar";
+> +				... /* various properties and child nodes */
+> +			}
+> +		}
+> +	};
+> +---- foo+bar.dts -------------------------------------------------------=
+------
+> +
+> +As a result of the the overlay, a new device node (bar) has been created
+> +so a bar platform device will be registered and if a matching device dri=
+ver
+> +is loaded the device will be created as expected.
 
--- 
-With warm regards,
-Sachin
+Hrm.  This all seems rather complicated.  Maybe it needs to be, but
+I'm not entirely convinced yet.
+
+One other point - both of these patches are assuming that the overlay
+is in the "live tree" format, but it still needs a bunch of extra
+mangling.  Would it simplify things to just go straight from the
+overlay in flat tree form to modifications to the system-wide live
+tree.
+
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
+
+--Pql/uPZNXIm1JCle
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlD+DKAACgkQaILKxv3ab8a1bQCdHVwRPPq/XIGHB/7PsWQMfIBe
+vBMAnRkWwnob5D1uEZBG3Htmb3QCj9/R
+=uHL2
+-----END PGP SIGNATURE-----
+
+--Pql/uPZNXIm1JCle--
