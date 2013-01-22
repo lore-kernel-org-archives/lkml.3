@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab3AVQ3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 11:29:45 -0500
-Received: from mga09.intel.com ([134.134.136.24]:29635 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754540Ab3AVQ3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 11:29:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,515,1355126400"; 
-   d="scan'208";a="275227540"
-Date: Tue, 22 Jan 2013 17:29:40 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>
-Subject: Re: [PATCH] mfd: vexpress: export global functions to fix build error
-Message-ID: <20130122162940.GB6013@sortiz-mobl>
-References: <1357463779-28096-1-git-send-email-linux@roeck-us.net>
- <20130122033042.GV7409@sortiz-mobl>
- <20130122122026.GA12038@roeck-us.net>
+	id S1754256Ab3AVQaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 11:30:11 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41299 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753559Ab3AVQaH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 11:30:07 -0500
+Message-ID: <50FEBE8B.60101@wwwdotorg.org>
+Date: Tue, 22 Jan 2013 09:30:03 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130122122026.GA12038@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Courbot <acourbot@nvidia.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Mark Zhang <markz@nvidia.com>, "gnurou@gmail.com" <gnurou@gmail.com>
+Subject: Re: [PATCH 2/3] tegra: pwm-backlight: add tegra pwm-bl driver
+References: <1358591420-7790-1-git-send-email-acourbot@nvidia.com> <1358591420-7790-3-git-send-email-acourbot@nvidia.com> <50FD7EF9.1010205@wwwdotorg.org> <12033649.LY58cllSHv@percival>
+In-Reply-To: <12033649.LY58cllSHv@percival>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+On 01/21/2013 08:24 PM, Alex Courbot wrote:
+> On Tuesday 22 January 2013 01:46:33 Stephen Warren wrote:
+>>>  arch/arm/boot/dts/tegra20-ventana.dts  |  18 +++-
+>>>  arch/arm/configs/tegra_defconfig       |   1 +
+>>>  drivers/video/backlight/Kconfig        |   7 ++
+>>>  drivers/video/backlight/pwm_bl.c       |   3 +
+>>>  drivers/video/backlight/pwm_bl_tegra.c | 159
 
-On Tue, Jan 22, 2013 at 04:20:26AM -0800, Guenter Roeck wrote:
-> On Tue, Jan 22, 2013 at 04:30:42AM +0100, Samuel Ortiz wrote:
-> > Hi Guenter,
-> > 
-> > On Sun, Jan 06, 2013 at 01:16:19AM -0800, Guenter Roeck wrote:
-> > > Compiling vexpress client drivers as module results in error messages such as
-> > > 
-> > > ERROR: "__vexpress_config_func_get" [drivers/hwmon/vexpress.ko] undefined!
-> > > ERROR: "vexpress_config_func_put" [drivers/hwmon/vexpress.ko] undefined!
-> > > 
-> > > This is because the global functions in drivers/mfd/vexpress-config.c are not
-> > > exported. Fix it.
-> > > 
-> > > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > > ---
-> > >  drivers/mfd/vexpress-config.c |    8 ++++++--
-> > >  1 file changed, 6 insertions(+), 2 deletions(-)
-> > Applied, thanks for the fix.
-> > 
-> Caution: Looks like I misspelled EXPORT_SYMBOL.
-I fixed that now.
+>>> +static struct pwm_backlight_subdriver pwm_backlight_ventana_subdriver = {
+>>> +	.name = "pwm-backlight-ventana",
+>>> +	.init = init_ventana,
+>>> +	.exit = exit_ventana,
+>>> +	.notify = notify_ventana,
+>>> +	.notify_after = notify_after_ventana,
+>>> +};
+>>
+>> It seems like all of that code should be completely generic.
+> 
+> Sorry, I don't get your point here - could you elaborate?
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Nothing there (i.e. in the body of any of those functions) seems
+remotely specific to Ventana or even Ventana's panel; presumably it
+would work for any built-in LCD panel?
