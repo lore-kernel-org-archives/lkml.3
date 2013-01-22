@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab3AVHwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:52:31 -0500
-Received: from sd-mail-sa-02.sanoma.fi ([158.127.18.162]:58928 "EHLO
-	sd-mail-sa-02.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754187Ab3AVHw0 (ORCPT
+	id S1754493Ab3AVHhE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:37:04 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:33419 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754424Ab3AVHg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:52:26 -0500
-X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jan 2013 02:52:26 EST
-Message-ID: <20130122094614.79031aq5ddrgr2zo@www.dalek.fi>
-Date: Tue, 22 Jan 2013 09:46:14 +0200
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>, LKML <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
-        Dave Martin <dave.martin@linaro.org>,
-        David McCullough <david_mccullough@mcafee.com>
-Subject: Re: [PATCH] crypto: fix FTBFS with ARM SHA1-asm and THUMB2_KERNEL
-References: <1358787763-1226-1-git-send-email-matt@genesi-usa.com>
- <alpine.LFD.2.02.1301211739470.6300@xanadu.home>
- <CAKGA1bkQ9e8gmSPz_4csJWjEOKj3ZVqSLijSTRWxgDSaZoYqCA@mail.gmail.com>
-In-Reply-To: <CAKGA1bkQ9e8gmSPz_4csJWjEOKj3ZVqSLijSTRWxgDSaZoYqCA@mail.gmail.com>
+	Tue, 22 Jan 2013 02:36:58 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v5 08/45] CPU hotplug: Convert preprocessor macros to static
+ inline functions
+To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org
+Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
+        fweisbec@gmail.com, linux@arm.linux.org.uk, nikunj@linux.vnet.ibm.com,
+        srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 22 Jan 2013 13:05:02 +0530
+Message-ID: <20130122073500.13822.11469.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012207-2674-0000-0000-0000078F5FE4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Matt Sealey <matt@genesi-usa.com>:
+On 12/05/2012 06:10 AM, Andrew Morton wrote:
+"static inline C functions would be preferred if possible.  Feel free to
+fix up the wrong crufty surrounding code as well ;-)"
 
-> This question is to the implementor/committer (Dave McCullough), how
-> exactly did you measure the benchmark and can we reproduce it on some
-> other ARM box?
->
-> If it's long and laborious and not so important to test the IPsec
-> tunnel use-case, what would be the simplest possible benchmark to see
-> if the C vs. assembly version is faster for a particular ARM device? I
-> can get hold of pretty much any Cortex-A8 or Cortex-A9 that matters, I
-> have access to a Chromebook for A15, and maybe an i.MX27 or i.MX35 and
-> a couple Marvell boards (ARMv6) if I set my mind to it... that much
-> testing implies we find a pretty concise benchmark though with a
-> fairly common kernel version we can spread around (i.MX, OMAP and the
-> Chromebook, I can handle, the rest I'm a little wary of bothering to
-> spend too much time on). I think that could cover a good swath of
-> not-ARMv5 use cases from lower speeds to quad core monsters.. but I
-> might stick to i.MX to start with..
+Convert the macros in the CPU hotplug code to static inline C functions.
 
-There is 'tcrypt' module in crypto/ for quick benchmarking. 'modprobe  
-tcrypt mode=500 sec=1' tests AES in various cipher-modes, using  
-different buffer sizes and outputs results to kernel log.
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
--Jussi
+ include/linux/cpu.h |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index cf24da1..eb79f47 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -198,10 +198,10 @@ static inline void cpu_hotplug_driver_unlock(void)
+ 
+ #else		/* CONFIG_HOTPLUG_CPU */
+ 
+-#define get_online_cpus()	do { } while (0)
+-#define put_online_cpus()	do { } while (0)
+-#define get_online_cpus_atomic()	do { } while (0)
+-#define put_online_cpus_atomic()	do { } while (0)
++static inline void get_online_cpus(void) {}
++static inline void put_online_cpus(void) {}
++static inline void get_online_cpus_atomic(void) {}
++static inline void put_online_cpus_atomic(void) {}
+ #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
+ /* These aren't inline functions due to a GCC bug. */
+ #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
 
