@@ -1,172 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab3AVXiK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 18:38:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47111 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab3AVXiE (ORCPT
+	id S1755712Ab3AVXmy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 18:42:54 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:54894 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531Ab3AVXmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 18:38:04 -0500
-Date: Tue, 22 Jan 2013 15:38:03 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: paul.szabo@sydney.edu.au
-Cc: linux-mm@kvack.org, 695182@bugs.debian.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Subtract min_free_kbytes from dirtyable memory
-Message-Id: <20130122153803.550ddb14.akpm@linux-foundation.org>
-In-Reply-To: <201301210315.r0L3FnGV021298@como.maths.usyd.edu.au>
-References: <201301210315.r0L3FnGV021298@como.maths.usyd.edu.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Jan 2013 18:42:52 -0500
+Date: Tue, 22 Jan 2013 15:42:48 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH 1/4] ACPI / PM: Expose power states of ACPI devices to
+ user space
+Message-ID: <20130122234248.GB694@kroah.com>
+References: <3307415.pdOY6ovZLa@vostro.rjw.lan>
+ <4247313.2G7Z3nCgM0@vostro.rjw.lan>
+ <2760421.6nE3tkh92K@vostro.rjw.lan>
+ <4706454.hY2fLkUfhN@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4706454.hY2fLkUfhN@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jan 2013 14:15:49 +1100
-paul.szabo@sydney.edu.au wrote:
-
-> When calculating amount of dirtyable memory, min_free_kbytes should be
-> subtracted because it is not intended for dirty pages.
-
-Makes sense.
-
-> Using an "extern int" because that is the only interface to some such
-> sysctl values.
-
-urgh, not that way.  Let's do it properly:
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix
-
-fix up min_free_kbytes extern declarations
-
-Cc: Paul Szabo <psz@maths.usyd.edu.au>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- include/linux/mm.h  |    3 +++
- kernel/sysctl.c     |    1 -
- mm/huge_memory.c    |    1 -
- mm/page-writeback.c |    1 -
- 4 files changed, 3 insertions(+), 3 deletions(-)
-
---- a/mm/page-writeback.c~page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix
-+++ a/mm/page-writeback.c
-@@ -233,7 +233,6 @@ static unsigned long highmem_dirtyable_m
- static unsigned long global_dirtyable_memory(void)
- {
- 	unsigned long x;
--	extern int min_free_kbytes;
- 
- 	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
- 	x -= min(x, dirty_balance_reserve);
---- a/include/linux/mm.h~page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix
-+++ a/include/linux/mm.h
-@@ -1387,6 +1387,9 @@ extern void setup_per_cpu_pageset(void);
- extern void zone_pcp_update(struct zone *zone);
- extern void zone_pcp_reset(struct zone *zone);
- 
-+/* page_alloc.c */
-+extern int min_free_kbytes;
-+
- /* nommu.c */
- extern atomic_long_t mmap_pages_allocated;
- extern int nommu_shrink_inode_mappings(struct inode *, size_t, size_t);
---- a/mm/huge_memory.c~page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix
-+++ a/mm/huge_memory.c
-@@ -105,7 +105,6 @@ static int set_recommended_min_free_kbyt
- 	struct zone *zone;
- 	int nr_zones = 0;
- 	unsigned long recommended_min;
--	extern int min_free_kbytes;
- 
- 	if (!khugepaged_enabled())
- 		return 0;
---- a/kernel/sysctl.c~page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix
-+++ a/kernel/sysctl.c
-@@ -104,7 +104,6 @@ extern char core_pattern[];
- extern unsigned int core_pipe_limit;
- #endif
- extern int pid_max;
--extern int min_free_kbytes;
- extern int pid_max_min, pid_max_max;
- extern int sysctl_drop_caches;
- extern int percpu_pagelist_fraction;
-_
-
-
-> (This patch does not solve the PAE OOM issue.)
+On Tue, Jan 22, 2013 at 03:25:15AM +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
-> School of Mathematics and Statistics   University of Sydney    Australia
+> Make it possible to retrieve the current power state of a device with
+> ACPI power management from user space via sysfs by adding two new
+> attributes, power_state and real_power_state, to the sysfs directory
+> associated with the struct acpi_device object representing the
+> device's ACPI node.
 > 
-> Reported-by: Paul Szabo <psz@maths.usyd.edu.au>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Reported-by isn't needed in such cases.  It is assumed that finder==fixer.
-
-> Reference: http://bugs.debian.org/695182
-> Signed-off-by: Paul Szabo <psz@maths.usyd.edu.au>
-> 
-> --- mm/page-writeback.c.old	2012-12-06 22:20:40.000000000 +1100
-> +++ mm/page-writeback.c	2013-01-21 13:57:05.000000000 +1100
-
-Please prepare patches in `patch -p1' form.  This should be covered in
-Documentation/SubmittingPatches, but isn't. 
-Documentation/applying-patches.txt mentions it.
-
-> @@ -343,12 +343,16 @@
->  unsigned long determine_dirtyable_memory(void)
-
-You appear to be patching an old kernel.  But the change is still
-applicable, to global_dirtyable_memory().
-
->  {
->  	unsigned long x;
-> +	extern int min_free_kbytes;
->  
->  	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
->  
->  	if (!vm_highmem_is_dirtyable)
->  		x -= highmem_dirtyable_memory(x);
->  
-> +	/* Subtract min_free_kbytes */
-> +	x -= min(x, min_free_kbytes >> (PAGE_SHIFT - 10));
-
-Generates
-
-mm/page-writeback.c:244: warning: comparison of distinct pointer types lacks a cast
-
-because of the problematic min(int, unsigned long).  min_free_kbytes
-should have an unsigned (long?) type, but I can't be bothered fixing
-that right now..
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix-fix
-
-fix min() warning
-
-Cc: Paul Szabo <psz@maths.usyd.edu.au>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- mm/page-writeback.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/mm/page-writeback.c~page-writebackc-subtract-min_free_kbytes-from-dirtyable-memory-fix-fix
-+++ a/mm/page-writeback.c
-@@ -241,7 +241,7 @@ static unsigned long global_dirtyable_me
- 		x -= highmem_dirtyable_memory(x);
- 
- 	/* Subtract min_free_kbytes */
--	x -= min(x, min_free_kbytes >> (PAGE_SHIFT - 10));
-+	x -= min_t(unsigned long, x, min_free_kbytes >> (PAGE_SHIFT - 10));
- 
- 	return x + 1;	/* Ensure that we never return 0 */
- }
-_
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
