@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab3AVHkr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:40:47 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:51245 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643Ab3AVHko (ORCPT
+	id S1754802Ab3AVHk7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:40:59 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:53694 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754307Ab3AVHk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:40:44 -0500
+	Tue, 22 Jan 2013 02:40:56 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5 20/45] block: Use get/put_online_cpus_atomic() to prevent
- CPU offline
+Subject: [PATCH v5 21/45] crypto: pcrypt - Protect access to cpu_online_mask
+ with get/put_online_cpus()
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -20,8 +20,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 22 Jan 2013 13:08:42 +0530
-Message-ID: <20130122073838.13822.28777.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 22 Jan 2013 13:08:52 +0530
+Message-ID: <20130122073848.13822.35451.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,48 +29,44 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012207-5816-0000-0000-0000065BDF02
+x-cbid: 13012207-5140-0000-0000-000002A8FA51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once stop_machine() is gone from the CPU offline path, we won't be able to
-depend on preempt_disable() or local_irq_disable() to prevent CPUs from
-going offline from under us.
+The pcrypt_aead_init_tfm() function access the cpu_online_mask without
+disabling CPU hotplug. And it looks like it can afford to sleep, so use
+the get/put_online_cpus() APIs to protect against CPU hotplug.
 
-Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
-while invoking from atomic context.
-
-Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: linux-crypto@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- block/blk-softirq.c |    4 ++++
+ crypto/pcrypt.c |    4 ++++
  1 file changed, 4 insertions(+)
 
-diff --git a/block/blk-softirq.c b/block/blk-softirq.c
-index 467c8de..448f9a9 100644
---- a/block/blk-softirq.c
-+++ b/block/blk-softirq.c
-@@ -58,6 +58,8 @@ static void trigger_softirq(void *data)
-  */
- static int raise_blk_irq(int cpu, struct request *rq)
- {
-+	get_online_cpus_atomic();
+diff --git a/crypto/pcrypt.c b/crypto/pcrypt.c
+index b2c99dc..10f64e2 100644
+--- a/crypto/pcrypt.c
++++ b/crypto/pcrypt.c
+@@ -280,12 +280,16 @@ static int pcrypt_aead_init_tfm(struct crypto_tfm *tfm)
+ 
+ 	ictx->tfm_count++;
+ 
++	get_online_cpus();
 +
- 	if (cpu_online(cpu)) {
- 		struct call_single_data *data = &rq->csd;
+ 	cpu_index = ictx->tfm_count % cpumask_weight(cpu_online_mask);
  
-@@ -66,9 +68,11 @@ static int raise_blk_irq(int cpu, struct request *rq)
- 		data->flags = 0;
+ 	ctx->cb_cpu = cpumask_first(cpu_online_mask);
+ 	for (cpu = 0; cpu < cpu_index; cpu++)
+ 		ctx->cb_cpu = cpumask_next(ctx->cb_cpu, cpu_online_mask);
  
- 		__smp_call_function_single(cpu, data, 0);
-+		put_online_cpus_atomic();
- 		return 0;
- 	}
++	put_online_cpus();
++
+ 	cipher = crypto_spawn_aead(crypto_instance_ctx(inst));
  
-+	put_online_cpus_atomic();
- 	return 1;
- }
- #else /* CONFIG_SMP && CONFIG_USE_GENERIC_SMP_HELPERS */
+ 	if (IS_ERR(cipher))
 
