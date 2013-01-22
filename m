@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab3AVVxK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 16:53:10 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:56972 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752531Ab3AVVxH (ORCPT
+	id S1753023Ab3AVVxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 16:53:37 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:55017 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646Ab3AVVxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 16:53:07 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19sMLQlp3R8axgVY5beTUNS
-Date: Tue, 22 Jan 2013 13:52:57 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, Peter Zijlstra <peterz@infradead.org>,
-        Matt Sealey <matt@genesi-usa.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben@simtec.co.uk>, Ingo Molnar <mingo@redhat.com>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: One of these things (CONFIG_HZ) is not like the others..
-Message-ID: <20130122215257.GU22517@atomide.com>
-References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com>
- <20130121232322.GK15361@atomide.com>
- <50FE307F.9000701@ti.com>
- <201301220931.24570.arnd@arndb.de>
- <50FE666B.10902@ti.com>
- <20130122145113.GK23505@n2100.arm.linux.org.uk>
- <50FEE175.90504@linaro.org>
+	Tue, 22 Jan 2013 16:53:35 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Clark <robdclark@gmail.com>
+Subject: Re: [PATCH] OMAPDSS: enable omapdss for ARCH_MULTIPLATFORM
+Date: Tue, 22 Jan 2013 21:53:19 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>
+References: <1358891160-9534-1-git-send-email-robdclark@gmail.com>
+In-Reply-To: <1358891160-9534-1-git-send-email-robdclark@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FEE175.90504@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301222153.19580.arnd@arndb.de>
+X-Provags-ID: V02:K0:rmNgwD5Nlsun1uveciiTvOdp53fV57tsCfemiJQ+2X4
+ zfMKuwdDsmdgCtSK32c+G9XE2SKDBGBwZOoq9H96zAFoKnnU5b
+ HbOnXwITwbtU9LFJ0o3bz0oemEAwGOiv5+gLcWqO7TBY3f174p
+ 0qSVGxyASH9Ajtbk5OrWP6Pw8EqmvCujm8ZGQvrR38ffIRS883
+ 7WsvjpEQo1FB5KzPRZtWiCv8+ZG90lP/gWOecyZ0xQyVLxDwjn
+ 7KsAq1DpJoMRt99EfAnSrDCmlXJD8nb5GBX7CJfbB+/xrpc8UQ
+ JP0DC4cb3VHusoSGLaf7xRSNLuKMQ6HII1rg7EEuVitZU+9LEb
+ qYk8xz+qpI8XWGE5qb+M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* John Stultz <john.stultz@linaro.org> [130122 11:02]:
+On Tuesday 22 January 2013, Rob Clark wrote:
+> At least core omapdss does not have any build dependencies on
+> ARCH_OMAP2PLUS, and adding this dependency in the Kconfig breaks omapdrm
+> for ARCH_MULTIPLATFORM builds.
 > 
-> Correct, with HRT, we actually trigger the HZ-frequency timer tick
-> from an hrtimer (which expires based on the system time driven by
-> the clocksource). Thus even if there is a theoretical error between
-> the ideal HZ and what the hardware can do, that error will not
-> propagate forward.
+> Signed-off-by: Rob Clark <robdclark@gmail.com>
 
-If there's no cumulative error, sounds like the way to go is to select
-HRT for ARM multiplatform builds and set the HZ to 100 then.
-
-Regards,
-
-Tony
+Acked-by: Arnd Bergmann <arnd@arndb.de>
