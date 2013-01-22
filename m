@@ -1,408 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab3AVK3q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 05:29:46 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:18380
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752301Ab3AVK3f (ORCPT
+	id S1752894Ab3AVKbs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 05:31:48 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:44933 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965Ab3AVKbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 05:29:35 -0500
-X-IronPort-AV: E=Sophos;i="4.84,513,1355094000"; 
-   d="scan'208";a="169299125"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] crypto: use ERR_CAST
-Date: Tue, 22 Jan 2013 12:29:26 +0100
-Message-Id: <1358854166-3952-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1358854166-3952-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1358854166-3952-1-git-send-email-Julia.Lawall@lip6.fr>
+	Tue, 22 Jan 2013 05:31:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <87r4lgxgee.fsf@devron.myhome.or.jp>
+References: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
+	<878v9f5ugn.fsf@devron.myhome.or.jp>
+	<CAKYAXd-ydXkwDq6vkECEKPUQiNgg2+GKbL+ah9sn+uqr8BT1kQ@mail.gmail.com>
+	<87k3sy17vk.fsf@devron.myhome.or.jp>
+	<CAKYAXd8=7BG8NsVyvUP5xW48Y9FJpD7M95_MiJVGcwYOfYsrLA@mail.gmail.com>
+	<87txs0x45r.fsf@devron.myhome.or.jp>
+	<CAKYAXd8OP_FXxJWHESW_bCY1hGQuZPMJYOkLkmQ4fOkDhGO8xw@mail.gmail.com>
+	<CAKYAXd9NXVsBTMpTUWxN_10z1Ozt47f6Ghvsv9rbp_Y8tVMg2A@mail.gmail.com>
+	<87623ydnvq.fsf@devron.myhome.or.jp>
+	<CAKYAXd8GgrG+cMN_wQDFLiuXoBPbR7c6N9eZqGCrK-OH3HpuZA@mail.gmail.com>
+	<CAKYAXd9OhKDh5r6O=ACyDez1B2S=DB0Eo2-cSNuM1vaURmFNoQ@mail.gmail.com>
+	<877gobn7fy.fsf@devron.myhome.or.jp>
+	<CAKYAXd8SB7tz82Y57TKcngZC8vzvy1S=SAhzurA92jyobaVtNg@mail.gmail.com>
+	<87obhnlmkt.fsf@devron.myhome.or.jp>
+	<87k3sblmj2.fsf@devron.myhome.or.jp>
+	<CAKYAXd-7kq9EoBE7e5sGXBeA8u914moz15-ubFimczGyiznUCA@mail.gmail.com>
+	<87r4lgxgee.fsf@devron.myhome.or.jp>
+Date: Tue, 22 Jan 2013 19:31:45 +0900
+Message-ID: <CAKYAXd_Lg8twC3XVX8S3Ncm0ghicvXD0Q75-8amuO2Lz40v8Rw@mail.gmail.com>
+Subject: Re: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if
+ fat_dget() fails
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+2013/1/20, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>> We rewrite patch as your suggestion using dummy inode. Would please
+>> you review below patch code ?
+>
+> Looks like good as initial. Clean and shorter.
+>
+> Next is, we have to think about race. I.e. if real inode was made, what
+> happens? Is there no race?
+Hi OGAWA.
 
-Replace PTR_ERR followed by ERR_PTR by ERR_CAST, to be more concise.
+Although checking several routines to check hang case you said, I
+didn't find anything.
+And There is no any race on test result also. Am I missing something ?
+Let me know your opinion.
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@@
-expression err,x;
-@@
--       err = PTR_ERR(x);
-        if (IS_ERR(x))
--                return ERR_PTR(err);
-+                return ERR_CAST(x);
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
- crypto/aead.c       |    6 ++----
- crypto/algapi.c     |    4 +---
- crypto/authenc.c    |    3 +--
- crypto/authencesn.c |    3 +--
- crypto/blkcipher.c  |    6 ++----
- crypto/ccm.c        |   23 +++++++----------------
- crypto/chainiv.c    |    3 +--
- crypto/ctr.c        |    3 +--
- crypto/cts.c        |    3 +--
- crypto/gcm.c        |   29 +++++++++--------------------
- crypto/seqiv.c      |    3 +--
- 11 files changed, 27 insertions(+), 59 deletions(-)
-
-diff --git a/crypto/aead.c b/crypto/aead.c
-index 0b8121e..4d04e12 100644
---- a/crypto/aead.c
-+++ b/crypto/aead.c
-@@ -282,18 +282,16 @@ struct crypto_instance *aead_geniv_alloc(struct crypto_template *tmpl,
- 	int err;
- 
- 	algt = crypto_get_attr_type(tb);
--	err = PTR_ERR(algt);
- 	if (IS_ERR(algt))
--		return ERR_PTR(err);
-+		return ERR_CAST(algt);
- 
- 	if ((algt->type ^ (CRYPTO_ALG_TYPE_AEAD | CRYPTO_ALG_GENIV)) &
- 	    algt->mask)
- 		return ERR_PTR(-EINVAL);
- 
- 	name = crypto_attr_alg_name(tb[1]);
--	err = PTR_ERR(name);
- 	if (IS_ERR(name))
--		return ERR_PTR(err);
-+		return ERR_CAST(name);
- 
- 	inst = kzalloc(sizeof(*inst) + sizeof(*spawn), GFP_KERNEL);
- 	if (!inst)
-diff --git a/crypto/algapi.c b/crypto/algapi.c
-index c3b9bfe..08c57c8 100644
---- a/crypto/algapi.c
-+++ b/crypto/algapi.c
-@@ -749,12 +749,10 @@ struct crypto_alg *crypto_attr_alg2(struct rtattr *rta,
- 				    u32 type, u32 mask)
- {
- 	const char *name;
--	int err;
- 
- 	name = crypto_attr_alg_name(rta);
--	err = PTR_ERR(name);
- 	if (IS_ERR(name))
--		return ERR_PTR(err);
-+		return ERR_CAST(name);
- 
- 	return crypto_find_alg(name, frontend, type, mask);
- }
-diff --git a/crypto/authenc.c b/crypto/authenc.c
-index d0583a4..ffce19d 100644
---- a/crypto/authenc.c
-+++ b/crypto/authenc.c
-@@ -592,9 +592,8 @@ static struct crypto_instance *crypto_authenc_alloc(struct rtattr **tb)
- 	int err;
- 
- 	algt = crypto_get_attr_type(tb);
--	err = PTR_ERR(algt);
- 	if (IS_ERR(algt))
--		return ERR_PTR(err);
-+		return ERR_CAST(algt);
- 
- 	if ((algt->type ^ CRYPTO_ALG_TYPE_AEAD) & algt->mask)
- 		return ERR_PTR(-EINVAL);
-diff --git a/crypto/authencesn.c b/crypto/authencesn.c
-index 136b68b..ab53762 100644
---- a/crypto/authencesn.c
-+++ b/crypto/authencesn.c
-@@ -715,9 +715,8 @@ static struct crypto_instance *crypto_authenc_esn_alloc(struct rtattr **tb)
- 	int err;
- 
- 	algt = crypto_get_attr_type(tb);
--	err = PTR_ERR(algt);
- 	if (IS_ERR(algt))
--		return ERR_PTR(err);
-+		return ERR_CAST(algt);
- 
- 	if ((algt->type ^ CRYPTO_ALG_TYPE_AEAD) & algt->mask)
- 		return ERR_PTR(-EINVAL);
-diff --git a/crypto/blkcipher.c b/crypto/blkcipher.c
-index a8d85a1..e9e7244 100644
---- a/crypto/blkcipher.c
-+++ b/crypto/blkcipher.c
-@@ -588,18 +588,16 @@ struct crypto_instance *skcipher_geniv_alloc(struct crypto_template *tmpl,
- 	int err;
- 
- 	algt = crypto_get_attr_type(tb);
--	err = PTR_ERR(algt);
- 	if (IS_ERR(algt))
--		return ERR_PTR(err);
-+		return ERR_CAST(algt);
- 
- 	if ((algt->type ^ (CRYPTO_ALG_TYPE_GIVCIPHER | CRYPTO_ALG_GENIV)) &
- 	    algt->mask)
- 		return ERR_PTR(-EINVAL);
- 
- 	name = crypto_attr_alg_name(tb[1]);
--	err = PTR_ERR(name);
- 	if (IS_ERR(name))
--		return ERR_PTR(err);
-+		return ERR_CAST(name);
- 
- 	inst = kzalloc(sizeof(*inst) + sizeof(*spawn), GFP_KERNEL);
- 	if (!inst)
-diff --git a/crypto/ccm.c b/crypto/ccm.c
-index 32fe1bb..499c917 100644
---- a/crypto/ccm.c
-+++ b/crypto/ccm.c
-@@ -484,18 +484,16 @@ static struct crypto_instance *crypto_ccm_alloc_common(struct rtattr **tb,
- 	int err;
- 
- 	algt = crypto_get_attr_type(tb);
--	err = PTR_ERR(algt);
- 	if (IS_ERR(algt))
--		return ERR_PTR(err);
-+		return ERR_CAST(algt);
- 
- 	if ((algt->type ^ CRYPTO_ALG_TYPE_AEAD) & algt->mask)
- 		return ERR_PTR(-EINVAL);
- 
- 	cipher = crypto_alg_mod_lookup(cipher_name,  CRYPTO_ALG_TYPE_CIPHER,
- 				       CRYPTO_ALG_TYPE_MASK);
--	err = PTR_ERR(cipher);
- 	if (IS_ERR(cipher))
--		return ERR_PTR(err);
-+		return ERR_CAST(cipher);
- 
- 	err = -EINVAL;
- 	if (cipher->cra_blocksize != 16)
-@@ -573,15 +571,13 @@ out_put_cipher:
- 
- static struct crypto_instance *crypto_ccm_alloc(struct rtattr **tb)
- {
--	int err;
- 	const char *cipher_name;
- 	char ctr_name[CRYPTO_MAX_ALG_NAME];
- 	char full_name[CRYPTO_MAX_ALG_NAME];
- 
- 	cipher_name = crypto_attr_alg_name(tb[1]);
--	err = PTR_ERR(cipher_name);
- 	if (IS_ERR(cipher_name))
--		return ERR_PTR(err);
-+		return ERR_CAST(cipher_name);
- 
- 	if (snprintf(ctr_name, CRYPTO_MAX_ALG_NAME, "ctr(%s)",
- 		     cipher_name) >= CRYPTO_MAX_ALG_NAME)
-@@ -612,20 +608,17 @@ static struct crypto_template crypto_ccm_tmpl = {
- 
- static struct crypto_instance *crypto_ccm_base_alloc(struct rtattr **tb)
- {
--	int err;
- 	const char *ctr_name;
- 	const char *cipher_name;
- 	char full_name[CRYPTO_MAX_ALG_NAME];
- 
- 	ctr_name = crypto_attr_alg_name(tb[1]);
--	err = PTR_ERR(ctr_name);
- 	if (IS_ERR(ctr_name))
--		return ERR_PTR(err);
-+		return ERR_CAST(ctr_name);
- 
- 	cipher_name = crypto_attr_alg_name(tb[2]);
--	err = PTR_ERR(cipher_name);
- 	if (IS_ERR(cipher_name))
--		return ERR_PTR(err);
-+		return ERR_CAST(cipher_name);
- 
- 	if (snprintf(full_name, CRYPTO_MAX_ALG_NAME, "ccm_base(%s,%s)",
- 		     ctr_name, cipher_name) >= CRYPTO_MAX_ALG_NAME)
-@@ -760,17 +753,15 @@ static struct crypto_instance *crypto_rfc4309_alloc(struct rtattr **tb)
- 	int err;
- 
- 	algt = crypto_get_attr_type(tb);
--	err = PTR_ERR(algt);
- 	if (IS_ERR(algt))
--		return ERR_PTR(err);
-+		return ERR_CAST(algt);
- 
- 	if ((algt->type ^ CRYPTO_ALG_TYPE_AEAD) & algt->mask)
- 		return ERR_PTR(-EINVAL);
- 
- 	ccm_name = crypto_attr_alg_name(tb[1]);
--	err = PTR_ERR(ccm_name);
- 	if (IS_ERR(ccm_name))
--		return ERR_PTR(err);
-+		return ERR_CAST(ccm_name);
- 
- 	inst = kzalloc(sizeof(*inst) + sizeof(*spawn), GFP_KERNEL);
- 	if (!inst)
-diff --git a/crypto/chainiv.c b/crypto/chainiv.c
-index ba200b0..834d8dd 100644
---- a/crypto/chainiv.c
-+++ b/crypto/chainiv.c
-@@ -291,9 +291,8 @@ static struct crypto_instance *chainiv_alloc(struct rtattr **tb)
- 	int err;
- 
- 	algt = crypto_get_attr_type(tb);
--	err = PTR_ERR(algt);
- 	if (IS_ERR(algt))
--		return ERR_PTR(err);
-+		return ERR_CAST(algt);
- 
- 	err = crypto_get_default_rng();
- 	if (err)
-diff --git a/crypto/ctr.c b/crypto/ctr.c
-index 4ca7222..095dcb6 100644
---- a/crypto/ctr.c
-+++ b/crypto/ctr.c
-@@ -334,9 +334,8 @@ static struct crypto_instance *crypto_rfc3686_alloc(struct rtattr **tb)
- 
- 	alg = crypto_attr_alg(tb[1], CRYPTO_ALG_TYPE_BLKCIPHER,
- 				  CRYPTO_ALG_TYPE_MASK);
--	err = PTR_ERR(alg);
- 	if (IS_ERR(alg))
--		return ERR_PTR(err);
-+		return ERR_CAST(alg);
- 
- 	/* We only support 16-byte blocks. */
- 	err = -EINVAL;
-diff --git a/crypto/cts.c b/crypto/cts.c
-index ccf9c5d..042223f 100644
---- a/crypto/cts.c
-+++ b/crypto/cts.c
-@@ -282,9 +282,8 @@ static struct crypto_instance *crypto_cts_alloc(struct rtattr **tb)
- 
- 	alg = crypto_attr_alg(tb[1], CRYPTO_ALG_TYPE_BLKCIPHER,
- 				  CRYPTO_ALG_TYPE_MASK);
--	err = PTR_ERR(alg);
- 	if (IS_ERR(alg))
--		return ERR_PTR(err);
-+		return ERR_CAST(alg);
- 
- 	inst = ERR_PTR(-EINVAL);
- 	if (!is_power_of_2(alg->cra_blocksize))
-diff --git a/crypto/gcm.c b/crypto/gcm.c
-index 1a25263..137ad1e 100644
---- a/crypto/gcm.c
-+++ b/crypto/gcm.c
-@@ -701,9 +701,8 @@ static struct crypto_instance *crypto_gcm_alloc_common(struct rtattr **tb,
- 	int err;
- 
- 	algt = crypto_get_attr_type(tb);
--	err = PTR_ERR(algt);
- 	if (IS_ERR(algt))
--		return ERR_PTR(err);
-+		return ERR_CAST(algt);
- 
- 	if ((algt->type ^ CRYPTO_ALG_TYPE_AEAD) & algt->mask)
- 		return ERR_PTR(-EINVAL);
-@@ -711,9 +710,8 @@ static struct crypto_instance *crypto_gcm_alloc_common(struct rtattr **tb,
- 	ghash_alg = crypto_find_alg(ghash_name, &crypto_ahash_type,
- 				    CRYPTO_ALG_TYPE_HASH,
- 				    CRYPTO_ALG_TYPE_AHASH_MASK);
--	err = PTR_ERR(ghash_alg);
- 	if (IS_ERR(ghash_alg))
--		return ERR_PTR(err);
-+		return ERR_CAST(ghash_alg);
- 
- 	err = -ENOMEM;
- 	inst = kzalloc(sizeof(*inst) + sizeof(*ctx), GFP_KERNEL);
-@@ -787,15 +785,13 @@ out_put_ghash:
- 
- static struct crypto_instance *crypto_gcm_alloc(struct rtattr **tb)
- {
--	int err;
- 	const char *cipher_name;
- 	char ctr_name[CRYPTO_MAX_ALG_NAME];
- 	char full_name[CRYPTO_MAX_ALG_NAME];
- 
- 	cipher_name = crypto_attr_alg_name(tb[1]);
--	err = PTR_ERR(cipher_name);
- 	if (IS_ERR(cipher_name))
--		return ERR_PTR(err);
-+		return ERR_CAST(cipher_name);
- 
- 	if (snprintf(ctr_name, CRYPTO_MAX_ALG_NAME, "ctr(%s)", cipher_name) >=
- 	    CRYPTO_MAX_ALG_NAME)
-@@ -826,20 +822,17 @@ static struct crypto_template crypto_gcm_tmpl = {
- 
- static struct crypto_instance *crypto_gcm_base_alloc(struct rtattr **tb)
- {
--	int err;
- 	const char *ctr_name;
- 	const char *ghash_name;
- 	char full_name[CRYPTO_MAX_ALG_NAME];
- 
- 	ctr_name = crypto_attr_alg_name(tb[1]);
--	err = PTR_ERR(ctr_name);
- 	if (IS_ERR(ctr_name))
--		return ERR_PTR(err);
-+		return ERR_CAST(ctr_name);
- 
- 	ghash_name = crypto_attr_alg_name(tb[2]);
--	err = PTR_ERR(ghash_name);
- 	if (IS_ERR(ghash_name))
--		return ERR_PTR(err);
-+		return ERR_CAST(ghash_name);
- 
- 	if (snprintf(full_name, CRYPTO_MAX_ALG_NAME, "gcm_base(%s,%s)",
- 		     ctr_name, ghash_name) >= CRYPTO_MAX_ALG_NAME)
-@@ -971,17 +964,15 @@ static struct crypto_instance *crypto_rfc4106_alloc(struct rtattr **tb)
- 	int err;
- 
- 	algt = crypto_get_attr_type(tb);
--	err = PTR_ERR(algt);
- 	if (IS_ERR(algt))
--		return ERR_PTR(err);
-+		return ERR_CAST(algt);
- 
- 	if ((algt->type ^ CRYPTO_ALG_TYPE_AEAD) & algt->mask)
- 		return ERR_PTR(-EINVAL);
- 
- 	ccm_name = crypto_attr_alg_name(tb[1]);
--	err = PTR_ERR(ccm_name);
- 	if (IS_ERR(ccm_name))
--		return ERR_PTR(err);
-+		return ERR_CAST(ccm_name);
- 
- 	inst = kzalloc(sizeof(*inst) + sizeof(*spawn), GFP_KERNEL);
- 	if (!inst)
-@@ -1222,17 +1213,15 @@ static struct crypto_instance *crypto_rfc4543_alloc(struct rtattr **tb)
- 	int err;
- 
- 	algt = crypto_get_attr_type(tb);
--	err = PTR_ERR(algt);
- 	if (IS_ERR(algt))
--		return ERR_PTR(err);
-+		return ERR_CAST(algt);
- 
- 	if ((algt->type ^ CRYPTO_ALG_TYPE_AEAD) & algt->mask)
- 		return ERR_PTR(-EINVAL);
- 
- 	ccm_name = crypto_attr_alg_name(tb[1]);
--	err = PTR_ERR(ccm_name);
- 	if (IS_ERR(ccm_name))
--		return ERR_PTR(err);
-+		return ERR_CAST(ccm_name);
- 
- 	inst = kzalloc(sizeof(*inst) + sizeof(*spawn), GFP_KERNEL);
- 	if (!inst)
-diff --git a/crypto/seqiv.c b/crypto/seqiv.c
-index 4c44912..f2cba4e 100644
---- a/crypto/seqiv.c
-+++ b/crypto/seqiv.c
-@@ -305,9 +305,8 @@ static struct crypto_instance *seqiv_alloc(struct rtattr **tb)
- 	int err;
- 
- 	algt = crypto_get_attr_type(tb);
--	err = PTR_ERR(algt);
- 	if (IS_ERR(algt))
--		return ERR_PTR(err);
-+		return ERR_CAST(algt);
- 
- 	err = crypto_get_default_rng();
- 	if (err)
-
+Thanks.
+>
+> Thanks.
+>
+>> Subject: [PATCH] fat (exportfs): rebuild directory-inode if fat_dget()
+>>  fails
+>>
+>> This patch enables rebuilding of directory inodes which are not present
+>> in the cache.This is done by traversing the disk clusters to find the
+>> directory entry of the parent directory and using its i_pos to build the
+>> inode.
+>>
+>> Do this only if the "nostale_ro" nfs mount option is specified.
+>>
+>> ---
+>>  fs/fat/dir.c   |   23 +++++++++++++++++++++++
+>>  fs/fat/fat.h   |    3 +++
+>>  fs/fat/inode.c |    2 +-
+>>  fs/fat/nfs.c   |   52
+>> +++++++++++++++++++++++++++++++++++++++++++++++++++-
+>>  4 files changed, 78 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/fat/dir.c b/fs/fat/dir.c
+>> index 695c15c..ac97f34 100644
+>> --- a/fs/fat/dir.c
+>> +++ b/fs/fat/dir.c
+>> @@ -975,6 +975,29 @@ int fat_scan(struct inode *dir, const unsigned char
+>> *name,
+>>
+>>  EXPORT_SYMBOL_GPL(fat_scan);
+>>
+>> +/*
+>> + * Scans a directory for a given logstart.
+>> + * Returns an error code or zero.
+>> + */
+>> +int fat_scan_logstart(struct inode *dir, int i_logstart,
+>> +		      struct fat_slot_info *sinfo)
+>> +{
+>> +	struct super_block *sb = dir->i_sb;
+>> +
+>> +	sinfo->slot_off = 0;
+>> +	sinfo->bh = NULL;
+>> +	while (fat_get_short_entry(dir, &sinfo->slot_off, &sinfo->bh,
+>> +				   &sinfo->de) >= 0) {
+>> +		if (fat_get_start(MSDOS_SB(sb), sinfo->de) == i_logstart) {
+>> +			sinfo->slot_off -= sizeof(*sinfo->de);
+>> +			sinfo->nr_slots = 1;
+>> +			sinfo->i_pos = fat_make_i_pos(sb, sinfo->bh, sinfo->de);
+>> +			return 0;
+>> +		}
+>> +	}
+>> +	return -ENOENT;
+>> +}
+>> +
+>>  static int __fat_remove_entries(struct inode *dir, loff_t pos, int
+>> nr_slots)
+>>  {
+>>  	struct super_block *sb = dir->i_sb;
+>> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+>> index 73f15b8..d882c01 100644
+>> --- a/fs/fat/fat.h
+>> +++ b/fs/fat/fat.h
+>> @@ -291,6 +291,8 @@ extern int fat_dir_empty(struct inode *dir);
+>>  extern int fat_subdirs(struct inode *dir);
+>>  extern int fat_scan(struct inode *dir, const unsigned char *name,
+>>  		    struct fat_slot_info *sinfo);
+>> +extern int fat_scan_logstart(struct inode *dir, int i_logstart,
+>> +			     struct fat_slot_info *sinfo);
+>>  extern int fat_get_dotdot_entry(struct inode *dir, struct buffer_head
+>> **bh,
+>>  				struct msdos_dir_entry **de);
+>>  extern int fat_alloc_new_dir(struct inode *dir, struct timespec *ts);
+>> @@ -370,6 +372,7 @@ extern int fat_fill_super(struct super_block *sb,
+>> void *data, int silent,
+>>
+>>  extern int fat_flush_inodes(struct super_block *sb, struct inode *i1,
+>>  		            struct inode *i2);
+>> +extern int fat_fill_inode(struct inode *inode, struct msdos_dir_entry
+>> *de);
+>>  static inline unsigned long fat_dir_hash(int logstart)
+>>  {
+>>  	return hash_32(logstart, FAT_HASH_BITS);
+>> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+>> index 491320b..c4c286a 100644
+>> --- a/fs/fat/inode.c
+>> +++ b/fs/fat/inode.c
+>> @@ -384,7 +384,7 @@ static int fat_calc_dir_size(struct inode *inode)
+>>  }
+>>
+>>  /* doesn't deal with root inode */
+>> -static int fat_fill_inode(struct inode *inode, struct msdos_dir_entry
+>> *de)
+>> +int fat_fill_inode(struct inode *inode, struct msdos_dir_entry *de)
+>>  {
+>>  	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+>>  	int error;
+>> diff --git a/fs/fat/nfs.c b/fs/fat/nfs.c
+>> index 08ff9fa..e94da33 100644
+>> --- a/fs/fat/nfs.c
+>> +++ b/fs/fat/nfs.c
+>> @@ -213,6 +213,53 @@ static struct dentry
+>> *fat_fh_to_parent_nostale(struct super_block *sb,
+>>  }
+>>
+>>  /*
+>> + * Rebuild the parent for a directory that is not connected
+>> + *  to the filesystem root
+>> + */
+>> +static
+>> +struct inode *fat_rebuild_parent(struct super_block *sb, int
+>> parent_logstart)
+>> +{
+>> +	int search_clus, clus_to_match;
+>> +	struct msdos_dir_entry *de;
+>> +	struct inode *parent = NULL;
+>> +	struct inode *dummy_grand_parent = NULL;
+>> +	struct fat_slot_info sinfo;
+>> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+>> +	sector_t blknr = fat_clus_to_blknr(sbi, parent_logstart);
+>> +	struct buffer_head *parent_bh = sb_bread(sb, blknr);
+>> +	if (!parent_bh) {
+>> +		fat_msg(sb, KERN_ERR,
+>> +			"unable to read cluster of parent directory");
+>> +		return NULL;
+>> +	}
+>> +
+>> +	de = (struct msdos_dir_entry *) parent_bh->b_data;
+>> +	clus_to_match = fat_get_start(sbi, &de[0]);
+>> +	search_clus = fat_get_start(sbi, &de[1]);
+>> +
+>> +	dummy_grand_parent = fat_dget(sb, search_clus);
+>> +	if (!dummy_grand_parent) {
+>> +		dummy_grand_parent = new_inode(sb);
+>> +		if (!dummy_grand_parent) {
+>> +			brelse(parent_bh);
+>> +			return parent;
+>> +		}
+>> +
+>> +		dummy_grand_parent->i_ino = iunique(sb, MSDOS_ROOT_INO);
+>> +		fat_fill_inode(dummy_grand_parent, &de[1]);
+>> +		MSDOS_I(dummy_grand_parent)->i_pos = -1;
+>> +	}
+>> +
+>> +	if (!fat_scan_logstart(dummy_grand_parent, clus_to_match, &sinfo))
+>> +		parent = fat_build_inode(sb, sinfo.de, sinfo.i_pos);
+>> +
+>> +	brelse(parent_bh);
+>> +	iput(dummy_grand_parent);
+>> +
+>> +	return parent;
+>> +}
+>> +
+>> +/*
+>>   * Find the parent for a directory that is not currently connected to
+>>   * the filesystem root.
+>>   *
+>> @@ -224,10 +271,13 @@ static struct dentry *fat_get_parent(struct
+>> dentry *child_dir)
+>>  	struct buffer_head *bh = NULL;
+>>  	struct msdos_dir_entry *de;
+>>  	struct inode *parent_inode = NULL;
+>> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+>>
+>>  	if (!fat_get_dotdot_entry(child_dir->d_inode, &bh, &de)) {
+>> -		int parent_logstart = fat_get_start(MSDOS_SB(sb), de);
+>> +		int parent_logstart = fat_get_start(sbi, de);
+>>  		parent_inode = fat_dget(sb, parent_logstart);
+>> +		if (!parent_inode && sbi->options.nfs == FAT_NFS_NOSTALE_RO)
+>> +			parent_inode = fat_rebuild_parent(sb, parent_logstart);
+>>  	}
+>>  	brelse(bh);
+>
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
