@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab3AVX5r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 18:57:47 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:50886 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751013Ab3AVX5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 18:57:45 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 3/4] sysfs: Functions for adding/removing symlinks to/from attribute groups
-Date: Wed, 23 Jan 2013 01:03:46 +0100
-Message-ID: <1484484.nWT31vvEGO@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130122235101.GE694@kroah.com>
-References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <3401016.osGyQ9N4xP@vostro.rjw.lan> <20130122235101.GE694@kroah.com>
+	id S1756324Ab3AVX6N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 18:58:13 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:57262 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756187Ab3AVX6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 18:58:11 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1358898745-4873-1-git-send-email-minchan@kernel.org>
+References: <1358898745-4873-1-git-send-email-minchan@kernel.org>
+Date: Tue, 22 Jan 2013 15:58:10 -0800
+Message-ID: <CAPkvG_f2mDr2p=ypqcikeNMRoE3tK1-kDjLWyz6bb9yQUpGgZQ@mail.gmail.com>
+Subject: Re: [PATCH v5 1/4] zram: Fix deadlock bug in partial write
+From: Nitin Gupta <ngupta@vflare.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, jmarchan@redhat.com,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 22, 2013 03:51:01 PM Greg Kroah-Hartman wrote:
-> On Tue, Jan 22, 2013 at 03:27:12AM +0100, Rafael J. Wysocki wrote:
-> > --- linux-pm.orig/include/linux/sysfs.h
-> > +++ linux-pm/include/linux/sysfs.h
-> > @@ -154,6 +154,8 @@ int __must_check sysfs_create_bin_file(s
-> >  void sysfs_remove_bin_file(struct kobject *kobj,
-> >  			   const struct bin_attribute *attr);
-> >  
-> > +int sysfs_create_link_sd(struct sysfs_dirent *sd, struct kobject *target,
-> > +			 const char *name);
-> 
-> This should go into fs/sysfs/sysfs.h not include/linux/sysfs.h as it's
-> an "internal" sysfs function.
+On Tue, Jan 22, 2013 at 3:52 PM, Minchan Kim <minchan@kernel.org> wrote:
+> Now zram allocates new page with GFP_KERNEL in zram I/O path
+> if IO is partial. Unfortunately, It may cuase deadlock with
+> reclaim path so this patch solves the problem.
+>
+> Cc: Jerome Marchand <jmarchan@redhat.com>
+> Cc: stable@vger.kernel.org
+> Acked-by: Nitin Gupta <ngupta@vflare.org>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/staging/zram/zram_drv.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
 
-Damn, right.  Will fix.
+Changelog for v4 vs v5?
 
 Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Nitin
