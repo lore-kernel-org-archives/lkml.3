@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab3AVFw7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 00:52:59 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19739 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919Ab3AVFw6 (ORCPT
+	id S1753504Ab3AVFy2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 00:54:28 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:48193 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751918Ab3AVFy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 00:52:58 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 21 Jan 2013 21:51:15 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <arnd@arndb.de>, <olof@lixom.net>, <santosh.shilimkar@ti.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: [v3 2/2] ARM: tegra: Skip scu_enable(scu_base) if not Cortex A9
-Date: Tue, 22 Jan 2013 07:52:02 +0200
-Message-ID: <1358833924-24535-2-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358833924-24535-1-git-send-email-hdoyu@nvidia.com>
-References: <1358833924-24535-1-git-send-email-hdoyu@nvidia.com>
+	Tue, 22 Jan 2013 00:54:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <053501cdf85e$507c2560$f1747020$@samsung.com>
+References: <1355845182-14104-1-git-send-email-gautam.vivek@samsung.com>
+	<20130118131013.GG4672@arwen.pp.htv.fi>
+	<20130118131250.GH4672@arwen.pp.htv.fi>
+	<053501cdf85e$507c2560$f1747020$@samsung.com>
+Date: Tue, 22 Jan 2013 11:24:25 +0530
+Message-ID: <CAFp+6iFM8g28PohX=95qMccNDkdmt86gKNg9=AJXdrCovsryPQ@mail.gmail.com>
+Subject: Re: [PATCH 0/2] ARM: Exynos5250: Enabling samsung usb phy
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: balbi@ti.com, Vivek Gautam <gautam.vivek@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        thomas.abraham@linaro.org, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, sylvester.nawrocki@gmail.com,
+        p.paneri@samsung.com, cpgs@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Skip scu_enable(scu_base) if CPU is not Cortex A9 with SCU.
+Hi Kukjin,
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- arch/arm/mach-tegra/platsmp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
-index 689ee4b..8853bd2 100644
---- a/arch/arm/mach-tegra/platsmp.c
-+++ b/arch/arm/mach-tegra/platsmp.c
-@@ -38,7 +38,6 @@
- extern void tegra_secondary_startup(void);
- 
- static cpumask_t tegra_cpu_init_mask;
--static void __iomem *scu_base = IO_ADDRESS(TEGRA_ARM_PERIF_BASE);
- 
- #define EVP_CPU_RESET_VECTOR \
- 	(IO_ADDRESS(TEGRA_EXCEPTION_VECTORS_BASE) + 0x100)
-@@ -187,7 +186,8 @@ static void __init tegra_smp_prepare_cpus(unsigned int max_cpus)
- 	/* Always mark the boot CPU (CPU0) as initialized. */
- 	cpumask_set_cpu(0, &tegra_cpu_init_mask);
- 
--	scu_enable(scu_base);
-+	if (scu_a9_has_base())
-+		scu_enable(IO_ADDRESS(scu_a9_get_base()));
- }
- 
- struct smp_operations tegra_smp_ops __initdata = {
+On Tue, Jan 22, 2013 at 10:36 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> Felipe Balbi wrote:
+>>
+>> On Fri, Jan 18, 2013 at 03:10:13PM +0200, Felipe Balbi wrote:
+>> > Hi,
+>> >
+>> > On Tue, Dec 18, 2012 at 09:09:40PM +0530, Vivek Gautam wrote:
+>> > > This patch-set enables the samsung-usbphy driver on exynos5250,
+>> > > which enables the support for USB2 type and USB3 type phys.
+>> > > The corresponding phy driver patches are available at:
+>> > >  1) https://lkml.org/lkml/2012/12/18/201
+>> > >  2) https://lists.ozlabs.org/pipermail/devicetree-discuss/2012-
+>> December/024559.html
+>> > >
+>> > > Tested this patch-set on exynos5250 with following patch-sets for
+>> > > USB 2.0 and USB 3.0:
+>> > >  - https://patchwork.kernel.org/patch/1794651/
+>> > >  - https://lkml.org/lkml/2012/12/18/201
+>> > >  - https://lists.ozlabs.org/pipermail/devicetree-discuss/2012-
+>> December/024559.html
+>> > >  - http://comments.gmane.org/gmane.linux.usb.general/76352
+>> > >  - https://lkml.org/lkml/2012/12/13/492
+>> > >
+>> > > Vivek Gautam (2):
+>> > >   ARM: Exynos5250: Enabling samsung-usbphy driver
+>> > >   ARM: Exynos5250: Enabling USB 3.0 phy for samsung-usbphy driver
+>> >
+>> > What should I do with this series ? Is it ready to apply ? If it is,
+>> > then please resend with Kukjim's Acked-by.
+>>
+>> actually, now that I look again, it's all under arch/arm/, so Kukjim can
+>> take all of those through his tree ;-)
+>>
+> Yes, once Vivek addresses comments from Sylwester, let me pick up into
+> Samsung tree :-)
+>
+
+Sure, i shall update this patch-series based on separate drivers for
+USB 3.0 PHY controller
+as posted in following patch series :
+[PATCH v3 0/2] Adding USB 3.0 DRD-phy support for exynos5250
+
+
+
 -- 
-1.7.9.5
-
+Thanks & Regards
+Vivek
