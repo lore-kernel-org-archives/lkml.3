@@ -1,51 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab3AVVYQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 16:24:16 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:57211 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904Ab3AVVYP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 16:24:15 -0500
-Date: Tue, 22 Jan 2013 16:24:10 -0500 (EST)
-Message-Id: <20130122.162410.201366520574331812.davem@davemloft.net>
-To: ncardwell@google.com
-Cc: avagin@openvz.org, netdev@vger.kernel.org, criu@openvz.org,
-        linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, edumazet@google.com,
-        ycheng@google.com, xemul@parallels.com, davej@redhat.com,
-        mtk.manpages@gmail.com
-Subject: Re: [PATCH net-next] tcp: add ability to set a timestamp offset
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CADVnQynxigC7wSW6D1WQNZwxoBd7fpySa8eGN0W4wrh7WtHV4Q@mail.gmail.com>
-References: <1358887953-28665-1-git-send-email-avagin@openvz.org>
-	<CADVnQynxigC7wSW6D1WQNZwxoBd7fpySa8eGN0W4wrh7WtHV4Q@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1756118Ab3AVVYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 16:24:43 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:48070 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752181Ab3AVVYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 16:24:41 -0500
+Subject: [PATCH 5/5] fix kvm's use of __pa() on percpu areas
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, Gleb Natapov <gleb@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+Date: Tue, 22 Jan 2013 13:24:35 -0800
+References: <20130122212428.8DF70119@kernel.stglabs.ibm.com>
+In-Reply-To: <20130122212428.8DF70119@kernel.stglabs.ibm.com>
+Message-Id: <20130122212435.4905663F@kernel.stglabs.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012221-7182-0000-0000-000004A19446
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Neal Cardwell <ncardwell@google.com>
-Date: Tue, 22 Jan 2013 16:18:04 -0500
 
-> On Tue, Jan 22, 2013 at 3:52 PM, Andrey Vagin <avagin@openvz.org> wrote:
->> If a TCP socket will get live-migrated from one box to another the
->> timestamps (which are typically ON) will get screwed up -- the new
->> kernel will generate TS values that has nothing to do with what they
->> were on dump. The solution is to yet again fix the kernel and put a
->> "timestamp offset" on a socket.
-> 
-> One serious issue with this patch is that outgoing timestamp values
-> will no longer correspond to tcp_time_stamp, so echoed timestamp
-> values will also no longer have a meaningful relationship to
-> tcp_time_stamp. That violates assumptions made in several places in
-> the code, which assumes that we can compare echoed timestamp values to
-> tcp_time_stamp; for example, there are several places where we do
-> things like subtracting:
->    tcp_time_stamp - tp->rx_opt.rcv_tsecr
-> to find the estimated RTT for a segment.
+In short, it is illegal to call __pa() on an address holding
+a percpu variable.  This replaces those __pa() calls with
+slow_virt_to_phys().  All of the cases in this patch are
+in boot time (or CPU hotplug time at worst) code, so the
+slow pagetable walking in slow_virt_to_phys() is not expected
+to have a performance impact.
 
-Right, this change seems pretty bogus as-is.
+The times when this actually matters are pretty obscure
+(certain 32-bit NUMA systems), but it _does_ happen.  It is
+important to keep KVM guests working on these systems because
+the real hardware is getting harder and harder to find.
+
+This bug manifested first by me seeing a plain hang at boot
+after this message:
+
+	CPU 0 irqstacks, hard=f3018000 soft=f301a000
+
+or, sometimes, it would actually make it out to the console:
+
+[    0.000000] BUG: unable to handle kernel paging request at ffffffff
+
+I eventually traced it down to the KVM async pagefault code.
+This can be worked around by disabling that code either at
+compile-time, or on the kernel command-line.
+
+The kvm async pagefault code was injecting page faults in
+to the guest which the guest misinterpreted because its
+"reason" was not being properly sent from the host.
+
+The guest passes a physical address of an per-cpu async page
+fault structure via an MSR to the host.  Since __pa() is
+broken on percpu data, the physical address it sent was
+bascially bogus and the host went scribbling on random data.
+The guest never saw the real reason for the page fault (it
+was injected by the host), assumed that the kernel had taken
+a _real_ page fault, and panic()'d.  The behavior varied,
+though, depending on what got corrupted by the bad write.
+
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+
+ linux-2.6.git-dave/arch/x86/kernel/kvm.c      |    9 +++++----
+ linux-2.6.git-dave/arch/x86/kernel/kvmclock.c |    4 ++--
+ 2 files changed, 7 insertions(+), 6 deletions(-)
+
+diff -puN arch/x86/kernel/kvm.c~fix-kvm-__pa-use-on-percpu-areas arch/x86/kernel/kvm.c
+--- linux-2.6.git/arch/x86/kernel/kvm.c~fix-kvm-__pa-use-on-percpu-areas	2013-01-22 13:17:16.424317475 -0800
++++ linux-2.6.git-dave/arch/x86/kernel/kvm.c	2013-01-22 13:17:16.432317541 -0800
+@@ -289,9 +289,9 @@ static void kvm_register_steal_time(void
+ 
+ 	memset(st, 0, sizeof(*st));
+ 
+-	wrmsrl(MSR_KVM_STEAL_TIME, (__pa(st) | KVM_MSR_ENABLED));
++	wrmsrl(MSR_KVM_STEAL_TIME, (slow_virt_to_phys(st) | KVM_MSR_ENABLED));
+ 	printk(KERN_INFO "kvm-stealtime: cpu %d, msr %lx\n",
+-		cpu, __pa(st));
++		cpu, slow_virt_to_phys(st));
+ }
+ 
+ static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) = KVM_PV_EOI_DISABLED;
+@@ -316,7 +316,7 @@ void __cpuinit kvm_guest_cpu_init(void)
+ 		return;
+ 
+ 	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF) && kvmapf) {
+-		u64 pa = __pa(&__get_cpu_var(apf_reason));
++		u64 pa = slow_virt_to_phys(&__get_cpu_var(apf_reason));
+ 
+ #ifdef CONFIG_PREEMPT
+ 		pa |= KVM_ASYNC_PF_SEND_ALWAYS;
+@@ -332,7 +332,8 @@ void __cpuinit kvm_guest_cpu_init(void)
+ 		/* Size alignment is implied but just to make it explicit. */
+ 		BUILD_BUG_ON(__alignof__(kvm_apic_eoi) < 4);
+ 		__get_cpu_var(kvm_apic_eoi) = 0;
+-		pa = __pa(&__get_cpu_var(kvm_apic_eoi)) | KVM_MSR_ENABLED;
++		pa = slow_virt_to_phys(&__get_cpu_var(kvm_apic_eoi))
++			| KVM_MSR_ENABLED;
+ 		wrmsrl(MSR_KVM_PV_EOI_EN, pa);
+ 	}
+ 
+diff -puN arch/x86/kernel/kvmclock.c~fix-kvm-__pa-use-on-percpu-areas arch/x86/kernel/kvmclock.c
+--- linux-2.6.git/arch/x86/kernel/kvmclock.c~fix-kvm-__pa-use-on-percpu-areas	2013-01-22 13:17:16.428317508 -0800
++++ linux-2.6.git-dave/arch/x86/kernel/kvmclock.c	2013-01-22 13:17:16.432317541 -0800
+@@ -162,8 +162,8 @@ int kvm_register_clock(char *txt)
+ 	int low, high, ret;
+ 	struct pvclock_vcpu_time_info *src = &hv_clock[cpu].pvti;
+ 
+-	low = (int)__pa(src) | 1;
+-	high = ((u64)__pa(src) >> 32);
++	low = (int)slow_virt_to_phys(src) | 1;
++	high = ((u64)slow_virt_to_phys(src) >> 32);
+ 	ret = native_write_msr_safe(msr_kvm_system_time, low, high);
+ 	printk(KERN_INFO "kvm-clock: cpu %d, msr %x:%x, %s\n",
+ 	       cpu, high, low, txt);
+_
+
