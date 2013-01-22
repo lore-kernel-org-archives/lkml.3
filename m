@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab3AVOPd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 09:15:33 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:50022 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab3AVOPb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 09:15:31 -0500
-Date: Tue, 22 Jan 2013 09:15:30 -0500 (EST)
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: simon@mungewell.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <118417672.210985.1358864130303.JavaMail.root@mail.savoirfairelinux.com>
-In-Reply-To: <alpine.LNX.2.00.1301221443320.20374@pobox.suse.cz>
-Subject: Re: [PATCH v2] HID: add ThingM blink(1) USB RGB LED support
+	id S1752981Ab3AVORT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 09:17:19 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45340 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751859Ab3AVORR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 09:17:17 -0500
+Message-ID: <50FE9F5C.2010501@ti.com>
+Date: Tue, 22 Jan 2013 16:17:00 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <tony@atomide.com>, <balbi@ti.com>, <linux@arm.linux.org.uk>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v1 6/6] USB: MUSB: OMAP: get PHY by phandle for dt boot
+References: <1358848694-20145-1-git-send-email-kishon@ti.com> <1358848694-20145-7-git-send-email-kishon@ti.com>
+In-Reply-To: <1358848694-20145-7-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [173.246.24.133]
-X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - FF3.0 (Linux)/7.1.4_GA_2555)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > The vendor's name is "ThingM" and the product's name is "blink(1)",
-> > not "blink".
-> > Given that, would you prefer to keep "blink(1)::1234", or would it
-> > rather be
-> > "thingm-blink1::1234" (avoiding parenthesis)?
-> > 
-> > I ask the same question for the driver name, which is actually
-> > "blink(1)".
+On 01/22/2013 11:58 AM, Kishon Vijay Abraham I wrote:
+> The OMAP glue has been modified to get PHY by phandle for dt boot.
 > 
-> Actually, for HID bus drivers, we are mostly following the convention
-> of
-> having just the vendor name in the driver, see hid-microsoft,
-> hid-logitech, etc.
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  drivers/usb/musb/omap2430.c |    7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
 > 
-> So it'd make most sense to me to name the driver hid-thingm, and in
-> case
-> it is driving blink(1) device (no other devices will be driven by it
-> currently), let it create /sys/class/leds/blink1...
+> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+> index 1a8cf6d..e43faeb 100644
+> --- a/drivers/usb/musb/omap2430.c
+> +++ b/drivers/usb/musb/omap2430.c
+> @@ -345,7 +345,12 @@ static int omap2430_musb_init(struct musb *musb)
+>  	 * up through ULPI.  TWL4030-family PMICs include one,
+>  	 * which needs a driver, drivers aren't always needed.
+>  	 */
+> -	musb->xceiv = devm_usb_get_phy_dev(dev, 0);
+> +	if (dev->parent->of_node)
+> +		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
+> +		    "usb_phy", 0);
+> +	else
+> +		musb->xceiv = devm_usb_get_phy_dev(dev, 0);
+> +
+>  	if (IS_ERR_OR_NULL(musb->xceiv)) {
+>  		pr_err("HS USB OTG: no transceiver configured\n");
+>  		return -ENODEV;
 
-Ok, makes sense to me!
+This will not work with PHY driver as a module. You need to use deferred probing mechanism here
+after you have addressed my comment in patch 2 and also devm_usb_get_phy_by_phandle()
 
-Thanks,
-Vivien
+e.g.
+
+if (IS_ERR(musb->xceiv)) {
+	int ret = PTR_ERR(musb->xveiv);
+
+	if (ret == -ENODEV)
+		pr_err("HS USB OTG: no transceiver configured\n");
+
+	return ret;
+}
+
+--
+cheers,
+-roger
+ 
+
