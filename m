@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab3AVHmi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:42:38 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:55362 "EHLO
+	id S1755519Ab3AVHnB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:43:01 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:55295 "EHLO
 	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755205Ab3AVHmd (ORCPT
+	with ESMTP id S1755255Ab3AVHlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:42:33 -0500
+	Tue, 22 Jan 2013 02:41:55 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5 28/45] kvm/vmx: Use get/put_online_cpus_atomic() to prevent
- CPU offline
+Subject: [PATCH v5 26/45] perf/x86: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -20,8 +20,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 22 Jan 2013 13:10:23 +0530
-Message-ID: <20130122074018.13822.89637.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 22 Jan 2013 13:09:52 +0530
+Message-ID: <20130122073948.13822.43399.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,51 +29,64 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012207-3568-0000-0000-0000030FFEFD
+x-cbid: 13012207-3568-0000-0000-0000030FFEC7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once stop_machine() is gone from the CPU offline path, we won't be able to
-depend on preempt_disable() or local_irq_disable() to prevent CPUs from
-going offline from under us.
+The CPU_DYING notifier modifies the per-cpu pointer pmu->box, and this can
+race with functions such as uncore_pmu_to_box() and uncore_pci_remove() when
+we remove stop_machine() from the CPU offline path. So protect them using
+get/put_online_cpus_atomic().
 
-Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
-while invoking from atomic context (in vmx_vcpu_load() to prevent CPUs from
-going offline while clearing vmcs).
-
-Reported-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-Debugged-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
-Cc: kvm@vger.kernel.org
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/kvm/vmx.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 9120ae1..2886ff0 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -1557,10 +1557,14 @@ static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- 	struct vcpu_vmx *vmx = to_vmx(vcpu);
- 	u64 phys_addr = __pa(per_cpu(vmxarea, cpu));
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index b43200d..6faae53 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -1,3 +1,4 @@
++#include <linux/cpu.h>
+ #include "perf_event_intel_uncore.h"
  
--	if (!vmm_exclusive)
-+	if (!vmm_exclusive) {
- 		kvm_cpu_vmxon(phys_addr);
--	else if (vmx->loaded_vmcs->cpu != cpu)
-+	} else if (vmx->loaded_vmcs->cpu != cpu) {
-+		/* Prevent any CPU from going offline */
-+		get_online_cpus_atomic();
- 		loaded_vmcs_clear(vmx->loaded_vmcs);
-+		put_online_cpus_atomic();
-+	}
+ static struct intel_uncore_type *empty_uncore[] = { NULL, };
+@@ -1965,6 +1966,7 @@ uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
+ 	if (box)
+ 		return box;
  
- 	if (per_cpu(current_vmcs, cpu) != vmx->loaded_vmcs->vmcs) {
- 		per_cpu(current_vmcs, cpu) = vmx->loaded_vmcs->vmcs;
++	get_online_cpus_atomic();
+ 	raw_spin_lock(&uncore_box_lock);
+ 	list_for_each_entry(box, &pmu->box_list, list) {
+ 		if (box->phys_id == topology_physical_package_id(cpu)) {
+@@ -1974,6 +1976,7 @@ uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
+ 		}
+ 	}
+ 	raw_spin_unlock(&uncore_box_lock);
++	put_online_cpus_atomic();
+ 
+ 	return *per_cpu_ptr(pmu->box, cpu);
+ }
+@@ -2556,6 +2559,7 @@ static void uncore_pci_remove(struct pci_dev *pdev)
+ 	if (WARN_ON_ONCE(phys_id != box->phys_id))
+ 		return;
+ 
++	get_online_cpus_atomic();
+ 	raw_spin_lock(&uncore_box_lock);
+ 	list_del(&box->list);
+ 	raw_spin_unlock(&uncore_box_lock);
+@@ -2569,6 +2573,7 @@ static void uncore_pci_remove(struct pci_dev *pdev)
+ 
+ 	WARN_ON_ONCE(atomic_read(&box->refcnt) != 1);
+ 	kfree(box);
++	put_online_cpus_atomic();
+ }
+ 
+ static int uncore_pci_probe(struct pci_dev *pdev,
 
