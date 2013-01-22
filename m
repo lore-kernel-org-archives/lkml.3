@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab3AVT7T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 14:59:19 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:40436 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754550Ab3AVT7R (ORCPT
+	id S1755698Ab3AVUAa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 15:00:30 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:42971 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753643Ab3AVUA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 14:59:17 -0500
-Date: Tue, 22 Jan 2013 11:59:12 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: keescook@chromium.org, chunkeey@googlemail.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linville@tuxdriver.com, kvalo@qca.qualcomm.com
-Subject: Re: [PATCH 16/20] drivers/net/wireless/p54: remove depends on
- CONFIG_EXPERIMENTAL
-Message-ID: <20130122195912.GA31151@kroah.com>
-References: <1358879444-25834-17-git-send-email-keescook@chromium.org>
- <201301221937.16916.chunkeey@googlemail.com>
- <CAGXu5jJCQshUntUk7MeZds59B2fa54GnonOz28dM1x2spEEGDg@mail.gmail.com>
- <20130122.141252.781223481145097577.davem@davemloft.net>
+	Tue, 22 Jan 2013 15:00:26 -0500
+Message-ID: <50FEEF5D.6080302@linux.vnet.ibm.com>
+Date: Wed, 23 Jan 2013 01:28:21 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130122.141252.781223481145097577.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, rjw@sisk.pl,
+        namhyung@kernel.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v5 01/45] percpu_rwlock: Introduce the global reader-writer
+ lock backend
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <20130122073315.13822.27093.stgit@srivatsabhat.in.ibm.com> <1358883152.21576.55.camel@gandalf.local.home>
+In-Reply-To: <1358883152.21576.55.camel@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012219-1618-0000-0000-0000033AF57A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 02:12:52PM -0500, David Miller wrote:
-> From: Kees Cook <keescook@chromium.org>
-> Date: Tue, 22 Jan 2013 10:40:12 -0800
+On 01/23/2013 01:02 AM, Steven Rostedt wrote:
+> On Tue, 2013-01-22 at 13:03 +0530, Srivatsa S. Bhat wrote:
+>> A straight-forward (and obvious) algorithm to implement Per-CPU Reader-Writer
+>> locks can also lead to too many deadlock possibilities which can make it very
+>> hard/impossible to use. This is explained in the example below, which helps
+>> justify the need for a different algorithm to implement flexible Per-CPU
+>> Reader-Writer locks.
+>>
+>> We can use global rwlocks as shown below safely, without fear of deadlocks:
+>>
+>> Readers:
+>>
+>>          CPU 0                                CPU 1
+>>          ------                               ------
+>>
+>> 1.    spin_lock(&random_lock);             read_lock(&my_rwlock);
+>>
+>>
+>> 2.    read_lock(&my_rwlock);               spin_lock(&random_lock);
+>>
+>>
+>> Writer:
+>>
+>>          CPU 2:
+>>          ------
+>>
+>>        write_lock(&my_rwlock);
+>>
 > 
-> > On Tue, Jan 22, 2013 at 10:37 AM, Christian Lamparter
-> > <chunkeey@googlemail.com> wrote:
-> >> Aren't these patches going through wireless-next
-> >> or linux-next?
-> > 
-> > They can go however it makes things easiest. Greg has offered to carry
-> > them in driver-core if Dave doesn't want to carry them in netdev.
+> I thought global locks are now fair. That is, a reader will block if a
+> writer is waiting. Hence, the above should deadlock on the current
+> rwlock_t types.
 > 
-> Greg can take these:
-> 
-> Acked-by: David S. Miller <davem@davemloft.net>
 
-Thanks, I'll go do that now.
+Oh is it? Last I checked, lockdep didn't complain about this ABBA scenario!
 
-greg k-h
+> We need to fix those locations (or better yet, remove all rwlocks ;-)
+> 
+
+:-)
+
+The challenge with stop_machine() removal is that the replacement on the
+reader side must have the (locking) flexibility comparable to preempt_disable().
+Otherwise, that solution most likely won't be viable because we'll hit way
+too many locking problems and go crazy by the time we convert them over..(if
+we can, that is!)
+
+Regards,
+Srivatsa S. Bhat
+
