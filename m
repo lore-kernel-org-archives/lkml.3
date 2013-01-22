@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab3AVHlR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 02:41:17 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:34462 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312Ab3AVHlM (ORCPT
+	id S1754312Ab3AVHlV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 02:41:21 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:40164 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754864Ab3AVHlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 02:41:12 -0500
+	Tue, 22 Jan 2013 02:41:18 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5 22/45] infiniband: ehca: Use get/put_online_cpus_atomic()
- to prevent CPU offline
+Subject: [PATCH v5 23/45] [SCSI] fcoe: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -20,8 +20,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 22 Jan 2013 13:09:13 +0530
-Message-ID: <20130122073909.13822.6220.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 22 Jan 2013 13:09:22 +0530
+Message-ID: <20130122073919.13822.73176.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,7 +29,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012207-2674-0000-0000-0000078F6293
+x-cbid: 13012207-8256-0000-0000-000005EE5837
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -41,65 +41,54 @@ going offline from under us.
 Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
 while invoking from atomic context.
 
-Cc: Roland Dreier <roland@kernel.org>
+Cc: Robert Love <robert.w.love@intel.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: devel@open-fcoe.org
+Cc: linux-scsi@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- drivers/infiniband/hw/ehca/ehca_irq.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/scsi/fcoe/fcoe.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/hw/ehca/ehca_irq.c b/drivers/infiniband/hw/ehca/ehca_irq.c
-index 8615d7c..d61936c 100644
---- a/drivers/infiniband/hw/ehca/ehca_irq.c
-+++ b/drivers/infiniband/hw/ehca/ehca_irq.c
-@@ -43,6 +43,7 @@
- 
- #include <linux/slab.h>
- #include <linux/smpboot.h>
-+#include <linux/cpu.h>
- 
- #include "ehca_classes.h"
- #include "ehca_irq.h"
-@@ -653,6 +654,9 @@ void ehca_tasklet_eq(unsigned long data)
- 	ehca_process_eq((struct ehca_shca*)data, 1);
- }
- 
-+/*
-+ * Must be called under get_online_cpus_atomic() and put_online_cpus_atomic().
-+ */
- static int find_next_online_cpu(struct ehca_comp_pool *pool)
- {
- 	int cpu;
-@@ -703,6 +707,7 @@ static void queue_comp_task(struct ehca_cq *__cq)
- 	int cq_jobs;
- 	unsigned long flags;
- 
+diff --git a/drivers/scsi/fcoe/fcoe.c b/drivers/scsi/fcoe/fcoe.c
+index 666b7ac..c971a17 100644
+--- a/drivers/scsi/fcoe/fcoe.c
++++ b/drivers/scsi/fcoe/fcoe.c
+@@ -1475,6 +1475,7 @@ static int fcoe_rcv(struct sk_buff *skb, struct net_device *netdev,
+ 	 * was originated, otherwise select cpu using rx exchange id
+ 	 * or fcoe_select_cpu().
+ 	 */
 +	get_online_cpus_atomic();
- 	cpu_id = find_next_online_cpu(pool);
- 	BUG_ON(!cpu_online(cpu_id));
- 
-@@ -720,6 +725,7 @@ static void queue_comp_task(struct ehca_cq *__cq)
- 		BUG_ON(!cct || !thread);
+ 	if (ntoh24(fh->fh_f_ctl) & FC_FC_EX_CTX)
+ 		cpu = ntohs(fh->fh_ox_id) & fc_cpu_mask;
+ 	else {
+@@ -1484,8 +1485,10 @@ static int fcoe_rcv(struct sk_buff *skb, struct net_device *netdev,
+ 			cpu = ntohs(fh->fh_rx_id) & fc_cpu_mask;
  	}
- 	__queue_comp_task(__cq, cct, thread);
-+	put_online_cpus_atomic();
- }
  
- static void run_comp_task(struct ehca_cpu_comp_task *cct)
-@@ -759,6 +765,7 @@ static void comp_task_park(unsigned int cpu)
- 	list_splice_init(&cct->cq_list, &list);
- 	spin_unlock_irq(&cct->task_lock);
+-	if (cpu >= nr_cpu_ids)
++	if (cpu >= nr_cpu_ids) {
++		put_online_cpus_atomic();
+ 		goto err;
++	}
  
-+	get_online_cpus_atomic();
- 	cpu = find_next_online_cpu(pool);
- 	target = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
- 	thread = *per_cpu_ptr(pool->cpu_comp_threads, cpu);
-@@ -768,6 +775,7 @@ static void comp_task_park(unsigned int cpu)
- 		__queue_comp_task(cq, target, thread);
+ 	fps = &per_cpu(fcoe_percpu, cpu);
+ 	spin_lock(&fps->fcoe_rx_list.lock);
+@@ -1505,6 +1508,7 @@ static int fcoe_rcv(struct sk_buff *skb, struct net_device *netdev,
+ 		spin_lock(&fps->fcoe_rx_list.lock);
+ 		if (!fps->thread) {
+ 			spin_unlock(&fps->fcoe_rx_list.lock);
++			put_online_cpus_atomic();
+ 			goto err;
+ 		}
  	}
- 	spin_unlock_irq(&target->task_lock);
+@@ -1526,6 +1530,7 @@ static int fcoe_rcv(struct sk_buff *skb, struct net_device *netdev,
+ 	if (fps->thread->state == TASK_INTERRUPTIBLE)
+ 		wake_up_process(fps->thread);
+ 	spin_unlock(&fps->fcoe_rx_list.lock);
 +	put_online_cpus_atomic();
- }
  
- static void comp_task_stop(unsigned int cpu, bool online)
+ 	return 0;
+ err:
 
