@@ -1,68 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424Ab3AVRaT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 12:30:19 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:41348 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145Ab3AVRaR (ORCPT
+	id S1754656Ab3AVRb4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 12:31:56 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:57798 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622Ab3AVRbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 12:30:17 -0500
-Date: Tue, 22 Jan 2013 09:30:13 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Rob Clark <rob@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arm@kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: Re: [PATCH 15/15] staging/omapdrm: don't build on multiplatform
-Message-ID: <20130122173013.GA17212@kroah.com>
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
- <1358788568-11137-16-git-send-email-arnd@arndb.de>
- <50FD7A5F.9020702@ti.com>
- <201301211741.11875.arnd@arndb.de>
- <50FD8B63.1060506@ti.com>
- <20130122165330.GA28152@kroah.com>
- <50FEC508.50004@ti.com>
+	Tue, 22 Jan 2013 12:31:55 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: One of these things (CONFIG_HZ) is not like the others..
+Date: Tue, 22 Jan 2013 17:31:46 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Matt Sealey <matt@genesi-usa.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ben Dooks <ben@simtec.co.uk>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
+References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com> <50FE666B.10902@ti.com> <20130122145113.GK23505@n2100.arm.linux.org.uk>
+In-Reply-To: <20130122145113.GK23505@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FEC508.50004@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301221731.46902.arnd@arndb.de>
+X-Provags-ID: V02:K0:hcR0zM4iopChG/tWJi4gcJyOLP+vK3Y0PLu0lSKhYcR
+ UF9Ruo8zMd8JqwdF3g7dyeiQOOnw16BfC0GghSLxSdOqqB3nio
+ EqyFA1G/pZBuag9W0subKG+/70pIuxa9LDeCd8KDma97LZfM/p
+ +aQSqzvLSyuLEsSWhlx5fpfYxwEvYPcJu0P/arYa/MQP6rsFJh
+ cUe6MnY6qaDakqGrglZujSRWn2zYsqfSrujY+i18xdTdWLXSMs
+ ed8aFAQ4XT57Yrbc3QR+4yqVVH6tGFw/6GJpWDeg4+g3Eim0/2
+ bpt+qTCprx18wTFcKBfC1moMc9vI2KYFoUK+2aco1yP8EzDASy
+ JoxFdjkUiUEATRqoNY6c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 10:57:44AM -0600, Rob Clark wrote:
-> On 01/22/2013 10:53 AM, Greg Kroah-Hartman wrote:
-> >On Mon, Jan 21, 2013 at 12:39:31PM -0600, Rob Clark wrote:
-> >>On 01/21/2013 11:41 AM, Arnd Bergmann wrote:
-> >>>On Monday 21 January 2013, Rob Clark wrote:
-> >>>>Are you sure OMAP2_DSS requires ARCH_OMAP2PLUS?  I don't see this, and
-> >>>>it at least used to not depend on ARCH_OMAP2PLUS.  If it does now, I
-> >>>>think the correct fix would be to remove the dependency in OMAP2_DSS.  I
-> >>>>don't think removing ARCH_MULTIPLATFORM support in omapdrm is the
-> >>>>correct solution.
-> >>>At least it says so in drivers/video/omap2/Kconfig, which contains
-> >>>
-> >>>if ARCH_OMAP2PLUS
-> >>>source drivers/video/omap2/dss/Kconfig
-> >>>endif
-> >>ahh, ok, I see.. the if ARCH_OMAP2PLUS bit looks like it came in
-> >>recently (770b6cb)
-> >>
-> >>what about changing this to 'if ARCH_OMAP2PLUS || ARCH_MULTIPLATFORM'?
-> >That's what Arnd's patch did.
+On Tuesday 22 January 2013, Russell King - ARM Linux wrote:
+> On Tue, Jan 22, 2013 at 03:44:03PM +0530, Santosh Shilimkar wrote:
+> > Sorry for not being clear enough. On OMAP, 32KHz is the only clock which
+> > is always running(even during low power states) and hence the clock
+> > source and clock event have been clocked using 32KHz clock. As mentioned
+> > by RMK, with 32768 Hz clock and HZ = 100, there will be always an
+> > error of 0.1 %. This accuracy also impacts the timer tick interval.
+> > This was the reason, OMAP has been using the HZ = 128.
 > 
-> sorry, I was talking about in drivers/video/omap2/Kconfig
+> Ok.  Let's look at this.  As far as time-of-day is concerned, this
+> shouldn't really matter with the clocksource/clockevent based system
+> that we now have (where *important point* platforms have been converted
+> over.)
+>
+> Any platform providing a clocksource will override the jiffy-based
+> clocksource.  The measurement of time-of-day passing is now based on
+> the difference in values read from the clocksource, not from the actual
+> tick rate.
 
-Ah, ok.
+Ok, that was my reading as well.
 
-> Ie. I'd prefer to re-enable omapdss on multi-plat rather than
-> disabling omapdrm.  With changes in drm core, it is a bit of a pain
-> to compile test all the arm drivers by doing N different builds, so
-> we've been trying to get to the point of all arm drm drivers
-> supporting multi-plat
+> - if the interrupt rate is slightly faster than HZ, then you can end up
+>   with updates being delayed by 2x interrupt rate.
+> - if the interrupt rate is slightly slower than HZ, you can occasionally
+>   end up with jiffies incrementing by two.
+> - if your interrupt rate is dead on HZ, then other system noise can come
+>   into effect and you may get maybe zero, one or two jiffy increments per
+>   interrupt.
+> 
+> (You have to think about time passing in NS, where jiffy updates should
+> be vs where the timer interrupts happen.)  See tick_do_update_jiffies64()
+> for the details.
 
-Ok, I'll let you and Arnd fight it out and drop this patch from my
-to-apply queue for now...
+Ah, right. I forgot about this case. So when we have an accurate clocksource,
+rather than relying on the timer tick as the sole source for timekeeping,
+the jiffies64 variable may be less accurate (up to almost two jiffies
+diff, rather than almost one jiffy).
 
-greg k-h
+> The timer infrastructure is jiffy based - which includes scheduling where
+> the scheduler does not use hrtimers.  That means a slight discrepency
+> between HZ and the actual interrupt rate can cause around 1/HZ jitter.
+> That's a matter of fact due to how the code works.
+
+Yes, the two jiffies accuracy I mentioned above would be the result of
+the 1 jiffy jitter plus 1 jiffy from the limited resolution.
+
+> So, actually, I think the accuracy of HZ has much overall effect _provided_
+> a platform provides a clocksource to the accuracy of jiffy based timers
+> nor timekeeping.  For those which don't, the accuracy of the timer
+> interrupt to HZ is very important.
+
+This is where I don't see the same problem that you are seeing. Shouldn't
+the old ACT_HZ calculation based on CLOCK_TICK_RATE have prevented this?
+
+Note that all PC-like systems traditionally have a CLOCK_TICK_RATE of
+1193182 Hz, which does not accurately divide into any of the normal
+HZ values, the jiffies clocksource used to have code in it to make
+up for this problem. Nowadays, since John's b3c869d35 "jiffies: Remove
+compile time assumptions about CLOCK_TICK_RATE" patch in 3.7, the
+logic in part of the refined_jiffies clock source that is used currently
+only on x86.
+
+I do agree that any platform that is using neither a platform specific
+clocksource nor the refined_jiffies would suffer from the drift as
+you describe. OMAP was in fact using CLOCK_TICK_RATE correctly, but
+is not using the refined_jiffies clocksource now because it has
+its own clocksource implementation.
+
+> And I think further discussion is pointless until such research has been
+> done (or someone who _really_ knows the time keeping/timer/sched code
+> inside out comments.)
+
+Maybe John has some more insights here, he seems to be the one that
+understands it better than any of us.
+
+	Arnd
