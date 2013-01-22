@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab3AVJKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 04:10:33 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60773 "EHLO
+	id S1752674Ab3AVJSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 04:18:05 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42753 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407Ab3AVJK2 (ORCPT
+	with ESMTP id S1754654Ab3AVJKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 04:10:28 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-d3-50fe576a377f
+	Tue, 22 Jan 2013 04:10:32 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-2d-50fe577a0083
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/19] perf tests: Add group test conditions
-Date: Tue, 22 Jan 2013 18:09:30 +0900
-Message-Id: <1358845787-1350-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 05/19] perf hists: Resort hist entries using group members for output
+Date: Tue, 22 Jan 2013 18:09:33 +0900
+Message-Id: <1358845787-1350-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1358845787-1350-1-git-send-email-namhyung@kernel.org>
 References: <1358845787-1350-1-git-send-email-namhyung@kernel.org>
@@ -28,8 +28,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-As some new fields for handling groups added, check them to be sure to
-have valid values in test__group* cases.
+When event group is enabled, sorting hist entries on periods for output
+should consider groups members' period also.  To do that, build period
+table using link/pair information and compare the table.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Acked-by: Jiri Olsa <jolsa@redhat.com>
@@ -38,191 +39,110 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1355726345-29553-3-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1355726345-29553-7-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/parse-events.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ tools/perf/util/evsel.h |  2 ++
+ tools/perf/util/hist.c  | 59 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 60 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index 337424d02e53..09c5d1e9bb7b 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -23,6 +23,7 @@ static int test__checkevent_tracepoint(struct perf_evlist *evlist)
- 	struct perf_evsel *evsel = perf_evlist__first(evlist);
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index f5d22f12ccd8..24225d728ba4 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -78,6 +78,8 @@ struct perf_evsel {
+ 	char			*group_name;
+ };
  
- 	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 0 == evlist->nr_groups);
- 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_TRACEPOINT == evsel->attr.type);
- 	TEST_ASSERT_VAL("wrong sample_type",
- 		PERF_TP_SAMPLE_TYPE == evsel->attr.sample_type);
-@@ -35,6 +36,7 @@ static int test__checkevent_tracepoint_multi(struct perf_evlist *evlist)
- 	struct perf_evsel *evsel;
++#define hists_to_evsel(h) container_of(h, struct perf_evsel, hists)
++
+ struct cpu_map;
+ struct thread_map;
+ struct perf_evlist;
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 8170a3d11ffa..f855941bebea 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -4,6 +4,7 @@
+ #include "hist.h"
+ #include "session.h"
+ #include "sort.h"
++#include "evsel.h"
+ #include <math.h>
  
- 	TEST_ASSERT_VAL("wrong number of entries", evlist->nr_entries > 1);
-+	TEST_ASSERT_VAL("wrong number of groups", 0 == evlist->nr_groups);
+ static bool hists__filter_entry_by_dso(struct hists *hists,
+@@ -540,6 +541,62 @@ void hists__collapse_resort_threaded(struct hists *hists)
+  * reverse the map, sort on period.
+  */
  
- 	list_for_each_entry(evsel, &evlist->entries, node) {
- 		TEST_ASSERT_VAL("wrong type",
-@@ -510,6 +512,7 @@ static int test__group1(struct perf_evlist *evlist)
- 	struct perf_evsel *evsel, *leader;
++static int period_cmp(u64 period_a, u64 period_b)
++{
++	if (period_a > period_b)
++		return 1;
++	if (period_a < period_b)
++		return -1;
++	return 0;
++}
++
++static int hist_entry__sort_on_period(struct hist_entry *a,
++				      struct hist_entry *b)
++{
++	int ret;
++	int i, nr_members;
++	struct perf_evsel *evsel;
++	struct hist_entry *pair;
++	u64 *periods_a, *periods_b;
++
++	ret = period_cmp(a->stat.period, b->stat.period);
++	if (ret || !symbol_conf.event_group)
++		return ret;
++
++	evsel = hists_to_evsel(a->hists);
++	nr_members = evsel->nr_members;
++	if (nr_members <= 1)
++		return ret;
++
++	periods_a = zalloc(sizeof(periods_a) * nr_members);
++	periods_b = zalloc(sizeof(periods_b) * nr_members);
++
++	if (!periods_a || !periods_b)
++		goto out;
++
++	list_for_each_entry(pair, &a->pairs.head, pairs.node) {
++		evsel = hists_to_evsel(pair->hists);
++		periods_a[perf_evsel__group_idx(evsel)] = pair->stat.period;
++	}
++
++	list_for_each_entry(pair, &b->pairs.head, pairs.node) {
++		evsel = hists_to_evsel(pair->hists);
++		periods_b[perf_evsel__group_idx(evsel)] = pair->stat.period;
++	}
++
++	for (i = 1; i < nr_members; i++) {
++		ret = period_cmp(periods_a[i], periods_b[i]);
++		if (ret)
++			break;
++	}
++
++out:
++	free(periods_a);
++	free(periods_b);
++
++	return ret;
++}
++
+ static void __hists__insert_output_entry(struct rb_root *entries,
+ 					 struct hist_entry *he,
+ 					 u64 min_callchain_hits)
+@@ -556,7 +613,7 @@ static void __hists__insert_output_entry(struct rb_root *entries,
+ 		parent = *p;
+ 		iter = rb_entry(parent, struct hist_entry, rb_node);
  
- 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
- 
- 	/* instructions:k */
- 	evsel = leader = perf_evlist__first(evlist);
-@@ -523,6 +526,8 @@ static int test__group1(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
- 
- 	/* cycles:upp */
- 	evsel = perf_evsel__next(evsel);
-@@ -537,6 +542,7 @@ static int test__group1(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 2);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
- 
- 	return 0;
- }
-@@ -546,6 +552,7 @@ static int test__group2(struct perf_evlist *evlist)
- 	struct perf_evsel *evsel, *leader;
- 
- 	TEST_ASSERT_VAL("wrong number of entries", 3 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
- 
- 	/* faults + :ku modifier */
- 	evsel = leader = perf_evlist__first(evlist);
-@@ -559,6 +566,8 @@ static int test__group2(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
- 
- 	/* cache-references + :u modifier */
- 	evsel = perf_evsel__next(evsel);
-@@ -572,6 +581,7 @@ static int test__group2(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
- 
- 	/* cycles:k */
- 	evsel = perf_evsel__next(evsel);
-@@ -594,6 +604,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
- 	struct perf_evsel *evsel, *leader;
- 
- 	TEST_ASSERT_VAL("wrong number of entries", 5 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 2 == evlist->nr_groups);
- 
- 	/* group1 syscalls:sys_enter_open:H */
- 	evsel = leader = perf_evlist__first(evlist);
-@@ -610,6 +621,8 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
- 	TEST_ASSERT_VAL("wrong group name",
- 		!strcmp(leader->group_name, "group1"));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
- 
- 	/* group1 cycles:kppp */
- 	evsel = perf_evsel__next(evsel);
-@@ -625,6 +638,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 3);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
- 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
- 
- 	/* group2 cycles + G modifier */
- 	evsel = leader = perf_evsel__next(evsel);
-@@ -640,6 +654,8 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
- 	TEST_ASSERT_VAL("wrong group name",
- 		!strcmp(leader->group_name, "group2"));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
- 
- 	/* group2 1:3 + G modifier */
- 	evsel = perf_evsel__next(evsel);
-@@ -652,6 +668,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
- 
- 	/* instructions:u */
- 	evsel = perf_evsel__next(evsel);
-@@ -674,6 +691,7 @@ static int test__group4(struct perf_evlist *evlist __maybe_unused)
- 	struct perf_evsel *evsel, *leader;
- 
- 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
- 
- 	/* cycles:u + p */
- 	evsel = leader = perf_evlist__first(evlist);
-@@ -689,6 +707,8 @@ static int test__group4(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 1);
- 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
- 
- 	/* instructions:kp + p */
- 	evsel = perf_evsel__next(evsel);
-@@ -703,6 +723,7 @@ static int test__group4(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 2);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
- 
- 	return 0;
- }
-@@ -712,6 +733,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	struct perf_evsel *evsel, *leader;
- 
- 	TEST_ASSERT_VAL("wrong number of entries", 5 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 2 == evlist->nr_groups);
- 
- 	/* cycles + G */
- 	evsel = leader = perf_evlist__first(evlist);
-@@ -726,6 +748,8 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
- 
- 	/* instructions + G */
- 	evsel = perf_evsel__next(evsel);
-@@ -739,6 +763,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
- 
- 	/* cycles:G */
- 	evsel = leader = perf_evsel__next(evsel);
-@@ -753,6 +778,8 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
- 
- 	/* instructions:G */
- 	evsel = perf_evsel__next(evsel);
-@@ -766,6 +793,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
- 
- 	/* cycles */
- 	evsel = perf_evsel__next(evsel);
+-		if (he->stat.period > iter->stat.period)
++		if (hist_entry__sort_on_period(he, iter) > 0)
+ 			p = &(*p)->rb_left;
+ 		else
+ 			p = &(*p)->rb_right;
 -- 
 1.7.11.7
 
