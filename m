@@ -1,160 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab3AVEpq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jan 2013 23:45:46 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8147 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab3AVEpo (ORCPT
+	id S1751003Ab3AVFCK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 00:02:10 -0500
+Received: from myspam1.stec-inc.com ([210.19.18.169]:59123 "HELO
+	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750738Ab3AVFCH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jan 2013 23:45:44 -0500
-X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=6SGtptbN4IMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=qG8yL3FeDQwA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=hGzw-44bAAAA:8 a=dP1YJgwhV2fsMVQfHHwA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=LI9Vle30uBYA:10 a=dowx1zmaLagA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358829942.21576.49.camel@gandalf.local.home>
-Subject: Re: [PATCH] tools lib traceevent: Handle dynamic array's element
- size properly
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon, 21 Jan 2013 23:45:42 -0500
-In-Reply-To: <1358772251-4411-1-git-send-email-jolsa@redhat.com>
-References: <1358772251-4411-1-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Jan 2013 00:02:07 -0500
+X-ASG-Debug-ID: 1358830922-053ea90dcf1c5780001-xx1T2L
+X-Barracuda-Envelope-From: akale@stec-inc.com
+X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
+From: Amit Kale <akale@stec-inc.com>
+X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
+X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
+To: Mike Snitzer <snitzer@redhat.com>
+CC: "Darrick J. Wong" <darrick.wong@oracle.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
+        "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "lsf-pc@lists.linux-foundation.org" 
+	<lsf-pc@lists.linux-foundation.org>,
+        Joe Thornber <ejt@redhat.com>
+Date: Tue, 22 Jan 2013 13:00:35 +0800
+Subject: RE: [LSF/MM TOPIC] Re: [dm-devel] Announcement: STEC EnhanceIO SSD
+ caching software for Linux kernel
+Thread-Topic: [LSF/MM TOPIC] Re: [dm-devel] Announcement: STEC EnhanceIO SSD
+ caching software for Linux kernel
+X-ASG-Orig-Subj: RE: [LSF/MM TOPIC] Re: [dm-devel] Announcement: STEC EnhanceIO SSD
+ caching software for Linux kernel
+Thread-Index: Ac332HwK2naQVTMqQ+Go/ZRfaUqFMAAhLyIQ
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D5DFC@MYMBX.MY.STEC-INC.AD>
+References: <50F844A3.9020300@warr.net>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D72F1@MYMBX.MY.STEC-INC.AD>
+ <50F970A3.4000403@warr.net> <20130118161135.GA3118@raspberrypi>
+ <50F97C0F.9010405@warr.net>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7345@MYMBX.MY.STEC-INC.AD>
+ <50F9963A.2080608@warr.net> <20130118212543.GB6425@blackbox.djwong.org>
+ <20130118213759.GA30278@redhat.com>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D5D4D@MYMBX.MY.STEC-INC.AD>
+ <20130121130951.GA16574@redhat.com>
+In-Reply-To: <20130121130951.GA16574@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
+X-Barracuda-Start-Time: 1358830922
+X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.120547
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-21 at 13:44 +0100, Jiri Olsa wrote:
-> Fixing the dynamic array format field parsing.
+> -----Original Message-----
+> From: Mike Snitzer [mailto:snitzer@redhat.com]
+> Sent: Monday, January 21, 2013 6:40 PM
+> To: Amit Kale
+> Cc: Darrick J. Wong; device-mapper development; linux-
+> bcache@vger.kernel.org; kent.overstreet@gmail.com; LKML; lsf-
+> pc@lists.linux-foundation.org; Joe Thornber
+> Subject: Re: [LSF/MM TOPIC] Re: [dm-devel] Announcement: STEC EnhanceIO
+> SSD caching software for Linux kernel
 > 
-> Currently the event_read_fields function could segfault while parsing
-> dynamic array other than string type. The reason is the event->pevent
-> does not need to be set and gets dereferenced unconditionaly.
+> On Mon, Jan 21 2013 at 12:26am -0500,
+> Amit Kale <akale@stec-inc.com> wrote:
 > 
-> Also adding proper initialization of field->elementsize based on the
-> parsed dynamic type.
+> > > -----Original Message-----
+> > > From: Mike Snitzer [mailto:snitzer@redhat.com]
+> > > Sent: Saturday, January 19, 2013 3:08 AM
+> > > To: Darrick J. Wong
+> > > Cc: device-mapper development; Amit Kale;
+> > > linux-bcache@vger.kernel.org; kent.overstreet@gmail.com; LKML;
+> > > lsf-pc@lists.linux-foundation.org; Joe Thornber
+> > > Subject: Re: [LSF/MM TOPIC] Re: [dm-devel] Announcement: STEC
+> > > EnhanceIO SSD caching software for Linux kernel
+> > >
+> > > On Fri, Jan 18 2013 at  4:25pm -0500, Darrick J. Wong
+> > > <darrick.wong@oracle.com> wrote:
+> > >
+> > > > Since Joe is putting together a testing tree to compare the three
+> > > > caching things, what do you all think of having a(nother) session
+> > > > about ssd caching at this year's LSFMM Summit?
+> > > >
+> > > > [Apologies for hijacking the thread.] [Adding lsf-pc to the cc
+> > > > list.]
+> > >
+> > > Hopefully we'll have some findings on the comparisons well before
+> > > LSF (since we currently have some momentum).  But yes it may be
+> > > worthwhile to discuss things further and/or report findings.
+> >
+> > We should have performance comparisons presented well before the
+> > summit. It'll be good to have ssd caching session in any case. The
+> > likelihood that one of them will be included in Linux kernel before
+> > April is very low.
 > 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  tools/lib/traceevent/event-parse.c | 40 +++++++++++++++++++++++++++++++++++---
->  tools/lib/traceevent/event-parse.h |  1 +
->  2 files changed, 38 insertions(+), 3 deletions(-)
-> 
-> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-> index f504619..d682df2 100644
-> --- a/tools/lib/traceevent/event-parse.c
-> +++ b/tools/lib/traceevent/event-parse.c
-> @@ -1223,6 +1223,34 @@ static int field_is_long(struct format_field *field)
->  	return 0;
->  }
->  
-> +static unsigned int field_dynamic_elem_size(struct format_field *field)
-> +{
-> +	/* This covers all FIELD_IS_STRING types. */
-> +	static struct {
-> +		char *type;
-> +		unsigned int size;
-> +	} table[] = {
-> +		{ "u8",   1 },
-> +		{ "u16",  2 },
-> +		{ "u32",  4 },
-> +		{ "u64",  8 },
-> +		{ "s8",   1 },
-> +		{ "s16",  2 },
-> +		{ "s32",  4 },
-> +		{ "s64",  8 },
-> +		{ "char", 1 },
-> +		{ },
-> +	};
-> +	int i;
-> +
-> +	for (i = 0; table[i].type; i++) {
-> +		if (!strcmp(table[i].type, field->type_dyn))
-> +			return table[i].size;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static int event_read_fields(struct event_format *event, struct format_field **fields)
->  {
->  	struct format_field *field = NULL;
-> @@ -1390,7 +1418,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
->  				field->type = new_type;
->  				strcat(field->type, " ");
->  				strcat(field->type, field->name);
-> -				free_token(field->name);
-> +				field->type_dyn = field->name;
+> dm-cache is under active review for upstream inclusion.  I wouldn't
+> categorize the chances of dm-cache going upstream when the v3.9 merge
+> window opens as "very low".  But even if dm-cache does go upstream it
+> doesn't preclude bcache and/or enhanceio from going upstream too.
 
-This is only used in this function (the field_dynamic_elem_size() is
-only called here). Can we not add the field->type_dyn, and just use a
-local variable here. You just need to make sure you free it correctly.
+I agree. We haven't seen a full comparison yet, IMHO. If different solutions offer mutually exclusive benefits, it'll be worthwhile including them all.
 
--- Steve
+We haven't submitted EnhanceIO for an inclusion yet. Need more testing from the community before we can mark it Beta.
+-Amit
 
->  				strcat(field->type, brackets);
->  				field->name = token;
->  				type = read_token(&token);
-> @@ -1477,10 +1505,14 @@ static int event_read_fields(struct event_format *event, struct format_field **f
->  		if (field->flags & FIELD_IS_ARRAY) {
->  			if (field->arraylen)
->  				field->elementsize = field->size / field->arraylen;
-> +			else if (field->flags & FIELD_IS_DYNAMIC)
-> +				field->elementsize = field_dynamic_elem_size(field);
->  			else if (field->flags & FIELD_IS_STRING)
->  				field->elementsize = 1;
-> -			else
-> -				field->elementsize = event->pevent->long_size;
-> +			else if (field->flags & FIELD_IS_LONG)
-> +				field->elementsize = event->pevent ?
-> +						     event->pevent->long_size :
-> +						     sizeof(long);
->  		} else
->  			field->elementsize = field->size;
->  
-> @@ -1496,6 +1528,7 @@ fail:
->  fail_expect:
->  	if (field) {
->  		free(field->type);
-> +		free(field->type_dyn);
->  		free(field->name);
->  		free(field);
->  	}
-> @@ -5500,6 +5533,7 @@ static void free_format_fields(struct format_field *field)
->  	while (field) {
->  		next = field->next;
->  		free(field->type);
-> +		free(field->type_dyn);
->  		free(field->name);
->  		free(field);
->  		field = next;
-> diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-> index 7be7e89..4d54af2 100644
-> --- a/tools/lib/traceevent/event-parse.h
-> +++ b/tools/lib/traceevent/event-parse.h
-> @@ -174,6 +174,7 @@ struct format_field {
->  	struct format_field	*next;
->  	struct event_format	*event;
->  	char			*type;
-> +	char			*type_dyn;
->  	char			*name;
->  	int			offset;
->  	int			size;
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
 
 
+
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
