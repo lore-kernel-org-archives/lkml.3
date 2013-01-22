@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab3AVMM2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 07:12:28 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48363 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab3AVMMY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 07:12:24 -0500
-Message-ID: <50FE8226.5050209@kernel.org>
-Date: Tue, 22 Jan 2013 12:12:22 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
+	id S1753103Ab3AVMMG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 07:12:06 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:49679 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752264Ab3AVMMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 07:12:03 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH 2/2] ACPI / PM: Fix device power state value after transitions to D3cold
+Date: Tue, 22 Jan 2013 13:18 +0100
+Message-ID: <3543306.ZHWZyu77Fs@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <4115893.XLRCUukpRD@vostro.rjw.lan>
+References: <4115893.XLRCUukpRD@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org
-Subject: Re: [PATCH 11/33] iio: Convert to devm_ioremap_resource()
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de> <1358762966-20791-12-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1358762966-20791-12-git-send-email-thierry.reding@avionic-design.de>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2013 10:09 AM, Thierry Reding wrote:
-> Convert all uses of devm_request_and_ioremap() to the newly introduced
-> devm_ioremap_resource() which provides more consistent error handling.
-> 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> Cc: Jonathan Cameron <jic23@cam.ac.uk>
-> Cc: linux-iio@vger.kernel.org
-Looks fine to me.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Acked-by: Jonathan Cameron <jic23@kernel.org>
-> ---
->  drivers/iio/adc/at91_adc.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
-> index a526c0e..83c836b 100644
-> --- a/drivers/iio/adc/at91_adc.c
-> +++ b/drivers/iio/adc/at91_adc.c
-> @@ -557,9 +557,9 @@ static int at91_adc_probe(struct platform_device *pdev)
->  
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  
-> -	st->reg_base = devm_request_and_ioremap(&pdev->dev, res);
-> -	if (!st->reg_base) {
-> -		ret = -ENOMEM;
-> +	st->reg_base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(st->reg_base)) {
-> +		ret = PTR_ERR(st->reg_base);
->  		goto error_free_device;
->  	}
->  
-> 
+When a transition to the D3cold power state is requested,
+acpi_device_set_power() first carries out a transition to D3hot and
+then turns off the device's power resources.  However, it fails to
+update the device's power.state field appropriately and D3hot is
+stored in it as a result.
+
+Fix this, but make sure that the device's power.state value will be
+D3hot if its power resources cannot be turned off in the final step.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/device_pm.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+Index: linux-pm/drivers/acpi/device_pm.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/device_pm.c
++++ linux-pm/drivers/acpi/device_pm.c
+@@ -264,8 +264,11 @@ int acpi_device_set_power(struct acpi_de
+ 	if (result)
+ 		goto end;
+ 
+-	if (cut_power)
+-		result = acpi_power_transition(device, ACPI_STATE_D3_COLD);
++	if (cut_power) {
++		device->power.state = state;
++		state = ACPI_STATE_D3_COLD;
++		result = acpi_power_transition(device, state);
++	}
+ 
+  end:
+ 	if (result) {
+
