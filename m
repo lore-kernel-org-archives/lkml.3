@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab3AVLon (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 06:44:43 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56245 "EHLO song.cn.fujitsu.com"
+	id S1753799Ab3AVLpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 06:45:20 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:15778 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752715Ab3AVLoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 06:44:02 -0500
+	id S1752264Ab3AVLoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 06:44:01 -0500
 X-IronPort-AV: E=Sophos;i="4.84,514,1355068800"; 
-   d="scan'208";a="6628474"
+   d="scan'208";a="6628472"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
         benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
@@ -19,55 +19,101 @@ To: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
         sfr@canb.auug.org.au
 Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
-Subject: [PATCH Bug fix 4/5] Bug fix: Fix section mismatch problem of release_firmware_map_entry().
-Date: Tue, 22 Jan 2013 19:43:03 +0800
-Message-Id: <1358854984-6073-5-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH Bug fix 2/5] Bug-fix: mempolicy: fix is_valid_nodemask()
+Date: Tue, 22 Jan 2013 19:43:01 +0800
+Message-Id: <1358854984-6073-3-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/01/22 19:42:58,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/22 19:43:02,
-	Serialize complete at 2013/01/22 19:43:02
+ 2013/01/22 19:43:01,
+	Serialize complete at 2013/01/22 19:43:01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function release_firmware_map_entry() references the function
-__meminit firmware_map_find_entry_in_list(). So it should also have
-__meminit.
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-And since the firmware_map_entry->kobj is initialized with memmap_ktype,
-the memmap_ktype should also be prefixed by __refdata.
+is_valid_nodemask() is introduced by 19770b32. but it does not match
+its comments, because it does not check the zone which > policy_zone.
 
+Also in b377fd, this commits told us, if highest zone is ZONE_MOVABLE,
+we should also apply memory policies to it. so ZONE_MOVABLE should be valid zone
+for policies. is_valid_nodemask() need to be changed to match it.
+
+Fix: check all zones, even its zoneid > policy_zone.
+Use nodes_intersects() instead open code to check it.
+
+Reported-by: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- drivers/firmware/memmap.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ mm/mempolicy.c |   36 ++++++++++++++++++++++--------------
+ 1 files changed, 22 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/firmware/memmap.c b/drivers/firmware/memmap.c
-index 0710179..658fdd4 100644
---- a/drivers/firmware/memmap.c
-+++ b/drivers/firmware/memmap.c
-@@ -103,7 +103,7 @@ to_memmap_entry(struct kobject *kobj)
- 	return container_of(kobj, struct firmware_map_entry, kobj);
- }
- 
--static void release_firmware_map_entry(struct kobject *kobj)
-+static void __meminit release_firmware_map_entry(struct kobject *kobj)
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index af8a121..6f7979c 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -161,19 +161,7 @@ static const struct mempolicy_operations {
+ /* Check that the nodemask contains at least one populated zone */
+ static int is_valid_nodemask(const nodemask_t *nodemask)
  {
- 	struct firmware_map_entry *entry = to_memmap_entry(kobj);
- 
-@@ -127,7 +127,7 @@ static void release_firmware_map_entry(struct kobject *kobj)
- 	kfree(entry);
+-	int nd, k;
+-
+-	for_each_node_mask(nd, *nodemask) {
+-		struct zone *z;
+-
+-		for (k = 0; k <= policy_zone; k++) {
+-			z = &NODE_DATA(nd)->node_zones[k];
+-			if (z->managed_pages > 0)
+-				return 1;
+-		}
+-	}
+-
+-	return 0;
++	return nodes_intersects(*nodemask, node_states[N_MEMORY]);
  }
  
--static struct kobj_type memmap_ktype = {
-+static struct kobj_type __refdata memmap_ktype = {
- 	.release	= release_firmware_map_entry,
- 	.sysfs_ops	= &memmap_attr_ops,
- 	.default_attrs	= def_attrs,
+ static inline int mpol_store_user_nodemask(const struct mempolicy *pol)
+@@ -1644,6 +1632,26 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
+ 	return pol;
+ }
+ 
++static int apply_policy_zone(struct mempolicy *policy, enum zone_type zone)
++{
++	enum zone_type dynamic_policy_zone = policy_zone;
++
++	BUG_ON(dynamic_policy_zone == ZONE_MOVABLE);
++
++	/*
++	 * if policy->v.nodes has movable memory only,
++	 * we apply policy when gfp_zone(gfp) = ZONE_MOVABLE only.
++	 *
++	 * policy->v.nodes is intersect with node_states[N_MEMORY].
++	 * so if the following test faile, it implies
++	 * policy->v.nodes has movable memory only.
++	 */
++	if (!nodes_intersects(policy->v.nodes, node_states[N_HIGH_MEMORY]))
++		dynamic_policy_zone = ZONE_MOVABLE;
++
++	return zone >= dynamic_policy_zone;
++}
++
+ /*
+  * Return a nodemask representing a mempolicy for filtering nodes for
+  * page allocation
+@@ -1652,7 +1660,7 @@ static nodemask_t *policy_nodemask(gfp_t gfp, struct mempolicy *policy)
+ {
+ 	/* Lower zones don't get a nodemask applied for MPOL_BIND */
+ 	if (unlikely(policy->mode == MPOL_BIND) &&
+-			gfp_zone(gfp) >= policy_zone &&
++			apply_policy_zone(policy, gfp_zone(gfp)) &&
+ 			cpuset_nodemask_valid_mems_allowed(&policy->v.nodes))
+ 		return &policy->v.nodes;
+ 
 -- 
 1.7.1
 
