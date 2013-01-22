@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab3AVW0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 17:26:19 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:40614 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab3AVW0R (ORCPT
+	id S1753468Ab3AVWad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 17:30:33 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37982 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190Ab3AVWaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 17:26:17 -0500
+	Tue, 22 Jan 2013 17:30:30 -0500
+Date: Tue, 22 Jan 2013 23:30:26 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Ben Dooks <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 10/33] i2c: Convert to devm_ioremap_resource()
+Message-ID: <20130122223026.GA956@pengutronix.de>
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
+ <1358762966-20791-11-git-send-email-thierry.reding@avionic-design.de>
 MIME-Version: 1.0
-In-Reply-To: <1358833677-15611-1-git-send-email-stepanm@codeaurora.org>
-References: <1358833677-15611-1-git-send-email-stepanm@codeaurora.org>
-Date: Tue, 22 Jan 2013 23:26:16 +0100
-X-Google-Sender-Auth: SBafmQayxgLAszpeGwsBmdUvXi0
-Message-ID: <CAMuHMdWedqgvrSCfpmDFdM=ww-6+8v39sz+92CQaYHO4x5jNNQ@mail.gmail.com>
-Subject: Re: [PATCH] lib: vsprintf: Add %pa format specifier for phys_addr_t types
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
-        George Spelvin <linux@horizon.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Andrei Emeltchenko <andrei.emeltchenko@intel.com>, mingo@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
+Content-Disposition: inline
+In-Reply-To: <1358762966-20791-11-git-send-email-thierry.reding@avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 6:47 AM, Stepan Moskovchenko
-<stepanm@codeaurora.org> wrote:
-> Add the %pa format specifier for printing a phys_addr_t
-> type, since the physical address size on some platforms
-> can vary based on build options, regardless of the native
-> integer type.
 
-I'm not so sure it's a good idea to start using %p for integer types.
-For structures like MAC addresses, it makes life easier.
+--pf9I7BMVVzbSWLtt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-%p offers very minimal support from the compiler for checking the argument type.
-At least with casting to "unsigned long long" and using %llu not much can go
-wrong if there are no compiler warnings.
+On Mon, Jan 21, 2013 at 11:09:03AM +0100, Thierry Reding wrote:
+> Convert all uses of devm_request_and_ioremap() to the newly introduced
+> devm_ioremap_resource() which provides more consistent error handling.
+>=20
+> devm_ioremap_resource() provides its own error messages so all explicit
+> error messages can be removed from the failure code paths.
+>=20
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> Cc: linux-i2c@vger.kernel.org
 
-Also variables holding MAC address typically don't change, while there's been
-lots of churn in variables changing type from unsigned long to phys_addr_t or
-unsigned long long or void *. Without help of the compiler to catch
-incorrect format
-specifiers, it will become much more difficult to get and keep all of
-them correct.
+I still have the concerns I mentioned in the previous discussion but the
+series seems to have enough momentum that we could also just try it.
 
-Just my two (euro)cents...
+So, for I2C:
 
-Gr{oetje,eeting}s,
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 
-                        Geert
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+--pf9I7BMVVzbSWLtt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlD/EwIACgkQD27XaX1/VRsYDQCeLQxcrfIPVKYe5Wu5vA4OfFtX
+jqEAnjBBmERGCFxh4rbz8MuaVo20COoi
+=5MT+
+-----END PGP SIGNATURE-----
+
+--pf9I7BMVVzbSWLtt--
