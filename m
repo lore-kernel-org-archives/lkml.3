@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab3AVP15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 10:27:57 -0500
-Received: from pindarots.xs4all.nl ([80.101.128.228]:32828 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab3AVP14 (ORCPT
+	id S1754378Ab3AVPaN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 10:30:13 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:34891 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753383Ab3AVPaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 10:27:56 -0500
-Message-ID: <50FEAFEB.7020103@xs4all.nl>
-Date: Tue, 22 Jan 2013 16:27:39 +0100
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 22 Jan 2013 10:30:11 -0500
+Date: Tue, 22 Jan 2013 10:30:10 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Shawn Guo <shawn.guo@linaro.org>
+cc: Arnd Bergmann <arnd@arndb.de>, Felipe Balbi <balbi@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <arm@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        Manjunath Goudar <manjunath.goudar@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH 13/15] USB: ehci: make orion and mxc bus glues coexist
+In-Reply-To: <20130122061116.GD29677@S2100-06.ap.freescale.net>
+Message-ID: <Pine.LNX.4.44L0.1301221028580.1510-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Boris Ostrovsky <boris.ostrovsky@amd.com>
-CC: suravee.suthikulpanit@amd.com, Jacob Shin <jacob.shin@amd.com>,
-        Borislav Petkov <bp@alien8.de>,
-        =?UTF-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
-References: <50FBC7EF.6040207@xs4all.nl> <20130120103652.GB16800@pd.tnic>  <50FBC994.8020409@xs4all.nl> <20130120111920.GL25591@8bytes.org>  <50FBD413.1000406@xs4all.nl> <20130120114011.GN25591@8bytes.org>  <20130120114828.GB16519@pd.tnic> <20130121160450 <50FE9E76.30702@xs4all.nl> <50FEA3F2.1070408@amd.com>
-In-Reply-To: <50FEA3F2.1070408@amd.com>
-X-Enigmail-Version: 1.5.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-01-22 15:36, Boris Ostrovsky wrote:
->> Gigabyte demonstrate that using ESX 5i IOMMU works fine. (with pictures
->> attached).
+On Tue, 22 Jan 2013, Shawn Guo wrote:
+
+> On Mon, Jan 21, 2013 at 09:37:42PM +0000, Arnd Bergmann wrote:
+> > > Arnd, please take a look at
+> > > 
+> > >         http://marc.info/?l=linux-usb&amp;m=135843716515529&amp;w=2
+> > > 
+> > > I can't test it easily, not being set up for cross compilation.  I'm 
+> > > waiting to hear from anybody whether it works before submitting it.
+> > > (There's also a report of memory corruption involving a similar patch 
+> > > for ehci-omap; it hasn't been tracked down yet.)
+> > 
+> > Your patch looks good to me, but it also seems to do some other
+> > changes that are not required to fix the problem but could wait
+> > for 3.9 instead. You definitely have my Ack if you are willing
+> > to take it for 3.8 though.
+
+I think it's not too late to submit this for 3.8.  Thanks for the Ack.
+
+> > Shawn or Sascha should be able to test it.
+> > 
+> Alan,
 > 
-> There are no attachments to your message.
+> Thanks for the patch.  I just gave it try.  The USB Host port still
+> works for me with a couple of fixes on your changes integrated (one
+> for compiling and the other for probing).  So you have my ACK with
+> the changes below rolled into your patch.
 
-Correct, gigabyte did send them via their support web-interface.
-Do yo uneed to see them? They just show IOMMU enabled or similar.
+Right, I have merged your changes into the patch.  Will submit shortly.
 
->> What can we bring against that?
-> 
-> How reproducible is the problem that you are seeing?
-
-Seen once over here. Correlated with raid-check.
-
-Udo
+Alan Stern
 
