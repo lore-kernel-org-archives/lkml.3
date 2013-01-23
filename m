@@ -1,47 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab3AWT2Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 14:28:16 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:28800 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab3AWT2K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 14:28:10 -0500
-Message-ID: <510039C8.7040401@hp.com>
-Date: Wed, 23 Jan 2013 11:28:08 -0800
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1752226Ab3AWT3X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 14:29:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34944 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750813Ab3AWT3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 14:29:13 -0500
+Date: Wed, 23 Jan 2013 20:29:11 +0100
+From: Jan Kara <jack@suse.cz>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
+Subject: Re: jbd2: don't wake kjournald unnecessarily
+Message-ID: <20130123192911.GB21112@quack.suse.cz>
+References: <20130121104733.GE5588@quack.suse.cz>
+ <CA+icZUVy-=jJkRsEKmX+ZGRjiGr4wwp3pqdxuLCRHeqW_H0x9Q@mail.gmail.com>
+ <CA+icZUVAP4ArN+j34GTUwMxte5DtLPJSrLmK9T6Na8Qy+aM0Rg@mail.gmail.com>
+ <20130121140738.GI5588@quack.suse.cz>
+ <CA+icZUXLcdnNPvA9o8d5msOQ0MkMci8mPXujLZ3zcYjYcVZ7JQ@mail.gmail.com>
+ <20130121231130.GB12410@thunk.org>
+ <20130122235041.GA7497@quack.suse.cz>
+ <50FF3EEA.2030408@redhat.com>
+ <20130123094421.GB9821@quack.suse.cz>
+ <50FFFFC6.8070308@redhat.com>
 MIME-Version: 1.0
-To: Leandro Lucarella <leandro.lucarella@sociomantic.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Doubts about listen backlog and tcp_max_syn_backlog
-References: <20130122161038.GG4608@sociomantic.com> <1358873142.3464.3964.camel@edumazet-glaptop> <20130122165929.GH4608@sociomantic.com> <1358874800.3464.4002.camel@edumazet-glaptop> <50FED7CE.1030008@hp.com> <20130122184245.GJ4608@sociomantic.com> <50FF0C25.9000300@hp.com> <20130123104736.GK4608@sociomantic.com>
-In-Reply-To: <20130123104736.GK4608@sociomantic.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FFFFC6.8070308@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2013 02:47 AM, Leandro Lucarella wrote:
-> Thanks for the info. I'm definitely dropping SYNs and sending cookies,
-> around 50/s. Is there any way to tell how many connections are queued in
-> a particular socket?
+On Wed 23-01-13 09:20:38, Eric Sandeen wrote:
+> On 1/23/13 3:44 AM, Jan Kara wrote:
+> > On Tue 22-01-13 19:37:46, Eric Sandeen wrote:
+> >> On 1/22/13 5:50 PM, Jan Kara wrote:
+> >>> On Mon 21-01-13 18:11:30, Ted Tso wrote:
+> >>>> On Tue, Jan 22, 2013 at 12:04:32AM +0100, Sedat Dilek wrote:
+> >>>>>
+> >>>>> Beyond the FUSE/LOOP fun, will you apply this patch to your linux-next GIT tree?
+> >>>>>
+> >>>>> Feel free to add...
+> >>>>>
+> >>>>>      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+> >>>>>
+> >>>>> A similiar patch for JBD went through your tree into mainline (see [1] and [2]).
+> >>>>
+> >>>> I'm not at all convinced that this patch has anything to do with your
+> >>>> problem.  I don't see how it could affect things, and I believe you
+> >>>> mentioned that you saw the problem even with this patch applied?  (I'm
+> >>>> not sure; some of your messages which you sent were hard to
+> >>>> understand, and you mentioned something about trying to send messages
+> >>>> when low on sleep :-).
+> >>>>
+> >>>> In any case, the reason why I haven't pulled this patch into the ext4
+> >>>> tree is because I was waiting for Eric and some of the performance
+> >>>> team folks at Red Hat to supply some additional information about why
+> >>>> this commit was making a difference in performance for a particular
+> >>>> proprietary, closed source benchmark.
+> >>>   Just a small correction - it was aim7 AFAIK which isn't closed source
+> >>> (anymore). You can download it from SourceForge
+> >>> (http://sourceforge.net/projects/aimbench/files/aim-suite7/Initial%20release/).
+> >>> Now I have some reservations about what the benchmark does but historically
+> >>> it has found quite a few issues for us as well.
+> >>>
+> >>>> I'm very suspicious about applying patches under the "cargo cult"
+> >>>> school of programming.  ("We don't understand why it makes a
+> >>>> difference, but it seems to be good, so bombs away!" :-)
+> >>>   Well, neither am I ;) But it is obvious the patch speeds up
+> >>> log_start_commit() by 'a bit' (taking spinlock, disabling irqs, ...). And
+> >>> apparently 'a bit' is noticeable for particular workload on a particular
+> >>> machine - commit statistics Eric provided showed that clearly. I'd still be
+> >>> happier if Eric also told us how much log_start_commit() calls there were
+> >>> so that one could verify that 'a bit' could indeed multiply to a measurable
+> >>> difference. But given how simple the patch is, I gave away after a while
+> >>> and just merged it...
+> >>
+> >> I am still trying to get our perf guys to collect that data, FWIW...
+> >> I will send it when I get it.  I bugged them again today.  :)
+> >>
+> >> (Just to be sure: I was going to measure the wakeups the old way, and the
+> >> avoided wakeups with the new change; sound ok?)
+> >   Yes, that would be what I'm interested in.
+> 
+> Holy cow, this is much more than I expected, but here's what they report:
+> 
+> old JBD: AIM7 jobs/min 97624.39;  got 78193 jbd wakeups
+> new JBD: AIM7 jobs/min 85929.43;  got 6306999 jbd wakeups, 6264684 extra wakeups
+  Yeah, that's a lot. My guess would be *a lot* of processes are hanging in
+start_this_handle() and waiting for transaction commit. Each of them calls
+__log_start_commit() and things add up. Thanks for getting these numbers.
 
-I am not familiar with one.  Doesn't mean there isn't one, only that I 
-am not able to think of it.
-
-> Then if syncookies are enabled, the time spent in connect() shouldn't be
-> bigger than 3 seconds even if SYNs are being "dropped" by listen, right?
-
-Do you mean if "ESTABLISHED" connections are dropped because the listen 
-queue is full?  I don't think I would put that as "SYNs being dropped by 
-listen" - too easy to confuse that with an actual dropping of a SYN segment.
-
-But yes, I would not expect a connect() call to remain incomplete for 
-any longer than it took to receive an SYN|ACK from the other end.  That 
-would be 3 (,9, 21, etc...) seconds on a kernel with 3 seconds as the 
-initial retransmission timeout.
-
-rick
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
