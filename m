@@ -1,91 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab3AWRlb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 12:41:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42093 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab3AWRla (ORCPT
+	id S1756710Ab3AWRlx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 12:41:53 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44713 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754655Ab3AWRlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 12:41:30 -0500
-Date: Wed, 23 Jan 2013 15:40:47 -0200
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Ilija Hadzic <ilijahadzic@gmail.com>
-Cc: Shuah Khan <shuah.khan@hp.com>, Greg KH <gregkh@linuxfoundation.org>,
-        jglisse@redhat.com, dri-devel@lists.freedesktop.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>, shuahkhan@gmail.com,
-        airlied@redhat.com
-Subject: Re: [PATCH] drm/radeon: fix NULL pointer dereference in UMS mode in
- radeon_cs_parser_fini()
-Message-ID: <20130123174046.GD15627@herton-Z68MA-D2H-B3>
-References: <1358379788.7243.10.camel@lorien2>
- <Pine.GSO.4.64.1301162045321.898@umail>
- <1358442582.2828.11.camel@lorien2>
- <20130123160659.GC15627@herton-Z68MA-D2H-B3>
- <CA+4h6Hno5o=RjrXhqupedEZXoHv6v_4duZtpHXV9F04t=x00Nw@mail.gmail.com>
+	Wed, 23 Jan 2013 12:41:52 -0500
+Date: Wed, 23 Jan 2013 12:41:50 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Alex Elder <elder@inktank.com>
+Cc: Sage Weil <sage@inktank.com>, "David S. Miller" <davem@davemloft.net>,
+        ceph-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/ceph/osdmap.c: fix undefined behavior when using
+ snprintf()
+Message-ID: <20130123174150.GA26336@gmail.com>
+References: <1358882429-19066-1-git-send-email-dinggnu@gmail.com>
+ <51001447.3030600@inktank.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+4h6Hno5o=RjrXhqupedEZXoHv6v_4duZtpHXV9F04t=x00Nw@mail.gmail.com>
+In-Reply-To: <51001447.3030600@inktank.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 12:21:29PM -0500, Ilija Hadzic wrote:
-> On Wed, Jan 23, 2013 at 11:07 AM, Herton Ronaldo Krzesinski
-> <herton.krzesinski@canonical.com> wrote:
-> > On Thu, Jan 17, 2013 at 10:09:42AM -0700, Shuah Khan wrote:
-> >> On Wed, 2013-01-16 at 21:06 -0600, Ilija Hadzic wrote:
-> >> > Actually, the code path affected by your patch is not executed in UMS mode
-> >> > at all. Notice that radeon_cs_parser_fini is only called from
-> >> > radeon_cs_ioctl which is a KMS-only ioctl (see radeon_kms.c).
-> >> >
-> >> > The equivalent of the fix you are trying to do is in
-> >> > a6b7e1a02b77ab8fe8775d20a88c53d8ba55482e (function patched by that one is
-> >> > the one used by legacy-CS ioctl), which you should go together
-> >> > with ff4bd0827764e10a428a9d39e6814c5478863f94 if you are backporting UMS
-> >> > fixes to 3.7. Both are needed to prevent kernel crashes in UMS mode.
-> >> >
-> >> > -- Ilija
-> >>
-> >> Thanks. I will take a look at a6b7e1a02b77ab8fe8775d20a88c53d8ba55482e.
-> >> I sent back-ported ff4bd0827764e10a428a9d39e6814c5478863f94 patch to
-> >> stable and I will back-port and send
-> >> a6b7e1a02b77ab8fe8775d20a88c53d8ba55482e as well.
-> >
-> > While at it, also looks like commit
-> > 25d8999780f8c1f53928f4a24a09c01550423109 could also be added to stables.
-> > But while looking at it, while the patch itself is correct, I noted that
-> > there is a possibility of double free: if either of the
-> > p->chunks[p->chunk_ib_idx].kpage[] items are non NULL, we will free it in
-> > radeon_cs_parser_init and also when calling one of the fini functions
-> > (radeon_cs_parser_fini or r600_cs_parser_fini). So either we need to set
-> > kpage[n] to NULL after kfree, or just return the error.
-> >
+On Wed, Jan 23, 2013 at 10:48:07AM -0600, Alex Elder wrote:
+> On 01/22/2013 01:20 PM, Cong Ding wrote:
+> > The variable "str" is used as both the source and destination in function
+> > snprintf(), which is undefined behavior based on C11. The original description
+> > in C11 is:
+> > 	"If copying takes place between objects that
+> > 	overlap, the behavior is undefined."
 > 
-> Yes you are right. The error-handling path should force both kpage[]
-> pointers to NULL before returning -ENOMEM. That would fix the double
-> free.
+> Yes, this was an ill-advised thing to do in this function.
 > 
-> Regarding, inclusion of 25d8999780f8c1f53928f4a24a09c01550423109 into
-> stable (and possible follow-up patch to fix potential double-kfree),
-> does this pass the "no fixes for theoretical problems in stable"
-> criterion ?
+> In fact, the only place this function is used (in osdmap_show()),
+> the non-static buffer was not initialized before the call.  (It
+> might happen to work because the same stack space was getting
+> reused each time through the loop.  Eeeeew!)
 > 
-> It is an obvious bug, but it happens so rarely that I am not surprised
-> that it has never happened: You need an (old) AGP card *and* you need
-> to run out of kmalloc memory.
+> This is just an awful couple of functions.
+> 
+> > And, the function of ceph_osdmap_state_str() is to return the osdmap state, so
+> > it should return "doesn't exist" when all the conditions are not satisfied. I
+> > fix it in this patch.
+> > 
+> > Based on C11, snprintf() does nothing if n==0:
+> > 	"If n is zero, nothing is written, and s may be a
+> > 	null pointer. Otherwise, output characters beyond
+> > 	the n-1st are discarded rather than being written to
+> > 	the array, and a null character is written at the
+> > 	end of the characters actually written into the
+> > 	array."
+> > so I remove the unnecessary check of len (because it is not a busy path and
+> > saves a few lines of code).
+> 
+> True.  But since you know it's not going to do anything why
+> not only make the call if len is non-zero?  I.e.:
+> 
+> 	else if (len)
+> 		snprintf(str, len, "doesn't exist");
+> 
+> With your permission I'll make this change and will commit
+> this for you.  OK?
+It's fine, thanks. But I think it's better to check len in the beginning
+because other conditions also call snprintf with parameter len. Like this:
 
-About the "theoretical problem" criteria, I think it applies more to
-race conditions not detected in practice, things that are not obvious/
-deterministic etc., but indeed commit 25d89997 looks not be worth to be
-added on stables.
+	if (!len)
+		return str;
 
-> 
-> -- Ilija
-> 
+	if ((state & CEPH_OSD_EXISTS) && (state & CEPH_OSD_UP))
+		snprintf(str, len, "exists, up");
+	else if (state & CEPH_OSD_EXISTS)
+		snprintf(str, len, "exists");
+	else if (state & CEPH_OSD_UP)
+		snprintf(str, len, "up");
+	else
+		snprintf(str, len, "doesn't exist");
 
--- 
-[]'s
-Herton
+	return str;
+
+or like this:
+
+	if (len) {
+		if ((state & CEPH_OSD_EXISTS) && (state & CEPH_OSD_UP))
+			snprintf(str, len, "exists, up");
+		else if (state & CEPH_OSD_EXISTS)
+			snprintf(str, len, "exists");
+		else if (state & CEPH_OSD_UP)
+			snprintf(str, len, "up");
+		else
+			snprintf(str, len, "doesn't exist");
+	}
+	return str;
+
+Thanks,
+- cong
+
