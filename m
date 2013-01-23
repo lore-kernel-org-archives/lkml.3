@@ -1,131 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab3AWQyx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 11:54:53 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:48039 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab3AWQyw (ORCPT
+	id S1756563Ab3AWQzO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 11:55:14 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:63098 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756437Ab3AWQzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 11:54:52 -0500
+	Wed, 23 Jan 2013 11:55:12 -0500
+Message-ID: <51001447.3030600@inktank.com>
+Date: Wed, 23 Jan 2013 10:48:07 -0600
+From: Alex Elder <elder@inktank.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130118230604.GJ4051@tassilo.jf.intel.com>
-References: <1358264386-24633-1-git-send-email-eranian@google.com>
-	<1358264386-24633-8-git-send-email-eranian@google.com>
-	<20130118230604.GJ4051@tassilo.jf.intel.com>
-Date: Wed, 23 Jan 2013 17:54:51 +0100
-Message-ID: <CABPqkBSNRmXb8hbXMUOLuCpJmoLh-mmo3YGdqY1_zeepCVRNUg@mail.gmail.com>
-Subject: Re: [PATCH v6 07/18] perf: add generic memory sampling interface
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+To: Cong Ding <dinggnu@gmail.com>
+CC: Sage Weil <sage@inktank.com>, "David S. Miller" <davem@davemloft.net>,
+        ceph-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/ceph/osdmap.c: fix undefined behavior when using
+ snprintf()
+References: <1358882429-19066-1-git-send-email-dinggnu@gmail.com>
+In-Reply-To: <1358882429-19066-1-git-send-email-dinggnu@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 19, 2013 at 12:06 AM, Andi Kleen <ak@linux.intel.com> wrote:
->>  extern void perf_output_sample(struct perf_output_handle *handle,
->> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
->> index 7e24641..8283218 100644
->> --- a/include/uapi/linux/perf_event.h
->> +++ b/include/uapi/linux/perf_event.h
->> @@ -133,9 +133,9 @@ enum perf_event_sample_format {
->>       PERF_SAMPLE_REGS_USER                   = 1U << 12,
->>       PERF_SAMPLE_STACK_USER                  = 1U << 13,
->>       PERF_SAMPLE_WEIGHT                      = 1U << 14,
->> +     PERF_SAMPLE_DSRC                        = 1U << 15,
->
-> This conflicts with similar extensions in the Haswell patchkit,
-> but that can be worked out by just moving some numbers (and making
-> sure the input/output calls are still in the right place)
->
-Yes, it all depends on which patch goes in first. No big deal.
+On 01/22/2013 01:20 PM, Cong Ding wrote:
+> The variable "str" is used as both the source and destination in function
+> snprintf(), which is undefined behavior based on C11. The original description
+> in C11 is:
+> 	"If copying takes place between objects that
+> 	overlap, the behavior is undefined."
 
->
->> +union perf_mem_dsrc {
->> +     __u64 val;
->> +     struct {
->> +             __u64   mem_op:5,       /* type of opcode */
->> +                     mem_lvl:14,     /* memory hierarchy level */
->> +                     mem_snoop:5,    /* snoop mode */
->> +                     mem_lock:2,     /* lock instr */
->> +                     mem_dtlb:7,     /* tlb access */
->> +                     mem_rsvd:31;
->> +     };
->> +};
->> +
->> +/* type of opcode (load/store/prefetch,code) */
->> +#define PERF_MEM_OP_NA               0x01 /* not available */
->> +#define PERF_MEM_OP_LOAD     0x02 /* load instruction */
->> +#define PERF_MEM_OP_STORE    0x04 /* store instruction */
->> +#define PERF_MEM_OP_PFETCH   0x08 /* prefetch */
->> +#define PERF_MEM_OP_EXEC     0x10 /* code (execution) */
->> +#define PERF_MEM_OP_SHIFT    0
->
-> Do we really need the shift? it's implicit in the bitfield right?
->
-The bitfield is provided for reference for user code. It is not
-used by the kernel code. We use plain u64 instead thus we
-need the shift. This is used for the static pebs_data_source[]
-table.
+Yes, this was an ill-advised thing to do in this function.
 
->> +/* memory hierarchy (memory level, hit or miss) */
->> +#define PERF_MEM_LVL_NA              0x01  /* not available */
->> +#define PERF_MEM_LVL_HIT     0x02  /* hit level */
->> +#define PERF_MEM_LVL_MISS    0x04  /* miss level  */
->> +#define PERF_MEM_LVL_L1              0x08  /* L1 */
->> +#define PERF_MEM_LVL_LFB     0x10  /* Line Fill Buffer */
->> +#define PERF_MEM_LVL_L2              0x20  /* L2 hit */
->> +#define PERF_MEM_LVL_L3              0x40  /* L3 hit */
->> +#define PERF_MEM_LVL_LOC_RAM 0x80  /* Local DRAM */
->> +#define PERF_MEM_LVL_REM_RAM1        0x100 /* Remote DRAM (1 hop) */
->> +#define PERF_MEM_LVL_REM_RAM2        0x200 /* Remote DRAM (2 hops) */
->> +#define PERF_MEM_LVL_REM_CCE1        0x400 /* Remote Cache (1 hop) */
->> +#define PERF_MEM_LVL_REM_CCE2        0x800 /* Remote Cache (2 hops) */
->> +#define PERF_MEM_LVL_IO              0x1000 /* I/O memory */
->> +#define PERF_MEM_LVL_UNC     0x2000 /* Uncached memory */
->
-> I would leave some free bits here, obviously this doesn't cover all
-> that may be possible in system architecture. Also why is this a bit mask,
-> you can only hit one level right? So perhaps a number.
->
-Yeah, I have been going back and forth on how to best define this to leave
-some room for extensions. For now, we have 31 bits left at the in the MSB
-part of the u64. Could either leave them there or try to commandeer some
-for the memory hierarchy field.
+In fact, the only place this function is used (in osdmap_show()),
+the non-static buffer was not initialized before the call.  (It
+might happen to work because the same stack space was getting
+reused each time through the loop.  Eeeeew!)
 
-This can be a bitmask on architectures where the HW cannot determine
-for sure where the line came from. It may provided best effort such as
-missed L2 or L3.
+This is just an awful couple of functions.
 
->> +/* TLB access */
->> +#define PERF_MEM_TLB_NA              0x01 /* not available */
->> +#define PERF_MEM_TLB_HIT     0x02 /* hit level */
->> +#define PERF_MEM_TLB_MISS    0x04 /* miss level */
->> +#define PERF_MEM_TLB_L1              0x08 /* L1 */
->> +#define PERF_MEM_TLB_L2              0x10 /* L2 */
->> +#define PERF_MEM_TLB_WK              0x20 /* Hardware Walker*/
->> +#define PERF_MEM_TLB_OS              0x40 /* OS fault handler */
->
->
-The current x86 PEBS-LL is a example of HW that cannot disambiguate
-where the TLB access actually was. It can for instance return that the access
-did not miss the 2nd level TLB which means: hit L1 TLB or L2 TLB. That's
-why you need a bitmask.
+> And, the function of ceph_osdmap_state_str() is to return the osdmap state, so
+> it should return "doesn't exist" when all the conditions are not satisfied. I
+> fix it in this patch.
+> 
+> Based on C11, snprintf() does nothing if n==0:
+> 	"If n is zero, nothing is written, and s may be a
+> 	null pointer. Otherwise, output characters beyond
+> 	the n-1st are discarded rather than being written to
+> 	the array, and a null character is written at the
+> 	end of the characters actually written into the
+> 	array."
+> so I remove the unnecessary check of len (because it is not a busy path and
+> saves a few lines of code).
 
+True.  But since you know it's not going to do anything why
+not only make the call if len is non-zero?  I.e.:
 
-> Same
->
->
->> +#define PERF_MEM_TLB_SHIFT   26
->> +
->> +#define PERF_MEM_S(a, s) \
->> +     (((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
->
-> Is that used by anything?
->
->
-Yes, it is used to populate the pebs_data_source[] in perf_event_intel_ds.c
+	else if (len)
+		snprintf(str, len, "doesn't exist");
+
+With your permission I'll make this change and will commit
+this for you.  OK?
+
+> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+
+Reviewed-by: Alex Elder <elder@inktank.com>
+
+> ---
+>  net/ceph/osdmap.c |   27 ++++++++-------------------
+>  1 file changed, 8 insertions(+), 19 deletions(-)
+> 
+> diff --git a/net/ceph/osdmap.c b/net/ceph/osdmap.c
+> index de73214..3131a99d3 100644
+> --- a/net/ceph/osdmap.c
+> +++ b/net/ceph/osdmap.c
+> @@ -13,26 +13,15 @@
+>  
+>  char *ceph_osdmap_state_str(char *str, int len, int state)
+>  {
+> -	int flag = 0;
+> -
+> -	if (!len)
+> -		goto done;
+> -
+> -	*str = '\0';
+> -	if (state) {
+> -		if (state & CEPH_OSD_EXISTS) {
+> -			snprintf(str, len, "exists");
+> -			flag = 1;
+> -		}
+> -		if (state & CEPH_OSD_UP) {
+> -			snprintf(str, len, "%s%s%s", str, (flag ? ", " : ""),
+> -				 "up");
+> -			flag = 1;
+> -		}
+> -	} else {
+> +	if ((state & CEPH_OSD_EXISTS) && (state & CEPH_OSD_UP))
+> +		snprintf(str, len, "exists, up");
+> +	else if (state & CEPH_OSD_EXISTS)
+> +		snprintf(str, len, "exists");
+> +	else if (state & CEPH_OSD_UP)
+> +		snprintf(str, len, "up");
+> +	else
+>  		snprintf(str, len, "doesn't exist");
+> -	}
+> -done:
+> +
+>  	return str;
+>  }
+>  
+> 
+
