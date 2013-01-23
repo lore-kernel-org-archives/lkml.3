@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab3AWBrd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 20:47:33 -0500
-Received: from mout.gmx.net ([212.227.15.19]:63078 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751965Ab3AWBrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 20:47:31 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19KHBN3hDtKtLSmcnhBCSs0OX5BrZFao+NsWorp4q
-	TJdp7Ek0T2gt8q
-Message-ID: <1358905643.5752.8.camel@marge.simpson.net>
-Subject: Re: [PATCH v3 09/22] sched: compute runnable load avg in cpu_load
- and cpu_avg_load_per_task
-From: Mike Galbraith <efault@gmx.de>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>, namhyung@kernel.org,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        preeti@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Jan 2013 02:47:23 +0100
-In-Reply-To: <50FF3090.1090608@intel.com>
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
-	 <1357375071-11793-10-git-send-email-alex.shi@intel.com>
-	 <50E7EAB1.6020302@intel.com> <50E92DC3.4050906@intel.com>
-	 <CA+55aFxbS-u1Zfwg2oKOmHq6FBF+dRRhrdssqc9PpC_gXoV3+g@mail.gmail.com>
-	 <50EFB1DB.7090804@intel.com> <50FD54EA.4060804@intel.com>
-	 <50FE0575.6090005@intel.com> <1358837740.5782.209.camel@marge.simpson.net>
-	 <50FE44B5.6020004@intel.com> <1358848338.5782.331.camel@marge.simpson.net>
-	 <50FF3090.1090608@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1752849Ab3AWBuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 20:50:05 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58551 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737Ab3AWBuD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 20:50:03 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-69-50ff41c78b47
+Date: Wed, 23 Jan 2013 10:49:59 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: paul.szabo@sydney.edu.au
+Cc: linux-mm@kvack.org, 695182@bugs.debian.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Subtract min_free_kbytes from dirtyable memory
+Message-ID: <20130123014959.GB2723@blaptop>
+References: <201301210315.r0L3FnGV021298@como.maths.usyd.edu.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201301210315.r0L3FnGV021298@como.maths.usyd.edu.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-23 at 08:36 +0800, Alex Shi wrote: 
-> On 01/22/2013 05:52 PM, Mike Galbraith wrote:
-> > On Tue, 2013-01-22 at 15:50 +0800, Alex Shi wrote:
-> > 
-> >> Thanks for your suggestions and example, Mike!
-> >> I just can't understand the your last words here, Sorry. what the
-> >> detailed concern of you on 'both performance profiles with either
-> >> metric'? Could you like to give your preferred solutions?
-> > 
-> > Hm.. I'll try rephrasing.  Any power saving gain will of necessity be
-> > paid for in latency currency.  I don't have a solution other than make a
-> > button, let the user decide whether history influences fast path task
-> > placement or not.  Any other decision maker will get it wrong.
+On Mon, Jan 21, 2013 at 02:15:49PM +1100, paul.szabo@sydney.edu.au wrote:
+> When calculating amount of dirtyable memory, min_free_kbytes should be
+> subtracted because it is not intended for dirty pages.
+
+So what's the effect for user?
+It would be better to include that in description if possible.
+
 > 
-> Um, if no other objection, I'd like to move the runnable load only used
-> for power friendly policy -- for this patchset, they are 'powersaving'
-> and 'balance', Can I?
+> Using an "extern int" because that is the only interface to some such
+> sysctl values.
+> 
+> (This patch does not solve the PAE OOM issue.)
+> 
+> Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
+> School of Mathematics and Statistics   University of Sydney    Australia
+> 
+> Reported-by: Paul Szabo <psz@maths.usyd.edu.au>
+> Reference: http://bugs.debian.org/695182
+> Signed-off-by: Paul Szabo <psz@maths.usyd.edu.au>
+> 
+> --- mm/page-writeback.c.old	2012-12-06 22:20:40.000000000 +1100
+> +++ mm/page-writeback.c	2013-01-21 13:57:05.000000000 +1100
+> @@ -343,12 +343,16 @@
+>  unsigned long determine_dirtyable_memory(void)
+>  {
+>  	unsigned long x;
+> +	extern int min_free_kbytes;
+>  
+>  	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
+>  
+>  	if (!vm_highmem_is_dirtyable)
+>  		x -= highmem_dirtyable_memory(x);
+>  
+> +	/* Subtract min_free_kbytes */
+> +	x -= min(x, min_free_kbytes >> (PAGE_SHIFT - 10));
 
-Yeah, that should work be fine.
+It seems you saw old kernel.
+Current kernel includes following logic.
 
--Mike
+static unsigned long global_dirtyable_memory(void)
+{
+        unsigned long x;
 
+        x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
+        x -= min(x, dirty_balance_reserve);
+
+        if (!vm_highmem_is_dirtyable)
+                x -= highmem_dirtyable_memory(x);
+
+        return x + 1;   /* Ensure that we never return 0 */
+}
+
+And dirty_lanace_reserve already includes high_wmark_pages.
+Look at calculate_totalreserve_pages.
+
+So I think we don't need this patch.
+Thanks.
+
+> +
+>  	return x + 1;	/* Ensure that we never return 0 */
+>  }
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
