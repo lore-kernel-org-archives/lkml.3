@@ -1,59 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab3AWPWu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:22:50 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:58660 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752867Ab3AWPWt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 10:22:49 -0500
-Date: Wed, 23 Jan 2013 10:22:48 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Sascha Hauer <s.hauer@pengutronix.de>
-cc: Arnd Bergmann <arnd@arndb.de>,
-        Manjunath Goudar <manjunath.goudar@linaro.org>, <balbi@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <arm@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH 13/15] USB: ehci: make orion and mxc bus glues coexist
-In-Reply-To: <20130122210027.GN1906@pengutronix.de>
-Message-ID: <Pine.LNX.4.44L0.1301231018390.2045-100000@iolanthe.rowland.org>
+	id S1755675Ab3AWPXv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:23:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51526 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752867Ab3AWPXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 10:23:49 -0500
+Date: Wed, 23 Jan 2013 15:23:31 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Simon Jeons <simon.jeons@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm: uninline page_xchg_last_nid()
+Message-ID: <20130123152330.GJ13304@suse.de>
+References: <1358874762-19717-1-git-send-email-mgorman@suse.de>
+ <1358874762-19717-6-git-send-email-mgorman@suse.de>
+ <20130122144659.d512e05c.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130122144659.d512e05c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jan 2013, Sascha Hauer wrote:
+Andrew Morton pointed out that page_xchg_last_nid() and reset_page_last_nid()
+were "getting nuttily large" and asked that it be investigated.
 
-> On Tue, Jan 22, 2013 at 03:38:55PM +0000, Arnd Bergmann wrote:
-> > On Tuesday 22 January 2013, Alan Stern wrote:
-> > > In order to prevent this, you have to make sure that each glue driver
-> > > depends on USB_ARCH_HAS_EHCI.  A simple way to do this is to surround
-> > > the Kconfig entries for those drivers with "if USB && 
-> > > USB_ARCH_HAS_EHCI" ... "endif".
-> > 
-> > I was actually thinking we could remove the use of USB_ARCH_HAS_EHCI
-> > as well once we have inverted the logic for selecting USB_EHCI_HCD,
-> > but there is another problem with that, because then we still need
-> > something to select USB_ARCH_HAS_HCD, or kill that symbol as well.
-> 
-> +1 for killing it. Such symbols get more and more meaningless anyway
-> with multiarch kernels-
+reset_page_last_nid() is on the page free path and it would be unfortunate
+to make that path more expensive than it needs to be. Due to the internal
+use of page_xchg_last_nid() it is already too expensive but fortunately,
+it should also be impossible for the page->flags to be updated in parallel
+when we call reset_page_last_nid(). Instead of unlining the function,
+it uses a simplier implementation that assumes no parallel updates and
+should now be sufficiently short for inlining.
 
-I tend to agree.  Anyway, the symbols are named badly.  _Any_
-architecture with HAS_IOMEM can in theory aupport host-side USB.  
-Maybe some of the platforms don't, but that has nothing to do with the
-CPU's architecture.
+page_xchg_last_nid() is called in paths that are already quite expensive
+(splitting huge page, fault handling, migration) and it is reasonable to
+uninline. There was not really a good place to place the function but
+mm/mmzone.c was the closest fit IMO.
 
-Furthermore, even platforms that don't support USB host controllers 
-can use things like dummy-hcd and usbip, which provide virtual host 
-controllers.
+This patch saved 128 bytes of text in the vmlinux file for the kernel
+configuration I used for testing automatic NUMA balancing.
 
-Anybody think these symbols should be retained?
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/mm.h |   21 +++++----------------
+ mm/mmzone.c        |   20 +++++++++++++++++++-
+ 2 files changed, 24 insertions(+), 17 deletions(-)
 
-Alan Stern
-
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e25d47f..6e4468f 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -676,25 +676,14 @@ static inline int page_last_nid(struct page *page)
+ 	return (page->flags >> LAST_NID_PGSHIFT) & LAST_NID_MASK;
+ }
+ 
+-static inline int page_xchg_last_nid(struct page *page, int nid)
+-{
+-	unsigned long old_flags, flags;
+-	int last_nid;
+-
+-	do {
+-		old_flags = flags = page->flags;
+-		last_nid = page_last_nid(page);
+-
+-		flags &= ~(LAST_NID_MASK << LAST_NID_PGSHIFT);
+-		flags |= (nid & LAST_NID_MASK) << LAST_NID_PGSHIFT;
+-	} while (unlikely(cmpxchg(&page->flags, old_flags, flags) != old_flags));
+-
+-	return last_nid;
+-}
++extern int page_xchg_last_nid(struct page *page, int nid);
+ 
+ static inline void reset_page_last_nid(struct page *page)
+ {
+-	page_xchg_last_nid(page, (1 << LAST_NID_SHIFT) - 1);
++	int nid = (1 << LAST_NID_SHIFT) - 1;
++
++	page->flags &= ~(LAST_NID_MASK << LAST_NID_PGSHIFT);
++	page->flags |= (nid & LAST_NID_MASK) << LAST_NID_PGSHIFT;
+ }
+ #endif /* LAST_NID_NOT_IN_PAGE_FLAGS */
+ #else
+diff --git a/mm/mmzone.c b/mm/mmzone.c
+index 4596d81..bce796e 100644
+--- a/mm/mmzone.c
++++ b/mm/mmzone.c
+@@ -1,7 +1,7 @@
+ /*
+  * linux/mm/mmzone.c
+  *
+- * management codes for pgdats and zones.
++ * management codes for pgdats, zones and page flags
+  */
+ 
+ 
+@@ -96,3 +96,21 @@ void lruvec_init(struct lruvec *lruvec)
+ 	for_each_lru(lru)
+ 		INIT_LIST_HEAD(&lruvec->lists[lru]);
+ }
++
++#if defined(CONFIG_NUMA_BALANCING) && !defined(LAST_NID_NOT_IN_PAGE_FLAGS)
++int page_xchg_last_nid(struct page *page, int nid)
++{
++	unsigned long old_flags, flags;
++	int last_nid;
++
++	do {
++		old_flags = flags = page->flags;
++		last_nid = page_last_nid(page);
++
++		flags &= ~(LAST_NID_MASK << LAST_NID_PGSHIFT);
++		flags |= (nid & LAST_NID_MASK) << LAST_NID_PGSHIFT;
++	} while (unlikely(cmpxchg(&page->flags, old_flags, flags) != old_flags));
++
++	return last_nid;
++}
++#endif
