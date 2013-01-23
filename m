@@ -1,558 +1,400 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab3AWElN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 23:41:13 -0500
-Received: from ozlabs.org ([203.10.76.45]:44802 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752448Ab3AWElL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 23:41:11 -0500
-Date: Wed, 23 Jan 2013 15:40:41 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jon Loeliger <jdl@jdl.com>, Tony Lindgren <tony@atomide.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
-        Alan Tull <atull@altera.com>, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
-        Joel A Fernandes <agnel.joel@gmail.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Matt Ranostay <mranostay@gmail.com>
-Subject: Re: [PATCH 5/6] OF: Introduce Device Tree resolve support.
-Message-ID: <20130123044041.GS23500@truffula.fritz.box>
-References: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
- <1357327870-13615-6-git-send-email-panto@antoniou-consulting.com>
- <20130121044836.GB24829@truffula.fritz.box>
- <EEEDB0B2-7410-456B-BED7-89FD5E407553@antoniou-consulting.com>
- <20130122040524.GG23500@truffula.fritz.box>
- <AB11FABF-6A45-493D-869D-7549FD758DD2@antoniou-consulting.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BuGwuXnZwGGQ9GEc"
-Content-Disposition: inline
-In-Reply-To: <AB11FABF-6A45-493D-869D-7549FD758DD2@antoniou-consulting.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753649Ab3AWEoM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 23:44:12 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27612 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753454Ab3AWEoK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 23:44:10 -0500
+X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=1lp5RE5RrrwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=CpGQe48J6BUA:10 a=t5przTZDzlzkzD_J__UA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358916249.21576.105.camel@gandalf.local.home>
+Subject: Re: [RFC] Hack to use mkdir/rmdir in debugfs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 22 Jan 2013 23:44:09 -0500
+In-Reply-To: <1358915495.21576.102.camel@gandalf.local.home>
+References: <1358910114.21576.86.camel@gandalf.local.home>
+	 <20130123040846.GA2638@kroah.com>
+	 <1358915495.21576.102.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-01-22 at 23:31 -0500, Steven Rostedt wrote:
 
---BuGwuXnZwGGQ9GEc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > 
+> > But again, I'd really not want to do this in debugfs, how about your own
+> > filesystem?
+> 
+> I will note that this never modifies the debugfs code. But it does
+> circumvent it. That is, all this code lives in kernel/trace/trace.c. I
+> don't modify any of the debugfs code. I just replace the debugfs
+> dentry->d_inode->i_op with my own ops.
 
-On Tue, Jan 22, 2013 at 01:06:09PM +0200, Pantelis Antoniou wrote:
-> Hi
->=20
-> On Jan 22, 2013, at 6:05 AM, David Gibson wrote:
->=20
-> > On Mon, Jan 21, 2013 at 12:59:15PM +0200, Pantelis Antoniou wrote:
-> >> Hi David
-> >>=20
-> >> On Jan 21, 2013, at 6:48 AM, David Gibson wrote:
-> >>=20
-> >>> On Fri, Jan 04, 2013 at 09:31:09PM +0200, Pantelis Antoniou wrote:
-> >>>> Introduce support for dynamic device tree resolution.
-> >>>> Using it, it is possible to prepare a device tree that's
-> >>>> been loaded on runtime to be modified and inserted at the kernel
-> >>>> live tree.
-> >>>>=20
-> >>>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> >>>> ---
-> >>>> .../devicetree/dynamic-resolution-notes.txt        |  25 ++
-> >>>> drivers/of/Kconfig                                 |   9 +
-> >>>> drivers/of/Makefile                                |   1 +
-> >>>> drivers/of/resolver.c                              | 394 +++++++++++=
-++++++++++
-> >>>> include/linux/of.h                                 |  17 +
-> >>>> 5 files changed, 446 insertions(+)
-> >>>> create mode 100644 Documentation/devicetree/dynamic-resolution-notes=
-=2Etxt
-> >>>> create mode 100644 drivers/of/resolver.c
-> >>>>=20
-> >>>> diff --git a/Documentation/devicetree/dynamic-resolution-notes.txt b=
-/Documentation/devicetree/dynamic-resolution-notes.txt
-> >>>> new file mode 100644
-> >>>> index 0000000..0b396c4
-> >>>> --- /dev/null
-> >>>> +++ b/Documentation/devicetree/dynamic-resolution-notes.txt
-> >>>> @@ -0,0 +1,25 @@
-> >>>> +Device Tree Dynamic Resolver Notes
-> >>>> +----------------------------------
-> >>>> +
-> >>>> +This document describes the implementation of the in-kernel
-> >>>> +Device Tree resolver, residing in drivers/of/resolver.c and is a
-> >>>> +companion document to Documentation/devicetree/dt-object-internal.t=
-xt[1]
-> >>>> +
-> >>>> +How the resolver works
-> >>>> +----------------------
-> >>>> +
-> >>>> +The resolver is given as an input an arbitrary tree compiled with t=
-he
-> >>>> +proper dtc option and having a /plugin/ tag. This generates the
-> >>>> +appropriate __fixups__ & __local_fixups__ nodes as described in [1].
-> >>>> +
-> >>>> +In sequence the resolver works by the following steps:
-> >>>> +
-> >>>> +1. Get the maximum device tree phandle value from the live tree + 1.
-> >>>> +2. Adjust all the local phandles of the tree to resolve by that amo=
-unt.
-> >>>> +3. Using the __local__fixups__ node information adjust all local re=
-ferences
-> >>>> +   by the same amount.
-> >>>> +4. For each property in the __fixups__ node locate the node it refe=
-rences
-> >>>> +   in the live tree. This is the label used to tag the node.
-> >>>> +5. Retrieve the phandle of the target of the fixup.
-> >>>> +5. For each fixup in the property locate the node:property:offset l=
-ocation
-> >>>> +   and replace it with the phandle value.
-> >>>=20
-> >>> Hrm.  So, I'm really still not convinced by this approach.
-> >>>=20
-> >>> 	First, I think it's unwise to allow overlays to change
-> >>> essentially anything in the base tree, rather than having the base
-> >>> tree define sockets of some sort where things can be attached.
-> >>>=20
-> >>=20
-> >> One could say that the labels define the sockets. It's not just things
-> >> to be attached, properties might have to change, or something more com=
-plex,
-> >> as we've found out in practice.
-> >=20
-> > Hrm.  I know a number of these have come up previously in that big
-> > thread, but can you summarise some of these cases here.  If things
-> > need modification in the base tree that still seems to me like the
-> > base tree hasn't properly described the socket arrangement (I realise
-> > that allowing such descriptions may require extensions to some of our
-> > device tree conventions).
-> >=20
->=20
-> It would be pointless to number all the use-cases that Grant put in that
-> long document, but I can summarize the cases that we've seen on the bone.
->=20
-> * Addition of child device nodes to the ocp node, creates new platform
-> devices of various kind (audio/video/pwms/timers) - almost any kind of
-> platform device that the SoC supports. Removing the overlay unregisters
-> the devices (but precious few drivers support that cleanly ATM). Since
-> the capes don't support hotplug that's not a big deal.
+Again, I want to stress that this doesn't touch the debugfs code. Here's
+the real change that I've been testing. It includes the code for the
+"new" and "free" files but those are not created because of an early
+'return' I added. Notice that it's all contained in
+kernel/trace/trace.c.
 
-Ok, that's just adding nodes, which is straightforward.
+-- Steve
 
-> * Addition of pinctrl configuration nodes.
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 253cb51..851eb4a 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4912,6 +4912,331 @@ static const struct file_operations rb_simple_fops = {
+ 	.llseek		= default_llseek,
+ };
+ 
++struct dentry *trace_instance_dir;
++
++static void
++init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer);
++
++static ssize_t
++trace_new_instance_read(struct file *filp, char __user *ubuf,
++			size_t cnt, loff_t *ppos)
++{
++	static char text[] =
++		"\nWrite into this file to create a new instance\n\n";
++
++	return simple_read_from_buffer(ubuf, cnt, ppos, text, sizeof(text));
++}
++
++static int new_instance_create(const char *name)
++{
++	enum ring_buffer_flags rb_flags;
++	struct trace_array *tr;
++	int ret;
++	int i;
++
++	mutex_lock(&trace_types_lock);
++
++	ret = -EEXIST;
++	list_for_each_entry(tr, &ftrace_trace_arrays, list) {
++		if (tr->name && strcmp(tr->name, name) == 0)
++			goto out_unlock;
++	}
++
++	ret = -ENOMEM;
++	tr = kzalloc(sizeof(*tr), GFP_KERNEL);
++	if (!tr)
++		goto out_unlock;
++
++	tr->name = kstrdup(name, GFP_KERNEL);
++	if (!tr->name)
++		goto out_free_tr;
++
++	raw_spin_lock_init(&tr->start_lock);
++
++	tr->current_trace = &nop_trace;
++
++	INIT_LIST_HEAD(&tr->systems);
++	INIT_LIST_HEAD(&tr->events);
++
++	rb_flags = trace_flags & TRACE_ITER_OVERWRITE ? RB_FL_OVERWRITE : 0;
++
++	tr->buffer = ring_buffer_alloc(trace_buf_size, rb_flags);
++	if (!tr->buffer)
++		goto out_free_tr;
++
++	tr->data = alloc_percpu(struct trace_array_cpu);
++	if (!tr->data)
++		goto out_free_tr;
++
++	for_each_tracing_cpu(i) {
++		memset(per_cpu_ptr(tr->data, i), 0, sizeof(struct trace_array_cpu));
++		per_cpu_ptr(tr->data, i)->trace_cpu.cpu = i;
++		per_cpu_ptr(tr->data, i)->trace_cpu.tr = tr;
++	}
++
++	/* Holder for file callbacks */
++	tr->trace_cpu.cpu = RING_BUFFER_ALL_CPUS;
++	tr->trace_cpu.tr = tr;
++
++	tr->dir = debugfs_create_dir(name, trace_instance_dir);
++	if (!tr->dir)
++		goto out_free_tr;
++
++	ret = event_trace_add_tracer(tr->dir, tr);
++	if (ret)
++		goto out_free_tr;
++
++	init_tracer_debugfs(tr, tr->dir);
++
++	mutex_unlock(&trace_types_lock);
++
++	list_add(&tr->list, &ftrace_trace_arrays);
++
++	return 0;
++
++ out_free_tr:
++	if (tr->buffer)
++		ring_buffer_free(tr->buffer);
++	kfree(tr->name);
++	kfree(tr);
++
++ out_unlock:
++	mutex_unlock(&trace_types_lock);
++
++	return ret;
++
++}
++
++static ssize_t
++trace_new_instance_write(struct file *filp, const char __user *ubuf,
++			 size_t cnt, loff_t *ppos)
++{
++	char *buf;
++	char *name;
++	int ret;
++
++	/* Don't let names be bigger than 1024 */
++	if (cnt > 1024)
++		return -EINVAL;
++
++	ret = -ENOMEM;
++	name = kmalloc(cnt+1, GFP_KERNEL);
++	if (!name)
++		return -ENOMEM;
++
++	ret = -EFAULT;
++	if (strncpy_from_user(name, ubuf, cnt) < 0)
++		goto out_free_name;
++
++	name[cnt] = '\0';
++
++	/* remove leading and trailing whitespace */
++	ret = -ENOMEM;
++	buf = strstrip(name);
++	buf = kstrdup(buf, GFP_KERNEL);
++	if (!buf)
++		goto out_free_name;
++	kfree(name);
++	name = buf;
++
++	ret = new_instance_create(name);
++
++	kfree(name);
++
++	if (ret)
++		return ret;
++
++	(*ppos) += cnt;
++
++	return cnt;
++
++ out_free_name:
++	kfree(name);
++	return ret;
++}
++
++static ssize_t
++trace_del_instance_read(struct file *filp, char __user *ubuf,
++			size_t cnt, loff_t *ppos)
++{
++	static char text[] =
++		"\nWrite into this file to remove an instance\n\n";
++
++	return simple_read_from_buffer(ubuf, cnt, ppos, text, sizeof(text));
++}
++
++static int instance_delete(const char *name)
++{
++	struct trace_array *tr;
++	int found = 0;
++	int ret;
++
++	mutex_lock(&trace_types_lock);
++
++	ret = -ENODEV;
++	list_for_each_entry(tr, &ftrace_trace_arrays, list) {
++		if (tr->name && strcmp(tr->name, name) == 0) {
++			found = 1;
++			break;
++		}
++	}
++	if (!found)
++		goto out_unlock;
++
++	list_del(&tr->list);
++
++	event_trace_del_tracer(tr);
++	debugfs_remove_recursive(tr->dir);
++	free_percpu(tr->data);
++	ring_buffer_free(tr->buffer);
++
++	kfree(tr->name);
++	kfree(tr);
++
++	ret = 0;
++
++ out_unlock:
++	mutex_unlock(&trace_types_lock);
++
++	return ret;
++}
++
++static ssize_t
++trace_del_instance_write(struct file *filp, const char __user *ubuf,
++			 size_t cnt, loff_t *ppos)
++{
++	char *buf;
++	char *name;
++	int ret;
++
++	/* Don't let names be bigger than 1024 */
++	if (cnt > 1024)
++		return -EINVAL;
++
++	name = kmalloc(cnt+1, GFP_KERNEL);
++	if (!name)
++		return -ENOMEM;
++
++	ret = -EFAULT;
++	if (strncpy_from_user(name, ubuf, cnt) < 0)
++		goto out_free_name;
++
++	name[cnt] = '\0';
++
++	/* remove leading and trailing whitespace */
++	buf = strstrip(name);
++	buf = kstrdup(buf, GFP_KERNEL);
++	if (!buf)
++		goto out_free_name;
++	kfree(name);
++	name = buf;
++
++	ret = instance_delete(name);
++
++	(*ppos) += cnt;
++
++	return cnt;
++
++ out_free_name:
++	kfree(name);
++	return ret;
++}
++
++static const struct file_operations trace_new_instance_fops = {
++	.open		= tracing_open_generic,
++	.read		= trace_new_instance_read,
++	.write		= trace_new_instance_write,
++	.llseek		= default_llseek,
++};
++
++static const struct file_operations trace_del_instance_fops = {
++	.open		= tracing_open_generic,
++	.read		= trace_del_instance_read,
++	.write		= trace_del_instance_write,
++	.llseek		= default_llseek,
++};
++
++static int instance_mkdir (struct inode *inode, struct dentry *dentry, umode_t mode)
++{
++	struct dentry *parent;
++	int ret;
++
++	/* Paranoid: Make sure the parent is the "instances" directory */
++	parent = hlist_entry(inode->i_dentry.first, struct dentry, d_alias);
++	if (WARN_ON_ONCE(parent != trace_instance_dir))
++		return -ENOENT;
++
++	/*
++	 * The inode mutex is locked, but debugfs_create_dir() will also
++	 * take the mutex. As the instances directory can not be destroyed
++	 * or changed in any other way, it is safe to unlock it, and
++	 * let the dentry try. If two users try to make the same dir at
++	 * the same time, then the new_instance_create() will determine the
++	 * winner.
++	 */
++	mutex_unlock(&inode->i_mutex);
++
++	ret = new_instance_create(dentry->d_iname);
++
++	mutex_lock(&inode->i_mutex);
++
++	return ret;
++}
++
++static int instance_rmdir(struct inode *inode, struct dentry *dentry)
++{
++	struct dentry *parent;
++	int ret;
++
++	/* Paranoid: Make sure the parent is the "instances" directory */
++	parent = hlist_entry(inode->i_dentry.first, struct dentry, d_alias);
++	if (WARN_ON_ONCE(parent != trace_instance_dir))
++		return -ENOENT;
++
++	/* The caller did a dget() on dentry */
++	mutex_unlock(&dentry->d_inode->i_mutex);
++
++	/*
++	 * The inode mutex is locked, but debugfs_create_dir() will also
++	 * take the mutex. As the instances directory can not be destroyed
++	 * or changed in any other way, it is safe to unlock it, and
++	 * let the dentry try. If two users try to make the same dir at
++	 * the same time, then the instance_delete() will determine the
++	 * winner.
++	 */
++	mutex_unlock(&inode->i_mutex);
++
++	ret = instance_delete(dentry->d_iname);
++
++	mutex_lock_nested(&inode->i_mutex, I_MUTEX_PARENT);
++	mutex_lock(&dentry->d_inode->i_mutex);
++
++	return ret;
++}
++
++static const struct inode_operations instance_dir_inode_operations = {
++	.lookup		= simple_lookup,
++	.mkdir		= instance_mkdir,
++	.rmdir		= instance_rmdir,
++};
++
++static __init void create_trace_instances(struct dentry *d_tracer)
++{
++	trace_instance_dir = debugfs_create_dir("instances", d_tracer);
++	if (WARN_ON(!trace_instance_dir))
++		return;
++
++	/* Hijack the dir inode operations, to allow mkdir */
++	trace_instance_dir->d_inode->i_op = &instance_dir_inode_operations;
++
++	return;
++	trace_create_file("new", 0644, trace_instance_dir, NULL,
++			  &trace_new_instance_fops);
++
++	trace_create_file("free", 0644, trace_instance_dir, NULL,
++			  &trace_del_instance_fops);
++}
++
+ static void
+ init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer)
+ {
+@@ -4983,6 +5308,8 @@ static __init int tracer_init_debugfs(void)
+ 			&ftrace_update_tot_cnt, &tracing_dyn_info_fops);
+ #endif
+ 
++	create_trace_instances(d_tracer);
++
+ 	create_trace_options_dir(&global_trace);
+ 
+ 	for_each_tracing_cpu(cpu)
 
-Ok, do you know where I can look to see how the pinctrl stuff works?
 
-> * Addition of i2c/spi etc device nodes and modification of the parent's
-> node status property to "okay",
-
-Ok.  I'm assuming this is basically just to enable the bus controller
-which was previously disabled because it had nothing attached to it?
-
-> creates the bus platform device & registers
-> the devices on the bus. Slight complication with i2c client devices which
-> are not platform devices need special handling.
-
-And this part is again just adding nodes.
-
-> * Modification of configuration parameters of a disabled device and subse=
-quent
-> enablement.=20
-
-What sorts of modification are necessary to the parameters?  Other
-than changing status =3D "disabled" of course.  This is the only case I
-see here which might be changing data other than the status property,
-which if it were the only one could reasonably be special cased, I
-think.
-
-> >> As far as the unwise part, a good deal of care has been taken so that=
-=20
-> >> people that don't use the overlay functionality have absolutely no
-> >> overhead, or anything modified in the way they use DT.
-> >=20
-> > Yeah, that's not what I'm concerned about.  I'm concerned about hard
-> > to debug problems because some subtle change in the base tree or the
-> > overlay or both causes the overlay to alter something in the base tree
-> > it really shouldn't.
->=20
-> Define shouldn't. Let's say someone inserts a bogus overlay that makes th=
-e system
-> fail, or misbehave in some other manner. What is the different between=20
-> using the overlay and inserting kernel module that fails in a
-> similar manner?
-
-Hm, you do have a point there.
-
-Another reason for a more constrained format did occur to me though -
-it opens the possibility for multiple interchangeable sockets on the
-same board.  e.g. we get the BeaglePlus or whatever which can take two
-capes simultaneously.  With the current scheme an identical cape would
-need different overlays for insertion in socket A and socket B because
-it would need different labels for all the fixups.
-
-> As far as supporting arbitrary overlays, that is not the case, and never =
-will
-> be. Now since the beaglebone is for hobbyists too, we can't restrict what
-> a user can do in any way; but that person is free to do whatever he wants.
->=20
-> >>> 	Second, even allowing overlays to change anything, I don't see
-> >>> a lot of reason to do this kind of resolution within the kernel and
-> >>> with data stored in the dtb itself, rather than doing the resolution
-> >>> in userspace from an annotated overlay dts or dtb, then inserting the
-> >>> fully resolved product into the kernel.  In either case, the overlay
-> >>> needs to be constructed with pretty intimate knowledge of the base
-> >>> tree.
-> >>=20
-> >> Fair enough, but that's one more thing of user-space crud to drag alon=
-g, which
-> >> will get enabled pretty late in the boot sequence. Meaning a whole bun=
-ch of devices,
-> >> like consoles, and root filesystems on the devices that need an overla=
-y to operate
-> >> won't work easily enough.
-> >=20
-> > Hrm.  But doesn't your scheme already require userspace to identify
-> > the hardware and load the overlay?  So why is having it resolve the
-> > overlay significantly harder?
->=20
-> There is no user-space involved what so ever. The only place where
-> user-space might be involved is supplying the dtbo firmware image as a
-> result of the loader driver issuing request_firmware(). =20
-
-Right.. and couldn't the request_firmware() involve processing the
-resolutions, rather than just grabbing the file.
-
-> > AFAICT devices wanted early can be handled in several possible ways
-> > without having the resolved in kernel: an initramfs is the most
-> > obvious, but for things you want really early, it should be possible
-> > to do the resolution from the platform's bootloader update tool - so
-> > the pre-resolved overlay gets bundled with the kernel/initrd/whatever
-> > to get fired up from the bootloader.
->=20
-> No. Just no. It is a support nightmare when dealing with the hobbyist mar=
-ket.
-> Something similar has been tried before. While I don't have an exact figu=
-re,=20
-> having users tinker with any part of the bootloader/init sequence in orde=
-r to=20
-> add some new cape lead to an unacceptable number of RMAed boards, which
-> had absolutely nothing wrong with them, besides the fact that the person =
-tinkering
-> with it couldn't get it booting after screwing it.
-> This wiped off any amount of profit for the board maker; possibly even ma=
-de the
-> whole operation a loss.
-
-Ok.  I certainly don't want to dismiss usability concerns. I was
-envisaging this pre-resolving process asn being part of the platform's
-equivalent of running the lilo / update-grub / whatever script.  So
-I'm trying to understand what's different about the platform's boot
-sequence it so much more fraught in this case.
-
-The other thing I notice is that this sort of concern is exactly why I
-lean towards the idea of a more constrained "overlay" format where the
-base tree desribes what a socket can add / change, rather than
-allowing arbitrary alterations to the base tree.  With such
-constraints, it's going to be much harder to screw up the basic
-platform booting due to a bad overlay.  Obviously the cape won't work
-properly without correct device information, but you won't be able to
-clobber the basic device information for the board.
-
-[snip]
-> >>> That said, I have some implementation comments below.
-> >>>=20
-> >>> [snip]
-> >>>> +/**
-> >>>> + * Find a subtree's maximum phandle value.
-> >>>> + */
-> >>>> +static phandle __of_get_tree_max_phandle(struct device_node *node,
-> >>>> +		phandle max_phandle)
-> >>>> +{
-> >>>> +	struct device_node *child;
-> >>>> +
-> >>>> +	if (node->phandle !=3D 0 && node->phandle !=3D OF_PHANDLE_ILLEGAL =
-&&
-> >>>> +			node->phandle > max_phandle)
-> >>>> +		max_phandle =3D node->phandle;
-> >>>> +
-> >>>> +	__for_each_child_of_node(node, child)
-> >>>> +		max_phandle =3D __of_get_tree_max_phandle(child, max_phandle);
-> >>>=20
-> >>> Recursion is best avoided given the kernel's limited stack space.
-> >>> This is also trivial to implement non-recursively, using the allnext
-> >>> pointer.
-> >>=20
-> >> The caller passes a tree that's not yet been inserted in the live
-> >> tree.
-> >=20
-> > Um.. isn't this used to find the max phandle in the base tree, so how
-> > is it not inserted in the live tree yet?
->=20
-> We have a use case (for devices that must be inserted very early in the b=
-oot
-> process) that the overlay is stored in a part of the base tree, not in a
-> different dtbo file. Some phandle juggling there uses this function.
-> This patchset only uses it on the base tree.
-
-Ok.  Nonetheless it's not hard to avoid a recursive approach here.
-
-> >> So there's no allnodes pointer yet.=20
-> >=20
-> > I would strongly suggest populating that in the subtree as you build
-> > it, then.  Except that I don't think it is a detached subtree in this
-> > case, though it is in some of the cases below.
-> >=20
-> >> Care has been taken for the function
-> >> to not have excessive local variables. I would guess about 20-32 bytes=
- for
-> >> the stack frame + the local variables, so with a 4K stack we would ove=
-rflow at a=20
-> >> nest level of 128, which has a pretty slim chance for a real system.
-> >=20
-> > Hrm.  Recursion still makes me nervous.  I believe there are platforms
-> > that have a non-trivial lower-bound on stack usage per frame, even
-> > with few local variables.
->=20
-> How about having a recursion limit argument set to something sane
-> like 10?
-
-Ugh.  It's really best just to avoid recursion in the kernel.
-
-> >>>> +
-> >>>> +	return max_phandle;
-> >>>> +}
-> >>>> +
-> >>>> +/**
-> >>>> + * Find live tree's maximum phandle value.
-> >>>> + */
-> >>>> +static phandle of_get_tree_max_phandle(void)
-> >>>> +{
-> >>>> +	struct device_node *node;
-> >>>> +	phandle phandle;
-> >>>> +
-> >>>> +	/* get root node */
-> >>>> +	node =3D of_find_node_by_path("/");
-> >>>> +	if (node =3D=3D NULL)
-> >>>> +		return OF_PHANDLE_ILLEGAL;
-> >>>> +
-> >>>> +	/* now search recursively */
-> >>>> +	read_lock(&devtree_lock);
-> >>>> +	phandle =3D __of_get_tree_max_phandle(node, 0);
-> >>>> +	read_unlock(&devtree_lock);
-> >>>> +
-> >>>> +	of_node_put(node);
-> >>>> +
-> >>>> +	return phandle;
-> >>>> +}
-> >>>> +
-> >>>> +/**
-> >>>> + * Adjust a subtree's phandle values by a given delta.
-> >>>> + * Makes sure not to just adjust the device node's phandle value,
-> >>>> + * but modify the phandle properties values as well.
-> >>>> + */
-> >>>> +static void __of_adjust_tree_phandles(struct device_node *node,
-> >>>> +		int phandle_delta)
-> >>>> +{
-> >>>> +	struct device_node *child;
-> >>>> +	struct property *prop;
-> >>>> +	phandle phandle;
-> >>>> +
-> >>>> +	/* first adjust the node's phandle direct value */
-> >>>> +	if (node->phandle !=3D 0 && node->phandle !=3D OF_PHANDLE_ILLEGAL)
-> >>>> +		node->phandle +=3D phandle_delta;
-> >>>=20
-> >>> You need to have some kind of check for overflow here, or the adjusted
-> >>> phandle could be one of the illegal values (0 or -1) - or wrap around
-> >>> and colllide with existing phandle values in the base tree.  dtc
-> >>> (currently) allocates phandles from the bottom, but there's no
-> >>> guarantee that a base tree will only have low phandle values - it only
-> >>> takes one node with phandle set to 0xfffffffe in the base tree to have
-> >>> this function make a mess of things.
-> >>=20
-> >> Correct, I'll take care of handling the overflow.
-> >>=20
-> >>>=20
-> >>>=20
-> >>>> +	/* now adjust phandle & linux,phandle values */
-> >>>> +	for_each_property_of_node(node, prop) {
-> >>>> +
-> >>>> +		/* only look for these two */
-> >>>> +		if (of_prop_cmp(prop->name, "phandle") !=3D 0 &&
-> >>>> +		    of_prop_cmp(prop->name, "linux,phandle") !=3D 0)
-> >>>> +			continue;
-> >>>> +
-> >>>> +		/* must be big enough */
-> >>>> +		if (prop->length < 4)
-> >>>> +			continue;
-> >>>=20
-> >>> If prop->length !=3D 4 (including > 4) something is pretty wrong, and
-> >>> you should probably bail with an error message.
-> >>=20
-> >> OK, just playing it safe here.
-> >>=20
-> >>>=20
-> >>>> +
-> >>>> +		/* read phandle value */
-> >>>> +		phandle =3D be32_to_cpu(*(uint32_t *)prop->value);
-> >>>> +		if (phandle =3D=3D OF_PHANDLE_ILLEGAL)	/* unresolved */
-> >>>> +			continue;
-> >>>> +
-> >>>> +		/* adjust */
-> >>>> +		*(uint32_t *)prop->value =3D cpu_to_be32(node->phandle);
-> >>>> +	}
-> >>>> +
-> >>>> +	/* now do the children recursively */
-> >>>> +	__for_each_child_of_node(node, child)
-> >>>> +		__of_adjust_tree_phandles(child, phandle_delta);
-> >>>=20
-> >>> Again, recursion is not a good idea.
-> >>>=20
-> >>=20
-> >> No other way to handle it. This is not a node that's in the live
-> >> tree yet.
-> >=20
-> > There's always another way to handle it, although it may be less
-> > elegant.  In this case it should be easy though - populate the allnext
-> > pointers when you unflatten the tree.  Or, have the offset applied
-> > when you actually apply the overlay rather than as a separate pass.
->=20
-> Previous comment applies here too. Recursion limit counter?
-
-Is a nasty band-aid, when it's really not that hard to avoid recursion
-altogether.
-
-> >>>> +}
-> >>>> +
-> >>>> +/**
-> >>>> + * Adjust the local phandle references by the given phandle delta.
-> >>>> + * Assumes the existances of a __local_fixups__ node at the root
-> >>>> + * of the tree. Does not take any devtree locks so make sure you
-> >>>> + * call this on a tree which is at the detached state.
-> >>>> + */
-> >>>> +static int __of_adjust_tree_phandle_references(struct device_node *=
-node,
-> >>>> +		int phandle_delta)
-> >>>> +{
-> >>>> +	phandle phandle;
-> >>>> +	struct device_node *refnode, *child;
-> >>>> +	struct property *rprop, *sprop;
-> >>>> +	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
-> >>>> +	int offset, propcurlen;
-> >>>> +	int err;
-> >>>> +
-> >>>> +	/* locate the symbols & fixups nodes on resolve */
-> >>>> +	__for_each_child_of_node(node, child)
-> >>>> +		if (of_node_cmp(child->name, "__local_fixups__") =3D=3D 0)
-> >>>> +			break;
-> >>>> +
-> >>>> +	/* no local fixups */
-> >>>> +	if (child =3D=3D NULL)
-> >>>> +		return 0;
-> >>>> +
-> >>>> +	/* find the local fixups property */
-> >>>> +	for_each_property_of_node(child, rprop) {
-> >>>> +
-> >>>> +		/* skip properties added automatically */
-> >>>> +		if (of_prop_cmp(rprop->name, "name") =3D=3D 0)
-> >>>> +			continue;
-> >>>=20
-> >>> Ok, so you're interpreting any property except name in the
-> >>> __local_fixups__ node in exactly the same way?  That's a bit strange.
-> >>> Why not just have a single property rather than a node's worth in that
-> >>> case.
-> >>=20
-> >> It saves space. For example you might have to resolve a label reference
-> >> more than once. So instead of doing:
-> >>=20
-> >> 	label =3D "/foo:bar:0";
-> >> 	label =3D "/bar:foo:4";
-> >>=20
-> >> You can do this:
-> >>=20
-> >> 	label =3D "/foo:bar:0", "/bar/foo:4";
-> >=20
-> > Um.. you seem to have read me as saying the exact opposite of what I
-> > said.  I'm _suggesting_ that you use:
-> > 	__local_fixups__ =3D "/foo:bar:0", "/bar/foo:4";
-> > Since the 'label' name has no meaning in the case of local fixups.
->=20
-> Err, I misread that.
->=20
-> At first I tried to do it the way you suggested but run into the following
-> problem: The DTC enforces the properties to always precede the child node=
-s.
-> I wasn't able to find a way to insert the __local_fixups__ property easil=
-y.
-> Perhaps you can suggest where would you put it?=20
-
-Ah, ok.  I haven't looked at your dtc patch in any detail yet, since I
-wanted to review the concept first, through these patches.
-
-So the basic answer is that you should add the extra annotations for
-overlays onto the live tree that dtc maintains before flatenning it,
-rather than doing it as part of the flattening process.  On the live
-tree you can add properties and subnodes in whatever order.  It also
-means that you'll see the right overlay annotations for all dtc output
-formats.
-
-> >>>> +		/* make a copy */
-> >>>> +		propval =3D kmalloc(rprop->length, GFP_KERNEL);
-> >>>> +		if (propval =3D=3D NULL) {
-> >>>> +			pr_err("%s: Could not copy value of '%s'\n",
-> >>>> +					__func__, rprop->name);
-> >>>> +			return -ENOMEM;
-> >>>> +		}
-> >>>> +		memcpy(propval, rprop->value, rprop->length);
-> >>>> +
-> >>>> +		propend =3D propval + rprop->length;
-> >>>> +		for (propcur =3D propval; propcur < propend;
-> >>>> +				propcur +=3D propcurlen + 1) {
-> >>>> +
-> >>>> +			propcurlen =3D strlen(propcur);
-> >>>> +
-> >>>> +			nodestr =3D propcur;
-> >>>> +			s =3D strchr(propcur, ':');
-> >>>=20
-> >>> So, using strings with separators like this doesn't sit will with
-> >>> existing device tree practice.  More similar to existing things would
-> >>> have NUL separators and the integer values in binary, rather than
-> >>> text (and yes, there is precedent for mixed string and integer content
-> >>> in properties).
-> >>>=20
-> >>=20
-> >> Hmm, I guess it can be done, but I wouldn't expect any space savings.
-> >=20
-> > I'm not after space savings, just least-surprise by matching existing
-> > common practices.
->=20
-> Maybe. You also lose the ability to print the contents of the node and
-> easily inspect. It's your call really, I don't mind that much.
-
-Hm, ok I'll give it some thought.  There are bigger things I'd like to
-be convinced on before worrying too much about details like this :).
-
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
-
---BuGwuXnZwGGQ9GEc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlD/ackACgkQaILKxv3ab8YC/ACcDKjmxtyBRKnF43lSVlEOFcTy
-qJ4AmwXMWLh49v9Tpoyy0I6Z2KR6SKlw
-=25Rn
------END PGP SIGNATURE-----
-
---BuGwuXnZwGGQ9GEc--
