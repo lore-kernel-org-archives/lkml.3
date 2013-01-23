@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab3AWBif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 20:38:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48769 "EHLO mx1.redhat.com"
+	id S1752835Ab3AWBk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 20:40:58 -0500
+Received: from mx1.fusionio.com ([66.114.96.30]:46604 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718Ab3AWBid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 20:38:33 -0500
-Message-ID: <50FF3EEA.2030408@redhat.com>
-Date: Tue, 22 Jan 2013 19:37:46 -0600
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1752753Ab3AWBkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 20:40:55 -0500
+X-ASG-Debug-ID: 1358905254-03d6a508b852d4e0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Tue, 22 Jan 2013 20:40:52 -0500
+From: Chris Mason <chris.mason@fusionio.com>
+To: Liu Bo <bo.li.liu@oracle.com>
+CC: Chris Mason <clmason@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Btrfs fixes
+Message-ID: <20130123014052.GA32562@shiny>
+X-ASG-Orig-Subj: Re: [GIT PULL] Btrfs fixes
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clmason@fusionio.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20130123004833.GA30526@shiny>
+ <20130123012818.GA17162@liubo.jp.oracle.com>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Sedat Dilek <sedat.dilek@gmail.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
-Subject: Re: jbd2: don't wake kjournald unnecessarily
-References: <CA+icZUWOvk5i+XY22xdZYuxu=Vy3fG2QxJStEgNFQVS4u55y-w@mail.gmail.com> <CA+icZUUzNYE9QAh_p7=ZNuvZbxRPCb9zd4k7+aW-hv34mQWz=A@mail.gmail.com> <20130121104733.GE5588@quack.suse.cz> <CA+icZUVy-=jJkRsEKmX+ZGRjiGr4wwp3pqdxuLCRHeqW_H0x9Q@mail.gmail.com> <CA+icZUVAP4ArN+j34GTUwMxte5DtLPJSrLmK9T6Na8Qy+aM0Rg@mail.gmail.com> <20130121140738.GI5588@quack.suse.cz> <CA+icZUXLcdnNPvA9o8d5msOQ0MkMci8mPXujLZ3zcYjYcVZ7JQ@mail.gmail.com> <20130121231130.GB12410@thunk.org> <20130122235041.GA7497@quack.suse.cz>
-In-Reply-To: <20130122235041.GA7497@quack.suse.cz>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130123012818.GA17162@liubo.jp.oracle.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1358905254
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.120628
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/22/13 5:50 PM, Jan Kara wrote:
-> On Mon 21-01-13 18:11:30, Ted Tso wrote:
->> On Tue, Jan 22, 2013 at 12:04:32AM +0100, Sedat Dilek wrote:
->>>
->>> Beyond the FUSE/LOOP fun, will you apply this patch to your linux-next GIT tree?
->>>
->>> Feel free to add...
->>>
->>>      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
->>>
->>> A similiar patch for JBD went through your tree into mainline (see [1] and [2]).
->>
->> I'm not at all convinced that this patch has anything to do with your
->> problem.  I don't see how it could affect things, and I believe you
->> mentioned that you saw the problem even with this patch applied?  (I'm
->> not sure; some of your messages which you sent were hard to
->> understand, and you mentioned something about trying to send messages
->> when low on sleep :-).
->>
->> In any case, the reason why I haven't pulled this patch into the ext4
->> tree is because I was waiting for Eric and some of the performance
->> team folks at Red Hat to supply some additional information about why
->> this commit was making a difference in performance for a particular
->> proprietary, closed source benchmark.
->   Just a small correction - it was aim7 AFAIK which isn't closed source
-> (anymore). You can download it from SourceForge
-> (http://sourceforge.net/projects/aimbench/files/aim-suite7/Initial%20release/).
-> Now I have some reservations about what the benchmark does but historically
-> it has found quite a few issues for us as well.
+On Tue, Jan 22, 2013 at 06:28:21PM -0700, Liu Bo wrote:
+> On Tue, Jan 22, 2013 at 07:48:33PM -0500, Chris Mason wrote:
+> > Hi Linus,
+> > 
+> > My for-linus branch has our batch of btrfs fixes:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+> > 
+> > We've been hammering away at a crc corruption as well, which I was
+> > really hoping to get into this pull.  It isn't nailed down yet, but we
+> > were finally able to get a solid way to reproduce.  The only good
+> > news is it isn't a recent regression.
+> > 
+> > The most important batch of fixes in here come from Ilya.  They address
+> > a regression Liu Bo found in the balance ioctls for pausing and resuming
+> > a running balance across drives.
+> > 
+> > Josef's orphan truncate patch fixes an obscure corruption we'd see
+> > during xfstests.
+> > 
+> > Arne's patches address problems with subvolume quotas.  If the user
+> > destroys quota groups incorrectly the FS will refuse to mount.
+> > 
+> > The rest are smaller fixes and plugs for memory leaks.
 > 
->> I'm very suspicious about applying patches under the "cargo cult"
->> school of programming.  ("We don't understand why it makes a
->> difference, but it seems to be good, so bombs away!" :-)
->   Well, neither am I ;) But it is obvious the patch speeds up
-> log_start_commit() by 'a bit' (taking spinlock, disabling irqs, ...). And
-> apparently 'a bit' is noticeable for particular workload on a particular
-> machine - commit statistics Eric provided showed that clearly. I'd still be
-> happier if Eric also told us how much log_start_commit() calls there were
-> so that one could verify that 'a bit' could indeed multiply to a measurable
-> difference. But given how simple the patch is, I gave away after a while
-> and just merged it...
-
-I am still trying to get our perf guys to collect that data, FWIW...
-I will send it when I get it.  I bugged them again today.  :)
-
-(Just to be sure: I was going to measure the wakeups the old way, and the
-avoided wakeups with the new change; sound ok?)
-
--Eric
-
-> 								Honza
+> Hi,
 > 
+> Any chance to get these in this round?  I think they're good fixes,
+> a memory leak and a warning fix, both are got from xfstests.
 
+I'll get these tested in the next pull.
+
+-chris
