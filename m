@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab3AWKin (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 05:38:43 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:46594 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754934Ab3AWKij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 05:38:39 -0500
+	id S1755503Ab3AWKnl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 05:43:41 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:41926 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754939Ab3AWKio (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 05:38:44 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <sameo@linux.intel.com>
 CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
@@ -13,9 +14,9 @@ CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
         <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <rogerq@ti.com>
-Subject: [PATCH v9 03/20] mfd: omap-usb-tll: Fix channel count detection
-Date: Wed, 23 Jan 2013 12:37:55 +0200
-Message-ID: <1358937492-8129-4-git-send-email-rogerq@ti.com>
+Subject: [PATCH v9 04/20] mfd: omap-usb-tll: Use devm_kzalloc/ioremap and clean up error path
+Date: Wed, 23 Jan 2013 12:37:56 +0200
+Message-ID: <1358937492-8129-5-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358937492-8129-1-git-send-email-rogerq@ti.com>
 References: <1358937492-8129-1-git-send-email-rogerq@ti.com>
@@ -25,79 +26,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix channel count detecion for REV2. Also, don't give up
-if we don't recognize the IP Revision. We assume the default
-number of channels (i.e. 3) for unrecognized IPs.
+Use devm_ variants of kzalloc() and ioremap(). Simplify the error path.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/mfd/omap-usb-tll.c |   20 +++++++++++---------
- 1 files changed, 11 insertions(+), 9 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   38 ++++++++++++--------------------------
+ 1 files changed, 12 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index e459489..9658e18 100644
+index 9658e18..9a19cc7 100644
 --- a/drivers/mfd/omap-usb-tll.c
 +++ b/drivers/mfd/omap-usb-tll.c
-@@ -98,6 +98,7 @@
- struct usbtll_omap {
- 	struct clk				*usbtll_p1_fck;
- 	struct clk				*usbtll_p2_fck;
-+	int					nch;	/* num. of channels */
- 	struct usbhs_omap_platform_data		*pdata;
- 	/* secure the register updates */
- 	spinlock_t				lock;
-@@ -210,7 +211,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	unsigned				reg;
- 	unsigned long				flags;
- 	int					ret = 0;
--	int					i, ver, count;
-+	int					i, ver;
+@@ -215,11 +215,10 @@ static int usbtll_omap_probe(struct platform_device *pdev)
  
  	dev_dbg(dev, "starting TI HSUSB TLL Controller\n");
  
-@@ -262,16 +263,18 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	ver =  usbtll_read(base, OMAP_USBTLL_REVISION);
- 	switch (ver) {
- 	case OMAP_USBTLL_REV1:
--	case OMAP_USBTLL_REV2:
--		count = OMAP_TLL_CHANNEL_COUNT;
-+		tll->nch = OMAP_TLL_CHANNEL_COUNT;
- 		break;
-+	case OMAP_USBTLL_REV2:
- 	case OMAP_USBTLL_REV3:
--		count = OMAP_REV2_TLL_CHANNEL_COUNT;
-+		tll->nch = OMAP_REV2_TLL_CHANNEL_COUNT;
- 		break;
- 	default:
--		dev_err(dev, "TLL version failed\n");
+-	tll = kzalloc(sizeof(struct usbtll_omap), GFP_KERNEL);
++	tll = devm_kzalloc(dev, sizeof(struct usbtll_omap), GFP_KERNEL);
+ 	if (!tll) {
+ 		dev_err(dev, "Memory allocation failed\n");
+-		ret = -ENOMEM;
+-		goto end;
++		return -ENOMEM;
+ 	}
+ 
+ 	spin_lock_init(&tll->lock);
+@@ -230,28 +229,22 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 	if (IS_ERR(tll->usbtll_p1_fck)) {
+ 		ret = PTR_ERR(tll->usbtll_p1_fck);
+ 		dev_err(dev, "usbtll_p1_fck failed error:%d\n", ret);
+-		goto err_tll;
++		return ret;
+ 	}
+ 
+ 	tll->usbtll_p2_fck = clk_get(dev, "usb_tll_hs_usb_ch1_clk");
+ 	if (IS_ERR(tll->usbtll_p2_fck)) {
+ 		ret = PTR_ERR(tll->usbtll_p2_fck);
+ 		dev_err(dev, "usbtll_p2_fck failed error:%d\n", ret);
+-		goto err_usbtll_p1_fck;
++		goto err_p2_fck;
+ 	}
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(dev, "usb tll get resource failed\n");
 -		ret = -ENODEV;
--		goto err_ioremap;
-+		tll->nch = OMAP_TLL_CHANNEL_COUNT;
-+		dev_dbg(dev,
-+		 "USB TLL Rev : 0x%x not recognized, assuming %d channels\n",
-+			ver, tll->nch);
-+		break;
+-		goto err_usbtll_p2_fck;
+-	}
+-
+-	base = ioremap(res->start, resource_size(res));
++	base = devm_request_and_ioremap(dev, res);
+ 	if (!base) {
+-		dev_err(dev, "TLL ioremap failed\n");
+-		ret = -ENOMEM;
+-		goto err_usbtll_p2_fck;
++		ret = -EADDRNOTAVAIL;
++		dev_err(dev, "Resource request/ioremap failed:%d\n", ret);
++		goto err_res;
  	}
  
- 	if (is_ehci_tll_mode(pdata->port_mode[0]) ||
-@@ -291,7 +294,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 		usbtll_write(base, OMAP_TLL_SHARED_CONF, reg);
- 
- 		/* Enable channels now */
--		for (i = 0; i < count; i++) {
-+		for (i = 0; i < tll->nch; i++) {
- 			reg = usbtll_read(base,	OMAP_TLL_CHANNEL_CONF(i));
- 
- 			if (is_ohci_port(pdata->port_mode[i])) {
-@@ -319,7 +322,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 		}
+ 	platform_set_drvdata(pdev, tll);
+@@ -323,23 +316,17 @@ static int usbtll_omap_probe(struct platform_device *pdev)
  	}
  
--err_ioremap:
  	spin_unlock_irqrestore(&tll->lock, flags);
- 	iounmap(base);
+-	iounmap(base);
  	pm_runtime_put_sync(dev);
+ 	tll_pdev = pdev;
+-	if (!ret)
+-		goto end;
+-	pm_runtime_disable(dev);
+ 
+-err_usbtll_p2_fck:
++	return 0;
++
++err_res:
+ 	clk_put(tll->usbtll_p2_fck);
+ 
+-err_usbtll_p1_fck:
++err_p2_fck:
+ 	clk_put(tll->usbtll_p1_fck);
+ 
+-err_tll:
+-	kfree(tll);
+-
+-end:
+ 	return ret;
+ }
+ 
+@@ -356,7 +343,6 @@ static int usbtll_omap_remove(struct platform_device *pdev)
+ 	clk_put(tll->usbtll_p2_fck);
+ 	clk_put(tll->usbtll_p1_fck);
+ 	pm_runtime_disable(&pdev->dev);
+-	kfree(tll);
+ 	return 0;
+ }
+ 
 -- 
 1.7.4.1
 
