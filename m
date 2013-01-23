@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab3AWABv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 19:01:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47879 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301Ab3AWABs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 19:01:48 -0500
-Date: Wed, 23 Jan 2013 01:01:47 +0100
-From: Jan Kara <jack@suse.cz>
-To: paul.szabo@sydney.edu.au
-Cc: linux-mm@kvack.org, 695182@bugs.debian.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MAX_PAUSE to be at least 4
-Message-ID: <20130123000147.GC7497@quack.suse.cz>
-References: <201301210307.r0L37YuG018834@como.maths.usyd.edu.au>
+	id S1755608Ab3AWACm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 19:02:42 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:59478 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301Ab3AWACj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 19:02:39 -0500
+Message-ID: <50FF287C.70906@gmail.com>
+Date: Tue, 22 Jan 2013 16:02:04 -0800
+From: John Fastabend <john.fastabend@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201301210307.r0L37YuG018834@como.maths.usyd.edu.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Daniel Wagner <wagi@monom.org>
+CC: Li Zefan <lizefan@huawei.com>, John Fastabend <john.r.fastabend@intel.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Daniel Wagner <daniel.wagner@bmw-carit.de>,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [BUG] Bug in netprio_cgroup and netcls_cgroup ?
+References: <50FCDB5C.4050608@huawei.com> <50FD0144.1000401@monom.org> <50FD0402.6060400@huawei.com> <50FD09FD.4010804@monom.org> <50FD1113.6010402@huawei.com> <50FD786E.4050108@gmail.com> <20130122100938.GA26820@candlejack.bmw-carit.intra>
+In-Reply-To: <20130122100938.GA26820@candlejack.bmw-carit.intra>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 21-01-13 14:07:34, paul.szabo@sydney.edu.au wrote:
-> Ensure MAX_PAUSE is 4 or larger, so limits in
-> 	return clamp_val(t, 4, MAX_PAUSE);
-> (the only use of it) are not back-to-front.
-> 
-> (This patch does not solve the PAE OOM issue.)
-> 
-> Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
-> School of Mathematics and Statistics   University of Sydney    Australia
-  I guess this isn't needed in patch changelog?
+[...]
 
-  Also clamp_val(t, 4, MAX_PAUSE) doesn't seem to exist anymore?
+>>
+>> OK, I guess we should do something similar in the netprio, netcls
+>> cgroups and
+>> yes document it as you noted in your last comment.
+>
+> Here is my attempt to add such a check. I really don't know if this is the
+> correct way to do so. To test this I have written a test program, which
+> seems to test the right thing. Please have a look and let me know if
+> it is correct: http://www.monom.org/misc/scm_rights.c
+>
+> And here a dirty first version of the patch:
+>
+>
+>  From 49a78d907eaf31c16673025e7e3b4844e419e416 Mon Sep 17 00:00:00 2001
+> From: Daniel Wagner <daniel.wagner@bmw-carit.de>
+> Date: Tue, 22 Jan 2013 11:08:22 +0100
+> Subject: [PATCH] net: net_prio: Block attach if a socket is shared
+>
+> ---
+>   net/core/netprio_cgroup.c | 30 ++++++++++++++++++++++++++++++
+>   1 file changed, 30 insertions(+)
+>
+> diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+> index 847c02b..de4e6c5 100644
+> --- a/net/core/netprio_cgroup.c
+> +++ b/net/core/netprio_cgroup.c
+> @@ -274,9 +274,39 @@ static struct cftype ss_files[] = {
+>   	{ }	/* terminate */
+>   };
+>
+> +static int check_cnt(const void *v, struct file *file, unsigned n)
+> +{
+> +	unsigned *flag = (unsigned *)v;
+> +	int err;
+> +
+> +	struct socket *sock = sock_from_file(file, &err);
+> +	if (sock && file_count(file) > 1)
+> +		*flag = 1;
+> +
 
-								Honza
-> Reported-by: Paul Szabo <psz@maths.usyd.edu.au>
-> Reference: http://bugs.debian.org/695182
-> Signed-off-by: Paul Szabo <psz@maths.usyd.edu.au>
-> 
-> --- mm/page-writeback.c.old	2012-12-06 22:20:40.000000000 +1100
-> +++ mm/page-writeback.c	2013-01-21 13:57:05.000000000 +1100
-> @@ -39,7 +39,7 @@
->  /*
->   * Sleep at most 200ms at a time in balance_dirty_pages().
->   */
-> -#define MAX_PAUSE		max(HZ/5, 1)
-> +#define MAX_PAUSE		max(HZ/5, 4)
->  
->  /*
->   * Estimate write bandwidth at 200ms intervals.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I think this check will catch a lot of cases that are not necessarily
+sharing a socket across tasks though. For example iscsid passes a file
+descriptor to the kernel which does a sockfd_lookup() incrementing
+f_count. Similarly look at dup/clone/etc.
+
+In many of these cases I believe it should be OK to move the task
+around when the sockets are not shared between multiple tasks.
+
+.John
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+John Fastabend         Intel Corporation
