@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab3AWBGQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 20:06:16 -0500
-Received: from nihxway3out.hub.nih.gov ([128.231.90.111]:37644 "EHLO
-	nihxway3out.hub.nih.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab3AWBGO convert rfc822-to-8bit (ORCPT
+	id S1752696Ab3AWBIH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 20:08:07 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:33133 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612Ab3AWBID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 20:06:14 -0500
-X-Greylist: delayed 585 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jan 2013 20:06:13 EST
-X-IronPortListener: Outbound_SMTP
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av//AF80/1CcKEcX/2dsb2JhbABEgm8BCAECAZUtjiGEaxeGRYQ+h14Wc1sBAQEBAQFaAQEBAQEBGQEdAQsBAQEKAQEBBAIBAQEIEl8aARUnRCcEEwgahScBAQEBAQEBgisBAQEBAQcDD5tmhE2JHgGDKZAsjAdsG4NHYQOFJoMGNYpPgQUFh1+FKoI3gluDE4FR
-X-Ironport-Out-SPAM: Positive
-From: "Edwards, Anita (NIH/OD) [E]" <Edward1A@od1em1.od.nih.gov>
-To: "andrewliu@mail.nih.gov" <andrewliu@mail.nih.gov>
-Date: Tue, 22 Jan 2013 19:56:17 -0500
-Subject: *23/01/2012 from HongKong
-Thread-Topic: *23/01/2012 from HongKong
-Thread-Index: AQHN+QRykvivW1PlbUCueRssBTgwaA==
-Message-ID: <852B38214790094C8B7486B548516BBA6B3B8D6165@NIHMLBX06.nih.gov>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Tue, 22 Jan 2013 20:08:03 -0500
+Date: Tue, 22 Jan 2013 17:07:58 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: [PATCHSET] workqueue: remove gcwq and make worker_pool the only
+ backend abstraction
+Message-ID: <20130123010758.GH5359@htj.dyndns.org>
+References: <1358386969-945-1-git-send-email-tj@kernel.org>
+ <20130122053702.GA10675@lge.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130122053702.GA10675@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*23/01/2012 from HongKong
+Hey.
 
-Hello , I am Mr. Andrew Liu from Hong Kong, I have a business of 44.5Mil USD and
+On Tue, Jan 22, 2013 at 02:37:02PM +0900, Joonsoo Kim wrote:
+> > It seems like we'll need to support worker pools with custom
+> > attributes, which is planned to be implemented as extra worker_pools
+> > for the unbound CPU.  Removing gcwq and having worker_pool as the top
+> > level abstraction makes things much simpler for such designs.  Also,
+> > there's scalability benefit to not sharing locking and busy hash among
+> > different worker pools as worker pools w/ custom attributes are likely
+> > to have widely different memory / cpu locality characteristics.
+> 
+> Could you tell me why extra worker_pools with custom attributes are needed?
+> Or could you give a reference link for this?
 
-I want you to be my business partner. Please contact me for more details through my private
+Currently, there are two expected users - writeback and crypto.  The
+former currently implements its own worker pool and the latter is
+using per-cpu workqueue but not particularly happy with it.  Being
+bound to the issuing CPU seems a bit too limiting.
 
-e-mail
+Thanks.
 
-andrewliu19@yahoo.com.hk or andrewliu45@aol.com thank you Mr. Andrew Liu
-
-
+-- 
+tejun
