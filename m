@@ -1,194 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab3AWLjM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 06:39:12 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42938 "EHLO comal.ext.ti.com"
+	id S1755441Ab3AWLjK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 06:39:10 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33214 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755230Ab3AWLjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 06:39:06 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH v2 1/2] clk: divider: prepare for minimum divider
-Date: Wed, 23 Jan 2013 17:08:52 +0530
-Message-ID: <6dc1c48cac5b2646a55da3079afb72f88e40c3bc.1358937138.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.12
+	id S1755091Ab3AWLjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 06:39:05 -0500
+Date: Wed, 23 Jan 2013 12:41:57 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH v4 01/13] scripts/gdb: Add infrastructure
+Message-ID: <20130123114157.GB4256@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jan Kiszka <jan.kiszka@siemens.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org,
+	Jason Wessel <jason.wessel@windriver.com>,
+	kgdb-bugreport@lists.sourceforge.net,
+	Andi Kleen <andi@firstfloor.org>, Tom Tromey <tromey@redhat.com>,
+	Ben Widawsky <ben@bwidawsk.net>, Michal Marek <mmarek@suse.cz>,
+	linux-kbuild@vger.kernel.org
+References: <cover.1358787929.git.jan.kiszka@siemens.com>
+ <1e49f090f16f3e22711a27f473e2ed604f6a249f.1358787929.git.jan.kiszka@siemens.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1e49f090f16f3e22711a27f473e2ed604f6a249f.1358787929.git.jan.kiszka@siemens.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of clocks can have a limit on minimum divider value that can be
-programmed, prepare for such a support.
+On Mon, Jan 21, 2013 at 06:06:08PM +0100, Jan Kiszka wrote:
+> This provides the basic infrastructure to load kernel-specific python
+> helper scripts when debugging the kernel in gdb.
+> 
+> The loading mechanism is based on gdb loading for <objfile>-gdb.py when
+> opening <objfile>. Therefore, this places a corresponding link to the
+> main helper script into the output directory that contains vmlinux.
+> 
+> The main scripts will pull in submodules containing Linux specific gdb
+> commands and functions. To avoid polluting the source directory with
+> compiled python modules, we link to them from the object directory.
+> 
+> Due to gdb.parse_and_eval, we depend on gdb >= 7.1. We need to
+> pre-process the version string returned by gdb as some distros tend to
+> prefix it with their name.
+> 
+> This feature depends on CONFIG_DEBUG_INFO.
+> 
+> CC: Michal Marek <mmarek@suse.cz>
+> CC: linux-kbuild@vger.kernel.org
+> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+> ---
+>  Makefile                   |    5 ++++-
+>  scripts/Makefile           |    3 ++-
+>  scripts/gdb/Makefile       |    9 +++++++++
+>  scripts/gdb/utils.py       |   17 +++++++++++++++++
+>  scripts/gdb/vmlinux-gdb.py |   22 ++++++++++++++++++++++
+>  5 files changed, 54 insertions(+), 2 deletions(-)
+>  create mode 100644 scripts/gdb/Makefile
+>  create mode 100644 scripts/gdb/utils.py
+>  create mode 100644 scripts/gdb/vmlinux-gdb.py
+> 
+> diff --git a/Makefile b/Makefile
+> index 253a455..fb18794 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -774,6 +774,9 @@ endif
+>  ifdef CONFIG_BUILD_DOCSRC
+>  	$(Q)$(MAKE) $(build)=Documentation
+>  endif
+> +ifdef CONFIG_DEBUG_INFO
+> +	$(Q)ln -fsn $(srctree)/scripts/gdb/vmlinux-gdb.py
+> +endif
 
-Add a new field min_div for the basic divider clock and a new dynamic
-clock divider registration function where minimum divider value can
-be specified. Keep behaviour of existing divider clock registration
-functions, static initialization helpers as was earlier.
+I'm wondering whether it won't be a better idea to make this symlink
+creation in the toplevel directory only when a user requires it.. I.e.,
+not simply when CONFIG_DEBUG_INFO is enabled (it could be enabled for a
+lot and different reasons) but only when user wants to really debug the
+kernel with gdb.
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
----
+Then, having a specific make target could arrange for all the setup like
+the symlink, gdb version checking, etc, maybe something like this:
 
-v2: create a new registration function for those that needs to
-    constrain minimum divider value instead of modifying existing
-    registration functions and hence remove modification in other
-    clock files.
-    
+$ make gdb
 
- drivers/clk/clk-divider.c    | 37 ++++++++++++++++++++++++++++++++++---
- include/linux/clk-private.h  |  6 +++++-
- include/linux/clk-provider.h |  7 +++++++
- 3 files changed, 46 insertions(+), 4 deletions(-)
+and all is prepared (or errored out with a sensible message).
 
-diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-index a9204c6..4025c5a 100644
---- a/drivers/clk/clk-divider.c
-+++ b/drivers/clk/clk-divider.c
-@@ -236,7 +236,7 @@ EXPORT_SYMBOL_GPL(clk_divider_ops);
- 
- static struct clk *_register_divider(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
--		void __iomem *reg, u8 shift, u8 width,
-+		void __iomem *reg, u8 shift, u8 width, u8 min_div,
- 		u8 clk_divider_flags, const struct clk_div_table *table,
- 		spinlock_t *lock)
- {
-@@ -244,6 +244,11 @@ static struct clk *_register_divider(struct device *dev, const char *name,
- 	struct clk *clk;
- 	struct clk_init_data init;
- 
-+	if (!min_div) {
-+		pr_err("%s: minimum divider cannot be zero\n", __func__);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
- 	/* allocate the divider */
- 	div = kzalloc(sizeof(struct clk_divider), GFP_KERNEL);
- 	if (!div) {
-@@ -261,6 +266,7 @@ static struct clk *_register_divider(struct device *dev, const char *name,
- 	div->reg = reg;
- 	div->shift = shift;
- 	div->width = width;
-+	div->min_div = min_div;
- 	div->flags = clk_divider_flags;
- 	div->lock = lock;
- 	div->hw.init = &init;
-@@ -276,6 +282,29 @@ static struct clk *_register_divider(struct device *dev, const char *name,
- }
- 
- /**
-+ * clk_register_min_divider - register a divider clock having minimum divider
-+ * constraints with clock framework
-+ * @dev: device registering this clock
-+ * @name: name of this clock
-+ * @parent_name: name of clock's parent
-+ * @flags: framework-specific flags
-+ * @reg: register address to adjust divider
-+ * @shift: number of bits to shift the bitfield
-+ * @width: width of the bitfield
-+ * @min_div: minimum allowable divider
-+ * @clk_divider_flags: divider-specific flags for this clock
-+ * @lock: shared register lock for this clock
-+ */
-+struct clk *clk_register_min_divider(struct device *dev, const char *name,
-+		const char *parent_name, unsigned long flags,
-+		void __iomem *reg, u8 shift, u8 width, u8 min_div,
-+		u8 clk_divider_flags, spinlock_t *lock)
-+{
-+	return _register_divider(dev, name, parent_name, flags, reg, shift,
-+			width, min_div, clk_divider_flags, NULL, lock);
-+}
-+
-+/**
-  * clk_register_divider - register a divider clock with the clock framework
-  * @dev: device registering this clock
-  * @name: name of this clock
-@@ -293,7 +322,8 @@ struct clk *clk_register_divider(struct device *dev, const char *name,
- 		u8 clk_divider_flags, spinlock_t *lock)
- {
- 	return _register_divider(dev, name, parent_name, flags, reg, shift,
--			width, clk_divider_flags, NULL, lock);
-+			width, CLK_DIVIDER_MIN_DIV_DEFAULT, clk_divider_flags,
-+			NULL, lock);
- }
- 
- /**
-@@ -317,5 +347,6 @@ struct clk *clk_register_divider_table(struct device *dev, const char *name,
- 		spinlock_t *lock)
- {
- 	return _register_divider(dev, name, parent_name, flags, reg, shift,
--			width, clk_divider_flags, table, lock);
-+			width, CLK_DIVIDER_MIN_DIV_DEFAULT, clk_divider_flags,
-+			table, lock);
- }
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index 9c7f580..942a1be 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -105,7 +105,8 @@ struct clk {
- 
- #define _DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
- 				_flags, _reg, _shift, _width,	\
--				_divider_flags, _table, _lock)	\
-+				_min_div, _divider_flags,	\
-+				_table, _lock)			\
- 	static struct clk _name;				\
- 	static const char *_name##_parent_names[] = {		\
- 		_parent_name,					\
-@@ -120,6 +121,7 @@ struct clk {
- 		.reg = _reg,					\
- 		.shift = _shift,				\
- 		.width = _width,				\
-+		.min_div = _min_div,				\
- 		.flags = _divider_flags,			\
- 		.table = _table,				\
- 		.lock = _lock,					\
-@@ -132,6 +134,7 @@ struct clk {
- 				_divider_flags, _lock)		\
- 	_DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
- 				_flags, _reg, _shift, _width,	\
-+				CLK_DIVIDER_MIN_DIV_DEFAULT,	\
- 				_divider_flags, NULL, _lock)
- 
- #define DEFINE_CLK_DIVIDER_TABLE(_name, _parent_name,		\
-@@ -140,6 +143,7 @@ struct clk {
- 				_table, _lock)			\
- 	_DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
- 				_flags, _reg, _shift, _width,	\
-+				CLK_DIVIDER_MIN_DIV_DEFAULT,	\
- 				_divider_flags, _table, _lock)	\
- 
- #define DEFINE_CLK_MUX(_name, _parent_names, _parents, _flags,	\
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 4989b8a..1c09481 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -248,15 +248,22 @@ struct clk_divider {
- 	void __iomem	*reg;
- 	u8		shift;
- 	u8		width;
-+	u8		min_div;
- 	u8		flags;
- 	const struct clk_div_table	*table;
- 	spinlock_t	*lock;
- };
- 
-+#define	CLK_DIVIDER_MIN_DIV_DEFAULT	1
-+
- #define CLK_DIVIDER_ONE_BASED		BIT(0)
- #define CLK_DIVIDER_POWER_OF_TWO	BIT(1)
- 
- extern const struct clk_ops clk_divider_ops;
-+struct clk *clk_register_min_divider(struct device *dev, const char *name,
-+		const char *parent_name, unsigned long flags,
-+		void __iomem *reg, u8 shift, u8 width, u8 min_div,
-+		u8 clk_divider_flags, spinlock_t *lock);
- struct clk *clk_register_divider(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		void __iomem *reg, u8 shift, u8 width,
+Hmm....
+
 -- 
-1.7.12
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
