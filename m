@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab3AWOAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:00:09 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:62919 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755405Ab3AWOAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:00:07 -0500
-X-IronPort-AV: E=Sophos;i="4.84,523,1355068800"; 
-   d="scan'208";a="6635898"
-Message-ID: <50FFE2FC.9030401@cn.fujitsu.com>
-Date: Wed, 23 Jan 2013 21:17:48 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755528Ab3AWOCP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:02:15 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:34913 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754500Ab3AWOCO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 09:02:14 -0500
 MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
-        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
-        glommer@parallels.com, jiang.liu@huawei.com, julian.calaby@gmail.com,
-        sfr@canb.auug.org.au, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH Bug fix 0/5] Bug fix for physical memory hot-remove.
-References: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com> <1358944171.3351.1.camel@kernel>
-In-Reply-To: <1358944171.3351.1.camel@kernel>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/23 21:17:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/23 21:17:51,
-	Serialize complete at 2013/01/23 21:17:51
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+In-Reply-To: <1358949189.21576.114.camel@gandalf.local.home>
+References: <1358946905-13320-1-git-send-email-sedat.dilek@gmail.com>
+	<CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
+	<CA+icZUW7XrOGguoPO00wxPLUr2Xc8fP=jQZwekpnmWKRewwX2g@mail.gmail.com>
+	<CAFTL4hzcuxoy2deQpXDBRQZZBZ4VjT=EnO3ZZv6x-jGMTr_eaA@mail.gmail.com>
+	<1358949189.21576.114.camel@gandalf.local.home>
+Date: Wed, 23 Jan 2013 15:02:13 +0100
+Message-ID: <CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
+Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing EXPORT_SYMBOL when CONFIG_KVM=m
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: sedat.dilek@gmail.com, "devendra.aaru" <devendra.aaru@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2013 08:29 PM, Simon Jeons wrote:
-> Hi Tang,
+2013/1/23 Steven Rostedt <rostedt@goodmis.org>:
+> On Wed, 2013-01-23 at 14:46 +0100, Frederic Weisbecker wrote:
 >
-> I remember your big physical memory hot-remove patchset has already
-> merged by Andrew, but where I can find it? Could you give me git tree
-> address?
+>> > Hmmm, yes, but why, clueless, CONFIG_KVM=y as a workaround!
+>>
+>> I believe he pointed out the "{i" to you. Typing mistake?
+>
+> In which case the CONFIG_KVM=y is a work around if that {i is within a
+> #ifndef CONFIG_KVM ;-)
 
-Hi Simon,
+No it's in #ifdef CONFIG_KVM so the right fix is:
 
-You can find all the physical memory hot-remove patches and related bugfix
-patches from the following url:
+diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+index bbb2c2c..a13b8a3 100644
+--- a/kernel/context_tracking.c
++++ b/kernel/context_tracking.c
+@@ -111,14 +111,19 @@ void guest_enter(void)
+        else
+                __guest_enter();
+ }
++EXPORT_SYMBOL_GPL(guest_enter);
 
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
-
-
-Thanks. :)
-
+ void guest_exit(void)
+ {
++#ifndef CONFIG_KVM
++i
++#endif
+        if (vtime_accounting_enabled())
+                vtime_guest_exit(current);
+        else
+                __guest_exit();
+ }
++EXPORT_SYMBOL_GPL(guest_exit);
+ #endif
