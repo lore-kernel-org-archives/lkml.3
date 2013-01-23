@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab3AWM3o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 07:29:44 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:33657 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755567Ab3AWM3m (ORCPT
+	id S1755845Ab3AWM3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 07:29:55 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:1547 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755797Ab3AWM3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 07:29:42 -0500
-Message-ID: <1358944171.3351.1.camel@kernel>
-Subject: Re: [PATCH Bug fix 0/5] Bug fix for physical memory hot-remove.
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
-        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
-        glommer@parallels.com, jiang.liu@huawei.com, julian.calaby@gmail.com,
-        sfr@canb.auug.org.au, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org
-Date: Wed, 23 Jan 2013 06:29:31 -0600
-In-Reply-To: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jan 2013 07:29:54 -0500
+From: Yijing Wang <wangyijing@huawei.com>
+To: Rob Landley <rob@landley.net>, Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
+        <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH] PCI: Document PCI Hotplug resource reservation parameters
+Date: Wed, 23 Jan 2013 20:29:06 +0800
+Message-ID: <1358944146-28884-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-22 at 19:42 +0800, Tang Chen wrote:
-> Here are some bug fix patches for physical memory hot-remove. All these
-> patches are based on the latest -mm tree.
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
-> 
-> And patch1 and patch3 are very important.
-> patch1: free compound pages when freeing memmap, otherwise the kernel
->         will panic the next time memory is hot-added.
-> patch3: the old way of freeing pagetable pages was wrong. We should never
->         split larger pages into small ones.
-> 
-> 
+Document pci hotplug resource reservation parameters hpiosize
+and hpmemsize into Documentation/kernel-parameters.txt.
+The two parameters can override default hotplug io size(256 bytes)
+and default mem size(2M).
 
-Hi Tang,
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ Documentation/kernel-parameters.txt |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-I remember your big physical memory hot-remove patchset has already
-merged by Andrew, but where I can find it? Could you give me git tree 
-address?
-
-> Lai Jiangshan (1):
->   Bug-fix: mempolicy: fix is_valid_nodemask()
-> 
-> Tang Chen (3):
->   Bug fix: Do not split pages when freeing pagetable pages.
->   Bug fix: Fix section mismatch problem of
->     release_firmware_map_entry().
->   Bug fix: Fix the doc format in drivers/firmware/memmap.c
-> 
-> Wen Congyang (1):
->   Bug fix: consider compound pages when free memmap
-> 
->  arch/x86/mm/init_64.c     |  148 ++++++++++++++-------------------------------
->  drivers/firmware/memmap.c |   16 +++---
->  mm/mempolicy.c            |   36 +++++++----
->  mm/sparse.c               |    2 +-
->  4 files changed, 77 insertions(+), 125 deletions(-)
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 1fb269b..46eff3d 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2263,6 +2263,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 				the default.
+ 				off: Turn ECRC off
+ 				on: Turn ECRC on.
++		hpiosize=nn[KMG]	The fixed amount of bus space which is
++				reserved for hotplug bridge's IO window.
++				Default size is 256 bytes.
++		hpmemsize=nn[KMG]	The fixed amount of bus space which is
++				reserved for hotplug bridge's memory window.
++				Default size is 2 megabytes.
+ 		realloc=	Enable/disable reallocating PCI bridge resources
+ 				if allocations done by BIOS are too small to
+ 				accommodate resources required by all child
+-- 
+1.7.1
 
 
