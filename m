@@ -1,140 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436Ab3AWNhu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 08:37:50 -0500
-Received: from outbound-mail04.westnet.com.au ([203.10.1.245]:9989 "EHLO
-	outbound-mail04.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754196Ab3AWNhs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 08:37:48 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAFjn/1B8q83Z/2dsb2JhbAANN74/gxEBAQEDAXgBBQsLDgoJFg8JAwIBAgFFBg0BBQIBAYgPqV6TX4xwhEMDn1mKAw
-X-IronPort-AV: E=Sophos;i="4.84,523,1355068800"; 
-   d="scan'208";a="66611703"
-Message-ID: <50FFE7A5.9000708@uclinux.org>
-Date: Wed, 23 Jan 2013 23:37:41 +1000
-From: Greg Ungerer <gerg@uclinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1754990Ab3AWNks (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 08:40:48 -0500
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:56711
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754341Ab3AWNkq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 08:40:46 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VPS-7(zz98dI9371I15bfK542I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahz8dhz17326ah8275dh8275bhz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1155h)
+X-WSS-ID: 0MH2ZBS-01-39E-02
+X-M-MSG: 
+From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+To: Shuah Khan <shuahkhan@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: Linux 3.8-rc4
+Thread-Topic: Linux 3.8-rc4
+Thread-Index: AQHN9cxhktnF6ESNpkuAIBoIzsaQJZhQNCEAgACn4tCABRQtgP//oN5AgAB+F4D//6LmYIAAax0AgABUMQCAAH8jgA==
+Date: Wed, 23 Jan 2013 13:40:39 +0000
+Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D02DF086E6@sausexdag04.amd.com>
+References: <CA+55aFx5ZyFtd59ygn6ja5X-3ZyRvhfJLqtNKyF_mH3+-kSjKg@mail.gmail.com>
+	<CAKocOOPr4wddCmDEWKmsKsKeTc3m779opuN_qRb4yiL63KVZ8A@mail.gmail.com>
+	<CAKocOOPp1PA-n_=xdPuBSBKaKiREqhgeo02QqWpP-oX7vnN_YA@mail.gmail.com>
+	<CAKocOOOpDb=0XgX-uhDbBjOF7qK_M5MA31q9ScD0yTat0QRquQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC30FE7@sausexdag04.amd.com>
+	<CAKocOONuFvcik229+1B0oeaBnQG7seZPeYf99xqduFa6kBZhOw@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF083DE@sausexdag04.amd.com>
+	<CAKocOOMxAYw-XO-6XGteKb8NyHDq4_BdZn2njUNBh+a73wrFGA@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF084EA@sausexdag04.amd.com>
+	<CAKocOOOYKAZPH1+W3usfRUh68594e8YKqBUORo2c5bCCCYDh0A@mail.gmail.com>
+ <CAKocOOOaWSvWZkhLNBx9u6M5nOu39wUgnS-a9Srsbp5BTcdh1A@mail.gmail.com>
+In-Reply-To: <CAKocOOOaWSvWZkhLNBx9u6M5nOu39wUgnS-a9Srsbp5BTcdh1A@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.224.13.198]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Jorn_Engel <joern@logfs.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] Avoid populating unbounded num of ptes with mmap_sem
- held
-References: <1356050997-2688-1-git-send-email-walken@google.com> <CANN689Eeh-s_npXe5nuEb1ryAcU-7CzSZ=X_6SUpUjA2FGh4ag@mail.gmail.com>
-In-Reply-To: <CANN689Eeh-s_npXe5nuEb1ryAcU-7CzSZ=X_6SUpUjA2FGh4ag@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
-
-On 12/21/2012 08:46 PM, Michel Lespinasse wrote:
-> I wanted to ask if you could check the sanity of the following patches
-> in nommu configurations. My understanding is that these always
-> populate mappings when they are created, so that MAP_POPULATE and
-> MAP_LOCKED are actually no-ops. Is this an accurate description ?
-
-Sorry, I have been very slow at getting around to this.
-
-MAP_LOCKED and MAP_POPULATE are effectively no-ops, we don't deal
-with them on the no-mmu mmap path.
-
-I had a look over the patches and they look ok to me with regard
-to no-mmu. So if you still want it:
-
-Acked-by: Greg Ungerer <gerg@uclinux.org>
-
-Regards
-Greg
-
-
-
-> On Thu, Dec 20, 2012 at 4:49 PM, Michel Lespinasse <walken@google.com> wrote:
->> We have many vma manipulation functions that are fast in the typical case,
->> but can optionally be instructed to populate an unbounded number of ptes
->> within the region they work on:
->> - mmap with MAP_POPULATE or MAP_LOCKED flags;
->> - remap_file_pages() with MAP_NONBLOCK not set or when working on a
->>   VM_LOCKED vma;
->> - mmap_region() and all its wrappers when mlock(MCL_FUTURE) is in effect;
->> - brk() when mlock(MCL_FUTURE) is in effect.
->>
->> Current code handles these pte operations locally, while the sourrounding
->> code has to hold the mmap_sem write side since it's manipulating vmas.
->> This means we're doing an unbounded amount of pte population work with
->> mmap_sem held, and this causes problems as Andy Lutomirski reported
->> (we've hit this at Google as well, though it's not entirely clear why
->> people keep trying to use mlock(MCL_FUTURE) in the first place).
->>
->> I propose introducing a new mm_populate() function to do this pte
->> population work after the mmap_sem has been released. mm_populate()
->> does need to acquire the mmap_sem read side, but critically, it
->> doesn't need to hold continuously for the entire duration of the
->> operation - it can drop it whenever things take too long (such as when
->> hitting disk for a file read) and re-acquire it later on.
->>
->> The following patches are against v3.7:
->>
->> - Patches 1-2 fix some issues I noticed while working on the existing code.
->>   If needed, they could potentially go in before the rest of the patches.
->>
->> - Patch 3 introduces the new mm_populate() function and changes
->>   mmap_region() call sites to use it after they drop mmap_sem. This is
->>   inspired from Andy Lutomirski's proposal and is built as an extension
->>   of the work I had previously done for mlock() and mlockall() around
->>   v2.6.38-rc1. I had tried doing something similar at the time but had
->>   given up as there were so many do_mmap() call sites; the recent cleanups
->>   by Linus and Viro are a tremendous help here.
->>
->> - Patches 4-6 convert some of the less-obvious places doing unbounded
->>   pte populates to the new mm_populate() mechanism.
->>
->> - Patches 7-8 are code cleanups that are made possible by the
->>   mm_populate() work. In particular, they remove more code than the
->>   entire patch series added, which should be a good thing :)
->>
->> - Patch 9 is optional to this entire series. It only helps to deal more
->>   nicely with racy userspace programs that might modify their mappings
->>   while we're trying to populate them. It adds a new VM_POPULATE flag
->>   on the mappings we do want to populate, so that if userspace replaces
->>   them with mappings it doesn't want populated, mm_populate() won't
->>   populate those replacement mappings.
->>
->> Michel Lespinasse (9):
->>   mm: make mlockall preserve flags other than VM_LOCKED in def_flags
->>   mm: remap_file_pages() fixes
->>   mm: introduce mm_populate() for populating new vmas
->>   mm: use mm_populate() for blocking remap_file_pages()
->>   mm: use mm_populate() when adjusting brk with MCL_FUTURE in effect.
->>   mm: use mm_populate() for mremap() of VM_LOCKED vmas
->>   mm: remove flags argument to mmap_region
->>   mm: directly use __mlock_vma_pages_range() in find_extend_vma()
->>   mm: introduce VM_POPULATE flag to better deal with racy userspace programs
->>
->>  arch/tile/mm/elf.c   |    1 -
->>  fs/aio.c             |    6 +++-
->>  include/linux/mm.h   |   23 +++++++++---
->>  include/linux/mman.h |    4 ++-
->>  ipc/shm.c            |   12 ++++---
->>  mm/fremap.c          |   51 ++++++++++++++-------------
->>  mm/internal.h        |    4 +-
->>  mm/memory.c          |   24 -------------
->>  mm/mlock.c           |   94 +++++++++++++------------------------------------
->>  mm/mmap.c            |   77 ++++++++++++++++++++++++----------------
->>  mm/mremap.c          |   25 +++++++------
->>  mm/nommu.c           |    5 ++-
->>  mm/util.c            |    6 +++-
->>  13 files changed, 154 insertions(+), 178 deletions(-)
->>
->> --
->> 1.7.7.3
+> -----Original Message-----
+> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+> Sent: Tuesday, January 22, 2013 6:57 PM
+> To: Deucher, Alexander
+> Cc: Linus Torvalds; Linux Kernel Mailing List
+> Subject: Re: Linux 3.8-rc4
 > 
+> On Tue, Jan 22, 2013 at 11:55 AM, Shuah Khan <shuahkhan@gmail.com>
+> wrote:
 > 
+> >>> init:
+> >>
+> >> Does the attached patch stop them?  It basically skips all initialization of
+> the DMA ring on your system.  What I don't understand is why you still get
+> them with the previous patch, but not with
+> 909d9eb67f1e4e39f2ea88e96bde03d560cde3eb reverted.
+> 909d9eb67f1e4e39f2ea88e96bde03d560cde3eb only affects the use of the
+> DMA ring for buffer migration and the patch I previously attached disables
+> the use of the DMA ring for buffer migration.  Does the latest batch of drm-
+> fixes from Dave that Linus just merged help?
+> >>
+> >> Alex
+> >
+> > Will try your latest patch. Will also try the latest git - I am
+> > currently on Jan 17th. However, in the meantime, I found that these
+> > messages might not be new and getting printed now with the
+> > eaaa6983ab2ccdf826c90838eb584211e0cadb76 [PATCH] drm/radeon: print
+> dma
+> > status reg on lockup (v2) commit that introduced debug messages in
+> > r600_gpu_soft_reset(). I couldn't revert this commit, but doing a
+> > compile with these messages commented out. Will update you on the
+> > results and then test the new git
+> >
+> > -- Shuah
 > 
+> Here is what I tried:
+> 
+> 1. Applied your latest disable_dma_ring_on_6xx-2.diff and still see
+> messages.
+
+If that is the case, I'm beginning to think the bug is elsewhere.  Support for the DMA ring was the only major feature we added in this cycle.  If you are still getting errors even with the ring completely disabled, it's probably not the DMA ring.
+
+Make sure your kernel has this patch:
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=20707874fd4fd37e09513f508e642fa8bd06365a
+That's the only thing I can think of that may cause the DMAR errors if the DMA ring is disabled.
+
+> 2. Tried intel_iommu=igfx_off to see if that changes anything. The
+> reason for trying this option is, I noticed this message: (this is not
+> a new message, I see this all the time)
+> 
+> [    1.337112] DMAR: Disabling IOMMU for graphics on this chipset
+> 
+> No change with or without option - still see the same messages.
+> 
+> Next steps:
+> 
+> 1. One big difference between 3.7 and 3.8 is in the
+> r600_gpu_soft_reset() - I started with 3.7 to see the differences if
+> any of these differences is causing this to be logged. In 3.7
+> r600_gpu_soft_reset() is called with no reset_mask. I am going to
+> first verify if softreset happens on 3.7. Does this give you any ideas
+> of whether this could cause a problem?
+
+I don't think the problem is related to GPU reset.  That's for resetting the GPU when it hangs.  It changed slightly in 3.8 to accommodate the new DMA engine that we added support for in 3.8.  Previously we just reset the graphics engine.
+
+> 
+> 2. Another angle I am looking at is the newly added
+> 
+> dev_info(rdev->dev, "  R_00D034_DMA_STATUS_REG   = 0x%08X\n",
+>                 RREG32(DMA_STATUS_REG));
+> 
+> messages in r600_gpu_soft_reset_dma().
+> 
+> Could it be that these newly added debug messages are now showing this
+> old condition that always existed on my test system. From what I have
+> observed so far, this is very likely.
+
+I'm not following.  That just prints the DMA status register when we attempt to reset the GPU.  It's purely for debugging.
+
+Alex
+
+> 
+> Please let me know if you want to me try anything else or if you don't
+> think these steps won't help.
+> 
+> -- Shuah
+
 
