@@ -1,134 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab3AWI67 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 03:58:59 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54105 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753972Ab3AWI65 (ORCPT
+	id S1754359Ab3AWJAZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 04:00:25 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:45713 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754187Ab3AWJAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 03:58:57 -0500
-Message-ID: <1358931532.2736.3.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [Linux-c6x-dev] [PATCH 3/9] c6x: Provide dma_mmap_coherent()
- and dma_get_sgtable()
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mark Salter <msalter@redhat.com>, linux-arch@vger.kernel.org,
-        linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org
-Date: Wed, 23 Jan 2013 08:58:52 +0000
-In-Reply-To: <50FF9004.50807@synopsys.com>
-References: <1358073890-3610-1-git-send-email-geert@linux-m68k.org>
-	  <1358073890-3610-3-git-send-email-geert@linux-m68k.org>
-	  <1358177872.4357.53.camel@t520.localdomain>
-	 <50F4D83A.7020803@synopsys.com>
-	  <CAMuHMdWjZAY19GPpjoXKfWb3pOp2RbZXDvb4nr5pMmjEMFuB4w@mail.gmail.com>
-	  <50F56286.8070200@samsung.com>
-	  <1358269008.10591.11.camel@dabdike.int.hansenpartnership.com>
-	  <50FE66C6.4040900@samsung.com>
-	 <1358850164.2387.16.camel@dabdike.int.hansenpartnership.com>
-	 <50FF9004.50807@synopsys.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 23 Jan 2013 04:00:23 -0500
+Message-ID: <50FFA695.6010407@linux.vnet.ibm.com>
+Date: Wed, 23 Jan 2013 17:00:05 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Mike Galbraith <bitbucket@online.de>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
+        mingo@kernel.org, a.p.zijlstra@chello.nl
+Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
+References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com> <50FCACE3.5000706@linux.vnet.ibm.com> <1358743128.4994.33.camel@marge.simpson.net> <50FCCCF5.30504@linux.vnet.ibm.com> <1358750523.4994.55.camel@marge.simpson.net> <1358752180.4994.65.camel@marge.simpson.net> <50FCF212.3010504@linux.vnet.ibm.com> <1358759355.4994.108.camel@marge.simpson.net> <50FD08E1.8000302@linux.vnet.ibm.com> <1358761496.4994.118.camel@marge.simpson.net> <50FE0ADC.6060701@linux.vnet.ibm.com> <1358841795.5782.255.camel@marge.simpson.net> <50FE5433.1070801@linux.vnet.ibm.com> <1358865692.5782.420.camel@marge.simpson.net> <50FF4EA0.1070000@linux.vnet.ibm.com> <1358915494.5752.46.camel@marge.simpson.net> <50FF7086.4020509@linux.vnet.ibm.com> <1358922520.5752.91.camel@marge.simpson.net> <50FF8CD8.4060105@linux.vnet.ibm.com>	 <1358929257.5752.109.camel@marge.simp! son.net>	 <50FF9F92.60202@linux.vnet.ibm.com> <1358930968.5752.123.camel@marge.simpson.net>
+In-Reply-To: <1358930968.5752.123.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012308-2674-0000-0000-00000792E832
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-23 at 12:53 +0530, Vineet Gupta wrote:
-> On Tuesday 22 January 2013 03:52 PM, James Bottomley wrote:
-> > On Tue, 2013-01-22 at 11:15 +0100, Marek Szyprowski wrote:
-> >> Hello,
-> >>
-> >> On 1/15/2013 5:56 PM, James Bottomley wrote:
-> >>> On Tue, 2013-01-15 at 15:07 +0100, Marek Szyprowski wrote:
-> >>>> Hello,
-> >>>>
-> >>>> On 1/15/2013 10:13 AM, Geert Uytterhoeven wrote:
-> >>>>> Marek?
-> >>>>>
-> >>>>> On Tue, Jan 15, 2013 at 5:16 AM, Vineet Gupta
-> >>>>> <Vineet.Gupta1@synopsys.com> wrote:
-> >>>>>> On Monday 14 January 2013 09:07 PM, Mark Salter wrote:
-> >>>>>>> On Sun, 2013-01-13 at 11:44 +0100, Geert Uytterhoeven wrote:
-> >>>>>>>> c6x/allmodconfig (assumed):
-> >>>>>>>>
-> >>>>>>>> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_mmap’:
-> >>>>>>>> drivers/media/v4l2-core/videobuf2-dma-contig.c:204: error: implicit declaration of function ‘dma_mmap_coherent’
-> >>>>>>>> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_get_base_sgt’:
-> >>>>>>>> drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function ‘dma_get_sgtable’
-> >>>>>>>>
-> >>>>>>>> For architectures using dma_map_ops, dma_mmap_coherent() and
-> >>>>>>>> dma_get_sgtable() are provided in <asm-generic/dma-mapping-common.h>.
-> >>>>>>>>
-> >>>>>>>> C6x does not use dma_map_ops, hence it should implement them as inline
-> >>>>>>>> stubs using dma_common_mmap() and dma_common_get_sgtable().
-> >>>>>>>>
-> >>>>>>> So are dma_mmap_coherent() and dma_get_sgtable() part of the DMA API
-> >>>>>>> now? I don't them in Documentation/DMA*.txt anywhere.
-> >>>>>>>
-> >>>>>>> Why does the default dma_common_mmap() for !CONFIG_MMU return an
-> >>>>>>> error?
-> >>>>>>>
-> >>>>>>> Wouldn't it be better to provide default implementations that an arch
-> >>>>>>> could override rather than having to patch all "no dma_map_ops"
-> >>>>>>> architectures?
-> >>>>>>>
-> >>>>>> Speaking for the still-reviewed ARC Port, I completely agree with Mark.
-> >>>>
-> >>>> dma_mmap_coherent() was partially in the DMA mapping API for some time, but
-> >>>> it was available only on a few architectures (afair ARM, powerpc and avr32).
-> >>>> This caused significant problems for writing unified device drivers or some
-> >>>> device helper modules which were aimed to work on more than one
-> >>>> architecture.
-> >>>>
-> >>>> dma_get_sgtable() is an extension discussed during the Linaro meetings. It
-> >>>> is required to correctly implement buffer sharing between device driver
-> >>>> without hacks or any assumptions about memory layout in the device drivers.
-> >>>>
-> >>>> I have implemented some generic code for both of those two functions,
-> >>>> keeping
-> >>>> in mind that on some hardware architectures (like already mentioned VIVT)
-> >>>> it might be not possible to provide coherent mapping to userspace. It is
-> >>>> perfectly fine for those functions to return an error in such case.
-> >>>
-> >>> It's not possible on VIPT either.  This means that the API is unusable
-> >>> on quite a large number of architectures.  Surely, if we're starting to
-> >>> write drivers using this, we need to fix the API before more people try
-> >>> to use it.
-> >>
-> >> I don't get this one. On ARM coherent mappings are implemented as 
-> >> non-cacheable,
-> >> both in userspace and kernel-space, so having a coherent mapping is 
-> >> possible on
-> >> VIPT architecture.
-> > 
-> > Only if you have an uncacheable bit in the architecture page table ...
-> > which some of ours don't.
-> > 
-> > Regardless, setting pages Uncacheable is really a hack job on shared
-> > buffers because it creates a huge slow down .... like an order of
-> > magnitude more than simply copying the page, which I believe is the
-> > current solution.
+On 01/23/2013 04:49 PM, Mike Galbraith wrote:
+> On Wed, 2013-01-23 at 16:30 +0800, Michael Wang wrote: 
+>> On 01/23/2013 04:20 PM, Mike Galbraith wrote:
+>>> On Wed, 2013-01-23 at 15:10 +0800, Michael Wang wrote: 
+>>>> On 01/23/2013 02:28 PM, Mike Galbraith wrote:
+>>>
+>>>>> Abbreviated test run:
+>>>>> Tasks    jobs/min  jti  jobs/min/task      real       cpu
+>>>>>   640   158044.01   81       246.9438     24.54    577.66   Wed Jan 23 07:14:33 2013
+>>>>>  1280    50434.33   39        39.4018    153.80   5737.57   Wed Jan 23 07:17:07 2013
+>>>>>  2560    47214.07   34        18.4430    328.58  12715.56   Wed Jan 23 07:22:36 2013
+>>>>
+>>>> So still not works... and not going to balance path while waking up will
+>>>> fix it, looks like that's the only choice if no error on balance path
+>>>> could be found...benchmark wins again, I'm feeling bad...
+>>>>
+>>>> I will conclude the info we collected and make a v3 later.
+>>>
+>>> FWIW, I hacked virgin to do full balance if an idle CPU was not found,
+>>> leaving the preference to wake cache affine intact though, turned on
+>>> WAKE_BALANCE in all domains, and it did not collapse.  In fact, the high
+>>> load end, where the idle search will frequently be a waste of cycles,
+>>> actually improved a bit.  Things that make ya go hmmm.
+>>
+>> Oh, does that means the old balance path is good while the new is really
+>> broken, I mean, compared this with the previously results, could we say
+>> that all the collapse was just caused by the change of balance path?
 > 
-> IMHO, setting the page uncached, even for shared buffer, is the only option for
-> arches with non snooping DMA - independent of VIPT issue.
+> That's a good supposition.  I'll see if it holds.
 
-I didn't say architectures *shouldn't* be able to do this.  I did say
-that for architectures where it's not possible (some PARISC and nommu)
-or for which it tanks performance, there should still be a functional
-API.
+I just notice that there is no sd support the WAKE flag at all according
+to your debug info, isn't it?
 
-changing the cpu_addr to be mutable means that current uncached
-implementations pass it through unchanged.  However if we need to make
-it coherent by changing it, we now have that option.
+Which means there is no way to do load balance since we can even not
+found a suitable sd for wake up...totally confusing me now ;(
 
-The point is that the current implementation can't work on some
-architectures and is badly performing on others.  The new proposal will,
-I think, work on every architecture and it can improve performance
-should the architecture wish to take advantage of it.
+Regards,
+Michael Wang
 
-James
-
+> 
+> Next, I'm going to try ripping select_idle_sibling() to tiny shreds,
+> twiddle the balance path a little to see if I can get rid of the bad
+> stuff for tbench, maybe make some good stuff for pgbench and ilk, ilk
+> _maybe_ including heavy duty remote network type loads.
+> 
+> There's gonna be some violent axe swinging here shortly.
+> 
+> -Mike
+> 
 
