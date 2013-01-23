@@ -1,90 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab3AWOmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:42:20 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24437 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab3AWOmS (ORCPT
+	id S1752969Ab3AWOot (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:44:49 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:39421 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab3AWOor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:42:18 -0500
-X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=NpjRPGXs834A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=KYlOPR1D8z8A:10 a=YgwN3AOMAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=fB5lnGKdFrWL4hk70WAA:9 a=PUjeQqilurYA:10 a=x8gzFH9gYPwA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358952137.21576.117.camel@gandalf.local.home>
-Subject: Re: [PATCH 11/15] tools/lib/traceevent/event-parse.c: adjust
- duplicate test
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Date: Wed, 23 Jan 2013 09:42:17 -0500
-In-Reply-To: <1358773378-4700-12-git-send-email-Julia.Lawall@lip6.fr>
-References: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
-	 <1358773378-4700-12-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jan 2013 09:44:47 -0500
+Date: Wed, 23 Jan 2013 14:44:41 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Subject: Re: [GIT PULL] power: ab8500-bm: Latest Mainline<->STE delta
+ reduction patch-set
+Message-ID: <20130123144441.GN15873@gmail.com>
+References: <20130123113854.GK15873@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130123113854.GK15873@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-21 at 14:02 +0100, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Delete successive tests to the same location.  Field was already tested.
-> Alloc_arg can fail, so test that value instead.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @s exists@
-> local idexpression y;
-> expression x,e;
-> @@
-> 
-> *if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
->  { ... when forall
->    return ...; }
-> ... when != \(y = e\|y += e\|y -= e\|y |= e\|y &= e\|y++\|y--\|&y\)
->     when != \(XT_GETPAGE(...,y)\|WMI_CMD_BUF(...)\)
-> *if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
->  { ... when forall
->    return ...; }
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
+Okay, after Linus Walleij's diligent observaions, I have removed all
+new functionallity related to Deep Debug and will continue to
+investigate what I need to do in that regard.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+In the mean-time, here's the fresh deep-debug:less pull-request:
 
--- Steve
+----------------------------------------------------------------
 
-> ---
->  tools/lib/traceevent/event-parse.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-> index 5a824e3..7538a1f 100644
-> --- a/tools/lib/traceevent/event-parse.c
-> +++ b/tools/lib/traceevent/event-parse.c
-> @@ -2481,7 +2481,7 @@ process_dynamic_array(struct event_format *event, struct print_arg *arg, char **
->  
->  	free_token(token);
->  	arg = alloc_arg();
-> -	if (!field) {
-> +	if (!arg) {
->  		do_warning("%s: not enough memory!", __func__);
->  		*tok = NULL;
->  		return EVENT_ERROR;
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The following changes since commit 8fd526fd18233887ba652079a369f4eee0de9d9d:
 
+  qnap-poweroff: Fix license string (2013-01-19 18:04:04 -0800)
 
+are available in the git repository at:
+
+  git://git.linaro.org/people/ljones/linux-3.0-ux500.git tb-power-2
+
+for you to fetch changes up to 34c11a709e928090cf34ecd706f7d3170f4e5026:
+
+  u8500-charger: Delay for USB enumeration (2013-01-23 14:39:22 +0000)
+
+----------------------------------------------------------------
+Hakan Berg (1):
+      ab8500-fg: Adjust for RF bursts voltage drops
+
+Henrik Sölver (1):
+      ab8500-charger: AB workaround for invalid charger
+
+Jonas Aaberg (2):
+      ab8500-bm: Flush all work queues before suspending
+      ab8500-charger: Do not touch VBUSOVV bits
+
+Lee Jones (7):
+      ab8500-charger: Kick watchdog
+      ab8500-chargalg: Update battery health on safety timer exp
+      pm2301: Move all configuration and emum structs out to a header
+      file
+      ab8500-chargalg: Only root should have write permission on sysfs
+      file
+      abx500-chargalg: Add new sysfs interface to get current charge
+      status
+      pm2301: LPN mode control support
+      ab8500-bm: Remove individual [charger|btemp|fg|chargalg] pdata
+      structures
+
+Loic Pallardy (2):
+      pm2301: Remove volt_now & curr_now properties
+      pm2301: Update watchdog for pm2xxx support
+
+Martin Bergström (1):
+      ab8500-fg: Go to INIT_RECOVERY when charger removed
+
+Michel JAOUEN (2):
+      pm2301: Provide u9540 support for the pm2301 charger
+      ab8500-btemp: Adaptation to AB8505 and AB9540 platforms
+
+Nicolas Guion (1):
+      ab8500-charger: Add support for autopower on AB8505 and AB9540
+
+Olivier Clergeaud (1):
+      pm2301: Clean-up PM2301 interrupt management
+
+Paer-Olof Haakansson (1):
+      u8500-charger: Delay for USB enumeration
+
+Rajkumar Kasirajan (2):
+      pm2301: Enable vbat low monitoring
+      ab8500-fg: Use correct battery charge full design
+
+ drivers/mfd/ab8500-core.c                 |    6 +
+ drivers/power/Kconfig                     |    7 +
+ drivers/power/Makefile                    |    1 +
+ drivers/power/ab8500_btemp.c              |   67 +-
+ drivers/power/ab8500_charger.c            |  617 ++++++++++++----
+ drivers/power/ab8500_fg.c                 |   51 +-
+ drivers/power/abx500_chargalg.c           |   43 +-
+ drivers/power/pm2301_charger.c            | 1088 +++++++++++++++++++++++++++++
+ drivers/power/pm2301_charger.h            |  513 ++++++++++++++
+ include/linux/mfd/abx500.h                |    3 +
+ include/linux/mfd/abx500/ab8500-bm.h      |   22 +-
+ include/linux/mfd/abx500/ab8500.h         |   19 +
+ include/linux/mfd/abx500/ux500_chargalg.h |    5 +
+ include/linux/pm2301_charger.h            |   61 ++
+ 14 files changed, 2306 insertions(+), 197 deletions(-)
+ create mode 100644 drivers/power/pm2301_charger.c
+ create mode 100644 drivers/power/pm2301_charger.h
+ create mode 100644 include/linux/pm2301_charger.h
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
