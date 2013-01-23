@@ -1,106 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab3AWP2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:28:12 -0500
-Received: from mail.atsec.com ([195.30.99.214]:34713 "EHLO mail.atsec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751143Ab3AWP2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 10:28:10 -0500
-X-Greylist: delayed 596 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jan 2013 10:28:10 EST
-Message-ID: <50FFFF48.6020608@atsec.com>
-Date: Wed, 23 Jan 2013 16:18:32 +0100
-From: Stephan Mueller <stephan.mueller@atsec.com>
-Organization: atsec information security GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1755786Ab3AWPab (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:30:31 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:58372 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752976Ab3AWPa3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 10:30:29 -0500
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Kyle McMartin <kyle@redhat.com>, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, jstancek@redhat.com
-Subject: Re: [PATCH] MODSIGN: only panic in fips mode if sig_enforce is set
-References: <20130122184357.GD6538@redacted.bos.redhat.com> <8615.1358940375@warthog.procyon.org.uk>
-In-Reply-To: <8615.1358940375@warthog.procyon.org.uk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <50FEA1BC.6070101@broadcom.com>
+References: <CACnwZYcXa0W3fV-fSDE1YCD2pCV350uY4QEyK+UVS4w4LDifxw@mail.gmail.com>
+	<50FEA1BC.6070101@broadcom.com>
+Date: Wed, 23 Jan 2013 13:30:27 -0200
+Message-ID: <CACnwZYeS2=LJuuHJhpTtdijj+xXYiYZ2_hZNShGo9q8_J-pkMQ@mail.gmail.com>
+Subject: Re: listing drivers
+From: Thiago Farina <tfransosi@gmail.com>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: linux list <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: multipart/mixed; boundary=e0cb4efe33deb19da604d3f65f9f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.01.2013 12:26:15, +0100, David Howells <dhowells@redhat.com> wrote:
+--e0cb4efe33deb19da604d3f65f9f
+Content-Type: text/plain; charset=UTF-8
 
-Hi David,
+Hi,
 
-> Kyle McMartin <kyle@redhat.com> wrote:
-> 
->> Commit 1d0059f3a added a test to check if the system is booted in fips
->> mode, and if so, panic the system if an unsigned module is loaded.
->> However the wording of the changelog "in signature enforcing mode" leads
->> one to assume that sig_enforce should be set for the panic to occur and
->> that these two tests are transposed.
+On Tue, Jan 22, 2013 at 12:27 PM, Arend van Spriel <arend@broadcom.com> wrote:
+> On 01/22/2013 02:46 PM, Thiago Farina wrote:
+>> Hi folks,
 >>
->> Move the test for -ENOKEY && !sig_enforce before the test of fips_mode,
->> so that err will be 0, and the panic will not trigger unless we've
->> explicitly disabled unsigned modules with sig_enforce set, so that
->> systemtap and 3rd party modules will work in fips mode. (This also
->> matches the behaviour by Red Hat Enterprise Linux 6.)
->>
->> Things which need to deny module loading such as secure boot already set
->> sig_enforce, so there's no issue here.
->>
->> Reported-by: Jan Stancek <jstancek@redhat.com>
->> Signed-off-by: Kyle McMartin <kyle@redhat.com>
-> 
-> Fine by me, but adding Stephan Mueller for his input.
+>> Is there a way to list the drivers installed/used in my desktop and
+>> map them (the path) to their source code in the linux kernel tree?
+>
+> This might work for you (if using bash):
+>
+> for m in $(cat /proc/modules | gawk '{ print $1; }');do modinfo $m |
+> grep 'filename:'; done
+>
+Thanks a lot Arend! That is exactly what I wanted ;)
 
-FIPS requires the module (in our case the static kernel binary with its
-kernel crypto API plus all the crypto kernel modules) to be unavailable
-if the module signature fails. That is an unconditional requirement.
+--
+Thiago
 
-Now, all is a name game from here on. With your patch, the FIPS mode is
-only enabled if both flags, i.e. fips_enabled *and* sig_enforce are set!
-IMHO this is very misleading of the fips_enabled flag which is intended
-to be the only trigger for the FIPS mode.
+--e0cb4efe33deb19da604d3f65f9f
+Content-Type: application/octet-stream; name=drivers-list
+Content-Disposition: attachment; filename=drivers-list
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hcamq1ci0
 
-Hence, I would NACK the patch -- only from this point of view (i.e. I do
-not have a technical argument against the patch)!
-
-The solution to the problem IMHO is rather to somehow identify crypto
-modules, i.e. modules that hook themselves into the kernel crypto API
-and only panic the kernel when those integrity checks fail. Therefore,
-to remove the panic() call in the module loading function when
-fips_enabled is set would entail to:
-
-1. load and sig check the module as it is done now
-
-2. remember whether the signature check passed or failed for the loaded
-module
-
-3. in the cipher initialization code of the crypto API (i.e. the one
-behind crypto_register_alg()), you check the signature check flag --
-panic the kernel when the flag shows that the signature check failed
-
-This way you limit the panic on signature checks in FIPS mode to the
-crypto modules.
-
-> 
-> David
-> 
->> --- a/kernel/module.c
->> +++ b/kernel/module.c
->> @@ -2460,11 +2460,11 @@ static int module_sig_check(struct load_info *info)
->>  	}
->>  
->>  	/* Not having a signature is only an error if we're strict. */
->> +	if (err == -ENOKEY && !sig_enforce)
->> +		err = 0;
->>  	if (err < 0 && fips_enabled)
->>  		panic("Module verification failed with error %d in FIPS mode\n",
->>  		      err);
->> -	if (err == -ENOKEY && !sig_enforce)
->> -		err = 0;
->>  
->>  	return err;
->>  }
-> 
-
-
+ZmlsZW5hbWU6ICAgICAgIC9saWIvbW9kdWxlcy8yLjYuMzgtMTYtZ2VuZXJpYy9rZXJuZWwvZnMv
+bmxzL25sc19pc284ODU5LTEua28KZmlsZW5hbWU6ICAgICAgIC9saWIvbW9kdWxlcy8yLjYuMzgt
+MTYtZ2VuZXJpYy9rZXJuZWwvZnMvbmxzL25sc19jcDQzNy5rbwpmaWxlbmFtZTogICAgICAgL2xp
+Yi9tb2R1bGVzLzIuNi4zOC0xNi1nZW5lcmljL2tlcm5lbC9mcy9mYXQvdmZhdC5rbwpmaWxlbmFt
+ZTogICAgICAgL2xpYi9tb2R1bGVzLzIuNi4zOC0xNi1nZW5lcmljL2tlcm5lbC9mcy9mYXQvZmF0
+LmtvCmZpbGVuYW1lOiAgICAgICAvbGliL21vZHVsZXMvMi42LjM4LTE2LWdlbmVyaWMva2VybmVs
+L2ZzL2JpbmZtdF9taXNjLmtvCmZpbGVuYW1lOiAgICAgICAvbGliL21vZHVsZXMvMi42LjM4LTE2
+LWdlbmVyaWMva2VybmVsL2RyaXZlcnMvcGFycG9ydC9wYXJwb3J0X3BjLmtvCmZpbGVuYW1lOiAg
+ICAgICAvbGliL21vZHVsZXMvMi42LjM4LTE2LWdlbmVyaWMva2VybmVsL2RyaXZlcnMvY2hhci9w
+cGRldi5rbwpmaWxlbmFtZTogICAgICAgL2xpYi9tb2R1bGVzLzIuNi4zOC0xNi1nZW5lcmljL2tl
+cm5lbC9zb3VuZC91c2Ivc25kLXVzYi1hdWRpby5rbwpmaWxlbmFtZTogICAgICAgL2xpYi9tb2R1
+bGVzLzIuNi4zOC0xNi1nZW5lcmljL2tlcm5lbC9zb3VuZC9jb3JlL3NuZC1wY20ua28KZmlsZW5h
+bWU6ICAgICAgIC9saWIvbW9kdWxlcy8yLjYuMzgtMTYtZ2VuZXJpYy9rZXJuZWwvc291bmQvY29y
+ZS9zbmQtcGFnZS1hbGxvYy5rbwpmaWxlbmFtZTogICAgICAgL2xpYi9tb2R1bGVzLzIuNi4zOC0x
+Ni1nZW5lcmljL2tlcm5lbC9zb3VuZC9jb3JlL3NuZC1od2RlcC5rbwpmaWxlbmFtZTogICAgICAg
+L2xpYi9tb2R1bGVzLzIuNi4zOC0xNi1nZW5lcmljL2tlcm5lbC9zb3VuZC91c2Ivc25kLXVzYm1p
+ZGktbGliLmtvCmZpbGVuYW1lOiAgICAgICAvbGliL21vZHVsZXMvMi42LjM4LTE2LWdlbmVyaWMv
+a2VybmVsL3NvdW5kL2NvcmUvc2VxL3NuZC1zZXEtbWlkaS5rbwpmaWxlbmFtZTogICAgICAgL2xp
+Yi9tb2R1bGVzLzIuNi4zOC0xNi1nZW5lcmljL2tlcm5lbC9zb3VuZC9jb3JlL3NuZC1yYXdtaWRp
+LmtvCmZpbGVuYW1lOiAgICAgICAvbGliL21vZHVsZXMvMi42LjM4LTE2LWdlbmVyaWMva2VybmVs
+L3NvdW5kL2NvcmUvc2VxL3NuZC1zZXEtbWlkaS1ldmVudC5rbwpmaWxlbmFtZTogICAgICAgL2xp
+Yi9tb2R1bGVzLzIuNi4zOC0xNi1nZW5lcmljL2tlcm5lbC9zb3VuZC9jb3JlL3NlcS9zbmQtc2Vx
+LmtvCmZpbGVuYW1lOiAgICAgICAvbGliL21vZHVsZXMvMi42LjM4LTE2LWdlbmVyaWMva2VybmVs
+L3NvdW5kL2NvcmUvc25kLXRpbWVyLmtvCmZpbGVuYW1lOiAgICAgICAvbGliL21vZHVsZXMvMi42
+LjM4LTE2LWdlbmVyaWMva2VybmVsL3NvdW5kL2NvcmUvc2VxL3NuZC1zZXEtZGV2aWNlLmtvCmZp
+bGVuYW1lOiAgICAgICAvbGliL21vZHVsZXMvMi42LjM4LTE2LWdlbmVyaWMva2VybmVsL3NvdW5k
+L2NvcmUvc25kLmtvCmZpbGVuYW1lOiAgICAgICAvbGliL21vZHVsZXMvMi42LjM4LTE2LWdlbmVy
+aWMva2VybmVsL3NvdW5kL3NvdW5kY29yZS5rbwpmaWxlbmFtZTogICAgICAgL2xpYi9tb2R1bGVz
+LzIuNi4zOC0xNi1nZW5lcmljL2tlcm5lbC9kcml2ZXJzL3VzYi9zdG9yYWdlL3VzYi1zdG9yYWdl
+LmtvCmZpbGVuYW1lOiAgICAgICAvbGliL21vZHVsZXMvMi42LjM4LTE2LWdlbmVyaWMva2VybmVs
+L2RyaXZlcnMvdXNiL3N0b3JhZ2UvdWFzLmtvCmZpbGVuYW1lOiAgICAgICAvbGliL21vZHVsZXMv
+Mi42LjM4LTE2LWdlbmVyaWMva2VybmVsL2RyaXZlcnMvZmlybXdhcmUvZGNkYmFzLmtvCmZpbGVu
+YW1lOiAgICAgICAvbGliL21vZHVsZXMvMi42LjM4LTE2LWdlbmVyaWMva2VybmVsL2RyaXZlcnMv
+Z3B1L2RybS9pOTE1L2k5MTUua28KZmlsZW5hbWU6ICAgICAgIC9saWIvbW9kdWxlcy8yLjYuMzgt
+MTYtZ2VuZXJpYy9rZXJuZWwvZHJpdmVycy9pbnB1dC9tb3VzZS9wc21vdXNlLmtvCmZpbGVuYW1l
+OiAgICAgICAvbGliL21vZHVsZXMvMi42LjM4LTE2LWdlbmVyaWMva2VybmVsL2RyaXZlcnMvaW5w
+dXQvc2VyaW8vc2VyaW9fcmF3LmtvCmZpbGVuYW1lOiAgICAgICAvbGliL21vZHVsZXMvMi42LjM4
+LTE2LWdlbmVyaWMva2VybmVsL2RyaXZlcnMvZ3B1L2RybS9kcm1fa21zX2hlbHBlci5rbwpmaWxl
+bmFtZTogICAgICAgL2xpYi9tb2R1bGVzLzIuNi4zOC0xNi1nZW5lcmljL2tlcm5lbC9kcml2ZXJz
+L2dwdS9kcm0vZHJtLmtvCmZpbGVuYW1lOiAgICAgICAvbGliL21vZHVsZXMvMi42LjM4LTE2LWdl
+bmVyaWMva2VybmVsL2RyaXZlcnMvaTJjL2FsZ29zL2kyYy1hbGdvLWJpdC5rbwpmaWxlbmFtZTog
+ICAgICAgL2xpYi9tb2R1bGVzLzIuNi4zOC0xNi1nZW5lcmljL2tlcm5lbC9kcml2ZXJzL2FjcGkv
+dmlkZW8ua28KZmlsZW5hbWU6ICAgICAgIC9saWIvbW9kdWxlcy8yLjYuMzgtMTYtZ2VuZXJpYy9r
+ZXJuZWwvZHJpdmVycy9jaGFyL2xwLmtvCmZpbGVuYW1lOiAgICAgICAvbGliL21vZHVsZXMvMi42
+LjM4LTE2LWdlbmVyaWMva2VybmVsL2RyaXZlcnMvcGFycG9ydC9wYXJwb3J0LmtvCmZpbGVuYW1l
+OiAgICAgICAvbGliL21vZHVsZXMvMi42LjM4LTE2LWdlbmVyaWMva2VybmVsL2RyaXZlcnMvaGlk
+L3VzYmhpZC91c2JoaWQua28KZmlsZW5hbWU6ICAgICAgIC9saWIvbW9kdWxlcy8yLjYuMzgtMTYt
+Z2VuZXJpYy9rZXJuZWwvZHJpdmVycy9oaWQvaGlkLmtvCmZpbGVuYW1lOiAgICAgICAvbGliL21v
+ZHVsZXMvMi42LjM4LTE2LWdlbmVyaWMva2VybmVsL2RyaXZlcnMvbmV0L3RnMy5rbwo=
+--e0cb4efe33deb19da604d3f65f9f--
