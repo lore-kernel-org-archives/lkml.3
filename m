@@ -1,52 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab3AWX5M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 18:57:12 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:34226 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab3AWX5C (ORCPT
+	id S1752584Ab3AWX6I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 18:58:08 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:46019 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154Ab3AWX55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 18:57:02 -0500
-Date: Wed, 23 Jan 2013 15:56:58 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] misc fix for 3.8-rc4
-Message-ID: <20130123235658.GA11781@kroah.com>
+	Wed, 23 Jan 2013 18:57:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51005C4D.1090105@redhat.com>
+References: <1358896415-28569-1-git-send-email-walken@google.com>
+	<1358896415-28569-5-git-send-email-walken@google.com>
+	<51005C4D.1090105@redhat.com>
+Date: Wed, 23 Jan 2013 15:52:30 -0800
+Message-ID: <CANN689GdaoiQ6EDTgTfPmXTQPb6_4pWnXZm4pEs=f6pqjL2KKA@mail.gmail.com>
+Subject: Re: [RFC PATCH 4/6] kernel: faster queue spinlock implementation
+From: Michel Lespinasse <walken@google.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 9a9284153d965a57edc7162a8e57c14c97f3a935:
+On Wed, Jan 23, 2013 at 1:55 PM, Rik van Riel <riel@redhat.com> wrote:
+> There is one thing I do not understand about these locks.
 
-  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2013-01-20 20:55:49 -0800)
+Ah, I need to explain it better then :)
 
-are available in the git repository at:
+> On 01/22/2013 06:13 PM, Michel Lespinasse wrote:
+>> +static inline void
+>> +q_spin_unlock(struct q_spinlock *lock, struct q_spinlock_node *node)
+>> +{
+>> +       q_spin_unlock_mb();     /* guarantee release store semantics */
+>> +       ACCESS_ONCE(node->token->wait) = false;
+>> +       preempt_enable();
+>> +}
+>
+> Here you set wait to false, in the CPU-local (on the current CPU)
+> queue lock token. Afterwards, the same CPU could try to lock another
+> lock, using the same token...
 
+No, it won't use the same token. Besically, setting token->wait =
+false does two things:
+- it indicates to the next waiter (if any) that it doesn't need to spin anymore;
+- it releases ownership of the token so that the next thread to
+acquire the spinlock (or that may be already spinning on it) can reuse
+the token.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.8-rc4
+>> +DEFINE_PER_CPU(struct q_spinlock_token *, q_spinlock_token[2]);
+>> +
+>> +static inline struct q_spinlock_token *
+>> +____q_spin_lock(struct q_spinlock *lock,
+>> +               struct q_spinlock_token **percpu_token)
+>>   {
+>> +       /*
+>> +        * Careful about reentrancy here - if we are interrupted and the
+>> code
+>> +        * running in that interrupt tries to get another queue spinlock,
+>> +        * it must not use the same percpu_token that we're using here.
+>> +        */
+>> +
+>> +       struct q_spinlock_token *token, *prev;
+>> +
+>> +       token = __this_cpu_read(*percpu_token);
+>> +       token->wait = true;
+>> +       prev = xchg(&lock->token, token);
+>> +       __this_cpu_write(*percpu_token, prev);
+>> +       while (ACCESS_ONCE(prev->wait))
+>>                 cpu_relax();
+>>         q_spin_lock_mb();       /* guarantee acquire load semantics */
+>> +       return token;
+>>   }
+>
+> Here a CPU trying to take the lock will spin on the previous
+> CPU's token.
+>
+> However, the previous CPU can immediately re-use its token.
 
-for you to fetch changes up to a7e2ca17039edb5f782be519eaf9d8ea500ba7cc:
+No, they'll use a different token every time.
+I think what confused you is that in __q_spin_lock_process(),
+percpu_token always points to q_spinlock_token[0]. But that in turns
+points to a new token every time (actually points to the token that
+was reclaimed on the last spinlock acquisition), so that consecutive
+spinlock acquisitions on the same CPU won't keep reusing the same
+token.
 
-  Revert "drivers/misc/ti-st: remove gpio handling" (2013-01-22 17:22:47 -0800)
+>> +       token = __this_cpu_read(*percpu_token);
 
-----------------------------------------------------------------
-MISC driver fix for 3.8-rc4
+This get the token that was reclaimed during the last spinlock
+acquisition. We know the token is available to us, because the
+previous spinlock acquisition waited for token->wait to become false,
+and this condition got satisfied only when the previous spinlock
+holder released ownership of the token.
 
-Here is a single revert for the ti-st misc driver, fixing problem that was
-introduced in 3.7-rc1 that has been bothering people.
+>> +       __this_cpu_write(*percpu_token, prev);
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This stores the token we're waiting on in our per-cpu stash so we can
+reuse it on the next spinlock acquisition. It doesn't belong to us
+yet, but it will as soon as we're done spinning.
 
-----------------------------------------------------------------
-Luciano Coelho (1):
-      Revert "drivers/misc/ti-st: remove gpio handling"
+We also have the __q_spin_lock_process() vs __q_spin_lock_bh()
+distinction to ensure interrupts won't cause us to reuse per-cpu
+tokens before we're done spinning on them.
 
- drivers/misc/ti-st/st_kim.c | 37 ++++++++++++++++++++++++++++++++++++-
- 1 file changed, 36 insertions(+), 1 deletion(-)
+Hope this helps,
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
