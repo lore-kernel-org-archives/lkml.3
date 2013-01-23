@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab3AWRNy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 12:13:54 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:50236 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab3AWRNw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 12:13:52 -0500
-Date: Wed, 23 Jan 2013 18:13:51 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 16/29] perf, tools: Add support for weight v7
-Message-ID: <20130123171351.GZ30577@one.firstfloor.org>
-References: <1358455012-12287-1-git-send-email-andi@firstfloor.org> <1358455012-12287-17-git-send-email-andi@firstfloor.org> <CABPqkBQNXUfC9VwyZAA-OyhKJ6JL8Sr__Rq=sZPAzSL6cP+E6Q@mail.gmail.com> <CABPqkBT+wKBKVt30OJ4mhMGGq1711r51tdWsxyyHAmEy3rYfyw@mail.gmail.com> <CABPqkBSBWsx50Pupc5nh6yqvkgLBa4BSCQN==6=SPp1Z_iQUYA@mail.gmail.com>
+	id S1756668Ab3AWROE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 12:14:04 -0500
+Received: from minus.inr.ac.ru ([194.67.69.97]:54365 "HELO ms2.inr.ac.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752976Ab3AWROB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 12:14:01 -0500
+X-Greylist: delayed 3181 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jan 2013 12:14:00 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=ms2.inr.ac.ru;
+  b=d5BbddnyMqYhlmMAldnFeSD/Vz9r/Kw+JPcPm4R08ArV1qtbbooFVcrDOHnK7BYQceXcq8mOJS6AJyWb7O+nIIRiwVjJb+dZ4c6rtdXErdvfeJiGtOPfsdGTEeEyzATxbgZ96GouBDtobK8gq4DHAdXbatYAQGNeJRUoZKZZDVA=;
+Date: Wed, 23 Jan 2013 20:20:25 +0400
+From: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: netdev@vger.kernel.org, criu@openvz.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, Eric Dumazet <edumazet@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] [RFC] tcp: add ability to set a timestamp offset (v2)
+Message-ID: <20130123162025.GA2147@ms2.inr.ac.ru>
+References: <1358953314-12979-1-git-send-email-avagin@openvz.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBSBWsx50Pupc5nh6yqvkgLBa4BSCQN==6=SPp1Z_iQUYA@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1358953314-12979-1-git-send-email-avagin@openvz.org>
+User-Agent: Mutt/1.5.6i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> For PEBS-LL and possibly other special cases, it is important to remember
-> that perf report always end up sorting by period (hist_collapse_resort). But
-> for PEBS-LL we want to sort on nr_events * weight. Thus, with your patch,
-> the only way, I found, to achieve this is by passing:
-> 
->        add_hist_entry(self, &entry, al, weight, weight);
+Hello!
 
-Seems like a hack. IMHO it should always sort by all the keys 
-i specified with --sort in exactly that order I specified
+On Wed, Jan 23, 2013 at 07:01:52PM +0400, Andrey Vagin wrote:
+> -#define tcp_time_stamp         ((__u32)(jiffies))
+> +#define tcp_time_stamp(tp)     ((__u32)(jiffies) + tp->tsoffset)
 
-I had a similar thing in a really old version of my patches,
-but I gave it up because it was too unintuitive.
+This implies that you always have some tp in hands. AFAIK this is not true,
+so that I am puzzled how you were able to make something compilable with this definition.
 
--Andi
+At least in tcp_v4_send_ack() you obviously use some invalid tp, there is
+no socket in hands there. The thing which is called "sk" is dummy.
+
+With container migration I used per-container offset. When you have no container,
+you have to do something a little bit smarter.
+
+Alexey
