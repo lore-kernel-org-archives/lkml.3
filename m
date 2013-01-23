@@ -1,119 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab3AWLjB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 06:39:01 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:57780 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744Ab3AWLi7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 06:38:59 -0500
-Date: Wed, 23 Jan 2013 11:38:54 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: [GIT PULL] power: ab8500-bm: Latest Mainline<->STE delta reduction
- patch-set
-Message-ID: <20130123113854.GK15873@gmail.com>
+	id S1755472Ab3AWLjM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 06:39:12 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42938 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755230Ab3AWLjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 06:39:06 -0500
+From: Afzal Mohammed <afzal@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: [PATCH v2 1/2] clk: divider: prepare for minimum divider
+Date: Wed, 23 Jan 2013 17:08:52 +0530
+Message-ID: <6dc1c48cac5b2646a55da3079afb72f88e40c3bc.1358937138.git.afzal@ti.com>
+X-Mailer: git-send-email 1.7.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 8fd526fd18233887ba652079a369f4eee0de9d9d:
+Some of clocks can have a limit on minimum divider value that can be
+programmed, prepare for such a support.
 
-  qnap-poweroff: Fix license string (2013-01-19 18:04:04 -0800)
+Add a new field min_div for the basic divider clock and a new dynamic
+clock divider registration function where minimum divider value can
+be specified. Keep behaviour of existing divider clock registration
+functions, static initialization helpers as was earlier.
 
-are available in the git repository at:
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+---
 
-  git://git.linaro.org/people/ljones/linux-3.0-ux500.git tb-power-2
+v2: create a new registration function for those that needs to
+    constrain minimum divider value instead of modifying existing
+    registration functions and hence remove modification in other
+    clock files.
+    
 
-for you to fetch changes up to 19db37d598705c273f6b5ab261b9115d065ffb5b:
+ drivers/clk/clk-divider.c    | 37 ++++++++++++++++++++++++++++++++++---
+ include/linux/clk-private.h  |  6 +++++-
+ include/linux/clk-provider.h |  7 +++++++
+ 3 files changed, 46 insertions(+), 4 deletions(-)
 
-  u8500-charger: Delay for USB enumeration (2013-01-23 11:33:17 +0000)
-
-----------------------------------------------------------------
-Hakan Berg (1):
-      ab8500-fg: Adjust for RF bursts voltage drops
-
-Henrik Sölver (1):
-      ab8500-charger: AB workaround for invalid charger
-
-Jonas Aaberg (2):
-      ab8500-bm: Flush all work queues before suspending
-      ab8500-charger: Do not touch VBUSOVV bits
-
-Lee Jones (5):
-      ab8500-charger: Kick watchdog
-      ab8500-chargalg: Update battery health on safety timer exp
-      ab8500-chargalg: Only root should have write permission on sysfs
-      file
-      abx500-chargalg: Add new sysfs interface to get current charge
-      status
-      ab8500-bm: Remove individual [charger|btemp|fg|chargalg] pdata
-      structures
-
-Loic Pallardy (3):
-      pm2301: Add deep debug
-      pm2301: Remove volt_now & curr_now properties
-      pm2301: Update watchdog for pm2xxx support
-
-Martin Bergström (1):
-      ab8500-fg: Go to INIT_RECOVERY when charger removed
-
-Michel JAOUEN (4):
-      pm2301: Provide u9540 support for the pm2301 charger
-      ab8500-btemp: Adaptation to AB8505 and AB9540 platforms
-      ab8500-fg: Add test interface for u9540
-      ab8500-fg-deepdebug: Create Deep Debug interface
-
-Nicolas Guion (1):
-      ab8500-charger: Add support for autopower on AB8505 and AB9540
-
-Olivier Clergeaud (1):
-      pm2301: Clean-up PM2301 interrupt management
-
-Paer-Olof Haakansson (1):
-      u8500-charger: Delay for USB enumeration
-
-Rajkumar Kasirajan (2):
-      pm2301: Enable vbat low monitoring
-      ab8500-fg: Use correct battery charge full design
-
-Rupesh Kumar (1):
-      pm2301: LPN mode control support
-
- drivers/mfd/ab8500-core.c                 |    6 +
- drivers/power/Kconfig                     |   26 +
- drivers/power/Makefile                    |    3 +
- drivers/power/ab8500_btemp.c              |   67 +-
- drivers/power/ab8500_charger.c            |  629 ++++++++---
- drivers/power/ab8500_fg.c                 |  316 ++----
- drivers/power/ab8500_fg.h                 |  244 +++++
- drivers/power/ab8500_fg_deepdebug.c       | 1692 +++++++++++++++++++++++++++++
- drivers/power/abx500_chargalg.c           |   43 +-
- drivers/power/pm2301_charger.c            | 1097 +++++++++++++++++++
- drivers/power/pm2301_charger.h            |  535 +++++++++
- drivers/power/pm2301_deepdebug.c          |  131 +++
- include/linux/mfd/abx500.h                |    3 +
- include/linux/mfd/abx500/ab8500-bm.h      |  186 +++-
- include/linux/mfd/abx500/ab8500.h         |   19 +
- include/linux/mfd/abx500/ux500_chargalg.h |    5 +
- include/linux/pm2301_charger.h            |   61 ++
- 17 files changed, 4655 insertions(+), 408 deletions(-)
- create mode 100644 drivers/power/ab8500_fg.h
- create mode 100644 drivers/power/ab8500_fg_deepdebug.c
- create mode 100644 drivers/power/pm2301_charger.c
- create mode 100644 drivers/power/pm2301_charger.h
- create mode 100644 drivers/power/pm2301_deepdebug.c
- create mode 100644 include/linux/pm2301_charger.h
-
+diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+index a9204c6..4025c5a 100644
+--- a/drivers/clk/clk-divider.c
++++ b/drivers/clk/clk-divider.c
+@@ -236,7 +236,7 @@ EXPORT_SYMBOL_GPL(clk_divider_ops);
+ 
+ static struct clk *_register_divider(struct device *dev, const char *name,
+ 		const char *parent_name, unsigned long flags,
+-		void __iomem *reg, u8 shift, u8 width,
++		void __iomem *reg, u8 shift, u8 width, u8 min_div,
+ 		u8 clk_divider_flags, const struct clk_div_table *table,
+ 		spinlock_t *lock)
+ {
+@@ -244,6 +244,11 @@ static struct clk *_register_divider(struct device *dev, const char *name,
+ 	struct clk *clk;
+ 	struct clk_init_data init;
+ 
++	if (!min_div) {
++		pr_err("%s: minimum divider cannot be zero\n", __func__);
++		return ERR_PTR(-EINVAL);
++	}
++
+ 	/* allocate the divider */
+ 	div = kzalloc(sizeof(struct clk_divider), GFP_KERNEL);
+ 	if (!div) {
+@@ -261,6 +266,7 @@ static struct clk *_register_divider(struct device *dev, const char *name,
+ 	div->reg = reg;
+ 	div->shift = shift;
+ 	div->width = width;
++	div->min_div = min_div;
+ 	div->flags = clk_divider_flags;
+ 	div->lock = lock;
+ 	div->hw.init = &init;
+@@ -276,6 +282,29 @@ static struct clk *_register_divider(struct device *dev, const char *name,
+ }
+ 
+ /**
++ * clk_register_min_divider - register a divider clock having minimum divider
++ * constraints with clock framework
++ * @dev: device registering this clock
++ * @name: name of this clock
++ * @parent_name: name of clock's parent
++ * @flags: framework-specific flags
++ * @reg: register address to adjust divider
++ * @shift: number of bits to shift the bitfield
++ * @width: width of the bitfield
++ * @min_div: minimum allowable divider
++ * @clk_divider_flags: divider-specific flags for this clock
++ * @lock: shared register lock for this clock
++ */
++struct clk *clk_register_min_divider(struct device *dev, const char *name,
++		const char *parent_name, unsigned long flags,
++		void __iomem *reg, u8 shift, u8 width, u8 min_div,
++		u8 clk_divider_flags, spinlock_t *lock)
++{
++	return _register_divider(dev, name, parent_name, flags, reg, shift,
++			width, min_div, clk_divider_flags, NULL, lock);
++}
++
++/**
+  * clk_register_divider - register a divider clock with the clock framework
+  * @dev: device registering this clock
+  * @name: name of this clock
+@@ -293,7 +322,8 @@ struct clk *clk_register_divider(struct device *dev, const char *name,
+ 		u8 clk_divider_flags, spinlock_t *lock)
+ {
+ 	return _register_divider(dev, name, parent_name, flags, reg, shift,
+-			width, clk_divider_flags, NULL, lock);
++			width, CLK_DIVIDER_MIN_DIV_DEFAULT, clk_divider_flags,
++			NULL, lock);
+ }
+ 
+ /**
+@@ -317,5 +347,6 @@ struct clk *clk_register_divider_table(struct device *dev, const char *name,
+ 		spinlock_t *lock)
+ {
+ 	return _register_divider(dev, name, parent_name, flags, reg, shift,
+-			width, clk_divider_flags, table, lock);
++			width, CLK_DIVIDER_MIN_DIV_DEFAULT, clk_divider_flags,
++			table, lock);
+ }
+diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+index 9c7f580..942a1be 100644
+--- a/include/linux/clk-private.h
++++ b/include/linux/clk-private.h
+@@ -105,7 +105,8 @@ struct clk {
+ 
+ #define _DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
+ 				_flags, _reg, _shift, _width,	\
+-				_divider_flags, _table, _lock)	\
++				_min_div, _divider_flags,	\
++				_table, _lock)			\
+ 	static struct clk _name;				\
+ 	static const char *_name##_parent_names[] = {		\
+ 		_parent_name,					\
+@@ -120,6 +121,7 @@ struct clk {
+ 		.reg = _reg,					\
+ 		.shift = _shift,				\
+ 		.width = _width,				\
++		.min_div = _min_div,				\
+ 		.flags = _divider_flags,			\
+ 		.table = _table,				\
+ 		.lock = _lock,					\
+@@ -132,6 +134,7 @@ struct clk {
+ 				_divider_flags, _lock)		\
+ 	_DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
+ 				_flags, _reg, _shift, _width,	\
++				CLK_DIVIDER_MIN_DIV_DEFAULT,	\
+ 				_divider_flags, NULL, _lock)
+ 
+ #define DEFINE_CLK_DIVIDER_TABLE(_name, _parent_name,		\
+@@ -140,6 +143,7 @@ struct clk {
+ 				_table, _lock)			\
+ 	_DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
+ 				_flags, _reg, _shift, _width,	\
++				CLK_DIVIDER_MIN_DIV_DEFAULT,	\
+ 				_divider_flags, _table, _lock)	\
+ 
+ #define DEFINE_CLK_MUX(_name, _parent_names, _parents, _flags,	\
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 4989b8a..1c09481 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -248,15 +248,22 @@ struct clk_divider {
+ 	void __iomem	*reg;
+ 	u8		shift;
+ 	u8		width;
++	u8		min_div;
+ 	u8		flags;
+ 	const struct clk_div_table	*table;
+ 	spinlock_t	*lock;
+ };
+ 
++#define	CLK_DIVIDER_MIN_DIV_DEFAULT	1
++
+ #define CLK_DIVIDER_ONE_BASED		BIT(0)
+ #define CLK_DIVIDER_POWER_OF_TWO	BIT(1)
+ 
+ extern const struct clk_ops clk_divider_ops;
++struct clk *clk_register_min_divider(struct device *dev, const char *name,
++		const char *parent_name, unsigned long flags,
++		void __iomem *reg, u8 shift, u8 width, u8 min_div,
++		u8 clk_divider_flags, spinlock_t *lock);
+ struct clk *clk_register_divider(struct device *dev, const char *name,
+ 		const char *parent_name, unsigned long flags,
+ 		void __iomem *reg, u8 shift, u8 width,
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.12
+
