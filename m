@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275Ab3AWR4u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 12:56:50 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:52140 "EHLO hydra.sisk.pl"
+	id S1756177Ab3AWR4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 12:56:48 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:52143 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754456Ab3AWR4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 12:56:21 -0500
+	id S1755304Ab3AWR4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 12:56:22 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
         Len Brown <lenb@kernel.org>
-Subject: [Update][PATCH 2/5] ACPI / PM: Expose power states of ACPI devices to user space
-Date: Wed, 23 Jan 2013 18:59:27 +0100
-Message-ID: <2490525.U5VNOREm8j@vostro.rjw.lan>
+Subject: [Update][PATCH 1/5] ACPI / scan: Prevent device add uevents from racing with user space
+Date: Wed, 23 Jan 2013 18:58:31 +0100
+Message-ID: <4119653.FS5BMPMa9z@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <1551140.kO91IOVbjI@vostro.rjw.lan>
 References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <2760421.6nE3tkh92K@vostro.rjw.lan> <1551140.kO91IOVbjI@vostro.rjw.lan>
@@ -27,146 +27,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Make it possible to retrieve the current power state of a device with
-ACPI power management from user space via sysfs by adding two new
-attributes, power_state and real_power_state, to the sysfs directory
-associated with the struct acpi_device object representing the
-device's ACPI node.
+ACPI core adds sysfs device files after the given devices have been
+registered with device_register(), which is not appropriate, because
+it may lead to race conditions with user space tools using those
+files.
+
+Fix the problem by delaying the KOBJ_ADD uevent for ACPI devices
+until after all of the devices' sysfs files have been created.
+
+This also fixes a use-after-free in acpi_device_unregister().
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- Documentation/ABI/testing/sysfs-devices-power_state      |   20 ++++++
- Documentation/ABI/testing/sysfs-devices-real_power_state |   23 +++++++
- drivers/acpi/scan.c                                      |   49 ++++++++++++++-
- 3 files changed, 91 insertions(+), 1 deletion(-)
+ drivers/acpi/internal.h |    5 +++--
+ drivers/acpi/power.c    |    3 ++-
+ drivers/acpi/scan.c     |   20 +++++++++++++++-----
+ 3 files changed, 20 insertions(+), 8 deletions(-)
 
+Index: linux-pm/drivers/acpi/internal.h
+===================================================================
+--- linux-pm.orig/drivers/acpi/internal.h
++++ linux-pm/drivers/acpi/internal.h
+@@ -40,10 +40,11 @@ static inline void acpi_debugfs_init(voi
+ #define ACPI_STA_DEFAULT (ACPI_STA_DEVICE_PRESENT | ACPI_STA_DEVICE_ENABLED | \
+ 			  ACPI_STA_DEVICE_UI | ACPI_STA_DEVICE_FUNCTIONING)
+ 
+-int acpi_device_register(struct acpi_device *device,
+-			 void (*release)(struct device *));
++int acpi_device_add(struct acpi_device *device,
++		    void (*release)(struct device *));
+ void acpi_init_device_object(struct acpi_device *device, acpi_handle handle,
+ 			     int type, unsigned long long sta);
++void acpi_device_add_finalize(struct acpi_device *device);
+ void acpi_free_ids(struct acpi_device *device);
+ 
+ /* --------------------------------------------------------------------------
+Index: linux-pm/drivers/acpi/power.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/power.c
++++ linux-pm/drivers/acpi/power.c
+@@ -719,13 +719,14 @@ int acpi_add_power_resource(acpi_handle
+ 	       acpi_device_bid(device), state ? "on" : "off");
+ 
+ 	device->flags.match_driver = true;
+-	result = acpi_device_register(device, acpi_release_power_resource);
++	result = acpi_device_add(device, acpi_release_power_resource);
+ 	if (result)
+ 		goto err;
+ 
+ 	mutex_lock(&power_resource_list_lock);
+ 	list_add(&resource->list_node, &acpi_power_resource_list);
+ 	mutex_unlock(&power_resource_list_lock);
++	acpi_device_add_finalize(device);
+ 	return 0;
+ 
+  err:
 Index: linux-pm/drivers/acpi/scan.c
 ===================================================================
 --- linux-pm.orig/drivers/acpi/scan.c
 +++ linux-pm/drivers/acpi/scan.c
-@@ -178,6 +178,32 @@ err_out:
- }
- EXPORT_SYMBOL(acpi_bus_hot_remove_device);
+@@ -633,8 +633,8 @@ struct bus_type acpi_bus_type = {
+ 	.uevent		= acpi_device_uevent,
+ };
  
-+static ssize_t real_power_state_show(struct device *dev,
-+				     struct device_attribute *attr, char *buf)
-+{
-+	struct acpi_device *adev = to_acpi_device(dev);
-+	int state;
-+	int ret;
-+
-+	ret = acpi_device_get_power(adev, &state);
-+	if (ret)
-+		return ret;
-+
-+	return sprintf(buf, "%s\n", acpi_power_state_string(state));
-+}
-+
-+static DEVICE_ATTR(real_power_state, 0444, real_power_state_show, NULL);
-+
-+static ssize_t power_state_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct acpi_device *adev = to_acpi_device(dev);
-+
-+	return sprintf(buf, "%s\n", acpi_power_state_string(adev->power.state));
-+}
-+
-+static DEVICE_ATTR(power_state, 0444, power_state_show, NULL);
-+
- static ssize_t
- acpi_eject_store(struct device *d, struct device_attribute *attr,
- 		const char *buf, size_t count)
-@@ -369,8 +395,22 @@ static int acpi_device_setup_files(struc
-          * hot-removal function from userland.
-          */
- 	status = acpi_get_handle(dev->handle, "_EJ0", &temp);
--	if (ACPI_SUCCESS(status))
-+	if (ACPI_SUCCESS(status)) {
- 		result = device_create_file(&dev->dev, &dev_attr_eject);
-+		if (result)
-+			return result;
-+	}
-+
-+	if (dev->flags.power_manageable) {
-+		result = device_create_file(&dev->dev, &dev_attr_power_state);
-+		if (result)
-+			return result;
-+
-+		if (dev->power.flags.power_resources)
-+			result = device_create_file(&dev->dev,
-+						    &dev_attr_real_power_state);
-+	}
-+
- end:
- 	return result;
- }
-@@ -380,6 +420,13 @@ static void acpi_device_remove_files(str
- 	acpi_status status;
- 	acpi_handle temp;
+-int acpi_device_register(struct acpi_device *device,
+-			 void (*release)(struct device *))
++int acpi_device_add(struct acpi_device *device,
++		    void (*release)(struct device *))
+ {
+ 	int result;
+ 	struct acpi_device_bus_id *acpi_device_bus_id, *new_bus_id;
+@@ -704,7 +704,7 @@ int acpi_device_register(struct acpi_dev
+ 		device->dev.parent = &device->parent->dev;
+ 	device->dev.bus = &acpi_bus_type;
+ 	device->dev.release = release;
+-	result = device_register(&device->dev);
++	result = device_add(&device->dev);
+ 	if (result) {
+ 		dev_err(&device->dev, "Error registering device\n");
+ 		goto err;
+@@ -743,12 +743,13 @@ static void acpi_device_unregister(struc
  
-+	if (dev->flags.power_manageable) {
-+		device_remove_file(&dev->dev, &dev_attr_power_state);
-+		if (dev->power.flags.power_resources)
-+			device_remove_file(&dev->dev,
-+					   &dev_attr_real_power_state);
-+	}
-+
+ 	acpi_power_add_remove_device(device, false);
+ 	acpi_device_remove_files(device);
+-	device_unregister(&device->dev);
++	device_del(&device->dev);
  	/*
- 	 * If device has _STR, remove 'description' file
+ 	 * Drop the reference counts of all power resources the device depends
+ 	 * on and turn off the ones that have no more references.
  	 */
-Index: linux-pm/Documentation/ABI/testing/sysfs-devices-power_state
-===================================================================
---- /dev/null
-+++ linux-pm/Documentation/ABI/testing/sysfs-devices-power_state
-@@ -0,0 +1,20 @@
-+What:		/sys/devices/.../power_state
-+Date:		January 2013
-+Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-+Description:
-+		The /sys/devices/.../power_state attribute is only present for
-+		device objects representing ACPI device nodes that provide power
-+		management methods.
+ 	acpi_power_transition(device, ACPI_STATE_D3_COLD);
++	put_device(&device->dev);
+ }
+ 
+ /* --------------------------------------------------------------------------
+@@ -1390,6 +1391,14 @@ void acpi_init_device_object(struct acpi
+ 	acpi_device_get_busid(device);
+ 	acpi_device_set_id(device);
+ 	acpi_bus_get_flags(device);
++	device_initialize(&device->dev);
++	dev_set_uevent_suppress(&device->dev, true);
++}
 +
-+		If present, it contains a string representing the current ACPI
-+		power state of the given device node.  Its possible values,
-+		"D0", "D1", "D2", "D3hot", and "D3cold", reflect the power state
-+		names defined by the ACPI specification (ACPI 4 and above).
-+
-+		If the device node uses shared ACPI power resources, this state
-+		determines a list of power resources required not to be turned
-+		off.  However, some power resources needed by the device node in
-+		higher-power (lower-number) states may also be ON because of
-+		some other devices using them at the moment.
-+
-+		This attribute is read-only.
-Index: linux-pm/Documentation/ABI/testing/sysfs-devices-real_power_state
-===================================================================
---- /dev/null
-+++ linux-pm/Documentation/ABI/testing/sysfs-devices-real_power_state
-@@ -0,0 +1,23 @@
-+What:		/sys/devices/.../real_power_state
-+Date:		January 2013
-+Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-+Description:
-+		The /sys/devices/.../real_power_state attribute is only present
-+		for device objects representing ACPI device nodes that provide
-+		power management methods and use ACPI power resources for power
-+		management.
-+
-+		If present, it contains a string representing the real ACPI
-+		power state of the given device node as returned by the _PSC
-+		control method or inferred from the configuration of power
-+		resources.  Its possible values, "D0", "D1", "D2", "D3hot", and
-+		"D3cold", reflect the power state names defined by the ACPI
-+		specification (ACPI 4 and above).
-+
-+		In some situations the value of this attribute may be different
-+		from the value of the /sys/devices/.../power_state attribute for
-+		the same device object.  If that happens, some shared power
-+		resources used by the device node are only ON because of some
-+		other devices using them at the moment.
-+
-+		This attribute is read-only.
++void acpi_device_add_finalize(struct acpi_device *device)
++{
++	dev_set_uevent_suppress(&device->dev, false);
++	kobject_uevent(&device->dev.kobj, KOBJ_ADD);
+ }
+ 
+ static int acpi_add_single_object(struct acpi_device **child,
+@@ -1411,13 +1420,14 @@ static int acpi_add_single_object(struct
+ 	acpi_bus_get_wakeup_device_flags(device);
+ 
+ 	device->flags.match_driver = match_driver;
+-	result = acpi_device_register(device, acpi_device_release);
++	result = acpi_device_add(device, acpi_device_release);
+ 	if (result) {
+ 		acpi_device_release(&device->dev);
+ 		return result;
+ 	}
+ 
+ 	acpi_power_add_remove_device(device, true);
++	acpi_device_add_finalize(device);
+ 	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+ 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Added %s [%s] parent %s\n",
+ 		dev_name(&device->dev), (char *) buffer.pointer,
 
