@@ -1,120 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab3AWKif (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 05:38:35 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:41907 "EHLO
+	id S1755143Ab3AWKir (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 05:38:47 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:41922 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754554Ab3AWKic (ORCPT
+	with ESMTP id S1754975Ab3AWKin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 05:38:32 -0500
+	Wed, 23 Jan 2013 05:38:43 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <sameo@linux.intel.com>
 CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
         <sshtylyov@mvista.com>, <bjorn@mork.no>, <linux@arm.linux.org.uk>,
         <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <rogerq@ti.com>
-Subject: [PATCH v9 00/20] OMAP USB Host cleanup
-Date: Wed, 23 Jan 2013 12:37:52 +0200
-Message-ID: <1358937492-8129-1-git-send-email-rogerq@ti.com>
+        <rogerq@ti.com>, Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH v9 02/20] mfd: omap-usb-host: Consolidate OMAP USB-HS platform data
+Date: Wed, 23 Jan 2013 12:37:54 +0200
+Message-ID: <1358937492-8129-3-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1358937492-8129-1-git-send-email-rogerq@ti.com>
+References: <1358937492-8129-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+Let's have a single platform data structure for the OMAP's High-Speed
+USB host subsystem instead of having 3 separate ones i.e. one for
+board data, one for USB Host (UHH) module and one for USB-TLL module.
 
-I think this series is in a pretty good shape to pull now :). I've added
-Reviewed-by and Acked-by tags. You can please pull from below.
+This makes the code much simpler and avoids creating multiple copies of
+platform data.
 
-NOTE: the first patch is a stable fix so Greg KH might want to pick it up for 3.8-rc.
+CC: Alan Stern <stern@rowland.harvard.edu>
 
-The following changes since commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619:
-
-  Linux 3.8-rc4 (2013-01-17 19:25:45 -0800)
-
-are available in the git repository at:
-  git://github.com/rogerq/linux.git linux-usbhost14-part
-
-This patchset addresses the following
-
-- Consolidate USB Host platform data.
-- Avoid addressing clocks one by one by name and use a for loop + bunch
-  of cleanups.
-- Get number of channels/ports dynamically either from revision register
-  or from platform data. Avoids getting clocks that are not present.
-- Add OMAP5 and HSIC mode (Not tested).
-
-v9:
-- Addressed clock framework related comments from Russell King.
-- Removed 2 clock data patches from the series as they will be taken care
-  of by Paul Walmsey.
-
-v8:
-- Re-arranged patch "USB-ehci-omap-Don-t-free-gpios-that-we-didn-t-reques.patch"
-  to be the first since it is a candidate for stable.
-- Fixed issues raised by Felipe, i.e. indentation and use of switch ()
-
-v7:
-- Updated patch 4 to not hold a spinlock when using clk_get().
-- Updated patches 3 and 11 to return -EADDRNOTAVAIL on failure of
-  demv_request_and_ioremap().
-
-v6:
-- Added USB Host platform data consolidation patch as the first patch.
-  based on request from Tony.
-- Rebased on v3.8-rc3.
-
-v5:
-- Rebased on top of todays arm-soc/for-next.
-- Removed the clock merging patch from the list.
-- Updated patches 14, 19 and 20 to accomodate the above change.
-- Added patch 22 to fix a build warning.
-
-v4:
-- Added appropriate maintainers in to/cc.
-- minor print message fix in patch 23 to maintain consistency.
-
-v3:
-- Rebased on arm-soc/for-next commit f979306c4d38d213c6977aaf3b1115e8ded71e3a.
-- Rearranged patch that get rids of cpu_is_omap..() macros.
-- Coding style fixes.
-
-v2:
-- Clocks are allocated dynamically based on number of ports available
-  on the platform.
-- Reduced console spam if non critical clocks are not found on the platform.
-- Get rid of cpu_is_.. macros from USB host driver.
-
-cheers,
--roger
-
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+For the ehci-omap.c part:
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 ---
-Roger Quadros (20):
-      USB: ehci-omap: Don't free gpios that we didn't request
-      mfd: omap-usb-host: Consolidate OMAP USB-HS platform data
-      mfd: omap-usb-tll: Fix channel count detection
-      mfd: omap-usb-tll: Use devm_kzalloc/ioremap and clean up error path
-      mfd: omap-usb-tll: Clean up clock handling
-      mfd: omap-usb-tll: introduce and use mode_needs_tll()
-      mfd: omap-usb-tll: Check for missing platform data in probe
-      mfd: omap-usb-tll: Fix error message
-      mfd: omap-usb-tll: serialize access to TLL device
-      mfd: omap-usb-tll: Add OMAP5 revision and HSIC support
-      mfd: omap_usb_host: Avoid missing platform data checks in suspend/resume
-      mfd: omap-usb-host: Use devm_kzalloc() and devm_request_and_ioremap()
-      mfd: omap-usb-host: know about number of ports from revision register
-      mfd: omap-usb-host: override number of ports from platform data
-      mfd: omap-usb-host: cleanup clock management code
-      mfd: omap-usb-host: Manage HSIC clocks for HSIC mode
-      mfd: omap-usb-host: Get rid of unnecessary spinlock
-      mfd: omap-usb-host: clean up omap_usbhs_init()
-      mfd: omap-usb-host: Don't spam console on clk_set_parent failure
-      mdf: omap-usb-host: get rid of build warning
-
  arch/arm/mach-omap2/board-3430sdp.c        |    2 +-
  arch/arm/mach-omap2/board-3630sdp.c        |    2 +-
  arch/arm/mach-omap2/board-am3517crane.c    |    2 +-
@@ -131,14 +56,623 @@ Roger Quadros (20):
  arch/arm/mach-omap2/board-omap4panda.c     |    2 +-
  arch/arm/mach-omap2/board-overo.c          |    2 +-
  arch/arm/mach-omap2/board-zoom.c           |    2 +-
- arch/arm/mach-omap2/usb-host.c             |   29 +--
- arch/arm/mach-omap2/usb.h                  |   20 +-
- drivers/mfd/omap-usb-host.c                |  558 +++++++++++++++++-----------
- drivers/mfd/omap-usb-tll.c                 |  243 +++++++------
- drivers/usb/host/ehci-omap.c               |   14 +-
- include/linux/platform_data/usb-omap.h     |   24 +-
- 22 files changed, 497 insertions(+), 425 deletions(-)
+ arch/arm/mach-omap2/usb-host.c             |   29 ++-----------
+ arch/arm/mach-omap2/usb.h                  |   20 +--------
+ drivers/mfd/omap-usb-host.c                |   63 +++++++++++----------------
+ drivers/mfd/omap-usb-tll.c                 |   11 ++---
+ drivers/usb/host/ehci-omap.c               |    6 +-
+ include/linux/platform_data/usb-omap.h     |   23 ++--------
+ 22 files changed, 61 insertions(+), 125 deletions(-)
 
+diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
+index bb73afc..46147c8 100644
+--- a/arch/arm/mach-omap2/board-3430sdp.c
++++ b/arch/arm/mach-omap2/board-3430sdp.c
+@@ -424,7 +424,7 @@ static void enable_board_wakeup_source(void)
+ 		OMAP_WAKEUP_EN | OMAP_PIN_INPUT_PULLUP);
+ }
+ 
+-static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 
+ 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+diff --git a/arch/arm/mach-omap2/board-3630sdp.c b/arch/arm/mach-omap2/board-3630sdp.c
+index 050aaa7..78b1724 100644
+--- a/arch/arm/mach-omap2/board-3630sdp.c
++++ b/arch/arm/mach-omap2/board-3630sdp.c
+@@ -53,7 +53,7 @@ static void enable_board_wakeup_source(void)
+ 		OMAP_WAKEUP_EN | OMAP_PIN_INPUT_PULLUP);
+ }
+ 
+-static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 
+ 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+diff --git a/arch/arm/mach-omap2/board-am3517crane.c b/arch/arm/mach-omap2/board-am3517crane.c
+index 51b96a1..26f1916 100644
+--- a/arch/arm/mach-omap2/board-am3517crane.c
++++ b/arch/arm/mach-omap2/board-am3517crane.c
+@@ -40,7 +40,7 @@ static struct omap_board_mux board_mux[] __initdata = {
+ };
+ #endif
+ 
+-static struct usbhs_omap_board_data usbhs_bdata __initdata = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[1] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
+index f81a303..c76725d 100644
+--- a/arch/arm/mach-omap2/board-am3517evm.c
++++ b/arch/arm/mach-omap2/board-am3517evm.c
+@@ -274,7 +274,7 @@ static __init void am3517_evm_mcbsp1_init(void)
+ 	omap_ctrl_writel(devconf0, OMAP2_CONTROL_DEVCONF0);
+ }
+ 
+-static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
+ #if defined(CONFIG_PANEL_SHARP_LQ043T1DG01) || \
+ 		defined(CONFIG_PANEL_SHARP_LQ043T1DG01_MODULE)
+diff --git a/arch/arm/mach-omap2/board-cm-t35.c b/arch/arm/mach-omap2/board-cm-t35.c
+index b3102c2..cdf1d6e 100644
+--- a/arch/arm/mach-omap2/board-cm-t35.c
++++ b/arch/arm/mach-omap2/board-cm-t35.c
+@@ -418,7 +418,7 @@ static struct omap2_hsmmc_info mmc[] = {
+ 	{}	/* Terminator */
+ };
+ 
+-static struct usbhs_omap_board_data usbhs_bdata __initdata = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+diff --git a/arch/arm/mach-omap2/board-cm-t3517.c b/arch/arm/mach-omap2/board-cm-t3517.c
+index ebbc2ad..cfa9098 100644
+--- a/arch/arm/mach-omap2/board-cm-t3517.c
++++ b/arch/arm/mach-omap2/board-cm-t3517.c
+@@ -166,7 +166,7 @@ static inline void cm_t3517_init_rtc(void) {}
+ #define HSUSB2_RESET_GPIO	(147)
+ #define USB_HUB_RESET_GPIO	(152)
+ 
+-static struct usbhs_omap_board_data cm_t3517_ehci_pdata __initdata = {
++static struct usbhs_omap_platform_data cm_t3517_ehci_pdata __initdata = {
+ 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
+index 12865af..051ec0d 100644
+--- a/arch/arm/mach-omap2/board-devkit8000.c
++++ b/arch/arm/mach-omap2/board-devkit8000.c
+@@ -435,7 +435,7 @@ static struct platform_device *devkit8000_devices[] __initdata = {
+ 	&omap_dm9000_dev,
+ };
+ 
+-static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 
+ 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[1] = OMAP_USBHS_PORT_MODE_UNUSED,
+diff --git a/arch/arm/mach-omap2/board-igep0020.c b/arch/arm/mach-omap2/board-igep0020.c
+index 0f24cb8..cfba790 100644
+--- a/arch/arm/mach-omap2/board-igep0020.c
++++ b/arch/arm/mach-omap2/board-igep0020.c
+@@ -526,7 +526,7 @@ static void __init igep_i2c_init(void)
+ 	omap3_pmic_init("twl4030", &igep_twldata);
+ }
+ 
+-static const struct usbhs_omap_board_data igep2_usbhs_bdata __initconst = {
++static struct usbhs_omap_platform_data igep2_usbhs_bdata __initdata = {
+ 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[1] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+@@ -537,7 +537,7 @@ static const struct usbhs_omap_board_data igep2_usbhs_bdata __initconst = {
+ 	.reset_gpio_port[2] = -EINVAL,
+ };
+ 
+-static const struct usbhs_omap_board_data igep3_usbhs_bdata __initconst = {
++static struct usbhs_omap_platform_data igep3_usbhs_bdata __initdata = {
+ 	.port_mode[0] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+diff --git a/arch/arm/mach-omap2/board-omap3beagle.c b/arch/arm/mach-omap2/board-omap3beagle.c
+index 22c483d..1cb114e 100644
+--- a/arch/arm/mach-omap2/board-omap3beagle.c
++++ b/arch/arm/mach-omap2/board-omap3beagle.c
+@@ -430,7 +430,7 @@ static struct platform_device *omap3_beagle_devices[] __initdata = {
+ 	&madc_hwmon,
+ };
+ 
+-static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 
+ 	.port_mode[0] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index 3985f35..7bdc8a4 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -538,7 +538,7 @@ static int __init omap3_evm_i2c_init(void)
+ 	return 0;
+ }
+ 
+-static struct usbhs_omap_board_data usbhs_bdata __initdata = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 
+ 	.port_mode[0] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
+index a53a668..145a6f8 100644
+--- a/arch/arm/mach-omap2/board-omap3pandora.c
++++ b/arch/arm/mach-omap2/board-omap3pandora.c
+@@ -567,7 +567,7 @@ static struct platform_device *omap3pandora_devices[] __initdata = {
+ 	&pandora_backlight,
+ };
+ 
+-static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 
+ 	.port_mode[0] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+diff --git a/arch/arm/mach-omap2/board-omap3stalker.c b/arch/arm/mach-omap2/board-omap3stalker.c
+index 53a6cbc..278ae95 100644
+--- a/arch/arm/mach-omap2/board-omap3stalker.c
++++ b/arch/arm/mach-omap2/board-omap3stalker.c
+@@ -361,7 +361,7 @@ static struct platform_device *omap3_stalker_devices[] __initdata = {
+ 	&keys_gpio,
+ };
+ 
+-static struct usbhs_omap_board_data usbhs_bdata __initconst = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 	.port_mode[0] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+diff --git a/arch/arm/mach-omap2/board-omap3touchbook.c b/arch/arm/mach-omap2/board-omap3touchbook.c
+index 263cb9c..65a285f 100644
+--- a/arch/arm/mach-omap2/board-omap3touchbook.c
++++ b/arch/arm/mach-omap2/board-omap3touchbook.c
+@@ -309,7 +309,7 @@ static struct platform_device *omap3_touchbook_devices[] __initdata = {
+ 	&keys_gpio,
+ };
+ 
+-static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 
+ 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
+index 5c8e9ce..ee76830 100644
+--- a/arch/arm/mach-omap2/board-omap4panda.c
++++ b/arch/arm/mach-omap2/board-omap4panda.c
+@@ -139,7 +139,7 @@ static struct platform_device *panda_devices[] __initdata = {
+ 	&btwilink_device,
+ };
+ 
+-static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[1] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+diff --git a/arch/arm/mach-omap2/board-overo.c b/arch/arm/mach-omap2/board-overo.c
+index c8fde3e..b1b0f09 100644
+--- a/arch/arm/mach-omap2/board-overo.c
++++ b/arch/arm/mach-omap2/board-overo.c
+@@ -457,7 +457,7 @@ static int __init overo_spi_init(void)
+ 	return 0;
+ }
+ 
+-static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 	.port_mode[0] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+diff --git a/arch/arm/mach-omap2/board-zoom.c b/arch/arm/mach-omap2/board-zoom.c
+index d7fa31e..2d7a457 100644
+--- a/arch/arm/mach-omap2/board-zoom.c
++++ b/arch/arm/mach-omap2/board-zoom.c
+@@ -92,7 +92,7 @@ static struct mtd_partition zoom_nand_partitions[] = {
+ 	},
+ };
+ 
+-static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
++static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 	.port_mode[0]		= OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[1]		= OMAP_EHCI_PORT_MODE_PHY,
+ 	.port_mode[2]		= OMAP_USBHS_PORT_MODE_UNUSED,
+diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
+index 2e44e8a..940aad4 100644
+--- a/arch/arm/mach-omap2/usb-host.c
++++ b/arch/arm/mach-omap2/usb-host.c
+@@ -37,11 +37,6 @@
+ #define	USBHS_UHH_HWMODNAME	"usb_host_hs"
+ #define USBHS_TLL_HWMODNAME	"usb_tll_hs"
+ 
+-static struct usbhs_omap_platform_data		usbhs_data;
+-static struct usbtll_omap_platform_data		usbtll_data;
+-static struct ehci_hcd_omap_platform_data	ehci_data;
+-static struct ohci_hcd_omap_platform_data	ohci_data;
+-
+ static struct omap_device_pm_latency omap_uhhtll_latency[] = {
+ 	  {
+ 		.deactivate_func = omap_device_idle_hwmods,
+@@ -485,32 +480,18 @@ void __init setup_4430ohci_io_mux(const enum usbhs_omap_port_mode *port_mode)
+ 	}
+ }
+ 
+-void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
++void __init usbhs_init(struct usbhs_omap_platform_data *pdata)
+ {
+ 	struct omap_hwmod	*uhh_hwm, *tll_hwm;
+ 	struct platform_device	*pdev;
+ 	int			bus_id = -1;
+-	int			i;
+-
+-	for (i = 0; i < OMAP3_HS_USB_PORTS; i++) {
+-		usbhs_data.port_mode[i] = pdata->port_mode[i];
+-		usbtll_data.port_mode[i] = pdata->port_mode[i];
+-		ohci_data.port_mode[i] = pdata->port_mode[i];
+-		ehci_data.port_mode[i] = pdata->port_mode[i];
+-		ehci_data.reset_gpio_port[i] = pdata->reset_gpio_port[i];
+-		ehci_data.regulator[i] = pdata->regulator[i];
+-	}
+-	ehci_data.phy_reset = pdata->phy_reset;
+-	ohci_data.es2_compatibility = pdata->es2_compatibility;
+-	usbhs_data.ehci_data = &ehci_data;
+-	usbhs_data.ohci_data = &ohci_data;
+ 
+ 	if (cpu_is_omap34xx()) {
+ 		setup_ehci_io_mux(pdata->port_mode);
+ 		setup_ohci_io_mux(pdata->port_mode);
+ 
+ 		if (omap_rev() <= OMAP3430_REV_ES2_1)
+-			usbhs_data.single_ulpi_bypass = true;
++			pdata->single_ulpi_bypass = true;
+ 
+ 	} else if (cpu_is_omap44xx()) {
+ 		setup_4430ehci_io_mux(pdata->port_mode);
+@@ -530,7 +511,7 @@ void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
+ 	}
+ 
+ 	pdev = omap_device_build(OMAP_USBTLL_DEVICE, bus_id, tll_hwm,
+-				&usbtll_data, sizeof(usbtll_data),
++				pdata, sizeof(*pdata),
+ 				omap_uhhtll_latency,
+ 				ARRAY_SIZE(omap_uhhtll_latency), false);
+ 	if (IS_ERR(pdev)) {
+@@ -540,7 +521,7 @@ void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
+ 	}
+ 
+ 	pdev = omap_device_build(OMAP_USBHS_DEVICE, bus_id, uhh_hwm,
+-				&usbhs_data, sizeof(usbhs_data),
++				pdata, sizeof(*pdata),
+ 				omap_uhhtll_latency,
+ 				ARRAY_SIZE(omap_uhhtll_latency), false);
+ 	if (IS_ERR(pdev)) {
+@@ -552,7 +533,7 @@ void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
+ 
+ #else
+ 
+-void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
++void __init usbhs_init(struct usbhs_omap_platform_data *pdata)
+ {
+ }
+ 
+diff --git a/arch/arm/mach-omap2/usb.h b/arch/arm/mach-omap2/usb.h
+index 9b986ea..3319f5c 100644
+--- a/arch/arm/mach-omap2/usb.h
++++ b/arch/arm/mach-omap2/usb.h
+@@ -53,26 +53,8 @@
+ #define USBPHY_OTGSESSEND_EN	(1 << 20)
+ #define USBPHY_DATA_POLARITY	(1 << 23)
+ 
+-struct usbhs_omap_board_data {
+-	enum usbhs_omap_port_mode	port_mode[OMAP3_HS_USB_PORTS];
+-
+-	/* have to be valid if phy_reset is true and portx is in phy mode */
+-	int	reset_gpio_port[OMAP3_HS_USB_PORTS];
+-
+-	/* Set this to true for ES2.x silicon */
+-	unsigned			es2_compatibility:1;
+-
+-	unsigned			phy_reset:1;
+-
+-	/*
+-	 * Regulators for USB PHYs.
+-	 * Each PHY can have a separate regulator.
+-	 */
+-	struct regulator		*regulator[OMAP3_HS_USB_PORTS];
+-};
+-
+ extern void usb_musb_init(struct omap_musb_board_data *board_data);
+-extern void usbhs_init(const struct usbhs_omap_board_data *pdata);
++extern void usbhs_init(struct usbhs_omap_platform_data *pdata);
+ 
+ extern void am35x_musb_reset(void);
+ extern void am35x_musb_phy_power(u8 on);
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 05164d7..d6e6b8c 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -102,7 +102,7 @@ struct usbhs_hcd_omap {
+ 
+ 	void __iomem			*uhh_base;
+ 
+-	struct usbhs_omap_platform_data	platdata;
++	struct usbhs_omap_platform_data	*pdata;
+ 
+ 	u32				usbhs_rev;
+ 	spinlock_t			lock;
+@@ -184,19 +184,13 @@ err_end:
+ static int omap_usbhs_alloc_children(struct platform_device *pdev)
+ {
+ 	struct device				*dev = &pdev->dev;
+-	struct usbhs_hcd_omap			*omap;
+-	struct ehci_hcd_omap_platform_data	*ehci_data;
+-	struct ohci_hcd_omap_platform_data	*ohci_data;
++	struct usbhs_omap_platform_data		*pdata = dev->platform_data;
+ 	struct platform_device			*ehci;
+ 	struct platform_device			*ohci;
+ 	struct resource				*res;
+ 	struct resource				resources[2];
+ 	int					ret;
+ 
+-	omap = platform_get_drvdata(pdev);
+-	ehci_data = omap->platdata.ehci_data;
+-	ohci_data = omap->platdata.ohci_data;
+-
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "ehci");
+ 	if (!res) {
+ 		dev_err(dev, "EHCI get resource IORESOURCE_MEM failed\n");
+@@ -213,8 +207,8 @@ static int omap_usbhs_alloc_children(struct platform_device *pdev)
+ 	}
+ 	resources[1] = *res;
+ 
+-	ehci = omap_usbhs_alloc_child(OMAP_EHCI_DEVICE, resources, 2, ehci_data,
+-		sizeof(*ehci_data), dev);
++	ehci = omap_usbhs_alloc_child(OMAP_EHCI_DEVICE, resources, 2, pdata,
++		sizeof(*pdata), dev);
+ 
+ 	if (!ehci) {
+ 		dev_err(dev, "omap_usbhs_alloc_child failed\n");
+@@ -238,8 +232,8 @@ static int omap_usbhs_alloc_children(struct platform_device *pdev)
+ 	}
+ 	resources[1] = *res;
+ 
+-	ohci = omap_usbhs_alloc_child(OMAP_OHCI_DEVICE, resources, 2, ohci_data,
+-		sizeof(*ohci_data), dev);
++	ohci = omap_usbhs_alloc_child(OMAP_OHCI_DEVICE, resources, 2, pdata,
++		sizeof(*pdata), dev);
+ 	if (!ohci) {
+ 		dev_err(dev, "omap_usbhs_alloc_child failed\n");
+ 		ret = -ENOMEM;
+@@ -278,7 +272,7 @@ static bool is_ohci_port(enum usbhs_omap_port_mode pmode)
+ static int usbhs_runtime_resume(struct device *dev)
+ {
+ 	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
+-	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
++	struct usbhs_omap_platform_data	*pdata = omap->pdata;
+ 	unsigned long			flags;
+ 
+ 	dev_dbg(dev, "usbhs_runtime_resume\n");
+@@ -310,7 +304,7 @@ static int usbhs_runtime_resume(struct device *dev)
+ static int usbhs_runtime_suspend(struct device *dev)
+ {
+ 	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
+-	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
++	struct usbhs_omap_platform_data	*pdata = omap->pdata;
+ 	unsigned long			flags;
+ 
+ 	dev_dbg(dev, "usbhs_runtime_suspend\n");
+@@ -342,19 +336,19 @@ static int usbhs_runtime_suspend(struct device *dev)
+ static void omap_usbhs_init(struct device *dev)
+ {
+ 	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
+-	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
++	struct usbhs_omap_platform_data	*pdata = omap->pdata;
+ 	unsigned long			flags;
+ 	unsigned			reg;
+ 
+ 	dev_dbg(dev, "starting TI HSUSB Controller\n");
+ 
+-	if (pdata->ehci_data->phy_reset) {
+-		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0]))
+-			gpio_request_one(pdata->ehci_data->reset_gpio_port[0],
++	if (pdata->phy_reset) {
++		if (gpio_is_valid(pdata->reset_gpio_port[0]))
++			gpio_request_one(pdata->reset_gpio_port[0],
+ 					 GPIOF_OUT_INIT_LOW, "USB1 PHY reset");
+ 
+-		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1]))
+-			gpio_request_one(pdata->ehci_data->reset_gpio_port[1],
++		if (gpio_is_valid(pdata->reset_gpio_port[1]))
++			gpio_request_one(pdata->reset_gpio_port[1],
+ 					 GPIOF_OUT_INIT_LOW, "USB2 PHY reset");
+ 
+ 		/* Hold the PHY in RESET for enough time till DIR is high */
+@@ -430,33 +424,33 @@ static void omap_usbhs_init(struct device *dev)
+ 	spin_unlock_irqrestore(&omap->lock, flags);
+ 
+ 	pm_runtime_put_sync(dev);
+-	if (pdata->ehci_data->phy_reset) {
++	if (pdata->phy_reset) {
+ 		/* Hold the PHY in RESET for enough time till
+ 		 * PHY is settled and ready
+ 		 */
+ 		udelay(10);
+ 
+-		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0]))
++		if (gpio_is_valid(pdata->reset_gpio_port[0]))
+ 			gpio_set_value_cansleep
+-				(pdata->ehci_data->reset_gpio_port[0], 1);
++				(pdata->reset_gpio_port[0], 1);
+ 
+-		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1]))
++		if (gpio_is_valid(pdata->reset_gpio_port[1]))
+ 			gpio_set_value_cansleep
+-				(pdata->ehci_data->reset_gpio_port[1], 1);
++				(pdata->reset_gpio_port[1], 1);
+ 	}
+ }
+ 
+ static void omap_usbhs_deinit(struct device *dev)
+ {
+ 	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
+-	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
++	struct usbhs_omap_platform_data	*pdata = omap->pdata;
+ 
+-	if (pdata->ehci_data->phy_reset) {
+-		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0]))
+-			gpio_free(pdata->ehci_data->reset_gpio_port[0]);
++	if (pdata->phy_reset) {
++		if (gpio_is_valid(pdata->reset_gpio_port[0]))
++			gpio_free(pdata->reset_gpio_port[0]);
+ 
+-		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1]))
+-			gpio_free(pdata->ehci_data->reset_gpio_port[1]);
++		if (gpio_is_valid(pdata->reset_gpio_port[1]))
++			gpio_free(pdata->reset_gpio_port[1]);
+ 	}
+ }
+ 
+@@ -490,15 +484,10 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+ 
+ 	spin_lock_init(&omap->lock);
+ 
+-	for (i = 0; i < OMAP3_HS_USB_PORTS; i++)
+-		omap->platdata.port_mode[i] = pdata->port_mode[i];
+-
+-	omap->platdata.ehci_data = pdata->ehci_data;
+-	omap->platdata.ohci_data = pdata->ohci_data;
++	omap->pdata = pdata;
+ 
+ 	pm_runtime_enable(dev);
+ 
+-
+ 	for (i = 0; i < OMAP3_HS_USB_PORTS; i++)
+ 		if (is_ehci_phy_mode(i) || is_ehci_tll_mode(i) ||
+ 			is_ehci_hsic_mode(i)) {
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index eb86915..e459489 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -98,7 +98,7 @@
+ struct usbtll_omap {
+ 	struct clk				*usbtll_p1_fck;
+ 	struct clk				*usbtll_p2_fck;
+-	struct usbtll_omap_platform_data	platdata;
++	struct usbhs_omap_platform_data		*pdata;
+ 	/* secure the register updates */
+ 	spinlock_t				lock;
+ };
+@@ -203,7 +203,7 @@ static unsigned ohci_omap3_fslsmode(enum usbhs_omap_port_mode mode)
+ static int usbtll_omap_probe(struct platform_device *pdev)
+ {
+ 	struct device				*dev =  &pdev->dev;
+-	struct usbtll_omap_platform_data	*pdata = dev->platform_data;
++	struct usbhs_omap_platform_data		*pdata = dev->platform_data;
+ 	void __iomem				*base;
+ 	struct resource				*res;
+ 	struct usbtll_omap			*tll;
+@@ -223,8 +223,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 
+ 	spin_lock_init(&tll->lock);
+ 
+-	for (i = 0; i < OMAP3_HS_USB_PORTS; i++)
+-		tll->platdata.port_mode[i] = pdata->port_mode[i];
++	tll->pdata = pdata;
+ 
+ 	tll->usbtll_p1_fck = clk_get(dev, "usb_tll_hs_usb_ch0_clk");
+ 	if (IS_ERR(tll->usbtll_p1_fck)) {
+@@ -362,7 +361,7 @@ static int usbtll_omap_remove(struct platform_device *pdev)
+ static int usbtll_runtime_resume(struct device *dev)
+ {
+ 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
+-	struct usbtll_omap_platform_data	*pdata = &tll->platdata;
++	struct usbhs_omap_platform_data		*pdata = tll->pdata;
+ 	unsigned long				flags;
+ 
+ 	dev_dbg(dev, "usbtll_runtime_resume\n");
+@@ -388,7 +387,7 @@ static int usbtll_runtime_resume(struct device *dev)
+ static int usbtll_runtime_suspend(struct device *dev)
+ {
+ 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
+-	struct usbtll_omap_platform_data	*pdata = &tll->platdata;
++	struct usbhs_omap_platform_data		*pdata = tll->pdata;
+ 	unsigned long				flags;
+ 
+ 	dev_dbg(dev, "usbtll_runtime_suspend\n");
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index e9d9b09..b96a4bf 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -107,7 +107,7 @@ static int omap_ehci_init(struct usb_hcd *hcd)
+ {
+ 	struct ehci_hcd		*ehci = hcd_to_ehci(hcd);
+ 	int			rc;
+-	struct ehci_hcd_omap_platform_data	*pdata;
++	struct usbhs_omap_platform_data	*pdata;
+ 
+ 	pdata = hcd->self.controller->platform_data;
+ 
+@@ -151,7 +151,7 @@ static int omap_ehci_init(struct usb_hcd *hcd)
+ }
+ 
+ static void disable_put_regulator(
+-		struct ehci_hcd_omap_platform_data *pdata)
++		struct usbhs_omap_platform_data *pdata)
+ {
+ 	int i;
+ 
+@@ -176,7 +176,7 @@ static void disable_put_regulator(
+ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+ {
+ 	struct device				*dev = &pdev->dev;
+-	struct ehci_hcd_omap_platform_data	*pdata = dev->platform_data;
++	struct usbhs_omap_platform_data		*pdata = dev->platform_data;
+ 	struct resource				*res;
+ 	struct usb_hcd				*hcd;
+ 	void __iomem				*regs;
+diff --git a/include/linux/platform_data/usb-omap.h b/include/linux/platform_data/usb-omap.h
+index ef65b67..04c7537 100644
+--- a/include/linux/platform_data/usb-omap.h
++++ b/include/linux/platform_data/usb-omap.h
+@@ -38,30 +38,15 @@ enum usbhs_omap_port_mode {
+ 	OMAP_OHCI_PORT_MODE_TLL_2PIN_DPDM
+ };
+ 
+-struct usbtll_omap_platform_data {
+-	enum usbhs_omap_port_mode		port_mode[OMAP3_HS_USB_PORTS];
+-};
+-
+-struct ehci_hcd_omap_platform_data {
++struct usbhs_omap_platform_data {
+ 	enum usbhs_omap_port_mode	port_mode[OMAP3_HS_USB_PORTS];
+ 	int				reset_gpio_port[OMAP3_HS_USB_PORTS];
+ 	struct regulator		*regulator[OMAP3_HS_USB_PORTS];
+-	unsigned			phy_reset:1;
+-};
+-
+-struct ohci_hcd_omap_platform_data {
+-	enum usbhs_omap_port_mode	port_mode[OMAP3_HS_USB_PORTS];
+-	unsigned			es2_compatibility:1;
+-};
+-
+-struct usbhs_omap_platform_data {
+-	enum usbhs_omap_port_mode		port_mode[OMAP3_HS_USB_PORTS];
+-
+-	struct ehci_hcd_omap_platform_data	*ehci_data;
+-	struct ohci_hcd_omap_platform_data	*ohci_data;
+ 
+ 	/* OMAP3 <= ES2.1 have a single ulpi bypass control bit */
+-	unsigned				single_ulpi_bypass:1;
++	unsigned			single_ulpi_bypass:1;
++	unsigned			es2_compatibility:1;
++	unsigned			phy_reset:1;
+ };
+ 
+ /*-------------------------------------------------------------------------*/
 -- 
 1.7.4.1
 
