@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab3AWMQP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 07:16:15 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:43142 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707Ab3AWMQO (ORCPT
+	id S1755434Ab3AWMTV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 07:19:21 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:53578 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754723Ab3AWMTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 07:16:14 -0500
+	Wed, 23 Jan 2013 07:19:20 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUV-e51Fg2xvhxz5Wvjj-g=tyft56eNmF9ZGrnJzkL+wUQ@mail.gmail.com>
-References: <CA+icZUWuMEX7s8wvTZpA3C2-3qUjHgWM31Tefep_EU5Uj9xxLw@mail.gmail.com>
-	<CA+icZUXzQgxBokwOmyx5+e8rLNCkoz6ea=YoPA7=BT+iENWj8g@mail.gmail.com>
-	<CAFTL4hzmf9ZLb4=QjpGFXT96EwOyRSFbqBD0VjLgKYaZGrBzYg@mail.gmail.com>
-	<CA+icZUV-e51Fg2xvhxz5Wvjj-g=tyft56eNmF9ZGrnJzkL+wUQ@mail.gmail.com>
-Date: Wed, 23 Jan 2013 13:16:13 +0100
-Message-ID: <CA+icZUXw9oNpb5zr+P-0CMZwq1SgT=QJkR+6LfESbyvuEv7dUQ@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.8-rc4-nohz3
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <srostedt@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1358936878-29806-1-git-send-email-fabio.baltieri@linaro.org>
+References: <1358936878-29806-1-git-send-email-fabio.baltieri@linaro.org>
+Date: Wed, 23 Jan 2013 13:19:19 +0100
+Message-ID: <CACRpkdZrmq8=_=BwvB9wZYxHEQZRZ1pVqD3+7B=YORU=rpnOOw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: mach-ux500: enable 128KB way L2 cache on DB8540
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Maxime Coquelin <maxime.coquelin@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 1:14 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Wed, Jan 23, 2013 at 1:11 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> 2013/1/23 Sedat Dilek <sedat.dilek@gmail.com>:
->>> On Wed, Jan 23, 2013 at 12:19 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>> Hi Frederic,
->>>>
->>>> I wanted to 3.8-rc4-nohz3 [1] here on my Ubuntu/precise AMD64 system.
->>>>
->>>> Unfortunately, the build breaks like this:
->>>>
->>>> ERROR: "guest_enter" [arch/x86/kvm/kvm.ko] undefined!
->>>> ERROR: "guest_exit" [arch/x86/kvm/kvm.ko] undefined!
->>>>
->>>
->>> Looks like you tested with CONFIG_KVM=y (as module fails!).
->>
->> Yep. looks like I forgot some EXPORT_SYMBOL().
->>
->
-> Hmmm, that was my first thought, too, but about...
->
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index c243b81..fff0932 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -5713,7 +5713,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
->         if (req_immediate_exit)
->                 smp_send_reschedule(vcpu->cpu);
->
-> -       kvm_guest_enter();
-> +       guest_enter();
->
->         if (unlikely(vcpu->arch.switch_db_regs)) {
->                 set_debugreg(0, 7);
->
->
-> ...this?
->
+On Wed, Jan 23, 2013 at 11:27 AM, Fabio Baltieri
+<fabio.baltieri@linaro.org> wrote:
 
-Which is nonsense!
-
-include/linux/kvm_host.h:780:static inline void kvm_guest_enter(void)
-
-- Sedat -
-
-> - Sedat -
+> From: Maxime Coquelin <maxime.coquelin@stericsson.com>
 >
->> Thanks!
+> DB8540 L2 was configured with 64KB way size, but it has 128KB as AP9540.
+>
+> Fix this by modifying ux500_l2x0_init() to use 128KB way size for all
+> cpus in the x540 family.
+>
+> Signed-off-by: Maxime Coquelin <maxime.coquelin@stericsson.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+
+Applied to my ux500-core branch.
+
+Yours,
+Linus Walleij
