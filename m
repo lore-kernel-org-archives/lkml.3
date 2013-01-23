@@ -1,486 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab3AWGH3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 01:07:29 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:19506 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab3AWGH2 (ORCPT
+	id S1752993Ab3AWGIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 01:08:06 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:38926 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab3AWGIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 01:07:28 -0500
-From: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
-To: <linux-usb@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <zihan@huawei.com>, <Lin.Lei@huawei.com>,
-        <greg@kroah.com>, <neil.yi@huawei.com>, <wangyuhua@huawei.com>,
-        <huqiao36@huawei.com>, <balbi@ti.com>, <mdharm-usb@one-eyed-alien.net>,
-        <sebastian@breakpoint.cc>
-Message-ID: <fe8aa6f420f4.20f4fe8aa6f4@huawei.com>
-Date: Wed, 23 Jan 2013 14:07:17 +0800
-X-Mailer: iPlanet Messenger Express 5.2 HotFix 2.14 (built Aug  8 2006)
+	Wed, 23 Jan 2013 01:08:02 -0500
 MIME-Version: 1.0
-Content-Language: zh-CN
-Subject: [PATCH 1/1]linux-usb:optimize to match the Huawei USB storage
- devices and support new switch command
-X-Accept-Language: zh-CN
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-X-CFilter-Loop: Reflected
+In-Reply-To: <CADoNuNd5zqnXDJNe6TYmC70tqK19iKXGCntnm4vtHvKKZEb2kQ@mail.gmail.com>
+References: <1356109906-1622-1-git-send-email-tobetter@gmail.com>
+	<CAJuYYwSGvbUFVYt5P-pD5s=htTqLBmSmiEYt_kEJae-knnMkCA@mail.gmail.com>
+	<CADoNuNd5zqnXDJNe6TYmC70tqK19iKXGCntnm4vtHvKKZEb2kQ@mail.gmail.com>
+Date: Wed, 23 Jan 2013 15:08:01 +0900
+Message-ID: <CADoNuNdHEBHa8dEb_7SgjOLBhYuCCJ4R8=7udbDHKXQs45oSWA@mail.gmail.com>
+Subject: Re: [PATCH] mmc: host: dw_mmc-exynos: Add support for pinctrl
+From: Dongjin Kim <tobetter@gmail.com>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: Chris Ball <cjb@laptop.org>, Arnd Bergmann <arnd@arndb.de>,
+        Will Newton <will.newton@imgtec.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: fangxiaozhi <huananhu@huawei.com>
+Hi Thomas,
 
-1. Optimize the match rules with new macro for Huawei USB storage devices, 
-   to avoid to load USB storage driver for the modem interface 
-   with Huawei devices.
-2. Add to support new switch command for new Huawei USB dongles.
+I have a question regarding the bus setup when I use the patch
+https://patchwork.kernel.org/patch/1870231. It configures buses as
+defined in "pinctrl-0 = ...".
 
-Signed-off-by: fangxiaozhi <huananhu@huawei.com>
---------------------------------------------------------------------
-diff -uprN linux-3.8-rc4_orig/drivers/usb/storage/initializers.c linux-3.8-rc4/drivers/usb/storage/initializers.c
---- linux-3.8-rc4_orig/drivers/usb/storage/initializers.c	2013-01-22 14:12:42.594238726 +0800
-+++ linux-3.8-rc4/drivers/usb/storage/initializers.c	2013-01-22 14:28:21.512294889 +0800
-@@ -92,8 +92,8 @@ int usb_stor_ucr61s2b_init(struct us_dat
- 	return 0;
- }
- 
--/* This places the HUAWEI E220 devices in multi-port mode */
--int usb_stor_huawei_e220_init(struct us_data *us)
-+/* This places the HUAWEI usb dongles in multi-port mode */
-+static int usb_stor_huawei_feature_init(struct us_data *us)
- {
- 	int result;
- 
-@@ -104,3 +104,75 @@ int usb_stor_huawei_e220_init(struct us_
- 	US_DEBUGP("Huawei mode set result is %d\n", result);
- 	return 0;
- }
-+
-+/*
-+ * It will send a scsi switch command called rewind' to huawei dongle.
-+ * When the dongle receives this command at the first time,
-+ * it will reboot immediately. After rebooted, it will ignore this command.
-+ * So it is  unnecessary to read its response.
-+ */
-+static int usb_stor_huawei_scsi_init(struct us_data *us)
-+{
-+	int result = 0;
-+	int act_len = 0;
-+	struct bulk_cb_wrap *bcbw = (struct bulk_cb_wrap *) us->iobuf;
-+	char rewind_cmd[] = {0x11, 0x06, 0x20, 0x00, 0x00, 0x01, 0x01, 0x00,
-+			0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-+
-+	bcbw->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-+	bcbw->Tag = 0;
-+	bcbw->DataTransferLength = 0;
-+	bcbw->Flags = bcbw->Lun = 0;
-+	bcbw->Length = sizeof(rewind_cmd);
-+	memset(bcbw->CDB, 0, sizeof(bcbw->CDB));
-+	memcpy(bcbw->CDB, rewind_cmd, sizeof(rewind_cmd));
-+
-+	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, bcbw,
-+					US_BULK_CB_WRAP_LEN, &act_len);
-+	US_DEBUGP("transfer actual length=%d, result=%d\n", act_len, result);
-+	return result;
-+}
-+
-+/*
-+ * It tries to find the supported Huawei USB dongles.
-+ * In Huawei, they assign the following product IDs
-+ * for all of their mobile broadband dongles,
-+ * including the new dongles in the future.
-+ * So if the product ID is not included in this list,
-+ * it means it is not Huawei's mobile broadband dongles.
-+ */
-+static int usb_stor_huawei_dongles_pid(struct us_data *us)
-+{
-+	struct usb_interface_descriptor *idesc;
-+	int idProduct;
-+
-+	idesc = &us->pusb_intf->cur_altsetting->desc;
-+	idProduct = us->pusb_dev->descriptor.idProduct;
-+	/* The first port is CDROM,
-+	 * means the dongle in the single port mode,
-+	 * and a switch command is required to be sent. */
-+	if (idesc && idesc->bInterfaceNumber == 0) {
-+		if ((idProduct == 0x1001)
-+			|| (idProduct == 0x1003)
-+			|| (idProduct == 0x1004)
-+			|| (idProduct >= 0x1401 && idProduct <= 0x1500)
-+			|| (idProduct >= 0x1505 && idProduct <= 0x1600)
-+			|| (idProduct >= 0x1c02 && idProduct <= 0x2202)) {
-+			return 1;
-+		}
-+	}
-+	return 0;
-+}
-+
-+int usb_stor_huawei_init(struct us_data *us)
-+{
-+	int result = 0;
-+
-+	if (usb_stor_huawei_dongles_pid(us)) {
-+		if (us->pusb_dev->descriptor.idProduct >= 0x1446)
-+			result = usb_stor_huawei_scsi_init(us);
-+		else
-+			result = usb_stor_huawei_feature_init(us);
-+	}
-+	return result;
-+}
-diff -uprN linux-3.8-rc4_orig/drivers/usb/storage/initializers.h linux-3.8-rc4/drivers/usb/storage/initializers.h
---- linux-3.8-rc4_orig/drivers/usb/storage/initializers.h	2013-01-22 14:12:42.595238727 +0800
-+++ linux-3.8-rc4/drivers/usb/storage/initializers.h	2013-01-22 14:19:53.208263547 +0800
-@@ -46,5 +46,5 @@ int usb_stor_euscsi_init(struct us_data
-  * flash reader */
- int usb_stor_ucr61s2b_init(struct us_data *us);
- 
--/* This places the HUAWEI E220 devices in multi-port mode */
--int usb_stor_huawei_e220_init(struct us_data *us);
-+/* This places the HUAWEI usb dongles in multi-port mode */
-+int usb_stor_huawei_init(struct us_data *us);
-diff -uprN linux-3.8-rc4_orig/drivers/usb/storage/unusual_devs.h linux-3.8-rc4/drivers/usb/storage/unusual_devs.h
---- linux-3.8-rc4_orig/drivers/usb/storage/unusual_devs.h	2013-01-22 14:12:42.594238726 +0800
-+++ linux-3.8-rc4/drivers/usb/storage/unusual_devs.h	2013-01-22 14:19:53.208263547 +0800
-@@ -1527,335 +1527,10 @@ UNUSUAL_DEV(  0x1210, 0x0003, 0x0100, 0x
- /* Reported by fangxiaozhi <huananhu@huawei.com>
-  * This brings the HUAWEI data card devices into multi-port mode
-  */
--UNUSUAL_DEV(  0x12d1, 0x1001, 0x0000, 0x0000,
-+UNUSUAL_VENDOR_INTF(0x12d1, 0x08, 0x06, 0x50,
- 		"HUAWEI MOBILE",
- 		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1003, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1004, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1401, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1402, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1403, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1404, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1405, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1406, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1407, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1408, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1409, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x140A, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x140B, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x140C, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x140D, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x140E, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x140F, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1410, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1411, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1412, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1413, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1414, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1415, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1416, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1417, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1418, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1419, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x141A, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x141B, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x141C, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x141D, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x141E, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x141F, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1420, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1421, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1422, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1423, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1424, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1425, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1426, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1427, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1428, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1429, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x142A, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x142B, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x142C, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x142D, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x142E, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x142F, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1430, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1431, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1432, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1433, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1434, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1435, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1436, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1437, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1438, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x1439, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x143A, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x143B, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x143C, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x143D, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x143E, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
--		0),
--UNUSUAL_DEV(  0x12d1, 0x143F, 0x0000, 0x0000,
--		"HUAWEI MOBILE",
--		"Mass Storage",
--		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
-+		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_init,
- 		0),
- 
- /* Reported by Vilius Bilinkevicius <vilisas AT xxx DOT lt) */
+But in the function dw_mci_exynos_setup_bus(), it tries again to
+configure gpios and probing is failed because there is no "gpios =
+<...>" property. So I guess bus setup has to be ignored when the gpios
+are configured with pinctrl.
 
- 
- 
+What's your advice?
 
+Thank you in advance.
+Dongjin.
+
+On Fri, Jan 4, 2013 at 3:33 AM, Dongjin Kim <tobetter@gmail.com> wrote:
+> Hi Thomas,
+>
+> Thank you for your reviewing, and
+> https://patchwork.kernel.org/patch/1870231 works. So this change is
+> needless.
+>
+> I had tested with below changes on my hardware.
+>
+> [1] https://patchwork.kernel.org/patch/1904431
+> [2] https://patchwork.kernel.org/patch/1920661
+>
+> Best regards,
+> Dongjin.
+>
+> On Mon, Dec 31, 2012 at 2:57 PM, Thomas Abraham
+> <thomas.abraham@linaro.org> wrote:
+>> On 21 December 2012 09:11, Dongjin Kim <tobetter@gmail.com> wrote:
+>>> This patch adds support for pin configuration using pinctrl subsystem to
+>>> dw_mmc-exynos driver. The property 'wp-gpios' can be specified for write
+>>> protect but 'samsung,cd-pinmux-gpio' and gpios used for clock, command and
+>>> data lines will be ignored.
+>>>
+>>> -. 'pinctrl-0' should specify pin control groups (clock, comand and data
+>>>     lines) used for this controller.
+>>> -. 'pinctrl-names' should contain only one value, 'default'.
+>>>
+>>> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+>>> ---
+>>>  drivers/mmc/host/dw_mmc-exynos.c |   44 ++++++++++++++++++++++++--------------
+>>>  1 file changed, 28 insertions(+), 16 deletions(-)
+>>>
+>>> diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
+>>> index 4d50da6..d1c9963 100644
+>>> --- a/drivers/mmc/host/dw_mmc-exynos.c
+>>> +++ b/drivers/mmc/host/dw_mmc-exynos.c
+>>> @@ -16,6 +16,7 @@
+>>>  #include <linux/mmc/dw_mmc.h>
+>>>  #include <linux/of.h>
+>>>  #include <linux/of_gpio.h>
+>>> +#include <linux/pinctrl/consumer.h>
+>>>
+>>>  #include "dw_mmc.h"
+>>>  #include "dw_mmc-pltfm.h"
+>>> @@ -49,6 +50,7 @@ struct dw_mci_exynos_priv_data {
+>>>         u8                              ciu_div;
+>>>         u32                             sdr_timing;
+>>>         u32                             ddr_timing;
+>>> +       struct pinctrl                  *pctrl;
+>>>  };
+>>>
+>>>  static struct dw_mci_exynos_compatible {
+>>> @@ -84,6 +86,10 @@ static int dw_mci_exynos_priv_init(struct dw_mci *host)
+>>>                         priv->ctrl_type = exynos_compat[idx].ctrl_type;
+>>>         }
+>>>
+>>> +       priv->pctrl = devm_pinctrl_get_select_default(host->dev);
+>>> +       if (IS_ERR(priv->pctrl))
+>>> +               dev_dbg(host->dev, "no pinctrl node\n");
+>>> +
+>>
+>> This could have been handled in dw_mci_exynos_setup_bus function. And
+>> we also need to check if this patch gets merged.
+>> https://patchwork.kernel.org/patch/1870231/. If it gets merged, this
+>> change can be avoided.
+>>
+>>>         host->priv = priv;
+>>>         return 0;
+>>>  }
+>>> @@ -149,32 +155,19 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
+>>>                 return ret;
+>>>
+>>>         priv->ddr_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], div);
+>>> +
+>>>         return 0;
+>>>  }
+>>>
+>>>  static int dw_mci_exynos_setup_bus(struct dw_mci *host,
+>>>                                 struct device_node *slot_np, u8 bus_width)
+>>>  {
+>>> +       struct dw_mci_exynos_priv_data *priv = host->priv;
+>>>         int idx, gpio, ret;
+>>>
+>>>         if (!slot_np)
+>>>                 return -EINVAL;
+>>>
+>>> -       /* cmd + clock + bus-width pins */
+>>> -       for (idx = 0; idx < NUM_PINS(bus_width); idx++) {
+>>> -               gpio = of_get_gpio(slot_np, idx);
+>>> -               if (!gpio_is_valid(gpio)) {
+>>> -                       dev_err(host->dev, "invalid gpio: %d\n", gpio);
+>>> -                       return -EINVAL;
+>>> -               }
+>>> -
+>>> -               ret = devm_gpio_request(host->dev, gpio, "dw-mci-bus");
+>>> -               if (ret) {
+>>> -                       dev_err(host->dev, "gpio [%d] request failed\n", gpio);
+>>> -                       return -EBUSY;
+>>> -               }
+>>> -       }
+>>> -
+>>>         gpio = of_get_named_gpio(slot_np, "wp-gpios", 0);
+>>>         if (gpio_is_valid(gpio)) {
+>>>                 if (devm_gpio_request(host->dev, gpio, "dw-mci-wp"))
+>>> @@ -185,9 +178,12 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
+>>>                 host->pdata->quirks |= DW_MCI_QUIRK_NO_WRITE_PROTECT;
+>>>         }
+>>>
+>>> -       if (host->pdata->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)
+>>> +       if (!IS_ERR(priv->pctrl))
+>>>                 return 0;
+>>>
+>>> +       if (host->pdata->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)
+>>> +               goto setup_bus;
+>>> +
+>>
+>> Why do the entire bus setup if card detection is broken?
+>>
+>>>         gpio = of_get_named_gpio(slot_np, "samsung,cd-pinmux-gpio", 0);
+>>>         if (gpio_is_valid(gpio)) {
+>>>                 if (devm_gpio_request(host->dev, gpio, "dw-mci-cd"))
+>>> @@ -196,6 +192,22 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
+>>>                 dev_info(host->dev, "cd gpio not available");
+>>>         }
+>>>
+>>> + setup_bus:
+>>> +       /* cmd + clock + bus-width pins */
+>>> +       for (idx = 0; idx < NUM_PINS(bus_width); idx++) {
+>>> +               gpio = of_get_gpio(slot_np, idx);
+>>> +               if (!gpio_is_valid(gpio)) {
+>>> +                       dev_err(host->dev, "invalid gpio: %d\n", gpio);
+>>> +                       return -EINVAL;
+>>> +               }
+>>> +
+>>> +               ret = devm_gpio_request(host->dev, gpio, "dw-mci-bus");
+>>> +               if (ret) {
+>>> +                       dev_err(host->dev, "gpio [%d] request failed\n", gpio);
+>>> +                       return -EBUSY;
+>>> +               }
+>>> +       }
+>>
+>> This change should not have been there. If the mmc bus setup is being
+>> done using pinctrl framework, this change can be avoided.
+>>
+>> Thanks,
+>> Thomas.
+>>
+>>> +
+>>>         return 0;
+>>>  }
+>>>
+>>> --
+>>> 1.7.9.5
+>>>
