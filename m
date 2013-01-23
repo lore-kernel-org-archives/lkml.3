@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab3AWRgd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 12:36:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:62657 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932074Ab3AWRgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 12:36:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,523,1355126400"; 
-   d="scan'208";a="275722022"
-Date: Wed, 23 Jan 2013 19:40:21 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] clk: x86: add support for Lynxpoint LPSS clocks
-Message-ID: <20130123174021.GK2239@intel.com>
-References: <1358516761-20981-1-git-send-email-mika.westerberg@linux.intel.com>
- <1358516761-20981-3-git-send-email-mika.westerberg@linux.intel.com>
- <20130122184754.24671.16583@quantum>
+	id S1756574Ab3AWRlb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 12:41:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42093 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754655Ab3AWRla (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 12:41:30 -0500
+Date: Wed, 23 Jan 2013 15:40:47 -0200
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Ilija Hadzic <ilijahadzic@gmail.com>
+Cc: Shuah Khan <shuah.khan@hp.com>, Greg KH <gregkh@linuxfoundation.org>,
+        jglisse@redhat.com, dri-devel@lists.freedesktop.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>, shuahkhan@gmail.com,
+        airlied@redhat.com
+Subject: Re: [PATCH] drm/radeon: fix NULL pointer dereference in UMS mode in
+ radeon_cs_parser_fini()
+Message-ID: <20130123174046.GD15627@herton-Z68MA-D2H-B3>
+References: <1358379788.7243.10.camel@lorien2>
+ <Pine.GSO.4.64.1301162045321.898@umail>
+ <1358442582.2828.11.camel@lorien2>
+ <20130123160659.GC15627@herton-Z68MA-D2H-B3>
+ <CA+4h6Hno5o=RjrXhqupedEZXoHv6v_4duZtpHXV9F04t=x00Nw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130122184754.24671.16583@quantum>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <CA+4h6Hno5o=RjrXhqupedEZXoHv6v_4duZtpHXV9F04t=x00Nw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 10:47:54AM -0800, Mike Turquette wrote:
-> Quoting Mika Westerberg (2013-01-18 05:46:00)
-> > Intel Lynxpoint Low Power Subsystem hosts peripherals like UART, I2C and
-> > SPI controllers. For most of these there is a configuration register that
-> > allows software to enable and disable the functional clock. Disabling the
-> > clock while the peripheral is not used saves power.
-> > 
-> > In order to take advantage of this we add a new clock gate of type
-> > lpss_gate that just re-uses the ordinary clk_gate but in addition is able
-> > to enumerate the base address register of the device using ACPI.
-> > 
-> > We then create a clock tree that models the Lynxpoint LPSS clocks using
-> > these gates and fixed clocks so that we can pass clock rate to the drivers
-> > as well.
-> > 
-> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+On Wed, Jan 23, 2013 at 12:21:29PM -0500, Ilija Hadzic wrote:
+> On Wed, Jan 23, 2013 at 11:07 AM, Herton Ronaldo Krzesinski
+> <herton.krzesinski@canonical.com> wrote:
+> > On Thu, Jan 17, 2013 at 10:09:42AM -0700, Shuah Khan wrote:
+> >> On Wed, 2013-01-16 at 21:06 -0600, Ilija Hadzic wrote:
+> >> > Actually, the code path affected by your patch is not executed in UMS mode
+> >> > at all. Notice that radeon_cs_parser_fini is only called from
+> >> > radeon_cs_ioctl which is a KMS-only ioctl (see radeon_kms.c).
+> >> >
+> >> > The equivalent of the fix you are trying to do is in
+> >> > a6b7e1a02b77ab8fe8775d20a88c53d8ba55482e (function patched by that one is
+> >> > the one used by legacy-CS ioctl), which you should go together
+> >> > with ff4bd0827764e10a428a9d39e6814c5478863f94 if you are backporting UMS
+> >> > fixes to 3.7. Both are needed to prevent kernel crashes in UMS mode.
+> >> >
+> >> > -- Ilija
+> >>
+> >> Thanks. I will take a look at a6b7e1a02b77ab8fe8775d20a88c53d8ba55482e.
+> >> I sent back-ported ff4bd0827764e10a428a9d39e6814c5478863f94 patch to
+> >> stable and I will back-port and send
+> >> a6b7e1a02b77ab8fe8775d20a88c53d8ba55482e as well.
+> >
+> > While at it, also looks like commit
+> > 25d8999780f8c1f53928f4a24a09c01550423109 could also be added to stables.
+> > But while looking at it, while the patch itself is correct, I noted that
+> > there is a possibility of double free: if either of the
+> > p->chunks[p->chunk_ib_idx].kpage[] items are non NULL, we will free it in
+> > radeon_cs_parser_init and also when calling one of the fini functions
+> > (radeon_cs_parser_fini or r600_cs_parser_fini). So either we need to set
+> > kpage[n] to NULL after kfree, or just return the error.
+> >
 > 
-> Nice to see another architecture using this framework.
+> Yes you are right. The error-handling path should force both kpage[]
+> pointers to NULL before returning -ENOMEM. That would fix the double
+> free.
 > 
-> Acked-by: Mike Turquette <mturquette@linaro.org>
+> Regarding, inclusion of 25d8999780f8c1f53928f4a24a09c01550423109 into
+> stable (and possible follow-up patch to fix potential double-kfree),
+> does this pass the "no fixes for theoretical problems in stable"
+> criterion ?
+> 
+> It is an obvious bug, but it happens so rarely that I am not surprised
+> that it has never happened: You need an (old) AGP card *and* you need
+> to run out of kmalloc memory.
 
-Thanks!
+About the "theoretical problem" criteria, I think it applies more to
+race conditions not detected in practice, things that are not obvious/
+deterministic etc., but indeed commit 25d89997 looks not be worth to be
+added on stables.
 
-How about x86 maintainers? Do you have any comments on the series?
+> 
+> -- Ilija
+> 
+
+-- 
+[]'s
+Herton
