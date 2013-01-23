@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299Ab3AWFRr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 00:17:47 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57365 "EHLO arroyo.ext.ti.com"
+	id S1752472Ab3AWFTo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 00:19:44 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:54026 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750897Ab3AWFRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 00:17:46 -0500
-Message-ID: <50FF7295.2000300@ti.com>
-Date: Wed, 23 Jan 2013 10:48:13 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1750768Ab3AWFTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 00:19:41 -0500
+Message-ID: <50FF72D3.2060301@ti.com>
+Date: Wed, 23 Jan 2013 10:49:15 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: John Stultz <john.stultz@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Peter Zijlstra <peterz@infradead.org>,
-        Matt Sealey <matt@genesi-usa.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben@simtec.co.uk>, Ingo Molnar <mingo@redhat.com>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: One of these things (CONFIG_HZ) is not like the others..
-References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com> <20130121232322.GK15361@atomide.com> <50FE307F.9000701@ti.com> <201301220931.24570.arnd@arndb.de> <50FE666B.10902@ti.com> <20130122145113.GK23505@n2100.arm.linux.org.uk> <50FEE175.90504@linaro.org> <20130122215257.GU22517@atomide.com>
-In-Reply-To: <20130122215257.GU22517@atomide.com>
+To: Koen Kooi <koen@dominion.thruhere.net>
+CC: <tony@atomide.com>, <balbi@ti.com>, <linux@arm.linux.org.uk>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org List" <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Jason Kridner <jkridner@beagleboard.org>
+Subject: Re: [PATCH v1 0/6] USB: Add support for multiple PHYs of same type
+References: <1358848694-20145-1-git-send-email-kishon@ti.com> <2D906ABA-71F2-4843-9DBE-F82527A1240A@dominion.thruhere.net> <50FEB3FD.3050001@ti.com> <50FEBB61.9000707@ti.com> <B9531499-0746-44DA-BDBB-999D4CA31E63@dominion.thruhere.net>
+In-Reply-To: <B9531499-0746-44DA-BDBB-999D4CA31E63@dominion.thruhere.net>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 January 2013 03:22 AM, Tony Lindgren wrote:
-> * John Stultz <john.stultz@linaro.org> [130122 11:02]:
+On Tuesday 22 January 2013 10:32 PM, Koen Kooi wrote:
+>
+> Op 22 jan. 2013, om 17:16 heeft kishon <kishon@ti.com> het volgende geschreven:
+>
+>> Hi,
 >>
->> Correct, with HRT, we actually trigger the HZ-frequency timer tick
->> from an hrtimer (which expires based on the system time driven by
->> the clocksource). Thus even if there is a theoretical error between
->> the ideal HZ and what the hardware can do, that error will not
->> propagate forward.
+>> On Tuesday 22 January 2013 09:15 PM, kishon wrote:
+>>> On Tuesday 22 January 2013 09:11 PM, Koen Kooi wrote:
+>>>>
+>>>> Op 22 jan. 2013, om 10:58 heeft Kishon Vijay Abraham I <kishon@ti.com>
+>>>> het volgende geschreven:
+>>>>
+>>>>> This patch series adds support for adding multiple PHY's (of same type).
+>>>>> The binding information has to be present in the PHY library (otg.c) in
+>>>>> order for it to return the appropriate PHY whenever the USB controller
+>>>>> request for the PHY. So added a new API usb_bind_phy() to pass the
+>>>>> binding
+>>>>> information. This API should be called by platform specific
+>>>>> initialization
+>>>>> code.
+>>>>>
+>>>>> So the binding should be done something like
+>>>>> usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto"); specifying
+>>>>> the USB
+>>>>> controller device name, index, and the PHY device name.
+>>>>> I have done this binding for OMAP platforms, but it should be done for
+>>>>> all the platforms.
+>>>>>
+>>>>> After this design, the phy can be got by passing the USB controller
+>>>>> device
+>>>>> pointer and the index.
+>>>>>
+>>>>> Developed this patch series on
+>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git xceiv
+>>>>> after applying "usb: musb: add driver for control module" patch series
+>>>>> and "ARM: dts: omap: add dt data for MUSB"
+>>>>>
+>>>>> Did basic enumeration testing in omap4 panda and omap3 beagle.
+>>>>
+>>>> With this patchset USB completely breaks on am33xx beaglebone, is that
+>>>> intended?
+>>> Not really.
+>>> Does am33xx makes use of omap2430.c? Which PHY does am33xx uses?
+>>
+>> I figured out it uses drivers/usb/musb/musb_dsps.c (So it doesn't use omap2430.c). I think it uses TWL4030_USB (TPS659x0) as PHY.
 >
-> If there's no cumulative error, sounds like the way to go is to select
-> HRT for ARM multiplatform builds and set the HZ to 100 then.
->
-HIGH_RES_TIMERS are always enabled by default for OMAP as well as
-multi-platform build.
+> Actually it uses nop-phy as a phy, which is missing from arch/arm/boot/dts/am33xx.dtsi, so mainline is already broken. But adding the nop-phy to the DT is easy enough to patch in locally.
 
-Regards,
-Santosh
+Cool. You can add your patch after applying this series then. (I'll post 
+a new version addressing the comments in this series.)
+
+Thanks
+Kishon
