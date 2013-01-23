@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab3AWBor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 20:44:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43077 "EHLO mx1.redhat.com"
+	id S1752823Ab3AWBrd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 20:47:33 -0500
+Received: from mout.gmx.net ([212.227.15.19]:63078 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752788Ab3AWBop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 20:44:45 -0500
-Date: Tue, 22 Jan 2013 20:44:41 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Guangliang Zhao <gzhao@suse.com>
-cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com, agk@redhat.com
-Subject: Re: [dm-devel] [PATCH 0/3 v3] add resync speed control for dm-raid1
-In-Reply-To: <20130116082109.GA2154@glzhao-laptop.site>
-Message-ID: <Pine.LNX.4.64.1301222033290.4723@file.rdu.redhat.com>
-References: <1357552933-26126-1-git-send-email-gzhao@suse.com>
- <Pine.LNX.4.64.1301090034200.29917@file.rdu.redhat.com>
- <20130116082109.GA2154@glzhao-laptop.site>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751965Ab3AWBrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 20:47:31 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19KHBN3hDtKtLSmcnhBCSs0OX5BrZFao+NsWorp4q
+	TJdp7Ek0T2gt8q
+Message-ID: <1358905643.5752.8.camel@marge.simpson.net>
+Subject: Re: [PATCH v3 09/22] sched: compute runnable load avg in cpu_load
+ and cpu_avg_load_per_task
+From: Mike Galbraith <efault@gmx.de>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, namhyung@kernel.org,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        preeti@linux.vnet.ibm.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 23 Jan 2013 02:47:23 +0100
+In-Reply-To: <50FF3090.1090608@intel.com>
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
+	 <1357375071-11793-10-git-send-email-alex.shi@intel.com>
+	 <50E7EAB1.6020302@intel.com> <50E92DC3.4050906@intel.com>
+	 <CA+55aFxbS-u1Zfwg2oKOmHq6FBF+dRRhrdssqc9PpC_gXoV3+g@mail.gmail.com>
+	 <50EFB1DB.7090804@intel.com> <50FD54EA.4060804@intel.com>
+	 <50FE0575.6090005@intel.com> <1358837740.5782.209.camel@marge.simpson.net>
+	 <50FE44B5.6020004@intel.com> <1358848338.5782.331.camel@marge.simpson.net>
+	 <50FF3090.1090608@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 16 Jan 2013, Guangliang Zhao wrote:
-
-> On Wed, Jan 09, 2013 at 12:43:21AM -0500, Mikulas Patocka wrote:
-> > Hi
-> Hi,
-> 
-> I think it is very good that your patches could be used for other
-> targets(snapshot, thin) after reviewing yours, but I find some issues
-> (maybe not, please correct me if I am wrong).
-> 
+On Wed, 2013-01-23 at 08:36 +0800, Alex Shi wrote: 
+> On 01/22/2013 05:52 PM, Mike Galbraith wrote:
+> > On Tue, 2013-01-22 at 15:50 +0800, Alex Shi wrote:
 > > 
-> > I did this already some times ago.
-> > I'm sending my patches in the next mail.
+> >> Thanks for your suggestions and example, Mike!
+> >> I just can't understand the your last words here, Sorry. what the
+> >> detailed concern of you on 'both performance profiles with either
+> >> metric'? Could you like to give your preferred solutions?
 > > 
-> > Basically, my and Guangliang's patches have the following differences:
-> > 
-> > my patch: uses per-module throttle settings
-> > Guangliang's patch: uses per-device settings
-> > (my patch could be changed to use per-device throttle too, but without 
-> > userspace support it isn't much useful because userspace lvm can 
-> > reload the mirror and per-device settings would be lost)
+> > Hm.. I'll try rephrasing.  Any power saving gain will of necessity be
+> > paid for in latency currency.  I don't have a solution other than make a
+> > button, let the user decide whether history influences fast path task
+> > placement or not.  Any other decision maker will get it wrong.
 > 
-> We couldn't force every devices in the system hold the same throttle,
-> IMHO, per-device settings couldn't be ignored. 
-> Setting the global value by the parameters of module is a good way, and
-> it could also be used to set the default value in my patches. In this way,
-> the global setting wouldn't be lost, and we could also adjust every device's
-> speed.
+> Um, if no other objection, I'd like to move the runnable load only used
+> for power friendly policy -- for this patchset, they are 'powersaving'
+> and 'balance', Can I?
 
-It could be good to have per-device throttle.
+Yeah, that should work be fine.
 
-> > my patch: uses fine grained throttling of the individual IOs in kcopyd - 
-> > it measures active/inactive ratio and if the disk is active more than the 
-> > specified percentage of time, sleep is inserted.
-> 
-> I think this policy might not be able to represent the exact write speed, 
-> while other modules(such as md, drbd) monitor the real IO speed.
+-Mike
 
-But you don't want to limit raid resynchronization to a certain speed. A 
-disk has varying speed, it is faster in the beginning and slower in the 
-end.
-
-So if you want to limit raid resynchronization so that other tasks have 
-faster access to the disk, you need to limit percentage of time that is 
-spent on resynchronization, not resynchronization speed.
-
-Mikulas
