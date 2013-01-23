@@ -1,125 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab3AWPC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:02:58 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:2410 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753122Ab3AWPCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 10:02:55 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: netdev@vger.kernel.org
-Cc: criu@openvz.org, linux-kernel@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Eric Dumazet <edumazet@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Dave Jones <davej@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: [PATCH 2/2] tcp: add ability to set a timestamp offset (v2)
-Date: Wed, 23 Jan 2013 19:01:54 +0400
-Message-Id: <1358953314-12979-3-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1358953314-12979-1-git-send-email-avagin@openvz.org>
-References: <1358953314-12979-1-git-send-email-avagin@openvz.org>
+	id S1755400Ab3AWPDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:03:32 -0500
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:48998 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753093Ab3AWPDa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 10:03:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+icZUXM+tj5hnh--3CraRsvrsKfBUrS7Udf2L1OEhBnvWqpjQ@mail.gmail.com>
+References: <1358946905-13320-1-git-send-email-sedat.dilek@gmail.com>
+	<CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
+	<CA+icZUW7XrOGguoPO00wxPLUr2Xc8fP=jQZwekpnmWKRewwX2g@mail.gmail.com>
+	<CAFTL4hzcuxoy2deQpXDBRQZZBZ4VjT=EnO3ZZv6x-jGMTr_eaA@mail.gmail.com>
+	<1358949189.21576.114.camel@gandalf.local.home>
+	<CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
+	<CA+icZUXM+tj5hnh--3CraRsvrsKfBUrS7Udf2L1OEhBnvWqpjQ@mail.gmail.com>
+Date: Wed, 23 Jan 2013 16:03:29 +0100
+Message-ID: <CAFTL4hwkRv5LjzXN2BmSxS73GqKZkJ=H92qaD+ohvdOs-pAxHg@mail.gmail.com>
+Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing EXPORT_SYMBOL when CONFIG_KVM=m
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: sedat.dilek@gmail.com
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "devendra.aaru" <devendra.aaru@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a TCP socket will get live-migrated from one box to another the
-timestamps (which are typically ON) will get screwed up -- the new
-kernel will generate TS values that has nothing to do with what they
-were on dump. The solution is to yet again fix the kernel and put a
-"timestamp offset" on a socket.
+2013/1/23 Sedat Dilek <sedat.dilek@gmail.com>:
+> On Wed, Jan 23, 2013 at 3:02 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> 2013/1/23 Steven Rostedt <rostedt@goodmis.org>:
+>>> On Wed, 2013-01-23 at 14:46 +0100, Frederic Weisbecker wrote:
+>>>
+>>>> > Hmmm, yes, but why, clueless, CONFIG_KVM=y as a workaround!
+>>>>
+>>>> I believe he pointed out the "{i" to you. Typing mistake?
+>>>
+>>> In which case the CONFIG_KVM=y is a work around if that {i is within a
+>>> #ifndef CONFIG_KVM ;-)
+>>
+>> No it's in #ifdef CONFIG_KVM so the right fix is:
+>>
+>> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+>> index bbb2c2c..a13b8a3 100644
+>> --- a/kernel/context_tracking.c
+>> +++ b/kernel/context_tracking.c
+>> @@ -111,14 +111,19 @@ void guest_enter(void)
+>>         else
+>>                 __guest_enter();
+>>  }
+>> +EXPORT_SYMBOL_GPL(guest_enter);
+>>
+>>  void guest_exit(void)
+>>  {
+>> +#ifndef CONFIG_KVM
+>> +i
+>> +#endif
+>>         if (vtime_accounting_enabled())
+>>                 vtime_guest_exit(current);
+>>         else
+>>                 __guest_exit();
+>>  }
+>> +EXPORT_SYMBOL_GPL(guest_exit);
+>>  #endif
+>
+> So, what's the real fix for this issue?
 
-This patch adds one more tcp socket option TCP_TIMESTAMP, which is used
-for getting and setting a current value of tcp_timestamp.
-
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- include/linux/tcp.h      | 2 ++
- include/net/tcp.h        | 2 +-
- include/uapi/linux/tcp.h | 1 +
- net/ipv4/tcp.c           | 7 +++++++
- 4 files changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/tcp.h b/include/linux/tcp.h
-index 4e1d228..5ebc67c 100644
---- a/include/linux/tcp.h
-+++ b/include/linux/tcp.h
-@@ -162,6 +162,8 @@ struct tcp_sock {
- 	u32	rcv_tstamp;	/* timestamp of last received ACK (for keepalives) */
- 	u32	lsndtime;	/* timestamp of last sent data packet (for restart window) */
- 
-+	u32	tsoffset;	/* timestamp offset */
-+
- 	struct list_head tsq_node; /* anchor in tsq_tasklet.head list */
- 	unsigned long	tsq_flags;
- 
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index 3e242ba..25119c0 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -677,7 +677,7 @@ void tcp_send_window_probe(struct sock *sk);
-  */
- static inline u32 tcp_time_stamp(const struct tcp_sock *tp)
- {
--	return (__u32)jiffies;
-+	return (__u32)(jiffies) + tp->tsoffset;
- }
- 
- #define tcp_flag_byte(th) (((u_int8_t *)th)[13])
-diff --git a/include/uapi/linux/tcp.h b/include/uapi/linux/tcp.h
-index e962faa..6b1ead0 100644
---- a/include/uapi/linux/tcp.h
-+++ b/include/uapi/linux/tcp.h
-@@ -111,6 +111,7 @@ enum {
- #define TCP_QUEUE_SEQ		21
- #define TCP_REPAIR_OPTIONS	22
- #define TCP_FASTOPEN		23	/* Enable FastOpen on listeners */
-+#define TCP_TIMESTAMP		24
- 
- struct tcp_repair_opt {
- 	__u32	opt_code;
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 086ceda..23f93d4 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2704,6 +2704,10 @@ static int do_tcp_setsockopt(struct sock *sk, int level,
- 		else
- 			err = -EINVAL;
- 		break;
-+	case TCP_TIMESTAMP:
-+		tp->tsoffset = 0;
-+		tp->tsoffset = val - tcp_time_stamp(tp);
-+		break;
- 	default:
- 		err = -ENOPROTOOPT;
- 		break;
-@@ -2952,6 +2956,9 @@ static int do_tcp_getsockopt(struct sock *sk, int level,
- 	case TCP_USER_TIMEOUT:
- 		val = jiffies_to_msecs(icsk->icsk_user_timeout);
- 		break;
-+	case TCP_TIMESTAMP:
-+		val = tcp_time_stamp(tp);
-+		break;
- 	default:
- 		return -ENOPROTOOPT;
- 	}
--- 
-1.7.11.7
-
+So CONFIG_SOMETHING doesn't work when it's a module. Hence we need to
+remove the ifdef CONFIG_KVM around guest_enter(), guest_exit(),
+vtime_guest_enter() and vtime_guest_exit(). Also it seems we need
+<linux/export.h> in context_tracking.c
