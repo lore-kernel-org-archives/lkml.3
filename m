@@ -1,107 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab3AWCjE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 21:39:04 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:50990 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899Ab3AWCjA (ORCPT
+	id S1752805Ab3AWCpE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 21:45:04 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:52744 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136Ab3AWCpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 21:39:00 -0500
+	Tue, 22 Jan 2013 21:45:01 -0500
+Message-ID: <50FF4EA0.1070000@linux.vnet.ibm.com>
+Date: Wed, 23 Jan 2013 10:44:48 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAMbhsRRM+60gUTRuYzT5sAgLPP7Fj=T78Z3E_hZVmajY-wqGeQ@mail.gmail.com>
-References: <1357941108-14138-1-git-send-email-ccross@android.com>
-	<20130114154914.6d69eb27.akpm@linux-foundation.org>
-	<CAMbhsRR29Zhje9mGtUwHfUsX+eFsggYkVMHPyQ+zgrGUp_rqTQ@mail.gmail.com>
-	<20130114162504.e667a4be.akpm@linux-foundation.org>
-	<CAMbhsRRM+60gUTRuYzT5sAgLPP7Fj=T78Z3E_hZVmajY-wqGeQ@mail.gmail.com>
-Date: Tue, 22 Jan 2013 18:38:59 -0800
-X-Google-Sender-Auth: 5Uuiq7KQKu621nOZ4A2lOQg1CgM
-Message-ID: <CAMbhsRTDSJaQd4JKfo8KoaUsBaa5pQkpqh7JpH6jkOP4QFojhA@mail.gmail.com>
-Subject: Re: [PATCH v2] hardlockup: detect hard lockups without NMIs using
- secondary cpus
-From: Colin Cross <ccross@android.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        liu chuansheng <chuansheng.liu@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mike Galbraith <bitbucket@online.de>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
+        mingo@kernel.org, a.p.zijlstra@chello.nl
+Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
+References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com> <50ED384C.1030301@linux.vnet.ibm.com> <1357977704.6796.47.camel@marge.simpson.net> <1357985943.6796.55.camel@marge.simpson.net> <1358155290.5631.19.camel@marge.simpson.net> <50F79256.1010900@linux.vnet.ibm.com> <1358654997.5743.17.camel@marge.simpson.net> <50FCACE3.5000706@linux.vnet.ibm.com> <1358743128.4994.33.camel@marge.simpson.net> <50FCCCF5.30504@linux.vnet.ibm.com> <1358750523.4994.55.camel@marge.simpson.net> <1358752180.4994.65.camel@marge.simpson.net> <50FCF212.3010504@linux.vnet.ibm.com> <1358759355.4994.108.camel@marge.simpson.net> <50FD08E1.8000302@linux.vnet.ibm.com> <1358761496.4994.118.camel@marge.simpson.net> <50FE0ADC.6060701@linux.vnet.ibm.com> <1358841795.5782.255.camel@marge.simpson.net> <50FE5433.1070801@linux.vnet.ibm.com> <1358865692.5782.420.camel@marge.simpson.net>
+In-Reply-To: <1358865692.5782.420.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012302-1396-0000-0000-00000273DF2D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 4:30 PM, Colin Cross <ccross@android.com> wrote:
-> On Mon, Jan 14, 2013 at 4:25 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
->> On Mon, 14 Jan 2013 16:19:23 -0800
->> Colin Cross <ccross@android.com> wrote:
->>
->>> >> +static void watchdog_check_hardlockup_other_cpu(void)
->>> >> +{
->>> >> +     unsigned int next_cpu;
->>> >> +
->>> >> +     /*
->>> >> +      * Test for hardlockups every 3 samples.  The sample period is
->>> >> +      *  watchdog_thresh * 2 / 5, so 3 samples gets us back to slightly over
->>> >> +      *  watchdog_thresh (over by 20%).
->>> >> +      */
->>> >> +     if (__this_cpu_read(hrtimer_interrupts) % 3 != 0)
->>> >> +             return;
->>> >
->>> > The hardwired interval Seems Wrong.  watchdog_thresh is tunable at runtime.
->>> >
->>> > The comment could do with some fleshing out.  *why* do we want to test
->>> > at an interval "slightly over watchdog_thresh"?  What's going on here?
->>>
->>> I'll reword it.  We don't want to be slightly over watchdog_thresh,
->>> ideally we would be exactly at watchdog_thresh.  However, since this
->>> relies on the hrtimer interrupts that are scheduled at watchdog_thresh
->>> * 2 / 5, there is no multiple of hrtimer_interrupts that will result
->>> in watchdog_thresh.  watchdog_thresh * 2 / 5 * 3 (watchdog_thresh *
->>> 1.2) is the closest I can get to testing for a hardlockup once every
->>> watchdog_thresh seconds.
->>
->> It needs more than rewording, doesn't it?  What happens if watchdog_thresh is
->> altered at runtime?
->
-> I'm not sure what you mean.  If watchdog_thresh changes, the next
-> hrtimer interrupt on each cpu will move the following hrtimer
-> interrupt forward by the new watchdog_thresh * 2 / 5.  There may be a
-> single cycle of watchdog checks at an intermediate period, but nothing
-> bad should happen.
->
-> This code doesn't ever deal with watchdog_thresh directly, it is only
-> counting hrtimer interrupts.  3 hrtimer interrupts is always a
-> reasonable approximation of watchdog_thresh.
+On 01/22/2013 10:41 PM, Mike Galbraith wrote:
+> On Tue, 2013-01-22 at 16:56 +0800, Michael Wang wrote:
+> 
+>> What about this patch? May be the wrong map is the killer on balance
+>> path, should we check it? ;-) 
+> 
+> [    1.232249] Brought up 40 CPUs
+> [    1.236003] smpboot: Total of 40 processors activated (180873.90 BogoMIPS)
+> [    1.244744] CPU0 attaching sched-domain:
+> [    1.254131] NMI watchdog: enabled on all CPUs, permanently consumes one hw-PMU counter.
+> [    1.252010]  domain 0: span 0,16 level SIBLING
+> [    1.280001]   groups: 0 (cpu_power = 589) 16 (cpu_power = 589)
+> [    1.292540]   domain 1: span 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38 level MC
+> [    1.312001]    groups: 0,16 (cpu_power = 1178) 2,18 (cpu_power = 1178) 4,20 (cpu_power = 1178) 6,22 (cpu_power = 1178) 8,24 (cpu_power = 1178)
+>                          10,26 (cpu_power = 1178)12,28 (cpu_power = 1178)14,30 (cpu_power = 1178)32,36 (cpu_power = 1178)34,38 (cpu_power = 1178)
+> [    1.368002]    domain 2: span 0-39 level NUMA
+> [    1.376001]     groups: 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38 (cpu_power = 11780)
+>                            1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39 (cpu_power = 11780)
 
-I think I see the race you were referring to.  When the hrtimer
-interrupt fires on the first cpu after changing the watchdog thresh,
-it will see the new value and starting firing the timer at the new
-rate.  The other cpus may not see the new value for as long as the old
-sample period.  If the new threshold is more than 3 times lower than
-the old value, one cpu could easily get 3 hrtimer interrupts while
-another cpu doesn't get any, triggering the lockup detector.
+Thanks for the testing, that's not all the output but just for cpu 0,
+correct?
 
-The exact same issue is already present in the existing NMI detector,
-which is conceptually very similar to this one.  It has two
-asynchronous timers, the NMI perf counter and the hrtimer.  If one
-timer sees the new threshold before the other their relative rates
-will be wrong and the lockup detector may fire.  Setting
-watchdog_nmi_touch is not good enough, as one interrupt could fire
-enough to trigger the hardlockup detector twice.  The only fix I can
-think of is to set a timestamp far enough in the future to catch all
-the ordering problems, and ignore lockups until sched_clock() is
-higher than the timestamp.  I think it would need to be a delay of
-twice the larger of the old and new watchdog_thresh values.
+> [    1.412546] WYT: sbm of cpu 0
+> [    1.416001] WYT:      exec map
+> [    1.424002] WYT:              sd 6ce55000, idx 0, level 0, weight 2
+> [    1.436001] WYT:              sd 6ce74000, idx 1, level 1, weight 20
+> [    1.448001] WYT:              sd 6cef3000, idx 3, level 3, weight 40
+> [    1.460001] WYT:      fork map
+> [    1.468001] WYT:              sd 6ce55000, idx 0, level 0, weight 2
+> [    1.480001] WYT:              sd 6ce74000, idx 1, level 1, weight 20
 
-But its worse than that, the NMI perf counter is never updated when
-watchdog_thresh changes, so raising watchdog_thresh more than 2.5x may
-trigger the NMI detector.
+This is not by design... sd in idx 2 should point to level 1 sd if there
+is no level 2 sd, this part is broken...oh, how could level 3 sd be
+there with out level 2 created? strange...
 
-I'll send a separate patch for the first problem, but I don't have
-anything to test resetting the NMI counter on so I'll leave that issue
-for someone else.
+So with this map, the new balance path will no doubt broken, I think we
+got the reason, amazing ;-)
+
+Let's see how to fix it, hmm... need some study firstly.
+
+Regards,
+Michael Wang
+
+> [    1.492001] WYT:              sd 6cef3000, idx 3, level 3, weight 40
+> [    1.504001] WYT:      wake map
+>                                  Hi, we're not home right now...
+> [    1.508001] WYT:      affine map
+> [    1.516001] WYT:              affine with cpu 0 in sd 6ce55000, weight 2
+> [    1.528001] WYT:              affine with cpu 1 in sd 6cef3000, weight 40
+> [    1.544001] WYT:              affine with cpu 2 in sd 6ce74000, weight 20
+> [    1.556001] WYT:              affine with cpu 3 in sd 6cef3000, weight 40
+> [    1.568001] WYT:              affine with cpu 4 in sd 6ce74000, weight 20
+> [    1.584001] WYT:              affine with cpu 5 in sd 6cef3000, weight 40
+> [    1.596001] WYT:              affine with cpu 6 in sd 6ce74000, weight 20
+> [    1.608001] WYT:              affine with cpu 7 in sd 6cef3000, weight 40
+> [    1.624001] WYT:              affine with cpu 8 in sd 6ce74000, weight 20
+> [    1.636001] WYT:              affine with cpu 9 in sd 6cef3000, weight 40
+> [    1.648001] WYT:              affine with cpu a in sd 6ce74000, weight 20
+> [    1.660001] WYT:              affine with cpu b in sd 6cef3000, weight 40
+> [    1.676001] WYT:              affine with cpu c in sd 6ce74000, weight 20
+> [    1.688001] WYT:              affine with cpu d in sd 6cef3000, weight 40
+> [    1.700001] WYT:              affine with cpu e in sd 6ce74000, weight 20
+> [    1.716001] WYT:              affine with cpu f in sd 6cef3000, weight 40
+> [    1.728001] WYT:              affine with cpu 10 in sd 6ce55000, weight 2
+> [    1.740001] WYT:              affine with cpu 11 in sd 6cef3000, weight 40
+> [    1.756001] WYT:              affine with cpu 12 in sd 6ce74000, weight 20
+> [    1.768001] WYT:              affine with cpu 13 in sd 6cef3000, weight 40
+> [    1.780001] WYT:              affine with cpu 14 in sd 6ce74000, weight 20
+> [    1.796001] WYT:              affine with cpu 15 in sd 6cef3000, weight 40
+> [    1.808001] WYT:              affine with cpu 16 in sd 6ce74000, weight 20
+> [    1.820001] WYT:              affine with cpu 17 in sd 6cef3000, weight 40
+> [    1.836001] WYT:              affine with cpu 18 in sd 6ce74000, weight 20
+> [    1.848001] WYT:              affine with cpu 19 in sd 6cef3000, weight 40
+> [    1.860001] WYT:              affine with cpu 1a in sd 6ce74000, weight 20
+> [    1.876001] WYT:              affine with cpu 1b in sd 6cef3000, weight 40
+> [    1.888001] WYT:              affine with cpu 1c in sd 6ce74000, weight 20
+> [    1.900001] WYT:              affine with cpu 1d in sd 6cef3000, weight 40
+> [    1.916001] WYT:              affine with cpu 1e in sd 6ce74000, weight 20
+> [    1.928001] WYT:              affine with cpu 1f in sd 6cef3000, weight 40
+> [    1.940001] WYT:              affine with cpu 20 in sd 6ce74000, weight 20
+> [    1.956001] WYT:              affine with cpu 21 in sd 6cef3000, weight 40
+> [    1.968001] WYT:              affine with cpu 22 in sd 6ce74000, weight 20
+> [    1.984001] WYT:              affine with cpu 23 in sd 6cef3000, weight 40
+> [    1.996001] WYT:              affine with cpu 24 in sd 6ce74000, weight 20
+> [    2.008002] WYT:              affine with cpu 25 in sd 6cef3000, weight 40
+> [    2.024002] WYT:              affine with cpu 26 in sd 6ce74000, weight 20
+> [    2.036001] WYT:              affine with cpu 27 in sd 6cef3000, weight 40
+
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
