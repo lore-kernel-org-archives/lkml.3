@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab3AWBQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 20:16:40 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:39385 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263Ab3AWBQi (ORCPT
+	id S1752483Ab3AWBY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 20:24:56 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:34258 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466Ab3AWBYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 20:16:38 -0500
-Date: Wed, 23 Jan 2013 12:16:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: linux-next: manual merge of the wireless-next tree with Linus' tree
-Message-Id: <20130123121635.f9d10701019ad76297799d68@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__23_Jan_2013_12_16_35_+1100_+1fL357lOc2gJVL3"
+	Tue, 22 Jan 2013 20:24:54 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r0N1Nuh8008249, This message is released by code: ctaloc0852
+Message-ID: <50FF3BAD.4010009@realsil.com.cn>
+Date: Wed, 23 Jan 2013 09:23:57 +0800
+From: pclinux <pclinux@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: =?GB2312?B?zfXsvw==?= <wei_wang@realsil.com.cn>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "oakad@yahoo.com" <oakad@yahoo.com>,
+        "bp@alien8.de" <bp@alien8.de>
+Subject: Re: [PATCH v4 0/8] rtsx patchset for MFD and MMC tree
+References: <cover.1357638064.git.wei_wang@realsil.com.cn> <50F66CAD.6090003@realsil.com.cn> <20130122033115.GY7409@sortiz-mobl> <50FE09DD.6070102@realsil.com.cn> <20130122224232.GC5151@sortiz-mobl>
+In-Reply-To: <20130122224232.GC5151@sortiz-mobl>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__23_Jan_2013_12_16_35_+1100_+1fL357lOc2gJVL3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+于 2013年01月23日 06:42, Samuel Ortiz 写道:
+> On Tue, Jan 22, 2013 at 11:39:09AM +0800, wwang wrote:
+>>>>> Wei WANG (8):
+>>>>>   MFD:rtsx: Fix typo in comment
+>>>>>   MFD:rtsx: Remove redundant code
+>>>>>   MFD:rtsx: Declare that the DMA address limitation is 32bit explicitly
+>>>>>   MFD:rtsx: Add callback function switch_output_voltage
+>>>>>   MMC:rtsx: Using callback function to switch output voltage
+>>>>>   MFD:rtsx: Add callback function conv_clk_and_div_n
+>>>>>   MFD:rtsx: Fix checkpatch warning
+>>>>>   MFD:rtsx: Use macro defines to replace some variables
+>>>>>
+>>>>>  drivers/mfd/rtl8411.c             |   29 ++++++++++++++++++++++++
+>>>>>  drivers/mfd/rts5209.c             |   21 +++++++++++++++++
+>>>>>  drivers/mfd/rts5229.c             |   21 +++++++++++++++++
+>>>>>  drivers/mfd/rtsx_pcr.c            |   45 +++++++++++++++++++++++++------------
+>>>>>  drivers/mfd/rtsx_pcr.h            |    3 +++
+>>>>>  drivers/mmc/host/rtsx_pci_sdmmc.c |   30 +++++--------------------
+>>>>>  include/linux/mfd/rtsx_common.h   |    3 +++
+>>>>>  include/linux/mfd/rtsx_pci.h      |   27 +++++++++++++++++-----
+>>>>>  8 files changed, 135 insertions(+), 44 deletions(-)
+>>>>>
+>>>> Hi Chris and Samuel:
+>>>>
+>>>> This patchset is trying to fix some bugs and some coding style issues.
+>>>> Would you please help to merge it to v3.8 kernel?
+>>> I'll only take bug fixes for 3.8, even minor ones, and I don't see real bug
+>>> fixes here. Am I missing something ?
+>>>
+>>> Cheers,
+>>> Samuel.
+>>>
+>> Hi Samuel:
+>>
+>> The commits below are all bug fix ( fix rtl8411 specifically)
+>>
+>>   MFD:rtsx: Add callback function switch_output_voltage
+>>   MMC:rtsx: Using callback function to switch output voltage
+>>   MFD:rtsx: Add callback function conv_clk_and_div_n
+> Would you mind building a separate patchset for those 3, against e.g. a
+> vanilla 3.8-rc4 kernel ? Otherwise they won't apply cleanly against my
+> for-linus tree.
+>
+> Cheers,
+> Samuel.
+>
+Hi Samuel:
 
-Hi John,
+Sure. I will do it.
+Does it mean that the other commits only can be submitted to 3.9-rc?
 
-Today's linux-next merge of the wireless-next tree got a conflict in
-drivers/net/wireless/iwlwifi/dvm/tx.c between commit f590dcec9445
-("iwlwifi: fix the reclaimed packet tracking upon flush queue") from
-Linus' tree and commit 1c3fea82d6eb ("iwlwifi: improve the reports in TX
-path") from the wireless-next tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/wireless/iwlwifi/dvm/tx.c
-index 31534f7,b0aad71..0000000
---- a/drivers/net/wireless/iwlwifi/dvm/tx.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/tx.c
-@@@ -1218,14 -1205,8 +1210,15 @@@ int iwlagn_rx_reply_tx(struct iwl_priv=20
-  			freed++;
-  		}
- =20
- +		if (tid !=3D IWL_TID_NON_QOS) {
- +			priv->tid_data[sta_id][tid].next_reclaimed =3D
- +				next_reclaimed;
- +			IWL_DEBUG_TX_REPLY(priv, "Next reclaimed packet:%d\n",
- +					   next_reclaimed);
- +		}
- +
-- 		WARN_ON(!is_agg && freed !=3D 1);
-+ 		if (!is_agg && freed !=3D 1)
-+ 			IWL_ERR(priv, "Q: %d, freed %d\n", txq_id, freed);
- =20
-  		/*
-  		 * An offchannel frame can be send only on the AUX queue, where
-
---Signature=_Wed__23_Jan_2013_12_16_35_+1100_+1fL357lOc2gJVL3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ/znzAAoJEECxmPOUX5FEwOwQAJLfCw863dydL2VMmPtE3qpc
-HgB6So2t3Bhbu2ThyWC8+wa0MEn6uEmQL7OA0PerX1d90bjYgUL+ZBrdEAHEtpLm
-tyYTwdi7Ymzu3cYxc3rss5W2I1qU6Hmcu1Te/IPyEPjrdNNARoM/0JFoamxgmNxN
-+10LVbQt2XcyQVbdppDMhe6XZoxrXxgEKdu3N8MIEA3niJPmV20eZIGI+JgTf895
-r6joQ3cfCAeXMHJ0wR8xa2Q/8ROWBOg89VwyMlhp9m4qgEqxOh2+GBb7STGADMDl
-LTtzMjJHXq6eTitmLJc45ji9J7KMQbqaK10Vu0+3fo1uSTnv3sgEZ8yM7grjzSFN
-MZYTe/syGn5lNU0kuwtlmimCGdczycnDQ4VeJPADv3byMmmS927XarIEbGpKM/KL
-88YYXVHKM6cPlK3UPYk1I43A8gUiXrLeH1UxY9EzZS1ZLLVMmSzZ4cl3mitmwQ+7
-ST/CK3ScZtlPkKHd9+ftqilSkPbVYsSN1R2xweGwNf5sBdkpdbxcaCFTBGDWCXqu
-/9qCfLNQsGt/IDLoTvrwbR+7YSY26wuoxuHIL9nn/RLU+eoZ8EJlcOaPV2pn2CRq
-4IkK/OQ7ygwGJU0gYopCQDa76WU6XTmX36H6jbrZqH5eGEQ0/wwSVJMLz5MmZZ1L
-qFqtGNfeMEJV82ymuHXO
-=bMFX
------END PGP SIGNATURE-----
-
---Signature=_Wed__23_Jan_2013_12_16_35_+1100_+1fL357lOc2gJVL3--
+BR,
+Wei WANG
