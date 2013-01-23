@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052Ab3AWOZH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:25:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48210 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754334Ab3AWOZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:25:06 -0500
-Date: Wed, 23 Jan 2013 14:25:07 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Simon Jeons <simon.jeons@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] mm: Fold page->_last_nid into page->flags where
- possible
-Message-ID: <20130123142507.GI13304@suse.de>
-References: <1358874762-19717-1-git-send-email-mgorman@suse.de>
- <1358874762-19717-6-git-send-email-mgorman@suse.de>
- <20130122144659.d512e05c.akpm@linux-foundation.org>
+	id S1756137Ab3AWOZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:25:49 -0500
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:36635 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755279Ab3AWOZr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 09:25:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130122144659.d512e05c.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93EA911BF@DBDE01.ent.ti.com>
+References: <cover.1358871750.git.afzal@ti.com>
+	<02F0A27B-B16B-42F8-A0BC-29726732226D@dominion.thruhere.net>
+	<CAF6AEGuyb26EZ_9=GP9gs0TZqUtiFv3D_7+wcDOHuKn2qUcytQ@mail.gmail.com>
+	<C8443D0743D26F4388EA172BF4E2A7A93EA911BF@DBDE01.ent.ti.com>
+Date: Wed, 23 Jan 2013 08:25:46 -0600
+Message-ID: <CAF6AEGtOzKNn0jJ+KPdx6kZOGdw6M2u6xm34Qq9X6SHpGZe51A@mail.gmail.com>
+Subject: Re: [PATCH v3 00/12] video: da8xx-fb: am335x DT support
+From: Rob Clark <robdclark@gmail.com>
+To: "Mohammed, Afzal" <afzal@ti.com>
+Cc: Koen Kooi <koen@dominion.thruhere.net>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Mike Turquette <mturquette@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 02:46:59PM -0800, Andrew Morton wrote:
-> 
-> reset_page_last_nid() is poorly named.  page_reset_last_nid() would be
-> better, and consistent.
-> 
+On Wed, Jan 23, 2013 at 6:27 AM, Mohammed, Afzal <afzal@ti.com> wrote:
+> Hi,
+>
+> On Wed, Jan 23, 2013 at 00:15:09, Rob Clark wrote:
+>
+>> > Wouldn't it be better to delete da8xx-fb.* and switch to Rob Clarks DRM based driver for this IP block?
+>
+>> we probably can't delete da8xx-fb, but I think it would be ok to only
+>> use it for legacy platforms not yet ported to DT.
+>
+> We can't remove da8xx-fb as DA830 is a non-DT one and DA850 is only gaining
+> DT support.
+>
+> And Rob,
+>
+> I am not familiar with drm setup, would all the user space frame buffer based
+> applications work as is with drm driver?
 
-Look at this closer, are you sure you want? Why is page_reset_last_nid()
-better or more consistent?
+drm does provide a legacy fbdev interface (needed for fbcon, for
+example).  I don't think da8xx-fb has any custom ioctls, so probably
+what drm provides should be enough.
 
-The getter functions for page-related fields start with page (page_count,
-page_mapcount etc.) but the setters begin with set (set_page_section,
-set_page_zone, set_page_links etc.). For mapcount, we also have
-reset_page_mapcount() so to me reset_page_last_nid() is already
-consistent.
+BR,
+-R
 
--- 
-Mel Gorman
-SUSE Labs
+> Regards
+> Afzal
