@@ -1,253 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751167Ab3AWSbv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 13:31:51 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:55814 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861Ab3AWSb3 (ORCPT
+	id S1751687Ab3AWSpE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 13:45:04 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:36654 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab3AWSo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 13:31:29 -0500
+	Wed, 23 Jan 2013 13:44:59 -0500
 MIME-Version: 1.0
-In-Reply-To: <1358901294-3269-1-git-send-email-fweisbec@gmail.com>
-References: <1358901294-3269-1-git-send-email-fweisbec@gmail.com>
-From: Hakan Akkan <hakanakkan@gmail.com>
-Date: Wed, 23 Jan 2013 11:31:08 -0700
-Message-ID: <CABVzNXq=LB87+oSvMo=TLumS6M6qnaA+Wtg5TRO+banNbo9-iw@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.8-rc4-nohz3
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D02DF086E6@sausexdag04.amd.com>
+References: <CA+55aFx5ZyFtd59ygn6ja5X-3ZyRvhfJLqtNKyF_mH3+-kSjKg@mail.gmail.com>
+	<CAKocOOPr4wddCmDEWKmsKsKeTc3m779opuN_qRb4yiL63KVZ8A@mail.gmail.com>
+	<CAKocOOPp1PA-n_=xdPuBSBKaKiREqhgeo02QqWpP-oX7vnN_YA@mail.gmail.com>
+	<CAKocOOOpDb=0XgX-uhDbBjOF7qK_M5MA31q9ScD0yTat0QRquQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC30FE7@sausexdag04.amd.com>
+	<CAKocOONuFvcik229+1B0oeaBnQG7seZPeYf99xqduFa6kBZhOw@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF083DE@sausexdag04.amd.com>
+	<CAKocOOMxAYw-XO-6XGteKb8NyHDq4_BdZn2njUNBh+a73wrFGA@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF084EA@sausexdag04.amd.com>
+	<CAKocOOOYKAZPH1+W3usfRUh68594e8YKqBUORo2c5bCCCYDh0A@mail.gmail.com>
+	<CAKocOOOaWSvWZkhLNBx9u6M5nOu39wUgnS-a9Srsbp5BTcdh1A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF086E6@sausexdag04.amd.com>
+Date: Wed, 23 Jan 2013 11:44:54 -0700
+Message-ID: <CAKocOOMD9i7TtzoH3c2pDXqSRXV8RB1qmqp_QxftCpfK763CqA@mail.gmail.com>
+Subject: Re: Linux 3.8-rc4
+From: Shuah Khan <shuahkhan@gmail.com>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jan 23, 2013 at 6:40 AM, Deucher, Alexander
+<Alexander.Deucher@amd.com> wrote:
+>> -----Original Message-----
+>> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+>> Sent: Tuesday, January 22, 2013 6:57 PM
+>> To: Deucher, Alexander
+>> Cc: Linus Torvalds; Linux Kernel Mailing List
+>> Subject: Re: Linux 3.8-rc4
+>>
+>> On Tue, Jan 22, 2013 at 11:55 AM, Shuah Khan <shuahkhan@gmail.com>
+>> wrote:
+>>
+>> >>> init:
+>> >>
+>> >> Does the attached patch stop them?  It basically skips all initialization of
+>> the DMA ring on your system.  What I don't understand is why you still get
+>> them with the previous patch, but not with
+>> 909d9eb67f1e4e39f2ea88e96bde03d560cde3eb reverted.
+>> 909d9eb67f1e4e39f2ea88e96bde03d560cde3eb only affects the use of the
+>> DMA ring for buffer migration and the patch I previously attached disables
+>> the use of the DMA ring for buffer migration.  Does the latest batch of drm-
+>> fixes from Dave that Linus just merged help?
+>> >>
+>> >> Alex
+>> >
+>> > Will try your latest patch. Will also try the latest git - I am
+>> > currently on Jan 17th. However, in the meantime, I found that these
+>> > messages might not be new and getting printed now with the
+>> > eaaa6983ab2ccdf826c90838eb584211e0cadb76 [PATCH] drm/radeon: print
+>> dma
+>> > status reg on lockup (v2) commit that introduced debug messages in
+>> > r600_gpu_soft_reset(). I couldn't revert this commit, but doing a
+>> > compile with these messages commented out. Will update you on the
+>> > results and then test the new git
+>> >
+>> > -- Shuah
+>>
+>> Here is what I tried:
+>>
+>> 1. Applied your latest disable_dma_ring_on_6xx-2.diff and still see
+>> messages.
+>
+> If that is the case, I'm beginning to think the bug is elsewhere.  Support for the DMA ring was the only major feature we added in this cycle.  If you are still getting errors even with the ring completely disabled, it's probably not the DMA ring.
+>
+> Make sure your kernel has this patch:
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=20707874fd4fd37e09513f508e642fa8bd06365a
+> That's the only thing I can think of that may cause the DMAR errors if the DMA ring is disabled.
+>
 
-This WARN_ON is triggered for every full nohz CPU in the system during
-AP boot in a 16 core machine:
+I verified I have this commit. ok maybe the bug is elsewhere. So far
+all my bisects are on drivers/gpu/drm/radeon - I am going go one more
+level up and start at drivers/gpu/drm and see what I can isolate it
+that way. I do know that I don't see this problem on 3.7.4
 
-[    0.336895] ------------[ cut here ]------------
-[    0.341508] WARNING: at arch/x86/kernel/smp.c:123
-native_smp_send_reschedule+0x4f/0x60()
-[    0.349578] Hardware name: X8DTG-D
-[    0.315066] smpboot: Booting Node   0, Processors  #1
-[    0.352978] Modules linked in:
-[    0.356233] Pid: 0, comm: swapper/1 Not tainted 3.8.0-rc4+ #3
-[    0.361959] Call Trace:
-[    0.364404]  [<ffffffff8103c4fa>] warn_slowpath_common+0x7a/0xb0
-[    0.370399]  [<ffffffff8103c545>] warn_slowpath_null+0x15/0x20
-[    0.376213]  [<ffffffff8102435f>] native_smp_send_reschedule+0x4f/0x60
-[    0.382723]  [<ffffffff8106b328>] wake_up_nohz_cpu+0x78/0x80
-[    0.388374]  [<ffffffff8104c33a>] add_timer_on+0x8a/0xf0
-[    0.393679]  [<ffffffff8101c6f4>] mce_start_timer+0x64/0x70
-[    0.399241]  [<ffffffff8101c752>] __mcheck_cpu_init_timer+0x52/0x60
-[    0.405490]  [<ffffffff817d804a>] mcheck_cpu_init+0x360/0x3d9
-[    0.411226]  [<ffffffff817d6160>] identify_cpu+0x39d/0x3ba
-[    0.416696]  [<ffffffff817d6193>] identify_secondary_cpu+0x16/0x1d
-[    0.422855]  [<ffffffff817d9730>] smp_store_cpu_info+0x38/0x3a
-[    0.428672]  [<ffffffff817d981a>] start_secondary+0xe8/0x192
-[    0.434317] ---[ end trace 17bfa0d8291c432e ]---
-
-The machine seems to be working just fine.
-
-FYI.
-
-On Tue, Jan 22, 2013 at 5:34 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> Hi,
->
-> This version of the full dynticks patchset integrates the latest full
-> dynticks cputime accounting changes (see https://lkml.org/lkml/2013/1/22/652)
-> and is rebased against 3.8-rc4.
->
-> All of these patches have been posted already so I'm not spamming
-> you again.
->
-> You can pull from:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
->         3.8-rc4-nohz3
->
-> So this fixes and improve a lot of things since 3.8-rc2-nohz2:
->
-> - Use sched_clock() instead of jiffies for better precision. And because
-> jiffies granularity was requiring too much dirty hacks to make it working.
-> (Thanks Steven for the suggestion).
->
-> - To fully support sched_clock(), use a per nanosec granularity in cputime_t
->
-> - Fix a deadlock with tsacct
->
-> - Better description of the Kconfig
->
-> - Don't scale generic vtime accounting against CFS precise task time accounting.
-> Now that we use sched_clock() we should have precise enough statistics.
->
-> - Consolidate some code in the reader side
->
-> - Make the reader irqsafe (fix potential deadlock against writers)
->
-> - Handle guest cputime
->
-> - Handle idle tasks. Those were special because they don't start from schedule()
-> so they need their own initializations.
->
-> - Fix build error with CONFIG_IRQ_TIME_ACCOUNTING (thanks Wu Fenguang)
->
-> - Depend on 64 bits archs to make kernel_cpustat reading to be atomic
->
->
-> Thanks.
->
-> ---
-> Frederic Weisbecker (44):
->       irq_work: Fix racy IRQ_WORK_BUSY flag setting
->       irq_work: Fix racy check on work pending flag
->       irq_work: Remove CONFIG_HAVE_IRQ_WORK
->       nohz: Add API to check tick state
->       irq_work: Don't stop the tick with pending works
->       irq_work: Make self-IPIs optable
->       printk: Wake up klogd using irq_work
->       context_tracking: Add comments on interface and internals
->       context_tracking: Export context state for generic vtime
->       cputime: Librarize per nsecs resolution cputime definitions
->       cputime: Move default nsecs_to_cputime() to jiffies based cputime file
->       cputime: Generic on-demand virtual cputime accounting
->       cputime: Allow dynamic switch between tick/virtual based cputime accounting
->       cputime: Use accessors to read task cputime stats
->       kvm: Prepare to add generic guest entry/exit callbacks
->       cputime: Safely read cputime of full dynticks CPUs
->       Merge branch 'nohz/printk-v8'
->       nohz: Basic full dynticks interface
->       nohz: Assign timekeeping duty to a non-full-nohz CPU
->       nohz: Trace timekeeping update
->       nohz: Wake up full dynticks CPUs when a timer gets enqueued
->       rcu: Restart the tick on non-responding full dynticks CPUs
->       sched: Comment on rq->clock correctness in ttwu_do_wakeup() in nohz
->       sched: Update rq clock on nohz CPU before migrating tasks
->       sched: Update rq clock on nohz CPU before setting fair group shares
->       sched: Update rq clock on tickless CPUs before calling check_preempt_curr()
->       sched: Update rq clock earlier in unthrottle_cfs_rq
->       sched: Update clock of nohz busiest rq before balancing
->       sched: Update rq clock before idle balancing
->       sched: Update nohz rq clock before searching busiest group on load balancing
->       nohz: Move nohz load balancer selection into idle logic
->       nohz: Full dynticks mode
->       nohz: Only stop the tick on RCU nocb CPUs
->       nohz: Don't turn off the tick if rcu needs it
->       nohz: Don't stop the tick if posix cpu timers are running
->       nohz: Add some tracing
->       rcu: Don't keep the tick for RCU while in userspace
->       profiling: Remove unused timer hook
->       timer: Don't run non-pinned timer to full dynticks CPUs
->       sched: Use an accessor to read rq clock
->       sched: Debug nohz rq clock
->       sched: Remove broken check for skip clock update
->       sched: Update rq clock before rt sched average scale
->       sched: Disable lb_bias feature for full dynticks
->
-> Steven Rostedt (2):
->       irq_work: Flush work on CPU_DYING
->       irq_work: Warn if there's still work on cpu_down
->
->  arch/alpha/Kconfig                           |    1 -
->  arch/alpha/kernel/osf_sys.c                  |    6 +-
->  arch/arm/Kconfig                             |    1 -
->  arch/arm64/Kconfig                           |    1 -
->  arch/blackfin/Kconfig                        |    1 -
->  arch/frv/Kconfig                             |    1 -
->  arch/hexagon/Kconfig                         |    1 -
->  arch/ia64/include/asm/cputime.h              |   92 +--------
->  arch/ia64/include/asm/thread_info.h          |    4 +-
->  arch/ia64/include/asm/xen/minstate.h         |    2 +-
->  arch/ia64/kernel/asm-offsets.c               |    2 +-
->  arch/ia64/kernel/entry.S                     |   16 +-
->  arch/ia64/kernel/fsys.S                      |    4 +-
->  arch/ia64/kernel/head.S                      |    4 +-
->  arch/ia64/kernel/ivt.S                       |    8 +-
->  arch/ia64/kernel/minstate.h                  |    2 +-
->  arch/ia64/kernel/time.c                      |    4 +-
->  arch/mips/Kconfig                            |    1 -
->  arch/parisc/Kconfig                          |    1 -
->  arch/powerpc/Kconfig                         |    1 -
->  arch/powerpc/configs/chroma_defconfig        |    2 +-
->  arch/powerpc/configs/corenet64_smp_defconfig |    2 +-
->  arch/powerpc/configs/pasemi_defconfig        |    2 +-
->  arch/powerpc/include/asm/cputime.h           |    6 +-
->  arch/powerpc/include/asm/lppaca.h            |    2 +-
->  arch/powerpc/include/asm/ppc_asm.h           |    4 +-
->  arch/powerpc/kernel/entry_64.S               |    4 +-
->  arch/powerpc/kernel/time.c                   |    4 +-
->  arch/powerpc/platforms/pseries/dtl.c         |    6 +-
->  arch/powerpc/platforms/pseries/setup.c       |    6 +-
->  arch/s390/Kconfig                            |    1 -
->  arch/s390/kernel/vtime.c                     |    6 +-
->  arch/sh/Kconfig                              |    1 -
->  arch/sparc/Kconfig                           |    1 -
->  arch/x86/Kconfig                             |    1 -
->  arch/x86/kernel/apm_32.c                     |   11 +-
->  drivers/isdn/mISDN/stack.c                   |    7 +-
->  drivers/staging/iio/trigger/Kconfig          |    1 -
->  fs/binfmt_elf.c                              |    8 +-
->  fs/binfmt_elf_fdpic.c                        |    7 +-
->  fs/proc/array.c                              |    4 +-
->  include/asm-generic/cputime.h                |   66 +-----
->  include/asm-generic/cputime_jiffies.h        |   72 ++++++
->  include/asm-generic/cputime_nsecs.h          |  104 +++++++++
->  include/linux/context_tracking.h             |   28 +++
->  include/linux/hardirq.h                      |    4 +-
->  include/linux/init_task.h                    |   11 +
->  include/linux/irq_work.h                     |   20 ++
->  include/linux/kernel_stat.h                  |    2 +-
->  include/linux/kvm_host.h                     |   55 ++++-
->  include/linux/posix-timers.h                 |    1 +
->  include/linux/printk.h                       |    3 -
->  include/linux/profile.h                      |   13 --
->  include/linux/rcupdate.h                     |    8 +
->  include/linux/sched.h                        |   50 ++++-
->  include/linux/tick.h                         |   26 +++-
->  include/linux/tsacct_kern.h                  |    3 +
->  include/linux/vtime.h                        |   59 ++++--
->  init/Kconfig                                 |   28 ++-
->  kernel/acct.c                                |    6 +-
->  kernel/context_tracking.c                    |  110 ++++++++---
->  kernel/cpu.c                                 |    4 +-
->  kernel/delayacct.c                           |    7 +-
->  kernel/exit.c                                |   10 +-
->  kernel/fork.c                                |    6 +
->  kernel/hrtimer.c                             |    3 +-
->  kernel/irq_work.c                            |  131 +++++++++---
->  kernel/posix-cpu-timers.c                    |   39 +++-
->  kernel/printk.c                              |   36 ++--
->  kernel/profile.c                             |   24 --
->  kernel/rcutree.c                             |   19 ++-
->  kernel/rcutree.h                             |    1 -
->  kernel/rcutree_plugin.h                      |   13 +-
->  kernel/sched/core.c                          |  105 ++++++++-
->  kernel/sched/cputime.c                       |  298 +++++++++++++++++++++++---
->  kernel/sched/fair.c                          |   96 ++++++---
->  kernel/sched/features.h                      |    3 +
->  kernel/sched/rt.c                            |    8 +-
->  kernel/sched/sched.h                         |   50 +++++
->  kernel/sched/stats.h                         |    8 +-
->  kernel/sched/stop_task.c                     |    8 +-
->  kernel/signal.c                              |   12 +-
->  kernel/softirq.c                             |   11 +-
->  kernel/time/Kconfig                          |    9 +
->  kernel/time/tick-broadcast.c                 |    3 +-
->  kernel/time/tick-common.c                    |    5 +-
->  kernel/time/tick-sched.c                     |  144 +++++++++++--
->  kernel/timer.c                               |    6 +-
->  kernel/tsacct.c                              |   44 +++-
->  89 files changed, 1489 insertions(+), 522 deletions(-)
+-- Shuah
