@@ -1,32 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab3AWFZt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 00:25:49 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:42444 "EHLO
+	id S1752773Ab3AWFak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 00:30:40 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:45414 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab3AWFZs (ORCPT
+	with ESMTP id S1750768Ab3AWFai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 00:25:48 -0500
-Date: Wed, 23 Jan 2013 16:25:37 +1100
+	Wed, 23 Jan 2013 00:30:38 -0500
+Date: Wed, 23 Jan 2013 16:30:36 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Stephen Warren <swarren@nvidia.com>, Colin Cross <ccross@android.com>,
         Olof Johansson <olof@lixom.net>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>
+        Rob Herring <rob.herring@calxeda.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
 Subject: linux-next: manual merge of the tegra tree with the arm-soc tree
-Message-Id: <20130123162537.b4285c002892dde1405559a6@canb.auug.org.au>
+Message-Id: <20130123163036.4791935db9e9539c4313c97f@canb.auug.org.au>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Wed__23_Jan_2013_16_25_37_+1100_uA3oaJ_o_E/ME6W2"
+ boundary="Signature=_Wed__23_Jan_2013_16_30_36_+1100_+8DozrnPOnmx9EGr"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__23_Jan_2013_16_25_37_+1100_uA3oaJ_o_E/ME6W2
+--Signature=_Wed__23_Jan_2013_16_30_36_+1100_+8DozrnPOnmx9EGr
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
@@ -34,10 +34,10 @@ Content-Transfer-Encoding: quoted-printable
 Hi all,
 
 Today's linux-next merge of the tegra tree got a conflict in
-arch/arm/mach-tegra/common.c between commit 0529e315bbda ("ARM: use
-common irqchip_init for GIC init") from the arm-soc tree and commit
-567f70da22d2 ("ARM: tegra: migrate to new clock code") from the tegra
-tree.
+arch/arm/mach-tegra/platsmp.c between commit 520f7bd73354 ("irqchip: Move
+ARM gic.h to include/linux/irqchip/arm-gic.h") from the arm-soc tree and
+commit 4c6e1ff5b5fe ("ARM: tegra: move tegra_cpu_car.h to
+linux/clk/tegra.h") from the tegra tree.
 
 I fixed it up (see below) and can carry the fix as necessary (no action
 is required).
@@ -46,61 +46,45 @@ is required).
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/arm/mach-tegra/common.c
-index 3599959,87dd69c..0000000
---- a/arch/arm/mach-tegra/common.c
-+++ b/arch/arm/mach-tegra/common.c
-@@@ -21,9 -21,11 +21,10 @@@
+diff --cc arch/arm/mach-tegra/platsmp.c
+index 18d7290,3ec7fc4..0000000
+--- a/arch/arm/mach-tegra/platsmp.c
++++ b/arch/arm/mach-tegra/platsmp.c
+@@@ -18,11 -18,13 +18,13 @@@
+  #include <linux/jiffies.h>
+  #include <linux/smp.h>
   #include <linux/io.h>
-  #include <linux/clk.h>
-  #include <linux/delay.h>
- -#include <linux/of_irq.h>
- +#include <linux/irqchip.h>
+ +#include <linux/irqchip/arm-gic.h>
 + #include <linux/clk/tegra.h>
  =20
-  #include <asm/hardware/cache-l2x0.h>
+  #include <asm/cacheflush.h>
  -#include <asm/hardware/gic.h>
+  #include <asm/mach-types.h>
+  #include <asm/smp_scu.h>
++ #include <asm/smp_plat.h>
  =20
   #include <mach/powergate.h>
  =20
-@@@ -56,10 -58,16 +57,11 @@@ u32 tegra_uart_config[4] =3D=20
-  };
- =20
-  #ifdef CONFIG_OF
- -static const struct of_device_id tegra_dt_irq_match[] __initconst =3D {
- -	{ .compatible =3D "arm,cortex-a9-gic", .data =3D gic_of_init },
- -	{ }
- -};
- -
-  void __init tegra_dt_init_irq(void)
-  {
-+ 	tegra_clocks_init();
-  	tegra_init_irq();
- -	of_irq_init(tegra_dt_irq_match);
- +	irqchip_init();
-  }
-  #endif
- =20
 
---Signature=_Wed__23_Jan_2013_16_25_37_+1100_uA3oaJ_o_E/ME6W2
+--Signature=_Wed__23_Jan_2013_16_30_36_+1100_+8DozrnPOnmx9EGr
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQ/3RRAAoJEECxmPOUX5FEfS0P/RLcYRrXi+Rju9B/1IVUPSzv
-QDv7sh8llkdNFWKJDmE3FwHNOTnhLeaTOIgKaxt3snUFL/TX/sPlLzMhbpUYxW4e
-MSKgeRoWQMYRzmDcobJm4fH5olSxVwSFMOrdAi3d5U4p2Bh/Xk7nRrkYBYAmSLlO
-yZrQTKx2uctx2tDEA+tL+VRAyVLVMnJDQxvwAdbOyOeYVOHMuIx/PdtHDU67yG/Q
-w+5Ge4kg7eeRDDLNfq+q7yxMKHdbU3M0KwxxCD0xZ52RvaK5j0DUuPwFcBt70g66
-WvN2EcXFoudlWpXxxPHvyNHfpdeQUP0Oeh+ekUVHyBh8Xhyxu+k81/B9rwnDGfEI
-oPvSZYYHSx2gR4Wd1fFLq5qA0f7H/F/xL24c+WzyKdK1e6n/+lGzY8DkHRI4e5vm
-Ix1pPNFDcQD1cOdC5hIcqFYN84FMihz39oabkBlyoXXYza5GtT/gDuPPHx22kolJ
-tcz8hVWPOITZ6aBfmUraiJSDjPXBadZux6ggy6kwsTdDWKTeuZhT+3tj5gDWO196
-ygLU2vpBzbIGMwZQUxe0rY/DHM9lYPNYXyJXthQF1esBPcyyMM1n04rHFmN092OF
-7Q4tqr2F9GJkCVfKqjRaXsYmgMeE6p6p0g7y9JhgYZ7sPokipxzxnwhUxmOXHe86
-tS5j8jZBNz1RAQbH71jk
-=AwBb
+iQIcBAEBCAAGBQJQ/3V8AAoJEECxmPOUX5FEUM0P/2OollIZsF76Z4N66Ld+v4GK
+AGVkeMVh6r5IQDOGSkt+yt8/mcQVYB1uPr2xxPN7oLJcr0jX4ZbjV058R1CZ/Vpw
+5O+xWmBeXxKVyT2nHgyBy80n+psAEBrEVsdaWlKwaPlhJj821OAL5o0bRcRyRpaX
+zJM6ZzLTXomsdAPnzYr6xWu4k/i5Zke3RJ0O1r7lI9CZSAMtVGU1T0hKkSVFunXI
+eYcpIxIK9+BWJ4CuVq1tZustrmLGDNiYd+bnBiYgcObvmhTPoXTLvYS4F3pgqSnS
+4lF7uyBOdliGGYIflEoPfDJndpJMcYaQLJYMzwZUZh087JB1zrmR6cfaahOb7GZo
+9UDhCaOB4jas633lrzEW2ovRRuDwGlQ5/syejB/tpipdCyfi7xfVyzatG4m/XyeH
++JhP5lDKYYjvZ90+yEfsjsRJd2iLPIGYcYM0vrbLWigoQW58JqSHbB7o+lpuq4r7
+T7CSP0odOtvMJkwNDGSIq0d3LHUIw/5/x6fl9hvYFKreLLvRjNsLerCt//X7bvbr
+zkCzQR/wcZQQ/MNnQLNtAivR3DsYgpSwaqkfmiCW5JoZ0pA0/rvbWcQD4zKgr6SF
+LBynGIcoP8XtQiQYJTJxJldVnpwsXoAKezVCLRr8Pk4Gu9xVMZI7aEgh5azjBqpk
+DUgcR/DVtJhG4qXc/LcC
+=B4g1
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__23_Jan_2013_16_25_37_+1100_uA3oaJ_o_E/ME6W2--
+--Signature=_Wed__23_Jan_2013_16_30_36_+1100_+8DozrnPOnmx9EGr--
