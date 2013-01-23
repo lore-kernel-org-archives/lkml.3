@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086Ab3AWPC7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:02:59 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:36066 "EHLO relay.sw.ru"
+	id S1754792Ab3AWPC6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:02:58 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:2410 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753093Ab3AWPCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753122Ab3AWPCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Jan 2013 10:02:55 -0500
 From: Andrey Vagin <avagin@openvz.org>
 To: netdev@vger.kernel.org
@@ -19,10 +19,12 @@ Cc: criu@openvz.org, linux-kernel@vger.kernel.org,
         Neal Cardwell <ncardwell@google.com>,
         Pavel Emelyanov <xemul@parallels.com>, Dave Jones <davej@redhat.com>,
         Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: [PATCH] [RFC] tcp: add ability to set a timestamp offset (v2)
-Date: Wed, 23 Jan 2013 19:01:52 +0400
-Message-Id: <1358953314-12979-1-git-send-email-avagin@openvz.org>
+Subject: [PATCH 2/2] tcp: add ability to set a timestamp offset (v2)
+Date: Wed, 23 Jan 2013 19:01:54 +0400
+Message-Id: <1358953314-12979-3-git-send-email-avagin@openvz.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1358953314-12979-1-git-send-email-avagin@openvz.org>
+References: <1358953314-12979-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,17 +35,8 @@ kernel will generate TS values that has nothing to do with what they
 were on dump. The solution is to yet again fix the kernel and put a
 "timestamp offset" on a socket.
 
-v2: We can't adjust tcp_time_stamp only for output packets, because
-echoed timestamp values will also no longer have a meaningful
-relationship to tcp_time_stamp. That violates assumptions made in
-several places in the code, which assumes that we can compare echoed
-timestamp values to tcp_time_stamp; //Neal Cardwell
-
-This version is a "bit more" radical. It makes tcp_time_stamp dependent
-on tcp_sock. The idea of this patch is in the next two lines:
-
--#define tcp_time_stamp         ((__u32)(jiffies))
-+#define tcp_time_stamp(tp)     ((__u32)(jiffies) + tp->tsoffset)
+This patch adds one more tcp socket option TCP_TIMESTAMP, which is used
+for getting and setting a current value of tcp_timestamp.
 
 Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
@@ -57,29 +50,76 @@ Cc: Pavel Emelyanov <xemul@parallels.com>
 Cc: Dave Jones <davej@redhat.com>
 Cc: Michael Kerrisk <mtk.manpages@gmail.com>
 Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ include/linux/tcp.h      | 2 ++
+ include/net/tcp.h        | 2 +-
+ include/uapi/linux/tcp.h | 1 +
+ net/ipv4/tcp.c           | 7 +++++++
+ 4 files changed, 11 insertions(+), 1 deletion(-)
 
-Andrey Vagin (2):
-  tcp: make tcp_timestamp dependent on tcp_sock
-  tcp: add ability to set a timestamp offset (v2)
-
- include/linux/tcp.h      |  2 ++
- include/net/tcp.h        | 15 +++++++++-----
- include/uapi/linux/tcp.h |  1 +
- net/ipv4/syncookies.c    |  4 ++--
- net/ipv4/tcp.c           |  9 +++++++-
- net/ipv4/tcp_bic.c       | 10 ++++-----
- net/ipv4/tcp_cubic.c     | 14 ++++++-------
- net/ipv4/tcp_htcp.c      |  2 +-
- net/ipv4/tcp_input.c     | 53 +++++++++++++++++++++++++-----------------------
- net/ipv4/tcp_ipv4.c      | 19 +++++++++--------
- net/ipv4/tcp_lp.c        | 10 ++++-----
- net/ipv4/tcp_metrics.c   |  2 +-
- net/ipv4/tcp_output.c    | 35 +++++++++++++++++---------------
- net/ipv4/tcp_timer.c     |  9 ++++----
- net/ipv4/tcp_westwood.c  |  8 +++++---
- net/ipv6/tcp_ipv6.c      | 22 ++++++++++++--------
- 16 files changed, 123 insertions(+), 92 deletions(-)
-
---
+diff --git a/include/linux/tcp.h b/include/linux/tcp.h
+index 4e1d228..5ebc67c 100644
+--- a/include/linux/tcp.h
++++ b/include/linux/tcp.h
+@@ -162,6 +162,8 @@ struct tcp_sock {
+ 	u32	rcv_tstamp;	/* timestamp of last received ACK (for keepalives) */
+ 	u32	lsndtime;	/* timestamp of last sent data packet (for restart window) */
+ 
++	u32	tsoffset;	/* timestamp offset */
++
+ 	struct list_head tsq_node; /* anchor in tsq_tasklet.head list */
+ 	unsigned long	tsq_flags;
+ 
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 3e242ba..25119c0 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -677,7 +677,7 @@ void tcp_send_window_probe(struct sock *sk);
+  */
+ static inline u32 tcp_time_stamp(const struct tcp_sock *tp)
+ {
+-	return (__u32)jiffies;
++	return (__u32)(jiffies) + tp->tsoffset;
+ }
+ 
+ #define tcp_flag_byte(th) (((u_int8_t *)th)[13])
+diff --git a/include/uapi/linux/tcp.h b/include/uapi/linux/tcp.h
+index e962faa..6b1ead0 100644
+--- a/include/uapi/linux/tcp.h
++++ b/include/uapi/linux/tcp.h
+@@ -111,6 +111,7 @@ enum {
+ #define TCP_QUEUE_SEQ		21
+ #define TCP_REPAIR_OPTIONS	22
+ #define TCP_FASTOPEN		23	/* Enable FastOpen on listeners */
++#define TCP_TIMESTAMP		24
+ 
+ struct tcp_repair_opt {
+ 	__u32	opt_code;
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 086ceda..23f93d4 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2704,6 +2704,10 @@ static int do_tcp_setsockopt(struct sock *sk, int level,
+ 		else
+ 			err = -EINVAL;
+ 		break;
++	case TCP_TIMESTAMP:
++		tp->tsoffset = 0;
++		tp->tsoffset = val - tcp_time_stamp(tp);
++		break;
+ 	default:
+ 		err = -ENOPROTOOPT;
+ 		break;
+@@ -2952,6 +2956,9 @@ static int do_tcp_getsockopt(struct sock *sk, int level,
+ 	case TCP_USER_TIMEOUT:
+ 		val = jiffies_to_msecs(icsk->icsk_user_timeout);
+ 		break;
++	case TCP_TIMESTAMP:
++		val = tcp_time_stamp(tp);
++		break;
+ 	default:
+ 		return -ENOPROTOOPT;
+ 	}
+-- 
 1.7.11.7
 
