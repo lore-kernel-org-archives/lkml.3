@@ -1,623 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801Ab3AWBvb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 20:51:31 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:59025 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab3AWBvZ (ORCPT
+	id S1752967Ab3AWBvr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 20:51:47 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:53831 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab3AWBvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 20:51:25 -0500
-X-AuditID: cbfee61a-b7f7d6d000000f4e-fc-50ff421b0ec8
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Maxime Ripard'" <maxime.ripard@free-electrons.com>
-Cc: "'Shawn Guo'" <shawn.guo@linaro.org>,
-        "'Brian Lilly'" <brian@crystalfontz.com>,
-        linux-arm-kernel@lists.infradead.org,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Rob Herring'" <rob.herring@calxeda.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1358871791-14214-1-git-send-email-maxime.ripard@free-electrons.com>
- <1358871791-14214-2-git-send-email-maxime.ripard@free-electrons.com>
-In-reply-to: <1358871791-14214-2-git-send-email-maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH 1/3] fb: backlight: Add the Himax HX-8357B LCD controller
-Date: Wed, 23 Jan 2013 10:51:22 +0900
-Message-id: <00c001cdf90c$2566a4a0$7033ede0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac34vPpFr59U+wXdSye3lMykjyJtOwASxwgw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zfV1pp/8BBg9umFmc6PvAanF51xw2
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJa9l9nLeirqNgx5wpzA+OW+C5GTg4JAROJ29/OMELY
-	YhIX7q1n62Lk4hASWMYosejpOSaYomvnLkElpjNKdJ1ZyArh/GKUuNq4G6ydTUBN4suXw+wg
-	toiAmcShnscsIDazwHZmiTMP5CEaZjJKXJ9zkg0kwSkQLHFp0kugIg4OYQFfiTOr2EBMFgFV
-	iUPXIkAqeAVsJeZ8/8MEYQtK/Jh8D2qklsT6nceZIGx5ic1r3jKDtEoIqEs8+qsLcYGRxJnN
-	p6HKRST2vXjHCHKBhMAydokZx16AXcAiICDxbfIhFoheWYlNB5gh/pWUOLjiBssERolZSDbP
-	QrJ5FpLNs5CsWMDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjJMakdjCubLA4xCjAwajE
-	w5vw7F+AEGtiWXFl7iFGCQ5mJRFe5Y1AId6UxMqq1KL8+KLSnNTiQ4zJQMdOZJYSTc4Hxn9e
-	SbyhsbGJmYmpibmlqbkpacJK4ryMp54ECAmkJ5akZqemFqQWwWxh4uCUamDsOPets9j8mevG
-	ug9Sen8FDCfO+ypdw/uY++XGv8I7eVflPHMRmf70yhN+Xl43loigjEtzpkvlph2q2LGtesl2
-	nZiCClvGNbEzv5RNdVf5I6ulXc9Xdtnzixzro8PTojhLefPDj4ZP/CNyRyhG7sE5w32HWvjS
-	P9dvcjE6Znt+3U3D+cLV2XFKLMUZiYZazEXFiQBHLMqX9QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jQV1pp/8BBks6uC1O9H1gtbi8aw6b
-	A5PH501yAYxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4B
-	um6ZOUCjlRTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZLfuvsxb0VVTs
-	mHOFuYFxS3wXIyeHhICJxLVzl9ggbDGJC/fWA9lcHEIC0xklus4sZIVwfjFKXG3czQhSxSag
-	JvHly2F2EFtEwEziUM9jFhCbWWA7s8SZB/IQDTMZJa7POQk2llMgWOLSpJdARRwcwgK+EmdW
-	sYGYLAKqEoeuRYBU8ArYSsz5/ocJwhaU+DH5HtRILYn1O48zQdjyEpvXvGUGaZUQUJd49FcX
-	4gIjiTObT0OVi0jse/GOcQKj0Cwkk2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7N
-	S9dLzs/dxAiO4GdSOxhXNlgcYhTgYFTi4U149i9AiDWxrLgy9xCjBAezkgiv8kagEG9KYmVV
-	alF+fFFpTmrxIcZkoD8nMkuJJucDk0teSbyhsYmZkaWRmYWRibk5acJK4ryMp54ECAmkJ5ak
-	ZqemFqQWwWxh4uCUamAUK3NfFK727KrtfYXgn40GPWkXWduytrmUxx9SapPt2j/x98M+kc2/
-	g7svbJOx+hRufZ0xsVh3kfzFlS6fXmQLfZuafLlA00DeUfiI68LyzVtaz+cU6+yfO2ehIdP8
-	pWmHViX1lb4+L6ZyLTDF7cKM+q4rh3sPZnWtZL79X2V1YWna1oxbGzOUWIozEg21mIuKEwGG
-	RZiFJAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 22 Jan 2013 20:51:42 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r0N1p7it022221
+From: <wei_wang@realsil.com.cn>
+To: <cjb@laptop.org>, <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <arnd@arndb.de>, <oakad@yahoo.com>, <bp@alien8.de>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH 1/3] MFD:rtsx: Add callback function switch_output_voltage
+Date: Wed, 23 Jan 2013 09:51:04 +0800
+Message-ID: <4c45c78f2e66710bf54fd4bbcd5bdb2f0fee2028.1358905022.git.wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1358905022.git.wei_wang@realsil.com.cn>
+References: <cover.1358905022.git.wei_wang@realsil.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 23, 2013 1:23 AM, Maxime Ripard wrote
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  drivers/video/backlight/Kconfig  |    7 +
->  drivers/video/backlight/Makefile |    1 +
->  drivers/video/backlight/hx8357.c |  482 ++++++++++++++++++++++++++++++++++++++
->  3 files changed, 490 insertions(+)
->  create mode 100644 drivers/video/backlight/hx8357.c
-> 
-> diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-> index 765a945..c39bed0 100644
-> --- a/drivers/video/backlight/Kconfig
-> +++ b/drivers/video/backlight/Kconfig
-> @@ -126,6 +126,13 @@ config LCD_AMS369FG06
->  	  If you have an AMS369FG06 AMOLED Panel, say Y to enable its
->  	  LCD control driver.
-> 
-> +config LCD_HX8357
-> +	tristate "Himax HX-8357 LCD Driver"
-> +	depends on SPI
-> +	help
-> +	  If you have a HX-8357 LCD panel, say Y to enable its LCD control
-> +	  driver.
-> +
->  endif # LCD_CLASS_DEVICE
-> 
->  #
-> diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
-> index e7ce729..b69d391 100644
-> --- a/drivers/video/backlight/Makefile
-> +++ b/drivers/video/backlight/Makefile
-> @@ -14,6 +14,7 @@ obj-$(CONFIG_LCD_TOSA)		   += tosa_lcd.o
->  obj-$(CONFIG_LCD_S6E63M0)	+= s6e63m0.o
->  obj-$(CONFIG_LCD_LD9040)	+= ld9040.o
->  obj-$(CONFIG_LCD_AMS369FG06)	+= ams369fg06.o
-> +obj-$(CONFIG_LCD_HX8357)	+= hx8357.o
-> 
->  obj-$(CONFIG_BACKLIGHT_CLASS_DEVICE) += backlight.o
->  obj-$(CONFIG_BACKLIGHT_ATMEL_PWM)    += atmel-pwm-bl.o
-> diff --git a/drivers/video/backlight/hx8357.c b/drivers/video/backlight/hx8357.c
-> new file mode 100644
-> index 0000000..ee4d607
-> --- /dev/null
-> +++ b/drivers/video/backlight/hx8357.c
-> @@ -0,0 +1,482 @@
-> +/*
-> + * Driver for the Himax HX-8357 LCD Controller
-> + *
-> + * Copyright 2012 Free Electrons
-> + *
-> + * Licensed under the GPLv2 or later.
-> + */
-> +
-> +#include <linux/delay.h>
-> +#include <linux/lcd.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/spi/spi.h>
-> +
-> +#define HX8357_NUM_IM_PINS	3
-> +
-> +#define HX8357_SWRESET			0x01
-> +#define HX8357_GET_RED_CHANNEL		0x06
-> +#define HX8357_GET_GREEN_CHANNEL	0x07
-> +#define HX8357_GET_BLUE_CHANNEL		0x08
-> +#define HX8357_GET_POWER_MODE		0x0a
-> +#define HX8357_GET_MADCTL		0x0b
-> +#define HX8357_GET_PIXEL_FORMAT		0x0c
-> +#define HX8357_GET_DISPLAY_MODE		0x0d
-> +#define HX8357_GET_SIGNAL_MODE		0x0e
-> +#define HX8357_GET_DIAGNOSTIC_RESULT	0x0f
-> +#define HX8357_ENTER_SLEEP_MODE		0x10
-> +#define HX8357_EXIT_SLEEP_MODE		0x11
-> +#define HX8357_ENTER_PARTIAL_MODE	0x12
-> +#define HX8357_ENTER_NORMAL_MODE	0x13
-> +#define HX8357_EXIT_INVERSION_MODE	0x20
-> +#define HX8357_ENTER_INVERSION_MODE	0x21
-> +#define HX8357_SET_DISPLAY_OFF		0x28
-> +#define HX8357_SET_DISPLAY_ON		0x29
-> +#define HX8357_SET_COLUMN_ADDRESS	0x2a
-> +#define HX8357_SET_PAGE_ADDRESS		0x2b
-> +#define HX8357_WRITE_MEMORY_START	0x2c
-> +#define HX8357_READ_MEMORY_START	0x2e
-> +#define HX8357_SET_PARTIAL_AREA		0x30
-> +#define HX8357_SET_SCROLL_AREA		0x33
-> +#define HX8357_SET_TEAR_OFF		0x34
-> +#define HX8357_SET_TEAR_ON		0x35
-> +#define HX8357_SET_ADDRESS_MODE		0x36
-> +#define HX8357_SET_SCROLL_START		0x37
-> +#define HX8357_EXIT_IDLE_MODE		0x38
-> +#define HX8357_ENTER_IDLE_MOD		0x39
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-Please change MOD to MODE as below :-)
+Different card reader has different method to switch output voltage,
+add this callback to let the card reader implement its individual switch
+function.
 
-  HX8357_ENTER_IDLE_MODE
+Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+---
+ drivers/mfd/rtl8411.c        |   16 ++++++++++++++++
+ drivers/mfd/rts5209.c        |   20 ++++++++++++++++++++
+ drivers/mfd/rts5229.c        |   20 ++++++++++++++++++++
+ drivers/mfd/rtsx_pcr.c       |    9 +++++++++
+ include/linux/mfd/rtsx_pci.h |   24 ++++++++++++++++++++----
+ 5 files changed, 85 insertions(+), 4 deletions(-)
 
-> +#define HX8357_SET_PIXEL_FORMAT		0x3a
-> +#define HX8357_SET_PIXEL_FORMAT_DBI_3BIT	(0x1)
-> +#define HX8357_SET_PIXEL_FORMAT_DBI_16BIT	(0x5)
-> +#define HX8357_SET_PIXEL_FORMAT_DBI_18BIT	(0x6)
-> +#define HX8357_SET_PIXEL_FORMAT_DPI_3BIT	(0x1 << 4)
-> +#define HX8357_SET_PIXEL_FORMAT_DPI_16BIT	(0x5 << 4)
-> +#define HX8357_SET_PIXEL_FORMAT_DPI_18BIT	(0x6 << 4)
-> +#define HX8357_WRITE_MEMORY_CONTINUE	0x3c
-> +#define HX8357_READ_MEMORY_CONTINUE	0x3e
-> +#define HX8357_SET_TEAR_SCAN_LINES	0x44
-> +#define HX8357_GET_SCAN_LINES		0x45
-> +#define HX8357_READ_DDB_START		0xa1
-> +#define HX8357_SET_DISPLAY_MODE		0xb4
-> +#define HX8357_SET_DISPLAY_MODE_RGB_THROUGH	(0x3)
-> +#define HX8357_SET_DISPLAY_MODE_RGB_INTERFACE	(1 << 4)
-> +#define HX8357_SET_PANEL_DRIVING	0xc0
-> +#define HX8357_SET_DISPLAY_FRAME	0xc5
-> +#define HX8357_SET_RGB			0xc6
-> +#define HX8357_SET_RGB_ENABLE_HIGH		(1 << 1)
-> +#define HX8357_SET_GAMMA		0xc8
-> +#define HX8357_SET_POWER		0xd0
-> +#define HX8357_SET_VCOM			0xd1
-> +#define HX8357_SET_POWER_NORMAL		0xd2
-> +#define HX8357_SET_PANEL_RELATED	0xe9
-> +
-> +struct hx8357_data {
-> +	unsigned		im_pins[HX8357_NUM_IM_PINS];
-> +	unsigned		reset;
-> +	struct spi_device	*spi;
-> +	int			state;
-> +};
-> +
-> +static int hx8357_spi_write_then_read(struct lcd_device *lcdev,
-> +				void *txbuf, u16 txlen,
-> +				void *rxbuf, u16 rxlen)
-> +{
-> +	struct hx8357_data *lcd = lcd_get_data(lcdev);
-> +	struct spi_message msg;
-> +	struct spi_transfer xfer[2];
-> +	u16 *local_txbuf = NULL;
-> +	int ret = 0;
-> +
-> +	memset(xfer, 0, sizeof(xfer));
-> +	spi_message_init(&msg);
-> +
-> +	if (txlen) {
-> +		int i;
-> +
-> +		local_txbuf = kcalloc(sizeof(*local_txbuf), txlen, GFP_KERNEL);
-> +
-> +		if (!local_txbuf) {
-> +			dev_err(&lcdev->dev, "Couldn't allocate data buffer.\n");
-> +			return -ENOMEM;
-> +		}
-> +
-> +		for (i = 0; i < txlen; i++) {
-> +			local_txbuf[i] = ((u8 *)txbuf)[i];
-> +			if (i > 0)
-> +				local_txbuf[i] |= 1 << 8;
-> +		}
-> +
-> +		xfer[0].len = 2 * txlen;
-> +		xfer[0].bits_per_word = 9;
-> +		xfer[0].tx_buf = local_txbuf;
-> +		spi_message_add_tail(&xfer[0], &msg);
-> +	}
-> +
-> +	if (rxlen) {
-> +		xfer[1].len = rxlen;
-> +		xfer[1].bits_per_word = 8;
-> +		xfer[1].rx_buf = rxbuf;
-> +		spi_message_add_tail(&xfer[1], &msg);
-> +	}
-> +
-> +	ret = spi_sync(lcd->spi, &msg);
-> +	if (ret < 0)
-> +		dev_err(&lcdev->dev, "Couldn't send SPI data.\n");
-> +
-> +	if (txlen)
-> +		kfree(local_txbuf);
-> +
-> +	return ret;
-> +}
-> +
-> +static inline int hx8357_spi_write_array(struct lcd_device *lcdev,
-> +					u8 *value, u8 len)
-> +{
-> +	return hx8357_spi_write_then_read(lcdev, value, len, NULL, 0);
-> +}
-> +
-> +static inline int hx8357_spi_write_byte(struct lcd_device *lcdev,
-> +					u8 value)
-> +{
-> +	return hx8357_spi_write_then_read(lcdev, &value, 1, NULL, 0);
-> +}
-> +
-> +static int hx8357_enter_standby(struct lcd_device *lcdev)
-> +{
-> +	int ret;
-> +
-> +	ret = hx8357_spi_write_byte(lcdev, HX8357_SET_DISPLAY_OFF);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	usleep_range(10000, 12000);
-> +
-> +	ret = hx8357_spi_write_byte(lcdev, HX8357_ENTER_SLEEP_MODE);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	msleep(120);
-> +
-> +	return 0;
-> +}
-> +
-> +static int hx8357_exit_standby(struct lcd_device *lcdev)
-> +{
-> +	int ret;
-> +
-> +	ret = hx8357_spi_write_byte(lcdev, HX8357_EXIT_SLEEP_MODE);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	msleep(120);
-> +
-> +	ret = hx8357_spi_write_byte(lcdev, HX8357_SET_DISPLAY_ON);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static int hx8357_lcd_init(struct lcd_device *lcdev)
-> +{
-> +	struct hx8357_data *lcd = lcd_get_data(lcdev);
-> +	u8 buf[16];
-> +	int ret;
-> +
-> +	/*
-> +	 * Set the interface selection pins to SPI mode, with three
-> +	 * wires
-> +	 */
-> +	gpio_set_value_cansleep(lcd->im_pins[0], 1);
-> +	gpio_set_value_cansleep(lcd->im_pins[1], 0);
-> +	gpio_set_value_cansleep(lcd->im_pins[2], 1);
-> +
-> +	/* Reset the screen */
-> +	gpio_set_value(lcd->reset, 1);
-> +	usleep_range(10000, 12000);
-> +	gpio_set_value(lcd->reset, 0);
-> +	usleep_range(10000, 12000);
-> +	gpio_set_value(lcd->reset, 1);
-> +	msleep(120);
-> +
-> +	buf[0] = HX8357_SET_POWER;
-> +	buf[1] = 0x44;
-> +	buf[2] = 0x41;
-> +	buf[3] = 0x06;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 4);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = HX8357_SET_VCOM;
-> +	buf[1] = 0x40;
-> +	buf[2] = 0x10;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 3);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = HX8357_SET_POWER_NORMAL;
-> +	buf[1] = 0x05;
-> +	buf[2] = 0x12;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 3);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = HX8357_SET_PANEL_DRIVING;
-> +	buf[1] = 0x14;
-> +	buf[2] = 0x3b;
-> +	buf[3] = 0x00;
-> +	buf[4] = 0x02;
-> +	buf[5] = 0x11;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 6);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = HX8357_SET_DISPLAY_FRAME;
-> +	buf[1] = 0x0c;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 2);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = HX8357_SET_PANEL_RELATED;
-> +	buf[1] = 0x01;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 2);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = 0xea;
-> +	buf[1] = 0x03;
-> +	buf[2] = 0x00;
-> +	buf[3] = 0x00;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 4);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = 0xeb;
-> +	buf[1] = 0x40;
-> +	buf[2] = 0x54;
-> +	buf[3] = 0x26;
-> +	buf[4] = 0xdb;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 5);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = HX8357_SET_GAMMA;
-> +	buf[1] = 0x00;
-> +	buf[2] = 0x15;
-> +	buf[3] = 0x00;
-> +	buf[4] = 0x22;
-> +	buf[5] = 0x00;
-> +	buf[6] = 0x08;
-> +	buf[7] = 0x77;
-> +	buf[8] = 0x26;
-> +	buf[9] = 0x77;
-> +	buf[10] = 0x22;
-> +	buf[11] = 0x04;
-> +	buf[12] = 0x00;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 13);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = HX8357_SET_ADDRESS_MODE;
-> +	buf[1] = 0xc0;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 2);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = HX8357_SET_PIXEL_FORMAT;
-> +	buf[1] = HX8357_SET_PIXEL_FORMAT_DPI_18BIT |
-> +		HX8357_SET_PIXEL_FORMAT_DBI_18BIT;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 2);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = HX8357_SET_COLUMN_ADDRESS;
-> +	buf[1] = 0x00;
-> +	buf[2] = 0x00;
-> +	buf[3] = 0x01;
-> +	buf[4] = 0x3f;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 5);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = HX8357_SET_PAGE_ADDRESS;
-> +	buf[1] = 0x00;
-> +	buf[2] = 0x00;
-> +	buf[3] = 0x01;
-> +	buf[4] = 0xdf;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 5);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = HX8357_SET_RGB;
-> +	buf[1] = 0x02;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 2);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	buf[0] = HX8357_SET_DISPLAY_MODE;
-> +	buf[1] = HX8357_SET_DISPLAY_MODE_RGB_THROUGH |
-> +		HX8357_SET_DISPLAY_MODE_RGB_INTERFACE;
-> +	ret = hx8357_spi_write_array(lcdev, buf, 2);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = hx8357_spi_write_byte(lcdev, HX8357_EXIT_SLEEP_MODE);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	msleep(120);
-> +
-> +	ret = hx8357_spi_write_byte(lcdev, HX8357_SET_DISPLAY_ON);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	usleep_range(5000, 7000);
-> +
-> +	ret = hx8357_spi_write_byte(lcdev, HX8357_WRITE_MEMORY_START);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +#define POWER_IS_ON(pwr)	((pwr) <= FB_BLANK_NORMAL)
-> +
-> +static int hx8357_set_power(struct lcd_device *lcdev, int power)
-> +{
-> +	struct hx8357_data *lcd = lcd_get_data(lcdev);
-> +	int ret = 0;
-> +
-> +	if (POWER_IS_ON(power) && !POWER_IS_ON(lcd->state))
-> +		ret = hx8357_exit_standby(lcdev);
-> +	else if (!POWER_IS_ON(power) && POWER_IS_ON(lcd->state))
-> +		ret = hx8357_enter_standby(lcdev);
-> +
-> +	if (ret == 0)
-> +		lcd->state = power;
-> +	else
-> +		dev_warn(&lcdev->dev, "failed to set power mode %d\n", power);
-> +
-> +	return ret;
-> +}
-> +
-> +static int hx8357_get_power(struct lcd_device *lcdev)
-> +{
-> +	struct hx8357_data *lcd = lcd_get_data(lcdev);
-> +
-> +	return lcd->state;
-> +}
-> +
-> +static struct lcd_ops hx8357_ops = {
-> +	.set_power	= hx8357_set_power,
-> +	.get_power	= hx8357_get_power,
-> +};
-> +
-> +static int __devinit hx8357_probe(struct spi_device *spi)
-
-Please remove '__devexit', because it is useless.
-Also, it makes build error.
-
-(http://comments.gmane.org/gmane.linux.kernel/1395773)
-
-> +{
-> +	struct lcd_device *lcdev;
-> +	struct hx8357_data *lcd;
-> +	int i, ret;
-> +
-> +	lcd = devm_kzalloc(&spi->dev, sizeof(*lcd), GFP_KERNEL);
-> +	if (!lcd) {
-> +		dev_err(&spi->dev, "Couldn't allocate lcd internal structure!\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	ret = spi_setup(spi);
-> +	if (ret < 0) {
-> +		dev_err(&spi->dev, "SPI setup failed.\n");
-> +		return ret;
-> +	}
-> +
-> +	lcd->spi = spi;
-> +
-> +	lcd->reset = of_get_named_gpio(spi->dev.of_node, "gpios-reset", 0);
-> +	if (!gpio_is_valid(lcd->reset)) {
-> +		dev_err(&spi->dev, "Missing dt property: gpios-reset\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	ret = devm_gpio_request_one(&spi->dev, lcd->reset,
-> +				    GPIOF_OUT_INIT_HIGH,
-> +				    "hx8357-reset");
-> +	if (ret) {
-> +		dev_err(&spi->dev,
-> +			"failed to request gpio %d: %d\n",
-> +			lcd->reset, ret);
-> +		return -EINVAL;
-> +	}
-> +
-> +	for (i = 0; i < HX8357_NUM_IM_PINS; i++) {
-> +		lcd->im_pins[i] = of_get_named_gpio(spi->dev.of_node,
-> +						"im-gpios", i);
-> +		if (lcd->im_pins[i] == -EPROBE_DEFER) {
-> +			dev_info(&spi->dev, "GPIO requested is not here yet, deferring the probe\n");
-> +			return -EPROBE_DEFER;
-> +		}
-> +		if (!gpio_is_valid(lcd->im_pins[i])) {
-> +			dev_err(&spi->dev, "Missing dt property: im-gpios\n");
-> +			return -EINVAL;
-> +		}
-> +
-> +		ret = devm_gpio_request_one(&spi->dev, lcd->im_pins[i],
-> +					GPIOF_DIR_OUT, "im_pins");
-
-Please replace GPIOF_DIR_OUT with GPIOF_OUT_INIT_LOW.
-If you want to set Low value, please use GPIOF_OUT_INIT_LOW.
-
-
-> +		if (ret) {
-> +			dev_err(&spi->dev, "failed to request gpio %d: %d\n",
-> +				lcd->im_pins[i], ret);
-> +			return -EINVAL;
-> +		}
-> +	}
-> +
-> +	lcdev = lcd_device_register("mxsfb", &spi->dev, lcd, &hx8357_ops);
-> +	if (IS_ERR(lcdev)) {
-> +		ret = PTR_ERR(lcdev);
-> +		return ret;
-> +	}
-> +	spi_set_drvdata(spi, lcdev);
-> +
-> +	ret = hx8357_lcd_init(lcdev);
-> +	if (ret) {
-> +		dev_err(&spi->dev, "Couldn't initialize panel\n");
-> +		goto init_error;
-> +	}
-> +
-> +	dev_info(&spi->dev, "Panel probed\n");
-> +
-> +	return 0;
-> +
-> +init_error:
-> +	lcd_device_unregister(lcdev);
-> +	return ret;
-> +}
-> +
-> +static int __devexit hx8357_remove(struct spi_device *spi)
-
-Please remove '__devexit'.
-
-> +{
-> +	struct lcd_device *lcdev = spi_get_drvdata(spi);
-> +
-> +	lcd_device_unregister(lcdev);
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id hx8357_dt_ids[] = {
-> +	{ .compatible = "himax,hx8357" },
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, hx8357_dt_ids);
-> +
-> +static struct spi_driver hx8357_driver = {
-> +	.probe  = hx8357_probe,
-> +	.remove = __devexit_p(hx8357_remove),
-
-Please remove '__devexit_p'.
-
-> +	.driver = {
-> +		.name = "hx8357",
-> +		.of_match_table = of_match_ptr(hx8357_dt_ids),
-> +	},
-> +};
-> +
-> +module_spi_driver(hx8357_driver);
-> +
-> +MODULE_AUTHOR("Maxime Ripard <maxime.ripard@free-electrons.com>");
-> +MODULE_DESCRIPTION("Himax HX-8357 LCD Driver");
-> +MODULE_LICENSE("GPL");
-> --
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
+index 89f046c..5058ba8 100644
+--- a/drivers/mfd/rtl8411.c
++++ b/drivers/mfd/rtl8411.c
+@@ -112,6 +112,21 @@ static int rtl8411_card_power_off(struct rtsx_pcr *pcr, int card)
+ 			BPP_LDO_POWB, BPP_LDO_SUSPEND);
+ }
+ 
++static int rtl8411_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
++{
++	u8 mask, val;
++
++	mask = (BPP_REG_TUNED18 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_MASK;
++	if (voltage == OUTPUT_3V3)
++		val = (BPP_ASIC_3V3 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_3V3;
++	else if (voltage == OUTPUT_1V8)
++		val = (BPP_ASIC_1V8 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_1V8;
++	else
++		return -EINVAL;
++
++	return rtsx_pci_write_register(pcr, LDO_CTL, mask, val);
++}
++
+ static unsigned int rtl8411_cd_deglitch(struct rtsx_pcr *pcr)
+ {
+ 	unsigned int card_exist;
+@@ -172,6 +187,7 @@ static const struct pcr_ops rtl8411_pcr_ops = {
+ 	.disable_auto_blink = rtl8411_disable_auto_blink,
+ 	.card_power_on = rtl8411_card_power_on,
+ 	.card_power_off = rtl8411_card_power_off,
++	.switch_output_voltage = rtl8411_switch_output_voltage,
+ 	.cd_deglitch = rtl8411_cd_deglitch,
+ };
+ 
+diff --git a/drivers/mfd/rts5209.c b/drivers/mfd/rts5209.c
+index 283a4f1..ba74de8 100644
+--- a/drivers/mfd/rts5209.c
++++ b/drivers/mfd/rts5209.c
+@@ -144,6 +144,25 @@ static int rts5209_card_power_off(struct rtsx_pcr *pcr, int card)
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
+ 
++static int rts5209_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
++{
++	int err;
++
++	if (voltage == OUTPUT_3V3) {
++		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4FC0 | 0x24);
++		if (err < 0)
++			return err;
++	} else if (voltage == OUTPUT_1V8) {
++		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4C40 | 0x24);
++		if (err < 0)
++			return err;
++	} else {
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static const struct pcr_ops rts5209_pcr_ops = {
+ 	.extra_init_hw = rts5209_extra_init_hw,
+ 	.optimize_phy = rts5209_optimize_phy,
+@@ -153,6 +172,7 @@ static const struct pcr_ops rts5209_pcr_ops = {
+ 	.disable_auto_blink = rts5209_disable_auto_blink,
+ 	.card_power_on = rts5209_card_power_on,
+ 	.card_power_off = rts5209_card_power_off,
++	.switch_output_voltage = rts5209_switch_output_voltage,
+ 	.cd_deglitch = NULL,
+ };
+ 
+diff --git a/drivers/mfd/rts5229.c b/drivers/mfd/rts5229.c
+index b9dbab2..ec1747a 100644
+--- a/drivers/mfd/rts5229.c
++++ b/drivers/mfd/rts5229.c
+@@ -114,6 +114,25 @@ static int rts5229_card_power_off(struct rtsx_pcr *pcr, int card)
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
+ 
++static int rts5229_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
++{
++	int err;
++
++	if (voltage == OUTPUT_3V3) {
++		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4FC0 | 0x24);
++		if (err < 0)
++			return err;
++	} else if (voltage == OUTPUT_1V8) {
++		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4C40 | 0x24);
++		if (err < 0)
++			return err;
++	} else {
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static const struct pcr_ops rts5229_pcr_ops = {
+ 	.extra_init_hw = rts5229_extra_init_hw,
+ 	.optimize_phy = rts5229_optimize_phy,
+@@ -123,6 +142,7 @@ static const struct pcr_ops rts5229_pcr_ops = {
+ 	.disable_auto_blink = rts5229_disable_auto_blink,
+ 	.card_power_on = rts5229_card_power_on,
+ 	.card_power_off = rts5229_card_power_off,
++	.switch_output_voltage = rts5229_switch_output_voltage,
+ 	.cd_deglitch = NULL,
+ };
+ 
+diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+index 7a7b0bd..f4e02d0 100644
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -703,6 +703,15 @@ int rtsx_pci_card_power_off(struct rtsx_pcr *pcr, int card)
+ }
+ EXPORT_SYMBOL_GPL(rtsx_pci_card_power_off);
+ 
++int rtsx_pci_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
++{
++	if (pcr->ops->switch_output_voltage)
++		return pcr->ops->switch_output_voltage(pcr, voltage);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_switch_output_voltage);
++
+ unsigned int rtsx_pci_card_exist(struct rtsx_pcr *pcr)
+ {
+ 	unsigned int val;
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index 060b721..271b6e5 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -158,10 +158,9 @@
+ #define SG_TRANS_DATA		(0x02 << 4)
+ #define SG_LINK_DESC		(0x03 << 4)
+ 
+-/* SD bank voltage */
+-#define SD_IO_3V3		0
+-#define SD_IO_1V8		1
+-
++/* Output voltage */
++#define OUTPUT_3V3		0
++#define OUTPUT_1V8		1
+ 
+ /* Card Clock Enable Register */
+ #define SD_CLK_EN			0x04
+@@ -201,6 +200,20 @@
+ #define CHANGE_CLK			0x01
+ 
+ /* LDO_CTL */
++#define BPP_ASIC_1V7			0x00
++#define BPP_ASIC_1V8			0x01
++#define BPP_ASIC_1V9			0x02
++#define BPP_ASIC_2V0			0x03
++#define BPP_ASIC_2V7			0x04
++#define BPP_ASIC_2V8			0x05
++#define BPP_ASIC_3V2			0x06
++#define BPP_ASIC_3V3			0x07
++#define BPP_REG_TUNED18			0x07
++#define BPP_TUNED18_SHIFT_8402		5
++#define BPP_TUNED18_SHIFT_8411		4
++#define BPP_PAD_MASK			0x04
++#define BPP_PAD_3V3			0x04
++#define BPP_PAD_1V8			0x00
+ #define BPP_LDO_POWB			0x03
+ #define BPP_LDO_ON			0x00
+ #define BPP_LDO_SUSPEND			0x02
+@@ -688,6 +701,8 @@ struct pcr_ops {
+ 	int		(*disable_auto_blink)(struct rtsx_pcr *pcr);
+ 	int		(*card_power_on)(struct rtsx_pcr *pcr, int card);
+ 	int		(*card_power_off)(struct rtsx_pcr *pcr, int card);
++	int		(*switch_output_voltage)(struct rtsx_pcr *pcr,
++						u8 voltage);
+ 	unsigned int	(*cd_deglitch)(struct rtsx_pcr *pcr);
+ };
+ 
+@@ -783,6 +798,7 @@ int rtsx_pci_switch_clock(struct rtsx_pcr *pcr, unsigned int card_clock,
+ 		u8 ssc_depth, bool initial_mode, bool double_clk, bool vpclk);
+ int rtsx_pci_card_power_on(struct rtsx_pcr *pcr, int card);
+ int rtsx_pci_card_power_off(struct rtsx_pcr *pcr, int card);
++int rtsx_pci_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage);
+ unsigned int rtsx_pci_card_exist(struct rtsx_pcr *pcr);
+ void rtsx_pci_complete_unfinished_transfer(struct rtsx_pcr *pcr);
+ 
+-- 
+1.7.9.5
 
