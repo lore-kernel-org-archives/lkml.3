@@ -1,150 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096Ab3AWR5d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 12:57:33 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:52136 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754273Ab3AWR4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 12:56:21 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
-        Len Brown <lenb@kernel.org>
-Subject: [Update][PATCH 3/5] ACPI / PM: Expose current status of ACPI power resources
-Date: Wed, 23 Jan 2013 19:00:10 +0100
-Message-ID: <1551140.LKaQ2sxfTJ@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1551140.kO91IOVbjI@vostro.rjw.lan>
-References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <2760421.6nE3tkh92K@vostro.rjw.lan> <1551140.kO91IOVbjI@vostro.rjw.lan>
+	id S1755768Ab3AWR77 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 12:59:59 -0500
+Received: from mail-ye0-f175.google.com ([209.85.213.175]:51207 "EHLO
+	mail-ye0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754108Ab3AWR76 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 12:59:58 -0500
+Date: Wed, 23 Jan 2013 14:59:49 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 08/13] perf gtk/browser: Add support for event group view
+Message-ID: <20130123175949.GB6687@ghostprotocols.net>
+References: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
+ <1358235117-12803-9-git-send-email-namhyung@kernel.org>
+ <20130115183405.GD5826@ghostprotocols.net>
+ <87a9s9mnlt.fsf@sejong.aot.lge.com>
+ <20130116182859.GO5826@ghostprotocols.net>
+ <87pq0xkbcj.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87pq0xkbcj.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Em Tue, Jan 22, 2013 at 02:58:36PM +0900, Namhyung Kim escreveu:
+> Hi Arnaldo,
+> 
+> On Wed, 16 Jan 2013 15:28:59 -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Wed, Jan 16, 2013 at 07:25:02PM +0900, Namhyung Kim escreveu:
+> >> Adding current header name to event name will fix the problem but it
+> >> probably occupies too much screen width especially for long named
+> >> tracepoint or PMU-specific events like
+> >> "compaction:mm_compaction_isolate_migratepages".
+> >> 
+> >>   Overhead/branches  Overhead/branch-misses  sys/branches  sys/branch-misses  usr/branches  usr/branch-misses  Command  Shared Object   Symbol
+> >>   .................  ......................  ............  .................  ............  .................  .......  .............  .......
+> >>              98.32%                  31.16%         0.00%              0.00%        98.32%             31.16%    a.out          a.out  [.] foo
+> >> 
+> >> 
+> >> If you have a better idea or other way to place the cursor without
+> >> printing bogus 0.00% on GTK, please let me know.
+> >
+> > Compacting it using an extra line:
+> >
+> >  Overhead...............  sys....................  usr....................
+> >  branches  branch-misses  branches  branch-misses  branches  branch-misses  Command  Shared Object   Symbol
+> >  ........  .............  ........  .............  ........  .............  .......  .............  .......
+> >    98.32%         31.16%     0.00%          0.00%    98.32%         31.16%    a.out          a.out  [.] foo
+> >
+> > It could even use some reference:
+> >
+> >  Overhead.....................  sys.........  usr...........
+> >  branches(1)  branch-misses(2)  (1)    (2)    (1)     (2)     Command  Shared Object   Symbol
+> >  ...........  ................  .....  .....  ......  ......  .......  .............  .......
+> >       98.32%            31.16%  0.00%  0.00%  98.32%  31.16%    a.out          a.out  [.] foo
+> >
+> > The (1) could be done with a superscript number or even just using a
+> > different fore/background color, to use fewer columns.
+> >
+> > One other way, that would scale for really long event names, would be to
+> > have the event list in the first few lines and then:
+> >
+> > Events:
+> > 1. branches
+> > 2. branch-misses
+> >
+> >  Overhead......  sys.........  usr...........
+> >  (1)     (2)     (1)    (2)    (1)     (2)     Command  Shared Object   Symbol
+> >  ......  ......  .....  .....  ......  ......  .......  .............  .......
+> >  98.32%  31.16%  0.00%  0.00%  98.32%  31.16%   a.out           a.out  [.] foo
+> >
+> > I think you could switch to/from each of these forms using a hotkey,
+> > that would influence how the hist_entry__snprintf() routine would work,
+> > either using perf_evsel__name() or evsel->idx :-)
+> >
+> > This way if at some point the user wants to expand/compress the lines,
+> > it will be possible to do so quickly, just pressing the hotkey.
+> 
+> By saying hotkey, I guess you meant to use it for TUI.  However TUI
+> doesn't provide those header lines. ;-)
 
-Since ACPI power resources are going to be used more extensively on
-new hardware platforms, it becomes necessary for user space (powertop
-in particular) to observe some properties of those resources for
-diagnostics purposes.
+See? I was trying to hit two rabbits with one stone, but you realised
+that...
 
-For this reason, expose the current status of each ACPI power
-resource to user space via sysfs by adding a new resource_in_use
-attribute to the sysfs directory representing the given power
-resource.
+> As this extra line (and hotkey) thing might add complexity to the
+> patchset, I'd like to separate it to a different work and to focus on
+> the basic feature with current behavior.  Is it acceptable for you?
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- Documentation/ABI/testing/sysfs-devices-resource_in_use |   12 +++++++
- drivers/acpi/power.c                                    |   26 +++++++++++++++-
- drivers/acpi/scan.c                                     |    3 +
- include/acpi/acpi_bus.h                                 |    1 
- 4 files changed, 41 insertions(+), 1 deletion(-)
+Sure thing.
 
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -278,6 +278,7 @@ struct acpi_device {
- 	struct mutex physical_node_lock;
- 	DECLARE_BITMAP(physical_node_id_bitmap, ACPI_MAX_PHYSICAL_NODE);
- 	struct list_head power_dependent;
-+	void (*remove)(struct acpi_device *);
- };
- 
- static inline void *acpi_driver_data(struct acpi_device *d)
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -790,6 +790,9 @@ static void acpi_device_unregister(struc
- 
- 	acpi_power_add_remove_device(device, false);
- 	acpi_device_remove_files(device);
-+	if (device->remove)
-+		device->remove(device);
-+
- 	device_del(&device->dev);
- 	/*
- 	 * Drop the reference counts of all power resources the device depends
-Index: linux-pm/drivers/acpi/power.c
-===================================================================
---- linux-pm.orig/drivers/acpi/power.c
-+++ linux-pm/drivers/acpi/power.c
-@@ -87,6 +87,12 @@ static DEFINE_MUTEX(power_resource_list_
-                              Power Resource Management
-    -------------------------------------------------------------------------- */
- 
-+static inline
-+struct acpi_power_resource *to_power_resource(struct acpi_device *device)
-+{
-+	return container_of(device, struct acpi_power_resource, device);
-+}
-+
- static struct acpi_power_resource *acpi_power_get_context(acpi_handle handle)
- {
- 	struct acpi_device *device;
-@@ -94,7 +100,7 @@ static struct acpi_power_resource *acpi_
- 	if (acpi_bus_get_device(handle, &device))
- 		return NULL;
- 
--	return container_of(device, struct acpi_power_resource, device);
-+	return to_power_resource(device);
- }
- 
- static int acpi_power_resources_list_add(acpi_handle handle,
-@@ -676,6 +682,21 @@ static void acpi_release_power_resource(
- 	kfree(resource);
- }
- 
-+static ssize_t acpi_power_in_use_show(struct device *dev,
-+				      struct device_attribute *attr,
-+				      char *buf) {
-+	struct acpi_power_resource *resource;
-+
-+	resource = to_power_resource(to_acpi_device(dev));
-+	return sprintf(buf, "%u\n", !!resource->ref_count);
-+}
-+static DEVICE_ATTR(resource_in_use, 0444, acpi_power_in_use_show, NULL);
-+
-+static void acpi_power_sysfs_remove(struct acpi_device *device)
-+{
-+	device_remove_file(&device->dev, &dev_attr_resource_in_use);
-+}
-+
- int acpi_add_power_resource(acpi_handle handle)
- {
- 	struct acpi_power_resource *resource;
-@@ -723,6 +744,9 @@ int acpi_add_power_resource(acpi_handle
- 	if (result)
- 		goto err;
- 
-+	if (!device_create_file(&device->dev, &dev_attr_resource_in_use))
-+		device->remove = acpi_power_sysfs_remove;
-+
- 	mutex_lock(&power_resource_list_lock);
- 	list_add(&resource->list_node, &acpi_power_resource_list);
- 	mutex_unlock(&power_resource_list_lock);
-Index: linux-pm/Documentation/ABI/testing/sysfs-devices-resource_in_use
-===================================================================
---- /dev/null
-+++ linux-pm/Documentation/ABI/testing/sysfs-devices-resource_in_use
-@@ -0,0 +1,12 @@
-+What:		/sys/devices/.../resource_in_use
-+Date:		January 2013
-+Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-+Description:
-+		The /sys/devices/.../resource_in_use attribute is only present
-+		for device objects representing ACPI power resources.
-+
-+		If present, it contains a number (0 or 1) representing the
-+		current status of the given power resource (0 means that the
-+		resource is not in use and therefore it has been turned off).
-+
-+		This attribute is read-only.
-
+- Arnaldo
