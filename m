@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab3AWXwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 18:52:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55578 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab3AWXwF (ORCPT
+	id S1752445Ab3AWXze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 18:55:34 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:62725 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab3AWXzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 18:52:05 -0500
-Date: Wed, 23 Jan 2013 15:51:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [tracepoint] cargo-culting considered harmful...
-Message-Id: <20130123155147.25fe49a2.akpm@linux-foundation.org>
-In-Reply-To: <20130123225523.GY4939@ZenIV.linux.org.uk>
-References: <20130123225523.GY4939@ZenIV.linux.org.uk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jan 2013 18:55:25 -0500
+Date: Wed, 23 Jan 2013 15:55:20 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PATCH] more TTY/Serial fixes for 3.8-rc4
+Message-ID: <20130123235520.GA11415@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jan 2013 22:55:24 +0000
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+The following changes since commit 248152b60209874b1707a23d336b137486756a29:
 
-> In samples/tracepoints/tracepoint-probe-sample.c:
-> /*
->  * Here the caller only guarantees locking for struct file and struct inode.
->  * Locking must therefore be done in the probe to use the dentry.
->  */
-> static void probe_subsys_event(void *ignore,   
->                                struct inode *inode, struct file *file)
-> {
->         path_get(&file->f_path);
->         dget(file->f_path.dentry);
->         printk(KERN_INFO "Event is encountered with filename %s\n",
->                 file->f_path.dentry->d_name.name);
->         dput(file->f_path.dentry);
->         path_put(&file->f_path);
-> }
-> 
-> note that
-> 	* file->f_path is already pinned down by open(), path_get() does not
-> provide anything extra.
-> 	* file->f_path.dentry is already pinned by open() *and* path_get()
-> just above that dget().
-> 	* ->d_name.name *IS* *NOT* *PROTECTED* by pinning dentry down,
-> whether it's done once or thrice.
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k (2013-01-23 13:31:15 -0800)
 
-I guess the first two are obvious (or at least, expected).  But the
-third isn't.
+are available in the git repository at:
 
-Where should a kernel developer go to learn these things? 
-include/linux/dcache.h doesn't mention d_name locking rules, nor does
-Documentation/filesystems/vfs.txt.
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.8-rc4
+
+for you to fetch changes up to 5e30bbb723415fb94a098e314d1908a39a7e50a2:
+
+  MAINTAINERS: Someone needs to watch over the serial drivers (2013-01-23 15:45:23 -0800)
+
+----------------------------------------------------------------
+TTY patches for 3.8-rc4
+
+Just a MAINTAINERS update, now that Alan has left for a bit, I'll
+continue to watch over the serial drivers.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Greg Kroah-Hartman (1):
+      MAINTAINERS: Someone needs to watch over the serial drivers
+
+ MAINTAINERS | 2 ++
+ 1 file changed, 2 insertions(+)
