@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515Ab3AWQfq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 11:35:46 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:54705 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754634Ab3AWQfo (ORCPT
+	id S1755947Ab3AWQhs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 11:37:48 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40359 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754655Ab3AWQhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 11:35:44 -0500
-Date: Wed, 23 Jan 2013 08:35:36 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/6] cgroup: initialize cgrp->dentry before css_alloc()
-Message-ID: <20130123163536.GA2373@mtj.dyndns.org>
-References: <50F7B040.2020906@huawei.com>
- <20130123002754.GB5359@htj.dyndns.org>
- <50FF4C4D.4020405@huawei.com>
+	Wed, 23 Jan 2013 11:37:47 -0500
+Message-ID: <510011D7.3000301@wwwdotorg.org>
+Date: Wed, 23 Jan 2013 09:37:43 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FF4C4D.4020405@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [v3 2/2] ARM: tegra: Skip scu_enable(scu_base) if not Cortex
+ A9
+References: <50FE2CA8.20100@ti.com><50FEC503.2080602@wwwdotorg.org><20130123.080457.171573168772211248.hdoyu@nvidia.com> <20130123.112745.1104072242042163713.hdoyu@nvidia.com>
+In-Reply-To: <20130123.112745.1104072242042163713.hdoyu@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
-
-On Wed, Jan 23, 2013 at 10:34:53AM +0800, Li Zefan wrote:
-> Scheduler changes made in patch #2 are preparation for #3 and #4.
+On 01/23/2013 02:27 AM, Hiroshi Doyu wrote:
+> Hiroshi Doyu <hdoyu@nvidia.com> wrote @ Wed, 23 Jan 2013 08:04:57 +0200 (EET):
 > 
-> - for #3:
+>> Stephen Warren <swarren@wwwdotorg.org> wrote @ Tue, 22 Jan 2013 17:57:39 +0100:
+>>
+>>> Hiroshi, is this series the only dependency you need for your
+>>> Tegra114
+>>
+>> Basically yes.
+>>
+>>> series? So, I could merge your Tegra114 series once this series is applied?
+>>
+>> But now "CCF" seems to be in. Then, the HACK(*1) needs to be replaced
+>> with "Tegra114 CCF". But "Tegra114 CCF" doesn't seem ready yet. I'll check
+>> if this Tegra114 series would work without "Tegra114 CCF".
+>>
+>> *1: http://patchwork.ozlabs.org/patch/212010/
 > 
-> After ss->css_alloc(), there's a small window that tg->css.cgroup is NULL.
-> With the change, tg won't be seen before ss->css_online(), so the scheduler
-> won't see NULL tg->css.cgroup.
+> Stephen,
 > 
-> - for #4:
-> 
-> If tg is unregistered and removed from global list in css_free(), and if
-> we kfree cgroup right after ss->css_free(), the scheduler can access
-> invalid tg->css.cgroup, because tg is also protected by RCU.
+> Verified "Tegra114 series" worked with "for-3.9/soc" branch(inc CCF)
+> with a little tweak.
 
-Can you please incorporate the above into the patch descriptions?
+Good news.
 
-Thanks!
+> I can post Tegra114 series again. If you want them rebased onto
+> another branch, let me know.
 
--- 
-tejun
+Yes please. I will apply them to for-3.9/soc. Please assume that
+for-3.9/soc will already contain "ARM: Define CPU part numbers and
+implementors", and your two SCU-related patches. Include your "ARM:
+tegra: Use DT /cpu node to detect number of CPU core" as the first patch
+in the series. I assume that is all of the dependencies; if I've
+forgotten anything, please point it out. Thanks.
