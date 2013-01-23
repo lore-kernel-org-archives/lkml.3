@@ -1,52 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab3AWR1M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 12:27:12 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52289 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754864Ab3AWR1L (ORCPT
+	id S1756681Ab3AWR1u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 12:27:50 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:58520 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756244Ab3AWR1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 12:27:11 -0500
-Date: Wed, 23 Jan 2013 17:27:04 +0000
-From: Catalin Marinas <Catalin.Marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arm64 fixes for 3.8
-Message-ID: <20130123172703.GJ27474@arm.com>
+	Wed, 23 Jan 2013 12:27:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-user-agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E1C2B9@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F69E1C2B9@DQHE02.ent.ti.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Wed, 23 Jan 2013 09:27:26 -0800
+Message-ID: <CAK5ve-+5SUeNq4UtUZ3T=dt0Ak_NMH7sW+_-nbB9TfyBJ0mzVA@mail.gmail.com>
+Subject: Re: [PATCH v2] leds: fix build error for LP55xx Common driver
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Jan 23, 2013 at 1:38 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
+> To solve undefined symbols for LED class and I2C, lp55xx-common driver should
+> support a module build as well.
+>
+> In case of CONFIG_I2C=m, CONFIG_LEDS_LP5521/5523=m, it still has undefined
+> symbol problems because CONFIG_LEDS_LP55XX_COMMON can be selected as 'y'.
+> Moreover, I2C functions are used in both LP5521 and LP5523 drivers.
+> Therefore, each LP55xx driver should have an 'I2C' dependency.
+>
+> make x86_64 allmodconfig failed like this:
+>
+> drivers/built-in.o: In function `lp55xx_unregister_leds':
+> (.text+0x161dab): undefined reference to `led_classdev_unregister'
+>
+> drivers/built-in.o: In function `lp55xx_init_led':
+> leds-lp55xx-common.c:(.text+0x161f23): undefined reference to `led_classdev_register'
+> leds-lp55xx-common.c:(.text+0x161f9f): undefined reference to `led_classdev_unregister'
+>
+> drivers/built-in.o: In function `lp55xx_read':
+> (.text+0x1621b3): undefined reference to `i2c_smbus_read_byte_data'
+> drivers/built-in.o: In function `lp55xx_init_device':
+> (.text+0x1622f0): undefined reference to `i2c_smbus_write_byte_data'
+> drivers/built-in.o: In function `lp55xx_init_device':
+> (.text+0x162331): undefined reference to `i2c_smbus_write_byte_data'
+> drivers/built-in.o: In function `lp55xx_update_bits':
+> (.text+0x162492): undefined reference to `i2c_smbus_write_byte_data'
+> drivers/built-in.o: In function `lp55xx_write':
+> (.text+0x1624c5): undefined reference to `i2c_smbus_write_byte_data'
+>
 
-Please pull the arm64 fixes below. Thanks.
+Thanks, Merged already
 
-The following changes since commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619:
+-Bryan
 
-  Linux 3.8-rc4 (2013-01-17 19:25:45 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-fixes
-
-for you to fetch changes up to f1b99392caf120d7533da260318fae0eb5053737:
-
-  arm64: makefile: fix uname munging when setting ARCH on native machine (2013-01-22 17:51:00 +0000)
-
-----------------------------------------------------------------
-- ELF coredump fix (more registers dumped than what user space expects)
-- SUBARCH name generation (s/aarch64/arm64/)
-
-----------------------------------------------------------------
-Will Deacon (2):
-      arm64: elf: fix core dumping to match what glibc expects
-      arm64: makefile: fix uname munging when setting ARCH on native machine
-
- Makefile                     | 2 +-
- arch/arm64/include/asm/elf.h | 5 ++++-
- tools/perf/Makefile          | 2 +-
- 3 files changed, 6 insertions(+), 3 deletions(-)
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
+>  drivers/leds/Kconfig |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> index c7c5280..09a6984 100644
+> --- a/drivers/leds/Kconfig
+> +++ b/drivers/leds/Kconfig
+> @@ -194,9 +194,8 @@ config LEDS_LP3944
+>           module will be called leds-lp3944.
+>
+>  config LEDS_LP55XX_COMMON
+> -       bool "Common Driver for TI/National LP5521 and LP5523/55231"
+> +       tristate "Common Driver for TI/National LP5521 and LP5523/55231"
+>         depends on LEDS_LP5521 || LEDS_LP5523
+> -       depends on I2C
+>         select FW_LOADER
+>         help
+>           This option supports common operations for LP5521 and LP5523/55231
+> @@ -205,6 +204,7 @@ config LEDS_LP55XX_COMMON
+>  config LEDS_LP5521
+>         tristate "LED Support for N.S. LP5521 LED driver chip"
+>         depends on LEDS_CLASS
+> +       depends on I2C
+>         select LEDS_LP55XX_COMMON
+>         help
+>           If you say yes here you get support for the National Semiconductor
+> @@ -215,6 +215,7 @@ config LEDS_LP5521
+>  config LEDS_LP5523
+>         tristate "LED Support for TI/National LP5523/55231 LED driver chip"
+>         depends on LEDS_CLASS
+> +       depends on I2C
+>         select LEDS_LP55XX_COMMON
+>         help
+>           If you say yes here you get support for TI/National Semiconductor
+> --
+> 1.7.9.5
+>
+>
+> Best Regards,
+> Milo
+>
+>
