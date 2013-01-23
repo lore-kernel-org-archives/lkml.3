@@ -1,290 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab3AWJcz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 04:32:55 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62987 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439Ab3AWJcx (ORCPT
+	id S1754389Ab3AWJeV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 04:34:21 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:35319 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753929Ab3AWJeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 04:32:53 -0500
-Message-ID: <1358933555.5752.132.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
-From: Mike Galbraith <bitbucket@online.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
-        mingo@kernel.org, a.p.zijlstra@chello.nl
-Date: Wed, 23 Jan 2013 10:32:35 +0100
-In-Reply-To: <1358932694.5752.126.camel@marge.simpson.net>
-References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com>
-	 <50FCACE3.5000706@linux.vnet.ibm.com>
-	 <1358743128.4994.33.camel@marge.simpson.net>
-	 <50FCCCF5.30504@linux.vnet.ibm.com>
-	 <1358750523.4994.55.camel@marge.simpson.net>
-	 <1358752180.4994.65.camel@marge.simpson.net>
-	 <50FCF212.3010504@linux.vnet.ibm.com>
-	 <1358759355.4994.108.camel@marge.simpson.net>
-	 <50FD08E1.8000302@linux.vnet.ibm.com>
-	 <1358761496.4994.118.camel@marge.simpson.net>
-	 <50FE0ADC.6060701@linux.vnet.ibm.com>
-	 <1358841795.5782.255.camel@marge.simpson.net>
-	 <50FE5433.1070801@linux.vnet.ibm.com>
-	 <1358865692.5782.420.camel@marge.simpson.net>
-	 <50FF4EA0.1070000@linux.vnet.ibm.com>
-	 <1358915494.5752.46.camel@marge.simpson.net>
-	 <50FF7086.4020509@linux.vnet.ibm.com>
-	 <1358922520.5752.91.camel@marge.simpson.net>
-	 <50FF8CD8.4060105@linux.vnet.ibm.com>
-	 <1358929257.5752.109.camel@marge.simp! son.net>
-	 <50FF9F92.60202@linux.vnet.ibm.com>
-	 <1358930968.5752.123.camel@marge.simpson.net>
-	 <50FFA695.6010407@linux.vnet.ibm.com>
-	 <1358932694.5752.126.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:VHGVvbFzrzp70B0pnPF5WE+AAokNIMlUb18GBfQ5V4x
- WMfRRNBYwQIqCZVPR+py7WhYZSB4QWJCDC6X67eVFe2HesbRy0
- y5l0Ml2OlnAGRtEsLaNdObdlJyoWhU08+BzXpB8jVoZqX4jrAP
- e+6ZY4V5nMPly2/qGvkvH8RrRHxvuxpYM5rIpSZV1qL956w1DM
- c/9KghO6hJVtu/OCJfokestt5mtUrPFTi26tayqdly8WU1hD8U
- YSgOa0GvYApfd7UiS/QYIARNPsU9txxBvHdUx00R1jN44wT6GT
- qDytK4e4gyhkqU7vFW4zVhaUKj2GJDn9Bh6CG00evNe2iHbxaW
- VIzVoXHFlo/P9S7o+86SSwMChSpn9NsSkhiUC6sbKaOgk/8Pz+
- QNOqMaUlzSSdQ==
+	Wed, 23 Jan 2013 04:34:19 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, Alejandro Mery <amery@geeks.cl>,
+        Stefan Roese <sr@denx.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: sunxi: gpio: Add Allwinner SoCs GPIO drivers
+Date: Wed, 23 Jan 2013 10:34:06 +0100
+Message-Id: <1358933646-12681-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1358933646-12681-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1358933646-12681-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-23 at 10:18 +0100, Mike Galbraith wrote: 
-> On Wed, 2013-01-23 at 17:00 +0800, Michael Wang wrote: 
-> > On 01/23/2013 04:49 PM, Mike Galbraith wrote:
-> > > On Wed, 2013-01-23 at 16:30 +0800, Michael Wang wrote: 
-> > >> On 01/23/2013 04:20 PM, Mike Galbraith wrote:
-> > >>> On Wed, 2013-01-23 at 15:10 +0800, Michael Wang wrote: 
-> > >>>> On 01/23/2013 02:28 PM, Mike Galbraith wrote:
-> > >>>
-> > >>>>> Abbreviated test run:
-> > >>>>> Tasks    jobs/min  jti  jobs/min/task      real       cpu
-> > >>>>>   640   158044.01   81       246.9438     24.54    577.66   Wed Jan 23 07:14:33 2013
-> > >>>>>  1280    50434.33   39        39.4018    153.80   5737.57   Wed Jan 23 07:17:07 2013
-> > >>>>>  2560    47214.07   34        18.4430    328.58  12715.56   Wed Jan 23 07:22:36 2013
-> > >>>>
-> > >>>> So still not works... and not going to balance path while waking up will
-> > >>>> fix it, looks like that's the only choice if no error on balance path
-> > >>>> could be found...benchmark wins again, I'm feeling bad...
-> > >>>>
-> > >>>> I will conclude the info we collected and make a v3 later.
-> > >>>
-> > >>> FWIW, I hacked virgin to do full balance if an idle CPU was not found,
-> > >>> leaving the preference to wake cache affine intact though, turned on
-> > >>> WAKE_BALANCE in all domains, and it did not collapse.  In fact, the high
-> > >>> load end, where the idle search will frequently be a waste of cycles,
-> > >>> actually improved a bit.  Things that make ya go hmmm.
-> > >>
-> > >> Oh, does that means the old balance path is good while the new is really
-> > >> broken, I mean, compared this with the previously results, could we say
-> > >> that all the collapse was just caused by the change of balance path?
-> > > 
-> > > That's a good supposition.  I'll see if it holds.
-> > 
-> > I just notice that there is no sd support the WAKE flag at all according
-> > to your debug info, isn't it?
-> 
-> There is, I turned it on in all domains.
+The IP responsible for the muxing on the Allwinner SoCs are also
+handling the GPIOs on the system. This patch adds the needed driver that
+relies on the pinctrl driver for most of its operations.
 
-For your patches, I had to turn it on at birth, but doing that, and
-restoring the full balance path to original form killed the collapse.
+The number of pins available for GPIOs operations are already declared
+in the pinctrl driver, we only need to probe a generic driver to handle
+the banks available for each SoC.
 
-Tasks    jobs/min  jti  jobs/min/task      real       cpu
-  640   152452.83   97       238.2075     25.44    613.48   Wed Jan 23 10:22:12 2013
- 1280   190491.16   97       148.8212     40.72   1223.74   Wed Jan 23 10:22:53 2013
- 2560   219397.54   95        85.7022     70.71   2422.46   Wed Jan 23 10:24:04 2013
+This driver has been tested on a A13-Olinuxino.
 
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- include/linux/topology.h |    6 ++---
- kernel/sched/core.c      |   41 ++++++++++++++++++++++++++++++-------
- kernel/sched/fair.c      |   52 +++++++++++++++++++++++++++++------------------
- 3 files changed, 70 insertions(+), 29 deletions(-)
+ drivers/pinctrl/pinctrl-sunxi.c |  138 ++++++++++++++++++++++++++++++++++++++-
+ drivers/pinctrl/pinctrl-sunxi.h |   23 ++++++-
+ 2 files changed, 158 insertions(+), 3 deletions(-)
 
---- a/include/linux/topology.h
-+++ b/include/linux/topology.h
-@@ -95,7 +95,7 @@ int arch_update_cpu_topology(void);
- 				| 1*SD_BALANCE_NEWIDLE			\
- 				| 1*SD_BALANCE_EXEC			\
- 				| 1*SD_BALANCE_FORK			\
--				| 0*SD_BALANCE_WAKE			\
-+				| 1*SD_BALANCE_WAKE			\
- 				| 1*SD_WAKE_AFFINE			\
- 				| 1*SD_SHARE_CPUPOWER			\
- 				| 1*SD_SHARE_PKG_RESOURCES		\
-@@ -126,7 +126,7 @@ int arch_update_cpu_topology(void);
- 				| 1*SD_BALANCE_NEWIDLE			\
- 				| 1*SD_BALANCE_EXEC			\
- 				| 1*SD_BALANCE_FORK			\
--				| 0*SD_BALANCE_WAKE			\
-+				| 1*SD_BALANCE_WAKE			\
- 				| 1*SD_WAKE_AFFINE			\
- 				| 0*SD_SHARE_CPUPOWER			\
- 				| 1*SD_SHARE_PKG_RESOURCES		\
-@@ -156,7 +156,7 @@ int arch_update_cpu_topology(void);
- 				| 1*SD_BALANCE_NEWIDLE			\
- 				| 1*SD_BALANCE_EXEC			\
- 				| 1*SD_BALANCE_FORK			\
--				| 0*SD_BALANCE_WAKE			\
-+				| 1*SD_BALANCE_WAKE			\
- 				| 1*SD_WAKE_AFFINE			\
- 				| 0*SD_SHARE_CPUPOWER			\
- 				| 0*SD_SHARE_PKG_RESOURCES		\
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5609,11 +5609,39 @@ static void update_top_cache_domain(int
- static int sbm_max_level;
- DEFINE_PER_CPU_SHARED_ALIGNED(struct sched_balance_map, sbm_array);
+diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
+index 6f02e34..bfca9e1 100644
+--- a/drivers/pinctrl/pinctrl-sunxi.c
++++ b/drivers/pinctrl/pinctrl-sunxi.c
+@@ -11,6 +11,7 @@
+  */
  
-+static void debug_sched_balance_map(int cpu)
+ #include <linux/io.h>
++#include <linux/gpio.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+@@ -609,11 +610,57 @@ static int sunxi_pmx_enable(struct pinctrl_dev *pctldev,
+ 	return 0;
+ }
+ 
++static int
++sunxi_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
++			struct pinctrl_gpio_range *range,
++			unsigned offset,
++			bool input)
 +{
-+	int i, type, level = 0;
-+	struct sched_balance_map *sbm = &per_cpu(sbm_array, cpu);
++	struct sunxi_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++	struct sunxi_desc_function *desc;
++	char *func, *pin_name;
++	u8 bank, pin;
++	int ret;
 +
-+	printk("WYT: sbm of cpu %d\n", cpu);
++	bank = (offset) / PINS_PER_BANK;
++	pin = (offset) % PINS_PER_BANK;
 +
-+	for (type = 0; type < SBM_MAX_TYPE; type++) {
-+		if (type == SBM_EXEC_TYPE)
-+			printk("WYT: \t exec map\n");
-+		else if (type == SBM_FORK_TYPE)
-+			printk("WYT: \t fork map\n");
-+		else if (type == SBM_WAKE_TYPE)
-+			printk("WYT: \t wake map\n");
++	pin_name = kzalloc(5, GFP_KERNEL);
++	if (!pin_name)
++		return -ENOMEM;
 +
-+		for (level = 0; level < sbm_max_level; level++) {
-+			if (sbm->sd[type][level])
-+				printk("WYT: \t\t sd %x, idx %d, level %d, weight %d\n", sbm->sd[type][level], level, sbm->sd[type][level]->level, sbm->sd[type][level]->span_weight);
-+		}
++	ret = sprintf(pin_name, "P%c%d", 'A' + bank, pin);
++	if (!ret)
++		goto error;
++
++	if (input)
++		func = "gpio_in";
++	else
++		func = "gpio_out";
++
++	desc = sunxi_pinctrl_desc_find_function_by_name(pctl,
++							pin_name,
++							func);
++	if (!desc) {
++		ret = -EINVAL;
++		goto error;
 +	}
 +
-+	printk("WYT: \t affine map\n");
++	sunxi_pmx_set(pctldev, offset, desc->muxval);
 +
-+	for_each_possible_cpu(i) {
-+		if (sbm->affine_map[i])
-+			printk("WYT: \t\t affine with cpu %x in sd %x, weight %d\n", i, sbm->affine_map[i], sbm->affine_map[i]->span_weight);
-+	}
++	ret = 0;
++
++error:
++	kfree(pin_name);
++	return ret;
 +}
 +
- static void build_sched_balance_map(int cpu)
- {
- 	struct sched_balance_map *sbm = &per_cpu(sbm_array, cpu);
- 	struct sched_domain *sd = cpu_rq(cpu)->sd;
--	struct sched_domain *top_sd = NULL;
- 	int i, type, level = 0;
+ static struct pinmux_ops sunxi_pmx_ops = {
+ 	.get_functions_count	= sunxi_pmx_get_funcs_cnt,
+ 	.get_function_name	= sunxi_pmx_get_func_name,
+ 	.get_function_groups	= sunxi_pmx_get_func_groups,
+ 	.enable			= sunxi_pmx_enable,
++	.gpio_set_direction	= sunxi_pmx_gpio_set_direction,
+ };
  
- 	memset(sbm->top_level, 0, sizeof((*sbm).top_level));
-@@ -5656,11 +5684,9 @@ static void build_sched_balance_map(int
- 	 * fill the hole to get lower level sd easily.
- 	 */
- 	for (type = 0; type < SBM_MAX_TYPE; type++) {
--		level = sbm->top_level[type];
--		top_sd = sbm->sd[type][level];
--		if ((++level != sbm_max_level) && top_sd) {
--			for (; level < sbm_max_level; level++)
--				sbm->sd[type][level] = top_sd;
-+		for (level = 1; level < sbm_max_level; level++) {
-+			if (!sbm->sd[type][level])
-+				sbm->sd[type][level] = sbm->sd[type][level - 1];
- 		}
- 	}
- }
-@@ -5719,6 +5745,7 @@ cpu_attach_domain(struct sched_domain *s
- 	 * destroy_sched_domains() already do the work.
- 	 */
- 	build_sched_balance_map(cpu);
-+//MIKE	debug_sched_balance_map(cpu);
- 	rcu_assign_pointer(rq->sbm, sbm);
- }
+ static struct pinctrl_desc sunxi_pctrl_desc = {
+@@ -622,6 +669,60 @@ static struct pinctrl_desc sunxi_pctrl_desc = {
+ 	.pmxops		= &sunxi_pmx_ops,
+ };
  
-@@ -6220,7 +6247,7 @@ sd_numa_init(struct sched_domain_topolog
- 					| 1*SD_BALANCE_NEWIDLE
- 					| 0*SD_BALANCE_EXEC
- 					| 0*SD_BALANCE_FORK
--					| 0*SD_BALANCE_WAKE
-+					| 1*SD_BALANCE_WAKE
- 					| 0*SD_WAKE_AFFINE
- 					| 0*SD_SHARE_CPUPOWER
- 					| 0*SD_SHARE_PKG_RESOURCES
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3312,7 +3312,7 @@ static int select_idle_sibling(struct ta
- static int
- select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- {
--	struct sched_domain *sd = NULL;
-+	struct sched_domain *sd = NULL, *tmp;
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
- 	int new_cpu = cpu;
-@@ -3376,31 +3376,45 @@ select_task_rq_fair(struct task_struct *
- 
- balance_path:
- 	new_cpu = (sd_flag & SD_BALANCE_WAKE) ? prev_cpu : cpu;
--	sd = sbm->sd[type][sbm->top_level[type]];
-+	sd = tmp = sbm->sd[type][sbm->top_level[type]];
- 
- 	while (sd) {
- 		int load_idx = sd->forkexec_idx;
--		struct sched_group *sg = NULL;
-+		struct sched_group *group;
-+		int weight;
++static int sunxi_pinctrl_gpio_request(struct gpio_chip *chip, unsigned offset)
++{
++	return pinctrl_request_gpio(chip->base + offset);
++}
 +
-+		if (!(sd->flags & sd_flag)) {
-+			sd = sd->child;
-+			continue;
-+		}
- 
- 		if (sd_flag & SD_BALANCE_WAKE)
- 			load_idx = sd->wake_idx;
- 
--		sg = find_idlest_group(sd, p, cpu, load_idx);
--		if (!sg)
--			goto next_sd;
--
--		new_cpu = find_idlest_cpu(sg, p, cpu);
--		if (new_cpu != -1)
--			cpu = new_cpu;
--next_sd:
--		if (!sd->level)
--			break;
--
--		sbm = cpu_rq(cpu)->sbm;
--		if (!sbm)
--			break;
--
--		sd = sbm->sd[type][sd->level - 1];
-+		group = find_idlest_group(sd, p, cpu, load_idx);
-+		if (!group) {
-+			sd = sd->child;
-+			continue;
-+		}
++static void sunxi_pinctrl_gpio_free(struct gpio_chip *chip, unsigned offset)
++{
++	pinctrl_free_gpio(chip->base + offset);
++}
 +
-+		new_cpu = find_idlest_cpu(group, p, cpu);
-+		if (new_cpu == -1 || new_cpu == cpu) {
-+			/* Now try balancing at a lower domain level of cpu */
-+			sd = sd->child;
-+			continue;
-+		}
++static int sunxi_pinctrl_gpio_direction_input(struct gpio_chip *chip,
++					unsigned offset)
++{
++	return pinctrl_gpio_direction_input(chip->base + offset);
++}
 +
-+		/* Now try balancing at a lower domain level of new_cpu */
-+		cpu = new_cpu;
-+		weight = sd->span_weight;
-+		sd = NULL;
-+		for_each_domain(cpu, tmp) {
-+			if (weight <= tmp->span_weight)
-+				break;
-+			if (tmp->flags & sd_flag)
-+				sd = tmp;
-+		}
-+		/* while loop will break here if sd == NULL */
++static int sunxi_pinctrl_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	struct sunxi_pinctrl *pctl = dev_get_drvdata(chip->dev);
++
++	u32 reg = sunxi_data_reg(offset);
++	u8 index = sunxi_data_offset(offset);
++	u32 val = (readl(pctl->membase + reg) >> index) & DATA_PINS_MASK;
++
++	return val;
++}
++
++static int sunxi_pinctrl_gpio_direction_output(struct gpio_chip *chip,
++					unsigned offset, int value)
++{
++	return pinctrl_gpio_direction_output(chip->base + offset);
++}
++
++static void sunxi_pinctrl_gpio_set(struct gpio_chip *chip,
++				unsigned offset, int value)
++{
++	struct sunxi_pinctrl *pctl = dev_get_drvdata(chip->dev);
++	u32 reg = sunxi_data_reg(offset);
++	u8 index = sunxi_data_offset(offset);
++
++	writel((value & DATA_PINS_MASK) << index, pctl->membase + reg);
++}
++
++static struct gpio_chip sunxi_pinctrl_gpio_chip __devinitconst = {
++	.owner			= THIS_MODULE,
++	.request		= sunxi_pinctrl_gpio_request,
++	.free			= sunxi_pinctrl_gpio_free,
++	.direction_input	= sunxi_pinctrl_gpio_direction_input,
++	.direction_output	= sunxi_pinctrl_gpio_direction_output,
++	.get			= sunxi_pinctrl_gpio_get,
++	.set			= sunxi_pinctrl_gpio_set,
++	.can_sleep		= 0,
++};
++
+ static struct of_device_id sunxi_pinctrl_match[] = {
+ 	{ .compatible = "allwinner,sun5i-a13-pinctrl", .data = (void *)&sun5i_a13_pinctrl_data },
+ 	{}
+@@ -737,7 +838,7 @@ static int sunxi_pinctrl_probe(struct platform_device *pdev)
+ 	const struct of_device_id *device;
+ 	struct pinctrl_pin_desc *pins;
+ 	struct sunxi_pinctrl *pctl;
+-	int i, ret;
++	int i, ret, last_pin;
+ 
+ 	pctl = devm_kzalloc(&pdev->dev, sizeof(*pctl), GFP_KERNEL);
+ 	if (!pctl)
+@@ -781,9 +882,42 @@ static int sunxi_pinctrl_probe(struct platform_device *pdev)
+ 		return -EINVAL;
  	}
  
- unlock:
-
+-	dev_info(&pdev->dev, "initialized sunXi pin control driver\n");
++	pctl->chip = devm_kzalloc(&pdev->dev, sizeof(*pctl->chip), GFP_KERNEL);
++	if (!pctl->chip) {
++		ret = -ENOMEM;
++		goto pinctrl_error;
++	}
++
++	last_pin = pctl->desc->pins[pctl->desc->npins - 1].pin.number;
++	pctl->chip = &sunxi_pinctrl_gpio_chip;
++	pctl->chip->ngpio = round_up(last_pin, PINS_PER_BANK);
++	pctl->chip->label = dev_name(&pdev->dev);
++	pctl->chip->dev = &pdev->dev;
++	pctl->chip->base = 0;
++
++	ret = gpiochip_add(pctl->chip);
++	if (ret)
++		goto pinctrl_error;
++
++	for (i = 0; i < pctl->desc->npins; i++) {
++		const struct sunxi_desc_pin *pin = pctl->desc->pins + i;
++
++		ret = gpiochip_add_pin_range(pctl->chip, dev_name(&pdev->dev),
++					     pin->pin.number,
++					     pin->pin.number, 1);
++		if (ret)
++			goto gpiochip_error;
++	}
++
++	dev_info(&pdev->dev, "initialized sunXi PIO driver\n");
+ 
+ 	return 0;
++
++gpiochip_error:
++	ret = gpiochip_remove(pctl->chip);
++pinctrl_error:
++	pinctrl_unregister(pctl->pctl_dev);
++	return ret;
+ }
+ 
+ static struct platform_driver sunxi_pinctrl_driver = {
+diff --git a/drivers/pinctrl/pinctrl-sunxi.h b/drivers/pinctrl/pinctrl-sunxi.h
+index 0dc3b9d..0416c36 100644
+--- a/drivers/pinctrl/pinctrl-sunxi.h
++++ b/drivers/pinctrl/pinctrl-sunxi.h
+@@ -256,6 +256,7 @@
+ 
+ #define BANK_MEM_SIZE		0x24
+ #define MUX_REGS_OFFSET		0x0
++#define DATA_REGS_OFFSET	0x10
+ #define DLEVEL_REGS_OFFSET	0x14
+ #define PULL_REGS_OFFSET	0x1c
+ 
+@@ -263,6 +264,9 @@
+ #define MUX_PINS_PER_REG	8
+ #define MUX_PINS_BITS		4
+ #define MUX_PINS_MASK		0x0f
++#define DATA_PINS_PER_REG	32
++#define DATA_PINS_BITS		1
++#define DATA_PINS_MASK		0x01
+ #define DLEVEL_PINS_PER_REG	16
+ #define DLEVEL_PINS_BITS	2
+ #define DLEVEL_PINS_MASK	0x03
+@@ -283,6 +287,8 @@ struct sunxi_desc_pin {
+ struct sunxi_pinctrl_desc {
+ 	const struct sunxi_desc_pin	*pins;
+ 	int				npins;
++	struct pinctrl_gpio_range	*ranges;
++	int				nranges;
+ };
+ 
+ struct sunxi_pinctrl_function {
+@@ -299,6 +305,7 @@ struct sunxi_pinctrl_group {
+ 
+ struct sunxi_pinctrl {
+ 	void __iomem			*membase;
++	struct gpio_chip		*chip;
+ 	struct sunxi_pinctrl_desc	*desc;
+ 	struct device			*dev;
+ 	struct sunxi_pinctrl_function	*functions;
+@@ -321,7 +328,6 @@ struct sunxi_pinctrl {
+ 		.muxval = _val,					\
+ 	}
+ 
+-
+ /*
+  * The sunXi PIO registers are organized as is:
+  * 0x00 - 0x0c	Muxing values.
+@@ -354,6 +360,21 @@ static inline u32 sunxi_mux_offset(u16 pin)
+ 	return pin_num * MUX_PINS_BITS;
+ }
+ 
++static inline u32 sunxi_data_reg(u16 pin)
++{
++	u8 bank = pin / PINS_PER_BANK;
++	u32 offset = bank * BANK_MEM_SIZE;
++	offset += DATA_REGS_OFFSET;
++	offset += pin % PINS_PER_BANK / DATA_PINS_PER_REG * 0x04;
++	return round_down(offset, 4);
++}
++
++static inline u32 sunxi_data_offset(u16 pin)
++{
++	u32 pin_num = pin % DATA_PINS_PER_REG;
++	return pin_num * DATA_PINS_BITS;
++}
++
+ static inline u32 sunxi_dlevel_reg(u16 pin)
+ {
+ 	u8 bank = pin / PINS_PER_BANK;
+-- 
+1.7.10.4
 
