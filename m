@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab3AWByE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 20:54:04 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:49704 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494Ab3AWByA (ORCPT
+	id S1752978Ab3AWBy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 20:54:26 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45943 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908Ab3AWByY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 20:54:00 -0500
+	Tue, 22 Jan 2013 20:54:24 -0500
+Message-ID: <50FF42CD.6010203@linaro.org>
+Date: Tue, 22 Jan 2013 17:54:21 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130123010226.GF5359@htj.dyndns.org>
-References: <1357731938-8417-1-git-send-email-glommer@parallels.com>
-	<CAMbhsRQ7B4Uu1Wukfay+m4K7CVXtVbsTTEd6JHrwC2s+NcEFNA@mail.gmail.com>
-	<50FD3123.6090003@parallels.com>
-	<20130123010226.GF5359@htj.dyndns.org>
-Date: Tue, 22 Jan 2013 17:53:59 -0800
-Message-ID: <CAMbhsRSDbKUz7OT3Y0bGfYqgp3yMgwk8oHx0rpsX+XDFWTMqkw@mail.gmail.com>
-Subject: Re: [PATCH v5 00/11] per-cgroup cpu-stat
-From: Colin Cross <ccross@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] Add support for S3 non-stop TSC support.
+References: <1358750325-21217-1-git-send-email-feng.tang@intel.com> <50FD8D07.5030908@linaro.org> <20130122195701.GH30647@obsidianresearch.com> <50FEF505.60504@linaro.org> <20130123002610.GA814@obsidianresearch.com> <50FF31D6.3090304@linaro.org> <20130123013710.GA1046@obsidianresearch.com>
+In-Reply-To: <20130123013710.GA1046@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 5:02 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
+On 01/22/2013 05:37 PM, Jason Gunthorpe wrote:
+> On Tue, Jan 22, 2013 at 04:41:58PM -0800, John Stultz wrote:
 >
-> On Mon, Jan 21, 2013 at 04:14:27PM +0400, Glauber Costa wrote:
->> > Android userspace is currently using both cpu and cpuacct, and not
->> > co-mounting them.  They are used for fundamentally different uses such
->> > that creating a single hierarchy for both of them while maintaining
->> > the existing behavior is not possible.
->> >
->> > We use the cpu cgroup primarily as a priority container.  A simple
->> > view is that each thread is assigned to a foreground cgroup when it is
->> > user-visible, and a background cgroup when it is not.  The foreground
->> > cgroup is assigned a significantly higher cpu.shares value such that
->> > when each group is fully loaded the background group will get 5% and
->> > the foreground group will get 95%.
->> >
->> > We use the cpuacct cgroup to measure cpu usage per uid, primarily to
->> > estimate one cause of battery usage.  Each uid gets a cgroup, and when
->> > spawning a task for a new uid we put it in the appropriate cgroup.
->>
->> As we are all in a way sons of Linus the Great, the fact that you have
->> this usecase should be by itself a reason for us not to deprecate it.
->>
->> I still view this, however, as a not common use case. And from the
->> scheduler PoV, we still have all the duplicate hierarchy walks. So
->> assuming we would carry on all the changes in this patchset, except the
->> deprecation, would it be okay for you?
->>
->> This way we could take steps to make sure the scheduler codepaths for
->> cpuacct are not taking during normal comounted operation, and you could
->> still have your setup unchanged.
->>
->> Tejun, any words here?
+>> Right but to calculate an suspend interval (since they are likely
+>> many orders of magnitude larger then the intervals between timer
+>> interrupts), you need different mult/shift selection.  Its splitting
+>> out the mult/shift management into a per-subsystem level that is the
+> You are talking about overflow in cyclecounter_cyc2ns and the like
+> right? The 64 bit cycle_t and the underlying hw counter (eg 64 bit
+> rdtsc) are not going to overflow..
 >
-> I think the only thing we can do is keeping cpuacct around.  We can
-> still optimize comounted cpu and cpuacct as the usual case.  That
-> said, I'd really like to avoid growing new use cases for separate
-> hierarchies for cpu and cpuacct (well, any controller actually).
-> Having multiple hierarchies is fundamentally broken in that we can't
-> say whether a given resource belongs to certain cgroup independently
-> from the current task, and we're definitnely moving towards unified
-> hierarchy.
-
-I understand why it makes sense from a code perspective to combine cpu
-and cpuacct, but by combining them you are enforcing a strange
-requirement that to measure the cpu usage of a group of processes you
-force them to be treated as a single scheduling entity by their parent
-group, effectively splitting their time as if they were a single task.
- That doesn't make any sense to me.
-
-> We are not gonna break multiple hierarchies but won't go extra miles
-> to optimize or enable new features on it, so it would be best to move
-> away from it.
-
-I don't see how I can move away from it with the current design.
-
-> Maybe we can generate a warning message on separate mounts?
+> An alternate version of cyclecounter_cyc2ns for use by the suspend
+> code that handles overflow during the mult/shift operation solves that
+> problem:
 >
-> Thanks.
+> // Drops some small precision along the way but is simple..
+> static inline u64 cyclecounter_cyc2ns_128(const struct cyclecounter *cc,
+>                                            cycle_t cycles)
+> {
+>      u64 max = U64_MAX/cc->mult;
+>      u64 num = cycles/max;
+>      u64 result = num * ((max * cc->mult) >> cc->shift);
+>      return result + cyclecounter_cyc2ns(cc, cycles - num*cc->mult);
+> }
 >
-> --
-> tejun
+> Or am I missing the issue?
+
+Well, cyclecounters and clocksources are currently different things. 
+There was some hope that cyclecounters would be a simpler base structure 
+that would supersede clocksources, but the complexity of all the 
+variants of clocksources have limited the ability to make such a 
+conversion. At least so far. I hope to eventually clean that up as the 
+potential overlap is obvious - although as the 
+cyclecounters/timecounters code never grew as I expected. But I'm not 
+sure how soon "eventually" will end up being.
+
+But regardless of historical tangents :), you're right, an alternate and 
+slower cyc2ns function could be used to avoid overflow issues.
+
+
+>
+>> complicated part. Additionally, there may be cases where the
+>> timekeeping clocksource is one clocksource and the suspend
+>> clocksource is another. So I think to properly integrate this sort
+> Does the difference matter? The clocksource to use is detected at
+> runtime, if the timekeeping clocksource is no good for suspend time
+> keeping then it just won't be used. With a distinct
+> read_persistent_clock API then they are already seperate??
+
+Not sure I'm following you here.  I still think the selection of which 
+clocksource to use for suspend timing is problematic (especially if its 
+not the active timekeeping clocksource).  So I think instead of 
+complicating the generic timekeeping code with the logic, I'd rather 
+push it off to new read_presistent_clock api.
+
+thanks
+-john
+
+
