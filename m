@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab3AWMXY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 07:23:24 -0500
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:61091 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707Ab3AWMXX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 07:23:23 -0500
+	id S1755620Ab3AWM1s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 07:27:48 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:50605 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755387Ab3AWM1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 07:27:45 -0500
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: Rob Clark <robdclark@gmail.com>, Koen Kooi <koen@dominion.thruhere.net>
+CC: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: RE: [PATCH v3 00/12] video: da8xx-fb: am335x DT support
+Thread-Topic: [PATCH v3 00/12] video: da8xx-fb: am335x DT support
+Thread-Index: AQHN+MDYoJpa4cfnpkmrt/FePfrjS5hVNzoAgAAcRYCAAYJFUA==
+Date: Wed, 23 Jan 2013 12:27:21 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA911BF@DBDE01.ent.ti.com>
+References: <cover.1358871750.git.afzal@ti.com>
+	<02F0A27B-B16B-42F8-A0BC-29726732226D@dominion.thruhere.net>
+ <CAF6AEGuyb26EZ_9=GP9gs0TZqUtiFv3D_7+wcDOHuKn2qUcytQ@mail.gmail.com>
+In-Reply-To: <CAF6AEGuyb26EZ_9=GP9gs0TZqUtiFv3D_7+wcDOHuKn2qUcytQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CA+icZUV-e51Fg2xvhxz5Wvjj-g=tyft56eNmF9ZGrnJzkL+wUQ@mail.gmail.com>
-References: <CA+icZUWuMEX7s8wvTZpA3C2-3qUjHgWM31Tefep_EU5Uj9xxLw@mail.gmail.com>
-	<CA+icZUXzQgxBokwOmyx5+e8rLNCkoz6ea=YoPA7=BT+iENWj8g@mail.gmail.com>
-	<CAFTL4hzmf9ZLb4=QjpGFXT96EwOyRSFbqBD0VjLgKYaZGrBzYg@mail.gmail.com>
-	<CA+icZUV-e51Fg2xvhxz5Wvjj-g=tyft56eNmF9ZGrnJzkL+wUQ@mail.gmail.com>
-Date: Wed, 23 Jan 2013 13:23:22 +0100
-Message-ID: <CAFTL4hxxSO6KQ6JKwTCiVG55HBP2w+FE9K9jMzYpgsU8A51U-w@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.8-rc4-nohz3
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: sedat.dilek@gmail.com
-Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <srostedt@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0NCRpAR003670
 
-2013/1/23 Sedat Dilek <sedat.dilek@gmail.com>:
-> On Wed, Jan 23, 2013 at 1:11 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> 2013/1/23 Sedat Dilek <sedat.dilek@gmail.com>:
->>> On Wed, Jan 23, 2013 at 12:19 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>> Hi Frederic,
->>>>
->>>> I wanted to 3.8-rc4-nohz3 [1] here on my Ubuntu/precise AMD64 system.
->>>>
->>>> Unfortunately, the build breaks like this:
->>>>
->>>> ERROR: "guest_enter" [arch/x86/kvm/kvm.ko] undefined!
->>>> ERROR: "guest_exit" [arch/x86/kvm/kvm.ko] undefined!
->>>>
->>>
->>> Looks like you tested with CONFIG_KVM=y (as module fails!).
->>
->> Yep. looks like I forgot some EXPORT_SYMBOL().
->>
->
-> Hmmm, that was my first thought, too, but about...
->
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index c243b81..fff0932 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -5713,7 +5713,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
->         if (req_immediate_exit)
->                 smp_send_reschedule(vcpu->cpu);
->
-> -       kvm_guest_enter();
-> +       guest_enter();
+Hi,
 
-You still need to keep kvm_guest_enter() here, otherwise you miss the
-rcu_virt_note_context_switch().
+On Wed, Jan 23, 2013 at 00:15:09, Rob Clark wrote:
+
+> > Wouldn't it be better to delete da8xx-fb.* and switch to Rob Clarks DRM based driver for this IP block?
+
+> we probably can't delete da8xx-fb, but I think it would be ok to only
+> use it for legacy platforms not yet ported to DT.
+
+We can't remove da8xx-fb as DA830 is a non-DT one and DA850 is only gaining
+DT support.
+
+And Rob,
+
+I am not familiar with drm setup, would all the user space frame buffer based
+applications work as is with drm driver?
+
+Regards
+Afzal
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
