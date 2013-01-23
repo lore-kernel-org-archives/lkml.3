@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab3AWL0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 06:26:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2934 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755042Ab3AWL0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 06:26:23 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20130122184357.GD6538@redacted.bos.redhat.com>
-References: <20130122184357.GD6538@redacted.bos.redhat.com>
-To: Kyle McMartin <kyle@redhat.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
-        jstancek@redhat.com, Stephan Mueller <stephan.mueller@atsec.com>
-Subject: Re: [PATCH] MODSIGN: only panic in fips mode if sig_enforce is set
-Date: Wed, 23 Jan 2013 11:26:15 +0000
-Message-ID: <8615.1358940375@warthog.procyon.org.uk>
+	id S1755222Ab3AWL1x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 06:27:53 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:40405 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754737Ab3AWL1v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 06:27:51 -0500
+Date: Wed, 23 Jan 2013 11:27:46 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com, ulf.hansson@linaro.org
+Subject: Re: [PATCH 8/8] ARM: ux500: Remove traces of the ios_handler from
+ platform code
+Message-ID: <20130123112746.GJ15873@gmail.com>
+References: <1355404930-5691-1-git-send-email-lee.jones@linaro.org>
+ <1355404930-5691-9-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbwQAEQxWpXHoEieou5rShcZvsGSddKLaOjwGeG-2o=wg@mail.gmail.com>
+ <CACRpkdZnDi8F7Zu646CPEt9SAx5gA=v0CJ-Rq1eJqKS_s2EHvw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZnDi8F7Zu646CPEt9SAx5gA=v0CJ-Rq1eJqKS_s2EHvw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kyle McMartin <kyle@redhat.com> wrote:
+On Wed, 23 Jan 2013, Linus Walleij wrote:
 
-> Commit 1d0059f3a added a test to check if the system is booted in fips
-> mode, and if so, panic the system if an unsigned module is loaded.
-> However the wording of the changelog "in signature enforcing mode" leads
-> one to assume that sig_enforce should be set for the panic to occur and
-> that these two tests are transposed.
+> On Wed, Jan 23, 2013 at 11:04 AM, Linus Walleij
+> <linus.walleij@linaro.org> wrote:
+> > On Thu, Dec 13, 2012 at 2:22 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> >
+> >> Now MMCI on/off functionality is using the regulator framework
+> >> from the MMCI driver, there is no need to keep the ios_handler
+> >> laying around, duplicating functionality. So we're removing it.
+> >>
+> >> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> >> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >
+> > Applied to my ux500-cleanups branch.
 > 
-> Move the test for -ENOKEY && !sig_enforce before the test of fips_mode,
-> so that err will be 0, and the panic will not trigger unless we've
-> explicitly disabled unsigned modules with sig_enforce set, so that
-> systemtap and 3rd party modules will work in fips mode. (This also
-> matches the behaviour by Red Hat Enterprise Linux 6.)
+> Or no, wait, that is dependent or Russell's tree so will not
+> be bisectable.
 > 
-> Things which need to deny module loading such as secure boot already set
-> sig_enforce, so there's no issue here.
+> Either submit sequel patches to [1/8] through Russell's
+> patch tracker (based on his tree I guess) or wait for these
+> to hit mainline and push them after that.
 > 
-> Reported-by: Jan Stancek <jstancek@redhat.com>
-> Signed-off-by: Kyle McMartin <kyle@redhat.com>
+> Acked-by anway, on all of the cleanups following [1/8].
 
-Fine by me, but adding Stephan Mueller for his input.
+I have this queued already, with the MMCI patch in as a dependency.
 
-David
-
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -2460,11 +2460,11 @@ static int module_sig_check(struct load_info *info)
->  	}
->  
->  	/* Not having a signature is only an error if we're strict. */
-> +	if (err == -ENOKEY && !sig_enforce)
-> +		err = 0;
->  	if (err < 0 && fips_enabled)
->  		panic("Module verification failed with error %d in FIPS mode\n",
->  		      err);
-> -	if (err == -ENOKEY && !sig_enforce)
-> -		err = 0;
->  
->  	return err;
->  }
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
