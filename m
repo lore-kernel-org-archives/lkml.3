@@ -1,111 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab3AWKrt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 05:47:49 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:63839 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754561Ab3AWKrs (ORCPT
+	id S1754955Ab3AWKs1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 05:48:27 -0500
+Received: from smtp-out-073.synserver.de ([212.40.185.73]:1442 "EHLO
+	smtp-out-073.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754561Ab3AWKs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 05:47:48 -0500
-Date: Wed, 23 Jan 2013 11:47:36 +0100
-From: Leandro Lucarella <leandro.lucarella@sociomantic.com>
-To: Rick Jones <rick.jones2@hp.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Doubts about listen backlog and tcp_max_syn_backlog
-Message-ID: <20130123104736.GK4608@sociomantic.com>
-References: <20130122161038.GG4608@sociomantic.com>
- <1358873142.3464.3964.camel@edumazet-glaptop>
- <20130122165929.GH4608@sociomantic.com>
- <1358874800.3464.4002.camel@edumazet-glaptop>
- <50FED7CE.1030008@hp.com>
- <20130122184245.GJ4608@sociomantic.com>
- <50FF0C25.9000300@hp.com>
+	Wed, 23 Jan 2013 05:48:26 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 11710
+Message-ID: <50FFC02C.9000109@metafoo.de>
+Date: Wed, 23 Jan 2013 11:49:16 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FF0C25.9000300@hp.com>
-X-Paranoid: Just because you're paranoid, don't mean they're not after you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:6FVe5nSP87/vh2DuZfzNuDZz/imakTRAE2RWnzYq6q9
- uNjChOT1gQOIQK2E2r5qwAORERYPFCP4l21R7/CGE20fuGSAZT
- dMuo22rOO9jOs8nY+bZN0UDyFS4mAtCB8Kps+pB5u0wtBTAldL
- otWMJchhLZQX4nvzAhA4Nw5jIVqS3sSK7UK8i5/Ah1x0JEE8dX
- cJieRJkAcGqeRMv8KiWFeYmNGX4ONta8yxXO2Anr0u6z6kQWyI
- un5eLCsW2+fwOLxoo3CK6AIy/BsKYWK28VZp/SiJV1qwBL8rTQ
- 1EStRUhGtkaEZjjmM9S9PP8Y1zEk6bLrfGQLDvopg+8XsSoNmR
- RPjNMmgUgFfb59dMV9pT8rTzlsaYqxGiUIBGx+OFqxPEZ8nMpd
- Bbim0boPyEbBQ==
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clk: Add axi-clkgen driver
+References: <1357755120-32735-1-git-send-email-lars@metafoo.de> <20130122175552.24671.27893@quantum> <50FFB4D8.5060801@metafoo.de> <20130123102755.GP23505@n2100.arm.linux.org.uk>
+In-Reply-To: <20130123102755.GP23505@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 02:01:09PM -0800, Rick Jones wrote:
-> >>If that is being overflowed, I believe you should be seeing something like:
-> >>
-> >>     14 SYNs to LISTEN sockets dropped
-> >>
-> >>in the output of netstat -s on the system on which the server
-> >>application is running.
-> >
-> >What is that value reporting exactly?
+On 01/23/2013 11:27 AM, Russell King - ARM Linux wrote:
+> On Wed, Jan 23, 2013 at 11:00:56AM +0100, Lars-Peter Clausen wrote:
+>> I think I read somewhere at some point that ioread{8,16,32} is preferred
+>> over write{b,h,l} in new code.
 > 
-> Netstat is reporting the ListenDrops and/or ListenOverflows  which
-> map to LINUX_MIB_LISTENDROPS and LINUX_MIB_LISTENOVERFLOWS.  Those
-> get incremented in tcp_v4_syn_recv_sock() (and its v6 version etc)
+> But... there's *no* point using ioread*() if you don't only use the
+> ioremap() interface.
 > 
->        if (sk_acceptq_is_full(sk))
->                 goto exit_overflow;
-> 
-> Will increment both overflows and drops, and drops will increment on
-> its own in some additional cases.
-> 
-> >Because we are using syncookies, and AFAIK with that enabled, all
-> >SYNs are being replied, and what the listen backlog is really
-> >limitting is the "completely established sockets waiting to be
-> >accepted", according to listen(2). What I don't really know to be
-> >honest, is what a "completely established socket" is, does it mean
-> >that the SYN,ACK was sent, or the ACK was received back?
-> 
-> I have always thought it meant that the ACK of the SYN|ACK has been
-> received.
-> 
-> SyncookiesSent SyncookiesRecv SyncookiesFailed also appear in
-> /proc/net/netstat and presumably in netstat -s output.
+> ioread*() is there to allow PC IO and PC MMIO accesses through one
+> accessor depending on the cookie.  ioremap() only ever returns cookies
+> for MMIO accesses.
 
-Thanks for the info. I'm definitely dropping SYNs and sending cookies,
-around 50/s. Is there any way to tell how many connections are queued in
-a particular socket?
+So your point is, if you know that it is MMIO memory only ever use readl and
+friends?
 
-> >Also, from the client side, when is the connect(2) call done? When the
-> >SYN,ACK is received?
-> 
-> That would be my assumption.
-
-Then if syncookies are enabled, the time spent in connect() shouldn't be
-bigger than 3 seconds even if SYNs are being "dropped" by listen, right?
-(and I'm saying "dropped" because I assume if syncookies are enabled,
-SYN,ACK replies are sent anyway, with a cookie, but they are not stored
-in the queue/hash table).
-
-> In a previous message:
-> 
-> >What I'm seeing are clients taking either useconds to connect, or 3
-> >seconds, which suggest SYNs are getting lost, but the network doesn't
-> >seem to be the problem. I'm still investigating this, so unfortunately
-> >I'm not really sure.
-> 
-> I recently ran into something like that, which turned-out to be an
-> issue with nf_conntrack and its table filling.
-
-Doing a quick research about it, I found that when that happens I should
-get a message about it in dmesg (like "kernel: nf_conntrack: table full,
-dropping packet.") but I'm not getting any, so I guess that's not a
-problem.
-
-Thanks!
-
--- 
-Leandro Lucarella
-sociomantic labs GmbH
-http://www.sociomantic.com
+- Lars
