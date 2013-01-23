@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab3AWHlS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 02:41:18 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:50009 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751240Ab3AWHlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 02:41:16 -0500
-Date: Wed, 23 Jan 2013 08:41:13 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Tom St Denis <tstdenis@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
-        David Miller <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] CMAC support for CryptoAPI, fixed patch issues, indent,
- and testmgr build issues
-Message-ID: <20130123074113.GH9147@secunet.com>
-References: <537355069.94465.1358772395763.JavaMail.root@elliptictech.com>
- <436404741.94502.1358773048618.JavaMail.root@elliptictech.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <436404741.94502.1358773048618.JavaMail.root@elliptictech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 23 Jan 2013 07:41:13.0513 (UTC) FILETIME=[04F57990:01CDF93D]
+	id S1753935Ab3AWHtJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 02:49:09 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:49912 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191Ab3AWHtH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 02:49:07 -0500
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+To: linux-next@vger.kernel.org, akpm@linux-foundation.org, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, c.gmeiner@bachmann.info
+Cc: Christian Gmeiner <christian.gmeiner@gmail.com>
+Subject: [PATCH 3/3] leds-ot200: Fix error caused by shifted mask
+Date: Wed, 23 Jan 2013 09:10:00 +0100
+Message-Id: <1358928600-15458-1-git-send-email-christian.gmeiner@gmail.com>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Cc netdev@vger.kernel.org)
+During the development of this driver an in-house register
+documentation was used. The last weeks some integration tests
+were done and this problem was found. It turned out that
+the released register documentation is wrong.
 
-On Mon, Jan 21, 2013 at 07:57:28AM -0500, Tom St Denis wrote:
-> Hey all,
-> 
-> Here's an updated patch which addresses a couple of build issues and coding style complaints.  
-> 
-> I still can't get it to run via testmgr I get 
-> 
-> [  162.407807] alg: No test for cmac(aes) (cmac(aes-generic))
-> 
-> Despite the fact I have an entry for cmac(aes) (much like xcbc(aes)...).
-> 
-> Here's the patch to bring 3.8-rc4 up with CMAC ...
-> 
+The fix is very simple: shift all masks by one.
 
-As already pointed out by David Dillow, the above comments should go
-after the '---' separator. Please use the subject line and commit
-message from the previous version of this patch when you resend,
-this was ok.
+Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+---
+ drivers/leds/leds-ot200.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-> Signed-off-by: Tom St Denis <tstdenis@elliptictech.com>
-> 
-> ---
->  crypto/Kconfig               |   8 ++
->  crypto/Makefile              |   1 +
->  crypto/cmac.c                | 317 +++++++++++++++++++++++++++++++++++++++++++
->  crypto/testmgr.c             |   9 ++
->  crypto/testmgr.h             |  52 +++++++
->  include/uapi/linux/pfkeyv2.h |   1 +
->  net/xfrm/xfrm_algo.c         |  17 +++
->  7 files changed, 405 insertions(+)
->  create mode 100644 crypto/cmac.c
-> 
-> diff --git a/crypto/Kconfig b/crypto/Kconfig
-> index 4641d95..5ac2c7f 100644
-> --- a/crypto/Kconfig
-> +++ b/crypto/Kconfig
-> @@ -301,6 +301,14 @@ config CRYPTO_XCBC
->  		http://csrc.nist.gov/encryption/modes/proposedmodes/
->  		 xcbc-mac/xcbc-mac-spec.pdf
->  
-> +config CRYPTO_CMAC
-> +	tristate "CMAC support"
-> +	depends on EXPERIMENTAL
+diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
+index ee14662..98cae52 100644
+--- a/drivers/leds/leds-ot200.c
++++ b/drivers/leds/leds-ot200.c
+@@ -47,37 +47,37 @@ static struct ot200_led leds[] = {
+ 	{
+ 		.name = "led_1",
+ 		.port = 0x49,
+-		.mask = BIT(7),
++		.mask = BIT(6),
+ 	},
+ 	{
+ 		.name = "led_2",
+ 		.port = 0x49,
+-		.mask = BIT(6),
++		.mask = BIT(5),
+ 	},
+ 	{
+ 		.name = "led_3",
+ 		.port = 0x49,
+-		.mask = BIT(5),
++		.mask = BIT(4),
+ 	},
+ 	{
+ 		.name = "led_4",
+ 		.port = 0x49,
+-		.mask = BIT(4),
++		.mask = BIT(3),
+ 	},
+ 	{
+ 		.name = "led_5",
+ 		.port = 0x49,
+-		.mask = BIT(3),
++		.mask = BIT(2),
+ 	},
+ 	{
+ 		.name = "led_6",
+ 		.port = 0x49,
+-		.mask = BIT(2),
++		.mask = BIT(1),
+ 	},
+ 	{
+ 		.name = "led_7",
+ 		.port = 0x49,
+-		.mask = BIT(1),
++		.mask = BIT(0),
+ 	}
+ };
+ 
+-- 
+1.7.12.2.421.g261b511
 
-CONFIG_EXPERIMENTAL is going to be removed in linux-next,
-please remove this dependency.
-
-> +	select CRYPTO_HASH
-> +	select CRYPTO_MANAGER
-> +	help
-> +	  NIST CMAC cipher based MAC
-> +
-
-Please add some more information to the help text. Everybody who knows
-what a 'NIST CMAC cipher based MAC' is will not need this help text, all
-the others are left with almost no information. This help text is for
-users in the first place, not for developers. So it should contain some
-informations about this cipher and/or some pointers where to find
-informations.
-
-Please Cc me on your next version because we plan to route your
-patch via the ipsec-next tree into the mainline.
-
-Thanks!
