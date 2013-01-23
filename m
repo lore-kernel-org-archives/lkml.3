@@ -1,180 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab3AWUrK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 15:47:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37882 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750813Ab3AWUrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 15:47:06 -0500
-Date: Wed, 23 Jan 2013 14:46:46 -0600
-From: Clark Williams <williams@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] sched: add a tuning knob to allow changing RR tmeslice
-Message-ID: <20130123144646.6221097e@redhat.com>
-In-Reply-To: <1358971778.21576.122.camel@gandalf.local.home>
-References: <20121108142719.1e0dfc24@redhat.com>
-	<1358971778.21576.122.camel@gandalf.local.home>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/iKUSPfGrOs_04Ujg78YBmx6"; protocol="application/pgp-signature"
+	id S1752211Ab3AWUtF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 15:49:05 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:64554 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388Ab3AWUs7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 15:48:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130123104736.GK4608@sociomantic.com>
+References: <20130122161038.GG4608@sociomantic.com>
+	<1358873142.3464.3964.camel@edumazet-glaptop>
+	<20130122165929.GH4608@sociomantic.com>
+	<1358874800.3464.4002.camel@edumazet-glaptop>
+	<50FED7CE.1030008@hp.com>
+	<20130122184245.GJ4608@sociomantic.com>
+	<50FF0C25.9000300@hp.com>
+	<20130123104736.GK4608@sociomantic.com>
+Date: Wed, 23 Jan 2013 12:48:58 -0800
+Message-ID: <CAGK4HS9qtB7uixResGpKuTXC5uUS-EZERhnfew-y7O5Ky791OQ@mail.gmail.com>
+Subject: Re: Doubts about listen backlog and tcp_max_syn_backlog
+From: Vijay Subramanian <subramanian.vijay@gmail.com>
+To: Leandro Lucarella <leandro.lucarella@sociomantic.com>
+Cc: Rick Jones <rick.jones2@hp.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/iKUSPfGrOs_04Ujg78YBmx6
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 23 January 2013 02:47, Leandro Lucarella
+<leandro.lucarella@sociomantic.com> wrote:
+> On Tue, Jan 22, 2013 at 02:01:09PM -0800, Rick Jones wrote:
+>> >>If that is being overflowed, I believe you should be seeing something like:
+>> >>
+>> >>     14 SYNs to LISTEN sockets dropped
+>> >>
+>> >>in the output of netstat -s on the system on which the server
+>> >>application is running.
+>> >
+>> >What is that value reporting exactly?
+>>
+>> Netstat is reporting the ListenDrops and/or ListenOverflows  which
+>> map to LINUX_MIB_LISTENDROPS and LINUX_MIB_LISTENOVERFLOWS.  Those
+>> get incremented in tcp_v4_syn_recv_sock() (and its v6 version etc)
+>>
+>>        if (sk_acceptq_is_full(sk))
+>>                 goto exit_overflow;
+>>
+>> Will increment both overflows and drops, and drops will increment on
+>> its own in some additional cases.
 
-On Wed, 23 Jan 2013 15:09:38 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+Note that tcp_v4_conn_request() can also drop SYNs directly (start of
+TWHS) if acceptq is full and more than one young requests are queued
+up
+vim +1504 tcp_ipv4.c
 
-> On Thu, 2012-11-08 at 14:27 -0600, Clark Williams wrote:
-> > Subject: [PATCH] sched: add a tuning knob to allow changing RR timeslice
-> >=20
-> > User wanted a facility simliar to the ability on Solaris to adjust
-> > the SCHED_RR timeslice value. Add a /proc/sys/kernel scheduler knob
-> > named sched_rr_timeslice_ms which allows global changing of the SCHED_RR
-> > timeslice value. User visable value is in milliseconds but is stored as
-> > jiffies.  Setting to 0 (zero) resets to the default (currently 100ms).
-> >=20
->=20
-> Hmm, has this been ignored?
->=20
-> I guess the real question, is it still needed (or wanted)?
->=20
+       if (sk_acceptq_is_full(sk) && inet_csk_reqsk_queue_young(sk) > 1)
+                goto drop;
 
-Yes, we've got a couple of customers that have been asking for it.=20
 
-> -- Steve
->=20
-> > Patch against tip/master, currently 3.7-rc3.
-> >=20
-> > Signed-off-by: Clark Williams <williams@redhat.com>
-> > ---
-> >  include/linux/sched.h |  6 +++++-
-> >  kernel/sched.c        | 19 +++++++++++++++++++
-> >  kernel/sched_rt.c     |  4 ++--
-> >  kernel/sysctl.c       |  8 ++++++++
-> >  4 files changed, 34 insertions(+), 3 deletions(-)
-> >=20
-> > diff --git a/include/linux/sched.h b/include/linux/sched.h
-> > index 12317b6..214bf27 100644
-> > --- a/include/linux/sched.h
-> > +++ b/include/linux/sched.h
-> > @@ -2097,11 +2097,15 @@ static inline unsigned int get_sysctl_timer_mig=
-ration(void)
-> >  #endif
-> >  extern unsigned int sysctl_sched_rt_period;
-> >  extern int sysctl_sched_rt_runtime;
-> > -
-> >  int sched_rt_handler(struct ctl_table *table, int write,
-> >  		void __user *buffer, size_t *lenp,
-> >  		loff_t *ppos);
-> > =20
-> > +extern int sched_rr_timeslice;
-> > +extern int sched_rr_handler(struct ctl_table *table, int write,
-> > +		void __user *buffer, size_t *lenp,
-> > +		loff_t *ppos);
-> > +
-> >  #ifdef CONFIG_SCHED_AUTOGROUP
-> >  extern unsigned int sysctl_sched_autogroup_enabled;
-> > =20
-> > diff --git a/kernel/sched.c b/kernel/sched.c
-> > index cdf9484..c63c3a4 100644
-> > --- a/kernel/sched.c
-> > +++ b/kernel/sched.c
-> > @@ -120,6 +120,7 @@
-> >   * Timeslices get refilled after they expire.
-> >   */
-> >  #define DEF_TIMESLICE		(100 * HZ / 1000)
-> > +int sched_rr_timeslice =3D DEF_TIMESLICE;
-> > =20
-> >  /*
-> >   * single value that denotes runtime =3D=3D period, ie unlimited time.
-> > @@ -9614,6 +9615,24 @@ static int sched_rt_global_constraints(void)
-> >  }
-> >  #endif /* CONFIG_RT_GROUP_SCHED */
-> > =20
-> > +int sched_rr_handler(struct ctl_table *table, int write,
-> > +		void __user *buffer, size_t *lenp,
-> > +		loff_t *ppos)
-> > +{
-> > +	int ret;
-> > +	static DEFINE_MUTEX(mutex);
-> > +
-> > +	mutex_lock(&mutex);
-> > +	ret =3D proc_dointvec(table, write, buffer, lenp, ppos);
-> > +	/* make sure that internally we keep jiffies */
-> > +	/* also, writing zero resets timeslice to default */
-> > +	if (!ret && write)=20
-> > +		sched_rr_timeslice =3D sched_rr_timeslice <=3D 0 ?=20
-> > +			DEF_TIMESLICE : msecs_to_jiffies(sched_rr_timeslice);
-> > +	mutex_unlock(&mutex);
-> > +	return ret;
-> > +}
-> > +
-> >  int sched_rt_handler(struct ctl_table *table, int write,
-> >  		void __user *buffer, size_t *lenp,
-> >  		loff_t *ppos)
-> > diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-> > index c108b9c..799dd09 100644
-> > --- a/kernel/sched_rt.c
-> > +++ b/kernel/sched_rt.c
-> > @@ -1791,7 +1791,7 @@ static void task_tick_rt(struct rq *rq, struct ta=
-sk_struct *p, int queued)
-> >  	if (--p->rt.time_slice)
-> >  		return;
-> > =20
-> > -	p->rt.time_slice =3D DEF_TIMESLICE;
-> > +	p->rt.time_slice =3D sched_rr_timeslice;
-> > =20
-> >  	/*
-> >  	 * Requeue to the end of queue if we are not the only element
-> > @@ -1819,7 +1819,7 @@ static unsigned int get_rr_interval_rt(struct rq =
-*rq, struct task_struct *task)
-> >  	 * Time slice is 0 for SCHED_FIFO tasks
-> >  	 */
-> >  	if (task->policy =3D=3D SCHED_RR)
-> > -		return DEF_TIMESLICE;
-> > +		return sched_rr_timeslice;
-> >  	else
-> >  		return 0;
-> >  }
-> > diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> > index ea7ec7f..10b1129 100644
-> > --- a/kernel/sysctl.c
-> > +++ b/kernel/sysctl.c
-> > @@ -362,6 +362,14 @@ static struct ctl_table kern_table[] =3D {
-> >  		.mode		=3D 0644,
-> >  		.proc_handler	=3D sched_rt_handler,
-> >  	},
-> > +	{
-> > +		.procname	=3D "sched_rr_timeslice_ms",
-> > +		.data		=3D &sched_rr_timeslice,
-> > +		.maxlen		=3D sizeof(int),
-> > +		.mode		=3D 0644,
-> > +		.proc_handler	=3D sched_rr_handler,
-> > +	},
-> > +
-> >  #ifdef CONFIG_SCHED_AUTOGROUP
-> >  	{
-> >  		.procname	=3D "sched_autogroup_enabled",
->=20
->=20
+These drops do not seem to be tracked by any MIB variable and so will
+not show up in netstat
+(Also, newer nstat is preferred to netstat ).
+Maybe we need to track these drops too?
 
---Sig_/iKUSPfGrOs_04Ujg78YBmx6
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlEATDYACgkQHyuj/+TTEp3aAQCg0AktrOXAv5yWje+9WAuPfNiY
-aJYAoLRaw4AIsBT/XS/Hbxy9G4jGxPdb
-=O7VD
------END PGP SIGNATURE-----
-
---Sig_/iKUSPfGrOs_04Ujg78YBmx6--
+Vijay
