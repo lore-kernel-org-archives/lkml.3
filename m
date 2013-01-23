@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab3AWXqz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 18:46:55 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:36961 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752299Ab3AWXqv (ORCPT
+	id S1752245Ab3AWXsy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 18:48:54 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:48636 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab3AWXsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 18:46:51 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ah8NABx1AFF5LA3Z/2dsb2JhbABEhVyyUIYUF3OCHgEBBTocFgoDEAgDDgQGCSUPBSUDDRQTiBm9fBWMWxuEKAOWC5BKgwmBWw
-Date: Thu, 24 Jan 2013 10:46:49 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, xfs@oss.sgi.com,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC, PATCH 00/19] Numa aware LRU lists and shrinkers
-Message-ID: <20130123234649.GV2498@dastard>
-References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
- <50FD6815.90900@parallels.com>
- <20130121232121.GG2498@dastard>
- <50FFF571.8080506@parallels.com>
+	Wed, 23 Jan 2013 18:48:47 -0500
+Date: Wed, 23 Jan 2013 18:48:41 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: LKML and other vger MLs - which provider...
+Message-ID: <20130123234841.GB26336@gmail.com>
+References: <Pine.LNX.4.64.1301232209310.428@axis700.grange>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50FFF571.8080506@parallels.com>
+In-Reply-To: <Pine.LNX.4.64.1301232209310.428@axis700.grange>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 06:36:33PM +0400, Glauber Costa wrote:
-> On 01/22/2013 03:21 AM, Dave Chinner wrote:
-> > On Mon, Jan 21, 2013 at 08:08:53PM +0400, Glauber Costa wrote:
-> >> On 11/28/2012 03:14 AM, Dave Chinner wrote:
-> >>> [PATCH 09/19] list_lru: per-node list infrastructure
-> >>>
-> >>> This makes the generic LRU list much more scalable by changing it to
-> >>> a {list,lock,count} tuple per node. There are no external API
-> >>> changes to this changeover, so is transparent to current users.
-> >>>
-> >>> [PATCH 10/19] shrinker: add node awareness
-> >>> [PATCH 11/19] fs: convert inode and dentry shrinking to be node
-> >>>
-> >>> Adds a nodemask to the struct shrink_control for callers of
-> >>> shrink_slab to set appropriately for their reclaim context. This
-> >>> nodemask is then passed by the inode and dentry cache reclaim code
-> >>> to the generic LRU list code to implement node aware shrinking.
-> >>
-> >> I have a follow up question that popped up from a discussion between me
-> >> and my very American friend Johnny Wheeler, also known as Johannes
-> >> Weiner (CC'd). I actually remember we discussing this, but don't fully
-> >> remember the outcome. And since I can't find it anywhere, it must have
-> >> been in a media other than e-mail. So I thought it would do no harm in
-> >> at least documenting it...
-> >>
-> >> Why are we doing this per-node, instead of per-zone?
-> >>
-> >> It seems to me that the goal is to collapse all zones of a node into a
-> >> single list, but since the number of zones is not terribly larger than
-> >> the number of nodes, and zones is where the pressure comes from, what do
-> >> we really gain from this?
-> > 
-> > The number is quite a bit higher - there are platforms with 5 zones
-> > to a node. The reality is, though, for most platforms slab
-> > allocations come from a single zone - they never come from ZONE_DMA,
-> > ZONE_HIGHMEM or ZONE_MOVEABLE, so there is there is no good reason
-> > for having cache LRUs for these zones. So, two zones at most.
-> > 
-> Yes, but one would expect that most of those special zones would be
-> present only in the first node, no? (correct me if I am wrong here).
+On Wed, Jan 23, 2013 at 10:32:39PM +0100, Guennadi Liakhovetski wrote:
+> Hi David
+> 
+> In short: I'm looking for a (free) email provider to use for my 
+> vger.kernel.org subscriptions. Read a thread on google+ with your 
+> participation and was wondering whether you could recommend one or knew of 
+> a way to get an @infradead.org address, although that doesn't seem to be 
+> safe enough either any more...
+> 
+> The long story: gmx.de, that I'm using as my "identity" address, got me 
+> unsubscribed multiple times from vger MLs. Even though not wanting to give 
+> the big G even more power, gmail has worked pretty stably, without 
+> dropping me out. However, recently I've detected a flaw with them (known 
+> to some too, I'm sure): they only deliver one copy of each mail. So, if a 
+> patch series is sent to more than one vger ML, I end up with some mails 
+> from it in my, say, mmc folder and with other in the linux-sh folder. 
+I suggest to use Gmail filter rather than mutt filter. The difference is that
+Gmail filter can mark one email with multiple labels, which means you can see
+the same email in two or more folders (called labels in Gmail) even there is
+only one copy stored in Gmail. btw, the unread sign of one email in different
+labels is shared. I think this feature is quite good, though I hate Gmail web
+version doesn't follow the RFC about thread.
 
-As I understand it, every node has an identical zone setup (i.e. a
-flat array of MAX_NR_ZONES zones in the struct pglist_data), and
-pages are simply places the in the appropriate zones on each node...
+- cong
 
-Also, IIUC, the behaviour of the zones one each node is architecture
-dependent, we can't make assumptions that certain zones are only
-ever used on the first node...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> Since I don't see a way to fix that with gmail (yes, I've sent a request 
+> to them, but I'm not very hopeful), I'd be happy to move to another 
+> provider. So, any recommendations would be welcome. I know this has been 
+> discussed multiple times before, but unfortunately I don't find those 
+> threads again. Might be a good thing to put on vger info pages.
+> 
+> Thanks
+> Guennadi
+> ---
+> Guennadi Liakhovetski, Ph.D.
+> Freelance Open-Source Software Developer
+> http://www.open-technology.de/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
