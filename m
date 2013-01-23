@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab3AWOOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:14:49 -0500
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:44015 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755561Ab3AWOOs (ORCPT
+	id S1755854Ab3AWOQe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:16:34 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:39826 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755675Ab3AWOQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:14:48 -0500
+	Wed, 23 Jan 2013 09:16:32 -0500
 MIME-Version: 1.0
-In-Reply-To: <1358908049.18561.12.camel@suxuemin.sh.intel.com>
-References: <1358908049.18561.12.camel@suxuemin.sh.intel.com>
-Date: Wed, 23 Jan 2013 09:14:47 -0500
-Message-ID: <CADnq5_Oiq3FrVLeA6uovDQnGrmZ3=gPaH173Q9aw9yMhfWM1kA@mail.gmail.com>
-Subject: Re: [PATCH] radeon_display: Use pointer return error codes
-From: Alex Deucher <alexdeucher@gmail.com>
-To: "Su, Xuemin" <xuemin.su@intel.com>
-Cc: airlied@linux.ie, airlied@redhat.com, alexander.deucher@amd.com,
-        s.hauer@pengutronix.de, ihadzic@research.bell-labs.com,
-        laurent.pinchart@ideasonboard.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com,
-        bo.he@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
+References: <1358946905-13320-1-git-send-email-sedat.dilek@gmail.com>
+	<CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
+	<CA+icZUW7XrOGguoPO00wxPLUr2Xc8fP=jQZwekpnmWKRewwX2g@mail.gmail.com>
+	<CAFTL4hzcuxoy2deQpXDBRQZZBZ4VjT=EnO3ZZv6x-jGMTr_eaA@mail.gmail.com>
+	<1358949189.21576.114.camel@gandalf.local.home>
+	<CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
+Date: Wed, 23 Jan 2013 15:16:32 +0100
+Message-ID: <CA+icZUWF21-QPRkSC8dSP6URQe=KEnHbVre=xGqv9icj8XxiQw@mail.gmail.com>
+Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing EXPORT_SYMBOL when CONFIG_KVM=m
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "devendra.aaru" <devendra.aaru@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 9:27 PM, Su, Xuemin <xuemin.su@intel.com> wrote:
-> From: xueminsu <xuemin.su@intel.com>
-> Date: Tue, 22 Jan 2013 22:16:53 +0800
-> Subject: [PATCH] radeon_display: Use pointer return error codes
+On Wed, Jan 23, 2013 at 3:02 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 2013/1/23 Steven Rostedt <rostedt@goodmis.org>:
+>> On Wed, 2013-01-23 at 14:46 +0100, Frederic Weisbecker wrote:
+>>
+>>> > Hmmm, yes, but why, clueless, CONFIG_KVM=y as a workaround!
+>>>
+>>> I believe he pointed out the "{i" to you. Typing mistake?
+>>
+>> In which case the CONFIG_KVM=y is a work around if that {i is within a
+>> #ifndef CONFIG_KVM ;-)
 >
-> drm_mode_addfb() expects fb_create return error code
-> instead of NULL.
+> No it's in #ifdef CONFIG_KVM so the right fix is:
 >
-> Signed-off-by: xueminsu <xuemin.su@intel.com>
+> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+> index bbb2c2c..a13b8a3 100644
+> --- a/kernel/context_tracking.c
+> +++ b/kernel/context_tracking.c
+> @@ -111,14 +111,19 @@ void guest_enter(void)
+>         else
+>                 __guest_enter();
+>  }
+> +EXPORT_SYMBOL_GPL(guest_enter);
+>
+>  void guest_exit(void)
+>  {
+> +#ifndef CONFIG_KVM
+> +i
+> +#endif
+>         if (vtime_accounting_enabled())
+>                 vtime_guest_exit(current);
+>         else
+>                 __guest_exit();
+>  }
+> +EXPORT_SYMBOL_GPL(guest_exit);
+>  #endif
 
-Thanks.  Added to my fixes queue.
+With and without the magic "i" hack the warning still remains!
+Dropped the coffee on my t-shirt, damn Frederic.
 
-Alex
-
-
-> ---
->  drivers/gpu/drm/radeon/radeon_display.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
-> index 1da2386..ff3def7 100644
-> --- a/drivers/gpu/drm/radeon/radeon_display.c
-> +++ b/drivers/gpu/drm/radeon/radeon_display.c
-> @@ -1122,7 +1122,7 @@ radeon_user_framebuffer_create(struct drm_device *dev,
->         if (ret) {
->                 kfree(radeon_fb);
->                 drm_gem_object_unreference_unlocked(obj);
-> -               return NULL;
-> +               return ERR_PTR(ret);
->         }
->
->         return &radeon_fb->base;
-> --
-> 1.7.6
->
->
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+- Sedat -
