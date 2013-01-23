@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab3AWJqQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 04:46:16 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:38037 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754404Ab3AWJqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 04:46:13 -0500
-From: Philip Avinash <avinashphilip@ti.com>
-To: <khilman@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <dwmw2@infradead.org>
-CC: <afzal@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, <nsekhar@ti.com>,
-        <gururaja.hebbar@ti.com>, Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH 4/4] mtd: nand: omap2: Low power transition support
-Date: Wed, 23 Jan 2013 15:15:46 +0530
-Message-ID: <1358934346-16822-5-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358933176-12409-1-git-send-email-avinashphilip@ti.com>
-References: <1358933176-12409-1-git-send-email-avinashphilip@ti.com>
+	id S1754738Ab3AWJqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 04:46:43 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54299 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754404Ab3AWJql (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 04:46:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1358775323-8155-1-git-send-email-lee.jones@linaro.org>
+References: <1358775323-8155-1-git-send-email-lee.jones@linaro.org>
+Date: Wed, 23 Jan 2013 10:46:40 +0100
+Message-ID: <CACRpkdbWVVW98upGcqCsbNXPU9Q2m5VFe71GwngBni4ih+m8_w@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ARM: ux500: Enable Snowball's GPIO controlled
+ Ethernet regulator in DT
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for Low power transition support in nand driver. Also
-ensures the current transaction finishes before going to low power mode
-with _suspend support in mtd layer.
+On Mon, Jan 21, 2013 at 2:35 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
----
- drivers/mtd/nand/omap2.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+> The Snowball Board's Ethernet chip is configured in a slightly
+> non-standard way. Its SoC has an address space usually reserved
+> for a NOR-flash device. However, on the Snowball, that external
+> bus is populated by the SMSC9115 Ethernet chip. So, to power on
+> the Ethernet chip, we have to enable the GPIO controlled
+> regulator which usually controls the NOR-flash. In this patch
+> we inform the Snowball's Device Tree which GPIO is used to
+> operate it.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
-index 8e820dd..790215b 100644
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -2103,9 +2103,28 @@ static int omap_nand_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM
-+static int omap_nand_suspend(struct platform_device *pdev, pm_message_t state)
-+{
-+	struct mtd_info *mtd = platform_get_drvdata(pdev);
-+
-+	mtd->_suspend(mtd);
-+	return 0;
-+}
-+
-+static int omap_nand_resume(struct platform_device *pdev)
-+{
-+	return 0;
-+}
-+#endif
-+
- static struct platform_driver omap_nand_driver = {
- 	.probe		= omap_nand_probe,
- 	.remove		= omap_nand_remove,
-+#ifdef CONFIG_PM
-+	.suspend	= omap_nand_suspend,
-+	.resume		= omap_nand_resume,
-+#endif
- 	.driver		= {
- 		.name	= DRIVER_NAME,
- 		.owner	= THIS_MODULE,
--- 
-1.7.9.5
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+I guess you will funnel this to ARM SoC with other DT patches?
+
+Yours,
+Linus Walleij
