@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702Ab3AWLmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 06:42:31 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44772 "EHLO arroyo.ext.ti.com"
+	id S1755591Ab3AWLmY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 06:42:24 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:34900 "EHLO thoth.sbs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755512Ab3AWLm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 06:42:28 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH v2 3/4] ARM: OMAP2+: clock: DEFINE_STRUCT_CLK_FLAGS helper
-Date: Wed, 23 Jan 2013 17:12:05 +0530
-Message-ID: <26ae4f6265be65543b891442396d81b389ca5f32.1358937533.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <cover.1358937533.git.afzal@ti.com>
-References: <cover.1358937533.git.afzal@ti.com>
+	id S1755512Ab3AWLmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 06:42:21 -0500
+Message-ID: <50FFCC4B.10105@siemens.com>
+Date: Wed, 23 Jan 2013 12:40:59 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
+        linux-ia64@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>, sparclinux@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH v4 00/13] Add gdb python scripts as kernel debugging helpers
+References: <cover.1358787929.git.jan.kiszka@siemens.com> <20130123113221.GA4256@pd.tnic>
+In-Reply-To: <20130123113221.GA4256@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DEFINE_STRUCT_CLK does not have the capability to set flags, define
-DEFINE_STRUCT_CLK_FLAGS to handle flags. This is needed to add
-SET_RATE_PARENT flag in statically defined lcd clock in am335x.
+On 2013-01-23 12:32, Borislav Petkov wrote:
+> Ok, first of all, I gotta say, this is very cool stuff, thanks for doing
+> this. I'm playing with your tutorial and I'm having some trouble, see
+> below:
+> 
+> On Mon, Jan 21, 2013 at 06:06:07PM +0100, Jan Kiszka wrote:
+>>  o Let's examine the current task a bit:
+>>     (gdb) p ().pid
+> 
+> when I do that, it says:
+> 
+> (gdb) p ().pid
+> A syntax error in expression, near `).pid'
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
----
- arch/arm/mach-omap2/clock.h | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+Ouch, my git-send script ate all the "$foo" in the cover letter :(. It
+has to be $lx_current, $lx_per_cpu and $container_of. Will write an
+add-on patch that adds the tutorial as a text file later on.
 
-diff --git a/arch/arm/mach-omap2/clock.h b/arch/arm/mach-omap2/clock.h
-index b402048..60ddd86 100644
---- a/arch/arm/mach-omap2/clock.h
-+++ b/arch/arm/mach-omap2/clock.h
-@@ -65,6 +65,17 @@ struct clockdomain;
- 		.ops = &_clkops_name,				\
- 	};
- 
-+#define DEFINE_STRUCT_CLK_FLAGS(_name, _parent_array_name,	\
-+				_clkops_name, _flags)		\
-+	static struct clk _name = {				\
-+		.name = #_name,					\
-+		.hw = &_name##_hw.hw,				\
-+		.parent_names = _parent_array_name,		\
-+		.num_parents = ARRAY_SIZE(_parent_array_name),	\
-+		.ops = &_clkops_name,				\
-+		.flags = _flags,				\
-+	};
-+
- #define DEFINE_STRUCT_CLK_HW_OMAP(_name, _clkdm_name)		\
- 	static struct clk_hw_omap _name##_hw = {		\
- 		.hw = {						\
+Jan
+
 -- 
-1.7.12
-
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
