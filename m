@@ -1,155 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356Ab3AWVAO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 16:00:14 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:59365 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab3AWVAI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 16:00:08 -0500
-Date: Wed, 23 Jan 2013 16:00:10 -0500
-From: Matt Porter <mporter@ti.com>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-Cc: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH v3 02/16] ARM: davinci: move private EDMA API to
- arm/common
-Message-ID: <20130123210010.GB5256@beef>
-References: <1350566815-409-1-git-send-email-mporter@ti.com>
- <1350566815-409-3-git-send-email-mporter@ti.com>
- <508CEA05.8060200@ti.com>
- <20130110235157.GU14660@beef>
- <d631bf39a8b8474bae448d089497fe0e@DLEE74.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <d631bf39a8b8474bae448d089497fe0e@DLEE74.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752109Ab3AWVGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 16:06:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19063 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab3AWVF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 16:05:59 -0500
+Date: Wed, 23 Jan 2013 19:05:45 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for v3.8-rc5] media fixes
+Message-ID: <20130123190545.781e4468@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 03:40:06PM +0000, Sekhar Nori wrote:
-> Matt,
-> 
-> Sorry about the late reply. I noticed this mail only after I started to
-> look at v5 of your series :(
+Hi Linus,
 
-Any time is fine! :)
- 
-> On 1/11/2013 5:21 AM, Matt Porter wrote:
-> > On Sun, Oct 28, 2012 at 01:47:09PM +0530, Sekhar Nori wrote:
-> >> On 10/18/2012 6:56 PM, Matt Porter wrote:
-> >>> Move mach-davinci/dma.c to common/edma.c so it can be used
-> >>> by OMAP (specifically AM33xx) as well. This just moves the
-> >>> private EDMA API but does not support OMAP.
-> >>>
-> >>> Signed-off-by: Matt Porter <mporter@ti.com>
-> >>> ---
-> >>
-> >>> diff --git a/arch/arm/mach-davinci/devices.c b/arch/arm/mach-davinci/devices.c
-> >>> index 4c48a36..f45d591 100644
-> >>> --- a/arch/arm/mach-davinci/devices.c
-> >>> +++ b/arch/arm/mach-davinci/devices.c
-> >>> @@ -19,9 +19,10 @@
-> >>>  #include <mach/irqs.h>
-> >>>  #include <mach/cputype.h>
-> >>>  #include <mach/mux.h>
-> >>> -#include <mach/edma.h>
-> >>>  #include <linux/platform_data/mmc-davinci.h>
-> >>>  #include <mach/time.h>
-> >>> +#include <linux/platform_data/edma.h>
-> >>
-> >> Can you please introduce a patch to clean this mixture of linux/ and
-> >> mach/ includes?
-> > 
-> > Yeah, are you ok with a follow on series to clean all these files? I
-> > don't want to make this series longer with something not dma related
-> > that's purely cleanup from the great header reorg of 2012.
-> 
-> Okay. I agree doing this sort of change now will cause merge issues.
+Please pull from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
 
-Ok.
+For some fixes:
+	- gspca: add needed delay for I2C traffic for sonixb/sonixj cameras;
+	- gspca: add one missing Kinect USB ID;
+	- usbvideo: some regression fixes;
+	- omap3isp: fix some build issues;
+	- videobuf2: fix video output handling;
+	- exynos s5p/m5mols: a few regression fixes.
 
-> 
-> > 
-> >>> +
-> >>>  
-> >>>  #include "davinci.h"
-> >>>  #include "clock.h"
-> >>> @@ -141,10 +142,10 @@ static struct resource mmcsd0_resources[] = {
-> >>>  	},
-> >>>  	/* DMA channels: RX, then TX */
-> >>>  	{
-> >>> -		.start = EDMA_CTLR_CHAN(0, DAVINCI_DMA_MMCRXEVT),
-> >>> +		.start = EDMA_CTLR_CHAN(0, 26),
-> >>
-> >> Instead of just replacing the event #defines with plain numbers, can you
-> >> introduce a mach-davinci local edma.h which can then be included in the
-> >> davinci platform files which refer to edma channel numbers?
-> > 
-> > Ok, so when I removed the old edma.h it was full of unused defines and
-> > we are left with just this one. If I introduced something like that it
-> > would be used in just one place here. and only for these two values.
-> > How about we just add a comment?
-> 
-> I prefer adding a local #define in this file. This will keep it
-> consistent with what is done in arch/arm/mach-davinci/dm365.c for
-> example. Same for the change in sound/soc/davinci/davinci-sffsdr.c
+Thank you!
+Mauro
 
-Ok, will do.
+-
+The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
 
-> > 
-> >>
-> >>> diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
-> >>> index 7cd56ed..153fab8 100644
-> >>> --- a/arch/arm/plat-omap/Kconfig
-> >>> +++ b/arch/arm/plat-omap/Kconfig
-> >>> @@ -28,6 +28,7 @@ config ARCH_OMAP2PLUS
-> >>>  	select OMAP_DM_TIMER
-> >>>  	select PROC_DEVICETREE if PROC_FS
-> >>>  	select SPARSE_IRQ
-> >>> +	select TI_PRIV_EDMA
-> >>
-> >> This hunk does not seem to belong to subject of this patch.
-> > 
-> > Let me reword the subject/description. The idea of this logical
-> > chunk was to put everything in place to make it build on OMAP,
-> > with the expectation that the build fails without the next patch
-> > in the series.
-> 
-> But this will break bisect. With just this patch applied, omap build
-> breaks. Looks like it will be more logical to merge this hunk with 3/14
-> since that's when you really start using the private DMA support on OMAP
-> platforms.
+  Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
 
-Ahh, yes,. thanks for pointing that out. I will address it and add your
-ack. Thanks.
+are available in the git repository at:
 
-> This issue is a must fix IMO.
- 
-Ok.
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
 
-> I am ok with the patch otherwise. With these changes done, you can add:
-> 
-> Acked-by: Sekhar Nori <nsekhar@ti.com>
-> 
-> Thanks,
-> Sekhar
+for you to fetch changes up to 68d6f84ba0c47e658beff3a4bf0c43acee4b4690:
+
+  [media] uvcvideo: Set error_idx properly for S_EXT_CTRLS failures (2013-01-11 13:30:27 -0200)
+
+----------------------------------------------------------------
+Hans de Goede (2):
+      [media] gspca_sonixb: Properly wait between i2c writes
+      [media] gspca_sonixj: Add a small delay after i2c_w1
+
+Jacob Schloss (1):
+      [media] gspca_kinect: add Kinect for Windows USB id
+
+Kamil Debski (1):
+      [media] s5p-mfc: Fix interrupt error handling routine
+
+Laurent Pinchart (6):
+      [media] [FOR,v3.8] omap3isp: Don't include deleted OMAP plat/ header files
+      [media] v4l: vb2: Set data_offset to 0 for single-plane output buffers
+      [media] omap3isp: Don't include <plat/cpu.h>
+      [media] uvcvideo: Return -EACCES when trying to set a read-only control
+      [media] uvcvideo: Cleanup leftovers of partial revert
+      [media] uvcvideo: Set error_idx properly for S_EXT_CTRLS failures
+
+Mauro Carvalho Chehab (1):
+      Merge tag 'v3.8-rc3' into v4l_for_linus
+
+Sylwester Nawrocki (2):
+      [media] m5mols: Fix typo in get_fmt callback
+      [media] s5p-fimc: Fix return value of __fimc_md_create_flite_source_links()
+
+ drivers/media/i2c/m5mols/m5mols_core.c         |  2 +-
+ drivers/media/platform/omap3isp/ispvideo.c     |  3 -
+ drivers/media/platform/s5p-fimc/fimc-mdevice.c |  2 +-
+ drivers/media/platform/s5p-mfc/s5p_mfc.c       | 88 +++++++++++---------------
+ drivers/media/usb/gspca/kinect.c               |  1 +
+ drivers/media/usb/gspca/sonixb.c               | 13 ++--
+ drivers/media/usb/gspca/sonixj.c               |  1 +
+ drivers/media/usb/uvc/uvc_ctrl.c               |  4 +-
+ drivers/media/usb/uvc/uvc_v4l2.c               |  6 +-
+ drivers/media/v4l2-core/videobuf2-core.c       |  4 +-
+ 10 files changed, 57 insertions(+), 67 deletions(-)
+
