@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab3AWOau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:30:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42271 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754740Ab3AWOat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:30:49 -0500
-Date: Wed, 23 Jan 2013 06:32:16 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: davem@davemloft.net, sfr@canb.auug.org.au, devel@driverdev.osuosl.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dan.carpenter@oracle.com
-Subject: Re: [RFC PATCH v3 linux-next] et131x: Promote staging et131x driver
- to drivers/net
-Message-ID: <20130123143216.GA2050@kroah.com>
-References: <1358935859-29525-1-git-send-email-mark.einon@gmail.com>
- <1358945130-3101-1-git-send-email-mark.einon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358945130-3101-1-git-send-email-mark.einon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755970Ab3AWOfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:35:54 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35899 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755306Ab3AWOfx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 09:35:53 -0500
+Date: Wed, 23 Jan 2013 14:35:41 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: snakky.zhang@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Is this a bug that n_tty_set_room not serialized? If so please
+ correct it.
+Message-ID: <20130123143541.0abfa379@www.etchedpixels.co.uk>
+In-Reply-To: <50FF69C6.2040705@gmail.com>
+References: <50FF69C6.2040705@gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 12:45:30PM +0000, Mark Einon wrote:
-> This patch moves the et131x gigabit ethernet driver from drivers/staging
-> to drivers/net/ethernet/agere.
+On Wed, 23 Jan 2013 12:40:38 +0800
+snakky.zhang@gmail.com wrote:
+
+> Hi experts,
 > 
-> All the existing issues noted for this driver have been resolved, apart
-> from one performance issue where some fragmented packets suffer from
-> frame receive errors.
+> Seems there is an bug related to function n_tty_set_roomin source file
+> drivers/tty/n_tty.c. This function is used to set receive_room based on
+> the read_cntby both the consumer and the producer of the tty's read buffer.
 > 
-> Signed-off-by: Mark Einon <mark.einon@gmail.com>
-> ---
-> 
-> Changes from V2 - vendor name changed from Atheros to Agere in drivers/net/ethernet/agere/Kconfig
-> 
->  MAINTAINERS                                        |   11 ++++---
->  drivers/net/ethernet/Kconfig                       |    1 +
->  drivers/net/ethernet/Makefile                      |    1 +
->  drivers/net/ethernet/agere/Kconfig                 |   32 ++++++++++++++++++++
->  .../et131x => net/ethernet/agere}/Makefile         |    1 +
->  .../et131x => net/ethernet/agere}/et131x.c         |    0
->  .../et131x => net/ethernet/agere}/et131x.h         |    0
->  drivers/staging/Kconfig                            |    2 --
->  drivers/staging/Makefile                           |    1 -
->  drivers/staging/et131x/Kconfig                     |   10 ------
->  drivers/staging/et131x/README                      |   16 ----------
->  11 files changed, 41 insertions(+), 34 deletions(-)
->  create mode 100644 drivers/net/ethernet/agere/Kconfig
->  rename drivers/{staging/et131x => net/ethernet/agere}/Makefile (98%)
->  rename drivers/{staging/et131x => net/ethernet/agere}/et131x.c (100%)
->  rename drivers/{staging/et131x => net/ethernet/agere}/et131x.h (100%)
->  delete mode 100644 drivers/staging/et131x/Kconfig
->  delete mode 100644 drivers/staging/et131x/README
+> But this function is not serialized, so I am afraid there is
+> a risk like: The producer make the buffer full and then call this 
+> function to
 
-Creating a patch this way is the correct way to do it, however it gives
-no clue to the network developers as to exactly what is in this driver
-at the moment :(
+It's not entirely robust - it should be ok for current usage. The proper
+fix IMHO is to make the ldisc receive function return the number of bytes
+actually consumed. That cures the problem rather than patching around it.
 
-I usually recommend just creating a new patch, that adds the driver to
-the proper place in the kernel, and sending that in.  If the subsystem
-maintainers accept it, then I can just delete the staging driver.
+It's an interesting little project for someone, and as I think only n_tty
+uses that level of flow control probably not too horrible now.
 
-Yes, this looses the history of the code, but usually no one cares about
-that for staging drivers.
-
-If that's not ok, I have no problem accepting this, if I get an ack from
-the subsystem maintainers that it's ok, but again, this patch makes it
-pretty hard for them to know that or not.
-
-thanks,
-
-greg k-h
+Alan
