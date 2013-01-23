@@ -1,91 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257Ab3AWPiQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:38:16 -0500
-Received: from mga03.intel.com ([143.182.124.21]:47809 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756229Ab3AWPiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 10:38:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,523,1355126400"; 
-   d="scan'208";a="194342978"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 1/4] dw_dmac: remove unnecessary tx_list field in dw_dma_chan
-Date: Wed, 23 Jan 2013 17:37:29 +0200
-Message-Id: <1358955452-20960-2-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1358955452-20960-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1358955452-20960-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1755877Ab3AWPqp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:46:45 -0500
+Received: from mx.scalarmail.ca ([98.158.95.75]:49136 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754339Ab3AWPqn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 10:46:43 -0500
+Date: Wed, 23 Jan 2013 10:46:41 -0500 (EST)
+From: Tom St Denis <tstdenis@elliptictech.com>
+To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
+        David Miller <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        netdev@vger.kernel.org
+Message-ID: <1454517509.108827.1358956001908.JavaMail.root@elliptictech.com>
+In-Reply-To: <20130123173510.14986sla4qsstz8k@www.dalek.fi>
+Subject: Re: [PATCH] CMAC support for CryptoAPI, fixed patch issues, indent,
+ and testmgr build issues
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.17.19.112]
+X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC24 (Linux)/7.2.1_GA_2790)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The soft LLP mode is working for active descriptor only. So, we do not need to
-have a copy of its pointer.
+----- Original Message -----
+> From: "Jussi Kivilinna" <jussi.kivilinna@mbnet.fi>
+> To: "Tom St Denis" <tstdenis@elliptictech.com>
+> Cc: linux-kernel@vger.kernel.org, "Herbert Xu" <herbert@gondor.apana.org.au>, "David Miller" <davem@davemloft.net>,
+> linux-crypto@vger.kernel.org, "Steffen Klassert" <steffen.klassert@secunet.com>, netdev@vger.kernel.org
+> Sent: Wednesday, 23 January, 2013 10:35:10 AM
+> Subject: Re: [PATCH] CMAC support for CryptoAPI, fixed patch issues, indent, and testmgr build issues
+> 
+> Quoting Tom St Denis <tstdenis@elliptictech.com>:
+> 
+> > ----- Original Message -----
+> >> From: "Jussi Kivilinna" <jussi.kivilinna@mbnet.fi>
+> >> To: "Tom St Denis" <tstdenis@elliptictech.com>
+> >> Cc: linux-kernel@vger.kernel.org, "Herbert Xu"
+> >> <herbert@gondor.apana.org.au>, "David Miller"
+> >> <davem@davemloft.net>,
+> >> linux-crypto@vger.kernel.org, "Steffen Klassert"
+> >> <steffen.klassert@secunet.com>, netdev@vger.kernel.org
+> >> Sent: Wednesday, 23 January, 2013 9:36:44 AM
+> >> Subject: Re: [PATCH] CMAC support for CryptoAPI, fixed patch
+> >> issues, indent, and testmgr build issues
+> >>
+> >> Quoting Tom St Denis <tstdenis@elliptictech.com>:
+> >>
+> >> > Hey all,
+> >> >
+> >> > Here's an updated patch which addresses a couple of build issues
+> >> > and
+> >> > coding style complaints.
+> >> >
+> >> > I still can't get it to run via testmgr I get
+> >> >
+> >> > [  162.407807] alg: No test for cmac(aes) (cmac(aes-generic))
+> >> >
+> >> > Despite the fact I have an entry for cmac(aes) (much like
+> >> > xcbc(aes)...).
+> >> >
+> >> > Here's the patch to bring 3.8-rc4 up with CMAC ...
+> >> >
+> >> > Signed-off-by: Tom St Denis <tstdenis@elliptictech.com>
+> >> >
+> >> <snip>
+> >> > diff --git a/include/uapi/linux/pfkeyv2.h
+> >> > b/include/uapi/linux/pfkeyv2.h
+> >> > index 0b80c80..d61898e 100644
+> >> > --- a/include/uapi/linux/pfkeyv2.h
+> >> > +++ b/include/uapi/linux/pfkeyv2.h
+> >> > @@ -296,6 +296,7 @@ struct sadb_x_kmaddress {
+> >> >  #define SADB_X_AALG_SHA2_512HMAC	7
+> >> >  #define SADB_X_AALG_RIPEMD160HMAC	8
+> >> >  #define SADB_X_AALG_AES_XCBC_MAC	9
+> >> > +#define SADB_X_AALG_AES_CMAC_MAC	10
+> >> >  #define SADB_X_AALG_NULL		251	/* kame */
+> >> >  #define SADB_AALG_MAX			251
+> >>
+> >> Should these values be based on IANA assigned IPSEC AH transform
+> >> identifiers?
+> >>
+> >> https://www.iana.org/assignments/isakmp-registry/isakmp-registry.xml#isakmp-registry-6
+> >
+> > There is no CMAC entry apparently ... despite the fact that CMAC is
+> > a proposed RFC standard for IPsec.
+> >
+> > It might be safer to move that to 14 since it's currently
+> > unassigned
+> > and then go through whatever channels are required to allocate it.
+> > Mostly this affects key setting.  So this means my patch would
+> > break
+> > AH_RSA setkey calls (which the kernel doesn't support anyways).
+> >
+> 
+> Problem seems to be that PFKEYv2 does not quite work with IKEv2, and
+> XFRM API should be used instead. There is new numbers assigned for
+> IKEv2:
+> https://www.iana.org/assignments/ikev2-parameters/ikev2-parameters.xml#ikev2-parameters-7
+> 
+> For new SADB_X_AALG_*, I'd think you should use value from "Reserved
+> for private use" range. Maybe 250?
+> 
+> But maybe better solution might be to not make AES-CMAC (or other new
+> algorithms) available throught PFKEY API at all, just XFRM?
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dw_dmac.c      |   17 ++++++++++++-----
- drivers/dma/dw_dmac_regs.h |    1 -
- 2 files changed, 12 insertions(+), 6 deletions(-)
+This is where I'm getting out of my area of knowledge.  Internally we use the "ip" tool to set SAs and that's about all I know about key management for IPsec in the kernel.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 72e6316..82e7c58 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -284,9 +284,9 @@ static void dwc_dostart(struct dw_dma_chan *dwc, struct dw_desc *first)
- 
- 		dwc_initialize(dwc);
- 
--		dwc->tx_list = &first->tx_list;
- 		dwc->tx_node_active = &first->tx_list;
- 
-+		/* Submit first block */
- 		dwc_do_single_block(dwc, first);
- 
- 		return;
-@@ -404,15 +404,22 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 		dma_writel(dw, CLEAR.XFER, dwc->mask);
- 
- 		if (test_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags)) {
--			if (dwc->tx_node_active != dwc->tx_list) {
--				desc = to_dw_desc(dwc->tx_node_active);
-+			/*
-+			 * We are inside first active descriptor.
-+			 * Otherwise something is really wrong.
-+			 */
-+			desc = dwc_first_active(dwc);
-+
-+			if (dwc->tx_node_active != &desc->tx_list) {
-+				child = to_dw_desc(dwc->tx_node_active);
- 
- 				/* Submit next block */
--				dwc_do_single_block(dwc, desc);
--				spin_unlock_irqrestore(&dwc->lock, flags);
-+				dwc_do_single_block(dwc, child);
- 
-+				spin_unlock_irqrestore(&dwc->lock, flags);
- 				return;
- 			}
-+
- 			/* We are done here */
- 			clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
- 		}
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index fef296d..13000d2 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -194,7 +194,6 @@ struct dw_dma_chan {
- 	bool				initialized;
- 
- 	/* software emulation of the LLP transfers */
--	struct list_head	*tx_list;
- 	struct list_head	*tx_node_active;
- 
- 	spinlock_t		lock;
--- 
-1.7.10.4
+For testing we only use static keys since IKE is not part of our hardware offering anyways.
 
+As long as I can use "ip" to set the keys I'm ok with whatever changes we make to this entry.
+
+Tom
