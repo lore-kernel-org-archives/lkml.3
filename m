@@ -1,148 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab3AWEHW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 23:07:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57388 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752848Ab3AWEHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 23:07:20 -0500
-Date: Tue, 22 Jan 2013 20:08:46 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] Hack to use mkdir/rmdir in debugfs
-Message-ID: <20130123040846.GA2638@kroah.com>
-References: <1358910114.21576.86.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358910114.21576.86.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753261Ab3AWEMe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 23:12:34 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:48557 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021Ab3AWEMd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 23:12:33 -0500
+Date: Wed, 23 Jan 2013 15:12:23 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Milo(Woogyom) Kim" <milo.kim@ti.com>
+Subject: linux-next: build failure after merge of the leds tree
+Message-Id: <20130123151223.01bb155bb06a2e30446900c2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__23_Jan_2013_15_12_23_+1100_F5XXZChprYLv6vsv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 10:01:54PM -0500, Steven Rostedt wrote:
-> Let me explain the situation.
-> 
-> I'm adding the ability to create multiple ftrace instances (buffers). I
-> have a directory: /debug/tracing/instances that will hold sub
-> directories that have the control files for these buffers. Basically,
-> each directory in the instances directory will be a duplicate of
-> the /debug/tracing directory, and will act agnostic from each other.
-> 
-> I original had:
-> 
-> # ls /debug/tracing/instances
-> new	free
-> 
-> Where to create an instance you had to echo the name of the instance
-> into the "new" file and it would be created:
-> 
-> # cd /debug/tracing/instances
-> # echo foo > new
-> 
-> # ls
-> new	foo	free
-> 
-> # ls foo
-> buffer_size_kb        free_buffer  trace_clock    trace_pipe
-> buffer_total_size_kb  set_event    trace_marker   tracing_on
-> events                trace        trace_options
-> 
-> 
-> And to remove it you would echo the name into the "free" file.
-> 
-> I find this interface rather awkward. A more elegant interface would be
-> to use mkdir and rmdir to create and remove these instances:
-> 
-> # cd /debug/traces/instances
-> 
-> # ls
-> 
-> # mkdir foo
-> 
-> # ls
-> foo
-> 
-> 
-> Unfortunately, the debugfs dir_inode_operations does not include a
-> mkdir. I decided to hijack the dir operations and install my own. But as
-> the mkdir needs to created debugfs directories with the instances
-> directory, they too will grab the i_node->i_mutex that is held by the
-> mkdir system call.
-> 
-> I finally did the following hack that works in my tests. But I'm a bit
-> uncomfortable and decided to call upon the VFS overlords to say this is
-> fine, or that I've must have stumbled upon a new kind of crack. Or maybe
-> this new crack is just fine.
-> 
-> I release the inode->i_mutex as the new_instance_create() has its own
-> locking to synchronize things and does the debugfs_create_dir() and
-> friends . Also, the instances directory is created at boot up and is
-> never destroyed, so I'm hoping that it's OK to release its i_mutex. I
-> even added a paranoid check to make sure it is the "instances"
-> directory. Note, the instances d_entry is saved as a static variable and
-> isn't needed to be recovered.
-> 
-> Is doing something as silly as the following fine, or is there a better
-> way?
+--Signature=_Wed__23_Jan_2013_15_12_23_+1100_F5XXZChprYLv6vsv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, why not create your own fs for ftrace?  :)
+Hi Bryan,
 
-> ----
-> static int instance_mkdir (struct inode *inode, struct dentry *dentry, umode_t mode)
-> {
-> 	struct dentry *parent;
-> 	int ret;
-> 
-> 	/* Paranoid: Make sure the parent is the "instances" directory */
-> 	parent = hlist_entry(inode->i_dentry.first, struct dentry, d_alias);
-> 	if (WARN_ON_ONCE(parent != trace_instance_dir))
-> 		return -ENOENT;
-> 
-> 	/*
-> 	 * The inode mutex is locked, but debugfs_create_dir() will also
-> 	 * take the mutex. As the instances directory can not be destroyed
-> 	 * or changed in any other way, it is safe to unlock it, and
-> 	 * let the dentry try. If two users try to make the same dir at
-> 	 * the same time, then the new_instance_create() determine the
-> 	 * winner.
-> 	 */
-> 	mutex_unlock(&inode->i_mutex);
-> 
-> 	ret = new_instance_create(dentry->d_iname);
-> 
-> 	mutex_lock(&inode->i_mutex);
-> 
-> 	return ret;
-> }
-> 
-> static const struct inode_operations instance_dir_inode_operations = {
-> 	.lookup		= simple_lookup,
-> 	.mkdir		= instance_mkdir,
-> };
-> 
-> static __init void create_trace_instances(struct dentry *d_tracer)
-> {
-> 	trace_instance_dir = debugfs_create_dir("instances", d_tracer);
-> 	if (WARN_ON(!trace_instance_dir))
-> 		return;
-> 
-> 	/* Hijack the dir inode operations, to allow mkdir */
-> 	trace_instance_dir->d_inode->i_op = &instance_dir_inode_operations;
-> }
-> ----
+After merging the leds tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-But how can you callback to your code to let it know that something was
-created in it?
+drivers/built-in.o: In function `lp55xx_unregister_leds':
+(.text+0x161dab): undefined reference to `led_classdev_unregister'
 
-Don't you need that for both mkdir and rmdir?
+Caused by commit 14732b162d34 ("leds-lp55xx: use lp55xx_unregister_leds()").
 
-But again, I'd really not want to do this in debugfs, how about your own
-filesystem?
+drivers/built-in.o: In function `lp55xx_init_led':
+leds-lp55xx-common.c:(.text+0x161f23): undefined reference to `led_classdev=
+_register'
+leds-lp55xx-common.c:(.text+0x161f9f): undefined reference to `led_classdev=
+_unregister'
 
-greg k-h
+Caused by commit b5370ff365fa ("eds-lp55xx: use lp55xx_init_led() common fu=
+nction").
+
+drivers/built-in.o: In function `lp55xx_read':
+(.text+0x1621b3): undefined reference to `i2c_smbus_read_byte_data'
+drivers/built-in.o: In function `lp55xx_init_device':
+(.text+0x1622f0): undefined reference to `i2c_smbus_write_byte_data'
+drivers/built-in.o: In function `lp55xx_init_device':
+(.text+0x162331): undefined reference to `i2c_smbus_write_byte_data'
+drivers/built-in.o: In function `lp55xx_update_bits':
+(.text+0x162492): undefined reference to `i2c_smbus_write_byte_data'
+drivers/built-in.o: In function `lp55xx_write':
+(.text+0x1624c5): undefined reference to `i2c_smbus_write_byte_data'
+
+Caused by commit 597eb710be87 ("leds-lp55xx: add new common driver for
+lp5521/5523").
+
+I have used the leds tree from next-20130122 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__23_Jan_2013_15_12_23_+1100_F5XXZChprYLv6vsv
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ/2MnAAoJEECxmPOUX5FEC98P/0pNiYd4nn0d7wNi76fLNDj0
+TcB/Bc4FgNXkrbWcj+0Wty7F9QDhvuzj78We9AQ7JCjDoxYhYi6fISS78FD/o1rW
+uf51HkUl+ZX1U7aQTkQDDNP5mKxp/4D6miMA+HiR/n4nJazpNLbCaCAh1/j7BXz0
+FDuzQ1z5sDoJnNIqTiHerBeOeA3yYeV0Ys7NZAH5JQrlySBqCBKmJlggu9dmII1B
+REm2vmkd8SLdlkf0VlOnndlDtMX5U8lU4LFTqkTHRTDp7SjSguD72/aI9bzyeUwk
+biD5W8GXiF7YuTVqtxG9ZbM98yDXSTGKLBUc5y5+tfRX/R+CoxIh8Ek5ZzE3FTm8
+SyPPDfiNWq4AYQw6cgKSPiVz08c7jDRxRlrCwT4h1tD15OMikCFdMV1gRX6fh+Gd
+Z9gmMB/xc70YSeX77YSv/L6xXSD42p0t//Y0Ng2JVhKRx09ceU8gnTIXvk9i6xrx
+6asfZdT0UPG7CuJn94mnxlj1I7akmbBdiMaWYmSepZoAQJUee0Y9rELpUs0RLEsL
+QrEOpeWHNGUYkipReB5lUl1AZHUuvcuBEGTLcxYaaPFRG7cHKPFqz86XPnssvmjo
+xTer0nHmXfWglPqmOkX/vT9XMQZNwdfzefsTIfYkmWYJaGJeubhJNcqMCADHDdXZ
+hG10IrRv79SzB+mbs7XF
+=zNGl
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__23_Jan_2013_15_12_23_+1100_F5XXZChprYLv6vsv--
