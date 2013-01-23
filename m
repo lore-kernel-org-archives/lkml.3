@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab3AWOH7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:07:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17302 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755508Ab3AWOH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:07:57 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>,
-        Stephen Hemminger <stephen@networkplumber.org>
-Subject: [PATCH 2/2] tuntap: limit the number of flow caches
-Date: Wed, 23 Jan 2013 21:59:13 +0800
-Message-Id: <1358949553-30309-2-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1358949553-30309-1-git-send-email-jasowang@redhat.com>
-References: <1358949553-30309-1-git-send-email-jasowang@redhat.com>
+	id S1755813Ab3AWOOt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:14:49 -0500
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:44015 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755561Ab3AWOOs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 09:14:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <1358908049.18561.12.camel@suxuemin.sh.intel.com>
+References: <1358908049.18561.12.camel@suxuemin.sh.intel.com>
+Date: Wed, 23 Jan 2013 09:14:47 -0500
+Message-ID: <CADnq5_Oiq3FrVLeA6uovDQnGrmZ3=gPaH173Q9aw9yMhfWM1kA@mail.gmail.com>
+Subject: Re: [PATCH] radeon_display: Use pointer return error codes
+From: Alex Deucher <alexdeucher@gmail.com>
+To: "Su, Xuemin" <xuemin.su@intel.com>
+Cc: airlied@linux.ie, airlied@redhat.com, alexander.deucher@amd.com,
+        s.hauer@pengutronix.de, ihadzic@research.bell-labs.com,
+        laurent.pinchart@ideasonboard.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com,
+        bo.he@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We create new flow caches when a new flow is identified by tuntap, This may lead
-some issues:
+On Tue, Jan 22, 2013 at 9:27 PM, Su, Xuemin <xuemin.su@intel.com> wrote:
+> From: xueminsu <xuemin.su@intel.com>
+> Date: Tue, 22 Jan 2013 22:16:53 +0800
+> Subject: [PATCH] radeon_display: Use pointer return error codes
+>
+> drm_mode_addfb() expects fb_create return error code
+> instead of NULL.
+>
+> Signed-off-by: xueminsu <xuemin.su@intel.com>
 
-- userspace may produce a huge amount of short live flows to exhaust host memory
-- the unlimited number of flow caches may produce a long list which increase the
-  time in the linear searching
+Thanks.  Added to my fixes queue.
 
-Solve this by introducing a limit of total number of flow caches.
+Alex
 
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/tun.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 8939d21..cc09b67 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -113,6 +113,7 @@ struct tap_filter {
-  * the netdevice to be fit in one page. So we can make sure the success of
-  * memory allocation. TODO: increase the limit. */
- #define MAX_TAP_QUEUES DEFAULT_MAX_NUM_RSS_QUEUES
-+#define MAX_TAP_FLOWS  4096
- 
- #define TUN_FLOW_EXPIRE (3 * HZ)
- 
-@@ -185,6 +186,7 @@ struct tun_struct {
- 	unsigned int numdisabled;
- 	struct list_head disabled;
- 	void *security;
-+	u32 flow_count;
- };
- 
- static inline u32 tun_hashfn(u32 rxhash)
-@@ -218,6 +220,7 @@ static struct tun_flow_entry *tun_flow_create(struct tun_struct *tun,
- 		e->queue_index = queue_index;
- 		e->tun = tun;
- 		hlist_add_head_rcu(&e->hash_link, head);
-+		++tun->flow_count;
- 	}
- 	return e;
- }
-@@ -228,6 +231,7 @@ static void tun_flow_delete(struct tun_struct *tun, struct tun_flow_entry *e)
- 		  e->rxhash, e->queue_index);
- 	hlist_del_rcu(&e->hash_link);
- 	kfree_rcu(e, rcu);
-+	--tun->flow_count;
- }
- 
- static void tun_flow_flush(struct tun_struct *tun)
-@@ -317,7 +321,8 @@ static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
- 		e->updated = jiffies;
- 	} else {
- 		spin_lock_bh(&tun->lock);
--		if (!tun_flow_find(head, rxhash))
-+		if (!tun_flow_find(head, rxhash) &&
-+		    tun->flow_count < MAX_TAP_FLOWS)
- 			tun_flow_create(tun, head, rxhash, queue_index);
- 
- 		if (!timer_pending(&tun->flow_gc_timer))
--- 
-1.7.1
-
+> ---
+>  drivers/gpu/drm/radeon/radeon_display.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
+> index 1da2386..ff3def7 100644
+> --- a/drivers/gpu/drm/radeon/radeon_display.c
+> +++ b/drivers/gpu/drm/radeon/radeon_display.c
+> @@ -1122,7 +1122,7 @@ radeon_user_framebuffer_create(struct drm_device *dev,
+>         if (ret) {
+>                 kfree(radeon_fb);
+>                 drm_gem_object_unreference_unlocked(obj);
+> -               return NULL;
+> +               return ERR_PTR(ret);
+>         }
+>
+>         return &radeon_fb->base;
+> --
+> 1.7.6
+>
+>
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
