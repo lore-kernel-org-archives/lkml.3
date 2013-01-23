@@ -1,59 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361Ab3AWSuc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 13:50:32 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:40820 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273Ab3AWSu1 (ORCPT
+	id S1752169Ab3AWSzi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 13:55:38 -0500
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:46615 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273Ab3AWSzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 13:50:27 -0500
-Date: Wed, 23 Jan 2013 13:50:24 -0500 (EST)
-Message-Id: <20130123.135024.1407137924304146015.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: mst@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stephen@networkplumber.org
-Subject: Re: [PATCH 2/2] tuntap: limit the number of flow caches
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1358949553-30309-2-git-send-email-jasowang@redhat.com>
-References: <1358949553-30309-1-git-send-email-jasowang@redhat.com>
-	<1358949553-30309-2-git-send-email-jasowang@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jan 2013 13:55:31 -0500
+X-Greylist: delayed 66337 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jan 2013 13:55:31 EST
+Date: Wed, 23 Jan 2013 10:55:22 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 04/45] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+Message-ID: <20130123185522.GG2373@mtj.dyndns.org>
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
+ <20130122073347.13822.85876.stgit@srivatsabhat.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130122073347.13822.85876.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Wed, 23 Jan 2013 21:59:13 +0800
+Hello, Srivatsa.
 
-> We create new flow caches when a new flow is identified by tuntap, This may lead
-> some issues:
-> 
-> - userspace may produce a huge amount of short live flows to exhaust host memory
-> - the unlimited number of flow caches may produce a long list which increase the
->   time in the linear searching
-> 
-> Solve this by introducing a limit of total number of flow caches.
-> 
-> Cc: Stephen Hemminger <stephen@networkplumber.org>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
+First of all, I'm not sure whether we need to be this step-by-step
+when introducing something new.  It's not like we're transforming an
+existing implementation and it doesn't seem to help understanding the
+series that much either.
 
-Applied, but really flow caches are an extremely broken concept especially
-when external entities control the population of such caches.
+On Tue, Jan 22, 2013 at 01:03:53PM +0530, Srivatsa S. Bhat wrote:
+> Using global rwlocks as the backend for per-CPU rwlocks helps us avoid many
+> lock-ordering related problems (unlike per-cpu locks). However, global
 
-We removed the routing cache of the ipv4 networking code exactly because
-this kind of crap does not work at all.
+So, unfortunately, this already seems broken, right?  The problem here
+seems to be that previously, say, read_lock() implied
+preempt_disable() but as this series aims to move away from it, it
+introduces the problem of locking order between such locks and the new
+contruct.
 
-Next you're going to have to add a delicately managed garbage
-collection scheme for this tuntap flow cache, and that will be tuned
-endlessly, when the real issue is that fundamentally this does not
-work.
+The only two options are either punishing writers or identifying and
+updating all such possible deadlocks.  percpu_rwsem does the former,
+right?  I don't know how feasible the latter would be.  Srivatsa,
+you've been looking at all the places which would require conversion,
+how difficult would doing the latter be?
 
-Instead, make the full lookup scale properly and use appropriate data
-structures.  It won't be as fast as a simple hash table demux, but
-it'll actually be immune to growth issues and DoS attacks and give
-consistent and repeatable lookup performance regardless of traffic
-patterns.
+> +#define reader_uses_percpu_refcnt(pcpu_rwlock, cpu)			\
+> +		(ACCESS_ONCE(per_cpu(*((pcpu_rwlock)->reader_refcnt), cpu)))
+> +
+> +#define reader_nested_percpu(pcpu_rwlock)				\
+> +			(__this_cpu_read(*((pcpu_rwlock)->reader_refcnt)) > 1)
+> +
+> +#define writer_active(pcpu_rwlock)					\
+> +			(__this_cpu_read(*((pcpu_rwlock)->writer_signal)))
+
+Why are these in the public header file?  Are they gonna be used to
+inline something?
+
+> +static inline void raise_writer_signal(struct percpu_rwlock *pcpu_rwlock,
+> +				       unsigned int cpu)
+> +{
+> +	per_cpu(*pcpu_rwlock->writer_signal, cpu) = true;
+> +}
+> +
+> +static inline void drop_writer_signal(struct percpu_rwlock *pcpu_rwlock,
+> +				      unsigned int cpu)
+> +{
+> +	per_cpu(*pcpu_rwlock->writer_signal, cpu) = false;
+> +}
+> +
+> +static void announce_writer_active(struct percpu_rwlock *pcpu_rwlock)
+> +{
+> +	unsigned int cpu;
+> +
+> +	for_each_online_cpu(cpu)
+> +		raise_writer_signal(pcpu_rwlock, cpu);
+> +
+> +	smp_mb(); /* Paired with smp_rmb() in percpu_read_[un]lock() */
+> +}
+> +
+> +static void announce_writer_inactive(struct percpu_rwlock *pcpu_rwlock)
+> +{
+> +	unsigned int cpu;
+> +
+> +	drop_writer_signal(pcpu_rwlock, smp_processor_id());
+> +
+> +	for_each_online_cpu(cpu)
+> +		drop_writer_signal(pcpu_rwlock, cpu);
+> +
+> +	smp_mb(); /* Paired with smp_rmb() in percpu_read_[un]lock() */
+> +}
+
+It could be just personal preference but I find the above one line
+wrappers more obfuscating than anything else.  What's the point of
+wrapping writer_signal = true/false into a separate function?  These
+simple wrappers just add layers that people have to dig through to
+figure out what's going on without adding anything of value.  I'd much
+prefer collapsing these into the percpu_write_[un]lock().
+
+Thanks.
+
+-- 
+tejun
