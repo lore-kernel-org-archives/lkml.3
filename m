@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab3AWKjG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 05:39:06 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:41949 "EHLO
+	id S1755209Ab3AWKi5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 05:38:57 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:41945 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754561Ab3AWKi7 (ORCPT
+	with ESMTP id S1754561Ab3AWKiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 05:38:59 -0500
+	Wed, 23 Jan 2013 05:38:55 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <sameo@linux.intel.com>
 CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
@@ -14,9 +14,9 @@ CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
         <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <rogerq@ti.com>
-Subject: [PATCH v9 10/20] mfd: omap-usb-tll: Add OMAP5 revision and HSIC support
-Date: Wed, 23 Jan 2013 12:38:02 +0200
-Message-ID: <1358937492-8129-11-git-send-email-rogerq@ti.com>
+Subject: [PATCH v9 08/20] mfd: omap-usb-tll: Fix error message
+Date: Wed, 23 Jan 2013 12:38:00 +0200
+Message-ID: <1358937492-8129-9-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358937492-8129-1-git-send-email-rogerq@ti.com>
 References: <1358937492-8129-1-git-send-email-rogerq@ti.com>
@@ -26,65 +26,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TLL module on OMAP5 has 3 channels.
-HSIC mode requires the TLL channel to be in Transparent UTMI mode.
+omap_enable/disable_tll() can fail if TLL device is not
+initialized. It could be due to multiple reasons and not only
+due to missing platform data.
+
+Also make local variables static and use 'struct device *'
+instead of 'struct platform_device *' for global reference.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/mfd/omap-usb-tll.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   21 ++++++++++++---------
+ 1 files changed, 12 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index 55c85c7..0aef1a7 100644
+index 3dbbfea..eccc65e 100644
 --- a/drivers/mfd/omap-usb-tll.c
 +++ b/drivers/mfd/omap-usb-tll.c
-@@ -54,10 +54,13 @@
+@@ -109,8 +109,8 @@ struct usbtll_omap {
  
- #define	OMAP_TLL_CHANNEL_CONF(num)			(0x040 + 0x004 * num)
- #define OMAP_TLL_CHANNEL_CONF_FSLSMODE_SHIFT		24
-+#define OMAP_TLL_CHANNEL_CONF_DRVVBUS			(1 << 16)
-+#define OMAP_TLL_CHANNEL_CONF_CHRGVBUS			(1 << 15)
- #define	OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF		(1 << 11)
- #define	OMAP_TLL_CHANNEL_CONF_ULPI_ULPIAUTOIDLE		(1 << 10)
- #define	OMAP_TLL_CHANNEL_CONF_UTMIAUTOIDLE		(1 << 9)
- #define	OMAP_TLL_CHANNEL_CONF_ULPIDDRMODE		(1 << 8)
-+#define OMAP_TLL_CHANNEL_CONF_MODE_TRANSPARENT_UTMI	(2 << 1)
- #define OMAP_TLL_CHANNEL_CONF_CHANMODE_FSLS		(1 << 1)
- #define	OMAP_TLL_CHANNEL_CONF_CHANEN			(1 << 0)
+ /*-------------------------------------------------------------------------*/
  
-@@ -92,6 +95,7 @@
- #define OMAP_USBTLL_REV1		0x00000015	/* OMAP3 */
- #define OMAP_USBTLL_REV2		0x00000018	/* OMAP 3630 */
- #define OMAP_USBTLL_REV3		0x00000004	/* OMAP4 */
-+#define OMAP_USBTLL_REV4		0x00000006	/* OMAP5 */
+-const char usbtll_driver_name[] = USBTLL_DRIVER_NAME;
+-struct platform_device	*tll_pdev;
++static const char usbtll_driver_name[] = USBTLL_DRIVER_NAME;
++static struct device	*tll_dev;
  
- #define is_ehci_tll_mode(x)	(x == OMAP_EHCI_PORT_MODE_TLL)
+ /*-------------------------------------------------------------------------*/
  
-@@ -245,6 +249,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	ver =  usbtll_read(base, OMAP_USBTLL_REVISION);
- 	switch (ver) {
- 	case OMAP_USBTLL_REV1:
-+	case OMAP_USBTLL_REV4:
- 		tll->nch = OMAP_TLL_CHANNEL_COUNT;
- 		break;
- 	case OMAP_USBTLL_REV2:
-@@ -310,6 +315,15 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 				reg &= ~(OMAP_TLL_CHANNEL_CONF_UTMIAUTOIDLE
- 					| OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF
- 					| OMAP_TLL_CHANNEL_CONF_ULPIDDRMODE);
-+			} else if (pdata->port_mode[i] ==
-+					OMAP_EHCI_PORT_MODE_HSIC) {
-+				/*
-+				 * HSIC Mode requires UTMI port configurations
-+				 */
-+				reg |= OMAP_TLL_CHANNEL_CONF_DRVVBUS
-+				 | OMAP_TLL_CHANNEL_CONF_CHRGVBUS
-+				 | OMAP_TLL_CHANNEL_CONF_MODE_TRANSPARENT_UTMI
-+				 | OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF;
- 			} else {
- 				continue;
- 			}
+@@ -334,7 +334,8 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 
+ 	spin_unlock_irqrestore(&tll->lock, flags);
+ 	pm_runtime_put_sync(dev);
+-	tll_pdev = pdev;
++	/* only after this can omap_tll_enable/disable work */
++	tll_dev = dev;
+ 
+ 	return 0;
+ 
+@@ -356,6 +357,8 @@ static int usbtll_omap_remove(struct platform_device *pdev)
+ 	struct usbtll_omap *tll = platform_get_drvdata(pdev);
+ 	int i;
+ 
++	tll_dev = NULL;
++
+ 	for (i = 0; i < tll->nch; i++)
+ 		if (!IS_ERR(tll->ch_clk[i]))
+ 			clk_put(tll->ch_clk[i]);
+@@ -436,21 +439,21 @@ static struct platform_driver usbtll_omap_driver = {
+ 
+ int omap_tll_enable(void)
+ {
+-	if (!tll_pdev) {
+-		pr_err("missing omap usbhs tll platform_data\n");
++	if (!tll_dev) {
++		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
+ 		return  -ENODEV;
+ 	}
+-	return pm_runtime_get_sync(&tll_pdev->dev);
++	return pm_runtime_get_sync(tll_dev);
+ }
+ EXPORT_SYMBOL_GPL(omap_tll_enable);
+ 
+ int omap_tll_disable(void)
+ {
+-	if (!tll_pdev) {
+-		pr_err("missing omap usbhs tll platform_data\n");
++	if (!tll_dev) {
++		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
+ 		return  -ENODEV;
+ 	}
+-	return pm_runtime_put_sync(&tll_pdev->dev);
++	return pm_runtime_put_sync(tll_dev);
+ }
+ EXPORT_SYMBOL_GPL(omap_tll_disable);
+ 
 -- 
 1.7.4.1
 
