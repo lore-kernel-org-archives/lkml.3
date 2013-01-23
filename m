@@ -1,255 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426Ab3AWXSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 18:18:51 -0500
-Received: from longford.logfs.org ([213.229.74.203]:58383 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab3AWXSq (ORCPT
+	id S1752578Ab3AWXXk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 18:23:40 -0500
+Received: from sting.hengli.com.au ([178.18.18.71]:33686 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751143Ab3AWXXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 18:18:46 -0500
-X-Greylist: delayed 2183 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jan 2013 18:18:45 EST
-Date: Wed, 23 Jan 2013 16:20:33 -0500
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mpt2sas: prevent double free on error path
-Message-ID: <20130123212033.GA15800@logfs.org>
+	Wed, 23 Jan 2013 18:23:32 -0500
+Date: Thu, 24 Jan 2013 10:23:16 +1100
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
+        linux-iio@vger.kernel.org, Artem Bityutskiy <dedekind1@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org
+Subject: Re: linux-next: Tree for Jan 23 (mtd/ubi and iio and
+ crypto/crc32[c])
+Message-ID: <20130123232316.GB25726@gondor.apana.org.au>
+References: <20130123174336.47c0113740a14da7f6a92187@canb.auug.org.au>
+ <51006DC9.30802@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <51006DC9.30802@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed this one when list_del was called with poisoned list
-pointers, but the real problem is a double-free (and a use-after-free
-just before that).
+On Wed, Jan 23, 2013 at 03:10:01PM -0800, Randy Dunlap wrote:
+> On 01/22/13 22:43, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > Changes since 20130122:
+> > 
+> 
+> 
+> on i386:
+> 
+> ERROR: "crc32_le" [drivers/mtd/ubi/ubi.ko] undefined!
+> ERROR: "iio_triggered_buffer_setup" [drivers/iio/adc/max1363.ko] undefined!
+> ERROR: "iio_triggered_buffer_cleanup" [drivers/iio/adc/max1363.ko] undefined!
+> ERROR: "__crc32c_le" [crypto/crc32c.ko] undefined!
+> ERROR: "crc32_le" [crypto/crc32.ko] undefined!
 
-Both _scsih_probe_boot_devices() and _scsih_sas_device_add() put the
-sas_device onto a list, thereby giving up control.  Next they call
-mpt2sas_transport_port_add() and will list_del and free the object on
-errors.  If some other function already did the list_del and free, it
-will happen again.
+Weird.  You do have CONFIG_CRC32 selected, so did it compile
+a lib/crc32.ko or not?
 
-This patch adds reference counting to prevent the double free.  One
-reference count goes to the caller of mpt2sas_transport_port_add(), the
-second to the list.  Whoever removes the object from the list gets to
-drop one reference count.  _scsih_probe_boot_devices() and
-_scsih_sas_device_add() get a second reference count to ensure the
-object is not freed while they are still accessing it.
-
-To prevent the double list_del(), I changed the code to list_del_init()
-and added a list_empty() check before that.  Since the
-list_empty/list_del_init is always called under a lock, this should be
-safe.
-
-I hate the complexity this patch adds, but see no alternative to it.
-
-mpt2sas0: failure at drivers/scsi/mpt2sas/mpt2sas_transport.c:708/mpt2sas_transport_port_add()!
-general protection fault: 0000 [#1] SMP
-CPU 9
-Pid: 3097, comm: kworker/u:11 Tainted: G        W  O 3.6.10+ #31392.trunk    /0JP31P
-RIP: 0010:[<ffffffffa0309744>]  [<ffffffffa0309744>] _scsih_sas_device_remove+0x54/0x90 [mpt2sas]
-RSP: 0018:ffff881fed4d7ab0  EFLAGS: 00010046
-RAX: dead000000200200 RBX: ffff881ff6a5cd88 RCX: 00000000000010e8
-RDX: ffff881ff7dab800 RSI: ffff881ff7daba00 RDI: dead000000100100
-RBP: ffff881fed4d7ad0 R08: dead000000200200 R09: ffff880fff802200
-R10: ffffffffa0317980 R11: 0000000000000000 R12: ffff881ff7daba00
-R13: 0000000000000286 R14: 500605ba006c9d09 R15: ffff881ff7daba00
-FS:  0000000000000000(0000) GS:ffff88203fc80000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007f8ac89ec458 CR3: 0000001ff4c5c000 CR4: 00000000000407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process kworker/u:11 (pid: 3097, threadinfo ffff881fed4d6000, task ffff881402f3d9c0)
-Stack:
- 0000000000000401 ffff881ff6a5c6b0 0000000000000401 0000000000000016
- ffff881fed4d7bb0 ffffffffa030f93e 0000000000000000 ffff881ff6a5cd88
- 0012000e0f000008 006c9d090002000b 00180009500605ba 0000040100000016
-Call Trace:
- [<ffffffffa030f93e>] _scsih_add_device.clone.32+0x2fe/0x420 [mpt2sas]
- [<ffffffffa03126e5>] _scsih_sas_topology_change_event.clone.38+0x285/0x620 [mpt2sas]
- [<ffffffff81078c90>] ? load_balance+0x100/0x7a0
- [<ffffffffa0312a80>] ? _scsih_sas_topology_change_event.clone.38+0x620/0x620 [mpt2sas]
- [<ffffffffa0312d8a>] _firmware_event_work+0x30a/0xfc0 [mpt2sas]
- [<ffffffff810015cc>] ? __switch_to+0x14c/0x410
- [<ffffffff8106dfdb>] ? finish_task_switch+0x4b/0xf0
- [<ffffffffa0312a80>] ? _scsih_sas_topology_change_event.clone.38+0x620/0x620 [mpt2sas]
- [<ffffffff8105bf40>] process_one_work+0x140/0x500
- [<ffffffff8105d354>] worker_thread+0x194/0x510
- [<ffffffff8106dfdb>] ? finish_task_switch+0x4b/0xf0
- [<ffffffff8105d1c0>] ? manage_workers+0x320/0x320
- [<ffffffff8106282e>] kthread+0x9e/0xb0
- [<ffffffff815bef44>] kernel_thread_helper+0x4/0x10
- [<ffffffff815b5e5d>] ? retint_restore_args+0x13/0x13
- [<ffffffff81062790>] ? kthread_freezable_should_stop+0x70/0x70
- [<ffffffff815bef40>] ? gs_change+0x13/0x13
-
-Signed-off-by: Joern Engel <joern@logfs.org>
----
- drivers/scsi/mpt2sas/mpt2sas_base.h  |    1 +
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |   55 ++++++++++++++++++++++++++++------
- 2 files changed, 47 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.h b/drivers/scsi/mpt2sas/mpt2sas_base.h
-index 543d8d6..ceb7d41 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.h
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
-@@ -367,6 +367,7 @@ struct _sas_device {
- 	u16	slot;
- 	u8	phy;
- 	u8	responding;
-+	struct kref kref;
- };
- 
- /**
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-index c6bdc92..43b3a98 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -570,6 +570,18 @@ _scsih_sas_device_find_by_handle(struct MPT2SAS_ADAPTER *ioc, u16 handle)
- 	return NULL;
- }
- 
-+static void free_sas_device(struct kref *kref)
-+{
-+	struct _sas_device *sas_device = container_of(kref, struct _sas_device,
-+			kref);
-+	kfree(sas_device);
-+}
-+
-+static void put_sas_device(struct _sas_device *sas_device)
-+{
-+	kref_put(&sas_device->kref, free_sas_device);
-+}
-+
- /**
-  * _scsih_sas_device_remove - remove sas_device from list.
-  * @ioc: per adapter object
-@@ -583,14 +595,19 @@ _scsih_sas_device_remove(struct MPT2SAS_ADAPTER *ioc,
-     struct _sas_device *sas_device)
- {
- 	unsigned long flags;
-+	int was_on_list = 0;
- 
- 	if (!sas_device)
- 		return;
- 
- 	spin_lock_irqsave(&ioc->sas_device_lock, flags);
--	list_del(&sas_device->list);
--	kfree(sas_device);
-+	if (!list_empty(&sas_device->list)) {
-+		list_del_init(&sas_device->list);
-+		was_on_list = 1;
-+	}
- 	spin_unlock_irqrestore(&ioc->sas_device_lock, flags);
-+	if (was_on_list)
-+		put_sas_device(sas_device);
- }
- 
- 
-@@ -613,6 +630,8 @@ _scsih_sas_device_add(struct MPT2SAS_ADAPTER *ioc,
- 	    sas_device->handle, (unsigned long long)sas_device->sas_address));
- 
- 	spin_lock_irqsave(&ioc->sas_device_lock, flags);
-+	/* Get an extra refcount... */
-+	kref_get(&sas_device->kref);
- 	list_add_tail(&sas_device->list, &ioc->sas_device_list);
- 	spin_unlock_irqrestore(&ioc->sas_device_lock, flags);
- 
-@@ -630,6 +649,12 @@ _scsih_sas_device_add(struct MPT2SAS_ADAPTER *ioc,
- 			sas_device->sas_address_parent);
- 		_scsih_sas_device_remove(ioc, sas_device);
- 	}
-+	/*
-+	 * ...and drop it again.  If an error already happend, this is the
-+	 * final put and we free the object now.  Otherwise whoever removes
-+	 * the object from the list will do the final put and free.
-+	 */
-+	put_sas_device(sas_device);
- }
- 
- /**
-@@ -5270,6 +5295,7 @@ _scsih_add_device(struct MPT2SAS_ADAPTER *ioc, u16 handle, u8 phy_num, u8 is_pd)
- 		return -1;
- 	}
- 
-+	kref_init(&sas_device->kref);
- 	sas_device->handle = handle;
- 	if (_scsih_get_sas_address(ioc, le16_to_cpu
- 		(sas_device_pg0.ParentDevHandle),
-@@ -5341,7 +5367,7 @@ _scsih_remove_device(struct MPT2SAS_ADAPTER *ioc,
- 	    "handle(0x%04x), sas_addr(0x%016llx)\n", ioc->name, __func__,
- 	    sas_device->handle, (unsigned long long)
- 	    sas_device->sas_address));
--	kfree(sas_device);
-+	put_sas_device(sas_device);
- }
- /**
-  * _scsih_device_remove_by_handle - removing device object by handle
-@@ -5355,16 +5381,21 @@ _scsih_device_remove_by_handle(struct MPT2SAS_ADAPTER *ioc, u16 handle)
- {
- 	struct _sas_device *sas_device;
- 	unsigned long flags;
-+	int was_on_list = 0;
- 
- 	if (ioc->shost_recovery)
- 		return;
- 
- 	spin_lock_irqsave(&ioc->sas_device_lock, flags);
- 	sas_device = _scsih_sas_device_find_by_handle(ioc, handle);
--	if (sas_device)
--		list_del(&sas_device->list);
-+	if (sas_device) {
-+		if (!list_empty(&sas_device->list)) {
-+			list_del_init(&sas_device->list);
-+			was_on_list = 1;
-+		}
-+	}
- 	spin_unlock_irqrestore(&ioc->sas_device_lock, flags);
--	if (sas_device)
-+	if (was_on_list)
- 		_scsih_remove_device(ioc, sas_device);
- }
- 
-@@ -5381,6 +5412,7 @@ mpt2sas_device_remove_by_sas_address(struct MPT2SAS_ADAPTER *ioc,
- {
- 	struct _sas_device *sas_device;
- 	unsigned long flags;
-+	int was_on_list = 0;
- 
- 	if (ioc->shost_recovery)
- 		return;
-@@ -5388,10 +5420,14 @@ mpt2sas_device_remove_by_sas_address(struct MPT2SAS_ADAPTER *ioc,
- 	spin_lock_irqsave(&ioc->sas_device_lock, flags);
- 	sas_device = mpt2sas_scsih_sas_device_find_by_sas_address(ioc,
- 	    sas_address);
--	if (sas_device)
--		list_del(&sas_device->list);
-+	if (sas_device) {
-+		if (!list_empty(&sas_device->list)) {
-+			list_del_init(&sas_device->list);
-+			was_on_list = 1;
-+		}
-+	}
- 	spin_unlock_irqrestore(&ioc->sas_device_lock, flags);
--	if (sas_device)
-+	if (was_on_list)
- 		_scsih_remove_device(ioc, sas_device);
- }
- #ifdef CONFIG_SCSI_MPT2SAS_LOGGING
-@@ -7805,6 +7841,7 @@ _scsih_probe_boot_devices(struct MPT2SAS_ADAPTER *ioc)
- 		handle = sas_device->handle;
- 		sas_address_parent = sas_device->sas_address_parent;
- 		sas_address = sas_device->sas_address;
-+		kref_get(&sas_device->kref);
- 		list_move_tail(&sas_device->list, &ioc->sas_device_list);
- 		spin_unlock_irqrestore(&ioc->sas_device_lock, flags);
- 
+Thanks,
 -- 
-1.7.10.4
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
