@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab3AWK2P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 05:28:15 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:61902 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581Ab3AWK2L (ORCPT
+	id S1754811Ab3AWK3U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 05:29:20 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4742 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581Ab3AWK3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 05:28:11 -0500
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org,
-        Maxime Coquelin <maxime.coquelin@stericsson.com>,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH] ARM: mach-ux500: enable 128KB way L2 cache on DB8540
-Date: Wed, 23 Jan 2013 11:27:58 +0100
-Message-Id: <1358936878-29806-1-git-send-email-fabio.baltieri@linaro.org>
-X-Mailer: git-send-email 1.7.12.1
+	Wed, 23 Jan 2013 05:29:18 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 23 Jan 2013 02:29:17 -0800
+From: Alex Courbot <acourbot@nvidia.com>
+To: Leela Krishna Amudala <leelakrishna.a@gmail.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Mark Zhang <markz@nvidia.com>, "gnurou@gmail.com" <gnurou@gmail.com>
+Subject: Re: [PATCH 2/3] tegra: pwm-backlight: add tegra pwm-bl driver
+Date: Wed, 23 Jan 2013 19:29:16 +0900
+Message-ID: <3208798.X7kqxH1FjQ@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9.5 (Linux/3.6.11-1-ARCH; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAL1wa8d2BS3RxdsdUyCqF20ZKe46jUZcfUKitnpP9Lgb9aB5hw@mail.gmail.com>
+References: <1358591420-7790-1-git-send-email-acourbot@nvidia.com> <1358591420-7790-3-git-send-email-acourbot@nvidia.com> <CAL1wa8d2BS3RxdsdUyCqF20ZKe46jUZcfUKitnpP9Lgb9aB5hw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maxime Coquelin <maxime.coquelin@stericsson.com>
+On Wednesday 23 January 2013 18:15:30 Leela Krishna Amudala wrote:
+> > +       pwm_backlight_set_subdriver_data(dev, data);
+> 
+> Here you are passing ventana_bl_data pointer as input and in the
+> pwm_backlight_get_subdriver_data() function you are assigning the
+> received driver data to backlight_device pointer. As both are two
+> different structures with different structure fields in it. There can
+> be a chance for a crash.
 
-DB8540 L2 was configured with 64KB way size, but it has 128KB as AP9540.
+That's because the following happens later in pwm_backlight_probe():
 
-Fix this by modifying ux500_l2x0_init() to use 128KB way size for all
-cpus in the x540 family.
+	pb->subdriver_data = dev_get_drvdata(&pdev->dev);
+	...
+	bl = backlight_device_register(dev_name(&pdev->dev), &pdev->dev, pb,
+				       &pwm_backlight_ops, &props);
+	...
+	platform_set_drvdata(pdev, bl);
 
-Signed-off-by: Maxime Coquelin <maxime.coquelin@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
----
- arch/arm/mach-ux500/cache-l2x0.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+So from then on the result of dev_get_drvdata() is indeed an instance of 
+backlight_device from which we can retrieve the subdriver data. I'm not really 
+proud of this. But fortunately it seems like we are going to do things 
+differently.
 
-diff --git a/arch/arm/mach-ux500/cache-l2x0.c b/arch/arm/mach-ux500/cache-l2x0.c
-index 75d5b51..1682dfe 100644
---- a/arch/arm/mach-ux500/cache-l2x0.c
-+++ b/arch/arm/mach-ux500/cache-l2x0.c
-@@ -46,8 +46,8 @@ static int __init ux500_l2x0_init(void)
- 	/* Unlock before init */
- 	ux500_l2x0_unlock();
- 
--	/* DB9540's L2 has 128KB way size */
--	if (cpu_is_u9540())
-+	/* DBx540's L2 has 128KB way size */
-+	if (cpu_is_ux540_family())
- 		/* 128KB way size */
- 		aux_val |= (0x4 << L2X0_AUX_CTRL_WAY_SIZE_SHIFT);
- 	else
--- 
-1.7.12.1
+Alex.
 
