@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab3AWOfy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:35:54 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35899 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755306Ab3AWOfx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:35:53 -0500
-Date: Wed, 23 Jan 2013 14:35:41 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: snakky.zhang@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Is this a bug that n_tty_set_room not serialized? If so please
- correct it.
-Message-ID: <20130123143541.0abfa379@www.etchedpixels.co.uk>
-In-Reply-To: <50FF69C6.2040705@gmail.com>
-References: <50FF69C6.2040705@gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755890Ab3AWOgV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:36:21 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:47957 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750845Ab3AWOgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 09:36:19 -0500
+Message-ID: <50FFF571.8080506@parallels.com>
+Date: Wed, 23 Jan 2013 18:36:33 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <xfs@oss.sgi.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC, PATCH 00/19] Numa aware LRU lists and shrinkers
+References: <1354058086-27937-1-git-send-email-david@fromorbit.com> <50FD6815.90900@parallels.com> <20130121232121.GG2498@dastard>
+In-Reply-To: <20130121232121.GG2498@dastard>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jan 2013 12:40:38 +0800
-snakky.zhang@gmail.com wrote:
-
-> Hi experts,
+On 01/22/2013 03:21 AM, Dave Chinner wrote:
+> On Mon, Jan 21, 2013 at 08:08:53PM +0400, Glauber Costa wrote:
+>> On 11/28/2012 03:14 AM, Dave Chinner wrote:
+>>> [PATCH 09/19] list_lru: per-node list infrastructure
+>>>
+>>> This makes the generic LRU list much more scalable by changing it to
+>>> a {list,lock,count} tuple per node. There are no external API
+>>> changes to this changeover, so is transparent to current users.
+>>>
+>>> [PATCH 10/19] shrinker: add node awareness
+>>> [PATCH 11/19] fs: convert inode and dentry shrinking to be node
+>>>
+>>> Adds a nodemask to the struct shrink_control for callers of
+>>> shrink_slab to set appropriately for their reclaim context. This
+>>> nodemask is then passed by the inode and dentry cache reclaim code
+>>> to the generic LRU list code to implement node aware shrinking.
+>>
+>> I have a follow up question that popped up from a discussion between me
+>> and my very American friend Johnny Wheeler, also known as Johannes
+>> Weiner (CC'd). I actually remember we discussing this, but don't fully
+>> remember the outcome. And since I can't find it anywhere, it must have
+>> been in a media other than e-mail. So I thought it would do no harm in
+>> at least documenting it...
+>>
+>> Why are we doing this per-node, instead of per-zone?
+>>
+>> It seems to me that the goal is to collapse all zones of a node into a
+>> single list, but since the number of zones is not terribly larger than
+>> the number of nodes, and zones is where the pressure comes from, what do
+>> we really gain from this?
 > 
-> Seems there is an bug related to function n_tty_set_roomin source file
-> drivers/tty/n_tty.c. This function is used to set receive_room based on
-> the read_cntby both the consumer and the producer of the tty's read buffer.
+> The number is quite a bit higher - there are platforms with 5 zones
+> to a node. The reality is, though, for most platforms slab
+> allocations come from a single zone - they never come from ZONE_DMA,
+> ZONE_HIGHMEM or ZONE_MOVEABLE, so there is there is no good reason
+> for having cache LRUs for these zones. So, two zones at most.
 > 
-> But this function is not serialized, so I am afraid there is
-> a risk like: The producer make the buffer full and then call this 
-> function to
+Yes, but one would expect that most of those special zones would be
+present only in the first node, no? (correct me if I am wrong here).
 
-It's not entirely robust - it should be ok for current usage. The proper
-fix IMHO is to make the ldisc receive function return the number of bytes
-actually consumed. That cures the problem rather than patching around it.
+Over that, things should be pretty much addressable.
 
-It's an interesting little project for someone, and as I think only n_tty
-uses that level of flow control probably not too horrible now.
-
-Alan
