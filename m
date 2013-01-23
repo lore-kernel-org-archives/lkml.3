@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab3AWPEu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:04:50 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20541 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab3AWPEt (ORCPT
+	id S1754382Ab3AWPHf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:07:35 -0500
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:21876
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751225Ab3AWPHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 10:04:49 -0500
-X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=aeQPs-_SJuMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=N-VFlIc2aKAA:10 a=hHmAqNvhI3CydcFX9usA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358953487.21576.120.camel@gandalf.local.home>
-Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing EXPORT_SYMBOL when
- CONFIG_KVM=m
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: sedat.dilek@gmail.com, "devendra.aaru" <devendra.aaru@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 23 Jan 2013 10:04:47 -0500
-In-Reply-To: <CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
-References: <1358946905-13320-1-git-send-email-sedat.dilek@gmail.com>
-	 <CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
-	 <CA+icZUW7XrOGguoPO00wxPLUr2Xc8fP=jQZwekpnmWKRewwX2g@mail.gmail.com>
-	 <CAFTL4hzcuxoy2deQpXDBRQZZBZ4VjT=EnO3ZZv6x-jGMTr_eaA@mail.gmail.com>
-	 <1358949189.21576.114.camel@gandalf.local.home>
-	 <CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Wed, 23 Jan 2013 10:07:34 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h1155h)
+X-WSS-ID: 0MH33C6-01-9AO-02
+X-M-MSG: 
+Message-ID: <50FFFCA5.1010309@amd.com>
+Date: Wed, 23 Jan 2013 09:07:17 -0600
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Joerg Roedel <joro@8bytes.org>
+CC: <iommu@lists.linux-foundation.org>, Borislav Petkov <bp@alien8.de>,
+        <linux-kernel@vger.kernel.org>, Udo van den Heuvel <udovdh@xs4all.nl>,
+        <ssg.sos.staff@mpdtxmail.amd.com>
+Subject: Re: [PATCH 1/1] AMD Family15h Model10-1Fh erratum 746 Workaround
+References: <1358896750-5199-1-git-send-email-suravee.suthikulpanit@amd.com> <20130123070604.GT25591@8bytes.org>
+In-Reply-To: <20130123070604.GT25591@8bytes.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-23 at 15:02 +0100, Frederic Weisbecker wrote:
+On 1/23/2013 1:06 AM, Joerg Roedel wrote:
 
-> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-> index bbb2c2c..a13b8a3 100644
-> --- a/kernel/context_tracking.c
-> +++ b/kernel/context_tracking.c
-> @@ -111,14 +111,19 @@ void guest_enter(void)
->         else
->                 __guest_enter();
->  }
-> +EXPORT_SYMBOL_GPL(guest_enter);
-> 
->  void guest_exit(void)
->  {
-> +#ifndef CONFIG_KVM
-> +i
-> +#endif
+> On Tue, Jan 22, 2013 at 05:19:10PM -0600, Suthikulpanit, Suravee wrote:
+>> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+>> @@ -1171,6 +1195,8 @@ static int iommu_init_pci(struct amd_iommu *iommu)
+>>   		for (i = 0; i < 0x83; i++)
+>>   			iommu->stored_l2[i] = iommu_read_l2(iommu, i);
+>>   	}
+>> +	
+>> +	amd_iommu_apply_erratum_746(iommu);
+> This will also be applied to RD890 IOMMUs, right? This workaround should
+> be limited to Trinity IOMMUs.
 
-I don't like #ifdefs in .c files. They belong in headers. Could you
-convert this to be:
+Inside the function, it checks the family and model number.  Only Trinitiy is affected.
 
-include/linux/context_tracking.h:
-
-#ifdef CONFIG_KVM
- #define add_vi_i_typo()
-#else
- #define add_vi_i_typo()	i
-#endif
-
-and then in context_tracking.c:
-
-void guest_exit(void)
-{
-	add_vi_typo();
-
-[...]
-
--- Steve
-
->         if (vtime_accounting_enabled())
->                 vtime_guest_exit(current);
->         else
->                 __guest_exit();
->  }
-> +EXPORT_SYMBOL_GPL(guest_exit);
->  #endif
+Suravee
 
 
