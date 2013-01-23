@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab3AWAff (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 19:35:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47331 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab3AWAfc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 19:35:32 -0500
-Date: Tue, 22 Jan 2013 16:35:26 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 1/6] cgroup: initialize cgrp->dentry before css_alloc()
-Message-Id: <20130122163526.6c4ea765.akpm@linux-foundation.org>
-In-Reply-To: <20130123002754.GB5359@htj.dyndns.org>
-References: <50F7B040.2020906@huawei.com>
-	<20130123002754.GB5359@htj.dyndns.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752582Ab3AWAfo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 19:35:44 -0500
+Received: from mga11.intel.com ([192.55.52.93]:41960 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752008Ab3AWAfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 19:35:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,518,1355126400"; 
+   d="scan'208";a="277208217"
+Message-ID: <50FF3090.1090608@intel.com>
+Date: Wed, 23 Jan 2013 08:36:32 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Mike Galbraith <efault@gmx.de>
+CC: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, namhyung@kernel.org,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        preeti@linux.vnet.ibm.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 09/22] sched: compute runnable load avg in cpu_load
+ and cpu_avg_load_per_task
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>  <1357375071-11793-10-git-send-email-alex.shi@intel.com>  <50E7EAB1.6020302@intel.com> <50E92DC3.4050906@intel.com>  <CA+55aFxbS-u1Zfwg2oKOmHq6FBF+dRRhrdssqc9PpC_gXoV3+g@mail.gmail.com>  <50EFB1DB.7090804@intel.com> <50FD54EA.4060804@intel.com>  <50FE0575.6090005@intel.com> <1358837740.5782.209.camel@marge.simpson.net>  <50FE44B5.6020004@intel.com> <1358848338.5782.331.camel@marge.simpson.net>
+In-Reply-To: <1358848338.5782.331.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jan 2013 16:27:54 -0800
-Tejun Heo <tj@kernel.org> wrote:
+On 01/22/2013 05:52 PM, Mike Galbraith wrote:
+> On Tue, 2013-01-22 at 15:50 +0800, Alex Shi wrote:
+> 
+>> Thanks for your suggestions and example, Mike!
+>> I just can't understand the your last words here, Sorry. what the
+>> detailed concern of you on 'both performance profiles with either
+>> metric'? Could you like to give your preferred solutions?
+> 
+> Hm.. I'll try rephrasing.  Any power saving gain will of necessity be
+> paid for in latency currency.  I don't have a solution other than make a
+> button, let the user decide whether history influences fast path task
+> placement or not.  Any other decision maker will get it wrong.
 
-> (cc'ing Andrew as scheduler folks are difficult to get response from
->  these days and I can't think of anyone else to bother :)
+Um, if no other objection, I'd like to move the runnable load only used
+for power friendly policy -- for this patchset, they are 'powersaving'
+and 'balance', Can I?
+
 > 
-> Hello, Li.
-> 
-> The cgroup part looks good to me but it would be great if the
-> descriptions are more detailed, especially, about why the change is
-> beneficial or what it's aiming at.  I take it that the shed changes
-> are necessary to facilitate the later cgroup changes?  Can you please
-> elaborate how?
-> 
-> The scheduler part of changes are mostly mechanical, so it would be
-> great if we can get ack from scheduler people and route these together.
+> -Mike
 > 
 
-The sched parts do look pretty innocuous and could be viewed as "cgroup
-stuff which happens to reside in kernel/sched/".
 
-If you like the code, I think the best you can do is to merge it up,
-make sure the sched guys are fully cc'ed then send it in to Linus.
+-- 
+Thanks Alex
