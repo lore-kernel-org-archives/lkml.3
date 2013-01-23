@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab3AWLll (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 06:41:41 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:44262 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754549Ab3AWLlk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 06:41:40 -0500
+	id S1755497Ab3AWLmD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 06:42:03 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:49110 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755388Ab3AWLmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 06:42:01 -0500
 From: Afzal Mohammed <afzal@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 CC: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
         Mike Turquette <mturquette@linaro.org>,
         Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH v2 0/4] ARM: AM335x: LCDC platform support
-Date: Wed, 23 Jan 2013 17:11:28 +0530
-Message-ID: <cover.1358937533.git.afzal@ti.com>
+Subject: [PATCH v2 1/4] ARM: OMAP2+: dpll: round rate to closest value
+Date: Wed, 23 Jan 2013 17:11:52 +0530
+Message-ID: <871e6890897534b6c3669e252f23bef5ff1247b6.1358937533.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.12
+In-Reply-To: <cover.1358937533.git.afzal@ti.com>
+References: <cover.1358937533.git.afzal@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Currently round rate function would return proper rate iff requested
+rate exactly matches the PLL lockable rate. This causes set_rate to
+fail if exact rate could not be set. Instead round rate may return
+closest rate possible (less than the requested). And if any user is
+badly in need of exact rate, then return value of round rate could
+be used to decide whether to invoke set rate or not.
 
-This series make am335x lcdc capable of providing display.
-Certain changes were required in generic OMAP clock handling
-to attain it. Clock nodes in LCDC path is marked such that
-rate can get propogated to upstream clocks till display PLL.
+Modify round rate so that it return closest possible rate.
 
-Based on 3.8-rc3.
+This was required to get display working on am335x. Without this
+display rate could not be set (taking help of SET_RATE_PARENT). Couple
+of the downstream clocks of display PLL are basic clock dividers and
+they do MULT_ROUND_UP before requesting rate on PLL causing values
+that mostly could not be locked by PLL. And even otherwise, if
+requested rate for a particular pixel clock could not be satisfied by
+PLL, display would not work. This change will resolve the issue.
 
-Tested on AM335x EVM.
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+---
+ arch/arm/mach-omap2/clkt_dpll.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-To test on AM335x based boards, tree
-@ git://gitorious.org/x0148406-public/linux-kernel.git tags/da8xx-fb-dt-v4
-
-Regards
-Afzal
-
-v2: As DEFINE_CLK_DIVIDER args has no change, make it's usage as reqd.
-
-Afzal Mohammed (4):
-  ARM: OMAP2+: dpll: round rate to closest value
-  ARM: OMAP2+: dpll: am335x - avoid freqsel
-  ARM: OMAP2+: clock: DEFINE_STRUCT_CLK_FLAGS helper
-  ARM: AM33XX: clock: SET_RATE_PARENT in lcd path
-
- arch/arm/mach-omap2/cclock33xx_data.c | 10 ++++++----
- arch/arm/mach-omap2/clkt_dpll.c       | 12 +++++++-----
- arch/arm/mach-omap2/clock.h           | 11 +++++++++++
- arch/arm/mach-omap2/dpll3xxx.c        |  5 +++--
- 4 files changed, 27 insertions(+), 11 deletions(-)
-
+diff --git a/arch/arm/mach-omap2/clkt_dpll.c b/arch/arm/mach-omap2/clkt_dpll.c
+index 924c230..15e6d41 100644
+--- a/arch/arm/mach-omap2/clkt_dpll.c
++++ b/arch/arm/mach-omap2/clkt_dpll.c
+@@ -345,20 +345,22 @@ long omap2_dpll_round_rate(struct clk_hw *hw, unsigned long target_rate,
+ 		pr_debug("clock: %s: m = %d: n = %d: new_rate = %ld\n",
+ 			 clk_name, m, n, new_rate);
+ 
+-		if (target_rate == new_rate) {
++		if ((new_rate <= target_rate) &&
++		    (new_rate > dd->last_rounded_rate)) {
+ 			dd->last_rounded_m = m;
+ 			dd->last_rounded_n = n;
+-			dd->last_rounded_rate = target_rate;
+-			break;
++			dd->last_rounded_rate = new_rate;
++			if (new_rate == target_rate)
++				break;
+ 		}
+ 	}
+ 
+-	if (target_rate != new_rate) {
++	if (!dd->last_rounded_rate) {
+ 		pr_debug("clock: %s: cannot round to rate %ld\n",
+ 			 clk_name, target_rate);
+ 		return ~0;
+ 	}
+ 
+-	return target_rate;
++	return dd->last_rounded_rate;
+ }
+ 
 -- 
 1.7.12
 
