@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071Ab3AWQZi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 11:25:38 -0500
-Received: from 94.43.138.210.xn.2iij.net ([210.138.43.94]:38592 "EHLO
-	mail.st-paulia.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756437Ab3AWQZW (ORCPT
+	id S1756640Ab3AWQZg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 11:25:36 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:63513 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756580Ab3AWQZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 11:25:22 -0500
-Message-ID: <51000EEF.7090308@linux-ipv6.org>
-Date: Thu, 24 Jan 2013 01:25:19 +0900
-From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Organization: USAGI Project
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-CC: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        Tom St Denis <tstdenis@elliptictech.com>, linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        David Miller <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] CMAC support for CryptoAPI, fixed patch issues, indent,
- and testmgr build issues
-References: <1776726593.108228.1358952383104.JavaMail.root@elliptictech.com> <20130123173510.14986sla4qsstz8k@www.dalek.fi> <51000CEE.9060109@linux-ipv6.org>
-In-Reply-To: <51000CEE.9060109@linux-ipv6.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jan 2013 11:25:24 -0500
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fbdev-devel@lists.sourceforge.net,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 2/2] drm/i915: fixup per-crtc locking in intel_release_load_detect_pipe
+Date: Wed, 23 Jan 2013 17:25:09 +0100
+Message-Id: <1358958309-5342-3-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1358958309-5342-1-git-send-email-daniel.vetter@ffwll.ch>
+References: <1358958309-5342-1-git-send-email-daniel.vetter@ffwll.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-YOSHIFUJI Hideaki wrote:
-> Jussi Kivilinna wrote:
-> 
->>>>> diff --git a/include/uapi/linux/pfkeyv2.h
->>>>> b/include/uapi/linux/pfkeyv2.h
->>>>> index 0b80c80..d61898e 100644
->>>>> --- a/include/uapi/linux/pfkeyv2.h
->>>>> +++ b/include/uapi/linux/pfkeyv2.h
->>>>> @@ -296,6 +296,7 @@ struct sadb_x_kmaddress {
->>>>>  #define SADB_X_AALG_SHA2_512HMAC    7
->>>>>  #define SADB_X_AALG_RIPEMD160HMAC    8
->>>>>  #define SADB_X_AALG_AES_XCBC_MAC    9
->>>>> +#define SADB_X_AALG_AES_CMAC_MAC    10
->>>>>  #define SADB_X_AALG_NULL        251    /* kame */
->>>>>  #define SADB_AALG_MAX            251
->>>>
->>>> Should these values be based on IANA assigned IPSEC AH transform
->>>> identifiers?
->>>>
->>>> https://www.iana.org/assignments/isakmp-registry/isakmp-registry.xml#isakmp-registry-6
->>>
->>> There is no CMAC entry apparently ... despite the fact that CMAC is a proposed RFC standard for IPsec.
->>>
->>> It might be safer to move that to 14 since it's currently unassigned and then go through whatever channels are required to allocate it.  Mostly this affects key setting.  So this means my patch would break AH_RSA setkey calls (which the kernel doesn't support anyways).
->>>
->>
->> Problem seems to be that PFKEYv2 does not quite work with IKEv2, and XFRM API should be used instead. There is new numbers assigned for IKEv2: https://www.iana.org/assignments/ikev2-parameters/ikev2-parameters.xml#ikev2-parameters-7
->>
->> For new SADB_X_AALG_*, I'd think you should use value from "Reserved for private use" range. Maybe 250?
-> 
-> We can choose any value unless we do not break existing
-> binaries.  When IKE used, the daemon is responsible
-> for translation.
+One of the early return cases missed the mutex unlocking. Hilarity
+ensued.
 
-I meant, we can choose any values "if" we do not break ...
+This regression has been introduced in
 
---yoshfuji
+commit 7b24056be6db7ce907baffdd4cf142ab774ea60c
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Wed Dec 12 00:35:33 2012 +0100
+
+    drm: don't hold crtc mutexes for connector ->detect callbacks
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=59750
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/gpu/drm/i915/intel_display.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 26df9e3..ece4afd 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -6522,6 +6522,7 @@ void intel_release_load_detect_pipe(struct drm_connector *connector,
+ 			drm_framebuffer_unreference(old->release_fb);
+ 		}
+ 
++		mutex_unlock(&crtc->mutex);
+ 		return;
+ 	}
+ 
+-- 
+1.7.10.4
 
