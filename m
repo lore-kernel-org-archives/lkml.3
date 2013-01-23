@@ -1,142 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab3AWRrm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 12:47:42 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:65398 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756135Ab3AWRrk (ORCPT
+	id S1756754Ab3AWRsG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 12:48:06 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:55228 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756719Ab3AWRsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 12:47:40 -0500
-From: Dongjin Kim <tobetter@gmail.com>
-Cc: Dongjin Kim <tobetter@gmail.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCH] USB: misc: usb3503: add dt support
-Date: Thu, 24 Jan 2013 02:47:10 +0900
-Message-Id: <1358963242-2596-1-git-send-email-tobetter@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 23 Jan 2013 12:48:04 -0500
+Message-ID: <5100224A.8010102@inktank.com>
+Date: Wed, 23 Jan 2013 11:47:54 -0600
+From: Alex Elder <elder@inktank.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Cong Ding <dinggnu@gmail.com>
+CC: Sage Weil <sage@inktank.com>, "David S. Miller" <davem@davemloft.net>,
+        ceph-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/ceph/osdmap.c: fix undefined behavior when using
+ snprintf()
+References: <1358882429-19066-1-git-send-email-dinggnu@gmail.com> <51001447.3030600@inktank.com> <20130123174150.GA26336@gmail.com>
+In-Reply-To: <20130123174150.GA26336@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added device tree support for usb3503 driver and add new document with device tree binding information.
+On 01/23/2013 11:41 AM, Cong Ding wrote:
+> On Wed, Jan 23, 2013 at 10:48:07AM -0600, Alex Elder wrote:
+>> On 01/22/2013 01:20 PM, Cong Ding wrote:
+>>> The variable "str" is used as both the source and destination in function
+>>> snprintf(), which is undefined behavior based on C11. The original description
+>>> in C11 is:
+>>> 	"If copying takes place between objects that
+>>> 	overlap, the behavior is undefined."
+>>
+>> Yes, this was an ill-advised thing to do in this function.
+>>
+>> In fact, the only place this function is used (in osdmap_show()),
+>> the non-static buffer was not initialized before the call.  (It
+>> might happen to work because the same stack space was getting
+>> reused each time through the loop.  Eeeeew!)
+>>
+>> This is just an awful couple of functions.
+>>
+>>> And, the function of ceph_osdmap_state_str() is to return the osdmap state, so
+>>> it should return "doesn't exist" when all the conditions are not satisfied. I
+>>> fix it in this patch.
+>>>
+>>> Based on C11, snprintf() does nothing if n==0:
+>>> 	"If n is zero, nothing is written, and s may be a
+>>> 	null pointer. Otherwise, output characters beyond
+>>> 	the n-1st are discarded rather than being written to
+>>> 	the array, and a null character is written at the
+>>> 	end of the characters actually written into the
+>>> 	array."
+>>> so I remove the unnecessary check of len (because it is not a busy path and
+>>> saves a few lines of code).
+>>
+>> True.  But since you know it's not going to do anything why
+>> not only make the call if len is non-zero?  I.e.:
+>>
+>> 	else if (len)
+>> 		snprintf(str, len, "doesn't exist");
+>>
+>> With your permission I'll make this change and will commit
+>> this for you.  OK?
+> It's fine, thanks. But I think it's better to check len in the beginning
+> because other conditions also call snprintf with parameter len. Like this:
 
-Signed-off-by: Dongjin Kim <tobetter@gmail.com>
----
- Documentation/devicetree/bindings/usb/usb3503.txt |   20 +++++++++++++
- drivers/usb/misc/usb3503.c                        |   31 +++++++++++++++++----
- 2 files changed, 46 insertions(+), 5 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/usb/usb3503.txt
+OK.  I'll do this.  Thank you.		-Alex
 
-diff --git a/Documentation/devicetree/bindings/usb/usb3503.txt b/Documentation/devicetree/bindings/usb/usb3503.txt
-new file mode 100644
-index 0000000..6813a71
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/usb3503.txt
-@@ -0,0 +1,20 @@
-+SMSC USB3503 High-Speed Hub Controller
-+
-+Required properties:
-+- compatible: Should be "smsc,usb3503".
-+- reg: Specifies the i2c slave address, it should be 0x08.
-+- connect-gpios: Should specify GPIO for connect.
-+- intn-gpios: Should specify GPIO for interrupt.
-+- reset-gpios: Should specify GPIO for reset.
-+- initial-mode: Should specify initial mode.
-+                (1 for HUB mode, 2 for STANDBY mode)
-+
-+Examples:
-+	usb3503@08 {
-+		compatible = "smsc,usb3503";
-+		reg = <0x08>;
-+		connect-gpios = <&gpx3 0 1>;
-+		intn-gpios = <&gpx3 4 1>;
-+		reset-gpios = <&gpx3 5 1>;
-+		initial-mode = <1>;
-+	};
-diff --git a/drivers/usb/misc/usb3503.c b/drivers/usb/misc/usb3503.c
-index dc2c993..471218a 100644
---- a/drivers/usb/misc/usb3503.c
-+++ b/drivers/usb/misc/usb3503.c
-@@ -23,6 +23,7 @@
- #include <linux/delay.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/of_gpio.h>
- #include <linux/platform_device.h>
- #include <linux/platform_data/usb3503.h>
- 
-@@ -181,8 +182,10 @@ err_hubmode:
- static int usb3503_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
- {
- 	struct usb3503_platform_data *pdata = i2c->dev.platform_data;
-+	struct device_node *np = i2c->dev.of_node;
- 	struct usb3503 *hub;
- 	int err = -ENOMEM;
-+	u32 mode;
- 
- 	hub = kzalloc(sizeof(struct usb3503), GFP_KERNEL);
- 	if (!hub) {
-@@ -193,14 +196,23 @@ static int usb3503_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
- 	i2c_set_clientdata(i2c, hub);
- 	hub->client = i2c;
- 
--	if (!pdata) {
--		dev_dbg(&i2c->dev, "missing platform data\n");
--		goto err_out;
--	} else {
-+	if (pdata) {
- 		hub->gpio_intn		= pdata->gpio_intn;
- 		hub->gpio_connect	= pdata->gpio_connect;
- 		hub->gpio_reset		= pdata->gpio_reset;
- 		hub->mode		= pdata->initial_mode;
-+	} else if (np) {
-+		hub->gpio_intn	= of_get_named_gpio(np, "connect-gpios", 0);
-+		if (hub->gpio_intn == -EPROBE_DEFER)
-+			return -EPROBE_DEFER;
-+		hub->gpio_connect = of_get_named_gpio(np, "intn-gpios", 0);
-+		if (hub->gpio_connect == -EPROBE_DEFER)
-+			return -EPROBE_DEFER;
-+		hub->gpio_reset	= of_get_named_gpio(np, "reset-gpios", 0);
-+		if (hub->gpio_reset == -EPROBE_DEFER)
-+			return -EPROBE_DEFER;
-+		of_property_read_u32(np, "initial-mode", &mode);
-+		hub->mode = mode;
- 	}
- 
- 	if (gpio_is_valid(hub->gpio_intn)) {
-@@ -236,7 +248,7 @@ static int usb3503_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
- 		}
- 	}
- 
--	usb3503_switch_mode(hub, pdata->initial_mode);
-+	usb3503_switch_mode(hub, hub->mode);
- 
- 	dev_info(&i2c->dev, "%s: probed on  %s mode\n", __func__,
- 			(hub->mode == USB3503_MODE_HUB) ? "hub" : "standby");
-@@ -277,9 +289,18 @@ static const struct i2c_device_id usb3503_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, usb3503_id);
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id usb3503_of_match[] = {
-+	{ .compatible = "smsc,usb3503", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, usb3503_of_match);
-+#endif
-+
- static struct i2c_driver usb3503_driver = {
- 	.driver = {
- 		.name = USB3503_I2C_NAME,
-+		.of_match_table = of_match_ptr(usb3503_of_match),
- 	},
- 	.probe		= usb3503_probe,
- 	.remove		= usb3503_remove,
--- 
-1.7.10.4
+
+> 	if (!len)
+> 		return str;
+> 
+> 	if ((state & CEPH_OSD_EXISTS) && (state & CEPH_OSD_UP))
+> 		snprintf(str, len, "exists, up");
+> 	else if (state & CEPH_OSD_EXISTS)
+> 		snprintf(str, len, "exists");
+> 	else if (state & CEPH_OSD_UP)
+> 		snprintf(str, len, "up");
+> 	else
+> 		snprintf(str, len, "doesn't exist");
+> 
+> 	return str;
+> 
+> or like this:
+> 
+> 	if (len) {
+> 		if ((state & CEPH_OSD_EXISTS) && (state & CEPH_OSD_UP))
+> 			snprintf(str, len, "exists, up");
+> 		else if (state & CEPH_OSD_EXISTS)
+> 			snprintf(str, len, "exists");
+> 		else if (state & CEPH_OSD_UP)
+> 			snprintf(str, len, "up");
+> 		else
+> 			snprintf(str, len, "doesn't exist");
+> 	}
+> 	return str;
+> 
+> Thanks,
+> - cong
+> 
 
