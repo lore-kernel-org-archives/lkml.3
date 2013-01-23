@@ -1,87 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab3AWAkU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 19:40:20 -0500
-Received: from mga11.intel.com ([192.55.52.93]:29438 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751077Ab3AWAkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 19:40:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,518,1355126400"; 
-   d="scan'208";a="277209266"
-Message-ID: <1358901594.7408.85.camel@yhuang-dev>
-Subject: Re: ERST: how to avoid a dynamic memory allocation in panic case
-From: Huang Ying <ying.huang@intel.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "rjw@sisk.pl" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "H. Peter Anvin (hpa@zytor.com)" <hpa@zytor.com>,
-        "robert.moore@intel.com" <robert.moore@intel.com>,
-        "trenn@suse.de" <trenn@suse.de>,
-        "myron.stowe@redhat.com" <myron.stowe@redhat.com>
-Date: Wed, 23 Jan 2013 08:39:54 +0800
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A51F3D@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A51F3D@USINDEM103.corp.hds.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	id S1752335Ab3AWAmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 19:42:08 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:50939 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859Ab3AWAmD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 19:42:03 -0500
+Message-ID: <50FF31D6.3090304@linaro.org>
+Date: Tue, 22 Jan 2013 16:41:58 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] Add support for S3 non-stop TSC support.
+References: <1358750325-21217-1-git-send-email-feng.tang@intel.com> <50FD8D07.5030908@linaro.org> <20130122195701.GH30647@obsidianresearch.com> <50FEF505.60504@linaro.org> <20130123002610.GA814@obsidianresearch.com>
+In-Reply-To: <20130123002610.GA814@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-22 at 23:30 +0000, Seiji Aguchi wrote:
-> [Issue]
-> 
-> Current erst driver is kicked in panic case.
-> On the other hand, a dynamic memory allocation seems to run in it
-> with a following code path.
-> 
-> erst_writer -> erst_write -> __erst_write_to_storage -> many of apei_exec_run -> 
-> ctx->ins_table[entry->instruction].run()
-> 
-> which are functions defined in erst_ins_type table i.e:
-> 
-> apei_exec_read_register -> apei_read -> acpi_os_read_memory64 -> acpi_os_ioremap -> ioremap_cache
-> 
-> which possibly involve IOMMU allocator.
-> 
-> I may cause a failure of  an erst driver if the panic happens in an interrupt context.
-> 
-> [Idea]
-> 
-> If we can remove ioremap_cache() from acpi_os_read_memory() as follows,
-> It is easy to fix this issue.
-> But I'm not sure if it is feasible because I can't see the reason of tying acpi_os_ioremap()  from a git log...
-> 
-> Any comment?
-> 
-> <snip>
-> @@ -918,10 +918,7 @@ acpi_os_read_memory(acpi_physical_address phys_addr, u64 *value, u32 width)
->  	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
->  	if (!virt_addr) {
->  		rcu_read_unlock();
-> -		virt_addr = acpi_os_ioremap(phys_addr, size);
-> -		if (!virt_addr)
-> -			return AE_BAD_ADDRESS;
-> -		unmap = true;
-> +		return AE_BAD_ADDRESS;
+On 01/22/2013 04:26 PM, Jason Gunthorpe wrote:
+> On Tue, Jan 22, 2013 at 12:22:29PM -0800, John Stultz wrote:
+>
+>>> How big of an issue is this? Could the RTCTOSYS function be moved to
+>>> the moment the RTC driver is registered rather than using a
+>>> late_initcall?
+>> It may not be huge. Most early boot items are going to be
+>> CLOCK_MONOTONIC based, which would be unaffected. So that's a
+>> potential solution, but I'm hesitant to claim there'd be no side
+>> effects.
+> Well, ARM/PPC/etc pretty much rely on RTCTOSYS for time, so if there
+> are side effects then they are going to be problematic for not-x86
+> today and should be fixed up.. But that probably also says there are
+> not many side effects because folks are not complaining??
+>
+>>>> Interface #2 could then be either RTC based, or countinuous counter
+>>>> based. Since we still want to do this measurement with interrupts
+>>>> off, we still would need that interrupt-free RTC method like
+>>>> read_persistent_clock() where supported (falling back to the RTC
+>>>> driver's suspend/resume handler to try to fix things up as best it
+>>>> can if that's not available).
+>>> Could the counter version of this be bundled into the clocksource
+>>> framework? It already has generic APIs for handling cycle counters and
+>>> things. Isn't there a TSC driver for clocksource already? Is all that
+>>> is missing is a way to tell if the counter survived suspend?
+>   
+>> So without *major* rework, I'd rather not do this. Again, the
+>> clocksource code has quite a few assumptions built in that are
+>> optimized for timekeeping (where we avoid overflows by expecting
+>> relatively frequent updates), and very different approaches are
+>> needed for something like suspend (where valid suspend times could
+>> be potentially months to years).
+> Well, I was thinking something very simple..
+>
+> The reason to be interested in the clocksource code is there is
+> already so much support code to make it easy to use for many timers
+> out there, and there is already TSC support for it. Plus there is
+> already the full architecture for muxing multiple drivers, which is
+> pretty important...
+>
+> The simple case is that any clocksource intended for suspend time
+> keeping must not over flow for reasonable times (years?), so you can
+> ignore the overflow problem entirely. The 32kHz ARM counter and the 64
+> bit TSC both seem to be OK in this regard.
 
-No.  We can not do that.  Because some users rely on acpi_os_read_memory
-to do ioremap for them.
+Right but to calculate an suspend interval (since they are likely many 
+orders of magnitude larger then the intervals between timer interrupts), 
+you need different mult/shift selection.  Its splitting out the 
+mult/shift management into a per-subsystem level that is the complicated 
+part. Additionally, there may be cases where the timekeeping clocksource 
+is one clocksource and the suspend clocksource is another. So I think to 
+properly integrate this sort of functionality w/ clocksources is going 
+to require a serious rework of the clocksource code.
 
-The correct fixing should be pre-map the io-memory that may be accessed
-in erst code patch with acpi_map().
 
-Best Regards,
-Huang Ying
+>
+>>> clocksource already has suspend/resume callbacks stuff, so the counter
+>>> driver could sense if the sleep was too deep and mark itself as
+>>> invalid.
+>> But at that point you've lost time. If this was all centrally
+>> controlled, you have to know before hand what the bounds would be.
+>> With the TSC, we know it won't wrap around our starting measurement
+>> for at least 10 years. That's a reasonable range for suspend.  We
+>> don't want to resume and just get a "oh, bad call, you picked the
+>> wrong clocksource for such a long suspend", and really without the
+>> clocksource checking with the RTC I don't think it can even know if
+>> its been too long itself (since maybe the counter wrapped, but maybe
+>> not).
+> I'm not worrying about overflow here, I was thinking about different
+> sleep states. Eg a timer may only function in suspend to ram but not
+> hibernate to disk, so on transition in/out of hibernate it would allow
+> the clock source driver to detect that transition and mark itself as
+> invalid.
+>
+> So, it would work something like:
+>   - Prior to suspend record the result of read() from all clock_sources
+>   - Run through all the suspend call backs. If the suspend state (eg
+>     hibernate) is too deep then the clock source PM call back will mark
+>     it as invalid
+>   - Upon resume do another read from all clock sources, and also do a
+>     'survived_suspend' type of call. Take the highest priority
+>     clock source that survived suspend and use that delta to update the
+>     realtime clock.
+>   - If no clock sources survived then attempt to read without
+>     interrupts from the RTC driver
+>   - If you couldn't read without interrupts from the RTC driver then
+>     schedual a RTC read when interrupts are on
+>
+> A fancier version could sanity check the clocksource delta with the
+> RTC delta, if they differ by more max(~10%,2 sec) then use the RTC
+> delta, this would handle clocksource overflows fairly simply.
 
->  	}
->  
->  	if (!value)
-> <snip>
-> 
-> Seiji
+So something like this flow sounds fine, but I think that doing it 
+behind the new read_persistent_clock()-like call is the right approach 
+in the near term.
 
+thanks
+-john
 
