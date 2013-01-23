@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab3AWKip (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 05:38:45 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:46586 "EHLO bear.ext.ti.com"
+	id S1755008Ab3AWKin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 05:38:43 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:46594 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754740Ab3AWKie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 05:38:34 -0500
+	id S1754934Ab3AWKij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 05:38:39 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <sameo@linux.intel.com>
 CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
         <sshtylyov@mvista.com>, <bjorn@mork.no>, <linux@arm.linux.org.uk>,
         <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <rogerq@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        <stable@vger.kernel.org>
-Subject: [PATCH v9 01/20] USB: ehci-omap: Don't free gpios that we didn't request
-Date: Wed, 23 Jan 2013 12:37:53 +0200
-Message-ID: <1358937492-8129-2-git-send-email-rogerq@ti.com>
+        <rogerq@ti.com>
+Subject: [PATCH v9 03/20] mfd: omap-usb-tll: Fix channel count detection
+Date: Wed, 23 Jan 2013 12:37:55 +0200
+Message-ID: <1358937492-8129-4-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358937492-8129-1-git-send-email-rogerq@ti.com>
 References: <1358937492-8129-1-git-send-email-rogerq@ti.com>
@@ -26,70 +25,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver does not request any gpios so don't free them.
-Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
-with ehci-omap in use.
-
-Without this patch, EHCI will break on repeated insmod/rmmod
-of ehci_hcd for all OMAP2+ platforms that use EHCI and
-set 'phy_reset = true' in usbhs_omap_board_data.
-i.e.
-
-board-3430sdp.c:	.phy_reset  = true,
-board-3630sdp.c:	.phy_reset  = true,
-board-am3517crane.c:	.phy_reset  = true,
-board-am3517evm.c:	.phy_reset  = true,
-board-cm-t3517.c:	.phy_reset  = true,
-board-cm-t35.c:	.phy_reset  = true,
-board-devkit8000.c:	.phy_reset  = true,
-board-igep0020.c:	.phy_reset = true,
-board-igep0020.c:	.phy_reset = true,
-board-omap3beagle.c:	.phy_reset  = true,
-board-omap3evm.c:	.phy_reset  = true,
-board-omap3pandora.c:	.phy_reset  = true,
-board-omap3stalker.c:	.phy_reset = true,
-board-omap3touchbook.c:	.phy_reset  = true,
-board-omap4panda.c:	.phy_reset  = false,
-board-overo.c:	.phy_reset  = true,
-board-zoom.c:	.phy_reset		= true,
-
-CC: Alan Stern <stern@rowland.harvard.edu>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: stable@vger.kernel.org
+Fix channel count detecion for REV2. Also, don't give up
+if we don't recognize the IP Revision. We assume the default
+number of channels (i.e. 3) for unrecognized IPs.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
 ---
- drivers/usb/host/ehci-omap.c |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   20 +++++++++++---------
+ 1 files changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-index ac17a7c..e9d9b09 100644
---- a/drivers/usb/host/ehci-omap.c
-+++ b/drivers/usb/host/ehci-omap.c
-@@ -288,7 +288,6 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
- {
- 	struct device *dev				= &pdev->dev;
- 	struct usb_hcd *hcd				= dev_get_drvdata(dev);
--	struct ehci_hcd_omap_platform_data *pdata	= dev->platform_data;
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index e459489..9658e18 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -98,6 +98,7 @@
+ struct usbtll_omap {
+ 	struct clk				*usbtll_p1_fck;
+ 	struct clk				*usbtll_p2_fck;
++	int					nch;	/* num. of channels */
+ 	struct usbhs_omap_platform_data		*pdata;
+ 	/* secure the register updates */
+ 	spinlock_t				lock;
+@@ -210,7 +211,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 	unsigned				reg;
+ 	unsigned long				flags;
+ 	int					ret = 0;
+-	int					i, ver, count;
++	int					i, ver;
  
- 	usb_remove_hcd(hcd);
- 	disable_put_regulator(dev->platform_data);
-@@ -298,13 +297,6 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
+ 	dev_dbg(dev, "starting TI HSUSB TLL Controller\n");
+ 
+@@ -262,16 +263,18 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 	ver =  usbtll_read(base, OMAP_USBTLL_REVISION);
+ 	switch (ver) {
+ 	case OMAP_USBTLL_REV1:
+-	case OMAP_USBTLL_REV2:
+-		count = OMAP_TLL_CHANNEL_COUNT;
++		tll->nch = OMAP_TLL_CHANNEL_COUNT;
+ 		break;
++	case OMAP_USBTLL_REV2:
+ 	case OMAP_USBTLL_REV3:
+-		count = OMAP_REV2_TLL_CHANNEL_COUNT;
++		tll->nch = OMAP_REV2_TLL_CHANNEL_COUNT;
+ 		break;
+ 	default:
+-		dev_err(dev, "TLL version failed\n");
+-		ret = -ENODEV;
+-		goto err_ioremap;
++		tll->nch = OMAP_TLL_CHANNEL_COUNT;
++		dev_dbg(dev,
++		 "USB TLL Rev : 0x%x not recognized, assuming %d channels\n",
++			ver, tll->nch);
++		break;
+ 	}
+ 
+ 	if (is_ehci_tll_mode(pdata->port_mode[0]) ||
+@@ -291,7 +294,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 		usbtll_write(base, OMAP_TLL_SHARED_CONF, reg);
+ 
+ 		/* Enable channels now */
+-		for (i = 0; i < count; i++) {
++		for (i = 0; i < tll->nch; i++) {
+ 			reg = usbtll_read(base,	OMAP_TLL_CHANNEL_CONF(i));
+ 
+ 			if (is_ohci_port(pdata->port_mode[i])) {
+@@ -319,7 +322,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-err_ioremap:
+ 	spin_unlock_irqrestore(&tll->lock, flags);
+ 	iounmap(base);
  	pm_runtime_put_sync(dev);
- 	pm_runtime_disable(dev);
- 
--	if (pdata->phy_reset) {
--		if (gpio_is_valid(pdata->reset_gpio_port[0]))
--			gpio_free(pdata->reset_gpio_port[0]);
--
--		if (gpio_is_valid(pdata->reset_gpio_port[1]))
--			gpio_free(pdata->reset_gpio_port[1]);
--	}
- 	return 0;
- }
- 
 -- 
 1.7.4.1
 
