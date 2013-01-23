@@ -1,111 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab3AWEkW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 23:40:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57921 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752448Ab3AWEkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 23:40:21 -0500
-Date: Tue, 22 Jan 2013 20:41:46 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] Hack to use mkdir/rmdir in debugfs
-Message-ID: <20130123044146.GA3079@kroah.com>
-References: <1358910114.21576.86.camel@gandalf.local.home>
- <20130123040846.GA2638@kroah.com>
- <1358915495.21576.102.camel@gandalf.local.home>
+	id S1753605Ab3AWEkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 23:40:45 -0500
+Received: from mail-ia0-f176.google.com ([209.85.210.176]:38859 "EHLO
+	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364Ab3AWEko (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 23:40:44 -0500
+Message-ID: <50FF69C6.2040705@gmail.com>
+Date: Wed, 23 Jan 2013 12:40:38 +0800
+From: snakky.zhang@gmail.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358915495.21576.102.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: Is this a bug that n_tty_set_room not serialized? If so please correct
+ it.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 11:31:35PM -0500, Steven Rostedt wrote:
-> On Tue, 2013-01-22 at 20:08 -0800, Greg Kroah-Hartman wrote:
-> 
-> > > Is doing something as silly as the following fine, or is there a better
-> > > way?
-> > 
-> > Yes, why not create your own fs for ftrace?  :)
-> 
-> But but but...
-> 
-> debugfs is soooo convenient!
-> 
-> Do you think it would be worth doing that though? I only need the mkdir
-> and rmdir for this one instance. Nothing more.
-> 
-> > >	mutex_unlock(&inode->i_mutex);
-> > > 
-> > > 	ret = new_instance_create(dentry->d_iname);
-> > > 
-> > > 	mutex_lock(&inode->i_mutex);
-> > > 
-> 
-> > But how can you callback to your code to let it know that something was
-> > created in it?
-> 
-> I pass the dentry->d_iname to create a directory.
-> 
-> > 
-> > Don't you need that for both mkdir and rmdir?
-> 
-> It's a global list. It's very specific and doesn't need to be robust. It
-> all deals with modifying one global parameter. Not that hard. And I've
-> already implemented this. It works quite well :-)
-> 
-> > 
-> > But again, I'd really not want to do this in debugfs, how about your own
-> > filesystem?
-> 
-> I will note that this never modifies the debugfs code. But it does
-> circumvent it.
+Hi experts,
 
-Ah, I like circumventing debugfs, it kind of fits right into its mission :)
+Seems there is an bug related to function n_tty_set_roomin source file
+drivers/tty/n_tty.c. This function is used to set receive_room based on
+the read_cntby both the consumer and the producer of the tty's read buffer.
 
-> That is, all this code lives in kernel/trace/trace.c. I don't modify
-> any of the debugfs code. I just replace the debugfs
-> dentry->d_inode->i_op with my own ops.
+But this function is not serialized, so I am afraid there is
+a risk like: The producer make the buffer full and then call this 
+function to
+set the receive_room to 0; while it is preempted by the consumer that empty
+the buffer(read_cnt is 0)and then call this very function to set the
+receive_room to a non-zero value. But when the producer continue, 
+receive_room
+was set to 0 again. Thus both read_cnt and receive_room is 0.For consumer
+theread_cnt is 0 that no data can be read; while for the producer, 
+thebuffer
+is full since the receive_room is 0. Both of them blockhere...
 
-Oh, ok, I thought you were talking about modifying the debugfs core.
+Two methods to avoid it:
+A) Addor find a lock to serialize this function;
+B) Once the producer find the buffer is full, double check/set the 
+buffer with
+n_tty_set_room. For example in function "flush_to_ldisc".
 
-> I can create my own fs, but that just seems to be overkill. The only
-> difference is that I need mkdir and rmdir for this one instance.
-> 
-> That said, perhaps it wouldn't be too hard to create a ftracefs. Where
-> should it go? fs/ftrace or perhaps kernel/trace/fs ?
+Please correct me if I misunderstand something. Or please fix it.
 
-Sure, it only takes 300 lines to write a fs so it's not hard to do your
-own.
-
-> I notice that I only use:
-> 
-> debugfs_create_file()
-> debugfs_remove();
-> debugfs_create_dir();
-> debugfs_remove_recursive();
-> debugfs_initialized()
-> 
-> so maybe it wouldn't be such a far fetch thing to implement.
-> 
-> But then would I be able to still mount it in /debug/tracing ? As this
-> is where everything currently uses it? But then we need to teach admins
-> to add it there, or someplace else. /sys/kernel/ftrace?
-> 
-> Tools like trace-cmd and perf already expect it to be in the debugfs
-> tracing directory, and will automate mounting it to /sys/kernel/debug/
-> if not found. This may break userspace if I make another fs.
-
-Yes, you would need to require distros to mount it in the proper place,
-which is a pain, but not impossible.  It's up to you, as I thought you
-needed to modify debugfs, I didn't like it, but if you can do it in your
-own code, I really don't care anymore :)
-
-greg k-h
+Thanks
+Xiao
