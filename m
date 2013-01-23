@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab3AWHgP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 02:36:15 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36220 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157Ab3AWHgN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 02:36:13 -0500
-From: <xufengzhang.main@gmail.com>
-To: <vyasevich@gmail.com>, <sri@us.ibm.com>, <nhorman@tuxdriver.com>,
-        <davem@davemloft.net>
-CC: <linux-sctp@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sctp: set association state to established in dupcook_a handler
-Date: Wed, 23 Jan 2013 15:38:40 +0800
-Message-ID: <1358926720-25557-1-git-send-email-xufengzhang.main@gmail.com>
-X-Mailer: git-send-email 1.7.0.2
+	id S1753872Ab3AWHlS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 02:41:18 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:50009 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751240Ab3AWHlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 02:41:16 -0500
+Date: Wed, 23 Jan 2013 08:41:13 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Tom St Denis <tstdenis@elliptictech.com>
+Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
+        David Miller <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] CMAC support for CryptoAPI, fixed patch issues, indent,
+ and testmgr build issues
+Message-ID: <20130123074113.GH9147@secunet.com>
+References: <537355069.94465.1358772395763.JavaMail.root@elliptictech.com>
+ <436404741.94502.1358773048618.JavaMail.root@elliptictech.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <436404741.94502.1358773048618.JavaMail.root@elliptictech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 23 Jan 2013 07:41:13.0513 (UTC) FILETIME=[04F57990:01CDF93D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
+(Cc netdev@vger.kernel.org)
 
-While sctp handling a duplicate COOKIE-ECHO and the action is
-'Association restart', sctp_sf_do_dupcook_a() will processing
-the unexpected COOKIE-ECHO for peer restart, but it does not set
-the association state to SCTP_STATE_ESTABLISHED, so the association
-could stuck in SCTP_STATE_SHUTDOWN_PENDING state forever.
-This violates the sctp specification:
-  RFC 4960 5.2.4. Handle a COOKIE ECHO when a TCB Exists
-  Action
-  A) In this case, the peer may have restarted. .....
-     After this, the endpoint shall enter the ESTABLISHED state.
+On Mon, Jan 21, 2013 at 07:57:28AM -0500, Tom St Denis wrote:
+> Hey all,
+> 
+> Here's an updated patch which addresses a couple of build issues and coding style complaints.  
+> 
+> I still can't get it to run via testmgr I get 
+> 
+> [  162.407807] alg: No test for cmac(aes) (cmac(aes-generic))
+> 
+> Despite the fact I have an entry for cmac(aes) (much like xcbc(aes)...).
+> 
+> Here's the patch to bring 3.8-rc4 up with CMAC ...
+> 
 
-Fix this problem by adding a SCTP_CMD_NEW_STATE cmd to the command
-list so as to set the restart association to SCTP_STATE_ESTABLISHED
-state properly.
+As already pointed out by David Dillow, the above comments should go
+after the '---' separator. Please use the subject line and commit
+message from the previous version of this patch when you resend,
+this was ok.
 
-Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
----
- net/sctp/sm_statefuns.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> Signed-off-by: Tom St Denis <tstdenis@elliptictech.com>
+> 
+> ---
+>  crypto/Kconfig               |   8 ++
+>  crypto/Makefile              |   1 +
+>  crypto/cmac.c                | 317 +++++++++++++++++++++++++++++++++++++++++++
+>  crypto/testmgr.c             |   9 ++
+>  crypto/testmgr.h             |  52 +++++++
+>  include/uapi/linux/pfkeyv2.h |   1 +
+>  net/xfrm/xfrm_algo.c         |  17 +++
+>  7 files changed, 405 insertions(+)
+>  create mode 100644 crypto/cmac.c
+> 
+> diff --git a/crypto/Kconfig b/crypto/Kconfig
+> index 4641d95..5ac2c7f 100644
+> --- a/crypto/Kconfig
+> +++ b/crypto/Kconfig
+> @@ -301,6 +301,14 @@ config CRYPTO_XCBC
+>  		http://csrc.nist.gov/encryption/modes/proposedmodes/
+>  		 xcbc-mac/xcbc-mac-spec.pdf
+>  
+> +config CRYPTO_CMAC
+> +	tristate "CMAC support"
+> +	depends on EXPERIMENTAL
 
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index 618ec7e..528f1c8 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -1779,6 +1779,8 @@ static sctp_disposition_t sctp_sf_do_dupcook_a(struct net *net,
- 
- 	/* Update the content of current association. */
- 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
-+	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
-+			SCTP_STATE(SCTP_STATE_ESTABLISHED));
- 	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
- 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
- 	return SCTP_DISPOSITION_CONSUME;
--- 
-1.7.0.2
+CONFIG_EXPERIMENTAL is going to be removed in linux-next,
+please remove this dependency.
 
+> +	select CRYPTO_HASH
+> +	select CRYPTO_MANAGER
+> +	help
+> +	  NIST CMAC cipher based MAC
+> +
+
+Please add some more information to the help text. Everybody who knows
+what a 'NIST CMAC cipher based MAC' is will not need this help text, all
+the others are left with almost no information. This help text is for
+users in the first place, not for developers. So it should contain some
+informations about this cipher and/or some pointers where to find
+informations.
+
+Please Cc me on your next version because we plan to route your
+patch via the ipsec-next tree into the mainline.
+
+Thanks!
