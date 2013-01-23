@@ -1,181 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab3AWTgC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 14:36:02 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:48634 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388Ab3AWTfx (ORCPT
+	id S1752082Ab3AWTvL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 14:51:11 -0500
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:57428 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab3AWTvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 14:35:53 -0500
-Message-ID: <51003B20.2060506@linux.vnet.ibm.com>
-Date: Thu, 24 Jan 2013 01:03:52 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Wed, 23 Jan 2013 14:51:08 -0500
+Date: Wed, 23 Jan 2013 11:50:59 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Yasunori Goto <y-goto@jp.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Michael Davidson <md@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Julien Tinnes <jln@google.com>,
+        Aaron Durbin <adurbin@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Alexander Gordeev <agordeev@redhat.com>
+Subject: Re: TASK_DEAD && ttwu() again (Was: ensure
+ arch_ptrace/ptrace_request can never race with SIGKILL)
+Message-ID: <20130123195059.GH2373@mtj.dyndns.org>
+References: <CA+55aFyEsU-pkX557A-m+xoGkA_v+fXEyA8z8HbJ5J8K1jObeg@mail.gmail.com>
+ <20130118185559.GA3773@redhat.com>
+ <CA+55aFy=newnMbx53HipyWbRs2mUUPSqXXCpSfDLW78gkro37g@mail.gmail.com>
+ <20130120192448.GA6771@redhat.com>
+ <20130120192527.GC6771@redhat.com>
+ <CA+55aFx1+hFSCa4nX80C30BkEOugXRvBZ=7LA+u+KOq_qSaJsg@mail.gmail.com>
+ <20130121172151.GA4691@redhat.com>
+ <CA+55aFwRkvEP5YJy+a=TFgDX==YuU7CJ+D_U+B2s4e1LX-nz3g@mail.gmail.com>
+ <20130121194723.GA18775@redhat.com>
+ <20130123191946.GA19101@redhat.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: tglx@linutronix.de, peterz@infradead.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 04/45] percpu_rwlock: Implement the core design of
- Per-CPU Reader-Writer Locks
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <20130122073347.13822.85876.stgit@srivatsabhat.in.ibm.com> <20130123185522.GG2373@mtj.dyndns.org>
-In-Reply-To: <20130123185522.GG2373@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012319-2000-0000-0000-00000AB59FEA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130123191946.GA19101@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 12:25 AM, Tejun Heo wrote:
-> Hello, Srivatsa.
+Hello, Oleg.
+
+On Wed, Jan 23, 2013 at 08:19:46PM +0100, Oleg Nesterov wrote:
+> Let me remind the problem. To oversimplify, we have
 > 
-> First of all, I'm not sure whether we need to be this step-by-step
-> when introducing something new.  It's not like we're transforming an
-> existing implementation and it doesn't seem to help understanding the
-> series that much either.
+> 	try_to_wake_up(task, state)
+> 	{
+> 		lock(task->pi_lock);
 > 
-
-Hmm.. I split it up into steps to help explain the reasoning behind
-the code sufficiently, rather than spring all of the intricacies at
-one go (which would make it very hard to write the changelog/comments
-also). The split made it easier for me to document it well in the
-changelog, because I could deal with reasonable chunks of code/complexity
-at a time. IMHO that helps people reading it for the first time to
-understand the logic easily.
-
-> On Tue, Jan 22, 2013 at 01:03:53PM +0530, Srivatsa S. Bhat wrote:
->> Using global rwlocks as the backend for per-CPU rwlocks helps us avoid many
->> lock-ordering related problems (unlike per-cpu locks). However, global
+> 		if (task->state & state)
+> 			task->state = TASK_RUNNING;
 > 
-> So, unfortunately, this already seems broken, right?  The problem here
-> seems to be that previously, say, read_lock() implied
-> preempt_disable() but as this series aims to move away from it, it
-> introduces the problem of locking order between such locks and the new
-> contruct.
->
-
-Not sure I got your point correctly. Are you referring to Steve's comment
-that rwlocks are probably fair now (and hence not really safe when used
-like this)? If yes, I haven't actually verified that yet, but yes, that
-will make this hard to use, since we need to take care of locking rules.
-
-But suppose rwlocks are unfair (as I had assumed them to be), then we
-have absolutely no problems and no lock-ordering to worry about.
- 
-> The only two options are either punishing writers or identifying and
-> updating all such possible deadlocks.  percpu_rwsem does the former,
-> right?  I don't know how feasible the latter would be.
-
-I don't think we can avoid looking into all the possible deadlocks,
-as long as we use rwlocks inside get/put_online_cpus_atomic() (assuming
-rwlocks are fair). Even with Oleg's idea of using synchronize_sched()
-at the writer, we still need to take care of locking rules, because the
-synchronize_sched() only helps avoid the memory barriers at the reader,
-and doesn't help get rid of the rwlocks themselves.
-So in short, I don't see how we can punish the writers and thereby somehow
-avoid looking into possible deadlocks (if rwlocks are fair).
-
->  Srivatsa,
-> you've been looking at all the places which would require conversion,
-> how difficult would doing the latter be?
+> 		unlock(task->pi_lock);
+> 	}
 > 
-
-The problem is that some APIs like smp_call_function() will need to use
-get/put_online_cpus_atomic(). That is when the locking becomes tricky
-in the subsystem which invokes these APIs with other (subsystem-specific,
-internal) locks held. So we could potentially use a convention such as
-"Make get/put_online_cpus_atomic() your outer-most calls, within which
-you nest the other locks" to rule out all ABBA deadlock possibilities...
-But we might still hit some hard-to-convert places.. 
-
-BTW, Steve, fair rwlocks doesn't mean the following scenario will result
-in a deadlock right?
-
-CPU 0                          CPU 1
-
-read_lock(&rwlock)
-
-                              write_lock(&rwlock) //spins, because CPU 0
-                              //has acquired the lock for read
-
-read_lock(&rwlock)
-   ^^^^^
-What happens here? Does CPU 0 start spinning (and hence deadlock) or will
-it continue realizing that it already holds the rwlock for read?
-
-If the above ends in a deadlock, then its next to impossible to convert
-all the places safely (because the above mentioned convention will simply
-fall apart).
-
->> +#define reader_uses_percpu_refcnt(pcpu_rwlock, cpu)			\
->> +		(ACCESS_ONCE(per_cpu(*((pcpu_rwlock)->reader_refcnt), cpu)))
->> +
->> +#define reader_nested_percpu(pcpu_rwlock)				\
->> +			(__this_cpu_read(*((pcpu_rwlock)->reader_refcnt)) > 1)
->> +
->> +#define writer_active(pcpu_rwlock)					\
->> +			(__this_cpu_read(*((pcpu_rwlock)->writer_signal)))
+> And this means that a task doing
 > 
-> Why are these in the public header file?  Are they gonna be used to
-> inline something?
->
-
-No, I can put it in the .c file itself. Will do.
- 
->> +static inline void raise_writer_signal(struct percpu_rwlock *pcpu_rwlock,
->> +				       unsigned int cpu)
->> +{
->> +	per_cpu(*pcpu_rwlock->writer_signal, cpu) = true;
->> +}
->> +
->> +static inline void drop_writer_signal(struct percpu_rwlock *pcpu_rwlock,
->> +				      unsigned int cpu)
->> +{
->> +	per_cpu(*pcpu_rwlock->writer_signal, cpu) = false;
->> +}
->> +
->> +static void announce_writer_active(struct percpu_rwlock *pcpu_rwlock)
->> +{
->> +	unsigned int cpu;
->> +
->> +	for_each_online_cpu(cpu)
->> +		raise_writer_signal(pcpu_rwlock, cpu);
->> +
->> +	smp_mb(); /* Paired with smp_rmb() in percpu_read_[un]lock() */
->> +}
->> +
->> +static void announce_writer_inactive(struct percpu_rwlock *pcpu_rwlock)
->> +{
->> +	unsigned int cpu;
->> +
->> +	drop_writer_signal(pcpu_rwlock, smp_processor_id());
->> +
->> +	for_each_online_cpu(cpu)
->> +		drop_writer_signal(pcpu_rwlock, cpu);
->> +
->> +	smp_mb(); /* Paired with smp_rmb() in percpu_read_[un]lock() */
->> +}
+> 	current->state = STATE_1;
+> 	// no schedule() in between
+> 	current->state = STATE_2;
+> 	schedule();
 > 
-> It could be just personal preference but I find the above one line
-> wrappers more obfuscating than anything else.  What's the point of
-> wrapping writer_signal = true/false into a separate function?  These
-> simple wrappers just add layers that people have to dig through to
-> figure out what's going on without adding anything of value.  I'd much
-> prefer collapsing these into the percpu_write_[un]lock().
->
+> can be actually woken up by try_to_wake_up(STATE_1) even if it already
+> sleeps in STATE_2.
 
-Sure, I see your point. I'll change that.
+Hmmm... nasty.
 
-Thanks a lot for your feedback Tejun!
+...
+> and we have the same problem again. So _I think_ that we we need another
+> mb() after unlock_wait() ?
 
-Regards,
-Srivatsa S. Bhat
+Seems so, or, maybe we should add barrier semantics to unlock_wait()?
+As it currently stands, it kinda invites misusages.
 
+> And, afaics, in theory we can't simply move the current mb() down, after
+> unlock_wait().  (again, only in theory, if nothing else we should have
+> the implicit barrrers after we played with ->state in the past).
+> 
+> Or perhaps we should modify ttwu_do_wakeup() to not blindly set RUNNING,
+> say, cmpxchg(old_state, RUNNING). But this is not simple/nice.
+
+I personally think this is the right thing to do short of requiring
+locking on current->state changes.  The situation is a bit muddy
+because we're generally requiring sleepers to loop while still having
+cases where things don't work that way.  It's a little scary that we
+require looping to protect against stray wakeups, which can be very
+rare, without any way to verify/test.
+
+The waker would be acquiring the cacheline exclusively one way or the
+other, so I don't think doing cmpxchg would add much overhead.  We
+would definitely want to do comparisons tho.
+
+Thanks.
+
+-- 
+tejun
