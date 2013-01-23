@@ -1,113 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab3AWAsj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 19:48:39 -0500
-Received: from mx2.fusionio.com ([66.114.96.31]:51605 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751374Ab3AWAsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 19:48:36 -0500
-X-ASG-Debug-ID: 1358902115-0421b532750a720001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Tue, 22 Jan 2013 19:48:33 -0500
-From: Chris Mason <chris.mason@fusionio.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs fixes
-Message-ID: <20130123004833.GA30526@shiny>
-X-ASG-Orig-Subj: [GIT PULL] Btrfs fixes
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	id S1752385Ab3AWAvv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 19:51:51 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:63227 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab3AWAvs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 19:51:48 -0500
+Date: Tue, 22 Jan 2013 16:51:42 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH v2 2/2] block: don't request module during elevator init
+Message-ID: <20130123005142.GD5359@htj.dyndns.org>
+References: <CA+55aFzm4k2CyQ_mZVHyeasjw4ybqfO2SpJrZZNZeUsSW8PB=g@mail.gmail.com>
+ <CA+55aFxLJ=Yfms9SkPJLjQ-ZASPNZC0JUBsb3OwonJvTCcBzxA@mail.gmail.com>
+ <20130116025251.GM2668@htj.dyndns.org>
+ <CA+55aFxttTkWG0gfUz3=V8A-9az3+qY3j0JZEAoKv0ne-QupZw@mail.gmail.com>
+ <20130116032502.GN2668@htj.dyndns.org>
+ <CA+55aFxCudzOv8e2XjHiT=Qhy9q+mrxUfSYAT=eU6Gq8uyNORw@mail.gmail.com>
+ <20130116164832.GP2668@htj.dyndns.org>
+ <50F6DD4D.3070808@linux.intel.com>
+ <CA+55aFyjrXzKMqmOuMo9z24OZj3kD4O4M4y_O-h=r6udCz2MyA@mail.gmail.com>
+ <20130116213104.GT2668@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1358902115
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.120626
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <20130116213104.GT2668@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+>From 21c3c5d2800733b7a276725b8e1ae49a694adc1a Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Tue, 22 Jan 2013 16:48:03 -0800
 
-My for-linus branch has our batch of btrfs fixes:
+Block layer allows selecting an elevator which is built as a module to
+be selected as system default via kernel param "elevator=".  This is
+achieved by automatically invoking request_module() whenever a new
+block device is initialized and the elevator is not available.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+This led to an interesting deadlock problem involving async and module
+init.  Block device probing running off an async job invokes
+request_module().  While the module is being loaded, it performs
+async_synchronize_full() which ends up waiting for the async job which
+is already waiting for request_module() to finish, leading to
+deadlock.
 
-We've been hammering away at a crc corruption as well, which I was
-really hoping to get into this pull.  It isn't nailed down yet, but we
-were finally able to get a solid way to reproduce.  The only good
-news is it isn't a recent regression.
+Invoking request_module() from deep in block device init path is
+already nasty in itself.  It seems best to avoid these situations from
+the beginning by moving on-demand module loading out of block init
+path.
 
-The most important batch of fixes in here come from Ilya.  They address
-a regression Liu Bo found in the balance ioctls for pausing and resuming
-a running balance across drives.
+The previous patch made sure that the default elevator module is
+loaded early during boot if available.  This patch removes on-demand
+loading of the default elevator from elevator init path.  As the
+module would have been loaded during boot, userland-visible behavior
+difference should be minimal.
 
-Josef's orphan truncate patch fixes an obscure corruption we'd see
-during xfstests.
+For more details, please refer to the following thread.
 
-Arne's patches address problems with subvolume quotas.  If the user
-destroys quota groups incorrectly the FS will refuse to mount.
+  http://thread.gmane.org/gmane.linux.kernel/1420814
 
-The rest are smaller fixes and plugs for memory leaks.
+v2: The bool parameter was named @request_module which conflicted with
+    request_module().  This built okay w/ CONFIG_MODULES because
+    request_module() was defined as a macro.  W/o CONFIG_MODULES, it
+    causes build breakage.  Rename the parameter to @try_loading.
+    Reported by Fengguang.
 
-Ilya Dryomov (6) commits (+94/-32):
-    Btrfs: reorder locks and sanity checks in btrfs_ioctl_defrag (+9/-8)
-    Btrfs: fix "mutually exclusive op is running" error code (+4/-4)
-    Btrfs: fix a regression in balance usage filter (+8/-1)
-    Btrfs: bring back balance pause/resume logic (+71/-17)
-    Btrfs: fix unlock order in btrfs_ioctl_rm_dev (+1/-1)
-    Btrfs: fix unlock order in btrfs_ioctl_resize (+1/-1)
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alex Riesen <raa.lkml@gmail.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+---
+Minor revision to fix build breakage on !CONFIG_MODULES reported by
+Fengguang.  The patch has been queued to
+wq/for-3.9-async-deadlock-fixes.
 
-Liu Bo (4) commits (+18/-7):
-    Btrfs: fix a bug when llseek for delalloc bytes behind prealloc extents (+14/-6)
-    Btrfs: let allocation start from the right raid type (+1/-1)
-    Btrfs: reset path lock state to zero (+2/-0)
-    Btrfs: fix off-by-one in lseek (+1/-0)
+Thanks.
 
-Miao Xie (4) commits (+15/-7):
-    Btrfs: fix missing write access release in btrfs_ioctl_resize() (+1/-0)
-    Btrfs: do not delete a subvolume which is in a R/O subvolume (+5/-5)
-    Btrfs: fix resize a readonly device (+4/-2)
-    Btrfs: disable qgroup id 0 (+5/-0)
+ block/elevator.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-Arne Jansen (2) commits (+19/-1):
-    Btrfs: prevent qgroup destroy when there are still relations (+12/-1)
-    Btrfs: ignore orphan qgroup relations (+7/-0)
+diff --git a/block/elevator.c b/block/elevator.c
+index c2d61d5..603b2c1 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -100,14 +100,14 @@ static void elevator_put(struct elevator_type *e)
+ 	module_put(e->elevator_owner);
+ }
+ 
+-static struct elevator_type *elevator_get(const char *name)
++static struct elevator_type *elevator_get(const char *name, bool try_loading)
+ {
+ 	struct elevator_type *e;
+ 
+ 	spin_lock(&elv_list_lock);
+ 
+ 	e = elevator_find(name);
+-	if (!e) {
++	if (!e && try_loading) {
+ 		spin_unlock(&elv_list_lock);
+ 		request_module("%s-iosched", name);
+ 		spin_lock(&elv_list_lock);
+@@ -207,25 +207,30 @@ int elevator_init(struct request_queue *q, char *name)
+ 	q->boundary_rq = NULL;
+ 
+ 	if (name) {
+-		e = elevator_get(name);
++		e = elevator_get(name, true);
+ 		if (!e)
+ 			return -EINVAL;
+ 	}
+ 
++	/*
++	 * Use the default elevator specified by config boot param or
++	 * config option.  Don't try to load modules as we could be running
++	 * off async and request_module() isn't allowed from async.
++	 */
+ 	if (!e && *chosen_elevator) {
+-		e = elevator_get(chosen_elevator);
++		e = elevator_get(chosen_elevator, false);
+ 		if (!e)
+ 			printk(KERN_ERR "I/O scheduler %s not found\n",
+ 							chosen_elevator);
+ 	}
+ 
+ 	if (!e) {
+-		e = elevator_get(CONFIG_DEFAULT_IOSCHED);
++		e = elevator_get(CONFIG_DEFAULT_IOSCHED, false);
+ 		if (!e) {
+ 			printk(KERN_ERR
+ 				"Default I/O scheduler not found. " \
+ 				"Using noop.\n");
+-			e = elevator_get("noop");
++			e = elevator_get("noop", false);
+ 		}
+ 	}
+ 
+@@ -967,7 +972,7 @@ int elevator_change(struct request_queue *q, const char *name)
+ 		return -ENXIO;
+ 
+ 	strlcpy(elevator_name, name, sizeof(elevator_name));
+-	e = elevator_get(strstrip(elevator_name));
++	e = elevator_get(strstrip(elevator_name), true);
+ 	if (!e) {
+ 		printk(KERN_ERR "elevator: type %s not found\n", elevator_name);
+ 		return -EINVAL;
+-- 
+1.8.1
 
-Josef Bacik (2) commits (+39/-16):
-    Btrfs: add orphan before truncating pagecache (+38/-15)
-    Btrfs: set flushing if we're limited flushing (+1/-1)
-
-Zach Brown (1) commits (+1/-0):
-    btrfs: fix btrfs_cont_expand() freeing IS_ERR em
-
-Lukas Czerner (1) commits (+1/-1):
-    btrfs: get the device in write mode when deleting it
-
-Eric Sandeen (1) commits (+14/-3):
-    btrfs: update timestamps on truncate()
-
-Tsutomu Itoh (1) commits (+3/-1):
-    Btrfs: fix memory leak in name_cache_insert()
-
-Total: (22) commits
-
- fs/btrfs/extent-tree.c |   6 ++-
- fs/btrfs/file.c        |  10 ++--
- fs/btrfs/inode.c       |  82 +++++++++++++++++++++++--------
- fs/btrfs/ioctl.c       | 129 +++++++++++++++++++++++++++++++++++--------------
- fs/btrfs/qgroup.c      |  20 +++++++-
- fs/btrfs/send.c        |   4 +-
- fs/btrfs/volumes.c     |  21 ++++++--
- 7 files changed, 204 insertions(+), 68 deletions(-)
