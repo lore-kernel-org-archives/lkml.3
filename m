@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226Ab3AWT55 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 14:57:57 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:57379 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab3AWT5u (ORCPT
+	id S1752191Ab3AWUA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 15:00:29 -0500
+Received: from jacques.telenet-ops.be ([195.130.132.50]:47510 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab3AWUAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 14:57:50 -0500
-Date: Wed, 23 Jan 2013 11:57:40 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 04/45] percpu_rwlock: Implement the core design of
- Per-CPU Reader-Writer Locks
-Message-ID: <20130123195740.GI2373@mtj.dyndns.org>
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
- <20130122073347.13822.85876.stgit@srivatsabhat.in.ibm.com>
- <20130123185522.GG2373@mtj.dyndns.org>
- <51003B20.2060506@linux.vnet.ibm.com>
+	Wed, 23 Jan 2013 15:00:22 -0500
+Date: Wed, 23 Jan 2013 21:00:18 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [git pull] m68k updates for 3.8 (take 2)
+Message-ID: <alpine.DEB.2.00.1301232058001.14225@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51003B20.2060506@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Srivatsa.
+	Hi Linus,
 
-On Thu, Jan 24, 2013 at 01:03:52AM +0530, Srivatsa S. Bhat wrote:
-> Hmm.. I split it up into steps to help explain the reasoning behind
-> the code sufficiently, rather than spring all of the intricacies at
-> one go (which would make it very hard to write the changelog/comments
-> also). The split made it easier for me to document it well in the
-> changelog, because I could deal with reasonable chunks of code/complexity
-> at a time. IMHO that helps people reading it for the first time to
-> understand the logic easily.
+The following changes since commit a49f0d1ea3ec94fc7cf33a7c36a16343b74bd565:
+  Linus Torvalds (1):
+        Linux 3.8-rc1
 
-I don't know.  It's a judgement call I guess.  I personally would much
-prefer having ample documentation as comments in the source itself or
-as a separate Documentation/ file as that's what most people are gonna
-be looking at to figure out what's going on.  Maybe just compact it a
-bit and add more in-line documentation instead?
+are available in the git repository at:
 
-> > The only two options are either punishing writers or identifying and
-> > updating all such possible deadlocks.  percpu_rwsem does the former,
-> > right?  I don't know how feasible the latter would be.
-> 
-> I don't think we can avoid looking into all the possible deadlocks,
-> as long as we use rwlocks inside get/put_online_cpus_atomic() (assuming
-> rwlocks are fair). Even with Oleg's idea of using synchronize_sched()
-> at the writer, we still need to take care of locking rules, because the
-> synchronize_sched() only helps avoid the memory barriers at the reader,
-> and doesn't help get rid of the rwlocks themselves.
+  ra.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
 
-Well, percpu_rwlock don't have to use rwlock for the slow path.  It
-can implement its own writer starving locking scheme.  It's not like
-implementing slow path global rwlock logic is difficult.
+Geert Uytterhoeven (3):
+      m68k: Provide dma_alloc_attrs()/dma_free_attrs()
+      asm-generic/dma-mapping-broken.h: Provide dma_alloc_attrs()/dma_free_attrs()
+      m68k: Wire up finit_module
 
-> CPU 0                          CPU 1
-> 
-> read_lock(&rwlock)
-> 
->                               write_lock(&rwlock) //spins, because CPU 0
->                               //has acquired the lock for read
-> 
-> read_lock(&rwlock)
->    ^^^^^
-> What happens here? Does CPU 0 start spinning (and hence deadlock) or will
-> it continue realizing that it already holds the rwlock for read?
+The asm-generic changeset has been ack'ed by Arnd.
 
-I don't think rwlock allows nesting write lock inside read lock.
-read_lock(); write_lock() will always deadlock.
+Thanks for pulling!
 
-Thanks.
+ arch/m68k/include/asm/dma-mapping.h      |   16 ++++++++++++++++
+ arch/m68k/include/asm/unistd.h           |    2 +-
+ arch/m68k/include/uapi/asm/unistd.h      |    1 +
+ arch/m68k/kernel/syscalltable.S          |    1 +
+ include/asm-generic/dma-mapping-broken.h |   16 ++++++++++++++++
+ 5 files changed, 35 insertions(+), 1 deletions(-)
 
--- 
-tejun
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
