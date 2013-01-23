@@ -1,141 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab3AWTVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 14:21:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18475 "EHLO mx1.redhat.com"
+	id S1752078Ab3AWTXU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 14:23:20 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:54534 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028Ab3AWTVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 14:21:22 -0500
-Date: Wed, 23 Jan 2013 20:19:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Yasunori Goto <y-goto@jp.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Michael Davidson <md@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Julien Tinnes <jln@google.com>,
-        Aaron Durbin <adurbin@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Roland McGrath <roland@hack.frob.com>,
-        Alexander Gordeev <agordeev@redhat.com>
-Subject: TASK_DEAD && ttwu() again (Was: ensure arch_ptrace/ptrace_request
-	can never race with SIGKILL)
-Message-ID: <20130123191946.GA19101@redhat.com>
-References: <20130118175224.GA520@redhat.com> <CA+55aFyEsU-pkX557A-m+xoGkA_v+fXEyA8z8HbJ5J8K1jObeg@mail.gmail.com> <20130118185559.GA3773@redhat.com> <CA+55aFy=newnMbx53HipyWbRs2mUUPSqXXCpSfDLW78gkro37g@mail.gmail.com> <20130120192448.GA6771@redhat.com> <20130120192527.GC6771@redhat.com> <CA+55aFx1+hFSCa4nX80C30BkEOugXRvBZ=7LA+u+KOq_qSaJsg@mail.gmail.com> <20130121172151.GA4691@redhat.com> <CA+55aFwRkvEP5YJy+a=TFgDX==YuU7CJ+D_U+B2s4e1LX-nz3g@mail.gmail.com> <20130121194723.GA18775@redhat.com>
+	id S1751158Ab3AWTXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 14:23:15 -0500
+Date: Wed, 23 Jan 2013 12:23:06 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] Add support for S3 non-stop TSC support.
+Message-ID: <20130123192306.GB4039@obsidianresearch.com>
+References: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
+ <50FD8D07.5030908@linaro.org>
+ <20130122195701.GH30647@obsidianresearch.com>
+ <50FEF505.60504@linaro.org>
+ <20130123002610.GA814@obsidianresearch.com>
+ <50FF31D6.3090304@linaro.org>
+ <20130123013710.GA1046@obsidianresearch.com>
+ <50FF42CD.6010203@linaro.org>
+ <20130123023523.GC1590@obsidianresearch.com>
+ <50FF53D8.2070503@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130121194723.GA18775@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <50FF53D8.2070503@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To avoid the confusion, this is not connected to ptrace_freeze_traced()
-changes...
+On Tue, Jan 22, 2013 at 07:07:04PM -0800, John Stultz wrote:
 
-With or without these changes, there is another problem: a spurious
-wakeup from try_to_wake_up(TASK_NORMAL) which doesn't necessarily see
-the "right" task->state.
+> But personally, I'm less fond of adding additional state to the
+> clocksources, as I'm (admittedly, very) slowly trying to go the
+> other way, and make the clocksources mostly state free. This is in
+> part to allow for faster timekeeping updates (see:
+> https://lkml.org/lkml/2012/3/2/66) - but again, I've not made much
+> progress there recently, so this probably isn't a strong enough
+> argument against it.
 
-As for ptrace_stop() this is purely theoretical, but I thought that
-perhaps it makes sense to extract the "mb + unlock_wait(pi_lock)" code
-from do_exit() into the generic helper,
-set_current_state_sync_because_we_cant_tolerate_a_wrong_wakeup().
-But when I look at this code again I am not sure it is right.
+I think there should be ways to avoid storing the suspend time in the
+clocksource struct, but since the suspend time is orthogonal to
+timekeeping updates maybe it doesn't matter?
 
-Let me remind the problem. To oversimplify, we have
+> Another downside is that accessing a clocksource can be costly, so
+> doing so for every clocksource could unnecessarily slow
+> suspend/resume down. Reading all the clocksources avoids the
+> complexity of creating the secondary selection and management of a
+> suspend-time measuring clocksource, but it also feels a little
+> hackish to me. And iterating over the clocksource list requires
+> exposing currently private clocksource data to the timekeeping core.
 
-	try_to_wake_up(task, state)
-	{
-		lock(task->pi_lock);
+I was imagining these functions would be in the clocksource code and
+called from suspend (clocksource_suspend_prepare,
+clocksource_suspend_delta or some such). Not sure on iteration
+expense, but you only need to look at clock sources that have a
+active_during_suspend function pointer, so there would be various ways
+to minimize the cost of finding that list, including precomputing it
+during clocksource registration.
 
-		if (task->state & state)
-			task->state = TASK_RUNNING;
+Generally there would be 0 or 1 active_during_suspend sources, I
+expect. So in practice this probably boils down to locking only one
+clocksource.
 
-		unlock(task->pi_lock);
-	}
+> The reason I like the idea of a new persistent_clock api, is that it
+> formalizes existing usage, and doesn't require changes to the
+> timekeeping logic, or to architectures that don't have running
 
-And this means that a task doing
+Having seen ARM go through so many iterations of removing these sorts
+of non-driver APIs and moving to dynamic bindings just makes it seem
+wrong to add more, especially when the API is expected to work with
+hardware already handled by a dynamically bound driver.
 
-	current->state = STATE_1;
-	// no schedule() in between
-	current->state = STATE_2;
-	schedule();
+> But don't let my naysaying stop you from submitting a patch. It
+> would be interesting to see your idea fully fleshed out.
 
-can be actually woken up by try_to_wake_up(STATE_1) even if it already
-sleeps in STATE_2.
-
-Usually this is fine, any wait_event-like code should be careful. But
-sometimes we can't afford the false wakeup, that is why do_wait() roughly
-does
-
-	do_exit()
-	{
-		// down_read(mmap_sem) can do this without schedule()
-		current->state = TASK_UNINTERRUPTIBLE;
-		current->state = TASK_RUNNING;
-
-		mb();
-
-		spin_unlock_wait(current->pi_lock);
-
-		current->state = TASK_DEAD;
-		schedule();
-	}
-
-This should ensure that any subsequent (after unlock_wait) try_to_wake_up()
-can't see state == UNINTERRUPTIBLE and I think this works.
-
-But. Somehow we missed the fact (I think) that we also need to serialize
-unlock_wait() and "state = TASK_DEAD". The code above can be reordered,
-
-	do_exit()
-	{
-		// down_read(mmap_sem) can do this without schedule()
-		current->state = TASK_UNINTERRUPTIBLE;
-		current->state = TASK_RUNNING;
-
-		mb();
-
-		current->state = TASK_DEAD;
-		// !!! ttwu() can change ->state here !!!
-		spin_unlock_wait(current->pi_lock);
-
-		schedule();
-	}
-
-and we have the same problem again. So _I think_ that we we need another
-mb() after unlock_wait() ?
-
-And, afaics, in theory we can't simply move the current mb() down, after
-unlock_wait().  (again, only in theory, if nothing else we should have
-the implicit barrrers after we played with ->state in the past).
-
-Or perhaps we should modify ttwu_do_wakeup() to not blindly set RUNNING,
-say, cmpxchg(old_state, RUNNING). But this is not simple/nice.
-
-Or I missed something?
-
-Oleg.
-
-
---- x/kernel/exit.c
-+++ x/kernel/exit.c
-@@ -869,8 +869,15 @@ void do_exit(long code)
- 	 * To avoid it, we have to wait for releasing tsk->pi_lock which
- 	 * is held by try_to_wake_up()
- 	 */
-+
- 	smp_mb();
- 	raw_spin_unlock_wait(&tsk->pi_lock);
-+	/*
-+	 * The first mb() ensures that after that try_to_wake_up() must see
-+	 * state == TASK_RUNNING. We need another one to ensure that we set
-+	 * TASK_DEAD only after ->pi_lock is really unlocked.
-+	 */
-+	smp_mb();
+Maybe Feng will try a v2 of his patch with some of these ideas? He has
+hardware to test it :) I agree it would be clearer to see with code!!
  
- 	/* causes final put_task_struct in finish_task_switch(). */
- 	tsk->state = TASK_DEAD;
+> I appreciate your persistence here, and apologies for my thick-headed-ness.
 
+NP
+
+Regards,
+Jason
