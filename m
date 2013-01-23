@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab3AWG0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 01:26:20 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:47370 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750950Ab3AWG0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 01:26:18 -0500
-Date: Tue, 22 Jan 2013 22:26:13 -0800
+	id S1753630Ab3AWG04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 01:26:56 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:38440 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224Ab3AWG0y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 01:26:54 -0500
+Date: Tue, 22 Jan 2013 22:26:45 -0800
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>
@@ -15,8 +16,8 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         robert.richter@amd.com, linuxppc-dev@ozlabs.org,
         linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 5/6][v4]: perf: Create a sysfs entry for Power event format
-Message-ID: <20130123062613.GF13720@us.ibm.com>
+Subject: [PATCH 6/6][v4]: perf: Document the ABI of perf sysfs entries
+Message-ID: <20130123062645.GG13720@us.ibm.com>
 References: <20130123062201.GA13720@us.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,81 +26,115 @@ In-Reply-To: <20130123062201.GA13720@us.ibm.com>
 X-Operating-System: Linux 2.0.32 on an i486
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012306-9360-0000-0000-00000F92D24C
+x-cbid: 13012306-4834-0000-0000-000002E0819C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-[PATCH 5/6][v4]: perf: Create a sysfs entry for Power event format
+[PATCH 6/6][v4]: perf: Document the ABI of perf sysfs entries
 
-Create a sysfs entry, '/sys/bus/event_source/devices/cpu/format/event'
-which describes the format of a POWER cpu.
+This patchset addes two new sets of files to sysfs for POWER architecture.
 
-The format of the event is the same for all POWER cpus at least in
-(Power6, Power7), so bulk of this change is common in the code common
-to POWER cpus.
+	- perf event config format in /sys/devices/cpu/format/event
+	- generic and POWER-specific perf events in /sys/devices/cpu/events/
 
-This code is based on corresponding code in x86.
+The format of the first file is already documented in:
 
-Changelog[v2]: [Jiri Osla] Use PMU_FORMAT_ATTR() rather than duplicating it.
+	sysfs-bus-event_source-devices-format
+
+Document the format of the second set of files '/sys/devices/cpu/events/*'
+which would also become part of the ABI.
+
+Changelog[v4]:
+	[Jiri Olsa]: Mention that multiple event= like terms can be specified
+	in the 'events' file.
+	[Jiri Olsa]: Remove the documentation for the 'config format' file
+	as it is already documented in 'Documentation/ABI/testing/'.
+	[Jiri Olsa]: Move ABI documentation from 'stable/' to 'testing/'
+
+Changelog[v3]:
+	[Greg KH] Include ABI documentation.
 
 Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 ---
- arch/powerpc/include/asm/perf_event_server.h |    6 ++++++
- arch/powerpc/perf/core-book3s.c              |   12 ++++++++++++
- arch/powerpc/perf/power7-pmu.c               |    1 +
- 3 files changed, 19 insertions(+), 0 deletions(-)
+ .../testing/sysfs-bus-event_source-devices-events  |   62 ++++++++++++++++++++
+ 1 files changed, 62 insertions(+), 0 deletions(-)
+ delete mode 100644 Documentation/ABI/stable/sysfs-devices-cpu-events
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-event_source-devices-events
 
-diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
-index b29fcc6..ee63205 100644
---- a/arch/powerpc/include/asm/perf_event_server.h
-+++ b/arch/powerpc/include/asm/perf_event_server.h
-@@ -135,3 +135,9 @@ extern ssize_t power_events_sysfs_show(struct device *dev,
- 
- #define	POWER_EVENT_ATTR(_name, _id)	EVENT_ATTR(PM_##_name, _id, _p)
- #define	POWER_EVENT_PTR(_id)		EVENT_PTR(_id, _p)
+diff --git a/Documentation/ABI/stable/sysfs-devices-cpu-events b/Documentation/ABI/stable/sysfs-devices-cpu-events
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+new file mode 100644
+index 0000000..0adeb52
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+@@ -0,0 +1,62 @@
++What:		/sys/devices/cpu/events/
++		/sys/devices/cpu/events/branch-misses
++		/sys/devices/cpu/events/cache-references
++		/sys/devices/cpu/events/cache-misses
++		/sys/devices/cpu/events/stalled-cycles-frontend
++		/sys/devices/cpu/events/branch-instructions
++		/sys/devices/cpu/events/stalled-cycles-backend
++		/sys/devices/cpu/events/instructions
++		/sys/devices/cpu/events/cpu-cycles
 +
-+/*
-+ * Format of a perf event is the same on all POWER cpus. Declare a
-+ * common sysfs attribute group that individual POWER cpus can share.
-+ */
-+extern struct attribute_group power_pmu_format_group;
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index fa476d5..4ae044b 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -1315,6 +1315,18 @@ ssize_t power_events_sysfs_show(struct device *dev,
- 	return sprintf(page, "event=0x%02llx\n", pmu_attr->id);
- }
- 
-+PMU_FORMAT_ATTR(event, "config:0-20");
++Date:		2013/01/08
 +
-+static struct attribute *power_pmu_format_attr[] = {
-+	&format_attr_event.attr,
-+	NULL,
-+};
++Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
 +
-+struct attribute_group power_pmu_format_group = {
-+	.name = "format",
-+	.attrs = power_pmu_format_attr,
-+};
++Description:	Generic performance monitoring events
 +
- struct pmu power_pmu = {
- 	.pmu_enable	= power_pmu_enable,
- 	.pmu_disable	= power_pmu_disable,
-diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
-index 5627940..5fb3c9b 100644
---- a/arch/powerpc/perf/power7-pmu.c
-+++ b/arch/powerpc/perf/power7-pmu.c
-@@ -410,6 +410,7 @@ static struct attribute_group power7_pmu_events_group = {
- };
- 
- static const struct attribute_group *power7_pmu_attr_groups[] = {
-+	&power_pmu_format_group,
- 	&power7_pmu_events_group,
- 	NULL,
- };
++		A collection of performance monitoring events that may be
++		supported by many/most CPUs. These events can be monitored
++		using the 'perf(1)' tool.
++
++		The contents of each file would look like:
++
++			event=0xNNNN
++
++		where 'N' is a hex digit and the number '0xNNNN' shows the
++		"raw code" for the perf event identified by the file's
++		"basename".
++
++
++What: 		/sys/devices/cpu/events/PM_LD_MISS_L1
++		/sys/devices/cpu/events/PM_LD_REF_L1
++		/sys/devices/cpu/events/PM_CYC
++		/sys/devices/cpu/events/PM_BRU_FIN
++		/sys/devices/cpu/events/PM_GCT_NOSLOT_CYC
++		/sys/devices/cpu/events/PM_BRU_MPRED
++		/sys/devices/cpu/events/PM_INST_CMPL
++		/sys/devices/cpu/events/PM_CMPLU_STALL
++
++Date:		2013/01/08
++
++Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
++		Linux Powerpc mailing list <linuxppc-dev@ozlabs.org>
++
++Description:	POWER-systems specific performance monitoring events
++
++		A collection of performance monitoring events that may be
++		supported by the POWER CPU. These events can be monitored
++		using the 'perf(1)' tool.
++
++		These events may not be supported by other CPUs.
++
++		The contents of each file would look like:
++
++			event=0xNNNN
++
++		where 'N' is a hex digit and the number '0xNNNN' shows the
++		"raw code" for the perf event identified by the file's
++		"basename".
++
++		Further, multiple terms like 'event=0xNNNN' can be specified
++		and separated with comma. All available terms are defined in
++		the /sys/bus/event_source/devices/<dev>/format file.
 -- 
 1.7.1
 
