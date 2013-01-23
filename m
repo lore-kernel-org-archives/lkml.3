@@ -1,206 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab3AWMwL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 07:52:11 -0500
-Received: from smtp-out-073.synserver.de ([212.40.185.73]:1418 "EHLO
-	smtp-out-073.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab3AWMwH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754707Ab3AWMwJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 07:52:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42921 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754872Ab3AWMwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Jan 2013 07:52:07 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 2339
-Message-ID: <50FFDD2A.9040102@metafoo.de>
-Date: Wed, 23 Jan 2013 13:52:58 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
+Date: Wed, 23 Jan 2013 13:52:02 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH v3 0/7] rework mem_cgroup iterator
+Message-ID: <20130123125202.GA13319@dhcp22.suse.cz>
+References: <1357235661-29564-1-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, dianders@chromium.org,
-        gregkh@linuxfoundation.org, naveenkrishna.ch@gmail.com
-Subject: Re: [PATCH] iio: adc: add exynos5 adc driver under iio framwork
-References: <1358775470-21278-1-git-send-email-ch.naveen@samsung.com> <1358917086-4148-1-git-send-email-ch.naveen@samsung.com>
-In-Reply-To: <1358917086-4148-1-git-send-email-ch.naveen@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357235661-29564-1-git-send-email-mhocko@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2013 05:58 AM, Naveen Krishna Chatradhi wrote:
-> This patch add an ADC IP found on EXYNOS5 series socs from Samsung.
-> Also adds the Documentation for device tree bindings.
+Are there any comments? Ying, Johannes?
+I would be happy if this could go into 3.9.
+
+On Thu 03-01-13 18:54:14, Michal Hocko wrote:
+> Hi all,
+> this is a third version of the patchset previously posted here:
+> https://lkml.org/lkml/2012/11/26/616
 > 
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> ---
-> Changes since v1:
+> The patch set tries to make mem_cgroup_iter saner in the way how it
+> walks hierarchies. css->id based traversal is far from being ideal as it
+> is not deterministic because it depends on the creation ordering.
 > 
-> 1. Fixed comments from Lars
-> 2. Added support for ADC on EXYNOS5410
+> Diffstat doesn't look that promising as in previous versions anymore but
+> I think it is worth the resulting outcome (and the sanity ;)).
 > 
-> Changes since v2:
+> The first patch fixes a potential misbehaving which I haven't seen but
+> the fix is needed for the later patches anyway. We could take it alone
+> as well but I do not have any bug report to base the fix on. The second
+> one is also preparatory and it is new to the series.
 > 
-> 1. Changed the instance name for (struct iio_dev *) to indio_dev
-> 2. Changed devm_request_irq to request_irq
+> The third patch is the core of the patchset and it replaces css_get_next
+> based on css_id by the generic cgroup pre-order iterator which
+> means that css_id is no longer used by memcg. This brings some
+> chalanges for the last visited group caching during the reclaim
+> (mem_cgroup_per_zone::reclaim_iter). We have to use memcg pointers
+> directly now which means that we have to keep a reference to those
+> groups' css to keep them alive.
 > 
-> Few doubts regarding the mappings and child device handling.
-> Kindly, suggest me better methods.
+> The next patch fixups an unbounded cgroup removal holdoff caused by
+> the elevated css refcount and does the clean up on the group removal.
+> Thanks to Ying who spotted this during testing of the previous version
+> of the patchset.
+> I could have folded it into the previous patch but I felt it would be
+> too big to review but if people feel it would be better that way, I have
+> no problems to squash them together.
 > 
+> The fourth and fifth patches are an attempt for simplification of the
+> mem_cgroup_iter. css juggling is removed and the iteration logic is
+> moved to a helper so that the reference counting and iteration are
+> separated.
+> 
+> The last patch just removes css_get_next as there is no user for it any
+> longer.
+> 
+> I am also thinking that leaf-to-root iteration makes more sense but this
+> patch is not included in the series yet because I have to think some
+> more about the justification.
+> 
+> Same as with the previous version I have tested with a quite simple
+> hierarchy:
+>         A (limit = 280M, use_hierarchy=true)
+>       / | \
+>      B  C  D (all have 100M limit)
+> 
+> And a separate kernel build in the each leaf group. This triggers
+> both children only and hierarchical reclaim which is parallel so the
+> iter_reclaim caching is active a lot. I will hammer it some more but the
+> series should be in quite a good shape already. 
+> 
+> Michal Hocko (7):
+>       memcg: synchronize per-zone iterator access by a spinlock
+>       memcg: keep prev's css alive for the whole mem_cgroup_iter
+>       memcg: rework mem_cgroup_iter to use cgroup iterators
+>       memcg: remove memcg from the reclaim iterators
+>       memcg: simplify mem_cgroup_iter
+>       memcg: further simplify mem_cgroup_iter
+>       cgroup: remove css_get_next
+> 
+> And the diffstat says:
+>  include/linux/cgroup.h |    7 --
+>  kernel/cgroup.c        |   49 ------------
+>  mm/memcontrol.c        |  199 ++++++++++++++++++++++++++++++++++++++++++------
+>  3 files changed, 175 insertions(+), 80 deletions(-)
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Hi,
-
-The patch looks mostly good now. As for the mappings, the problem is that we
-currently do not have any device tree bindings for IIO. So a proper solution
-would be to add dt bindings for IIO.
-
-[...]
-> diff --git a/drivers/iio/adc/exynos5_adc.c b/drivers/iio/adc/exynos5_adc.c
-> new file mode 100644
-> index 0000000..8982675
-> --- /dev/null
-> +++ b/drivers/iio/adc/exynos5_adc.c
-[...]
-> +
-> +/** ADC core in EXYNOS5410 has 10 channels,
-> + * ADC core in EXYNOS5250 has 8 channels
-> +*/
-
-Minor nitpick, according to Documentation/Codingsytle multi-line comments
-should look like this:
-
-/*
- * Text
- * Text
- */
-
-[...]
-> +static int exynos5_adc_probe(struct platform_device *pdev)
-> +{
-> +	struct exynos5_adc *info = NULL;
-> +	struct device_node *np = pdev->dev.of_node;
-> +	struct iio_dev *indio_dev = NULL;
-> +	struct resource	*mem;
-> +	int ret = -ENODEV;
-> +	int irq;
-> +
-> +	if (!np)
-> +		return ret;
-> +
-> +	indio_dev = iio_device_alloc(sizeof(struct exynos5_adc));
-> +	if (!indio_dev) {
-> +		dev_err(&pdev->dev, "failed allocating iio device\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	info = iio_priv(indio_dev);
-> +
-> +	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +
-> +	info->regs = devm_request_and_ioremap(&pdev->dev, mem);
-
-While devm_request_and_ioremap takes care of the printing and error you
-still need to check whether regs is non NULL.
-
-> +
-> +	irq = platform_get_irq(pdev, 0);
-> +	if (irq < 0) {
-> +		dev_err(&pdev->dev, "no irq resource?\n");
-> +		ret = irq;
-> +		goto err_iio;
-> +	}
-> +
-> +	info->irq = irq;
-> +
-> +	ret = request_irq(info->irq, exynos5_adc_isr,
-> +					0, dev_name(&pdev->dev), info);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "failed requesting irq, irq = %d\n",
-> +							info->irq);
-> +		goto err_iio;
-> +	}
-> +
-> +	info->clk = devm_clk_get(&pdev->dev, "adc");
-> +	if (IS_ERR(info->clk)) {
-> +		dev_err(&pdev->dev, "failed getting clock, err = %ld\n",
-> +							PTR_ERR(info->clk));
-> +		ret = PTR_ERR(info->clk);
-> +		goto err_irq;
-> +	}
-> +
-> +	info->vdd = devm_regulator_get(&pdev->dev, "vdd");
-> +	if (IS_ERR(info->vdd)) {
-> +		dev_err(&pdev->dev, "failed getting regulator, err = %ld\n",
-> +							PTR_ERR(info->vdd));
-> +		ret = PTR_ERR(info->vdd);
-> +		goto err_irq;
-> +	}
-> +
-> +	info->version = exynos5_adc_get_version(pdev);
-> +
-> +	platform_set_drvdata(pdev, indio_dev);
-> +
-> +	init_completion(&info->completion);
-
-Since the completion is used in the IRQ handler it should be initialized
-before the IRQ is requested.
-
-> +
-> +	indio_dev->name = dev_name(&pdev->dev);
-> +	indio_dev->dev.parent = &pdev->dev;
-> +	indio_dev->dev.of_node = pdev->dev.of_node;
-> +	indio_dev->info = &exynos5_adc_iio_info;
-> +	indio_dev->modes = INDIO_DIRECT_MODE;
-> +	indio_dev->channels = exynos5_adc_iio_channels;
-> +	indio_dev->num_channels = ARRAY_SIZE(exynos5_adc_iio_channels);
-
-Shouldn't the number of channels depend on the ADC version? E.g. 8 for v1
-and 10 for v2?
-
-> +
-> +	info->map = exynos5_adc_iio_maps;
-> +
-> +	ret = iio_map_array_register(indio_dev, info->map);
-> +	if (ret) {
-> +		dev_err(&indio_dev->dev, "failed mapping iio, err: %d\n", ret);
-> +		goto err_irq;
-> +	}
-> +
-> +	ret = iio_device_register(indio_dev);
-> +	if (ret)
-> +		goto err_map;
-> +
-> +	ret = regulator_enable(info->vdd);
-> +	if (ret)
-> +		goto err_iio_dev;
-
-You never disable the regulator again. I think you need to do that before it
-is freed.
-
-> +
-> +	clk_prepare_enable(info->clk);
-> +
-> +	exynos5_adc_hw_init(info);
-> +
-> +	ret = of_platform_populate(np, exynos5_adc_match, NULL, &pdev->dev);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "failed adding child nodes\n");
-> +		goto err_of_populate;
-> +	}
-> +
-> +	return 0;
-> +
-> +err_of_populate:
-> +	device_for_each_child(&pdev->dev, NULL, exynos5_adc_remove_devices);
-> +err_iio_dev:
-> +	iio_device_unregister(indio_dev);
-> +err_map:
-> +	iio_map_array_unregister(indio_dev, info->map);
-> +err_irq:
-> +	free_irq(info->irq, info);
-> +err_iio:
-> +	iio_device_free(indio_dev);
-> +	return ret;
-> +}
-> +
-[..]
+-- 
+Michal Hocko
+SUSE Labs
