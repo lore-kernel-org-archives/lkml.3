@@ -1,111 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab3AWMwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 07:52:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42921 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754872Ab3AWMwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 07:52:07 -0500
-Date: Wed, 23 Jan 2013 13:52:02 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH v3 0/7] rework mem_cgroup iterator
-Message-ID: <20130123125202.GA13319@dhcp22.suse.cz>
-References: <1357235661-29564-1-git-send-email-mhocko@suse.cz>
+	id S1755113Ab3AWMxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 07:53:16 -0500
+Received: from 14.mo3.mail-out.ovh.net ([188.165.43.98]:42584 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754737Ab3AWMxP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 07:53:15 -0500
+X-Greylist: delayed 7498 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jan 2013 07:53:15 EST
+Date: Wed, 23 Jan 2013 13:42:00 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        richard.genoud@gmail.com, linux-arm@overkiz.com, manabian@gmail.com,
+        dgilbert@interlog.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Josh Wu <josh.wu@atmel.com>,
+        Bo Shen <voice.shen@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH 7/9] ARM: at91/at91_dt_defconfig: remove memory
+ specification to cmdline
+Message-ID: <20130123124200.GK7360@game.jcrosoft.org>
+References: <cover.1358934163.git.nicolas.ferre@atmel.com>
+ <2e06e92c758b768baaacc061aafa7f710b74ea02.1358934163.git.nicolas.ferre@atmel.com>
+ <20130123102057.GJ7360@game.jcrosoft.org>
+ <50FFCC92.2080906@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1357235661-29564-1-git-send-email-mhocko@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50FFCC92.2080906@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 15773294746474556268
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrjeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrjeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Are there any comments? Ying, Johannes?
-I would be happy if this could go into 3.9.
+On 12:42 Wed 23 Jan     , Nicolas Ferre wrote:
+> On 01/23/2013 11:20 AM, Jean-Christophe PLAGNIOL-VILLARD :
+> > On 10:48 Wed 23 Jan     , Nicolas Ferre wrote:
+> >> No need for this cmdline option as we are using DT.
+> >> Moreover this defconfig is targeted to multiple SoC/boards: this option
+> >> was nonsense.
+> > just keep the console the rest is a nonsense too
+> > 
+> > as on 9g45 the initrd will be at 0x7xxxxxxx
+> 
+> BTW, how do you mix 9g45 with other sam9's in this defconfig: it is not
+> possible due to this difference in address rage, it not it?
+> 
+> In this case, should we remove the
+> CONFIG_SOC_AT91SAM9G45=y
+> from this at91_dt_defconfig?
+no you just need to boot the zImage from barebox
 
-On Thu 03-01-13 18:54:14, Michal Hocko wrote:
-> Hi all,
-> this is a third version of the patchset previously posted here:
-> https://lkml.org/lkml/2012/11/26/616
-> 
-> The patch set tries to make mem_cgroup_iter saner in the way how it
-> walks hierarchies. css->id based traversal is far from being ideal as it
-> is not deterministic because it depends on the creation ordering.
-> 
-> Diffstat doesn't look that promising as in previous versions anymore but
-> I think it is worth the resulting outcome (and the sanity ;)).
-> 
-> The first patch fixes a potential misbehaving which I haven't seen but
-> the fix is needed for the later patches anyway. We could take it alone
-> as well but I do not have any bug report to base the fix on. The second
-> one is also preparatory and it is new to the series.
-> 
-> The third patch is the core of the patchset and it replaces css_get_next
-> based on css_id by the generic cgroup pre-order iterator which
-> means that css_id is no longer used by memcg. This brings some
-> chalanges for the last visited group caching during the reclaim
-> (mem_cgroup_per_zone::reclaim_iter). We have to use memcg pointers
-> directly now which means that we have to keep a reference to those
-> groups' css to keep them alive.
-> 
-> The next patch fixups an unbounded cgroup removal holdoff caused by
-> the elevated css refcount and does the clean up on the group removal.
-> Thanks to Ying who spotted this during testing of the previous version
-> of the patchset.
-> I could have folded it into the previous patch but I felt it would be
-> too big to review but if people feel it would be better that way, I have
-> no problems to squash them together.
-> 
-> The fourth and fifth patches are an attempt for simplification of the
-> mem_cgroup_iter. css juggling is removed and the iteration logic is
-> moved to a helper so that the reference counting and iteration are
-> separated.
-> 
-> The last patch just removes css_get_next as there is no user for it any
-> longer.
-> 
-> I am also thinking that leaf-to-root iteration makes more sense but this
-> patch is not included in the series yet because I have to think some
-> more about the justification.
-> 
-> Same as with the previous version I have tested with a quite simple
-> hierarchy:
->         A (limit = 280M, use_hierarchy=true)
->       / | \
->      B  C  D (all have 100M limit)
-> 
-> And a separate kernel build in the each leaf group. This triggers
-> both children only and hierarchical reclaim which is parallel so the
-> iter_reclaim caching is active a lot. I will hammer it some more but the
-> series should be in quite a good shape already. 
-> 
-> Michal Hocko (7):
->       memcg: synchronize per-zone iterator access by a spinlock
->       memcg: keep prev's css alive for the whole mem_cgroup_iter
->       memcg: rework mem_cgroup_iter to use cgroup iterators
->       memcg: remove memcg from the reclaim iterators
->       memcg: simplify mem_cgroup_iter
->       memcg: further simplify mem_cgroup_iter
->       cgroup: remove css_get_next
-> 
-> And the diffstat says:
->  include/linux/cgroup.h |    7 --
->  kernel/cgroup.c        |   49 ------------
->  mm/memcontrol.c        |  199 ++++++++++++++++++++++++++++++++++++++++++------
->  3 files changed, 175 insertions(+), 80 deletions(-)
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+barebox handle automaticaly where the kernel is supposed to run
+and the kernel found his running/decompressing address at runtime too
 
--- 
-Michal Hocko
-SUSE Labs
+Best Regards,
+J.
