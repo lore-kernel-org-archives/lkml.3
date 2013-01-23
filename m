@@ -1,92 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab3AWJoZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 04:44:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35197 "EHLO mx2.suse.de"
+	id S1754656Ab3AWJp1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 04:45:27 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40249 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752439Ab3AWJoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 04:44:22 -0500
-Date: Wed, 23 Jan 2013 10:44:21 +0100
-From: Jan Kara <jack@suse.cz>
-To: Eric Sandeen <sandeen@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
-Subject: Re: jbd2: don't wake kjournald unnecessarily
-Message-ID: <20130123094421.GB9821@quack.suse.cz>
-References: <CA+icZUWOvk5i+XY22xdZYuxu=Vy3fG2QxJStEgNFQVS4u55y-w@mail.gmail.com>
- <CA+icZUUzNYE9QAh_p7=ZNuvZbxRPCb9zd4k7+aW-hv34mQWz=A@mail.gmail.com>
- <20130121104733.GE5588@quack.suse.cz>
- <CA+icZUVy-=jJkRsEKmX+ZGRjiGr4wwp3pqdxuLCRHeqW_H0x9Q@mail.gmail.com>
- <CA+icZUVAP4ArN+j34GTUwMxte5DtLPJSrLmK9T6Na8Qy+aM0Rg@mail.gmail.com>
- <20130121140738.GI5588@quack.suse.cz>
- <CA+icZUXLcdnNPvA9o8d5msOQ0MkMci8mPXujLZ3zcYjYcVZ7JQ@mail.gmail.com>
- <20130121231130.GB12410@thunk.org>
- <20130122235041.GA7497@quack.suse.cz>
- <50FF3EEA.2030408@redhat.com>
+	id S1754378Ab3AWJpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 04:45:22 -0500
+From: Philip Avinash <avinashphilip@ti.com>
+To: <khilman@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <dwmw2@infradead.org>
+CC: <afzal@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>, <nsekhar@ti.com>,
+        <gururaja.hebbar@ti.com>, Philip Avinash <avinashphilip@ti.com>
+Subject: [PATCH 2/4] mtd: devices: elm: Low power transition support
+Date: Wed, 23 Jan 2013 15:15:44 +0530
+Message-ID: <1358934346-16822-3-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358933176-12409-1-git-send-email-avinashphilip@ti.com>
+References: <1358933176-12409-1-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FF3EEA.2030408@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 22-01-13 19:37:46, Eric Sandeen wrote:
-> On 1/22/13 5:50 PM, Jan Kara wrote:
-> > On Mon 21-01-13 18:11:30, Ted Tso wrote:
-> >> On Tue, Jan 22, 2013 at 12:04:32AM +0100, Sedat Dilek wrote:
-> >>>
-> >>> Beyond the FUSE/LOOP fun, will you apply this patch to your linux-next GIT tree?
-> >>>
-> >>> Feel free to add...
-> >>>
-> >>>      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-> >>>
-> >>> A similiar patch for JBD went through your tree into mainline (see [1] and [2]).
-> >>
-> >> I'm not at all convinced that this patch has anything to do with your
-> >> problem.  I don't see how it could affect things, and I believe you
-> >> mentioned that you saw the problem even with this patch applied?  (I'm
-> >> not sure; some of your messages which you sent were hard to
-> >> understand, and you mentioned something about trying to send messages
-> >> when low on sleep :-).
-> >>
-> >> In any case, the reason why I haven't pulled this patch into the ext4
-> >> tree is because I was waiting for Eric and some of the performance
-> >> team folks at Red Hat to supply some additional information about why
-> >> this commit was making a difference in performance for a particular
-> >> proprietary, closed source benchmark.
-> >   Just a small correction - it was aim7 AFAIK which isn't closed source
-> > (anymore). You can download it from SourceForge
-> > (http://sourceforge.net/projects/aimbench/files/aim-suite7/Initial%20release/).
-> > Now I have some reservations about what the benchmark does but historically
-> > it has found quite a few issues for us as well.
-> > 
-> >> I'm very suspicious about applying patches under the "cargo cult"
-> >> school of programming.  ("We don't understand why it makes a
-> >> difference, but it seems to be good, so bombs away!" :-)
-> >   Well, neither am I ;) But it is obvious the patch speeds up
-> > log_start_commit() by 'a bit' (taking spinlock, disabling irqs, ...). And
-> > apparently 'a bit' is noticeable for particular workload on a particular
-> > machine - commit statistics Eric provided showed that clearly. I'd still be
-> > happier if Eric also told us how much log_start_commit() calls there were
-> > so that one could verify that 'a bit' could indeed multiply to a measurable
-> > difference. But given how simple the patch is, I gave away after a while
-> > and just merged it...
-> 
-> I am still trying to get our perf guys to collect that data, FWIW...
-> I will send it when I get it.  I bugged them again today.  :)
-> 
-> (Just to be sure: I was going to measure the wakeups the old way, and the
-> avoided wakeups with the new change; sound ok?)
-  Yes, that would be what I'm interested in.
+In low power modes of AM335X platforms, peripherals power is cut off.
+This patch supports low power sleep transition support for ELM driver.
 
-								Honza
+Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+---
+ drivers/mtd/devices/elm.c |   40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+
+diff --git a/drivers/mtd/devices/elm.c b/drivers/mtd/devices/elm.c
+index f78f43f..4793cb0 100644
+--- a/drivers/mtd/devices/elm.c
++++ b/drivers/mtd/devices/elm.c
+@@ -20,6 +20,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+ #include <linux/of.h>
++#include <linux/sched.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/platform_data/elm.h>
+ 
+@@ -62,6 +63,7 @@ struct elm_info {
+ 	struct completion elm_completion;
+ 	struct list_head list;
+ 	enum bch_ecc bch_type;
++	bool idle;
+ };
+ 
+ static LIST_HEAD(elm_devices);
+@@ -86,9 +88,11 @@ void elm_config(struct device *dev, enum bch_ecc bch_type)
+ 	u32 reg_val;
+ 	struct elm_info *info = dev_get_drvdata(dev);
+ 
++	info->idle = true;
+ 	reg_val = (bch_type & ECC_BCH_LEVEL_MASK) | (ELM_ECC_SIZE << 16);
+ 	elm_write_reg(info, ELM_LOCATION_CONFIG, reg_val);
+ 	info->bch_type = bch_type;
++	info->idle = false;
+ }
+ EXPORT_SYMBOL(elm_config);
+ 
+@@ -280,6 +284,7 @@ void elm_decode_bch_error_page(struct device *dev, u8 *ecc_calc,
+ 	struct elm_info *info = dev_get_drvdata(dev);
+ 	u32 reg_val;
+ 
++	info->idle = true;
+ 	/* Enable page mode interrupt */
+ 	reg_val = elm_read_reg(info, ELM_IRQSTATUS);
+ 	elm_write_reg(info, ELM_IRQSTATUS, reg_val & INTR_STATUS_PAGE_VALID);
+@@ -298,6 +303,7 @@ void elm_decode_bch_error_page(struct device *dev, u8 *ecc_calc,
+ 	reg_val = elm_read_reg(info, ELM_IRQENABLE);
+ 	elm_write_reg(info, ELM_IRQENABLE, reg_val & ~INTR_EN_PAGE_MASK);
+ 	elm_error_correction(info, err_vec);
++	info->idle = false;
+ }
+ EXPORT_SYMBOL(elm_decode_bch_error_page);
+ 
+@@ -368,6 +374,7 @@ static int elm_probe(struct platform_device *pdev)
+ 	INIT_LIST_HEAD(&info->list);
+ 	list_add(&info->list, &elm_devices);
+ 	platform_set_drvdata(pdev, info);
++	info->idle = false;
+ 	return ret;
+ }
+ 
+@@ -379,6 +386,38 @@ static int elm_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static int elm_suspend(struct device *dev)
++{
++	struct elm_info *info = dev_get_drvdata(dev);
++	wait_queue_head_t wq;
++	DECLARE_WAITQUEUE(wait, current);
++
++	init_waitqueue_head(&wq);
++	while (1) {
++		/* Make sure that ELM not running */
++		if (info->idle) {
++			add_wait_queue(&wq, &wait);
++			schedule();
++			remove_wait_queue(&wq, &wait);
++		} else {
++			break;
++		}
++	}
++	pm_runtime_put_sync(dev);
++	return 0;
++}
++
++static int elm_resume(struct device *dev)
++{
++	struct elm_info *info = dev_get_drvdata(dev);
++
++	pm_runtime_get_sync(dev);
++	elm_config(dev, info->bch_type);
++	return 0;
++}
++
++static SIMPLE_DEV_PM_OPS(elm_pm_ops, elm_suspend, elm_resume);
++
+ #ifdef CONFIG_OF
+ static const struct of_device_id elm_of_match[] = {
+ 	{ .compatible = "ti,am33xx-elm" },
+@@ -392,6 +431,7 @@ static struct platform_driver elm_driver = {
+ 		.name	= "elm",
+ 		.owner	= THIS_MODULE,
+ 		.of_match_table = of_match_ptr(elm_of_match),
++		.pm	= &elm_pm_ops,
+ 	},
+ 	.probe	= elm_probe,
+ 	.remove	= elm_remove,
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.9.5
+
