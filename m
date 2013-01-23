@@ -1,101 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab3AWTvL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 14:51:11 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:57428 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab3AWTvI (ORCPT
+	id S1752074Ab3AWTzK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 14:55:10 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24509 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388Ab3AWTzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 14:51:08 -0500
-Date: Wed, 23 Jan 2013 11:50:59 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Yasunori Goto <y-goto@jp.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Michael Davidson <md@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Julien Tinnes <jln@google.com>,
-        Aaron Durbin <adurbin@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Alexander Gordeev <agordeev@redhat.com>
-Subject: Re: TASK_DEAD && ttwu() again (Was: ensure
- arch_ptrace/ptrace_request can never race with SIGKILL)
-Message-ID: <20130123195059.GH2373@mtj.dyndns.org>
-References: <CA+55aFyEsU-pkX557A-m+xoGkA_v+fXEyA8z8HbJ5J8K1jObeg@mail.gmail.com>
- <20130118185559.GA3773@redhat.com>
- <CA+55aFy=newnMbx53HipyWbRs2mUUPSqXXCpSfDLW78gkro37g@mail.gmail.com>
- <20130120192448.GA6771@redhat.com>
- <20130120192527.GC6771@redhat.com>
- <CA+55aFx1+hFSCa4nX80C30BkEOugXRvBZ=7LA+u+KOq_qSaJsg@mail.gmail.com>
- <20130121172151.GA4691@redhat.com>
- <CA+55aFwRkvEP5YJy+a=TFgDX==YuU7CJ+D_U+B2s4e1LX-nz3g@mail.gmail.com>
- <20130121194723.GA18775@redhat.com>
- <20130123191946.GA19101@redhat.com>
+	Wed, 23 Jan 2013 14:55:07 -0500
+Date: Wed, 23 Jan 2013 14:54:55 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: Re: [PATCH V3 1/2] Xen stub driver for memory hotplug
+Message-ID: <20130123195455.GA18022@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923353C24AD@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130123191946.GA19101@redhat.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923353C24AD@SHSMSX101.ccr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
-
-On Wed, Jan 23, 2013 at 08:19:46PM +0100, Oleg Nesterov wrote:
-> Let me remind the problem. To oversimplify, we have
+On Mon, Jan 14, 2013 at 06:09:07AM +0000, Liu, Jinsong wrote:
+> >From 008ab02becba5ca94fddd6ce9be27b9877a6c55e Mon Sep 17 00:00:00 2001
+> From: Liu Jinsong <jinsong.liu@intel.com>
+> Date: Tue, 8 Jan 2013 11:15:14 +0800
+> Subject: [PATCH 1/2] Xen stub driver for memory hotplug
 > 
-> 	try_to_wake_up(task, state)
-> 	{
-> 		lock(task->pi_lock);
+> This patch create a file (xen-stub.c) for Xen stub drivers.
+> Xen stub drivers are used to reserve space for Xen drivers, i.e.
+> memory hotplug and cpu hotplug, and to block native drivers loaded,
+> so that real Xen drivers can be modular and loaded on demand.
 > 
-> 		if (task->state & state)
-> 			task->state = TASK_RUNNING;
+> This patch is specific for Xen memory hotplug (other Xen logic
+> can add stub drivers on their own). The xen stub driver will
+> occupied earlier via subsys_initcall (than native memory hotplug
+> driver via module_init and so blocking native). Later real Xen
+> memory hotplug logic will unregister the stub driver and register
+> itself to take effect on demand.
 > 
-> 		unlock(task->pi_lock);
-> 	}
+> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+> ---
+>  drivers/xen/Kconfig    |   11 ++++++++
+>  drivers/xen/Makefile   |    1 +
+>  drivers/xen/xen-stub.c |   60 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/xen/acpi.h     |    6 ++++
+>  4 files changed, 78 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/xen/xen-stub.c
 > 
-> And this means that a task doing
-> 
-> 	current->state = STATE_1;
-> 	// no schedule() in between
-> 	current->state = STATE_2;
-> 	schedule();
-> 
-> can be actually woken up by try_to_wake_up(STATE_1) even if it already
-> sleeps in STATE_2.
+> diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+> index cabfa97..1dcb5fc 100644
+> --- a/drivers/xen/Kconfig
+> +++ b/drivers/xen/Kconfig
+> @@ -180,6 +180,17 @@ config XEN_PRIVCMD
+>  	depends on XEN
+>  	default m
+>  
+> +config XEN_STUB
+> +	bool "Xen stub drivers"
+> +	depends on XEN_DOM0 && X86_64
+> +	default n
+> +	help
+> +	  Allow kernel to install stub drivers, to reserve space for Xen drivers,
+> +	  i.e. memory hotplug and cpu hotplug, and to block native drivers loaded,
+> +	  so that real Xen drivers can be modular.
+> +
+> +	  To enable Xen features like cpu and memory hotplug, select Y here.
+> +
+>  config XEN_ACPI_PROCESSOR
+>  	tristate "Xen ACPI processor"
+>  	depends on XEN && X86 && ACPI_PROCESSOR && CPU_FREQ
+> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+> index fb213cf..b63edd8 100644
+> --- a/drivers/xen/Makefile
+> +++ b/drivers/xen/Makefile
+> @@ -30,6 +30,7 @@ obj-$(CONFIG_SWIOTLB_XEN)		+= swiotlb-xen.o
+>  obj-$(CONFIG_XEN_MCE_LOG)		+= mcelog.o
+>  obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
+>  obj-$(CONFIG_XEN_PRIVCMD)		+= xen-privcmd.o
+> +obj-$(CONFIG_XEN_STUB)			+= xen-stub.o
+>  obj-$(CONFIG_XEN_ACPI_PROCESSOR)	+= xen-acpi-processor.o
+>  xen-evtchn-y				:= evtchn.o
+>  xen-gntdev-y				:= gntdev.o
+> diff --git a/drivers/xen/xen-stub.c b/drivers/xen/xen-stub.c
+> new file mode 100644
+> index 0000000..01a49e3
+> --- /dev/null
+> +++ b/drivers/xen/xen-stub.c
+> @@ -0,0 +1,60 @@
+> +/*
+> + * xen-stub.c - stub drivers to reserve space for Xen
+> + *
+> + * Copyright (C) 2012 Intel Corporation
+> + *    Author: Liu Jinsong <jinsong.liu@intel.com>
+> + *    Author: Jiang Yunhong <yunhong.jiang@intel.com>
+> + *
+> + * Copyright (C) 2012 Oracle Inc
+> + *    Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or (at
+> + * your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
+> + * NON INFRINGEMENT.  See the GNU General Public License for more
+> + * details.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/export.h>
+> +#include <linux/types.h>
+> +#include <linux/acpi.h>
+> +#include <acpi/acpi_drivers.h>
+> +#include <xen/acpi.h>
+> +
+> +/*--------------------------------------------
+> +	stub driver for Xen memory hotplug
+> +--------------------------------------------*/
+> +
+> +#ifdef CONFIG_ACPI
+> +
+> +static const struct acpi_device_id memory_device_ids[] = {
+> +	{ACPI_MEMORY_DEVICE_HID, 0},
+> +	{"", 0},
+> +};
+> +
+> +struct acpi_driver xen_stub_memory_device_driver = {
+> +	/* same name as native memory driver to block native loaded */
+> +	.name = "acpi_memhotplug",
+> +	.class = ACPI_MEMORY_DEVICE_CLASS,
+> +	.ids = memory_device_ids,
+> +};
+> +EXPORT_SYMBOL_GPL(xen_stub_memory_device_driver);
 
-Hmmm... nasty.
+Instead of having this, could you have a function that would unregister
+this if required.
 
-...
-> and we have the same problem again. So _I think_ that we we need another
-> mb() after unlock_wait() ?
+xen_stub_memory_device_uninit(void)
 
-Seems so, or, maybe we should add barrier semantics to unlock_wait()?
-As it currently stands, it kinda invites misusages.
+which would unregister the above mentioned structure?
 
-> And, afaics, in theory we can't simply move the current mb() down, after
-> unlock_wait().  (again, only in theory, if nothing else we should have
-> the implicit barrrers after we played with ->state in the past).
-> 
-> Or perhaps we should modify ttwu_do_wakeup() to not blindly set RUNNING,
-> say, cmpxchg(old_state, RUNNING). But this is not simple/nice.
+> +
+> +static int __init xen_stub_memory_device_init(void)
+> +{
+> +	if (!xen_initial_domain())
+> +		return -ENODEV;
+> +
+> +	/* just reserve space for Xen, block native driver loaded */
+> +	return acpi_bus_register_driver(&xen_stub_memory_device_driver);
+> +}
+> +subsys_initcall(xen_stub_memory_device_init);
+> +
+> +#endif
+> diff --git a/include/xen/acpi.h b/include/xen/acpi.h
+> index 48a9c01..7366e58 100644
+> --- a/include/xen/acpi.h
+> +++ b/include/xen/acpi.h
+> @@ -40,6 +40,12 @@
+>  #include <xen/xen.h>
+>  #include <linux/acpi.h>
+>  
+> +#define ACPI_MEMORY_DEVICE_CLASS        "memory"
+> +#define ACPI_MEMORY_DEVICE_HID          "PNP0C80"
+> +#define ACPI_MEMORY_DEVICE_NAME         "Hotplug Mem Device"
+> +
+> +extern struct acpi_driver xen_stub_memory_device_driver;
+> +
+>  int xen_acpi_notify_hypervisor_state(u8 sleep_state,
+>  				     u32 pm1a_cnt, u32 pm1b_cnd);
+>  
+> -- 
+> 1.7.1
 
-I personally think this is the right thing to do short of requiring
-locking on current->state changes.  The situation is a bit muddy
-because we're generally requiring sleepers to loop while still having
-cases where things don't work that way.  It's a little scary that we
-require looping to protect against stray wakeups, which can be very
-rare, without any way to verify/test.
 
-The waker would be acquiring the cacheline exclusively one way or the
-other, so I don't think doing cmpxchg would add much overhead.  We
-would definitely want to do comparisons tho.
-
-Thanks.
-
--- 
-tejun
