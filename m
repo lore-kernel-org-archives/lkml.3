@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab3AWJ16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 04:27:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34275 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753641Ab3AWJ14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 04:27:56 -0500
-Date: Wed, 23 Jan 2013 09:27:58 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Simon Jeons <simon.jeons@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/6] mm: numa: Handle side-effects in
- count_vm_numa_events() for !CONFIG_NUMA_BALANCING
-Message-ID: <20130123092758.GF13304@suse.de>
-References: <1358874762-19717-1-git-send-email-mgorman@suse.de>
- <1358874762-19717-4-git-send-email-mgorman@suse.de>
- <20130122144024.8ded0f53.akpm@linux-foundation.org>
+	id S1754618Ab3AWJ2F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 04:28:05 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18360 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641Ab3AWJ2A convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 04:28:00 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 23 Jan 2013 01:26:19 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+CC: "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Wed, 23 Jan 2013 10:27:45 +0100
+Subject: Re: [v3 2/2] ARM: tegra: Skip scu_enable(scu_base) if not Cortex A9
+Thread-Topic: [v3 2/2] ARM: tegra: Skip scu_enable(scu_base) if not Cortex A9
+Thread-Index: Ac35S+fSbb6FLSJlTlau0XrfvMQYeQ==
+Message-ID: <20130123.112745.1104072242042163713.hdoyu@nvidia.com>
+References: <50FE2CA8.20100@ti.com><50FEC503.2080602@wwwdotorg.org><20130123.080457.171573168772211248.hdoyu@nvidia.com>
+In-Reply-To: <20130123.080457.171573168772211248.hdoyu@nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130122144024.8ded0f53.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 02:40:24PM -0800, Andrew Morton wrote:
-> On Tue, 22 Jan 2013 17:12:39 +0000
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > The current definitions for count_vm_numa_events() is wrong for
-> > !CONFIG_NUMA_BALANCING as the following would miss the side-effect.
-> > 
-> > 	count_vm_numa_events(NUMA_FOO, bar++);
-> 
-> Stupid macros.
-> 
+Hiroshi Doyu <hdoyu@nvidia.com> wrote @ Wed, 23 Jan 2013 08:04:57 +0200 (EET):
 
-I know but static inlines are unsuitable in this case.
-
-> > There are no such users of count_vm_numa_events() but it is a potential
-> > pitfall. This patch fixes it and converts count_vm_numa_event() so that
-> > the definitions look similar.
+> Stephen Warren <swarren@wwwdotorg.org> wrote @ Tue, 22 Jan 2013 17:57:39 +0100:
 > 
-> Confused.  The patch doesn't alter count_vm_numa_event().  No matter.
+> > Hiroshi, is this series the only dependency you need for your
+> > Tegra114
 > 
+> Basically yes.
+> 
+> > series? So, I could merge your Tegra114 series once this series is applied?
+> 
+> But now "CCF" seems to be in. Then, the HACK(*1) needs to be replaced
+> with "Tegra114 CCF". But "Tegra114 CCF" doesn't seem ready yet. I'll check
+> if this Tegra114 series would work without "Tegra114 CCF".
+> 
+> *1: http://patchwork.ozlabs.org/patch/212010/
 
-Nuts. When I wrote that line in the changelog, it
-was because I had converted both to a static inline but that fails to
-compile if !CONFIG_NUMA_BALANCING because NUMA_PTE_UPDATES is not
-defined.
+Stephen,
 
-===
-There are no such users of count_vm_numa_events() but this patch fixes it as
-it is a potential pitfall. Ideally both would be converted to static inline
-but NUMA_PTE_UPDATES is not defined if !CONFIG_NUMA_BALANCING and creating
-dummy constants just to have a static inline would be similarly clumsy.
-====
+Verified "Tegra114 series" worked with "for-3.9/soc" branch(inc CCF)
+with a little tweak.
 
--- 
-Mel Gorman
-SUSE Labs
+I can post Tegra114 series again. If you want them rebased onto
+another branch, let me know.
