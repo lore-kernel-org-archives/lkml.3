@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab3AWSAe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 13:00:34 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:58876 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755405Ab3AWSAd (ORCPT
+	id S1756282Ab3AWSAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 13:00:40 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:46702 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755122Ab3AWSAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 13:00:33 -0500
-Date: Wed, 23 Jan 2013 10:00:27 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Kernel Security <security@kernel.org>,
-        Michael Davidson <md@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Julien Tinnes <jln@google.com>,
-        Aaron Durbin <adurbin@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Roland McGrath <roland@hack.frob.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [PATCH 0/4] (Was: ptrace: prevent PTRACE_SETREGS from corrupting
- stack)
-Message-ID: <20130123180027.GA6435@kroah.com>
-References: <20130116181830.GA6469@redhat.com>
- <CA+55aFzkWqSEzw9oa5JodrM2NWE0H_AF7xyzRhd+DQ=PB=ZT2A@mail.gmail.com>
- <20130118153700.GA27915@redhat.com>
- <CA+55aFxEow_-PoX0xFa07yOi6az=6uVx8zeOsfToErmzh7dB8A@mail.gmail.com>
- <20130118172854.GA29753@redhat.com>
- <20130118175224.GA520@redhat.com>
- <CA+55aFyEsU-pkX557A-m+xoGkA_v+fXEyA8z8HbJ5J8K1jObeg@mail.gmail.com>
- <20130118185559.GA3773@redhat.com>
- <CA+55aFy=newnMbx53HipyWbRs2mUUPSqXXCpSfDLW78gkro37g@mail.gmail.com>
- <20130120192448.GA6771@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130120192448.GA6771@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 23 Jan 2013 13:00:37 -0500
+From: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+To: jmorris@namei.org
+Cc: tj@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] device_cgroup: don't grab mutex in rcu callback
+Date: Wed, 23 Jan 2013 11:00:19 -0700
+Message-Id: <1358964019-12433-1-git-send-email-jerry.snitselaar@oracle.com>
+X-Mailer: git-send-email 1.8.1.1.293.gfe73786
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 08:24:48PM +0100, Oleg Nesterov wrote:
-> Greg, this doesn't look like -stable material. But please let me know
-> if you think 2/4 should be backported. With a couple of simple hacks
-> in PTRACE_DETACH/LISTEN paths we can do this without 1/4 and without
-> changes outside of ptrace.c. But again, probably we shouldn't do this.
+commit 103a197 "security/device_cgroup: lock assert fails in
+dev_exception_clean()" grabs devcgroup_mutex to fix assert failure,
+but mutex can't be grabbed in rcu callback. Since there shouldn't be
+any other references when css_free is called, mutex isn't needed for
+list cleanup in devcgroup_css_free().
 
-I think it is -stable material, and I've now applied the three patches
-that went into Linus's tree into the 3.4-stable and 3.7-stable trees.
-There was only one minor patch problem with 3.4 (comment block not being
-needed), if there is more work than that that you think is needed to get
-these working in those kernel releases, please let me know.
+Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+---
+ security/device_cgroup.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
-thanks,
+diff --git a/security/device_cgroup.c b/security/device_cgroup.c
+index d794abc..1c69e38 100644
+--- a/security/device_cgroup.c
++++ b/security/device_cgroup.c
+@@ -159,6 +159,16 @@ static void dev_exception_rm(struct dev_cgroup *dev_cgroup,
+ 	}
+ }
+ 
++static void __dev_exception_clean(struct dev_cgroup *dev_cgroup)
++{
++	struct dev_exception_item *ex, *tmp;
++
++	list_for_each_entry_safe(ex, tmp, &dev_cgroup->exceptions, list) {
++		list_del_rcu(&ex->list);
++		kfree_rcu(ex, rcu);
++	}
++}
++
+ /**
+  * dev_exception_clean - frees all entries of the exception list
+  * @dev_cgroup: dev_cgroup with the exception list to be cleaned
+@@ -167,14 +177,9 @@ static void dev_exception_rm(struct dev_cgroup *dev_cgroup,
+  */
+ static void dev_exception_clean(struct dev_cgroup *dev_cgroup)
+ {
+-	struct dev_exception_item *ex, *tmp;
+-
+ 	lockdep_assert_held(&devcgroup_mutex);
+ 
+-	list_for_each_entry_safe(ex, tmp, &dev_cgroup->exceptions, list) {
+-		list_del_rcu(&ex->list);
+-		kfree_rcu(ex, rcu);
+-	}
++	__dev_exception_clean(dev_cgroup);
+ }
+ 
+ /*
+@@ -215,9 +220,7 @@ static void devcgroup_css_free(struct cgroup *cgroup)
+ 	struct dev_cgroup *dev_cgroup;
+ 
+ 	dev_cgroup = cgroup_to_devcgroup(cgroup);
+-	mutex_lock(&devcgroup_mutex);
+-	dev_exception_clean(dev_cgroup);
+-	mutex_unlock(&devcgroup_mutex);
++	__dev_exception_clean(dev_cgroup);
+ 	kfree(dev_cgroup);
+ }
+ 
+-- 
+1.8.1.1.293.gfe73786
 
-greg k-h
