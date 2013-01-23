@@ -1,125 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab3AWCpE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 21:45:04 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:52744 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab3AWCpB (ORCPT
+	id S1752816Ab3AWCqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 21:46:32 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:43217 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136Ab3AWCqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 21:45:01 -0500
-Message-ID: <50FF4EA0.1070000@linux.vnet.ibm.com>
-Date: Wed, 23 Jan 2013 10:44:48 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 22 Jan 2013 21:46:31 -0500
+Message-ID: <50FF4F02.2010204@gmail.com>
+Date: Wed, 23 Jan 2013 10:46:26 +0800
+From: snakky.zhang@gmail.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
-        mingo@kernel.org, a.p.zijlstra@chello.nl
-Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
-References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com> <50ED384C.1030301@linux.vnet.ibm.com> <1357977704.6796.47.camel@marge.simpson.net> <1357985943.6796.55.camel@marge.simpson.net> <1358155290.5631.19.camel@marge.simpson.net> <50F79256.1010900@linux.vnet.ibm.com> <1358654997.5743.17.camel@marge.simpson.net> <50FCACE3.5000706@linux.vnet.ibm.com> <1358743128.4994.33.camel@marge.simpson.net> <50FCCCF5.30504@linux.vnet.ibm.com> <1358750523.4994.55.camel@marge.simpson.net> <1358752180.4994.65.camel@marge.simpson.net> <50FCF212.3010504@linux.vnet.ibm.com> <1358759355.4994.108.camel@marge.simpson.net> <50FD08E1.8000302@linux.vnet.ibm.com> <1358761496.4994.118.camel@marge.simpson.net> <50FE0ADC.6060701@linux.vnet.ibm.com> <1358841795.5782.255.camel@marge.simpson.net> <50FE5433.1070801@linux.vnet.ibm.com> <1358865692.5782.420.camel@marge.simpson.net>
-In-Reply-To: <1358865692.5782.420.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel@vger.kernel.org
+Subject: Is this a bug that n_tty_set_room not serialized? If so please correct
+ it.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012302-1396-0000-0000-00000273DF2D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2013 10:41 PM, Mike Galbraith wrote:
-> On Tue, 2013-01-22 at 16:56 +0800, Michael Wang wrote:
-> 
->> What about this patch? May be the wrong map is the killer on balance
->> path, should we check it? ;-) 
-> 
-> [    1.232249] Brought up 40 CPUs
-> [    1.236003] smpboot: Total of 40 processors activated (180873.90 BogoMIPS)
-> [    1.244744] CPU0 attaching sched-domain:
-> [    1.254131] NMI watchdog: enabled on all CPUs, permanently consumes one hw-PMU counter.
-> [    1.252010]  domain 0: span 0,16 level SIBLING
-> [    1.280001]   groups: 0 (cpu_power = 589) 16 (cpu_power = 589)
-> [    1.292540]   domain 1: span 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38 level MC
-> [    1.312001]    groups: 0,16 (cpu_power = 1178) 2,18 (cpu_power = 1178) 4,20 (cpu_power = 1178) 6,22 (cpu_power = 1178) 8,24 (cpu_power = 1178)
->                          10,26 (cpu_power = 1178)12,28 (cpu_power = 1178)14,30 (cpu_power = 1178)32,36 (cpu_power = 1178)34,38 (cpu_power = 1178)
-> [    1.368002]    domain 2: span 0-39 level NUMA
-> [    1.376001]     groups: 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38 (cpu_power = 11780)
->                            1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39 (cpu_power = 11780)
+Hi experts,
 
-Thanks for the testing, that's not all the output but just for cpu 0,
-correct?
+Seems there is an bug related to function n_tty_set_roomin source file
+drivers/tty/n_tty.c. This function is used to set receive_room based on
+the read_cntby both the consumer and the producer of the tty's read buffer.
 
-> [    1.412546] WYT: sbm of cpu 0
-> [    1.416001] WYT:      exec map
-> [    1.424002] WYT:              sd 6ce55000, idx 0, level 0, weight 2
-> [    1.436001] WYT:              sd 6ce74000, idx 1, level 1, weight 20
-> [    1.448001] WYT:              sd 6cef3000, idx 3, level 3, weight 40
-> [    1.460001] WYT:      fork map
-> [    1.468001] WYT:              sd 6ce55000, idx 0, level 0, weight 2
-> [    1.480001] WYT:              sd 6ce74000, idx 1, level 1, weight 20
+But this function is not serialized, so I am afraid there is
+a risk like: The producer make the buffer full and then call this 
+function to
+set the receive_room to 0; while it is preempted by the consumer that empty
+the buffer(read_cnt is 0)and then call this very function to set the
+receive_room to a non-zero value. But when the producer continue, 
+receive_room
+was set to 0 again. Thus both read_cnt and receive_room is 0.For consumer
+theread_cnt is 0 that no data can be read; while for the producer, thebuffer
+is full since the receive_room is 0. Both of them blockhere...
 
-This is not by design... sd in idx 2 should point to level 1 sd if there
-is no level 2 sd, this part is broken...oh, how could level 3 sd be
-there with out level 2 created? strange...
+Two methods to avoid it:
+A) Addor find a lock to serialize this function;
+B) Once the producer find the buffer is full, double check/set the 
+buffer with
+n_tty_set_room. For example in function "flush_to_ldisc".
 
-So with this map, the new balance path will no doubt broken, I think we
-got the reason, amazing ;-)
+Please correct me if I misunderstand something. Or please fix it.
 
-Let's see how to fix it, hmm... need some study firstly.
-
-Regards,
-Michael Wang
-
-> [    1.492001] WYT:              sd 6cef3000, idx 3, level 3, weight 40
-> [    1.504001] WYT:      wake map
->                                  Hi, we're not home right now...
-> [    1.508001] WYT:      affine map
-> [    1.516001] WYT:              affine with cpu 0 in sd 6ce55000, weight 2
-> [    1.528001] WYT:              affine with cpu 1 in sd 6cef3000, weight 40
-> [    1.544001] WYT:              affine with cpu 2 in sd 6ce74000, weight 20
-> [    1.556001] WYT:              affine with cpu 3 in sd 6cef3000, weight 40
-> [    1.568001] WYT:              affine with cpu 4 in sd 6ce74000, weight 20
-> [    1.584001] WYT:              affine with cpu 5 in sd 6cef3000, weight 40
-> [    1.596001] WYT:              affine with cpu 6 in sd 6ce74000, weight 20
-> [    1.608001] WYT:              affine with cpu 7 in sd 6cef3000, weight 40
-> [    1.624001] WYT:              affine with cpu 8 in sd 6ce74000, weight 20
-> [    1.636001] WYT:              affine with cpu 9 in sd 6cef3000, weight 40
-> [    1.648001] WYT:              affine with cpu a in sd 6ce74000, weight 20
-> [    1.660001] WYT:              affine with cpu b in sd 6cef3000, weight 40
-> [    1.676001] WYT:              affine with cpu c in sd 6ce74000, weight 20
-> [    1.688001] WYT:              affine with cpu d in sd 6cef3000, weight 40
-> [    1.700001] WYT:              affine with cpu e in sd 6ce74000, weight 20
-> [    1.716001] WYT:              affine with cpu f in sd 6cef3000, weight 40
-> [    1.728001] WYT:              affine with cpu 10 in sd 6ce55000, weight 2
-> [    1.740001] WYT:              affine with cpu 11 in sd 6cef3000, weight 40
-> [    1.756001] WYT:              affine with cpu 12 in sd 6ce74000, weight 20
-> [    1.768001] WYT:              affine with cpu 13 in sd 6cef3000, weight 40
-> [    1.780001] WYT:              affine with cpu 14 in sd 6ce74000, weight 20
-> [    1.796001] WYT:              affine with cpu 15 in sd 6cef3000, weight 40
-> [    1.808001] WYT:              affine with cpu 16 in sd 6ce74000, weight 20
-> [    1.820001] WYT:              affine with cpu 17 in sd 6cef3000, weight 40
-> [    1.836001] WYT:              affine with cpu 18 in sd 6ce74000, weight 20
-> [    1.848001] WYT:              affine with cpu 19 in sd 6cef3000, weight 40
-> [    1.860001] WYT:              affine with cpu 1a in sd 6ce74000, weight 20
-> [    1.876001] WYT:              affine with cpu 1b in sd 6cef3000, weight 40
-> [    1.888001] WYT:              affine with cpu 1c in sd 6ce74000, weight 20
-> [    1.900001] WYT:              affine with cpu 1d in sd 6cef3000, weight 40
-> [    1.916001] WYT:              affine with cpu 1e in sd 6ce74000, weight 20
-> [    1.928001] WYT:              affine with cpu 1f in sd 6cef3000, weight 40
-> [    1.940001] WYT:              affine with cpu 20 in sd 6ce74000, weight 20
-> [    1.956001] WYT:              affine with cpu 21 in sd 6cef3000, weight 40
-> [    1.968001] WYT:              affine with cpu 22 in sd 6ce74000, weight 20
-> [    1.984001] WYT:              affine with cpu 23 in sd 6cef3000, weight 40
-> [    1.996001] WYT:              affine with cpu 24 in sd 6ce74000, weight 20
-> [    2.008002] WYT:              affine with cpu 25 in sd 6cef3000, weight 40
-> [    2.024002] WYT:              affine with cpu 26 in sd 6ce74000, weight 20
-> [    2.036001] WYT:              affine with cpu 27 in sd 6cef3000, weight 40
-
-
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+Thanks
+Xiao
