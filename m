@@ -1,33 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856Ab3AWPZw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:25:52 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:35796 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753783Ab3AWPZv (ORCPT
+	id S1755906Ab3AWPZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:25:58 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:41629 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755551Ab3AWPZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 10:25:51 -0500
-Date: Wed, 23 Jan 2013 15:25:50 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Pekka Enberg <penberg@kernel.org>, js1304@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] slub: correct bootstrap() for kmem_cache,
- kmem_cache_node
-In-Reply-To: <1358755287-3899-2-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <0000013c6803dc46-c69428be-b537-4513-914d-88b58e63dcc4-000000@email.amazonses.com>
-References: <1358755287-3899-1-git-send-email-iamjoonsoo.kim@lge.com> <1358755287-3899-2-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 23 Jan 2013 10:25:57 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUVPDx=SkGFvYpACjoFE4NWchCJGs3ZnOVshs-a0dBYA3A@mail.gmail.com>
+References: <1358946905-13320-1-git-send-email-sedat.dilek@gmail.com>
+	<CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
+	<CA+icZUW7XrOGguoPO00wxPLUr2Xc8fP=jQZwekpnmWKRewwX2g@mail.gmail.com>
+	<CAFTL4hzcuxoy2deQpXDBRQZZBZ4VjT=EnO3ZZv6x-jGMTr_eaA@mail.gmail.com>
+	<1358949189.21576.114.camel@gandalf.local.home>
+	<CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
+	<CA+icZUXM+tj5hnh--3CraRsvrsKfBUrS7Udf2L1OEhBnvWqpjQ@mail.gmail.com>
+	<CAFTL4hwkRv5LjzXN2BmSxS73GqKZkJ=H92qaD+ohvdOs-pAxHg@mail.gmail.com>
+	<CA+icZUVPDx=SkGFvYpACjoFE4NWchCJGs3ZnOVshs-a0dBYA3A@mail.gmail.com>
+Date: Wed, 23 Jan 2013 16:25:55 +0100
+Message-ID: <CA+icZUW9g=GRQWkpHz=AmAvr3AdRxe7-PrJiDC=Vsu0R0bwRTg@mail.gmail.com>
+Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing EXPORT_SYMBOL when CONFIG_KVM=m
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "devendra.aaru" <devendra.aaru@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jan 2013, Joonsoo Kim wrote:
+On Wed, Jan 23, 2013 at 4:20 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Wed, Jan 23, 2013 at 4:03 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> 2013/1/23 Sedat Dilek <sedat.dilek@gmail.com>:
+>>> On Wed, Jan 23, 2013 at 3:02 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>>> 2013/1/23 Steven Rostedt <rostedt@goodmis.org>:
+>>>>> On Wed, 2013-01-23 at 14:46 +0100, Frederic Weisbecker wrote:
+>>>>>
+>>>>>> > Hmmm, yes, but why, clueless, CONFIG_KVM=y as a workaround!
+>>>>>>
+>>>>>> I believe he pointed out the "{i" to you. Typing mistake?
+>>>>>
+>>>>> In which case the CONFIG_KVM=y is a work around if that {i is within a
+>>>>> #ifndef CONFIG_KVM ;-)
+>>>>
+>>>> No it's in #ifdef CONFIG_KVM so the right fix is:
+>>>>
+>>>> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+>>>> index bbb2c2c..a13b8a3 100644
+>>>> --- a/kernel/context_tracking.c
+>>>> +++ b/kernel/context_tracking.c
+>>>> @@ -111,14 +111,19 @@ void guest_enter(void)
+>>>>         else
+>>>>                 __guest_enter();
+>>>>  }
+>>>> +EXPORT_SYMBOL_GPL(guest_enter);
+>>>>
+>>>>  void guest_exit(void)
+>>>>  {
+>>>> +#ifndef CONFIG_KVM
+>>>> +i
+>>>> +#endif
+>>>>         if (vtime_accounting_enabled())
+>>>>                 vtime_guest_exit(current);
+>>>>         else
+>>>>                 __guest_exit();
+>>>>  }
+>>>> +EXPORT_SYMBOL_GPL(guest_exit);
+>>>>  #endif
+>>>
+>>> So, what's the real fix for this issue?
+>>
+>> So CONFIG_SOMETHING doesn't work when it's a module. Hence we need to
+>> remove the ifdef CONFIG_KVM around guest_enter(), guest_exit(),
+>> vtime_guest_enter() and vtime_guest_exit(). Also it seems we need
+>> <linux/export.h> in context_tracking.c
+>
+> You mean sth. like this?
+>
 
-> v2: don't loop over all processors in bootstrap().
+Isn't vtime.h missing in kvm_host.h as an include?
 
-Acked-by: Christoph Lameter <cl@linux.com>
+- Sedat -
+
+> - Sedat -
