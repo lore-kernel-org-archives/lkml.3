@@ -1,108 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab3AWKKw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 05:10:52 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:42528 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210Ab3AWKKu (ORCPT
+	id S1754954Ab3AWKLR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 05:11:17 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64599 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754673Ab3AWKLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 05:10:50 -0500
-Message-ID: <50FFB721.2020509@linux.vnet.ibm.com>
-Date: Wed, 23 Jan 2013 18:10:41 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi.kivity@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 12/12] KVM: MMU: fast drop all spte on the pte_list
-References: <50FFB5A1.5090708@linux.vnet.ibm.com>
-In-Reply-To: <50FFB5A1.5090708@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012310-7014-0000-0000-000002815D55
+	Wed, 23 Jan 2013 05:11:14 -0500
+From: Mark Einon <mark.einon@gmail.com>
+To: davem@davemloft.net, gregkh@linuxfoundation.org, sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
+        Mark Einon <mark.einon@gmail.com>
+Subject: [RFC PATCH v2 linux-next] et131x: Promote staging et131x driver to drivers/net
+Date: Wed, 23 Jan 2013 10:10:58 +0000
+Message-Id: <1358935859-29525-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1358541648-29922-1-git-send-email-mark.einon@gmail.com>
+References: <1358541648-29922-1-git-send-email-mark.einon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the pte_list need to be destroyed, no need to delete its spte one
-by one, we can directly reset it and free the memory its used
+This patch moves the et131x gigabit ethernet driver from drivers/staging
+to drivers/net/ethernet/agere.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+All the existing issues noted for this driver have been resolved, apart
+from one performance issue where some fragmented packets suffer from
+frame receive errors.
+
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
 ---
- arch/x86/kvm/mmu.c |   36 +++++++++++++++++++++++++++---------
- 1 files changed, 27 insertions(+), 9 deletions(-)
+ MAINTAINERS                                        |   11 ++++---
+ drivers/net/ethernet/Kconfig                       |    1 +
+ drivers/net/ethernet/Makefile                      |    1 +
+ drivers/net/ethernet/agere/Kconfig                 |   32 ++++++++++++++++++++
+ .../et131x => net/ethernet/agere}/Makefile         |    1 +
+ .../et131x => net/ethernet/agere}/et131x.c         |    0
+ .../et131x => net/ethernet/agere}/et131x.h         |    0
+ drivers/staging/Kconfig                            |    2 --
+ drivers/staging/Makefile                           |    1 -
+ drivers/staging/et131x/Kconfig                     |   10 ------
+ drivers/staging/et131x/README                      |   16 ----------
+ 11 files changed, 41 insertions(+), 34 deletions(-)
+ create mode 100644 drivers/net/ethernet/agere/Kconfig
+ rename drivers/{staging/et131x => net/ethernet/agere}/Makefile (98%)
+ rename drivers/{staging/et131x => net/ethernet/agere}/et131x.c (100%)
+ rename drivers/{staging/et131x => net/ethernet/agere}/et131x.h (100%)
+ delete mode 100644 drivers/staging/et131x/Kconfig
+ delete mode 100644 drivers/staging/et131x/README
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 2c0a786..0afe8da 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -968,6 +968,25 @@ static void pte_list_remove(u64 *spte, unsigned long *pte_list)
- 	}
- }
-
-+static void pte_list_destroy(unsigned long *pte_list)
-+{
-+	struct pte_list_desc *desc;
-+	unsigned long list_value = *pte_list;
+diff --git a/MAINTAINERS b/MAINTAINERS
+index e80447a..cb09e9e 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3029,6 +3029,12 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/kristoffer/linux-hpc.git
+ F:	drivers/video/s1d13xxxfb.c
+ F:	include/video/s1d13xxxfb.h
+ 
++ET131X NETWORK DRIVER
++M:	Mark Einon <mark.einon@gmail.com>
++L:	netdev@vger.kernel.org
++S:	Maintained
++F:	drivers/net/ethernet/agere
 +
-+	*pte_list = 0;
+ ETHEREXPRESS-16 NETWORK DRIVER
+ M:	Philip Blundell <philb@gnu.org>
+ L:	netdev@vger.kernel.org
+@@ -7473,11 +7479,6 @@ M:	David Rowe <david@rowetel.com>
+ S:	Odd Fixes
+ F:	drivers/staging/echo/
+ 
+-STAGING - ET131X NETWORK DRIVER
+-M:	Mark Einon <mark.einon@gmail.com>
+-S:	Odd Fixes
+-F:	drivers/staging/et131x/
+-
+ STAGING - FLARION FT1000 DRIVERS
+ M:	Marek Belisko <marek.belisko@gmail.com>
+ S:	Odd Fixes
+diff --git a/drivers/net/ethernet/Kconfig b/drivers/net/ethernet/Kconfig
+index ed956e0..4b4edbb 100644
+--- a/drivers/net/ethernet/Kconfig
++++ b/drivers/net/ethernet/Kconfig
+@@ -20,6 +20,7 @@ config SUNGEM_PHY
+ source "drivers/net/ethernet/3com/Kconfig"
+ source "drivers/net/ethernet/adaptec/Kconfig"
+ source "drivers/net/ethernet/aeroflex/Kconfig"
++source "drivers/net/ethernet/agere/Kconfig"
+ source "drivers/net/ethernet/alteon/Kconfig"
+ source "drivers/net/ethernet/amd/Kconfig"
+ source "drivers/net/ethernet/apple/Kconfig"
+diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
+index 8268d85..7a96adb 100644
+--- a/drivers/net/ethernet/Makefile
++++ b/drivers/net/ethernet/Makefile
+@@ -6,6 +6,7 @@ obj-$(CONFIG_NET_VENDOR_3COM) += 3com/
+ obj-$(CONFIG_NET_VENDOR_8390) += 8390/
+ obj-$(CONFIG_NET_VENDOR_ADAPTEC) += adaptec/
+ obj-$(CONFIG_GRETH) += aeroflex/
++obj-$(CONFIG_NET_VENDOR_AGERE) += agere/
+ obj-$(CONFIG_NET_VENDOR_ALTEON) += alteon/
+ obj-$(CONFIG_NET_VENDOR_AMD) += amd/
+ obj-$(CONFIG_NET_VENDOR_APPLE) += apple/
+diff --git a/drivers/net/ethernet/agere/Kconfig b/drivers/net/ethernet/agere/Kconfig
+new file mode 100644
+index 0000000..6854966
+--- /dev/null
++++ b/drivers/net/ethernet/agere/Kconfig
+@@ -0,0 +1,32 @@
++#
++# Agere device configuration
++#
 +
-+	if (!(list_value & 1))
-+		return;
++config NET_VENDOR_AGERE
++       bool "Agere devices"
++       default y
++       depends on PCI
++       ---help---
++         If you have a network (Ethernet) card belonging to this class, say Y
++         and read the Ethernet-HOWTO, available from
++         <http://www.tldp.org/docs.html#howto>.
 +
-+	desc = (struct pte_list_desc *)(list_value & ~1ul);
-+	while (desc) {
-+		struct pte_list_desc *next_desc = desc->more;
++         Note that the answer to this question doesn't directly affect the
++         kernel: saying N will just cause the configurator to skip all
++         the questions about Atheros devices. If you say Y, you will be asked
++         for your specific card in the following questions.
 +
-+		mmu_free_pte_list_desc(desc);
-+		desc = next_desc;
-+	}
-+}
++if NET_VENDOR_AGERE
 +
- /*
-  * Used by the following functions to iterate through the sptes linked by a
-  * pte_list.  All fields are private and not assumed to be used outside.
-@@ -1206,17 +1225,17 @@ static bool rmap_write_protect(struct kvm *kvm, u64 gfn)
- static int kvm_unmap_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 			   struct kvm_memory_slot *slot, unsigned long data)
- {
--	u64 *sptep;
- 	struct pte_list_iterator iter;
-+	u64 *sptep;
- 	int need_tlb_flush = 0;
-
--restart:
- 	for_each_spte_in_rmap(*rmapp, iter, sptep) {
--		drop_spte(kvm, sptep);
-+		mmu_spte_clear_track_bits(sptep);
- 		need_tlb_flush = 1;
--		goto restart;
- 	}
-
-+	pte_list_destroy(rmapp);
++config ET131X
++       tristate "Agere ET-1310 Gigabit Ethernet support"
++       depends on PCI
++       select PHYLIB
++       ---help---
++         This driver supports Agere ET-1310 ethernet adapters.
 +
- 	return need_tlb_flush;
- }
-
-@@ -2041,11 +2060,10 @@ static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
- 	u64 *sptep;
- 	struct pte_list_iterator iter;
-
--restart:
--	for_each_spte_in_rmap(sp->parent_ptes, iter, sptep) {
--		drop_parent_pte(sp, sptep);
--		goto restart;
--	}
-+	for_each_spte_in_rmap(sp->parent_ptes, iter, sptep)
-+		mmu_spte_clear_no_track(sptep);
++         To compile this driver as a module, choose M here. The module
++         will be called et131x.
 +
-+	pte_list_destroy(&sp->parent_ptes);
- }
-
- static int mmu_zap_unsync_children(struct kvm *kvm,
++endif # NET_VENDOR_AGERE
++
+diff --git a/drivers/staging/et131x/Makefile b/drivers/net/ethernet/agere/Makefile
+similarity index 98%
+rename from drivers/staging/et131x/Makefile
+rename to drivers/net/ethernet/agere/Makefile
+index 027ff94..740f413 100644
+--- a/drivers/staging/et131x/Makefile
++++ b/drivers/net/ethernet/agere/Makefile
+@@ -3,3 +3,4 @@
+ #
+ 
+ obj-$(CONFIG_ET131X) += et131x.o
++
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/net/ethernet/agere/et131x.c
+similarity index 100%
+rename from drivers/staging/et131x/et131x.c
+rename to drivers/net/ethernet/agere/et131x.c
+diff --git a/drivers/staging/et131x/et131x.h b/drivers/net/ethernet/agere/et131x.h
+similarity index 100%
+rename from drivers/staging/et131x/et131x.h
+rename to drivers/net/ethernet/agere/et131x.h
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index 0b47a06..5dee726 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -24,8 +24,6 @@ menuconfig STAGING
+ 
+ if STAGING
+ 
+-source "drivers/staging/et131x/Kconfig"
+-
+ source "drivers/staging/slicoss/Kconfig"
+ 
+ source "drivers/staging/usbip/Kconfig"
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index b026ea3..6983d77 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -5,7 +5,6 @@ obj-$(CONFIG_STAGING)		+= staging.o
+ 
+ obj-y				+= media/
+ obj-y				+= net/
+-obj-$(CONFIG_ET131X)		+= et131x/
+ obj-$(CONFIG_SLICOSS)		+= slicoss/
+ obj-$(CONFIG_USBIP_CORE)	+= usbip/
+ obj-$(CONFIG_W35UND)		+= winbond/
+diff --git a/drivers/staging/et131x/Kconfig b/drivers/staging/et131x/Kconfig
+deleted file mode 100644
+index 8190f2a..0000000
+--- a/drivers/staging/et131x/Kconfig
++++ /dev/null
+@@ -1,10 +0,0 @@
+-config ET131X
+-	tristate "Agere ET-1310 Gigabit Ethernet support"
+-	depends on PCI && NET && NETDEVICES
+-	select PHYLIB
+-	default n
+-	---help---
+-	  This driver supports Agere ET-1310 ethernet adapters.
+-
+-	  To compile this driver as a module, choose M here. The module
+-	  will be called et131x.
+diff --git a/drivers/staging/et131x/README b/drivers/staging/et131x/README
+deleted file mode 100644
+index 38537d4..0000000
+--- a/drivers/staging/et131x/README
++++ /dev/null
+@@ -1,16 +0,0 @@
+-This is a driver for the ET1310 network device.
+-
+-Based on the driver found at https://sourceforge.net/projects/et131x/
+-
+-Cleaned up immensely by Olaf Hartman and Christoph Hellwig <hch@infradead.org>
+-
+-Note, the powermanagement options were removed from the vendor provided
+-driver as they did not build properly at the time.
+-
+-TODO:
+-	- some rx packets have CRC/code/frame errors
+-
+-Please send patches to:
+-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+-	Mark Einon <mark.einon@gmail.com>
+-
 -- 
-1.7.7.6
+1.7.10.4
 
