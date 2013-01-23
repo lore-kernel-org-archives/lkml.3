@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab3AWAFx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 19:05:53 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:35176 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756157Ab3AWAEZ (ORCPT
+	id S1756348Ab3AWAEY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 19:04:24 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:32773 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756157Ab3AWAES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 19:04:25 -0500
+	Tue, 22 Jan 2013 19:04:18 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -17,10 +17,11 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 4/8] cputime: Generic on-demand virtual cputime accounting
-Date: Wed, 23 Jan 2013 01:03:58 +0100
-Message-Id: <1358899442-3110-5-git-send-email-fweisbec@gmail.com>
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: [PATCH 2/8] cputime: Librarize per nsecs resolution cputime definitions
+Date: Wed, 23 Jan 2013 01:03:56 +0100
+Message-Id: <1358899442-3110-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1358899442-3110-1-git-send-email-fweisbec@gmail.com>
 References: <1358899442-3110-1-git-send-email-fweisbec@gmail.com>
@@ -28,36 +29,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we want to stop the tick further idle, we need to be
-able to account the cputime without using the tick.
+The full dynticks cputime accounting that we'll soon introduce
+will rely on sched_clock(). And its clock can have a per
+nanosecond granularity.
 
-Virtual based cputime accounting solves that problem by
-hooking into kernel/user boundaries.
+To prepare for this, we need to have a cputime_t implementation
+that has this precision.
 
-However implementing CONFIG_VIRT_CPU_ACCOUNTING require
-low level hooks and involves more overhead. But we already
-have a generic context tracking subsystem that is required
-for RCU needs by archs which plan to shut down the tick
-outside idle.
+ia64 virtual cputime accounting already uses that granularity
+so all we need is to librarize its implementation in the asm
+generic headers.
 
-This patch implements a generic virtual based cputime
-accounting that relies on these generic kernel/user hooks.
-
-There are some upsides of doing this:
-
-- This requires no arch code to implement CONFIG_VIRT_CPU_ACCOUNTING
-if context tracking is already built (already necessary for RCU in full
-tickless mode).
-
-- We can rely on the generic context tracking subsystem to dynamically
-(de)activate the hooks, so that we can switch anytime between virtual
-and tick based accounting. This way we don't have the overhead
-of the virtual accounting when the tick is running periodically.
-
-And one downside:
-
-- There is probably more overhead than a native virtual based cputime
-accounting. But this relies on hooks that are already set anyway.
+Also librarize the default per jiffy granularity cputime_t
+as well so that we can easily pick either implementation
+depending on the cputime accounting config we choose.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -69,771 +54,363 @@ Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/ia64/include/asm/cputime.h              |    6 +-
- arch/ia64/include/asm/thread_info.h          |    4 +-
- arch/ia64/include/asm/xen/minstate.h         |    2 +-
- arch/ia64/kernel/asm-offsets.c               |    2 +-
- arch/ia64/kernel/entry.S                     |   16 +++---
- arch/ia64/kernel/fsys.S                      |    4 +-
- arch/ia64/kernel/head.S                      |    4 +-
- arch/ia64/kernel/ivt.S                       |    8 ++--
- arch/ia64/kernel/minstate.h                  |    2 +-
- arch/ia64/kernel/time.c                      |    4 +-
- arch/powerpc/configs/chroma_defconfig        |    2 +-
- arch/powerpc/configs/corenet64_smp_defconfig |    2 +-
- arch/powerpc/configs/pasemi_defconfig        |    2 +-
- arch/powerpc/include/asm/cputime.h           |    6 +-
- arch/powerpc/include/asm/lppaca.h            |    2 +-
- arch/powerpc/include/asm/ppc_asm.h           |    4 +-
- arch/powerpc/kernel/entry_64.S               |    4 +-
- arch/powerpc/kernel/time.c                   |    4 +-
- arch/powerpc/platforms/pseries/dtl.c         |    6 +-
- arch/powerpc/platforms/pseries/setup.c       |    6 +-
- include/asm-generic/cputime.h                |    8 +++-
- include/asm-generic/cputime_nsecs.h          |    8 +++
- include/linux/kernel_stat.h                  |    2 +-
- include/linux/vtime.h                        |   16 +++++++
- init/Kconfig                                 |   23 +++++++++-
- kernel/context_tracking.c                    |    6 ++-
- kernel/sched/cputime.c                       |   61 ++++++++++++++++++++++++--
- 27 files changed, 160 insertions(+), 54 deletions(-)
+ arch/ia64/include/asm/cputime.h       |   88 ++----------------------------
+ include/asm-generic/cputime.h         |   62 +---------------------
+ include/asm-generic/cputime_jiffies.h |   66 ++++++++++++++++++++++
+ include/asm-generic/cputime_nsecs.h   |   96 +++++++++++++++++++++++++++++++++
+ 4 files changed, 167 insertions(+), 145 deletions(-)
+ create mode 100644 include/asm-generic/cputime_jiffies.h
+ create mode 100644 include/asm-generic/cputime_nsecs.h
 
 diff --git a/arch/ia64/include/asm/cputime.h b/arch/ia64/include/asm/cputime.h
-index 371ac96..3301c7b 100644
+index 7fcf7f0..371ac96 100644
 --- a/arch/ia64/include/asm/cputime.h
 +++ b/arch/ia64/include/asm/cputime.h
-@@ -11,19 +11,19 @@
-  * as published by the Free Software Foundation; either version
-  * 2 of the License, or (at your option) any later version.
-  *
-- * If we have CONFIG_VIRT_CPU_ACCOUNTING, we measure cpu time in nsec.
-+ * If we have CONFIG_VIRT_CPU_ACCOUNTING_NATIVE, we measure cpu time in nsec.
-  * Otherwise we measure cpu time in jiffies using the generic definitions.
-  */
- 
- #ifndef __IA64_CPUTIME_H
+@@ -19,91 +19,11 @@
  #define __IA64_CPUTIME_H
  
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- # include <asm-generic/cputime.h>
+ #ifndef CONFIG_VIRT_CPU_ACCOUNTING
+-#include <asm-generic/cputime.h>
++# include <asm-generic/cputime.h>
  #else
- # include <asm/processor.h>
- # include <asm-generic/cputime-nsecs.h>
+-
+-#include <linux/time.h>
+-#include <linux/jiffies.h>
+-#include <asm/processor.h>
+-
+-typedef u64 __nocast cputime_t;
+-typedef u64 __nocast cputime64_t;
+-
+-#define cputime_one_jiffy		jiffies_to_cputime(1)
+-
+-/*
+- * Convert cputime <-> jiffies (HZ)
+- */
+-#define cputime_to_jiffies(__ct)	\
+-	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
+-#define jiffies_to_cputime(__jif)	\
+-	(__force cputime_t)((__jif) * (NSEC_PER_SEC / HZ))
+-#define cputime64_to_jiffies64(__ct)	\
+-	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
+-#define jiffies64_to_cputime64(__jif)	\
+-	(__force cputime64_t)((__jif) * (NSEC_PER_SEC / HZ))
+-
+-/*
+- * Convert cputime <-> microseconds
+- */
+-#define cputime_to_usecs(__ct)		\
+-	((__force u64)(__ct) / NSEC_PER_USEC)
+-#define usecs_to_cputime(__usecs)	\
+-	(__force cputime_t)((__usecs) * NSEC_PER_USEC)
+-#define usecs_to_cputime64(__usecs)	\
+-	(__force cputime64_t)((__usecs) * NSEC_PER_USEC)
+-
+-/*
+- * Convert cputime <-> seconds
+- */
+-#define cputime_to_secs(__ct)		\
+-	((__force u64)(__ct) / NSEC_PER_SEC)
+-#define secs_to_cputime(__secs)		\
+-	(__force cputime_t)((__secs) * NSEC_PER_SEC)
+-
+-/*
+- * Convert cputime <-> timespec (nsec)
+- */
+-static inline cputime_t timespec_to_cputime(const struct timespec *val)
+-{
+-	u64 ret = val->tv_sec * NSEC_PER_SEC + val->tv_nsec;
+-	return (__force cputime_t) ret;
+-}
+-static inline void cputime_to_timespec(const cputime_t ct, struct timespec *val)
+-{
+-	val->tv_sec  = (__force u64) ct / NSEC_PER_SEC;
+-	val->tv_nsec = (__force u64) ct % NSEC_PER_SEC;
+-}
+-
+-/*
+- * Convert cputime <-> timeval (msec)
+- */
+-static inline cputime_t timeval_to_cputime(struct timeval *val)
+-{
+-	u64 ret = val->tv_sec * NSEC_PER_SEC + val->tv_usec * NSEC_PER_USEC;
+-	return (__force cputime_t) ret;
+-}
+-static inline void cputime_to_timeval(const cputime_t ct, struct timeval *val)
+-{
+-	val->tv_sec = (__force u64) ct / NSEC_PER_SEC;
+-	val->tv_usec = ((__force u64) ct % NSEC_PER_SEC) / NSEC_PER_USEC;
+-}
+-
+-/*
+- * Convert cputime <-> clock (USER_HZ)
+- */
+-#define cputime_to_clock_t(__ct)	\
+-	((__force u64)(__ct) / (NSEC_PER_SEC / USER_HZ))
+-#define clock_t_to_cputime(__x)		\
+-	(__force cputime_t)((__x) * (NSEC_PER_SEC / USER_HZ))
+-
+-/*
+- * Convert cputime64 to clock.
+- */
+-#define cputime64_to_clock_t(__ct)	\
+-	cputime_to_clock_t((__force cputime_t)__ct)
+-
++# include <asm/processor.h>
++# include <asm-generic/cputime-nsecs.h>
  extern void arch_vtime_task_switch(struct task_struct *tsk);
--#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- 
+-
+ #endif /* CONFIG_VIRT_CPU_ACCOUNTING */
++
  #endif /* __IA64_CPUTIME_H */
-diff --git a/arch/ia64/include/asm/thread_info.h b/arch/ia64/include/asm/thread_info.h
-index ff2ae41..020d655 100644
---- a/arch/ia64/include/asm/thread_info.h
-+++ b/arch/ia64/include/asm/thread_info.h
-@@ -31,7 +31,7 @@ struct thread_info {
- 	mm_segment_t addr_limit;	/* user-level address space limit */
- 	int preempt_count;		/* 0=premptable, <0=BUG; will also serve as bh-counter */
- 	struct restart_block restart_block;
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	__u64 ac_stamp;
- 	__u64 ac_leave;
- 	__u64 ac_stime;
-@@ -69,7 +69,7 @@ struct thread_info {
- #define task_stack_page(tsk)	((void *)(tsk))
- 
- #define __HAVE_THREAD_FUNCTIONS
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- #define setup_thread_stack(p, org)			\
- 	*task_thread_info(p) = *task_thread_info(org);	\
- 	task_thread_info(p)->ac_stime = 0;		\
-diff --git a/arch/ia64/include/asm/xen/minstate.h b/arch/ia64/include/asm/xen/minstate.h
-index c57fa91..00cf03e 100644
---- a/arch/ia64/include/asm/xen/minstate.h
-+++ b/arch/ia64/include/asm/xen/minstate.h
-@@ -1,5 +1,5 @@
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- /* read ar.itc in advance, and use it before leaving bank 0 */
- #define XEN_ACCOUNT_GET_STAMP		\
- 	MOV_FROM_ITC(pUStk, p6, r20, r2);
-diff --git a/arch/ia64/kernel/asm-offsets.c b/arch/ia64/kernel/asm-offsets.c
-index a48bd9a..46c9e30 100644
---- a/arch/ia64/kernel/asm-offsets.c
-+++ b/arch/ia64/kernel/asm-offsets.c
-@@ -41,7 +41,7 @@ void foo(void)
- 	DEFINE(TI_FLAGS, offsetof(struct thread_info, flags));
- 	DEFINE(TI_CPU, offsetof(struct thread_info, cpu));
- 	DEFINE(TI_PRE_COUNT, offsetof(struct thread_info, preempt_count));
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	DEFINE(TI_AC_STAMP, offsetof(struct thread_info, ac_stamp));
- 	DEFINE(TI_AC_LEAVE, offsetof(struct thread_info, ac_leave));
- 	DEFINE(TI_AC_STIME, offsetof(struct thread_info, ac_stime));
-diff --git a/arch/ia64/kernel/entry.S b/arch/ia64/kernel/entry.S
-index 6bfd842..7a53530 100644
---- a/arch/ia64/kernel/entry.S
-+++ b/arch/ia64/kernel/entry.S
-@@ -724,7 +724,7 @@ GLOBAL_ENTRY(__paravirt_leave_syscall)
- #endif
- .global __paravirt_work_processed_syscall;
- __paravirt_work_processed_syscall:
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	adds r2=PT(LOADRS)+16,r12
- 	MOV_FROM_ITC(pUStk, p9, r22, r19)	// fetch time at leave
- 	adds r18=TI_FLAGS+IA64_TASK_SIZE,r13
-@@ -762,7 +762,7 @@ __paravirt_work_processed_syscall:
- 
- 	ld8 r29=[r2],16		// M0|1 load cr.ipsr
- 	ld8 r28=[r3],16		// M0|1 load cr.iip
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- (pUStk) add r14=TI_AC_LEAVE+IA64_TASK_SIZE,r13
- 	;;
- 	ld8 r30=[r2],16		// M0|1 load cr.ifs
-@@ -793,7 +793,7 @@ __paravirt_work_processed_syscall:
- 	ld8.fill r1=[r3],16			// M0|1 load r1
- (pUStk) mov r17=1				// A
- 	;;
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- (pUStk) st1 [r15]=r17				// M2|3
- #else
- (pUStk) st1 [r14]=r17				// M2|3
-@@ -813,7 +813,7 @@ __paravirt_work_processed_syscall:
- 	shr.u r18=r19,16		// I0|1 get byte size of existing "dirty" partition
- 	COVER				// B    add current frame into dirty partition & set cr.ifs
- 	;;
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	mov r19=ar.bsp			// M2   get new backing store pointer
- 	st8 [r14]=r22			// M	save time at leave
- 	mov f10=f0			// F    clear f10
-@@ -948,7 +948,7 @@ GLOBAL_ENTRY(__paravirt_leave_kernel)
- 	adds r16=PT(CR_IPSR)+16,r12
- 	adds r17=PT(CR_IIP)+16,r12
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	.pred.rel.mutex pUStk,pKStk
- 	MOV_FROM_PSR(pKStk, r22, r29)	// M2 read PSR now that interrupts are disabled
- 	MOV_FROM_ITC(pUStk, p9, r22, r29)	// M  fetch time at leave
-@@ -981,7 +981,7 @@ GLOBAL_ENTRY(__paravirt_leave_kernel)
- 	;;
- 	ld8.fill r12=[r16],16
- 	ld8.fill r13=[r17],16
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- (pUStk)	adds r3=TI_AC_LEAVE+IA64_TASK_SIZE,r18
- #else
- (pUStk)	adds r18=IA64_TASK_THREAD_ON_USTACK_OFFSET,r18
-@@ -989,7 +989,7 @@ GLOBAL_ENTRY(__paravirt_leave_kernel)
- 	;;
- 	ld8 r20=[r16],16	// ar.fpsr
- 	ld8.fill r15=[r17],16
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- (pUStk)	adds r18=IA64_TASK_THREAD_ON_USTACK_OFFSET,r18	// deferred
- #endif
- 	;;
-@@ -997,7 +997,7 @@ GLOBAL_ENTRY(__paravirt_leave_kernel)
- 	ld8.fill r2=[r17]
- (pUStk)	mov r17=1
- 	;;
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	//  mmi_ :  ld8 st1 shr;;         mmi_ : st8 st1 shr;;
- 	//  mib  :  mov add br        ->  mib  : ld8 add br
- 	//  bbb_ :  br  nop cover;;       mbb_ : mov br  cover;;
-diff --git a/arch/ia64/kernel/fsys.S b/arch/ia64/kernel/fsys.S
-index e662f17..c4cd45d 100644
---- a/arch/ia64/kernel/fsys.S
-+++ b/arch/ia64/kernel/fsys.S
-@@ -529,7 +529,7 @@ GLOBAL_ENTRY(paravirt_fsys_bubble_down)
- 	nop.i 0
- 	;;
- 	mov ar.rsc=0				// M2   set enforced lazy mode, pl 0, LE, loadrs=0
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	MOV_FROM_ITC(p0, p6, r30, r23)		// M    get cycle for accounting
- #else
- 	nop.m 0
-@@ -555,7 +555,7 @@ GLOBAL_ENTRY(paravirt_fsys_bubble_down)
- 	cmp.ne pKStk,pUStk=r0,r0		// A    set pKStk <- 0, pUStk <- 1
- 	br.call.sptk.many b7=ia64_syscall_setup	// B
- 	;;
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	// mov.m r30=ar.itc is called in advance
- 	add r16=TI_AC_STAMP+IA64_TASK_SIZE,r2
- 	add r17=TI_AC_LEAVE+IA64_TASK_SIZE,r2
-diff --git a/arch/ia64/kernel/head.S b/arch/ia64/kernel/head.S
-index 4738ff7..9be4e49 100644
---- a/arch/ia64/kernel/head.S
-+++ b/arch/ia64/kernel/head.S
-@@ -1073,7 +1073,7 @@ END(ia64_native_sched_clock)
- sched_clock = ia64_native_sched_clock
- #endif
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- GLOBAL_ENTRY(cycle_to_cputime)
- 	alloc r16=ar.pfs,1,0,0,0
- 	addl r8=THIS_CPU(ia64_cpu_info) + IA64_CPUINFO_NSEC_PER_CYC_OFFSET,r0
-@@ -1091,7 +1091,7 @@ GLOBAL_ENTRY(cycle_to_cputime)
- 	shrp r8=r9,r8,IA64_NSEC_PER_CYC_SHIFT
- 	br.ret.sptk.many rp
- END(cycle_to_cputime)
--#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- 
- #ifdef CONFIG_IA64_BRL_EMU
- 
-diff --git a/arch/ia64/kernel/ivt.S b/arch/ia64/kernel/ivt.S
-index fa25689..689ffca 100644
---- a/arch/ia64/kernel/ivt.S
-+++ b/arch/ia64/kernel/ivt.S
-@@ -784,7 +784,7 @@ ENTRY(break_fault)
- 
- (p8)	adds r28=16,r28				// A    switch cr.iip to next bundle
- (p9)	adds r8=1,r8				// A    increment ei to next slot
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	;;
- 	mov b6=r30				// I0   setup syscall handler branch reg early
- #else
-@@ -801,7 +801,7 @@ ENTRY(break_fault)
- 	//
- ///////////////////////////////////////////////////////////////////////
- 	st1 [r16]=r0				// M2|3 clear current->thread.on_ustack flag
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	MOV_FROM_ITC(p0, p14, r30, r18)		// M    get cycle for accounting
- #else
- 	mov b6=r30				// I0   setup syscall handler branch reg early
-@@ -817,7 +817,7 @@ ENTRY(break_fault)
- 	cmp.eq p14,p0=r9,r0			// A    are syscalls being traced/audited?
- 	br.call.sptk.many b7=ia64_syscall_setup	// B
- 1:
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	// mov.m r30=ar.itc is called in advance, and r13 is current
- 	add r16=TI_AC_STAMP+IA64_TASK_SIZE,r13	// A
- 	add r17=TI_AC_LEAVE+IA64_TASK_SIZE,r13	// A
-@@ -1043,7 +1043,7 @@ END(ia64_syscall_setup)
- 	DBG_FAULT(16)
- 	FAULT(16)
- 
--#if defined(CONFIG_VIRT_CPU_ACCOUNTING) && defined(__IA64_ASM_PARAVIRTUALIZED_NATIVE)
-+#if defined(CONFIG_VIRT_CPU_ACCOUNTING_NATIVE) && defined(__IA64_ASM_PARAVIRTUALIZED_NATIVE)
- 	/*
- 	 * There is no particular reason for this code to be here, other than
- 	 * that there happens to be space here that would go unused otherwise.
-diff --git a/arch/ia64/kernel/minstate.h b/arch/ia64/kernel/minstate.h
-index d56753a..cc82a7d 100644
---- a/arch/ia64/kernel/minstate.h
-+++ b/arch/ia64/kernel/minstate.h
-@@ -4,7 +4,7 @@
- #include "entry.h"
- #include "paravirt_inst.h"
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- /* read ar.itc in advance, and use it before leaving bank 0 */
- #define ACCOUNT_GET_STAMP				\
- (pUStk) mov.m r20=ar.itc;
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index 88a7945..a3a3f5a 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -77,7 +77,7 @@ static struct clocksource clocksource_itc = {
- };
- static struct clocksource *itc_clocksource;
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 
- #include <linux/kernel_stat.h>
- 
-@@ -142,7 +142,7 @@ void vtime_account_idle(struct task_struct *tsk)
- 	account_idle_time(vtime_delta(tsk));
- }
- 
--#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- 
- static irqreturn_t
- timer_interrupt (int irq, void *dev_id)
-diff --git a/arch/powerpc/configs/chroma_defconfig b/arch/powerpc/configs/chroma_defconfig
-index 29bb11e..4f35fc4 100644
---- a/arch/powerpc/configs/chroma_defconfig
-+++ b/arch/powerpc/configs/chroma_defconfig
-@@ -1,6 +1,6 @@
- CONFIG_PPC64=y
- CONFIG_PPC_BOOK3E_64=y
--# CONFIG_VIRT_CPU_ACCOUNTING is not set
-+# CONFIG_VIRT_CPU_ACCOUNTING_NATIVE is not set
- CONFIG_SMP=y
- CONFIG_NR_CPUS=256
- CONFIG_EXPERIMENTAL=y
-diff --git a/arch/powerpc/configs/corenet64_smp_defconfig b/arch/powerpc/configs/corenet64_smp_defconfig
-index 88fa5c4..f7df836 100644
---- a/arch/powerpc/configs/corenet64_smp_defconfig
-+++ b/arch/powerpc/configs/corenet64_smp_defconfig
-@@ -1,6 +1,6 @@
- CONFIG_PPC64=y
- CONFIG_PPC_BOOK3E_64=y
--# CONFIG_VIRT_CPU_ACCOUNTING is not set
-+# CONFIG_VIRT_CPU_ACCOUNTING_NATIVE is not set
- CONFIG_SMP=y
- CONFIG_NR_CPUS=2
- CONFIG_EXPERIMENTAL=y
-diff --git a/arch/powerpc/configs/pasemi_defconfig b/arch/powerpc/configs/pasemi_defconfig
-index 840a2c2..bcedeea 100644
---- a/arch/powerpc/configs/pasemi_defconfig
-+++ b/arch/powerpc/configs/pasemi_defconfig
-@@ -1,6 +1,6 @@
- CONFIG_PPC64=y
- CONFIG_ALTIVEC=y
--# CONFIG_VIRT_CPU_ACCOUNTING is not set
-+# CONFIG_VIRT_CPU_ACCOUNTING_NATIVE is not set
- CONFIG_SMP=y
- CONFIG_NR_CPUS=2
- CONFIG_EXPERIMENTAL=y
-diff --git a/arch/powerpc/include/asm/cputime.h b/arch/powerpc/include/asm/cputime.h
-index 483733b..607559a 100644
---- a/arch/powerpc/include/asm/cputime.h
-+++ b/arch/powerpc/include/asm/cputime.h
-@@ -8,7 +8,7 @@
-  * as published by the Free Software Foundation; either version
-  * 2 of the License, or (at your option) any later version.
-  *
-- * If we have CONFIG_VIRT_CPU_ACCOUNTING, we measure cpu time in
-+ * If we have CONFIG_VIRT_CPU_ACCOUNTING_NATIVE, we measure cpu time in
-  * the same units as the timebase.  Otherwise we measure cpu time
-  * in jiffies using the generic definitions.
-  */
-@@ -16,7 +16,7 @@
- #ifndef __POWERPC_CPUTIME_H
- #define __POWERPC_CPUTIME_H
- 
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- #include <asm-generic/cputime.h>
- #ifdef __KERNEL__
- static inline void setup_cputime_one_jiffy(void) { }
-@@ -231,5 +231,5 @@ static inline cputime_t clock_t_to_cputime(const unsigned long clk)
- static inline void arch_vtime_task_switch(struct task_struct *tsk) { }
- 
- #endif /* __KERNEL__ */
--#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- #endif /* __POWERPC_CPUTIME_H */
-diff --git a/arch/powerpc/include/asm/lppaca.h b/arch/powerpc/include/asm/lppaca.h
-index 531fe0c3..b1e7f2a 100644
---- a/arch/powerpc/include/asm/lppaca.h
-+++ b/arch/powerpc/include/asm/lppaca.h
-@@ -145,7 +145,7 @@ struct dtl_entry {
- extern struct kmem_cache *dtl_cache;
- 
- /*
-- * When CONFIG_VIRT_CPU_ACCOUNTING = y, the cpu accounting code controls
-+ * When CONFIG_VIRT_CPU_ACCOUNTING_NATIVE = y, the cpu accounting code controls
-  * reading from the dispatch trace log.  If other code wants to consume
-  * DTL entries, it can set this pointer to a function that will get
-  * called once for each DTL entry that gets processed.
-diff --git a/arch/powerpc/include/asm/ppc_asm.h b/arch/powerpc/include/asm/ppc_asm.h
-index ea2a86e..2d0e1f5 100644
---- a/arch/powerpc/include/asm/ppc_asm.h
-+++ b/arch/powerpc/include/asm/ppc_asm.h
-@@ -24,7 +24,7 @@
-  * user_time and system_time fields in the paca.
-  */
- 
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- #define ACCOUNT_CPU_USER_ENTRY(ra, rb)
- #define ACCOUNT_CPU_USER_EXIT(ra, rb)
- #define ACCOUNT_STOLEN_TIME
-@@ -70,7 +70,7 @@ END_FW_FTR_SECTION_IFSET(FW_FEATURE_SPLPAR)
- 
- #endif /* CONFIG_PPC_SPLPAR */
- 
--#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- 
- /*
-  * Macros for storing registers into and loading registers from
-diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
-index b310a05..a0ca42f 100644
---- a/arch/powerpc/kernel/entry_64.S
-+++ b/arch/powerpc/kernel/entry_64.S
-@@ -94,7 +94,7 @@ system_call_common:
- 	addi	r9,r1,STACK_FRAME_OVERHEAD
- 	ld	r11,exception_marker@toc(r2)
- 	std	r11,-16(r9)		/* "regshere" marker */
--#if defined(CONFIG_VIRT_CPU_ACCOUNTING) && defined(CONFIG_PPC_SPLPAR)
-+#if defined(CONFIG_VIRT_CPU_ACCOUNTING_NATIVE) && defined(CONFIG_PPC_SPLPAR)
- BEGIN_FW_FTR_SECTION
- 	beq	33f
- 	/* if from user, see if there are any DTL entries to process */
-@@ -110,7 +110,7 @@ BEGIN_FW_FTR_SECTION
- 	addi	r9,r1,STACK_FRAME_OVERHEAD
- 33:
- END_FW_FTR_SECTION_IFSET(FW_FEATURE_SPLPAR)
--#endif /* CONFIG_VIRT_CPU_ACCOUNTING && CONFIG_PPC_SPLPAR */
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE && CONFIG_PPC_SPLPAR */
- 
- 	/*
- 	 * A syscall should always be called with interrupts enabled
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index 6f6b1cc..22c9b67 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -143,7 +143,7 @@ EXPORT_SYMBOL_GPL(ppc_proc_freq);
- unsigned long ppc_tb_freq;
- EXPORT_SYMBOL_GPL(ppc_tb_freq);
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- /*
-  * Factors for converting from cputime_t (timebase ticks) to
-  * jiffies, microseconds, seconds, and clock_t (1/USER_HZ seconds).
-@@ -377,7 +377,7 @@ void vtime_account_user(struct task_struct *tsk)
- 	account_user_time(tsk, utime, utimescaled);
- }
- 
--#else /* ! CONFIG_VIRT_CPU_ACCOUNTING */
-+#else /* ! CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- #define calc_cputime_factors()
- #endif
- 
-diff --git a/arch/powerpc/platforms/pseries/dtl.c b/arch/powerpc/platforms/pseries/dtl.c
-index a764854..0cc0ac0 100644
---- a/arch/powerpc/platforms/pseries/dtl.c
-+++ b/arch/powerpc/platforms/pseries/dtl.c
-@@ -57,7 +57,7 @@ static u8 dtl_event_mask = 0x7;
-  */
- static int dtl_buf_entries = N_DISPATCH_LOG;
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- struct dtl_ring {
- 	u64	write_index;
- 	struct dtl_entry *write_ptr;
-@@ -142,7 +142,7 @@ static u64 dtl_current_index(struct dtl *dtl)
- 	return per_cpu(dtl_rings, dtl->cpu).write_index;
- }
- 
--#else /* CONFIG_VIRT_CPU_ACCOUNTING */
-+#else /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- 
- static int dtl_start(struct dtl *dtl)
- {
-@@ -188,7 +188,7 @@ static u64 dtl_current_index(struct dtl *dtl)
- {
- 	return lppaca_of(dtl->cpu).dtl_idx;
- }
--#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- 
- static int dtl_enable(struct dtl *dtl)
- {
-diff --git a/arch/powerpc/platforms/pseries/setup.c b/arch/powerpc/platforms/pseries/setup.c
-index ca55882..527e12c 100644
---- a/arch/powerpc/platforms/pseries/setup.c
-+++ b/arch/powerpc/platforms/pseries/setup.c
-@@ -281,7 +281,7 @@ static struct notifier_block pci_dn_reconfig_nb = {
- 
- struct kmem_cache *dtl_cache;
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- /*
-  * Allocate space for the dispatch trace log for all possible cpus
-  * and register the buffers with the hypervisor.  This is used for
-@@ -332,12 +332,12 @@ static int alloc_dispatch_logs(void)
- 
- 	return 0;
- }
--#else /* !CONFIG_VIRT_CPU_ACCOUNTING */
-+#else /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- static inline int alloc_dispatch_logs(void)
- {
- 	return 0;
- }
--#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- 
- static int alloc_dispatch_log_kmem_cache(void)
- {
 diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
-index c6eddf5..5196943 100644
+index 9a62937..c6eddf5 100644
 --- a/include/asm-generic/cputime.h
 +++ b/include/asm-generic/cputime.h
-@@ -4,6 +4,12 @@
+@@ -4,66 +4,6 @@
  #include <linux/time.h>
  #include <linux/jiffies.h>
  
--#include <asm-generic/cputime_jiffies.h>
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+# include <asm-generic/cputime_jiffies.h>
-+#endif
-+
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-+# include <asm-generic/cputime_nsecs.h>
-+#endif
+-typedef unsigned long __nocast cputime_t;
+-
+-#define cputime_one_jiffy		jiffies_to_cputime(1)
+-#define cputime_to_jiffies(__ct)	(__force unsigned long)(__ct)
+-#define cputime_to_scaled(__ct)		(__ct)
+-#define jiffies_to_cputime(__hz)	(__force cputime_t)(__hz)
+-
+-typedef u64 __nocast cputime64_t;
+-
+-#define cputime64_to_jiffies64(__ct)	(__force u64)(__ct)
+-#define jiffies64_to_cputime64(__jif)	(__force cputime64_t)(__jif)
+-
+-#define nsecs_to_cputime64(__ct)	\
+-	jiffies64_to_cputime64(nsecs_to_jiffies64(__ct))
+-
+-
+-/*
+- * Convert cputime to microseconds and back.
+- */
+-#define cputime_to_usecs(__ct)		\
+-	jiffies_to_usecs(cputime_to_jiffies(__ct))
+-#define usecs_to_cputime(__usec)	\
+-	jiffies_to_cputime(usecs_to_jiffies(__usec))
+-#define usecs_to_cputime64(__usec)	\
+-	jiffies64_to_cputime64(nsecs_to_jiffies64((__usec) * 1000))
+-
+-/*
+- * Convert cputime to seconds and back.
+- */
+-#define cputime_to_secs(jif)		(cputime_to_jiffies(jif) / HZ)
+-#define secs_to_cputime(sec)		jiffies_to_cputime((sec) * HZ)
+-
+-/*
+- * Convert cputime to timespec and back.
+- */
+-#define timespec_to_cputime(__val)	\
+-	jiffies_to_cputime(timespec_to_jiffies(__val))
+-#define cputime_to_timespec(__ct,__val)	\
+-	jiffies_to_timespec(cputime_to_jiffies(__ct),__val)
+-
+-/*
+- * Convert cputime to timeval and back.
+- */
+-#define timeval_to_cputime(__val)	\
+-	jiffies_to_cputime(timeval_to_jiffies(__val))
+-#define cputime_to_timeval(__ct,__val)	\
+-	jiffies_to_timeval(cputime_to_jiffies(__ct),__val)
+-
+-/*
+- * Convert cputime to clock and back.
+- */
+-#define cputime_to_clock_t(__ct)	\
+-	jiffies_to_clock_t(cputime_to_jiffies(__ct))
+-#define clock_t_to_cputime(__x)		\
+-	jiffies_to_cputime(clock_t_to_jiffies(__x))
+-
+-/*
+- * Convert cputime64 to clock.
+- */
+-#define cputime64_to_clock_t(__ct)	\
+-	jiffies_64_to_clock_t(cputime64_to_jiffies64(__ct))
++#include <asm-generic/cputime_jiffies.h>
  
  #endif
-diff --git a/include/asm-generic/cputime_nsecs.h b/include/asm-generic/cputime_nsecs.h
-index c73d182..b6485ca 100644
---- a/include/asm-generic/cputime_nsecs.h
-+++ b/include/asm-generic/cputime_nsecs.h
-@@ -26,6 +26,7 @@ typedef u64 __nocast cputime64_t;
-  */
- #define cputime_to_jiffies(__ct)	\
- 	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
+diff --git a/include/asm-generic/cputime_jiffies.h b/include/asm-generic/cputime_jiffies.h
+new file mode 100644
+index 0000000..b747f1f
+--- /dev/null
++++ b/include/asm-generic/cputime_jiffies.h
+@@ -0,0 +1,66 @@
++#ifndef _ASM_GENERIC_CPUTIME_JIFFIES_H
++#define _ASM_GENERIC_CPUTIME_JIFFIES_H
++
++typedef unsigned long __nocast cputime_t;
++
++#define cputime_one_jiffy		jiffies_to_cputime(1)
++#define cputime_to_jiffies(__ct)	(__force unsigned long)(__ct)
 +#define cputime_to_scaled(__ct)		(__ct)
- #define jiffies_to_cputime(__jif)	\
- 	(__force cputime_t)((__jif) * (NSEC_PER_SEC / HZ))
- #define cputime64_to_jiffies64(__ct)	\
-@@ -33,6 +34,13 @@ typedef u64 __nocast cputime64_t;
- #define jiffies64_to_cputime64(__jif)	\
- 	(__force cputime64_t)((__jif) * (NSEC_PER_SEC / HZ))
- 
++#define jiffies_to_cputime(__hz)	(__force cputime_t)(__hz)
++
++typedef u64 __nocast cputime64_t;
++
++#define cputime64_to_jiffies64(__ct)	(__force u64)(__ct)
++#define jiffies64_to_cputime64(__jif)	(__force cputime64_t)(__jif)
++
++#define nsecs_to_cputime64(__ct)	\
++	jiffies64_to_cputime64(nsecs_to_jiffies64(__ct))
++
 +
 +/*
-+ * Convert cputime <-> nanoseconds
++ * Convert cputime to microseconds and back.
 + */
-+#define nsecs_to_cputime(__nsecs)	((__force u64)(__nsecs))
++#define cputime_to_usecs(__ct)		\
++	jiffies_to_usecs(cputime_to_jiffies(__ct))
++#define usecs_to_cputime(__usec)	\
++	jiffies_to_cputime(usecs_to_jiffies(__usec))
++#define usecs_to_cputime64(__usec)	\
++	jiffies64_to_cputime64(nsecs_to_jiffies64((__usec) * 1000))
 +
++/*
++ * Convert cputime to seconds and back.
++ */
++#define cputime_to_secs(jif)		(cputime_to_jiffies(jif) / HZ)
++#define secs_to_cputime(sec)		jiffies_to_cputime((sec) * HZ)
 +
- /*
-  * Convert cputime <-> microseconds
-  */
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index 66b7078..ed5f6ed 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -127,7 +127,7 @@ extern void account_system_time(struct task_struct *, int, cputime_t, cputime_t)
- extern void account_steal_time(cputime_t);
- extern void account_idle_time(cputime_t);
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- static inline void account_process_tick(struct task_struct *tsk, int user)
- {
- 	vtime_account_user(tsk);
-diff --git a/include/linux/vtime.h b/include/linux/vtime.h
-index ae30ab5..21ef703 100644
---- a/include/linux/vtime.h
-+++ b/include/linux/vtime.h
-@@ -14,9 +14,25 @@ extern void vtime_account(struct task_struct *tsk);
- static inline void vtime_task_switch(struct task_struct *prev) { }
- static inline void vtime_account_system(struct task_struct *tsk) { }
- static inline void vtime_account_system_irqsafe(struct task_struct *tsk) { }
-+static inline void vtime_account_user(struct task_struct *tsk) { }
- static inline void vtime_account(struct task_struct *tsk) { }
- #endif
- 
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-+static inline void arch_vtime_task_switch(struct task_struct *tsk) { }
-+static inline void vtime_user_enter(struct task_struct *tsk)
-+{
-+	vtime_account_system(tsk);
-+}
-+static inline void vtime_user_exit(struct task_struct *tsk)
-+{
-+	vtime_account_user(tsk);
-+}
-+#else
-+static inline void vtime_user_enter(struct task_struct *tsk) { }
-+static inline void vtime_user_exit(struct task_struct *tsk) { }
++/*
++ * Convert cputime to timespec and back.
++ */
++#define timespec_to_cputime(__val)	\
++	jiffies_to_cputime(timespec_to_jiffies(__val))
++#define cputime_to_timespec(__ct,__val)	\
++	jiffies_to_timespec(cputime_to_jiffies(__ct),__val)
++
++/*
++ * Convert cputime to timeval and back.
++ */
++#define timeval_to_cputime(__val)	\
++	jiffies_to_cputime(timeval_to_jiffies(__val))
++#define cputime_to_timeval(__ct,__val)	\
++	jiffies_to_timeval(cputime_to_jiffies(__ct),__val)
++
++/*
++ * Convert cputime to clock and back.
++ */
++#define cputime_to_clock_t(__ct)	\
++	jiffies_to_clock_t(cputime_to_jiffies(__ct))
++#define clock_t_to_cputime(__x)		\
++	jiffies_to_cputime(clock_t_to_jiffies(__x))
++
++/*
++ * Convert cputime64 to clock.
++ */
++#define cputime64_to_clock_t(__ct)	\
++	jiffies_64_to_clock_t(cputime64_to_jiffies64(__ct))
++
 +#endif
+diff --git a/include/asm-generic/cputime_nsecs.h b/include/asm-generic/cputime_nsecs.h
+new file mode 100644
+index 0000000..c73d182
+--- /dev/null
++++ b/include/asm-generic/cputime_nsecs.h
+@@ -0,0 +1,96 @@
++/*
++ * Definitions for measuring cputime in nsecs resolution.
++ *
++ * Based on <arch/ia64/include/asm/cputime.h>
++ *
++ * Copyright (C) 2007 FUJITSU LIMITED
++ * Copyright (C) 2007 Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ *
++ */
 +
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
- extern void irqtime_account_irq(struct task_struct *tsk);
- #else
-diff --git a/init/Kconfig b/init/Kconfig
-index be8b7f5..a05f843 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -326,6 +326,9 @@ source "kernel/time/Kconfig"
- 
- menu "CPU/Task time and stats accounting"
- 
-+config VIRT_CPU_ACCOUNTING
-+	bool
++#ifndef _ASM_GENERIC_CPUTIME_NSECS_H
++#define _ASM_GENERIC_CPUTIME_NSECS_H
 +
- choice
- 	prompt "Cputime accounting"
- 	default TICK_CPU_ACCOUNTING if !PPC64
-@@ -342,9 +345,10 @@ config TICK_CPU_ACCOUNTING
- 
- 	  If unsure, say Y.
- 
--config VIRT_CPU_ACCOUNTING
-+config VIRT_CPU_ACCOUNTING_NATIVE
- 	bool "Deterministic task and CPU time accounting"
- 	depends on HAVE_VIRT_CPU_ACCOUNTING
-+	select VIRT_CPU_ACCOUNTING
- 	help
- 	  Select this option to enable more accurate task and CPU time
- 	  accounting.  This is done by reading a CPU counter on each
-@@ -354,6 +358,23 @@ config VIRT_CPU_ACCOUNTING
- 	  this also enables accounting of stolen time on logically-partitioned
- 	  systems.
- 
-+config VIRT_CPU_ACCOUNTING_GEN
-+	bool "Full dynticks CPU time accounting"
-+	depends on HAVE_CONTEXT_TRACKING && 64BIT
-+	select VIRT_CPU_ACCOUNTING
-+	select CONTEXT_TRACKING
-+	help
-+	  Select this option to enable task and CPU time accounting on full
-+	  dynticks systems. This accounting is implemented by watching every
-+	  kernel-user boundaries using the context tracking subsystem.
-+	  The accounting is thus performed at the expense of some significant
-+	  overhead.
++typedef u64 __nocast cputime_t;
++typedef u64 __nocast cputime64_t;
 +
-+	  For now this is only useful if you are working on the full
-+	  dynticks subsystem development.
++#define cputime_one_jiffy		jiffies_to_cputime(1)
 +
-+	  If unsure, say N.
++/*
++ * Convert cputime <-> jiffies (HZ)
++ */
++#define cputime_to_jiffies(__ct)	\
++	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
++#define jiffies_to_cputime(__jif)	\
++	(__force cputime_t)((__jif) * (NSEC_PER_SEC / HZ))
++#define cputime64_to_jiffies64(__ct)	\
++	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
++#define jiffies64_to_cputime64(__jif)	\
++	(__force cputime64_t)((__jif) * (NSEC_PER_SEC / HZ))
 +
- config IRQ_TIME_ACCOUNTING
- 	bool "Fine granularity task level IRQ time accounting"
- 	depends on HAVE_IRQ_TIME_ACCOUNTING
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index c952770..bd461ad 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -56,7 +56,7 @@ void user_enter(void)
- 	local_irq_save(flags);
- 	if (__this_cpu_read(context_tracking.active) &&
- 	    __this_cpu_read(context_tracking.state) != IN_USER) {
--		__this_cpu_write(context_tracking.state, IN_USER);
-+		vtime_user_enter(current);
- 		/*
- 		 * At this stage, only low level arch entry code remains and
- 		 * then we'll run in userspace. We can assume there won't be
-@@ -65,6 +65,7 @@ void user_enter(void)
- 		 * on the tick.
- 		 */
- 		rcu_user_enter();
-+		__this_cpu_write(context_tracking.state, IN_USER);
- 	}
- 	local_irq_restore(flags);
- }
-@@ -90,12 +91,13 @@ void user_exit(void)
- 
- 	local_irq_save(flags);
- 	if (__this_cpu_read(context_tracking.state) == IN_USER) {
--		__this_cpu_write(context_tracking.state, IN_KERNEL);
- 		/*
- 		 * We are going to run code that may use RCU. Inform
- 		 * RCU core about that (ie: we may need the tick again).
- 		 */
- 		rcu_user_exit();
-+		vtime_user_exit(current);
-+		__this_cpu_write(context_tracking.state, IN_KERNEL);
- 	}
- 	local_irq_restore(flags);
- }
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 5849448b..1c964ec 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -3,6 +3,7 @@
- #include <linux/tsacct_kern.h>
- #include <linux/kernel_stat.h>
- #include <linux/static_key.h>
-+#include <linux/context_tracking.h>
- #include "sched.h"
- 
- 
-@@ -479,7 +480,9 @@ void vtime_task_switch(struct task_struct *prev)
- 	else
- 		vtime_account_system(prev);
- 
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	vtime_account_user(prev);
++/*
++ * Convert cputime <-> microseconds
++ */
++#define cputime_to_usecs(__ct)		\
++	((__force u64)(__ct) / NSEC_PER_USEC)
++#define usecs_to_cputime(__usecs)	\
++	(__force cputime_t)((__usecs) * NSEC_PER_USEC)
++#define usecs_to_cputime64(__usecs)	\
++	(__force cputime64_t)((__usecs) * NSEC_PER_USEC)
++
++/*
++ * Convert cputime <-> seconds
++ */
++#define cputime_to_secs(__ct)		\
++	((__force u64)(__ct) / NSEC_PER_SEC)
++#define secs_to_cputime(__secs)		\
++	(__force cputime_t)((__secs) * NSEC_PER_SEC)
++
++/*
++ * Convert cputime <-> timespec (nsec)
++ */
++static inline cputime_t timespec_to_cputime(const struct timespec *val)
++{
++	u64 ret = val->tv_sec * NSEC_PER_SEC + val->tv_nsec;
++	return (__force cputime_t) ret;
++}
++static inline void cputime_to_timespec(const cputime_t ct, struct timespec *val)
++{
++	val->tv_sec  = (__force u64) ct / NSEC_PER_SEC;
++	val->tv_nsec = (__force u64) ct % NSEC_PER_SEC;
++}
++
++/*
++ * Convert cputime <-> timeval (msec)
++ */
++static inline cputime_t timeval_to_cputime(struct timeval *val)
++{
++	u64 ret = val->tv_sec * NSEC_PER_SEC + val->tv_usec * NSEC_PER_USEC;
++	return (__force cputime_t) ret;
++}
++static inline void cputime_to_timeval(const cputime_t ct, struct timeval *val)
++{
++	val->tv_sec = (__force u64) ct / NSEC_PER_SEC;
++	val->tv_usec = ((__force u64) ct % NSEC_PER_SEC) / NSEC_PER_USEC;
++}
++
++/*
++ * Convert cputime <-> clock (USER_HZ)
++ */
++#define cputime_to_clock_t(__ct)	\
++	((__force u64)(__ct) / (NSEC_PER_SEC / USER_HZ))
++#define clock_t_to_cputime(__x)		\
++	(__force cputime_t)((__x) * (NSEC_PER_SEC / USER_HZ))
++
++/*
++ * Convert cputime64 to clock.
++ */
++#define cputime64_to_clock_t(__ct)	\
++	cputime_to_clock_t((__force cputime_t)__ct)
++
 +#endif
- 	arch_vtime_task_switch(prev);
- }
- #endif
-@@ -495,10 +498,24 @@ void vtime_task_switch(struct task_struct *prev)
- #ifndef __ARCH_HAS_VTIME_ACCOUNT
- void vtime_account(struct task_struct *tsk)
- {
--	if (in_interrupt() || !is_idle_task(tsk))
--		vtime_account_system(tsk);
--	else
--		vtime_account_idle(tsk);
-+	if (!in_interrupt()) {
-+		/*
-+		 * If we interrupted user, context_tracking_in_user()
-+		 * is 1 because the context tracking don't hook
-+		 * on irq entry/exit. This way we know if
-+		 * we need to flush user time on kernel entry.
-+		 */
-+		if (context_tracking_in_user()) {
-+			vtime_account_user(tsk);
-+			return;
-+		}
-+
-+		if (is_idle_task(tsk)) {
-+			vtime_account_idle(tsk);
-+			return;
-+		}
-+	}
-+	vtime_account_system(tsk);
- }
- EXPORT_SYMBOL_GPL(vtime_account);
- #endif /* __ARCH_HAS_VTIME_ACCOUNT */
-@@ -583,3 +600,39 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
- 	cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
- }
- #endif
-+
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-+static DEFINE_PER_CPU(unsigned long long, cputime_snap);
-+
-+static cputime_t get_vtime_delta(void)
-+{
-+	unsigned long long delta;
-+
-+	delta = sched_clock() - __this_cpu_read(cputime_snap);
-+	__this_cpu_add(cputime_snap, delta);
-+
-+	/* CHECKME: always safe to convert nsecs to cputime? */
-+	return nsecs_to_cputime(delta);
-+}
-+
-+void vtime_account_system(struct task_struct *tsk)
-+{
-+	cputime_t delta_cpu = get_vtime_delta();
-+
-+	account_system_time(tsk, irq_count(), delta_cpu, cputime_to_scaled(delta_cpu));
-+}
-+
-+void vtime_account_user(struct task_struct *tsk)
-+{
-+	cputime_t delta_cpu = get_vtime_delta();
-+
-+	account_user_time(tsk, delta_cpu, cputime_to_scaled(delta_cpu));
-+}
-+
-+void vtime_account_idle(struct task_struct *tsk)
-+{
-+	cputime_t delta_cpu = get_vtime_delta();
-+
-+	account_idle_time(delta_cpu);
-+}
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
 -- 
 1.7.5.4
 
