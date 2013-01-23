@@ -1,119 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab3AWAC4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 19:02:56 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:50903 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755841Ab3AWACy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 19:02:54 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 4/4] ACPI / PM: Expose lists of device power resources to user space
-Date: Wed, 23 Jan 2013 01:08:54 +0100
-Message-ID: <4110339.gOkm8VAsyn@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130122235624.GF694@kroah.com>
-References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <1477263.uvKKInuF7l@vostro.rjw.lan> <20130122235624.GF694@kroah.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755278Ab3AWAEM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 19:04:12 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:54850 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752805Ab3AWAEK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 19:04:10 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: [PATCH 0/8] cputime: Full dynticks task/cputime accounting v6
+Date: Wed, 23 Jan 2013 01:03:54 +0100
+Message-Id: <1358899442-3110-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 22, 2013 03:56:24 PM Greg Kroah-Hartman wrote:
-> On Tue, Jan 22, 2013 at 03:28:23AM +0100, Rafael J. Wysocki wrote:
-> > +static struct attribute *attrs[] = {
-> > +	NULL,
-> > +};
-> 
-> That's "odd"...
+Hi,
 
-Well, I don't really need file attributes here (at least at the moment),
-but sysfs_create_group() will complain if I just pass NULL in there.
+This version fixes everything I had on the TODO list. I'm just not very
+happy with the dependency on CONFIG_64BIT. It is necessary because cputime_t
+maps to unsigned long long in order to implement a per nanosec granularity
+fitting in a reasonable range. And 32 bits archs can't read 64 bits cputime_t
+safely (they read low and high part separately, this can race against an update
+that does an arithmetic carry after incrementing the low part).
+Usual utime/stime/gtime/... are fine because they are protected with the
+new seqcount. But kernel_cpustat is not protected on the read side.
 
-> > +static void acpi_power_hide_list(struct acpi_device *adev,
-> > +				 struct acpi_device_power_state *ps,
-> > +				 const char *group_name)
-> >  {
-> > -	if (adev->power.flags.power_resources) {
-> > -		struct acpi_device_power_state *ps;
-> > -		struct acpi_power_resource_entry *entry;
-> > -
-> > -		ps = &adev->power.states[ACPI_STATE_D0];
-> > -		list_for_each_entry(entry, &ps->resources, node) {
-> > -			struct acpi_power_resource *resource = entry->resource;
-> > -
-> > -			if (add)
-> > -				acpi_power_add_dependent(resource, adev);
-> > -			else
-> > -				acpi_power_remove_dependent(resource, adev);
-> > +	struct attribute_group attr_group = {
-> > +		.name	= group_name,
-> > +		.attrs	= attrs,
-> > +	};
-> 
-> This is on the stack, which seems like it would not be good...
-> 
-> > +	struct acpi_power_resource_entry *entry;
-> > +
-> > +	list_for_each_entry_reverse(entry, &ps->resources, node) {
-> > +		struct acpi_device *res_dev = &entry->resource->device;
-> > +
-> > +		sysfs_remove_link_from_group(&adev->dev.kobj, group_name,
-> > +					     dev_name(&res_dev->dev));
-> > +	}
-> > +	sysfs_remove_group(&adev->dev.kobj, &attr_group);
-> 
-> You aren't removing the same group that you created.  Well, kind of, but
-> that's strange, it really works?
+I don't know what the right fix is. May be we could use per cpu spinlocks
+or seqlocks from both read/update side of kernel_cpustat. Hmm, or perhaps
+take curr_task(cpu)->vtime_seqlock before reading it. This requires rq
+lock though.
 
-Yes, it does, as far as I can say.
+Anyway I believe that specific issue can wait for now. The patchset is already
+complicated enough and it depends on context_tracking that is only implemented
+on x86-64 yet. I guess once that gets merged and we get a 32 arch to support
+the context_tracking, we can start to think about that.
 
-> > +static void acpi_power_expose_list(struct acpi_device *adev,
-> > +				   struct acpi_device_power_state *ps,
-> > +				   const char *group_name)
-> > +{
-> > +	struct attribute_group attr_group = {
-> > +		.name	= group_name,
-> > +		.attrs	= attrs,
-> > +	};
-> 
-> again a structure on the stack.
-> 
-> Why not just create the attribute groups as static, instead of
-> "pseudo-dynamically" like you are doing here?
+This set is pullable from:
 
-Basically because I'm lazy. :-)
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+        vtime/generic-v6
 
-They can be static if that's better.
+Changes since v5:
 
-> I have no idea if sysfs
-> can properly cope with an attribute group pointer that disappears after
-> it has been registered with the sysfs core.  That seems ripe for
-> problems, don't you agree?
+- Handle guest cputime
+- Handle idle tasks. Those were special because they don't start from schedule()
+so they need their own initializations.
+- Fix build error with CONFIG_IRQ_TIME_ACCOUNTING (thanks Wu Fenguang)
+- Depend on 64 bits archs to make kern_cpustat reading to be atomic
 
-I don't think so having looked at the code, but I very well might overlook
-something.  I'll change that.
+Thanks.
 
-> Oh, and same question about racing userspace, you will have problems
-> here in that the symlinks will be showing up after the device is
-> created.  Perhaps, to make the whole thing easier, you just change the
-> acpi core code to hold off on the notification until you get all of
-> these links and files set up and then tell userspace.  That's probably
-> an easier fix.
+---
+Frederic Weisbecker (8):
+  context_tracking: Export context state for generic vtime
+  cputime: Librarize per nsecs resolution cputime definitions
+  cputime: Move default nsecs_to_cputime() to jiffies based cputime
+    file
+  cputime: Generic on-demand virtual cputime accounting
+  cputime: Allow dynamic switch between tick/virtual based cputime
+    accounting
+  cputime: Use accessors to read task cputime stats
+  kvm: Prepare to add generic guest entry/exit callbacks
+  cputime: Safely read cputime of full dynticks CPUs
 
-I suppose so.
-
-How can I do that?
-
-Rafael
-
+ arch/alpha/kernel/osf_sys.c                  |    6 +-
+ arch/ia64/include/asm/cputime.h              |   92 +--------
+ arch/ia64/include/asm/thread_info.h          |    4 +-
+ arch/ia64/include/asm/xen/minstate.h         |    2 +-
+ arch/ia64/kernel/asm-offsets.c               |    2 +-
+ arch/ia64/kernel/entry.S                     |   16 +-
+ arch/ia64/kernel/fsys.S                      |    4 +-
+ arch/ia64/kernel/head.S                      |    4 +-
+ arch/ia64/kernel/ivt.S                       |    8 +-
+ arch/ia64/kernel/minstate.h                  |    2 +-
+ arch/ia64/kernel/time.c                      |    4 +-
+ arch/powerpc/configs/chroma_defconfig        |    2 +-
+ arch/powerpc/configs/corenet64_smp_defconfig |    2 +-
+ arch/powerpc/configs/pasemi_defconfig        |    2 +-
+ arch/powerpc/include/asm/cputime.h           |    6 +-
+ arch/powerpc/include/asm/lppaca.h            |    2 +-
+ arch/powerpc/include/asm/ppc_asm.h           |    4 +-
+ arch/powerpc/kernel/entry_64.S               |    4 +-
+ arch/powerpc/kernel/time.c                   |    4 +-
+ arch/powerpc/platforms/pseries/dtl.c         |    6 +-
+ arch/powerpc/platforms/pseries/setup.c       |    6 +-
+ arch/s390/kernel/vtime.c                     |    6 +-
+ arch/x86/kernel/apm_32.c                     |   11 +-
+ drivers/isdn/mISDN/stack.c                   |    7 +-
+ fs/binfmt_elf.c                              |    8 +-
+ fs/binfmt_elf_fdpic.c                        |    7 +-
+ fs/proc/array.c                              |    4 +-
+ include/asm-generic/cputime.h                |   66 +-----
+ include/asm-generic/cputime_jiffies.h        |   72 ++++++
+ include/asm-generic/cputime_nsecs.h          |  104 +++++++++
+ include/linux/context_tracking.h             |   28 +++
+ include/linux/hardirq.h                      |    4 +-
+ include/linux/init_task.h                    |   11 +
+ include/linux/kernel_stat.h                  |    2 +-
+ include/linux/kvm_host.h                     |   55 ++++-
+ include/linux/sched.h                        |   40 ++++
+ include/linux/tsacct_kern.h                  |    3 +
+ include/linux/vtime.h                        |   59 ++++--
+ init/Kconfig                                 |   23 ++-
+ kernel/acct.c                                |    6 +-
+ kernel/context_tracking.c                    |   41 ++--
+ kernel/cpu.c                                 |    4 +-
+ kernel/delayacct.c                           |    7 +-
+ kernel/exit.c                                |   10 +-
+ kernel/fork.c                                |    6 +
+ kernel/posix-cpu-timers.c                    |   28 ++-
+ kernel/sched/core.c                          |    1 +
+ kernel/sched/cputime.c                       |  298 +++++++++++++++++++++++---
+ kernel/signal.c                              |   12 +-
+ kernel/softirq.c                             |    6 +-
+ kernel/time/tick-sched.c                     |    5 +-
+ kernel/tsacct.c                              |   44 +++-
+ 52 files changed, 840 insertions(+), 320 deletions(-)
+ create mode 100644 include/asm-generic/cputime_jiffies.h
+ create mode 100644 include/asm-generic/cputime_nsecs.h
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.5.4
+
