@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab3AWJ2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 04:28:05 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18360 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab3AWJ2A convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 04:28:00 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 23 Jan 2013 01:26:19 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
-CC: "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "olof@lixom.net" <olof@lixom.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Wed, 23 Jan 2013 10:27:45 +0100
-Subject: Re: [v3 2/2] ARM: tegra: Skip scu_enable(scu_base) if not Cortex A9
-Thread-Topic: [v3 2/2] ARM: tegra: Skip scu_enable(scu_base) if not Cortex A9
-Thread-Index: Ac35S+fSbb6FLSJlTlau0XrfvMQYeQ==
-Message-ID: <20130123.112745.1104072242042163713.hdoyu@nvidia.com>
-References: <50FE2CA8.20100@ti.com><50FEC503.2080602@wwwdotorg.org><20130123.080457.171573168772211248.hdoyu@nvidia.com>
-In-Reply-To: <20130123.080457.171573168772211248.hdoyu@nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1754650Ab3AWJ3H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 04:29:07 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39479 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754187Ab3AWJ3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 04:29:05 -0500
+Message-ID: <1358933288.6252.170.camel@cumari.coelho.fi>
+Subject: Re: [PATCH] Revert "drivers/misc/ti-st: remove gpio handling"
+From: Luciano Coelho <coelho@ti.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, <gregkh@linuxfoundation.org>,
+        <balbi@ti.com>, <linux-kernel@vger.kernel.org>
+Date: Wed, 23 Jan 2013 11:28:08 +0200
+In-Reply-To: <50FFAB9B.4040408@ti.com>
+References: <1358766762-24405-1-git-send-email-coelho@ti.com>
+	   <20130122201453.GR22517@atomide.com>
+	  <1358890299.6252.166.camel@cumari.coelho.fi> <50FFA7A9.9040709@ti.com>
+	  <50FFA7F5.1000104@ti.com> <1358932452.6252.169.camel@cumari.coelho.fi>
+	 <50FFAB9B.4040408@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hiroshi Doyu <hdoyu@nvidia.com> wrote @ Wed, 23 Jan 2013 08:04:57 +0200 (EET):
+On Wed, 2013-01-23 at 10:21 +0100, Peter Ujfalusi wrote:
+> On 01/23/2013 10:14 AM, Luciano Coelho wrote:
+> > Yes, most likely we can use usleep or something.  I'll look into that as
+> > part of my clean-up series. ;)
+> 
+> I would suggest to use usleep_range() instead of usleep() if you can.
 
-> Stephen Warren <swarren@wwwdotorg.org> wrote @ Tue, 22 Jan 2013 17:57:39 +0100:
-> 
-> > Hiroshi, is this series the only dependency you need for your
-> > Tegra114
-> 
-> Basically yes.
-> 
-> > series? So, I could merge your Tegra114 series once this series is applied?
-> 
-> But now "CCF" seems to be in. Then, the HACK(*1) needs to be replaced
-> with "Tegra114 CCF". But "Tegra114 CCF" doesn't seem ready yet. I'll check
-> if this Tegra114 series would work without "Tegra114 CCF".
-> 
-> *1: http://patchwork.ozlabs.org/patch/212010/
+Yes, probably something like that.  This doesn't need to be very
+accurate, but it must be just long enough.
 
-Stephen,
+--
+Luca.
 
-Verified "Tegra114 series" worked with "for-3.9/soc" branch(inc CCF)
-with a little tweak.
-
-I can post Tegra114 series again. If you want them rebased onto
-another branch, let me know.
