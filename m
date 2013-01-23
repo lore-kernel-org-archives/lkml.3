@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160Ab3AWNpn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 08:45:43 -0500
-Received: from mga14.intel.com ([143.182.124.37]:39394 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754374Ab3AWNpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 08:45:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,523,1355126400"; 
-   d="scan'208";a="247459619"
-Date: Wed, 23 Jan 2013 05:20:52 -0800
-From: Vinod Koul <vinod.koul@intel.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, djbw@fb.com
-Subject: [GIT PULL] slave-dmaengine fixes
-Message-ID: <20130123132052.GE26562@intel.com>
+	id S1755288Ab3AWNrJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 08:47:09 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:60153 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754381Ab3AWNrH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 08:47:07 -0500
+Date: Wed, 23 Jan 2013 08:46:50 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: xufengzhang.main@gmail.com
+Cc: vyasevich@gmail.com, sri@us.ibm.com, davem@davemloft.net,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sctp: set association state to established in dupcook_a
+ handler
+Message-ID: <20130123134650.GA3512@hmsreliant.think-freely.org>
+References: <1358926720-25557-1-git-send-email-xufengzhang.main@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1358926720-25557-1-git-send-email-xufengzhang.main@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus
+On Wed, Jan 23, 2013 at 03:38:40PM +0800, xufengzhang.main@gmail.com wrote:
+> From: Xufeng Zhang <xufeng.zhang@windriver.com>
+> 
+> While sctp handling a duplicate COOKIE-ECHO and the action is
+> 'Association restart', sctp_sf_do_dupcook_a() will processing
+> the unexpected COOKIE-ECHO for peer restart, but it does not set
+> the association state to SCTP_STATE_ESTABLISHED, so the association
+> could stuck in SCTP_STATE_SHUTDOWN_PENDING state forever.
+> This violates the sctp specification:
+>   RFC 4960 5.2.4. Handle a COOKIE ECHO when a TCB Exists
+>   Action
+>   A) In this case, the peer may have restarted. .....
+>      After this, the endpoint shall enter the ESTABLISHED state.
+> 
+> Fix this problem by adding a SCTP_CMD_NEW_STATE cmd to the command
+> list so as to set the restart association to SCTP_STATE_ESTABLISHED
+> state properly.
+> 
+> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+> ---
+>  net/sctp/sm_statefuns.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+> index 618ec7e..528f1c8 100644
+> --- a/net/sctp/sm_statefuns.c
+> +++ b/net/sctp/sm_statefuns.c
+> @@ -1779,6 +1779,8 @@ static sctp_disposition_t sctp_sf_do_dupcook_a(struct net *net,
+>  
+>  	/* Update the content of current association. */
+>  	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
+> +	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
+> +			SCTP_STATE(SCTP_STATE_ESTABLISHED));
+>  	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
+>  	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
+>  	return SCTP_DISPOSITION_CONSUME;
+> -- 
+> 1.7.0.2
+> 
+> 
 
-Please consider pull to receive few fixes on slave dmanengine.
-There are trivial fixes in imx-dma, tegra-dma & ioat driver
+Looks reasonable to me, thanks
 
-The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
-  Linus Torvalds (1):
-        Linux 3.8-rc2
+nit: The RFC indicate the association should enter the ESTABLISHED state after
+preforming all other actions, so it seems that the state change should occur
+after the ULP event is sent
 
-are available in the git repository at:
+Neil
 
-  git://git.infradead.org/users/vkoul/slave-dma.git fixes
-
-Javier Martin (1):
-      dmaengine: imx-dma: Disable use of hw_chain to fix sg_dma transfers.
-
-Laxman Dewangan (1):
-      dma: tegra: implement flags parameters for cyclic transfer
-
-Shuah Khan (1):
-      ioat: Fix DMA memory sync direction correct flag
-
- drivers/dma/imx-dma.c         |    5 ++---
- drivers/dma/ioat/dma_v3.c     |    2 +-
- drivers/dma/tegra20-apb-dma.c |    8 ++++++--
- 3 files changed, 9 insertions(+), 6 deletions(-)
-
-
-The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
-  Linus Torvalds (1):
-        Linux 3.8-rc2
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/vkoul/slave-dma.git fixes
-
-Javier Martin (1):
-      dmaengine: imx-dma: Disable use of hw_chain to fix sg_dma transfers.
-
-Laxman Dewangan (1):
-      dma: tegra: implement flags parameters for cyclic transfer
-
-Shuah Khan (1):
-      ioat: Fix DMA memory sync direction correct flag
-
- drivers/dma/imx-dma.c         |    5 ++---
- drivers/dma/ioat/dma_v3.c     |    2 +-
- drivers/dma/tegra20-apb-dma.c |    8 ++++++--
- 3 files changed, 9 insertions(+), 6 deletions(-)
-
---
-~Vinod
