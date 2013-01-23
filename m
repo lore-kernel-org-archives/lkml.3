@@ -1,105 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab3AWQR2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 11:17:28 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40855 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756445Ab3AWQR1 (ORCPT
+	id S1756576Ab3AWQR6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 11:17:58 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:62487 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756245Ab3AWQR5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 11:17:27 -0500
-Date: Wed, 23 Jan 2013 16:17:15 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: ebiederm@xmission.com, linux-kernel@vger.kernel.org, dhowells@redhat.com,
-        akpm@linux-foundation.org, fengguang.wu@intel.com, devel@openvz.org
-Subject: Re: [PATCH] proc: avoid extra pde_put() in proc_fill_super()
-Message-ID: <20130123161715.GX4939@ZenIV.linux.org.uk>
-References: <20130122170100.11323.13045.stgit@maximpc.sw.ru>
+	Wed, 23 Jan 2013 11:17:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130122170100.11323.13045.stgit@maximpc.sw.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAFTL4hyBs=NNQ34SkVWAmfffWifR_v1DeXUKZmZo1bVyco3bpw@mail.gmail.com>
+References: <1358957174-3927-1-git-send-email-sedat.dilek@gmail.com>
+	<CAFTL4hyBs=NNQ34SkVWAmfffWifR_v1DeXUKZmZo1bVyco3bpw@mail.gmail.com>
+Date: Wed, 23 Jan 2013 17:17:56 +0100
+Message-ID: <CA+icZUWUxyU_cs949QROmpfRYMPA6F3Ebo0fJwM-DHaxOHLfLQ@mail.gmail.com>
+Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing include and EXPORT_SYMBOL_GPL
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 09:03:26PM +0400, Maxim Patlasov wrote:
-> If proc_get_inode() succeeded, but d_make_root() failed, pde_put() for
-> proc_root will be called twice: the first time due to iput() called from
-> d_make_root() and the second time directly in the end of proc_fill_super().
+On Wed, Jan 23, 2013 at 5:14 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 2013/1/23 Sedat Dilek <sedat.dilek@gmail.com>:
+>> When CONFIG_KVM=m my build with 3.8-rc4-nohz3 breaks like this:
+>>
+>> ERROR: "guest_enter" [arch/x86/kvm/kvm.ko] undefined!
+>> ERROR: "guest_exit" [arch/x86/kvm/kvm.ko] undefined!
+>>
+>> Fix this by removing the CONFIG_KVM ifdefs and adding missing
+>> EXPORT_SYMBOL_GPL for:
+>> + guest_enter() and guest_exit()
+>> + vtime_guest_enter() and vtime_guest_exit()
+>>
+>> Also add a missing include:
+>> + Add <linux/export.h> to kernel/context_tracking.c
+>>
+>> This issue was introduced with commit 8eebafe9be58 ("kvm: Prepare to
+>> add generic guest entry/exit callbacks").
+>>
+>> With some help of funny "i™"X86 hackerz!
+>>
+>> Tested on a Ubuntu/precise AMD64 with 'CONFIG_KVM=m'.
+>>
+>> [ vUNKNOWN: Without the magic "i" hack. -dileks ]
+>> [ vUNKNOWN+1: Remove vtime.h from kvm_host.h. -dileks ]
+>>
+>> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+>
+> Thanks you!
+>
+> I hope you don't mind if I fold this patch into 8eebafe9be58. If I
+> apply your patch separately, my patch would break the bisection.
+> But I'll add your signed-off and the appropriate co-authorship credits.
 
-I don't like that solution, TBH.  How about making proc_get_inode() call
-pde_put() on failure instead?  Note that it already does so if inode had
-been found in icache, so this will just make the refcounting consistent.
-Completely untested patch follows:
+That sounds reasonable! Thanks for the vital help... Enjoyed it :-).
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
-diff --git a/fs/proc/generic.c b/fs/proc/generic.c
-index 76ddae8..8b487e5 100644
---- a/fs/proc/generic.c
-+++ b/fs/proc/generic.c
-@@ -413,31 +413,24 @@ struct dentry *proc_lookup_de(struct proc_dir_entry *de, struct inode *dir,
- 		struct dentry *dentry)
- {
- 	struct inode *inode = NULL;
--	int error = -ENOENT;
- 
- 	spin_lock(&proc_subdir_lock);
- 	for (de = de->subdir; de ; de = de->next) {
- 		if (de->namelen != dentry->d_name.len)
- 			continue;
--		if (!memcmp(dentry->d_name.name, de->name, de->namelen)) {
--			pde_get(de);
--			spin_unlock(&proc_subdir_lock);
--			error = -ENOMEM;
--			inode = proc_get_inode(dir->i_sb, de);
--			goto out_unlock;
--		}
--	}
--	spin_unlock(&proc_subdir_lock);
--out_unlock:
--
--	if (inode) {
-+		if (memcmp(dentry->d_name.name, de->name, de->namelen))
-+			continue;
-+		pde_get(de);
-+		spin_unlock(&proc_subdir_lock);
-+		inode = proc_get_inode(dir->i_sb, de);
-+		if (!inode)
-+			return ERR_PTR(-ENOMEM);
- 		d_set_d_op(dentry, &proc_dentry_operations);
- 		d_add(dentry, inode);
- 		return NULL;
- 	}
--	if (de)
--		pde_put(de);
--	return ERR_PTR(error);
-+	spin_unlock(&proc_subdir_lock);
-+	return ERR_PTR(-ENOENT);
- }
- 
- struct dentry *proc_lookup(struct inode *dir, struct dentry *dentry,
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index 439ae688..e2bbe20 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -448,9 +448,7 @@ struct inode *proc_get_inode(struct super_block *sb, struct proc_dir_entry *de)
- 	struct inode * inode;
- 
- 	inode = iget_locked(sb, de->low_ino);
--	if (!inode)
--		return NULL;
--	if (inode->i_state & I_NEW) {
-+	if (inode && inode->i_state & I_NEW) {
- 		inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
- 		PROC_I(inode)->pde = de;
- 
-@@ -499,6 +497,5 @@ int proc_fill_super(struct super_block *s)
- 		return 0;
- 
- 	printk("proc_read_super: get root inode failed\n");
--	pde_put(&proc_root);
- 	return -ENOMEM;
- }
+- Sedat -
