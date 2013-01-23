@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab3AWAfo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 19:35:44 -0500
-Received: from mga11.intel.com ([192.55.52.93]:41960 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752008Ab3AWAfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 19:35:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,518,1355126400"; 
-   d="scan'208";a="277208217"
-Message-ID: <50FF3090.1090608@intel.com>
-Date: Wed, 23 Jan 2013 08:36:32 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1752687Ab3AWAgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 19:36:14 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:35966 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861Ab3AWAgM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 19:36:12 -0500
+Date: Tue, 22 Jan 2013 16:29:50 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: fix bogus kernel warnings when cgroup_create()
+ failed
+Message-ID: <20130123002950.GC5359@htj.dyndns.org>
+References: <50FD15F9.1090701@huawei.com>
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>, namhyung@kernel.org,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        preeti@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 09/22] sched: compute runnable load avg in cpu_load
- and cpu_avg_load_per_task
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>  <1357375071-11793-10-git-send-email-alex.shi@intel.com>  <50E7EAB1.6020302@intel.com> <50E92DC3.4050906@intel.com>  <CA+55aFxbS-u1Zfwg2oKOmHq6FBF+dRRhrdssqc9PpC_gXoV3+g@mail.gmail.com>  <50EFB1DB.7090804@intel.com> <50FD54EA.4060804@intel.com>  <50FE0575.6090005@intel.com> <1358837740.5782.209.camel@marge.simpson.net>  <50FE44B5.6020004@intel.com> <1358848338.5782.331.camel@marge.simpson.net>
-In-Reply-To: <1358848338.5782.331.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FD15F9.1090701@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2013 05:52 PM, Mike Galbraith wrote:
-> On Tue, 2013-01-22 at 15:50 +0800, Alex Shi wrote:
+On Mon, Jan 21, 2013 at 06:18:33PM +0800, Li Zefan wrote:
+> If cgroup_create() failed and cgroup_destroy_locked() is called to
+> do cleanup, we'll see a bunch of warnings:
 > 
->> Thanks for your suggestions and example, Mike!
->> I just can't understand the your last words here, Sorry. what the
->> detailed concern of you on 'both performance profiles with either
->> metric'? Could you like to give your preferred solutions?
+> cgroup_addrm_files: failed to remove 2MB.limit_in_bytes, err=-2
+> cgroup_addrm_files: failed to remove 2MB.usage_in_bytes, err=-2
+> cgroup_addrm_files: failed to remove 2MB.max_usage_in_bytes, err=-2
+> cgroup_addrm_files: failed to remove 2MB.failcnt, err=-2
+> cgroup_addrm_files: failed to remove prioidx, err=-2
+> cgroup_addrm_files: failed to remove ifpriomap, err=-2
+> ...
 > 
-> Hm.. I'll try rephrasing.  Any power saving gain will of necessity be
-> paid for in latency currency.  I don't have a solution other than make a
-> button, let the user decide whether history influences fast path task
-> placement or not.  Any other decision maker will get it wrong.
+> We failed to remove those files, because cgroup_create() has failed
+> before creating those cgroup files.
+> 
+> To fix this, we simply don't warn if cgroup_rm_file() can't find the
+> cft entry.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-Um, if no other objection, I'd like to move the runnable load only used
-for power friendly policy -- for this patchset, they are 'powersaving'
-and 'balance', Can I?
-
-> 
-> -Mike
-> 
-
+Applied to cgroup/for-3.9.  Thanks!
 
 -- 
-Thanks Alex
+tejun
