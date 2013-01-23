@@ -1,41 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298Ab3AWPiS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:38:18 -0500
-Received: from mga03.intel.com ([143.182.124.21]:47809 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756086Ab3AWPiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 10:38:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,523,1355126400"; 
-   d="scan'208";a="194342975"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 0/4] dw_dmac: return proper residue value
-Date: Wed, 23 Jan 2013 17:37:28 +0200
-Message-Id: <1358955452-20960-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756449Ab3AWPjO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:39:14 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:48520 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756360Ab3AWPjM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 10:39:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <1358933646-12681-2-git-send-email-maxime.ripard@free-electrons.com>
+References: <1358933646-12681-1-git-send-email-maxime.ripard@free-electrons.com>
+	<1358933646-12681-2-git-send-email-maxime.ripard@free-electrons.com>
+Date: Wed, 23 Jan 2013 16:39:11 +0100
+Message-ID: <CACRpkda97_m2XxhCCFeH410=HQA+0G=UmY8BDk1d+o1Mo+ZfLA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: sunxi: gpio: Add Allwinner SoCs GPIO drivers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org, Alejandro Mery <amery@geeks.cl>,
+        Stefan Roese <sr@denx.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch series is targeted for getting proper residue value.
+On Wed, Jan 23, 2013 at 10:34 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
 
-Since v1:
- - everything is rewritten to address Viresh's and Vinod's comments.
+> The IP responsible for the muxing on the Allwinner SoCs are also
+> handling the GPIOs on the system. This patch adds the needed driver that
+> relies on the pinctrl driver for most of its operations.
+>
+> The number of pins available for GPIOs operations are already declared
+> in the pinctrl driver, we only need to probe a generic driver to handle
+> the banks available for each SoC.
+>
+> This driver has been tested on a A13-Olinuxino.
+>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-Andy Shevchenko (4):
-  dw_dmac: remove unnecessary tx_list field in dw_dma_chan
-  dw_dmac: introduce total_len field in struct dw_desc
-  dw_dmac: fill individual length of descriptor
-  dw_dmac: return proper residue value
+Overall this is VERY NICE!
 
- drivers/dma/dw_dmac.c      |   86 ++++++++++++++++++++++++++++++++++++--------
- drivers/dma/dw_dmac_regs.h |    3 +-
- 2 files changed, 74 insertions(+), 15 deletions(-)
+> +       char *func, *pin_name;
+(...)
+> +       pin_name = kzalloc(5, GFP_KERNEL);
+> +       if (!pin_name)
+> +               return -ENOMEM;
+> +
+> +       ret = sprintf(pin_name, "P%c%d", 'A' + bank, pin);
+> +       if (!ret)
+> +               goto error;
+(...)
+> +error:
+> +       kfree(pin_name);
 
--- 
-1.7.10.4
+Isn't this a bit awkward?
 
+Can't you either use something like a local
+static char foo[MAX_SIZE]; or atleast try to use
+one of the static string print functions from <linux/kernel.h>:
+
+/* lib/printf utilities */
+
+extern __printf(2, 3) int sprintf(char *buf, const char * fmt, ...);
+extern __printf(2, 0) int vsprintf(char *buf, const char *, va_list);
+extern __printf(3, 4)
+int snprintf(char *buf, size_t size, const char *fmt, ...);
+extern __printf(3, 0)
+int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
+extern __printf(3, 4)
+int scnprintf(char *buf, size_t size, const char *fmt, ...);
+extern __printf(3, 0)
+int vscnprintf(char *buf, size_t size, const char *fmt, va_list args);
+extern __printf(2, 3)
+char *kasprintf(gfp_t gfp, const char *fmt, ...);
+extern char *kvasprintf(gfp_t gfp, const char *fmt, va_list args);
+
+Yours,
+Linus Walleij
