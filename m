@@ -1,78 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab3AWAXG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 19:23:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30924 "EHLO mx1.redhat.com"
+	id S1756305Ab3AWA0U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 19:26:20 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:44743 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607Ab3AWAXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 19:23:02 -0500
-Date: Tue, 22 Jan 2013 22:08:20 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Gleb Natapov <gleb@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 5/5] fix kvm's use of __pa() on percpu areas
-Message-ID: <20130123000820.GA27204@amt.cnet>
-References: <20130122212428.8DF70119@kernel.stglabs.ibm.com>
- <20130122212435.4905663F@kernel.stglabs.ibm.com>
+	id S1753737Ab3AWA0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 19:26:19 -0500
+Date: Tue, 22 Jan 2013 17:26:10 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] Add support for S3 non-stop TSC support.
+Message-ID: <20130123002610.GA814@obsidianresearch.com>
+References: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
+ <50FD8D07.5030908@linaro.org>
+ <20130122195701.GH30647@obsidianresearch.com>
+ <50FEF505.60504@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130122212435.4905663F@kernel.stglabs.ibm.com>
+In-Reply-To: <50FEF505.60504@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 01:24:35PM -0800, Dave Hansen wrote:
+On Tue, Jan 22, 2013 at 12:22:29PM -0800, John Stultz wrote:
+
+> >How big of an issue is this? Could the RTCTOSYS function be moved to
+> >the moment the RTC driver is registered rather than using a
+> >late_initcall?
 > 
-> In short, it is illegal to call __pa() on an address holding
-> a percpu variable.  This replaces those __pa() calls with
-> slow_virt_to_phys().  All of the cases in this patch are
-> in boot time (or CPU hotplug time at worst) code, so the
-> slow pagetable walking in slow_virt_to_phys() is not expected
-> to have a performance impact.
-> 
-> The times when this actually matters are pretty obscure
-> (certain 32-bit NUMA systems), but it _does_ happen.  It is
-> important to keep KVM guests working on these systems because
-> the real hardware is getting harder and harder to find.
-> 
-> This bug manifested first by me seeing a plain hang at boot
-> after this message:
-> 
-> 	CPU 0 irqstacks, hard=f3018000 soft=f301a000
-> 
-> or, sometimes, it would actually make it out to the console:
-> 
-> [    0.000000] BUG: unable to handle kernel paging request at ffffffff
-> 
-> I eventually traced it down to the KVM async pagefault code.
-> This can be worked around by disabling that code either at
-> compile-time, or on the kernel command-line.
-> 
-> The kvm async pagefault code was injecting page faults in
-> to the guest which the guest misinterpreted because its
-> "reason" was not being properly sent from the host.
-> 
-> The guest passes a physical address of an per-cpu async page
-> fault structure via an MSR to the host.  Since __pa() is
-> broken on percpu data, the physical address it sent was
-> bascially bogus and the host went scribbling on random data.
-> The guest never saw the real reason for the page fault (it
-> was injected by the host), assumed that the kernel had taken
-> a _real_ page fault, and panic()'d.  The behavior varied,
-> though, depending on what got corrupted by the bad write.
-> 
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> ---
-> 
->  linux-2.6.git-dave/arch/x86/kernel/kvm.c      |    9 +++++----
->  linux-2.6.git-dave/arch/x86/kernel/kvmclock.c |    4 ++--
->  2 files changed, 7 insertions(+), 6 deletions(-)
+> It may not be huge. Most early boot items are going to be
+> CLOCK_MONOTONIC based, which would be unaffected. So that's a
+> potential solution, but I'm hesitant to claim there'd be no side
+> effects.
+
+Well, ARM/PPC/etc pretty much rely on RTCTOSYS for time, so if there
+are side effects then they are going to be problematic for not-x86
+today and should be fixed up.. But that probably also says there are
+not many side effects because folks are not complaining??
+
+> >>Interface #2 could then be either RTC based, or countinuous counter
+> >>based. Since we still want to do this measurement with interrupts
+> >>off, we still would need that interrupt-free RTC method like
+> >>read_persistent_clock() where supported (falling back to the RTC
+> >>driver's suspend/resume handler to try to fix things up as best it
+> >>can if that's not available).
+> >Could the counter version of this be bundled into the clocksource
+> >framework? It already has generic APIs for handling cycle counters and
+> >things. Isn't there a TSC driver for clocksource already? Is all that
+> >is missing is a way to tell if the counter survived suspend?
  
+> So without *major* rework, I'd rather not do this. Again, the
+> clocksource code has quite a few assumptions built in that are
+> optimized for timekeeping (where we avoid overflows by expecting
+> relatively frequent updates), and very different approaches are
+> needed for something like suspend (where valid suspend times could
+> be potentially months to years).
 
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+Well, I was thinking something very simple..
 
+The reason to be interested in the clocksource code is there is
+already so much support code to make it easy to use for many timers
+out there, and there is already TSC support for it. Plus there is
+already the full architecture for muxing multiple drivers, which is
+pretty important...
+
+The simple case is that any clocksource intended for suspend time
+keeping must not over flow for reasonable times (years?), so you can
+ignore the overflow problem entirely. The 32kHz ARM counter and the 64
+bit TSC both seem to be OK in this regard.
+
+> >clocksource already has suspend/resume callbacks stuff, so the counter
+> >driver could sense if the sleep was too deep and mark itself as
+> >invalid.
+
+> But at that point you've lost time. If this was all centrally
+> controlled, you have to know before hand what the bounds would be.
+> With the TSC, we know it won't wrap around our starting measurement
+> for at least 10 years. That's a reasonable range for suspend.  We
+> don't want to resume and just get a "oh, bad call, you picked the
+> wrong clocksource for such a long suspend", and really without the
+> clocksource checking with the RTC I don't think it can even know if
+> its been too long itself (since maybe the counter wrapped, but maybe
+> not).
+
+I'm not worrying about overflow here, I was thinking about different
+sleep states. Eg a timer may only function in suspend to ram but not
+hibernate to disk, so on transition in/out of hibernate it would allow
+the clock source driver to detect that transition and mark itself as
+invalid.
+
+So, it would work something like:
+ - Prior to suspend record the result of read() from all clock_sources
+ - Run through all the suspend call backs. If the suspend state (eg
+   hibernate) is too deep then the clock source PM call back will mark
+   it as invalid
+ - Upon resume do another read from all clock sources, and also do a
+   'survived_suspend' type of call. Take the highest priority
+   clock source that survived suspend and use that delta to update the
+   realtime clock.
+ - If no clock sources survived then attempt to read without
+   interrupts from the RTC driver
+ - If you couldn't read without interrupts from the RTC driver then
+   schedual a RTC read when interrupts are on
+
+A fancier version could sanity check the clocksource delta with the
+RTC delta, if they differ by more max(~10%,2 sec) then use the RTC
+delta, this would handle clocksource overflows fairly simply.
+
+Jason
