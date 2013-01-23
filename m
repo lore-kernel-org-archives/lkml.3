@@ -1,73 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867Ab3AWUgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 15:36:48 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20969 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335Ab3AWUef (ORCPT
+	id S1752109Ab3AWUqy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 15:46:54 -0500
+Received: from stringer.orebokech.com ([88.190.240.207]:43321 "EHLO
+	stringer.orebokech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab3AWUqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 15:34:35 -0500
-X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=MeYQtMFjgLsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=crS0yvFignIA:10 a=20KFwNOVAAAA:8 a=FmuBU-rodUV_qrTzYOYA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130123203433.845671704@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 23 Jan 2013 15:30:06 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 04/12 -next] ftrace: Fix global function tracers that are not recursion safe
-References: <20130123203002.957226869@goodmis.org>
-Content-Disposition: inline; filename=0004-ftrace-Fix-global-function-tracers-that-are-not-recu.patch
+	Wed, 23 Jan 2013 15:46:49 -0500
+From: Romain Francoise <romain@orebokech.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: kvm@vger.kernel.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] vhost-net: fall back to vmalloc if high-order allocation fails
+Organization: orebokech dot com
+Date: Wed, 23 Jan 2013 21:46:47 +0100
+Message-ID: <87k3r31vbc.fsf@silenus.orebokech.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+Creating a vhost-net device allocates an object large enough (34320 bytes
+on x86-64) to trigger an order-4 allocation, which may fail if memory if
+fragmented:
 
-If one of the function tracers set by the global ops is not recursion
-safe, it can still be called directly without the added recursion
-supplied by the ftrace infrastructure.
+ libvirtd: page allocation failure: order:4, mode:0x2000d0
+ ...
+ SLAB: Unable to allocate memory on node 0 (gfp=0xd0)
+   cache: size-65536, object size: 65536, order: 4
+   node 0: slabs: 8/8, objs: 8/8, free: 0
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+In that situation, rather than forcing the caller to use regular
+virtio-net, try to allocate the descriptor with vmalloc().
+
+Signed-off-by: Romain Francoise <romain@orebokech.com>
 ---
- kernel/trace/ftrace.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/vhost/net.c | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 6e34dc1..789cbec 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -221,10 +221,24 @@ static void update_global_ops(void)
- 	 * registered callers.
- 	 */
- 	if (ftrace_global_list == &ftrace_list_end ||
--	    ftrace_global_list->next == &ftrace_list_end)
-+	    ftrace_global_list->next == &ftrace_list_end) {
- 		func = ftrace_global_list->func;
--	else
-+		/*
-+		 * As we are calling the function directly.
-+		 * If it does not have recursion protection,
-+		 * the function_trace_op needs to be updated
-+		 * accordingly.
-+		 */
-+		if (ftrace_global_list->flags & FTRACE_OPS_FL_RECURSION_SAFE)
-+			global_ops.flags |= FTRACE_OPS_FL_RECURSION_SAFE;
-+		else
-+			global_ops.flags &= ~FTRACE_OPS_FL_RECURSION_SAFE;
-+	} else {
- 		func = ftrace_global_list_func;
-+		/* The list has its own recursion protection. */
-+		global_ops.flags |= FTRACE_OPS_FL_RECURSION_SAFE;
-+	}
-+
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index ebd08b2..1ded79b 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -18,6 +18,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/file.h>
+ #include <linux/slab.h>
++#include <linux/vmalloc.h>
  
- 	/* If we filter on pids, update to use the pid function */
- 	if (!list_empty(&ftrace_pids)) {
+ #include <linux/net.h>
+ #include <linux/if_packet.h>
+@@ -603,12 +604,23 @@ static void handle_rx_net(struct vhost_work *work)
+ 	handle_rx(net);
+ }
+ 
++static void vhost_net_kvfree(void *addr)
++{
++	if (is_vmalloc_addr(addr))
++		vfree(addr);
++	else
++		kfree(addr);
++}
++
+ static int vhost_net_open(struct inode *inode, struct file *f)
+ {
+-	struct vhost_net *n = kmalloc(sizeof *n, GFP_KERNEL);
++	struct vhost_net *n;
+ 	struct vhost_dev *dev;
+ 	int r;
+ 
++	n = kmalloc(sizeof *n, GFP_KERNEL | __GFP_NOWARN);
++	if (!n)
++		n = vmalloc(sizeof *n);
+ 	if (!n)
+ 		return -ENOMEM;
+ 
+@@ -617,7 +629,7 @@ static int vhost_net_open(struct inode *inode, struct file *f)
+ 	n->vqs[VHOST_NET_VQ_RX].handle_kick = handle_rx_kick;
+ 	r = vhost_dev_init(dev, n->vqs, VHOST_NET_VQ_MAX);
+ 	if (r < 0) {
+-		kfree(n);
++		vhost_net_kvfree(n);
+ 		return r;
+ 	}
+ 
+@@ -719,7 +731,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
+ 	/* We do an extra flush before freeing memory,
+ 	 * since jobs can re-queue themselves. */
+ 	vhost_net_flush(n);
+-	kfree(n);
++	vhost_net_kvfree(n);
+ 	return 0;
+ }
+ 
 -- 
-1.7.10.4
-
+1.8.1.1
 
