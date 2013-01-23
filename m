@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab3AWOQe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:16:34 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:39826 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675Ab3AWOQc (ORCPT
+	id S1755466Ab3AWOT3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:19:29 -0500
+Received: from pindarots.xs4all.nl ([80.101.128.228]:37174 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab3AWOT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:16:32 -0500
+	Wed, 23 Jan 2013 09:19:28 -0500
+Message-ID: <50FFF15E.7010403@xs4all.nl>
+Date: Wed, 23 Jan 2013 15:19:10 +0100
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
-References: <1358946905-13320-1-git-send-email-sedat.dilek@gmail.com>
-	<CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
-	<CA+icZUW7XrOGguoPO00wxPLUr2Xc8fP=jQZwekpnmWKRewwX2g@mail.gmail.com>
-	<CAFTL4hzcuxoy2deQpXDBRQZZBZ4VjT=EnO3ZZv6x-jGMTr_eaA@mail.gmail.com>
-	<1358949189.21576.114.camel@gandalf.local.home>
-	<CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
-Date: Wed, 23 Jan 2013 15:16:32 +0100
-Message-ID: <CA+icZUWF21-QPRkSC8dSP6URQe=KEnHbVre=xGqv9icj8XxiQw@mail.gmail.com>
-Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing EXPORT_SYMBOL when CONFIG_KVM=m
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "devendra.aaru" <devendra.aaru@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+CC: Boris Ostrovsky <boris.ostrovsky@amd.com>, Jacob Shin <jacob.shin@amd.com>,
+        Borislav Petkov <bp@alien8.de>,
+        =?UTF-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>,
         linux-kernel@vger.kernel.org
+Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
+References: <50FBC7EF.6040207@xs4all.nl> <20130120103652.GB16800@pd.tnic>  <50FBC994.8020409@xs4all.nl> <20130120111920.GL25591@8bytes.org>  <50FBD413.1000406@xs4all.nl> <20130120114011.GN25591@8bytes.org>  <20130120114828.GB16519@pd.tnic> <20130121160450 <50FE9E76.30702@xs4all.nl> <50FEA3F2.1070408@amd.com> <50FEAFEB.7020103@xs4all.nl> <50FEBA69.60106@amd.com> <50FEBE5D.7040905@xs4all.nl> <50FF20F2.9090503@amd.com>
+In-Reply-To: <50FF20F2.9090503@amd.com>
+X-Enigmail-Version: 1.5.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 3:02 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 2013/1/23 Steven Rostedt <rostedt@goodmis.org>:
->> On Wed, 2013-01-23 at 14:46 +0100, Frederic Weisbecker wrote:
->>
->>> > Hmmm, yes, but why, clueless, CONFIG_KVM=y as a workaround!
->>>
->>> I believe he pointed out the "{i" to you. Typing mistake?
->>
->> In which case the CONFIG_KVM=y is a work around if that {i is within a
->> #ifndef CONFIG_KVM ;-)
->
-> No it's in #ifdef CONFIG_KVM so the right fix is:
->
-> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-> index bbb2c2c..a13b8a3 100644
-> --- a/kernel/context_tracking.c
-> +++ b/kernel/context_tracking.c
-> @@ -111,14 +111,19 @@ void guest_enter(void)
->         else
->                 __guest_enter();
->  }
-> +EXPORT_SYMBOL_GPL(guest_enter);
->
->  void guest_exit(void)
->  {
-> +#ifndef CONFIG_KVM
-> +i
-> +#endif
->         if (vtime_accounting_enabled())
->                 vtime_guest_exit(current);
->         else
->                 __guest_exit();
->  }
-> +EXPORT_SYMBOL_GPL(guest_exit);
->  #endif
+On 2013-01-23 00:29, Suravee Suthikulanit wrote:
+> I sent out a patch
+> (http://marc.info/?l=linux-kernel&m=135889686523524&w=2) which should
+> implement
+> the workaround for AMD processor family15h model 10-1Fh erratum 746 in
+> the IOMMU driver.
+> In your case, the output from "setpci -s 00:00.02 F4.w" is "0050" which
+> tells me that BIOS doesn't
+> implement the work around. After patching, you should see the following
+> message in "dmesg".
+> 
+> "AMD-Vi: Applying erratum 746 for IOMMU at 0000:00:00.2"
 
-With and without the magic "i" hack the warning still remains!
-Dropped the coffee on my t-shirt, damn Frederic.
+Thanks!
+I'll check for that after these messages.
 
-- Sedat -
+> The following patch slightly modify
+> the code to always issue "COMPLETION_WAIT" after every command.  This
+> should help increasing the chance of reproducing
+> the issue.
+
+Should I test with these two patches together?
+Or should I apply the first one first and then see what the second can help?
+
+
+Kind regards,
+Udo
