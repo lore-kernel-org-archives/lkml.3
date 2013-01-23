@@ -1,78 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab3AWJvu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 04:51:50 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:33925 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754771Ab3AWJvo (ORCPT
+	id S1754719Ab3AWJwZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 04:52:25 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:34667 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579Ab3AWJtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 04:51:44 -0500
+	Wed, 23 Jan 2013 04:49:10 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <richard.genoud@gmail.com>, <linux-arm@overkiz.com>,
+        <manabian@gmail.com>, <dgilbert@interlog.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Josh Wu <josh.wu@atmel.com>, Bo Shen <voice.shen@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 2/9] ARM: at91/at91sam9x5 DTS: correct wrong PIO BANK values on u(s)arts
+Date: Wed, 23 Jan 2013 10:48:49 +0100
+Message-ID: <c89cec3a4037f4aebf948d0f9c984c4823478c66.1358934163.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <cover.1358934163.git.nicolas.ferre@atmel.com>
+References: <cover.1358934163.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <CAHp75VeNe1Z9CqYXVjV6am_vg=5XF=vx1i47h71xRdTvT6hSGA@mail.gmail.com>
-References: <1358758844-24711-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1358758844-24711-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAOh2x==FoW5Sh5KFt9iO+_04dEbwsQHJX3rsTWNqFiZqTbPn6A@mail.gmail.com>
-	<1358846546.12502.57.camel@smile>
-	<CAKohpo=m-s4+q+4v2v+8nzC32FRzJAb58no2hZLV_5QqTj4wig@mail.gmail.com>
-	<1358932355.12502.68.camel@smile>
-	<CAKohpo=BHGukSQJJGUS=H++qzxME3aEEQZR8QiyHPU8LabHsSw@mail.gmail.com>
-	<CAHp75VeNe1Z9CqYXVjV6am_vg=5XF=vx1i47h71xRdTvT6hSGA@mail.gmail.com>
-Date: Wed, 23 Jan 2013 15:21:42 +0530
-Message-ID: <CAKohpo=_BR49Og4MRPB9SfDEwnD3OoKwFWiCsTKNfpYFSyp25Q@mail.gmail.com>
-Subject: Re: [PATCH 2/2] dw_dmac: return proper residue value
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 January 2013 15:06, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
-> On Wed, Jan 23, 2013 at 11:22 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+From: Richard Genoud <richard.genoud@gmail.com>
 
->> Firstly i believe we can have a union of both list_heads as only one is used
->> at any time. Can you patch it down?
->
-> Okay, separately and later to avoid additional testing. Will it work for you?
+The PIN_BANK 3 is for PDxx pins, not PCxx pins.
+And PIN_BANK 1 is for PBxx, not PIN_BANK 0.
 
-Yes.
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/boot/dts/at91sam9x5.dtsi | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
->> Second to solve your problem, you can add another field here: total_len.
->> I know it will consume 4 bytes per desc but i think that's the drawback we need
->> to accept.
->
-> I found already better solution I guess.
+diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+index 3a47cf9..e9c4290 100644
+--- a/arch/arm/boot/dts/at91sam9x5.dtsi
++++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+@@ -154,12 +154,12 @@
+ 
+ 					pinctrl_usart1_rts: usart1_rts-0 {
+ 						atmel,pins =
+-							<3 27 0x3 0x0>;	/* PC27 periph C */
++							<2 27 0x3 0x0>;	/* PC27 periph C */
+ 					};
+ 
+ 					pinctrl_usart1_cts: usart1_cts-0 {
+ 						atmel,pins =
+-							<3 28 0x3 0x0>;	/* PC28 periph C */
++							<2 28 0x3 0x0>;	/* PC28 periph C */
+ 					};
+ 				};
+ 
+@@ -172,46 +172,46 @@
+ 
+ 					pinctrl_uart2_rts: uart2_rts-0 {
+ 						atmel,pins =
+-							<0 0 0x2 0x0>;	/* PB0 periph B */
++							<1 0 0x2 0x0>;	/* PB0 periph B */
+ 					};
+ 
+ 					pinctrl_uart2_cts: uart2_cts-0 {
+ 						atmel,pins =
+-							<0 1 0x2 0x0>;	/* PB1 periph B */
++							<1 1 0x2 0x0>;	/* PB1 periph B */
+ 					};
+ 				};
+ 
+ 				usart3 {
+ 					pinctrl_uart3: usart3-0 {
+ 						atmel,pins =
+-							<3 23 0x2 0x1	/* PC22 periph B with pullup */
+-							 3 23 0x2 0x0>;	/* PC23 periph B */
++							<2 23 0x2 0x1	/* PC22 periph B with pullup */
++							 2 23 0x2 0x0>;	/* PC23 periph B */
+ 					};
+ 
+ 					pinctrl_usart3_rts: usart3_rts-0 {
+ 						atmel,pins =
+-							<3 24 0x2 0x0>;	/* PC24 periph B */
++							<2 24 0x2 0x0>;	/* PC24 periph B */
+ 					};
+ 
+ 					pinctrl_usart3_cts: usart3_cts-0 {
+ 						atmel,pins =
+-							<3 25 0x2 0x0>;	/* PC25 periph B */
++							<2 25 0x2 0x0>;	/* PC25 periph B */
+ 					};
+ 				};
+ 
+ 				uart0 {
+ 					pinctrl_uart0: uart0-0 {
+ 						atmel,pins =
+-							<3 8 0x3 0x0	/* PC8 periph C */
+-							 3 9 0x3 0x1>;	/* PC9 periph C with pullup */
++							<2 8 0x3 0x0	/* PC8 periph C */
++							 2 9 0x3 0x1>;	/* PC9 periph C with pullup */
+ 					};
+ 				};
+ 
+ 				uart1 {
+ 					pinctrl_uart1: uart1-0 {
+ 						atmel,pins =
+-							<3 16 0x3 0x0	/* PC16 periph C */
+-							 3 17 0x3 0x1>;	/* PC17 periph C with pullup */
++							<2 16 0x3 0x0	/* PC16 periph C */
++							 2 17 0x3 0x1>;	/* PC17 periph C with pullup */
+ 					};
+ 				};
+ 
+-- 
+1.8.0
 
-Wow!!
-
-> I introduced two functions to get amount of sent bytes like
->
-> u32 calc_sent(u32 ctlhi, u32 ctllo)
-> {
->  return f1(ctlhi) * f2(ctllo);
-> }
->
-> u32 get_sent(dwc)
-> {
->  return calc_sent(read(CTL_HI), read(CTL_LO));
-> }
->
-> And usage like
->
-> /* initial residue */
-> desc->len - calc_sent(desc->lli.ctlhi, desc->lli.ctllo).
->
-> What do you think?
-
-You plan to use it for
-- the first descriptor in a list as others already have length embedded in them?
-- And the descriptor currently getting used, by reading its ctlhi/lo
-from registers
-  instead of lli.*** ?
-
-Looks good. but still keeping len of individual descriptors in all
-descriptors leaving
-the first one is not the code i would like to keep :)
