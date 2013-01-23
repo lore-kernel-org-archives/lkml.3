@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab3AWDnx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 22:43:53 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57056 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752461Ab3AWDnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 22:43:51 -0500
-Date: Tue, 22 Jan 2013 19:45:16 -0800
-From: Greg KH <greg@kroah.com>
-To: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
-        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
-        "Yili (Neil)" <neil.yi@huawei.com>,
-        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
-        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
-        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
-        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>
-Subject: Re: USB: storage: optimize the matching rules and support new switch
- command for Huawei USB storage devices
-Message-ID: <20130123034516.GA2467@kroah.com>
-References: <fe8c85797e7f.7e7ffe8c8579@huawei.com>
- <20130118234359.GA2160@kroah.com>
- <910F9D9E13B84F4C8FA771DC9BDE99F327016D33@szxeml546-mbx.china.huawei.com>
- <20130121171219.GB4997@kroah.com>
- <910F9D9E13B84F4C8FA771DC9BDE99F32701CC26@szxeml546-mbx.china.huawei.com>
- <20130122150340.GA10105@kroah.com>
- <910F9D9E13B84F4C8FA771DC9BDE99F32701F91A@szxeml546-mbx.china.huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <910F9D9E13B84F4C8FA771DC9BDE99F32701F91A@szxeml546-mbx.china.huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753010Ab3AWDrF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 22:47:05 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30364 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752351Ab3AWDrD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 22:47:03 -0500
+X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=1lp5RE5RrrwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=CpGQe48J6BUA:10 a=iQ-_c1YIavPIFMmZoSgA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358912821.21576.89.camel@gandalf.local.home>
+Subject: Re: [RFC] Hack to use mkdir/rmdir in debugfs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 22 Jan 2013 22:47:01 -0500
+In-Reply-To: <1358910114.21576.86.camel@gandalf.local.home>
+References: <1358910114.21576.86.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 03:24:22AM +0000, Fangxiaozhi (Franko) wrote:
-> Dear Greg:
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:greg@kroah.com]
-> > Sent: Tuesday, January 22, 2013 11:04 PM
-> > To: Fangxiaozhi (Franko)
-> > Cc: linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Xueguiying (Zihan);
-> > Linlei (Lei Lin); Yili (Neil); Wangyuhua (Roger, Credit); Huqiao (C); balbi@ti.com;
-> > mdharm-usb@one-eyed-alien.net; sebastian@breakpoint.cc
-> > Subject: Re: USB: storage: optimize the matching rules and support new switch
-> > command for Huawei USB storage devices
-> > 
-> > On Tue, Jan 22, 2013 at 09:16:08AM +0000, Fangxiaozhi (Franko) wrote:
-> > > Dear Greg:
-> > >
-> > > 	OK, I have fixed up and resend the patches based on linux-3.8-rc4 today.
-> > >
-> > > 	Email subjects:
-> > > 		1. [PATCH 1/2]linux-usb:define new macro and add new match rules
-> > for Huawei USB storage devices
-> > > 		2. [PATCH 2/2]linux-usb:define new macro and add new match rules
-> > for
-> > > Huawei USB storage devices
-> > 
-> > You sent me two patches, both with the same exact Subject: line.  That's not
-> > ok, please be descriptive in the subject lines as to what each individual patch
-> > does, as obviously they both don't do the same thing, right?
-> 
-> ----No, they do the same thing, so can I submit them in only one patch?
+On Tue, 2013-01-22 at 22:01 -0500, Steven Rostedt wrote:
 
-No they do not do the same thing, they both do different things.
-Together, they do one thing, but you have to show the steps involved to
-achieve that goal.
+> As you can see, I haven't implemented the rmdir yet.
 
-> ----(Last time, Sebastian thought that the one patch is too long, so
-> he advised me to separate it into two patches).
+I decided to implement this too :-)
 
-He is correct, they need to be in two patches, but again, you can't call
-them the same thing.
+static int instance_rmdir(struct inode *inode, struct dentry *dentry)
+{
+	struct dentry *parent;
+	int ret;
 
-Please read the file, Documentation/SubmittingPatches for how to do this
-properly.
+	/* Paranoid: Make sure the parent is the "instances" directory */
+	parent = hlist_entry(inode->i_dentry.first, struct dentry, d_alias);
+	if (WARN_ON_ONCE(parent != trace_instance_dir))
+		return -ENOENT;
 
-thanks,
+	/* The caller did a dget() on dentry */
+	mutex_unlock(&dentry->d_inode->i_mutex);
 
-greg k-h
+	/*
+	 * The inode mutex is locked, but debugfs_create_dir() will also
+	 * take the mutex. As the instances directory can not be destroyed
+	 * or changed in any other way, it is safe to unlock it, and
+	 * let the dentry try. If two users try to make the same dir at
+	 * the same time, then the instance_delete() will determine the
+	 * winner.
+	 */
+	mutex_unlock(&inode->i_mutex);
+
+	ret = instance_delete(dentry->d_iname);
+
+	mutex_lock_nested(&inode->i_mutex, I_MUTEX_PARENT);
+	mutex_lock(&dentry->d_inode->i_mutex);
+
+	return ret;
+}
+
+static const struct inode_operations instance_dir_inode_operations = {
+	.lookup		= simple_lookup,
+	.mkdir		= instance_mkdir,
+	.rmdir		= instance_rmdir,
+};
+
+
+I ran it under lockdep and it didn't complain.
+
+-- Steve
+
+
+
