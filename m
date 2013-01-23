@@ -1,128 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab3AWKnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 05:43:41 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:41926 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939Ab3AWKio (ORCPT
+	id S1754877Ab3AWKrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 05:47:49 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:63839 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754561Ab3AWKrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 05:38:44 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <sameo@linux.intel.com>
-CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
-        <sshtylyov@mvista.com>, <bjorn@mork.no>, <linux@arm.linux.org.uk>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <rogerq@ti.com>
-Subject: [PATCH v9 04/20] mfd: omap-usb-tll: Use devm_kzalloc/ioremap and clean up error path
-Date: Wed, 23 Jan 2013 12:37:56 +0200
-Message-ID: <1358937492-8129-5-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1358937492-8129-1-git-send-email-rogerq@ti.com>
-References: <1358937492-8129-1-git-send-email-rogerq@ti.com>
+	Wed, 23 Jan 2013 05:47:48 -0500
+Date: Wed, 23 Jan 2013 11:47:36 +0100
+From: Leandro Lucarella <leandro.lucarella@sociomantic.com>
+To: Rick Jones <rick.jones2@hp.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Doubts about listen backlog and tcp_max_syn_backlog
+Message-ID: <20130123104736.GK4608@sociomantic.com>
+References: <20130122161038.GG4608@sociomantic.com>
+ <1358873142.3464.3964.camel@edumazet-glaptop>
+ <20130122165929.GH4608@sociomantic.com>
+ <1358874800.3464.4002.camel@edumazet-glaptop>
+ <50FED7CE.1030008@hp.com>
+ <20130122184245.GJ4608@sociomantic.com>
+ <50FF0C25.9000300@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FF0C25.9000300@hp.com>
+X-Paranoid: Just because you're paranoid, don't mean they're not after you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:6FVe5nSP87/vh2DuZfzNuDZz/imakTRAE2RWnzYq6q9
+ uNjChOT1gQOIQK2E2r5qwAORERYPFCP4l21R7/CGE20fuGSAZT
+ dMuo22rOO9jOs8nY+bZN0UDyFS4mAtCB8Kps+pB5u0wtBTAldL
+ otWMJchhLZQX4nvzAhA4Nw5jIVqS3sSK7UK8i5/Ah1x0JEE8dX
+ cJieRJkAcGqeRMv8KiWFeYmNGX4ONta8yxXO2Anr0u6z6kQWyI
+ un5eLCsW2+fwOLxoo3CK6AIy/BsKYWK28VZp/SiJV1qwBL8rTQ
+ 1EStRUhGtkaEZjjmM9S9PP8Y1zEk6bLrfGQLDvopg+8XsSoNmR
+ RPjNMmgUgFfb59dMV9pT8rTzlsaYqxGiUIBGx+OFqxPEZ8nMpd
+ Bbim0boPyEbBQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_ variants of kzalloc() and ioremap(). Simplify the error path.
+On Tue, Jan 22, 2013 at 02:01:09PM -0800, Rick Jones wrote:
+> >>If that is being overflowed, I believe you should be seeing something like:
+> >>
+> >>     14 SYNs to LISTEN sockets dropped
+> >>
+> >>in the output of netstat -s on the system on which the server
+> >>application is running.
+> >
+> >What is that value reporting exactly?
+> 
+> Netstat is reporting the ListenDrops and/or ListenOverflows  which
+> map to LINUX_MIB_LISTENDROPS and LINUX_MIB_LISTENOVERFLOWS.  Those
+> get incremented in tcp_v4_syn_recv_sock() (and its v6 version etc)
+> 
+>        if (sk_acceptq_is_full(sk))
+>                 goto exit_overflow;
+> 
+> Will increment both overflows and drops, and drops will increment on
+> its own in some additional cases.
+> 
+> >Because we are using syncookies, and AFAIK with that enabled, all
+> >SYNs are being replied, and what the listen backlog is really
+> >limitting is the "completely established sockets waiting to be
+> >accepted", according to listen(2). What I don't really know to be
+> >honest, is what a "completely established socket" is, does it mean
+> >that the SYN,ACK was sent, or the ACK was received back?
+> 
+> I have always thought it meant that the ACK of the SYN|ACK has been
+> received.
+> 
+> SyncookiesSent SyncookiesRecv SyncookiesFailed also appear in
+> /proc/net/netstat and presumably in netstat -s output.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
----
- drivers/mfd/omap-usb-tll.c |   38 ++++++++++++--------------------------
- 1 files changed, 12 insertions(+), 26 deletions(-)
+Thanks for the info. I'm definitely dropping SYNs and sending cookies,
+around 50/s. Is there any way to tell how many connections are queued in
+a particular socket?
 
-diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index 9658e18..9a19cc7 100644
---- a/drivers/mfd/omap-usb-tll.c
-+++ b/drivers/mfd/omap-usb-tll.c
-@@ -215,11 +215,10 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 
- 	dev_dbg(dev, "starting TI HSUSB TLL Controller\n");
- 
--	tll = kzalloc(sizeof(struct usbtll_omap), GFP_KERNEL);
-+	tll = devm_kzalloc(dev, sizeof(struct usbtll_omap), GFP_KERNEL);
- 	if (!tll) {
- 		dev_err(dev, "Memory allocation failed\n");
--		ret = -ENOMEM;
--		goto end;
-+		return -ENOMEM;
- 	}
- 
- 	spin_lock_init(&tll->lock);
-@@ -230,28 +229,22 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	if (IS_ERR(tll->usbtll_p1_fck)) {
- 		ret = PTR_ERR(tll->usbtll_p1_fck);
- 		dev_err(dev, "usbtll_p1_fck failed error:%d\n", ret);
--		goto err_tll;
-+		return ret;
- 	}
- 
- 	tll->usbtll_p2_fck = clk_get(dev, "usb_tll_hs_usb_ch1_clk");
- 	if (IS_ERR(tll->usbtll_p2_fck)) {
- 		ret = PTR_ERR(tll->usbtll_p2_fck);
- 		dev_err(dev, "usbtll_p2_fck failed error:%d\n", ret);
--		goto err_usbtll_p1_fck;
-+		goto err_p2_fck;
- 	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(dev, "usb tll get resource failed\n");
--		ret = -ENODEV;
--		goto err_usbtll_p2_fck;
--	}
--
--	base = ioremap(res->start, resource_size(res));
-+	base = devm_request_and_ioremap(dev, res);
- 	if (!base) {
--		dev_err(dev, "TLL ioremap failed\n");
--		ret = -ENOMEM;
--		goto err_usbtll_p2_fck;
-+		ret = -EADDRNOTAVAIL;
-+		dev_err(dev, "Resource request/ioremap failed:%d\n", ret);
-+		goto err_res;
- 	}
- 
- 	platform_set_drvdata(pdev, tll);
-@@ -323,23 +316,17 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	}
- 
- 	spin_unlock_irqrestore(&tll->lock, flags);
--	iounmap(base);
- 	pm_runtime_put_sync(dev);
- 	tll_pdev = pdev;
--	if (!ret)
--		goto end;
--	pm_runtime_disable(dev);
- 
--err_usbtll_p2_fck:
-+	return 0;
-+
-+err_res:
- 	clk_put(tll->usbtll_p2_fck);
- 
--err_usbtll_p1_fck:
-+err_p2_fck:
- 	clk_put(tll->usbtll_p1_fck);
- 
--err_tll:
--	kfree(tll);
--
--end:
- 	return ret;
- }
- 
-@@ -356,7 +343,6 @@ static int usbtll_omap_remove(struct platform_device *pdev)
- 	clk_put(tll->usbtll_p2_fck);
- 	clk_put(tll->usbtll_p1_fck);
- 	pm_runtime_disable(&pdev->dev);
--	kfree(tll);
- 	return 0;
- }
- 
+> >Also, from the client side, when is the connect(2) call done? When the
+> >SYN,ACK is received?
+> 
+> That would be my assumption.
+
+Then if syncookies are enabled, the time spent in connect() shouldn't be
+bigger than 3 seconds even if SYNs are being "dropped" by listen, right?
+(and I'm saying "dropped" because I assume if syncookies are enabled,
+SYN,ACK replies are sent anyway, with a cookie, but they are not stored
+in the queue/hash table).
+
+> In a previous message:
+> 
+> >What I'm seeing are clients taking either useconds to connect, or 3
+> >seconds, which suggest SYNs are getting lost, but the network doesn't
+> >seem to be the problem. I'm still investigating this, so unfortunately
+> >I'm not really sure.
+> 
+> I recently ran into something like that, which turned-out to be an
+> issue with nf_conntrack and its table filling.
+
+Doing a quick research about it, I found that when that happens I should
+get a message about it in dmesg (like "kernel: nf_conntrack: table full,
+dropping packet.") but I'm not getting any, so I guess that's not a
+problem.
+
+Thanks!
+
 -- 
-1.7.4.1
-
+Leandro Lucarella
+sociomantic labs GmbH
+http://www.sociomantic.com
