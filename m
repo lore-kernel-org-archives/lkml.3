@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab3AWBc5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 20:32:57 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:44805 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311Ab3AWBcy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 20:32:54 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r0N1WEYv014254, This message is released by code: ctaloc0852
-Message-ID: <50FF3D9F.6070503@realsil.com.cn>
-Date: Wed, 23 Jan 2013 09:32:15 +0800
-From: wwang <wei_wang@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: pclinux <pclinux@realsil.com.cn>
-CC: Samuel Ortiz <sameo@linux.intel.com>, "cjb@laptop.org" <cjb@laptop.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "oakad@yahoo.com" <oakad@yahoo.com>,
-        "bp@alien8.de" <bp@alien8.de>
-Subject: Re: [PATCH v4 0/8] rtsx patchset for MFD and MMC tree
-References: <cover.1357638064.git.wei_wang@realsil.com.cn> <50F66CAD.6090003@realsil.com.cn> <20130122033115.GY7409@sortiz-mobl> <50FE09DD.6070102@realsil.com.cn> <20130122224232.GC5151@sortiz-mobl> <50FF3BAD.4010009@realsil.com.cn>
-In-Reply-To: <50FF3BAD.4010009@realsil.com.cn>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 8bit
+	id S1752735Ab3AWBgL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 20:36:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16096 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752643Ab3AWBgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 20:36:08 -0500
+Date: Tue, 22 Jan 2013 20:36:03 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Cong Ding <dinggnu@gmail.com>
+Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs/cifs/cifs_dfs_ref.c: fix potential memory leakage
+Message-ID: <20130122203603.1bd26363@corrin.poochiereds.net>
+In-Reply-To: <1358900459-26277-1-git-send-email-dinggnu@gmail.com>
+References: <1358900459-26277-1-git-send-email-dinggnu@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年01月23日 09:23, pclinux 写道:
-> 于 2013年01月23日 06:42, Samuel Ortiz 写道:
->> On Tue, Jan 22, 2013 at 11:39:09AM +0800, wwang wrote:
->>>>>> Wei WANG (8):
->>>>>>   MFD:rtsx: Fix typo in comment
->>>>>>   MFD:rtsx: Remove redundant code
->>>>>>   MFD:rtsx: Declare that the DMA address limitation is 32bit explicitly
->>>>>>   MFD:rtsx: Add callback function switch_output_voltage
->>>>>>   MMC:rtsx: Using callback function to switch output voltage
->>>>>>   MFD:rtsx: Add callback function conv_clk_and_div_n
->>>>>>   MFD:rtsx: Fix checkpatch warning
->>>>>>   MFD:rtsx: Use macro defines to replace some variables
->>>>>>
->>>>>>  drivers/mfd/rtl8411.c             |   29 ++++++++++++++++++++++++
->>>>>>  drivers/mfd/rts5209.c             |   21 +++++++++++++++++
->>>>>>  drivers/mfd/rts5229.c             |   21 +++++++++++++++++
->>>>>>  drivers/mfd/rtsx_pcr.c            |   45 +++++++++++++++++++++++++------------
->>>>>>  drivers/mfd/rtsx_pcr.h            |    3 +++
->>>>>>  drivers/mmc/host/rtsx_pci_sdmmc.c |   30 +++++--------------------
->>>>>>  include/linux/mfd/rtsx_common.h   |    3 +++
->>>>>>  include/linux/mfd/rtsx_pci.h      |   27 +++++++++++++++++-----
->>>>>>  8 files changed, 135 insertions(+), 44 deletions(-)
->>>>>>
->>>>> Hi Chris and Samuel:
->>>>>
->>>>> This patchset is trying to fix some bugs and some coding style issues.
->>>>> Would you please help to merge it to v3.8 kernel?
->>>> I'll only take bug fixes for 3.8, even minor ones, and I don't see real bug
->>>> fixes here. Am I missing something ?
->>>>
->>>> Cheers,
->>>> Samuel.
->>>>
->>> Hi Samuel:
->>>
->>> The commits below are all bug fix ( fix rtl8411 specifically)
->>>
->>>   MFD:rtsx: Add callback function switch_output_voltage
->>>   MMC:rtsx: Using callback function to switch output voltage
->>>   MFD:rtsx: Add callback function conv_clk_and_div_n
->> Would you mind building a separate patchset for those 3, against e.g. a
->> vanilla 3.8-rc4 kernel ? Otherwise they won't apply cleanly against my
->> for-linus tree.
->>
->> Cheers,
->> Samuel.
->>
-> Hi Samuel:
->
-> Sure. I will do it.
-> Does it mean that the other commits only can be submitted to 3.9-rc?
->
-> BR,
-> Wei WANG
-Hi Samuel:
+On Tue, 22 Jan 2013 19:20:58 -0500
+Cong Ding <dinggnu@gmail.com> wrote:
 
-Sorry, pclinux is also me. I always mess the two mail accounts up.
-I would like to repeat my question. Does it mean that the other commits
-only can be submitted to 3.9-rc?
+> When it goes to error through line 144, the memory allocated to *devname is
+> not freed, and the caller doesn't free it either in line 250. So we free the
+> memroy of *devname in function cifs_compose_mount_options() when it goes to
+> error.
+> 
+> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> ---
+>  fs/cifs/cifs_dfs_ref.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/fs/cifs/cifs_dfs_ref.c b/fs/cifs/cifs_dfs_ref.c
+> index ce5cbd7..210fce2 100644
+> --- a/fs/cifs/cifs_dfs_ref.c
+> +++ b/fs/cifs/cifs_dfs_ref.c
+> @@ -226,6 +226,8 @@ compose_mount_options_out:
+>  compose_mount_options_err:
+>  	kfree(mountdata);
+>  	mountdata = ERR_PTR(rc);
+> +	kfree(*devname);
+> +	*devname = NULL;
+>  	goto compose_mount_options_out;
+>  }
+>  
 
-BR,
-Wei WANG
+Nice catch. Looks correct to me. Should this also go to stable?
 
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
