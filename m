@@ -1,115 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab3AWL3e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 06:29:34 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:57252 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754737Ab3AWL33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 06:29:29 -0500
-Date: Wed, 23 Jan 2013 12:32:21 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
-        linux-ia64@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>, sparclinux@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH v4 00/13] Add gdb python scripts as kernel debugging
- helpers
-Message-ID: <20130123113221.GA4256@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jan Kiszka <jan.kiszka@siemens.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org,
-	Jason Wessel <jason.wessel@windriver.com>,
-	kgdb-bugreport@lists.sourceforge.net,
-	Andi Kleen <andi@firstfloor.org>, Tom Tromey <tromey@redhat.com>,
-	Ben Widawsky <ben@bwidawsk.net>,
-	"David S. Miller" <davem@davemloft.net>,
-	Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
-	linux-ia64@vger.kernel.org, linux-kbuild@vger.kernel.org,
-	Michal Marek <mmarek@suse.cz>, sparclinux@vger.kernel.org,
-	Tony Luck <tony.luck@intel.com>
-References: <cover.1358787929.git.jan.kiszka@siemens.com>
+	id S1755346Ab3AWLbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 06:31:33 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:55234 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755159Ab3AWLbb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 06:31:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <cover.1358787929.git.jan.kiszka@siemens.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130123103108.GA4584@mwanda>
+References: <1358541648-29922-1-git-send-email-mark.einon@gmail.com>
+ <1358935859-29525-1-git-send-email-mark.einon@gmail.com> <20130123103108.GA4584@mwanda>
+From: Mark Einon <mark.einon@gmail.com>
+Date: Wed, 23 Jan 2013 11:31:16 +0000
+Message-ID: <CANK3SE2qxP5dkYrdpYnWBGqTT5b7HrW_gXS++e73Xr++h6Mokg@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 linux-next] et131x: Promote staging et131x driver
+ to drivers/net
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: davem@davemloft.net, gregkh@linuxfoundation.org, sfr@canb.auug.org.au,
+        devel@driverdev.osuosl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, first of all, I gotta say, this is very cool stuff, thanks for doing
-this. I'm playing with your tutorial and I'm having some trouble, see
-below:
+On 23 January 2013 10:31, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Wed, Jan 23, 2013 at 10:10:58AM +0000, Mark Einon wrote:
+>> diff --git a/drivers/net/ethernet/agere/Kconfig b/drivers/net/ethernet/agere/Kconfig
+>> new file mode 100644
+>> index 0000000..6854966
+>> --- /dev/null
+>> +++ b/drivers/net/ethernet/agere/Kconfig
+>> @@ -0,0 +1,32 @@
+>> +#
+>> +# Agere device configuration
+>> +#
+>> +
+>> +config NET_VENDOR_AGERE
+>> +       bool "Agere devices"
+>> +       default y
+>> +       depends on PCI
+>> +       ---help---
+>> +         If you have a network (Ethernet) card belonging to this class, say Y
+>> +         and read the Ethernet-HOWTO, available from
+>> +         <http://www.tldp.org/docs.html#howto>.
+>> +
+>> +         Note that the answer to this question doesn't directly affect the
+>> +         kernel: saying N will just cause the configurator to skip all
+>> +         the questions about Atheros devices. If you say Y, you will be asked
+>                                 ^^^^^^^
+> Agere?
 
-On Mon, Jan 21, 2013 at 06:06:07PM +0100, Jan Kiszka wrote:
->  o Let's examine the current task a bit:
->     (gdb) p ().pid
+Well spotted, thanks. I'll fix it asap.
 
-when I do that, it says:
+>
+>> +         for your specific card in the following questions.
+>> +
+>
+> I think you should just leave this block out entirely.  It doesn't
+> save time for anyone.
 
-(gdb) p ().pid
-A syntax error in expression, near `).pid'
+It looks to be standard boilerplate for all the net/ethernet drivers
+having their own directory. I'm going to leave it in for now.
+If that's an issue that needs a change, it would also affect the other
+drivers and I think should be tackled as a separate thing.
 
-Here's what I do:
+Cheers,
 
-$ gdb --data-directory $(pwd)/scripts/gdb/ ./vmlinux
-GNU gdb (GDB) 7.4.1-debian
-Copyright (C) 2012 Free Software Foundation, Inc.
-License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
-and "show warranty" for details.
-This GDB was configured as "x86_64-linux-gnu".
-For bug reporting instructions, please see:
-<http://www.gnu.org/software/gdb/bugs/>...
-Reading symbols from /w/kernel/linux-2.6/vmlinux...done.
-(gdb) target remote :1234
-Remote debugging using :1234
-[New Thread 2]
-[Switching to Thread 2]
-default_idle () at arch/x86/kernel/process.c:391
-391             current_thread_info()->status |= TS_POLLING;
-(gdb) p ().pid
-A syntax error in expression, near `).pid'.
-(gdb) show data-directory
-GDB's data directory is "/w/kernel/linux-2.6/scripts/gdb/".
-(gdb) lx-symbols
-loading vmlinux
-no modules found
-(gdb) p ().pid
-A syntax error in expression, near `).pid'.
-(gdb)
-
-So, I thought I should point it explicitly to the python scripts with
---data-directory but it still doesn't fly. And gdb is 7.4.1 so it should
-be recent enough.
-
-lx-dmesg works, for example:
-
-(gdb) lx-dmesg
-[     0.000000] Linux version 3.8.0-rc4+ (boris@pd) (gcc version 4.7.2 (Debian 4.7.2-5) ) #2 SMP PREEMPT Wed Jan 23 11:59:58 CET 2013
-[     0.000000] Command line: vga=0 root=/dev/sda1 debug ignore_loglevel console=ttyS0,115200 console=tty0
-[     0.000000] e820: BIOS-provided physical RAM map:
-[     0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009f3ff] usable
-[     0.000000] BIOS-e820: [mem 0x000000000009f400-0x000000000009ffff] reserved
-[     0.000000] BIOS-e820: [mem 0x00000000000f0000-0x00000000000fffff] reserved
-[     0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000007fffdfff] usable
-...
-
-So what am I missing?
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Mark
