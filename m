@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab3AWICT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 03:02:19 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:33266 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab3AWICS (ORCPT
+	id S1754257Ab3AWIHZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 03:07:25 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33355 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753752Ab3AWIHT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 03:02:18 -0500
-From: Yijing Wang <wangyijing@huawei.com>
-To: Rob Landley <rob@landley.net>, Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jon Mason <jdmason@kudzu.us>, <linux-pci@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH] PCI: Document PCIE BUS MPS parameters
-Date: Wed, 23 Jan 2013 16:01:36 +0800
-Message-ID: <1358928096-29008-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Wed, 23 Jan 2013 03:07:19 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Bryan Wu <cooloney@gmail.com>
+CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] leds-lp5521: fix a build warning
+Thread-Topic: [PATCH 1/2] leds-lp5521: fix a build warning
+Thread-Index: Ac35QKQ6hqr/3pYRTG+j+CD6o7gucg==
+Date: Wed, 23 Jan 2013 08:07:09 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E1C27D@DQHE02.ent.ti.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.185.78]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document PCIE BUS MPS parameters pcie_bus_tune_off, pcie_bus_safe,
-pcie_bus_peer2peer, pcie_bus_perf into Documentation/kernel-parameters.txt.
-These parameters were introduced by Jon Mason <mason@myri.com> at
-commit 5f39e6705 and commit b03e7495a8. Document these into 
-kernel-parameters.txt help users to understand and use the parameters.
+This patch removes a build warning below.(ARCH=x86_64)
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+drivers/leds/leds-lp5521.c: In function lp5521_firmware_loaded:
+drivers/leds/leds-lp5521.c:257:4: warning: format %d expects argument of type in
+t, but argument 3 has type size_t [-Wformat]
+
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- Documentation/kernel-parameters.txt |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+ drivers/leds/leds-lp5521.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 363e348..4dfa8d2 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2227,6 +2227,19 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 				This sorting is done to get a device
- 				order compatible with older (<= 2.4) kernels.
- 		nobfsort	Don't sort PCI devices into breadth-first order.
-+		pcie_bus_tune_off	[X86] Disable PCI-E MPS turning and using
-+				the BIOS configured MPS defaults.
-+		pcie_bus_safe	[X86] Use the smallest common denominator MPS
-+				of the entire tree below a root complex for every device
-+				on that fabric. Can avoid inconsistent mps problem caused
-+				by hotplug.
-+		pcie_bus_perf	[X86] Configure pcie device MPS to the largest
-+				allowable MPS based on its parent bus.Improve performance
-+				as much as possible.
-+		pcie_bus_peer2peer	[X86] Make the system wide MPS the smallest
-+				possible value (128B).This configuration could prevent it
-+				from working by having the MPS on one root port different
-+				than the MPS on another.
- 		cbiosize=nn[KMG]	The fixed amount of bus space which is
- 				reserved for the CardBus bridge's IO window.
- 				The default value is 256 bytes.
+diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+index 80adfb4..74946f4 100644
+--- a/drivers/leds/leds-lp5521.c
++++ b/drivers/leds/leds-lp5521.c
+@@ -253,7 +253,7 @@ static void lp5521_firmware_loaded(struct lp55xx_chip *chip)
+ 	const struct firmware *fw = chip->fw;
+ 
+ 	if (fw->size > LP5521_PROGRAM_LENGTH) {
+-		dev_err(&chip->cl->dev, "firmware data size overflow: %d\n",
++		dev_err(&chip->cl->dev, "firmware data size overflow: %zd\n",
+ 			fw->size);
+ 		return;
+ 	}
 -- 
-1.7.1
+1.7.9.5
+
+
+Best Regards,
+Milo
 
 
