@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387Ab3AWSLb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 13:11:31 -0500
-Received: from londo.lunn.ch ([80.238.139.98]:57171 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754108Ab3AWSLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 13:11:30 -0500
-Date: Wed, 23 Jan 2013 19:10:29 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Soeren Moch <smoch@web.de>
-Cc: Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
- dma_alloc_coherent() calls
-Message-ID: <20130123181029.GE20719@lunn.ch>
-References: <20121119144826.f59667b2.akpm@linux-foundation.org>
- <201301171049.30415.arnd@arndb.de>
- <50F800EB.6040104@web.de>
- <201301172026.45514.arnd@arndb.de>
- <50FABBED.1020905@web.de>
- <20130119185907.GA20719@lunn.ch>
- <5100022D.9050106@web.de>
- <20130123162515.GK13482@lunn.ch>
- <510018B4.9040903@web.de>
- <51001BEE.9020201@web.de>
+	id S1756398Ab3AWSNR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 13:13:17 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:62283 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756194Ab3AWSNQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 13:13:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51001BEE.9020201@web.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1358953697.8899.2.camel@orca.stoopid.dyndns.org>
+References: <A874F61F95741C4A9BA573A70FE3998F69E1C27D@DQHE02.ent.ti.com> <1358953697.8899.2.camel@orca.stoopid.dyndns.org>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Wed, 23 Jan 2013 10:12:48 -0800
+Message-ID: <CAK5ve-JrjV1+21KV-QdYi-qXac7LzUaw0agpEWZ_T6aDg6OM7Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] leds-lp5521: fix a build warning
+To: Nathan Lynch <ntl@pobox.com>
+Cc: "Kim, Milo" <Milo.Kim@ti.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>
-> >
-> >Now (in the last hour) stable, occasionally lower numbers:
-> >3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
-> >3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
-> >3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
-> >3396 3396 3396 3396 3396 3396 3396 3396 3396 3365 3396 3394 3396 3396
-> >3396 3396 3373 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
-> >3396 3353 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
-> >3394 3396 3396 3396 3396 3396 3396 3396
-> >
-> >Before the last pool exhaustion going down:
-> >3395 3395 3389 3379 3379 3374 3367 3360 3352 3343 3343 3343 3342 3336
-> >3332 3324 3318 3314 3310 3307 3305 3299 3290 3283 3279 3272 3266 3265
-> >3247 3247 3247 3242 3236 3236
-> >
-> Here I stopped vdr (and so closed all dvb_demux devices), the number
-> was remaining the same 3236, even after restart of vdr (and restart
-> of streaming).
+On Wed, Jan 23, 2013 at 7:08 AM, Nathan Lynch <ntl@pobox.com> wrote:
+> On Wed, 2013-01-23 at 08:07 +0000, Kim, Milo wrote:
+>> This patch removes a build warning below.(ARCH=x86_64)
+>>
+>> drivers/leds/leds-lp5521.c: In function lp5521_firmware_loaded:
+>> drivers/leds/leds-lp5521.c:257:4: warning: format %d expects argument of type in
+>> t, but argument 3 has type size_t [-Wformat]
+>>
+>> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+>> ---
+>>  drivers/leds/leds-lp5521.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+>> index 80adfb4..74946f4 100644
+>> --- a/drivers/leds/leds-lp5521.c
+>> +++ b/drivers/leds/leds-lp5521.c
+>> @@ -253,7 +253,7 @@ static void lp5521_firmware_loaded(struct lp55xx_chip *chip)
+>>       const struct firmware *fw = chip->fw;
+>>
+>>       if (fw->size > LP5521_PROGRAM_LENGTH) {
+>> -             dev_err(&chip->cl->dev, "firmware data size overflow: %d\n",
+>> +             dev_err(&chip->cl->dev, "firmware data size overflow: %zd\n",
+>>                       fw->size);
+>
+> Documentation/printk-formats.txt says %zu is to be used for size_t.
+>
+> Same comment goes for patch 2/2.
+>
+>
 
-So it does suggest a leak. Probably somewhere on an error path,
-e.g. its lost video sync.
+I agree with Nathan here. It should be %zu and %zd is for ssize_t.
+Please update and fold these 2 patches into one, Milo.
 
-     Andrew
+Thanks,
+-Bryan
