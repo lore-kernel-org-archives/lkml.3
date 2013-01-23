@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab3AWKmk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 05:42:40 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42453 "EHLO arroyo.ext.ti.com"
+	id S1755481Ab3AWKm4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 05:42:56 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42450 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755163Ab3AWKiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 05:38:51 -0500
+	id S1755151Ab3AWKiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 05:38:50 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <sameo@linux.intel.com>
 CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
@@ -13,9 +13,9 @@ CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
         <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <rogerq@ti.com>
-Subject: [PATCH v9 06/20] mfd: omap-usb-tll: introduce and use mode_needs_tll()
-Date: Wed, 23 Jan 2013 12:37:58 +0200
-Message-ID: <1358937492-8129-7-git-send-email-rogerq@ti.com>
+Subject: [PATCH v9 05/20] mfd: omap-usb-tll: Clean up clock handling
+Date: Wed, 23 Jan 2013 12:37:57 +0200
+Message-ID: <1358937492-8129-6-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358937492-8129-1-git-send-email-rogerq@ti.com>
 References: <1358937492-8129-1-git-send-email-rogerq@ti.com>
@@ -25,75 +25,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a handy macro to check if the port requires the
-USB TLL module or not. Use it to Enable the TLL module and manage
-the clocks.
+Every channel has a functional clock that is similarly named.
+It makes sense to use a for loop to manage these clocks as OMAPs
+can come with up to 3 channels.
+
+Dynamically allocate and get channel clocks depending on the
+number of clocks avaiable on the platform.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- drivers/mfd/omap-usb-tll.c |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   87 +++++++++++++++++++++++++++-----------------
+ 1 files changed, 54 insertions(+), 33 deletions(-)
 
 diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index bf7355e..af67b96 100644
+index 9a19cc7..bf7355e 100644
 --- a/drivers/mfd/omap-usb-tll.c
 +++ b/drivers/mfd/omap-usb-tll.c
-@@ -95,6 +95,10 @@
- 
+@@ -96,10 +96,9 @@
  #define is_ehci_tll_mode(x)	(x == OMAP_EHCI_PORT_MODE_TLL)
  
-+/* only PHY and UNUSED modes don't need TLL */
-+#define omap_usb_mode_needs_tll(x)	((x) != OMAP_USBHS_PORT_MODE_UNUSED &&\
-+					 (x) != OMAP_EHCI_PORT_MODE_PHY)
-+
  struct usbtll_omap {
+-	struct clk				*usbtll_p1_fck;
+-	struct clk				*usbtll_p2_fck;
  	int					nch;	/* num. of channels */
  	struct usbhs_omap_platform_data		*pdata;
-@@ -211,6 +215,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	unsigned long				flags;
- 	int					ret = 0;
- 	int					i, ver;
-+	bool needs_tll;
++	struct clk				**ch_clk;
+ 	/* secure the register updates */
+ 	spinlock_t				lock;
+ };
+@@ -225,26 +224,12 @@ static int usbtll_omap_probe(struct platform_device *pdev)
  
- 	dev_dbg(dev, "starting TI HSUSB TLL Controller\n");
+ 	tll->pdata = pdata;
  
-@@ -278,12 +283,11 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+-	tll->usbtll_p1_fck = clk_get(dev, "usb_tll_hs_usb_ch0_clk");
+-	if (IS_ERR(tll->usbtll_p1_fck)) {
+-		ret = PTR_ERR(tll->usbtll_p1_fck);
+-		dev_err(dev, "usbtll_p1_fck failed error:%d\n", ret);
+-		return ret;
+-	}
+-
+-	tll->usbtll_p2_fck = clk_get(dev, "usb_tll_hs_usb_ch1_clk");
+-	if (IS_ERR(tll->usbtll_p2_fck)) {
+-		ret = PTR_ERR(tll->usbtll_p2_fck);
+-		dev_err(dev, "usbtll_p2_fck failed error:%d\n", ret);
+-		goto err_p2_fck;
+-	}
+-
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	base = devm_request_and_ioremap(dev, res);
+ 	if (!base) {
+ 		ret = -EADDRNOTAVAIL;
+ 		dev_err(dev, "Resource request/ioremap failed:%d\n", ret);
+-		goto err_res;
++		return ret;
+ 	}
  
- 	spin_lock_irqsave(&tll->lock, flags);
+ 	platform_set_drvdata(pdev, tll);
+@@ -270,6 +255,29 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 		break;
+ 	}
  
--	if (is_ehci_tll_mode(pdata->port_mode[0]) ||
--	    is_ehci_tll_mode(pdata->port_mode[1]) ||
--	    is_ehci_tll_mode(pdata->port_mode[2]) ||
--	    is_ohci_port(pdata->port_mode[0]) ||
--	    is_ohci_port(pdata->port_mode[1]) ||
--	    is_ohci_port(pdata->port_mode[2])) {
-+	needs_tll = false;
-+	for (i = 0; i < tll->nch; i++)
-+		needs_tll |= omap_usb_mode_needs_tll(pdata->port_mode[i]);
++	spin_unlock_irqrestore(&tll->lock, flags);
 +
-+	if (needs_tll) {
++	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
++						GFP_KERNEL);
++	if (!tll->ch_clk) {
++		ret = -ENOMEM;
++		dev_err(dev, "Couldn't allocate memory for channel clocks\n");
++		goto err_clk_alloc;
++	}
++
++	for (i = 0; i < tll->nch; i++) {
++		char clkname[] = "usb_tll_hs_usb_chx_clk";
++
++		snprintf(clkname, sizeof(clkname),
++					"usb_tll_hs_usb_ch%d_clk", i);
++		tll->ch_clk[i] = clk_get(dev, clkname);
++
++		if (IS_ERR(tll->ch_clk[i]))
++			dev_dbg(dev, "can't get clock : %s\n", clkname);
++	}
++
++	spin_lock_irqsave(&tll->lock, flags);
++
+ 	if (is_ehci_tll_mode(pdata->port_mode[0]) ||
+ 	    is_ehci_tll_mode(pdata->port_mode[1]) ||
+ 	    is_ehci_tll_mode(pdata->port_mode[2]) ||
+@@ -321,11 +329,9 @@ static int usbtll_omap_probe(struct platform_device *pdev)
  
- 		/* Program Common TLL register */
- 		reg = usbtll_read(base, OMAP_TLL_SHARED_CONF);
-@@ -372,7 +376,7 @@ static int usbtll_runtime_resume(struct device *dev)
+ 	return 0;
+ 
+-err_res:
+-	clk_put(tll->usbtll_p2_fck);
+-
+-err_p2_fck:
+-	clk_put(tll->usbtll_p1_fck);
++err_clk_alloc:
++	pm_runtime_put_sync(dev);
++	pm_runtime_disable(dev);
+ 
+ 	return ret;
+ }
+@@ -339,9 +345,12 @@ err_p2_fck:
+ static int usbtll_omap_remove(struct platform_device *pdev)
+ {
+ 	struct usbtll_omap *tll = platform_get_drvdata(pdev);
++	int i;
++
++	for (i = 0; i < tll->nch; i++)
++		if (!IS_ERR(tll->ch_clk[i]))
++			clk_put(tll->ch_clk[i]);
+ 
+-	clk_put(tll->usbtll_p2_fck);
+-	clk_put(tll->usbtll_p1_fck);
+ 	pm_runtime_disable(&pdev->dev);
+ 	return 0;
+ }
+@@ -351,6 +360,7 @@ static int usbtll_runtime_resume(struct device *dev)
+ 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
+ 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
+ 	unsigned long				flags;
++	int i;
+ 
+ 	dev_dbg(dev, "usbtll_runtime_resume\n");
+ 
+@@ -361,11 +371,20 @@ static int usbtll_runtime_resume(struct device *dev)
+ 
  	spin_lock_irqsave(&tll->lock, flags);
  
- 	for (i = 0; i < tll->nch; i++) {
--		if (is_ehci_tll_mode(pdata->port_mode[i])) {
-+		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
- 			int r;
+-	if (is_ehci_tll_mode(pdata->port_mode[0]))
+-		clk_enable(tll->usbtll_p1_fck);
++	for (i = 0; i < tll->nch; i++) {
++		if (is_ehci_tll_mode(pdata->port_mode[i])) {
++			int r;
  
- 			if (IS_ERR(tll->ch_clk[i]))
-@@ -408,7 +412,7 @@ static int usbtll_runtime_suspend(struct device *dev)
+-	if (is_ehci_tll_mode(pdata->port_mode[1]))
+-		clk_enable(tll->usbtll_p2_fck);
++			if (IS_ERR(tll->ch_clk[i]))
++				continue;
++
++			r = clk_enable(tll->ch_clk[i]);
++			if (r) {
++				dev_err(dev,
++				 "Error enabling ch %d clock: %d\n", i, r);
++			}
++		}
++	}
+ 
+ 	spin_unlock_irqrestore(&tll->lock, flags);
+ 
+@@ -377,6 +396,7 @@ static int usbtll_runtime_suspend(struct device *dev)
+ 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
+ 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
+ 	unsigned long				flags;
++	int i;
+ 
+ 	dev_dbg(dev, "usbtll_runtime_suspend\n");
+ 
+@@ -387,11 +407,12 @@ static int usbtll_runtime_suspend(struct device *dev)
+ 
  	spin_lock_irqsave(&tll->lock, flags);
  
- 	for (i = 0; i < tll->nch; i++) {
--		if (is_ehci_tll_mode(pdata->port_mode[i])) {
-+		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
- 			if (!IS_ERR(tll->ch_clk[i]))
- 				clk_disable(tll->ch_clk[i]);
- 		}
+-	if (is_ehci_tll_mode(pdata->port_mode[0]))
+-		clk_disable(tll->usbtll_p1_fck);
+-
+-	if (is_ehci_tll_mode(pdata->port_mode[1]))
+-		clk_disable(tll->usbtll_p2_fck);
++	for (i = 0; i < tll->nch; i++) {
++		if (is_ehci_tll_mode(pdata->port_mode[i])) {
++			if (!IS_ERR(tll->ch_clk[i]))
++				clk_disable(tll->ch_clk[i]);
++		}
++	}
+ 
+ 	spin_unlock_irqrestore(&tll->lock, flags);
+ 
 -- 
 1.7.4.1
 
