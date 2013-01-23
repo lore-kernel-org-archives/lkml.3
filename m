@@ -1,69 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab3AWUBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 15:01:00 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17614 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373Ab3AWUAz (ORCPT
+	id S1752165Ab3AWUI3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 15:08:29 -0500
+Received: from mail.avea-bayi.com.tr ([212.58.5.123]:4918 "EHLO
+	mail.avea-bayi.com.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273Ab3AWUI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 15:00:55 -0500
-X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=qt19TlZbzfwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=StY-X9Ple9EA:10 a=uNFOcSXsGN843nhkPjoA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358971252.21576.121.camel@gandalf.local.home>
-Subject: Re: [PATCH][GIT PULL][3.8] x86: Don't clobber top of pt_regs in
- nested NMI
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Salman Qazi <sqazi@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Jan 2013 15:00:52 -0500
-In-Reply-To: <50978DC902000078000A64AB@nat28.tlf.novell.com>
-References: <1351883953.4004.144.camel@gandalf.local.home>
-	 <50978DC902000078000A64AB@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jan 2013 15:08:27 -0500
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jan 2013 15:08:27 EST
+Date: Wed, 23 Jan 2013 21:53:24 +0200
+From: Webmail Upgrade Team <webmailupgradeteam@webmail.com>
+Reply-To: Webmail Upgrade Team <webmailupgradeteam@webmail.com>
+Subject: Message: Electronic Solutions Schedule Upgrade 2013
+Message-ID: <6a48362194d2294170e7360b8966b443@avea-bayi.com.tr>
+X-Mailer: IceWarp Web Mail 5.6.7
+X-Originating-IP: 116.203.86.184
+MIME-Version: 1.0
+Content-Type: text/plain; charset="windows-1254"
+Content-Transfer-Encoding: 8bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-05 at 08:58 +0000, Jan Beulich wrote:
-> >>> On 02.11.12 at 20:19, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > @@ -1842,8 +1851,12 @@ nmi_swapgs:
-> >  	SWAPGS_UNSAFE_STACK
-> >  nmi_restore:
-> >  	RESTORE_ALL 8
-> > +
-> > +	/* Pop the extra iret frame */
-> > +	addq $(5*8), %rsp
-> 
-> This could (for code efficiency) and should (for CFI annotation
-> correctness) be folded into the RESTORE_ALL above (by
-> converting "8" to "6*8").
 
-Hi Jan,
+Message: Electronic Solutions Schedule Upgrade 2013
 
-This change never made it in. Would you like to send a patch, or would
-you want me to do it?
+IMPORTANT WARNING MESSAGE FROM THE WEB-MAIL ADMIN TEAM, A 2013 DFXG Virus has been detected on your mail and your account will be terminated in a short time from our database. Please click on the below link or copy and lo-gin your full email address for maintenance and Virus Scanning, Very Important.
 
--- Steve
+http://webmail.upgradeteam.it.pn/
 
-> 
-> Jan
-> 
-> > +
-> >  	/* Clear the NMI executing stack variable */
-> > -	movq $0, 10*8(%rsp)
-> > +	movq $0, 5*8(%rsp)
-> >  	jmp irq_return
-> >  	CFI_ENDPROC
-> >  END(nmi)
-> 
+Thanks for your understanding and Co-operation.
 
 
