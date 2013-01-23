@@ -1,155 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979Ab3AWCAx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 21:00:53 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:36180 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab3AWCAv convert rfc822-to-8bit (ORCPT
+	id S1752319Ab3AWCRf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 21:17:35 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:45150 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab3AWCRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 21:00:51 -0500
-Subject: Re: extra large DMA buffer for PCI-E device under UIO
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: =?iso-8859-1?Q?Jean-Fran=E7ois_Dagenais?= <jeff.dagenais@gmail.com>
-In-Reply-To: <EDE518F3-0E59-49A4-A5B1-A013A91C319F@gmail.com>
-Date: Tue, 22 Jan 2013 21:00:45 -0500
-Cc: hjk@hansjkoch.de, tglx@linutronix.de,
-        open list <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <6537CEC1-06CF-4169-883A-60B2B4DC0AAB@gmail.com>
-References: <B458B2F0-2DDA-461F-A125-8C6C4CDEB6C5@gmail.com> <20111118220849.GA25205@suse.de> <EDE518F3-0E59-49A4-A5B1-A013A91C319F@gmail.com>
-To: Lokesh M <lokesh.m84@gmail.com>
-X-Mailer: Apple Mail (2.1085)
+	Tue, 22 Jan 2013 21:17:32 -0500
+Date: Wed, 23 Jan 2013 13:17:23 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20130123131723.412ded13d2c6abcf4f0f66b0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__23_Jan_2013_13_17_23_+1100_if3XPdx/gsZ7ew3w"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Wed__23_Jan_2013_13_17_23_+1100_if3XPdx/gsZ7ew3w
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi all,
 
-Here's to free software! (and good karma?)
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-A M Lokesh mailed me directly for a follow up question about this old thread, I
-thought it would be interesting to post my reply to the list.
+sound/soc/codecs/jz4740.c: In function 'jz4740_codec_probe':
+sound/soc/codecs/jz4740.c:364:2: error: implicit declaration of function 'd=
+evm_ioremap_resource' [-Werror=3Dimplicit-function-declaration]
+sound/soc/codecs/jz4740.c:364:7: warning: assignment makes pointer from int=
+eger without a cast [enabled by default]
 
-On 2013-01-22, at 10:23, Lokesh M wrote:
-> 
-> After reading through your below thread, I was wondering if you could please
-> give me some feedback
->  
-> https://lkml.org/lkml/2011/11/18/462
->  
-> I am in a similar situation, where I need to write a driver to pass the Data
-> from PCIe(FPGA) to my Linux machine (4MB would be enough - streaming).  I
-> havn't checked if my Server supports Vt-d,  But was interested in the way
-> your implementation was(UIO mapping).
+Caused by commit bc96ea9b07ad ("ASoC: Convert to devm_ioremap_resource()").\
+I think that devm_ioremap_resource() must be being introduced via a=20
+different tree, since there is no mention of it in linux-next (besides
+what is done in this commit).  Please build test.
 
-I've sort of abandonned the vt-d way of doing it because I also need to support
-an Atom architecture. Was a bit glad to do it like this since I know the IOMMU
-translation tables and what not aren't free and the code to map and support this
-was kind of hard to follow. Giving it up also means loosing FPGA stray memory
-access protection though, but it's not like I had the choice (Atom).
+I have used the sound-asoc tree from next-20130122 for today.
 
->  
-> I was looking to know more about the 2 buffer mapping you have for streaming
-> data and how it is achieved,  We have mapping for BAR0 for register access and
-> I would like to implement similar buffer for Data as well.  So Please let me
-> know any details and point me to few documentation to implement the same.
-> We have a bounce buffer mechanism (device ->Kernel ->User) but the speed is
-> around 100MB which I need to improve.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-On Nov 18, 2011, at 17:08, Greg KH wrote:
+--Signature=_Wed__23_Jan_2013_13_17_23_+1100_if3XPdx/gsZ7ew3w
+Content-Type: application/pgp-signature
 
-> On Fri, Nov 18, 2011 at 04:16:23PM -0500, Jean-Francois Dagenais wrote:
->> 
->> 
->> I had thought about cutting out a chunk of ram from the kernel's boot
->> args, but had always feared cache/snooping errors. Not to mention I
->> had no idea how to "claim" or setup this memory once my driver's probe
->> function. Maybe I would still be lucky and it would just work? mmmh...
-> 
-> Yeah, don't do that, it might not work out well.
-> 
-> greg k-h
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJQ/0gzAAoJEECxmPOUX5FEXJcP/jmMbK7nvf/R11higsIz4rE9
+p+ETalBR4TXuSMStB44b1l3+IySPTnueZPKibsC2uoVx6MCQbKOYtlfd9NMpU+Bg
+sOsODmFxELwJGfFFMErC0JwDlet83OzAZIhTOlvefz/l97OIAkekgVj/eHqTwJMa
+l+hHxsO1Y1kNu3UzJDNULjlDUr9BEQoREGc4+/yzDqEZIsNYhDuxS3GGHEFXaOQJ
+qwVz3TWIIQEFLQNRXnVBcSQa12jEeKI/GZfsZZ7+6wTjffr1NE3ebUvnhxYCL2tm
+etvC3h+HkynU8se4ocKbvh1X9LEqNCHRhoOMvS9twC3po73Susl34JHG1ofoNlrO
+M/gDEaEDnKac9whqPNffxS5HuXIJSiYF9vFZdgwrP0Mw5T3wgVHAnX1d7bA+3E6e
+ZYOpBevv1O+OpDhl6BVC8tTtF0s14R1HNzlsGP0ZWj8KOITsnzOtRmmgZ7fGMK1g
+IIyc+1vftRw8lbvyryE9jRzNbLam9ouyhVgFMetvnNKphQI+V2sJltj9WQpxiIfc
+47dsvQC9HjGnCUBmscLxmCr2l764DKcAcZP6VarBGUVNGaEj1cXhlL4pWDanGUAK
+KHmbMhiW2ftdzRqysNtWv8v9TSMfil6W122KVr4zAjlIuai9pUGAwRdUSSNZsOuA
+hemzE23JkCOMhEq7nJda
+=/Pg9
+-----END PGP SIGNATURE-----
 
-Turns out, for me, this works very well!!
-
-So, here the jist of what I do... remember, I only need to support pure Core2 +
-Intel CPU/Chipset architectures on very specific COM modules. This means the
-architecture takes care of invalidating the CPU cachelines when the PCI-E device
-(an FPGA) bus masters reads and writes to RAM (bus snooping). The area I
-describe here is 128M (on the other system, I used 256M successfully) and is
-strictly used for FPGA write - CPU read. As a note, the other area I use (only
-1M) for CPU write - FPGA read is still allocated using pci_alloc_consistent. The
-DMA address is collected through the 3rd argument of pci_alloc_consistent and is
-handed to UIO as UIO_MEM_PHYS type of memory. FYI, I had previously succeeded in
-allocating 4M using pci_alloc_consistent, but only if done quite soon after
-boot. This was on a Core2 duo arch.
-
-I do hook into the kernel boot parameter "memmap" to reserve a chunk of
-contiguous memory which I know falls inside a range which the BIOS declares
-(through E820) as available. This makes the kernel's memory management ignore
-this area. I compile-in a kernel module which looks like this:
-
-void* uio_hud_memblock_addr; EXPORT_SYMBOL(uio_hud_memblock_addr); unsigned long
-long uio_hud_memblock_size; EXPORT_SYMBOL(uio_hud_memblock_size);
-
-/* taken from parse_memmap_opt in e820.c and modified */ static int __init
-uio_hud_memblock_setup(char *str) {
-	char *cur_p = str; u64 mem_size;
-
-	if (!str)
-		return -EINVAL;
-
-	mem_size = memparse(str, &cur_p); if (cur_p == str)
-		return -EINVAL;
-
-	if (*cur_p == '$') {
-		uio_hud_memblock_addr = (void*)(ulong)memparse(cur_p+1, &cur_p);
-		uio_hud_memblock_size = mem_size;
-	} else {
-		return -EINVAL;
-	}
-
-	return *cur_p == '\0' ? 0 : -EINVAL;
-} __setup("memmap=", uio_hud_memblock_setup);
-
-
-static int __init uio_hud_memblock_init(void) {
-	if(uio_hud_memblock_addr) {
-		PDEBUG("ram memblock at %p (size:%llu)\n",
-		       uio_hud_memblock_addr, uio_hud_memblock_size);
-	} else {
-		PDEBUG("no memmap=nn$ss kernel parameter found\n");
-	}
-
-	return 0;
-} early_initcall(uio_hud_memblock_init);
-
-
-MODULE_AUTHOR("Jean-Francois Dagenais"); MODULE_DESCRIPTION("Built-in module to
-parse the memmap memblock reservation"); MODULE_LICENSE("GPL");
-
-The parsed address and size (uio_hud_memblock_addr/size) are exported for my
-other non-compiled in module to discover. That module is the real PCI "driver"
-which simply takes this address and size, and hands it to UIO as a memory map of
-type UIO_MEM_PHYS.
-
-That's pretty much it for the kernel stuff (aside for the trivial interrupt
-handling). In userspace, I also have a UIO map for the FPGA's BAR0 registers
-where I instruct the device where the other two physical memory ranges (begin
-and end addresses and one for it's read ops (1M), one for it's write ops(128M),
-so 4 physical addresses). The device autonomously updates where it's going to
-write next (it's "data write addr" register), rolls around when reaching the end
-and sends me an interrupt for each "data unit" it finishes. The interrupt is
-forwarded to userspace as described in UIO docs because of a small ISR in my
-kernel driver. Userspace instructs the device through a "software read addr"
-register which indicates to FPGA the lowest address which the software still
-needs (hasn't consumed yet). This is so the autonomous FPGA doesn't overwrite
-busy memory. As soon as I update the soft read addr, the FPGA can fill that spot
-again.
-
-This way you squeeze out as much as you can out of the architecture as the CPU
-is only burdonned with consuming the data and updating a pointer.
-
-Cheers!  /jfd
+--Signature=_Wed__23_Jan_2013_13_17_23_+1100_if3XPdx/gsZ7ew3w--
