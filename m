@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab3AWVGG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 16:06:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899Ab3AWVF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 16:05:59 -0500
-Date: Wed, 23 Jan 2013 19:05:45 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for v3.8-rc5] media fixes
-Message-ID: <20130123190545.781e4468@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752111Ab3AWVPB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 16:15:01 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57903 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab3AWVO4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 16:14:56 -0500
+Date: Wed, 23 Jan 2013 22:14:52 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: ipu-di: Change DI address info to dev_dbg
+Message-ID: <20130123211452.GG1906@pengutronix.de>
+References: <1357746750-28675-1-git-send-email-fabio.estevam@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357746750-28675-1-git-send-email-fabio.estevam@freescale.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 22:14:28 up 214 days, 12:26, 52 users,  load average: 0.12, 0.52,
+ 1.16
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Jan 09, 2013 at 01:52:30PM -0200, Fabio Estevam wrote:
+> Currently when ipuv3 is probed we have:
+> 
+> imx-ipuv3 40000000.ipu: DI0 base: 0x5e040000 remapped to a08aa000
+> imx-ipuv3 40000000.ipu: DI1 base: 0x5e048000 remapped to a08ac000
+> imx-ipuv3 40000000.ipu: IPUv3EX probed
+> 
+> The DI base address and the remapped address are more interesting for debug 
+> purposes, so mark this message as dev_dbg instead.
+> 
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
 
-For some fixes:
-	- gspca: add needed delay for I2C traffic for sonixb/sonixj cameras;
-	- gspca: add one missing Kinect USB ID;
-	- usbvideo: some regression fixes;
-	- omap3isp: fix some build issues;
-	- videobuf2: fix video output handling;
-	- exynos s5p/m5mols: a few regression fixes.
+Sascha
 
-Thank you!
-Mauro
+> ---
+>  drivers/staging/imx-drm/ipu-v3/ipu-di.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-di.c b/drivers/staging/imx-drm/ipu-v3/ipu-di.c
+> index 67d974f..ec340da 100644
+> --- a/drivers/staging/imx-drm/ipu-v3/ipu-di.c
+> +++ b/drivers/staging/imx-drm/ipu-v3/ipu-di.c
+> @@ -677,7 +677,7 @@ int ipu_di_init(struct ipu_soc *ipu, struct device *dev, int id,
+>  		goto failed_clk_register;
+>  	}
+>  
+> -	dev_info(dev, "DI%d base: 0x%08lx remapped to %p\n",
+> +	dev_dbg(dev, "DI%d base: 0x%08lx remapped to %p\n",
+>  			id, base, di->base);
+>  	di->inuse = false;
+>  	di->ipu = ipu;
+> -- 
+> 1.7.9.5
+> 
+> 
+> 
 
--
-The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
-
-  Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
-
-for you to fetch changes up to 68d6f84ba0c47e658beff3a4bf0c43acee4b4690:
-
-  [media] uvcvideo: Set error_idx properly for S_EXT_CTRLS failures (2013-01-11 13:30:27 -0200)
-
-----------------------------------------------------------------
-Hans de Goede (2):
-      [media] gspca_sonixb: Properly wait between i2c writes
-      [media] gspca_sonixj: Add a small delay after i2c_w1
-
-Jacob Schloss (1):
-      [media] gspca_kinect: add Kinect for Windows USB id
-
-Kamil Debski (1):
-      [media] s5p-mfc: Fix interrupt error handling routine
-
-Laurent Pinchart (6):
-      [media] [FOR,v3.8] omap3isp: Don't include deleted OMAP plat/ header files
-      [media] v4l: vb2: Set data_offset to 0 for single-plane output buffers
-      [media] omap3isp: Don't include <plat/cpu.h>
-      [media] uvcvideo: Return -EACCES when trying to set a read-only control
-      [media] uvcvideo: Cleanup leftovers of partial revert
-      [media] uvcvideo: Set error_idx properly for S_EXT_CTRLS failures
-
-Mauro Carvalho Chehab (1):
-      Merge tag 'v3.8-rc3' into v4l_for_linus
-
-Sylwester Nawrocki (2):
-      [media] m5mols: Fix typo in get_fmt callback
-      [media] s5p-fimc: Fix return value of __fimc_md_create_flite_source_links()
-
- drivers/media/i2c/m5mols/m5mols_core.c         |  2 +-
- drivers/media/platform/omap3isp/ispvideo.c     |  3 -
- drivers/media/platform/s5p-fimc/fimc-mdevice.c |  2 +-
- drivers/media/platform/s5p-mfc/s5p_mfc.c       | 88 +++++++++++---------------
- drivers/media/usb/gspca/kinect.c               |  1 +
- drivers/media/usb/gspca/sonixb.c               | 13 ++--
- drivers/media/usb/gspca/sonixj.c               |  1 +
- drivers/media/usb/uvc/uvc_ctrl.c               |  4 +-
- drivers/media/usb/uvc/uvc_v4l2.c               |  6 +-
- drivers/media/v4l2-core/videobuf2-core.c       |  4 +-
- 10 files changed, 57 insertions(+), 67 deletions(-)
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
