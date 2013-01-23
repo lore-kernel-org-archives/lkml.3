@@ -1,49 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab3AWPZR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:25:17 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:37736 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754381Ab3AWPZQ (ORCPT
+	id S1755817Ab3AWPZX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:25:23 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:35327 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754584Ab3AWPZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 10:25:16 -0500
-From: Dongjin Kim <tobetter@gmail.com>
-Cc: Dongjin Kim <tobetter@gmail.com>, Chris Ball <cjb@laptop.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Will Newton <will.newton@imgtec.com>, linux-mmc@vger.kernel.org,
+	Wed, 23 Jan 2013 10:25:21 -0500
+Date: Wed, 23 Jan 2013 15:25:19 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>, js1304@gmail.com, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] mmc: dw_mmc: Add MSHC compatible for Exynos4412
-Date: Thu, 24 Jan 2013 00:24:38 +0900
-Message-Id: <1358954692-5625-1-git-send-email-tobetter@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-To: unlisted-recipients:; (no To-header on input)
+Subject: Re: [PATCH v2 1/3] slub: correct to calculate num of acquired objects
+ in get_partial_node()
+In-Reply-To: <1358755287-3899-1-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <0000013c68036988-0c4473ce-1dc9-4967-b321-551196dc2830-000000@email.amazonses.com>
+References: <1358755287-3899-1-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the compatible string for MSHC controller of Exynos4412, and
-reuse the controller specific properties with Exynos5250 since those have same
-features.
+On Mon, 21 Jan 2013, Joonsoo Kim wrote:
 
-Signed-off-by: Dongjin Kim <tobetter@gmail.com>
----
- drivers/mmc/host/dw_mmc-exynos.c |    2 ++
- 1 file changed, 2 insertions(+)
+> v2: calculate nr of objects using new.objects and new.inuse.
+> It is more accurate way than before.
 
-diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
-index 0cb9bcb..4f7685f 100644
---- a/drivers/mmc/host/dw_mmc-exynos.c
-+++ b/drivers/mmc/host/dw_mmc-exynos.c
-@@ -204,6 +204,8 @@ static const struct dw_mci_drv_data exynos5250_drv_data = {
- };
- 
- static const struct of_device_id dw_mci_exynos_match[] = {
-+	{ .compatible = "samsung,exynos4412-dw-mshc",
-+			.data = &exynos5250_drv_data, },
- 	{ .compatible = "samsung,exynos5250-dw-mshc",
- 			.data = &exynos5250_drv_data, },
- 	{},
--- 
-1.7.10.4
-
+Acked-by: Christoph Lameter <cl@linux.com>
