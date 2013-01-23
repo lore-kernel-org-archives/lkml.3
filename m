@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab3AWKKU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 05:10:20 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:60286 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481Ab3AWKKR (ORCPT
+	id S1754925Ab3AWKKw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 05:10:52 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:42528 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754210Ab3AWKKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 05:10:17 -0500
-Message-ID: <50FFB6FF.5060607@linux.vnet.ibm.com>
-Date: Wed, 23 Jan 2013 18:10:07 +0800
+	Wed, 23 Jan 2013 05:10:50 -0500
+Message-ID: <50FFB721.2020509@linux.vnet.ibm.com>
+Date: Wed, 23 Jan 2013 18:10:41 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
@@ -16,98 +16,93 @@ To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi.kivity@gmail.com>,
         Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 11/12] KVM: MMU: fix spte assertion
+Subject: [PATCH v2 12/12] KVM: MMU: fast drop all spte on the pte_list
 References: <50FFB5A1.5090708@linux.vnet.ibm.com>
 In-Reply-To: <50FFB5A1.5090708@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012310-0260-0000-0000-00000271660B
+x-cbid: 13012310-7014-0000-0000-000002815D55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PT_PRESENT_MASK bit is not enough to see the spte has already been mapped
-into pte-list for mmio spte also set this bit. Use is_shadow_present_pte
-instead to fix it
-
-Also, this patch move many assertions to the common place to clean up the
-code
+If the pte_list need to be destroyed, no need to delete its spte one
+by one, we can directly reset it and free the memory its used
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c |   20 ++++++--------------
- 1 files changed, 6 insertions(+), 14 deletions(-)
+ arch/x86/kvm/mmu.c |   36 +++++++++++++++++++++++++++---------
+ 1 files changed, 27 insertions(+), 9 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index b7da3fb..2c0a786 100644
+index 2c0a786..0afe8da 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1032,7 +1032,9 @@ static u64 *pte_list_get_next(struct pte_list_iterator *iter)
-
- #define for_each_spte_in_pte_list(pte_list, iter, spte)		\
- 	   for (spte = pte_list_get_first(pte_list, &(iter));	\
--	      spte != NULL; spte = pte_list_get_next(&(iter)))
-+	      spte != NULL &&					\
-+	      ({WARN_ON(!is_shadow_present_pte(*(spte))); 1; });\
-+		   spte = pte_list_get_next(&iter))
-
- #define for_each_spte_in_rmap(rmap, iter, spte)			\
- 	   for_each_spte_in_pte_list(rmap, iter, spte)
-@@ -1151,11 +1153,8 @@ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
- 	struct pte_list_iterator iter;
- 	bool flush = false;
-
--	for_each_spte_in_rmap(*rmapp, iter, sptep) {
--		BUG_ON(!(*sptep & PT_PRESENT_MASK));
--
-+	for_each_spte_in_rmap(*rmapp, iter, sptep)
- 		spte_write_protect(kvm, sptep, &flush, pt_protect);
--	}
-
- 	return flush;
+@@ -968,6 +968,25 @@ static void pte_list_remove(u64 *spte, unsigned long *pte_list)
+ 	}
  }
-@@ -1236,7 +1235,6 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
 
- restart:
++static void pte_list_destroy(unsigned long *pte_list)
++{
++	struct pte_list_desc *desc;
++	unsigned long list_value = *pte_list;
++
++	*pte_list = 0;
++
++	if (!(list_value & 1))
++		return;
++
++	desc = (struct pte_list_desc *)(list_value & ~1ul);
++	while (desc) {
++		struct pte_list_desc *next_desc = desc->more;
++
++		mmu_free_pte_list_desc(desc);
++		desc = next_desc;
++	}
++}
++
+ /*
+  * Used by the following functions to iterate through the sptes linked by a
+  * pte_list.  All fields are private and not assumed to be used outside.
+@@ -1206,17 +1225,17 @@ static bool rmap_write_protect(struct kvm *kvm, u64 gfn)
+ static int kvm_unmap_rmapp(struct kvm *kvm, unsigned long *rmapp,
+ 			   struct kvm_memory_slot *slot, unsigned long data)
+ {
+-	u64 *sptep;
+ 	struct pte_list_iterator iter;
++	u64 *sptep;
+ 	int need_tlb_flush = 0;
+
+-restart:
  	for_each_spte_in_rmap(*rmapp, iter, sptep) {
--		BUG_ON(!is_shadow_present_pte(*sptep));
- 		rmap_printk("kvm_set_pte_rmapp: spte %p %llx\n", sptep, *sptep);
-
- 		need_flush = 1;
-@@ -1361,15 +1359,12 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 		goto out;
+-		drop_spte(kvm, sptep);
++		mmu_spte_clear_track_bits(sptep);
+ 		need_tlb_flush = 1;
+-		goto restart;
  	}
 
--	for_each_spte_in_rmap(*rmapp, iter, sptep) {
--		BUG_ON(!is_shadow_present_pte(*sptep));
--
-+	for_each_spte_in_rmap(*rmapp, iter, sptep)
- 		if (*sptep & shadow_accessed_mask) {
- 			young = 1;
- 			clear_bit((ffs(shadow_accessed_mask) - 1),
- 				 (unsigned long *)sptep);
- 		}
--	}
- out:
- 	/* @data has hva passed to kvm_age_hva(). */
- 	trace_kvm_age_page(data, slot, young);
-@@ -1391,14 +1386,11 @@ static int kvm_test_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 	if (!shadow_accessed_mask)
- 		goto out;
-
--	for_each_spte_in_rmap(*rmapp, iter, sptep) {
--		BUG_ON(!is_shadow_present_pte(*sptep));
--
-+	for_each_spte_in_rmap(*rmapp, iter, sptep)
- 		if (*sptep & shadow_accessed_mask) {
- 			young = 1;
- 			break;
- 		}
--	}
- out:
- 	return young;
++	pte_list_destroy(rmapp);
++
+ 	return need_tlb_flush;
  }
+
+@@ -2041,11 +2060,10 @@ static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
+ 	u64 *sptep;
+ 	struct pte_list_iterator iter;
+
+-restart:
+-	for_each_spte_in_rmap(sp->parent_ptes, iter, sptep) {
+-		drop_parent_pte(sp, sptep);
+-		goto restart;
+-	}
++	for_each_spte_in_rmap(sp->parent_ptes, iter, sptep)
++		mmu_spte_clear_no_track(sptep);
++
++	pte_list_destroy(&sp->parent_ptes);
+ }
+
+ static int mmu_zap_unsync_children(struct kvm *kvm,
 -- 
 1.7.7.6
 
