@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab3AWOjV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:39:21 -0500
-Received: from mout.web.de ([212.227.17.12]:60990 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754334Ab3AWOjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:39:20 -0500
-Message-ID: <50FFF5C0.60000@web.de>
-Date: Wed, 23 Jan 2013 15:37:52 +0100
-From: Soeren Moch <smoch@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Greg KH <gregkh@linuxfoundation.org>, Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all dma_alloc_coherent()
- calls
-References: <20121119144826.f59667b2.akpm@linux-foundation.org> <201301211855.25455.arnd@arndb.de> <20130121210150.GA9184@kroah.com> <201301221813.57741.arnd@arndb.de>
-In-Reply-To: <201301221813.57741.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756209Ab3AWOmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:42:20 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24437 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab3AWOmS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 09:42:18 -0500
+X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=NpjRPGXs834A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=KYlOPR1D8z8A:10 a=YgwN3AOMAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=fB5lnGKdFrWL4hk70WAA:9 a=PUjeQqilurYA:10 a=x8gzFH9gYPwA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358952137.21576.117.camel@gandalf.local.home>
+Subject: Re: [PATCH 11/15] tools/lib/traceevent/event-parse.c: adjust
+ duplicate test
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Wed, 23 Jan 2013 09:42:17 -0500
+In-Reply-To: <1358773378-4700-12-git-send-email-Julia.Lawall@lip6.fr>
+References: <1358773378-4700-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1358773378-4700-12-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:oL6dsLXmm5XSwaJ0L+TCMhQ9+YUIBjuM6aHP/JmdcII
- IGzGpENC+Ybffqb45glB5MTzuxBLjqe0AvExzLlVAZJhBWpU2K
- 6E3CIq/YXWBUJVT+N+STvIL8wwfmGZzle+vVenODyWWUJ1P0FY
- erU2/gQX76fq2CdGWe83y3JpeMYObWEmqtCEdhPe69Ha/P8mk4
- VG6WNT0Mun8jl9SlGGn6w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.01.2013 19:13, Arnd Bergmann wrote:
-> On Monday 21 January 2013, Greg KH wrote:
->>>
->>> I don't know a lot about USB, but I always assumed that this was not
->>> a normal condition and that there are only a couple of URBs per endpoint
->>> used at a time. Maybe Greg or someone else with a USB background can
->>> shed some light on this.
->>
->> There's no restriction on how many URBs a driver can have outstanding at
->> once, and if you have a system with a lot of USB devices running at the
->> same time, there could be lots of URBs in flight depending on the number
->> of host controllers and devices and drivers being used.
+On Mon, 2013-01-21 at 14:02 +0100, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Delete successive tests to the same location.  Field was already tested.
+> Alloc_arg can fail, so test that value instead.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @s exists@
+> local idexpression y;
+> expression x,e;
+> @@
+> 
+> *if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
+>  { ... when forall
+>    return ...; }
+> ... when != \(y = e\|y += e\|y -= e\|y |= e\|y &= e\|y++\|y--\|&y\)
+>     when != \(XT_GETPAGE(...,y)\|WMI_CMD_BUF(...)\)
+> *if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
+>  { ... when forall
+>    return ...; }
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
 
-I only use one host controller and (in this test) two usb devices with
-the same driver.
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-> Ok, thanks for clarifying that. I read some more of the em28xx driver,
-> and while it does have a bunch of URBs in flight, there are only five
-> audio and five video URBs that I see simultaneously being submitted,
-> and then resubmitted from their completion handlers. I think this
-> means that there should be 10 URBs active at any given time in this
-> driver, which does not explain why we get 256 allocations.
+-- Steve
 
-I think the audio part of the em28xx bridge is not used in my DVB tests.
+> ---
+>  tools/lib/traceevent/event-parse.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+> index 5a824e3..7538a1f 100644
+> --- a/tools/lib/traceevent/event-parse.c
+> +++ b/tools/lib/traceevent/event-parse.c
+> @@ -2481,7 +2481,7 @@ process_dynamic_array(struct event_format *event, struct print_arg *arg, char **
+>  
+>  	free_token(token);
+>  	arg = alloc_arg();
+> -	if (!field) {
+> +	if (!arg) {
+>  		do_warning("%s: not enough memory!", __func__);
+>  		*tok = NULL;
+>  		return EVENT_ERROR;
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Are there other allocations from orion-ehci directly? Maybe something
-special for isochronous transfers (since there is no problem with my 
-other dvb sticks using bulk transfers)?
-
-> I also noticed that the initial submissions are all atomic but don't
-> need to, so it may be worth trying the patch below, which should also
-> help in low-memory situations. We could also try moving the resubmission
-> into a workqueue in order to let those be GFP_KERNEL, but I don't think
-> that will help.
-
-I built a linux-3.7.4 with the em28xx patch and both of your dma-mapping.c
-patches. I still see the
-   ERROR: 1024 KiB atomic DMA coherent pool is too small!
-
-Soeren
 
