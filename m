@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392Ab3AWPiU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:38:20 -0500
-Received: from mga03.intel.com ([143.182.124.21]:39788 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756224Ab3AWPiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 10:38:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,523,1355126400"; 
-   d="scan'208";a="194342987"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 3/4] dw_dmac: fill individual length of descriptor
-Date: Wed, 23 Jan 2013 17:37:31 +0200
-Message-Id: <1358955452-20960-4-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1358955452-20960-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1358955452-20960-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1756425Ab3AWPif (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:38:35 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22556 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755893Ab3AWPic (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 10:38:32 -0500
+Date: Wed, 23 Jan 2013 10:37:25 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: KY Srinivasan <kys@microsoft.com>, Borislav Petkov <bp@alien8.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, "jeremy@goop.org" <jeremy@goop.org>,
+        "Jan Beulich (JBeulich@suse.com)" <JBeulich@suse.com>
+Subject: Re: [PATCH 1/1] X86: Handle Hyper-V vmbus interrupts as special
+ hypervisor interrupts
+Message-ID: <20130123153725.GJ3067@phenom.dumpdata.com>
+References: <1358469577-8794-1-git-send-email-kys@microsoft.com>
+ <20130118131056.GA14550@pd.tnic>
+ <794a590acf1a47408a87e95f095e6b1b@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130122222056.GC14503@phenom.dumpdata.com>
+ <2bd8c994-3e70-413b-85de-caec46428b1e@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2bd8c994-3e70-413b-85de-caec46428b1e@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will be useful to have the length of the transfer in the descriptor. The
-cyclic transfer functions remained untouched.
+On Tue, Jan 22, 2013 at 05:19:37PM -0600, H. Peter Anvin wrote:
+> Yes, how about we rename this the hypervisor vector...
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dw_dmac.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index c3062a5..026a3c7 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -756,6 +756,7 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 		desc->lli.dar = dest + offset;
- 		desc->lli.ctllo = ctllo;
- 		desc->lli.ctlhi = xfer_count;
-+		desc->len = xfer_count << src_width;
- 
- 		if (!first) {
- 			first = desc;
-@@ -852,8 +853,8 @@ slave_sg_todev_fill_desc:
- 				dlen = len;
- 				len = 0;
- 			}
--
- 			desc->lli.ctlhi = dlen >> mem_width;
-+			desc->len = dlen;
- 
- 			if (!first) {
- 				first = desc;
-@@ -912,6 +913,7 @@ slave_sg_fromdev_fill_desc:
- 				len = 0;
- 			}
- 			desc->lli.ctlhi = dlen >> reg_width;
-+			desc->len = dlen;
- 
- 			if (!first) {
- 				first = desc;
--- 
-1.7.10.4
-
+HYPERVISOR_CALLBACK_VECTOR ?
