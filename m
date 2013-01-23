@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab3AWHUz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 02:20:55 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:38812 "EHLO song.cn.fujitsu.com"
+	id S1754343Ab3AWHVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 02:21:21 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:37864 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753929Ab3AWHTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 02:19:40 -0500
+	id S1753191Ab3AWHTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 02:19:39 -0500
 X-IronPort-AV: E=Sophos;i="4.84,521,1355068800"; 
-   d="scan'208";a="6634050"
+   d="scan'208";a="6634049"
 From: Hu Tao <hutao@cn.fujitsu.com>
 To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -20,9 +20,9 @@ To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         Sasha Levin <levinsasha928@gmail.com>,
         Luiz Capitulino <lcapitulino@redhat.com>
 Cc: Wen Congyang <wency@cn.fujitsu.com>
-Subject: [PATCH v12 rebased 7/8] allower the user to disable pv event support
-Date: Wed, 23 Jan 2013 15:19:28 +0800
-Message-Id: <f47a38e12bf8728643b84869292f9f93e104b3aa.1358920534.git.hutao@cn.fujitsu.com>
+Subject: [PATCH v12 rebased 5/8] add a new qevent: QEVENT_GUEST_PANICKED
+Date: Wed, 23 Jan 2013 15:19:26 +0800
+Message-Id: <08fa928e5ef2dc3d16b4dc93a337fe84c78e3772.1358920534.git.hutao@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.0.1.240.ge8a1f5a
 In-Reply-To: <cover.1358920534.git.hutao@cn.fujitsu.com>
 References: <cover.1358920534.git.hutao@cn.fujitsu.com>
@@ -35,77 +35,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
----
- hw/pc_piix.c    | 9 ++++++++-
- qemu-options.hx | 3 ++-
- vl.c            | 4 ++++
- 3 files changed, 14 insertions(+), 2 deletions(-)
+This event will be emited when the guest is panicked.
 
-diff --git a/hw/pc_piix.c b/hw/pc_piix.c
-index fed6ccf..507c98b 100644
---- a/hw/pc_piix.c
-+++ b/hw/pc_piix.c
-@@ -44,6 +44,7 @@
- #include "exec/memory.h"
- #include "exec/address-spaces.h"
- #include "cpu.h"
-+#include "qemu/config-file.h"
- #ifdef CONFIG_XEN
- #  include <xen/hvm/hvm_info_table.h>
- #endif
-@@ -86,6 +87,8 @@ static void pc_init1(MemoryRegion *system_memory,
-     MemoryRegion *pci_memory;
-     MemoryRegion *rom_memory;
-     void *fw_cfg = NULL;
-+    QemuOptsList *list = qemu_find_opts("machine");
-+    bool enable_pv_event = false;
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ include/monitor/monitor.h | 1 +
+ monitor.c                 | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/include/monitor/monitor.h b/include/monitor/monitor.h
+index 87fb49c..4006905 100644
+--- a/include/monitor/monitor.h
++++ b/include/monitor/monitor.h
+@@ -45,6 +45,7 @@ typedef enum MonitorEvent {
+     QEVENT_WAKEUP,
+     QEVENT_BALLOON_CHANGE,
+     QEVENT_SPICE_MIGRATE_COMPLETED,
++    QEVENT_GUEST_PANICKED,
  
-     pc_cpus_init(cpu_model);
-     pc_acpi_init("acpi-dsdt.aml");
-@@ -218,7 +221,11 @@ static void pc_init1(MemoryRegion *system_memory,
-         pc_pci_device_init(pci_bus);
-     }
+     /* Add to 'monitor_event_names' array in monitor.c when
+      * defining new events here */
+diff --git a/monitor.c b/monitor.c
+index 9381ed0..61beeb4 100644
+--- a/monitor.c
++++ b/monitor.c
+@@ -463,6 +463,7 @@ static const char *monitor_event_names[] = {
+     [QEVENT_WAKEUP] = "WAKEUP",
+     [QEVENT_BALLOON_CHANGE] = "BALLOON_CHANGE",
+     [QEVENT_SPICE_MIGRATE_COMPLETED] = "SPICE_MIGRATE_COMPLETED",
++    [QEVENT_GUEST_PANICKED] = "GUEST_PANICKED",
+ };
+ QEMU_BUILD_BUG_ON(ARRAY_SIZE(monitor_event_names) != QEVENT_MAX)
  
--    if (kvm_enabled()) {
-+    if (list && !QTAILQ_EMPTY(&list->head)) {
-+        enable_pv_event = qemu_opt_get_bool(QTAILQ_FIRST(&list->head),
-+                                            "enable_pv_event", false);
-+    }
-+    if (kvm_enabled() && enable_pv_event) {
-         kvm_pv_event_init(isa_bus);
-     }
- }
-diff --git a/qemu-options.hx b/qemu-options.hx
-index 4e2b499..7522f4a 100644
---- a/qemu-options.hx
-+++ b/qemu-options.hx
-@@ -35,7 +35,8 @@ DEF("machine", HAS_ARG, QEMU_OPTION_machine, \
-     "                kernel_irqchip=on|off controls accelerated irqchip support\n"
-     "                kvm_shadow_mem=size of KVM shadow MMU\n"
-     "                dump-guest-core=on|off include guest memory in a core dump (default=on)\n"
--    "                mem-merge=on|off controls memory merge support (default: on)\n",
-+    "                mem-merge=on|off controls memory merge support (default: on)\n"
-+    "                enable_pv_event=on|off controls pv event support (default: off)\n",
-     QEMU_ARCH_ALL)
- STEXI
- @item -machine [type=]@var{name}[,prop=@var{value}[,...]]
-diff --git a/vl.c b/vl.c
-index 5aae03f..aa15b23 100644
---- a/vl.c
-+++ b/vl.c
-@@ -424,6 +424,10 @@ static QemuOptsList qemu_machine_opts = {
-             .name = "usb",
-             .type = QEMU_OPT_BOOL,
-             .help = "Set on/off to enable/disable usb",
-+        }, {
-+            .name = "enable_pv_event",
-+            .type = QEMU_OPT_BOOL,
-+            .help = "handle pv event"
-         },
-         { /* End of list */ }
-     },
 -- 
 1.8.0.1.240.ge8a1f5a
 
