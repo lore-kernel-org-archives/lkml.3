@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab3AWVcw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 16:32:52 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:64442 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab3AWVcp (ORCPT
+	id S1752332Ab3AWVhk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 16:37:40 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:39223 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab3AWVhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 16:32:45 -0500
-Date: Wed, 23 Jan 2013 22:32:39 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: David Woodhouse <dwmw2@infradead.org>
-cc: linux-kernel@vger.kernel.org
-Subject: LKML and other vger MLs - which provider...
-Message-ID: <Pine.LNX.4.64.1301232209310.428@axis700.grange>
+	Wed, 23 Jan 2013 16:37:31 -0500
+Date: Wed, 23 Jan 2013 16:37:36 -0500
+From: Matt Porter <mporter@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Sekhar Nori <nsekhar@ti.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 00/14] DMA Engine support for AM33XX
+Message-ID: <20130123213736.GC5256@beef>
+References: <1358281974-8411-1-git-send-email-mporter@ti.com>
+ <50FEB6B2.5020303@ti.com>
+ <20130123022133.GA5727@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:LDWz92MfMsHU0LAJfExTlSr/VS4s8DpF6X9gBKpXXcy
- p9lU+7yeMZa7rzUMGp7F5gjlGqMSyxKuuIsTZ7YIajFQyCWv6v
- yxFzyNlAGjIjhm5Np5rCbbprFzybBf66KO6DMlSPDbTwt/zk81
- w8xgGgnSbmJi0uThQCtBMYq3mw0jYia6q65Z6gfix0alKGJBr+
- c2LPw59/n5RPgcNcoVfJqWm+k3QNWxCIlHYj9RYa1/fkRWD4Dy
- l0KO1DVGYBsNNnmgYexDs9ioOYZu2/wVtqe93HFU84sUAaPL6o
- gW4TZq72+iJKyscEHXZ0InR5oer0mrTLA5KjnSnYAJ5SS/esh8
- CY3n+9QLFdDamW4fcp5keeGo7m69P6/eDLNq62Doo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130123022133.GA5727@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David
+On Wed, Jan 23, 2013 at 10:21:42AM +0800, Mark Brown wrote:
+> On Tue, Jan 22, 2013 at 09:26:34PM +0530, Sekhar Nori wrote:
+> > On 1/16/2013 2:02 AM, Matt Porter wrote:
+> 
+> > > This series adds DMA Engine support for AM33xx, which uses
+> > > an EDMA DMAC. The EDMA DMAC has been previously supported by only
+> > > a private API implementation (much like the situation with OMAP
+> > > DMA) found on the DaVinci family of SoCs.
+> 
+> > Will you take this series through the OMAP tree? Only 1/14 touches
+> > mach-davinci and I am mostly okay with it except some changes I just
+> > requested Matt to make in another thread.
+> 
+> Is this series somewhere near actually getting merged then? It seemed
+> like there was lots of stuff going on.
 
-In short: I'm looking for a (free) email provider to use for my 
-vger.kernel.org subscriptions. Read a thread on google+ with your 
-participation and was wondering whether you could recommend one or knew of 
-a way to get an @infradead.org address, although that doesn't seem to be 
-safe enough either any more...
+The issues raised by Sekhar and Santosh were reasonably minor and will
+be addressed. My major concern is that the dependency on some api to
+fetch dmaengine driver SG limitations is not resolved. That's being
+discussed in https://lkml.org/lkml/2013/1/10/432
 
-The long story: gmx.de, that I'm using as my "identity" address, got me 
-unsubscribed multiple times from vger MLs. Even though not wanting to give 
-the big G even more power, gmail has worked pretty stably, without 
-dropping me out. However, recently I've detected a flaw with them (known 
-to some too, I'm sure): they only deliver one copy of each mail. So, if a 
-patch series is sent to more than one vger ML, I end up with some mails 
-from it in my, say, mmc folder and with other in the linux-sh folder. 
-Since I don't see a way to fix that with gmail (yes, I've sent a request 
-to them, but I'm not very hopeful), I'd be happy to move to another 
-provider. So, any recommendations would be welcome. I know this has been 
-discussed multiple times before, but unfortunately I don't find those 
-threads again. Might be a good thing to put on vger info pages.
+If I don't get confirmation from Vinod soon, I'll just take a stab at
+implementing the callbacks he mentioned in that thread. Static
+per-channel caps don't provide the information needed by a client driver
+the uses the EDMA DMAC.
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Alternatively, we can go back to the hack that looks at the edma
+phandle and hardcodes the mmc SG limits to magic values, but that's just
+plain ugly. I could live with it temporarily if we can't get the
+dmaengine api resolved until 3.10...dunno if others can though. ;)
+
+-Matt
