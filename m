@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316Ab3AWAWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 19:22:44 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:50929 "EHLO hydra.sisk.pl"
+	id S1756401Ab3AWAXG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 19:23:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30924 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756249Ab3AWAWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 19:22:41 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 4/4] ACPI / PM: Expose lists of device power resources to user space
-Date: Wed, 23 Jan 2013 01:28:40 +0100
-Message-ID: <3211997.SUlOUD0HDl@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <4989050.jK98Xm5BOW@vostro.rjw.lan>
-References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <4110339.gOkm8VAsyn@vostro.rjw.lan> <4989050.jK98Xm5BOW@vostro.rjw.lan>
+	id S1752607Ab3AWAXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 19:23:02 -0500
+Date: Tue, 22 Jan 2013 22:08:20 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Gleb Natapov <gleb@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 5/5] fix kvm's use of __pa() on percpu areas
+Message-ID: <20130123000820.GA27204@amt.cnet>
+References: <20130122212428.8DF70119@kernel.stglabs.ibm.com>
+ <20130122212435.4905663F@kernel.stglabs.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130122212435.4905663F@kernel.stglabs.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 23, 2013 01:17:47 AM Rafael J. Wysocki wrote:
-> On Wednesday, January 23, 2013 01:08:54 AM Rafael J. Wysocki wrote:
-> > On Tuesday, January 22, 2013 03:56:24 PM Greg Kroah-Hartman wrote:
-> > > On Tue, Jan 22, 2013 at 03:28:23AM +0100, Rafael J. Wysocki wrote:
+On Tue, Jan 22, 2013 at 01:24:35PM -0800, Dave Hansen wrote:
 > 
-> [...]
+> In short, it is illegal to call __pa() on an address holding
+> a percpu variable.  This replaces those __pa() calls with
+> slow_virt_to_phys().  All of the cases in this patch are
+> in boot time (or CPU hotplug time at worst) code, so the
+> slow pagetable walking in slow_virt_to_phys() is not expected
+> to have a performance impact.
 > 
-> > > Oh, and same question about racing userspace, you will have problems
-> > > here in that the symlinks will be showing up after the device is
-> > > created.  Perhaps, to make the whole thing easier, you just change the
-> > > acpi core code to hold off on the notification until you get all of
-> > > these links and files set up and then tell userspace.  That's probably
-> > > an easier fix.
-> > 
-> > I suppose so.
-> > 
-> > How can I do that?
+> The times when this actually matters are pretty obscure
+> (certain 32-bit NUMA systems), but it _does_ happen.  It is
+> important to keep KVM guests working on these systems because
+> the real hardware is getting harder and harder to find.
 > 
-> Should I set dev->kobj.uevent_suppress before calling device_register() and
-> then clear it and call the kobject_uevent(&dev->kobj, KOBJ_ADD) from the ACPI
-> core after device_register() has returned and the files have been created?
+> This bug manifested first by me seeing a plain hang at boot
+> after this message:
+> 
+> 	CPU 0 irqstacks, hard=f3018000 soft=f301a000
+> 
+> or, sometimes, it would actually make it out to the console:
+> 
+> [    0.000000] BUG: unable to handle kernel paging request at ffffffff
+> 
+> I eventually traced it down to the KVM async pagefault code.
+> This can be worked around by disabling that code either at
+> compile-time, or on the kernel command-line.
+> 
+> The kvm async pagefault code was injecting page faults in
+> to the guest which the guest misinterpreted because its
+> "reason" was not being properly sent from the host.
+> 
+> The guest passes a physical address of an per-cpu async page
+> fault structure via an MSR to the host.  Since __pa() is
+> broken on percpu data, the physical address it sent was
+> bascially bogus and the host went scribbling on random data.
+> The guest never saw the real reason for the page fault (it
+> was injected by the host), assumed that the kernel had taken
+> a _real_ page fault, and panic()'d.  The behavior varied,
+> though, depending on what got corrupted by the bad write.
+> 
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> ---
+> 
+>  linux-2.6.git-dave/arch/x86/kernel/kvm.c      |    9 +++++----
+>  linux-2.6.git-dave/arch/x86/kernel/kvmclock.c |    4 ++--
+>  2 files changed, 7 insertions(+), 6 deletions(-)
+ 
 
-I suppose along the lines of how firmware_class.c uses uevent_suppress?
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
 
-Is there any safe mechanism for adding/removing sysfs attributes after
-kobject_uevent(&dev->kobj, KOBJ_ADD) has been called for the given device?
-
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
