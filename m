@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab3AWKln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 05:41:43 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40500 "EHLO comal.ext.ti.com"
+	id S1755459Ab3AWKmE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 05:42:04 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42466 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755245Ab3AWKjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 05:39:03 -0500
+	id S1754765Ab3AWKjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 05:39:02 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <sameo@linux.intel.com>
 CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
@@ -13,9 +13,9 @@ CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
         <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <rogerq@ti.com>
-Subject: [PATCH v9 13/20] mfd: omap-usb-host: know about number of ports from revision register
-Date: Wed, 23 Jan 2013 12:38:05 +0200
-Message-ID: <1358937492-8129-14-git-send-email-rogerq@ti.com>
+Subject: [PATCH v9 11/20] mfd: omap_usb_host: Avoid missing platform data checks in suspend/resume
+Date: Wed, 23 Jan 2013 12:38:03 +0200
+Message-ID: <1358937492-8129-12-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358937492-8129-1-git-send-email-rogerq@ti.com>
 References: <1358937492-8129-1-git-send-email-rogerq@ti.com>
@@ -25,79 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The revision register should tell us how many ports are present.
+Get rid of the unnecessary missing platform data checks
+in runtime_suspend/resume. We are already checking for missing
+platform data in probe.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/mfd/omap-usb-host.c |   33 ++++++++++++++++++++++++++++-----
- 1 files changed, 28 insertions(+), 5 deletions(-)
+ drivers/mfd/omap-usb-host.c |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 310aaa9..26319ca 100644
+index d6e6b8c..061366d 100644
 --- a/drivers/mfd/omap-usb-host.c
 +++ b/drivers/mfd/omap-usb-host.c
-@@ -91,6 +91,8 @@
+@@ -277,11 +277,6 @@ static int usbhs_runtime_resume(struct device *dev)
  
+ 	dev_dbg(dev, "usbhs_runtime_resume\n");
  
- struct usbhs_hcd_omap {
-+	int				nports;
-+
- 	struct clk			*xclk60mhsp1_ck;
- 	struct clk			*xclk60mhsp2_ck;
- 	struct clk			*utmi_p1_fck;
-@@ -347,8 +349,6 @@ static void omap_usbhs_init(struct device *dev)
- 
- 	pm_runtime_get_sync(dev);
- 	spin_lock_irqsave(&omap->lock, flags);
--	omap->usbhs_rev = usbhs_read(omap->uhh_base, OMAP_UHH_REVISION);
--	dev_dbg(dev, "OMAP UHH_REVISION 0x%x\n", omap->usbhs_rev);
- 
- 	reg = usbhs_read(omap->uhh_base, OMAP_UHH_HOSTCONFIG);
- 	/* setup ULPI bypass and burst configurations */
-@@ -483,7 +483,32 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 
- 	pm_runtime_enable(dev);
- 
--	for (i = 0; i < OMAP3_HS_USB_PORTS; i++)
-+	platform_set_drvdata(pdev, omap);
-+	pm_runtime_get_sync(dev);
-+
-+	omap->usbhs_rev = usbhs_read(omap->uhh_base, OMAP_UHH_REVISION);
-+
-+	/* we need to call runtime suspend before we update omap->nports
-+	 * to prevent unbalanced clk_disable()
-+	 */
-+	pm_runtime_put_sync(dev);
-+
-+	switch (omap->usbhs_rev) {
-+	case OMAP_USBHS_REV1:
-+		omap->nports = 3;
-+		break;
-+	case OMAP_USBHS_REV2:
-+		omap->nports = 2;
-+		break;
-+	default:
-+		omap->nports = OMAP3_HS_USB_PORTS;
-+		dev_dbg(dev,
-+		  "USB HOST Rev : 0x%d not recognized, assuming %d ports\n",
-+		   omap->usbhs_rev, omap->nports);
-+		break;
-+	}
-+
-+	for (i = 0; i < omap->nports; i++)
- 		if (is_ehci_phy_mode(i) || is_ehci_tll_mode(i) ||
- 			is_ehci_hsic_mode(i)) {
- 			omap->ehci_logic_fck = clk_get(dev, "ehci_logic_fck");
-@@ -573,8 +598,6 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 				"failed error:%d\n", ret);
- 	}
- 
--	platform_set_drvdata(pdev, omap);
+-	if (!pdata) {
+-		dev_dbg(dev, "missing platform_data\n");
+-		return  -ENODEV;
+-	}
 -
- 	omap_usbhs_init(dev);
- 	ret = omap_usbhs_alloc_children(pdev);
- 	if (ret) {
+ 	omap_tll_enable();
+ 	spin_lock_irqsave(&omap->lock, flags);
+ 
+@@ -309,11 +304,6 @@ static int usbhs_runtime_suspend(struct device *dev)
+ 
+ 	dev_dbg(dev, "usbhs_runtime_suspend\n");
+ 
+-	if (!pdata) {
+-		dev_dbg(dev, "missing platform_data\n");
+-		return  -ENODEV;
+-	}
+-
+ 	spin_lock_irqsave(&omap->lock, flags);
+ 
+ 	if (is_ehci_tll_mode(pdata->port_mode[0]))
 -- 
 1.7.4.1
 
