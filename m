@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455Ab3AWWg2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 17:36:28 -0500
-Received: from mailserver6.natinst.com ([130.164.80.6]:51024 "EHLO
-	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab3AWWgV (ORCPT
+	id S1752455Ab3AWWly (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 17:41:54 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:53548 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044Ab3AWWls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 17:36:21 -0500
-From: Karthik Manamcheri <Karthik.Manamcheri@ni.com>
-To: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Karthik Manamcheri <Karthik.Manamcheri@ni.com>
-Subject: [PATCH] n_tty: Unthrottle tty when flushing read buffer
-Date: Wed, 23 Jan 2013 16:36:18 -0600
-Message-Id: <1358980578-8811-1-git-send-email-Karthik.Manamcheri@ni.com>
-X-Mailer: git-send-email 1.8.1.1
-X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 01/23/2013 04:36:20 PM,
-	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 01/23/2013 04:36:20 PM,
-	Serialize complete at 01/23/2013 04:36:20 PM
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2013-01-23_07:2013-01-23,2013-01-23,1970-01-01 signatures=0
+	Wed, 23 Jan 2013 17:41:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130123165657.GC2373@mtj.dyndns.org>
+References: <1357731938-8417-1-git-send-email-glommer@parallels.com>
+	<CAMbhsRQ7B4Uu1Wukfay+m4K7CVXtVbsTTEd6JHrwC2s+NcEFNA@mail.gmail.com>
+	<50FD3123.6090003@parallels.com>
+	<20130123010226.GF5359@htj.dyndns.org>
+	<CAMbhsRSDbKUz7OT3Y0bGfYqgp3yMgwk8oHx0rpsX+XDFWTMqkw@mail.gmail.com>
+	<20130123165657.GC2373@mtj.dyndns.org>
+Date: Wed, 23 Jan 2013 14:41:46 -0800
+Message-ID: <CAMbhsRRj9svWubn01wb+f=jSwVWC5u7DqJ5c8P23vAp0E2L8Rg@mail.gmail.com>
+Subject: Re: [PATCH v5 00/11] per-cgroup cpu-stat
+From: Colin Cross <ccross@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the tty input buffer is full and thereby throttled,
-flushing/resetting the read buffer should unthrottle to allow more
-data to be received.
+On Wed, Jan 23, 2013 at 8:56 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Collin.
+>
+> On Tue, Jan 22, 2013 at 05:53:59PM -0800, Colin Cross wrote:
+>> I understand why it makes sense from a code perspective to combine cpu
+>> and cpuacct, but by combining them you are enforcing a strange
+>> requirement that to measure the cpu usage of a group of processes you
+>
+> Well, "strange" is in the eyes of the beholder.  The thing is that
+> cgroup, as its name suggests, is a facility to control and enforce
+> resources to groups of tasks.  As accounting is often a part of
+> resource control, it happens as part of it too, but at least I think
+> cpuacct becoming a separate controller wasn't a technically sound
+> choice and intend to stop growth of usages outside resource control.
+>
+> An over-arching theme of the problems in cgroup is having too much
+> unorganized flexibility to the extent where it impededs the original
+> intended goals.  The braindead hierarchy implementations make the
+> whole hierarchy completely meaningless.  Multiple hierarchies make it
+> impossible to tag and control resources in any sane way when a
+> resource exists across different resource and thus controller
+> boundaries.
+>
+> So, well, that's the direction cgroup is headed.  Narrower focus on
+> actual resource control and actively shutting out misuses of cgroup as
+> generic task grouping mechanism.
+>
+>> force them to be treated as a single scheduling entity by their parent
+>> group, effectively splitting their time as if they were a single task.
+>>  That doesn't make any sense to me.
+>
+>
+>> > We are not gonna break multiple hierarchies but won't go extra miles
+>> > to optimize or enable new features on it, so it would be best to move
+>> > away from it.
+>>
+>> I don't see how I can move away from it with the current design.
+>
+> What I don't get is why you don't put each applications into their
+> cgroups and tune their config variables, which is the intended usage
+> anyway.  You say that that would make the scheduler not give more cpu
+> time to applications with more threads, but isn't that the right thing
+> to do?  Why does the number of threads an application uses have any
+> bearing on how much CPU time it gets?  One is an implementation detail
+> while the other is a policy decision.  Also, if you wanna factor in
+> the number of threads into the policy decision for whatever reason,
+> you can easily do so by factoring in that number into the decision,
+> right?  That way, at least the decision would be explicit.
 
-Signed-off-by: Karthik Manamcheri <Karthik.Manamcheri@ni.com>
----
- drivers/tty/n_tty.c | 2 ++
- 1 file changed, 2 insertions(+)
+I think some of it is just historic, we previously did not group
+application threads in the scheduler, so it would cause a change in
+behavior if we started grouping them.  I will investigate switching to
+a co-mounted hierarchy so hopefully you can deprecate cpuacct in the
+future.
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 19083efa2314660b25e0fb5bc793af6fb7e9af57..d5cea3bb01eaeec61b577de6c58a8000412c0c37 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -229,6 +229,8 @@ static void reset_buffer_flags(struct tty_struct *tty)
- 	ldata->canon_head = ldata->canon_data = ldata->erasing = 0;
- 	bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
- 	n_tty_set_room(tty);
-+
-+	check_unthrottle(tty);
- }
- 
- /**
--- 
-1.8.1.1
-
+We can't factor the number of threads into the policy decision,
+because it depends on how many threads are runnable at any time in any
+particular application, and we have no way to track that.  It would
+have to be a cgroup scheduler feature.
