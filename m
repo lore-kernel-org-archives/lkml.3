@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab3AWS6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 13:58:13 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:34390 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028Ab3AWS6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 13:58:01 -0500
-Date: Wed, 23 Jan 2013 10:57:33 -0800
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Jiri Olsa <jolsa@redhat.com>, linuxppc-dev@ozlabs.org,
-        Anton Blanchard <anton@au1.ibm.com>, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
-        mingo <mingo@elte.hu>
-Subject: Re: [PATCH] perf: Fix compile warnings in tests/attr.c
-Message-ID: <20130123185733.GA22906@us.ibm.com>
-References: <20130119013052.GA24693@us.ibm.com>
- <20130121135906.GD1995@krava.brq.redhat.com>
- <20130121213823.GA4774@us.ibm.com>
- <1358898333.29791.14.camel@concordia>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358898333.29791.14.camel@concordia>
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012318-5806-0000-0000-00001EA86B84
+	id S1752340Ab3AWS7i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 13:59:38 -0500
+Received: from mail.windriver.com ([147.11.1.11]:64910 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab3AWS7d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 13:59:33 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH] mtd: fix random pointer dereference in OF device name handling
+Date: Wed, 23 Jan 2013 13:59:08 -0500
+Message-Id: <1358967548-25491-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Ellerman [michael@ellerman.id.au] wrote:
-| > | make: *** [tests/attr.o] Error 1
-| > | 
-| > | i386 compiles fine
-| > 
-| > __u64 is 'unsigned long long' on x86 and PRIu64 is 'llu' which is fine.
-| > 
-| > __u64 is 'unsigned long' on Power and PRIu64 is 'lu' which is again fine.
-| > 
-| > But __u64 is 'unsigned long long' on x86_64, but PRIu64 is '%lu' bc __WORDSIZE
-| > is 64.
-| 
-| 
-| This is a bit of a mess, but let me see if I can help explain it.
+Here is the output from an mpc8548 based board.  There are
+three instances of missing device name here:
 
-Yes it is :-) thanks for explaining it.
+1 |: Found 4 x16 devices at 0x0 in 32-bit bank. Manufacturer ID 0x008989 Chip ID 0x001818
+2 |Intel/Sharp Extended Query Table at 0x0031
+3 |Intel/Sharp Extended Query Table at 0x0031
+4 |Using buffer write method
+5 |cfi_cmdset_0001: Erase suspend on write enabled
+6 |2 ofpart partitions found on MTD device
+7 |Creating 2 MTD partitions on "":
+8 |0x000000000000-0x000003f00000 : "space"
+9 |0x000003f00000-0x000004000000 : "bootloader"
 
-| 
-| The root of the problem is that you're mixing up the kernel type __u64,
-| with the userspace format specifier PRIu64.
+Lines 1 (BOL), 6 (EOL) and 7 (inside quotes) have the missing
+device name issue.
 
-struct perf_event_attr is shared with user space and is using __u64. Should
-it use uint64_t instead ?
+Problem introduced with commit d68cbdd4fb04d2b756ad53c22f36943167b16340
+"mtd: physmap_of: allow to specify the mtd name for retro compatiblity"
 
-| 
-| PRIu64 is the format specifier for printing a uint64_t, it _may_ also be
-| the right specifier for a __u64, but there's no guarantee of that - as
-| you have discovered.
-| 
-| Inside the kernel both x86 and powerpc use unsigned long long always, in
-| 32-bit and 64-bit code. That means in the kernel we can always use %llu.
-| 
-| On x86 that definition is also exported to userspace, so on x86 __u64 is
-| always unsigned long long. As you noticed this potentially differs from
-| uint64_t, which can be confusing. However it means in x86 userspace code
-| you can always print a __u64 with %llu.
-| 
-| On powerpc we default to using definitions that match userspace, so
-| __u64 changes depending on your wordsize, and so you must use PRIu64
-| etc. to print them.
+There are actually two bugs here.  The 1st is that mtd_name
+is on the stack and never initialized.  It uses a call to
+of_property_read_string() to get the pointer.  However this
+function is explicitly documented as saying that the char
+"...pointer is modified only if a valid string can be decoded."
 
-Well, using __u64 and PRIu64 seems breaks x86-64...
+Hence it isn't NULL, and we use a pointer off in the weeds as
+the device name, leading to undefined behaviour.
 
-| 
-| There is however support in recent powerpc kernels to switch to using
-| unsigned long long even on 64-bit. See commit 2c9c6ce.
-| 
-| You need to define __SANE_USERSPACE_TYPES__ before including types.h.
-| Then you can always use %llu to print __u64.
+The second issue is in the NULL check itself.  It uses a "?"
+operator to choose between mtd_name and the devicetree based
+name.  But the operator isn't given two choices.  One choice
+(mtd_name) is missing from the RHS of the "?".
 
-but __SANE_USERSPACE_TYPES__ with __u64 and %llu seems to work on x86,
-x86-64, powerpc.
+With these fixed, the output appears as follows:
 
-Will modify my patch to add __SANE_USERSPACE_TYPES__ but leave the %llu
-as is.
+1 |fc000000.flash: Found 4 x16 devices at 0x0 in 32-bit bank. Manufacturer ID 0x008989 Chip ID 0x001818
+2 |Intel/Sharp Extended Query Table at 0x0031
+3 |Intel/Sharp Extended Query Table at 0x0031
+4 |Using buffer write method
+5 |cfi_cmdset_0001: Erase suspend on write enabled
+6 |2 ofpart partitions found on MTD device fc000000.flash
+7 |Creating 2 MTD partitions on "fc000000.flash":
+8 |0x000000000000-0x000003f00000 : "space"
+9 |0x000003f00000-0x000004000000 : "bootloader"
 
-Sukadev
+All the names are now appearing where they should be.
+
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+
+[Introduced into mainline at v3.8-rc1~47 ; hence no need for stable Cc]
+
+ drivers/mtd/maps/physmap_of.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mtd/maps/physmap_of.c b/drivers/mtd/maps/physmap_of.c
+index 67cc73c..a70c1c4 100644
+--- a/drivers/mtd/maps/physmap_of.c
++++ b/drivers/mtd/maps/physmap_of.c
+@@ -170,7 +170,7 @@ static int of_flash_probe(struct platform_device *dev)
+ 	resource_size_t res_size;
+ 	struct mtd_part_parser_data ppdata;
+ 	bool map_indirect;
+-	const char *mtd_name;
++	const char *mtd_name = NULL;
+ 
+ 	match = of_match_device(of_flash_match, &dev->dev);
+ 	if (!match)
+@@ -237,7 +237,8 @@ static int of_flash_probe(struct platform_device *dev)
+ 			goto err_out;
+ 		}
+ 
+-		info->list[i].map.name = mtd_name ?: dev_name(&dev->dev);
++		info->list[i].map.name = mtd_name ?
++					 mtd_name : dev_name(&dev->dev);
+ 		info->list[i].map.phys = res.start;
+ 		info->list[i].map.size = res_size;
+ 		info->list[i].map.bankwidth = be32_to_cpup(width);
+-- 
+1.8.1
 
