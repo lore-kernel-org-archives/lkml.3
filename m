@@ -1,187 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab3AWLCK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 06:02:10 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:44464 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754672Ab3AWLCI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 06:02:08 -0500
-Subject: Re: [PATCH 6/6] OF: Introduce DT overlay support.
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20130123051207.GA2228@truffula.fritz.box>
-Date: Wed, 23 Jan 2013 13:01:58 +0200
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jon Loeliger <jdl@jdl.com>, Tony Lindgren <tony@atomide.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
-        Alan Tull <atull@altera.com>, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
-        Joel A Fernandes <agnel.joel@gmail.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Matt Ranostay <mranostay@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <EAB57031-78DC-4150-B1A9-F6A19A60293F@antoniou-consulting.com>
-References: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com> <1357327870-13615-7-git-send-email-panto@antoniou-consulting.com> <20130122035056.GF23500@truffula.fritz.box> <9768253B-92ED-4298-8BE4-6FAB091DF062@antoniou-consulting.com> <20130123051207.GA2228@truffula.fritz.box>
-To: David Gibson <david@gibson.dropbear.id.au>
-X-Mailer: Apple Mail (2.1085)
+	id S1755123Ab3AWLE1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 06:04:27 -0500
+Received: from relay.parallels.com ([195.214.232.42]:53657 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754597Ab3AWLEZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 06:04:25 -0500
+Date: Wed, 23 Jan 2013 15:03:23 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+CC: Andrey Vagin <avagin@openvz.org>, <linux-kernel@vger.kernel.org>,
+        <criu@openvz.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-api@vger.kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH 0/3] signalfd: a kernel interface for dumping pending
+ signals
+Message-ID: <20130123110323.GA23139@paralelels.com>
+References: <1358849741-9611-1-git-send-email-avagin@openvz.org>
+ <CAKgNAkgfV3qdrvBUYKBAgaYXUTZ5hMYLhwaiLkZO0KBTA_=1zw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="koi8-r"
+Content-Disposition: inline
+In-Reply-To: <CAKgNAkgfV3qdrvBUYKBAgaYXUTZ5hMYLhwaiLkZO0KBTA_=1zw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.30.16.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Jan 23, 2013, at 7:12 AM, David Gibson wrote:
-
-> On Tue, Jan 22, 2013 at 01:08:04PM +0200, Pantelis Antoniou wrote:
->> Hi
->> 
->> On Jan 22, 2013, at 5:50 AM, David Gibson wrote:
->> 
->>> On Fri, Jan 04, 2013 at 09:31:10PM +0200, Pantelis Antoniou wrote:
->>>> Introduce DT overlay support.
->>>> Using this functionality it is possible to dynamically overlay a part of
->>>> the kernel's tree with another tree that's been dynamically loaded.
->>>> It is also possible to remove node and properties.
->>>> 
->>>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
->>>> ---
->>>> Documentation/devicetree/overlay-notes.txt | 179 +++++++
->>>> drivers/of/Kconfig                         |  10 +
->>>> drivers/of/Makefile                        |   1 +
->>>> drivers/of/overlay.c                       | 831 +++++++++++++++++++++++++++++
->>>> include/linux/of.h                         | 107 ++++
->>>> 5 files changed, 1128 insertions(+)
->>>> create mode 100644 Documentation/devicetree/overlay-notes.txt
->>>> create mode 100644 drivers/of/overlay.c
->>>> 
->>>> diff --git a/Documentation/devicetree/overlay-notes.txt b/Documentation/devicetree/overlay-notes.txt
->>>> new file mode 100644
->>>> index 0000000..5289cbb
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/overlay-notes.txt
->>>> @@ -0,0 +1,179 @@
->>>> +Device Tree Overlay Notes
->>>> +-------------------------
->>>> +
->>>> +This document describes the implementation of the in-kernel
->>>> +device tree overlay functionality residing in drivers/of/overlay.c and is a
->>>> +companion document to Documentation/devicetree/dt-object-internal.txt[1] &
->>>> +Documentation/devicetree/dynamic-resolution-notes.txt[2]
->>>> +
->>>> +How overlays work
->>>> +-----------------
->>>> +
->>>> +A Device Tree's overlay purpose is to modify the kernel's live tree, and
->>>> +have the modification affecting the state of the the kernel in a way that
->>>> +is reflecting the changes.
->>> 
->>> Um.. I'm having a great deal of trouble parsing that sentence.
->>> 
->>>> +Since the kernel mainly deals with devices, any new device node that result
->>>> +in an active device should have it created while if the device node is either
->>>> +disabled or removed all together, the affected device should be deregistered.
->>>> +
->>>> +Lets take an example where we have a foo board with the following base tree
->>>> +which is taken from [1].
->>>> +
->>>> +---- foo.dts -----------------------------------------------------------------
->>>> +	/* FOO platform */
->>>> +	/ {
->>>> +		compatible = "corp,foo";
->>>> +
->>>> +		/* shared resources */
->>>> +		res: res {
->>>> +		};
->>>> +
->>>> +		/* On chip peripherals */
->>>> +		ocp: ocp {
->>>> +			/* peripherals that are always instantiated */
->>>> +			peripheral1 { ... };
->>>> +		}
->>>> +	};
->>>> +---- foo.dts -----------------------------------------------------------------
->>>> +
->>>> +The overlay bar.dts, when loaded (and resolved as described in [2]) should
->>>> +
->>>> +---- bar.dts -----------------------------------------------------------------
->>>> +/plugin/;	/* allow undefined label references and record them */
->>>> +/ {
->>>> +	....	/* various properties for loader use; i.e. part id etc. */
->>>> +	fragment@0 {
->>>> +		target = <&ocp>;
->>>> +		__overlay__ {
->>>> +			/* bar peripheral */
->>>> +			bar {
->>>> +				compatible = "corp,bar";
->>>> +				... /* various properties and child nodes */
->>>> +			}
->>>> +		};
->>>> +	};
->>>> +};
->>>> +---- bar.dts -----------------------------------------------------------------
->>>> +
->>>> +result in foo+bar.dts
->>>> +
->>>> +---- foo+bar.dts -------------------------------------------------------------
->>>> +	/* FOO platform + bar peripheral */
->>>> +	/ {
->>>> +		compatible = "corp,foo";
->>>> +
->>>> +		/* shared resources */
->>>> +		res: res {
->>>> +		};
->>>> +
->>>> +		/* On chip peripherals */
->>>> +		ocp: ocp {
->>>> +			/* peripherals that are always instantiated */
->>>> +			peripheral1 { ... };
->>>> +
->>>> +			/* bar peripheral */
->>>> +			bar {
->>>> +				compatible = "corp,bar";
->>>> +				... /* various properties and child nodes */
->>>> +			}
->>>> +		}
->>>> +	};
->>>> +---- foo+bar.dts -------------------------------------------------------------
->>>> +
->>>> +As a result of the the overlay, a new device node (bar) has been created
->>>> +so a bar platform device will be registered and if a matching device driver
->>>> +is loaded the device will be created as expected.
->>> 
->>> Hrm.  This all seems rather complicated.  Maybe it needs to be, but
->>> I'm not entirely convinced yet.
->>> 
->>> One other point - both of these patches are assuming that the overlay
->>> is in the "live tree" format, but it still needs a bunch of extra
->>> mangling.  Would it simplify things to just go straight from the
->>> overlay in flat tree form to modifications to the system-wide live
->>> tree.
->> 
->> Sorry, I can't parse this. You mean apply the overlay without converting
->> to live tree format?
+On Wed, Jan 23, 2013 at 05:19:24AM +0100, Michael Kerrisk (man-pages) wrote:
+> Hi Andrey,
 > 
-> Yes.
+> On Tue, Jan 22, 2013 at 11:15 AM, Andrey Vagin <avagin@openvz.org> wrote:
+> > This patch set adds ability to choose a signal queue and
+> > to read signals without dequeuing them.
+> >
+> > Three new flags are added:
+> > SFD_SHARED_QUEUE     -- reads will be from process-wide shared signal queue
+> > SFD_PER_THREAD_QUEUE -- reads will be from per-thread signal queue
+> > SFD_PEEK             -- don't dequeue signals
+
+> 
+> A fuller description of the patch, including information that was in
+> previous versions of this patch would be helpful. Let me see if I can
+> summarize/fill out the API side of things, and ask a few questions
+> along the way (yes, I could answer some of the questions by checking
+> the code, but I want to know what the *intended* behavior is).
+> 
+> The patch series adds a total of 4 flags to signalfd(). In addition to
+> those you list above, the other is
+
+In additional we can say, that this patch series adds three orthogonal,
+independent groups of flags.
+* SFD_RAW
+* SFD_PEEK
+* SFD_SHARED_QUEUE, SFD_PER_THREAD_QUEUE
+
+> 
+> SFD_RAW -- return raw siginfo structs when reading, rather than signalfd_siginfo
+> 
+> The intention is that these flags be used in conjunction with pread(),
+> to peek at queued signals. The 'offset' argument is treated as a
+> position. Thus, for example, to non-destructively read all of the
+> per-thread signals in raw form from the per-thread queue, one would
+> write
 > 
 
-The gymnastics required when operating on the flat tree will make grown, tough as nails
-s/w developers cry.
+siginfo_t *buf;
 
-In essence you will have to replicate the unflattening functionality again, create a
-similar tree structure as the live tree, do your work, and then discard it.
+> fd = signalfd(-1, SFD_PER_THREAD_QUEUE | SFD_RAW | SFD_PEEK)
+> for (j = 0; ; j++) {
+>     s = pread(fd, buf, ocunt, j)
+      s = pread(fd, buf + j, sizeof(siginfo_t), j);
+>     if (s <= 0) /* No more signals */
+>         break;
+> }
 
-A bit excessive don't you think?
+This examples reads signals one by one
 
- 
+or
+
+  siginfo_t *buf = NULL;
+  unsigned long buf_size = 0, nr = 0;
+  int ret;
+
+  while (1) {
+	bug_size += PAGE_SIZ;
+	buf = realloc(buf, buf_size);
+	if (buf == NULL)
+		goto err;
+	ret = pread(fd, buf + nr, sizeof(siginfo_t), nr);
+	if (ret == -1)
+		goto err;
+	nr += ret / sizeof(siginfo_t);
+	if (ret < PAGE_SIZE) /* No more signals */
+		break;
+  }
+
+pread() can read more than one signal.
+
+* The interface of signalfd could be a bit more predictable,
+  if we will treat pos as offset in bytes, not in elements.
+
+  pread(fd, buf, sizeof(siginfo_t), i * sizeof(siginfo_t)) -
+               reads a signal with a sequence number i in a queue.
+> 
+> Right?
+> 
+> Now some questions. I don't require all of the following, but I'm
+> wanting to know what's possible, for documentation purposes.
+> 
+> Q1: with this patch series, is it permissible to specify
+> SFD_PER_THREAD_QUEUE or SFD_SHARED_QUEUE without specifying either
+> SFD_PEEK or SFD_QUEUE? In other words, can one do traditional
+> signalfd_siginfo reads, but selecting from a specific queue.
+
+Yes, we can
+> 
+> Q2: Is it possible to specify SFD_PEEK without SFD_RAW, so that one
+> can peek at siginfo structs rather than signalfd_siginfo structs?
+
+Yes, it is possible. read() and pread() returns signalfd_siginfo structs
+in this case.
+
+> 
+> Q3: Is it possible to specify SFD_RAW without SFD_PEEK, so that one
+> can destructively read signalfd_siginfo structs? Can that be done
+> using any read interface (read(), pread(), etc.)?
+Yes, it is possible too. read() will return siginfo structs.
+
+> 
+> Q4: Is it possible to specify both SFD_PER_THREAD_QUEUE and
+> SFD_SHARED_QUEUE? In that case, in what order are signals read from
+> the two queues?
+> 
+
+It is equal to the case, when none of these flags are not specified.
+And it is equal to what we had before this patches.
+signalfd() reads signals from a private queue, then from a shared queue.
+
+ps: A good analogy:
+signalfd looks like a pipe if SFD_PEEK are not specified, otherwise it looks
+like a file
+
+> Thanks,
+> 
+> Michael
+> 
+> > Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> > Cc: Oleg Nesterov <oleg@redhat.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> > Cc: Al Viro <viro@zeniv.linux.org.uk>
+> > Cc: Pavel Emelyanov <xemul@parallels.com>
+> > CC: Cyrill Gorcunov <gorcunov@openvz.org>
+> > Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+> >
+> > --
+> > 1.7.11.7
+> >
+> 
+> 
+> 
 > -- 
-> David Gibson			| I'll have my music baroque, and my code
-> david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-> 				| _way_ _around_!
-> http://www.ozlabs.org/~dgibson
-
+> Michael Kerrisk
+> Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+> Author of "The Linux Programming Interface"; http://man7.org/tlpi/
