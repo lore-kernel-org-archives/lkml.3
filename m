@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab3AWVzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 16:55:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752504Ab3AWVzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 16:55:45 -0500
-Message-ID: <51005C4D.1090105@redhat.com>
-Date: Wed, 23 Jan 2013 16:55:25 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Ingo Molnar <mingo@redhat.com>, "Paul E. McKenney" <paulmck@us.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 4/6] kernel: faster queue spinlock implementation
-References: <1358896415-28569-1-git-send-email-walken@google.com> <1358896415-28569-5-git-send-email-walken@google.com>
-In-Reply-To: <1358896415-28569-5-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752630Ab3AWV4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 16:56:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54323 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044Ab3AWV4O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 16:56:14 -0500
+Date: Wed, 23 Jan 2013 13:56:12 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Simon Jeons <simon.jeons@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] mm: Fold page->_last_nid into page->flags where
+ possible
+Message-Id: <20130123135612.4b383fa7.akpm@linux-foundation.org>
+In-Reply-To: <20130123142507.GI13304@suse.de>
+References: <1358874762-19717-1-git-send-email-mgorman@suse.de>
+	<1358874762-19717-6-git-send-email-mgorman@suse.de>
+	<20130122144659.d512e05c.akpm@linux-foundation.org>
+	<20130123142507.GI13304@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2013 06:13 PM, Michel Lespinasse wrote:
+On Wed, 23 Jan 2013 14:25:07 +0000
+Mel Gorman <mgorman@suse.de> wrote:
 
-> Because of these limitations, the MCS queue spinlock implementation does
-> not always compare favorably to ticket spinlocks under moderate contention.
->
-> This alternative queue spinlock implementation has some nice properties:
->
-> - One single atomic operation (xchg) during acquire
-> - One single memory store for unlock. No busy looping either.
->    Actually, the unlock is so short that we can just inline it.
-> - Same basic API as with the MCS spinlock
+> On Tue, Jan 22, 2013 at 02:46:59PM -0800, Andrew Morton wrote:
+> > 
+> > reset_page_last_nid() is poorly named.  page_reset_last_nid() would be
+> > better, and consistent.
+> > 
+> 
+> Look at this closer, are you sure you want? Why is page_reset_last_nid()
+> better or more consistent?
 
-There is one thing I do not understand about these locks.
+I was looking at this group:
 
-> +static inline void
-> +q_spin_unlock(struct q_spinlock *lock, struct q_spinlock_node *node)
-> +{
-> +	q_spin_unlock_mb();	/* guarantee release store semantics */
-> +	ACCESS_ONCE(node->token->wait) = false;
-> +	preempt_enable();
-> +}
+static inline int page_xchg_last_nid(struct page *page, int nid)
+static inline int page_last_nid(struct page *page)
+static inline void reset_page_last_nid(struct page *page)
 
-Here you set wait to false, in the CPU-local (on the current CPU)
-queue lock token. Afterwards, the same CPU could try to lock another
-lock, using the same token...
+IMO the best naming for these would be page_nid_xchg_last(),
+page_nid_last() and page_nid_reset_last().
 
-> +DEFINE_PER_CPU(struct q_spinlock_token *, q_spinlock_token[2]);
-> +
-> +static inline struct q_spinlock_token *
-> +____q_spin_lock(struct q_spinlock *lock,
-> +		struct q_spinlock_token **percpu_token)
->   {
-> +	/*
-> +	 * Careful about reentrancy here - if we are interrupted and the code
-> +	 * running in that interrupt tries to get another queue spinlock,
-> +	 * it must not use the same percpu_token that we're using here.
-> +	 */
-> +
-> +	struct q_spinlock_token *token, *prev;
-> +
-> +	token = __this_cpu_read(*percpu_token);
-> +	token->wait = true;
-> +	prev = xchg(&lock->token, token);
-> +	__this_cpu_write(*percpu_token, prev);
-> +	while (ACCESS_ONCE(prev->wait))
->   		cpu_relax();
->   	q_spin_lock_mb();	/* guarantee acquire load semantics */
-> +	return token;
->   }
+> The getter functions for page-related fields start with page (page_count,
+> page_mapcount etc.) but the setters begin with set (set_page_section,
+> set_page_zone, set_page_links etc.). For mapcount, we also have
+> reset_page_mapcount() so to me reset_page_last_nid() is already
+> consistent.
 
-Here a CPU trying to take the lock will spin on the previous
-CPU's token.
+But those schemes make no sense.
 
-However, the previous CPU can immediately re-use its token.
+I don't see any benefit in being consistent with existing
+inconsistency.  It's better to use good naming for new things and to
+fix up the old things where practical.
 
-It looks like it might be possible for the CPU trying to
-acquire the lock to miss prev->wait being set to false, and
-continue spinning.
-
-If this lock type is widely used, could that lead to a deadlock?
-
-Is there something in your code that guarantees the scenario
-I described cannot happen, and I just missed it?
