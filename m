@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465Ab3AWCXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 21:23:00 -0500
-Received: from mga14.intel.com ([143.182.124.37]:16327 "EHLO mga14.intel.com"
+	id S1752376Ab3AWC13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 21:27:29 -0500
+Received: from mga11.intel.com ([192.55.52.93]:52486 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751899Ab3AWCW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 21:22:57 -0500
+	id S1751633Ab3AWC10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 21:27:26 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,518,1355126400"; 
-   d="scan'208";a="194143795"
-Message-ID: <1358908049.18561.12.camel@suxuemin.sh.intel.com>
-Subject: [PATCH] radeon_display: Use pointer return error codes
+   d="scan'208";a="280906460"
+Message-ID: <1358908327.18561.15.camel@suxuemin.sh.intel.com>
+Subject: [PATCH] drm_crtc: check if fb_create return NULL
 From: "Su, Xuemin" <xuemin.su@intel.com>
-To: airlied@linux.ie, airlied@redhat.com, alexander.deucher@amd.com,
-        s.hauer@pengutronix.de, ihadzic@research.bell-labs.com,
-        laurent.pinchart@ideasonboard.com, dri-devel@lists.freedesktop.org,
+To: airlied@linux.ie, dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org
 Cc: bo.he@intel.com, xuemin.su@intel.com, yanmin_zhang@linux.intel.com
-Date: Wed, 23 Jan 2013 10:27:29 +0800
+Date: Wed, 23 Jan 2013 10:32:07 +0800
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
@@ -27,30 +25,34 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: xueminsu <xuemin.su@intel.com>
-Date: Tue, 22 Jan 2013 22:16:53 +0800
-Subject: [PATCH] radeon_display: Use pointer return error codes
+Date: Tue, 22 Jan 2013 22:39:39 +0800
+Subject: [PATCH] drm_crtc: check if fb_create return NULL
 
-drm_mode_addfb() expects fb_create return error code
-instead of NULL.
+Some buggy driver may still return NULL in fb_create,
+which leads to kernel panic.
 
 Signed-off-by: xueminsu <xuemin.su@intel.com>
 ---
- drivers/gpu/drm/radeon/radeon_display.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/gpu/drm/drm_crtc.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
-index 1da2386..ff3def7 100644
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -1122,7 +1122,7 @@ radeon_user_framebuffer_create(struct drm_device *dev,
- 	if (ret) {
- 		kfree(radeon_fb);
- 		drm_gem_object_unreference_unlocked(obj);
--		return NULL;
-+		return ERR_PTR(ret);
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index f2d667b..4ed0aed 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -2172,6 +2172,12 @@ int drm_mode_addfb(struct drm_device *dev,
+ 		ret = PTR_ERR(fb);
+ 		goto out;
  	}
++	/* some buggy driver may return NULL here, which may cause panic */
++	if (!fb) {
++		WARN(1, "%pf should not return NULL.",
++			dev->mode_config.funcs->fb_create);
++		return -EINVAL;
++	}
  
- 	return &radeon_fb->base;
+ 	or->fb_id = fb->base.id;
+ 	list_add(&fb->filp_head, &file_priv->fbs);
 -- 
 1.7.6
 
