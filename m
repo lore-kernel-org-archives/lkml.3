@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241Ab3AWSuU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 13:50:20 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:50328 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab3AWSuO (ORCPT
+	id S1752361Ab3AWSuc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 13:50:32 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:40820 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab3AWSu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 13:50:14 -0500
-Date: Wed, 23 Jan 2013 19:50:10 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 16/29] perf, tools: Add support for weight v7
-Message-ID: <20130123185010.GB30577@one.firstfloor.org>
-References: <1358455012-12287-1-git-send-email-andi@firstfloor.org> <1358455012-12287-17-git-send-email-andi@firstfloor.org> <CABPqkBQNXUfC9VwyZAA-OyhKJ6JL8Sr__Rq=sZPAzSL6cP+E6Q@mail.gmail.com> <CABPqkBT+wKBKVt30OJ4mhMGGq1711r51tdWsxyyHAmEy3rYfyw@mail.gmail.com> <CABPqkBSBWsx50Pupc5nh6yqvkgLBa4BSCQN==6=SPp1Z_iQUYA@mail.gmail.com> <20130123171351.GZ30577@one.firstfloor.org> <CABPqkBQvh5R32mxvLsaN2+YmBhxcoRmUYUZeQju4kBDnHB4s5A@mail.gmail.com> <20130123180231.GA30577@one.firstfloor.org> <CABPqkBRJnt9Pnu90NX20GdGuJAL_YDjkjJyva=UHMNQvJEK1fw@mail.gmail.com>
+	Wed, 23 Jan 2013 13:50:27 -0500
+Date: Wed, 23 Jan 2013 13:50:24 -0500 (EST)
+Message-Id: <20130123.135024.1407137924304146015.davem@davemloft.net>
+To: jasowang@redhat.com
+Cc: mst@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stephen@networkplumber.org
+Subject: Re: [PATCH 2/2] tuntap: limit the number of flow caches
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1358949553-30309-2-git-send-email-jasowang@redhat.com>
+References: <1358949553-30309-1-git-send-email-jasowang@redhat.com>
+	<1358949553-30309-2-git-send-email-jasowang@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBRJnt9Pnu90NX20GdGuJAL_YDjkjJyva=UHMNQvJEK1fw@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> For PEBS-LL I do force the sort period to:
-> local_weight,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked
+From: Jason Wang <jasowang@redhat.com>
+Date: Wed, 23 Jan 2013 21:59:13 +0800
+
+> We create new flow caches when a new flow is identified by tuntap, This may lead
+> some issues:
 > 
-> But that's not enough,
+> - userspace may produce a huge amount of short live flows to exhaust host memory
+> - the unlimited number of flow caches may produce a long list which increase the
+>   time in the linear searching
 > 
-> One solution could be to make period an explicit sort key. It
-> may then be dropped by some measurements, e.g., when weight is
-> is used.
+> Solve this by introducing a limit of total number of flow caches.
+> 
+> Cc: Stephen Hemminger <stephen@networkplumber.org>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
 
-Makes sense. Agreed, it should probably be an explicit key.
+Applied, but really flow caches are an extremely broken concept especially
+when external entities control the population of such caches.
 
--Andi
+We removed the routing cache of the ipv4 networking code exactly because
+this kind of crap does not work at all.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Next you're going to have to add a delicately managed garbage
+collection scheme for this tuntap flow cache, and that will be tuned
+endlessly, when the real issue is that fundamentally this does not
+work.
+
+Instead, make the full lookup scale properly and use appropriate data
+structures.  It won't be as fast as a simple hash table demux, but
+it'll actually be immune to growth issues and DoS attacks and give
+consistent and repeatable lookup performance regardless of traffic
+patterns.
