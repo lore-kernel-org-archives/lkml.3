@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab3AWJgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 04:36:01 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:45714 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab3AWJf7 convert rfc822-to-8bit (ORCPT
+	id S1754590Ab3AWJgW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 04:36:22 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:44102 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754488Ab3AWJgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 04:35:59 -0500
+	Wed, 23 Jan 2013 04:36:20 -0500
 MIME-Version: 1.0
-In-Reply-To: <1358203840.10402.3.camel@lorien2>
-References: <1358203840.10402.3.camel@lorien2>
-Date: Wed, 23 Jan 2013 09:35:57 +0000
-Message-ID: <CAHR064jGOp7tZL4ZAmOLp5G3cWXwjBtsZVH=sL1xsxOGMoMBOg@mail.gmail.com>
-Subject: Re: [PATCH TRIVIAL] asus-wmi: Fix unused function build warning
-From: Corentin Chary <corentin.chary@gmail.com>
-To: shuah.khan@hp.com
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+In-Reply-To: <CAKohpo=BHGukSQJJGUS=H++qzxME3aEEQZR8QiyHPU8LabHsSw@mail.gmail.com>
+References: <1358758844-24711-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1358758844-24711-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x==FoW5Sh5KFt9iO+_04dEbwsQHJX3rsTWNqFiZqTbPn6A@mail.gmail.com>
+	<1358846546.12502.57.camel@smile>
+	<CAKohpo=m-s4+q+4v2v+8nzC32FRzJAb58no2hZLV_5QqTj4wig@mail.gmail.com>
+	<1358932355.12502.68.camel@smile>
+	<CAKohpo=BHGukSQJJGUS=H++qzxME3aEEQZR8QiyHPU8LabHsSw@mail.gmail.com>
+Date: Wed, 23 Jan 2013 11:36:18 +0200
+Message-ID: <CAHp75VeNe1Z9CqYXVjV6am_vg=5XF=vx1i47h71xRdTvT6hSGA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] dw_dmac: return proper residue value
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 10:50 PM, Shuah Khan <shuah.khan@hp.com> wrote:
-> Fix the following build warning
->
-> CC [M]  drivers/platform/x86/asus-wmi.o
-> drivers/platform/x86/asus-wmi.c:1356:13: warning: ‘do_nothing’ defined but not used [-Wunused-function]
->
-> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> ---
->  drivers/platform/x86/asus-wmi.c |    5 -----
->  1 file changed, 5 deletions(-)
->
-> diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-> index e41eae3..c11b242 100644
-> --- a/drivers/platform/x86/asus-wmi.c
-> +++ b/drivers/platform/x86/asus-wmi.c
-> @@ -1353,11 +1353,6 @@ static int is_display_toggle(int code)
->         return 0;
->  }
->
-> -static void do_nothing(void)
-> -{
-> -       return;
-> -}
-> -
->  static void asus_wmi_notify(u32 value, void *context)
->  {
->         struct asus_wmi *asus = context;
-> --
-> 1.7.9.5
->
->
->
+On Wed, Jan 23, 2013 at 11:22 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 23 January 2013 14:42, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
 
-Acked-by: Corentin Chary <corentin.chary@gmail.com>
+>> Yesterday I spent in testing of different approaches. First of all, the
+>> calculation of the sent amount is nicer when ctlhi/ctllo is used and it
+>> works fine. But the approach, when we substract length of sent
+>> descriptors, is losing data. Namely, we have no information how big is
+>> the master descriptor (it has total length of the entire chain). So, I'm
+>> thinking how to solve this one. Otherwise it seems simpler than mine
+>> first idea.
+>
+> I was planning to give you another review comment which i thought i will
+> give later :)
+>
+> It looks to be a bit wrong to have individual lengths in all descriptors leaving
+> the first one :)
+>
+> This is the descriptor struct:
+>
+> struct dw_desc {
+>         /* FIRST values the hardware uses */
+>         struct dw_lli                   lli;
+>
+>         /* THEN values for driver housekeeping */
+>         struct list_head                desc_node;
+>         struct list_head                tx_list;
+>         struct dma_async_tx_descriptor  txd;
+>         size_t                          len;
+> };
+>
+> Firstly i believe we can have a union of both list_heads as only one is used
+> at any time. Can you patch it down?
 
+Okay, separately and later to avoid additional testing. Will it work for you?
 
+>
+> Second to solve your problem, you can add another field here: total_len.
+> I know it will consume 4 bytes per desc but i think that's the drawback we need
+> to accept.
 
---
-Corentin Chary
-http://xf.iksaif.net
+I found already better solution I guess.
+I introduced two functions to get amount of sent bytes like
+
+u32 calc_sent(u32 ctlhi, u32 ctllo)
+{
+ return f1(ctlhi) * f2(ctllo);
+}
+
+u32 get_sent(dwc)
+{
+ return calc_sent(read(CTL_HI), read(CTL_LO));
+}
+
+And usage like
+
+/* initial residue */
+desc->len - calc_sent(desc->lli.ctlhi, desc->lli.ctllo).
+
+What do you think?
+
+-- 
+With Best Regards,
+Andy Shevchenko
