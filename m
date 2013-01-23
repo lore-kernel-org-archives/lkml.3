@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab3AWJ4i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 04:56:38 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52249 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754420Ab3AWJ4h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754660Ab3AWJ4h (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 23 Jan 2013 04:56:37 -0500
-Date: Wed, 23 Jan 2013 10:56:27 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Laurent Navet <laurent.navet@gmail.com>
-Cc: ben-linux@fluff.org, khali@linux-fr.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: i2c: muxes: fix sizeof(ptr)
-Message-ID: <20130123095627.GD3767@nekote.pengutronix.de>
-References: <1357652409-22907-1-git-send-email-laurent.navet@gmail.com>
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:63052 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738Ab3AWJ4f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 04:56:35 -0500
+Date: Wed, 23 Jan 2013 10:53:37 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: "Su, Xuemin" <xuemin.su@intel.com>
+Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com,
+        bo.he@intel.com
+Subject: Re: [PATCH V2 RESEND] drm_crtc: check if fb_create return NULL
+Message-ID: <20130123095337.GQ31870@phenom.ffwll.local>
+Mail-Followup-To: "Su, Xuemin" <xuemin.su@intel.com>, airlied@linux.ie,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	yanmin_zhang@linux.intel.com, bo.he@intel.com
+References: <1358911167.18561.20.camel@suxuemin.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1357652409-22907-1-git-send-email-laurent.navet@gmail.com>
+In-Reply-To: <1358911167.18561.20.camel@suxuemin.sh.intel.com>
+X-Operating-System: Linux phenom 3.8.0-rc3+
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 02:40:09PM +0100, Laurent Navet wrote:
-> sizeof when applied to a pointer typed expression gives the size of
-> the pointer
+On Wed, Jan 23, 2013 at 11:19:27AM +0800, Su, Xuemin wrote:
+> From: xueminsu <xuemin.su@intel.com>
+> Date: Tue, 22 Jan 2013 22:39:39 +0800
+> Subject: [PATCH] drm_crtc: check if fb_create return NULL
 > 
-> The semantic patch that makes this output is available
-> in scripts/coccinelle/misc/noderef.cocci.
+> Some buggy driver may still return NULL in fb_create,
+> which leads to kernel panic.
 > 
-> More information about semantic patching is available at
-> http://coccinelle.lip6.fr/
-> 
-> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+> Signed-off-by: xueminsu <xuemin.su@intel.com>
 
-Thanks, applied to for-current.
+Imo just BUG_ON(!fb); and call it a day. Makes it pretty clear what's
+expected of the drivers.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
