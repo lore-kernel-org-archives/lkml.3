@@ -1,83 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab3AWACm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 19:02:42 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:59478 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab3AWACj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 19:02:39 -0500
-Message-ID: <50FF287C.70906@gmail.com>
-Date: Tue, 22 Jan 2013 16:02:04 -0800
-From: John Fastabend <john.fastabend@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756208Ab3AWAC4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 19:02:56 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:50903 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755841Ab3AWACy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 19:02:54 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH 4/4] ACPI / PM: Expose lists of device power resources to user space
+Date: Wed, 23 Jan 2013 01:08:54 +0100
+Message-ID: <4110339.gOkm8VAsyn@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130122235624.GF694@kroah.com>
+References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <1477263.uvKKInuF7l@vostro.rjw.lan> <20130122235624.GF694@kroah.com>
 MIME-Version: 1.0
-To: Daniel Wagner <wagi@monom.org>
-CC: Li Zefan <lizefan@huawei.com>, John Fastabend <john.r.fastabend@intel.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Daniel Wagner <daniel.wagner@bmw-carit.de>,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [BUG] Bug in netprio_cgroup and netcls_cgroup ?
-References: <50FCDB5C.4050608@huawei.com> <50FD0144.1000401@monom.org> <50FD0402.6060400@huawei.com> <50FD09FD.4010804@monom.org> <50FD1113.6010402@huawei.com> <50FD786E.4050108@gmail.com> <20130122100938.GA26820@candlejack.bmw-carit.intra>
-In-Reply-To: <20130122100938.GA26820@candlejack.bmw-carit.intra>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
+On Tuesday, January 22, 2013 03:56:24 PM Greg Kroah-Hartman wrote:
+> On Tue, Jan 22, 2013 at 03:28:23AM +0100, Rafael J. Wysocki wrote:
+> > +static struct attribute *attrs[] = {
+> > +	NULL,
+> > +};
+> 
+> That's "odd"...
 
->>
->> OK, I guess we should do something similar in the netprio, netcls
->> cgroups and
->> yes document it as you noted in your last comment.
->
-> Here is my attempt to add such a check. I really don't know if this is the
-> correct way to do so. To test this I have written a test program, which
-> seems to test the right thing. Please have a look and let me know if
-> it is correct: http://www.monom.org/misc/scm_rights.c
->
-> And here a dirty first version of the patch:
->
->
->  From 49a78d907eaf31c16673025e7e3b4844e419e416 Mon Sep 17 00:00:00 2001
-> From: Daniel Wagner <daniel.wagner@bmw-carit.de>
-> Date: Tue, 22 Jan 2013 11:08:22 +0100
-> Subject: [PATCH] net: net_prio: Block attach if a socket is shared
->
-> ---
->   net/core/netprio_cgroup.c | 30 ++++++++++++++++++++++++++++++
->   1 file changed, 30 insertions(+)
->
-> diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-> index 847c02b..de4e6c5 100644
-> --- a/net/core/netprio_cgroup.c
-> +++ b/net/core/netprio_cgroup.c
-> @@ -274,9 +274,39 @@ static struct cftype ss_files[] = {
->   	{ }	/* terminate */
->   };
->
-> +static int check_cnt(const void *v, struct file *file, unsigned n)
-> +{
-> +	unsigned *flag = (unsigned *)v;
-> +	int err;
-> +
-> +	struct socket *sock = sock_from_file(file, &err);
-> +	if (sock && file_count(file) > 1)
-> +		*flag = 1;
-> +
+Well, I don't really need file attributes here (at least at the moment),
+but sysfs_create_group() will complain if I just pass NULL in there.
 
-I think this check will catch a lot of cases that are not necessarily
-sharing a socket across tasks though. For example iscsid passes a file
-descriptor to the kernel which does a sockfd_lookup() incrementing
-f_count. Similarly look at dup/clone/etc.
+> > +static void acpi_power_hide_list(struct acpi_device *adev,
+> > +				 struct acpi_device_power_state *ps,
+> > +				 const char *group_name)
+> >  {
+> > -	if (adev->power.flags.power_resources) {
+> > -		struct acpi_device_power_state *ps;
+> > -		struct acpi_power_resource_entry *entry;
+> > -
+> > -		ps = &adev->power.states[ACPI_STATE_D0];
+> > -		list_for_each_entry(entry, &ps->resources, node) {
+> > -			struct acpi_power_resource *resource = entry->resource;
+> > -
+> > -			if (add)
+> > -				acpi_power_add_dependent(resource, adev);
+> > -			else
+> > -				acpi_power_remove_dependent(resource, adev);
+> > +	struct attribute_group attr_group = {
+> > +		.name	= group_name,
+> > +		.attrs	= attrs,
+> > +	};
+> 
+> This is on the stack, which seems like it would not be good...
+> 
+> > +	struct acpi_power_resource_entry *entry;
+> > +
+> > +	list_for_each_entry_reverse(entry, &ps->resources, node) {
+> > +		struct acpi_device *res_dev = &entry->resource->device;
+> > +
+> > +		sysfs_remove_link_from_group(&adev->dev.kobj, group_name,
+> > +					     dev_name(&res_dev->dev));
+> > +	}
+> > +	sysfs_remove_group(&adev->dev.kobj, &attr_group);
+> 
+> You aren't removing the same group that you created.  Well, kind of, but
+> that's strange, it really works?
 
-In many of these cases I believe it should be OK to move the task
-around when the sockets are not shared between multiple tasks.
+Yes, it does, as far as I can say.
 
-.John
+> > +static void acpi_power_expose_list(struct acpi_device *adev,
+> > +				   struct acpi_device_power_state *ps,
+> > +				   const char *group_name)
+> > +{
+> > +	struct attribute_group attr_group = {
+> > +		.name	= group_name,
+> > +		.attrs	= attrs,
+> > +	};
+> 
+> again a structure on the stack.
+> 
+> Why not just create the attribute groups as static, instead of
+> "pseudo-dynamically" like you are doing here?
+
+Basically because I'm lazy. :-)
+
+They can be static if that's better.
+
+> I have no idea if sysfs
+> can properly cope with an attribute group pointer that disappears after
+> it has been registered with the sysfs core.  That seems ripe for
+> problems, don't you agree?
+
+I don't think so having looked at the code, but I very well might overlook
+something.  I'll change that.
+
+> Oh, and same question about racing userspace, you will have problems
+> here in that the symlinks will be showing up after the device is
+> created.  Perhaps, to make the whole thing easier, you just change the
+> acpi core code to hold off on the notification until you get all of
+> these links and files set up and then tell userspace.  That's probably
+> an easier fix.
+
+I suppose so.
+
+How can I do that?
+
+Rafael
+
 
 -- 
-John Fastabend         Intel Corporation
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
