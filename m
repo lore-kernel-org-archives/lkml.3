@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab3AWKIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 05:08:36 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48568 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502Ab3AWKId (ORCPT
+	id S1754865Ab3AWKJM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 05:09:12 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:48953 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754524Ab3AWKJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 05:08:33 -0500
-Message-ID: <50FFB697.7030307@linux.vnet.ibm.com>
-Date: Wed, 23 Jan 2013 18:08:23 +0800
+	Wed, 23 Jan 2013 05:09:09 -0500
+Message-ID: <50FFB6BC.5090001@linux.vnet.ibm.com>
+Date: Wed, 23 Jan 2013 18:09:00 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
@@ -16,54 +16,268 @@ To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi.kivity@gmail.com>,
         Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 08/12] KVM: MMU: cleanup __direct_map
+Subject: [PATCH v2 09/12] KVM: MMU: introduce mmu_spte_establish
 References: <50FFB5A1.5090708@linux.vnet.ibm.com>
 In-Reply-To: <50FFB5A1.5090708@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012310-6102-0000-0000-000002E7D237
+x-cbid: 13012310-5490-0000-0000-000002DCD716
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use link_shadow_page to link the sp to the spte in __direct_map
+It is used to establish the spte if it is not present to cleanup the
+code, it also marks spte present before linking it to the sp's
+parent_list, then we can integrate the code between rmap walking and
+parent_lisk walking in the later patch
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+ arch/x86/kvm/mmu.c         |   81 ++++++++++++++++++++++---------------------
+ arch/x86/kvm/paging_tmpl.h |   16 ++++-----
+ 2 files changed, 48 insertions(+), 49 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index c0bb7cf..7d7eb4a 100644
+index 7d7eb4a..55198a1 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1984,9 +1984,9 @@ static void link_shadow_page(u64 *sptep, struct kvm_mmu_page *sp)
+@@ -1505,9 +1505,6 @@ static unsigned kvm_page_table_hashfn(gfn_t gfn)
+ static void mmu_page_add_parent_pte(struct kvm_vcpu *vcpu,
+ 				    struct kvm_mmu_page *sp, u64 *parent_pte)
  {
- 	u64 spte;
+-	if (!parent_pte)
+-		return;
+-
+ 	pte_list_add(vcpu, parent_pte, &sp->parent_ptes);
+ }
 
--	spte = __pa(sp->spt)
--		| PT_PRESENT_MASK | PT_ACCESSED_MASK
--		| PT_WRITABLE_MASK | PT_USER_MASK;
+@@ -1525,7 +1522,7 @@ static void drop_parent_pte(struct kvm_mmu_page *sp,
+ }
+
+ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
+-					       u64 *parent_pte, int direct)
++					       int direct)
+ {
+ 	struct kvm_mmu_page *sp;
+ 	sp = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_header_cache);
+@@ -1535,7 +1532,6 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
+ 	set_page_private(virt_to_page(sp->spt), (unsigned long)sp);
+ 	list_add(&sp->link, &vcpu->kvm->arch.active_mmu_pages);
+ 	sp->parent_ptes = 0;
+-	mmu_page_add_parent_pte(vcpu, sp, parent_pte);
+ 	kvm_mod_used_mmu_pages(vcpu->kvm, +1);
+ 	return sp;
+ }
+@@ -1868,8 +1864,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 					     gva_t gaddr,
+ 					     unsigned level,
+ 					     int direct,
+-					     unsigned access,
+-					     u64 *parent_pte)
++					     unsigned access)
+ {
+ 	union kvm_mmu_page_role role;
+ 	unsigned quadrant;
+@@ -1899,19 +1894,15 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 		if (sp->unsync && kvm_sync_page_transient(vcpu, sp))
+ 			break;
+
+-		mmu_page_add_parent_pte(vcpu, sp, parent_pte);
+-		if (sp->unsync_children) {
++		if (sp->unsync_children)
+ 			kvm_make_request(KVM_REQ_MMU_SYNC, vcpu);
+-			kvm_mmu_mark_parents_unsync(sp);
+-		} else if (sp->unsync)
+-			kvm_mmu_mark_parents_unsync(sp);
+
+ 		__clear_sp_write_flooding_count(sp);
+ 		trace_kvm_mmu_get_page(sp, false);
+ 		return sp;
+ 	}
+ 	++vcpu->kvm->stat.mmu_cache_miss;
+-	sp = kvm_mmu_alloc_page(vcpu, parent_pte, direct);
++	sp = kvm_mmu_alloc_page(vcpu, direct);
+ 	if (!sp)
+ 		return sp;
+ 	sp->gfn = gfn;
+@@ -1931,6 +1922,35 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 	return sp;
+ }
+
++static void link_shadow_page(u64 *sptep, struct kvm_mmu_page *sp)
++{
++	u64 spte;
++
 +	spte = __pa(sp->spt) | PT_PRESENT_MASK | PT_WRITABLE_MASK |
 +	       shadow_user_mask | shadow_x_mask | shadow_accessed_mask;
 +
- 	mmu_spte_set(sptep, spte);
++	mmu_spte_set(sptep, spte);
++}
++
++static struct kvm_mmu_page *
++mmu_spte_establish(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn, gva_t gaddr,
++		   unsigned level, int direct, unsigned access)
++{
++	struct kvm_mmu_page *sp;
++
++	WARN_ON(is_shadow_present_pte(*spte));
++
++	sp = kvm_mmu_get_page(vcpu, gfn, gaddr, level, direct, access);
++
++	link_shadow_page(spte, sp);
++	mmu_page_add_parent_pte(vcpu, sp, spte);
++
++	if (sp->unsync_children || sp->unsync)
++		kvm_mmu_mark_parents_unsync(sp);
++
++	return sp;
++}
++
+ static void shadow_walk_init(struct kvm_shadow_walk_iterator *iterator,
+ 			     struct kvm_vcpu *vcpu, u64 addr)
+ {
+@@ -1980,16 +2000,6 @@ static void shadow_walk_next(struct kvm_shadow_walk_iterator *iterator)
+ 	return __shadow_walk_next(iterator, *iterator->sptep);
  }
 
-@@ -2626,11 +2626,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
- 					      iterator.level - 1,
- 					      1, ACC_ALL, iterator.sptep);
+-static void link_shadow_page(u64 *sptep, struct kvm_mmu_page *sp)
+-{
+-	u64 spte;
+-
+-	spte = __pa(sp->spt) | PT_PRESENT_MASK | PT_WRITABLE_MASK |
+-	       shadow_user_mask | shadow_x_mask | shadow_accessed_mask;
+-
+-	mmu_spte_set(sptep, spte);
+-}
+-
+ static void validate_direct_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 				   unsigned direct_access)
+ {
+@@ -2046,11 +2056,6 @@ static void kvm_mmu_page_unlink_children(struct kvm *kvm,
+ 		mmu_page_zap_pte(kvm, sp, sp->spt + i);
+ }
 
--			mmu_spte_set(iterator.sptep,
--				     __pa(sp->spt)
--				     | PT_PRESENT_MASK | PT_WRITABLE_MASK
--				     | shadow_user_mask | shadow_x_mask
--				     | shadow_accessed_mask);
-+			link_shadow_page(iterator.sptep, sp);
+-static void kvm_mmu_put_page(struct kvm_mmu_page *sp, u64 *parent_pte)
+-{
+-	mmu_page_remove_parent_pte(sp, parent_pte);
+-}
+-
+ static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
+ {
+ 	u64 *sptep;
+@@ -2601,9 +2606,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 			bool prefault)
+ {
+ 	struct kvm_shadow_walk_iterator iterator;
+-	struct kvm_mmu_page *sp;
+ 	int emulate = 0;
+-	gfn_t pseudo_gfn;
+
+ 	for_each_shadow_entry(vcpu, (u64)gfn << PAGE_SHIFT, iterator) {
+ 		if (iterator.level == level) {
+@@ -2621,12 +2624,11 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 			u64 base_addr = iterator.addr;
+
+ 			base_addr &= PT64_LVL_ADDR_MASK(iterator.level);
+-			pseudo_gfn = base_addr >> PAGE_SHIFT;
+-			sp = kvm_mmu_get_page(vcpu, pseudo_gfn, iterator.addr,
+-					      iterator.level - 1,
+-					      1, ACC_ALL, iterator.sptep);
++			mmu_spte_establish(vcpu, iterator.sptep,
++					   gpa_to_gfn(base_addr),
++					   iterator.addr, iterator.level - 1,
++					   1, ACC_ALL);
+
+-			link_shadow_page(iterator.sptep, sp);
  		}
  	}
  	return emulate;
+@@ -2945,7 +2947,7 @@ static int mmu_alloc_direct_roots(struct kvm_vcpu *vcpu)
+ 		spin_lock(&vcpu->kvm->mmu_lock);
+ 		kvm_mmu_free_some_pages(vcpu);
+ 		sp = kvm_mmu_get_page(vcpu, 0, 0, PT64_ROOT_LEVEL,
+-				      1, ACC_ALL, NULL);
++				      1, ACC_ALL);
+ 		++sp->root_count;
+ 		spin_unlock(&vcpu->kvm->mmu_lock);
+ 		vcpu->arch.mmu.root_hpa = __pa(sp->spt);
+@@ -2958,8 +2960,7 @@ static int mmu_alloc_direct_roots(struct kvm_vcpu *vcpu)
+ 			kvm_mmu_free_some_pages(vcpu);
+ 			sp = kvm_mmu_get_page(vcpu, i << (30 - PAGE_SHIFT),
+ 					      i << 30,
+-					      PT32_ROOT_LEVEL, 1, ACC_ALL,
+-					      NULL);
++					      PT32_ROOT_LEVEL, 1, ACC_ALL);
+ 			root = __pa(sp->spt);
+ 			++sp->root_count;
+ 			spin_unlock(&vcpu->kvm->mmu_lock);
+@@ -2996,7 +2997,7 @@ static int mmu_alloc_shadow_roots(struct kvm_vcpu *vcpu)
+ 		spin_lock(&vcpu->kvm->mmu_lock);
+ 		kvm_mmu_free_some_pages(vcpu);
+ 		sp = kvm_mmu_get_page(vcpu, root_gfn, 0, PT64_ROOT_LEVEL,
+-				      0, ACC_ALL, NULL);
++				      0, ACC_ALL);
+ 		root = __pa(sp->spt);
+ 		++sp->root_count;
+ 		spin_unlock(&vcpu->kvm->mmu_lock);
+@@ -3031,7 +3032,7 @@ static int mmu_alloc_shadow_roots(struct kvm_vcpu *vcpu)
+ 		kvm_mmu_free_some_pages(vcpu);
+ 		sp = kvm_mmu_get_page(vcpu, root_gfn, i << 30,
+ 				      PT32_ROOT_LEVEL, 0,
+-				      ACC_ALL, NULL);
++				      ACC_ALL);
+ 		root = __pa(sp->spt);
+ 		++sp->root_count;
+ 		spin_unlock(&vcpu->kvm->mmu_lock);
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index b9a0df6..9dbb79a 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -437,8 +437,9 @@ static int FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ 		sp = NULL;
+ 		if (!is_shadow_present_pte(*it.sptep)) {
+ 			table_gfn = gw->table_gfn[it.level - 2];
+-			sp = kvm_mmu_get_page(vcpu, table_gfn, addr, it.level-1,
+-					      false, access, it.sptep);
++			sp = mmu_spte_establish(vcpu, it.sptep, table_gfn,
++						addr, it.level-1, false,
++						access);
+ 		}
+
+ 		/*
+@@ -447,9 +448,6 @@ static int FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ 		 */
+ 		if (FNAME(gpte_changed)(vcpu, gw, it.level - 1))
+ 			goto out_gpte_changed;
+-
+-		if (sp)
+-			link_shadow_page(it.sptep, sp);
+ 	}
+
+ 	for (;
+@@ -467,9 +465,8 @@ static int FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+
+ 		direct_gfn = gw->gfn & ~(KVM_PAGES_PER_HPAGE(it.level) - 1);
+
+-		sp = kvm_mmu_get_page(vcpu, direct_gfn, addr, it.level-1,
+-				      true, direct_access, it.sptep);
+-		link_shadow_page(it.sptep, sp);
++		mmu_spte_establish(vcpu, it.sptep, direct_gfn, addr,
++				   it.level-1, true, direct_access);
+ 	}
+
+ 	clear_sp_write_flooding_count(it.sptep);
+@@ -481,7 +478,8 @@ static int FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+
+ out_gpte_changed:
+ 	if (sp)
+-		kvm_mmu_put_page(sp, it.sptep);
++		drop_parent_pte(sp, it.sptep);
++
+ 	kvm_release_pfn_clean(pfn);
+ 	return 0;
+ }
 -- 
 1.7.7.6
 
