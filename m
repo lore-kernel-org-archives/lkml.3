@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab3AWNrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 08:47:09 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:60153 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754381Ab3AWNrH (ORCPT
+	id S1755422Ab3AWNxN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 08:53:13 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6895 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755306Ab3AWNxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 08:47:07 -0500
-Date: Wed, 23 Jan 2013 08:46:50 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: xufengzhang.main@gmail.com
-Cc: vyasevich@gmail.com, sri@us.ibm.com, davem@davemloft.net,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+	Wed, 23 Jan 2013 08:53:11 -0500
+X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=aeQPs-_SJuMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=N-VFlIc2aKAA:10 a=YjZLr5HInwWOWndY2xQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358949189.21576.114.camel@gandalf.local.home>
+Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing EXPORT_SYMBOL when
+ CONFIG_KVM=m
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: sedat.dilek@gmail.com, "devendra.aaru" <devendra.aaru@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sctp: set association state to established in dupcook_a
- handler
-Message-ID: <20130123134650.GA3512@hmsreliant.think-freely.org>
-References: <1358926720-25557-1-git-send-email-xufengzhang.main@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358926720-25557-1-git-send-email-xufengzhang.main@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+Date: Wed, 23 Jan 2013 08:53:09 -0500
+In-Reply-To: <CAFTL4hzcuxoy2deQpXDBRQZZBZ4VjT=EnO3ZZv6x-jGMTr_eaA@mail.gmail.com>
+References: <1358946905-13320-1-git-send-email-sedat.dilek@gmail.com>
+	 <CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
+	 <CA+icZUW7XrOGguoPO00wxPLUr2Xc8fP=jQZwekpnmWKRewwX2g@mail.gmail.com>
+	 <CAFTL4hzcuxoy2deQpXDBRQZZBZ4VjT=EnO3ZZv6x-jGMTr_eaA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 03:38:40PM +0800, xufengzhang.main@gmail.com wrote:
-> From: Xufeng Zhang <xufeng.zhang@windriver.com>
-> 
-> While sctp handling a duplicate COOKIE-ECHO and the action is
-> 'Association restart', sctp_sf_do_dupcook_a() will processing
-> the unexpected COOKIE-ECHO for peer restart, but it does not set
-> the association state to SCTP_STATE_ESTABLISHED, so the association
-> could stuck in SCTP_STATE_SHUTDOWN_PENDING state forever.
-> This violates the sctp specification:
->   RFC 4960 5.2.4. Handle a COOKIE ECHO when a TCB Exists
->   Action
->   A) In this case, the peer may have restarted. .....
->      After this, the endpoint shall enter the ESTABLISHED state.
-> 
-> Fix this problem by adding a SCTP_CMD_NEW_STATE cmd to the command
-> list so as to set the restart association to SCTP_STATE_ESTABLISHED
-> state properly.
-> 
-> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
-> ---
->  net/sctp/sm_statefuns.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-> index 618ec7e..528f1c8 100644
-> --- a/net/sctp/sm_statefuns.c
-> +++ b/net/sctp/sm_statefuns.c
-> @@ -1779,6 +1779,8 @@ static sctp_disposition_t sctp_sf_do_dupcook_a(struct net *net,
->  
->  	/* Update the content of current association. */
->  	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
-> +	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
-> +			SCTP_STATE(SCTP_STATE_ESTABLISHED));
->  	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
->  	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
->  	return SCTP_DISPOSITION_CONSUME;
-> -- 
-> 1.7.0.2
-> 
-> 
+On Wed, 2013-01-23 at 14:46 +0100, Frederic Weisbecker wrote:
 
-Looks reasonable to me, thanks
+> > Hmmm, yes, but why, clueless, CONFIG_KVM=y as a workaround!
+> 
+> I believe he pointed out the "{i" to you. Typing mistake?
 
-nit: The RFC indicate the association should enter the ESTABLISHED state after
-preforming all other actions, so it seems that the state change should occur
-after the ULP event is sent
+In which case the CONFIG_KVM=y is a work around if that {i is within a
+#ifndef CONFIG_KVM ;-)
 
-Neil
+-- Steve
+
 
