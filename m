@@ -1,76 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab3AVXym (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 18:54:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47423 "EHLO mx2.suse.de"
+	id S1756248Ab3AVXzV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 18:55:21 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:50876 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752262Ab3AVXyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 18:54:40 -0500
-Date: Wed, 23 Jan 2013 00:54:38 +0100
-From: Jan Kara <jack@suse.cz>
-To: paul.szabo@sydney.edu.au
-Cc: linux-mm@kvack.org, 695182@bugs.debian.org, linux-kernel@vger.kernel.org,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH] Negative (setpoint-dirty) in bdi_position_ratio()
-Message-ID: <20130122235438.GB7497@quack.suse.cz>
-References: <201301200002.r0K02Atl031280@como.maths.usyd.edu.au>
+	id S1752262Ab3AVXzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 18:55:18 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH 1/4] ACPI / PM: Expose power states of ACPI devices to user space
+Date: Wed, 23 Jan 2013 01:01:17 +0100
+Message-ID: <10095480.LFKcHvtS1j@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130122234718.GC694@kroah.com>
+References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <4706454.hY2fLkUfhN@vostro.rjw.lan> <20130122234718.GC694@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201301200002.r0K02Atl031280@como.maths.usyd.edu.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 20-01-13 11:02:10, paul.szabo@sydney.edu.au wrote:
-> In bdi_position_ratio(), get difference (setpoint-dirty) right even when
-> negative. Both setpoint and dirty are unsigned long, the difference was
-> zero-padded thus wrongly sign-extended to s64. This issue affects all
-> 32-bit architectures, does not affect 64-bit architectures where long
-> and s64 are equivalent.
+On Tuesday, January 22, 2013 03:47:18 PM Greg Kroah-Hartman wrote:
+> On Tue, Jan 22, 2013 at 03:25:15AM +0100, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > Make it possible to retrieve the current power state of a device with
+> > ACPI power management from user space via sysfs by adding two new
+> > attributes, power_state and real_power_state, to the sysfs directory
+> > associated with the struct acpi_device object representing the
+> > device's ACPI node.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  Documentation/ABI/testing/sysfs-devices-power_state      |   20 ++++++
+> >  Documentation/ABI/testing/sysfs-devices-real_power_state |   23 +++++++
+> >  drivers/acpi/scan.c                                      |   49 ++++++++++++++-
+> >  3 files changed, 91 insertions(+), 1 deletion(-)
+> > 
+> > Index: linux-pm/drivers/acpi/scan.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/scan.c
+> > +++ linux-pm/drivers/acpi/scan.c
+> > @@ -178,6 +178,32 @@ err_out:
+> >  }
+> >  EXPORT_SYMBOL(acpi_bus_hot_remove_device);
+> >  
+> > +static ssize_t real_power_state_show(struct device *dev,
+> > +				     struct device_attribute *attr, char *buf)
+> > +{
+> > +	struct acpi_device *adev = to_acpi_device(dev);
+> > +	int state;
+> > +	int ret;
+> > +
+> > +	ret = acpi_device_get_power(adev, &state);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	return sprintf(buf, "%s\n", acpi_power_state_string(state));
+> > +}
+> > +
+> > +static DEVICE_ATTR(real_power_state, 0444, real_power_state_show, NULL);
+> > +
+> > +static ssize_t power_state_show(struct device *dev,
+> > +				struct device_attribute *attr, char *buf)
+> > +{
+> > +	struct acpi_device *adev = to_acpi_device(dev);
+> > +
+> > +	return sprintf(buf, "%s\n", acpi_power_state_string(adev->power.state));
+> > +}
+> > +
+> > +static DEVICE_ATTR(power_state, 0444, power_state_show, NULL);
+> > +
+> >  static ssize_t
+> >  acpi_eject_store(struct device *d, struct device_attribute *attr,
+> >  		const char *buf, size_t count)
+> > @@ -369,8 +395,22 @@ static int acpi_device_setup_files(struc
+> >           * hot-removal function from userland.
+> >           */
+> >  	status = acpi_get_handle(dev->handle, "_EJ0", &temp);
+> > -	if (ACPI_SUCCESS(status))
+> > +	if (ACPI_SUCCESS(status)) {
+> >  		result = device_create_file(&dev->dev, &dev_attr_eject);
+> > +		if (result)
+> > +			return result;
+> > +	}
+> > +
+> > +	if (dev->flags.power_manageable) {
+> > +		result = device_create_file(&dev->dev, &dev_attr_power_state);
+> > +		if (result)
+> > +			return result;
+> > +
+> > +		if (dev->power.flags.power_resources)
+> > +			result = device_create_file(&dev->dev,
+> > +						    &dev_attr_real_power_state);
+> > +	}
+> > +
 > 
-> In this function, dirty is between freerun and limit, the pseudo-float x
-> is between [-1,1], expected to be negative about half the time. With
-> zero-padding, instead of a small negative x we obtained a large positive
-> one so bdi_position_ratio() returned garbage.
+> It isn't your fault, but I just noticed this when reading patch 2/4, but
+> I think you are racing userspace here.  The device is registered,
+> userspace is notified that the device is present, and _then_ the acpi
+> core creates the sysfs files for the device.
 > 
-> Casting the difference to s64 also prevents overflow with left-shift;
-> though normally these numbers are small and I never observed a 32-bit
-> overflow there.
+> That's not good, and needs to be fixed, especially now that you are
+> adding more and more sysfs files for these ACPI devices.
 > 
-> (This patch does not solve the PAE OOM issue.)
+> To do that, you need to set up "default" files for ACPI devices, they
+> can be enabled or not by the driver core, and will be created before the
+> event that the device is created is sent to userspace.
 > 
-> Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
-> School of Mathematics and Statistics   University of Sydney    Australia
-> 
-> Reported-by: Paul Szabo <psz@maths.usyd.edu.au>
-> Reference: http://bugs.debian.org/695182
-> Signed-off-by: Paul Szabo <psz@maths.usyd.edu.au>
-  Ah, good catch. Thanks for the patch. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+> Care to fix that all up in a follow-on patchset before some tools start
+> to get confused?
 
-  I've also added CC to writeback maintainer.
+I will.
 
-								Honza
+That's kind of has been happening for quite a long time, though, as far as
+I can say, so confusion would have ensued already before.  Not that I think
+it's not worth fixing, to be sure. :-)
 
-> 
-> --- mm/page-writeback.c.old	2012-12-06 22:20:40.000000000 +1100
-> +++ mm/page-writeback.c	2013-01-20 07:47:55.000000000 +1100
-> @@ -559,7 +559,7 @@ static unsigned long bdi_position_ratio(
->  	 *     => fast response on large errors; small oscillation near setpoint
->  	 */
->  	setpoint = (freerun + limit) / 2;
-> -	x = div_s64((setpoint - dirty) << RATELIMIT_CALC_SHIFT,
-> +	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
->  		    limit - setpoint + 1);
->  	pos_ratio = x;
->  	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+So acpi_device_setup_files() is called too late already, right?
+
+Rafael
+
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
