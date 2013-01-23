@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab3AWQZg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 11:25:36 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:63513 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756580Ab3AWQZY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 11:25:24 -0500
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fbdev-devel@lists.sourceforge.net,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 2/2] drm/i915: fixup per-crtc locking in intel_release_load_detect_pipe
-Date: Wed, 23 Jan 2013 17:25:09 +0100
-Message-Id: <1358958309-5342-3-git-send-email-daniel.vetter@ffwll.ch>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1358958309-5342-1-git-send-email-daniel.vetter@ffwll.ch>
-References: <1358958309-5342-1-git-send-email-daniel.vetter@ffwll.ch>
+	id S1756600Ab3AWQ0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 11:26:16 -0500
+Received: from londo.lunn.ch ([80.238.139.98]:56685 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756580Ab3AWQZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 11:25:37 -0500
+Date: Wed, 23 Jan 2013 17:25:15 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Soeren Moch <smoch@web.de>
+Cc: Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
+ dma_alloc_coherent() calls
+Message-ID: <20130123162515.GK13482@lunn.ch>
+References: <20121119144826.f59667b2.akpm@linux-foundation.org>
+ <201301171049.30415.arnd@arndb.de>
+ <50F800EB.6040104@web.de>
+ <201301172026.45514.arnd@arndb.de>
+ <50FABBED.1020905@web.de>
+ <20130119185907.GA20719@lunn.ch>
+ <5100022D.9050106@web.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5100022D.9050106@web.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One of the early return cases missed the mutex unlocking. Hilarity
-ensued.
+On Wed, Jan 23, 2013 at 04:30:53PM +0100, Soeren Moch wrote:
+> On 19.01.2013 19:59, Andrew Lunn wrote:
+> >>Please find attached a debug log generated with your patch.
+> >>
+> >>I used the sata disk and two em28xx dvb sticks, no other usb devices,
+> >>no ethernet cable connected, tuners on saa716x-based card not used.
+> >>
+> >>What I can see in the log: a lot of coherent mappings from sata_mv
+> >>and orion_ehci, a few from mv643xx_eth, no other coherent mappings.
+> >>All coherent mappings are page aligned, some of them (from orion_ehci)
+> >>are not really small (as claimed in __alloc_from_pool).
+> >>
+> >>I don't believe in a memory leak. When I restart vdr (the application
+> >>utilizing the dvb sticks) then there is enough dma memory available
+> >>again.
+> >
+> >Hi Soeren
+> >
+> >We should be able to rule out a leak. Mount debugfg and then:
+> >
+> >while [ /bin/true ] ; do cat /debug/dma-api/num_free_entries ; sleep 60 ; done
+> >
+> >while you are capturing. See if the number goes down.
+> >
+> >       Andrew
+> 
+> Now I built a kernel with debugfs enabled.
+> It is not clear to me what I can see from the
+> dma-api/num_free_entries output. After reboot (vdr running) I see
+> decreasing numbers (3453 3452 3445 3430...), min_free_entries is
+> lower (3390). Sometimes the output is constant for several minutes (
+> 3396 3396 3396 3396 3396,...)
 
-This regression has been introduced in
+We are interesting in the long term behavior. Does it gradually go
+down? Or is it stable? If it goes down over time, its clearly a leak
+somewhere.
 
-commit 7b24056be6db7ce907baffdd4cf142ab774ea60c
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Wed Dec 12 00:35:33 2012 +0100
-
-    drm: don't hold crtc mutexes for connector ->detect callbacks
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=59750
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
----
- drivers/gpu/drm/i915/intel_display.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 26df9e3..ece4afd 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -6522,6 +6522,7 @@ void intel_release_load_detect_pipe(struct drm_connector *connector,
- 			drm_framebuffer_unreference(old->release_fb);
- 		}
- 
-+		mutex_unlock(&crtc->mutex);
- 		return;
- 	}
- 
--- 
-1.7.10.4
-
+	Andrew
