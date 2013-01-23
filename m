@@ -1,81 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab3AWCfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 21:35:45 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:61170 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579Ab3AWCfo (ORCPT
+	id S1752688Ab3AWCjE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 21:39:04 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:50990 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab3AWCjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 21:35:44 -0500
-Message-ID: <50FF4C4D.4020405@huawei.com>
-Date: Wed, 23 Jan 2013 10:34:53 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Tue, 22 Jan 2013 21:39:00 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/6] cgroup: initialize cgrp->dentry before css_alloc()
-References: <50F7B040.2020906@huawei.com> <20130123002754.GB5359@htj.dyndns.org>
-In-Reply-To: <20130123002754.GB5359@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <CAMbhsRRM+60gUTRuYzT5sAgLPP7Fj=T78Z3E_hZVmajY-wqGeQ@mail.gmail.com>
+References: <1357941108-14138-1-git-send-email-ccross@android.com>
+	<20130114154914.6d69eb27.akpm@linux-foundation.org>
+	<CAMbhsRR29Zhje9mGtUwHfUsX+eFsggYkVMHPyQ+zgrGUp_rqTQ@mail.gmail.com>
+	<20130114162504.e667a4be.akpm@linux-foundation.org>
+	<CAMbhsRRM+60gUTRuYzT5sAgLPP7Fj=T78Z3E_hZVmajY-wqGeQ@mail.gmail.com>
+Date: Tue, 22 Jan 2013 18:38:59 -0800
+X-Google-Sender-Auth: 5Uuiq7KQKu621nOZ4A2lOQg1CgM
+Message-ID: <CAMbhsRTDSJaQd4JKfo8KoaUsBaa5pQkpqh7JpH6jkOP4QFojhA@mail.gmail.com>
+Subject: Re: [PATCH v2] hardlockup: detect hard lockups without NMIs using
+ secondary cpus
+From: Colin Cross <ccross@android.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        liu chuansheng <chuansheng.liu@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/1/23 8:27, Tejun Heo wrote:
-> (cc'ing Andrew as scheduler folks are difficult to get response from
->  these days and I can't think of anyone else to bother :)
-> 
-> Hello, Li.
-> 
-> The cgroup part looks good to me but it would be great if the
-> descriptions are more detailed, especially, about why the change is
-> beneficial or what it's aiming at.  I take it that the shed changes
-> are necessary to facilitate the later cgroup changes?  Can you please
-> elaborate how?
-> 
+On Mon, Jan 14, 2013 at 4:30 PM, Colin Cross <ccross@android.com> wrote:
+> On Mon, Jan 14, 2013 at 4:25 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+>> On Mon, 14 Jan 2013 16:19:23 -0800
+>> Colin Cross <ccross@android.com> wrote:
+>>
+>>> >> +static void watchdog_check_hardlockup_other_cpu(void)
+>>> >> +{
+>>> >> +     unsigned int next_cpu;
+>>> >> +
+>>> >> +     /*
+>>> >> +      * Test for hardlockups every 3 samples.  The sample period is
+>>> >> +      *  watchdog_thresh * 2 / 5, so 3 samples gets us back to slightly over
+>>> >> +      *  watchdog_thresh (over by 20%).
+>>> >> +      */
+>>> >> +     if (__this_cpu_read(hrtimer_interrupts) % 3 != 0)
+>>> >> +             return;
+>>> >
+>>> > The hardwired interval Seems Wrong.  watchdog_thresh is tunable at runtime.
+>>> >
+>>> > The comment could do with some fleshing out.  *why* do we want to test
+>>> > at an interval "slightly over watchdog_thresh"?  What's going on here?
+>>>
+>>> I'll reword it.  We don't want to be slightly over watchdog_thresh,
+>>> ideally we would be exactly at watchdog_thresh.  However, since this
+>>> relies on the hrtimer interrupts that are scheduled at watchdog_thresh
+>>> * 2 / 5, there is no multiple of hrtimer_interrupts that will result
+>>> in watchdog_thresh.  watchdog_thresh * 2 / 5 * 3 (watchdog_thresh *
+>>> 1.2) is the closest I can get to testing for a hardlockup once every
+>>> watchdog_thresh seconds.
+>>
+>> It needs more than rewording, doesn't it?  What happens if watchdog_thresh is
+>> altered at runtime?
+>
+> I'm not sure what you mean.  If watchdog_thresh changes, the next
+> hrtimer interrupt on each cpu will move the following hrtimer
+> interrupt forward by the new watchdog_thresh * 2 / 5.  There may be a
+> single cycle of watchdog checks at an intermediate period, but nothing
+> bad should happen.
+>
+> This code doesn't ever deal with watchdog_thresh directly, it is only
+> counting hrtimer interrupts.  3 hrtimer interrupts is always a
+> reasonable approximation of watchdog_thresh.
 
-Scheduler changes made in patch #2 are preparation for #3 and #4.
+I think I see the race you were referring to.  When the hrtimer
+interrupt fires on the first cpu after changing the watchdog thresh,
+it will see the new value and starting firing the timer at the new
+rate.  The other cpus may not see the new value for as long as the old
+sample period.  If the new threshold is more than 3 times lower than
+the old value, one cpu could easily get 3 hrtimer interrupts while
+another cpu doesn't get any, triggering the lockup detector.
 
-- for #3:
+The exact same issue is already present in the existing NMI detector,
+which is conceptually very similar to this one.  It has two
+asynchronous timers, the NMI perf counter and the hrtimer.  If one
+timer sees the new threshold before the other their relative rates
+will be wrong and the lockup detector may fire.  Setting
+watchdog_nmi_touch is not good enough, as one interrupt could fire
+enough to trigger the hardlockup detector twice.  The only fix I can
+think of is to set a timestamp far enough in the future to catch all
+the ordering problems, and ignore lockups until sched_clock() is
+higher than the timestamp.  I think it would need to be a delay of
+twice the larger of the old and new watchdog_thresh values.
 
-After ss->css_alloc(), there's a small window that tg->css.cgroup is NULL.
-With the change, tg won't be seen before ss->css_online(), so the scheduler
-won't see NULL tg->css.cgroup.
+But its worse than that, the NMI perf counter is never updated when
+watchdog_thresh changes, so raising watchdog_thresh more than 2.5x may
+trigger the NMI detector.
 
-- for #4:
-
-If tg is unregistered and removed from global list in css_free(), and if
-we kfree cgroup right after ss->css_free(), the scheduler can access
-invalid tg->css.cgroup, because tg is also protected by RCU.
-
-Without patch #2:
-
-cgroup_rmdir()
-  no ss->css_offline()
-diput()
-  syncronize_rcu()
-  ss->css_free()    <-- remove tg from global list,
-			and free tg via call_rcu()
-  kfree_rcu(cgroup) <-- wait rcu read section
-
-With the change:
-
-cgroup_rmdir()
-  ss->css_offline() <-- remove tg from global list
-diput()
-  synchronize_rcu() <-- wait rcu read section
-  ss->css_free();   <-- free tg
-  kfree(cgroup);
-
-> The scheduler part of changes are mostly mechanical, so it would be
-> great if we can get ack from scheduler people and route these together.
-> 
-> Thanks.
-> 
-
+I'll send a separate patch for the first problem, but I don't have
+anything to test resetting the NMI counter on so I'll leave that issue
+for someone else.
