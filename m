@@ -1,267 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab3AWJnc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 04:43:32 -0500
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:45479 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752439Ab3AWJn2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 04:43:28 -0500
-Message-ID: <50FFB094.5000100@st.com>
-Date: Wed, 23 Jan 2013 10:42:44 +0100
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1754552Ab3AWJoZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 04:44:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35197 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752439Ab3AWJoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 04:44:22 -0500
+Date: Wed, 23 Jan 2013 10:44:21 +0100
+From: Jan Kara <jack@suse.cz>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>, mszeredi@suse.cz
+Subject: Re: jbd2: don't wake kjournald unnecessarily
+Message-ID: <20130123094421.GB9821@quack.suse.cz>
+References: <CA+icZUWOvk5i+XY22xdZYuxu=Vy3fG2QxJStEgNFQVS4u55y-w@mail.gmail.com>
+ <CA+icZUUzNYE9QAh_p7=ZNuvZbxRPCb9zd4k7+aW-hv34mQWz=A@mail.gmail.com>
+ <20130121104733.GE5588@quack.suse.cz>
+ <CA+icZUVy-=jJkRsEKmX+ZGRjiGr4wwp3pqdxuLCRHeqW_H0x9Q@mail.gmail.com>
+ <CA+icZUVAP4ArN+j34GTUwMxte5DtLPJSrLmK9T6Na8Qy+aM0Rg@mail.gmail.com>
+ <20130121140738.GI5588@quack.suse.cz>
+ <CA+icZUXLcdnNPvA9o8d5msOQ0MkMci8mPXujLZ3zcYjYcVZ7JQ@mail.gmail.com>
+ <20130121231130.GB12410@thunk.org>
+ <20130122235041.GA7497@quack.suse.cz>
+ <50FF3EEA.2030408@redhat.com>
 MIME-Version: 1.0
-To: Byungho An <bh74.an@samsung.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        jeffrey.t.kirsher@intel.com, kgene.kim@samsung.com, cpgs@samsung.com
-Subject: Re: [PATCH net-next 1/3] net: stmmac: add gmac autoneg set for SGMII,
- TBI, and RTBI
-References: <00c001cdf369$9b25bdf0$d17139d0$@samsung.com> <50F6568D.3060703@st.com> <01e201cdf5a3$1f3e1890$5dba49b0$@samsung.com>
-In-Reply-To: <01e201cdf5a3$1f3e1890$5dba49b0$@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FF3EEA.2030408@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Byungho
+On Tue 22-01-13 19:37:46, Eric Sandeen wrote:
+> On 1/22/13 5:50 PM, Jan Kara wrote:
+> > On Mon 21-01-13 18:11:30, Ted Tso wrote:
+> >> On Tue, Jan 22, 2013 at 12:04:32AM +0100, Sedat Dilek wrote:
+> >>>
+> >>> Beyond the FUSE/LOOP fun, will you apply this patch to your linux-next GIT tree?
+> >>>
+> >>> Feel free to add...
+> >>>
+> >>>      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+> >>>
+> >>> A similiar patch for JBD went through your tree into mainline (see [1] and [2]).
+> >>
+> >> I'm not at all convinced that this patch has anything to do with your
+> >> problem.  I don't see how it could affect things, and I believe you
+> >> mentioned that you saw the problem even with this patch applied?  (I'm
+> >> not sure; some of your messages which you sent were hard to
+> >> understand, and you mentioned something about trying to send messages
+> >> when low on sleep :-).
+> >>
+> >> In any case, the reason why I haven't pulled this patch into the ext4
+> >> tree is because I was waiting for Eric and some of the performance
+> >> team folks at Red Hat to supply some additional information about why
+> >> this commit was making a difference in performance for a particular
+> >> proprietary, closed source benchmark.
+> >   Just a small correction - it was aim7 AFAIK which isn't closed source
+> > (anymore). You can download it from SourceForge
+> > (http://sourceforge.net/projects/aimbench/files/aim-suite7/Initial%20release/).
+> > Now I have some reservations about what the benchmark does but historically
+> > it has found quite a few issues for us as well.
+> > 
+> >> I'm very suspicious about applying patches under the "cargo cult"
+> >> school of programming.  ("We don't understand why it makes a
+> >> difference, but it seems to be good, so bombs away!" :-)
+> >   Well, neither am I ;) But it is obvious the patch speeds up
+> > log_start_commit() by 'a bit' (taking spinlock, disabling irqs, ...). And
+> > apparently 'a bit' is noticeable for particular workload on a particular
+> > machine - commit statistics Eric provided showed that clearly. I'd still be
+> > happier if Eric also told us how much log_start_commit() calls there were
+> > so that one could verify that 'a bit' could indeed multiply to a measurable
+> > difference. But given how simple the patch is, I gave away after a while
+> > and just merged it...
+> 
+> I am still trying to get our perf guys to collect that data, FWIW...
+> I will send it when I get it.  I bugged them again today.  :)
+> 
+> (Just to be sure: I was going to measure the wakeups the old way, and the
+> avoided wakeups with the new change; sound ok?)
+  Yes, that would be what I'm interested in.
 
-On 1/18/2013 6:41 PM, Byungho An wrote:
-> Hello Peppe,
->
-> On 1/15/2013 11:28 PM, Giuseppe CAVALLARO write:
->> On 1/15/2013 10:45 PM, Byungho An wrote:
->>>
->>> This patch adds gmac autoneg set function for SGMII, TBI, or RTBI
->>> interface. In case of PHY's autoneg is set, gmac's autoneg enable bit
->>> should set. After checking phy's autoneg if phydev's autoneg is '1'
->>> gmac's ANE bit set for those interface.
->>
->> Sorry I've some doubts about these patches.
->>
->> Firstly if the MAC is able to manage RGMII/SGMII etc this should be
-> verified
->> by looking at the HW cap register: i.e. PCS bit.
->>
->>     (I have no HW that support this so I cannot do any tests).
->>
-> I agree with you and actually I tried to use a PCS bit previously.
-> (PCS bit indicates TBI, SGMII, or RTBI PHY interface)
-> But I was confused which one I should use among PSC, ACTPHYIF or phydev to
-> recognize the interface.
-> At this time, I want to add auto-negotiation enable because sgmii interface
-> is not working without ANE using PCS bit(in H/W feature register).
->
-
-really strange, from the synopsys databook we should only look at the RO 
-bit in the HW cap reg just to understand if the feature is supported.
-
->> In case of this feature is actually supported then the driver could manage
->> everything bypassing the MDIO.
->> IMO, we could not need to call the stmmac_phy_init and we should not use
->> the PHYLIB.
->> I mean if we have the PCS module we could have a minimal support to get
->> link status, restart ANE etc w/o using at all the PHYLIB (so w/o touching
-> the
->> PHY regs via the MDIO/MDC).
->>
-> Yes. For example SGMII/RGMII/SMII Status Register is useful to know status
-> so we can use this register to manage status of SGMII/RGMII/SMII
->
->
->>     It could also be useful to complete the support with the RGMII... no
->>     extra effort should be needed while adding SGMII if you look at the
->>     core registers.
->>     If you add the RGMII on some platforms we could guarantee to manage
->>     the fix_mac_speed (see stmmac doc).
->>
-> Unfortunately I have only the SGMII.
-
-no problem, I'll complete it by my hand later.
-
->
->> Looking at the other your patches, the ethtool support is not completed. I
->> expected to restart ANE, get/set link property etc.
->>
-> What is link property? It means link up, speed and duplex mode.
-> Are there anything else?
-> I think get link property is already working using ethtool.
-> In case of SGMII/RGMII/SMII, I think we can use SGMII/RGMII/SMII Status
-> Register for link status.
->
-> I have a question regarding it.
-> In the mainline code, there is hardcode interrupt mask in
-> dwmac1000_core_init function.
-> When I try to get interrupt for link change, interrupt is not occurred
-> because of this mask.
-> Can we modify that?
-
-yes you can. I had wrote an initial patch that started doing something.
-I have tested it on my boards and I can send it to the mailing list to 
-be reviewed. Maybe you can build your patch on top of it.
-
->> Also pay attention to properly treat EEE. Maybe, as first stage we should
->> disable the feature in this case. We will see it later.
->> The question is that we could not be able to use some extra features that
->> currently need to dialog more with the PHY device. I mean what we actually
->> do by using PHYLIB.
-> OK. As I understood, using gmac register instead of phydev or phylib...
-> I agree. In my opinion gmac and phy communicate using mdio each other, after
-> that gmac can get updated status.
-
-yep, this is the point :-)
-
->>
->>>
->>> Signed-off-by: Byungho An <bh74.an@samsung.com>
->>> ---
->>>    drivers/net/ethernet/stmicro/stmmac/common.h         |    1 +
->>>    drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c |   11
->> +++++++++++
->>>    drivers/net/ethernet/stmicro/stmmac/stmmac_main.c    |    9 +++++++++
->>>    3 files changed, 21 insertions(+)
->>>
->>> diff --git a/drivers/net/ethernet/stmicro/stmmac/common.h
->>> b/drivers/net/ethernet/stmicro/stmmac/common.h
->>> index 186d148..72ba769 100644
->>> --- a/drivers/net/ethernet/stmicro/stmmac/common.h
->>> +++ b/drivers/net/ethernet/stmicro/stmmac/common.h
->>> @@ -344,6 +344,7 @@ struct stmmac_ops {
->>>    	void (*reset_eee_mode) (void __iomem *ioaddr);
->>>    	void (*set_eee_timer) (void __iomem *ioaddr, int ls, int tw);
->>>    	void (*set_eee_pls) (void __iomem *ioaddr, int link);
->>> +	void (*set_autoneg) (void __iomem *ioaddr);
->>>    };
->>>
->>>    struct mac_link {
->>> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
->>> b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
->>> index bfe0226..a0737b39 100644
->>> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
->>> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
->>> @@ -297,6 +297,16 @@ static void  dwmac1000_set_eee_timer(void
->> __iomem
->>> *ioaddr, int ls, int tw)
->>>    	writel(value, ioaddr + LPI_TIMER_CTRL);
->>>    }
->>>
->>> +static void dwmac1000_set_autoneg(void __iomem *ioaddr) {
->>> +	u32 value;
->>> +
->>> +	value = readl(ioaddr + GMAC_AN_CTRL);
->>> +	value |= 0x1000;
->>
->> pls use define instead of raw values ... see below.
->>
->>> +	writel(value, ioaddr + GMAC_AN_CTRL); }
->>> +
->>> +
->>>    static const struct stmmac_ops dwmac1000_ops = {
->>>    	.core_init = dwmac1000_core_init,
->>>    	.rx_ipc = dwmac1000_rx_ipc_enable,
->>> @@ -311,6 +321,7 @@ static const struct stmmac_ops dwmac1000_ops = {
->>>    	.reset_eee_mode =  dwmac1000_reset_eee_mode,
->>>    	.set_eee_timer =  dwmac1000_set_eee_timer,
->>>    	.set_eee_pls =  dwmac1000_set_eee_pls,
->>> +	.set_autoneg =  dwmac1000_set_autoneg,
->>>    };
->>>
->>>    struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr) diff
->>> --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
->>> b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
->>> index f07c061..3e28934 100644
->>> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
->>> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
->>> @@ -1007,6 +1007,7 @@ static int stmmac_open(struct net_device *dev)
->>>    {
->>>    	struct stmmac_priv *priv = netdev_priv(dev);
->>>    	int ret;
->>> +	int interface = priv->plat->interface;
->>>
->>>    	clk_prepare_enable(priv->stmmac_clk);
->>>
->>> @@ -1041,6 +1042,14 @@ static int stmmac_open(struct net_device *dev)
->>>    	/* Initialize the MAC Core */
->>>    	priv->hw->mac->core_init(priv->ioaddr);
->>>
->>> +	/* If phy autoneg is on, set gmac autoneg for SGMII, TBI and RTBI*/
->>> +	if (interface == PHY_INTERFACE_MODE_SGMII ||
->>> +	    interface == PHY_INTERFACE_MODE_TBI ||
->>> +	    interface == PHY_INTERFACE_MODE_RTBI) {
->>> +		if (priv->phydev->autoneg)
->>> +			priv->hw->mac->set_autoneg(priv->ioaddr);
->>> +	}
->>
->> we could use the following instead of priv->hw->mac->set_autoneg:
->>
->> static void dwmac1000_ctrl_ane(void __iomem *ioaddr, bool restart) {
->>       int value = GMAC_CTRL_ANE_EN;
->>
->>       if (restart)
->>           value |= GMAC_CTRL_ANE_RESTART;
->>
->>       writel(value, ioaddr +GMAC_AN_CTRL); }
->>
->> where we should defines all the missing macros for the registers 48, 49
-> ...
-> Actually I tested this code for restart autonegotiation, but even though I
-> changed link (1Gb -> 100Mb) phy's link is not changed.
-> For more detail, first time 1Gb I changed the link during system working and
-> then check speed using ethtool/mii-tool.
-> I think phy also should do autonegotiation (I'm not sure this is just for
-> the SGMII). Without phy auto negotiation  gmac is not working.
->
-> OK, I'll try to check functionality and make macros.
-> Anyway as a first step, I want to complete to the code regarding ANE (ctrl
-> function, macros, ethtool support for link status etc..)
-> I'll send new code before making patch soon.
-
-thanks you
-
->>
->> /* RGMI/SGMII defines */
->> #define GMAC_CTRL_ANE_SGMII_RAL (1 << 18)
->> #define GMAC_CTRL_ANE_EN       (1 << 12)
->> #define GMAC_CTRL_ANE_RESTART  (1 << 9)
->>
->> The handler should store the link status that will be used to pass the
-> info to
->> the ethtool for example. We need to manage speed and duplex etc.
->>
->> What happens if you run "ethtool eth0" command?
->> Or if you run mii-tool?
->> I expect to get the right speed and duplex at least.
-> So far, I can get right data speed and duplex and autoneg.
->
->>
->> Concerning the stmmac_set_pauseparam I'm also not sure you are doing the
->> right thing. Note that you are not restarting the ANE at all ... (this is
-> what the
->> phy_start_aneg does). If set the bit 12 then you are enabling the ane. To
->> restart it, you need to set the bit 9 in the reg 48.
->>
->> I can support you on all the points above. Let me know.
->>
->> BR,
->> peppe
->>
-> OK, thank you and happy new year.
-
-Also to you :-)
-
-let me know for any progresses etc.
-
-Peppe
-
-> Byungho An
->
->>> +
->>>    	/* Request the IRQ lines */
->>>    	ret = request_irq(dev->irq, stmmac_interrupt,
->>>    			 IRQF_SHARED, dev->name, dev);
->>>
->
->
->
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
