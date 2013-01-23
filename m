@@ -1,102 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab3AWNXH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 08:23:07 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52871 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab3AWNXE (ORCPT
+	id S1753715Ab3AWN2R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 08:28:17 -0500
+Received: from mo3.mail-out.ovh.net ([178.32.228.3]:53307 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797Ab3AWN2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 08:23:04 -0500
-Date: Wed, 23 Jan 2013 14:23:01 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
-Subject: [PULL REQUEST] i2c for 3.8
-Message-ID: <20130123132301.GA18005@pengutronix.de>
+	Wed, 23 Jan 2013 08:28:16 -0500
+Date: Wed, 23 Jan 2013 11:20:57 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        richard.genoud@gmail.com, linux-arm@overkiz.com, manabian@gmail.com,
+        dgilbert@interlog.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Josh Wu <josh.wu@atmel.com>,
+        Bo Shen <voice.shen@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH 7/9] ARM: at91/at91_dt_defconfig: remove memory
+ specification to cmdline
+Message-ID: <20130123102057.GJ7360@game.jcrosoft.org>
+References: <cover.1358934163.git.nicolas.ferre@atmel.com>
+ <2e06e92c758b768baaacc061aafa7f710b74ea02.1358934163.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-PGP: S<0x7D7F551B>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <2e06e92c758b768baaacc061aafa7f710b74ea02.1358934163.git.nicolas.ferre@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 13391453492850633580
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrjeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrjeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10:48 Wed 23 Jan     , Nicolas Ferre wrote:
+> No need for this cmdline option as we are using DT.
+> Moreover this defconfig is targeted to multiple SoC/boards: this option
+> was nonsense.
+just keep the console the rest is a nonsense too
 
---7AUc2qLy4jB3hD7Z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+as on 9g45 the initrd will be at 0x7xxxxxxx
 
-Linus,
+the console too but as the patch serie to support via DT is not yet mainline
+we can keep it
 
-here are a few, typical driver fixes for the I2C subsystem. Please pull.
-
-Thanks,
-
-   Wolfram
-
-
-The following changes since commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619:
-
-  Linux 3.8-rc4 (2013-01-17 19:25:45 -0800)
-
-are available in the git repository at:
-
-  git://git.pengutronix.de/git/wsa/linux.git i2c-embedded/for-current
-
-for you to fetch changes up to 9dd3162deb67e9d2dc08af8bedea61c41fae85a8:
-
-  i2c-designware: add missing MODULE_LICENSE (2013-01-22 16:43:34 +0100)
-
-----------------------------------------------------------------
-Aaro Koskinen (2):
-      i2c: omap: errata i462: fix incorrect ack for arbitration lost interr=
-upt
-      i2c: omap: fix draining irq handling
-
-Barry Song (1):
-      i2c: sirf: register i2c_client from dt child-nodes in probe entry
-
-Fabio Estevam (1):
-      i2c: mxs: Fix type of error code
-
-Laurent Navet (1):
-      i2c: muxes: fix wrong use of sizeof(ptr)
-
-Marek Vasut (1):
-      i2c: mxs: Fix misuse init_completion
-
-Mika Westerberg (1):
-      i2c-designware: add missing MODULE_LICENSE
-
- drivers/i2c/busses/i2c-designware-core.c |    4 ++++
- drivers/i2c/busses/i2c-mxs.c             |    6 ++++--
- drivers/i2c/busses/i2c-omap.c            |    6 +++---
- drivers/i2c/busses/i2c-sirf.c            |    4 ++++
- drivers/i2c/muxes/i2c-mux-pinctrl.c      |    2 +-
- 5 files changed, 16 insertions(+), 6 deletions(-)
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---7AUc2qLy4jB3hD7Z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlD/5DUACgkQD27XaX1/VRt5qwCfUisVfXBxKaIby+oc3dSMP+cQ
-NRUAnA03Hta7H07pBdt+x/ZFYMDK3WpB
-=z2vQ
------END PGP SIGNATURE-----
-
---7AUc2qLy4jB3hD7Z--
+Best Regards,
+J.
+> 
+> Reported-by: Josh Wu <josh.wu@atmel.com>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  arch/arm/configs/at91_dt_defconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/configs/at91_dt_defconfig b/arch/arm/configs/at91_dt_defconfig
+> index b175577..a353ff6 100644
+> --- a/arch/arm/configs/at91_dt_defconfig
+> +++ b/arch/arm/configs/at91_dt_defconfig
+> @@ -31,7 +31,7 @@ CONFIG_ZBOOT_ROM_TEXT=0x0
+>  CONFIG_ZBOOT_ROM_BSS=0x0
+>  CONFIG_ARM_APPENDED_DTB=y
+>  CONFIG_ARM_ATAG_DTB_COMPAT=y
+> -CONFIG_CMDLINE="mem=128M console=ttyS0,115200 initrd=0x21100000,25165824 root=/dev/ram0 rw"
+> +CONFIG_CMDLINE="console=ttyS0,115200 initrd=0x21100000,25165824 root=/dev/ram0 rw"
+>  CONFIG_KEXEC=y
+>  CONFIG_AUTO_ZRELADDR=y
+>  # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+> -- 
+> 1.8.0
+> 
