@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab3AWJtD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 04:49:03 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:34612 "EHLO
+	id S1754654Ab3AWJtL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 04:49:11 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:34642 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439Ab3AWJtA (ORCPT
+	with ESMTP id S1754554Ab3AWJtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 04:49:00 -0500
+	Wed, 23 Jan 2013 04:49:06 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
@@ -16,54 +16,53 @@ CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Josh Wu <josh.wu@atmel.com>, Bo Shen <voice.shen@atmel.com>,
         Ludovic Desroches <ludovic.desroches@atmel.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 0/9 v2] at91: some fixes for 3.8-rc5
-Date: Wed, 23 Jan 2013 10:48:47 +0100
-Message-ID: <cover.1358934163.git.nicolas.ferre@atmel.com>
+Subject: [PATCH 1/9] ARM: at91/at91-pinctrl documentation: fix typo and add some details
+Date: Wed, 23 Jan 2013 10:48:48 +0100
+Message-ID: <45976c01b7be338efc9d3c911293491a981ed87a.1358934163.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.8.0
+In-Reply-To: <cover.1358934163.git.nicolas.ferre@atmel.com>
+References: <cover.1358934163.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Richard Genoud <richard.genoud@gmail.com>
 
-A v2 of this patch series just to make sure that the patches hit the
-mailing-list once...
-I plan to send a pull-request later today (my time) so if you have something to
-add, well, tell me by now.
+The relation between PIN_BANK numbers and pio letters wasn't made very
+clear.
 
-Thanks for your help, bye,
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Boris BREZILLON (1):
-  ARM: at91/dts: add macb mii pinctrl config for kizbox
-
-Douglas Gilbert (1):
-  ARM: at91/dts: correct comment in at91sam9x5.dtsi for mii
-
-Jean-Christophe PLAGNIOL-VILLARD (1):
-  ARM: at91: rm9200: remake the BGA as default version
-
-Joachim Eastwood (1):
-  ARM: at91: fix gpios on i2c-gpio for RM9200 DT
-
-Nicolas Ferre (2):
-  ARM: at91/at91_dt_defconfig: remove memory specification to cmdline
-  ARM: at91/at91_dt_defconfig: add at91sam9n12 SoC to DT defconfig
-
-Richard Genoud (3):
-  ARM: at91/at91-pinctrl documentation: fix typo and add some details
-  ARM: at91/at91sam9x5 DTS: correct wrong PIO BANK values on u(s)arts
-  ARM: at91/at91sam9x5 DTS: add SCK USART pins
-
- .../bindings/pinctrl/atmel,at91-pinctrl.txt        |  5 +-
- arch/arm/boot/dts/at91rm9200.dtsi                  |  4 +-
- arch/arm/boot/dts/at91sam9x5.dtsi                  | 60 ++++++++++++++--------
- arch/arm/boot/dts/kizbox.dts                       |  2 +
- arch/arm/configs/at91_dt_defconfig                 |  3 +-
- arch/arm/mach-at91/setup.c                         |  2 +
- 6 files changed, 51 insertions(+), 25 deletions(-)
-
+diff --git a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+index 3a26812..bc50899 100644
+--- a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+@@ -81,7 +81,8 @@ PA31	TXD4
+ Required properties for pin configuration node:
+ - atmel,pins: 4 integers array, represents a group of pins mux and config
+   setting. The format is atmel,pins = <PIN_BANK PIN_BANK_NUM PERIPH CONFIG>.
+-  The PERIPH 0 means gpio.
++  The PERIPH 0 means gpio, PERIPH 1 is periph A, PERIPH 2 is periph B...
++  PIN_BANK 0 is pioA, PIN_BANK 1 is pioB...
+ 
+ Bits used for CONFIG:
+ PULL_UP		(1 << 0): indicate this pin need a pull up.
+@@ -126,7 +127,7 @@ pinctrl@fffff400 {
+ 		pinctrl_dbgu: dbgu-0 {
+ 			atmel,pins =
+ 				<1 14 0x1 0x0	/* PB14 periph A */
+-				 1 15 0x1 0x1>;	/* PB15 periph with pullup */
++				 1 15 0x1 0x1>;	/* PB15 periph A with pullup */
+ 		};
+ 	};
+ };
 -- 
 1.8.0
 
