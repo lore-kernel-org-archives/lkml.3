@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab3AWBIH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 20:08:07 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:33133 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab3AWBID (ORCPT
+	id S1752445Ab3AWBIz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 20:08:55 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:64033 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750855Ab3AWBIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 20:08:03 -0500
-Date: Tue, 22 Jan 2013 17:07:58 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [PATCHSET] workqueue: remove gcwq and make worker_pool the only
- backend abstraction
-Message-ID: <20130123010758.GH5359@htj.dyndns.org>
-References: <1358386969-945-1-git-send-email-tj@kernel.org>
- <20130122053702.GA10675@lge.com>
+	Tue, 22 Jan 2013 20:08:51 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/I4Q1/7uT0Plyba1mZS1DFarPhKLukgk4=
+Date: Tue, 22 Jan 2013 20:08:47 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Cong Ding <dinggnu@gmail.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] clk: mvebu/clk-cpu.c: fix memory leakage
+Message-ID: <20130123010847.GA1758@titan.lakedaemon.net>
+References: <1358183892-28928-1-git-send-email-dinggnu@gmail.com>
+ <50F563EC.3030804@free-electrons.com>
+ <20130115152307.GA25615@gmail.com>
+ <20130115153716.GF13433@titan.lakedaemon.net>
+ <50F584F5.6030007@free-electrons.com>
+ <20130115182629.GB7211@gmail.com>
+ <50F5A1A9.2030803@free-electrons.com>
+ <20130115184423.GC7211@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130122053702.GA10675@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130115184423.GC7211@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey.
-
-On Tue, Jan 22, 2013 at 02:37:02PM +0900, Joonsoo Kim wrote:
-> > It seems like we'll need to support worker pools with custom
-> > attributes, which is planned to be implemented as extra worker_pools
-> > for the unbound CPU.  Removing gcwq and having worker_pool as the top
-> > level abstraction makes things much simpler for such designs.  Also,
-> > there's scalability benefit to not sharing locking and busy hash among
-> > different worker pools as worker pools w/ custom attributes are likely
-> > to have widely different memory / cpu locality characteristics.
+On Tue, Jan 15, 2013 at 07:44:26PM +0100, Cong Ding wrote:
+> the variable cpuclk and clk_name should be properly freed when error happens.
 > 
-> Could you tell me why extra worker_pools with custom attributes are needed?
-> Or could you give a reference link for this?
+> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> Acked-by: Jason Cooper <jason@lakedaemon.net>
+> ---
+>  drivers/clk/mvebu/clk-cpu.c |    9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
 
-Currently, there are two expected users - writeback and crypto.  The
-former currently implements its own worker pool and the latter is
-using per-cpu workqueue but not particularly happy with it.  Being
-bound to the issuing CPU seems a bit too limiting.
+Applied to mvebu/fixes with MikeT's Ack.
 
-Thanks.
+thx,
 
--- 
-tejun
+Jason.
