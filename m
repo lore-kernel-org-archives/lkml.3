@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab3AWSro (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 13:47:44 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:40682 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab3AWSrj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 13:47:39 -0500
-Date: Wed, 23 Jan 2013 13:47:36 -0500 (EST)
-Message-Id: <20130123.134736.1854102244959594689.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: mst@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, dwmw2@infradead.org
-Subject: Re: [PATCH 1/2] tuntap: reduce memory using of queues
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1358949553-30309-1-git-send-email-jasowang@redhat.com>
-References: <1358949553-30309-1-git-send-email-jasowang@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1752082Ab3AWSuJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 13:50:09 -0500
+Received: from antcom.de ([188.40.178.216]:47049 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751718Ab3AWSuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 13:50:06 -0500
+Message-ID: <51003056.9080605@antcom.de>
+Date: Wed, 23 Jan 2013 19:47:50 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
+MIME-Version: 1.0
+To: Jonathan Corbet <corbet@lwn.net>
+CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, sr@denx.de, wg@grandegger.com, mark.rutland@arm.com,
+        nicolas.ferre@atmel.com
+Subject: Re: [PATCH 3/6 v14] gpio: Add userland device interface to block
+ GPIO
+References: <1358856404-8975-1-git-send-email-stigge@antcom.de> <1358856404-8975-4-git-send-email-stigge@antcom.de> <20130122180349.068f2c6a@lwn.net>
+In-Reply-To: <20130122180349.068f2c6a@lwn.net>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Wed, 23 Jan 2013 21:59:12 +0800
-
-> A MAX_TAP_QUEUES(1024) queues of tuntap device is always allocated
-> unconditionally even userspace only requires a single queue device. This is
-> unnecessary and will lead a very high order of page allocation when has a high
-> possibility to fail. Solving this by creating a one queue net device when
-> userspace only use one queue and also reduce MAX_TAP_QUEUES to
-> DEFAULT_MAX_NUM_RSS_QUEUES which can guarantee the success of
-> the allocation.
+On 23/01/13 02:03, Jonathan Corbet wrote:
+> On Tue, 22 Jan 2013 13:06:41 +0100
+> Roland Stigge <stigge@antcom.de> wrote:
 > 
-> Reported-by: Dirk Hohndel <dirk@hohndel.org>
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> This patch adds a character device interface to the block GPIO system.
+> 
+> So I was looking at this, and a couple of things caught my eye...
 
-Applied.
+Good points you mentioned. Will address them on a subsequent update.
+
+Thanks,
+
+Roland
