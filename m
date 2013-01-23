@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab3AWPZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:25:58 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:41629 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551Ab3AWPZ5 (ORCPT
+	id S1755825Ab3AWP0F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:26:05 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41325 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754146Ab3AWP0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 10:25:57 -0500
+	Wed, 23 Jan 2013 10:26:02 -0500
+Date: Wed, 23 Jan 2013 23:24:18 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mitch Bradley <wmb@firmworks.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V5] drivers/pinctrl: grab default handles from device core
+Message-ID: <20130123152410.GA4565@opensource.wolfsonmicro.com>
+References: <1358877374-1279-1-git-send-email-swarren@wwwdotorg.org>
+ <CACRpkdZTwvdmRnDOAcOObj7NhkuUunACpYBvAE1bY65suroQiA@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUVPDx=SkGFvYpACjoFE4NWchCJGs3ZnOVshs-a0dBYA3A@mail.gmail.com>
-References: <1358946905-13320-1-git-send-email-sedat.dilek@gmail.com>
-	<CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
-	<CA+icZUW7XrOGguoPO00wxPLUr2Xc8fP=jQZwekpnmWKRewwX2g@mail.gmail.com>
-	<CAFTL4hzcuxoy2deQpXDBRQZZBZ4VjT=EnO3ZZv6x-jGMTr_eaA@mail.gmail.com>
-	<1358949189.21576.114.camel@gandalf.local.home>
-	<CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
-	<CA+icZUXM+tj5hnh--3CraRsvrsKfBUrS7Udf2L1OEhBnvWqpjQ@mail.gmail.com>
-	<CAFTL4hwkRv5LjzXN2BmSxS73GqKZkJ=H92qaD+ohvdOs-pAxHg@mail.gmail.com>
-	<CA+icZUVPDx=SkGFvYpACjoFE4NWchCJGs3ZnOVshs-a0dBYA3A@mail.gmail.com>
-Date: Wed, 23 Jan 2013 16:25:55 +0100
-Message-ID: <CA+icZUW9g=GRQWkpHz=AmAvr3AdRxe7-PrJiDC=Vsu0R0bwRTg@mail.gmail.com>
-Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing EXPORT_SYMBOL when CONFIG_KVM=m
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "devendra.aaru" <devendra.aaru@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZTwvdmRnDOAcOObj7NhkuUunACpYBvAE1bY65suroQiA@mail.gmail.com>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 4:20 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Wed, Jan 23, 2013 at 4:03 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> 2013/1/23 Sedat Dilek <sedat.dilek@gmail.com>:
->>> On Wed, Jan 23, 2013 at 3:02 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>>> 2013/1/23 Steven Rostedt <rostedt@goodmis.org>:
->>>>> On Wed, 2013-01-23 at 14:46 +0100, Frederic Weisbecker wrote:
->>>>>
->>>>>> > Hmmm, yes, but why, clueless, CONFIG_KVM=y as a workaround!
->>>>>>
->>>>>> I believe he pointed out the "{i" to you. Typing mistake?
->>>>>
->>>>> In which case the CONFIG_KVM=y is a work around if that {i is within a
->>>>> #ifndef CONFIG_KVM ;-)
->>>>
->>>> No it's in #ifdef CONFIG_KVM so the right fix is:
->>>>
->>>> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
->>>> index bbb2c2c..a13b8a3 100644
->>>> --- a/kernel/context_tracking.c
->>>> +++ b/kernel/context_tracking.c
->>>> @@ -111,14 +111,19 @@ void guest_enter(void)
->>>>         else
->>>>                 __guest_enter();
->>>>  }
->>>> +EXPORT_SYMBOL_GPL(guest_enter);
->>>>
->>>>  void guest_exit(void)
->>>>  {
->>>> +#ifndef CONFIG_KVM
->>>> +i
->>>> +#endif
->>>>         if (vtime_accounting_enabled())
->>>>                 vtime_guest_exit(current);
->>>>         else
->>>>                 __guest_exit();
->>>>  }
->>>> +EXPORT_SYMBOL_GPL(guest_exit);
->>>>  #endif
->>>
->>> So, what's the real fix for this issue?
->>
->> So CONFIG_SOMETHING doesn't work when it's a module. Hence we need to
->> remove the ifdef CONFIG_KVM around guest_enter(), guest_exit(),
->> vtime_guest_enter() and vtime_guest_exit(). Also it seems we need
->> <linux/export.h> in context_tracking.c
->
-> You mean sth. like this?
->
 
-Isn't vtime.h missing in kvm_host.h as an include?
+--HlL+5n6rz5pIUxbD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-- Sedat -
+On Wed, Jan 23, 2013 at 09:50:36AM +0100, Linus Walleij wrote:
 
-> - Sedat -
+> Greg/Mark: are you still confident with your ACK/Reviewed-by
+> tags being added on this version?
+
+Yup, this looks great.
+
+--HlL+5n6rz5pIUxbD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRAABJAAoJELSic+t+oim9t5gP/0RqvcSOhV8eP7vhOiPJHStq
+5FLt9UkXziL+5epSAucgjkDdZrbg5spuV+6Utps8AX4wCYxvtDf8gbJRJmj9vMkD
+fATXVN/p3Ez+wgpahc4js6M/erbik7f2kCDEHDlS3b637tTqiiQ+c9b8sO+DVYM0
+Ymq/dHI8EYjEoD/YGfBXw7+/mWH7zuF8L4nmvtHfQsE8B6tLgH0FqmCsdd7v7KAk
+2HfTFgI2GnlbQrh0agy0IIuyfwspnu+DNuUSKIPz0GcVrszw7i+yk/a5TC9rqXRj
+ktgN41f2Q/qx/VnDzE6kFhYBQM4Jw4ROlRJy/51wu8/7+Q0Fk6UkxTpf1qzQ50lD
+LFSnvcAeIyCrJO9U6Rn7iyJ0oA9AfCw6Rovljw9jRVKltQyOTLI9QA5ixEKWEcdv
+lSa8FI65L90r9tPMLM+5YcykzXZjpTXWYTiHr02Md3ZS96u5nCGo3yvr5R3F0UGC
+2Ti2exo/Ao6EMDMYJ+sVVgLhdi1EcKbbTRN4h9rUFy/ryBm6hAyDpHq9qXa64yEK
+Ih1++ZeF928FTobwCl0uu805H4EgLkkMs6RZExG/ptn03+i3sU7OL3WRmsQ651D+
+A5lD9R+sBoLRb3W+QU8R1UPOBevNxpKTcPmnBu/DdFN7DdsvBRGdFg+f7ja84/on
+S4roiPFIH803LrdCGuGw
+=GfyF
+-----END PGP SIGNATURE-----
+
+--HlL+5n6rz5pIUxbD--
