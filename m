@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab3AWQmQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 11:42:16 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:37766 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976Ab3AWQmO (ORCPT
+	id S1755893Ab3AWQtJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 11:49:09 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:50892 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233Ab3AWQtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 11:42:14 -0500
-Date: Wed, 23 Jan 2013 17:42:04 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Cc: Linux I2C <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-3.7.[1,4]: kmemleak in i801_probe
-Message-ID: <20130123174204.00463f98@endymion.delvare>
-In-Reply-To: <50FFC659.1090402@fold.natur.cuni.cz>
-References: <50FFC659.1090402@fold.natur.cuni.cz>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jan 2013 11:49:07 -0500
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <s5hk3r3etwt.wl%tiwai@suse.de>
+References: <1358958309-5342-1-git-send-email-daniel.vetter@ffwll.ch>
+	<1358958309-5342-2-git-send-email-daniel.vetter@ffwll.ch>
+	<s5hk3r3etwt.wl%tiwai@suse.de>
+Date: Wed, 23 Jan 2013 17:49:04 +0100
+Message-ID: <CAKMK7uG-c3-qaMToTxYR+eeTD_NF7uJ2T76oemfb9r+zPcpz=w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] fb: Rework locking to fix lock ordering on takeover
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Dave Airlie <airlied@gmail.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fbdev-devel@lists.sourceforge.net,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin,
+On Wed, Jan 23, 2013 at 5:38 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Wed, 23 Jan 2013 17:25:08 +0100,
+> Daniel Vetter wrote:
+>>
+>> From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+>>
+>> Adjust the console layer to allow a take over call where the caller already
+>> holds the locks. Make the fb layer lock in order.
+>>
+>> This s partly a band aid, the fb layer is terminally confused about the
+>> locking rules it uses for its notifiers it seems.
+>>
+>> Signed-off-by: Alan Cox <alan@linux.intel.com>
+>> [danvet: Tiny whitespace cleanup.]
+>> Reported-and-tested-by: Hugh Dickins <hughd@google.com>
+>> Reported-and-tested-by: Sasha Levin <levinsasha928@gmail.com>
+>> References: https://lkml.org/lkml/2012/10/25/516
+>> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>
+> FYI, the latest patch of this is found in mm tree:
+>   http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover.patch
+>
+> Also I hit the same problem in another code paths (for unbind and
+> unregister):
+>   http://marc.info/?t=135309396400003&r=1&w=2
+>
+> My additional patch is found in mm tree, too:
+>   http://ozlabs.org/~akpm/mmots/broken-out/fb-yet-another-band-aid-for-fixing-lockdep-mess.patch
 
-On Wed, 23 Jan 2013 12:15:37 +0100, Martin Mokrejs wrote:
-> Hi,
->   I already reported this to lkml recently with linux-3.7.1 but this is to let you know
-> that with 3.7.4 I am still getting this kmemleak reported by the kernel.
-
-I don't read LKML.
-
-> unreferenced object 0xffff88040b614690 (size 256):
->   comm "swapper/0", pid 1, jiffies 4294937573 (age 133834.550s)
->   hex dump (first 32 bytes):
->     00 00 00 00 ad 4e ad de ff ff ff ff 00 00 00 00  .....N..........
->     ff ff ff ff ff ff ff ff 08 7f 5d 82 ff ff ff ff  ..........].....
->   backtrace:
->     [<ffffffff815b4aad>] kmemleak_alloc+0x21/0x3e
->     [<ffffffff81110352>] slab_post_alloc_hook+0x28/0x2a
->     [<ffffffff8111288a>] __kmalloc+0xf2/0x104
->     [<ffffffff81305165>] kzalloc.constprop.14+0xe/0x10
->     [<ffffffff813055c6>] device_private_init+0x14/0x63
->     [<ffffffff813076a0>] dev_set_drvdata+0x19/0x2f
->     [<ffffffff815c4f5e>] i801_probe+0x5e/0x451
->     [<ffffffff81280e40>] local_pci_probe+0x39/0x61
->     [<ffffffff81281f53>] pci_device_probe+0xc6/0xf3
->     [<ffffffff81307c5d>] driver_probe_device+0xa9/0x1c1
->     [<ffffffff81307dcf>] __driver_attach+0x5a/0x7e
->     [<ffffffff8130650a>] bus_for_each_dev+0x57/0x83
->     [<ffffffff81307806>] driver_attach+0x19/0x1b
->     [<ffffffff813073d8>] bus_add_driver+0xa8/0x1fa
->     [<ffffffff81308241>] driver_register+0x8c/0x106
->     [<ffffffff81281b4e>] __pci_register_driver+0x59/0x5d
-
-I am using the i2c-i801 driver, enabled kmemleak, but I don't get this
-leak. Did you have to do anything special to get it? Didn't you get a
-similar leak with older kernels? Do you get a similar leak (with
-reference to dev_set_drvdata)?
-
-I can see that dev_set_drvdata may allocate memory (which I didn't
-know) and I admit I don't see where it gets released, however this is
-all happening in the driver core and isn't specific to the i2c-i801
-driver, so if there really is a leak there, you should see it in all
-drivers.
-
+Indeed, there's more stuff :( And I've missed the export_symbol fix
+for the first patch. Still, is there any chance we can at least merge
+the first one (I don't think that many people unload framebuffers)
+into 3.8 with cc: stable? I'd like to get at least rid of the known
+deadlocks at kms takeover time, since we have quite a few unexplained
+such bug reports floating around ... Andrew, Dave?
+-Daniel
 -- 
-Jean Delvare
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
