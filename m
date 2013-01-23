@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab3AVX7Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 18:59:24 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24137 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab3AVX7X convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 18:59:23 -0500
+	id S1754023Ab3AWABv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 19:01:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47879 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752301Ab3AWABs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 19:01:48 -0500
+Date: Wed, 23 Jan 2013 01:01:47 +0100
+From: Jan Kara <jack@suse.cz>
+To: paul.szabo@sydney.edu.au
+Cc: linux-mm@kvack.org, 695182@bugs.debian.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MAX_PAUSE to be at least 4
+Message-ID: <20130123000147.GC7497@quack.suse.cz>
+References: <201301210307.r0L37YuG018834@como.maths.usyd.edu.au>
 MIME-Version: 1.0
-Message-ID: <6dc259d4-440e-4926-bf5f-e9deb9a19f09@default>
-Date: Tue, 22 Jan 2013 15:58:53 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: High slab usage testing with zcache/zswap (Was: [PATCH 7/8] zswap:
- add to mm/)
-References: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1355262966-15281-8-git-send-email-sjenning@linux.vnet.ibm.com>
- <0e91c1e5-7a62-4b89-9473-09fff384a334@default>
- <50E32255.60901@linux.vnet.ibm.com> <50E4588E.6080001@linux.vnet.ibm.com>
- <28a63847-7659-44c4-9c33-87f5d50b2ea0@default>
- <50E479AD.9030502@linux.vnet.ibm.com>
- <9955b9e0-731b-4cbf-9db0-683fcd32f944@default>
- <20130103073339.GF3120@dastard>
-In-Reply-To: <20130103073339.GF3120@dastard>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Disposition: inline
+In-Reply-To: <201301210307.r0L37YuG018834@como.maths.usyd.edu.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Dave Chinner [mailto:david@fromorbit.com]
-> Sent: Thursday, January 03, 2013 12:34 AM
-> Subject: Re: [PATCH 7/8] zswap: add to mm/
+On Mon 21-01-13 14:07:34, paul.szabo@sydney.edu.au wrote:
+> Ensure MAX_PAUSE is 4 or larger, so limits in
+> 	return clamp_val(t, 4, MAX_PAUSE);
+> (the only use of it) are not back-to-front.
 > 
-> > > On 01/02/2013 09:26 AM, Dan Magenheimer wrote:
-> > > > However if one compares the total percentage
-> > > > of RAM used for zpages by zswap vs the total percentage of RAM
-> > > > used by slab, I suspect that the zswap number will dominate,
-> > > > perhaps because zswap is storing primarily data and slab is
-> > > > storing primarily metadata?
-> > >
-> > > That's *obviously* 100% dependent on how you configure zswap.  But, that
-> > > said, most of _my_ systems tend to sit with about 5% of memory in
-> > > reclaimable slab
-> >
-> > The 5% "sitting" number for slab is somewhat interesting, but
-> > IMHO irrelevant here. The really interesting value is what percent
-> > is used by slab when the system is under high memory pressure; I'd
-> > imagine that number would be much smaller.  True?
+> (This patch does not solve the PAE OOM issue.)
 > 
-> Not at all. The amount of slab memory used is wholly dependent on
-> workload. I have plenty of workloads with severe memory pressure
-> that I test with that sit at a steady state of >80% of ram in slab
-> caches. These workloads are filesytem metadata intensive rather than
-> data intensive, that's exactly the right cache balance for the
-> system to have....
+> Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
+> School of Mathematics and Statistics   University of Sydney    Australia
+  I guess this isn't needed in patch changelog?
 
-Hey Dave --
+  Also clamp_val(t, 4, MAX_PAUSE) doesn't seem to exist anymore?
 
-I'd like to do some zcache policy testing where the severe
-memory pressure is a result of something like the above
-where >80% of ram is in slab caches.  Any thoughts on how
-to do this or easily simulate it on a very simple hardware
-system (e.g. PC with one SATA disk)?  Or is a "big data"
-configuration required?
-
-Thanks for any advice!
-Dan
+								Honza
+> Reported-by: Paul Szabo <psz@maths.usyd.edu.au>
+> Reference: http://bugs.debian.org/695182
+> Signed-off-by: Paul Szabo <psz@maths.usyd.edu.au>
+> 
+> --- mm/page-writeback.c.old	2012-12-06 22:20:40.000000000 +1100
+> +++ mm/page-writeback.c	2013-01-21 13:57:05.000000000 +1100
+> @@ -39,7 +39,7 @@
+>  /*
+>   * Sleep at most 200ms at a time in balance_dirty_pages().
+>   */
+> -#define MAX_PAUSE		max(HZ/5, 1)
+> +#define MAX_PAUSE		max(HZ/5, 4)
+>  
+>  /*
+>   * Estimate write bandwidth at 200ms intervals.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
