@@ -1,56 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab3AWOT3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:19:29 -0500
-Received: from pindarots.xs4all.nl ([80.101.128.228]:37174 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845Ab3AWOT2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:19:28 -0500
-Message-ID: <50FFF15E.7010403@xs4all.nl>
-Date: Wed, 23 Jan 2013 15:19:10 +0100
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755829Ab3AWOUF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:20:05 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:47506 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754334Ab3AWOUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 09:20:02 -0500
+Message-ID: <50FFF19D.60007@parallels.com>
+Date: Wed, 23 Jan 2013 18:20:13 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-CC: Boris Ostrovsky <boris.ostrovsky@amd.com>, Jacob Shin <jacob.shin@amd.com>,
-        Borislav Petkov <bp@alien8.de>,
-        =?UTF-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
-References: <50FBC7EF.6040207@xs4all.nl> <20130120103652.GB16800@pd.tnic>  <50FBC994.8020409@xs4all.nl> <20130120111920.GL25591@8bytes.org>  <50FBD413.1000406@xs4all.nl> <20130120114011.GN25591@8bytes.org>  <20130120114828.GB16519@pd.tnic> <20130121160450 <50FE9E76.30702@xs4all.nl> <50FEA3F2.1070408@amd.com> <50FEAFEB.7020103@xs4all.nl> <50FEBA69.60106@amd.com> <50FEBE5D.7040905@xs4all.nl> <50FF20F2.9090503@amd.com>
-In-Reply-To: <50FF20F2.9090503@amd.com>
-X-Enigmail-Version: 1.5.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>, Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH v5 11/11] sched: introduce cgroup file stat_percpu
+References: <1357731938-8417-1-git-send-email-glommer@parallels.com> <1357731938-8417-12-git-send-email-glommer@parallels.com> <20130109124220.ad9f1a54.akpm@linux-foundation.org>
+In-Reply-To: <20130109124220.ad9f1a54.akpm@linux-foundation.org>
+Content-Type: multipart/mixed;
+	boundary="------------040503070806010104010109"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-01-23 00:29, Suravee Suthikulanit wrote:
-> I sent out a patch
-> (http://marc.info/?l=linux-kernel&m=135889686523524&w=2) which should
-> implement
-> the workaround for AMD processor family15h model 10-1Fh erratum 746 in
-> the IOMMU driver.
-> In your case, the output from "setpci -s 00:00.02 F4.w" is "0050" which
-> tells me that BIOS doesn't
-> implement the work around. After patching, you should see the following
-> message in "dmesg".
-> 
-> "AMD-Vi: Applying erratum 746 for IOMMU at 0000:00:00.2"
+--------------040503070806010104010109
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 
-Thanks!
-I'll check for that after these messages.
+On 01/10/2013 12:42 AM, Andrew Morton wrote:
+> Also, I'm not seeing any changes to Docmentation/ in this patchset. 
+> How do we explain the interface to our users?
 
-> The following patch slightly modify
-> the code to always issue "COMPLETION_WAIT" after every command.  This
-> should help increasing the chance of reproducing
-> the issue.
+There is little point in adding any Documentation, since the cpu cgroup
+itself is not documented. I took the liberty of doing this myself so to
+provide a baseline for the upcoming changes. It would be very nice if
+you guys could review the file as-is, since it would save me one
+patchset iteration, at least.
 
-Should I test with these two patches together?
-Or should I apply the first one first and then see what the second can help?
+When the contents are settled, I intend to then proceed into documenting
+the new file in there.
+
+Thanks.
 
 
-Kind regards,
-Udo
+--------------040503070806010104010109
+Content-Type: text/plain; charset="UTF-8"; name="cpu.txt"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="cpu.txt"
+
+CPU Controller
+--------------
+
+The CPU controller is responsible for grouping tasks together that will be
+viewed by the scheduler as a single unit. The CFS scheduler will first divide
+CPU time equally between all entities in the same level, and then proceed by
+doing the same in the next level. Basic use cases for that are described in the
+main cgroup documentation file, cgroups.txt.
+
+Users of this functionality should be aware that deep hierarchies will of
+course impose scheduler overhead, since the scheduler will have to take extra
+steps and look up additional data structures to make its final decision.
+
+Through the CPU controller, the scheduler is also able to cap the CPU
+utilization of a particular group. This is particularly useful in environments
+in which CPU is paid for by the hour, and one values predictability over
+performance.
+
+CPU Accounting
+--------------
+
+The CPU cgroup will also provide additional files under the prefix "cpuacct".
+Those files provide accounting statistics and were previously provided by the
+separate cpuacct controller. Although the cpuacct controller will still be kept
+around for compatibility reasons, its usage is discouraged. If both the CPU and
+cpuacct controllers are present in the system, distributors are encouraged to
+always mount them together.
+
+Files
+-----
+
+The CPU controller exposes the following files to the user:
+
+cpu.shares:
+
+ - cpu.cfs_period_us: The duration in microseconds of each scheduler period, for
+ bandwidth decisions. This defaults to 100000us or 100ms. Larger periods will
+ improve throughput at the expense of latency, since the scheduler will be able
+ to sustain a cpu-bound workload for longer. The opposite of true for smaller
+ periods. Note that this only affects non-RT tasks that are scheduled by the
+ CFS scheduler.
+
+- cpu.cfs_quota_us: The maximum time in microseconds during each cfs_period_us
+  in for the current group will be allowed to run. For instance, if it is set to
+  half of cpu_period_us, the cgroup will only be able to peak run for 50 % of
+  the time. One should note that this represents aggregate time over all CPUs
+  in the system. Therefore, in order to allow full usage of two CPUs, for
+  instance, one should set this value to twice the value of cfs_period_us.
+
+- cpu.stat: statistics about the bandwidth controls. No data will be presented
+  if cpu.cfs_quota_us is not set. The file presents three
+  numbers:
+	nr_periods: how many full periods have been elapsed.
+	nr_throttled: number of times we exausted the full allowed bandwidth
+	throttled_time: total time the tasks were not run due to being overquota
+
+ - cpu.rt_runtime_us and cpu.rt_period_us: Those files are the RT-tasks
+   analogous to the CFS files cfs_quota_us and cfs_period_us. One important
+   difference, though, is that while the cfs quotas are upper bounds that
+   won't necessarily be met, the rt runtimes form a stricter guarantee.
+   Therefore, no overlap is allowed. Implications of that are that given a
+   hierarchy with multiple children, the sum of all rt_runtime_us may not exceed
+   the runtime of the parent. Also, a rt_runtime_us of 0, means that no rt tasks
+   can ever be run in this cgroup.
+
+ - cpuacct.usage: The aggregate CPU time, in microseconds, consumed by all tasks
+   in this group.
+
+ - cpuacct.usage_percpu: The CPU time, in microseconds, consumed by all tasks in
+   this group, separated by CPU. The format is an space-separated array of time
+   values, one for each present CPU.
+
+ - cpuacct.stat: aggregate user and system time consumed by tasks in this group.
+   The format is user: x\nsystem: y.
+
+
+--------------040503070806010104010109--
