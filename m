@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab3AWPEG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:04:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43372 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754629Ab3AWPEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 10:04:04 -0500
-Date: Wed, 23 Jan 2013 07:05:32 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Mitch Bradley <wmb@firmworks.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V5] drivers/pinctrl: grab default handles from device core
-Message-ID: <20130123150532.GA2383@kroah.com>
-References: <1358877374-1279-1-git-send-email-swarren@wwwdotorg.org>
- <CACRpkdZTwvdmRnDOAcOObj7NhkuUunACpYBvAE1bY65suroQiA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZTwvdmRnDOAcOObj7NhkuUunACpYBvAE1bY65suroQiA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754974Ab3AWPEu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:04:50 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20541 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab3AWPEt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 10:04:49 -0500
+X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=aeQPs-_SJuMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=N-VFlIc2aKAA:10 a=hHmAqNvhI3CydcFX9usA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358953487.21576.120.camel@gandalf.local.home>
+Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing EXPORT_SYMBOL when
+ CONFIG_KVM=m
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: sedat.dilek@gmail.com, "devendra.aaru" <devendra.aaru@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 23 Jan 2013 10:04:47 -0500
+In-Reply-To: <CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
+References: <1358946905-13320-1-git-send-email-sedat.dilek@gmail.com>
+	 <CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
+	 <CA+icZUW7XrOGguoPO00wxPLUr2Xc8fP=jQZwekpnmWKRewwX2g@mail.gmail.com>
+	 <CAFTL4hzcuxoy2deQpXDBRQZZBZ4VjT=EnO3ZZv6x-jGMTr_eaA@mail.gmail.com>
+	 <1358949189.21576.114.camel@gandalf.local.home>
+	 <CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 09:50:36AM +0100, Linus Walleij wrote:
-> OK!
-> 
-> This modified version of the patch is way more beautiful, stupid
-> me for not realizing it could be written like that.
-> 
-> And I can sure live with the removed doc piece ... we can discuss
-> that separately if need be, I have some argument for it but it's
-> a separate issue.
-> 
-> I've dubbed this version the v5 variant and applied it, and included
-> the changelog (so I remember how it came about).
-> 
-> Greg/Mark: are you still confident with your ACK/Reviewed-by
-> tags being added on this version?
+On Wed, 2013-01-23 at 15:02 +0100, Frederic Weisbecker wrote:
 
-Yes, that's fine with me.
+> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+> index bbb2c2c..a13b8a3 100644
+> --- a/kernel/context_tracking.c
+> +++ b/kernel/context_tracking.c
+> @@ -111,14 +111,19 @@ void guest_enter(void)
+>         else
+>                 __guest_enter();
+>  }
+> +EXPORT_SYMBOL_GPL(guest_enter);
+> 
+>  void guest_exit(void)
+>  {
+> +#ifndef CONFIG_KVM
+> +i
+> +#endif
+
+I don't like #ifdefs in .c files. They belong in headers. Could you
+convert this to be:
+
+include/linux/context_tracking.h:
+
+#ifdef CONFIG_KVM
+ #define add_vi_i_typo()
+#else
+ #define add_vi_i_typo()	i
+#endif
+
+and then in context_tracking.c:
+
+void guest_exit(void)
+{
+	add_vi_typo();
+
+[...]
+
+-- Steve
+
+>         if (vtime_accounting_enabled())
+>                 vtime_guest_exit(current);
+>         else
+>                 __guest_exit();
+>  }
+> +EXPORT_SYMBOL_GPL(guest_exit);
+>  #endif
+
+
