@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab3AWPC1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:02:27 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:38242
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752867Ab3AWPC0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 10:02:26 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VPS-7(z21eIzbb2dI98dI9371I936eI1be0I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h1155h)
-X-WSS-ID: 0MH332C-01-8S4-02
-X-M-MSG: 
-Message-ID: <50FFFB40.4020604@amd.com>
-Date: Wed, 23 Jan 2013 09:01:20 -0600
-From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-CC: Boris Ostrovsky <boris.ostrovsky@amd.com>, Jacob Shin <jacob.shin@amd.com>,
-        Borislav Petkov <bp@alien8.de>,
-        =?UTF-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
-References: <50FBC7EF.6040207@xs4all.nl> <20130120103652.GB16800@pd.tnic>  <50FBC994.8020409@xs4all.nl> <20130120111920.GL25591@8bytes.org>  <50FBD413.1000406@xs4all.nl> <20130120114011.GN25591@8bytes.org>  <20130120114828.GB16519@pd.tnic> <20130121160450 <50FE9E76.30702@xs4all.nl> <50FEA3F2.1070408@amd.com> <50FEAFEB.7020103@xs4all.nl> <50FEBA69.60106@amd.com> <50FEBE5D.7040905@xs4all.nl> <50FF20F2.9090503@amd.com> <50FFF272.6080905@xs4all.nl>
-In-Reply-To: <50FFF272.6080905@xs4all.nl>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+	id S1755086Ab3AWPC7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:02:59 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:36066 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753093Ab3AWPCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 10:02:55 -0500
+From: Andrey Vagin <avagin@openvz.org>
+To: netdev@vger.kernel.org
+Cc: criu@openvz.org, linux-kernel@vger.kernel.org,
+        Andrey Vagin <avagin@openvz.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, Eric Dumazet <edumazet@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: [PATCH] [RFC] tcp: add ability to set a timestamp offset (v2)
+Date: Wed, 23 Jan 2013 19:01:52 +0400
+Message-Id: <1358953314-12979-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/23/2013 8:23 AM, Udo van den Heuvel wrote:
+If a TCP socket will get live-migrated from one box to another the
+timestamps (which are typically ON) will get screwed up -- the new
+kernel will generate TS values that has nothing to do with what they
+were on dump. The solution is to yet again fix the kernel and put a
+"timestamp offset" on a socket.
 
-> On 2013-01-23 00:29, Suravee Suthikulanit wrote:
->> message in "dmesg".
->>
->> "AMD-Vi: Applying erratum 746 for IOMMU at 0000:00:00.2"
+v2: We can't adjust tcp_time_stamp only for output packets, because
+echoed timestamp values will also no longer have a meaningful
+relationship to tcp_time_stamp. That violates assumptions made in
+several places in the code, which assumes that we can compare echoed
+timestamp values to tcp_time_stamp; //Neal Cardwell
 
-This is expected.
+This version is a "bit more" radical. It makes tcp_time_stamp dependent
+on tcp_sock. The idea of this patch is in the next two lines:
 
-Regards,
+-#define tcp_time_stamp         ((__u32)(jiffies))
++#define tcp_time_stamp(tp)     ((__u32)(jiffies) + tp->tsoffset)
 
-Suravee
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
 
-> [    1.091733] AMD-Vi: Found IOMMU at 0000:00:00.2 cap 0x40
->
-> I assume that is correct.
->
-> Kind regards,
-> Udo
->
->
+Andrey Vagin (2):
+  tcp: make tcp_timestamp dependent on tcp_sock
+  tcp: add ability to set a timestamp offset (v2)
+
+ include/linux/tcp.h      |  2 ++
+ include/net/tcp.h        | 15 +++++++++-----
+ include/uapi/linux/tcp.h |  1 +
+ net/ipv4/syncookies.c    |  4 ++--
+ net/ipv4/tcp.c           |  9 +++++++-
+ net/ipv4/tcp_bic.c       | 10 ++++-----
+ net/ipv4/tcp_cubic.c     | 14 ++++++-------
+ net/ipv4/tcp_htcp.c      |  2 +-
+ net/ipv4/tcp_input.c     | 53 +++++++++++++++++++++++++-----------------------
+ net/ipv4/tcp_ipv4.c      | 19 +++++++++--------
+ net/ipv4/tcp_lp.c        | 10 ++++-----
+ net/ipv4/tcp_metrics.c   |  2 +-
+ net/ipv4/tcp_output.c    | 35 +++++++++++++++++---------------
+ net/ipv4/tcp_timer.c     |  9 ++++----
+ net/ipv4/tcp_westwood.c  |  8 +++++---
+ net/ipv6/tcp_ipv6.c      | 22 ++++++++++++--------
+ 16 files changed, 123 insertions(+), 92 deletions(-)
+
+--
+1.7.11.7
 
