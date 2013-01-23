@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab3AWJvi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 04:51:38 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:34712 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754660Ab3AWJtS (ORCPT
+	id S1754659Ab3AWJvu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 04:51:50 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:33925 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754771Ab3AWJvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 04:49:18 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <richard.genoud@gmail.com>, <linux-arm@overkiz.com>,
-        <manabian@gmail.com>, <dgilbert@interlog.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Josh Wu <josh.wu@atmel.com>, Bo Shen <voice.shen@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 4/9] ARM: at91: fix gpios on i2c-gpio for RM9200 DT
-Date: Wed, 23 Jan 2013 10:48:51 +0100
-Message-ID: <334c9e8d6d05be132792a855dcc637773d44cad3.1358934163.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <cover.1358934163.git.nicolas.ferre@atmel.com>
-References: <cover.1358934163.git.nicolas.ferre@atmel.com>
+	Wed, 23 Jan 2013 04:51:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAHp75VeNe1Z9CqYXVjV6am_vg=5XF=vx1i47h71xRdTvT6hSGA@mail.gmail.com>
+References: <1358758844-24711-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1358758844-24711-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x==FoW5Sh5KFt9iO+_04dEbwsQHJX3rsTWNqFiZqTbPn6A@mail.gmail.com>
+	<1358846546.12502.57.camel@smile>
+	<CAKohpo=m-s4+q+4v2v+8nzC32FRzJAb58no2hZLV_5QqTj4wig@mail.gmail.com>
+	<1358932355.12502.68.camel@smile>
+	<CAKohpo=BHGukSQJJGUS=H++qzxME3aEEQZR8QiyHPU8LabHsSw@mail.gmail.com>
+	<CAHp75VeNe1Z9CqYXVjV6am_vg=5XF=vx1i47h71xRdTvT6hSGA@mail.gmail.com>
+Date: Wed, 23 Jan 2013 15:21:42 +0530
+Message-ID: <CAKohpo=_BR49Og4MRPB9SfDEwnD3OoKwFWiCsTKNfpYFSyp25Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] dw_dmac: return proper residue value
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joachim Eastwood <manabian@gmail.com>
+On 23 January 2013 15:06, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+> On Wed, Jan 23, 2013 at 11:22 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
 
-Signed-off-by: Joachim Eastwood <manabian@gmail.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/boot/dts/at91rm9200.dtsi | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+>> Firstly i believe we can have a union of both list_heads as only one is used
+>> at any time. Can you patch it down?
+>
+> Okay, separately and later to avoid additional testing. Will it work for you?
 
-diff --git a/arch/arm/boot/dts/at91rm9200.dtsi b/arch/arm/boot/dts/at91rm9200.dtsi
-index e154f24..222047f 100644
---- a/arch/arm/boot/dts/at91rm9200.dtsi
-+++ b/arch/arm/boot/dts/at91rm9200.dtsi
-@@ -336,8 +336,8 @@
- 
- 	i2c@0 {
- 		compatible = "i2c-gpio";
--		gpios = <&pioA 23 0 /* sda */
--			 &pioA 24 0 /* scl */
-+		gpios = <&pioA 25 0 /* sda */
-+			 &pioA 26 0 /* scl */
- 			>;
- 		i2c-gpio,sda-open-drain;
- 		i2c-gpio,scl-open-drain;
--- 
-1.8.0
+Yes.
 
+>> Second to solve your problem, you can add another field here: total_len.
+>> I know it will consume 4 bytes per desc but i think that's the drawback we need
+>> to accept.
+>
+> I found already better solution I guess.
+
+Wow!!
+
+> I introduced two functions to get amount of sent bytes like
+>
+> u32 calc_sent(u32 ctlhi, u32 ctllo)
+> {
+>  return f1(ctlhi) * f2(ctllo);
+> }
+>
+> u32 get_sent(dwc)
+> {
+>  return calc_sent(read(CTL_HI), read(CTL_LO));
+> }
+>
+> And usage like
+>
+> /* initial residue */
+> desc->len - calc_sent(desc->lli.ctlhi, desc->lli.ctllo).
+>
+> What do you think?
+
+You plan to use it for
+- the first descriptor in a list as others already have length embedded in them?
+- And the descriptor currently getting used, by reading its ctlhi/lo
+from registers
+  instead of lli.*** ?
+
+Looks good. but still keeping len of individual descriptors in all
+descriptors leaving
+the first one is not the code i would like to keep :)
