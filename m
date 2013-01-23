@@ -1,71 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab3AWLbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 06:31:33 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:55234 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755159Ab3AWLbb (ORCPT
+	id S1755361Ab3AWLcq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 06:32:46 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:26967 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755159Ab3AWLcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 06:31:31 -0500
+	Wed, 23 Jan 2013 06:32:45 -0500
+X-Spam-Score: -100.6
+Message-ID: <50FFCA59.5070903@asianux.com>
+Date: Wed, 23 Jan 2013 19:32:41 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130123103108.GA4584@mwanda>
-References: <1358541648-29922-1-git-send-email-mark.einon@gmail.com>
- <1358935859-29525-1-git-send-email-mark.einon@gmail.com> <20130123103108.GA4584@mwanda>
-From: Mark Einon <mark.einon@gmail.com>
-Date: Wed, 23 Jan 2013 11:31:16 +0000
-Message-ID: <CANK3SE2qxP5dkYrdpYnWBGqTT5b7HrW_gXS++e73Xr++h6Mokg@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 linux-next] et131x: Promote staging et131x driver
- to drivers/net
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: davem@davemloft.net, gregkh@linuxfoundation.org, sfr@canb.auug.org.au,
-        devel@driverdev.osuosl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [Consult] Plan: personal contributes plan for 2013
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 January 2013 10:31, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Wed, Jan 23, 2013 at 10:10:58AM +0000, Mark Einon wrote:
->> diff --git a/drivers/net/ethernet/agere/Kconfig b/drivers/net/ethernet/agere/Kconfig
->> new file mode 100644
->> index 0000000..6854966
->> --- /dev/null
->> +++ b/drivers/net/ethernet/agere/Kconfig
->> @@ -0,0 +1,32 @@
->> +#
->> +# Agere device configuration
->> +#
->> +
->> +config NET_VENDOR_AGERE
->> +       bool "Agere devices"
->> +       default y
->> +       depends on PCI
->> +       ---help---
->> +         If you have a network (Ethernet) card belonging to this class, say Y
->> +         and read the Ethernet-HOWTO, available from
->> +         <http://www.tldp.org/docs.html#howto>.
->> +
->> +         Note that the answer to this question doesn't directly affect the
->> +         kernel: saying N will just cause the configurator to skip all
->> +         the questions about Atheros devices. If you say Y, you will be asked
->                                 ^^^^^^^
-> Agere?
+Hello Greg Kroah-Hartman:
 
-Well spotted, thanks. I'll fix it asap.
+  when you have time, could you help checking my contributes plan for 2013 ?
+    (the plan details are at bottom of this mail)
 
->
->> +         for your specific card in the following questions.
->> +
->
-> I think you should just leave this block out entirely.  It doesn't
-> save time for anyone.
 
-It looks to be standard boilerplate for all the net/ethernet drivers
-having their own directory. I'm going to leave it in for now.
-If that's an issue that needs a change, it would also affect the other
-drivers and I think should be tackled as a separate thing.
+  my limititions:
 
-Cheers,
+    I should face the whole kernel, because Asianux faces the whole kernel.
 
-Mark
+    excuse me, I have to do it in part time, so can not provide more patches.
+      (but at least, I should provide 10 patches per month)
+
+    excuse me, I am a newbie, so have to mainly face to non-functional features.
+      (I should farmiliar step by step by making document or comments patches)
+
+
+  welcome any other members to giving suggestions and completions.
+    (especially welcome the members who relative with mm or document)
+
+  thanks.
+
+gchen.
+
+
+
+
+Plan Details:
+
+10 patches per month: (at least)
+
+  patch content:
+
+    1st half year:
+      ------------------------------------------------------------------------
+      name:              per                 comments
+      ------------------------------------------------------------------------
+      GregKH:            40% (tty, stagging, usb, char)
+      arm:               30% (ti, samsung)
+      powerpc:           10% (POWER7)
+      others:            20% (fs, net, document, comments, MAINTAINERS)
+
+    2nd half year:
+      ------------------------------------------------------------------------
+      name:              per                 comments
+      ------------------------------------------------------------------------
+      interface:         50% (document, comments, MAINTAINERS)
+      mm:                30% (mm, fs, block)
+      integration:         1 (succeed integrating 1 new feature from outside)
+      others:            20% (GregKH, arm, powerpc, net)
+
+
+  patch type:
+
+    --------------------------
+      name:              per 
+    --------------------------
+    memory override:     25%
+    resource management: 25%
+    document + comments: 25%
+    others:              25%
+
+
+  mark as:
+
+    --------------------------
+      name:              per 
+    --------------------------
+    Signed-of-by         >=50%
+    Reported-by          <=50%
+    (only count 2 types, not count other types)
+
+
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
