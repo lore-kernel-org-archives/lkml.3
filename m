@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab3AWN2R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 08:28:17 -0500
-Received: from mo3.mail-out.ovh.net ([178.32.228.3]:53307 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab3AWN2Q (ORCPT
+	id S1754194Ab3AWNdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 08:33:15 -0500
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:62633 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797Ab3AWNdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 08:28:16 -0500
-Date: Wed, 23 Jan 2013 11:20:57 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        richard.genoud@gmail.com, linux-arm@overkiz.com, manabian@gmail.com,
-        dgilbert@interlog.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Josh Wu <josh.wu@atmel.com>,
-        Bo Shen <voice.shen@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH 7/9] ARM: at91/at91_dt_defconfig: remove memory
- specification to cmdline
-Message-ID: <20130123102057.GJ7360@game.jcrosoft.org>
-References: <cover.1358934163.git.nicolas.ferre@atmel.com>
- <2e06e92c758b768baaacc061aafa7f710b74ea02.1358934163.git.nicolas.ferre@atmel.com>
+	Wed, 23 Jan 2013 08:33:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2e06e92c758b768baaacc061aafa7f710b74ea02.1358934163.git.nicolas.ferre@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 13391453492850633580
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrjeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrjeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
+References: <1358946905-13320-1-git-send-email-sedat.dilek@gmail.com>
+	<CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
+Date: Wed, 23 Jan 2013 14:33:13 +0100
+Message-ID: <CA+icZUW7XrOGguoPO00wxPLUr2Xc8fP=jQZwekpnmWKRewwX2g@mail.gmail.com>
+Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing EXPORT_SYMBOL when CONFIG_KVM=m
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "devendra.aaru" <devendra.aaru@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10:48 Wed 23 Jan     , Nicolas Ferre wrote:
-> No need for this cmdline option as we are using DT.
-> Moreover this defconfig is targeted to multiple SoC/boards: this option
-> was nonsense.
-just keep the console the rest is a nonsense too
+On Wed, Jan 23, 2013 at 2:17 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
+> On Wed, Jan 23, 2013 at 8:15 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> With CONFIG_KVM=m my build with 3.8-rc4-nohz3 breaks like this:
+>>
+>> ERROR: "guest_enter" [arch/x86/kvm/kvm.ko] undefined!
+>> ERROR: "guest_exit" [arch/x86/kvm/kvm.ko] undefined!
+>>
+>> Fix this by adding the missing EXPORT_SYMBOL for guest_enter() and
+>> guest_exit() in kernel/context_tracking.c as suggested by Frederic.
+>>
+>> This issue was introduced with commit 8eebafe9be58 ("kvm: Prepare to
+>> add generic guest entry/exit callbacks").
+>>
+>> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+>> ---
+>>  kernel/context_tracking.c | 4 +++-
+>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+>> index bbb2c2c..950f30a 100644
+>> --- a/kernel/context_tracking.c
+>> +++ b/kernel/context_tracking.c
+>> @@ -111,14 +111,16 @@ void guest_enter(void)
+>>         else
+>>                 __guest_enter();
+>>  }
+>> +EXPORT_SYMBOL(guest_enter);
+>>
+>>  void guest_exit(void)
+>> -{
+>> +{i
+>
+> compilation fails with that?
+>
 
-as on 9g45 the initrd will be at 0x7xxxxxxx
+Hmmm, yes, but why, clueless, CONFIG_KVM=y as a workaround!
 
-the console too but as the patch serie to support via DT is not yet mainline
-we can keep it
+- Sedat -
 
-Best Regards,
-J.
-> 
-> Reported-by: Josh Wu <josh.wu@atmel.com>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
->  arch/arm/configs/at91_dt_defconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/configs/at91_dt_defconfig b/arch/arm/configs/at91_dt_defconfig
-> index b175577..a353ff6 100644
-> --- a/arch/arm/configs/at91_dt_defconfig
-> +++ b/arch/arm/configs/at91_dt_defconfig
-> @@ -31,7 +31,7 @@ CONFIG_ZBOOT_ROM_TEXT=0x0
->  CONFIG_ZBOOT_ROM_BSS=0x0
->  CONFIG_ARM_APPENDED_DTB=y
->  CONFIG_ARM_ATAG_DTB_COMPAT=y
-> -CONFIG_CMDLINE="mem=128M console=ttyS0,115200 initrd=0x21100000,25165824 root=/dev/ram0 rw"
-> +CONFIG_CMDLINE="console=ttyS0,115200 initrd=0x21100000,25165824 root=/dev/ram0 rw"
->  CONFIG_KEXEC=y
->  CONFIG_AUTO_ZRELADDR=y
->  # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-> -- 
-> 1.8.0
-> 
+>
+>>         if (vtime_accounting_enabled())
+>>                 vtime_guest_exit(current);
+>>         else
+>>                 __guest_exit();
+>>  }
+>> +EXPORT_SYMBOL(guest_exit);
+>>  #endif
+>>
+>>
+>> --
+>> 1.8.1.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
