@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab3AWLmD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 06:42:03 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:49110 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755388Ab3AWLmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 06:42:01 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH v2 1/4] ARM: OMAP2+: dpll: round rate to closest value
-Date: Wed, 23 Jan 2013 17:11:52 +0530
-Message-ID: <871e6890897534b6c3669e252f23bef5ff1247b6.1358937533.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <cover.1358937533.git.afzal@ti.com>
-References: <cover.1358937533.git.afzal@ti.com>
+	id S1755538Ab3AWLmI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 06:42:08 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:51240 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388Ab3AWLmE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 06:42:04 -0500
+Message-ID: <50FFCC92.2080906@atmel.com>
+Date: Wed, 23 Jan 2013 12:42:10 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <richard.genoud@gmail.com>, <linux-arm@overkiz.com>,
+        <manabian@gmail.com>, <dgilbert@interlog.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Josh Wu <josh.wu@atmel.com>, Bo Shen <voice.shen@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [PATCH 7/9] ARM: at91/at91_dt_defconfig: remove memory specification
+ to cmdline
+References: <cover.1358934163.git.nicolas.ferre@atmel.com> <2e06e92c758b768baaacc061aafa7f710b74ea02.1358934163.git.nicolas.ferre@atmel.com> <20130123102057.GJ7360@game.jcrosoft.org>
+In-Reply-To: <20130123102057.GJ7360@game.jcrosoft.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently round rate function would return proper rate iff requested
-rate exactly matches the PLL lockable rate. This causes set_rate to
-fail if exact rate could not be set. Instead round rate may return
-closest rate possible (less than the requested). And if any user is
-badly in need of exact rate, then return value of round rate could
-be used to decide whether to invoke set rate or not.
+On 01/23/2013 11:20 AM, Jean-Christophe PLAGNIOL-VILLARD :
+> On 10:48 Wed 23 Jan     , Nicolas Ferre wrote:
+>> No need for this cmdline option as we are using DT.
+>> Moreover this defconfig is targeted to multiple SoC/boards: this option
+>> was nonsense.
+> just keep the console the rest is a nonsense too
+> 
+> as on 9g45 the initrd will be at 0x7xxxxxxx
 
-Modify round rate so that it return closest possible rate.
+BTW, how do you mix 9g45 with other sam9's in this defconfig: it is not
+possible due to this difference in address rage, it not it?
 
-This was required to get display working on am335x. Without this
-display rate could not be set (taking help of SET_RATE_PARENT). Couple
-of the downstream clocks of display PLL are basic clock dividers and
-they do MULT_ROUND_UP before requesting rate on PLL causing values
-that mostly could not be locked by PLL. And even otherwise, if
-requested rate for a particular pixel clock could not be satisfied by
-PLL, display would not work. This change will resolve the issue.
+In this case, should we remove the
+CONFIG_SOC_AT91SAM9G45=y
+from this at91_dt_defconfig?
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
----
- arch/arm/mach-omap2/clkt_dpll.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+> the console too but as the patch serie to support via DT is not yet mainline
+> we can keep it
+> 
+> Best Regards,
+> J.
+>>
+>> Reported-by: Josh Wu <josh.wu@atmel.com>
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>>  arch/arm/configs/at91_dt_defconfig | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/configs/at91_dt_defconfig b/arch/arm/configs/at91_dt_defconfig
+>> index b175577..a353ff6 100644
+>> --- a/arch/arm/configs/at91_dt_defconfig
+>> +++ b/arch/arm/configs/at91_dt_defconfig
+>> @@ -31,7 +31,7 @@ CONFIG_ZBOOT_ROM_TEXT=0x0
+>>  CONFIG_ZBOOT_ROM_BSS=0x0
+>>  CONFIG_ARM_APPENDED_DTB=y
+>>  CONFIG_ARM_ATAG_DTB_COMPAT=y
+>> -CONFIG_CMDLINE="mem=128M console=ttyS0,115200 initrd=0x21100000,25165824 root=/dev/ram0 rw"
+>> +CONFIG_CMDLINE="console=ttyS0,115200 initrd=0x21100000,25165824 root=/dev/ram0 rw"
+>>  CONFIG_KEXEC=y
+>>  CONFIG_AUTO_ZRELADDR=y
+>>  # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
 
-diff --git a/arch/arm/mach-omap2/clkt_dpll.c b/arch/arm/mach-omap2/clkt_dpll.c
-index 924c230..15e6d41 100644
---- a/arch/arm/mach-omap2/clkt_dpll.c
-+++ b/arch/arm/mach-omap2/clkt_dpll.c
-@@ -345,20 +345,22 @@ long omap2_dpll_round_rate(struct clk_hw *hw, unsigned long target_rate,
- 		pr_debug("clock: %s: m = %d: n = %d: new_rate = %ld\n",
- 			 clk_name, m, n, new_rate);
- 
--		if (target_rate == new_rate) {
-+		if ((new_rate <= target_rate) &&
-+		    (new_rate > dd->last_rounded_rate)) {
- 			dd->last_rounded_m = m;
- 			dd->last_rounded_n = n;
--			dd->last_rounded_rate = target_rate;
--			break;
-+			dd->last_rounded_rate = new_rate;
-+			if (new_rate == target_rate)
-+				break;
- 		}
- 	}
- 
--	if (target_rate != new_rate) {
-+	if (!dd->last_rounded_rate) {
- 		pr_debug("clock: %s: cannot round to rate %ld\n",
- 			 clk_name, target_rate);
- 		return ~0;
- 	}
- 
--	return target_rate;
-+	return dd->last_rounded_rate;
- }
- 
+Bye,
 -- 
-1.7.12
-
+Nicolas Ferre
