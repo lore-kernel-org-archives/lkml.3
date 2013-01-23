@@ -1,117 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab3AWX6I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 18:58:08 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:46019 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154Ab3AWX55 (ORCPT
+	id S1752337Ab3AXABA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 19:01:00 -0500
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:58902 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab3AXAAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 18:57:57 -0500
+	Wed, 23 Jan 2013 19:00:54 -0500
+X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jan 2013 19:00:53 EST
 MIME-Version: 1.0
-In-Reply-To: <51005C4D.1090105@redhat.com>
-References: <1358896415-28569-1-git-send-email-walken@google.com>
-	<1358896415-28569-5-git-send-email-walken@google.com>
-	<51005C4D.1090105@redhat.com>
-Date: Wed, 23 Jan 2013 15:52:30 -0800
-Message-ID: <CANN689GdaoiQ6EDTgTfPmXTQPb6_4pWnXZm4pEs=f6pqjL2KKA@mail.gmail.com>
-Subject: Re: [RFC PATCH 4/6] kernel: faster queue spinlock implementation
-From: Michel Lespinasse <walken@google.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Ingo Molnar <mingo@redhat.com>, "Paul E. McKenney" <paulmck@us.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20130123230608.GJ2373@mtj.dyndns.org>
+References: <1357731938-8417-1-git-send-email-glommer@parallels.com>
+	<CAMbhsRQ7B4Uu1Wukfay+m4K7CVXtVbsTTEd6JHrwC2s+NcEFNA@mail.gmail.com>
+	<50FD3123.6090003@parallels.com>
+	<20130123010226.GF5359@htj.dyndns.org>
+	<CAMbhsRSDbKUz7OT3Y0bGfYqgp3yMgwk8oHx0rpsX+XDFWTMqkw@mail.gmail.com>
+	<20130123165657.GC2373@mtj.dyndns.org>
+	<CAMbhsRRj9svWubn01wb+f=jSwVWC5u7DqJ5c8P23vAp0E2L8Rg@mail.gmail.com>
+	<20130123230608.GJ2373@mtj.dyndns.org>
+Date: Wed, 23 Jan 2013 15:53:30 -0800
+Message-ID: <CAMbhsRSAPL3P-EhD4HBChsgr66xYuEg4o2JtbFX=tz9w7RCeGQ@mail.gmail.com>
+Subject: Re: [PATCH v5 00/11] per-cgroup cpu-stat
+From: Colin Cross <ccross@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 1:55 PM, Rik van Riel <riel@redhat.com> wrote:
-> There is one thing I do not understand about these locks.
-
-Ah, I need to explain it better then :)
-
-> On 01/22/2013 06:13 PM, Michel Lespinasse wrote:
->> +static inline void
->> +q_spin_unlock(struct q_spinlock *lock, struct q_spinlock_node *node)
->> +{
->> +       q_spin_unlock_mb();     /* guarantee release store semantics */
->> +       ACCESS_ONCE(node->token->wait) = false;
->> +       preempt_enable();
->> +}
+On Wed, Jan 23, 2013 at 3:06 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Collin.
 >
-> Here you set wait to false, in the CPU-local (on the current CPU)
-> queue lock token. Afterwards, the same CPU could try to lock another
-> lock, using the same token...
-
-No, it won't use the same token. Besically, setting token->wait =
-false does two things:
-- it indicates to the next waiter (if any) that it doesn't need to spin anymore;
-- it releases ownership of the token so that the next thread to
-acquire the spinlock (or that may be already spinning on it) can reuse
-the token.
-
->> +DEFINE_PER_CPU(struct q_spinlock_token *, q_spinlock_token[2]);
->> +
->> +static inline struct q_spinlock_token *
->> +____q_spin_lock(struct q_spinlock *lock,
->> +               struct q_spinlock_token **percpu_token)
->>   {
->> +       /*
->> +        * Careful about reentrancy here - if we are interrupted and the
->> code
->> +        * running in that interrupt tries to get another queue spinlock,
->> +        * it must not use the same percpu_token that we're using here.
->> +        */
->> +
->> +       struct q_spinlock_token *token, *prev;
->> +
->> +       token = __this_cpu_read(*percpu_token);
->> +       token->wait = true;
->> +       prev = xchg(&lock->token, token);
->> +       __this_cpu_write(*percpu_token, prev);
->> +       while (ACCESS_ONCE(prev->wait))
->>                 cpu_relax();
->>         q_spin_lock_mb();       /* guarantee acquire load semantics */
->> +       return token;
->>   }
+> On Wed, Jan 23, 2013 at 02:41:46PM -0800, Colin Cross wrote:
+>> I think some of it is just historic, we previously did not group
+>> application threads in the scheduler, so it would cause a change in
+>> behavior if we started grouping them.  I will investigate switching to
+>> a co-mounted hierarchy so hopefully you can deprecate cpuacct in the
+>> future.
 >
-> Here a CPU trying to take the lock will spin on the previous
-> CPU's token.
+> Yeah, it's gonna be many years, if ever, before we can actually
+> deprecate cpuacct and multiple hierarchies but it would be really nice
+> to move at least popular uses away from them sooner than later.
 >
-> However, the previous CPU can immediately re-use its token.
+> Also, maybe I'm misunderstanding what you were saying but isn't it the
+> case that only single application is "foreground" in at least vanilla
+> android?  Maybe multi-window support is scheduled for future releases
+> but it wouldn't count as behavior change in that case, right?
 
-No, they'll use a different token every time.
-I think what confused you is that in __q_spin_lock_process(),
-percpu_token always points to q_spinlock_token[0]. But that in turns
-points to a new token every time (actually points to the token that
-was reclaimed on the last spinlock acquisition), so that consecutive
-spinlock acquisitions on the same CPU won't keep reusing the same
-token.
+Not exactly.  Only one "app" is ever foreground, but there are
+numerous other app-like things in their own process containers that
+the user is aware of, and therefore gets foreground resources.  For
+example, a service that is playing music in the background may get
+treated like a foreground app.  Also, a foreground app may spawn
+threads and request that they run in the background, so a single
+container for an app is not sufficient.
 
->> +       token = __this_cpu_read(*percpu_token);
+> At any rate, IMHO, it's simply the better and correct to not depend on
+> the number of threads in use as a measure of CPU resource
+> distribution.
+>
+>> We can't factor the number of threads into the policy decision,
+>> because it depends on how many threads are runnable at any time in any
+>> particular application, and we have no way to track that.  It would
+>> have to be a cgroup scheduler feature.
+>
+> My understanding of android is very limited but the number of threads
+> in dalvik apps are controlled by the base system rather than
+> application itself, no?  If so, factoring that into scheduling params
+> shouldn't be difficult.  For native processes, if the number of
+> threads just *have* to be factored in some way, we can resort to
+> sampling.  That said, as native apps can easily thread-bomb out of
+> fairness, there are way more reasons to avoid basing the resource
+> policy decision on the number of threads in use.
 
-This get the token that was reclaimed during the last spinlock
-acquisition. We know the token is available to us, because the
-previous spinlock acquisition waited for token->wait to become false,
-and this condition got satisfied only when the previous spinlock
-holder released ownership of the token.
+A pure-dalvik app will spawn threads through a controlled interface
+that could count threads (but still could not count threads that are
+runnable vs. sleeping), but any app can use JNI to link to a native
+library and use pthreads directly if it wants to.  I agree per-app
+containers may have some fairness advantages between multiple apps, I
+just have to figure out what it will mean for apps vs. system
+services, etc
 
->> +       __this_cpu_write(*percpu_token, prev);
-
-This stores the token we're waiting on in our per-cpu stash so we can
-reuse it on the next spinlock acquisition. It doesn't belong to us
-yet, but it will as soon as we're done spinning.
-
-We also have the __q_spin_lock_process() vs __q_spin_lock_bh()
-distinction to ensure interrupts won't cause us to reuse per-cpu
-tokens before we're done spinning on them.
-
-Hope this helps,
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+> Thanks.
+>
+> --
+> tejun
