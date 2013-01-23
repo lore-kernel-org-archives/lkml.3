@@ -1,77 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332Ab3AWVhk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 16:37:40 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:39223 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169Ab3AWVhb (ORCPT
+	id S1752385Ab3AWViG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 16:38:06 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:38994 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab3AWVh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 16:37:31 -0500
-Date: Wed, 23 Jan 2013 16:37:36 -0500
-From: Matt Porter <mporter@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Sekhar Nori <nsekhar@ti.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 00/14] DMA Engine support for AM33XX
-Message-ID: <20130123213736.GC5256@beef>
-References: <1358281974-8411-1-git-send-email-mporter@ti.com>
- <50FEB6B2.5020303@ti.com>
- <20130123022133.GA5727@opensource.wolfsonmicro.com>
+	Wed, 23 Jan 2013 16:37:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130123022133.GA5727@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130123042714.GD2723@blaptop>
+References: <1358848018-3679-1-git-send-email-ezequiel.garcia@free-electrons.com>
+	<20130123042714.GD2723@blaptop>
+Date: Wed, 23 Jan 2013 18:37:56 -0300
+Message-ID: <CALF0-+V6D1Ka9SNyrgRAgTSGLUTp_9y4vYwauSx1qCfU-JOwjA@mail.gmail.com>
+Subject: Re: [RFC/PATCH] scripts/tracing: Add trace_analyze.py tool
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Tim Bird <tim.bird@am.sony.com>, Pekka Enberg <penberg@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 10:21:42AM +0800, Mark Brown wrote:
-> On Tue, Jan 22, 2013 at 09:26:34PM +0530, Sekhar Nori wrote:
-> > On 1/16/2013 2:02 AM, Matt Porter wrote:
-> 
-> > > This series adds DMA Engine support for AM33xx, which uses
-> > > an EDMA DMAC. The EDMA DMAC has been previously supported by only
-> > > a private API implementation (much like the situation with OMAP
-> > > DMA) found on the DaVinci family of SoCs.
-> 
-> > Will you take this series through the OMAP tree? Only 1/14 touches
-> > mach-davinci and I am mostly okay with it except some changes I just
-> > requested Matt to make in another thread.
-> 
-> Is this series somewhere near actually getting merged then? It seemed
-> like there was lots of stuff going on.
+Hi Minchan,
 
-The issues raised by Sekhar and Santosh were reasonably minor and will
-be addressed. My major concern is that the dependency on some api to
-fetch dmaengine driver SG limitations is not resolved. That's being
-discussed in https://lkml.org/lkml/2013/1/10/432
+On Wed, Jan 23, 2013 at 1:27 AM, Minchan Kim <minchan@kernel.org> wrote:
+> Hi Ezequiel,
+>
+> On Tue, Jan 22, 2013 at 06:46:58AM -0300, Ezequiel Garcia wrote:
+>> From: Ezequiel Garcia <elezegarcia@gmail.com>
+>>
+>> The purpose of trace_analyze.py tool is to perform static
+>> and dynamic memory analysis using a kmem ftrace
+>> log file and a built kernel tree.
+>>
+>> This script and related work has been done on the CEWG/2012 project:
+>> "Kernel dynamic memory allocation tracking and reduction"
+>> (More info here [1])
+>>
+>> It produces mainly two kinds of outputs:
+>>  * an account-like output, similar to the one given by Perf, example below.
+>>  * a ring-char output, examples here [2].
+>>
+>> $ ./scripts/tracing/trace_analyze.py -k linux -f kmem.log --account-file account.txt
+>> $ ./scripts/tracing/trace_analyze.py -k linux -f kmem.log -c account.txt
+>>
+>> This will produce an account file like this:
+>>
+>>     current bytes allocated:     669696
+>>     current bytes requested:     618823
+>>     current wasted bytes:         50873
+>>     number of allocs:              7649
+>>     number of frees:               2563
+>>     number of callers:              115
+>>
+>>      total    waste      net alloc/free  caller
+>>     ---------------------------------------------
+>>     299200        0   298928  1100/1     alloc_inode+0x4fL
+>>     189824        0   140544  1483/385   __d_alloc+0x22L
+>>      51904        0    47552   811/68    sysfs_new_dirent+0x4eL
+>>     [...]
+>>
+>> [1] http://elinux.org/Kernel_dynamic_memory_analysis
+>> [2] http://elinux.org/Kernel_dynamic_memory_analysis#Current_dynamic_footprint
+>
+> First of all, Thanks for nice work! It could be very useful for
+> embedded side.
+>
+> Questions.
+>
+> 1. Can we detect different call path but same function?
+>    I mean
+>
+>         A       C
+>          \     /
+>           B   D
+>            \ /
+>             E
+>             |
+>          kmalloc
+>
+> In this case, E could be called by A or C. I would like to know the call path.
+> It could point out exact culprit of memory hogger.
+>
 
-If I don't get confirmation from Vinod soon, I'll just take a stab at
-implementing the callbacks he mentioned in that thread. Static
-per-channel caps don't provide the information needed by a client driver
-the uses the EDMA DMAC.
+I'm sorry, I'm not following you:
+How can I know which caller in the call path is the 'real' responsible
+for the allocation?
 
-Alternatively, we can go back to the hack that looks at the edma
-phandle and hardcodes the mmc SG limits to magic values, but that's just
-plain ugly. I could live with it temporarily if we can't get the
-dmaengine api resolved until 3.10...dunno if others can though. ;)
+The only way I can think of achieving something like this is by using
+kmalloc_track_caller() instead of kmalloc().
+This is done in cases where an allocer is known to alloc memory on
+behalf of its caller.
 
--Matt
+> 2. Does it support alloc_pages family?
+>    kmem event trace already supports it. If it supports, maybe we can replace
+>    CONFIG_PAGE_OWNER hack.
+>
+
+Mmm.. no, it doesn't support alloc_pages and friends, for we found
+no reason to do it.
+However, it sounds like a nice idea, on a first thought.
+
+I'll review CONFIG_PAGE_OWNER patches and see if I can come up with something.
+
+Meantime, and given this is just a script submission, is there anything
+preventing to merge this? We can move it to perf, and/or add it
+features, etc. later,
+on top of this. Does this make sense?
+
+-- 
+    Ezequiel
