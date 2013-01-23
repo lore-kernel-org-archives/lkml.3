@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab3AWCf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 21:35:28 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:36032 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751819Ab3AWCf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 21:35:26 -0500
-Date: Tue, 22 Jan 2013 19:35:23 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/5] Add support for S3 non-stop TSC support.
-Message-ID: <20130123023523.GC1590@obsidianresearch.com>
-References: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
- <50FD8D07.5030908@linaro.org>
- <20130122195701.GH30647@obsidianresearch.com>
- <50FEF505.60504@linaro.org>
- <20130123002610.GA814@obsidianresearch.com>
- <50FF31D6.3090304@linaro.org>
- <20130123013710.GA1046@obsidianresearch.com>
- <50FF42CD.6010203@linaro.org>
+	id S1752851Ab3AWCfp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 21:35:45 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:61170 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752579Ab3AWCfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 21:35:44 -0500
+Message-ID: <50FF4C4D.4020405@huawei.com>
+Date: Wed, 23 Jan 2013 10:34:53 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FF42CD.6010203@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+To: Tejun Heo <tj@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/6] cgroup: initialize cgrp->dentry before css_alloc()
+References: <50F7B040.2020906@huawei.com> <20130123002754.GB5359@htj.dyndns.org>
+In-Reply-To: <20130123002754.GB5359@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 05:54:21PM -0800, John Stultz wrote:
-
-> >>complicated part. Additionally, there may be cases where the
-> >>timekeeping clocksource is one clocksource and the suspend
-> >>clocksource is another. So I think to properly integrate this sort
-> >Does the difference matter? The clocksource to use is detected at
-> >runtime, if the timekeeping clocksource is no good for suspend time
-> >keeping then it just won't be used. With a distinct
-> >read_persistent_clock API then they are already seperate??
+On 2013/1/23 8:27, Tejun Heo wrote:
+> (cc'ing Andrew as scheduler folks are difficult to get response from
+>  these days and I can't think of anyone else to bother :)
 > 
-> Not sure I'm following you here.  I still think the selection of
-> which clocksource to use for suspend timing is problematic
-> (especially if its not the active timekeeping clocksource).  So I
-> think instead of complicating the generic timekeeping code with the
-> logic, I'd rather push it off to new read_presistent_clock api.
+> Hello, Li.
+> 
+> The cgroup part looks good to me but it would be great if the
+> descriptions are more detailed, especially, about why the change is
+> beneficial or what it's aiming at.  I take it that the shed changes
+> are necessary to facilitate the later cgroup changes?  Can you please
+> elaborate how?
+> 
 
-Well, where do you see the complication?
+Scheduler changes made in patch #2 are preparation for #3 and #4.
 
-My thought was to save the cycle_t from *all* the clock sources during
-suspend, and then on resume look for the highest priority one where
-the driver reports it continued to tick the whole time. The active
-timekeeping clock source doesn't seem to come into the equation??
+- for #3:
 
-Add
-      int (*active_during_suspend)(struct clocksource *cs);
-      cycle_t value_before_suspend;
-To struct clocksource.
+After ss->css_alloc(), there's a small window that tg->css.cgroup is NULL.
+With the change, tg won't be seen before ss->css_online(), so the scheduler
+won't see NULL tg->css.cgroup.
 
-Before suspend:
-  foreach(cs,all clocksources) {
-      if (cs->active_during_suspend)
-            cs->value_before_suspend = cs->read(cs);
-  }
+- for #4:
 
-After resume:
-  cycle_t best_delta = 0;
-  struct clocksource *best_cs = NULL;
-  foreach(cs,all clocksources) {
-      if (cs->active_during_suspend &&
-          (best_cs == NULL || cs->rating > best_cs->rating) &&
-          cs->active_during_suspend(cs)) {
-            best_delta = cs->read(cs) - cs->value_before_suspend;
-            best_cs = cs;
-      }
-  }
+If tg is unregistered and removed from global list in css_free(), and if
+we kfree cgroup right after ss->css_free(), the scheduler can access
+invalid tg->css.cgroup, because tg is also protected by RCU.
 
-Update the TSC driver to set the function pointer
-active_during_suspend when the CPU supports non-stop TSC. Have it
-return true if S3 was the deepest sleep entered during the last
-suspend/resume cycle, false otherwise. Ditto for that ARM case.
+Without patch #2:
 
-This seems reasonably simple, compared to adding a new API, new
-drivers, new function pointer multiplexors to arches...
+cgroup_rmdir()
+  no ss->css_offline()
+diput()
+  syncronize_rcu()
+  ss->css_free()    <-- remove tg from global list,
+			and free tg via call_rcu()
+  kfree_rcu(cgroup) <-- wait rcu read section
 
-Jason
+With the change:
+
+cgroup_rmdir()
+  ss->css_offline() <-- remove tg from global list
+diput()
+  synchronize_rcu() <-- wait rcu read section
+  ss->css_free();   <-- free tg
+  kfree(cgroup);
+
+> The scheduler part of changes are mostly mechanical, so it would be
+> great if we can get ack from scheduler people and route these together.
+> 
+> Thanks.
+> 
+
