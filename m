@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465Ab3AWVpi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 16:45:38 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:58000 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154Ab3AWVpd (ORCPT
+	id S1752407Ab3AWVrF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 16:47:05 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39644 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab3AWVqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 16:45:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130123131713.GG13304@suse.de>
-References: <1358874762-19717-1-git-send-email-mgorman@suse.de>
- <1358874762-19717-6-git-send-email-mgorman@suse.de> <20130122144659.d512e05c.akpm@linux-foundation.org>
- <20130123131713.GG13304@suse.de>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Wed, 23 Jan 2013 16:45:12 -0500
-Message-ID: <CAHGf_=qG+dUDbzgMxq5tsd5u5thmD4iYDGKmmyvSJt3-1va3vQ@mail.gmail.com>
-Subject: Re: [PATCH 5/6] mm: Fold page->_last_nid into page->flags where possible
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Simon Jeons <simon.jeons@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 23 Jan 2013 16:46:54 -0500
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
+        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
+        minchan@kernel.org, dan.magenheimer@oracle.com
+Subject: [PATCH 1/2] staging: zcache: fix ppc64 and other arches where PAGE_SIZE!=4K
+Date: Wed, 23 Jan 2013 13:46:30 -0800
+Message-Id: <1358977591-24485-1-git-send-email-dan.magenheimer@oracle.com>
+X-Mailer: git-send-email 1.7.5.1
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Good question.
->
-> There are 19 free bits in my configuration but it's related to
-> CONFIG_NODES_SHIFT which is 9 for me (512 nodes) and very heavily affected
-> by options such as CONFIG_SPARSEMEM_VMEMMAP. Memory hot-remove does not work
-> with CONFIG_SPARSEMEM_VMEMMAP and enterprise distribution configs may be
-> taking the performance hit to enable memory hot-remove. If I disable this
-> option to enable memory hot-remove then there are 0 free bits in page->flags.
+Replace raw constant 12 with PAGE_SHIFT to fix non-x86 arches and
+provoke build failure if PAGE_SHIFT is too big
 
-FWIW, when using current mmotm, memory hot memory remove does work w/
-CONFIG_SPARSEMEM_VMEMMAP. Recently Fujitsu changed.
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+---
+ drivers/staging/zcache/zbud.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/zcache/zbud.c b/drivers/staging/zcache/zbud.c
+index a7c4361..6835fab 100644
+--- a/drivers/staging/zcache/zbud.c
++++ b/drivers/staging/zcache/zbud.c
+@@ -103,8 +103,8 @@ struct zbudpage {
+ 		struct {
+ 			unsigned long space_for_flags;
+ 			struct {
+-				unsigned zbud0_size:12;
+-				unsigned zbud1_size:12;
++				unsigned zbud0_size: PAGE_SHIFT;
++				unsigned zbud1_size: PAGE_SHIFT;
+ 				unsigned unevictable:2;
+ 			};
+ 			struct list_head budlist;
+@@ -112,6 +112,9 @@ struct zbudpage {
+ 		};
+ 	};
+ };
++#if (PAGE_SHIFT * 2) + 2 > BITS_PER_LONG
++#error "zbud won't work for this arch, PAGE_SIZE is too large"
++#endif
+ 
+ struct zbudref {
+ 	union {
+-- 
+1.7.1
+
