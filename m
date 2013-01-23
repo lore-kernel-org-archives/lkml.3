@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab3AWXk7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 18:40:59 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37479 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274Ab3AWXky (ORCPT
+	id S1752385Ab3AWXn4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 18:43:56 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:52404 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751143Ab3AWXnt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 18:40:54 -0500
-Message-ID: <51007545.5040406@infradead.org>
-Date: Wed, 23 Jan 2013 15:41:57 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	Wed, 23 Jan 2013 18:43:49 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Bryan Wu <cooloney@gmail.com>
+CC: Nathan Lynch <ntl@pobox.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] leds-lp5521/3: use '%zu' for formatting 'size_t'
+Thread-Topic: [PATCH v2] leds-lp5521/3: use '%zu' for formatting 'size_t'
+Thread-Index: Ac35w3gJ03eEQdh5Ts6dYDQX6ucNeg==
+Date: Wed, 23 Jan 2013 23:43:41 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E1C4F7@DQHE02.ent.ti.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
-        linux-iio@vger.kernel.org, Artem Bityutskiy <dedekind1@gmail.com>,
-        linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org
-Subject: Re: linux-next: Tree for Jan 23 (mtd/ubi and iio and crypto/crc32[c])
-References: <20130123174336.47c0113740a14da7f6a92187@canb.auug.org.au> <51006DC9.30802@infradead.org> <20130123232316.GB25726@gondor.apana.org.au>
-In-Reply-To: <20130123232316.GB25726@gondor.apana.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/13 15:23, Herbert Xu wrote:
-> On Wed, Jan 23, 2013 at 03:10:01PM -0800, Randy Dunlap wrote:
->> On 01/22/13 22:43, Stephen Rothwell wrote:
->>> Hi all,
->>>
->>> Changes since 20130122:
->>>
->>
->>
->> on i386:
->>
->> ERROR: "crc32_le" [drivers/mtd/ubi/ubi.ko] undefined!
->> ERROR: "iio_triggered_buffer_setup" [drivers/iio/adc/max1363.ko] undefined!
->> ERROR: "iio_triggered_buffer_cleanup" [drivers/iio/adc/max1363.ko] undefined!
->> ERROR: "__crc32c_le" [crypto/crc32c.ko] undefined!
->> ERROR: "crc32_le" [crypto/crc32.ko] undefined!
-> 
-> Weird.  You do have CONFIG_CRC32 selected, so did it compile
-> a lib/crc32.ko or not?
+The printk format of type 'size_t' is not '%d' but '%zu' or '%zx'.
+This patch fixes build warnings below.
 
-Hmph, this seems to be some kind of rebuild problem.  It's not
-reproducible, so the mtd/ubi and crypto reports above are incorrect --
-please ignore them.  Only the iio one is reproducible.
+ drivers/leds/leds-lp5521.c: In function lp5521_firmware_loaded:
+ drivers/leds/leds-lp5521.c:257:4: warning: format %d expects argument of
+  type int, but argument 3 has type size_t [-Wformat]
 
-Sorry about that.
+ drivers/leds/leds-lp5523.c: In function lp5523_firmware_loaded:
+ drivers/leds/leds-lp5523.c:283:4: warning: format %d expects argument of
+  type int, but argument 3 has type size_t [-Wformat]
 
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ drivers/leds/leds-lp5521.c |    2 +-
+ drivers/leds/leds-lp5523.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+index 80adfb4..1001347 100644
+--- a/drivers/leds/leds-lp5521.c
++++ b/drivers/leds/leds-lp5521.c
+@@ -253,7 +253,7 @@ static void lp5521_firmware_loaded(struct lp55xx_chip *chip)
+ 	const struct firmware *fw = chip->fw;
+ 
+ 	if (fw->size > LP5521_PROGRAM_LENGTH) {
+-		dev_err(&chip->cl->dev, "firmware data size overflow: %d\n",
++		dev_err(&chip->cl->dev, "firmware data size overflow: %zu\n",
+ 			fw->size);
+ 		return;
+ 	}
+diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+index 4ac7061..229f734 100644
+--- a/drivers/leds/leds-lp5523.c
++++ b/drivers/leds/leds-lp5523.c
+@@ -279,7 +279,7 @@ static void lp5523_firmware_loaded(struct lp55xx_chip *chip)
+ 	const struct firmware *fw = chip->fw;
+ 
+ 	if (fw->size > LP5523_PROGRAM_LENGTH) {
+-		dev_err(&chip->cl->dev, "firmware data size overflow: %d\n",
++		dev_err(&chip->cl->dev, "firmware data size overflow: %zu\n",
+ 			fw->size);
+ 		return;
+ 	}
 -- 
-~Randy
+1.7.9.5
+
+
+Best Regards,
+Milo
+
