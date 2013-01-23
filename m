@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab3AWO1L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:27:11 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51279 "EHLO arroyo.ext.ti.com"
+	id S1755923Ab3AWOau (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:30:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42271 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754500Ab3AWO1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:27:09 -0500
-Message-ID: <50FFF31D.2070908@ti.com>
-Date: Wed, 23 Jan 2013 19:56:37 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1754740Ab3AWOat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 09:30:49 -0500
+Date: Wed, 23 Jan 2013 06:32:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mark Einon <mark.einon@gmail.com>
+Cc: davem@davemloft.net, sfr@canb.auug.org.au, devel@driverdev.osuosl.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dan.carpenter@oracle.com
+Subject: Re: [RFC PATCH v3 linux-next] et131x: Promote staging et131x driver
+ to drivers/net
+Message-ID: <20130123143216.GA2050@kroah.com>
+References: <1358935859-29525-1-git-send-email-mark.einon@gmail.com>
+ <1358945130-3101-1-git-send-email-mark.einon@gmail.com>
 MIME-Version: 1.0
-To: "Mohammed, Afzal" <afzal@ti.com>
-CC: Koen Kooi <koen@dominion.thruhere.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        "eballetbo@gmail.com" <eballetbo@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        "javier@dowhile0.org" <javier@dowhile0.org>,
-        "linux-omap@vger.kernel.org List" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v1 0/6] USB: Add support for multiple PHYs of same type
-References: <1358848694-20145-1-git-send-email-kishon@ti.com> <2D906ABA-71F2-4843-9DBE-F82527A1240A@dominion.thruhere.net> <50FEB3FD.3050001@ti.com> <50FEBB61.9000707@ti.com> <B9531499-0746-44DA-BDBB-999D4CA31E63@dominion.thruhere.net> <C8443D0743D26F4388EA172BF4E2A7A93EA922F5@DBDE01.ent.ti.com>
-In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93EA922F5@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358945130-3101-1-git-send-email-mark.einon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Afzal,
+On Wed, Jan 23, 2013 at 12:45:30PM +0000, Mark Einon wrote:
+> This patch moves the et131x gigabit ethernet driver from drivers/staging
+> to drivers/net/ethernet/agere.
+> 
+> All the existing issues noted for this driver have been resolved, apart
+> from one performance issue where some fragmented packets suffer from
+> frame receive errors.
+> 
+> Signed-off-by: Mark Einon <mark.einon@gmail.com>
+> ---
+> 
+> Changes from V2 - vendor name changed from Atheros to Agere in drivers/net/ethernet/agere/Kconfig
+> 
+>  MAINTAINERS                                        |   11 ++++---
+>  drivers/net/ethernet/Kconfig                       |    1 +
+>  drivers/net/ethernet/Makefile                      |    1 +
+>  drivers/net/ethernet/agere/Kconfig                 |   32 ++++++++++++++++++++
+>  .../et131x => net/ethernet/agere}/Makefile         |    1 +
+>  .../et131x => net/ethernet/agere}/et131x.c         |    0
+>  .../et131x => net/ethernet/agere}/et131x.h         |    0
+>  drivers/staging/Kconfig                            |    2 --
+>  drivers/staging/Makefile                           |    1 -
+>  drivers/staging/et131x/Kconfig                     |   10 ------
+>  drivers/staging/et131x/README                      |   16 ----------
+>  11 files changed, 41 insertions(+), 34 deletions(-)
+>  create mode 100644 drivers/net/ethernet/agere/Kconfig
+>  rename drivers/{staging/et131x => net/ethernet/agere}/Makefile (98%)
+>  rename drivers/{staging/et131x => net/ethernet/agere}/et131x.c (100%)
+>  rename drivers/{staging/et131x => net/ethernet/agere}/et131x.h (100%)
+>  delete mode 100644 drivers/staging/et131x/Kconfig
+>  delete mode 100644 drivers/staging/et131x/README
 
-On Wednesday 23 January 2013 07:28 PM, Mohammed, Afzal wrote:
-> Hi Koen,
->
-> On Tue, Jan 22, 2013 at 22:32:56, Koen Kooi wrote:
->
->> Actually it uses nop-phy as a phy, which is missing from arch/arm/boot/dts/am33xx.dtsi, so mainline is already broken. But adding the nop-phy to the DT is easy enough to patch in locally.
->
-> USB first instance of am335x works in mainline as of now.
+Creating a patch this way is the correct way to do it, however it gives
+no clue to the network developers as to exactly what is in this driver
+at the moment :(
 
-Can you check if this series indeed breaks am335x?
+I usually recommend just creating a new patch, that adds the driver to
+the proper place in the kernel, and sending that in.  If the subsystem
+maintainers accept it, then I can just delete the staging driver.
 
-Thanks for your help.
+Yes, this looses the history of the code, but usually no one cares about
+that for staging drivers.
 
-Regards
-Kishon
+If that's not ok, I have no problem accepting this, if I get an ack from
+the subsystem maintainers that it's ok, but again, this patch makes it
+pretty hard for them to know that or not.
+
+thanks,
+
+greg k-h
