@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab3AWAGw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 19:06:52 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60651 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558Ab3AWAGu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 19:06:50 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-ee-50ff299810b5
-Date: Wed, 23 Jan 2013 09:06:48 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, jmarchan@redhat.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v5 1/4] zram: Fix deadlock bug in partial write
-Message-ID: <20130123000648.GA2723@blaptop>
-References: <1358898745-4873-1-git-send-email-minchan@kernel.org>
- <CAPkvG_f2mDr2p=ypqcikeNMRoE3tK1-kDjLWyz6bb9yQUpGgZQ@mail.gmail.com>
+	id S1756174Ab3AWALt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 19:11:49 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:50915 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752939Ab3AWALr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jan 2013 19:11:47 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH 4/4] ACPI / PM: Expose lists of device power resources to user space
+Date: Wed, 23 Jan 2013 01:17:47 +0100
+Message-ID: <4989050.jK98Xm5BOW@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <4110339.gOkm8VAsyn@vostro.rjw.lan>
+References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <20130122235624.GF694@kroah.com> <4110339.gOkm8VAsyn@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPkvG_f2mDr2p=ypqcikeNMRoE3tK1-kDjLWyz6bb9yQUpGgZQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nitin,
+On Wednesday, January 23, 2013 01:08:54 AM Rafael J. Wysocki wrote:
+> On Tuesday, January 22, 2013 03:56:24 PM Greg Kroah-Hartman wrote:
+> > On Tue, Jan 22, 2013 at 03:28:23AM +0100, Rafael J. Wysocki wrote:
 
-On Tue, Jan 22, 2013 at 03:58:10PM -0800, Nitin Gupta wrote:
-> On Tue, Jan 22, 2013 at 3:52 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > Now zram allocates new page with GFP_KERNEL in zram I/O path
-> > if IO is partial. Unfortunately, It may cuase deadlock with
-> > reclaim path so this patch solves the problem.
-> >
-> > Cc: Jerome Marchand <jmarchan@redhat.com>
-> > Cc: stable@vger.kernel.org
-> > Acked-by: Nitin Gupta <ngupta@vflare.org>
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  drivers/staging/zram/zram_drv.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> >
+[...]
+
+> > Oh, and same question about racing userspace, you will have problems
+> > here in that the symlinks will be showing up after the device is
+> > created.  Perhaps, to make the whole thing easier, you just change the
+> > acpi core code to hold off on the notification until you get all of
+> > these links and files set up and then tell userspace.  That's probably
+> > an easier fix.
 > 
-> Changelog for v4 vs v5?
-
-It's just adding your Acked-by in whole series.
-I thought it's minor.
-
-Thanks for the review, Nitin.
-
+> I suppose so.
 > 
-> Thanks,
-> Nitin
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> How can I do that?
+
+Should I set dev->kobj.uevent_suppress before calling device_register() and
+then clear it and call the kobject_uevent(&dev->kobj, KOBJ_ADD) from the ACPI
+core after device_register() has returned and the files have been created?
+
+Rafael
+
 
 -- 
-Kind regards,
-Minchan Kim
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
