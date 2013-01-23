@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab3AWHtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 02:49:09 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:49912 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753191Ab3AWHtH (ORCPT
+	id S1753977Ab3AWHtz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 02:49:55 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:60777 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191Ab3AWHtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 02:49:07 -0500
+	Wed, 23 Jan 2013 02:49:53 -0500
 From: Christian Gmeiner <christian.gmeiner@gmail.com>
 To: linux-next@vger.kernel.org, akpm@linux-foundation.org, rpurdie@rpsys.net,
         linux-kernel@vger.kernel.org, c.gmeiner@bachmann.info
 Cc: Christian Gmeiner <christian.gmeiner@gmail.com>
-Subject: [PATCH 3/3] leds-ot200: Fix error caused by shifted mask
-Date: Wed, 23 Jan 2013 09:10:00 +0100
-Message-Id: <1358928600-15458-1-git-send-email-christian.gmeiner@gmail.com>
+Subject: [PATCH] leds-ot200: Fix error caused by shifted mask
+Date: Wed, 23 Jan 2013 09:10:56 +0100
+Message-Id: <1358928657-15781-1-git-send-email-christian.gmeiner@gmail.com>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
