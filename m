@@ -1,44 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3AWEPT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jan 2013 23:15:19 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:60364 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887Ab3AWEPR (ORCPT
+	id S1753475Ab3AWEP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jan 2013 23:15:56 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:39102 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752926Ab3AWEPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jan 2013 23:15:17 -0500
-Date: Tue, 22 Jan 2013 23:15:15 -0500 (EST)
-Message-Id: <20130122.231515.1276077448591402095.davem@davemloft.net>
-To: freddy@asix.com.tw
-Cc: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, louis@asix.com.tw
-Subject: Re: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0
- to gigabit ethernet adapter driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1358908337-13841-1-git-send-email-freddy@asix.com.tw>
-References: <1358908337-13841-1-git-send-email-freddy@asix.com.tw>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 22 Jan 2013 23:15:55 -0500
+Date: Wed, 23 Jan 2013 15:15:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: linux-next: manual merge of the driver-core tree with Linus' tree
+Message-Id: <20130123151552.1b8723dfa9c9a5dd75f7fec2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__23_Jan_2013_15_15_52_+1100_28HuuR1g7Hc/GKWZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Freddy Xin <freddy@asix.com.tw>
-Date: Wed, 23 Jan 2013 10:32:17 +0800
+--Signature=_Wed__23_Jan_2013_15_15_52_+1100_28HuuR1g7Hc/GKWZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Fixed coding style errors.
+Hi Greg,
 
-There are still many style issues remaining, you have a lot more
-work to do, for example:
+Today's linux-next merge of the driver-core tree got a conflict in
+drivers/gpio/gpio-mvebu.c between commit 11c0ceec073c ("gpio: mvebu:
+Don't free chip label memory") from Linus' tree and commit 641d03422a59
+("gpio: Convert to devm_ioremap_resource()") from the driver-core tree.
 
-> +	return fn(dev, cmd, USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-> +	       value, index, data, size);
-> +
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-This empty line is unnecessary, get rid of it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Also this function call is not indented properly.  The first character
-on the second line of the fn() call should line up with the first
-column after the openning parenthesis of the first line of the call.
+diff --cc drivers/gpio/gpio-mvebu.c
+index 6819d63,bf6c7c9..0000000
+--- a/drivers/gpio/gpio-mvebu.c
++++ b/drivers/gpio/gpio-mvebu.c
+@@@ -544,10 -545,10 +545,9 @@@ static int mvebu_gpio_probe(struct plat
+  	mvchip->chip.of_node =3D np;
+ =20
+  	spin_lock_init(&mvchip->lock);
+- 	mvchip->membase =3D devm_request_and_ioremap(&pdev->dev, res);
+- 	if (! mvchip->membase) {
+- 		dev_err(&pdev->dev, "Cannot ioremap\n");
+- 		return -ENOMEM;
++ 	mvchip->membase =3D devm_ioremap_resource(&pdev->dev, res);
++ 	if (IS_ERR(mvchip->membase)) {
+ -		kfree(mvchip->chip.label);
++ 		return PTR_ERR(mvchip->membase);
+  	}
+ =20
+  	/* The Armada XP has a second range of registers for the
+@@@ -559,10 -560,12 +559,10 @@@
+  			return -ENODEV;
+  		}
+ =20
+- 		mvchip->percpu_membase =3D devm_request_and_ioremap(&pdev->dev, res);
+- 		if (! mvchip->percpu_membase) {
+- 			dev_err(&pdev->dev, "Cannot ioremap\n");
+- 			return -ENOMEM;
++ 		mvchip->percpu_membase =3D devm_ioremap_resource(&pdev->dev,
++ 							       res);
++ 		if (IS_ERR(mvchip->percpu_membase)) {
+ -			kfree(mvchip->chip.label);
++ 			return PTR_ERR(mvchip->percpu_membase);
+  		}
+  	}
+ =20
+
+--Signature=_Wed__23_Jan_2013_15_15_52_+1100_28HuuR1g7Hc/GKWZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ/2P4AAoJEECxmPOUX5FEpIkP/245zgqFt34eIlzD/9E4ue7Q
+ilsWbs3JxdygT9egHfx3D4m8wyq7ZJe2M8RBtpCMRBYLkjgsnH6kSGgTgZ+6kNQB
+4Tmq4DXtlUAiELUKwC6iOkiqzUsQ+cTaxhHj3ILjql7fU9uB92EHMzjae33QToF5
+ivSCVkO8cFmpo45CHqIvl1pgL2uVhADZZrx7NgZpFS4mNq0PPJ7M53FCQwP7cIK2
+MlXajFLigAF5GuMQyqJqtMZshvL8jORO22IAlfMEUIAdwNPbr7B2nSqUoWZy+RnY
+7PppPA0nAoLBBhXFriJW+MJ3ECUl929SZ3T78mHPOWVrNoDF24fuN+Z+Z0W4+9tS
++2fibSgF1OrBckIE2471jtKF3PSHz7/1+TewQx6/xgKulxx9v0oI8YyKI/OAhAli
+aNO9FkAu7j2iRClR/CePOX14qVCx9vP9bMt1REtTgzwfSrW/sDOJ/m5tDmsIr+M9
+d0YTTgQCwCsZIMGBPDrHS4Nxwop6xzfd9Mu3cidIzIDBvLYlgUNWF0sFMLxvOIYQ
+NXuuNnBhTRMv51u0XwgIHnDxe3TKhh5llY0nzJSffKkB0Eax9WMspV0GYl7xbhVo
+EjCe7iQaHhAz+KSMsRYKsn1bubl6unsbpciSfg7Ox3afwKZM8377ehakv84LzMxQ
+4WyuHl5wc+x1c5swJlr9
+=Mw17
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__23_Jan_2013_15_15_52_+1100_28HuuR1g7Hc/GKWZ--
