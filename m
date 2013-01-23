@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab3AWXsy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 18:48:54 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:48636 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab3AWXsr (ORCPT
+	id S1752270Ab3AWXwI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 18:52:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55578 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab3AWXwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 18:48:47 -0500
-Date: Wed, 23 Jan 2013 18:48:41 -0500
-From: Cong Ding <dinggnu@gmail.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: LKML and other vger MLs - which provider...
-Message-ID: <20130123234841.GB26336@gmail.com>
-References: <Pine.LNX.4.64.1301232209310.428@axis700.grange>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1301232209310.428@axis700.grange>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 23 Jan 2013 18:52:05 -0500
+Date: Wed, 23 Jan 2013 15:51:47 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [tracepoint] cargo-culting considered harmful...
+Message-Id: <20130123155147.25fe49a2.akpm@linux-foundation.org>
+In-Reply-To: <20130123225523.GY4939@ZenIV.linux.org.uk>
+References: <20130123225523.GY4939@ZenIV.linux.org.uk>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 10:32:39PM +0100, Guennadi Liakhovetski wrote:
-> Hi David
-> 
-> In short: I'm looking for a (free) email provider to use for my 
-> vger.kernel.org subscriptions. Read a thread on google+ with your 
-> participation and was wondering whether you could recommend one or knew of 
-> a way to get an @infradead.org address, although that doesn't seem to be 
-> safe enough either any more...
-> 
-> The long story: gmx.de, that I'm using as my "identity" address, got me 
-> unsubscribed multiple times from vger MLs. Even though not wanting to give 
-> the big G even more power, gmail has worked pretty stably, without 
-> dropping me out. However, recently I've detected a flaw with them (known 
-> to some too, I'm sure): they only deliver one copy of each mail. So, if a 
-> patch series is sent to more than one vger ML, I end up with some mails 
-> from it in my, say, mmc folder and with other in the linux-sh folder. 
-I suggest to use Gmail filter rather than mutt filter. The difference is that
-Gmail filter can mark one email with multiple labels, which means you can see
-the same email in two or more folders (called labels in Gmail) even there is
-only one copy stored in Gmail. btw, the unread sign of one email in different
-labels is shared. I think this feature is quite good, though I hate Gmail web
-version doesn't follow the RFC about thread.
+On Wed, 23 Jan 2013 22:55:24 +0000
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
-- cong
-
-> Since I don't see a way to fix that with gmail (yes, I've sent a request 
-> to them, but I'm not very hopeful), I'd be happy to move to another 
-> provider. So, any recommendations would be welcome. I know this has been 
-> discussed multiple times before, but unfortunately I don't find those 
-> threads again. Might be a good thing to put on vger info pages.
+> In samples/tracepoints/tracepoint-probe-sample.c:
+> /*
+>  * Here the caller only guarantees locking for struct file and struct inode.
+>  * Locking must therefore be done in the probe to use the dentry.
+>  */
+> static void probe_subsys_event(void *ignore,   
+>                                struct inode *inode, struct file *file)
+> {
+>         path_get(&file->f_path);
+>         dget(file->f_path.dentry);
+>         printk(KERN_INFO "Event is encountered with filename %s\n",
+>                 file->f_path.dentry->d_name.name);
+>         dput(file->f_path.dentry);
+>         path_put(&file->f_path);
+> }
 > 
-> Thanks
-> Guennadi
-> ---
-> Guennadi Liakhovetski, Ph.D.
-> Freelance Open-Source Software Developer
-> http://www.open-technology.de/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> note that
+> 	* file->f_path is already pinned down by open(), path_get() does not
+> provide anything extra.
+> 	* file->f_path.dentry is already pinned by open() *and* path_get()
+> just above that dget().
+> 	* ->d_name.name *IS* *NOT* *PROTECTED* by pinning dentry down,
+> whether it's done once or thrice.
+
+I guess the first two are obvious (or at least, expected).  But the
+third isn't.
+
+Where should a kernel developer go to learn these things? 
+include/linux/dcache.h doesn't mention d_name locking rules, nor does
+Documentation/filesystems/vfs.txt.
+
