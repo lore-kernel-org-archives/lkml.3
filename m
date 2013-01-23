@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab3AWPMb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 10:12:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18396 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752825Ab3AWPMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 10:12:30 -0500
-Date: Wed, 23 Jan 2013 17:16:27 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH 1/2] tuntap: reduce memory using of queues
-Message-ID: <20130123151627.GB1613@redhat.com>
-References: <1358949553-30309-1-git-send-email-jasowang@redhat.com>
+	id S1754978Ab3AWPR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 10:17:29 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:52523 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab3AWPR2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 10:17:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358949553-30309-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1358953487.21576.120.camel@gandalf.local.home>
+References: <1358946905-13320-1-git-send-email-sedat.dilek@gmail.com>
+	<CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
+	<CA+icZUW7XrOGguoPO00wxPLUr2Xc8fP=jQZwekpnmWKRewwX2g@mail.gmail.com>
+	<CAFTL4hzcuxoy2deQpXDBRQZZBZ4VjT=EnO3ZZv6x-jGMTr_eaA@mail.gmail.com>
+	<1358949189.21576.114.camel@gandalf.local.home>
+	<CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
+	<1358953487.21576.120.camel@gandalf.local.home>
+Date: Wed, 23 Jan 2013 16:17:27 +0100
+Message-ID: <CAFTL4hxcS-_LL8RLGaSKnb4K=MeNxzaL3GDC2JmjBDF_o4v2rg@mail.gmail.com>
+Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing EXPORT_SYMBOL when CONFIG_KVM=m
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: sedat.dilek@gmail.com, "devendra.aaru" <devendra.aaru@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 09:59:12PM +0800, Jason Wang wrote:
-> A MAX_TAP_QUEUES(1024) queues of tuntap device is always allocated
-> unconditionally even userspace only requires a single queue device. This is
-> unnecessary and will lead a very high order of page allocation when has a high
-> possibility to fail. Solving this by creating a one queue net device when
-> userspace only use one queue and also reduce MAX_TAP_QUEUES to
-> DEFAULT_MAX_NUM_RSS_QUEUES which can guarantee the success of
-> the allocation.
-> 
-> Reported-by: Dirk Hohndel <dirk@hohndel.org>
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+2013/1/23 Steven Rostedt <rostedt@goodmis.org>:
+> On Wed, 2013-01-23 at 15:02 +0100, Frederic Weisbecker wrote:
+>
+>> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+>> index bbb2c2c..a13b8a3 100644
+>> --- a/kernel/context_tracking.c
+>> +++ b/kernel/context_tracking.c
+>> @@ -111,14 +111,19 @@ void guest_enter(void)
+>>         else
+>>                 __guest_enter();
+>>  }
+>> +EXPORT_SYMBOL_GPL(guest_enter);
+>>
+>>  void guest_exit(void)
+>>  {
+>> +#ifndef CONFIG_KVM
+>> +i
+>> +#endif
+>
+> I don't like #ifdefs in .c files. They belong in headers. Could you
+> convert this to be:
+>
+> include/linux/context_tracking.h:
+>
+> #ifdef CONFIG_KVM
+>  #define add_vi_i_typo()
+> #else
+>  #define add_vi_i_typo()        i
+> #endif
+>
+> and then in context_tracking.c:
+>
+> void guest_exit(void)
+> {
+>         add_vi_typo();
+>
+> [...]
 
-Note: this is a 3.8 patch, it fixes a regression.
+Much cleaner indeed! And this way it's more generally available for
+further users.
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
-> ---
->  drivers/net/tun.c |   15 ++++++++-------
->  1 files changed, 8 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index c81680d..8939d21 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -109,11 +109,10 @@ struct tap_filter {
->  	unsigned char	addr[FLT_EXACT_COUNT][ETH_ALEN];
->  };
->  
-> -/* 1024 is probably a high enough limit: modern hypervisors seem to support on
-> - * the order of 100-200 CPUs so this leaves us some breathing space if we want
-> - * to match a queue per guest CPU.
-> - */
-> -#define MAX_TAP_QUEUES 1024
-> +/* DEFAULT_MAX_NUM_RSS_QUEUES were choosed to let the rx/tx queues allocated for
-> + * the netdevice to be fit in one page. So we can make sure the success of
-> + * memory allocation. TODO: increase the limit. */
-> +#define MAX_TAP_QUEUES DEFAULT_MAX_NUM_RSS_QUEUES
->  
->  #define TUN_FLOW_EXPIRE (3 * HZ)
->  
-> @@ -1583,6 +1582,8 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->  	else {
->  		char *name;
->  		unsigned long flags = 0;
-> +		int queues = ifr->ifr_flags & IFF_MULTI_QUEUE ?
-> +			     MAX_TAP_QUEUES : 1;
->  
->  		if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
->  			return -EPERM;
-> @@ -1606,8 +1607,8 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->  			name = ifr->ifr_name;
->  
->  		dev = alloc_netdev_mqs(sizeof(struct tun_struct), name,
-> -				       tun_setup,
-> -				       MAX_TAP_QUEUES, MAX_TAP_QUEUES);
-> +				       tun_setup, queues, queues);
-> +
->  		if (!dev)
->  			return -ENOMEM;
->  
-> -- 
-> 1.7.1
+Will do the change, thanks!
