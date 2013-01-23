@@ -1,56 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab3AWU7h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 15:59:37 -0500
-Received: from fold.natur.cuni.cz ([195.113.57.32]:48568 "HELO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751167Ab3AWU72 (ORCPT
+	id S1752356Ab3AWVAO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 16:00:14 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:59365 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab3AWVAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 15:59:28 -0500
-Message-ID: <51004F2D.9000405@fold.natur.cuni.cz>
-Date: Wed, 23 Jan 2013 21:59:25 +0100
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20100101 Firefox/17.0 SeaMonkey/2.14.1
+	Wed, 23 Jan 2013 16:00:08 -0500
+Date: Wed, 23 Jan 2013 16:00:10 -0500
+From: Matt Porter <mporter@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+Cc: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH v3 02/16] ARM: davinci: move private EDMA API to
+ arm/common
+Message-ID: <20130123210010.GB5256@beef>
+References: <1350566815-409-1-git-send-email-mporter@ti.com>
+ <1350566815-409-3-git-send-email-mporter@ti.com>
+ <508CEA05.8060200@ti.com>
+ <20130110235157.GU14660@beef>
+ <d631bf39a8b8474bae448d089497fe0e@DLEE74.ent.ti.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, Vlad Yasevich <vyasevich@gmail.com>,
-        Sridhar Samudrala <sri@us.ibm.com>, linux-sctp@vger.kernel.org
-Subject: linux-3.7.4: kmemleak in sctp_sysctl_net_register()?
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <d631bf39a8b8474bae448d089497fe0e@DLEE74.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-  today I got the following report from the kernel, looks it happened when
-I started/used/quit chromium browser. I haven't seen this with 3.7.1 but
-I use builtin kmemleak detector only for 2-3 weeks.
+On Tue, Jan 22, 2013 at 03:40:06PM +0000, Sekhar Nori wrote:
+> Matt,
+> 
+> Sorry about the late reply. I noticed this mail only after I started to
+> look at v5 of your series :(
 
-unreferenced object 0xffff880402d08000 (size 2048):
-  comm "chrome_sandbox", pid 18437, jiffies 4310887172 (age 9097.630s)
-  hex dump (first 32 bytes):
-    b2 68 89 81 ff ff ff ff 20 04 04 f8 01 88 ff ff  .h...... .......
-    04 00 00 00 a4 01 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff815b4aad>] kmemleak_alloc+0x21/0x3e
-    [<ffffffff81110352>] slab_post_alloc_hook+0x28/0x2a
-    [<ffffffff81113fad>] __kmalloc_track_caller+0xf1/0x104
-    [<ffffffff810f10c2>] kmemdup+0x1b/0x30
-    [<ffffffff81571e9f>] sctp_sysctl_net_register+0x1f/0x72
-    [<ffffffff8155d305>] sctp_net_init+0x100/0x39f
-    [<ffffffff814ad53c>] ops_init+0xc6/0xf5
-    [<ffffffff814ad5b7>] setup_net+0x4c/0xd0
-    [<ffffffff814ada5e>] copy_net_ns+0x6d/0xd6
-    [<ffffffff810938b1>] create_new_namespaces+0xd7/0x147
-    [<ffffffff810939f4>] copy_namespaces+0x63/0x99
-    [<ffffffff81076733>] copy_process+0xa65/0x1233
-    [<ffffffff81077030>] do_fork+0x10b/0x271
-    [<ffffffff8100a0e9>] sys_clone+0x23/0x25
-    [<ffffffff815dda73>] stub_clone+0x13/0x20
-    [<ffffffffffffffff>] 0xffffffffffffffff
+Any time is fine! :)
+ 
+> On 1/11/2013 5:21 AM, Matt Porter wrote:
+> > On Sun, Oct 28, 2012 at 01:47:09PM +0530, Sekhar Nori wrote:
+> >> On 10/18/2012 6:56 PM, Matt Porter wrote:
+> >>> Move mach-davinci/dma.c to common/edma.c so it can be used
+> >>> by OMAP (specifically AM33xx) as well. This just moves the
+> >>> private EDMA API but does not support OMAP.
+> >>>
+> >>> Signed-off-by: Matt Porter <mporter@ti.com>
+> >>> ---
+> >>
+> >>> diff --git a/arch/arm/mach-davinci/devices.c b/arch/arm/mach-davinci/devices.c
+> >>> index 4c48a36..f45d591 100644
+> >>> --- a/arch/arm/mach-davinci/devices.c
+> >>> +++ b/arch/arm/mach-davinci/devices.c
+> >>> @@ -19,9 +19,10 @@
+> >>>  #include <mach/irqs.h>
+> >>>  #include <mach/cputype.h>
+> >>>  #include <mach/mux.h>
+> >>> -#include <mach/edma.h>
+> >>>  #include <linux/platform_data/mmc-davinci.h>
+> >>>  #include <mach/time.h>
+> >>> +#include <linux/platform_data/edma.h>
+> >>
+> >> Can you please introduce a patch to clean this mixture of linux/ and
+> >> mach/ includes?
+> > 
+> > Yeah, are you ok with a follow on series to clean all these files? I
+> > don't want to make this series longer with something not dma related
+> > that's purely cleanup from the great header reorg of 2012.
+> 
+> Okay. I agree doing this sort of change now will cause merge issues.
 
+Ok.
 
-Please let me know if you need more info, like dmesg, .config or other.
-Hope this helps.
-Martin
+> 
+> > 
+> >>> +
+> >>>  
+> >>>  #include "davinci.h"
+> >>>  #include "clock.h"
+> >>> @@ -141,10 +142,10 @@ static struct resource mmcsd0_resources[] = {
+> >>>  	},
+> >>>  	/* DMA channels: RX, then TX */
+> >>>  	{
+> >>> -		.start = EDMA_CTLR_CHAN(0, DAVINCI_DMA_MMCRXEVT),
+> >>> +		.start = EDMA_CTLR_CHAN(0, 26),
+> >>
+> >> Instead of just replacing the event #defines with plain numbers, can you
+> >> introduce a mach-davinci local edma.h which can then be included in the
+> >> davinci platform files which refer to edma channel numbers?
+> > 
+> > Ok, so when I removed the old edma.h it was full of unused defines and
+> > we are left with just this one. If I introduced something like that it
+> > would be used in just one place here. and only for these two values.
+> > How about we just add a comment?
+> 
+> I prefer adding a local #define in this file. This will keep it
+> consistent with what is done in arch/arm/mach-davinci/dm365.c for
+> example. Same for the change in sound/soc/davinci/davinci-sffsdr.c
+
+Ok, will do.
+
+> > 
+> >>
+> >>> diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
+> >>> index 7cd56ed..153fab8 100644
+> >>> --- a/arch/arm/plat-omap/Kconfig
+> >>> +++ b/arch/arm/plat-omap/Kconfig
+> >>> @@ -28,6 +28,7 @@ config ARCH_OMAP2PLUS
+> >>>  	select OMAP_DM_TIMER
+> >>>  	select PROC_DEVICETREE if PROC_FS
+> >>>  	select SPARSE_IRQ
+> >>> +	select TI_PRIV_EDMA
+> >>
+> >> This hunk does not seem to belong to subject of this patch.
+> > 
+> > Let me reword the subject/description. The idea of this logical
+> > chunk was to put everything in place to make it build on OMAP,
+> > with the expectation that the build fails without the next patch
+> > in the series.
+> 
+> But this will break bisect. With just this patch applied, omap build
+> breaks. Looks like it will be more logical to merge this hunk with 3/14
+> since that's when you really start using the private DMA support on OMAP
+> platforms.
+
+Ahh, yes,. thanks for pointing that out. I will address it and add your
+ack. Thanks.
+
+> This issue is a must fix IMO.
+ 
+Ok.
+
+> I am ok with the patch otherwise. With these changes done, you can add:
+> 
+> Acked-by: Sekhar Nori <nsekhar@ti.com>
+> 
+> Thanks,
+> Sekhar
