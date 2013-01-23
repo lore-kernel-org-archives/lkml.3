@@ -1,118 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385Ab3AWViG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 16:38:06 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:38994 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab3AWVh5 (ORCPT
+	id S1752162Ab3AWVkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 16:40:42 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:55872 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab3AWVke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 16:37:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130123042714.GD2723@blaptop>
-References: <1358848018-3679-1-git-send-email-ezequiel.garcia@free-electrons.com>
-	<20130123042714.GD2723@blaptop>
-Date: Wed, 23 Jan 2013 18:37:56 -0300
-Message-ID: <CALF0-+V6D1Ka9SNyrgRAgTSGLUTp_9y4vYwauSx1qCfU-JOwjA@mail.gmail.com>
-Subject: Re: [RFC/PATCH] scripts/tracing: Add trace_analyze.py tool
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Tim Bird <tim.bird@am.sony.com>, Pekka Enberg <penberg@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 23 Jan 2013 16:40:34 -0500
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: mmarek@suse.cz
+Cc: Julia.Lawall@lip6.fr, Gilles.Muller@lip6.fr, nicolas.palix@imag.fr,
+        peter.senna@gmail.com, cocci@systeme.lip6.fr,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        elezegarcia@gmail.com
+Subject: [PATCH] scripts/coccinelle/misc/memcpy-assign.cocci: Replace memcpy with struct assignment
+Date: Wed, 23 Jan 2013 19:40:15 -0200
+Message-Id: <1358977215-2720-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+There are kinds of memcpy() that are error-prone. Its replacement with
+a struct assignment is prefered because it's type-safe and much easier
+to read. This semantic patch looks for memcpy() that can be replaced by
+struct assignment.
 
-On Wed, Jan 23, 2013 at 1:27 AM, Minchan Kim <minchan@kernel.org> wrote:
-> Hi Ezequiel,
->
-> On Tue, Jan 22, 2013 at 06:46:58AM -0300, Ezequiel Garcia wrote:
->> From: Ezequiel Garcia <elezegarcia@gmail.com>
->>
->> The purpose of trace_analyze.py tool is to perform static
->> and dynamic memory analysis using a kmem ftrace
->> log file and a built kernel tree.
->>
->> This script and related work has been done on the CEWG/2012 project:
->> "Kernel dynamic memory allocation tracking and reduction"
->> (More info here [1])
->>
->> It produces mainly two kinds of outputs:
->>  * an account-like output, similar to the one given by Perf, example below.
->>  * a ring-char output, examples here [2].
->>
->> $ ./scripts/tracing/trace_analyze.py -k linux -f kmem.log --account-file account.txt
->> $ ./scripts/tracing/trace_analyze.py -k linux -f kmem.log -c account.txt
->>
->> This will produce an account file like this:
->>
->>     current bytes allocated:     669696
->>     current bytes requested:     618823
->>     current wasted bytes:         50873
->>     number of allocs:              7649
->>     number of frees:               2563
->>     number of callers:              115
->>
->>      total    waste      net alloc/free  caller
->>     ---------------------------------------------
->>     299200        0   298928  1100/1     alloc_inode+0x4fL
->>     189824        0   140544  1483/385   __d_alloc+0x22L
->>      51904        0    47552   811/68    sysfs_new_dirent+0x4eL
->>     [...]
->>
->> [1] http://elinux.org/Kernel_dynamic_memory_analysis
->> [2] http://elinux.org/Kernel_dynamic_memory_analysis#Current_dynamic_footprint
->
-> First of all, Thanks for nice work! It could be very useful for
-> embedded side.
->
-> Questions.
->
-> 1. Can we detect different call path but same function?
->    I mean
->
->         A       C
->          \     /
->           B   D
->            \ /
->             E
->             |
->          kmalloc
->
-> In this case, E could be called by A or C. I would like to know the call path.
-> It could point out exact culprit of memory hogger.
->
+Inspired by patches sent by Ezequiel Garcia <elezegarcia@gmail.com>
 
-I'm sorry, I'm not following you:
-How can I know which caller in the call path is the 'real' responsible
-for the allocation?
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+ scripts/coccinelle/misc/memcpy-assign.cocci | 103 ++++++++++++++++++++++++++++
+ 1 file changed, 103 insertions(+)
+ create mode 100644 scripts/coccinelle/misc/memcpy-assign.cocci
 
-The only way I can think of achieving something like this is by using
-kmalloc_track_caller() instead of kmalloc().
-This is done in cases where an allocer is known to alloc memory on
-behalf of its caller.
-
-> 2. Does it support alloc_pages family?
->    kmem event trace already supports it. If it supports, maybe we can replace
->    CONFIG_PAGE_OWNER hack.
->
-
-Mmm.. no, it doesn't support alloc_pages and friends, for we found
-no reason to do it.
-However, it sounds like a nice idea, on a first thought.
-
-I'll review CONFIG_PAGE_OWNER patches and see if I can come up with something.
-
-Meantime, and given this is just a script submission, is there anything
-preventing to merge this? We can move it to perf, and/or add it
-features, etc. later,
-on top of this. Does this make sense?
-
+diff --git a/scripts/coccinelle/misc/memcpy-assign.cocci b/scripts/coccinelle/misc/memcpy-assign.cocci
+new file mode 100644
+index 0000000..5c1fd75
+--- /dev/null
++++ b/scripts/coccinelle/misc/memcpy-assign.cocci
+@@ -0,0 +1,103 @@
++//
++// Replace memcpy with struct assignment.
++//
++// Confidence: Moderate
++// Copyright: (C) 2012 Peter Senna Tschudin, INRIA/LIP6.  GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Comments:
++// Options: --no-includes --include-headers
++
++virtual patch
++virtual report
++virtual context
++virtual org
++
++@r1 depends on !patch@
++identifier struct_name;
++struct struct_name to;
++struct struct_name from;
++struct struct_name *top;
++struct struct_name *fromp;
++position p;
++@@
++memcpy@p(\(&(to)\|top\), \(&(from)\|fromp\), \(sizeof(to)\|sizeof(from)\|sizeof(struct struct_name)\|sizeof(*top)\|sizeof(*fromp)\))
++
++@script:python depends on report@
++p << r1.p;
++@@
++coccilib.report.print_report(p[0],"Replace memcpy with struct assignment")
++
++@depends on context@
++position r1.p;
++@@
++*memcpy@p(...);
++
++@script:python depends on org@
++p << r1.p;
++@@
++cocci.print_main("Replace memcpy with struct assignment",p)
++
++@depends on patch@
++identifier struct_name;
++struct struct_name to;
++struct struct_name from;
++@@
++(
++-memcpy(&(to), &(from), sizeof(to));
+++to = from;
++|
++-memcpy(&(to), &(from), sizeof(from));
+++to = from;
++|
++-memcpy(&(to), &(from), sizeof(struct struct_name));
+++to = from;
++)
++
++@depends on patch@
++identifier struct_name;
++struct struct_name to;
++struct struct_name *from;
++@@
++(
++-memcpy(&(to), from, sizeof(to));
+++to = *from;
++|
++-memcpy(&(to), from, sizeof(*from));
+++to = *from;
++|
++-memcpy(&(to), from, sizeof(struct struct_name));
+++to = *from;
++)
++
++@depends on patch@
++identifier struct_name;
++struct struct_name *to;
++struct struct_name from;
++@@
++(
++-memcpy(to, &(from), sizeof(*to));
+++ *to = from;
++|
++-memcpy(to, &(from), sizeof(from));
+++ *to = from;
++|
++-memcpy(to, &(from), sizeof(struct struct_name));
+++ *to = from;
++)
++
++@depends on patch@
++identifier struct_name;
++struct struct_name *to;
++struct struct_name *from;
++@@
++(
++-memcpy(to, from, sizeof(*to));
+++ *to = *from;
++|
++-memcpy(to, from, sizeof(*from));
+++ *to = *from;
++|
++-memcpy(to, from, sizeof(struct struct_name));
+++ *to = *from;
++)
++
 -- 
-    Ezequiel
+1.7.11.7
+
