@@ -1,97 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab3AWLpN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 06:45:13 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:24443 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754716Ab3AWLpL (ORCPT
+	id S1755451Ab3AWLpd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 06:45:33 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:43571 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192Ab3AWLp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 06:45:11 -0500
-Message-ID: <50FFCD04.2030207@siemens.com>
-Date: Wed, 23 Jan 2013 12:44:04 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Wed, 23 Jan 2013 06:45:29 -0500
+Message-ID: <50FFCD3B.8000704@huawei.com>
+Date: Wed, 23 Jan 2013 19:44:59 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH v4 01/13] scripts/gdb: Add infrastructure
-References: <cover.1358787929.git.jan.kiszka@siemens.com> <1e49f090f16f3e22711a27f473e2ed604f6a249f.1358787929.git.jan.kiszka@siemens.com> <20130123114157.GB4256@pd.tnic>
-In-Reply-To: <20130123114157.GB4256@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Murray <andrew.murray@arm.com>, Jon Mason <jdmason@kudzu.us>
+CC: Yijing Wang <wangyijing0307@gmail.com>, Rob Landley <rob@landley.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>
+Subject: Re: [PATCH] PCI: Document PCIE BUS MPS parameters
+References: <1358928096-29008-1-git-send-email-wangyijing@huawei.com> <20130123092150.GA25603@arm.com> <50FFB7AE.6050304@gmail.com> <20130123103006.GA26856@arm.com>
+In-Reply-To: <20130123103006.GA26856@arm.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-01-23 12:41, Borislav Petkov wrote:
-> On Mon, Jan 21, 2013 at 06:06:08PM +0100, Jan Kiszka wrote:
->> This provides the basic infrastructure to load kernel-specific python
->> helper scripts when debugging the kernel in gdb.
+On 2013/1/23 18:30, Andrew Murray wrote:
+> On Wed, Jan 23, 2013 at 10:13:02AM +0000, Yijing Wang wrote:
+>> ??? 2013-01-23 17:21, Andrew Murray ??????:
+>>> On Wed, Jan 23, 2013 at 08:01:36AM +0000, Yijing Wang wrote:
+>>>> Document PCIE BUS MPS parameters pcie_bus_tune_off, pcie_bus_safe,
+>>>> pcie_bus_peer2peer, pcie_bus_perf into Documentation/kernel-parameters.txt.
+>>>> These parameters were introduced by Jon Mason <mason@myri.com> at
+>>>> commit 5f39e6705 and commit b03e7495a8. Document these into 
+>>>> kernel-parameters.txt help users to understand and use the parameters.
+>>>>
+>>>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+>>>> ---
+>>>>  Documentation/kernel-parameters.txt |   13 +++++++++++++
+>>>>  1 files changed, 13 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>>>> index 363e348..4dfa8d2 100644
+>>>> --- a/Documentation/kernel-parameters.txt
+>>>> +++ b/Documentation/kernel-parameters.txt
+>>>> @@ -2227,6 +2227,19 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>>>  				This sorting is done to get a device
+>>>>  				order compatible with older (<= 2.4) kernels.
+>>>>  		nobfsort	Don't sort PCI devices into breadth-first order.
+>>>> +		pcie_bus_tune_off	[X86] Disable PCI-E MPS turning and using
+>>>> +				the BIOS configured MPS defaults.
+>>>> +		pcie_bus_safe	[X86] Use the smallest common denominator MPS
+>>>> +				of the entire tree below a root complex for every device
+>>>> +				on that fabric. Can avoid inconsistent mps problem caused
+>>>> +				by hotplug.
+>>>> +		pcie_bus_perf	[X86] Configure pcie device MPS to the largest
+>>>> +				allowable MPS based on its parent bus.Improve performance
+>>>> +				as much as possible.
+>>>> +		pcie_bus_peer2peer	[X86] Make the system wide MPS the smallest
+>>>> +				possible value (128B).This configuration could prevent it
+>>>> +				from working by having the MPS on one root port different
+>>>> +				than the MPS on another.
+>>>>  		cbiosize=nn[KMG]	The fixed amount of bus space which is
+>>>>  				reserved for the CardBus bridge's IO window.
+>>>>  				The default value is 256 bytes.
+>>>>
+>>> I was searching for documentation on this the other day.
+>>>
+>>> It's not just X86 that use these options, PowerPC and Tile also use them (grep
+>>> for users of pcie_bus_configure_settings). I've also noticed a call to it from
+>>> hotplug as well...
 >>
->> The loading mechanism is based on gdb loading for <objfile>-gdb.py when
->> opening <objfile>. Therefore, this places a corresponding link to the
->> main helper script into the output directory that contains vmlinux.
+>> Hi Andrew,
+>>    Thanks for reminder! I will update this patch right now.
 >>
->> The main scripts will pull in submodules containing Linux specific gdb
->> commands and functions. To avoid polluting the source directory with
->> compiled python modules, we link to them from the object directory.
+>>>
+>>> In addition these options also have an effect on MRRS - I've not figured out
+>>> what effect they have, but you can look in drivers/pci/probe.c at the
+>>> pcie_write_mrrs function.
 >>
->> Due to gdb.parse_and_eval, we depend on gdb >= 7.1. We need to
->> pre-process the version string returned by gdb as some distros tend to
->> prefix it with their name.
->>
->> This feature depends on CONFIG_DEBUG_INFO.
->>
->> CC: Michal Marek <mmarek@suse.cz>
->> CC: linux-kbuild@vger.kernel.org
->> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
->> ---
->>  Makefile                   |    5 ++++-
->>  scripts/Makefile           |    3 ++-
->>  scripts/gdb/Makefile       |    9 +++++++++
->>  scripts/gdb/utils.py       |   17 +++++++++++++++++
->>  scripts/gdb/vmlinux-gdb.py |   22 ++++++++++++++++++++++
->>  5 files changed, 54 insertions(+), 2 deletions(-)
->>  create mode 100644 scripts/gdb/Makefile
->>  create mode 100644 scripts/gdb/utils.py
->>  create mode 100644 scripts/gdb/vmlinux-gdb.py
->>
->> diff --git a/Makefile b/Makefile
->> index 253a455..fb18794 100644
->> --- a/Makefile
->> +++ b/Makefile
->> @@ -774,6 +774,9 @@ endif
->>  ifdef CONFIG_BUILD_DOCSRC
->>  	$(Q)$(MAKE) $(build)=Documentation
->>  endif
->> +ifdef CONFIG_DEBUG_INFO
->> +	$(Q)ln -fsn $(srctree)/scripts/gdb/vmlinux-gdb.py
->> +endif
+>> This is a separate issue, Andrew, can you provide the effetct problem log or detail information?
+>> That will helps us to analyze this issue.
 > 
-> I'm wondering whether it won't be a better idea to make this symlink
-> creation in the toplevel directory only when a user requires it.. I.e.,
-> not simply when CONFIG_DEBUG_INFO is enabled (it could be enabled for a
-> lot and different reasons) but only when user wants to really debug the
-> kernel with gdb.
-> 
-> Then, having a specific make target could arrange for all the setup like
-> the symlink, gdb version checking, etc, maybe something like this:
-> 
-> $ make gdb
-> 
-> and all is prepared (or errored out with a sensible message).
-> 
-> Hmm....
+> No this isn't a bug. When pcie_bus_perf is set, not only does it change the MPS
+> as described in your documentation - but it also changes the MRRS for better
+> performance. I felt this should also be included in your documentation of
+> pcie_bus_perf.
 
-I wonder why we should do this, remove the convenience of the automatic
-script setup, but I'm open for arguments.
+Will add it.
 
-Jan
+> 
+> The pcie_write_mrrs function uses pcie_bus_config to determine if a change to
+> the MRRS should be made.
+> 
+> (What I don't understand is that the comments in this function suggest the MRRS
+> cannot be larger than the MPS - I thought it could be?)
+
+I trace the change log about pcie_write_mrrs() function, my understanding for comment
+"it cannot be configured larger than the MPS the device or the bus can support" is that
+jon assume "device will never generate packets larger than MPS", so we can focus on upstream
+requests. If not, we should also concern the downstream request packet whether can be received by upstream
+device normally, maybe upstream mps is smaller than downstream device's mrrs.
+
+> 
+> Andrew Murray 
+> 
+> 
+> .
+> 
+
 
 -- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
+Thanks!
+Yijing
+
