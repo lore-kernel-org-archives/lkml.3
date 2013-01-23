@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab3AWHWG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 02:22:06 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:40337 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab3AWHWB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 02:22:01 -0500
-Date: Wed, 23 Jan 2013 10:21:22 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: pclinux <pclinux@realsil.com.cn>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, "oakad@yahoo.com" <oakad@yahoo.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+	id S1754401Ab3AWHVt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 02:21:49 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:47569 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753738Ab3AWHTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 02:19:38 -0500
+X-IronPort-AV: E=Sophos;i="4.84,521,1355068800"; 
+   d="scan'208";a="6634048"
+From: Hu Tao <hutao@cn.fujitsu.com>
+To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?utf-8?B?546L54Kc?= <wei_wang@realsil.com.cn>,
-        "bp@alien8.de" <bp@alien8.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "cjb@laptop.org" <cjb@laptop.org>
-Subject: Re: [PATCH v4 0/8] rtsx patchset for MFD and MMC tree
-Message-ID: <20130123072121.GY4584@mwanda>
-References: <cover.1357638064.git.wei_wang@realsil.com.cn>
- <50F66CAD.6090003@realsil.com.cn>
- <20130122033115.GY7409@sortiz-mobl>
- <50FE09DD.6070102@realsil.com.cn>
- <20130122224232.GC5151@sortiz-mobl>
- <50FF3BAD.4010009@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FF3BAD.4010009@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Subject: [PATCH v12 rebased 3/8] update kernel headers
+Date: Wed, 23 Jan 2013 15:19:24 +0800
+Message-Id: <641120dec72fc0a0779d89d25d2943e056b3afc1.1358920534.git.hutao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.0.1.240.ge8a1f5a
+In-Reply-To: <cover.1358920534.git.hutao@cn.fujitsu.com>
+References: <cover.1358920534.git.hutao@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/23 15:18:33,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/23 15:18:37,
+	Serialize complete at 2013/01/23 15:18:37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 09:23:57AM +0800, pclinux wrote:
-> Sure. I will do it.
-> Does it mean that the other commits only can be submitted to 3.9-rc?
-> 
+update kernel headers to add pv event macros.
 
-Submit them now.  They stay in Samuel's tree and are tested in
-linux-next until 3.8 is released.  Then Samuel submits them during
-the 3.9 merge window.
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
+---
+ linux-headers/asm-x86/kvm_para.h | 1 +
+ linux-headers/linux/kvm_para.h   | 6 ++++++
+ 2 files changed, 7 insertions(+)
 
-The merge window is for Samuel => Linus, it's not for you => Samuel.
-If your code has not reached Samuel's tree before 3.8 has been
-released then it's too late and it will be delayed for another few
-months.
+diff --git a/linux-headers/asm-x86/kvm_para.h b/linux-headers/asm-x86/kvm_para.h
+index a1c3d72..781959a 100644
+--- a/linux-headers/asm-x86/kvm_para.h
++++ b/linux-headers/asm-x86/kvm_para.h
+@@ -96,5 +96,6 @@ struct kvm_vcpu_pv_apf_data {
+ #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
+ #define KVM_PV_EOI_DISABLED 0x0
+ 
++#define KVM_PV_EVENT_PORT	(0x505UL)
+ 
+ #endif /* _ASM_X86_KVM_PARA_H */
+diff --git a/linux-headers/linux/kvm_para.h b/linux-headers/linux/kvm_para.h
+index 7bdcf93..f6be0bb 100644
+--- a/linux-headers/linux/kvm_para.h
++++ b/linux-headers/linux/kvm_para.h
+@@ -20,6 +20,12 @@
+ #define KVM_HC_FEATURES			3
+ #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+ 
++/* The bit of supported pv event */
++#define KVM_PV_FEATURE_PANICKED	0
++
++/* The pv event value */
++#define KVM_PV_EVENT_PANICKED	1
++
+ /*
+  * hypercalls use architecture specific
+  */
+-- 
+1.8.0.1.240.ge8a1f5a
 
-regards,
-dan carpenter
