@@ -1,120 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab3AWOot (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:44:49 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:39421 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845Ab3AWOor (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:44:47 -0500
-Date: Wed, 23 Jan 2013 14:44:41 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [GIT PULL] power: ab8500-bm: Latest Mainline<->STE delta
- reduction patch-set
-Message-ID: <20130123144441.GN15873@gmail.com>
-References: <20130123113854.GK15873@gmail.com>
+	id S1753868Ab3AWOo5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:44:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45349 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753097Ab3AWOoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 09:44:54 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <alpine.LNX.2.00.1301231212420.20374@pobox.suse.cz>
+References: <alpine.LNX.2.00.1301171118260.14768@pobox.suse.cz> <alpine.LNX.2.00.1301231212420.20374@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain;
+ charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130123113854.GK15873@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH] time: x86: report_lost_ticks doesn't exist any more
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 23 Jan 2013 08:43:45 -0600
+To: Jiri Kosina <jkosina@suse.cz>, x86@kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org
+Message-ID: <4b47e67f-b4b2-48ed-82cb-4ddaca5e1e77@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Okay, after Linus Walleij's diligent observaions, I have removed all
-new functionallity related to Deep Debug and will continue to
-investigate what I need to do in that regard.
+That works.  You can add my Ack if you want.  Thanks!
 
-In the mean-time, here's the fresh deep-debug:less pull-request:
+Jiri Kosina <jkosina@suse.cz> wrote:
 
-----------------------------------------------------------------
-
-The following changes since commit 8fd526fd18233887ba652079a369f4eee0de9d9d:
-
-  qnap-poweroff: Fix license string (2013-01-19 18:04:04 -0800)
-
-are available in the git repository at:
-
-  git://git.linaro.org/people/ljones/linux-3.0-ux500.git tb-power-2
-
-for you to fetch changes up to 34c11a709e928090cf34ecd706f7d3170f4e5026:
-
-  u8500-charger: Delay for USB enumeration (2013-01-23 14:39:22 +0000)
-
-----------------------------------------------------------------
-Hakan Berg (1):
-      ab8500-fg: Adjust for RF bursts voltage drops
-
-Henrik Sölver (1):
-      ab8500-charger: AB workaround for invalid charger
-
-Jonas Aaberg (2):
-      ab8500-bm: Flush all work queues before suspending
-      ab8500-charger: Do not touch VBUSOVV bits
-
-Lee Jones (7):
-      ab8500-charger: Kick watchdog
-      ab8500-chargalg: Update battery health on safety timer exp
-      pm2301: Move all configuration and emum structs out to a header
-      file
-      ab8500-chargalg: Only root should have write permission on sysfs
-      file
-      abx500-chargalg: Add new sysfs interface to get current charge
-      status
-      pm2301: LPN mode control support
-      ab8500-bm: Remove individual [charger|btemp|fg|chargalg] pdata
-      structures
-
-Loic Pallardy (2):
-      pm2301: Remove volt_now & curr_now properties
-      pm2301: Update watchdog for pm2xxx support
-
-Martin Bergström (1):
-      ab8500-fg: Go to INIT_RECOVERY when charger removed
-
-Michel JAOUEN (2):
-      pm2301: Provide u9540 support for the pm2301 charger
-      ab8500-btemp: Adaptation to AB8505 and AB9540 platforms
-
-Nicolas Guion (1):
-      ab8500-charger: Add support for autopower on AB8505 and AB9540
-
-Olivier Clergeaud (1):
-      pm2301: Clean-up PM2301 interrupt management
-
-Paer-Olof Haakansson (1):
-      u8500-charger: Delay for USB enumeration
-
-Rajkumar Kasirajan (2):
-      pm2301: Enable vbat low monitoring
-      ab8500-fg: Use correct battery charge full design
-
- drivers/mfd/ab8500-core.c                 |    6 +
- drivers/power/Kconfig                     |    7 +
- drivers/power/Makefile                    |    1 +
- drivers/power/ab8500_btemp.c              |   67 +-
- drivers/power/ab8500_charger.c            |  617 ++++++++++++----
- drivers/power/ab8500_fg.c                 |   51 +-
- drivers/power/abx500_chargalg.c           |   43 +-
- drivers/power/pm2301_charger.c            | 1088 +++++++++++++++++++++++++++++
- drivers/power/pm2301_charger.h            |  513 ++++++++++++++
- include/linux/mfd/abx500.h                |    3 +
- include/linux/mfd/abx500/ab8500-bm.h      |   22 +-
- include/linux/mfd/abx500/ab8500.h         |   19 +
- include/linux/mfd/abx500/ux500_chargalg.h |    5 +
- include/linux/pm2301_charger.h            |   61 ++
- 14 files changed, 2306 insertions(+), 197 deletions(-)
- create mode 100644 drivers/power/pm2301_charger.c
- create mode 100644 drivers/power/pm2301_charger.h
- create mode 100644 include/linux/pm2301_charger.h
+>On Thu, 17 Jan 2013, Jiri Kosina wrote:
+>
+>> 'report_lost_ticks' parameter has been removed back in 2007 through 
+>> 1489939f0ab ("time: x86_64: convert x86_64 to use GENERIC_TIME").
+>> 
+>> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+>> ---
+>>  Documentation/x86/x86_64/boot-options.txt |    4 ----
+>>  1 files changed, 0 insertions(+), 4 deletions(-)
+>> 
+>> diff --git a/Documentation/x86/x86_64/boot-options.txt
+>b/Documentation/x86/x86_64/boot-options.txt
+>> index de38429..e015a83 100644
+>> --- a/Documentation/x86/x86_64/boot-options.txt
+>> +++ b/Documentation/x86/x86_64/boot-options.txt
+>> @@ -112,10 +112,6 @@ Timing
+>>    This can be used to work around timing problems on multiprocessor
+>systems
+>>    with not properly synchronized CPUs.
+>>  
+>> -  report_lost_ticks
+>> -  Report when timer interrupts are lost because some code turned off
+>> -  interrupts for too long.
+>> -
+>>    nohpet
+>>    Don't use the HPET timer.
+>
+>Noone seems to have picked this up, I am taking it through trivial.git
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
