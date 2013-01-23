@@ -1,171 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab3AWMME (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 07:12:04 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:48957 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721Ab3AWMMC (ORCPT
+	id S1755534Ab3AWMO0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 07:14:26 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:36356 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754721Ab3AWMOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 07:12:02 -0500
+	Wed, 23 Jan 2013 07:14:25 -0500
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20130123110323.GA23139@paralelels.com>
-References: <1358849741-9611-1-git-send-email-avagin@openvz.org>
- <CAKgNAkgfV3qdrvBUYKBAgaYXUTZ5hMYLhwaiLkZO0KBTA_=1zw@mail.gmail.com> <20130123110323.GA23139@paralelels.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Wed, 23 Jan 2013 13:11:42 +0100
-Message-ID: <CAKgNAkjCX4L6R3X7uaLufjY61ZszQTWbD+bLqadGRB-HLNKOrw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] signalfd: a kernel interface for dumping pending signals
-To: Andrew Vagin <avagin@parallels.com>
-Cc: Andrey Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Serge Hallyn <serge.hallyn@canonical.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAFTL4hzmf9ZLb4=QjpGFXT96EwOyRSFbqBD0VjLgKYaZGrBzYg@mail.gmail.com>
+References: <CA+icZUWuMEX7s8wvTZpA3C2-3qUjHgWM31Tefep_EU5Uj9xxLw@mail.gmail.com>
+	<CA+icZUXzQgxBokwOmyx5+e8rLNCkoz6ea=YoPA7=BT+iENWj8g@mail.gmail.com>
+	<CAFTL4hzmf9ZLb4=QjpGFXT96EwOyRSFbqBD0VjLgKYaZGrBzYg@mail.gmail.com>
+Date: Wed, 23 Jan 2013 13:14:23 +0100
+Message-ID: <CA+icZUV-e51Fg2xvhxz5Wvjj-g=tyft56eNmF9ZGrnJzkL+wUQ@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 3.8-rc4-nohz3
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <srostedt@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrey,
-
-On Wed, Jan 23, 2013 at 12:03 PM, Andrew Vagin <avagin@parallels.com> wrote:
-> On Wed, Jan 23, 2013 at 05:19:24AM +0100, Michael Kerrisk (man-pages) wrote:
->> Hi Andrey,
+On Wed, Jan 23, 2013 at 1:11 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 2013/1/23 Sedat Dilek <sedat.dilek@gmail.com>:
+>> On Wed, Jan 23, 2013 at 12:19 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> Hi Frederic,
+>>>
+>>> I wanted to 3.8-rc4-nohz3 [1] here on my Ubuntu/precise AMD64 system.
+>>>
+>>> Unfortunately, the build breaks like this:
+>>>
+>>> ERROR: "guest_enter" [arch/x86/kvm/kvm.ko] undefined!
+>>> ERROR: "guest_exit" [arch/x86/kvm/kvm.ko] undefined!
+>>>
 >>
->> On Tue, Jan 22, 2013 at 11:15 AM, Andrey Vagin <avagin@openvz.org> wrote:
->> > This patch set adds ability to choose a signal queue and
->> > to read signals without dequeuing them.
->> >
->> > Three new flags are added:
->> > SFD_SHARED_QUEUE     -- reads will be from process-wide shared signal queue
->> > SFD_PER_THREAD_QUEUE -- reads will be from per-thread signal queue
->> > SFD_PEEK             -- don't dequeue signals
+>> Looks like you tested with CONFIG_KVM=y (as module fails!).
 >
->>
->> A fuller description of the patch, including information that was in
->> previous versions of this patch would be helpful. Let me see if I can
->> summarize/fill out the API side of things, and ask a few questions
->> along the way (yes, I could answer some of the questions by checking
->> the code, but I want to know what the *intended* behavior is).
->>
->> The patch series adds a total of 4 flags to signalfd(). In addition to
->> those you list above, the other is
+> Yep. looks like I forgot some EXPORT_SYMBOL().
 >
-> In additional we can say, that this patch series adds three orthogonal,
-> independent groups of flags.
-> * SFD_RAW
-> * SFD_PEEK
-> * SFD_SHARED_QUEUE, SFD_PER_THREAD_QUEUE
 
-Thanks. Nice summary.
+Hmmm, that was my first thought, too, but about...
 
->> SFD_RAW -- return raw siginfo structs when reading, rather than signalfd_siginfo
->>
->> The intention is that these flags be used in conjunction with pread(),
->> to peek at queued signals. The 'offset' argument is treated as a
->> position. Thus, for example, to non-destructively read all of the
->> per-thread signals in raw form from the per-thread queue, one would
->> write
->>
->
-> siginfo_t *buf;
->
->> fd = signalfd(-1, SFD_PER_THREAD_QUEUE | SFD_RAW | SFD_PEEK)
->> for (j = 0; ; j++) {
->>     s = pread(fd, buf, ocunt, j)
->       s = pread(fd, buf + j, sizeof(siginfo_t), j);
->>     if (s <= 0) /* No more signals */
->>         break;
->> }
->
-> This examples reads signals one by one
->
-> or
->
->   siginfo_t *buf = NULL;
->   unsigned long buf_size = 0, nr = 0;
->   int ret;
->
->   while (1) {
->         bug_size += PAGE_SIZ;
->         buf = realloc(buf, buf_size);
->         if (buf == NULL)
->                 goto err;
->         ret = pread(fd, buf + nr, sizeof(siginfo_t), nr);
->         if (ret == -1)
->                 goto err;
->         nr += ret / sizeof(siginfo_t);
->         if (ret < PAGE_SIZE) /* No more signals */
->                 break;
->   }
->
-> pread() can read more than one signal.
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index c243b81..fff0932 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5713,7 +5713,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
+        if (req_immediate_exit)
+                smp_send_reschedule(vcpu->cpu);
 
-(Thanks for the reminder on that last point.)
+-       kvm_guest_enter();
++       guest_enter();
 
-> * The interface of signalfd could be a bit more predictable,
->   if we will treat pos as offset in bytes, not in elements.
->
->   pread(fd, buf, sizeof(siginfo_t), i * sizeof(siginfo_t)) -
->                reads a signal with a sequence number i in a queue.
-
-Can you explain what you mean by "more predictable"? It's not clear to me.
-
->> Right?
->>
->> Now some questions. I don't require all of the following, but I'm
->> wanting to know what's possible, for documentation purposes.
->>
->> Q1: with this patch series, is it permissible to specify
->> SFD_PER_THREAD_QUEUE or SFD_SHARED_QUEUE without specifying either
->> SFD_PEEK or SFD_QUEUE? In other words, can one do traditional
->> signalfd_siginfo reads, but selecting from a specific queue.
->
-> Yes, we can
->>
->> Q2: Is it possible to specify SFD_PEEK without SFD_RAW, so that one
->> can peek at siginfo structs rather than signalfd_siginfo structs?
->
-> Yes, it is possible. read() and pread() returns signalfd_siginfo structs
-> in this case.
->
->>
->> Q3: Is it possible to specify SFD_RAW without SFD_PEEK, so that one
->> can destructively read signalfd_siginfo structs? Can that be done
->> using any read interface (read(), pread(), etc.)?
-> Yes, it is possible too. read() will return siginfo structs.
-
-3 * yes is nice!
-
-For which of the above 3 questions was the answer "No" with the
-previous version of these patches (the version that specified queue
-selection in pread())?
+        if (unlikely(vcpu->arch.switch_db_regs)) {
+                set_debugreg(0, 7);
 
 
->> Q4: Is it possible to specify both SFD_PER_THREAD_QUEUE and
->> SFD_SHARED_QUEUE? In that case, in what order are signals read from
->> the two queues?
->>
->
-> It is equal to the case, when none of these flags are not specified.
-> And it is equal to what we had before this patches.
-> signalfd() reads signals from a private queue, then from a shared queue.
+...this?
 
-So, the 'offset' argument of pread() is interpreted by considering the
-per-thread and shared queue as one concatenated list, right?
+- Sedat -
 
-If yes to the previous question, then from an API design point of view
-that seems odd: it exposes an implementation detail. Is specifying
-both SFD_PER_THREAD_QUEUE and SFD_SHARED_QUEUE usefule for
-checkpoint/restore? I almost wonder if, when SFD_PEEK is specified, a
-requirement should be enforced that SFD_PER_THREAD_QUEUE or
-SFD_SHARED_QUEUE, but not both, must be specified. What do you think?
-
-Thanks,
-
-Michael
+> Thanks!
