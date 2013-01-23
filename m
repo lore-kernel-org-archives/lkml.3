@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481Ab3AWKm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 05:42:56 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42450 "EHLO arroyo.ext.ti.com"
+	id S1755067Ab3AWKip (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 05:38:45 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:46586 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755151Ab3AWKiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 05:38:50 -0500
+	id S1754740Ab3AWKie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 05:38:34 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <sameo@linux.intel.com>
 CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
         <sshtylyov@mvista.com>, <bjorn@mork.no>, <linux@arm.linux.org.uk>,
         <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <rogerq@ti.com>
-Subject: [PATCH v9 05/20] mfd: omap-usb-tll: Clean up clock handling
-Date: Wed, 23 Jan 2013 12:37:57 +0200
-Message-ID: <1358937492-8129-6-git-send-email-rogerq@ti.com>
+        <rogerq@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        <stable@vger.kernel.org>
+Subject: [PATCH v9 01/20] USB: ehci-omap: Don't free gpios that we didn't request
+Date: Wed, 23 Jan 2013 12:37:53 +0200
+Message-ID: <1358937492-8129-2-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358937492-8129-1-git-send-email-rogerq@ti.com>
 References: <1358937492-8129-1-git-send-email-rogerq@ti.com>
@@ -25,182 +26,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every channel has a functional clock that is similarly named.
-It makes sense to use a for loop to manage these clocks as OMAPs
-can come with up to 3 channels.
+This driver does not request any gpios so don't free them.
+Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
+with ehci-omap in use.
 
-Dynamically allocate and get channel clocks depending on the
-number of clocks avaiable on the platform.
+Without this patch, EHCI will break on repeated insmod/rmmod
+of ehci_hcd for all OMAP2+ platforms that use EHCI and
+set 'phy_reset = true' in usbhs_omap_board_data.
+i.e.
+
+board-3430sdp.c:	.phy_reset  = true,
+board-3630sdp.c:	.phy_reset  = true,
+board-am3517crane.c:	.phy_reset  = true,
+board-am3517evm.c:	.phy_reset  = true,
+board-cm-t3517.c:	.phy_reset  = true,
+board-cm-t35.c:	.phy_reset  = true,
+board-devkit8000.c:	.phy_reset  = true,
+board-igep0020.c:	.phy_reset = true,
+board-igep0020.c:	.phy_reset = true,
+board-omap3beagle.c:	.phy_reset  = true,
+board-omap3evm.c:	.phy_reset  = true,
+board-omap3pandora.c:	.phy_reset  = true,
+board-omap3stalker.c:	.phy_reset = true,
+board-omap3touchbook.c:	.phy_reset  = true,
+board-omap4panda.c:	.phy_reset  = false,
+board-overo.c:	.phy_reset  = true,
+board-zoom.c:	.phy_reset		= true,
+
+CC: Alan Stern <stern@rowland.harvard.edu>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: stable@vger.kernel.org
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 ---
- drivers/mfd/omap-usb-tll.c |   87 +++++++++++++++++++++++++++-----------------
- 1 files changed, 54 insertions(+), 33 deletions(-)
+ drivers/usb/host/ehci-omap.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index 9a19cc7..bf7355e 100644
---- a/drivers/mfd/omap-usb-tll.c
-+++ b/drivers/mfd/omap-usb-tll.c
-@@ -96,10 +96,9 @@
- #define is_ehci_tll_mode(x)	(x == OMAP_EHCI_PORT_MODE_TLL)
- 
- struct usbtll_omap {
--	struct clk				*usbtll_p1_fck;
--	struct clk				*usbtll_p2_fck;
- 	int					nch;	/* num. of channels */
- 	struct usbhs_omap_platform_data		*pdata;
-+	struct clk				**ch_clk;
- 	/* secure the register updates */
- 	spinlock_t				lock;
- };
-@@ -225,26 +224,12 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 
- 	tll->pdata = pdata;
- 
--	tll->usbtll_p1_fck = clk_get(dev, "usb_tll_hs_usb_ch0_clk");
--	if (IS_ERR(tll->usbtll_p1_fck)) {
--		ret = PTR_ERR(tll->usbtll_p1_fck);
--		dev_err(dev, "usbtll_p1_fck failed error:%d\n", ret);
--		return ret;
--	}
--
--	tll->usbtll_p2_fck = clk_get(dev, "usb_tll_hs_usb_ch1_clk");
--	if (IS_ERR(tll->usbtll_p2_fck)) {
--		ret = PTR_ERR(tll->usbtll_p2_fck);
--		dev_err(dev, "usbtll_p2_fck failed error:%d\n", ret);
--		goto err_p2_fck;
--	}
--
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	base = devm_request_and_ioremap(dev, res);
- 	if (!base) {
- 		ret = -EADDRNOTAVAIL;
- 		dev_err(dev, "Resource request/ioremap failed:%d\n", ret);
--		goto err_res;
-+		return ret;
- 	}
- 
- 	platform_set_drvdata(pdev, tll);
-@@ -270,6 +255,29 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 		break;
- 	}
- 
-+	spin_unlock_irqrestore(&tll->lock, flags);
-+
-+	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
-+						GFP_KERNEL);
-+	if (!tll->ch_clk) {
-+		ret = -ENOMEM;
-+		dev_err(dev, "Couldn't allocate memory for channel clocks\n");
-+		goto err_clk_alloc;
-+	}
-+
-+	for (i = 0; i < tll->nch; i++) {
-+		char clkname[] = "usb_tll_hs_usb_chx_clk";
-+
-+		snprintf(clkname, sizeof(clkname),
-+					"usb_tll_hs_usb_ch%d_clk", i);
-+		tll->ch_clk[i] = clk_get(dev, clkname);
-+
-+		if (IS_ERR(tll->ch_clk[i]))
-+			dev_dbg(dev, "can't get clock : %s\n", clkname);
-+	}
-+
-+	spin_lock_irqsave(&tll->lock, flags);
-+
- 	if (is_ehci_tll_mode(pdata->port_mode[0]) ||
- 	    is_ehci_tll_mode(pdata->port_mode[1]) ||
- 	    is_ehci_tll_mode(pdata->port_mode[2]) ||
-@@ -321,11 +329,9 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 
- 	return 0;
- 
--err_res:
--	clk_put(tll->usbtll_p2_fck);
--
--err_p2_fck:
--	clk_put(tll->usbtll_p1_fck);
-+err_clk_alloc:
-+	pm_runtime_put_sync(dev);
-+	pm_runtime_disable(dev);
- 
- 	return ret;
- }
-@@ -339,9 +345,12 @@ err_p2_fck:
- static int usbtll_omap_remove(struct platform_device *pdev)
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index ac17a7c..e9d9b09 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -288,7 +288,6 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
  {
- 	struct usbtll_omap *tll = platform_get_drvdata(pdev);
-+	int i;
-+
-+	for (i = 0; i < tll->nch; i++)
-+		if (!IS_ERR(tll->ch_clk[i]))
-+			clk_put(tll->ch_clk[i]);
+ 	struct device *dev				= &pdev->dev;
+ 	struct usb_hcd *hcd				= dev_get_drvdata(dev);
+-	struct ehci_hcd_omap_platform_data *pdata	= dev->platform_data;
  
--	clk_put(tll->usbtll_p2_fck);
--	clk_put(tll->usbtll_p1_fck);
- 	pm_runtime_disable(&pdev->dev);
+ 	usb_remove_hcd(hcd);
+ 	disable_put_regulator(dev->platform_data);
+@@ -298,13 +297,6 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
+ 	pm_runtime_put_sync(dev);
+ 	pm_runtime_disable(dev);
+ 
+-	if (pdata->phy_reset) {
+-		if (gpio_is_valid(pdata->reset_gpio_port[0]))
+-			gpio_free(pdata->reset_gpio_port[0]);
+-
+-		if (gpio_is_valid(pdata->reset_gpio_port[1]))
+-			gpio_free(pdata->reset_gpio_port[1]);
+-	}
  	return 0;
  }
-@@ -351,6 +360,7 @@ static int usbtll_runtime_resume(struct device *dev)
- 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
- 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
- 	unsigned long				flags;
-+	int i;
- 
- 	dev_dbg(dev, "usbtll_runtime_resume\n");
- 
-@@ -361,11 +371,20 @@ static int usbtll_runtime_resume(struct device *dev)
- 
- 	spin_lock_irqsave(&tll->lock, flags);
- 
--	if (is_ehci_tll_mode(pdata->port_mode[0]))
--		clk_enable(tll->usbtll_p1_fck);
-+	for (i = 0; i < tll->nch; i++) {
-+		if (is_ehci_tll_mode(pdata->port_mode[i])) {
-+			int r;
- 
--	if (is_ehci_tll_mode(pdata->port_mode[1]))
--		clk_enable(tll->usbtll_p2_fck);
-+			if (IS_ERR(tll->ch_clk[i]))
-+				continue;
-+
-+			r = clk_enable(tll->ch_clk[i]);
-+			if (r) {
-+				dev_err(dev,
-+				 "Error enabling ch %d clock: %d\n", i, r);
-+			}
-+		}
-+	}
- 
- 	spin_unlock_irqrestore(&tll->lock, flags);
- 
-@@ -377,6 +396,7 @@ static int usbtll_runtime_suspend(struct device *dev)
- 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
- 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
- 	unsigned long				flags;
-+	int i;
- 
- 	dev_dbg(dev, "usbtll_runtime_suspend\n");
- 
-@@ -387,11 +407,12 @@ static int usbtll_runtime_suspend(struct device *dev)
- 
- 	spin_lock_irqsave(&tll->lock, flags);
- 
--	if (is_ehci_tll_mode(pdata->port_mode[0]))
--		clk_disable(tll->usbtll_p1_fck);
--
--	if (is_ehci_tll_mode(pdata->port_mode[1]))
--		clk_disable(tll->usbtll_p2_fck);
-+	for (i = 0; i < tll->nch; i++) {
-+		if (is_ehci_tll_mode(pdata->port_mode[i])) {
-+			if (!IS_ERR(tll->ch_clk[i]))
-+				clk_disable(tll->ch_clk[i]);
-+		}
-+	}
- 
- 	spin_unlock_irqrestore(&tll->lock, flags);
  
 -- 
 1.7.4.1
