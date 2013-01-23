@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3AWIMA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 03:12:00 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:38491 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753763Ab3AWIL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 03:11:58 -0500
-Message-ID: <50FF9B5F.9050402@parallels.com>
-Date: Wed, 23 Jan 2013 12:12:15 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1754051Ab3AWIQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 03:16:56 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:52430 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315Ab3AWIQz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 03:16:55 -0500
+Date: Wed, 23 Jan 2013 08:16:50 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Subject: Re: [PATCH 23/24] ab8500-bm: Fix minor niggles experienced during
+ testing
+Message-ID: <20130123081650.GE15873@gmail.com>
+References: <1358769840-4763-1-git-send-email-lee.jones@linaro.org>
+ <1358769840-4763-24-git-send-email-lee.jones@linaro.org>
+ <20130121191324.GA15037@lizard.mcd01528.sjc.wayport.net>
+ <20130122092717.GI6857@gmail.com>
+ <20130123062506.GA20858@lizard.gateway.2wire.net>
 MIME-Version: 1.0
-To: Colin Cross <ccross@google.com>
-CC: Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>
-Subject: Re: [PATCH v5 00/11] per-cgroup cpu-stat
-References: <1357731938-8417-1-git-send-email-glommer@parallels.com> <CAMbhsRQ7B4Uu1Wukfay+m4K7CVXtVbsTTEd6JHrwC2s+NcEFNA@mail.gmail.com> <50FD3123.6090003@parallels.com> <20130123010226.GF5359@htj.dyndns.org> <CAMbhsRSDbKUz7OT3Y0bGfYqgp3yMgwk8oHx0rpsX+XDFWTMqkw@mail.gmail.com>
-In-Reply-To: <CAMbhsRSDbKUz7OT3Y0bGfYqgp3yMgwk8oHx0rpsX+XDFWTMqkw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130123062506.GA20858@lizard.gateway.2wire.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2013 05:53 AM, Colin Cross wrote:
-> On Tue, Jan 22, 2013 at 5:02 PM, Tejun Heo <tj@kernel.org> wrote:
->> Hello,
->>
->> On Mon, Jan 21, 2013 at 04:14:27PM +0400, Glauber Costa wrote:
->>>> Android userspace is currently using both cpu and cpuacct, and not
->>>> co-mounting them.  They are used for fundamentally different uses such
->>>> that creating a single hierarchy for both of them while maintaining
->>>> the existing behavior is not possible.
->>>>
->>>> We use the cpu cgroup primarily as a priority container.  A simple
->>>> view is that each thread is assigned to a foreground cgroup when it is
->>>> user-visible, and a background cgroup when it is not.  The foreground
->>>> cgroup is assigned a significantly higher cpu.shares value such that
->>>> when each group is fully loaded the background group will get 5% and
->>>> the foreground group will get 95%.
->>>>
->>>> We use the cpuacct cgroup to measure cpu usage per uid, primarily to
->>>> estimate one cause of battery usage.  Each uid gets a cgroup, and when
->>>> spawning a task for a new uid we put it in the appropriate cgroup.
->>>
->>> As we are all in a way sons of Linus the Great, the fact that you have
->>> this usecase should be by itself a reason for us not to deprecate it.
->>>
->>> I still view this, however, as a not common use case. And from the
->>> scheduler PoV, we still have all the duplicate hierarchy walks. So
->>> assuming we would carry on all the changes in this patchset, except the
->>> deprecation, would it be okay for you?
->>>
->>> This way we could take steps to make sure the scheduler codepaths for
->>> cpuacct are not taking during normal comounted operation, and you could
->>> still have your setup unchanged.
->>>
->>> Tejun, any words here?
->>
->> I think the only thing we can do is keeping cpuacct around.  We can
->> still optimize comounted cpu and cpuacct as the usual case.  That
->> said, I'd really like to avoid growing new use cases for separate
->> hierarchies for cpu and cpuacct (well, any controller actually).
->> Having multiple hierarchies is fundamentally broken in that we can't
->> say whether a given resource belongs to certain cgroup independently
->> from the current task, and we're definitnely moving towards unified
->> hierarchy.
+On Tue, 22 Jan 2013, Anton Vorontsov wrote:
+
+> On Tue, Jan 22, 2013 at 09:27:17AM +0000, Lee Jones wrote:
+> > On Mon, 21 Jan 2013, Anton Vorontsov wrote:
+> > 
+> > > On Mon, Jan 21, 2013 at 12:03:59PM +0000, Lee Jones wrote:
+> > > > When compile testing the new AB8500 Battery Management changes
+> > > > due for inclusion into upstream, there were a few minor niggles
+> > > > which required repairing, or adapting for use against the
+> > > > Mainline kernel. This patch is a collection of them all.
+> > > 
+> > > No. This is the third time I'm saying it: the last time I checked, this is
+> > > not how we do development in the mainline.
+> > 
+> > Okay, all of these changes have now been fixed-up into the patches
+> > which caused the issues. I have also added Stable to the patch you
+> > requested it on.
+> > 
+> > How would you like to proceed? Do you want a pull-request, or for me
+> > to send the patches to the list again?
 > 
-> I understand why it makes sense from a code perspective to combine cpu
-> and cpuacct, but by combining them you are enforcing a strange
-> requirement that to measure the cpu usage of a group of processes you
-> force them to be treated as a single scheduling entity by their parent
-> group, effectively splitting their time as if they were a single task.
->  That doesn't make any sense to me.
+> Either way will work.
 > 
-That is a bit backwards.
+> Thanks!
+> 
+> Anton
+> 
+> p.s. I took another look at the patches, and noticed one issue that is
+> constantly there: you place your signed-off-by line on top of everyones',
+> but that's wrong. Sign offs are going downwards, not upwards. This is
+> quite important since the lines encode how the code "travels" between
+> companies and submitters. Currently, one might assume that the origin of
+> the code is always Linaro, which is not quite true. (And 'From:' doesn't
+> always mean the author, fwiw.)
 
-The question is not if it makes sense to enforce that tasks that are
-having their cputime measured needs to be grouped for scheduling
-purposes, but rather, if it makes sense to collect timing information
-collectively for something that is not a scheduling entity.
+Thanks for the info. I'll move them all and re-submit.
 
-The fact that you can do it today, is an artifact of the way cgroups
-were implemented in the first place. If controllers were bound to a
-single hierarchy from the very beginning, I really doubt you would have
-any luck convincing people that allowing separate hierarchy grouping
-would be necessary for this.
-
-Again, all that said, now that I survived 2012, I would like to be alive
-next year as well. And if we break your use case, Linus will kill us. So
-we don't plan to do it.
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
