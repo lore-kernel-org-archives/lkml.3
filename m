@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab3AWOCP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:02:15 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:34913 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754500Ab3AWOCO (ORCPT
+	id S1755587Ab3AWOCT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:02:19 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:45160 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755521Ab3AWOCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:02:14 -0500
+	Wed, 23 Jan 2013 09:02:15 -0500
+Date: Wed, 23 Jan 2013 14:01:50 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] clockevents: decouple broadcast mechanism from drivers
+Message-ID: <20130123140150.GA26811@mudshark.cambridge.arm.com>
+References: <20130117172910.GA10070@e106331-lin.cambridge.arm.com>
+ <20130118171545.GB15707@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-In-Reply-To: <1358949189.21576.114.camel@gandalf.local.home>
-References: <1358946905-13320-1-git-send-email-sedat.dilek@gmail.com>
-	<CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
-	<CA+icZUW7XrOGguoPO00wxPLUr2Xc8fP=jQZwekpnmWKRewwX2g@mail.gmail.com>
-	<CAFTL4hzcuxoy2deQpXDBRQZZBZ4VjT=EnO3ZZv6x-jGMTr_eaA@mail.gmail.com>
-	<1358949189.21576.114.camel@gandalf.local.home>
-Date: Wed, 23 Jan 2013 15:02:13 +0100
-Message-ID: <CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
-Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing EXPORT_SYMBOL when CONFIG_KVM=m
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: sedat.dilek@gmail.com, "devendra.aaru" <devendra.aaru@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130118171545.GB15707@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/23 Steven Rostedt <rostedt@goodmis.org>:
-> On Wed, 2013-01-23 at 14:46 +0100, Frederic Weisbecker wrote:
->
->> > Hmmm, yes, but why, clueless, CONFIG_KVM=y as a workaround!
->>
->> I believe he pointed out the "{i" to you. Typing mistake?
->
-> In which case the CONFIG_KVM=y is a work around if that {i is within a
-> #ifndef CONFIG_KVM ;-)
+On Fri, Jan 18, 2013 at 05:15:46PM +0000, Mark Rutland wrote:
+> Hello,
+> 
+> As has been pointed out elsewhere, in my haste to fix this up I made a
+> typo in the first patch, preventing it from building.
+> 
+> Apologies for the confusion. I've created a new branch with a corrected
+> and tested version. Please see the pull request below.
+> 
+> Thanks,
+> Mark.
+> 
+> The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
+> 
+>   Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://linux-arm.org/linux-mr.git for-tglx/timer-broadcast-v2
 
-No it's in #ifdef CONFIG_KVM so the right fix is:
+Can you pull this please Thomas? I need a stable branch so I can pull in the
+ARM-specific changes, which are in turn required for the KVM patch series.
 
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index bbb2c2c..a13b8a3 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -111,14 +111,19 @@ void guest_enter(void)
-        else
-                __guest_enter();
- }
-+EXPORT_SYMBOL_GPL(guest_enter);
+Cheers,
 
- void guest_exit(void)
- {
-+#ifndef CONFIG_KVM
-+i
-+#endif
-        if (vtime_accounting_enabled())
-                vtime_guest_exit(current);
-        else
-                __guest_exit();
- }
-+EXPORT_SYMBOL_GPL(guest_exit);
- #endif
+Will
