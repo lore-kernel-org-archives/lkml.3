@@ -1,44 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab3AWOv4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 09:51:56 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:59450 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224Ab3AWOvz (ORCPT
+	id S1755329Ab3AWOwj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 09:52:39 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:40261 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463Ab3AWOwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 09:51:55 -0500
+	Wed, 23 Jan 2013 09:52:38 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130123143216.GA2050@kroah.com>
-References: <1358935859-29525-1-git-send-email-mark.einon@gmail.com>
- <1358945130-3101-1-git-send-email-mark.einon@gmail.com> <20130123143216.GA2050@kroah.com>
-From: Mark Einon <mark.einon@gmail.com>
-Date: Wed, 23 Jan 2013 14:51:39 +0000
-Message-ID: <CANK3SE1W5O5Df95MpCCWHaQO_tN7OaA1jJ60zrH5Zx66ZGdNiw@mail.gmail.com>
-Subject: Re: [RFC PATCH v3 linux-next] et131x: Promote staging et131x driver
- to drivers/net
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: davem@davemloft.net, sfr@canb.auug.org.au, devel@driverdev.osuosl.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dan.carpenter@oracle.com
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
+References: <1358946905-13320-1-git-send-email-sedat.dilek@gmail.com>
+	<CAHdPZaNYFBXMhvH7Jyy5Zy4MnB3iKfL9UW9xf3jy5MNBu8aPnw@mail.gmail.com>
+	<CA+icZUW7XrOGguoPO00wxPLUr2Xc8fP=jQZwekpnmWKRewwX2g@mail.gmail.com>
+	<CAFTL4hzcuxoy2deQpXDBRQZZBZ4VjT=EnO3ZZv6x-jGMTr_eaA@mail.gmail.com>
+	<1358949189.21576.114.camel@gandalf.local.home>
+	<CAFTL4hzSvnE-b=TEvKcT3Jpwh4ZLPsMotCC7etpUeDDFNYOQBQ@mail.gmail.com>
+Date: Wed, 23 Jan 2013 15:52:37 +0100
+Message-ID: <CA+icZUXM+tj5hnh--3CraRsvrsKfBUrS7Udf2L1OEhBnvWqpjQ@mail.gmail.com>
+Subject: Re: [PATCH 3.8-rc4-nohz3] kvm: Add missing EXPORT_SYMBOL when CONFIG_KVM=m
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "devendra.aaru" <devendra.aaru@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 January 2013 14:32, Greg KH <gregkh@linuxfoundation.org> wrote:
-> I usually recommend just creating a new patch, that adds the driver to
-> the proper place in the kernel, and sending that in.  If the subsystem
-> maintainers accept it, then I can just delete the staging driver.
+On Wed, Jan 23, 2013 at 3:02 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 2013/1/23 Steven Rostedt <rostedt@goodmis.org>:
+>> On Wed, 2013-01-23 at 14:46 +0100, Frederic Weisbecker wrote:
+>>
+>>> > Hmmm, yes, but why, clueless, CONFIG_KVM=y as a workaround!
+>>>
+>>> I believe he pointed out the "{i" to you. Typing mistake?
+>>
+>> In which case the CONFIG_KVM=y is a work around if that {i is within a
+>> #ifndef CONFIG_KVM ;-)
 >
-> Yes, this looses the history of the code, but usually no one cares about
-> that for staging drivers.
+> No it's in #ifdef CONFIG_KVM so the right fix is:
 >
-> If that's not ok, I have no problem accepting this, if I get an ack from
-> the subsystem maintainers that it's ok, but again, this patch makes it
-> pretty hard for them to know that or not.
+> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+> index bbb2c2c..a13b8a3 100644
+> --- a/kernel/context_tracking.c
+> +++ b/kernel/context_tracking.c
+> @@ -111,14 +111,19 @@ void guest_enter(void)
+>         else
+>                 __guest_enter();
+>  }
+> +EXPORT_SYMBOL_GPL(guest_enter);
+>
+>  void guest_exit(void)
+>  {
+> +#ifndef CONFIG_KVM
+> +i
+> +#endif
+>         if (vtime_accounting_enabled())
+>                 vtime_guest_exit(current);
+>         else
+>                 __guest_exit();
+>  }
+> +EXPORT_SYMBOL_GPL(guest_exit);
+>  #endif
 
-I can see how that works - I'll send a v4 update shorty.
+So, what's the real fix for this issue?
 
-Cheers,
-
-Mark
+- Sedat -
