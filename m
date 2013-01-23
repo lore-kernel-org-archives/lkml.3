@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab3AWM1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 07:27:48 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50605 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755387Ab3AWM1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 07:27:45 -0500
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: Rob Clark <robdclark@gmail.com>, Koen Kooi <koen@dominion.thruhere.net>
-CC: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: RE: [PATCH v3 00/12] video: da8xx-fb: am335x DT support
-Thread-Topic: [PATCH v3 00/12] video: da8xx-fb: am335x DT support
-Thread-Index: AQHN+MDYoJpa4cfnpkmrt/FePfrjS5hVNzoAgAAcRYCAAYJFUA==
-Date: Wed, 23 Jan 2013 12:27:21 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA911BF@DBDE01.ent.ti.com>
-References: <cover.1358871750.git.afzal@ti.com>
-	<02F0A27B-B16B-42F8-A0BC-29726732226D@dominion.thruhere.net>
- <CAF6AEGuyb26EZ_9=GP9gs0TZqUtiFv3D_7+wcDOHuKn2qUcytQ@mail.gmail.com>
-In-Reply-To: <CAF6AEGuyb26EZ_9=GP9gs0TZqUtiFv3D_7+wcDOHuKn2qUcytQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="utf-8"
+	id S1755704Ab3AWM2z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 07:28:55 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:1050 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755387Ab3AWM2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 07:28:53 -0500
+From: Yijing Wang <wangyijing@huawei.com>
+To: Rob Landley <rob@landley.net>, Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jon Mason <jdmason@kudzu.us>, <linux-pci@vger.kernel.org>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [Update][PATCH] PCI: Document PCIE BUS MPS parameters
+Date: Wed, 23 Jan 2013 20:28:12 +0800
+Message-ID: <1358944092-28884-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0NCRpAR003670
 
-Hi,
+Document PCIE BUS MPS parameters pcie_bus_tune_off, pcie_bus_safe,
+pcie_bus_peer2peer, pcie_bus_perf into Documentation/kernel-parameters.txt.
+These parameters were introduced by Jon Mason <mason@myri.com> at
+commit 5f39e6705 and commit b03e7495a8. Document these into
+kernel-parameters.txt can help users to understand and use the parameters.
 
-On Wed, Jan 23, 2013 at 00:15:09, Rob Clark wrote:
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ Documentation/kernel-parameters.txt |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-> > Wouldn't it be better to delete da8xx-fb.* and switch to Rob Clarks DRM based driver for this IP block?
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 363e348..1fb269b 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2227,6 +2227,21 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 				This sorting is done to get a device
+ 				order compatible with older (<= 2.4) kernels.
+ 		nobfsort	Don't sort PCI devices into breadth-first order.
++		pcie_bus_tune_off	Disable PCI-E MPS turning and using
++				the BIOS configured MPS defaults.
++		pcie_bus_safe	Use the smallest common denominator MPS
++				of the entire tree below a root complex for every device
++				on that fabric. Can avoid inconsistent mps problem caused
++				by hotplug.
++		pcie_bus_perf	Configure pcie device MPS to the largest allowable
++				MPS based on its parent bus. And also set MRRS to the
++				largest supported value but cannot be configured larger
++				than the MPS the device or the bus can support for Max
++				performance.
++		pcie_bus_peer2peer	Make the system wide MPS the smallest
++				possible value (128B).This configuration could prevent it
++				from working by having the MPS on one root port different
++				than the MPS on another.
+ 		cbiosize=nn[KMG]	The fixed amount of bus space which is
+ 				reserved for the CardBus bridge's IO window.
+ 				The default value is 256 bytes.
+-- 
+1.7.1
 
-> we probably can't delete da8xx-fb, but I think it would be ok to only
-> use it for legacy platforms not yet ported to DT.
 
-We can't remove da8xx-fb as DA830 is a non-DT one and DA850 is only gaining
-DT support.
-
-And Rob,
-
-I am not familiar with drm setup, would all the user space frame buffer based
-applications work as is with drm driver?
-
-Regards
-Afzal
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
