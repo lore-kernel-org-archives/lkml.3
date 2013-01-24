@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab3AXUfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:35:44 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50139 "EHLO
+	id S1756789Ab3AXUfy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:35:54 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50138 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755832Ab3AXUIj (ORCPT
+	with ESMTP id S1755831Ab3AXUIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jan 2013 15:08:39 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tom.zanussi@linux.intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 70/74] perf script: hook up perf_scripting_context->pevent
-Date: Thu, 24 Jan 2013 17:08:19 -0300
-Message-Id: <1359058103-31645-71-git-send-email-acme@infradead.org>
+Subject: [PATCH 69/74] perf script: Don't display trace info when invoking scripts
+Date: Thu, 24 Jan 2013 17:08:18 -0300
+Message-Id: <1359058103-31645-70-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1359058103-31645-1-git-send-email-acme@infradead.org>
 References: <1359058103-31645-1-git-send-email-acme@infradead.org>
@@ -24,54 +24,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tom Zanussi <tom.zanussi@linux.intel.com>
 
-Running the check-perf-trace scripts causes segfaults in both the Perl
-and Python cases:
-
-  # perf script record check-perf-trace
-  # perf script -s libexec/perf-core/scripts/python/check-perf-trace.py
-  trace_begin
-  Segmentation fault (core dumped)
-
-The reason is that the 'pevent' field was added to
-perf_scripting_context but it wasn't hooked up with an actual pevent in
-either case, so when one of the 'common' fields is accessed (in
-util/trace-event-parse.c:get_common_fields()), pevent->events tries to
-dereference a NULL pointer.
-
-This sets the pevent field when the scripting context is set up.
+Only display the trace info if using the default event display.  When
+invoking scripts we assume they have complete control of what's
+displayed so we shouldn't unconditionally display the trace info, and
+when generating scripts we don't expect to see trace info obscuring the
+output message.
 
 Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
-Link: http://lkml.kernel.org/r/d2b1b8166a6ca0a36e1f5255b88a8289058ba236.1358527965.git.tom.zanussi@linux.intel.com
+Link: http://lkml.kernel.org/r/12ec084ef2870178915c907d16cd1dfa19fbb39e.1358527965.git.tom.zanussi@linux.intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/scripting-engines/trace-event-perl.c   | 1 +
- tools/perf/util/scripting-engines/trace-event-python.c | 1 +
- 2 files changed, 2 insertions(+)
+ tools/perf/builtin-script.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index f80605e..eacec85 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -292,6 +292,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __maybe_unused,
- 	ns = nsecs - s * NSECS_PER_SEC;
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index fee4c9a..92d4658 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -1475,7 +1475,8 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			return -1;
+ 	}
  
- 	scripting_context->event_data = data;
-+	scripting_context->pevent = evsel->tp_format->pevent;
+-	perf_session__fprintf_info(session, stdout, show_full_info);
++	if (!script_name && !generate_script_lang)
++		perf_session__fprintf_info(session, stdout, show_full_info);
  
- 	ENTER;
- 	SAVETMPS;
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 14683df..e87aa5d 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -265,6 +265,7 @@ static void python_process_tracepoint(union perf_event *perf_event
- 	ns = nsecs - s * NSECS_PER_SEC;
- 
- 	scripting_context->event_data = data;
-+	scripting_context->pevent = evsel->tp_format->pevent;
- 
- 	context = PyCObject_FromVoidPtr(scripting_context, NULL);
- 
+ 	if (!no_callchain)
+ 		symbol_conf.use_callchain = true;
 -- 
 1.8.1.1.361.gec3ae6e
 
