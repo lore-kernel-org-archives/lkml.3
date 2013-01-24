@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab3AXCVM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 21:21:12 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:16813 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917Ab3AXCVH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 21:21:07 -0500
-Message-ID: <51009A7F.6050104@huawei.com>
-Date: Thu, 24 Jan 2013 10:20:47 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753234Ab3AXCXD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 21:23:03 -0500
+Received: from mail.kernel.org ([198.145.19.201]:33856 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752917Ab3AXCWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 21:22:55 -0500
+Date: Wed, 23 Jan 2013 18:24:25 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Sven =?iso-8859-1?Q?K=F6hler?= <sven.koehler@gmail.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Linux 3.7.4
+Message-ID: <20130124022425.GA5721@kroah.com>
+References: <20130121195420.GA6534@kroah.com>
+ <kdq4sd$g3c$1@ger.gmane.org>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: Rob Landley <rob@landley.net>, Bjorn Helgaas <bhelgaas@google.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jon Mason <jdmason@kudzu.us>, <linux-pci@vger.kernel.org>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>
-Subject: Re: [Update][PATCH] PCI: Document PCIE BUS MPS parameters
-References: <1358944092-28884-1-git-send-email-wangyijing@huawei.com> <510074C7.6090203@infradead.org> <510094A4.3040806@huawei.com> <51009645.5040406@infradead.org>
-In-Reply-To: <51009645.5040406@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <kdq4sd$g3c$1@ger.gmane.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/1/24 10:02, Randy Dunlap wrote:
-> On 01/23/13 17:55, Yijing Wang wrote:
->> Hi Randy,
->>    Thanks for your review and comments! please refer to inlined comments below.
->>
->> On 2013/1/24 7:39, Randy Dunlap wrote:
->>> On 01/23/13 04:28, Yijing Wang wrote:
+On Thu, Jan 24, 2013 at 03:06:29AM +0100, Sven Köhler wrote:
+> Hi,
 > 
->>>
->>> What is (are) MRRS?
->>
->> MRRS is "Max Read Request Size" and MPS is "Max Payload Size".
->> Need use "Max Read Request Size" instead of MRRS ?
+> I had to revert this, because it resulted in
 > 
-> Where is MRRS documented?
-
-The description of MRRS can be found at PCIe Spec 2.0/3.0 7.8.4 Device Control Register.
-
+>   LD      init/built-in.o
+> arch/x86/built-in.o: In function `setup_arch':
+> (.init.text+0x359e): undefined reference to `early_pci_allowed'
+> arch/x86/built-in.o: In function `setup_arch':
+> (.init.text+0x35b2): undefined reference to `read_pci_config_16'
+> arch/x86/built-in.o: In function `setup_arch':
+> (.init.text+0x35cb): undefined reference to `read_pci_config_16'
+> make[1]: *** [vmlinux] Fehler 1
+> make: *** [sub-make] Fehler 2
 > 
-> I would probably do it like so:
-> 
-> Also set MRRS (Max Read Request Size) to the ....
-
-Hmm, I will explain MPS and MRRS when they appear first time like,
-
-pcie_bus_tune_off   Disable PCIe MPS (Max Payload Size) turning and using
-		the BIOS-configured MPS defaults.
-
-pcie_bus_perf	......Also set MRRS (Max Read Request Size) to the......
-
-Thanks!
-Yijing
-
-> 
+> I'm building a Xen domU kernel without modules (one big binary of
+> everything).
 
 
--- 
-Thanks!
-Yijing
+You had to revert _what_?
 
+confused,
+
+greg k-h
