@@ -1,72 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab3AXEP4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 23:15:56 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:34308 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104Ab3AXEPt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 23:15:49 -0500
-Date: Thu, 24 Jan 2013 15:15:37 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Liang Li <liang.li@windriver.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        Greg KH <greg@kroah.com>
-Subject: Re: linux-next: Tree for Jan 23 (pch_uart.c)
-Message-Id: <20130124151537.12c139821173713bf858fa40@canb.auug.org.au>
-In-Reply-To: <20130124023054.GA21851@localhost>
-References: <20130123174336.47c0113740a14da7f6a92187@canb.auug.org.au>
-	<51007226.1040604@infradead.org>
-	<20130124130616.ee95e032326b1afee6716419@canb.auug.org.au>
-	<20130124023054.GA21851@localhost>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_Jan_2013_15_15_37_+1100_bSRIaIXoUN5RA3YZ"
+	id S1753582Ab3AXEWp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 23:22:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42739 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752944Ab3AXEWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 23:22:38 -0500
+From: Dave Airlie <airlied@gmail.com>
+To: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: [PATCH] vgacon/vt: clear buffer attributes when we load a 512 character font
+Date: Thu, 24 Jan 2013 14:22:25 +1000
+Message-Id: <1359001345-3446-1-git-send-email-airlied@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Jan_2013_15_15_37_+1100_bSRIaIXoUN5RA3YZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Dave Airlie <airlied@redhat.com>
 
-Hi,
+When we switch from 256->512 byte font rendering mode, it means the
+current contents of the screen is being reinterpreted. The bit that holds
+the high bit of the 9-bit font, may have been previously set, and thus
+the new font misrenders.
 
-On Thu, 24 Jan 2013 10:30:54 +0800 Liang Li <liang.li@windriver.com> wrote:
->
-> Should I add a fix for the compile error .. or do squash then send out
-> refreshed patch ?
+The problem case we see is grub2 writes spaces with the bit set, so it
+ends up with data like 0x820, which gets reinterpreted into 0x120 char
+which the font translates into G with a circumflex. This flashes up on
+screen at boot and is quite ugly.
 
-You need to send a fix patch to Greg based on his tty tree
-(git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git).
+A current side effect of this patch though is that any rendering on the
+screen changes color to a slightly darker color, but at least the screen
+no longer corrupts.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+---
+ drivers/tty/vt/vt.c            |  2 +-
+ drivers/video/console/vgacon.c | 19 ++++++++++++-------
+ include/linux/vt_kern.h        |  1 +
+ 3 files changed, 14 insertions(+), 8 deletions(-)
 
---Signature=_Thu__24_Jan_2013_15_15_37_+1100_bSRIaIXoUN5RA3YZ
-Content-Type: application/pgp-signature
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index 8fd8968..c8067ae 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -638,7 +638,7 @@ static inline void save_screen(struct vc_data *vc)
+  *	Redrawing of screen
+  */
+ 
+-static void clear_buffer_attributes(struct vc_data *vc)
++void clear_buffer_attributes(struct vc_data *vc)
+ {
+ 	unsigned short *p = (unsigned short *)vc->vc_origin;
+ 	int count = vc->vc_screenbuf_size / 2;
+diff --git a/drivers/video/console/vgacon.c b/drivers/video/console/vgacon.c
+index d449a74..271b5d0 100644
+--- a/drivers/video/console/vgacon.c
++++ b/drivers/video/console/vgacon.c
+@@ -1064,7 +1064,7 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
+ 	unsigned short video_port_status = vga_video_port_reg + 6;
+ 	int font_select = 0x00, beg, i;
+ 	char *charmap;
+-	
++	bool clear_attribs = false;
+ 	if (vga_video_type != VIDEO_TYPE_EGAM) {
+ 		charmap = (char *) VGA_MAP_MEM(colourmap, 0);
+ 		beg = 0x0e;
+@@ -1169,12 +1169,6 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
+ 
+ 	/* if 512 char mode is already enabled don't re-enable it. */
+ 	if ((set) && (ch512 != vga_512_chars)) {
+-		/* attribute controller */
+-		for (i = 0; i < MAX_NR_CONSOLES; i++) {
+-			struct vc_data *c = vc_cons[i].d;
+-			if (c && c->vc_sw == &vga_con)
+-				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
+-		}
+ 		vga_512_chars = ch512;
+ 		/* 256-char: enable intensity bit
+ 		   512-char: disable intensity bit */
+@@ -1185,8 +1179,19 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
+ 		   it means, but it works, and it appears necessary */
+ 		inb_p(video_port_status);
+ 		vga_wattr(state->vgabase, VGA_AR_ENABLE_DISPLAY, 0);	
++		clear_attribs = true;
+ 	}
+ 	raw_spin_unlock_irq(&vga_lock);
++
++	if (clear_attribs) {
++		for (i = 0; i < MAX_NR_CONSOLES; i++) {
++			struct vc_data *c = vc_cons[i].d;
++			if (c && c->vc_sw == &vga_con) {
++				clear_buffer_attributes(c);
++				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
++			}
++		}
++	}
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
+index 50ae7d0..1f55665 100644
+--- a/include/linux/vt_kern.h
++++ b/include/linux/vt_kern.h
+@@ -47,6 +47,7 @@ int con_set_cmap(unsigned char __user *cmap);
+ int con_get_cmap(unsigned char __user *cmap);
+ void scrollback(struct vc_data *vc, int lines);
+ void scrollfront(struct vc_data *vc, int lines);
++void clear_buffer_attributes(struct vc_data *vc);
+ void update_region(struct vc_data *vc, unsigned long start, int count);
+ void redraw_screen(struct vc_data *vc, int is_switch);
+ #define update_screen(x) redraw_screen(x, 0)
+-- 
+1.8.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRALVpAAoJEECxmPOUX5FEWv4P+wVISo3NRpYkCycQ/CPf15N/
-kop2HPPBXEtWLXtXKgJU44QhTLdYMNtW2ZIU5DLW9ep/k2zPW2N93TfNAk7rjnTx
-oi1tEzGzNskHaTJnfomKuqnklJ6yljmeIKvqAMOP8Osh6FIsIEXl1tbGr0wh1Tqt
-l3+Xu9CnymabhxND6AnNmoiYHoh5S7x6reAK3YWOhZ8qaa5wFknPsxrv2+YrnFYQ
-dreJsjVMUt+y6E5QPu8PuvI7fNZ/HoVRJYl8043qXk5CmJM9vBUR+jvH1+cPg8FE
-PMMjhtLpL2M8kgb3mgcToavJRTHUHclKg5O4L30iu97SZntjTCkKy5ZL9g+HWACs
-6hdUhM0aKBDs6Jf9oc1UpFn0BvIXzRPH3vZw763B3if5sUBWFi3qxfFi11S6HjvC
-Z7gWLXVUONRI9CylUCQnHnQ42TYBP8JmciFc2orljaYcw06UxRL3qOIO4CeG/vVF
-9gIDct6E5ckRlp6c1tDGZvS5QQUwSVoGfXQ10RRoTa4UnNGiKq3aGE87qn0+TBpz
-VuQ4dJhvbK5NBcSRqSv8TiO1PjDS/cQA0ZqburU2NQymCi0oOInnyCSrTlKkb7bw
-enDBI+izCFWdDsndZs6RYpj+s8PIEyfts111YqFrq6gkL1jBFgYGzkPpc8nGoI7y
-FtsVejpxNwAC0vyM/KUC
-=kAaW
------END PGP SIGNATURE-----
-
---Signature=_Thu__24_Jan_2013_15_15_37_+1100_bSRIaIXoUN5RA3YZ--
