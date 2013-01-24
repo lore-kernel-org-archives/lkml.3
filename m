@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab3AXK5Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:57:25 -0500
-Received: from hermes.synopsys.com ([198.182.44.81]:33863 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753334Ab3AXK5N (ORCPT
+	id S1754696Ab3AXK5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:57:45 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:47287 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754374Ab3AXK5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jan 2013 05:57:13 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v3 62/71] ARC: [Review] Multi-platform image #2: Board callback Infrastructure
-Date: Thu, 24 Jan 2013 16:20:37 +0530
-Message-ID: <1359024639-21915-24-git-send-email-vgupta@synopsys.com>
+CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Rajeshwar Ranga <rajeshwar.ranga@gmail.com>
+Subject: [PATCH v3 48/71] ARC: kprobes support
+Date: Thu, 24 Jan 2013 16:20:33 +0530
+Message-ID: <1359024639-21915-20-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359024639-21915-1-git-send-email-vgupta@synopsys.com>
 References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com>
@@ -23,389 +24,727 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The orig platform code orgnaization was singleton design pattern - only
-one platform (and board thereof) would build at a time.
-
-Thus any platform/board specific code (e.g. irq init, early init ...)
-expected by ARC common code was exported as well defined set of APIs,
-with only ONE instance building ever.
-
-Now with multiple-platform build requirement, that design of code no
-longer holds - multiple board specific calls need to build at the same
-time - so ARC common code can't use the API approach, it needs a
-callback based design where each board registers it's specific set of
-functions, and at runtime, depending on board detection, the callbacks
-are used from the registry.
-
-This commit adds all the infrastructure, where board specific callbacks
-are specified as a "machine description".
-
-All the hooks are placed in right spots, no board callbacks registered
-yet (with MACHINE_STARt/END constructs) so the hooks will not run.
-
-Next commit will actually convert the platform to this infrastructure.
+Origin port done by Rajeshwar Ranga
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Rajeshwar Ranga <rajeshwar.ranga@gmail.com>
 ---
- arch/arc/include/asm/mach_desc.h |   85 ++++++++++++++++++++++++++++++++++++++
- arch/arc/include/asm/prom.h      |    1 -
- arch/arc/kernel/devtree.c        |   47 +++++++++++++++++----
- arch/arc/kernel/irq.c            |    7 +++
- arch/arc/kernel/setup.c          |   28 +++++++++++-
- arch/arc/kernel/smp.c            |    3 +
- arch/arc/kernel/time.c           |    4 ++
- arch/arc/kernel/vmlinux.lds.S    |    6 +++
- 8 files changed, 169 insertions(+), 12 deletions(-)
- create mode 100644 arch/arc/include/asm/mach_desc.h
+ arch/arc/Kconfig               |    2 +
+ arch/arc/include/asm/kprobes.h |   62 +++++
+ arch/arc/include/asm/ptrace.h  |    5 +
+ arch/arc/kernel/Makefile       |    1 +
+ arch/arc/kernel/disasm.c       |    5 +-
+ arch/arc/kernel/kprobes.c      |  525 ++++++++++++++++++++++++++++++++++++++++
+ arch/arc/kernel/traps.c        |   13 +
+ 7 files changed, 610 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arc/include/asm/kprobes.h
+ create mode 100644 arch/arc/kernel/kprobes.c
 
-diff --git a/arch/arc/include/asm/mach_desc.h b/arch/arc/include/asm/mach_desc.h
+diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+index 84b23fa..cde8d3f 100644
+--- a/arch/arc/Kconfig
++++ b/arch/arc/Kconfig
+@@ -24,6 +24,8 @@ config ARC
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_GENERIC_HARDIRQS
++	select HAVE_KPROBES
++	select HAVE_KRETPROBES
+ 	select HAVE_MEMBLOCK
+ 	select HAVE_MOD_ARCH_SPECIFIC if ARC_DW2_UNWIND
+ 	select HAVE_OPROFILE
+diff --git a/arch/arc/include/asm/kprobes.h b/arch/arc/include/asm/kprobes.h
 new file mode 100644
-index 0000000..eaebaf8
+index 0000000..4d9c211
 --- /dev/null
-+++ b/arch/arc/include/asm/mach_desc.h
-@@ -0,0 +1,85 @@
++++ b/arch/arc/include/asm/kprobes.h
+@@ -0,0 +1,62 @@
 +/*
-+ * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * based on METAG mach/arch.h (which in turn was based on ARM)
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef _ASM_ARC_MACH_DESC_H_
-+#define _ASM_ARC_MACH_DESC_H_
++#ifndef _ARC_KPROBES_H
++#define _ARC_KPROBES_H
 +
-+/**
-+ * struct machine_desc - Board specific callbacks, called from ARC common code
-+ *	Provided by each ARC board using MACHINE_START()/MACHINE_END(), so
-+ *	a multi-platform kernel builds with array of such descriptors.
-+ *	We extend the early DT scan to also match the DT's "compatible" string
-+ *	against the @dt_compat of all such descriptors, and one with highest
-+ *	"DT score" is selected as global @machine_desc.
-+ *
-+ * @name:		Board/SoC name
-+ * @dt_compat:		Array of device tree 'compatible' strings
-+ * 			(XXX: although only 1st entry is looked at)
-+ * @init_early:		Very early callback [called from setup_arch()]
-+ * @init_irq:		setup external IRQ controllers [called from init_IRQ()]
-+ * @init_smp:		for each CPU (e.g. setup IPI)
-+ * 			[(M):init_IRQ(), (o):start_kernel_secondary()]
-+ * @init_time:		platform specific clocksource/clockevent registration
-+ * 			[called from time_init()]
-+ * @init_machine:	arch initcall level callback (e.g. populate static
-+ * 			platform devices or parse Devicetree)
-+ * @init_late:		Late initcall level callback
-+ *
-+ */
-+struct machine_desc {
-+	const char		*name;
-+	const char		**dt_compat;
++#ifdef CONFIG_KPROBES
 +
-+	void			(*init_early)(void);
-+	void			(*init_irq)(void);
-+#ifdef CONFIG_SMP
-+	void			(*init_smp)(unsigned int);
-+#endif
-+	void			(*init_time)(void);
-+	void			(*init_machine)(void);
-+	void			(*init_late)(void);
++typedef u16 kprobe_opcode_t;
 +
++#define UNIMP_S_INSTRUCTION 0x79e0
++#define TRAP_S_2_INSTRUCTION 0x785e
++
++#define MAX_INSN_SIZE   8
++#define MAX_STACK_SIZE  64
++
++struct arch_specific_insn {
++	int is_short;
++	kprobe_opcode_t *t1_addr, *t2_addr;
++	kprobe_opcode_t t1_opcode, t2_opcode;
 +};
 +
-+/*
-+ * Current machine - only accessible during boot.
-+ */
-+extern struct machine_desc *machine_desc;
++#define flush_insn_slot(p)  do {  } while (0)
 +
-+/*
-+ * Machine type table - also only accessible during boot
-+ */
-+extern struct machine_desc __arch_info_begin[], __arch_info_end[];
-+#define for_each_machine_desc(p)			\
-+	for (p = __arch_info_begin; p < __arch_info_end; p++)
++#define kretprobe_blacklist_size    0
 +
-+static inline struct machine_desc *default_machine_desc(void)
++struct kprobe;
++
++void arch_remove_kprobe(struct kprobe *p);
++
++int kprobe_exceptions_notify(struct notifier_block *self,
++			     unsigned long val, void *data);
++
++struct prev_kprobe {
++	struct kprobe *kp;
++	unsigned long status;
++};
++
++struct kprobe_ctlblk {
++	unsigned int kprobe_status;
++	struct pt_regs jprobe_saved_regs;
++	char jprobes_stack[MAX_STACK_SIZE];
++	struct prev_kprobe prev_kprobe;
++};
++
++int kprobe_fault_handler(struct pt_regs *regs, unsigned long cause);
++void kretprobe_trampoline(void);
++void trap_is_kprobe(unsigned long cause, unsigned long address,
++			   struct pt_regs *regs);
++#else
++static void trap_is_kprobe(unsigned long cause, unsigned long address,
++			   struct pt_regs *regs)
 +{
-+	/* the default machine is the last one linked in */
-+	if (__arch_info_end - 1 < __arch_info_begin)
-+		return NULL;
-+	return __arch_info_end - 1;
++}
++#endif
++
++#endif
+diff --git a/arch/arc/include/asm/ptrace.h b/arch/arc/include/asm/ptrace.h
+index 8bf7ff4..713f145 100644
+--- a/arch/arc/include/asm/ptrace.h
++++ b/arch/arc/include/asm/ptrace.h
+@@ -146,6 +146,11 @@ struct user_regs_struct {
+ 	(struct pt_regs *)(pg_start + THREAD_SIZE - 4) - 1;	\
+ })
+ 
++static inline long regs_return_value(struct pt_regs *regs)
++{
++	return regs->r0;
 +}
 +
-+/*
-+ * Set of macros to define architecture features.
-+ * This is built into a table by the linker.
-+ */
-+#define MACHINE_START(_type, _name)			\
-+static const struct machine_desc __mach_desc_##_type	\
-+__used							\
-+__attribute__((__section__(".arch.info.init"))) = {	\
-+	.name		= _name,
-+
-+#define MACHINE_END				\
-+};
-+
-+extern struct machine_desc *setup_machine_fdt(void *dt);
-+#endif
-diff --git a/arch/arc/include/asm/prom.h b/arch/arc/include/asm/prom.h
-index f54489b..692d0d0 100644
---- a/arch/arc/include/asm/prom.h
-+++ b/arch/arc/include/asm/prom.h
-@@ -10,6 +10,5 @@
- #define _ASM_ARC_PROM_H_
+ #endif /* !__ASSEMBLY__ */
  
- #define HAVE_ARCH_DEVTREE_FIXUPS
--extern int __init setup_machine_fdt(void *dt);
+ #define orig_r8_IS_SCALL		0x0001
+diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
+index 8906531..a64a604 100644
+--- a/arch/arc/kernel/Makefile
++++ b/arch/arc/kernel/Makefile
+@@ -15,6 +15,7 @@ obj-$(CONFIG_OF)			+= devtree.o
+ obj-$(CONFIG_MODULES)			+= arcksyms.o module.o
+ obj-$(CONFIG_SMP) 			+= smp.o
+ obj-$(CONFIG_ARC_DW2_UNWIND)		+= unwind.o
++obj-$(CONFIG_KPROBES)      		+= kprobes.o
  
- #endif
-diff --git a/arch/arc/kernel/devtree.c b/arch/arc/kernel/devtree.c
-index d2a41be..051ec8b 100644
---- a/arch/arc/kernel/devtree.c
-+++ b/arch/arc/kernel/devtree.c
-@@ -21,6 +21,7 @@
- #include <linux/of_platform.h>
- #include <asm/prom.h>
- #include <asm/clk.h>
-+#include <asm/mach_desc.h>
- 
- /* called from unflatten_device_tree() to bootstrap devicetree itself */
- void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
-@@ -35,27 +36,57 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
-  * If a dtb was passed to the kernel, then use it to choose the correct
-  * machine_desc and to setup the system.
+ obj-$(CONFIG_ARC_FPU_SAVE_RESTORE)	+= fpu.o
+ CFLAGS_fpu.o   += -mdpfp
+diff --git a/arch/arc/kernel/disasm.c b/arch/arc/kernel/disasm.c
+index 254d11a..51bad8f 100644
+--- a/arch/arc/kernel/disasm.c
++++ b/arch/arc/kernel/disasm.c
+@@ -497,9 +497,8 @@ void __kprobes set_reg(int reg, long val, struct pt_regs *regs,
+  * @pc +2/4/6 (ARCompact ISA allows free intermixing of 16/32 bit insns).
+  *
+  * If @pc is a branch
+- * 	-@tgt_if_br is set to branch target.
+- * 	-If branch has delay slot, @next_pc updated with actual next PC.
+- *
++ *	-@tgt_if_br is set to branch target.
++ *	-If branch has delay slot, @next_pc updated with actual next PC.
   */
--int __init setup_machine_fdt(void *dt)
-+struct machine_desc * __init setup_machine_fdt(void *dt)
- {
- 	struct boot_param_header *devtree = dt;
-+	struct machine_desc *mdesc = NULL, *mdesc_best = NULL;
-+	unsigned int score, mdesc_score = ~1;
- 	unsigned long dt_root;
--	char *model, *compat;
-+	const char *model, *compat;
- 	void *clk;
- 	char manufacturer[16];
- 	unsigned long len;
- 
- 	/* check device tree validity */
- 	if (be32_to_cpu(devtree->magic) != OF_DT_HEADER)
--		return 1;
-+		return NULL;
- 
--	/* Search the mdescs for the 'best' compatible value match */
- 	initial_boot_params = devtree;
- 	dt_root = of_get_flat_dt_root();
- 
-+	/*
-+	 * The kernel could be multi-platform enabled, thus could have many
-+	 * "baked-in" machine descriptors. Search thru all for the best
-+	 * "compatible" string match.
-+	 */
-+	for_each_machine_desc(mdesc) {
-+		score = of_flat_dt_match(dt_root, mdesc->dt_compat);
-+		if (score > 0 && score < mdesc_score) {
-+			mdesc_best = mdesc;
-+			mdesc_score = score;
-+		}
+ int __kprobes disasm_next_pc(unsigned long pc, struct pt_regs *regs,
+ 			     struct callee_regs *cregs,
+diff --git a/arch/arc/kernel/kprobes.c b/arch/arc/kernel/kprobes.c
+new file mode 100644
+index 0000000..47e42f2
+--- /dev/null
++++ b/arch/arc/kernel/kprobes.c
+@@ -0,0 +1,525 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/types.h>
++#include <linux/kprobes.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/kprobes.h>
++#include <linux/kdebug.h>
++#include <linux/sched.h>
++#include <linux/uaccess.h>
++#include <asm/cacheflush.h>
++#include <asm/current.h>
++#include <asm/disasm.h>
++
++#define MIN_STACK_SIZE(addr)	min((unsigned long)MAX_STACK_SIZE, \
++		(unsigned long)current_thread_info() + THREAD_SIZE - (addr))
++
++DEFINE_PER_CPU(struct kprobe *, current_kprobe) = NULL;
++DEFINE_PER_CPU(struct kprobe_ctlblk, kprobe_ctlblk);
++
++int __kprobes arch_prepare_kprobe(struct kprobe *p)
++{
++	/* Attempt to probe at unaligned address */
++	if ((unsigned long)p->addr & 0x01)
++		return -EINVAL;
++
++	/* Address should not be in exception handling code */
++
++	p->ainsn.is_short = is_short_instr((unsigned long)p->addr);
++	p->opcode = *p->addr;
++
++	return 0;
++}
++
++void __kprobes arch_arm_kprobe(struct kprobe *p)
++{
++	*p->addr = UNIMP_S_INSTRUCTION;
++
++	flush_icache_range((unsigned long)p->addr,
++			   (unsigned long)p->addr + sizeof(kprobe_opcode_t));
++}
++
++void __kprobes arch_disarm_kprobe(struct kprobe *p)
++{
++	*p->addr = p->opcode;
++
++	flush_icache_range((unsigned long)p->addr,
++			   (unsigned long)p->addr + sizeof(kprobe_opcode_t));
++}
++
++void __kprobes arch_remove_kprobe(struct kprobe *p)
++{
++	arch_disarm_kprobe(p);
++
++	/* Can we remove the kprobe in the middle of kprobe handling? */
++	if (p->ainsn.t1_addr) {
++		*(p->ainsn.t1_addr) = p->ainsn.t1_opcode;
++
++		flush_icache_range((unsigned long)p->ainsn.t1_addr,
++				   (unsigned long)p->ainsn.t1_addr +
++				   sizeof(kprobe_opcode_t));
++
++		p->ainsn.t1_addr = NULL;
 +	}
-+	if (!mdesc_best) {
-+		const char *prop;
-+		long size;
 +
-+		pr_err("\n unrecognized device tree list:\n[ ");
++	if (p->ainsn.t2_addr) {
++		*(p->ainsn.t2_addr) = p->ainsn.t2_opcode;
 +
-+		prop = of_get_flat_dt_prop(dt_root, "compatible", &size);
-+		if (prop) {
-+			while (size > 0) {
-+				printk("'%s' ", prop);
-+				size -= strlen(prop) + 1;
-+				prop += strlen(prop) + 1;
++		flush_icache_range((unsigned long)p->ainsn.t2_addr,
++				   (unsigned long)p->ainsn.t2_addr +
++				   sizeof(kprobe_opcode_t));
++
++		p->ainsn.t2_addr = NULL;
++	}
++}
++
++static void __kprobes save_previous_kprobe(struct kprobe_ctlblk *kcb)
++{
++	kcb->prev_kprobe.kp = kprobe_running();
++	kcb->prev_kprobe.status = kcb->kprobe_status;
++}
++
++static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
++{
++	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
++	kcb->kprobe_status = kcb->prev_kprobe.status;
++}
++
++static inline void __kprobes set_current_kprobe(struct kprobe *p)
++{
++	__get_cpu_var(current_kprobe) = p;
++}
++
++static void __kprobes resume_execution(struct kprobe *p, unsigned long addr,
++				       struct pt_regs *regs)
++{
++	/* Remove the trap instructions inserted for single step and
++	 * restore the original instructions
++	 */
++	if (p->ainsn.t1_addr) {
++		*(p->ainsn.t1_addr) = p->ainsn.t1_opcode;
++
++		flush_icache_range((unsigned long)p->ainsn.t1_addr,
++				   (unsigned long)p->ainsn.t1_addr +
++				   sizeof(kprobe_opcode_t));
++
++		p->ainsn.t1_addr = NULL;
++	}
++
++	if (p->ainsn.t2_addr) {
++		*(p->ainsn.t2_addr) = p->ainsn.t2_opcode;
++
++		flush_icache_range((unsigned long)p->ainsn.t2_addr,
++				   (unsigned long)p->ainsn.t2_addr +
++				   sizeof(kprobe_opcode_t));
++
++		p->ainsn.t2_addr = NULL;
++	}
++
++	return;
++}
++
++static void __kprobes setup_singlestep(struct kprobe *p, struct pt_regs *regs)
++{
++	unsigned long next_pc;
++	unsigned long tgt_if_br = 0;
++	int is_branch;
++	unsigned long bta;
++
++	/* Copy the opcode back to the kprobe location and execute the
++	 * instruction. Because of this we will not be able to get into the
++	 * same kprobe until this kprobe is done
++	 */
++	*(p->addr) = p->opcode;
++
++	flush_icache_range((unsigned long)p->addr,
++			   (unsigned long)p->addr + sizeof(kprobe_opcode_t));
++
++	/* Now we insert the trap at the next location after this instruction to
++	 * single step. If it is a branch we insert the trap at possible branch
++	 * targets
++	 */
++
++	bta = regs->bta;
++
++	if (regs->status32 & 0x40) {
++		/* We are in a delay slot with the branch taken */
++
++		next_pc = bta & ~0x01;
++
++		if (!p->ainsn.is_short) {
++			if (bta & 0x01)
++				regs->blink += 2;
++			else {
++				/* Branch not taken */
++				next_pc += 2;
++
++				/* next pc is taken from bta after executing the
++				 * delay slot instruction
++				 */
++				regs->bta += 2;
 +			}
 +		}
-+		printk("]\n\n");
 +
-+		machine_halt();
++		is_branch = 0;
++	} else
++		is_branch =
++		    disasm_next_pc((unsigned long)p->addr, regs,
++			(struct callee_regs *) current->thread.callee_reg,
++			&next_pc, &tgt_if_br);
++
++	p->ainsn.t1_addr = (kprobe_opcode_t *) next_pc;
++	p->ainsn.t1_opcode = *(p->ainsn.t1_addr);
++	*(p->ainsn.t1_addr) = TRAP_S_2_INSTRUCTION;
++
++	flush_icache_range((unsigned long)p->ainsn.t1_addr,
++			   (unsigned long)p->ainsn.t1_addr +
++			   sizeof(kprobe_opcode_t));
++
++	if (is_branch) {
++		p->ainsn.t2_addr = (kprobe_opcode_t *) tgt_if_br;
++		p->ainsn.t2_opcode = *(p->ainsn.t2_addr);
++		*(p->ainsn.t2_addr) = TRAP_S_2_INSTRUCTION;
++
++		flush_icache_range((unsigned long)p->ainsn.t2_addr,
++				   (unsigned long)p->ainsn.t2_addr +
++				   sizeof(kprobe_opcode_t));
++	}
++}
++
++int __kprobes arc_kprobe_handler(unsigned long addr, struct pt_regs *regs)
++{
++	struct kprobe *p;
++	struct kprobe_ctlblk *kcb;
++
++	preempt_disable();
++
++	kcb = get_kprobe_ctlblk();
++	p = get_kprobe((unsigned long *)addr);
++
++	if (p) {
++		/*
++		 * We have reentered the kprobe_handler, since another kprobe
++		 * was hit while within the handler, we save the original
++		 * kprobes and single step on the instruction of the new probe
++		 * without calling any user handlers to avoid recursive
++		 * kprobes.
++		 */
++		if (kprobe_running()) {
++			save_previous_kprobe(kcb);
++			set_current_kprobe(p);
++			kprobes_inc_nmissed_count(p);
++			setup_singlestep(p, regs);
++			kcb->kprobe_status = KPROBE_REENTER;
++			return 1;
++		}
++
++		set_current_kprobe(p);
++		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
++
++		/* If we have no pre-handler or it returned 0, we continue with
++		 * normal processing. If we have a pre-handler and it returned
++		 * non-zero - which is expected from setjmp_pre_handler for
++		 * jprobe, we return without single stepping and leave that to
++		 * the break-handler which is invoked by a kprobe from
++		 * jprobe_return
++		 */
++		if (!p->pre_handler || !p->pre_handler(p, regs)) {
++			setup_singlestep(p, regs);
++			kcb->kprobe_status = KPROBE_HIT_SS;
++		}
++
++		return 1;
++	} else if (kprobe_running()) {
++		p = __get_cpu_var(current_kprobe);
++		if (p->break_handler && p->break_handler(p, regs)) {
++			setup_singlestep(p, regs);
++			kcb->kprobe_status = KPROBE_HIT_SS;
++			return 1;
++		}
 +	}
 +
- 	/* compat = "<manufacturer>,<model>" */
--	compat = of_get_flat_dt_prop(dt_root, "compatible", NULL);
--	if (!compat)
--		compat = "<unknown>";
-+	compat =  mdesc_best->dt_compat[0];
- 
- 	model = strchr(compat, ',');
- 	if (model)
-@@ -78,5 +109,5 @@ int __init setup_machine_fdt(void *dt)
- 	if (clk)
- 		arc_set_core_freq(of_read_ulong(clk, len/4));
- 
--	return 0;
-+	return mdesc_best;
- }
-diff --git a/arch/arc/kernel/irq.c b/arch/arc/kernel/irq.c
-index df7da2b..1198168 100644
---- a/arch/arc/kernel/irq.c
-+++ b/arch/arc/kernel/irq.c
-@@ -13,6 +13,7 @@
- #include <linux/irqdomain.h>
- #include <asm/sections.h>
- #include <asm/irq.h>
-+#include <asm/mach_desc.h>
- 
- /*
-  * Early Hardware specific Interrupt setup
-@@ -125,9 +126,15 @@ void __init init_IRQ(void)
- 	init_onchip_IRQ();
- 	plat_init_IRQ();
- 
-+	/* Any external intc can be setup here */
-+	if (machine_desc->init_irq)
-+		machine_desc->init_irq();
++	/* no_kprobe: */
++	preempt_enable_no_resched();
++	return 0;
++}
 +
- #ifdef CONFIG_SMP
- 	/* Master CPU can initialize it's side of IPI */
- 	arc_platform_smp_init_cpu();
-+	if (machine_desc->init_smp)
-+		machine_desc->init_smp(smp_processor_id());
- #endif
- }
- 
-diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
-index 6cc361c..20273b8 100644
---- a/arch/arc/kernel/setup.c
-+++ b/arch/arc/kernel/setup.c
-@@ -25,12 +25,14 @@
- #include <asm/prom.h>
- #include <asm/unwind.h>
- #include <asm/clk.h>
-+#include <asm/mach_desc.h>
- 
- #define FIX_PTR(x)  __asm__ __volatile__(";" : "+r"(x))
- 
- int running_on_hw = 1;	/* vs. on ISS */
- 
- char __initdata command_line[COMMAND_LINE_SIZE];
-+struct machine_desc *machine_desc __initdata;
- 
- struct task_struct *_current_task[NR_CPUS];	/* For stack switching */
- 
-@@ -323,8 +325,6 @@ void __init __attribute__((weak)) arc_platform_early_init(void)
- 
- void __init setup_arch(char **cmdline_p)
- {
--	int rc;
--
- #ifdef CONFIG_CMDLINE_UBOOT
- 	/* Make sure that a whitespace is inserted before */
- 	strlcat(command_line, " ", sizeof(command_line));
-@@ -339,13 +339,17 @@ void __init setup_arch(char **cmdline_p)
- 	strlcpy(boot_command_line, command_line, COMMAND_LINE_SIZE);
- 	*cmdline_p = command_line;
- 
--	rc = setup_machine_fdt(__dtb_start);
-+	machine_desc = setup_machine_fdt(__dtb_start);
-+	if (!machine_desc)
-+		panic("Embedded DT invalid\n");
- 
- 	/* To force early parsing of things like mem=xxx */
- 	parse_early_param();
- 
- 	/* Platform/board specific: e.g. early console registration */
- 	arc_platform_early_init();
-+	if (machine_desc->init_early)
-+		machine_desc->init_early();
- 
- 	setup_processor();
- 
-@@ -372,6 +376,24 @@ void __init setup_arch(char **cmdline_p)
- 	arc_unwind_setup();
- }
- 
-+static int __init customize_machine(void)
++static int __kprobes arc_post_kprobe_handler(unsigned long addr,
++					 struct pt_regs *regs)
 +{
-+	/* Add platform devices */
-+	if (machine_desc->init_machine)
-+		machine_desc->init_machine();
++	struct kprobe *cur = kprobe_running();
++	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
++
++	if (!cur)
++		return 0;
++
++	resume_execution(cur, addr, regs);
++
++	/* Rearm the kprobe */
++	arch_arm_kprobe(cur);
++
++	/*
++	 * When we return from trap instruction we go to the next instruction
++	 * We restored the actual instruction in resume_exectuiont and we to
++	 * return to the same address and execute it
++	 */
++	regs->ret = addr;
++
++	if ((kcb->kprobe_status != KPROBE_REENTER) && cur->post_handler) {
++		kcb->kprobe_status = KPROBE_HIT_SSDONE;
++		cur->post_handler(cur, regs, 0);
++	}
++
++	if (kcb->kprobe_status == KPROBE_REENTER) {
++		restore_previous_kprobe(kcb);
++		goto out;
++	}
++
++	reset_current_kprobe();
++
++out:
++	preempt_enable_no_resched();
++	return 1;
++}
++
++/*
++ * Fault can be for the instruction being single stepped or for the
++ * pre/post handlers in the module.
++ * This is applicable for applications like user probes, where we have the
++ * probe in user space and the handlers in the kernel
++ */
++
++int __kprobes kprobe_fault_handler(struct pt_regs *regs, unsigned long trapnr)
++{
++	struct kprobe *cur = kprobe_running();
++	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
++
++	switch (kcb->kprobe_status) {
++	case KPROBE_HIT_SS:
++	case KPROBE_REENTER:
++		/*
++		 * We are here because the instruction being single stepped
++		 * caused the fault. We reset the current kprobe and allow the
++		 * exception handler as if it is regular exception. In our
++		 * case it doesn't matter because the system will be halted
++		 */
++		resume_execution(cur, (unsigned long)cur->addr, regs);
++
++		if (kcb->kprobe_status == KPROBE_REENTER)
++			restore_previous_kprobe(kcb);
++		else
++			reset_current_kprobe();
++
++		preempt_enable_no_resched();
++		break;
++
++	case KPROBE_HIT_ACTIVE:
++	case KPROBE_HIT_SSDONE:
++		/*
++		 * We are here because the instructions in the pre/post handler
++		 * caused the fault.
++		 */
++
++		/* We increment the nmissed count for accounting,
++		 * we can also use npre/npostfault count for accouting
++		 * these specific fault cases.
++		 */
++		kprobes_inc_nmissed_count(cur);
++
++		/*
++		 * We come here because instructions in the pre/post
++		 * handler caused the page_fault, this could happen
++		 * if handler tries to access user space by
++		 * copy_from_user(), get_user() etc. Let the
++		 * user-specified handler try to fix it first.
++		 */
++		if (cur->fault_handler && cur->fault_handler(cur, regs, trapnr))
++			return 1;
++
++		/*
++		 * In case the user-specified fault handler returned zero,
++		 * try to fix up.
++		 */
++		if (fixup_exception(regs))
++			return 1;
++
++		/*
++		 * fixup_exception() could not handle it,
++		 * Let do_page_fault() fix it.
++		 */
++		break;
++
++	default:
++		break;
++	}
++	return 0;
++}
++
++int __kprobes kprobe_exceptions_notify(struct notifier_block *self,
++				       unsigned long val, void *data)
++{
++	struct die_args *args = data;
++	unsigned long addr = args->err;
++	int ret = NOTIFY_DONE;
++
++	switch (val) {
++	case DIE_IERR:
++		if (arc_kprobe_handler(addr, args->regs))
++			return NOTIFY_STOP;
++		break;
++
++	case DIE_TRAP:
++		if (arc_post_kprobe_handler(addr, args->regs))
++			return NOTIFY_STOP;
++		break;
++
++	default:
++		break;
++	}
++
++	return ret;
++}
++
++int __kprobes setjmp_pre_handler(struct kprobe *p, struct pt_regs *regs)
++{
++	struct jprobe *jp = container_of(p, struct jprobe, kp);
++	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
++	unsigned long sp_addr = regs->sp;
++
++	kcb->jprobe_saved_regs = *regs;
++	memcpy(kcb->jprobes_stack, (void *)sp_addr, MIN_STACK_SIZE(sp_addr));
++	regs->ret = (unsigned long)(jp->entry);
++
++	return 1;
++}
++
++void __kprobes jprobe_return(void)
++{
++	__asm__ __volatile__("unimp_s");
++	return;
++}
++
++int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
++{
++	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
++	unsigned long sp_addr;
++
++	*regs = kcb->jprobe_saved_regs;
++	sp_addr = regs->sp;
++	memcpy((void *)sp_addr, kcb->jprobes_stack, MIN_STACK_SIZE(sp_addr));
++	preempt_enable_no_resched();
++
++	return 1;
++}
++
++static void __used kretprobe_trampoline_holder(void)
++{
++	__asm__ __volatile__(".global kretprobe_trampoline\n"
++			     "kretprobe_trampoline:\n" "nop\n");
++}
++
++void __kprobes arch_prepare_kretprobe(struct kretprobe_instance *ri,
++				      struct pt_regs *regs)
++{
++
++	ri->ret_addr = (kprobe_opcode_t *) regs->blink;
++
++	/* Replace the return addr with trampoline addr */
++	regs->blink = (unsigned long)&kretprobe_trampoline;
++}
++
++static int __kprobes trampoline_probe_handler(struct kprobe *p,
++					      struct pt_regs *regs)
++{
++	struct kretprobe_instance *ri = NULL;
++	struct hlist_head *head, empty_rp;
++	struct hlist_node *node, *tmp;
++	unsigned long flags, orig_ret_address = 0;
++	unsigned long trampoline_address = (unsigned long)&kretprobe_trampoline;
++
++	INIT_HLIST_HEAD(&empty_rp);
++	kretprobe_hash_lock(current, &head, &flags);
++
++	/*
++	 * It is possible to have multiple instances associated with a given
++	 * task either because an multiple functions in the call path
++	 * have a return probe installed on them, and/or more than one return
++	 * return probe was registered for a target function.
++	 *
++	 * We can handle this because:
++	 *     - instances are always inserted at the head of the list
++	 *     - when multiple return probes are registered for the same
++	 *       function, the first instance's ret_addr will point to the
++	 *       real return address, and all the rest will point to
++	 *       kretprobe_trampoline
++	 */
++	hlist_for_each_entry_safe(ri, node, tmp, head, hlist) {
++		if (ri->task != current)
++			/* another task is sharing our hash bucket */
++			continue;
++
++		if (ri->rp && ri->rp->handler)
++			ri->rp->handler(ri, regs);
++
++		orig_ret_address = (unsigned long)ri->ret_addr;
++		recycle_rp_inst(ri, &empty_rp);
++
++		if (orig_ret_address != trampoline_address) {
++			/*
++			 * This is the real return address. Any other
++			 * instances associated with this task are for
++			 * other calls deeper on the call stack
++			 */
++			break;
++		}
++	}
++
++	kretprobe_assert(ri, orig_ret_address, trampoline_address);
++	regs->ret = orig_ret_address;
++
++	reset_current_kprobe();
++	kretprobe_hash_unlock(current, &flags);
++	preempt_enable_no_resched();
++
++	hlist_for_each_entry_safe(ri, node, tmp, &empty_rp, hlist) {
++		hlist_del(&ri->hlist);
++		kfree(ri);
++	}
++
++	/* By returning a non zero value, we are telling the kprobe handler
++	 * that we don't want the post_handler to run
++	 */
++	return 1;
++}
++
++static struct kprobe trampoline_p = {
++	.addr = (kprobe_opcode_t *) &kretprobe_trampoline,
++	.pre_handler = trampoline_probe_handler
++};
++
++int __init arch_init_kprobes(void)
++{
++	/* Registering the trampoline code for the kret probe */
++	return register_kprobe(&trampoline_p);
++}
++
++int __kprobes arch_trampoline_kprobe(struct kprobe *p)
++{
++	if (p->addr == (kprobe_opcode_t *) &kretprobe_trampoline)
++		return 1;
 +
 +	return 0;
 +}
-+arch_initcall(customize_machine);
 +
-+static int __init init_late_machine(void)
++void trap_is_kprobe(unsigned long cause, unsigned long address,
++		    struct pt_regs *regs)
 +{
-+	if (machine_desc->init_late)
-+		machine_desc->init_late();
-+
-+	return 0;
++	notify_die(DIE_TRAP, "kprobe_trap", regs, address, cause, SIGTRAP);
 +}
-+late_initcall(init_late_machine);
- /*
-  *  Get CPU information for use by the procfs.
-  */
-diff --git a/arch/arc/kernel/smp.c b/arch/arc/kernel/smp.c
-index 1f762ad..ea15f07 100644
---- a/arch/arc/kernel/smp.c
-+++ b/arch/arc/kernel/smp.c
-@@ -32,6 +32,7 @@
- #include <linux/reboot.h>
- #include <asm/processor.h>
+diff --git a/arch/arc/kernel/traps.c b/arch/arc/kernel/traps.c
+index fd2457c..c6396b4 100644
+--- a/arch/arc/kernel/traps.c
++++ b/arch/arc/kernel/traps.c
+@@ -15,6 +15,7 @@
+ #include <linux/uaccess.h>
+ #include <asm/ptrace.h>
  #include <asm/setup.h>
-+#include <asm/mach_desc.h>
++#include <asm/kprobes.h>
  
- arch_spinlock_t smp_atomic_ops_lock = __ARCH_SPIN_LOCK_UNLOCKED;
- arch_spinlock_t smp_bitops_lock = __ARCH_SPIN_LOCK_UNLOCKED;
-@@ -127,6 +128,8 @@ void __cpuinit start_kernel_secondary(void)
- 	pr_info("## CPU%u LIVE ##: Executing Code...\n", cpu);
- 
- 	arc_platform_smp_init_cpu();
-+	if (machine_desc->init_smp)
-+		machine_desc->init_smp(smp_processor_id());
- 
- 	arc_local_timer_setup(cpu);
- 
-diff --git a/arch/arc/kernel/time.c b/arch/arc/kernel/time.c
-index 05dba11..0ce0e6f 100644
---- a/arch/arc/kernel/time.c
-+++ b/arch/arc/kernel/time.c
-@@ -43,6 +43,7 @@
- #include <asm/irq.h>
- #include <asm/arcregs.h>
- #include <asm/clk.h>
-+#include <asm/mach_desc.h>
- 
- #define ARC_TIMER_MAX	0xFFFFFFFF
- 
-@@ -258,6 +259,9 @@ void __init time_init(void)
- 
- 	/* sets up the periodic event timer */
- 	arc_local_timer_setup(smp_processor_id());
-+
-+	if (machine_desc->init_time)
-+		machine_desc->init_time();
+ void __init trap_init(void)
+ {
+@@ -90,6 +91,7 @@ void do_machine_check_fault(unsigned long cause, unsigned long address,
+ 	die("Machine Check Exception", regs, address, cause);
  }
  
- #ifdef CONFIG_ARC_HAS_RTSC
-diff --git a/arch/arc/kernel/vmlinux.lds.S b/arch/arc/kernel/vmlinux.lds.S
-index 8d3b0d4..622d8b6 100644
---- a/arch/arc/kernel/vmlinux.lds.S
-+++ b/arch/arc/kernel/vmlinux.lds.S
-@@ -75,6 +75,12 @@ SECTIONS
- 		SECURITY_INITCALL
- 	}
- 
-+	.init.arch.info : {
-+		__arch_info_begin = .;
-+		*(.arch.info.init)
-+		__arch_info_end = .;
-+	}
 +
- 	PERCPU_SECTION(L1_CACHE_BYTES)
+ /*
+  * Entry point for traps induced by ARCompact TRAP_S <n> insn
+  * This is same family as TRAP0/SWI insn (use the same vector).
+@@ -109,6 +111,10 @@ void do_non_swi_trap(unsigned long cause, unsigned long address,
+ 		trap_is_brkpt(cause, address, regs);
+ 		break;
  
- 	/*
++	case 2:
++		trap_is_kprobe(param, address, regs);
++		break;
++
+ 	default:
+ 		break;
+ 	}
+@@ -116,10 +122,17 @@ void do_non_swi_trap(unsigned long cause, unsigned long address,
+ 
+ /*
+  * Entry point for Instruction Error Exception
++ *  -For a corner case, ARC kprobes implementation resorts to using
++ *   this exception, hence the check
+  */
+ void do_insterror_or_kprobe(unsigned long cause,
+ 				       unsigned long address,
+ 				       struct pt_regs *regs)
+ {
++	/* Check if this exception is caused by kprobes */
++	if (notify_die(DIE_IERR, "kprobe_ierr", regs, address,
++		       cause, SIGILL) == NOTIFY_STOP)
++		return;
++
+ 	insterror_is_error(cause, address, regs);
+ }
 -- 
 1.7.4.1
 
