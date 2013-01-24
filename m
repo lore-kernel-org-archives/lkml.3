@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab3AXDqr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:46:47 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59132 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755361Ab3AXDpd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:45:33 -0500
+	id S1755473Ab3AXDrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:47:18 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:38586 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753575Ab3AXDp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 22:45:27 -0500
 From: "Patil, Rachna" <rachna@ti.com>
 To: <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
@@ -20,9 +19,9 @@ CC: Samuel Ortiz <sameo@linux.intel.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
         <gururaja.hebbar@ti.com>, "Patil, Rachna" <rachna@ti.com>
-Subject: [PATCH v4 7/8] IIO: ti_am335x_adc: Add DT support
-Date: Thu, 24 Jan 2013 09:15:11 +0530
-Message-ID: <1358999112-31192-8-git-send-email-rachna@ti.com>
+Subject: [PATCH v4 3/8] input: touchscreen: ti_tsc: remove unwanted fifo flush
+Date: Thu, 24 Jan 2013 09:15:07 +0530
+Message-ID: <1358999112-31192-4-git-send-email-rachna@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358999112-31192-1-git-send-email-rachna@ti.com>
 References: <1358999112-31192-1-git-send-email-rachna@ti.com>
@@ -34,69 +33,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Patil, Rachna" <rachna@ti.com>
 
-Add DT support for client ADC driver.
+When touchscreen and ADC are used together, this
+unwanted fifo flush leads to loss of ADC data.
 
 Signed-off-by: Patil, Rachna <rachna@ti.com>
 ---
-Changes in v4:
-	Non-standard properties prefixed with vendor name.
+ drivers/input/touchscreen/ti_am335x_tsc.c |   10 ----------
+ 1 file changed, 10 deletions(-)
 
- drivers/iio/adc/ti_am335x_adc.c |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index cd030e1..8e7b089 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -22,6 +22,8 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/iio/iio.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
+diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
+index 0c460f9..064d2b2 100644
+--- a/drivers/input/touchscreen/ti_am335x_tsc.c
++++ b/drivers/input/touchscreen/ti_am335x_tsc.c
+@@ -308,8 +308,6 @@ static irqreturn_t titsc_irq(int irq, void *dev)
+ 	unsigned int x = 0, y = 0;
+ 	unsigned int z1, z2, z;
+ 	unsigned int fsm;
+-	unsigned int fifo1count, fifo0count;
+-	int i;
  
- #include <linux/mfd/ti_am335x_tscadc.h>
- #include <linux/platform_data/ti_am335x_adc.h>
-@@ -141,11 +143,12 @@ static int tiadc_probe(struct platform_device *pdev)
- 	struct iio_dev		*indio_dev;
- 	struct tiadc_device	*adc_dev;
- 	struct ti_tscadc_dev	*tscadc_dev = pdev->dev.platform_data;
--	struct mfd_tscadc_board	*pdata;
-+	struct mfd_tscadc_board	*pdata = tscadc_dev->dev->platform_data;
-+	struct device_node	*node = tscadc_dev->dev->of_node;
- 	int			err;
-+	u32			val32;
+ 	status = titsc_readl(ts_dev, REG_IRQSTATUS);
+ 	if (status & IRQENB_FIFO0THRES) {
+@@ -318,14 +316,6 @@ static irqreturn_t titsc_irq(int irq, void *dev)
+ 		z1 = titsc_readl(ts_dev, REG_FIFO0) & 0xfff;
+ 		z2 = titsc_readl(ts_dev, REG_FIFO1) & 0xfff;
  
--	pdata = tscadc_dev->dev->platform_data;
--	if (!pdata || !pdata->adc_init) {
-+	if (!pdata && !node) {
- 		dev_err(&pdev->dev, "Could not find platform data\n");
- 		return -EINVAL;
- 	}
-@@ -159,7 +162,22 @@ static int tiadc_probe(struct platform_device *pdev)
- 	adc_dev = iio_priv(indio_dev);
- 
- 	adc_dev->mfd_tscadc = tscadc_dev;
--	adc_dev->channels = pdata->adc_init->adc_channels;
-+
-+	if (pdata)
-+		adc_dev->channels = pdata->adc_init->adc_channels;
-+	else {
-+		node = of_find_node_by_name(node, "adc");
-+		if (!node)
-+			return  -EINVAL;
-+		else {
-+			err = of_property_read_u32(node,
-+					"ti,adc-channels", &val32);
-+			if (err < 0)
-+				goto err_free_device;
-+			else
-+				adc_dev->channels = val32;
-+		}
-+	}
- 
- 	indio_dev->dev.parent = &pdev->dev;
- 	indio_dev->name = dev_name(&pdev->dev);
+-		fifo1count = titsc_readl(ts_dev, REG_FIFO1CNT);
+-		for (i = 0; i < fifo1count; i++)
+-			titsc_readl(ts_dev, REG_FIFO1);
+-
+-		fifo0count = titsc_readl(ts_dev, REG_FIFO0CNT);
+-		for (i = 0; i < fifo0count; i++)
+-			titsc_readl(ts_dev, REG_FIFO0);
+-
+ 		if (ts_dev->pen_down && z1 != 0 && z2 != 0) {
+ 			/*
+ 			 * Calculate pressure using formula
 -- 
 1.7.9.5
 
