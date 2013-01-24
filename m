@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab3AXGqj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 01:46:39 -0500
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:13440
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751199Ab3AXGqd (ORCPT
+	id S1752354Ab3AXGvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 01:51:24 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:53683 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278Ab3AXGvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 01:46:33 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(z37d5kzzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1155h)
-From: Vakul Garg <vakul@freescale.com>
-To: <linux-crypto@vger.kernel.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vakul Garg <vakul@freescale.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCHv2] crypto: caam - Added property fsl,sec-era in SEC4.0 device tree binding.
-Date: Thu, 24 Jan 2013 12:13:46 +0530
-Message-ID: <1359009826-32483-1-git-send-email-vakul@freescale.com>
-X-Mailer: git-send-email 1.7.7.6
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Thu, 24 Jan 2013 01:51:16 -0500
+Message-ID: <1359010272.5833.39.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
+From: Mike Galbraith <bitbucket@online.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
+        mingo@kernel.org, a.p.zijlstra@chello.nl
+Date: Thu, 24 Jan 2013 07:51:12 +0100
+In-Reply-To: <5100CE1F.7080704@linux.vnet.ibm.com>
+References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com>
+	 <1358750523.4994.55.camel@marge.simpson.net>
+	 <1358752180.4994.65.camel@marge.simpson.net>
+	 <50FCF212.3010504@linux.vnet.ibm.com>
+	 <1358759355.4994.108.camel@marge.simpson.net>
+	 <50FD08E1.8000302@linux.vnet.ibm.com>
+	 <1358761496.4994.118.camel@marge.simpson.net>
+	 <50FE0ADC.6060701@linux.vnet.ibm.com>
+	 <1358841795.5782.255.camel@marge.simpson.net>
+	 <50FE5433.1070801@linux.vnet.ibm.com>
+	 <1358865692.5782.420.camel@marge.simpson.net>
+	 <50FF4EA0.1070000@linux.vnet.ibm.com>
+	 <1358915494.5752.46.camel@marge.simpson.net>
+	 <50FF7086.4020509@linux.vnet.ibm.com>
+	 <1358922520.5752.91.camel@marge.simpson.net>
+	 <50FF8CD8.4060105@linux.vnet.ibm.com>
+	 <1358929257.5752.109.camel@marge.simp! son.net>
+	 <50FF9F92.60202@linux.vnet.ibm.com>
+	 <1358930968.5752.123.camel@marge.simpson.net>
+	 <50FFA695.6010407@linux.vnet.ibm.com>
+	 <1358932694.5752.126.camel@marge.simpson.net>
+	 <1358933555.5752.132.camel@marge.simpson.net>
+	 <5100CE1F.7080704@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:f3P9MSyyM0Sx1aL8JJbZt6Q9wXpm4/PaOFQoZQk/nMG
+ s+ynK+J/IYKuX/9s92UHUVDTGRW3A84Zu/DMsvipxqpt78F7nI
+ R8H9P06N+aI7p0ZmUnx1fmISltiEVl6h0z5qgc7fwKW//2+3DB
+ svDcSMAVUeKZ+URvAXI5UpruZZoefPm3HWzwAbdev3E1RtUl+f
+ XA9AGUuWMV9W17MwaIBEr/GWa33M+im0Ze4eClWanGGezlqJWZ
+ VzXyOw8qwVbjD5nhxBhzHbDigRfBPA98FcbwukdPA2KIHwhhp8
+ NtTark/G9JVQJ5drKHQ0KGeaRzctk/IKgq6ewMojkJFzhheHO8
+ DvGwIXfbKig9eGsKN5LOBKsFT/SncdE+fdhO0skK+SQnp/dm92
+ hKXykMO3wHt1Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This new property defines the era of the particular SEC version.
-The compatible property in device tree "crypto" node has been updated
-not to contain SEC era numbers.
+On Thu, 2013-01-24 at 14:01 +0800, Michael Wang wrote:
 
-Signed-off-by: Vakul Garg <vakul@freescale.com>
----
-Changes in v1:
-	1. Marked fsl,sec-era as 'optional'.
+> I've enabled WAKE flag on my box like you did, but still can't see
+> regression, and I've just tested on a power server with 64 cpu, also
+> failed to reproduce the issue (not compared with virgin yet, but can't
+> see collapse).
 
-Changes in v2:
-	1. Changed 'fsl,sec-era' in example from hex to decimal.
+I'm not surprised.  I'm seeing enough inconsistent crap to come to the
+conclusion that stock scheduler knobs flat can't be used on a largish
+box, they're just too preempt-happy, leading to weird crap.
 
- .../devicetree/bindings/crypto/fsl-sec4.txt        |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+My 2 missing nodes came back, and the very same kernel that highly
+repeatably collapsed with 2 nodes does not with 4 nodes, and 2 nodes
+does not collapse with only preemption knob tweaking, and that's
+bullshit.  Virgin shows instability in the mid-range, make a tiny tweak
+that should have little if any effect there, and that instability
+vanishes entirely.  Test runs are not consistent enough boot to boot etc
+etc.  Either stock knobs suck on NUMA boxen, or this box is possessed.
 
-diff --git a/Documentation/devicetree/bindings/crypto/fsl-sec4.txt b/Documentation/devicetree/bindings/crypto/fsl-sec4.txt
-index fc9ce6f..dc40055 100644
---- a/Documentation/devicetree/bindings/crypto/fsl-sec4.txt
-+++ b/Documentation/devicetree/bindings/crypto/fsl-sec4.txt
-@@ -54,8 +54,13 @@ PROPERTIES
-    - compatible
-       Usage: required
-       Value type: <string>
--      Definition: Must include "fsl,sec-v4.0". Also includes SEC
--           ERA versions (optional) with which the device is compatible.
-+      Definition: Must include "fsl,sec-v4.0"
-+
-+   - fsl,sec-era
-+      Usage: optional
-+      Value type: <u32>
-+      Definition: A standard property. Define the 'ERA' of the SEC
-+          device.
- 
-    - #address-cells
-        Usage: required
-@@ -107,7 +112,8 @@ PROPERTIES
- 
- EXAMPLE
- 	crypto@300000 {
--		compatible = "fsl,sec-v4.0", "fsl,sec-era-v2.0";
-+		compatible = "fsl,sec-v4.0";
-+		fsl,sec-era = <2>;
- 		#address-cells = <1>;
- 		#size-cells = <1>;
- 		reg = <0x300000 0x10000>;
--- 
-1.7.7.6
-
+-Mike
 
