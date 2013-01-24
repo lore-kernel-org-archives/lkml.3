@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422686Ab3AXVUy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:20:54 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41274 "EHLO mail.kernel.org"
+	id S932274Ab3AXVVF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:21:05 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41287 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422642Ab3AXVT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1422666Ab3AXVT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jan 2013 16:19:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shuah Khan <shuah.khan@hp.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>
-Subject: [ 15/15] ioat: Fix DMA memory sync direction correct flag
-Date: Thu, 24 Jan 2013 13:18:39 -0800
-Message-Id: <20130124211729.429168479@linuxfoundation.org>
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Abdallah Chatila <abdallah.chatila@ericsson.com>
+Subject: [ 10/15] drm/i915: Implement WaDisableHiZPlanesWhenMSAAEnabled
+Date: Thu, 24 Jan 2013 13:18:34 -0800
+Message-Id: <20130124211727.549433922@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211723.489089115@linuxfoundation.org>
 References: <20130124211723.489089115@linuxfoundation.org>
@@ -26,66 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shuah Khan <shuah.khan@hp.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit ac4989874af56435c308bdde9ad9c837a26f8b23 upstream.
+commit 4283908ef7f11a72c3b80dd4cf026f1a86429f82 upstream.
 
-ioat does DMA memory sync with DMA_TO_DEVICE direction on a buffer allocated
-for DMA_FROM_DEVICE dma, resulting in the following warning from dma debug.
-Fixed the dma_sync_single_for_device() call to use the correct direction.
+Quoting from Bspec, 3D_CHICKEN1, bit 10
 
-[  226.288947] WARNING: at lib/dma-debug.c:990 check_sync+0x132/0x550()
-[  226.288948] Hardware name: ProLiant DL380p Gen8
-[  226.288951] ioatdma 0000:00:04.0: DMA-API: device driver syncs DMA memory with different direction [device address=0x00000000ffff7000] [size=4096 bytes] [mapped with DMA_FROM_DEVICE] [synced with DMA_TO_DEVICE]
-[  226.288953] Modules linked in: iTCO_wdt(+) sb_edac(+) ioatdma(+) microcode serio_raw pcspkr edac_core hpwdt(+) iTCO_vendor_support hpilo(+) dca acpi_power_meter ata_generic pata_acpi sd_mod crc_t10dif ata_piix libata hpsa tg3 netxen_nic(+) sunrpc dm_mirror dm_region_hash dm_log dm_mod
-[  226.288967] Pid: 1055, comm: work_for_cpu Tainted: G        W    3.3.0-0.20.el7.x86_64 #1
-[  226.288968] Call Trace:
-[  226.288974]  [<ffffffff810644cf>] warn_slowpath_common+0x7f/0xc0
-[  226.288977]  [<ffffffff810645c6>] warn_slowpath_fmt+0x46/0x50
-[  226.288980]  [<ffffffff81345502>] check_sync+0x132/0x550
-[  226.288983]  [<ffffffff81345c9f>] debug_dma_sync_single_for_device+0x3f/0x50
-[  226.288988]  [<ffffffff81661002>] ? wait_for_common+0x72/0x180
-[  226.288995]  [<ffffffffa019590f>] ioat_xor_val_self_test+0x3e5/0x832 [ioatdma]
-[  226.288999]  [<ffffffff811a5739>] ? kfree+0x259/0x270
-[  226.289004]  [<ffffffffa0195d77>] ioat3_dma_self_test+0x1b/0x20 [ioatdma]
-[  226.289008]  [<ffffffffa01952c3>] ioat_probe+0x2f8/0x348 [ioatdma]
-[  226.289011]  [<ffffffffa0195f51>] ioat3_dma_probe+0x1d5/0x2aa [ioatdma]
-[  226.289016]  [<ffffffffa0194d12>] ioat_pci_probe+0x139/0x17c [ioatdma]
-[  226.289020]  [<ffffffff81354b8c>] local_pci_probe+0x5c/0xd0
-[  226.289023]  [<ffffffff81083e50>] ? destroy_work_on_stack+0x20/0x20
-[  226.289025]  [<ffffffff81083e68>] do_work_for_cpu+0x18/0x30
-[  226.289029]  [<ffffffff8108d997>] kthread+0xb7/0xc0
-[  226.289033]  [<ffffffff8166cef4>] kernel_thread_helper+0x4/0x10
-[  226.289036]  [<ffffffff81662d20>] ? _raw_spin_unlock_irq+0x30/0x50
-[  226.289038]  [<ffffffff81663234>] ? retint_restore_args+0x13/0x13
-[  226.289041]  [<ffffffff8108d8e0>] ? kthread_worker_fn+0x1a0/0x1a0
-[  226.289044]  [<ffffffff8166cef0>] ? gs_change+0x13/0x13
-[  226.289045] ---[ end trace e1618afc7a606089 ]---
-[  226.289047] Mapped at:
-[  226.289048]  [<ffffffff81345307>] debug_dma_map_page+0x87/0x150
-[  226.289050]  [<ffffffffa019653c>] dma_map_page.constprop.18+0x70/0xb34 [ioatdma]
-[  226.289054]  [<ffffffffa0195702>] ioat_xor_val_self_test+0x1d8/0x832 [ioatdma]
-[  226.289058]  [<ffffffffa0195d77>] ioat3_dma_self_test+0x1b/0x20 [ioatdma]
-[  226.289061]  [<ffffffffa01952c3>] ioat_probe+0x2f8/0x348 [ioatdma]
+This bit needs to be set always to "1", Project: DevSNB "
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Abdallah Chatila <abdallah.chatila@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/ioat/dma_v3.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_reg.h      |    3 +++
+ drivers/gpu/drm/i915/intel_display.c |    4 ++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -949,7 +949,7 @@ static int __devinit ioat_xor_val_self_t
- 			goto free_resources;
- 		}
- 	}
--	dma_sync_single_for_device(dev, dest_dma, PAGE_SIZE, DMA_TO_DEVICE);
-+	dma_sync_single_for_device(dev, dest_dma, PAGE_SIZE, DMA_FROM_DEVICE);
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -27,6 +27,8 @@
  
- 	/* skip validate if the capability is not present */
- 	if (!dma_has_cap(DMA_XOR_VAL, dma_chan->device->cap_mask))
+ #define _PIPE(pipe, a, b) ((a) + (pipe)*((b)-(a)))
+ 
++#define _MASKED_BIT_ENABLE(a) (((a) << 16) | (a))
++
+ /*
+  * The Bridge device's PCI config space has information about the
+  * fb aperture size and the amount of pre-reserved memory.
+@@ -354,6 +356,7 @@
+  * the enables for writing to the corresponding low bit.
+  */
+ #define _3D_CHICKEN	0x02084
++#define _3D_CHICKEN_HIZ_PLANE_DISABLE_MSAA_4X_SNB	(1 << 10)
+ #define _3D_CHICKEN2	0x0208c
+ /* Disables pipelining of read flushes past the SF-WIZ interface.
+  * Required on all Ironlake steppings according to the B-Spec, but the
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7412,6 +7412,10 @@ static void gen6_init_clock_gating(struc
+ 		   I915_READ(ILK_DISPLAY_CHICKEN2) |
+ 		   ILK_ELPIN_409_SELECT);
+ 
++	/* WaDisableHiZPlanesWhenMSAAEnabled */
++	I915_WRITE(_3D_CHICKEN,
++		   _MASKED_BIT_ENABLE(_3D_CHICKEN_HIZ_PLANE_DISABLE_MSAA_4X_SNB));
++
+ 	I915_WRITE(WM3_LP_ILK, 0);
+ 	I915_WRITE(WM2_LP_ILK, 0);
+ 	I915_WRITE(WM1_LP_ILK, 0);
 
 
