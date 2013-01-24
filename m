@@ -1,51 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945908Ab3AXXSk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 18:18:40 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:46303 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754818Ab3AXXSd (ORCPT
+	id S1756633Ab3AXXUx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 18:20:53 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:49990 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754818Ab3AXXUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 18:18:33 -0500
-MIME-Version: 1.0
-X-Originating-IP: [86.16.28.30]
-Date: Fri, 25 Jan 2013 00:18:32 +0100
-Message-ID: <CAEpun2ZqgWVcVwRwEN6Z0ggmoffhwpcH05EMZ3R5MzYBGAc1nQ@mail.gmail.com>
-Subject: My new tool/service - identify unknown kernel source trees
-From: Tomasz Mloduchowski <q@qdot.me>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 24 Jan 2013 18:20:46 -0500
+Date: Fri, 25 Jan 2013 10:20:36 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: David Miller <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: linux-next: New trees - ipsec and ipsec-next
+Message-Id: <20130125102036.c04539e1b0beb2f44f8394cd@canb.auug.org.au>
+In-Reply-To: <20130124061315.GI9147@secunet.com>
+References: <20130124061315.GI9147@secunet.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__25_Jan_2013_10_20_36_+1100_/z8INOA_5h4.dzCH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+--Signature=_Fri__25_Jan_2013_10_20_36_+1100_/z8INOA_5h4.dzCH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Every now and then I see a tree of kernel sources, contributed in good
-faith and compliance with the GPL, by some hardware vendor, or even
-worse, a hardware distributor, without any explanation of the changes
-made, or even which official tree is it based on.
+Hi Steffen,
 
-Usually, some hunting reveals that they branched off the tree
-maintained by the SoC manufacturer, and few diffs later, the
-investigative part is over.
+On Thu, 24 Jan 2013 07:13:15 +0100 Steffen Klassert <steffen.klassert@secun=
+et.com> wrote:
+>
+> could you please add the ipsec and ipsec-next tree to linux-next?
+>=20
+> The ipsec tree is intended to cover fixes for the ipsec networking
+> subsystem and the ipsec-next tree to cover changes for ipsec with
+> linux-next as target.
+>=20
+> The trees are located at:
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/klassert/ipsec.git master
+> git://git.kernel.org/pub/scm/linux/kernel/git/klassert/ipsec-next.git mas=
+ter
+>=20
+> The ipsec tree follows David Miller's net tree, the ipsec-next tree follo=
+ws
+> the net-next tree. So they should be merged after net and net-next.
 
+Added from today with just you as the contact.
 
-It had happened for me again, few days ago. I decided to implement a
-more automated solution, and I would like to hear your feedback, and
-whether (which) kernel trees are notable enough as points of
-divergence, to include in this tool.
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
 
-Before you ask - most of these 'unidentified' sources are lacking git metadata.
-Before you ask again - make kernelversion can sometimes reveal what it
-is, but only for direct offspring of official trees.
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
 
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
 
-Enough of the introduction, if it's something that you find useful,
-please head to:
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
 
-http://qdot.me/kids
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
 
+--Signature=_Fri__25_Jan_2013_10_20_36_+1100_/z8INOA_5h4.dzCH
+Content-Type: application/pgp-signature
 
-Cheers!
-Tomasz
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRAcHFAAoJEECxmPOUX5FESh4P/0xaWNcU9Ki3RPwxPjhIT9yJ
+JEKS5w0PTwPeqJnwqIWz/glB4jEC45Uskvwn/QFmXfFPcQVWBYuyDaHhKgq5hk+r
+K8wAT2zOhq1ZLouA42So6vt+pXtwImOMl7E1V0rSvxFzvQpBI+Vx2nPNQ3DkRwC2
+JtEF0rtqqM2rcsgWUkWhm1Rc37r8zuj9PbxipqX1dUlZ68yQpsObBxUwk02336Z6
+Br3WhK1zmYqwzJkVPf/PiY0L/3pp3clrr9PAIpWBJVy50pN8HkmUgaZjjPORU8r9
+DXvMwZc3UuaUcc/utTUwVEhCA5/UPvCkQ2AtWF9jhBEu7KUfF4KHiK8fNqacKn02
+657RVASjf1lsme3ukwB8MGtiGCWdeBKdNiPN8j03Z5PgyBAyW/BE2fyv1i7XUnS0
+sHj7sx/VUdHrW//mJWYx22xy9Vl3zN+nhTgT7IRD8IlvnCYqeDaSbatgyGg5UtZo
+48mPC9nxupQhFeTqbebWJrIF1XgIEocSc+P+xttbDceRFFQbZ+tkUQpMBaqsLZ2N
+JFayp0ByJUGHETJO5VibMlKVjyvns5JLAzm7xnv+6cNoOEecAdmU/tG3eRBb6P3U
+9CtlwZHGJ4VBLXaGN/l3t+ctlIG5E5wDjZvLTbiv8tyK2fqLNn8tBYATGxyMMThj
+JImb8I53N+v4Cd9gTwop
+=17vy
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__25_Jan_2013_10_20_36_+1100_/z8INOA_5h4.dzCH--
