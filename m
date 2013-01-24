@@ -1,104 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734Ab3AXLLr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:11:47 -0500
-Received: from hermes.synopsys.com ([198.182.44.81]:34155 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754420Ab3AXLLA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:11:00 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH v3 49/71] sysctl: Enable PARISC "unaligned-trap" to be used cross-arch
-Date: Thu, 24 Jan 2013 16:36:13 +0530
-Message-ID: <1359025589-22277-30-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
-References: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
+	id S1754750Ab3AXLL4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:11:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35384 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754412Ab3AXLK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 06:10:59 -0500
+Date: Thu, 24 Jan 2013 12:13:40 +0100
+From: Borislav Petkov <bp@suse.de>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Alec Bickerton <alec@theangrymob.co.uk>, linux-kbuild@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add Intel Ivy bridge CPU flags
+Message-ID: <20130124111340.GB13471@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@suse.de>,
+	Michal Marek <mmarek@suse.cz>,
+	Alec Bickerton <alec@theangrymob.co.uk>,
+	linux-kbuild@vger.kernel.org, x86@kernel.org,
+	linux-kernel@vger.kernel.org
+References: <51002135.2060302@theangrymob.co.uk>
+ <20130124105343.GA30701@sepie.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.205]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130124105343.GA30701@sepie.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PARISC defines /proc/sys/kernel/unaligned-trap to runtime toggle
-unaligned access emulation.
+On Thu, Jan 24, 2013 at 11:53:43AM +0100, Michal Marek wrote:
+> On Wed, Jan 23, 2013 at 06:43:17PM +0100, Alec Bickerton wrote:
+> > Hi,
+> > 
+> > I'd like to submit the attached patch to add Ivy Bridge processor support to the
+> > processor type menu in menuconfig. Setting this configures the appropriate
+> > CFLAGS (core-avx-i) for ivy bridge.
+> > 
+> > As this is my first kbuild patch, could somebody review it and let me know what
+> > I've done wrong. ;-)
+> 
+> You sent it to linux-kbuild instead of x86@kernel.org. The kbuild
+> maintainer is not really knowledgeable about gcc optimisation options ;).
+> Nevertheless, some random comments are below. Note that I am not
+> saying if the config option is useful or not.
 
-The exact mechanics of enablig/disabling are still arch specific, we can
-make the sysctl usable by other arches.
+Normally, such optimizations have a little effect on the kernel because
+it doesn't normally use fpu stuff and the rest of the instructions
+we need, we add ourselves (see arch/x86/include/asm/archrandom.h for
+RDRAND, for example).
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Acked-by: Helge Deller <deller@gmx.de>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Helge Deller <deller@gmx.de>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
----
- arch/parisc/Kconfig |    1 +
- init/Kconfig        |    8 ++++++++
- kernel/sysctl.c     |    5 +++++
- 3 files changed, 14 insertions(+), 0 deletions(-)
+So, first we'd need persuasive benchmark numbers which show that a
+kernel built with core-avx-i is faster at some representative workload
+than mtune=generic one...
 
-diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
-index b77feff..8c76095 100644
---- a/arch/parisc/Kconfig
-+++ b/arch/parisc/Kconfig
-@@ -20,6 +20,7 @@ config PARISC
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_SMP_IDLE_THREAD
- 	select GENERIC_STRNCPY_FROM_USER
-+	select SYSCTL_ARCH_UNALIGN_ALLOW
- 	select HAVE_MOD_ARCH_SPECIFIC
- 	select MODULES_USE_ELF_RELA
- 	select CLONE_BACKWARDS
-diff --git a/init/Kconfig b/init/Kconfig
-index be8b7f5..01180da 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1232,6 +1232,14 @@ config SYSCTL_EXCEPTION_TRACE
- 	help
- 	  Enable support for /proc/sys/debug/exception-trace.
- 
-+config SYSCTL_ARCH_UNALIGN_ALLOW
-+	bool
-+	help
-+	  Enable support for /proc/sys/kernel/unaligned-trap
-+	  Allows arches to define/use @unaligned_enabled to runtime toggle
-+	  the unaligned access emulation.
-+	  see arch/parisc/kernel/unaligned.c for reference
-+
- config KALLSYMS
- 	 bool "Load all symbols for debugging/ksymoops" if EXPERT
- 	 default y
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c88878d..878b4c4 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -157,6 +157,9 @@ extern int sysctl_tsb_ratio;
- 
- #ifdef __hppa__
- extern int pwrsw_enabled;
-+#endif
-+
-+#ifdef CONFIG_SYSCTL_ARCH_UNALIGN_ALLOW
- extern int unaligned_enabled;
- #endif
- 
-@@ -545,6 +548,8 @@ static struct ctl_table kern_table[] = {
- 	 	.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
-+#endif
-+#ifdef CONFIG_SYSCTL_ARCH_UNALIGN_ALLOW
- 	{
- 		.procname	= "unaligned-trap",
- 		.data		= &unaligned_enabled,
+Thanks.
+
 -- 
-1.7.4.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
