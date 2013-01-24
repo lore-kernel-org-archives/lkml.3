@@ -1,186 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab3AXKep (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:34:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54826 "EHLO mx1.redhat.com"
+	id S1753830Ab3AXKfH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:35:07 -0500
+Received: from mga01.intel.com ([192.55.52.88]:38408 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753483Ab3AXKee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:34:34 -0500
-Date: Thu, 24 Jan 2013 12:38:42 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V6 2/3] vhost_net: handle polling errors when setting
- backend
-Message-ID: <20130124103842.GD9368@redhat.com>
-References: <1358351078-58915-1-git-send-email-jasowang@redhat.com>
- <1358351078-58915-3-git-send-email-jasowang@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358351078-58915-3-git-send-email-jasowang@redhat.com>
+	id S1753483Ab3AXKes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 05:34:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,528,1355126400"; 
+   d="scan'208";a="281604437"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v3 4/4] dw_dmac: return proper residue value
+Date: Thu, 24 Jan 2013 12:34:20 +0200
+Message-Id: <1359023660-29084-5-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1359023660-29084-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1359023660-29084-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 11:44:37PM +0800, Jason Wang wrote:
-> Currently, the polling errors were ignored, which can lead following issues:
-> 
-> - vhost remove itself unconditionally from waitqueue when stopping the poll,
->   this may crash the kernel since the previous attempt of starting may fail to
->   add itself to the waitqueue
-> - userspace may think the backend were successfully set even when the polling
->   failed.
-> 
-> Solve this by:
-> 
-> - check poll->wqh before trying to remove from waitqueue
-> - report polling errors in vhost_poll_start(), tx_poll_start(), the return value
->   will be checked and returned when userspace want to set the backend
-> 
-> After this fix, there still could be a polling failure after backend is set, it
-> will addressed by the next patch.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+Currently the driver returns full length of the active descriptor which is
+wrong. We have to go throught the active descriptor and substract the length of
+each sent children in the chain from the total length along with the actual
+data in the DMA channel registers.
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+The cyclic case is not handled by this patch due to len field in the descriptor
+structure is left untouched by the original code.
 
-> ---
->  drivers/vhost/net.c   |   27 ++++++++++++++++++---------
->  drivers/vhost/vhost.c |   18 +++++++++++++++---
->  drivers/vhost/vhost.h |    2 +-
->  3 files changed, 34 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index d10ad6f..959b1cd 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -165,12 +165,16 @@ static void tx_poll_stop(struct vhost_net *net)
->  }
->  
->  /* Caller must have TX VQ lock */
-> -static void tx_poll_start(struct vhost_net *net, struct socket *sock)
-> +static int tx_poll_start(struct vhost_net *net, struct socket *sock)
->  {
-> +	int ret;
-> +
->  	if (unlikely(net->tx_poll_state != VHOST_NET_POLL_STOPPED))
-> -		return;
-> -	vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
-> -	net->tx_poll_state = VHOST_NET_POLL_STARTED;
-> +		return 0;
-> +	ret = vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
-> +	if (!ret)
-> +		net->tx_poll_state = VHOST_NET_POLL_STARTED;
-> +	return ret;
->  }
->  
->  /* In case of DMA done not in order in lower device driver for some reason.
-> @@ -642,20 +646,23 @@ static void vhost_net_disable_vq(struct vhost_net *n,
->  		vhost_poll_stop(n->poll + VHOST_NET_VQ_RX);
->  }
->  
-> -static void vhost_net_enable_vq(struct vhost_net *n,
-> +static int vhost_net_enable_vq(struct vhost_net *n,
->  				struct vhost_virtqueue *vq)
->  {
->  	struct socket *sock;
-> +	int ret;
->  
->  	sock = rcu_dereference_protected(vq->private_data,
->  					 lockdep_is_held(&vq->mutex));
->  	if (!sock)
-> -		return;
-> +		return 0;
->  	if (vq == n->vqs + VHOST_NET_VQ_TX) {
->  		n->tx_poll_state = VHOST_NET_POLL_STOPPED;
-> -		tx_poll_start(n, sock);
-> +		ret = tx_poll_start(n, sock);
->  	} else
-> -		vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
-> +		ret = vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
-> +
-> +	return ret;
->  }
->  
->  static struct socket *vhost_net_stop_vq(struct vhost_net *n,
-> @@ -833,7 +840,9 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
->  		r = vhost_init_used(vq);
->  		if (r)
->  			goto err_used;
-> -		vhost_net_enable_vq(n, vq);
-> +		r = vhost_net_enable_vq(n, vq);
-> +		if (r)
-> +			goto err_used;
->  
->  		oldubufs = vq->ubufs;
->  		vq->ubufs = ubufs;
-> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-> index 34389f7..9759249 100644
-> --- a/drivers/vhost/vhost.c
-> +++ b/drivers/vhost/vhost.c
-> @@ -77,26 +77,38 @@ void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
->  	init_poll_funcptr(&poll->table, vhost_poll_func);
->  	poll->mask = mask;
->  	poll->dev = dev;
-> +	poll->wqh = NULL;
->  
->  	vhost_work_init(&poll->work, fn);
->  }
->  
->  /* Start polling a file. We add ourselves to file's wait queue. The caller must
->   * keep a reference to a file until after vhost_poll_stop is called. */
-> -void vhost_poll_start(struct vhost_poll *poll, struct file *file)
-> +int vhost_poll_start(struct vhost_poll *poll, struct file *file)
->  {
->  	unsigned long mask;
-> +	int ret = 0;
->  
->  	mask = file->f_op->poll(file, &poll->table);
->  	if (mask)
->  		vhost_poll_wakeup(&poll->wait, 0, 0, (void *)mask);
-> +	if (mask & POLLERR) {
-> +		if (poll->wqh)
-> +			remove_wait_queue(poll->wqh, &poll->wait);
-> +		ret = -EINVAL;
-> +	}
-> +
-> +	return ret;
->  }
->  
->  /* Stop polling a file. After this function returns, it becomes safe to drop the
->   * file reference. You must also flush afterwards. */
->  void vhost_poll_stop(struct vhost_poll *poll)
->  {
-> -	remove_wait_queue(poll->wqh, &poll->wait);
-> +	if (poll->wqh) {
-> +		remove_wait_queue(poll->wqh, &poll->wait);
-> +		poll->wqh = NULL;
-> +	}
->  }
->  
->  static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
-> @@ -792,7 +804,7 @@ long vhost_vring_ioctl(struct vhost_dev *d, int ioctl, void __user *argp)
->  		fput(filep);
->  
->  	if (pollstart && vq->handle_kick)
-> -		vhost_poll_start(&vq->poll, vq->kick);
-> +		r = vhost_poll_start(&vq->poll, vq->kick);
->  
->  	mutex_unlock(&vq->mutex);
->  
-> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-> index 2639c58..17261e2 100644
-> --- a/drivers/vhost/vhost.h
-> +++ b/drivers/vhost/vhost.h
-> @@ -42,7 +42,7 @@ void vhost_work_queue(struct vhost_dev *dev, struct vhost_work *work);
->  
->  void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
->  		     unsigned long mask, struct vhost_dev *dev);
-> -void vhost_poll_start(struct vhost_poll *poll, struct file *file);
-> +int vhost_poll_start(struct vhost_poll *poll, struct file *file);
->  void vhost_poll_stop(struct vhost_poll *poll);
->  void vhost_poll_flush(struct vhost_poll *poll);
->  void vhost_poll_queue(struct vhost_poll *poll);
-> -- 
-> 1.7.1
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/dma/dw_dmac.c      |   44 +++++++++++++++++++++++++++++++++++++++++---
+ drivers/dma/dw_dmac_regs.h |    1 +
+ 2 files changed, 42 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 3b788c8..3925318 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -284,6 +284,7 @@ static void dwc_dostart(struct dw_dma_chan *dwc, struct dw_desc *first)
+ 
+ 		dwc_initialize(dwc);
+ 
++		dwc->residue = first->total_len;
+ 		dwc->tx_node_active = &first->tx_list;
+ 
+ 		/* Submit first block */
+@@ -387,6 +388,15 @@ static void dwc_complete_all(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 		dwc_descriptor_complete(dwc, desc, true);
+ }
+ 
++/* Returns how many bytes were already received from source */
++static inline u32 dwc_get_sent(struct dw_dma_chan *dwc)
++{
++	u32 ctlhi = channel_readl(dwc, CTL_HI);
++	u32 ctllo = channel_readl(dwc, CTL_LO);
++
++	return (ctlhi & DWC_CTLH_BLOCK_TS_MASK) * (1 << (ctllo >> 4 & 7));
++}
++
+ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ {
+ 	dma_addr_t llp;
+@@ -414,6 +424,12 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 
+ 			head = &desc->tx_list;
+ 			if (active != head) {
++				if (active == head->next)
++					dwc->residue -= desc->len;
++				else
++					dwc->residue -=
++						to_dw_desc(active->prev)->len;
++
+ 				child = to_dw_desc(active);
+ 
+ 				/* Submit next block */
+@@ -426,6 +442,9 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 			/* We are done here */
+ 			clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
+ 		}
++
++		dwc->residue = 0;
++
+ 		spin_unlock_irqrestore(&dwc->lock, flags);
+ 
+ 		dwc_complete_all(dw, dwc);
+@@ -433,6 +452,7 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 	}
+ 
+ 	if (list_empty(&dwc->active_list)) {
++		dwc->residue = 0;
+ 		spin_unlock_irqrestore(&dwc->lock, flags);
+ 		return;
+ 	}
+@@ -447,6 +467,9 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 			(unsigned long long)llp);
+ 
+ 	list_for_each_entry_safe(desc, _desc, &dwc->active_list, desc_node) {
++		/* initial residue value */
++		dwc->residue = desc->total_len;
++
+ 		/* check first descriptors addr */
+ 		if (desc->txd.phys == llp) {
+ 			spin_unlock_irqrestore(&dwc->lock, flags);
+@@ -456,16 +479,21 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 		/* check first descriptors llp */
+ 		if (desc->lli.llp == llp) {
+ 			/* This one is currently in progress */
++			dwc->residue -= dwc_get_sent(dwc);
+ 			spin_unlock_irqrestore(&dwc->lock, flags);
+ 			return;
+ 		}
+ 
+-		list_for_each_entry(child, &desc->tx_list, desc_node)
++		dwc->residue -= desc->len;
++		list_for_each_entry(child, &desc->tx_list, desc_node) {
+ 			if (child->lli.llp == llp) {
+ 				/* Currently in progress */
++				dwc->residue -= dwc_get_sent(dwc);
+ 				spin_unlock_irqrestore(&dwc->lock, flags);
+ 				return;
+ 			}
++			dwc->residue -= child->len;
++		}
+ 
+ 		/*
+ 		 * No descriptors so far seem to be in progress, i.e.
+@@ -1062,6 +1090,7 @@ dwc_tx_status(struct dma_chan *chan,
+ 	      struct dma_tx_state *txstate)
+ {
+ 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
++	unsigned long		flags;
+ 	enum dma_status		ret;
+ 
+ 	ret = dma_cookie_status(chan, cookie, txstate);
+@@ -1071,8 +1100,17 @@ dwc_tx_status(struct dma_chan *chan,
+ 		ret = dma_cookie_status(chan, cookie, txstate);
+ 	}
+ 
+-	if (ret != DMA_SUCCESS)
+-		dma_set_residue(txstate, dwc_first_active(dwc)->len);
++	spin_lock_irqsave(&dwc->lock, flags);
++
++	if (ret != DMA_SUCCESS) {
++		u32 residue = dwc->residue;
++
++		if (test_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags) && residue)
++			residue -= dwc_get_sent(dwc);
++		dma_set_residue(txstate, residue);
++	}
++
++	spin_unlock_irqrestore(&dwc->lock, flags);
+ 
+ 	if (dwc->paused)
+ 		return DMA_PAUSED;
+diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+index 833b4cf..88dd8eb 100644
+--- a/drivers/dma/dw_dmac_regs.h
++++ b/drivers/dma/dw_dmac_regs.h
+@@ -203,6 +203,7 @@ struct dw_dma_chan {
+ 	struct list_head	active_list;
+ 	struct list_head	queue;
+ 	struct list_head	free_list;
++	u32			residue;
+ 	struct dw_cyclic_desc	*cdesc;
+ 
+ 	unsigned int		descs_allocated;
+-- 
+1.7.10.4
+
