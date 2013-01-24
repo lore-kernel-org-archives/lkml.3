@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab3AXPXD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:23:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47007 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752384Ab3AXPXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:23:01 -0500
-Date: Thu, 24 Jan 2013 16:25:44 +0100
-From: Borislav Petkov <bp@suse.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, ling.ma.program@gmail.com,
-        mingo@redhat.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        Ma Ling <ling.ml@alipay.com>
-Subject: Re: [Suggestion] [x86]: Compiler Option Os is better on latest x86
-Message-ID: <20130124152544.GA13504@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@suse.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-	ling.ma.program@gmail.com, mingo@redhat.com, tglx@linutronix.de,
-	linux-kernel@vger.kernel.org, Ma Ling <ling.ml@alipay.com>
-References: <1356503537-4987-1-git-send-email-ling.ma@alipay.com>
- <20130124141733.GA14876@gmail.com>
- <20130124144612.GC13471@pd.tnic>
- <51014B9A.5080500@zytor.com>
+	id S1754733Ab3AXPXT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:23:19 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:55356 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab3AXPXR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 10:23:17 -0500
+From: Tiana Rakotovao Andriamahefa <rkmahefa@gmail.com>
+To: mmarek@suse.cz
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rkmahefa@gmail.com
+Subject: [PATCH] scripts: kconfig: qconf.cc: fix a compiliation error when using make xconfig
+Date: Thu, 24 Jan 2013 16:20:39 +0000
+Message-Id: <1359044439-13647-1-git-send-email-rkmahefa@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51014B9A.5080500@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 08:56:26AM -0600, H. Peter Anvin wrote:
-> There has been occasional talk about a -Ok(ernel) option to gcc, but
-> that would require someone to go through gcc and figure out what bits
-> makes sense and which don't...
+Le jeudi 24 janvier 2013 à 11:36:31, Michal Marek a écrit :
+> On 16.1.2013 13:26, Tiana Rakotovao Andriamahefa wrote:
+> > I have checked it and found that the error was effectively fixed in the last
+> > maintained upload of Qt3 in 2011. However, the correction is not yet in Wheezy
+> > (Debian testing) which I have used for more than a year. It might be
+> > included there one day!
+> > This is the case of Debian, but not all distros.
+> 
+> OK. And it is dead upstream. So I'll apply your patch. Could you please
+> resend it? I deleted the email already.
 
-Yep, such an option has a great potential for us and, if done right,
-would be very cool. It could probably be taught to insert HWEIGHT,
-RDRAND, CLFLUSH and whatever other insns we have the inline asm versions
-for... and query CPUID before that... uuh, nice stuff.
+Here is the patch.
 
-The alternative would be to fork gcc and call it kcc...
+When using make xconfig, the following compilation error appears :
+   /usr/include/qt3/qvaluelist.h:427:13: error: ‘ptrdiff_t’ does not name a type
+Including stddef.h in scripts/kconfig/qconf.cc permits to avoid this error.
 
-/me runs away pretty quickly without even turning back :-)
+Signed-off-by: Tiana Rakotovao Andriamahefa <rkmahefa@gmail.com>
+---
+ scripts/kconfig/qconf.cc |    1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
+index df274fe..1500c38 100644
+--- a/scripts/kconfig/qconf.cc
++++ b/scripts/kconfig/qconf.cc
+@@ -6,6 +6,7 @@
+ #include <qglobal.h>
+ 
+ #if QT_VERSION < 0x040000
++#include <stddef.h>
+ #include <qmainwindow.h>
+ #include <qvbox.h>
+ #include <qvaluelist.h>
 -- 
-Regards/Gruss,
-    Boris.
+1.7.10.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
