@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161000Ab3AXVa0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:30:26 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40331 "EHLO mail.kernel.org"
+	id S1946024Ab3AXVag (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:30:36 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40316 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756995Ab3AXVOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:14:44 -0500
+	id S1756988Ab3AXVOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:14:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Joel D. Diaz" <joeldiaz@us.ibm.com>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <JBottomley@Parallels.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [ 31/46] SCSI: sd: Reshuffle init_sd to avoid crash
-Date: Thu, 24 Jan 2013 13:13:09 -0800
-Message-Id: <20130124211147.647140241@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 37/46] module: fix missing module_mutex unlock
+Date: Thu, 24 Jan 2013 13:13:15 -0800
+Message-Id: <20130124211149.542636401@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
 References: <20130124211135.862755794@linuxfoundation.org>
@@ -27,66 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Joel D. Diaz" <joeldiaz@us.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit afd5e34b2bb34881d3a789e62486814a49b47faa upstream.
+commit ee61abb3223e28a1a14a8429c0319755d20d3e40 upstream.
 
-scsi_register_driver will register a prep_fn() function, which
-in turn migh need to use the sd_cdp_pool for DIF.
-Which hasn't been initialised at this point, leading to
-a crash. So reshuffle the init_sd() and exit_sd() paths
-to have the driver registered last.
+Commit 1fb9341ac348 ("module: put modules in list much earlier") moved
+some of the module initialization code around, and in the process
+changed the exit paths too.  But for the duplicate export symbol error
+case the change made the ddebug_cleanup path jump to after the module
+mutex unlock, even though it happens with the mutex held.
 
-Signed-off-by: Joel D. Diaz <joeldiaz@us.ibm.com>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Cc: CAI Qian <caiqian@redhat.com>
+Rusty has some patches to split this function up into some helper
+functions, hopefully the mess of complex goto targets will go away
+eventually.
+
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/sd.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ kernel/module.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -3116,10 +3116,6 @@ static int __init init_sd(void)
- 	if (err)
- 		goto err_out;
- 
--	err = scsi_register_driver(&sd_template.gendrv);
--	if (err)
--		goto err_out_class;
--
- 	sd_cdb_cache = kmem_cache_create("sd_ext_cdb", SD_EXT_CDB_SIZE,
- 					 0, 0, NULL);
- 	if (!sd_cdb_cache) {
-@@ -3133,8 +3129,15 @@ static int __init init_sd(void)
- 		goto err_out_cache;
- 	}
- 
-+	err = scsi_register_driver(&sd_template.gendrv);
-+	if (err)
-+		goto err_out_driver;
-+
- 	return 0;
- 
-+err_out_driver:
-+	mempool_destroy(sd_cdb_pool);
-+
- err_out_cache:
- 	kmem_cache_destroy(sd_cdb_cache);
- 
-@@ -3157,10 +3160,10 @@ static void __exit exit_sd(void)
- 
- 	SCSI_LOG_HLQUEUE(3, printk("exit_sd: exiting sd driver\n"));
- 
-+	scsi_unregister_driver(&sd_template.gendrv);
- 	mempool_destroy(sd_cdb_pool);
- 	kmem_cache_destroy(sd_cdb_cache);
- 
--	scsi_unregister_driver(&sd_template.gendrv);
- 	class_unregister(&sd_disk_class);
- 
- 	for (i = 0; i < SD_MAJORS; i++)
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3100,8 +3100,8 @@ again:
+ 	/* module_bug_cleanup needs module_mutex protection */
+ 	mutex_lock(&module_mutex);
+ 	module_bug_cleanup(mod);
+-	mutex_unlock(&module_mutex);
+  ddebug_cleanup:
++	mutex_unlock(&module_mutex);
+ 	dynamic_debug_remove(info.debug);
+ 	synchronize_sched();
+ 	kfree(mod->args);
 
 
