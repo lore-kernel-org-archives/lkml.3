@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945962Ab3AXVXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:23:15 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41261 "EHLO mail.kernel.org"
+	id S1946000Ab3AXVXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:23:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41257 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422665Ab3AXVTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:19:24 -0500
+	id S1422664Ab3AXVTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:19:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 14/15] ACPI / cpuidle: Fix NULL pointer issues when cpuidle is disabled
-Date: Thu, 24 Jan 2013 13:18:38 -0800
-Message-Id: <20130124211729.121059298@linuxfoundation.org>
+        Robin Holt <holt@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 13/15] SGI-XP: handle non-fatal traps
+Date: Thu, 24 Jan 2013 13:18:37 -0800
+Message-Id: <20130124211728.796636943@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211723.489089115@linuxfoundation.org>
 References: <20130124211723.489089115@linuxfoundation.org>
@@ -26,81 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Robin Holt <holt@sgi.com>
 
-commit b88a634a903d9670aa5f2f785aa890628ce0dece upstream.
+commit 891348ca0f66206f1dc0e30d63757e3df1ae2d15 upstream.
 
-If cpuidle is disabled, that means that:
+We found a user code which was raising a divide-by-zero trap.  That trap
+would lead to XPC connections between system-partitions being torn down
+due to the die_chain notifier callouts it received.
 
-	per_cpu(acpi_cpuidle_device, pr->id)
+This also revealed a different issue where multiple callers into
+xpc_die_deactivate() would all attempt to do the disconnect in parallel
+which would sometimes lock up but often overwhelm the console on very
+large machines as each would print at least one line of output at the
+end of the deactivate.
 
-is set to NULL as the acpi_processor_power_init ends up failing at
+I reviewed all the users of the die_chain notifier and changed the code
+to ignore the notifier callouts for reasons which will not actually lead
+to a system to continue on to call die().
 
-	 retval = cpuidle_register_driver(&acpi_idle_driver)
-
-(in acpi_processor_power_init) and never sets the per_cpu idle
-device.  So when acpi_processor_hotplug on CPU online notification
-tries to reference said device it crashes:
-
-cpu 3 spinlock event irq 62
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
-IP: [<ffffffff81381013>] acpi_processor_setup_cpuidle_cx+0x3f/0x105
-PGD a259b067 PUD ab38b067 PMD 0
-Oops: 0002 [#1] SMP
-odules linked in: dm_multipath dm_mod xen_evtchn iscsi_boot_sysfs iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi libcrc32c crc32c nouveau mxm_wmi wmi radeon ttm sg sr_mod sd_mod cdrom ata_generic ata_piix libata crc32c_intel scsi_mod atl1c i915 fbcon tileblit font bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
-CPU 1
-Pid: 3047, comm: bash Not tainted 3.8.0-rc3upstream-00250-g165c029 #1 MSI MS-7680/H61M-P23 (MS-7680)
-RIP: e030:[<ffffffff81381013>]  [<ffffffff81381013>] acpi_processor_setup_cpuidle_cx+0x3f/0x105
-RSP: e02b:ffff88001742dca8  EFLAGS: 00010202
-RAX: 0000000000010be9 RBX: ffff8800a0a61800 RCX: ffff880105380000
-RDX: 0000000000000003 RSI: 0000000000000200 RDI: ffff8800a0a61800
-RBP: ffff88001742dce8 R08: ffffffff81812360 R09: 0000000000000200
-R10: aaaaaaaaaaaaaaaa R11: 0000000000000001 R12: ffff8800a0a61800
-R13: 00000000ffffff01 R14: 0000000000000000 R15: ffffffff81a907a0
-FS:  00007fd6942f7700(0000) GS:ffff880105280000(0000) knlGS:0000000000000000
-CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000004 CR3: 00000000a6773000 CR4: 0000000000042660
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process bash (pid: 3047, threadinfo ffff88001742c000, task ffff880017944000)
-Stack:
- 0000000000000150 ffff880100f59e00 ffff88001742dcd8 ffff8800a0a61800
- 0000000000000000 00000000ffffff01 0000000000000000 ffffffff81a907a0
- ffff88001742dd18 ffffffff813815b1 ffff88001742dd08 ffffffff810ae336
-Call Trace:
- [<ffffffff813815b1>] acpi_processor_hotplug+0x7c/0x9f
- [<ffffffff810ae336>] ? schedule_delayed_work_on+0x16/0x20
- [<ffffffff8137ee8f>] acpi_cpu_soft_notify+0x90/0xca
- [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
- [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
- [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
- [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
- [<ffffffff81652e18>] cpu_up+0xd9/0xec
- [<ffffffff8164a254>] store_online+0x94/0xd0
- [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
- [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
-
-This patch fixes it.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[akpm@linux-foundation.org: fix ia64]
+Signed-off-by: Robin Holt <holt@sgi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/processor_idle.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/misc/sgi-xp/xpc_main.c |   34 ++++++++++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -991,6 +991,9 @@ static int acpi_processor_setup_cpuidle(
- 		return -EINVAL;
- 	}
+--- a/drivers/misc/sgi-xp/xpc_main.c
++++ b/drivers/misc/sgi-xp/xpc_main.c
+@@ -53,6 +53,10 @@
+ #include <linux/kthread.h>
+ #include "xpc.h"
  
-+	if (!dev)
-+		return -EINVAL;
++#ifdef CONFIG_X86_64
++#include <asm/traps.h>
++#endif
 +
- 	dev->cpu = pr->id;
- 	for (i = 0; i < CPUIDLE_STATE_MAX; i++) {
- 		dev->states[i].name[0] = '\0';
+ /* define two XPC debug device structures to be used with dev_dbg() et al */
+ 
+ struct device_driver xpc_dbg_name = {
+@@ -1079,6 +1083,9 @@ xpc_system_reboot(struct notifier_block
+ 	return NOTIFY_DONE;
+ }
+ 
++/* Used to only allow one cpu to complete disconnect */
++static unsigned int xpc_die_disconnecting;
++
+ /*
+  * Notify other partitions to deactivate from us by first disengaging from all
+  * references to our memory.
+@@ -1092,6 +1099,9 @@ xpc_die_deactivate(void)
+ 	long keep_waiting;
+ 	long wait_to_print;
+ 
++	if (cmpxchg(&xpc_die_disconnecting, 0, 1))
++		return;
++
+ 	/* keep xpc_hb_checker thread from doing anything (just in case) */
+ 	xpc_exiting = 1;
+ 
+@@ -1159,7 +1169,7 @@ xpc_die_deactivate(void)
+  * about the lack of a heartbeat.
+  */
+ static int
+-xpc_system_die(struct notifier_block *nb, unsigned long event, void *unused)
++xpc_system_die(struct notifier_block *nb, unsigned long event, void *_die_args)
+ {
+ #ifdef CONFIG_IA64		/* !!! temporary kludge */
+ 	switch (event) {
+@@ -1191,7 +1201,27 @@ xpc_system_die(struct notifier_block *nb
+ 		break;
+ 	}
+ #else
+-	xpc_die_deactivate();
++	struct die_args *die_args = _die_args;
++
++	switch (event) {
++	case DIE_TRAP:
++		if (die_args->trapnr == X86_TRAP_DF)
++			xpc_die_deactivate();
++
++		if (((die_args->trapnr == X86_TRAP_MF) ||
++		     (die_args->trapnr == X86_TRAP_XF)) &&
++		    !user_mode_vm(die_args->regs))
++			xpc_die_deactivate();
++
++		break;
++	case DIE_INT3:
++	case DIE_DEBUG:
++		break;
++	case DIE_OOPS:
++	case DIE_GPF:
++	default:
++		xpc_die_deactivate();
++	}
+ #endif
+ 
+ 	return NOTIFY_DONE;
 
 
