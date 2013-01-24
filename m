@@ -1,131 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab3AXUPc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:15:32 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:42827 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756282Ab3AXUOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:14:22 -0500
-Date: Thu, 24 Jan 2013 14:14:20 -0600
-From: Robin Holt <holt@sgi.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Robin Holt <holt@sgi.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: How should I proceed to get commit 891348c to 3.0.y?
-Message-ID: <20130124201420.GI3438@sgi.com>
-References: <20130124152851.GF3460@sgi.com>
- <20130124181535.GB12106@kroah.com>
- <20130124183010.GF3438@sgi.com>
- <20130124200034.GB24705@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130124200034.GB24705@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1161008Ab3AXUOy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:14:54 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50183 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755943Ab3AXUIu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 15:08:50 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ulrich Drepper <drepper@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 55/74] perf tools: Remove unused 'unset' parameter from parse_events
+Date: Thu, 24 Jan 2013 17:08:04 -0300
+Message-Id: <1359058103-31645-56-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
+In-Reply-To: <1359058103-31645-1-git-send-email-acme@infradead.org>
+References: <1359058103-31645-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 12:00:34PM -0800, Greg KH wrote:
-> On Thu, Jan 24, 2013 at 12:30:10PM -0600, Robin Holt wrote:
-> > On Thu, Jan 24, 2013 at 10:15:35AM -0800, Greg KH wrote:
-> > > On Thu, Jan 24, 2013 at 09:28:51AM -0600, Robin Holt wrote:
-> > > > 
-> > > > I missed the email from 12/31 indicating commit 891348c was pulled from
-> > > > the 3.0.y stable tree due to a build breakage.
-> > > > 
-> > > > That commit requires the enum defined in traps.h by commit c940826.  That,
-> > > > in turn depends on commit 228bdaa95f which depends upon earlier commits.
-> > > > 
-> > > > How should I proceed?  Should I give you a patch that uses the constants
-> > > > in xpc_main.c? Should I add a patch which just pulls the enum portion of
-> > > > commit c940826 into traps.h? Any other direction you think this should go?
-> > > 
-> > > I think the last one makes the most sense as that makes it all
-> > > self-contained and sensible, right?
-> > 
-> > git diff c940826~..c940826 -- arch/x86/include/asm/traps.h | patch -p1
-> > git commit -a -c c940826
-> > 
-> > Then fixed it up to add a Signed-off-by: Robin Holt <holt@sgi.com>
-> > 
-> > I then did a make x86_64_defconfig, make menuconfig to get SGI_XP
-> > selected.  I ran into a compile error where traps.h line 56 was failing
-> > on __kprobes not being defined.  I added the #include <linux/kprobes.h>
-> > and now it builds.
-> > 
-> > Here is the munged commit I currently have.  With that 891348c can be
-> > cherry-picked and will build.  How should I proceed?  Is this enough
-> > for you to make progress?  Should I clear out those Signed-off-by
-> > lines for the submitter and HPA or should those stay?
-> 
-> They should stay.  resend this saying where the patch came from, and I
-> will be glad to apply it.  Also tell me what the original patch you
-> wanted me to apply was as well, I forgot it :)
+From: Jiri Olsa <jolsa@redhat.com>
 
-I changed the "Author:" line to me and added my own Signed-off-by:
-line.
+The 'unset' parameter is option callback leftover with no use, removing.
 
-The original commit which needed this fixup was 891348c
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ulrich Drepper <drepper@gmail.com>
+Link: http://lkml.kernel.org/r/1358257194-8204-2-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/tests/evsel-roundtrip-name.c | 4 ++--
+ tools/perf/tests/hists_link.c           | 4 ++--
+ tools/perf/tests/parse-events.c         | 2 +-
+ tools/perf/util/parse-events.c          | 5 ++---
+ tools/perf/util/parse-events.h          | 3 +--
+ 5 files changed, 8 insertions(+), 10 deletions(-)
 
-Thanks,
-Robin
-
-commit b4ff8081e86ebf7bb8c1d4c93dfaaf81a4539ee6
-Author: Robin Holt <holt@sgi.com>
-Date:   Fri Mar 9 16:07:10 2012 -0800
-
-    x86: Use enum instead of literals for trap values [PARTIAL]
-    
-    The traps are referred to by their numbers and it can be difficult to
-    understand them while reading the code without context. This patch adds
-    enumeration of the trap numbers and replaces the numbers with the correct
-    enum for x86.
-    
-    Signed-off-by: Kees Cook <keescook@chromium.org>
-    Link: http://lkml.kernel.org/r/20120310000710.GA32667@www.outflux.net
-    Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-    Signed-off-by: Robin Holt <holt@sgi.com>
-
-diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
-index 0310da6..1d44903 100644
---- a/arch/x86/include/asm/traps.h
-+++ b/arch/x86/include/asm/traps.h
-@@ -1,6 +1,7 @@
- #ifndef _ASM_X86_TRAPS_H
- #define _ASM_X86_TRAPS_H
+diff --git a/tools/perf/tests/evsel-roundtrip-name.c b/tools/perf/tests/evsel-roundtrip-name.c
+index e61fc82..0fd99a9 100644
+--- a/tools/perf/tests/evsel-roundtrip-name.c
++++ b/tools/perf/tests/evsel-roundtrip-name.c
+@@ -22,7 +22,7 @@ static int perf_evsel__roundtrip_cache_name_test(void)
+ 			for (i = 0; i < PERF_COUNT_HW_CACHE_RESULT_MAX; i++) {
+ 				__perf_evsel__hw_cache_type_op_res_name(type, op, i,
+ 									name, sizeof(name));
+-				err = parse_events(evlist, name, 0);
++				err = parse_events(evlist, name);
+ 				if (err)
+ 					ret = err;
+ 			}
+@@ -70,7 +70,7 @@ static int __perf_evsel__name_array_test(const char *names[], int nr_names)
+                 return -ENOMEM;
  
-+#include <linux/kprobes.h>
- #include <asm/debugreg.h>
- #include <asm/siginfo.h>			/* TRAP_TRACE, ... */
+ 	for (i = 0; i < nr_names; ++i) {
+-		err = parse_events(evlist, names[i], 0);
++		err = parse_events(evlist, names[i]);
+ 		if (err) {
+ 			pr_debug("failed to parse event '%s', err %d\n",
+ 				 names[i], err);
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 27860a0..0afd922 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -441,10 +441,10 @@ int test__hists_link(void)
+ 	if (evlist == NULL)
+                 return -ENOMEM;
  
-@@ -87,4 +88,29 @@ asmlinkage void smp_thermal_interrupt(void);
- asmlinkage void mce_threshold_interrupt(void);
- #endif
+-	err = parse_events(evlist, "cpu-clock", 0);
++	err = parse_events(evlist, "cpu-clock");
+ 	if (err)
+ 		goto out;
+-	err = parse_events(evlist, "task-clock", 0);
++	err = parse_events(evlist, "task-clock");
+ 	if (err)
+ 		goto out;
  
-+/* Interrupts/Exceptions */
-+enum {
-+	X86_TRAP_DE = 0,	/*  0, Divide-by-zero */
-+	X86_TRAP_DB,		/*  1, Debug */
-+	X86_TRAP_NMI,		/*  2, Non-maskable Interrupt */
-+	X86_TRAP_BP,		/*  3, Breakpoint */
-+	X86_TRAP_OF,		/*  4, Overflow */
-+	X86_TRAP_BR,		/*  5, Bound Range Exceeded */
-+	X86_TRAP_UD,		/*  6, Invalid Opcode */
-+	X86_TRAP_NM,		/*  7, Device Not Available */
-+	X86_TRAP_DF,		/*  8, Double Fault */
-+	X86_TRAP_OLD_MF,	/*  9, Coprocessor Segment Overrun */
-+	X86_TRAP_TS,		/* 10, Invalid TSS */
-+	X86_TRAP_NP,		/* 11, Segment Not Present */
-+	X86_TRAP_SS,		/* 12, Stack Segment Fault */
-+	X86_TRAP_GP,		/* 13, General Protection Fault */
-+	X86_TRAP_PF,		/* 14, Page Fault */
-+	X86_TRAP_SPURIOUS,	/* 15, Spurious Interrupt */
-+	X86_TRAP_MF,		/* 16, x87 Floating-Point Exception */
-+	X86_TRAP_AC,		/* 17, Alignment Check */
-+	X86_TRAP_MC,		/* 18, Machine Check */
-+	X86_TRAP_XF,		/* 19, SIMD Floating-Point Exception */
-+	X86_TRAP_IRET = 32,	/* 32, IRET Exception */
-+};
-+
- #endif /* _ASM_X86_TRAPS_H */
+diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
+index e7eb708..337424d 100644
+--- a/tools/perf/tests/parse-events.c
++++ b/tools/perf/tests/parse-events.c
+@@ -1018,7 +1018,7 @@ static int test_event(struct test__event_st *e)
+ 	if (evlist == NULL)
+ 		return -ENOMEM;
+ 
+-	ret = parse_events(evlist, e->name, 0);
++	ret = parse_events(evlist, e->name);
+ 	if (ret) {
+ 		pr_debug("failed to parse event '%s', err %d\n",
+ 			 e->name, ret);
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 626c120..d3bf570 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -872,8 +872,7 @@ int parse_events_terms(struct list_head *terms, const char *str)
+ 	return ret;
+ }
+ 
+-int parse_events(struct perf_evlist *evlist, const char *str,
+-		 int unset __maybe_unused)
++int parse_events(struct perf_evlist *evlist, const char *str)
+ {
+ 	struct parse_events_data__events data = {
+ 		.list = LIST_HEAD_INIT(data.list),
+@@ -900,7 +899,7 @@ int parse_events_option(const struct option *opt, const char *str,
+ 			int unset __maybe_unused)
+ {
+ 	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
+-	int ret = parse_events(evlist, str, unset);
++	int ret = parse_events(evlist, str);
+ 
+ 	if (ret) {
+ 		fprintf(stderr, "invalid or unsupported event: '%s'\n", str);
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index b7af80b..7c5244f 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -29,8 +29,7 @@ const char *event_type(int type);
+ 
+ extern int parse_events_option(const struct option *opt, const char *str,
+ 			       int unset);
+-extern int parse_events(struct perf_evlist *evlist, const char *str,
+-			int unset);
++extern int parse_events(struct perf_evlist *evlist, const char *str);
+ extern int parse_events_terms(struct list_head *terms, const char *str);
+ extern int parse_filter(const struct option *opt, const char *str, int unset);
+ 
+-- 
+1.8.1.1.361.gec3ae6e
+
