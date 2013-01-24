@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab3AXDJx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:09:53 -0500
-Received: from mga01.intel.com ([192.55.52.88]:37140 "EHLO mga01.intel.com"
+	id S1753941Ab3AXDJB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:09:01 -0500
+Received: from mga01.intel.com ([192.55.52.88]:7626 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753547Ab3AXDH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:07:59 -0500
+	id S1753310Ab3AXDHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 22:07:44 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,525,1355126400"; 
-   d="scan'208";a="277725094"
+   d="scan'208";a="277725052"
 From: Alex Shi <alex.shi@intel.com>
 To: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
         tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
@@ -16,9 +16,9 @@ To: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
 Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
         linux-kernel@vger.kernel.org, alex.shi@intel.com
-Subject: [patch v4 17/18] sched: power aware load balance,
-Date: Thu, 24 Jan 2013 11:06:59 +0800
-Message-Id: <1358996820-23036-18-git-send-email-alex.shi@intel.com>
+Subject: [patch v4 11/18] sched: log the cpu utilization at rq
+Date: Thu, 24 Jan 2013 11:06:53 +0800
+Message-Id: <1358996820-23036-12-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
 References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
@@ -26,243 +26,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enabled the power aware consideration in load balance.
+The cpu's utilization is to measure how busy is the cpu.
+        util = cpu_rq(cpu)->avg.runnable_avg_sum
+                / cpu_rq(cpu)->avg.runnable_avg_period;
 
-As mentioned in the power aware scheduler proposal, Power aware
-scheduling has 2 assumptions:
-1, race to idle is helpful for power saving
-2, pack tasks on less sched_groups will reduce power consumption
+Since the util is no more than 1, we use its percentage value in later
+caculations. And set the the FULL_UTIL as 100%.
 
-The first assumption make performance policy take over scheduling when
-system busy.
-The second assumption make power aware scheduling try to move
-disperse tasks into fewer groups until that groups are full of tasks.
-
-This patch reuse some of Suresh's power saving load balance code.
-
-The enabling logical summary here:
-1, Collect power aware scheduler statistics during performance load
-balance statistics collection.
-2, If the balance cpu is eligible for power load balance, just do it
-and forget performance load balance. But if the domain is suitable for
-power balance, while the cpu is not appropriate, stop both
-power/performance balance, else do performance load balance.
-
-A test can show the effort on different policy:
-for ((i = 0; i < I; i++)) ; do while true; do :; done  &   done
-
-On my SNB laptop with 4core* HT: the data is Watts
-        powersaving     balance         performance
-i = 2   40              54              54
-i = 4   57              64*             68
-i = 8   68              68              68
-
-Note:
-When i = 4 with balance policy, the power may change in 57~68Watt,
-since the HT capacity and core capacity are both 1.
-
-on SNB EP machine with 2 sockets * 8 cores * HT:
-        powersaving     balance         performance
-i = 4   190             201             238
-i = 8   205             241             268
-i = 16  271             348             376
-
-If system has few continued tasks, use power policy can get
-the performance/power gain. Like sysbench fileio randrw test with 16
-thread on the SNB EP box,
+In later power aware scheduling, we are sensitive for how busy of the
+cpu, not how much weight of its load. As to power consuming, it is more
+related with cpu busy time, not the load weight.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c | 127 ++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 124 insertions(+), 3 deletions(-)
+ kernel/sched/debug.c | 1 +
+ kernel/sched/fair.c  | 4 ++++
+ kernel/sched/sched.h | 4 ++++
+ 3 files changed, 9 insertions(+)
 
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 2cd3c1b..e4035f7 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -318,6 +318,7 @@ do {									\
+ 
+ 	P(ttwu_count);
+ 	P(ttwu_local);
++	P(util);
+ 
+ #undef P
+ #undef P64
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 94bd40b..a83ad90 100644
+index 947542f..20363fb 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -3350,6 +3350,7 @@ struct sd_lb_stats {
- 	unsigned int  sd_utils;	/* sum utilizations of this domain */
- 	unsigned long sd_capacity;	/* capacity of this domain */
- 	struct sched_group *group_leader; /* Group which relieves group_min */
-+	struct sched_group *group_min;	/* Least loaded group in sd */
- 	unsigned long min_load_per_task; /* load_per_task in group_min */
- 	unsigned int  leader_util;	/* sum utilizations of group_leader */
- 	unsigned int  min_util;		/* sum utilizations of group_min */
-@@ -4396,6 +4397,106 @@ static unsigned long task_h_load(struct task_struct *p)
+@@ -1495,8 +1495,12 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+ 
+ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+ {
++	u32 period;
+ 	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
+ 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
++
++	period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
++	rq->util = rq->avg.runnable_avg_sum * 100 / period;
+ }
+ 
+ /* Add the load generated by se into cfs_rq's child load-average */
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 66b08a1..fa8bdb9 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -350,6 +350,9 @@ extern struct root_domain def_root_domain;
+ 
+ #endif /* CONFIG_SMP */
+ 
++/* the percentage full cpu utilization */
++#define FULL_UTIL	100
++
+ /*
+  * This is the main, per-CPU runqueue data structure.
+  *
+@@ -481,6 +484,7 @@ struct rq {
  #endif
  
- /********** Helpers for find_busiest_group ************************/
-+
-+/**
-+ * init_sd_lb_power_stats - Initialize power savings statistics for
-+ * the given sched_domain, during load balancing.
-+ *
-+ * @env: The load balancing environment.
-+ * @sds: Variable containing the statistics for sd.
-+ */
-+static inline void init_sd_lb_power_stats(struct lb_env *env,
-+						struct sd_lb_stats *sds)
-+{
-+	if (sched_policy == SCHED_POLICY_PERFORMANCE ||
-+				env->idle == CPU_NOT_IDLE) {
-+		env->power_lb = 0;
-+		env->perf_lb = 1;
-+		return;
-+	}
-+	env->perf_lb = 0;
-+	env->power_lb = 1;
-+	sds->min_util = UINT_MAX;
-+	sds->leader_util = 0;
-+}
-+
-+/**
-+ * update_sd_lb_power_stats - Update the power saving stats for a
-+ * sched_domain while performing load balancing.
-+ *
-+ * @env: The load balancing environment.
-+ * @group: sched_group belonging to the sched_domain under consideration.
-+ * @sds: Variable containing the statistics of the sched_domain
-+ * @local_group: Does group contain the CPU for which we're performing
-+ * load balancing?
-+ * @sgs: Variable containing the statistics of the group.
-+ */
-+static inline void update_sd_lb_power_stats(struct lb_env *env,
-+			struct sched_group *group, struct sd_lb_stats *sds,
-+			int local_group, struct sg_lb_stats *sgs)
-+{
-+	unsigned long threshold, threshold_util;
-+
-+	if (env->perf_lb)
-+		return;
-+
-+	if (sched_policy == SCHED_POLICY_POWERSAVING)
-+		threshold = sgs->group_weight;
-+	else
-+		threshold = sgs->group_capacity;
-+	threshold_util = threshold * FULL_UTIL;
-+
-+	/*
-+	 * If the local group is idle or full loaded
-+	 * no need to do power savings balance at this domain
-+	 */
-+	if (local_group && (!sgs->sum_nr_running ||
-+		sgs->group_utils + FULL_UTIL > threshold_util))
-+		env->power_lb = 0;
-+
-+	/* Do performance load balance if any group overload */
-+	if (sgs->group_utils > threshold_util) {
-+		env->perf_lb = 1;
-+		env->power_lb = 0;
-+	}
-+
-+	/*
-+	 * If a group is idle,
-+	 * don't include that group in power savings calculations
-+	 */
-+	if (!env->power_lb || !sgs->sum_nr_running)
-+		return;
-+
-+	/*
-+	 * Calculate the group which has the least non-idle load.
-+	 * This is the group from where we need to pick up the load
-+	 * for saving power
-+	 */
-+	if ((sgs->group_utils < sds->min_util) ||
-+	    (sgs->group_utils == sds->min_util &&
-+	     group_first_cpu(group) > group_first_cpu(sds->group_min))) {
-+		sds->group_min = group;
-+		sds->min_util = sgs->group_utils;
-+		sds->min_load_per_task = sgs->sum_weighted_load /
-+						sgs->sum_nr_running;
-+	}
-+
-+	/*
-+	 * Calculate the group which is almost near its
-+	 * capacity but still has some space to pick up some load
-+	 * from other group and save more power
-+	 */
-+	if (sgs->group_utils + FULL_UTIL > threshold_util)
-+		return;
-+
-+	if (sgs->group_utils > sds->leader_util ||
-+	    (sgs->group_utils == sds->leader_util && sds->group_leader &&
-+	     group_first_cpu(group) < group_first_cpu(sds->group_leader))) {
-+		sds->group_leader = group;
-+		sds->leader_util = sgs->group_utils;
-+	}
-+}
-+
- /**
-  * get_sd_load_idx - Obtain the load index for a given sched domain.
-  * @sd: The sched_domain whose load_idx is to be obtained.
-@@ -4635,6 +4736,12 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 		sgs->group_load += load;
- 		sgs->sum_nr_running += nr_running;
- 		sgs->sum_weighted_load += weighted_cpuload(i);
-+
-+		/* accumulate the maximum potential util */
-+		if (!nr_running)
-+			nr_running = 1;
-+		sgs->group_utils += rq->util * nr_running;
-+
- 		if (idle_cpu(i))
- 			sgs->idle_cpus++;
- 	}
-@@ -4743,6 +4850,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
- 	if (child && child->flags & SD_PREFER_SIBLING)
- 		prefer_sibling = 1;
+ 	struct sched_avg avg;
++	unsigned int util;
+ };
  
-+	init_sd_lb_power_stats(env, sds);
- 	load_idx = get_sd_load_idx(env->sd, env->idle);
- 
- 	do {
-@@ -4794,6 +4902,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
- 			sds->group_imb = sgs.group_imb;
- 		}
- 
-+		update_sd_lb_power_stats(env, sg, sds, local_group, &sgs);
- 		sg = sg->next;
- 	} while (sg != env->sd->groups);
- }
-@@ -5011,6 +5120,19 @@ find_busiest_group(struct lb_env *env, int *balance)
- 	 */
- 	update_sd_lb_stats(env, balance, &sds);
- 
-+	if (!env->perf_lb && !env->power_lb)
-+		return  NULL;
-+
-+	if (env->power_lb) {
-+		if (sds.this == sds.group_leader &&
-+				sds.group_leader != sds.group_min) {
-+			env->imbalance = sds.min_load_per_task;
-+			return sds.group_min;
-+		}
-+		env->power_lb = 0;
-+		return NULL;
-+	}
-+
- 	/*
- 	 * this_cpu is not the appropriate cpu to perform load balancing at
- 	 * this level.
-@@ -5188,8 +5310,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 		.idle		= idle,
- 		.loop_break	= sched_nr_migrate_break,
- 		.cpus		= cpus,
--		.power_lb	= 0,
--		.perf_lb	= 1,
-+		.power_lb	= 1,
-+		.perf_lb	= 0,
- 	};
- 
- 	cpumask_copy(cpus, cpu_active_mask);
-@@ -6267,7 +6389,6 @@ void unregister_fair_sched_group(struct task_group *tg, int cpu) { }
- 
- #endif /* CONFIG_FAIR_GROUP_SCHED */
- 
--
- static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task)
- {
- 	struct sched_entity *se = &task->se;
+ static inline int cpu_of(struct rq *rq)
 -- 
 1.7.12
 
