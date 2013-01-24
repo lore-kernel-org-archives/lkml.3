@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab3AXTgz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:36:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33730 "EHLO
+	id S1755351Ab3AXThg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:37:36 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33741 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab3AXTgx (ORCPT
+	with ESMTP id S1751992Ab3AXThe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:36:53 -0500
-Date: Thu, 24 Jan 2013 11:36:04 -0800
-From: tip-bot for Shan Wei <davidshan@tencent.com>
-Message-ID: <tip-d8a0349c0cea477322c66ea9362f10c62fad5f62@git.kernel.org>
+	Thu, 24 Jan 2013 14:37:34 -0500
+Date: Thu, 24 Jan 2013 11:37:14 -0800
+From: tip-bot for Jovi Zhang <bookjovi@gmail.com>
+Message-ID: <tip-d24d7dbf3cc49b00a152e55e24f0eeb173c7a971@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        davidshan@tencent.com, rostedt@goodmis.org, cl@linux.com,
-        tglx@linutronix.de
+        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
+        namhyung@kernel.org, bookjovi@gmail.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        davidshan@tencent.com, rostedt@goodmis.org, tglx@linutronix.de,
-        cl@linux.com
-In-Reply-To: <50A1A800.3020102@gmail.com>
-References: <50A1A800.3020102@gmail.com>
+        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
+        namhyung@kernel.org, bookjovi@gmail.com
+In-Reply-To: <20130103004212.690763002@goodmis.org>
+References: <20130103004212.690763002@goodmis.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing: Use this_cpu_ptr per-cpu helper
-Git-Commit-ID: d8a0349c0cea477322c66ea9362f10c62fad5f62
+Subject: [tip:perf/core] tracing:
+  Verify target file before registering a uprobe event
+Git-Commit-ID: d24d7dbf3cc49b00a152e55e24f0eeb173c7a971
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,68 +30,62 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 11:36:11 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 11:37:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d8a0349c0cea477322c66ea9362f10c62fad5f62
-Gitweb:     http://git.kernel.org/tip/d8a0349c0cea477322c66ea9362f10c62fad5f62
-Author:     Shan Wei <davidshan@tencent.com>
-AuthorDate: Tue, 13 Nov 2012 09:53:04 +0800
+Commit-ID:  d24d7dbf3cc49b00a152e55e24f0eeb173c7a971
+Gitweb:     http://git.kernel.org/tip/d24d7dbf3cc49b00a152e55e24f0eeb173c7a971
+Author:     Jovi Zhang <bookjovi@gmail.com>
+AuthorDate: Wed, 18 Jul 2012 18:16:44 +0800
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 21 Jan 2013 13:22:30 -0500
+CommitDate: Mon, 21 Jan 2013 13:22:31 -0500
 
-tracing: Use this_cpu_ptr per-cpu helper
+tracing: Verify target file before registering a uprobe event
 
-typeof(&buffer) is a pointer to array of 1024 char, or char (*)[1024].
-But, typeof(&buffer[0]) is a pointer to char which match the return type of get_trace_buf().
-As well-known, the value of &buffer is equal to &buffer[0].
-so return this_cpu_ptr(&percpu_buffer->buffer[0]) can avoid type cast.
+Without this patch, we can register a uprobe event for a directory.
+Enabling such a uprobe event would anyway fail.
 
-Link: http://lkml.kernel.org/r/50A1A800.3020102@gmail.com
+Example:
+$ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
 
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Shan Wei <davidshan@tencent.com>
+However dirctories cannot be valid targets for uprobe.
+Hence verify if the target is a regular file during the probe
+registration.
+
+Link: http://lkml.kernel.org/r/20130103004212.690763002@goodmis.org
+
+Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+[ cleaned up whitespace and removed redundant IS_DIR() check ]
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/blktrace.c | 2 +-
- kernel/trace/trace.c    | 5 +----
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ kernel/trace/trace_uprobe.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index c0bd030..71259e2 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -147,7 +147,7 @@ void __trace_note_message(struct blk_trace *bt, const char *fmt, ...)
- 		return;
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index c86e6d4..87b6db4 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -258,6 +258,10 @@ static int create_trace_uprobe(int argc, char **argv)
+ 		goto fail_address_parse;
  
- 	local_irq_save(flags);
--	buf = per_cpu_ptr(bt->msg_data, smp_processor_id());
-+	buf = this_cpu_ptr(bt->msg_data);
- 	va_start(args, fmt);
- 	n = vscnprintf(buf, BLK_TN_MAX_MSG, fmt, args);
- 	va_end(args);
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 3c13e46..f8b7c62 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1517,7 +1517,6 @@ static struct trace_buffer_struct *trace_percpu_nmi_buffer;
- static char *get_trace_buf(void)
- {
- 	struct trace_buffer_struct *percpu_buffer;
--	struct trace_buffer_struct *buffer;
+ 	inode = igrab(path.dentry->d_inode);
++	if (!S_ISREG(inode->i_mode)) {
++		ret = -EINVAL;
++		goto fail_address_parse;
++	}
  
- 	/*
- 	 * If we have allocated per cpu buffers, then we do not
-@@ -1535,9 +1534,7 @@ static char *get_trace_buf(void)
- 	if (!percpu_buffer)
- 		return NULL;
+ 	argc -= 2;
+ 	argv += 2;
+@@ -356,7 +360,7 @@ fail_address_parse:
+ 	if (inode)
+ 		iput(inode);
  
--	buffer = per_cpu_ptr(percpu_buffer, smp_processor_id());
--
--	return buffer->buffer;
-+	return this_cpu_ptr(&percpu_buffer->buffer[0]);
+-	pr_info("Failed to parse address.\n");
++	pr_info("Failed to parse address or file.\n");
+ 
+ 	return ret;
  }
- 
- static int alloc_percpu_trace_buffer(void)
