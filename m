@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab3AXM3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 07:29:15 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:47793 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754377Ab3AXM2y (ORCPT
+	id S1753863Ab3AXMaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 07:30:21 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:43545 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753143Ab3AXMaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 07:28:54 -0500
-Date: Thu, 24 Jan 2013 13:28:49 +0100
+	Thu, 24 Jan 2013 07:30:14 -0500
+Date: Thu, 24 Jan 2013 13:30:10 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: mingo@elte.hu, paul.gortmaker@windriver.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-Subject: Re: [GIT PULL rcu/urgent] Fixes for RCU regressions in 3.8
-Message-ID: <20130124122849.GC3104@gmail.com>
-References: <20130111160813.GA14503@linux.vnet.ibm.com>
+To: Anton Arapov <anton@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Christoph Hellwig <hch@infradead.org>, Josh Stone <jistone@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] uprobes: pre-filtering
+Message-ID: <20130124123010.GA4755@gmail.com>
+References: <20130113185916.GA25831@redhat.com>
+ <20130124121720.GA3104@gmail.com>
+ <CAMeizLf1XTwaLLE2eBm+XMRQZPgBY=dUkEcpaDYdupB0T3+2Lg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130111160813.GA14503@linux.vnet.ibm.com>
+In-Reply-To: <CAMeizLf1XTwaLLE2eBm+XMRQZPgBY=dUkEcpaDYdupB0T3+2Lg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+* Anton Arapov <anton@redhat.com> wrote:
 
-> Hello, Ingo,
+> Hello Ingo,
 > 
-> Paul Gortmaker found some problems with no-CBs-CPU support in 3.8
-> mainline, and kindly supplied fixes.  The first problem is soft-lockup
-> complaints that can occur on systems running with no-CBs CPUs that have
-> long periods of time where RCU is completely idle, which can happen on
-> some embedded systems.  The second problem is a documentation error
-> for the "rcutree.rcu_nocb_poll" boot parameter.  In this case, Paul Gortmaker
-> (rightly) noted that the need for "rcutree." was inconsistent with the
-> "rcu_nocbs=<cpumap>" boot parameter.  The fix therefore to make the boot
-> parameter named "rcu_nocb_poll".
+> On Thu, Jan 24, 2013 at 11:17 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> >> Ingo, please pull from
+> >>
+> >>   git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
+> >>
+> >> Mostly pre-filtering. This needs more work and perhaps more functionality.
+> >> In particular, perhaps dup_mmap() should remove the unwanted breakpoints.
+> >> And we can add more ->filter() hooks to, say, speedup uprobe_register().
+> >> Plus we can do some optimizations to avoid register_for_each_vma() in
+> >> case when we know that all mm's were previously acked/nacked.
+> >>
+> >> Srikar, the only patch you did not ack explicitely is 1fecb96d
+> >> "Do not allocate current->utask unnecessary", but afaics you do not
+> >> object.
+> >>
+> >> And the patch from Josh which exports uprobe_register/unregister for modules.
+> >> Christoph (cc'ed) doesn't like this change, but I disagree. Whatever you
+> >> think about systemtap it is the widely used tool, and uprobes can have other
+> >> out-of-tree users. This is like kprobes, kprobe_register() is exported but
+> >> it doesn't have a modular in-kernel user too. I do not see why should we
+> >> limit the usage of uprobes.
+> >>
+> >>
+> >>
+> >> Josh Stone (1):
+> >>       uprobes: Add exports for module use
+> >>
+> >> Oleg Nesterov (26):
+> >>       uprobes: Move __set_bit(UPROBE_SKIP_SSTEP) into alloc_uprobe()
+> >>       uprobes: Kill the "uprobe != NULL" check in uprobe_unregister()
+> >>       uprobes: Kill the pointless inode/uc checks in register/unregister
+> >>       uprobes: Kill uprobe_consumer->filter()
+> >>       uprobes: Introduce filter_chain()
+> >>       uprobes: _unregister() should always do register_for_each_vma(false)
+> >>       uprobes: _register() should always do register_for_each_vma(true)
+> >>       uprobes: Introduce uprobe->register_rwsem
+> >>       uprobes: Change filter_chain() to iterate ->consumers list
+> >>       uprobes: Kill UPROBE_RUN_HANDLER flag
+> >>       uprobes: Kill uprobe->copy_mutex
+> >>       uprobes: Kill uprobe_events, use RB_EMPTY_ROOT() instead
+> >>       uprobes: Introduce uprobe_is_active()
+> >>       uprobes: Kill uprobes_mutex[], separate alloc_uprobe() and __uprobe_register()
+> >>       uprobes: Rationalize the usage of filter_chain()
+> >>       uprobes: Reintroduce uprobe_consumer->filter()
+> >>       uprobes: Teach handler_chain() to filter out the probed task
+> >>       uprobes/x86: Change __skip_sstep() to actually skip the whole insn
+> >>       uprobes: Change handle_swbp() to expose bp_vaddr to handler_chain()
+> >>       uprobes: Move alloc_page() from xol_add_vma() to xol_alloc_area()
+> >>       uprobes: Fold xol_alloc_area() into get_xol_area()
+> >>       uprobes: Turn add_utask() into get_utask()
+> >>       uprobes: Do not play with utask in xol_get_insn_slot()
+> >>       uprobes: Fix utask->xol_vaddr leak in pre_ssout()
+> >>       uprobes: Do not allocate current->utask unnecessary
+> >>       uprobes: Kill the bogus IS_ERR_VALUE(xol_vaddr) check
+> >>
+> >>  arch/x86/kernel/uprobes.c   |    4 +-
+> >>  include/linux/uprobes.h     |   17 ++-
+> >>  kernel/events/uprobes.c     |  433 ++++++++++++++++++++++---------------------
+> >>  kernel/ptrace.c             |    6 +
+> >>  kernel/trace/trace_uprobe.c |    5 +-
+> >>  5 files changed, 243 insertions(+), 222 deletions(-)
+> >
+> > The kernel side looks good to me - but how does 'perf uprobe'
+> > make use of it in practice, how can I test it?
 > 
-> These problems only affect kernels built with the new CONFIG_RCU_NOCB_CPU
-> kernel parameter, but still should be fixed.
-> 
-> These fixes are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
-> 
-> 							Thanx, Paul
-> 
-> ------------------>
-> Paul Gortmaker (2):
->       rcu: Prevent soft-lockup complaints about no-CBs CPUs
->       rcu: Make rcu_nocb_poll an early_param instead of module_param
-> 
->  Documentation/kernel-parameters.txt |    2 +-
->  kernel/rcutree_plugin.h             |   13 ++++++++++---
->  2 files changed, 11 insertions(+), 4 deletions(-)
+> I'm not sure whether you looking into testing specific changes in this
+> pull, [...]
 
-Pulled, thanks a lot Paul!
+Yes, I was curious about specifically testing the filtering 
+callback changes in this pull request.
+
+Thanks,
 
 	Ingo
