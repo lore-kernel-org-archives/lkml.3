@@ -1,103 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab3AXMwC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 07:52:02 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:53313 "EHLO hydra.sisk.pl"
+	id S1754023Ab3AXMwn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 07:52:43 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:47001 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753054Ab3AXMvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 07:51:53 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [GIT PULL] ACPI and power management fixes for v3.8-rc5
-Date: Thu, 24 Jan 2013 13:57:55 +0100
-Message-ID: <4322980.ey5AOPpS2x@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+	id S1752953Ab3AXMwg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 07:52:36 -0500
+Date: Thu, 24 Jan 2013 13:52:34 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Tom St Denis <tstdenis@elliptictech.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Subject: Re: [PATCH] CMAC support for CryptoAPI, fixed patch issues, indent,
+ and testmgr build issues
+Message-ID: <20130124125234.GL9147@secunet.com>
+References: <20130124123210.GK9147@secunet.com>
+ <909599053.113808.1359031070783.JavaMail.root@elliptictech.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <909599053.113808.1359031070783.JavaMail.root@elliptictech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 24 Jan 2013 12:52:34.0331 (UTC) FILETIME=[AE01D6B0:01CDFA31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Jan 24, 2013 at 07:37:50AM -0500, Tom St Denis wrote:
+> 
+> Also a question for the netdev folk, in order to be timely would it be acceptable to patch ah4 and then ah6 with the AEAD changes?  Or would the team require both to be patched simultaneously?
+>  
 
-Please pull from the git repository at
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-for-3.8-rc5
-
-to receive ACPI and power management fixes for v3.8-rc5 with top-most commit
-efa17194581bdfca0986dabc178908bd7c21ba00
-
-  cpufreq: Add module aliases for acpi-cpufreq
-
-on top of commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619
-
-  Linux 3.8-rc4
-
-Included are:
-
-* Two cpuidle initialization fixes (both -stable material) from
-  Konrad Rzeszutek Wilk.
-
-* cpufreq regression fixes for AMD processors, mostly related to the change
-  of the default driver for newer CPUs from powernow-k8 to acpi-cpufreq.
-  From Borislav Petkov, Stefan Bader, Matthew Garrett.
-
-* ACPI cpufreq fix related to system reconfigurations such as the switch
-  from battery to AC power from Thomas Schlichter (-stable material).
-
-* cpufreq and devfreq fixes related to incorrect usage of operating
-  performance points (OPP) framework and RCU from Nishanth Menon
-  (-stable material).
-
-* APEI workaround for incorrect BIOS information from Lans Zhang.
-
-Thanks!
- 
-
- drivers/acpi/apei/apei-base.c    |    3 ++
- drivers/acpi/processor_idle.c    |    4 ++
- drivers/acpi/processor_perflib.c |    7 ++++
- drivers/cpufreq/Kconfig.x86      |    2 +-
- drivers/cpufreq/acpi-cpufreq.c   |    7 ++++
- drivers/cpufreq/cpufreq-cpu0.c   |    5 +++
- drivers/cpufreq/omap-cpufreq.c   |    3 ++
- drivers/devfreq/devfreq.c        |    5 +++
- drivers/devfreq/exynos4_bus.c    |   94 +++++++++++++++++++++++++++++++++-------------
- drivers/idle/intel_idle.c        |    3 +-
- 10 files changed, 103 insertions(+), 30 deletions(-)
-
----------------
-
-Borislav Petkov (1):
-      powernow-k8: Add a kconfig dependency on acpi-cpufreq
-
-Konrad Rzeszutek Wilk (2):
-      intel_idle: Don't register CPU notifier if we are not running.
-      ACPI / cpuidle: Fix NULL pointer issues when cpuidle is disabled
-
-Lans Zhang (1):
-      ACPI, APEI: Fixup incorrect 64-bit access width firmware bug
-
-Matthew Garrett (1):
-      cpufreq: Add module aliases for acpi-cpufreq
-
-Nishanth Menon (4):
-      cpufreq: OMAP: use RCU locks around usage of OPP
-      cpufreq: cpufreq-cpu0: use RCU locks around usage of OPP
-      PM / devfreq: add locking documentation for recommended_opp
-      PM / devfreq: exynos4_bus: honor RCU lock usage
-
-Stefan Bader (1):
-      ACPI: Check MSR valid bit before using P-state frequencies
-
-Thomas Schlichter (1):
-      ACPI / processor: Get power info before updating the C-states
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+We would need patches for both, but the changes to ah4/ah6 should
+e very similar.
