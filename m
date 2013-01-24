@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab3AXDem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:34:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44452 "EHLO
+	id S1755287Ab3AXDe4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:34:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44448 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755152Ab3AXDbw (ORCPT
+	with ESMTP id S1755109Ab3AXDbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:31:52 -0500
+	Wed, 23 Jan 2013 22:31:49 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 68/74] ALSA: usb - fix race in creation of M-Audio Fast track pro driver
-Date: Thu, 24 Jan 2013 01:27:20 -0200
-Message-Id: <1358998046-613-69-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 67/74] drm/radeon: fix a bogus kfree
+Date: Thu, 24 Jan 2013 01:27:19 -0200
+Message-Id: <1358998046-613-68-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,52 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Ilija Hadzic <ihadzic@research.bell-labs.com>
 
-commit b98ae2729dea161edc96c9d177459b6c28bcbba5 upstream.
+commit a6b7e1a02b77ab8fe8775d20a88c53d8ba55482e upstream.
 
-A patch in the 3.2 kernel caused regression with hotplugging the
-M-Audio Fast track pro, or sound after suspend. I don't have the
-device so I haven't done a full analysis, but it seems userspace
-(both udev and pulseaudio) got confused when a card was created,
-immediately destroyed, and then created again.
+parser->chunks[.].kpage[.] is not always kmalloc-ed
+by the parser initialization, so parser_fini should
+not try to kfree it if it didn't allocate it.
 
-However, at least one person in the bug report (martin djfun)
-reports that this patch resolves the issue for him. It also leaves
-a message in the log:
-"snd-usb-audio: probe of 1-1.1:1.1 failed with error -5" which is
-a bit misleading. It is better than non-working audio, but maybe
-there's a more elegant solution?
+This patch fixes a kernel oops that can be provoked
+in UMS mode.
 
-BugLink: https://bugs.launchpad.net/bugs/1095315
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- sound/usb/quirks.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/r600_cs.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/sound/usb/quirks.c b/sound/usb/quirks.c
-index 2781726..c46171a 100644
---- a/sound/usb/quirks.c
-+++ b/sound/usb/quirks.c
-@@ -387,11 +387,13 @@ static int snd_usb_fasttrackpro_boot_quirk(struct usb_device *dev)
- 		 * rules
- 		 */
- 		err = usb_driver_set_configuration(dev, 2);
--		if (err < 0) {
-+		if (err < 0)
- 			snd_printdd("error usb_driver_set_configuration: %d\n",
- 				    err);
--			return -ENODEV;
--		}
-+		/* Always return an error, so that we stop creating a device
-+		   that will just be destroyed and recreated with a new
-+		   configuration */
-+		return -ENODEV;
- 	} else
- 		snd_printk(KERN_INFO "usb-audio: Fast Track Pro config OK\n");
- 
+diff --git a/drivers/gpu/drm/radeon/r600_cs.c b/drivers/gpu/drm/radeon/r600_cs.c
+index 1119e31..c05e88a 100644
+--- a/drivers/gpu/drm/radeon/r600_cs.c
++++ b/drivers/gpu/drm/radeon/r600_cs.c
+@@ -2330,8 +2330,10 @@ static void r600_cs_parser_fini(struct radeon_cs_parser *parser, int error)
+ 	kfree(parser->relocs);
+ 	for (i = 0; i < parser->nchunks; i++) {
+ 		kfree(parser->chunks[i].kdata);
+-		kfree(parser->chunks[i].kpage[0]);
+-		kfree(parser->chunks[i].kpage[1]);
++		if (parser->rdev && (parser->rdev->flags & RADEON_IS_AGP)) {
++			kfree(parser->chunks[i].kpage[0]);
++			kfree(parser->chunks[i].kpage[1]);
++		}
+ 	}
+ 	kfree(parser->chunks);
+ 	kfree(parser->chunks_array);
 -- 
 1.7.9.5
 
