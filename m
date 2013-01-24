@@ -1,78 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab3AXMRq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 07:17:46 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35772 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752824Ab3AXMRj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 07:17:39 -0500
-Date: Thu, 24 Jan 2013 20:17:30 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stijn Devriendt <highguy@gmail.com>
-Cc: Roland Stigge <stigge@antcom.de>, gregkh@linuxfoundation.org,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
-        daniel-gl@gmx.net, rmallon@gmail.com, sr@denx.de, wg@grandegger.com,
-        mark.rutland@arm.com, nicolas.ferre@atmel.com
-Subject: Re: [PATCH 6/6 v14] gpio: Add block gpio to several gpio drivers
-Message-ID: <20130124121726.GQ4955@opensource.wolfsonmicro.com>
-References: <1358856404-8975-1-git-send-email-stigge@antcom.de>
- <1358856404-8975-7-git-send-email-stigge@antcom.de>
- <CAOY=C6H5xETt5UNXUfRkGW9q+bj0y2R3sXNvW87XXvQcYoL_-g@mail.gmail.com>
+	id S1753462Ab3AXMTN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 07:19:13 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56920 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752902Ab3AXMTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 07:19:09 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAPM=9tzqfDb7wtwRbDcYYcoB_HBLWksP8NYggsfj_GcNu=CY-A@mail.gmail.com>
+References: <1359001345-3446-1-git-send-email-airlied@gmail.com> <b2122295-0a35-4aba-90f3-8306b92af78b@email.android.com> <CAPM=9tzqfDb7wtwRbDcYYcoB_HBLWksP8NYggsfj_GcNu=CY-A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DCA/C9WSnDtl50zu"
-Content-Disposition: inline
-In-Reply-To: <CAOY=C6H5xETt5UNXUfRkGW9q+bj0y2R3sXNvW87XXvQcYoL_-g@mail.gmail.com>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] vgacon/vt: clear buffer attributes when we load a 512 character font
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 24 Jan 2013 06:18:58 -0600
+To: Dave Airlie <airlied@gmail.com>
+CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Message-ID: <1ef10934-f81f-4a4b-b4a9-4d499e9721bc@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The characters will morph anyway, it is just a matter off having them randomly scream with the intensity bit.
 
---DCA/C9WSnDtl50zu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+512-character mode is definitely useful... we get much wider language coverage with 512 than with 256, which is why most distros use a 512 console font.
 
-On Thu, Jan 24, 2013 at 01:02:38PM +0100, Stijn Devriendt wrote:
+Dave Airlie <airlied@gmail.com> wrote:
 
-> As a fictive example, consider the i2c-bitbang driver, which you could optimize
-> by using block-gpio with sda/scl in a single block. By offering the
-> block-gpio API
-> even when you cannot set all bits at once, you could cause timing issues.
-> You might be toggling the clock line before pushing out data, for example.
+>On Thu, Jan 24, 2013 at 3:20 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> We should clear this bit presumably on switching either from or to
+>512-char mode, since the bit doesn't really make sense either way.
+>
+>Yeah the only problem going from 512-char is that chars above 256 will
+>morph into garbage chars below 256, like ctrl chars, I don't really
+>want to face into doing some sort of safe translation out of 512-char
+>mode, from reading around the net, 512 char mode doesn't seem all that
+>brilliantly useful.
+>
+>Dave.
 
-> The same holds below, for a driver that has separate hi/lo bits.
-
-If there's a strict ordering requirement on updates then I would expect
-a user to explictly code that in hardware otherwise there may be
-hardware level issues with unpredictable results; besides in general it
-seems silly to force users to open code both versions if they don't want
-to rely on this API.
-
---DCA/C9WSnDtl50zu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRASZNAAoJELSic+t+oim9Q5MP/1R9vJk2LZNFHHoAC/dh14L2
-Hy0TLb73kDDOjLjgYd8cod6ukHultUaeLH3JbMpqzGhMBL/qoSX1doPFoEqXhbnK
-Eq9di+gqQA8naP23+hmp/MijV2ua0I4FwGI1LjwnTw5uCbOMkJ9br3gq4m2kSjbX
-5nIWNpa6BumR99qoJHwzplKrRaEGxN1ZHat/+sf1va/06JdqKAo9cNPR8jfHnwcg
-h8dIEJx6zm5Iql+sZhqlqc+Bnf5IP4LjI35j4QNskaFF9EJm6Q36IbFatRXfCpLG
-CzdIzlT0FDr/1sHDY3IZF931ca9t9Gqk1X+S15e0xlBRJ59dZq6moSoQmFPZyI/9
-RDqUm/ODRVNdPXVNEtx6VZD3Hz9s4SxNF1f681YLJWYFEv7SW4sXc27lLDwq5+wc
-Je59kiNKnGW5zkhFBv5v63liDSmOKRJM6vTPNtTIQ3o/VhGDF+q479bRJ7jSzyE3
-UKgQ47LeXeZmWttvG6SoLaV1t4QFQY0bXdNjRkwr4YrUWmBJa1XjFtOHttw67M8T
-yWsFvdyD3AU8IgMZz32kcg6Q4gYZk/zU3JB3aKvi3LGG71Y1oj7Jf6+uL5MlI/JH
-PNnNAAahd7q0VDN7C1H6Cl+FOr2of9mkGtcMwTE0vnNHF5/ln3NZ9tUn1uHt4D0S
-DMACQpb6nNQBpdnp85Qk
-=AbYf
------END PGP SIGNATURE-----
-
---DCA/C9WSnDtl50zu--
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
