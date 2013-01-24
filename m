@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945953Ab3AXV2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:28:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34799 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757082Ab3AXV2A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:28:00 -0500
-Date: Thu, 24 Jan 2013 13:27:59 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Valdis.Kletnieks@vt.edu, Hillf Danton <dhillf@gmail.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org, zab@zabbo.net, linux-fsdevel@vger.kernel.org
-Subject: Re: next-20130117 - kernel BUG with aio
-Message-Id: <20130124132759.c892fb4c.akpm@linux-foundation.org>
-In-Reply-To: <20130124211850.GH26407@google.com>
-References: <3544.1358774694@turing-police.cc.vt.edu>
-	<CAJd=RBBBbv07aoOTF=PNy1FpCyuRV7fnQEGX_DXEYFSSknKtqQ@mail.gmail.com>
-	<2553.1358890098@turing-police.cc.vt.edu>
-	<CAJd=RBCHRDzyjY_hOZCj6rHBXzb3f5wWxdqXYuLbQXLe2n4JeA@mail.gmail.com>
-	<13450.1359048141@turing-police.cc.vt.edu>
-	<20130124211850.GH26407@google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1161048Ab3AXVPI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:15:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40116 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756284Ab3AXVOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:14:08 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 15/46] wake_up_process() should be never used to wakeup a TASK_STOPPED/TRACED task
+Date: Thu, 24 Jan 2013 13:12:53 -0800
+Message-Id: <20130124211141.310754591@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
+References: <20130124211135.862755794@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jan 2013 13:18:50 -0800
-Kent Overstreet <koverstreet@google.com> wrote:
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-> So, Andrew - that "smoosh struct kiocb" patch should just be dropped,
-> even if I fixed that issue clearly the idea is a lot less safe than I
-> thought. I've got patches for the other stuff I'm going to mail out
-> momentarily.
+------------------
 
-Dropped.  Do you expect that this will fix everything?
+From: Oleg Nesterov <oleg@redhat.com>
 
-Please cc linux-fsdevel on the aio stuff - I'm seeing some AIO things
-over there which aren't cc'ed to lkml or linux-aio.
+commit 9067ac85d533651b98c2ff903182a20cbb361fcb upstream.
 
-Please also take a look at Jan's recent
-http://www.spinics.net/lists/linux-fsdevel/msg61738.html and have a
-think about how this plays with your patchset.
+wake_up_process() should never wakeup a TASK_STOPPED/TRACED task.
+Change it to use TASK_NORMAL and add the WARN_ON().
+
+TASK_ALL has no other users, probably can be killed.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/sched/core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1497,7 +1497,8 @@ out:
+  */
+ int wake_up_process(struct task_struct *p)
+ {
+-	return try_to_wake_up(p, TASK_ALL, 0);
++	WARN_ON(task_is_stopped_or_traced(p));
++	return try_to_wake_up(p, TASK_NORMAL, 0);
+ }
+ EXPORT_SYMBOL(wake_up_process);
+ 
+
 
