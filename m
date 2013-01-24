@@ -1,90 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab3AXPH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:07:56 -0500
-Received: from mga03.intel.com ([143.182.124.21]:63589 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753220Ab3AXPHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:07:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,530,1355126400"; 
-   d="scan'208";a="194724367"
-Message-ID: <51014E34.60309@intel.com>
-Date: Thu, 24 Jan 2013 23:07:32 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com> <20130124094439.GB13463@pd.tnic>
-In-Reply-To: <20130124094439.GB13463@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754380Ab3AXPIb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:08:31 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:37538 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446Ab3AXPI1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 10:08:27 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: tj@kernel.org, pmatouse@redhat.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 04/13] sg_io: resolve conflicts between commands assigned to multiple classes (CVE-2012-4542)
+Date: Thu, 24 Jan 2013 16:00:40 +0100
+Message-Id: <1359039649-17734-5-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
+References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 05:44 PM, Borislav Petkov wrote:
-> On Thu, Jan 24, 2013 at 11:06:42AM +0800, Alex Shi wrote:
->> Since the runnable info needs 345ms to accumulate, balancing
->> doesn't do well for many tasks burst waking. After talking with Mike
->> Galbraith, we are agree to just use runnable avg in power friendly 
->> scheduling and keep current instant load in performance scheduling for 
->> low latency.
->>
->> So the biggest change in this version is removing runnable load avg in
->> balance and just using runnable data in power balance.
->>
->> The patchset bases on Linus' tree, includes 3 parts,
->> ** 1, bug fix and fork/wake balancing clean up. patch 1~5,
->> ----------------------
->> the first patch remove one domain level. patch 2~5 simplified fork/wake
->> balancing, it can increase 10+% hackbench performance on our 4 sockets
->> SNB EP machine.
-> 
-> Ok, I see some benchmarking results here and there in the commit
-> messages but since this is touching the scheduler, you probably would
-> need to make sure it doesn't introduce performance regressions vs
-> mainline with a comprehensive set of benchmarks.
-> 
+Some SCSI commands can be sent to disks via SG_IO even by unprivileged
+users.  Unfortunately, some opcodes overlap across SCSI device classes
+and have different meanings for different classes.  Four of them can
+be used for read-only file descriptors on MMC, but should be limited to
+descriptors opened for read-write on SBC:
 
-Thanks a lot for your comments, Borislav! :)
+The current bitmap of allowed commands is designed for MMC devices
+(roughly, "play/burn CDs without requiring root").
 
-For this patchset, the code will just check current policy, if it is
-performance, the code patch will back to original performance code at
-once. So there should no performance change on performance policy.
+- READ SUBCHANNEL <-> UNMAP (destructive, but no control on written
+  data)
 
-I once tested the balance policy performance with benchmark
-kbuild/hackbench/aim9/dbench/tbench on version 2, only hackbench has a
-bit drop ~3%. others have no clear change.
+- GET PERFORMANCE <-> ERASE (not really a problem, no one supports
+  ERASE anyway)
 
-> And, AFAICR, mainline does by default the 'performance' scheme by
-> spreading out tasks to idle cores, so have you tried comparing vanilla
-> mainline to your patchset in the 'performance' setting so that you can
-> make sure there are no problems there? And not only hackbench or a
-> microbenchmark but aim9 (I saw that in a commit message somewhere) and
-> whatever else multithreaded benchmark you can get your hands on.
-> 
-> Also, you might want to run it on other machines too, not only SNB :-)
+- READ DISC INFORMATION <-> XPWRITE (not commonly implemented but
+  most dangerous)
 
-Anyway I will redo the performance testing on this version again on all
-machine. but doesn't expect something change. :)
+- PLAY AUDIO TI <-> SANITIZE (a very new command)
 
-> And what about ARM, maybe someone there can run your patchset too?
-> 
-> So, it would be cool to see comprehensive results from all those runs
-> and see what the numbers say.
-> 
-> Thanks.
-> 
+To fix this, the series splits the bitmap entries for these four
+commands into two entries, one read-only for MMC and one read-write
+for the other device classes.
 
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ block/scsi_ioctl.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index e68add2..c266546 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -181,29 +181,33 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	sgio_bitmap_set(0x2E, D|      W|R|O|      B|K        , write); // WRITE AND VERIFY(10)
+ 	sgio_bitmap_set(0x35, D|      W|R|O|      B|K        , write); // SYNCHRONIZE CACHE(10)
+ 	sgio_bitmap_set(0x3F, D|      W|  O                  , write); // WRITE LONG(10)
++	sgio_bitmap_set(0x42, D                              , write); // UNMAP
++	sgio_bitmap_set(0x48, D|                  B          , write); // SANITIZE
++	sgio_bitmap_set(0x51, D                              , write); // XPWRITE(10)
+ 	sgio_bitmap_set(0x8A, D|T|    W|  O|      B          , write); // WRITE(16)
+ 	sgio_bitmap_set(0xAA, D|      W|R|O|              C  , write); // WRITE(12)
++	sgio_bitmap_set(0xAC,             O                  , write); // ERASE(12)
+ 	sgio_bitmap_set(0xAE, D|      W|  O                  , write); // WRITE AND VERIFY(12)
+ 	sgio_bitmap_set(0xEA, D|      W|  O                  , write); // WRITE_LONG_2 ??
+ 
+ 	/* (mostly) MMC */
+ 
+ 	sgio_bitmap_set(0x23,           R                    , read);  // READ FORMAT CAPACITIES
+-	sgio_bitmap_set(0x42, D|        R                    , read);  // READ SUB-CHANNEL / UNMAP !!
++	sgio_bitmap_set(0x42,           R                    , read);  // READ SUB-CHANNEL
+ 	sgio_bitmap_set(0x43,           R                    , read);  // READ TOC/PMA/ATIP
+ 	sgio_bitmap_set(0x44,   T|      R|            V      , read);  // READ HEADER
+ 	sgio_bitmap_set(0x45,           R                    , read);  // PLAY AUDIO(10)
+ 	sgio_bitmap_set(0x46,           R                    , read);  // GET CONFIGURATION
+ 	sgio_bitmap_set(0x47,           R                    , read);  // PLAY AUDIO MSF
+-	sgio_bitmap_set(0x48, D|        R|        B          , read);  // PLAY AUDIO TI / SANITIZE !!
++	sgio_bitmap_set(0x48,           R                    , read);  // PLAY AUDIO TI
+ 	sgio_bitmap_set(0x4A,           R                    , read);  // GET EVENT STATUS NOTIFICATION
+ 	sgio_bitmap_set(0x4B,           R                    , read);  // PAUSE/RESUME
+ 	sgio_bitmap_set(0x4E,           R                    , read);  // STOP PLAY/SCAN
+-	sgio_bitmap_set(0x51, D|        R                    , read);  // READ DISC INFORMATION / XPWRITE(10) !!
++	sgio_bitmap_set(0x51,           R                    , read);  // READ DISC INFORMATION
+ 	sgio_bitmap_set(0x52,           R                    , read);  // READ TRACK INFORMATION
+ 	sgio_bitmap_set(0x5C,           R                    , read);  // READ BUFFER CAPACITY
+ 	sgio_bitmap_set(0xA4,           R                    , read);  // REPORT KEY
+-	sgio_bitmap_set(0xAC,           R|O                  , read);  // GET PERFORMANCE / ERASE !!
++	sgio_bitmap_set(0xAC,           R                    , read);  // GET PERFORMANCE
+ 	sgio_bitmap_set(0xAD,           R                    , read);  // READ DVD STRUCTURE
+ 	sgio_bitmap_set(0xB9,           R                    , read);  // READ CD MSF
+ 	sgio_bitmap_set(0xBA,           R                    , read);  // SCAN
 -- 
-Thanks
-    Alex
+1.7.1
+
+
