@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab3AXQ7p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 11:59:45 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:45154 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752667Ab3AXQ7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 11:59:44 -0500
-X-SBRS: None
-X-MesageID: 4957388
-X-Ironport-Server: ftlpip01.citrite.net
-X-Remote-IP: 75.150.106.249
-X-Policy: $Relay
-X-IronPort-AV: E=Sophos;i="4.84,530,1355097600"; 
-   d="scan'208";a="4957388"
-From: Ben Guthro <benjamin.guthro@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Cc: Ben Guthro <benjamin.guthro@citrix.com>
-Subject: [PATCH] xen: Re-upload processor PM data to hypervisor after S3 resume
-Date: Thu, 24 Jan 2013 11:59:19 -0500
-Message-Id: <1359046759-11376-1-git-send-email-benjamin.guthro@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754817Ab3AXRAD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 12:00:03 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:57871 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754728Ab3AXRAA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 12:00:00 -0500
+Date: Thu, 24 Jan 2013 17:59:55 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Clark Williams <williams@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2] sched: add a tuning knob to allow changing RR tmeslice
+Message-ID: <20130124165955.GA9324@gmail.com>
+References: <20121108195113.2dd51d43@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121108195113.2dd51d43@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Upon resume, it was found that ACPI C-states were missing from non-boot CPUs.
-This change registers a syscore_ops handler for this case, and performs a
-subset of the xen_acpi_processor_init() functionality to achieve this case.
 
-Signed-Off-By: Ben Guthro <benjamin.guthro@citrix.com>
----
- drivers/xen/xen-acpi-processor.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+* Clark Williams <williams@redhat.com> wrote:
 
-diff --git a/drivers/xen/xen-acpi-processor.c b/drivers/xen/xen-acpi-processor.c
-index 316df65..1510c64 100644
---- a/drivers/xen/xen-acpi-processor.c
-+++ b/drivers/xen/xen-acpi-processor.c
-@@ -25,6 +25,7 @@
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/types.h>
-+#include <linux/syscore_ops.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
- #include <acpi/processor.h>
-@@ -467,6 +468,26 @@ static void free_acpi_perf_data(void)
- 	free_percpu(acpi_perf_data);
- }
- 
-+static void xen_acpi_processor_resume(void)
-+{
-+	int i;
-+	printk(KERN_INFO "Resuming Xen processor info\n");
-+
-+	for_each_possible_cpu(i) {
-+		struct acpi_processor *_pr;
-+		_pr = per_cpu(processors, i /* APIC ID */);
-+		if (!_pr)
-+			continue;
-+
-+		__clear_bit(_pr->acpi_id, acpi_ids_done);
-+		(void)upload_pm_data(_pr);
-+	}
-+}
-+
-+static struct syscore_ops xap_syscore_ops = {
-+	.resume			= xen_acpi_processor_resume,
-+};
-+
- static int __init xen_acpi_processor_init(void)
- {
- 	struct acpi_processor *pr_backup = NULL;
-@@ -532,6 +553,8 @@ static int __init xen_acpi_processor_init(void)
- 	if (rc)
- 		goto err_unregister;
- 
-+	register_syscore_ops(&xap_syscore_ops);
-+
- 	return 0;
- err_unregister:
- 	for_each_possible_cpu(i) {
-@@ -550,6 +573,7 @@ static void __exit xen_acpi_processor_exit(void)
- 	int i;
- 
- 	kfree(acpi_ids_done);
-+	unregister_syscore_ops(&xap_syscore_ops);
- 	for_each_possible_cpu(i) {
- 		struct acpi_processor_performance *perf;
- 		perf = per_cpu_ptr(acpi_perf_data, i);
--- 
-1.7.9.5
+> This version stores the user-input value in a separate 
+> location from the jiffies values used by the scheduler, to 
+> prevent a race condition.
+> 
+> Subject: [PATCH v2] sched: add a tuning knob to allow changing 
+> RR timeslice
 
+looks useful.
+
+> @@ -2010,7 +2010,7 @@ static void task_tick_rt(struct rq *rq, struct
+> task_struct *p, int queued) if (--p->rt.time_slice)
+>  		return;
+>  
+> -	p->rt.time_slice = RR_TIMESLICE;
+> +	p->rt.time_slice = sched_rr_timeslice;
+>  
+>  	/*
+>  	 * Requeue to the end of queue if we (and all of our
+> ancestors) are the @@ -2041,7 +2041,7 @@ static unsigned int
+> get_rr_interval_rt(struct rq *rq, struct task_struct *task)
+>  	 * Time slice is 0 for SCHED_FIFO tasks
+
+Patch wont apply due to patch corruption, alas.
+
+Thanks,
+
+	Ingo
