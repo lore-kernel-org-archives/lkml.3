@@ -1,96 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757122Ab3AXV2G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:28:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40651 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932081Ab3AXVQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:16:04 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [ 04/22] evm: checking if removexattr is not a NULL
-Date: Thu, 24 Jan 2013 13:15:25 -0800
-Message-Id: <20130124211506.072245635@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130124211504.701368763@linuxfoundation.org>
-References: <20130124211504.701368763@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1945953Ab3AXV2T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:28:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34799 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757082Ab3AXV2A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:28:00 -0500
+Date: Thu, 24 Jan 2013 13:27:59 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Valdis.Kletnieks@vt.edu, Hillf Danton <dhillf@gmail.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org, zab@zabbo.net, linux-fsdevel@vger.kernel.org
+Subject: Re: next-20130117 - kernel BUG with aio
+Message-Id: <20130124132759.c892fb4c.akpm@linux-foundation.org>
+In-Reply-To: <20130124211850.GH26407@google.com>
+References: <3544.1358774694@turing-police.cc.vt.edu>
+	<CAJd=RBBBbv07aoOTF=PNy1FpCyuRV7fnQEGX_DXEYFSSknKtqQ@mail.gmail.com>
+	<2553.1358890098@turing-police.cc.vt.edu>
+	<CAJd=RBCHRDzyjY_hOZCj6rHBXzb3f5wWxdqXYuLbQXLe2n4JeA@mail.gmail.com>
+	<13450.1359048141@turing-police.cc.vt.edu>
+	<20130124211850.GH26407@google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 24 Jan 2013 13:18:50 -0800
+Kent Overstreet <koverstreet@google.com> wrote:
 
-------------------
+> So, Andrew - that "smoosh struct kiocb" patch should just be dropped,
+> even if I fixed that issue clearly the idea is a lot less safe than I
+> thought. I've got patches for the other stuff I'm going to mail out
+> momentarily.
 
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Dropped.  Do you expect that this will fix everything?
 
-commit a67adb997419fb53540d4a4f79c6471c60bc69b6 upstream.
+Please cc linux-fsdevel on the aio stuff - I'm seeing some AIO things
+over there which aren't cc'ed to lkml or linux-aio.
 
-The following lines of code produce a kernel oops.
-
-fd = socket(PF_FILE, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0);
-fchmod(fd, 0666);
-
-[  139.922364] BUG: unable to handle kernel NULL pointer dereference at   (null)
-[  139.924982] IP: [<  (null)>]   (null)
-[  139.924982] *pde = 00000000
-[  139.924982] Oops: 0000 [#5] SMP
-[  139.924982] Modules linked in: fuse dm_crypt dm_mod i2c_piix4 serio_raw evdev binfmt_misc button
-[  139.924982] Pid: 3070, comm: acpid Tainted: G      D      3.8.0-rc2-kds+ #465 Bochs Bochs
-[  139.924982] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
-[  139.924982] EIP is at 0x0
-[  139.924982] EAX: cf5ef000 EBX: cf5ef000 ECX: c143d600 EDX: c15225f2
-[  139.924982] ESI: cf4d2a1c EDI: cf4d2a1c EBP: cc02df10 ESP: cc02dee4
-[  139.924982]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[  139.924982] CR0: 80050033 CR2: 00000000 CR3: 0c059000 CR4: 000006d0
-[  139.924982] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-[  139.924982] DR6: ffff0ff0 DR7: 00000400
-[  139.924982] Process acpid (pid: 3070, ti=cc02c000 task=d7705340 task.ti=cc02c000)
-[  139.924982] Stack:
-[  139.924982]  c1203c88 00000000 cc02def4 cf4d2a1c ae21eefa 471b60d5 1083c1ba c26a5940
-[  139.924982]  e891fb5e 00000041 00000004 cc02df1c c1203964 00000000 cc02df4c c10e20c3
-[  139.924982]  00000002 00000000 00000000 22222222 c1ff2222 cf5ef000 00000000 d76efb08
-[  139.924982] Call Trace:
-[  139.924982]  [<c1203c88>] ? evm_update_evmxattr+0x5b/0x62
-[  139.924982]  [<c1203964>] evm_inode_post_setattr+0x22/0x26
-[  139.924982]  [<c10e20c3>] notify_change+0x25f/0x281
-[  139.924982]  [<c10cbf56>] chmod_common+0x59/0x76
-[  139.924982]  [<c10e27a1>] ? put_unused_fd+0x33/0x33
-[  139.924982]  [<c10cca09>] sys_fchmod+0x39/0x5c
-[  139.924982]  [<c13f4f30>] syscall_call+0x7/0xb
-[  139.924982] Code:  Bad EIP value.
-
-This happens because sockets do not define the removexattr operation.
-Before removing the xattr, verify the removexattr function pointer is
-not NULL.
-
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- security/integrity/evm/evm_crypto.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/security/integrity/evm/evm_crypto.c
-+++ b/security/integrity/evm/evm_crypto.c
-@@ -205,9 +205,9 @@ int evm_update_evmxattr(struct dentry *d
- 		rc = __vfs_setxattr_noperm(dentry, XATTR_NAME_EVM,
- 					   &xattr_data,
- 					   sizeof(xattr_data), 0);
--	}
--	else if (rc == -ENODATA)
-+	} else if (rc == -ENODATA && inode->i_op->removexattr) {
- 		rc = inode->i_op->removexattr(dentry, XATTR_NAME_EVM);
-+	}
- 	return rc;
- }
- 
-
+Please also take a look at Jan's recent
+http://www.spinics.net/lists/linux-fsdevel/msg61738.html and have a
+think about how this plays with your patchset.
 
