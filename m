@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab3AXLJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:09:29 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:47370 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753505Ab3AXLJT (ORCPT
+	id S1753846Ab3AXLJn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:09:43 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:34123 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543Ab3AXLJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:09:19 -0500
+	Thu, 24 Jan 2013 06:09:28 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v3 31/71] ARC: [plat-arcfpga] Static platform device for CONFIG_SERIAL_ARC
-Date: Thu, 24 Jan 2013 16:36:02 +0530
-Message-ID: <1359025589-22277-19-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v3 28/71] ARC: Page Fault handling
+Date: Thu, 24 Jan 2013 16:36:01 +0530
+Message-ID: <1359025589-22277-18-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
 References: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
@@ -23,239 +23,254 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-N.B. This is old style of hardcoding platform device specific info
-in code and it's instantiation thererof using platform_add_devices().
-Subsequent patches replace this with DeviceTree based runtime probe.
+This includes recent changes to make handler "retry" and/or "killable"
 
-This patch has been retained just as an example of "don't-do-this" for
-newer kernel ports.
+The killable (early exit) logic is loosely based on how SH implements it
+	return if SIGKILL + either of VM_FAULT_OOM or VM_FAULT_RETRY
+which is different from Hexagon implementation which would NOT early
+exit for
+	SIGKILL + VM_FAULT_OOM + !VM_FAULT_RETRY
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arc/include/asm/irq.h                  |    1 +
- arch/arc/plat-arcfpga/include/plat/irq.h    |   27 +++++++
- arch/arc/plat-arcfpga/include/plat/memmap.h |   31 ++++++++
- arch/arc/plat-arcfpga/platform.c            |  108 +++++++++++++++++++++++++++
- 4 files changed, 167 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/plat-arcfpga/include/plat/irq.h
- create mode 100644 arch/arc/plat-arcfpga/include/plat/memmap.h
+ arch/arc/mm/fault.c |  228 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 228 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/mm/fault.c
 
-diff --git a/arch/arc/include/asm/irq.h b/arch/arc/include/asm/irq.h
-index 514b302..c91b2e4 100644
---- a/arch/arc/include/asm/irq.h
-+++ b/arch/arc/include/asm/irq.h
-@@ -13,6 +13,7 @@
- #define TIMER0_IRQ      3
- #define TIMER1_IRQ      4
- 
-+#include <plat/irq.h>		/* Board Specific IRQ assignments */
- #include <asm-generic/irq.h>
- 
- extern void __init arc_init_IRQ(void);
-diff --git a/arch/arc/plat-arcfpga/include/plat/irq.h b/arch/arc/plat-arcfpga/include/plat/irq.h
+diff --git a/arch/arc/mm/fault.c b/arch/arc/mm/fault.c
 new file mode 100644
-index 0000000..b34e087
+index 0000000..af55aab
 --- /dev/null
-+++ b/arch/arc/plat-arcfpga/include/plat/irq.h
-@@ -0,0 +1,27 @@
-+/*
++++ b/arch/arc/mm/fault.c
+@@ -0,0 +1,228 @@
++/* Page Fault Handling for ARC (TLB Miss / ProtV)
++ *
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ *
-+ * vineetg: Feb 2009
-+ *  -For AA4 board, IRQ assignments to peripherals
 + */
 +
-+#ifndef __PLAT_IRQ_H
-+#define __PLAT_IRQ_H
++#include <linux/signal.h>
++#include <linux/interrupt.h>
++#include <linux/sched.h>
++#include <linux/errno.h>
++#include <linux/ptrace.h>
++#include <linux/version.h>
++#include <linux/uaccess.h>
++#include <linux/kdebug.h>
++#include <asm/pgalloc.h>
 +
-+#define NR_IRQS		16
++static int handle_vmalloc_fault(struct mm_struct *mm, unsigned long address)
++{
++	/*
++	 * Synchronize this task's top level page-table
++	 * with the 'reference' page table.
++	 */
++	pgd_t *pgd, *pgd_k;
++	pud_t *pud, *pud_k;
++	pmd_t *pmd, *pmd_k;
 +
-+#define UART0_IRQ	5
-+#define UART1_IRQ	10
-+#define UART2_IRQ	11
++	pgd = pgd_offset_fast(mm, address);
++	pgd_k = pgd_offset_k(address);
 +
-+#define VMAC_IRQ	6
++	if (!pgd_present(*pgd_k))
++		goto bad_area;
 +
-+#define IDE_IRQ		13
-+#define PCI_IRQ		14
-+#define PS2_IRQ		15
++	pud = pud_offset(pgd, address);
++	pud_k = pud_offset(pgd_k, address);
++	if (!pud_present(*pud_k))
++		goto bad_area;
 +
-+#endif
-diff --git a/arch/arc/plat-arcfpga/include/plat/memmap.h b/arch/arc/plat-arcfpga/include/plat/memmap.h
-new file mode 100644
-index 0000000..1663f33
---- /dev/null
-+++ b/arch/arc/plat-arcfpga/include/plat/memmap.h
-@@ -0,0 +1,31 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * vineetg: Feb 2009
-+ *  -For AA4 board, System Memory Map for Peripherals etc
-+ */
++	pmd = pmd_offset(pud, address);
++	pmd_k = pmd_offset(pud_k, address);
++	if (!pmd_present(*pmd_k))
++		goto bad_area;
 +
-+#ifndef __PLAT_MEMMAP_H
-+#define __PLAT_MEMMAP_H
++	set_pmd(pmd, *pmd_k);
 +
-+#define UART0_BASE              0xC0FC1000
-+#define UART1_BASE              0xC0FC1100
++	/* XXX: create the TLB entry here */
++	return 0;
 +
-+#define VMAC_REG_BASEADDR       0xC0FC2000
-+
-+#define IDE_CONTROLLER_BASE     0xC0FC9000
-+
-+#define AHB_PCI_HOST_BRG_BASE   0xC0FD0000
-+
-+#define PGU_BASEADDR            0xC0FC8000
-+#define VLCK_ADDR               0xC0FCF028
-+
-+#define BVCI_LAT_UNIT_BASE      0xC0FED000
-+
-+#define PS2_BASE_ADDR		0xC0FCC000
-+
-+#endif
-diff --git a/arch/arc/plat-arcfpga/platform.c b/arch/arc/plat-arcfpga/platform.c
-index 7b5dcab..5388b31 100644
---- a/arch/arc/plat-arcfpga/platform.c
-+++ b/arch/arc/plat-arcfpga/platform.c
-@@ -10,7 +10,102 @@
- 
- #include <linux/types.h>
- #include <linux/init.h>
-+#include <linux/device.h>
- #include <linux/platform_device.h>
-+#include <linux/console.h>
-+#include <asm/setup.h>
-+#include <asm/irq.h>
-+#include <asm/clk.h>
-+#include <plat/memmap.h>
-+
-+/*----------------------- Platform Devices -----------------------------*/
-+
-+#if defined(CONFIG_SERIAL_ARC) || defined(CONFIG_SERIAL_ARC_MODULE)
-+
-+static unsigned long arc_uart_info[] = {
-+	CONFIG_ARC_SERIAL_BAUD,	/* uart->baud */
-+	-1,			/* uart->port.uartclk */
-+	-1,			/* uart->is_emulated (runtime @running_on_hw) */
-+	0
-+};
-+
-+#define ARC_UART_DEV(n)					\
-+							\
-+static struct resource arc_uart##n##_res[] = {		\
-+	{						\
-+		.start = UART##n##_BASE,			\
-+		.end   = UART##n##_BASE + 0xFF,		\
-+		.flags = IORESOURCE_MEM,		\
-+	},						\
-+	{						\
-+		.start = UART##n##_IRQ,			\
-+		.end   = UART##n##_IRQ,			\
-+		.flags = IORESOURCE_IRQ,		\
-+	},						\
-+};							\
-+							\
-+static struct platform_device arc_uart##n##_dev = {	\
-+	.name = "arc-uart",				\
-+	.id = n,					\
-+	.num_resources = ARRAY_SIZE(arc_uart##n##_res),	\
-+	.resource = arc_uart##n##_res,			\
-+	.dev = {					\
-+		.platform_data = &arc_uart_info,	\
-+	},						\
++bad_area:
++	return 1;
 +}
 +
-+ARC_UART_DEV(0);
-+#if CONFIG_SERIAL_ARC_NR_PORTS > 1
-+ARC_UART_DEV(1);
-+#endif
-+
-+static struct platform_device *fpga_early_devs[] __initdata = {
-+#if defined(CONFIG_SERIAL_ARC_CONSOLE)
-+	&arc_uart0_dev,
-+#endif
-+};
-+
-+static void arc_fpga_serial_init(void)
++void do_page_fault(struct pt_regs *regs, int write, unsigned long address,
++		   unsigned long cause_code)
 +{
-+	arc_uart_info[1] = arc_get_core_freq();
-+
-+	/* To let driver workaround ISS bug: baudh Reg can't be set to 0 */
-+	arc_uart_info[2] = !running_on_hw;
-+
-+	early_platform_add_devices(fpga_early_devs,
-+				   ARRAY_SIZE(fpga_early_devs));
++	struct vm_area_struct *vma = NULL;
++	struct task_struct *tsk = current;
++	struct mm_struct *mm = tsk->mm;
++	siginfo_t info;
++	int fault, ret;
++	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
++				(write ? FAULT_FLAG_WRITE : 0);
 +
 +	/*
-+	 * ARC console driver registers itself as an early platform driver
-+	 * of class "earlyprintk".
-+	 * Install it here, followed by probe of devices.
-+	 * The installation here doesn't require earlyprintk in command line
-+	 * To do so however, replace the lines below with
-+	 *	parse_early_param();
-+	 *	early_platform_driver_probe("earlyprintk", 1, 1);
-+	 *						      ^^
++	 * We fault-in kernel-space virtual memory on-demand. The
++	 * 'reference' page table is init_mm.pgd.
++	 *
++	 * NOTE! We MUST NOT take any locks for this case. We may
++	 * be in an interrupt or a critical region, and should
++	 * only copy the information from the master page table,
++	 * nothing more.
 +	 */
-+	early_platform_driver_register_all("earlyprintk");
-+	early_platform_driver_probe("earlyprintk", 1, 0);
++	if (address >= VMALLOC_START && address <= VMALLOC_END) {
++		ret = handle_vmalloc_fault(mm, address);
++		if (unlikely(ret))
++			goto bad_area_nosemaphore;
++		else
++			return;
++	}
++
++	info.si_code = SEGV_MAPERR;
 +
 +	/*
-+	 * This is to make sure that arc uart would be preferred console
-+	 * despite one/more of following:
-+	 *   -command line lacked "console=ttyARC0" or
-+	 *   -CONFIG_VT_CONSOLE was enabled (for no reason whatsoever)
-+	 * Note that this needs to be done after above early console is reg,
-+	 * otherwise the early console never gets a chance to run.
++	 * If we're in an interrupt or have no user
++	 * context, we must not take the fault..
 +	 */
-+	add_preferred_console("ttyARC", 0, "115200");
++	if (in_atomic() || !mm)
++		goto no_context;
++
++retry:
++	down_read(&mm->mmap_sem);
++	vma = find_vma(mm, address);
++	if (!vma)
++		goto bad_area;
++	if (vma->vm_start <= address)
++		goto good_area;
++	if (!(vma->vm_flags & VM_GROWSDOWN))
++		goto bad_area;
++	if (expand_stack(vma, address))
++		goto bad_area;
++
++	/*
++	 * Ok, we have a good vm_area for this memory access, so
++	 * we can handle it..
++	 */
++good_area:
++	info.si_code = SEGV_ACCERR;
++
++	/* Handle protection violation, execute on heap or stack */
++
++	if (cause_code == ((ECR_V_PROTV << 16) | ECR_C_PROTV_INST_FETCH))
++		goto bad_area;
++
++	if (write) {
++		if (!(vma->vm_flags & VM_WRITE))
++			goto bad_area;
++	} else {
++		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
++			goto bad_area;
++	}
++
++survive:
++	/*
++	 * If for any reason at all we couldn't handle the fault,
++	 * make sure we exit gracefully rather than endlessly redo
++	 * the fault.
++	 */
++	fault = handle_mm_fault(mm, vma, address, flags);
++
++	/* If Pagefault was interrupted by SIGKILL, exit page fault "early" */
++	if (unlikely(fatal_signal_pending(current))) {
++		if ((fault & VM_FAULT_ERROR) && !(fault & VM_FAULT_RETRY))
++			up_read(&mm->mmap_sem);
++		if (user_mode(regs))
++			return;
++	}
++
++	if (likely(!(fault & VM_FAULT_ERROR))) {
++		if (flags & FAULT_FLAG_ALLOW_RETRY) {
++			/* To avoid updating stats twice for retry case */
++			if (fault & VM_FAULT_MAJOR)
++				tsk->maj_flt++;
++			else
++				tsk->min_flt++;
++
++			if (fault & VM_FAULT_RETRY) {
++				flags &= ~FAULT_FLAG_ALLOW_RETRY;
++				flags |= FAULT_FLAG_TRIED;
++				goto retry;
++			}
++		}
++
++		/* Fault Handled Gracefully */
++		up_read(&mm->mmap_sem);
++		return;
++	}
++
++	/* TBD: switch to pagefault_out_of_memory() */
++	if (fault & VM_FAULT_OOM)
++		goto out_of_memory;
++	else if (fault & VM_FAULT_SIGBUS)
++		goto do_sigbus;
++
++	/* no man's land */
++	BUG();
++
++	/*
++	 * Something tried to access memory that isn't in our memory map..
++	 * Fix it, but check if it's kernel or user first..
++	 */
++bad_area:
++	up_read(&mm->mmap_sem);
++
++bad_area_nosemaphore:
++	/* User mode accesses just cause a SIGSEGV */
++	if (user_mode(regs)) {
++		tsk->thread.fault_address = address;
++		tsk->thread.cause_code = cause_code;
++		info.si_signo = SIGSEGV;
++		info.si_errno = 0;
++		/* info.si_code has been set above */
++		info.si_addr = (void __user *)address;
++		force_sig_info(SIGSEGV, &info, tsk);
++		return;
++	}
++
++no_context:
++	/* Are we prepared to handle this kernel fault?
++	 *
++	 * (The kernel has valid exception-points in the source
++	 *  when it acesses user-memory. When it fails in one
++	 *  of those points, we find it in a table and do a jump
++	 *  to some fixup code that loads an appropriate error
++	 *  code)
++	 */
++	if (fixup_exception(regs))
++		return;
++
++	die("Oops", regs, address, cause_code);
++
++out_of_memory:
++	if (is_global_init(tsk)) {
++		yield();
++		goto survive;
++	}
++	up_read(&mm->mmap_sem);
++
++	if (user_mode(regs))
++		do_group_exit(SIGKILL);	/* This will never return */
++
++	goto no_context;
++
++do_sigbus:
++	up_read(&mm->mmap_sem);
++
++	if (!user_mode(regs))
++		goto no_context;
++
++	tsk->thread.fault_address = address;
++	tsk->thread.cause_code = cause_code;
++	info.si_signo = SIGBUS;
++	info.si_errno = 0;
++	info.si_code = BUS_ADRERR;
++	info.si_addr = (void __user *)address;
++	force_sig_info(SIGBUS, &info, tsk);
 +}
-+
-+#else
-+
-+static void arc_fpga_serial_init(void)
-+{
-+}
-+
-+#endif	/* CONFIG_SERIAL_ARC */
- 
- /*
-  * Early Platform Initialization called from setup_arch()
-@@ -18,12 +113,25 @@
- void __init arc_platform_early_init(void)
- {
- 	pr_info("[plat-arcfpga]: registering early dev resources\n");
-+
-+	arc_fpga_serial_init();
- }
- 
-+static struct platform_device *fpga_devs[] __initdata = {
-+#if defined(CONFIG_SERIAL_ARC) || defined(CONFIG_SERIAL_ARC_MODULE)
-+	&arc_uart0_dev,
-+#if CONFIG_SERIAL_ARC_NR_PORTS > 1
-+	&arc_uart1_dev,
-+#endif
-+#endif
-+};
-+
- int __init fpga_plat_init(void)
- {
- 	pr_info("[plat-arcfpga]: registering device resources\n");
- 
-+	platform_add_devices(fpga_devs, ARRAY_SIZE(fpga_devs));
-+
- 	return 0;
- }
- arch_initcall(fpga_plat_init);
 -- 
 1.7.4.1
 
