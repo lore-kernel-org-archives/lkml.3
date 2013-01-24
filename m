@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab3AXKMi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:12:38 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:56128 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752923Ab3AXKM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:12:29 -0500
-Message-ID: <51010908.5090105@ti.com>
-Date: Thu, 24 Jan 2013 11:12:24 +0100
-From: =?ISO-8859-1?Q?Vincent_Stehl=E9?= <v-stehle@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1753354Ab3AXKNC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:13:02 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:46971 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab3AXKMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 05:12:51 -0500
+Message-ID: <510108B9.3020205@synopsys.com>
+Date: Thu, 24 Jan 2013 15:41:05 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regmap: debugfs: Fix compilation warning
-References: <1358779015-25735-1-git-send-email-v-stehle@ti.com> <20130122064121.GC1766@opensource.wolfsonmicro.com> <50FE64C8.8040407@ti.com> <20130123155834.GD4565@opensource.wolfsonmicro.com>
-In-Reply-To: <20130123155834.GD4565@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+To: James Hogan <james.hogan@imgtec.com>
+CC: Arnd Bergmann <arnd@arndb.de>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH v2 00/76] Synopsys ARC Linux kernel Port
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <201301181512.14441.arnd@arndb.de> <5100F6AD.5050001@synopsys.com> <51010461.20604@imgtec.com>
+In-Reply-To: <51010461.20604@imgtec.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2013 04:58 PM, Mark Brown wrote:
-> On Tue, Jan 22, 2013 at 11:07:04AM +0100, Vincent Stehlé wrote:
-> 
->> Do you think there is a way to "mark" the list_for_each_entry()
->> as iterating at least once? an __attribute__ maybe?
-> 
-> No - but are you sure that's true?
+On Thursday 24 January 2013 03:22 PM, James Hogan wrote:
+> Hi Vineet,
+>
+> On 24/01/13 08:54, Vineet Gupta wrote:
+>> (3) That branch will be ARC patches on top of Linus's 3.8 rc4. Actually for my
+>> development, I'd also cherry picked a few patches from linux-next (soft and hard
+>> dependencies from several different *next trees) - hard ones being
+>>
+>> f13a366 CONFIG_GENERIC_SIGALTSTACK build breakage with asm-generic/syscalls.h [Al]
+> FYI this one has now been merged into Linus' master.
+>
+> Cheers
+> James
+>
 
-If you mean "am I sure the loop iterates at least once", then yes, as
-we have an explicit check just before the concerned list_for_each_entry():
+OK thanks - but I'd rather have the patches based on a well known checkpoint - so
+maybe wait for next rc.
+Any ideas about other questions on the thread - given that several next trees are
+still involved.
 
-	/*
-	 * This should never happen; we return above if we fail to
-	 * allocate and we should never be in this code if there are
-	 * no registers at all.
-	 */
-	if (list_empty(&map->debugfs_off_cache)) {
-		WARN_ON(list_empty(&map->debugfs_off_cache));
-		return base;
-	}
+metag doesn't seem to be on linux-next yet ?
 
-Best regards,
-
-V.
-
+-Vineet
