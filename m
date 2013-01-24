@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825Ab3AXDbQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:31:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44325 "EHLO
+	id S1754875Ab3AXDbZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:31:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44345 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754634Ab3AXDaZ (ORCPT
+	with ESMTP id S1754454Ab3AXDaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:30:25 -0500
+	Wed, 23 Jan 2013 22:30:39 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 44/74] target: Release se_cmd when LUN lookup fails for TMR
-Date: Thu, 24 Jan 2013 01:26:56 -0200
-Message-Id: <1358998046-613-45-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 48/74] USB: option: add Telekom Speedstick LTE II
+Date: Thu, 24 Jan 2013 01:27:00 -0200
+Message-Id: <1358998046-613-49-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,39 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 5a3b6fc0092c5f8dee7820064ee54d2631d48573 upstream.
+commit 5ec0085440ef8c2cf50002b34d5a504ee12aa2bf upstream.
 
-When transport_lookup_tmr_lun() fails and we return a task management
-response from target_complete_tmr_failure(), we need to call
-transport_cmd_check_stop_to_fabric() to release the last ref to the
-cmd after calling se_tfo->queue_tm_rsp(), or else we will never remove
-the failed TMR from the session command list (and we'll end up waiting
-forever when trying to tear down the session).
+also known as Alcatel One Touch L100V LTE
 
-(nab: Fix minor compile breakage)
+The driver description files gives these names to the vendor specific
+functions on this modem:
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+ Application1: VID_1BBB&PID_011E&MI_00
+ Application2: VID_1BBB&PID_011E&MI_01
+ Modem:        VID_1BBB&PID_011E&MI_03
+ Ethernet:     VID_1BBB&PID_011E&MI_04
+
+Reported-by: Thomas Schäfer <tschaefer@t-online.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/target/target_core_transport.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index d6c73e8..047f49a 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1614,6 +1614,8 @@ static void target_complete_tmr_failure(struct work_struct *work)
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index ed257a7..425baf5 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -288,6 +288,7 @@ static void option_instat_callback(struct urb *urb);
+ #define ALCATEL_VENDOR_ID			0x1bbb
+ #define ALCATEL_PRODUCT_X060S_X200		0x0000
+ #define ALCATEL_PRODUCT_X220_X500D		0x0017
++#define ALCATEL_PRODUCT_L100V			0x011e
  
- 	se_cmd->se_tmr_req->response = TMR_LUN_DOES_NOT_EXIST;
- 	se_cmd->se_tfo->queue_tm_rsp(se_cmd);
-+
-+	transport_cmd_check_stop_to_fabric(se_cmd);
- }
- 
- /**
+ #define PIRELLI_VENDOR_ID			0x1266
+ #define PIRELLI_PRODUCT_C100_1			0x1002
+@@ -1194,6 +1195,8 @@ static const struct usb_device_id option_ids[] = {
+ 	  .driver_info = (kernel_ulong_t)&alcatel_x200_blacklist
+ 	},
+ 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X220_X500D) },
++	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
+ 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
 -- 
 1.7.9.5
 
