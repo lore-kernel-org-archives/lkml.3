@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086Ab3AXDeI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:34:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44461 "EHLO
+	id S1755275Ab3AXDeS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:34:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44463 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755040Ab3AXDcA (ORCPT
+	with ESMTP id S1755002Ab3AXDcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Jan 2013 22:32:00 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Wolfgang Frisch <wfpub@roembden.net>, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 69/74] x86/Sandy Bridge: reserve pages when integrated graphics is present
-Date: Thu, 24 Jan 2013 01:27:21 -0200
-Message-Id: <1358998046-613-70-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 70/74] USB: io_ti: Fix NULL dereference in chase_port()
+Date: Thu, 24 Jan 2013 01:27:22 -0200
+Message-Id: <1358998046-613-71-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,133 +28,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Wolfgang Frisch <wfpub@roembden.net>
 
-commit a9acc5365dbda29f7be2884efb63771dc24bd815 upstream.
+commit 1ee0a224bc9aad1de496c795f96bc6ba2c394811 upstream.
 
-SNB graphics devices have a bug that prevent them from accessing certain
-memory ranges, namely anything below 1M and in the pages listed in the
-table.  So reserve those at boot if set detect a SNB gfx device on the
-CPU to avoid GPU hangs.
+The tty is NULL when the port is hanging up.
+chase_port() needs to check for this.
 
-Stephane Marchesin had a similar patch to the page allocator awhile
-back, but rather than reserving pages up front, it leaked them at
-allocation time.
+This patch is intended for stable series.
+The behavior was observed and tested in Linux 3.2 and 3.7.1.
 
-[ hpa: made a number of stylistic changes, marked arrays as static
-  const, and made less verbose; use "memblock=debug" for full
-  verbosity. ]
+Johan Hovold submitted a more elaborate patch for the mainline kernel.
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+[   56.277883] usb 1-1: edge_bulk_in_callback - nonzero read bulk status received: -84
+[   56.278811] usb 1-1: USB disconnect, device number 3
+[   56.278856] usb 1-1: edge_bulk_in_callback - stopping read!
+[   56.279562] BUG: unable to handle kernel NULL pointer dereference at 00000000000001c8
+[   56.280536] IP: [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
+[   56.281212] PGD 1dc1b067 PUD 1e0f7067 PMD 0
+[   56.282085] Oops: 0002 [#1] SMP
+[   56.282744] Modules linked in:
+[   56.283512] CPU 1
+[   56.283512] Pid: 25, comm: khubd Not tainted 3.7.1 #1 innotek GmbH VirtualBox/VirtualBox
+[   56.283512] RIP: 0010:[<ffffffff8144e62a>]  [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
+[   56.283512] RSP: 0018:ffff88001fa99ab0  EFLAGS: 00010046
+[   56.283512] RAX: 0000000000000046 RBX: 00000000000001c8 RCX: 0000000000640064
+[   56.283512] RDX: 0000000000010000 RSI: ffff88001fa99b20 RDI: 00000000000001c8
+[   56.283512] RBP: ffff88001fa99b20 R08: 0000000000000000 R09: 0000000000000000
+[   56.283512] R10: 0000000000000000 R11: ffffffff812fcb4c R12: ffff88001ddf53c0
+[   56.283512] R13: 0000000000000000 R14: 00000000000001c8 R15: ffff88001e19b9f4
+[   56.283512] FS:  0000000000000000(0000) GS:ffff88001fd00000(0000) knlGS:0000000000000000
+[   56.283512] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   56.283512] CR2: 00000000000001c8 CR3: 000000001dc51000 CR4: 00000000000006e0
+[   56.283512] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   56.283512] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   56.283512] Process khubd (pid: 25, threadinfo ffff88001fa98000, task ffff88001fa94f80)
+[   56.283512] Stack:
+[   56.283512]  0000000000000046 00000000000001c8 ffffffff810578ec ffffffff812fcb4c
+[   56.283512]  ffff88001e19b980 0000000000002710 ffffffff812ffe81 0000000000000001
+[   56.283512]  ffff88001fa94f80 0000000000000202 ffffffff00000001 0000000000000296
+[   56.283512] Call Trace:
+[   56.283512]  [<ffffffff810578ec>] ? add_wait_queue+0x12/0x3c
+[   56.283512]  [<ffffffff812fcb4c>] ? usb_serial_port_work+0x28/0x28
+[   56.283512]  [<ffffffff812ffe81>] ? chase_port+0x84/0x2d6
+[   56.283512]  [<ffffffff81063f27>] ? try_to_wake_up+0x199/0x199
+[   56.283512]  [<ffffffff81263a5c>] ? tty_ldisc_hangup+0x222/0x298
+[   56.283512]  [<ffffffff81300171>] ? edge_close+0x64/0x129
+[   56.283512]  [<ffffffff810612f7>] ? __wake_up+0x35/0x46
+[   56.283512]  [<ffffffff8106135b>] ? should_resched+0x5/0x23
+[   56.283512]  [<ffffffff81264916>] ? tty_port_shutdown+0x39/0x44
+[   56.283512]  [<ffffffff812fcb4c>] ? usb_serial_port_work+0x28/0x28
+[   56.283512]  [<ffffffff8125d38c>] ? __tty_hangup+0x307/0x351
+[   56.283512]  [<ffffffff812e6ddc>] ? usb_hcd_flush_endpoint+0xde/0xed
+[   56.283512]  [<ffffffff8144e625>] ? _raw_spin_lock_irqsave+0x14/0x35
+[   56.283512]  [<ffffffff812fd361>] ? usb_serial_disconnect+0x57/0xc2
+[   56.283512]  [<ffffffff812ea99b>] ? usb_unbind_interface+0x5c/0x131
+[   56.283512]  [<ffffffff8128d738>] ? __device_release_driver+0x7f/0xd5
+[   56.283512]  [<ffffffff8128d9cd>] ? device_release_driver+0x1a/0x25
+[   56.283512]  [<ffffffff8128d393>] ? bus_remove_device+0xd2/0xe7
+[   56.283512]  [<ffffffff8128b7a3>] ? device_del+0x119/0x167
+[   56.283512]  [<ffffffff812e8d9d>] ? usb_disable_device+0x6a/0x180
+[   56.283512]  [<ffffffff812e2ae0>] ? usb_disconnect+0x81/0xe6
+[   56.283512]  [<ffffffff812e4435>] ? hub_thread+0x577/0xe82
+[   56.283512]  [<ffffffff8144daa7>] ? __schedule+0x490/0x4be
+[   56.283512]  [<ffffffff8105798f>] ? abort_exclusive_wait+0x79/0x79
+[   56.283512]  [<ffffffff812e3ebe>] ? usb_remote_wakeup+0x2f/0x2f
+[   56.283512]  [<ffffffff812e3ebe>] ? usb_remote_wakeup+0x2f/0x2f
+[   56.283512]  [<ffffffff810570b4>] ? kthread+0x81/0x89
+[   56.283512]  [<ffffffff81057033>] ? __kthread_parkme+0x5c/0x5c
+[   56.283512]  [<ffffffff8145387c>] ? ret_from_fork+0x7c/0xb0
+[   56.283512]  [<ffffffff81057033>] ? __kthread_parkme+0x5c/0x5c
+[   56.283512] Code: 8b 7c 24 08 e8 17 0b c3 ff 48 8b 04 24 48 83 c4 10 c3 53 48 89 fb 41 50 e8 e0 0a c3 ff 48 89 04 24 e8 e7 0a c3 ff ba 00 00 01 00
+<f0> 0f c1 13 48 8b 04 24 89 d1 c1 ea 10 66 39 d1 74 07 f3 90 66
+[   56.283512] RIP  [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
+[   56.283512]  RSP <ffff88001fa99ab0>
+[   56.283512] CR2: 00000000000001c8
+[   56.283512] ---[ end trace 49714df27e1679ce ]---
+
+Signed-off-by: Wolfgang Frisch <wfpub@roembden.net>
+Cc: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/x86/kernel/setup.c |   78 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 78 insertions(+)
+ drivers/usb/serial/io_ti.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index e860517..a0ee620 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -613,6 +613,81 @@ static __init void reserve_ibft_region(void)
+diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
+index 3936904..ab49912 100644
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -543,6 +543,9 @@ static void chase_port(struct edgeport_port *port, unsigned long timeout,
+ 	wait_queue_t wait;
+ 	unsigned long flags;
  
- static unsigned reserve_low = CONFIG_X86_RESERVE_LOW << 10;
- 
-+static bool __init snb_gfx_workaround_needed(void)
-+{
-+	int i;
-+	u16 vendor, devid;
-+	static const u16 snb_ids[] = {
-+		0x0102,
-+		0x0112,
-+		0x0122,
-+		0x0106,
-+		0x0116,
-+		0x0126,
-+		0x010a,
-+	};
-+
-+	/* Assume no if something weird is going on with PCI */
-+	if (!early_pci_allowed())
-+		return false;
-+
-+	vendor = read_pci_config_16(0, 2, 0, PCI_VENDOR_ID);
-+	if (vendor != 0x8086)
-+		return false;
-+
-+	devid = read_pci_config_16(0, 2, 0, PCI_DEVICE_ID);
-+	for (i = 0; i < ARRAY_SIZE(snb_ids); i++)
-+		if (devid == snb_ids[i])
-+			return true;
-+
-+	return false;
-+}
-+
-+/*
-+ * Sandy Bridge graphics has trouble with certain ranges, exclude
-+ * them from allocation.
-+ */
-+static void __init trim_snb_memory(void)
-+{
-+	static const unsigned long bad_pages[] = {
-+		0x20050000,
-+		0x20110000,
-+		0x20130000,
-+		0x20138000,
-+		0x40004000,
-+	};
-+	int i;
-+
-+	if (!snb_gfx_workaround_needed())
++	if (!tty)
 +		return;
 +
-+	printk(KERN_DEBUG "reserving inaccessible SNB gfx pages\n");
-+
-+	/*
-+	 * Reserve all memory below the 1 MB mark that has not
-+	 * already been reserved.
-+	 */
-+	memblock_reserve(0, 1<<20);
-+	
-+	for (i = 0; i < ARRAY_SIZE(bad_pages); i++) {
-+		if (memblock_reserve(bad_pages[i], PAGE_SIZE))
-+			printk(KERN_WARNING "failed to reserve 0x%08lx\n",
-+			       bad_pages[i]);
-+	}
-+}
-+
-+/*
-+ * Here we put platform-specific memory range workarounds, i.e.
-+ * memory known to be corrupt or otherwise in need to be reserved on
-+ * specific platforms.
-+ *
-+ * If this gets used more widely it could use a real dispatch mechanism.
-+ */
-+static void __init trim_platform_memory_ranges(void)
-+{
-+	trim_snb_memory();
-+}
-+
- static void __init trim_bios_range(void)
- {
- 	/*
-@@ -633,6 +708,7 @@ static void __init trim_bios_range(void)
- 	 * take them out.
- 	 */
- 	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
-+
- 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
- }
+ 	if (!timeout)
+ 		timeout = (HZ * EDGE_CLOSING_WAIT)/100;
  
-@@ -911,6 +987,8 @@ void __init setup_arch(char **cmdline_p)
- 
- 	setup_real_mode();
- 
-+	trim_platform_memory_ranges();
-+
- 	init_gbpages();
- 
- 	/* max_pfn_mapped is updated here */
 -- 
 1.7.9.5
 
