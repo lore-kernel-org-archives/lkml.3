@@ -1,107 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab3AXBgn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 20:36:43 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:39285 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab3AXBge (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 20:36:34 -0500
+	id S1753196Ab3AXBhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 20:37:04 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:35598 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752868Ab3AXBg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 20:36:57 -0500
+X-IronPort-AV: E=Sophos;i="4.84,526,1355068800"; 
+   d="scan'208";a="6637175"
+Message-ID: <51009003.5020901@cn.fujitsu.com>
+Date: Thu, 24 Jan 2013 09:36:03 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <50FFF218.1010204@gmail.com>
-References: <1358926720-25557-1-git-send-email-xufengzhang.main@gmail.com>
-	<20130123134650.GA3512@hmsreliant.think-freely.org>
-	<50FFF218.1010204@gmail.com>
-Date: Thu, 24 Jan 2013 09:36:32 +0800
-Message-ID: <CA+=dFziSL35Y3+Y=3BWnX5ChfLHDrm5Kr-mU6KP=yNR7vOwwbg@mail.gmail.com>
-Subject: Re: [PATCH] sctp: set association state to established in dupcook_a handler
-From: Xufeng Zhang <xufengzhang.main@gmail.com>
-To: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>, sri@us.ibm.com, davem@davemloft.net,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Simon Jeons <simon.jeons@gmail.com>
+CC: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        glommer@parallels.com, jiang.liu@huawei.com, julian.calaby@gmail.com,
+        sfr@canb.auug.org.au, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH Bug fix 0/5] Bug fix for physical memory hot-remove.
+References: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>  <1358944171.3351.1.camel@kernel> <50FFE2FC.9030401@cn.fujitsu.com> <1358987715.3351.3.camel@kernel>
+In-Reply-To: <1358987715.3351.3.camel@kernel>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/24 09:35:54,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/24 09:35:56,
+	Serialize complete at 2013/01/24 09:35:56
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/23/13, Vlad Yasevich <vyasevich@gmail.com> wrote:
-> On 01/23/2013 08:46 AM, Neil Horman wrote:
->> On Wed, Jan 23, 2013 at 03:38:40PM +0800, xufengzhang.main@gmail.com
->> wrote:
->>> From: Xufeng Zhang <xufeng.zhang@windriver.com>
+On 01/24/2013 08:35 AM, Simon Jeons wrote:
+> On Wed, 2013-01-23 at 21:17 +0800, Tang Chen wrote:
+>> On 01/23/2013 08:29 PM, Simon Jeons wrote:
+>>> Hi Tang,
 >>>
->>> While sctp handling a duplicate COOKIE-ECHO and the action is
->>> 'Association restart', sctp_sf_do_dupcook_a() will processing
->>> the unexpected COOKIE-ECHO for peer restart, but it does not set
->>> the association state to SCTP_STATE_ESTABLISHED, so the association
->>> could stuck in SCTP_STATE_SHUTDOWN_PENDING state forever.
->>> This violates the sctp specification:
->>>    RFC 4960 5.2.4. Handle a COOKIE ECHO when a TCB Exists
->>>    Action
->>>    A) In this case, the peer may have restarted. .....
->>>       After this, the endpoint shall enter the ESTABLISHED state.
->>>
->>> Fix this problem by adding a SCTP_CMD_NEW_STATE cmd to the command
->>> list so as to set the restart association to SCTP_STATE_ESTABLISHED
->>> state properly.
->>>
->>> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
->>> ---
->>>   net/sctp/sm_statefuns.c |    2 ++
->>>   1 files changed, 2 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
->>> index 618ec7e..528f1c8 100644
->>> --- a/net/sctp/sm_statefuns.c
->>> +++ b/net/sctp/sm_statefuns.c
->>> @@ -1779,6 +1779,8 @@ static sctp_disposition_t
->>> sctp_sf_do_dupcook_a(struct net *net,
->>>
->>>   	/* Update the content of current association. */
->>>   	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC,
->>> SCTP_ASOC(new_asoc));
->>> +	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
->>> +			SCTP_STATE(SCTP_STATE_ESTABLISHED));
->>>   	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
->>>   	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
->>>   	return SCTP_DISPOSITION_CONSUME;
->>> --
->>> 1.7.0.2
->>>
->>>
+>>> I remember your big physical memory hot-remove patchset has already
+>>> merged by Andrew, but where I can find it? Could you give me git tree
+>>> address?
 >>
->> Looks reasonable to me, thanks
+>> Hi Simon,
 >>
->> nit: The RFC indicate the association should enter the ESTABLISHED state
->> after
->> preforming all other actions, so it seems that the state change should
->> occur
->> after the ULP event is sent
+>> You can find all the physical memory hot-remove patches and related bugfix
+>> patches from the following url:
 >>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
 >
-> I have a slight concern here that if we change state last, then any data
-> that may have been bundled with COOKIE-ACK as part of CMD_REPLY will get
-> the SACK_IMMEDIATE flag set since we are still in the SHUTDOWN_PENDING
-> state.
+> ~/linux-next$ git remote -v
+> origin git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (fetch)
+> origin git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (push)
+> ~/linux-next$ git branch
+> * akpm
+>    master
+> ~/linux-next$ wc -l mm/memory_hotplug.c
+> 1173 mm/memory_hotplug.c
 >
-> I would be more correct (and would match sctp_sf_do_5_1D_ce) to
-> do it in this order:
->    UPDATE_ASSOC  - resets all the congestion/association variables
->    EVENT_UP  - send RESTART to USER
->    NEW_STATE  - set ESTABLISHED state (as per spec)
->    REPLY	- Send cookie-ack along with any pending data.
+> I still can't find it. :(
 
-Yep, I agree with you, I'll send V2 patch based on your suggestion.
-Thanks for your review!
+Hi Simon,
+
+It's weird, in my akpm git log, I can find the following commit.
+
+commit deed0460e01b3968f2cf46fb94851936535b7e0d
+Author: Tang Chen <tangchen@cn.fujitsu.com>
+Date:   Sat Jan 19 11:07:13 2013 +1100
+
+     memory-hotplug: do not allocate pgdat if it was not freed when offline.
+
+And there are 15 related patches following it. And above it, there are 
+some more related bugfix
+from me and Andrew. They are all in -mm tree.
+
+This is what I did:
+
+   $ git remote add next 
+http://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+   $ git remote update next
+   $ git checkout -b next-akpm remotes/next/akpm
+
+Please pull your tree and try again. :)
+
+Thanks. :)
 
 
-Thanks,
-Xufeng
-
 >
-> -vlad
->> Neil
 >>
+>>
+>> Thanks. :)
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
 >
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
