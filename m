@@ -1,148 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab3AXTFo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:05:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33199 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751893Ab3AXTFm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:05:42 -0500
-Date: Thu, 24 Jan 2013 11:05:14 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-xuho5hrrxy2ky0cjpr80hyfp@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evsel:
-  No need to always ask for PERF_FORMAT_ID in read_format
-Git-Commit-ID: 3a5afaec593954a399967155db47f72cb8828a6a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1755459Ab3AXTGI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:06:08 -0500
+Received: from na01-bl2-obe.ptr.protection.outlook.com ([65.55.169.23]:18572
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752667Ab3AXTGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 14:06:06 -0500
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -1
+X-BigFish: PS-1(z551biz98dI9371I542I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz31h2a8h668h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB062;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: Jan Beulich <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: RE: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
+ special hypervisor interrupts
+Thread-Topic: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
+ special hypervisor interrupts
+Thread-Index: AQHN+c0MrCoyWgAlfk2jp/FeLEmABphYK3yAgAB21tCAAAYiAIAAKTrAgAAEqICAAACTQA==
+Date: Thu, 24 Jan 2013 19:03:42 +0000
+Message-ID: <462e0bc4257744428139d5dbc91192be@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1358990259-22551-1-git-send-email-kys@microsoft.com>
+ <5101035D02000078000B8FFD@nat28.tlf.novell.com>
+ <27092660926e4d3f80394697cc0dc858@SN2PR03MB061.namprd03.prod.outlook.com>
+ <51016C3202000078000B943E@nat28.tlf.novell.com>
+ <f6cbfec9c014433fa54af61d8f436ebb@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130124185943.GA19194@aepfle.de>
+In-Reply-To: <20130124185943.GA19194@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [66.235.28.166]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 11:05:19 -0800 (PST)
+X-OrganizationHeadersPreserved: SN2PR03MB062.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%ZYTOR.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUTRONIX.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%ALIEN8.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(51704002)(13464002)(24454001)(377454001)(50466001)(54356001)(33646001)(53806001)(6806001)(74662001)(74502001)(47976001)(16676001)(47736001)(50986001)(76482001)(54316002)(49866001)(79102001)(47446002)(63696002)(44976002)(4396001)(51856001)(31966008)(59766001)(77982001)(56776001)(56816002)(5343635001)(46102001)(23676001)(47776003)(24736002)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB023;H:TK5EX14HUBC103.redmond.corp.microsoft.com;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 073631BD3D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0OJ68g7013758
 
-Commit-ID:  3a5afaec593954a399967155db47f72cb8828a6a
-Gitweb:     http://git.kernel.org/tip/3a5afaec593954a399967155db47f72cb8828a6a
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 10 Dec 2012 15:29:12 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 11 Dec 2012 17:12:58 -0300
 
-perf evsel: No need to always ask for PERF_FORMAT_ID in read_format
 
-Instead make perf_evlist__confir_attrs use perf_evsel__set_sample_id()
-when having more than one event, that way only if we have multiple
-events we'll ask to have the event ids returned when we read its file
-descriptors.
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Thursday, January 24, 2013 2:00 PM
+> To: KY Srinivasan
+> Cc: Jan Beulich; bp@alien8.de; apw@canonical.com; x86@kernel.org;
+> tglx@linutronix.de; devel@linuxdriverproject.org; gregkh@linuxfoundation.org;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org; hpa@zytor.com
+> Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
+> special hypervisor interrupts
+> 
+> On Thu, Jan 24, KY Srinivasan wrote:
+> 
+> 
+> > > Question is - considering you stated that this is supported
+> > > starting in Win8, doesn't Hyper-V itself announce that
+> > > capability in some explicit way?
+> >
+> > Thanks Jan. Unfortunately I don't think tis interrupt delivery model
+> > is specified via a "feature" bit (I will check with the Windows guys).
+> > Perhaps, we can have a Hyper-V specific compilation switch to address
+> > the Xen emulation issue.
+> 
+> Would that really help if both pvops XEN_PVHVM and HYPERV are enabled in
+> the config? I assume at this point the access to the DMI data is not yet
+> possible.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-xuho5hrrxy2ky0cjpr80hyfp@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/tests/attr/base-record        | 2 +-
- tools/perf/tests/attr/test-record-group  | 2 ++
- tools/perf/tests/attr/test-record-group1 | 2 ++
- tools/perf/util/evlist.c                 | 2 +-
- tools/perf/util/evsel.c                  | 3 +--
- 5 files changed, 7 insertions(+), 4 deletions(-)
+I was under the impression that only Dom0 Xen would emulate Hyper-V.
 
-diff --git a/tools/perf/tests/attr/base-record b/tools/perf/tests/attr/base-record
-index f1485d8..f9d0464 100644
---- a/tools/perf/tests/attr/base-record
-+++ b/tools/perf/tests/attr/base-record
-@@ -7,7 +7,7 @@ size=96
- config=0
- sample_period=4000
- sample_type=263
--read_format=7
-+read_format=3
- disabled=1
- inherit=1
- pinned=0
-diff --git a/tools/perf/tests/attr/test-record-group b/tools/perf/tests/attr/test-record-group
-index a6599e9..0df34ca 100644
---- a/tools/perf/tests/attr/test-record-group
-+++ b/tools/perf/tests/attr/test-record-group
-@@ -6,12 +6,14 @@ args    = --group -e cycles,instructions kill >/dev/null 2>&1
- fd=1
- group_fd=-1
- sample_type=327
-+read_format=7
- 
- [event-2:base-record]
- fd=2
- group_fd=1
- config=1
- sample_type=327
-+read_format=7
- mmap=0
- comm=0
- enable_on_exec=0
-diff --git a/tools/perf/tests/attr/test-record-group1 b/tools/perf/tests/attr/test-record-group1
-index 5a8359d..18bd926 100644
---- a/tools/perf/tests/attr/test-record-group1
-+++ b/tools/perf/tests/attr/test-record-group1
-@@ -6,6 +6,7 @@ args    = -e '{cycles,instructions}' kill >/tmp/krava 2>&1
- fd=1
- group_fd=-1
- sample_type=327
-+read_format=7
- 
- [event-2:base-record]
- fd=2
-@@ -13,6 +14,7 @@ group_fd=1
- type=0
- config=1
- sample_type=327
-+read_format=7
- mmap=0
- comm=0
- enable_on_exec=0
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 2655659..5a0878d 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -61,7 +61,7 @@ void perf_evlist__config_attrs(struct perf_evlist *evlist,
- 		perf_evsel__config(evsel, opts);
- 
- 		if (evlist->nr_entries > 1)
--			perf_evsel__set_sample_bit(evsel, ID);
-+			perf_evsel__set_sample_id(evsel);
- 	}
- }
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 9dde7e9..e62d3ae 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -466,8 +466,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 	attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
- 	attr->inherit	    = !opts->no_inherit;
- 	attr->read_format   = PERF_FORMAT_TOTAL_TIME_ENABLED |
--			      PERF_FORMAT_TOTAL_TIME_RUNNING |
--			      PERF_FORMAT_ID;
-+			      PERF_FORMAT_TOTAL_TIME_RUNNING;
- 
- 	perf_evsel__set_sample_bit(evsel, IP);
- 	perf_evsel__set_sample_bit(evsel, TID);
+
+K. Y
+> 
+> Olaf
+> 
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
