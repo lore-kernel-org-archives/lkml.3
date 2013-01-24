@@ -1,42 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab3AXPAb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:00:31 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:45098 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab3AXPA3 (ORCPT
+	id S1754634Ab3AXPBA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:01:00 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:54680 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753890Ab3AXPA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:00:29 -0500
-From: Jiang Fang <jiang.xx.fang@gmail.com>
-To: dipankar@in.ibm.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] rcu: indent: fix leading space
-Date: Thu, 24 Jan 2013 23:00:17 +0800
-Message-Id: <1359039617-6472-1-git-send-email-jiang.xx.fang@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 24 Jan 2013 10:00:57 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: tj@kernel.org, pmatouse@redhat.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-scsi@kernel.org
+Subject: [PATCH 00/13] Corrections and customization of the SG_IO command whitelist (CVE-2012-4542)
+Date: Thu, 24 Jan 2013 16:00:36 +0100
+Message-Id: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This series regards the whitelist that is used for the SG_IO ioctl.  This
+whitelist has three problems:
 
-Signed-off-by: Jiang Fang <jiang.xx.fang@gmail.com>
----
- kernel/rcutree.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+* the bitmap of allowed commands is designed for MMC devices (roughly,
+  "play/burn CDs without requiring root") but some opcodes overlap across SCSI
+  device classes and have different meanings for different classes.
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e441b77..dbf7d7f 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -3064,7 +3064,7 @@ void __init rcu_init(void)
- 	rcu_init_one(&rcu_bh_state, &rcu_bh_data);
- 	__rcu_init_preempt();
- 	rcu_init_nocb();
--	 open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
-+	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
- 
- 	/*
- 	 * We don't need protection against CPU-hotplug here because
--- 
-1.7.9.5
+* also because the bitmap of allowed commands is designed for MMC devices
+  only, some commands are missing even though they are generally useful and
+  not insecure.  At least not more insecure than anything else you can
+  do if you have access to /dev/sdX or /dev/stX nodes.
+
+* the whitelist can be disabled per-process but not per-disk.  In addition,
+  the required capability (CAP_SYS_RAWIO) gives access to a range of other 
+  resources, enough to make it insecure.
+
+The series corrects these problems.  Patches 1-4 solve the first problem,
+which also has an assigned CVE, by using different bitmaps for the various
+device classes.  Patches 5-11 solve the second by adding more commands
+to the bitmaps.  Patches 12 and 13 solve the third, and were already
+posted but ignored by the maintainers despite multiple pings.
+
+Note: checkpatch hates the formatting of the command table.  I know about this,
+and ensured that there are no errors in the rest of the code.
+
+Ok for the next merge window?
+
+Paolo Bonzini (13):
+  sg_io: pass request_queue to blk_verify_command
+  sg_io: reorganize list of allowed commands
+  sg_io: use different default filters for each device class
+  sg_io: resolve conflicts between commands assigned to multiple
+    classes (CVE-2012-4542)
+  sg_io: whitelist a few more commands for rare & obsolete device types
+  sg_io: whitelist a few more commands for multimedia devices
+  sg_io: whitelist a few more commands for media changers
+  sg_io: whitelist a few more commands for tapes
+  sg_io: whitelist a few more commands for disks
+  sg_io: whitelist a few obsolete commands
+  sg_io: add list of commands that were in the consulted list but are
+    disabled
+  sg_io: remove remnants of sysfs SG_IO filters
+  sg_io: introduce unpriv_sgio queue flag
+
+ Documentation/block/queue-sysfs.txt |    8 +
+ block/blk-sysfs.c                   |   33 +++
+ block/bsg.c                         |    2 +-
+ block/scsi_ioctl.c                  |  440 ++++++++++++++++++++++++++++-------
+ drivers/scsi/scsi_scan.c            |    2 +
+ drivers/scsi/sg.c                   |    3 +-
+ include/linux/blkdev.h              |    8 +-
+ include/linux/genhd.h               |    9 -
+ include/scsi/scsi.h                 |    1 +
+ 9 files changed, 403 insertions(+), 103 deletions(-)
 
