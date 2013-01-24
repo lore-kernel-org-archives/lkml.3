@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab3AXKj5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:39:57 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:55743 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752824Ab3AXKjt convert rfc822-to-8bit (ORCPT
+	id S1753463Ab3AXKp0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:45:26 -0500
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:49629 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752887Ab3AXKpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:39:49 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Thu, 24 Jan 2013 05:45:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] vhost-net: fall back to vmalloc if high-order allocation fails
-Date: Thu, 24 Jan 2013 10:37:39 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B711F@saturn3.aculab.com>
-In-Reply-To: <20130124100600.GB8710@redhat.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] vhost-net: fall back to vmalloc if high-order allocation fails
-Thread-Index: Ac36GY74Ihw/ENfFRJiOMJM66uclPgAA9lBg
-References: <87k3r31vbc.fsf@silenus.orebokech.com> <AE90C24D6B3A694183C094C60CF0A2F6026B711E@saturn3.aculab.com> <20130124100600.GB8710@redhat.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "Romain Francoise" <romain@orebokech.com>, <kvm@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+In-Reply-To: <1359023660-29084-5-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1359023660-29084-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1359023660-29084-5-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Thu, 24 Jan 2013 16:15:17 +0530
+X-Google-Sender-Auth: xdGW0Fkh6KQDtV0x2AG3sgWQQME
+Message-ID: <CAOh2x=kqEzw9cvg=WLpjEbF50aTKCUUVd9GzNg8PqtBx_BpYLg@mail.gmail.com>
+Subject: Re: [PATCH v3 4/4] dw_dmac: return proper residue value
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I think this means that kmalloc() is likely to be faster
-> > (if it doesn't have to sleep), but that vmalloc() is
-> > allocating from a much larger resource.
-> >
-> > This make me that that large allocations that are not
-> > temporary should probably be allocated with vmalloc().
-> 
-> vmalloc has some issues for example afaik it's not backed by
-> a huge page so  I think its use puts more stress on the TLB cache.
+I told you, we can get rid of that routine :)
 
-Thinks further ...
-64bit systems are likely to have enough kernel VA to be able
-to map all of physical memory into contiguous VA.
+On Thu, Jan 24, 2013 at 4:04 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
 
-I don't know if Linux does that, but I know code to map it was added
-to NetBSD amd64 in order to speed up kernel accesses to 'random'
-pages - it might have been partially backed out due to bugs!
+I don't see residue - len from interrupt handler. It isn't required?
 
-If physical memory is mapped like that then kmalloc() requests
-can any of physical memory and be unlikely to fail - since user
-pages can be moved in order to generate contiguous free blocks.
+> @@ -1062,6 +1090,7 @@ dwc_tx_status(struct dma_chan *chan,
+>               struct dma_tx_state *txstate)
+>  {
+>         struct dw_dma_chan      *dwc = to_dw_dma_chan(chan);
+> +       unsigned long           flags;
+>         enum dma_status         ret;
+>
+>         ret = dma_cookie_status(chan, cookie, txstate);
+> @@ -1071,8 +1100,17 @@ dwc_tx_status(struct dma_chan *chan,
+>                 ret = dma_cookie_status(chan, cookie, txstate);
+>         }
+>
+> -       if (ret != DMA_SUCCESS)
+> -               dma_set_residue(txstate, dwc_first_active(dwc)->len);
+> +       spin_lock_irqsave(&dwc->lock, flags);
+> +
+> +       if (ret != DMA_SUCCESS) {
+> +               u32 residue = dwc->residue;
 
-Doesn't help with 32bit systems - they had to stop mapping all
-of physical memory into kernel space a long time ago.
+If you agree with the explanation that i gave in last mail, you must drop lock
+right here. and also take it in this if block.
 
-	David
+> +               if (test_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags) && residue)
+> +                       residue -= dwc_get_sent(dwc);
+> +               dma_set_residue(txstate, residue);
+> +       }
+> +
+> +       spin_unlock_irqrestore(&dwc->lock, flags);
 
+other than that:
 
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
