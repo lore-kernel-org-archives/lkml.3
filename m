@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943Ab3AXWSR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 17:18:17 -0500
-Received: from fold.natur.cuni.cz ([195.113.57.32]:34255 "HELO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755756Ab3AXWSF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 17:18:05 -0500
-Message-ID: <5101B31A.1050408@fold.natur.cuni.cz>
-Date: Thu, 24 Jan 2013 23:18:02 +0100
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20100101 Firefox/17.0 SeaMonkey/2.14.1
+	id S1755939Ab3AXWW7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 17:22:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36081 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753511Ab3AXWWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 17:22:51 -0500
+Message-ID: <5101B42D.2090709@suse.cz>
+Date: Thu, 24 Jan 2013 23:22:37 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] USB: XHCI: fix memory leak of URB-private data
-References: <Pine.LNX.4.44L0.1301171031260.1339-100000@iolanthe.rowland.org> <5101AD55.2000008@fold.natur.cuni.cz> <20130124215707.GA30414@kroah.com>
-In-Reply-To: <20130124215707.GA30414@kroah.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: linux-kbuild@vger.kernel.org, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mod/file2alias: make modalias generation safe for cross
+ compiling
+References: <m2txqbu6yg.fsf@igel.home>
+In-Reply-To: <m2txqbu6yg.fsf@igel.home>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> On Thu, Jan 24, 2013 at 10:53:25PM +0100, Martin Mokrejs wrote:
->> Hi Sarah and Alan,
->>   I just saw 3.7.5 patches announced by Greg but I don't see this path in there.
->> And, don't know but maybe this applies to older stable kernels as well?
->> Where will this patch posted originally to linux-usb land?
->>
->> Ah, is that because the email was actually NOT sent to "stable@"? ;-)
+Dne 20.1.2013 17:58, Andreas Schwab napsal(a):
+> Use the target compiler to compute the offsets for the fields of the
+> device_id structures, so that it won't be broken by different alignments
+> between the host and target ABIs.
 > 
-> No.  It's because the patch isn't in Linus's tree yet, which is one of
-> the requirements for a patch to be able to get into the stable kernel
-> releases.
+> This also fixes missing endian corrections for some modaliases.
 > 
-> Please read the kernel file, Documentation/stable_kernel_rules.txt for
-> more details if you are curious.
+> Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+> ---
+> This has been tested with an allmodconfig cross build of the m68k
+> kernel.  This is the difference in the generated module aliases before
+> and after the patch:
 
-Thank you Greg!
+Nice! I merged your patch to kbuild.git#kbuild.
 
-Aside from the fact that I do not know how much serious a memleak is and whether
-it is eligible for -stable. Other than that, it was helpful to read the file.
-Will see what happens. Meanwhile will continue running my patched kernel. ;-)
-Martin
+Thanks,
+Michal
