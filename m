@@ -1,177 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750910Ab3AXFEl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 00:04:41 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:37312 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717Ab3AXFEf (ORCPT
+	id S1751074Ab3AXFFI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 00:05:08 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57472 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717Ab3AXFFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 00:04:35 -0500
-Date: Wed, 23 Jan 2013 21:04:40 -0800
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ARM: arm-soc fixes for 3.8-rc
-Message-ID: <20130124050440.GA9151@quad.lixom.net>
+	Thu, 24 Jan 2013 00:05:04 -0500
+Message-ID: <5100C0F7.9080101@wwwdotorg.org>
+Date: Wed, 23 Jan 2013 22:04:55 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Olof Johansson <olof@lixom.net>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [v3 2/2] ARM: tegra: Skip scu_enable(scu_base) if not Cortex
+ A9
+References: <1358833924-24535-1-git-send-email-hdoyu@nvidia.com> <1358833924-24535-2-git-send-email-hdoyu@nvidia.com> <50FE2CA8.20100@ti.com> <50FEC503.2080602@wwwdotorg.org> <CAOesGMgtaCkiv285TU_vbAokN5M2MrANQ9piDcyXu5YMmbQq3A@mail.gmail.com> <50FFA620.50008@ti.com>
+In-Reply-To: <50FFA620.50008@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 01/23/2013 01:58 AM, Santosh Shilimkar wrote:
+> On Tuesday 22 January 2013 10:34 PM, Olof Johansson wrote:
+>> On Tue, Jan 22, 2013 at 8:57 AM, Stephen Warren
+>> <swarren@wwwdotorg.org> wrote:
+>>> On 01/21/2013 11:07 PM, Santosh Shilimkar wrote:
+>>>> On Tuesday 22 January 2013 11:22 AM, Hiroshi Doyu wrote:
+>>>>> Skip scu_enable(scu_base) if CPU is not Cortex A9 with SCU.
+>>>>>
+>>>>> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+>>>>> ---
+>>>> Looks fine. I will also update OMAP code with the new
+>>>> interface. Thanks.
+>>>
+>>> OK, so patch 1/2 at least needs to get into a stable arm-soc branch
+>>> then. Unless there are violent objections, I'll forward patch 1/2 to
+>>> arm-soc and request it be added into a branch so that Tegra and OMAP can
+>>> both merge it into their branches as a dependency. I guess patch 2/2
+>>> could also be included; I don't think it has any complex dependencies
+>>> that'd prevent that, and would help to show how patch 1/2 gets used.
+>>>
+>>> Hiroshi, is this series the only dependency you need for your Tegra114
+>>> series? So, I could merge your Tegra114 series once this series is
+>>> applied?
+>>
+>> For something like this, it might make more sense for us to just apply
+>> the patches for OMAP on top, i.e. we'll pull the short branch from
+>> you, and then we can just apply patches (with maintainer acks) on top,
+>> instead of doing a bunch of single-patch pulls.
+>
+> In case you decide to apply patches, you can use patch in the end
+> of the email for OMAP. Attached the same in case mailer damages it.
+> 
+> Btw, I noticed the build error with patch 1/1. Since I wasn't using
+> the first interface in OMAP code, I just bypassed it for testing.
+> I might be missing some dependent patch which added
+> read_cpuid_part_number().
 
-The following changes since commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619:
+Thanks for the OMAP patch. I have pushed a couple of temporary and
+non-stable branches to:
 
-  Linux 3.8-rc4 (2013-01-17 19:25:45 -0800)
+git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
 
-are available in the git repository at:
+Branch scu-base-rework contains just the SCU base address patches. After
+the few things listed below, I'll rename this branch and send a pull
+request to arm-soc.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+1) Olof asked that Russell Ack or otherwise OK Hiroshi's latest versions
+of the following two patches since he commented on previous versions:
 
-for you to fetch changes up to 4ad3041d3b76632c02b50aa384a8f21d7d15bac0:
+ARM: tegra: Skip scu_enable(scu_base) if not Cortex A9
+ARM: Add API to detect SCU base address from CP15
 
-  Merge tag 'imx-fixes-3.8-3' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes (2013-01-23 20:35:02 -0800)
+2) Lorenzo's last comment on "ARM: tegra: Use DT /cpu node to detect
+number of CPU core" was:
 
-----------------------------------------------------------------
+Please add missing punctuation, reword the commit log to make it clearer.
 
-ARM: arm-soc fixes for 3.8
+... so that patch needs a reworded commit log.
 
-Here's a long-pending fixes pull request for arm-soc (I didn't send one
-in the -rc4 cycle).
+3) This branch needs testing on both Tegra30 and OMAP (I'm away from the
+office at the moment and can only test on Tegra20 here),
 
-The largest delta is for a fixup of error paths in the mvsdio
-driver. There's also a header file move for a driver that hadn't been
-properly converted to multiplatform on i.MX, which was causing build
-failures when included.
+Branch test-test-hdoyu-t114 contains the most recent version of the
+Tegra114 series from Hiroshi, mainly for my local testing etc. Hiroshi
+said he will repost an updated version based on the latest Tegra common
+clock framework changes. For the record, what I plan to do when applying
+this is:
 
-The rest are the normal mix of small fixes all over the place; sunxi,
-omap, imx, mvebu, etc, etc.
+1) Merge the renamed tmp/scu-base-rework into Tegra's for-3.9/soc.
 
-----------------------------------------------------------------
-Alim Akhtar (1):
-      ARM: dts: correct the dw-mshc timing properties as per binding
-
-Andrew Lunn (1):
-      mmc: mvsdio: use devm_ API to simplify/correct error paths.
-
-Cong Ding (1):
-      clk: mvebu/clk-cpu.c: fix memory leakage
-
-Dimitris Papastamos (1):
-      ARM: S3C64XX: Fix up IRQ mapping for balblair on Cragganmore
-
-Fabio Estevam (1):
-      video: imxfb: Do not crash on reboot
-
-Gregory CLEMENT (1):
-      arm: mvebu: Fix memory size for Armada 370 DB
-
-Gwenhael Goavec-Merou (2):
-      ARM: imx: platform-imx-fb: modifies platform device name
-      video: imxfb: fix imxfb_info configuration order
-
-Jon Hunter (1):
-      ARM: OMAP2: Fix missing omap2xxx_clkt_vps_late_init function calls
-
-Linus Walleij (1):
-      ARM: integrator: move syscon remap for AP PCIv3
-
-Luciano Coelho (1):
-      ARM: OMAP2+: omap4-panda: add UART2 muxing for WiLink shared transport
-
-Maxime Ripard (1):
-      ARM: sunxi: Use the Synosys APB UART instead of ns8250
-
-Olof Johansson (8):
-      Merge tag 'mvebu_fixes_for_v3.8-rc3' of git://git.infradead.org/users/jcooper/linux into fixes
-      Merge tag 'imx-fixes-3.8-2' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
-      Merge tag 'sunxi-fixes-for-3.8-rc4' of git://github.com/mripard/linux into fixes
-      Merge branch 'v3.8-samsung-fixes-3' of git://git.kernel.org/.../kgene/linux-samsung into fixes
-      Merge tag 'imx-fixes-rc' of git://git.pengutronix.de/git/imx/linux-2.6 into fixes
-      Merge tag 'omap-for-v3.8-rc4/fixes-signed' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-      Merge tag 'mvebu_fixes_for_v3.8-rc5' of git://git.infradead.org/users/jcooper/linux into fixes
-      Merge tag 'imx-fixes-3.8-3' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
-
-Pantelis Antoniou (1):
-      ARM: OMAP2+: DT node Timer iteration fix
-
-Peter Ujfalusi (2):
-      ARM: OMAP4: clock data: Lock ABE DPLL on all revisions
-      ARM: OMAP4: hwmod_data: Correct IDLEMODE for McPDM
-
-Rob Clark (1):
-      ARM: OMAP2+: fix build break for omapdrm
-
-Sascha Hauer (1):
-      [media] coda: Fix build due to iram.h rename
-
-Sebastian Hesselbarth (2):
-      ARM: Dove: add Cubox sdhci card detect gpio
-      ARM: kirkwood: fix missing #interrupt-cells property
-
-Shawn Guo (3):
-      ARM: imx: fix build error with !CONFIG_SMP
-      ARM: imx: disable cpu in .cpu_kill hook
-      ARM: imx: correct low-power mode setting
-
-Simon Guinot (1):
-      ARM: Kirkwood: fix ns2 gpios by converting to pinctrl
-
-Thomas Petazzoni (1):
-      arm: mvebu: use global interrupts for GPIOs on Armada XP
-
-Tomasz Figa (1):
-      ARM: S3C64XX: Fix build error with CONFIG_S3C_DEV_FB disabled
-
-Tony Lindgren (3):
-      arm: mvebu: Fix compile for multiplatform when ARMv6 is selected
-      Merge tag 'omap-fixes-b-for-v3.8-rc' of git://git.kernel.org/.../pjw/omap-pending into omap-for-v3.8-rc4/fixes
-      ARM: OMAP2+: Fix section warning for omap_init_ocp2scp()
-
-Uwe Kleine-König (1):
-      ARM: compile fix for DEBUG_LL=y && MMU=n
-
- arch/arm/boot/dts/armada-370-db.dts                |  2 +-
- arch/arm/boot/dts/armada-xp-mv78230.dtsi           | 14 ++--
- arch/arm/boot/dts/armada-xp-mv78260.dtsi           | 21 +++--
- arch/arm/boot/dts/armada-xp-mv78460.dtsi           | 21 +++--
- arch/arm/boot/dts/cros5250-common.dtsi             | 12 +--
- arch/arm/boot/dts/dove-cubox.dts                   | 14 +++-
- arch/arm/boot/dts/exynos5250-smdk5250.dts          |  8 +-
- arch/arm/boot/dts/kirkwood-ns2-common.dtsi         | 16 ++++
- arch/arm/boot/dts/kirkwood.dtsi                    |  2 +
- arch/arm/boot/dts/sunxi.dtsi                       |  6 +-
- arch/arm/kernel/debug.S                            |  2 +
- arch/arm/mach-imx/Kconfig                          |  1 +
- arch/arm/mach-imx/clk-imx6q.c                      |  3 +
- arch/arm/mach-imx/common.h                         |  1 +
- arch/arm/mach-imx/devices/platform-imx-fb.c        |  2 +-
- arch/arm/mach-imx/hotplug.c                        | 10 ++-
- arch/arm/mach-imx/iram_alloc.c                     |  3 +-
- arch/arm/mach-imx/platsmp.c                        |  1 +
- arch/arm/mach-imx/pm-imx6q.c                       |  1 +
- arch/arm/mach-integrator/pci_v3.c                  | 14 +++-
- arch/arm/mach-kirkwood/board-ns2.c                 | 38 ---------
- arch/arm/mach-mvebu/Makefile                       |  2 +
- arch/arm/mach-omap2/board-omap4panda.c             |  6 ++
- arch/arm/mach-omap2/cclock2420_data.c              |  2 +
- arch/arm/mach-omap2/cclock2430_data.c              |  2 +
- arch/arm/mach-omap2/cclock44xx_data.c              | 13 ++-
- arch/arm/mach-omap2/devices.c                      |  2 +-
- arch/arm/mach-omap2/drm.c                          |  3 +-
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |  6 +-
- arch/arm/mach-omap2/timer.c                        |  8 +-
- arch/arm/mach-s3c64xx/mach-crag6410-module.c       |  2 +-
- arch/arm/mach-s3c64xx/pm.c                         |  2 +
- drivers/clk/mvebu/clk-cpu.c                        |  9 ++-
- drivers/media/platform/coda.c                      |  2 +-
- drivers/mmc/host/mvsdio.c                          | 92 +++++++---------------
- drivers/video/imxfb.c                              | 13 ++-
- .../linux/platform_data/imx-iram.h                 |  0
- 37 files changed, 176 insertions(+), 180 deletions(-)
- rename arch/arm/mach-imx/iram.h => include/linux/platform_data/imx-iram.h (100%)
+2) Apply the new posting of the Tegra114 patch series.
