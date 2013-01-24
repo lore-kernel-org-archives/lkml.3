@@ -1,97 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab3AXLNz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:13:55 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49192 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab3AXLNj (ORCPT
+	id S1755245Ab3AXLOb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:14:31 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:42993 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753452Ab3AXLOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:13:39 -0500
-Date: Thu, 24 Jan 2013 12:13:29 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, grundler@chromium.org,
-        devicetree-discuss@lists.ozlabs.org, ben-linux@fluff.org,
-        khali@linux-fr.org, naveen@chromium.org
-Subject: Re: [PATCH 1/2] i2c-core: Add gpio based bus arbitration
- implementation
-Message-ID: <20130124111329.GC12933@pengutronix.de>
-References: <1355464254-12768-1-git-send-email-ch.naveen@samsung.com>
- <1355464254-12768-2-git-send-email-ch.naveen@samsung.com>
- <50CB4E99.9060506@wwwdotorg.org>
- <20121215142135.GB22033@opensource.wolfsonmicro.com>
+	Thu, 24 Jan 2013 06:14:03 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH v3 60/71] ARC: [Review] Multi-platform image #1: Kconfig enablement
+Date: Thu, 24 Jan 2013 16:36:21 +0530
+Message-ID: <1359025589-22277-38-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
+References: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6zdv2QT/q3FMhpsV"
-Content-Disposition: inline
-In-Reply-To: <20121215142135.GB22033@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This mini patchseries addresses the lack of multi-platform-image support
+in ARC port.
 
---6zdv2QT/q3FMhpsV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Older build system only supported one platform(soc) to build at a time
+and further only one board of that platform could be built. There was no
+technical reason for that - we just didn't have the need.
 
-Hi,
+So the first step towards multi-platform (and multi-board) builds it to
+allow build system to do that.
 
-On Sat, Dec 15, 2012 at 11:21:36PM +0900, Mark Brown wrote:
-> On Fri, Dec 14, 2012 at 09:06:49AM -0700, Stephen Warren wrote:
-> > On 12/13/2012 10:50 PM, Naveen Krishna Chatradhi wrote:
->=20
-> > > +The first should be an output, and is used to claim the I2C bus,
-> > > +the second should be an input, and signals that the other side (Clie=
-nt)
-> > > +wants to claim the bus. This allows two masters to share the same I2=
-C bus.
->=20
-> > I'm confused why this is even needed; the I2C protocol itself defines
-> > how multi-master is supposed to work, just using the regular SCL/SDA li=
-nes.
->=20
-> Practically speaking essentially no systems actually do that - mostly
-> Linux will treat failure to get the bus as an error for example.
+So as applicable, <choice .. endchoice> => <menu .. endmenu>
 
-It is true that Linux currently does not have proper multi-master
-support. It is worth a look what is missing and how far we can get with
-the I2C specified arbitration IMO.
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ arch/arc/Kconfig              |    6 ++----
+ arch/arc/plat-arcfpga/Kconfig |    5 ++---
+ 2 files changed, 4 insertions(+), 7 deletions(-)
 
-> also get things like read operations which appear as multiple
-> transactions on the I2C bus so require something higher level than what
-> multi-master provides.
+diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+index 2dab40d..3fdd6a5 100644
+--- a/arch/arc/Kconfig
++++ b/arch/arc/Kconfig
+@@ -82,9 +82,7 @@ source "kernel/Kconfig.freezer"
+ 
+ menu "ARC Architecture Configuration"
+ 
+-choice
+-	prompt "ARC Platform"
+-	default ARC_PLAT_FPGA_LEGACY
++menu "ARC Platform/SoC"
+ 
+ config ARC_PLAT_FPGA_LEGACY
+ 	bool "\"Legacy\" ARC FPGA dev platform"
+@@ -96,7 +94,7 @@ config ARC_PLAT_FPGA_LEGACY
+ 	  - MetaWare ISS
+ 
+ #New platform adds here
+-endchoice
++endmenu
+ 
+ menu "ARC CPU Configuration"
+ 
+diff --git a/arch/arc/plat-arcfpga/Kconfig b/arch/arc/plat-arcfpga/Kconfig
+index 9912d9c..ae2c017 100644
+--- a/arch/arc/plat-arcfpga/Kconfig
++++ b/arch/arc/plat-arcfpga/Kconfig
+@@ -8,8 +8,7 @@
+ 
+ if ARC_PLAT_FPGA_LEGACY
+ 
+-choice
+-	prompt "FPGA Board"
++menu "FPGA Board"
+ 
+ config ARC_BOARD_ANGEL4
+ 	bool "ARC Angel4"
+@@ -35,7 +34,7 @@ config ISS_SMP_EXTN
+ 	  -XTL (To enable CPU start/stop/set-PC for another CPU)
+ 	  It doesn't provide coherent Caches and/or Atomic Ops (LLOCK/SCOND)
+ 
+-endchoice
++endmenu
+ 
+ config ARC_SERIAL_BAUD
+ 	int "UART Baud rate"
+-- 
+1.7.4.1
 
-I don't get what you mean here. Can you elaborate?
-
-That being said. Grant's design was the most promising one.
-
-Thanks,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---6zdv2QT/q3FMhpsV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlEBF1kACgkQD27XaX1/VRullQCePgYzSfFOMBAK94oXjHZnLFtt
-TYIAoMQogd0XfDbXQpVnMGySY0AW5KEI
-=Zzsm
------END PGP SIGNATURE-----
-
---6zdv2QT/q3FMhpsV--
