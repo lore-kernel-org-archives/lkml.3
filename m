@@ -1,80 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab3AXMkC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 07:40:02 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:49896 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065Ab3AXMjz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 07:39:55 -0500
-Date: Thu, 24 Jan 2013 07:39:39 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: xufengzhang.main@gmail.com
-Cc: vyasevich@gmail.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sctp: set association state to established in
- dupcook_a handler
-Message-ID: <20130124123939.GA20658@hmsreliant.think-freely.org>
-References: <1358995474-28369-1-git-send-email-xufengzhang.main@gmail.com>
+	id S1754370Ab3AXMwC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 07:52:02 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:53313 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753054Ab3AXMvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 07:51:53 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [GIT PULL] ACPI and power management fixes for v3.8-rc5
+Date: Thu, 24 Jan 2013 13:57:55 +0100
+Message-ID: <4322980.ey5AOPpS2x@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358995474-28369-1-git-send-email-xufengzhang.main@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 10:44:34AM +0800, xufengzhang.main@gmail.com wrote:
-> From: Xufeng Zhang <xufeng.zhang@windriver.com>
-> 
-> While sctp handling a duplicate COOKIE-ECHO and the action is
-> 'Association restart', sctp_sf_do_dupcook_a() will processing
-> the unexpected COOKIE-ECHO for peer restart, but it does not set
-> the association state to SCTP_STATE_ESTABLISHED, so the association
-> could stuck in SCTP_STATE_SHUTDOWN_PENDING state forever.
-> This violates the sctp specification:
->   RFC 4960 5.2.4. Handle a COOKIE ECHO when a TCB Exists
->   Action
->   A) In this case, the peer may have restarted. .....
->      After this, the endpoint shall enter the ESTABLISHED state.
-> 
-> To resolve this problem, adding a SCTP_CMD_NEW_STATE cmd to the
-> command list before SCTP_CMD_REPLY cmd, this will set the restart
-> association to SCTP_STATE_ESTABLISHED state properly and also avoid
-> I-bit being set in the DATA chunk header when COOKIE_ACK is bundled
-> with DATA chunks.
-> 
-> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
-> ---
-> v2:
-> - Put the SCTP_CMD_NEW_STATE command before SCTP_CMD_REPLY and after SCTP_CMD_EVENT_ULP
->   suggested by Vlad and Neil
-> - Improve the last paragraph of the commit header
->  
->  net/sctp/sm_statefuns.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-> index 618ec7e..5131fcf 100644
-> --- a/net/sctp/sm_statefuns.c
-> +++ b/net/sctp/sm_statefuns.c
-> @@ -1779,8 +1779,10 @@ static sctp_disposition_t sctp_sf_do_dupcook_a(struct net *net,
->  
->  	/* Update the content of current association. */
->  	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
-> -	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
->  	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
-> +	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
-> +			SCTP_STATE(SCTP_STATE_ESTABLISHED));
-> +	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
->  	return SCTP_DISPOSITION_CONSUME;
->  
->  nomem_ev:
-> -- 
-> 1.7.0.2
-> 
-> 
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Hi Linus,
 
+Please pull from the git repository at
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-for-3.8-rc5
+
+to receive ACPI and power management fixes for v3.8-rc5 with top-most commit
+efa17194581bdfca0986dabc178908bd7c21ba00
+
+  cpufreq: Add module aliases for acpi-cpufreq
+
+on top of commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619
+
+  Linux 3.8-rc4
+
+Included are:
+
+* Two cpuidle initialization fixes (both -stable material) from
+  Konrad Rzeszutek Wilk.
+
+* cpufreq regression fixes for AMD processors, mostly related to the change
+  of the default driver for newer CPUs from powernow-k8 to acpi-cpufreq.
+  From Borislav Petkov, Stefan Bader, Matthew Garrett.
+
+* ACPI cpufreq fix related to system reconfigurations such as the switch
+  from battery to AC power from Thomas Schlichter (-stable material).
+
+* cpufreq and devfreq fixes related to incorrect usage of operating
+  performance points (OPP) framework and RCU from Nishanth Menon
+  (-stable material).
+
+* APEI workaround for incorrect BIOS information from Lans Zhang.
+
+Thanks!
+ 
+
+ drivers/acpi/apei/apei-base.c    |    3 ++
+ drivers/acpi/processor_idle.c    |    4 ++
+ drivers/acpi/processor_perflib.c |    7 ++++
+ drivers/cpufreq/Kconfig.x86      |    2 +-
+ drivers/cpufreq/acpi-cpufreq.c   |    7 ++++
+ drivers/cpufreq/cpufreq-cpu0.c   |    5 +++
+ drivers/cpufreq/omap-cpufreq.c   |    3 ++
+ drivers/devfreq/devfreq.c        |    5 +++
+ drivers/devfreq/exynos4_bus.c    |   94 +++++++++++++++++++++++++++++++++-------------
+ drivers/idle/intel_idle.c        |    3 +-
+ 10 files changed, 103 insertions(+), 30 deletions(-)
+
+---------------
+
+Borislav Petkov (1):
+      powernow-k8: Add a kconfig dependency on acpi-cpufreq
+
+Konrad Rzeszutek Wilk (2):
+      intel_idle: Don't register CPU notifier if we are not running.
+      ACPI / cpuidle: Fix NULL pointer issues when cpuidle is disabled
+
+Lans Zhang (1):
+      ACPI, APEI: Fixup incorrect 64-bit access width firmware bug
+
+Matthew Garrett (1):
+      cpufreq: Add module aliases for acpi-cpufreq
+
+Nishanth Menon (4):
+      cpufreq: OMAP: use RCU locks around usage of OPP
+      cpufreq: cpufreq-cpu0: use RCU locks around usage of OPP
+      PM / devfreq: add locking documentation for recommended_opp
+      PM / devfreq: exynos4_bus: honor RCU lock usage
+
+Stefan Bader (1):
+      ACPI: Check MSR valid bit before using P-state frequencies
+
+Thomas Schlichter (1):
+      ACPI / processor: Get power info before updating the C-states
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
