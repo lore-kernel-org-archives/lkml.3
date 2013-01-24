@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab3AXTUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:20:51 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:57236 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319Ab3AXTUs convert rfc822-to-8bit (ORCPT
+	id S1755303Ab3AXTV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:21:27 -0500
+Received: from fold.natur.cuni.cz ([195.113.57.32]:52496 "HELO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753890Ab3AXTVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:20:48 -0500
-Content-Type: text/plain; charset="utf-8"
+	Thu, 24 Jan 2013 14:21:24 -0500
+Message-ID: <510189B1.606@fold.natur.cuni.cz>
+Date: Thu, 24 Jan 2013 20:21:21 +0100
+From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20100101 Firefox/17.0 SeaMonkey/2.14.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <50E793A0.4020702@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "linux@prisktech.co.nz" <linux@prisktech.co.nz>,
-        "josh.cartwright@ni.com" <josh.cartwright@ni.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
- <1357282858-2112-2-git-send-email-pgaikwad@nvidia.com>
- <50E703A8.1080808@wwwdotorg.org> <50E793A0.4020702@nvidia.com>
-Message-ID: <20130124192043.10623.60751@quantum>
-User-Agent: alot/0.3.3+
-Subject: Re: [PATCH 2/7] clk: tegra: Use common of_clk_init() function
-Date: Thu, 24 Jan 2013 11:20:43 -0800
+To: Chris Clayton <chris2553@googlemail.com>
+CC: linux-media@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.8.0-rc4+ - Oops on removing WinTV-HVR-1400 expresscard TV Tuner
+References: <51016937.1020202@googlemail.com>
+In-Reply-To: <51016937.1020202@googlemail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Prashant Gaikwad (2013-01-04 18:44:48)
-> On Friday 04 January 2013 10:00 PM, Stephen Warren wrote:
-> > On 01/04/2013 12:00 AM, Prashant Gaikwad wrote:
-> >> Use common of_clk_init() function for clocks initialization.
-> >>   drivers/clk/tegra/clk-tegra20.c |    3 ++-
-> >>   drivers/clk/tegra/clk-tegra30.c |    3 ++-
-> > Oh, so this series is written assuming that the Tegra CCF rework is
-> > already applied then? That makes the dependencies quite painful, since I
-> > think we'll end up with the following order being needed:
-> >
-> > 1) clk: Add composite clock type
-> >     -> This would usually go through the clk tree.
-> > 2) The Tegra CCF rework series
-> >     -> This must go through the Tegra tree due to lots of dependencies
-> >     and merge conflicts with other Tegra patches.
-> > 3) This series
-> >     -> This would usually go through the clk tree.
-> >
-> > Is it possible to re-order the dependencies as (1) (3) (2), so that Mike
-> > can apply (1) and (3) to the clock tree, then I can use the clk tree as
-> > the basis for a branch in the Tegra tree to apply (2) and all the other
-> > Tegra patches that will conflict with (2)?
+Hi Chris,
+  try to include in kernel only acpiphp and omit pciehp. Don't use modules but include
+them statically. And try, in addition, check whether "pcie_aspm=off" in grub.conf helped.
+
+  The best would if you subscribe to linux-pci, and read my recent threads
+about similar issues I had with express cards with Dell Vostro 3550. Further, there is
+a lot of changes to PCI hotplug done by Yingahi Liu and Rafael Wysockij, just browse the
+archives of linux-pci and see the pacthes and the discussion.
+Martin
+
+Chris Clayton wrote:
+> Hi,
 > 
-> If Mike approves the concept and implementation in (1) and (3) then I 
-> will repost (2) and (3) with dependencies re-ordered.
-
-Patch (1) still has some unaddressed comments, and is not a real
-dependency for this series.  Since all of the patches have received their
-Tested-by's then I propose to merge all patches from this series into
-clk-next, which exception of patch 2/7 (the Tegra patch).
-
-This reduces your Tegra CCF conversion dependencies and you can role the
-necessary of_clk_init change into your Tegra CCF conversion branch (it
-has my implicit Ack and can be taken through your tree).
-
-Let me know if this is OK for you.
-
-Thanks,
-Mike
+> I've today taken delivery of a WinTV-HVR-1400 expresscard TV Tuner and got an Oops when I removed from the expresscard slot in my laptop. I will quite understand if the response to this report is "don't do that!", but in that case, how should one remove one of these cards?
+> 
+> I have attached three files:
+> 
+> 1. the dmesg output from when I rebooted the machine after the oops. I have turned debugging on in the dib700p and cx23885 modules via modules options in /etc/modprobe.d/hvr1400.conf;
+> 
+> 2. the .config file for the kernel that oopsed.
+> 
+> 3. the text of the oops message. I've typed this up from a photograph of the screen because the laptop was locked up and there was nothing in the log files. Apologies for any typos, but I have tried to be careful.
+> 
+> Assuming the answer isn't don't do that, let me know if I can provide any additional diagnostics, test any patches, etc. Please, however, cc me as I'm not subscribed.
+> 
+> Chris
