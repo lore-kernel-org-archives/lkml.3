@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab3AXUNr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:13:47 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50187 "EHLO
+	id S1755890Ab3AXUN6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:13:58 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50189 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755727Ab3AXUIw (ORCPT
+	with ESMTP id S1755769Ab3AXUIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jan 2013 15:08:52 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 67/74] perf tools: Remove some needless die() calls from the main routine
-Date: Thu, 24 Jan 2013 17:08:16 -0300
-Message-Id: <1359058103-31645-68-git-send-email-acme@infradead.org>
+Subject: [PATCH 63/74] perf ui browsers: Fix usage of __ in struct names
+Date: Thu, 24 Jan 2013 17:08:12 -0300
+Message-Id: <1359058103-31645-64-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1359058103-31645-1-git-send-email-acme@infradead.org>
 References: <1359058103-31645-1-git-send-email-acme@infradead.org>
@@ -29,9 +29,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Some would just call exit() anyway right after calling die() and the
-main routine doesn't have to call it, just return the exit value.
+In tools/perf we use a convention where __ separates the struct name
+from the function name for functions that operate on a struct instance.
 
+Fix this usage by removing it from the struct names and fix also the
+associated functions.
+
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
@@ -40,83 +44,75 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-nzq0sdur6oq6lgkt2ipf4o8s@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-rfj7acng5tukftb8hy1rrw08@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/perf.c | 32 +++++++++++++++++++++-----------
- 1 file changed, 21 insertions(+), 11 deletions(-)
+ tools/perf/ui/browser.c           | 4 ++--
+ tools/perf/ui/browsers/annotate.c | 8 ++++----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 0f661fb..095b882 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -328,14 +328,23 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
- 	if (S_ISFIFO(st.st_mode) || S_ISSOCK(st.st_mode))
- 		return 0;
- 
-+	status = 1;
- 	/* Check for ENOSPC and EIO errors.. */
--	if (fflush(stdout))
--		die("write failure on standard output: %s", strerror(errno));
--	if (ferror(stdout))
--		die("unknown write failure on standard output");
--	if (fclose(stdout))
--		die("close failed on standard output: %s", strerror(errno));
--	return 0;
-+	if (fflush(stdout)) {
-+		fprintf(stderr, "write failure on standard output: %s", strerror(errno));
-+		goto out;
-+	}
-+	if (ferror(stdout)) {
-+		fprintf(stderr, "unknown write failure on standard output");
-+		goto out;
-+	}
-+	if (fclose(stdout)) {
-+		fprintf(stderr, "close failed on standard output: %s", strerror(errno));
-+		goto out;
-+	}
-+	status = 0;
-+out:
-+	return status;
+diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
+index 4aeb7d5..588bcb2 100644
+--- a/tools/perf/ui/browser.c
++++ b/tools/perf/ui/browser.c
+@@ -471,7 +471,7 @@ unsigned int ui_browser__list_head_refresh(struct ui_browser *browser)
+ 	return row;
  }
  
- static void handle_internal_command(int argc, const char **argv)
-@@ -467,7 +476,8 @@ int main(int argc, const char **argv)
- 		cmd += 5;
- 		argv[0] = cmd;
- 		handle_internal_command(argc, argv);
--		die("cannot handle %s internally", cmd);
-+		fprintf(stderr, "cannot handle %s internally", cmd);
-+		goto out;
+-static struct ui_browser__colorset {
++static struct ui_browser_colorset {
+ 	const char *name, *fg, *bg;
+ 	int colorset;
+ } ui_browser__colorsets[] = {
+@@ -706,7 +706,7 @@ void ui_browser__init(void)
+ 	perf_config(ui_browser__color_config, NULL);
+ 
+ 	while (ui_browser__colorsets[i].name) {
+-		struct ui_browser__colorset *c = &ui_browser__colorsets[i++];
++		struct ui_browser_colorset *c = &ui_browser__colorsets[i++];
+ 		sltt_set_color(c->colorset, c->name, c->fg, c->bg);
  	}
  
- 	/* Look for flags.. */
-@@ -485,7 +495,7 @@ int main(int argc, const char **argv)
- 		printf("\n usage: %s\n\n", perf_usage_string);
- 		list_common_cmds_help();
- 		printf("\n %s\n\n", perf_more_info_string);
--		exit(1);
-+		goto out;
- 	}
- 	cmd = argv[0];
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index 2fc7f04..7dca155 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -926,7 +926,7 @@ out_free_offsets:
+ /*
+  * Keep the entries sorted, they are bsearch'ed
+  */
+-static struct annotate__config {
++static struct annotate_config {
+ 	const char *name;
+ 	bool *value;
+ } annotate__configs[] = {
+@@ -940,7 +940,7 @@ static struct annotate__config {
  
-@@ -517,7 +527,7 @@ int main(int argc, const char **argv)
- 			fprintf(stderr, "Expansion of alias '%s' failed; "
- 				"'%s' is not a perf-command\n",
- 				cmd, argv[0]);
--			exit(1);
-+			goto out;
- 		}
- 		if (!done_help) {
- 			cmd = argv[0] = help_unknown_cmd(cmd);
-@@ -528,6 +538,6 @@ int main(int argc, const char **argv)
+ static int annotate_config__cmp(const void *name, const void *cfgp)
+ {
+-	const struct annotate__config *cfg = cfgp;
++	const struct annotate_config *cfg = cfgp;
  
- 	fprintf(stderr, "Failed to run command '%s': %s\n",
- 		cmd, strerror(errno));
--
-+out:
- 	return 1;
+ 	return strcmp(name, cfg->name);
  }
+@@ -948,7 +948,7 @@ static int annotate_config__cmp(const void *name, const void *cfgp)
+ static int annotate__config(const char *var, const char *value,
+ 			    void *data __maybe_unused)
+ {
+-	struct annotate__config *cfg;
++	struct annotate_config *cfg;
+ 	const char *name;
+ 
+ 	if (prefixcmp(var, "annotate.") != 0)
+@@ -956,7 +956,7 @@ static int annotate__config(const char *var, const char *value,
+ 
+ 	name = var + 9;
+ 	cfg = bsearch(name, annotate__configs, ARRAY_SIZE(annotate__configs),
+-		      sizeof(struct annotate__config), annotate_config__cmp);
++		      sizeof(struct annotate_config), annotate_config__cmp);
+ 
+ 	if (cfg == NULL)
+ 		return -1;
 -- 
 1.8.1.1.361.gec3ae6e
 
