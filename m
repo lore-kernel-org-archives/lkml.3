@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab3AXPR3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:17:29 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:45644 "EHLO relay.sw.ru"
+	id S1755248Ab3AXPRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:17:44 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:14625 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753239Ab3AXPR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:17:26 -0500
+	id S1754491Ab3AXPRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 10:17:39 -0500
 From: Lord Glauber Costa of Sealand <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         ccross@google.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v6 02/12] cgroup: implement CFTYPE_NO_PREFIX
-Date: Thu, 24 Jan 2013 19:17:32 +0400
-Message-Id: <1359040662-8055-3-git-send-email-glommer@parallels.com>
+        Paul Turner <pjt@google.com>, Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v6 12/12] sched: introduce cgroup file stat_percpu
+Date: Thu, 24 Jan 2013 19:17:42 +0400
+Message-Id: <1359040662-8055-13-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359040662-8055-1-git-send-email-glommer@parallels.com>
 References: <1359040662-8055-1-git-send-email-glommer@parallels.com>
@@ -22,49 +21,271 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
+From: Glauber Costa <glommer@parallels.com>
 
-When cgroup files are created, cgroup core automatically prepends the
-name of the subsystem as prefix.  This patch adds CFTYPE_NO_PREFIX
-which disables the automatic prefix.
+The file cpu.stat_percpu will show various scheduler related
+information, that are usually available to the top level through other
+files.
 
-This will be used to deprecate cpuacct which will make cpu create and
-serve the cpuacct files.
+For instance, most of the meaningful data in /proc/stat is presented
+here. Given this file, a container can easily construct a local copy of
+/proc/stat for internal consumption.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Glauber Costa <glommer@parallels.com>
+The data we export is comprised of:
+* all the tick information, previously available only through cpuacct,
+  like user time, system time, etc.
+
+* wait time, which can be used to construct analogous information to
+  steal time in hypervisors,
+
+* nr_switches and nr_running, which are cgroup-local versions of
+  their global counterparts.
+
+The file format consists of a one-line header that describes the fields
+being listed.  No guarantee is given that the fields will be kept the
+same between kernel releases, and readers should always check the header
+in order to introspect it.
+
+Each of the following lines will show the respective field value for
+each of the possible cpus in the system. All values are show in
+nanoseconds.
+
+One example output for this file is:
+
+cpu user nice system irq softirq guest guest_nice wait nr_switches nr_running
+cpu0 471000000 0 15000000 0 0 0 0 1996534 7205 1
+cpu1 588000000 0 17000000 0 0 0 0 2848680 6510 1
+cpu2 505000000 0 14000000 0 0 0 0 2350771 6183 1
+cpu3 472000000 0 16000000 0 0 0 0 19766345 6277 2
+
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Turner <pjt@google.com>
 ---
- include/linux/cgroup.h | 1 +
- kernel/cgroup.c        | 3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ Documentation/cgroups/cpu.txt |  18 +++++++
+ kernel/sched/core.c           | 109 ++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/fair.c           |  14 ++++++
+ kernel/sched/sched.h          |  11 ++++-
+ 4 files changed, 150 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 7d73905..7d193f9 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -277,6 +277,7 @@ struct cgroup_map_cb {
- /* cftype->flags */
- #define CFTYPE_ONLY_ON_ROOT	(1U << 0)	/* only create on root cg */
- #define CFTYPE_NOT_ON_ROOT	(1U << 1)	/* don't create on root cg */
-+#define CFTYPE_NO_PREFIX	(1U << 2)	/* skip subsys prefix */
+diff --git a/Documentation/cgroups/cpu.txt b/Documentation/cgroups/cpu.txt
+index e0ea075..2124320 100644
+--- a/Documentation/cgroups/cpu.txt
++++ b/Documentation/cgroups/cpu.txt
+@@ -68,6 +68,24 @@ The CPU controller exposes the following files to the user:
+    can ever be run in this cgroup. For more information about rt tasks runtime
+    assignments, see scheduler/sched-rt-group.txt
  
- #define MAX_CFTYPE_NAME		64
++ - cpu.stat_percpu: Various scheduler statistics for the current group. The
++   information provided in this file is akin to the one displayed in /proc/stat,
++   except for the fact that it is cgroup-aware. The file format consists of a
++   one-line header that describes the fields being listed.  No guarantee is
++   given that the fields will be kept the same between kernel releases, and
++   readers should always check the header in order to introspect it.
++
++   Each of the following lines will show the respective field value for
++   each of the possible cpus in the system. All values are show in
++   nanoseconds. One example output for this file is:
++
++   cpu user nice system irq softirq guest guest_nice wait nr_switches nr_running
++   cpu0 471000000 0 15000000 0 0 0 0 1996534 7205 1
++   cpu1 588000000 0 17000000 0 0 0 0 2848680 6510 1
++   cpu2 505000000 0 14000000 0 0 0 0 2350771 6183 1
++   cpu3 472000000 0 16000000 0 0 0 0 19766345 6277 2
++
++
+  - cpuacct.usage: The aggregate CPU time, in nanoseconds, consumed by all tasks
+    in this group.
  
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 4855892..2f98398 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2723,7 +2723,8 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 6bb56f0..87437af 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7680,6 +7680,7 @@ static inline void cfs_exec_clock_reset(struct task_group *tg, int cpu)
+ #else
+ static inline u64 cfs_exec_clock(struct task_group *tg, int cpu)
+ {
++	return 0;
+ }
  
- 	simple_xattrs_init(&cft->xattrs);
+ static inline void cfs_exec_clock_reset(struct task_group *tg, int cpu)
+@@ -8111,6 +8112,108 @@ static u64 cpu_rt_period_read_uint(struct cgroup *cgrp, struct cftype *cft)
+ }
+ #endif /* CONFIG_RT_GROUP_SCHED */
  
--	if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
-+	if (subsys && !(cft->flags & CFTYPE_NO_PREFIX) &&
-+	    !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
- 		strcpy(name, subsys->name);
- 		strcat(name, ".");
- 	}
++#ifdef CONFIG_SCHEDSTATS
++
++#ifdef CONFIG_FAIR_GROUP_SCHED
++#define fair_rq(field, tg, i)  (tg)->cfs_rq[i]->field
++#else
++#define fair_rq(field, tg, i)  0
++#endif
++
++#ifdef CONFIG_RT_GROUP_SCHED
++#define rt_rq(field, tg, i)  (tg)->rt_rq[i]->field
++#else
++#define rt_rq(field, tg, i)  0
++#endif
++
++static u64 tg_nr_switches(struct task_group *tg, int cpu)
++{
++	/* nr_switches, which counts idle and stop task, is added to all tgs */
++	return cpu_rq(cpu)->nr_switches +
++		cfs_nr_switches(tg, cpu) + rt_nr_switches(tg, cpu);
++}
++
++static u64 tg_nr_running(struct task_group *tg, int cpu)
++{
++	/*
++	 * because of autogrouped groups in root_task_group, the
++	 * following does not hold.
++	 */
++	if (tg != &root_task_group)
++		return rt_rq(rt_nr_running, tg, cpu) + fair_rq(nr_running, tg, cpu);
++
++	return cpu_rq(cpu)->nr_running;
++}
++
++static u64 tg_wait(struct task_group *tg, int cpu)
++{
++	u64 val;
++
++	if (tg != &root_task_group)
++		val = cfs_read_wait(tg, cpu);
++	else
++		/*
++		 * There are many errors here that we are accumulating.
++		 * However, we only provide this in the interest of having
++		 * a consistent interface for all cgroups. Everybody
++		 * probing the root cgroup should be getting its figures
++		 * from system-wide files as /proc/stat. That would be faster
++		 * to begin with...
++		 */
++		val = kcpustat_cpu(cpu).cpustat[CPUTIME_STEAL] * TICK_NSEC;
++
++	return val;
++}
++
++static inline void do_fill_seq(struct seq_file *m, struct task_group *tg,
++			       int cpu, int index)
++{
++	u64 val = 0;
++	struct kernel_cpustat *kcpustat;
++	kcpustat = per_cpu_ptr(tg->cpustat, cpu);
++	val = cputime64_to_clock_t(kcpustat->cpustat[index]) * TICK_NSEC;
++	seq_put_decimal_ull(m, ' ', val);
++}
++
++/*
++ * This will dislay per-cpu statistics about the running cgroup. The file
++ * format consists of a one-line header that describes the fields being listed.
++ * No guarantee is given that the fields will be kept the same between kernel
++ * releases, and readers should always check the header in order to introspect
++ * it. The first column, however, will always be in the form cpux, where
++ * x is the logical number of the cpu.
++ *
++ * Each of the following lines will show the respective field value for each of
++ * the possible cpus in the system. All values are show in nanoseconds.
++ */
++static int cpu_stats_percpu_show(struct cgroup *cgrp, struct cftype *cft,
++				 struct seq_file *m)
++{
++	struct task_group *tg = cgroup_tg(cgrp);
++	int cpu;
++
++	seq_printf(m, "cpu user nice system irq softirq guest guest_nice ");
++	seq_printf(m, "wait nr_switches nr_running\n");
++
++	for_each_possible_cpu(cpu) {
++		seq_printf(m, "cpu%d", cpu);
++		do_fill_seq(m, tg, cpu, CPUTIME_USER);
++		do_fill_seq(m, tg, cpu, CPUTIME_NICE);
++		do_fill_seq(m, tg, cpu, CPUTIME_SYSTEM);
++		do_fill_seq(m, tg, cpu, CPUTIME_IRQ);
++		do_fill_seq(m, tg, cpu, CPUTIME_SOFTIRQ);
++		do_fill_seq(m, tg, cpu, CPUTIME_GUEST);
++		do_fill_seq(m, tg, cpu, CPUTIME_GUEST_NICE);
++		seq_put_decimal_ull(m, ' ', tg_wait(tg, cpu));
++		seq_put_decimal_ull(m, ' ', tg_nr_switches(tg, cpu));
++		seq_put_decimal_ull(m, ' ', tg_nr_running(tg, cpu));
++		seq_putc(m, '\n');
++	}
++
++	return 0;
++}
++#endif
++
+ static struct cftype cpu_files[] = {
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	{
+@@ -8164,6 +8267,12 @@ static struct cftype cpu_files[] = {
+ 		.flags = CFTYPE_NO_PREFIX,
+ 		.read_map = cpucg_stats_show,
+ 	},
++#ifdef CONFIG_SCHEDSTATS
++	{
++		.name = "stat_percpu",
++		.read_seq_string = cpu_stats_percpu_show,
++	},
++#endif
+ 	{ }	/* terminate */
+ };
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 0dd9c50..792e68d 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1104,6 +1104,20 @@ static void update_cfs_shares(struct cfs_rq *cfs_rq)
+ 
+ 	reweight_entity(cfs_rq_of(se), se, shares);
+ }
++
++#ifdef CONFIG_SCHEDSTATS
++u64 cfs_read_wait(struct task_group *tg, int cpu)
++{
++	struct sched_entity *se = tg->se[cpu];
++	struct cfs_rq *cfs_rq = cfs_rq_of(se);
++	u64 value = se->statistics.wait_sum;
++
++	if (!se->statistics.wait_start)
++		return value;
++
++	return value + rq_of(cfs_rq)->clock - se->statistics.wait_start;
++}
++#endif
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+ static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
+ {
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index a426abc..cd4688e 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -198,8 +198,16 @@ extern void init_tg_rt_entry(struct task_group *tg, struct rt_rq *rt_rq,
+ 		struct sched_rt_entity *rt_se, int cpu,
+ 		struct sched_rt_entity *parent);
+ 
+-#else /* CONFIG_CGROUP_SCHED */
+ 
++#ifdef CONFIG_FAIR_GROUP_SCHED
++extern u64 cfs_read_wait(struct task_group *tg, int cpu);
++#else
++static inline u64 cfs_read_wait(struct task_group *tg, int cpu)
++{
++	return 0;
++}
++#endif
++#else /* CONFIG_CGROUP_SCHED */
+ struct cfs_bandwidth { };
+ 
+ #endif	/* CONFIG_CGROUP_SCHED */
+@@ -1195,7 +1203,6 @@ extern void init_cfs_rq(struct cfs_rq *cfs_rq);
+ extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
+ 
+ extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
+-
+ #ifdef CONFIG_NO_HZ
+ enum rq_nohz_flag_bits {
+ 	NOHZ_TICK_STOPPED,
 -- 
 1.8.1
 
