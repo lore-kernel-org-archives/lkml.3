@@ -1,98 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab3AXT2v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:28:51 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:59567 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754939Ab3AXT2s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:28:48 -0500
-Message-ID: <51018BC7.20100@metafoo.de>
-Date: Thu, 24 Jan 2013 20:30:15 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
+	id S1754914Ab3AXTcj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:32:39 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33670 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751951Ab3AXTch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 14:32:37 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130124192359.GA22484@aepfle.de>
+References: <1358990259-22551-1-git-send-email-kys@microsoft.com> <5101035D02000078000B8FFD@nat28.tlf.novell.com> <27092660926e4d3f80394697cc0dc858@SN2PR03MB061.namprd03.prod.outlook.com> <51016C3202000078000B943E@nat28.tlf.novell.com> <f6cbfec9c014433fa54af61d8f436ebb@SN2PR03MB061.namprd03.prod.outlook.com> <20130124185943.GA19194@aepfle.de> <4d9be218-acf5-45a6-aeda-cee592fd74c8@email.android.com> <20130124192359.GA22484@aepfle.de>
 MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>
-CC: Doug Anderson <dianders@chromium.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
-        Naveen Krishna <naveenkrishna.ch@gmail.com>
-Subject: Re: [PATCH] iio: adc: add exynos5 adc driver under iio framwork
-References: <1358775470-21278-1-git-send-email-ch.naveen@samsung.com> <CAD=FV=VRKqeRxvcV1-aQCbu0FoTpMiVVXoNiVEx5SxLe3N_tgQ@mail.gmail.com> <51017B4D.7000105@metafoo.de> <1523320.h6ZorTqNLc@flatron>
-In-Reply-To: <1523320.h6ZorTqNLc@flatron>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 24 Jan 2013 13:30:52 -0600
+To: Olaf Hering <olaf@aepfle.de>
+CC: KY Srinivasan <kys@microsoft.com>, Jan Beulich <JBeulich@suse.com>,
+        "bp@alien8.de" <bp@alien8.de>, "apw@canonical.com" <apw@canonical.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <e8da7a46-c0f6-4590-87a4-e9860fb4ccab@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 08:15 PM, Tomasz Figa wrote:
-> Hi,
-> 
-> On Thursday 24 of January 2013 19:19:57 Lars-Peter Clausen wrote:
->> On 01/24/2013 05:12 PM, Doug Anderson wrote:
->>> Lars,
->>>
->>> Thank you for your comments / thoughts...
->>
->> Hi,
->>
->>> On Thu, Jan 24, 2013 at 1:54 AM, Lars-Peter Clausen <lars@metafoo.de> 
-> wrote:
->>>> adc: adc@12D10000 {
->>>>
->>>>         #io-channel-cells = <1>;
->>>>         io-channel-output-names = "adc1", "adc2", ...;
->>>>         
->>>>         ncp15wb473@0 {
->>>>         
->>>>                 compatible = "ntc,ncp15wb473";
->>>>                 ...
->>>>                 io-channels = <&adc 0>; // First ADC channel
->>>
->>> I'm not an expert, but I think the typical way is:
->>> * No need to include a handle to &adc.  It's logically our parent.  In
->>> a similar way i2c devices don't specify their parent bus--they are
->>> just listed under it.
->>> * The "0" should be specified with reg = <0>
->>
->> The relationship between the IIO sensor device and the consumer device
->> is not always a parent child relationship. In this case it makes sense
->> to have the ADC as the parent for the thermistors. But for other cases
->> this may not be true. E.g. take a touchscreen or power monitoring
->> platform device which uses the IIO device to do measurements.
-> 
-> The policy is to use children with reg property only inside a node 
-> representing a bus controller through which the child device is being 
-> accessed (like I2C, SPI).
-> 
-> I would see IIO bindings similar to what we have with GPIOs, interrupts or 
-> regulators, so io-channels = <&iio-controller channel> seems fine (or 
-> rather iio-channels) with the node under appropriate parent.
+And there is no evidence of Xen in CPUID?
 
-IIO is a very Linux specific term, the device tree bindings should be as OS
-agnostic as possible, so io-channels is probably the better term.
+Olaf Hering <olaf@aepfle.de> wrote:
 
+>On Thu, Jan 24, H. Peter Anvin wrote:
+>
+>> Can't you discover Xen emulation by looking for Xen first?  Or does
+>Xen go "stealth"?
+>
+>The current code looks at cpuid to decide what the host type is. One
+>thing to detect a Xen host is to look for the DIM strings, which still
+>have "Xen HVM DomU" or similar.
+>
+>Olaf
 
-> 
->>> To implement this I'd imagine that we'll need a new API call, right?
->>> In this case the thermistor driver won't know the name of the channel.
->>>
->>>  It can find the ADC (the struct device and probably other things) and
->>>
->>> knows a channel index.  Am I understanding properly?
->>
->> This can be done by adding a new api call, but it would be best if both
->> dt and non-dt based consumers can use the same function. I outlined one
->> possible solution how this can be done in the previous mail to Naveen.
-> 
-> In case of the solution I mentioned, implementation would be almost 
-> identical to what is done with GPIOs (see drivers/gpio/gpiolib-of.c).
-
-Although similar to the GPIO bindings, the clk bindings are in my opinion an
-even better example.
-
-- Lars
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
