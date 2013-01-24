@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab3AXLUU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:20:20 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:42903 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309Ab3AXLKp (ORCPT
+	id S1754572Ab3AXLUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:20:30 -0500
+Received: from kiruna.synopsys.com ([198.182.44.80]:51401 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754311Ab3AXLKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jan 2013 06:10:45 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v3 27/71] ARC: TLB flush Handling
-Date: Thu, 24 Jan 2013 16:36:00 +0530
-Message-ID: <1359025589-22277-17-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v3 16/71] ARC: Non-MMU Exception Handling
+Date: Thu, 24 Jan 2013 16:35:56 +0530
+Message-ID: <1359025589-22277-13-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
 References: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
@@ -25,410 +25,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/include/asm/tlb.h      |   17 ++
- arch/arc/include/asm/tlbflush.h |   28 ++++
- arch/arc/mm/tlb.c               |  311 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 356 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/include/asm/tlbflush.h
+ arch/arc/include/asm/hw_irq.h |    7 --
+ arch/arc/kernel/traps.c       |  125 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 125 insertions(+), 7 deletions(-)
+ delete mode 100644 arch/arc/include/asm/hw_irq.h
+ create mode 100644 arch/arc/kernel/traps.c
 
-diff --git a/arch/arc/include/asm/tlb.h b/arch/arc/include/asm/tlb.h
-index b571e12..3eb2ce0 100644
---- a/arch/arc/include/asm/tlb.h
-+++ b/arch/arc/include/asm/tlb.h
-@@ -21,6 +21,23 @@
- 
- #ifndef __ASSEMBLY__
- 
-+#define tlb_flush(tlb) local_flush_tlb_mm((tlb)->mm)
-+
-+/*
-+ * This pair is called at time of munmap/exit to flush cache and TLB entries
-+ * for mappings being torn down.
-+ * 1) cache-flush part -implemented via tlb_start_vma( ) can be NOP (for now)
-+ *    as we don't support aliasing configs in our VIPT D$.
-+ * 2) tlb-flush part - implemted via tlb_end_vma( ) can be NOP as well-
-+ *    albiet for difft reasons - its better handled by moving to new ASID
-+ *
-+ * Note, read http://lkml.org/lkml/2004/1/15/6
-+ */
-+#define tlb_start_vma(tlb, vma)
-+#define tlb_end_vma(tlb, vma)
-+
-+#define __tlb_remove_tlb_entry(tlb, ptep, address)
-+
- #include <linux/pagemap.h>
- #include <asm-generic/tlb.h>
- 
-diff --git a/arch/arc/include/asm/tlbflush.h b/arch/arc/include/asm/tlbflush.h
+diff --git a/arch/arc/include/asm/hw_irq.h b/arch/arc/include/asm/hw_irq.h
+deleted file mode 100644
+index fd565ab..0000000
+--- a/arch/arc/include/asm/hw_irq.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-/*
+- * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+diff --git a/arch/arc/kernel/traps.c b/arch/arc/kernel/traps.c
 new file mode 100644
-index 0000000..b2f9bc7
+index 0000000..fd2457c
 --- /dev/null
-+++ b/arch/arc/include/asm/tlbflush.h
-@@ -0,0 +1,28 @@
++++ b/arch/arc/kernel/traps.c
+@@ -0,0 +1,125 @@
 +/*
++ * Traps/Non-MMU Exception handling for ARC
++ *
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
++ *
++ * Rahul Trivedi: Codito Technologies 2004
 + */
 +
-+#ifndef __ASM_ARC_TLBFLUSH__
-+#define __ASM_ARC_TLBFLUSH__
-+
-+#include <linux/mm.h>
-+
-+void local_flush_tlb_all(void);
-+void local_flush_tlb_mm(struct mm_struct *mm);
-+void local_flush_tlb_page(struct vm_area_struct *vma, unsigned long page);
-+void local_flush_tlb_kernel_range(unsigned long start, unsigned long end);
-+void local_flush_tlb_range(struct vm_area_struct *vma,
-+			   unsigned long start, unsigned long end);
-+
-+/* XXX: Revisit for SMP */
-+#define flush_tlb_range(vma, s, e)	local_flush_tlb_range(vma, s, e)
-+#define flush_tlb_page(vma, page)	local_flush_tlb_page(vma, page)
-+#define flush_tlb_kernel_range(s, e)	local_flush_tlb_kernel_range(s, e)
-+#define flush_tlb_all()			local_flush_tlb_all()
-+#define flush_tlb_mm(mm)		local_flush_tlb_mm(mm)
-+
-+#endif
-diff --git a/arch/arc/mm/tlb.c b/arch/arc/mm/tlb.c
-index 404e5be..232a0ff 100644
---- a/arch/arc/mm/tlb.c
-+++ b/arch/arc/mm/tlb.c
-@@ -6,13 +6,97 @@
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-+ *
-+ * vineetg: Aug 2011
-+ *  -Reintroduce duplicate PD fixup - some customer chips still have the issue
-+ *
-+ * vineetg: May 2011
-+ *  -No need to flush_cache_page( ) for each call to update_mmu_cache()
-+ *   some of the LMBench tests improved amazingly
-+ *      = page-fault thrice as fast (75 usec to 28 usec)
-+ *      = mmap twice as fast (9.6 msec to 4.6 msec),
-+ *      = fork (5.3 msec to 3.7 msec)
-+ *
-+ * vineetg: April 2011 :
-+ *  -MMU v3: PD{0,1} bits layout changed: They don't overlap anymore,
-+ *      helps avoid a shift when preparing PD0 from PTE
-+ *
-+ * vineetg: April 2011 : Preparing for MMU V3
-+ *  -MMU v2/v3 BCRs decoded differently
-+ *  -Remove TLB_SIZE hardcoding as it's variable now: 256 or 512
-+ *  -tlb_entry_erase( ) can be void
-+ *  -local_flush_tlb_range( ):
-+ *      = need not "ceil" @end
-+ *      = walks MMU only if range spans < 32 entries, as opposed to 256
-+ *
-+ * Vineetg: Sept 10th 2008
-+ *  -Changes related to MMU v2 (Rel 4.8)
-+ *
-+ * Vineetg: Aug 29th 2008
-+ *  -In TLB Flush operations (Metal Fix MMU) there is a explict command to
-+ *    flush Micro-TLBS. If TLB Index Reg is invalid prior to TLBIVUTLB cmd,
-+ *    it fails. Thus need to load it with ANY valid value before invoking
-+ *    TLBIVUTLB cmd
-+ *
-+ * Vineetg: Aug 21th 2008:
-+ *  -Reduced the duration of IRQ lockouts in TLB Flush routines
-+ *  -Multiple copies of TLB erase code seperated into a "single" function
-+ *  -In TLB Flush routines, interrupt disabling moved UP to retrieve ASID
-+ *       in interrupt-safe region.
-+ *
-+ * Vineetg: April 23rd Bug #93131
-+ *    Problem: tlb_flush_kernel_range() doesnt do anything if the range to
-+ *              flush is more than the size of TLB itself.
-+ *
-+ * Rahul Trivedi : Codito Technologies 2004
-  */
- 
- #include <linux/module.h>
- #include <asm/arcregs.h>
++#include <linux/sched.h>
++#include <linux/kdebug.h>
++#include <linux/uaccess.h>
++#include <asm/ptrace.h>
 +#include <asm/setup.h>
- #include <asm/mmu_context.h>
- #include <asm/tlb.h>
- 
-+/*			Need for ARC MMU v2
-+ *
-+ * ARC700 MMU-v1 had a Joint-TLB for Code and Data and is 2 way set-assoc.
-+ * For a memcpy operation with 3 players (src/dst/code) such that all 3 pages
-+ * map into same set, there would be contention for the 2 ways causing severe
-+ * Thrashing.
-+ *
-+ * Although J-TLB is 2 way set assoc, ARC700 caches J-TLB into uTLBS which has
-+ * much higher associativity. u-D-TLB is 8 ways, u-I-TLB is 4 ways.
-+ * Given this, the thrasing problem should never happen because once the 3
-+ * J-TLB entries are created (even though 3rd will knock out one of the prev
-+ * two), the u-D-TLB and u-I-TLB will have what is required to accomplish memcpy
-+ *
-+ * Yet we still see the Thrashing because a J-TLB Write cause flush of u-TLBs.
-+ * This is a simple design for keeping them in sync. So what do we do?
-+ * The solution which James came up was pretty neat. It utilised the assoc
-+ * of uTLBs by not invalidating always but only when absolutely necessary.
-+ *
-+ * - Existing TLB commands work as before
-+ * - New command (TLBWriteNI) for TLB write without clearing uTLBs
-+ * - New command (TLBIVUTLB) to invalidate uTLBs.
-+ *
-+ * The uTLBs need only be invalidated when pages are being removed from the
-+ * OS page table. If a 'victim' TLB entry is being overwritten in the main TLB
-+ * as a result of a miss, the removed entry is still allowed to exist in the
-+ * uTLBs as it is still valid and present in the OS page table. This allows the
-+ * full associativity of the uTLBs to hide the limited associativity of the main
-+ * TLB.
-+ *
-+ * During a miss handler, the new "TLBWriteNI" command is used to load
-+ * entries without clearing the uTLBs.
-+ *
-+ * When the OS page table is updated, TLB entries that may be associated with a
-+ * removed page are removed (flushed) from the TLB using TLBWrite. In this
-+ * circumstance, the uTLBs must also be cleared. This is done by using the
-+ * existing TLBWrite command. An explicit IVUTLB is also required for those
-+ * corner cases when TLBWrite was not executed at all because the corresp
-+ * J-TLB entry got evicted/replaced.
-+ */
 +
- /* A copy of the ASID from the PID reg is kept in asid_cache */
- int asid_cache = FIRST_ASID;
- 
-@@ -22,6 +106,233 @@ int asid_cache = FIRST_ASID;
-  */
- struct mm_struct *asid_mm_map[NUM_ASID + 1];
- 
-+/*
-+ * Utility Routine to erase a J-TLB entry
-+ * The procedure is to look it up in the MMU. If found, ERASE it by
-+ *  issuing a TlbWrite CMD with PD0 = PD1 = 0
-+ */
-+
-+static void __tlb_entry_erase(void)
++void __init trap_init(void)
 +{
-+	write_aux_reg(ARC_REG_TLBPD1, 0);
-+	write_aux_reg(ARC_REG_TLBPD0, 0);
-+	write_aux_reg(ARC_REG_TLBCOMMAND, TLBWrite);
++	return;
 +}
 +
-+static void tlb_entry_erase(unsigned int vaddr_n_asid)
++void die(const char *str, struct pt_regs *regs, unsigned long address,
++	 unsigned long cause_reg)
 +{
-+	unsigned int idx;
++	show_kernel_fault_diag(str, regs, address, cause_reg);
 +
-+	/* Locate the TLB entry for this vaddr + ASID */
-+	write_aux_reg(ARC_REG_TLBPD0, vaddr_n_asid);
-+	write_aux_reg(ARC_REG_TLBCOMMAND, TLBProbe);
-+	idx = read_aux_reg(ARC_REG_TLBINDEX);
-+
-+	/* No error means entry found, zero it out */
-+	if (likely(!(idx & TLB_LKUP_ERR))) {
-+		__tlb_entry_erase();
-+	} else {		/* Some sort of Error */
-+
-+		/* Duplicate entry error */
-+		if (idx & 0x1) {
-+			/* TODO we need to handle this case too */
-+			pr_emerg("unhandled Duplicate flush for %x\n",
-+			       vaddr_n_asid);
-+		}
-+		/* else entry not found so nothing to do */
-+	}
-+}
-+
-+/****************************************************************************
-+ * ARC700 MMU caches recently used J-TLB entries (RAM) as uTLBs (FLOPs)
-+ *
-+ * New IVUTLB cmd in MMU v2 explictly invalidates the uTLB
-+ *
-+ * utlb_invalidate ( )
-+ *  -For v2 MMU calls Flush uTLB Cmd
-+ *  -For v1 MMU does nothing (except for Metal Fix v1 MMU)
-+ *      This is because in v1 TLBWrite itself invalidate uTLBs
-+ ***************************************************************************/
-+
-+static void utlb_invalidate(void)
-+{
-+#if (CONFIG_ARC_MMU_VER >= 2)
-+
-+#if (CONFIG_ARC_MMU_VER < 3)
-+	/* MMU v2 introduced the uTLB Flush command.
-+	 * There was however an obscure hardware bug, where uTLB flush would
-+	 * fail when a prior probe for J-TLB (both totally unrelated) would
-+	 * return lkup err - because the entry didnt exist in MMU.
-+	 * The Workround was to set Index reg with some valid value, prior to
-+	 * flush. This was fixed in MMU v3 hence not needed any more
-+	 */
-+	unsigned int idx;
-+
-+	/* make sure INDEX Reg is valid */
-+	idx = read_aux_reg(ARC_REG_TLBINDEX);
-+
-+	/* If not write some dummy val */
-+	if (unlikely(idx & TLB_LKUP_ERR))
-+		write_aux_reg(ARC_REG_TLBINDEX, 0xa);
-+#endif
-+
-+	write_aux_reg(ARC_REG_TLBCOMMAND, TLBIVUTLB);
-+#endif
-+
++	/* DEAD END */
++	__asm__("flag 1");
 +}
 +
 +/*
-+ * Un-conditionally (without lookup) erase the entire MMU contents
++ * Helper called for bulk of exceptions NOT needing specific handling
++ *  -for user faults enqueues requested signal
++ *  -for kernel, chk if due to copy_(to|from)_user, otherwise die()
 + */
-+
-+noinline void local_flush_tlb_all(void)
++static noinline int handle_exception(unsigned long cause, char *str,
++				     struct pt_regs *regs, siginfo_t *info)
 +{
-+	unsigned long flags;
-+	unsigned int entry;
-+	struct cpuinfo_arc_mmu *mmu = &cpuinfo_arc700[smp_processor_id()].mmu;
++	if (user_mode(regs)) {
++		struct task_struct *tsk = current;
 +
-+	local_irq_save(flags);
++		tsk->thread.fault_address = (__force unsigned int)info->si_addr;
++		tsk->thread.cause_code = cause;
 +
-+	/* Load PD0 and PD1 with template for a Blank Entry */
-+	write_aux_reg(ARC_REG_TLBPD1, 0);
-+	write_aux_reg(ARC_REG_TLBPD0, 0);
++		force_sig_info(info->si_signo, info, tsk);
 +
-+	for (entry = 0; entry < mmu->num_tlb; entry++) {
-+		/* write this entry to the TLB */
-+		write_aux_reg(ARC_REG_TLBINDEX, entry);
-+		write_aux_reg(ARC_REG_TLBCOMMAND, TLBWrite);
++	} else {
++		/* If not due to copy_(to|from)_user, we are doomed */
++		if (fixup_exception(regs))
++			return 0;
++
++		die(str, regs, (unsigned long)info->si_addr, cause);
 +	}
 +
-+	utlb_invalidate();
++	return 1;
++}
 +
-+	local_irq_restore(flags);
++#define DO_ERROR_INFO(signr, str, name, sicode) \
++int name(unsigned long cause, unsigned long address, struct pt_regs *regs) \
++{						\
++	siginfo_t info = {			\
++		.si_signo = signr,		\
++		.si_errno = 0,			\
++		.si_code  = sicode,		\
++		.si_addr = (void __user *)address,	\
++	};					\
++	return handle_exception(cause, str, regs, &info);\
 +}
 +
 +/*
-+ * Flush the entrie MM for userland. The fastest way is to move to Next ASID
++ * Entry points for exceptions NOT needing specific handling
 + */
-+noinline void local_flush_tlb_mm(struct mm_struct *mm)
-+{
-+	/*
-+	 * Small optimisation courtesy IA64
-+	 * flush_mm called during fork,exit,munmap etc, multiple times as well.
-+	 * Only for fork( ) do we need to move parent to a new MMU ctxt,
-+	 * all other cases are NOPs, hence this check.
-+	 */
-+	if (atomic_read(&mm->mm_users) == 0)
-+		return;
++DO_ERROR_INFO(SIGILL, "Priv Op/Disabled Extn", do_privilege_fault, ILL_PRVOPC)
++DO_ERROR_INFO(SIGILL, "Invalid Extn Insn", do_extension_fault, ILL_ILLOPC)
++DO_ERROR_INFO(SIGILL, "Illegal Insn (or Seq)", insterror_is_error, ILL_ILLOPC)
++DO_ERROR_INFO(SIGBUS, "Invalid Mem Access", do_memory_error, BUS_ADRERR)
++DO_ERROR_INFO(SIGTRAP, "Breakpoint Set", trap_is_brkpt, TRAP_BRKPT)
 +
-+	/*
-+	 * Workaround for Android weirdism:
-+	 * A binder VMA could end up in a task such that vma->mm != tsk->mm
-+	 * old code would cause h/w - s/w ASID to get out of sync
-+	 */
-+	if (current->mm != mm)
-+		destroy_context(mm);
-+	else
-+		get_new_mmu_context(mm);
++DO_ERROR_INFO(SIGSEGV, "Misaligned Access", do_misaligned_access, SEGV_ACCERR)
++
++/*
++ * Entry point for miscll errors such as Nested Exceptions
++ *  -Duplicate TLB entry is handled seperately though
++ */
++void do_machine_check_fault(unsigned long cause, unsigned long address,
++			    struct pt_regs *regs)
++{
++	die("Machine Check Exception", regs, address, cause);
 +}
 +
 +/*
-+ * Flush a Range of TLB entries for userland.
-+ * @start is inclusive, while @end is exclusive
-+ * Difference between this and Kernel Range Flush is
-+ *  -Here the fastest way (if range is too large) is to move to next ASID
-+ *      without doing any explicit Shootdown
-+ *  -In case of kernel Flush, entry has to be shot down explictly
++ * Entry point for traps induced by ARCompact TRAP_S <n> insn
++ * This is same family as TRAP0/SWI insn (use the same vector).
++ * The only difference being SWI insn take no operand, while TRAP_S does
++ * which reflects in ECR Reg as 8 bit param.
++ * Thus TRAP_S <n> can be used for specific purpose
++ *  -1 used for software breakpointing (gdb)
++ *  -2 used by kprobes
 + */
-+void local_flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
-+			   unsigned long end)
++void do_non_swi_trap(unsigned long cause, unsigned long address,
++			struct pt_regs *regs)
 +{
-+	unsigned long flags;
-+	unsigned int asid;
++	unsigned int param = cause & 0xff;
 +
-+	/* If range @start to @end is more than 32 TLB entries deep,
-+	 * its better to move to a new ASID rather than searching for
-+	 * individual entries and then shooting them down
-+	 *
-+	 * The calc above is rough, doesn't account for unaligned parts,
-+	 * since this is heuristics based anyways
-+	 */
-+	if (unlikely((end - start) >= PAGE_SIZE * 32)) {
-+		local_flush_tlb_mm(vma->vm_mm);
-+		return;
++	switch (param) {
++	case 1:
++		trap_is_brkpt(cause, address, regs);
++		break;
++
++	default:
++		break;
 +	}
-+
-+	/*
-+	 * @start moved to page start: this alone suffices for checking
-+	 * loop end condition below, w/o need for aligning @end to end
-+	 * e.g. 2000 to 4001 will anyhow loop twice
-+	 */
-+	start &= PAGE_MASK;
-+
-+	local_irq_save(flags);
-+	asid = vma->vm_mm->context.asid;
-+
-+	if (asid != NO_ASID) {
-+		while (start < end) {
-+			tlb_entry_erase(start | (asid & 0xff));
-+			start += PAGE_SIZE;
-+		}
-+	}
-+
-+	utlb_invalidate();
-+
-+	local_irq_restore(flags);
-+}
-+
-+/* Flush the kernel TLB entries - vmalloc/modules (Global from MMU perspective)
-+ *  @start, @end interpreted as kvaddr
-+ * Interestingly, shared TLB entries can also be flushed using just
-+ * @start,@end alone (interpreted as user vaddr), although technically SASID
-+ * is also needed. However our smart TLbProbe lookup takes care of that.
-+ */
-+void local_flush_tlb_kernel_range(unsigned long start, unsigned long end)
-+{
-+	unsigned long flags;
-+
-+	/* exactly same as above, except for TLB entry not taking ASID */
-+
-+	if (unlikely((end - start) >= PAGE_SIZE * 32)) {
-+		local_flush_tlb_all();
-+		return;
-+	}
-+
-+	start &= PAGE_MASK;
-+
-+	local_irq_save(flags);
-+	while (start < end) {
-+		tlb_entry_erase(start);
-+		start += PAGE_SIZE;
-+	}
-+
-+	utlb_invalidate();
-+
-+	local_irq_restore(flags);
 +}
 +
 +/*
-+ * Delete TLB entry in MMU for a given page (??? address)
-+ * NOTE One TLB entry contains translation for single PAGE
++ * Entry point for Instruction Error Exception
 + */
-+
-+void local_flush_tlb_page(struct vm_area_struct *vma, unsigned long page)
++void do_insterror_or_kprobe(unsigned long cause,
++				       unsigned long address,
++				       struct pt_regs *regs)
 +{
-+	unsigned long flags;
-+
-+	/* Note that it is critical that interrupts are DISABLED between
-+	 * checking the ASID and using it flush the TLB entry
-+	 */
-+	local_irq_save(flags);
-+
-+	if (vma->vm_mm->context.asid != NO_ASID) {
-+		tlb_entry_erase((page & PAGE_MASK) |
-+				(vma->vm_mm->context.asid & 0xff));
-+		utlb_invalidate();
-+	}
-+
-+	local_irq_restore(flags);
++	insterror_is_error(cause, address, regs);
 +}
- 
- /*
-  * Routine to create a TLB entry
 -- 
 1.7.4.1
 
