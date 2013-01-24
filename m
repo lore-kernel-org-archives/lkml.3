@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab3AXDdU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:33:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44484 "EHLO
+	id S1755282Ab3AXDdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:33:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44473 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753Ab3AXDcW (ORCPT
+	with ESMTP id S1755209Ab3AXDcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:32:22 -0500
+	Wed, 23 Jan 2013 22:32:08 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Joel D. Diaz" <joeldiaz@us.ibm.com>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Stefan Assmann <sassmann@kpanic.de>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 74/74] [SCSI] sd: Reshuffle init_sd to avoid crash
-Date: Thu, 24 Jan 2013 01:27:26 -0200
-Message-Id: <1358998046-613-75-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 72/74] igb: release already assigned MSI-X interrupts if setup fails
+Date: Thu, 24 Jan 2013 01:27:24 -0200
+Message-Id: <1358998046-613-73-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,67 +28,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Joel D. Diaz" <joeldiaz@us.ibm.com>
+From: Stefan Assmann <sassmann@kpanic.de>
 
-commit afd5e34b2bb34881d3a789e62486814a49b47faa upstream.
+commit 52285b762b3681669215bf1d17ca6143448ab7d3 upstream.
 
-scsi_register_driver will register a prep_fn() function, which
-in turn migh need to use the sd_cdp_pool for DIF.
-Which hasn't been initialised at this point, leading to
-a crash. So reshuffle the init_sd() and exit_sd() paths
-to have the driver registered last.
+During MSI-X setup the system might run out of vectors. If this happens the
+already assigned vectors for this NIC should be freed before trying the
+disable MSI-X. Failing to do so results in the following oops.
 
-Signed-off-by: Joel D. Diaz <joeldiaz@us.ibm.com>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+kernel BUG at drivers/pci/msi.c:341!
+[...]
+Call Trace:
+ [<ffffffff8128f39d>] pci_disable_msix+0x3d/0x60
+ [<ffffffffa037d1ce>] igb_reset_interrupt_capability+0x27/0x5c [igb]
+ [<ffffffffa037d229>] igb_clear_interrupt_scheme+0x26/0x2d [igb]
+ [<ffffffffa0384268>] igb_request_irq+0x73/0x297 [igb]
+ [<ffffffffa0384554>] __igb_open+0xc8/0x223 [igb]
+ [<ffffffffa0384815>] igb_open+0x13/0x15 [igb]
+ [<ffffffff8144592f>] __dev_open+0xbf/0x120
+ [<ffffffff81443e51>] __dev_change_flags+0xa1/0x180
+ [<ffffffff81445828>] dev_change_flags+0x28/0x70
+ [<ffffffff814af537>] devinet_ioctl+0x5b7/0x620
+ [<ffffffff814b01c8>] inet_ioctl+0x88/0xa0
+ [<ffffffff8142e8a0>] sock_do_ioctl+0x30/0x70
+ [<ffffffff8142ecf2>] sock_ioctl+0x72/0x270
+ [<ffffffff8118062c>] do_vfs_ioctl+0x8c/0x340
+ [<ffffffff81180981>] sys_ioctl+0xa1/0xb0
+ [<ffffffff815161a9>] system_call_fastpath+0x16/0x1b
+Code: 48 89 df e8 1f 40 ed ff 4d 39 e6 49 8b 45 10 75 b6 48 83 c4 18 5b 41 5c 41 5d 41 5e 41 5f c9 c3 48 8b 7b 20 e8 3e 91 db ff eb ae <0f> 0b eb fe 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
+RIP  [<ffffffff8128e144>] free_msi_irqs+0x124/0x130
+ RSP <ffff880037503bd8>
+
+Signed-off-by: Stefan Assmann <sassmann@kpanic.de>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/scsi/sd.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/intel/igb/igb_main.c |   22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 6f72b80..043395d0 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2920,10 +2920,6 @@ static int __init init_sd(void)
- 	if (err)
- 		goto err_out;
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index dd3bfe8..64a0f74 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -937,17 +937,18 @@ static int igb_request_msix(struct igb_adapter *adapter)
+ {
+ 	struct net_device *netdev = adapter->netdev;
+ 	struct e1000_hw *hw = &adapter->hw;
+-	int i, err = 0, vector = 0;
++	int i, err = 0, vector = 0, free_vector = 0;
  
--	err = scsi_register_driver(&sd_template.gendrv);
--	if (err)
--		goto err_out_class;
--
- 	sd_cdb_cache = kmem_cache_create("sd_ext_cdb", SD_EXT_CDB_SIZE,
- 					 0, 0, NULL);
- 	if (!sd_cdb_cache) {
-@@ -2937,8 +2933,15 @@ static int __init init_sd(void)
- 		goto err_out_cache;
+ 	err = request_irq(adapter->msix_entries[vector].vector,
+ 	                  igb_msix_other, 0, netdev->name, adapter);
+ 	if (err)
+-		goto out;
+-	vector++;
++		goto err_out;
+ 
+ 	for (i = 0; i < adapter->num_q_vectors; i++) {
+ 		struct igb_q_vector *q_vector = adapter->q_vector[i];
+ 
++		vector++;
++
+ 		q_vector->itr_register = hw->hw_addr + E1000_EITR(vector);
+ 
+ 		if (q_vector->rx.ring && q_vector->tx.ring)
+@@ -966,13 +967,22 @@ static int igb_request_msix(struct igb_adapter *adapter)
+ 		                  igb_msix_ring, 0, q_vector->name,
+ 		                  q_vector);
+ 		if (err)
+-			goto out;
+-		vector++;
++			goto err_free;
  	}
  
-+	err = scsi_register_driver(&sd_template.gendrv);
-+	if (err)
-+		goto err_out_driver;
-+
+ 	igb_configure_msix(adapter);
  	return 0;
- 
-+err_out_driver:
-+	mempool_destroy(sd_cdb_pool);
+-out:
 +
- err_out_cache:
- 	kmem_cache_destroy(sd_cdb_cache);
++err_free:
++	/* free already assigned IRQs */
++	free_irq(adapter->msix_entries[free_vector++].vector, adapter);
++
++	vector--;
++	for (i = 0; i < vector; i++) {
++		free_irq(adapter->msix_entries[free_vector++].vector,
++			 adapter->q_vector[i]);
++	}
++err_out:
+ 	return err;
+ }
  
-@@ -2961,10 +2964,10 @@ static void __exit exit_sd(void)
- 
- 	SCSI_LOG_HLQUEUE(3, printk("exit_sd: exiting sd driver\n"));
- 
-+	scsi_unregister_driver(&sd_template.gendrv);
- 	mempool_destroy(sd_cdb_pool);
- 	kmem_cache_destroy(sd_cdb_cache);
- 
--	scsi_unregister_driver(&sd_template.gendrv);
- 	class_unregister(&sd_disk_class);
- 
- 	for (i = 0; i < SD_MAJORS; i++)
 -- 
 1.7.9.5
 
