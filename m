@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab3AXQ5L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 11:57:11 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37790 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab3AXQ5J (ORCPT
+	id S1754531Ab3AXQ60 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 11:58:26 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:40042 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab3AXQ6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 11:57:09 -0500
-Message-ID: <510167DD.3090001@wwwdotorg.org>
-Date: Thu, 24 Jan 2013 08:57:01 -0800
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 24 Jan 2013 11:58:24 -0500
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Venu Byravarasu <vbyravarasu@nvidia.com>, gregkh@linuxfoundation.org,
-        stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] usb: host: tegra: make use of PHY pointer of HCD
-References: <1359023223-13751-1-git-send-email-vbyravarasu@nvidia.com> <20130124140504.GA2609@arwen.pp.htv.fi>
-In-Reply-To: <20130124140504.GA2609@arwen.pp.htv.fi>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <CAJn8CcE2eXK83-Jsia37dLoEwVjhQ=SiDru5fFzWGp+bzEScWA@mail.gmail.com>
+References: <20130107113144.GA7544@redhat.com>
+	<20130109183248.GA8293@somewhere.redhat.com>
+	<CAJn8CcE2eXK83-Jsia37dLoEwVjhQ=SiDru5fFzWGp+bzEScWA@mail.gmail.com>
+Date: Thu, 24 Jan 2013 17:58:20 +0100
+Message-ID: <CAFTL4hzhdXkh2cy_iCr1iQJ5boJ=k1D61s+Z48YUk-JuENG7cw@mail.gmail.com>
+Subject: Re: [PATCH v2 repost] sched: cputime: avoid multiplication overflow
+ (in common cases)
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        akpm@linux-foundation.org, Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 06:05 AM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Thu, Jan 24, 2013 at 03:57:03PM +0530, Venu Byravarasu wrote:
->> As pointer to PHY structure can be stored in struct usb_hcd 
->> making use of it, to call Tegra PHY APIs.
->> 
->> Call to usb_phy_shutdown() is moved up in tegra_ehci_remove(), so
->> that to avoid dereferencing of hcd after its freed up.
->> 
->> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com> --- First
->> version of patch can be found at 
->> http://marc.info/?l=linux-kernel&m=135581479020213&w=2. As it was
->> not yet applied, sending v2 of the patch.
->> 
->> delta from v1: Modified all Tegra PHY APIs to use standard
->> 'structu usb_phy *' as their parameter instead of proprietary
->> parameter of type 'struct tegra_usb_phy *'.
-> 
-> I would like to see those tegra-specific functions vanish from the 
-> driver. Can that be done for v3.10 merge window ?
+2013/1/24 Xiaotian Feng <xtfeng@gmail.com>:
+> On Thu, Jan 10, 2013 at 2:33 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> --- a/kernel/sched/cputime.c
+>> +++ b/kernel/sched/cputime.c
+>> @@ -509,11 +509,11 @@ EXPORT_SYMBOL_GPL(vtime_account);
+>>  # define nsecs_to_cputime(__nsecs)     nsecs_to_jiffies(__nsecs)
+>>  #endif
+>>
+>> -static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
+>> +static cputime_t scale_utime(cputime_t stime, cputime_t rtime, cputime_t total)
+>
+> s/scale_utime/scale_stime.
 
-Felipe, I assume that means you're OK with me taking this patch for
-3.9 then?
+Whoops! :-)
+
+Thanks I'm fixing this.
