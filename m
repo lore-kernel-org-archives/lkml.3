@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab3AXUXQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:23:16 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:26739 "EHLO
+	id S1756544Ab3AXUXf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:23:35 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26971 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756298Ab3AXUWB (ORCPT
+	with ESMTP id S1756390Ab3AXUWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:22:01 -0500
+	Thu, 24 Jan 2013 15:22:15 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
@@ -15,88 +15,69 @@ Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Jan Kiszka <jan.kiszka@web.de>,
         Jason Wessel <jason.wessel@windriver.com>,
         Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 17/35] x86, boot: Move checking of cmd_line_ptr out of common path
-Date: Thu, 24 Jan 2013 12:19:58 -0800
-Message-Id: <1359058816-7615-18-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>, Zachary Amsden <zamsden@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 20/35] x86, boot: Move lldt/ltr out of 64bit code section
+Date: Thu, 24 Jan 2013 12:20:01 -0800
+Message-Id: <1359058816-7615-21-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
 References: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cmdline.c::__cmdline_find_option... are shared between 16-bit setup code
-and 32/64 bit decompressor code.
+commit 08da5a2ca
 
-for 32/64 only path via kexec, we should not check if ptr is less 1M.
-as those cmdline could be put above 1M, or even 4G.
+    x86_64: Early segment setup for VT
 
-Move out accessible checking out of __cmdline_find_option()
-So decompressor in misc.c can parse cmdline correctly.
+sets up LDT and TR into a valid state in order to speed up boot
+decompression under VT.
+
+Those code are put in code64, and it is using GDT that is only
+loaded from code32 path.
+
+That breaks booting with 64bit bootloader that does not go through
+code32 path and jump to startup_64 directly, and it has different
+GDT.
+
+Move those lines into code32 after their GDT is loaded.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Zachary Amsden <zamsden@gmail.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/boot/boot.h    |   14 ++++++++++++--
- arch/x86/boot/cmdline.c |    8 ++++----
- 2 files changed, 16 insertions(+), 6 deletions(-)
+ arch/x86/boot/compressed/head_64.S |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-index 18997e5..7fadf80 100644
---- a/arch/x86/boot/boot.h
-+++ b/arch/x86/boot/boot.h
-@@ -289,12 +289,22 @@ int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int
- int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option);
- static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
- {
--	return __cmdline_find_option(boot_params.hdr.cmd_line_ptr, option, buffer, bufsize);
-+	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index fb984c0..5c80b94 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -154,6 +154,12 @@ ENTRY(startup_32)
+ 	btsl	$_EFER_LME, %eax
+ 	wrmsr
+ 
++	/* After gdt is loaded */
++	xorl	%eax, %eax
++	lldt	%ax
++	movl    $0x20, %eax
++	ltr	%ax
 +
-+	if (cmd_line_ptr >= 0x100000)
-+		return -1;      /* inaccessible */
-+
-+	return __cmdline_find_option(cmd_line_ptr, option, buffer, bufsize);
- }
+ 	/*
+ 	 * Setup for the jump to 64bit mode
+ 	 *
+@@ -239,9 +245,6 @@ preferred_addr:
+ 	movl	%eax, %ss
+ 	movl	%eax, %fs
+ 	movl	%eax, %gs
+-	lldt	%ax
+-	movl    $0x20, %eax
+-	ltr	%ax
  
- static inline int cmdline_find_option_bool(const char *option)
- {
--	return __cmdline_find_option_bool(boot_params.hdr.cmd_line_ptr, option);
-+	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
-+
-+	if (cmd_line_ptr >= 0x100000)
-+		return -1;      /* inaccessible */
-+
-+	return __cmdline_find_option_bool(cmd_line_ptr, option);
- }
- 
- 
-diff --git a/arch/x86/boot/cmdline.c b/arch/x86/boot/cmdline.c
-index 6b3b6f7..768f00f 100644
---- a/arch/x86/boot/cmdline.c
-+++ b/arch/x86/boot/cmdline.c
-@@ -41,8 +41,8 @@ int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int
- 		st_bufcpy	/* Copying this to buffer */
- 	} state = st_wordstart;
- 
--	if (!cmdline_ptr || cmdline_ptr >= 0x100000)
--		return -1;	/* No command line, or inaccessible */
-+	if (!cmdline_ptr)
-+		return -1;      /* No command line */
- 
- 	cptr = cmdline_ptr & 0xf;
- 	set_fs(cmdline_ptr >> 4);
-@@ -111,8 +111,8 @@ int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option)
- 		st_wordskip,	/* Miscompare, skip */
- 	} state = st_wordstart;
- 
--	if (!cmdline_ptr || cmdline_ptr >= 0x100000)
--		return -1;	/* No command line, or inaccessible */
-+	if (!cmdline_ptr)
-+		return -1;      /* No command line */
- 
- 	cptr = cmdline_ptr & 0xf;
- 	set_fs(cmdline_ptr >> 4);
+ 	/*
+ 	 * Compute the decompressed kernel start address.  It is where
 -- 
 1.7.10.4
 
