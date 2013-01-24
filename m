@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab3AXVdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:33:25 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31685 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756555Ab3AXVdH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:33:07 -0500
-X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=YyIrxvMppY0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=W0fAN9IbdjwA:10 a=U3mvYQgqbpKD95cSg6EA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1359063185.21576.157.camel@gandalf.local.home>
-Subject: Re: [PATCHv2] tools lib traceevent: Handle dynamic array's element
- size properly
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Thu, 24 Jan 2013 16:33:05 -0500
-In-Reply-To: <20130124212840.GD14382@infradead.org>
-References: <1359060403-32422-1-git-send-email-jolsa@redhat.com>
-	 <1359061993.21576.156.camel@gandalf.local.home>
-	 <20130124212840.GD14382@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1161061Ab3AXVdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:33:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40176 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755885Ab3AXVOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:14:19 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Colin Ian King <colin.king@canonical.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 21/46] PCI: Allow pcie_aspm=force even when FADT indicates it is unsupported
+Date: Thu, 24 Jan 2013 13:12:59 -0800
+Message-Id: <20130124211144.003058072@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
+References: <20130124211135.862755794@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-24 at 18:28 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Jan 24, 2013 at 04:13:13PM -0500, Steven Rostedt escreveu:
-> > On Thu, 2013-01-24 at 21:46 +0100, Jiri Olsa wrote:
-> > >  
-> > > +static unsigned int type_size(char *name)
-> > 
-> > Sorry to nitpick, but please make that const char *name.
-> 
-> Agreed, no need to resubmit, I'll fix that up.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-I'm sure Tom St Denis appreciates it.
+------------------
 
-> 
-> > The rest looks good.
-> 
-> Thanks, adding your Acked-by,
+From: Colin Ian King <colin.king@canonical.com>
 
-Sure. But I probably should test it too ;-)
+commit 9e16721498b0c3d3ebfa0b503c63d35c0a4c0642 upstream.
 
--- Steve
+Right now using pcie_aspm=force will not enable ASPM if the FADT indicates
+ASPM is unsupported.  However, the semantics of force should probably allow
+for this, especially as they did before 3c076351c4 ("PCI: Rework ASPM
+disable code")
+
+This patch just skips the clearing of any ASPM setup that the firmware has
+carried out on this bus if pcie_aspm=force is being used.
+
+Reference: http://bugs.launchpad.net/bugs/962038
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/pci/pcie/aspm.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -773,6 +773,9 @@ void pcie_clear_aspm(struct pci_bus *bus
+ {
+ 	struct pci_dev *child;
+ 
++	if (aspm_force)
++		return;
++
+ 	/*
+ 	 * Clear any ASPM setup that the firmware has carried out on this bus
+ 	 */
 
 
