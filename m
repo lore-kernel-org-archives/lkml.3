@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab3AXCmO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 21:42:14 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:26948 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752850Ab3AXCmE (ORCPT
+	id S1753478Ab3AXCmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 21:42:20 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35816 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242Ab3AXCmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 21:42:04 -0500
-X-AuditID: cbfee61a-b7f7d6d000000f4e-39-51009f7a7c25
-Message-id: <51009F6D.5040001@samsung.com>
-Date: Thu, 24 Jan 2013 11:41:49 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Dongjin Kim <tobetter@gmail.com>
-Cc: "unlisted-recipients: ;Chris Ball" <cjb@laptop.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Will Newton <will.newton@imgtec.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: dw_mmc: Add MSHC compatible for Exynos4412
-References: <1358954692-5625-1-git-send-email-tobetter@gmail.com>
-In-reply-to: <1358954692-5625-1-git-send-email-tobetter@gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zPd2q+QyBBnOfC1pc3jWHzeLI/35G
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDLWr7nMWjCTo2LjvVMsDYy32boYOTkkBEwk9vW/ZoGw
-	xSQu3FsPFOfiEBJYxigxf8psuKKvH/6wQCQWMUp0vPrNCuG8ZJQ4sbqPCaSKV0BL4uzWqWAd
-	LAKqEs3Hm1hBbDYBHYnt346D1YgKhEmsnH6FBaJeUOLH5HtgtoiAikTX0adMIEOZBZ4ySjzd
-	MwWsWVjARWLVtw/sILaQgKPE86mzGEFsTgEniTu/toINZQZasL91GhuELS+xec1bZpBBEgLd
-	7BIftz1igbhIQOLb5ENANgdQQlZi0wFmiNckJQ6uuMEygVFsFpKbZiEZOwvJ2AWMzKsYRVML
-	kguKk9JzDfWKE3OLS/PS9ZLzczcxQiJEagfjygaLQ4wCHIxKPLwKqgyBQqyJZcWVuYcYJTiY
-	lUR41eqBQrwpiZVVqUX58UWlOanFhxiTgQ6cyCwlmpwPjN68knhDYwNjQ0NLQzNTS1MD0oSV
-	xHkZTz0JEBJITyxJzU5NLUgtgtnCxMEp1cDo/PJvR8q+G6sO7d3ic7WH03Shv8b+lQuirldy
-	aJf1mj9b1OHFwlV3XqRf1Jdt3r8djO1P14pfkUipu/Vmr+2ElKTuh2dbp7j+e8u5V/zB0l2N
-	/yKm+X8W4RWq5Kxk2nfA+thTnRNWhyRfs1kIq7o3Xa2NWidhc2+ytePSmSn/M4oc+jg3HZmj
-	xFKckWioxVxUnAgAtu0D6NQCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsVy+t9jAd2q+QyBBlvncFpc3jWHzeLI/35G
-	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
-	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz1q+5zFowk6Ni
-	471TLA2Mt9m6GDk5JARMJL5++MMCYYtJXLi3HijOxSEksIhRouPVb1YI5yWjxInVfUwgVbwC
-	WhJnt04F62YRUJVoPt7ECmKzCehIbP92HKxGVCBMYuX0KywQ9YISPybfA7NFBFQkuo4+ZQIZ
-	yizwlFHi6Z4pYM3CAi4Sq759YAexhQQcJZ5PncUIYnMKOEnc+bUVbCgz0IL9rdPYIGx5ic1r
-	3jJPYBSYhWTHLCRls5CULWBkXsUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHH/PpHYwrmyw
-	OMQowMGoxMOroMoQKMSaWFZcmXuIUYKDWUmEV60eKMSbklhZlVqUH19UmpNafIgxGRgEE5ml
-	RJPzgakhryTe0NjEzMjSyMzYxNzYmDRhJXFexlNPAoQE0hNLUrNTUwtSi2C2MHFwSjUwWu9b
-	duyPRoQkw17eRa91DxdeS9rDr84pVHdpQlKQVt1X2XuluzV4Iled8luZvCbuSsSl+Dv7frsL
-	POzjd1xaFC2eZ3Wn30HxQhTffe1j/7SltzvbmK3r1d61pvea/BOZIye0m+Zn8DQndi6/smd2
-	brxS5fXWH7OmzmHsZ7o/y6e2hDmIsfK1EktxRqKhFnNRcSIAobrTagMDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 23 Jan 2013 21:42:12 -0500
+From: <xufengzhang.main@gmail.com>
+To: <vyasevich@gmail.com>, <nhorman@tuxdriver.com>, <davem@davemloft.net>
+CC: <linux-sctp@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] sctp: set association state to established in dupcook_a handler
+Date: Thu, 24 Jan 2013 10:44:34 +0800
+Message-ID: <1358995474-28369-1-git-send-email-xufengzhang.main@gmail.com>
+X-Mailer: git-send-email 1.7.0.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 12:24 AM, Dongjin Kim wrote:
-> This patch adds the compatible string for MSHC controller of Exynos4412, and
-> reuse the controller specific properties with Exynos5250 since those have same
-> features.
-> 
-> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
-> ---
->  drivers/mmc/host/dw_mmc-exynos.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
-> index 0cb9bcb..4f7685f 100644
-> --- a/drivers/mmc/host/dw_mmc-exynos.c
-> +++ b/drivers/mmc/host/dw_mmc-exynos.c
-> @@ -204,6 +204,8 @@ static const struct dw_mci_drv_data exynos5250_drv_data = {
->  };
->  
->  static const struct of_device_id dw_mci_exynos_match[] = {
-> +	{ .compatible = "samsung,exynos4412-dw-mshc",
-> +			.data = &exynos5250_drv_data, },
-If we can use the same drv_data, should be changed to more generic name, not "exynos5250_".
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-Best Regards,
-Jaehoon Chung
->  	{ .compatible = "samsung,exynos5250-dw-mshc",
->  			.data = &exynos5250_drv_data, },
->  	{},
-> 
+While sctp handling a duplicate COOKIE-ECHO and the action is
+'Association restart', sctp_sf_do_dupcook_a() will processing
+the unexpected COOKIE-ECHO for peer restart, but it does not set
+the association state to SCTP_STATE_ESTABLISHED, so the association
+could stuck in SCTP_STATE_SHUTDOWN_PENDING state forever.
+This violates the sctp specification:
+  RFC 4960 5.2.4. Handle a COOKIE ECHO when a TCB Exists
+  Action
+  A) In this case, the peer may have restarted. .....
+     After this, the endpoint shall enter the ESTABLISHED state.
+
+To resolve this problem, adding a SCTP_CMD_NEW_STATE cmd to the
+command list before SCTP_CMD_REPLY cmd, this will set the restart
+association to SCTP_STATE_ESTABLISHED state properly and also avoid
+I-bit being set in the DATA chunk header when COOKIE_ACK is bundled
+with DATA chunks.
+
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+---
+v2:
+- Put the SCTP_CMD_NEW_STATE command before SCTP_CMD_REPLY and after SCTP_CMD_EVENT_ULP
+  suggested by Vlad and Neil
+- Improve the last paragraph of the commit header
+ 
+ net/sctp/sm_statefuns.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+index 618ec7e..5131fcf 100644
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -1779,8 +1779,10 @@ static sctp_disposition_t sctp_sf_do_dupcook_a(struct net *net,
+ 
+ 	/* Update the content of current association. */
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
++	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
++			SCTP_STATE(SCTP_STATE_ESTABLISHED));
++	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
+ 	return SCTP_DISPOSITION_CONSUME;
+ 
+ nomem_ev:
+-- 
+1.7.0.2
 
