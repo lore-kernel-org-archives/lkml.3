@@ -1,165 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab3AXKg4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:36:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753498Ab3AXKgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:36:08 -0500
-Date: Thu, 24 Jan 2013 12:36:04 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi.kivity@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 05/12] KVM: MMU: introduce vcpu_adjust_access
-Message-ID: <20130124103604.GW31120@redhat.com>
-References: <50FFB5A1.5090708@linux.vnet.ibm.com>
- <50FFB62C.4070808@linux.vnet.ibm.com>
+	id S1753334Ab3AXKj5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:39:57 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:55743 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752824Ab3AXKjt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 05:39:49 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FFB62C.4070808@linux.vnet.ibm.com>
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] vhost-net: fall back to vmalloc if high-order allocation fails
+Date: Thu, 24 Jan 2013 10:37:39 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B711F@saturn3.aculab.com>
+In-Reply-To: <20130124100600.GB8710@redhat.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] vhost-net: fall back to vmalloc if high-order allocation fails
+Thread-Index: Ac36GY74Ihw/ENfFRJiOMJM66uclPgAA9lBg
+References: <87k3r31vbc.fsf@silenus.orebokech.com> <AE90C24D6B3A694183C094C60CF0A2F6026B711E@saturn3.aculab.com> <20130124100600.GB8710@redhat.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Romain Francoise" <romain@orebokech.com>, <kvm@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 06:06:36PM +0800, Xiao Guangrong wrote:
-> Introduce it to split the code of adjusting pte_access from the large
-> function of set_spte
+> > I think this means that kmalloc() is likely to be faster
+> > (if it doesn't have to sleep), but that vmalloc() is
+> > allocating from a much larger resource.
+> >
+> > This make me that that large allocations that are not
+> > temporary should probably be allocated with vmalloc().
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/mmu.c |   63 +++++++++++++++++++++++++++++++++-------------------
->  1 files changed, 40 insertions(+), 23 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index af8bcb2..43b7e0c 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -2324,25 +2324,18 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
->  	return 0;
->  }
-> 
-> -static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
-> -		    unsigned pte_access, int level,
-> -		    gfn_t gfn, pfn_t pfn, bool speculative,
-> -		    bool can_unsync, bool host_writable)
-> +/*
-> + * Return -1 if a race condition is detected, 1 if @gfn need to be
-> + * write-protected, otherwise 0 is returned.
-> + */
-That's a little bit crafty.
+> vmalloc has some issues for example afaik it's not backed by
+> a huge page so  I think its use puts more stress on the TLB cache.
 
-Isn't it better to handle race condition in set_spte() explicitly?
-Something like do:
+Thinks further ...
+64bit systems are likely to have enough kernel VA to be able
+to map all of physical memory into contiguous VA.
 
- if (host_writable && (pte_access & ACC_WRITE_MASK) &&
-        level > PT_PAGE_TABLE_LEVEL && has_wrprotected_page(vcpu->kvm, gfn, level))
-    return 0;
+I don't know if Linux does that, but I know code to map it was added
+to NetBSD amd64 in order to speed up kernel accesses to 'random'
+pages - it might have been partially backed out due to bugs!
 
-before calling vcpu_adjust_access() in set_spte()?
+If physical memory is mapped like that then kmalloc() requests
+can any of physical memory and be unlikely to fail - since user
+pages can be moved in order to generate contiguous free blocks.
 
-Or even do:
+Doesn't help with 32bit systems - they had to stop mapping all
+of physical memory into kernel space a long time ago.
 
- if ((pte_access & ACC_WRITE_MASK) && level > PT_PAGE_TABLE_LEVEL &&
-           has_wrprotected_page(vcpu->kvm, gfn, level))
-    return 0;
+	David
 
-After calling vcpu_adjust_access().
 
-The later will create read only large page mapping where now it is not
-created, but it shouldn't be a problem as far as I see.
 
-> +static int vcpu_adjust_access(struct kvm_vcpu *vcpu, u64 *sptep,
-> +			      unsigned *pte_access, int level, gfn_t gfn,
-> +			      bool can_unsync, bool host_writable)
->  {
-> -	u64 spte;
-> -	int ret = 0;
-> -
-> -	if (set_mmio_spte(sptep, gfn, pfn, pte_access))
-> -		return 0;
-> +	if (!host_writable)
-> +		*pte_access &= ~ACC_WRITE_MASK;
-> 
-> -	spte = PT_PRESENT_MASK;
-> -
-> -	if (host_writable)
-> -		spte |= SPTE_HOST_WRITEABLE;
-> -	else
-> -		pte_access &= ~ACC_WRITE_MASK;
-> -
-> -	if (pte_access & ACC_WRITE_MASK) {
-> +	if (*pte_access & ACC_WRITE_MASK) {
->  		/*
->  		 * Other vcpu creates new sp in the window between
->  		 * mapping_level() and acquiring mmu-lock. We can
-> @@ -2351,7 +2344,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->  		 */
->  		if (level > PT_PAGE_TABLE_LEVEL &&
->  		      has_wrprotected_page(vcpu->kvm, gfn, level))
-> -			goto done;
-> +			return -1;
-> 
->  		/*
->  		 * Optimization: for pte sync, if spte was writable the hash
-> @@ -2360,17 +2353,41 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->  		 * Same reasoning can be applied to dirty page accounting.
->  		 */
->  		if (!can_unsync && is_writable_pte(*sptep))
-> -			goto out_access_adjust;
-> +			return 0;
-> 
->  		if (mmu_need_write_protect(vcpu, gfn, can_unsync)) {
->  			pgprintk("%s: found shadow page for %llx, marking ro\n",
->  				 __func__, gfn);
-> -			ret = 1;
-> -			pte_access &= ~ACC_WRITE_MASK;
-> +
-> +			*pte_access &= ~ACC_WRITE_MASK;
-> +			return 1;
->  		}
->  	}
-> 
-> -out_access_adjust:
-> +	return 0;
-> +}
-> +
-> +static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
-> +		    unsigned pte_access, int level,
-> +		    gfn_t gfn, pfn_t pfn, bool speculative,
-> +		    bool can_unsync, bool host_writable)
-> +{
-> +	u64 spte;
-> +	int ret;
-> +
-> +	if (set_mmio_spte(sptep, gfn, pfn, pte_access))
-> +		return 0;
-> +
-> +	ret = vcpu_adjust_access(vcpu, sptep, &pte_access, level, gfn,
-> +				 can_unsync, host_writable);
-> +	if (ret < 0)
-> +		return 0;
-> +
-> +	spte = PT_PRESENT_MASK;
-> +
-> +	if (host_writable)
-> +		spte |= SPTE_HOST_WRITEABLE;
-> +
->  	if (!speculative)
->  		spte |= shadow_accessed_mask;
-> 
-> @@ -2399,7 +2416,7 @@ out_access_adjust:
-> 
->  	if (mmu_spte_update(sptep, spte))
->  		kvm_flush_remote_tlbs(vcpu->kvm);
-> -done:
-> +
->  	return ret;
->  }
-> 
-> -- 
-> 1.7.7.6
-
---
-			Gleb.
