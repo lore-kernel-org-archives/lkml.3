@@ -1,1047 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980Ab3AXROr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 12:14:47 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5708 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab3AXROp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 12:14:45 -0500
-X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Awc5SuyJjWgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=bOKmtxNtfT4A:10 a=KKAkSRfTAAAA:8 a=dUUpLaML5EWg_hRIV1QA:9 a=PUjeQqilurYA:10 a=WwgC8nHKvroA:10 a=IAM1QQdGurKl6Zvm:21 a=wdZlvHWrQHoWwJvI:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1359047682.21576.154.camel@gandalf.local.home>
-Subject: [BUG] snowball board locks up on boot
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>
-Date: Thu, 24 Jan 2013 12:14:42 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754324Ab3AXRPJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 12:15:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9957 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752919Ab3AXRPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 12:15:06 -0500
+Date: Thu, 24 Jan 2013 19:19:04 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Jason Wang <jasowang@redhat.com>, Eric Dumazet <erdnetdev@gmail.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH V6 1/3] virtio-net: fix the set affinity bug when CPU IDs
+ are not consecutive
+Message-ID: <20130124171904.GA11664@redhat.com>
+References: <1358767524-17934-1-git-send-email-gaowanlong@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358767524-17934-1-git-send-email-gaowanlong@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tried to get my snowball board working on the latest kernel, but it
-locks up hard very early on boot up.
-
-I bisected it down to this commit:
-
-commit ebc96db7632f987e0b9bffcb782cf5cfb8afb0dd
-Author: Ulf Hansson <ulf.hansson@linaro.org>
-Date:   Mon Aug 27 15:45:53 2012 +0200
-
-    ARM: ux500: Switch to use common clock framework
-    
-    Remove machine specific clock implementation and switch to use
-    new common clock framework.
-    
-    Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-    Acked-by: Linus Walleij <linus.walleij@linaro.org>
-    Signed-off-by: Mike Turquette <mturquette@linaro.org>
+On Mon, Jan 21, 2013 at 07:25:22PM +0800, Wanlong Gao wrote:
+> As Michael mentioned, set affinity and select queue will not work very
+> well when CPU IDs are not consecutive, this can happen with hot unplug.
+> Fix this bug by traversal the online CPUs, and create a per cpu variable
+> to find the mapping from CPU to the preferable virtual-queue.
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> Cc: Jason Wang <jasowang@redhat.com>
+> Cc: Eric Dumazet <erdnetdev@gmail.com>
+> Cc: virtualization@lists.linux-foundation.org
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 
 
-I reverted the change (tweaking it to get it to compile again), and sure
-enough, I'm able to boot the board again.
+For the series:
 
-I'm not sure what to do about this, but I wanted to let you know that
-the common clock framework does not support my snowball board.
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-Below is the changes I made to get the board working on 3.8-rc4.
-
--- Steve
-
----
- arch/arm/mach-ux500/Kconfig  |    1 
- arch/arm/mach-ux500/Makefile |    2 
- arch/arm/mach-ux500/clock.c  |  715 +++++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-ux500/clock.h  |  164 +++++++++
- arch/arm/mach-ux500/cpu.c    |   15 
- drivers/clk/Makefile         |    1 
- 6 files changed, 886 insertions(+), 12 deletions(-)
-
-Index: arm-test.git/arch/arm/mach-ux500/Kconfig
-===================================================================
---- arm-test.git.orig/arch/arm/mach-ux500/Kconfig	2013-01-24 11:29:36.000000000 -0500
-+++ arm-test.git/arch/arm/mach-ux500/Kconfig	2013-01-24 11:30:28.574250603 -0500
-@@ -8,7 +8,6 @@ config UX500_SOC_COMMON
- 	select ARM_GIC
- 	select CACHE_L2X0
- 	select CLKSRC_NOMADIK_MTU
--	select COMMON_CLK
- 	select PINCTRL
- 	select PINCTRL_NOMADIK
- 	select PL310_ERRATA_753970 if CACHE_PL310
-Index: arm-test.git/arch/arm/mach-ux500/Makefile
-===================================================================
---- arm-test.git.orig/arch/arm/mach-ux500/Makefile	2013-01-24 10:33:45.000000000 -0500
-+++ arm-test.git/arch/arm/mach-ux500/Makefile	2013-01-24 11:30:19.402046175 -0500
-@@ -2,7 +2,7 @@
- # Makefile for the linux kernel, U8500 machine.
- #
- 
--obj-y				:= cpu.o devices.o devices-common.o \
-+obj-y				:= clock.o cpu.o devices.o devices-common.o \
- 				   id.o usb.o timer.o
- obj-$(CONFIG_CPU_IDLE)          += cpuidle.o
- obj-$(CONFIG_CACHE_L2X0)	+= cache-l2x0.o
-Index: arm-test.git/arch/arm/mach-ux500/clock.c
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ arm-test.git/arch/arm/mach-ux500/clock.c	2013-01-24 11:52:41.083970656 -0500
-@@ -0,0 +1,715 @@
-+/*
-+ *  Copyright (C) 2009 ST-Ericsson
-+ *  Copyright (C) 2009 STMicroelectronics
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/list.h>
-+#include <linux/errno.h>
-+#include <linux/err.h>
-+#include <linux/clk.h>
-+#include <linux/io.h>
-+#include <linux/clkdev.h>
-+#include <linux/cpufreq.h>
-+
-+//#include <plat/mtu.h>
-+#include <mach/hardware.h>
-+#include "clock.h"
-+
-+#ifdef CONFIG_DEBUG_FS
-+#include <linux/debugfs.h>
-+#include <linux/uaccess.h>	/* for copy_from_user */
-+static LIST_HEAD(clk_list);
-+#endif
-+
-+#define PRCC_PCKEN		0x00
-+#define PRCC_PCKDIS		0x04
-+#define PRCC_KCKEN		0x08
-+#define PRCC_KCKDIS		0x0C
-+
-+#define PRCM_YYCLKEN0_MGT_SET	0x510
-+#define PRCM_YYCLKEN1_MGT_SET	0x514
-+#define PRCM_YYCLKEN0_MGT_CLR	0x518
-+#define PRCM_YYCLKEN1_MGT_CLR	0x51C
-+#define PRCM_YYCLKEN0_MGT_VAL	0x520
-+#define PRCM_YYCLKEN1_MGT_VAL	0x524
-+
-+#define PRCM_SVAMMDSPCLK_MGT	0x008
-+#define PRCM_SIAMMDSPCLK_MGT	0x00C
-+#define PRCM_SGACLK_MGT		0x014
-+#define PRCM_UARTCLK_MGT	0x018
-+#define PRCM_MSP02CLK_MGT	0x01C
-+#define PRCM_MSP1CLK_MGT	0x288
-+#define PRCM_I2CCLK_MGT		0x020
-+#define PRCM_SDMMCCLK_MGT	0x024
-+#define PRCM_SLIMCLK_MGT	0x028
-+#define PRCM_PER1CLK_MGT	0x02C
-+#define PRCM_PER2CLK_MGT	0x030
-+#define PRCM_PER3CLK_MGT	0x034
-+#define PRCM_PER5CLK_MGT	0x038
-+#define PRCM_PER6CLK_MGT	0x03C
-+#define PRCM_PER7CLK_MGT	0x040
-+#define PRCM_LCDCLK_MGT		0x044
-+#define PRCM_BMLCLK_MGT		0x04C
-+#define PRCM_HSITXCLK_MGT	0x050
-+#define PRCM_HSIRXCLK_MGT	0x054
-+#define PRCM_HDMICLK_MGT	0x058
-+#define PRCM_APEATCLK_MGT	0x05C
-+#define PRCM_APETRACECLK_MGT	0x060
-+#define PRCM_MCDECLK_MGT	0x064
-+#define PRCM_IPI2CCLK_MGT	0x068
-+#define PRCM_DSIALTCLK_MGT	0x06C
-+#define PRCM_DMACLK_MGT		0x074
-+#define PRCM_B2R2CLK_MGT	0x078
-+#define PRCM_TVCLK_MGT		0x07C
-+#define PRCM_TCR		0x1C8
-+#define PRCM_TCR_STOPPED	(1 << 16)
-+#define PRCM_TCR_DOZE_MODE	(1 << 17)
-+#define PRCM_UNIPROCLK_MGT	0x278
-+#define PRCM_SSPCLK_MGT		0x280
-+#define PRCM_RNGCLK_MGT		0x284
-+#define PRCM_UICCCLK_MGT	0x27C
-+
-+#define PRCM_MGT_ENABLE		(1 << 8)
-+
-+static DEFINE_SPINLOCK(clocks_lock);
-+
-+static void __clk_enable(struct clk *clk)
-+{
-+	if (clk->enabled++ == 0) {
-+		if (clk->parent_cluster)
-+			__clk_enable(clk->parent_cluster);
-+
-+		if (clk->parent_periph)
-+			__clk_enable(clk->parent_periph);
-+
-+		if (clk->ops && clk->ops->enable)
-+			clk->ops->enable(clk);
-+	}
-+}
-+
-+int clk_enable(struct clk *clk)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&clocks_lock, flags);
-+	__clk_enable(clk);
-+	spin_unlock_irqrestore(&clocks_lock, flags);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(clk_enable);
-+
-+static void __clk_disable(struct clk *clk)
-+{
-+	if (--clk->enabled == 0) {
-+		if (clk->ops && clk->ops->disable)
-+			clk->ops->disable(clk);
-+
-+		if (clk->parent_periph)
-+			__clk_disable(clk->parent_periph);
-+
-+		if (clk->parent_cluster)
-+			__clk_disable(clk->parent_cluster);
-+	}
-+}
-+
-+void clk_disable(struct clk *clk)
-+{
-+	unsigned long flags;
-+
-+	WARN_ON(!clk->enabled);
-+
-+	spin_lock_irqsave(&clocks_lock, flags);
-+	__clk_disable(clk);
-+	spin_unlock_irqrestore(&clocks_lock, flags);
-+}
-+EXPORT_SYMBOL(clk_disable);
-+
-+/*
-+ * The MTU has a separate, rather complex muxing setup
-+ * with alternative parents (peripheral cluster or
-+ * ULP or fixed 32768 Hz) depending on settings
-+ */
-+static unsigned long clk_mtu_get_rate(struct clk *clk)
-+{
-+	void __iomem *addr;
-+	u32 tcr;
-+	int mtu = (int) clk->data;
-+	/*
-+	 * One of these is selected eventually
-+	 * TODO: Replace the constant with a reference
-+	 * to the ULP source once this is modeled.
-+	 */
-+	unsigned long clk32k = 32768;
-+	unsigned long mturate;
-+	unsigned long retclk;
-+
-+	if (cpu_is_u8500_family())
-+		addr = __io_address(U8500_PRCMU_BASE);
-+	else
-+		ux500_unknown_soc();
-+
-+	/*
-+	 * On a startup, always conifgure the TCR to the doze mode;
-+	 * bootloaders do it for us. Do this in the kernel too.
-+	 */
-+	writel(PRCM_TCR_DOZE_MODE, addr + PRCM_TCR);
-+
-+	tcr = readl(addr + PRCM_TCR);
-+
-+	/* Get the rate from the parent as a default */
-+	if (clk->parent_periph)
-+		mturate = clk_get_rate(clk->parent_periph);
-+	else if (clk->parent_cluster)
-+		mturate = clk_get_rate(clk->parent_cluster);
-+	else
-+		/* We need to be connected SOMEWHERE */
-+		BUG();
-+
-+	/* Return the clock selected for this MTU */
-+	if (tcr & (1 << mtu))
-+		retclk = clk32k;
-+	else
-+		retclk = mturate;
-+
-+	pr_info("MTU%d clock rate: %lu Hz\n", mtu, retclk);
-+	return retclk;
-+}
-+
-+unsigned long clk_get_rate(struct clk *clk)
-+{
-+	unsigned long rate;
-+
-+	/*
-+	 * If there is a custom getrate callback for this clock,
-+	 * it will take precedence.
-+	 */
-+	if (clk->get_rate)
-+		return clk->get_rate(clk);
-+
-+	if (clk->ops && clk->ops->get_rate)
-+		return clk->ops->get_rate(clk);
-+
-+	rate = clk->rate;
-+	if (!rate) {
-+		if (clk->parent_periph)
-+			rate = clk_get_rate(clk->parent_periph);
-+		else if (clk->parent_cluster)
-+			rate = clk_get_rate(clk->parent_cluster);
-+	}
-+
-+	return rate;
-+}
-+EXPORT_SYMBOL(clk_get_rate);
-+
-+long clk_round_rate(struct clk *clk, unsigned long rate)
-+{
-+	/*TODO*/
-+	return rate;
-+}
-+EXPORT_SYMBOL(clk_round_rate);
-+
-+int clk_set_rate(struct clk *clk, unsigned long rate)
-+{
-+	clk->rate = rate;
-+	return 0;
-+}
-+EXPORT_SYMBOL(clk_set_rate);
-+
-+int clk_set_parent(struct clk *clk, struct clk *parent)
-+{
-+	/*TODO*/
-+	return -ENOSYS;
-+}
-+EXPORT_SYMBOL(clk_set_parent);
-+
-+static void clk_prcmu_enable(struct clk *clk)
-+{
-+	void __iomem *cg_set_reg = __io_address(U8500_PRCMU_BASE)
-+				   + PRCM_YYCLKEN0_MGT_SET + clk->prcmu_cg_off;
-+
-+	writel(1 << clk->prcmu_cg_bit, cg_set_reg);
-+}
-+
-+static void clk_prcmu_disable(struct clk *clk)
-+{
-+	void __iomem *cg_clr_reg = __io_address(U8500_PRCMU_BASE)
-+				   + PRCM_YYCLKEN0_MGT_CLR + clk->prcmu_cg_off;
-+
-+	writel(1 << clk->prcmu_cg_bit, cg_clr_reg);
-+}
-+
-+static struct clkops clk_prcmu_ops = {
-+	.enable = clk_prcmu_enable,
-+	.disable = clk_prcmu_disable,
-+};
-+
-+static unsigned int clkrst_base[] = {
-+	[1] = U8500_CLKRST1_BASE,
-+	[2] = U8500_CLKRST2_BASE,
-+	[3] = U8500_CLKRST3_BASE,
-+	[5] = U8500_CLKRST5_BASE,
-+	[6] = U8500_CLKRST6_BASE,
-+};
-+
-+static void clk_prcc_enable(struct clk *clk)
-+{
-+	void __iomem *addr = __io_address(clkrst_base[clk->cluster]);
-+
-+	if (clk->prcc_kernel != -1)
-+		writel(1 << clk->prcc_kernel, addr + PRCC_KCKEN);
-+
-+	if (clk->prcc_bus != -1)
-+		writel(1 << clk->prcc_bus, addr + PRCC_PCKEN);
-+}
-+
-+static void clk_prcc_disable(struct clk *clk)
-+{
-+	void __iomem *addr = __io_address(clkrst_base[clk->cluster]);
-+
-+	if (clk->prcc_bus != -1)
-+		writel(1 << clk->prcc_bus, addr + PRCC_PCKDIS);
-+
-+	if (clk->prcc_kernel != -1)
-+		writel(1 << clk->prcc_kernel, addr + PRCC_KCKDIS);
-+}
-+
-+static struct clkops clk_prcc_ops = {
-+	.enable = clk_prcc_enable,
-+	.disable = clk_prcc_disable,
-+};
-+
-+static struct clk clk_32khz = {
-+	.name =  "clk_32khz",
-+	.rate = 32000,
-+};
-+
-+/*
-+ * PRCMU level clock gating
-+ */
-+
-+/* Bank 0 */
-+static DEFINE_PRCMU_CLK(svaclk,		0x0, 2, SVAMMDSPCLK);
-+static DEFINE_PRCMU_CLK(siaclk,		0x0, 3, SIAMMDSPCLK);
-+static DEFINE_PRCMU_CLK(sgaclk,		0x0, 4, SGACLK);
-+static DEFINE_PRCMU_CLK_RATE(uartclk,	0x0, 5, UARTCLK, 38400000);
-+static DEFINE_PRCMU_CLK(msp02clk,	0x0, 6, MSP02CLK);
-+static DEFINE_PRCMU_CLK(msp1clk,	0x0, 7, MSP1CLK); /* v1 */
-+static DEFINE_PRCMU_CLK_RATE(i2cclk,	0x0, 8, I2CCLK, 48000000);
-+static DEFINE_PRCMU_CLK_RATE(sdmmcclk,	0x0, 9, SDMMCCLK, 100000000);
-+static DEFINE_PRCMU_CLK(slimclk,	0x0, 10, SLIMCLK);
-+static DEFINE_PRCMU_CLK(per1clk,	0x0, 11, PER1CLK);
-+static DEFINE_PRCMU_CLK(per2clk,	0x0, 12, PER2CLK);
-+static DEFINE_PRCMU_CLK(per3clk,	0x0, 13, PER3CLK);
-+static DEFINE_PRCMU_CLK(per5clk,	0x0, 14, PER5CLK);
-+static DEFINE_PRCMU_CLK_RATE(per6clk,	0x0, 15, PER6CLK, 133330000);
-+static DEFINE_PRCMU_CLK(lcdclk,		0x0, 17, LCDCLK);
-+static DEFINE_PRCMU_CLK(bmlclk,		0x0, 18, BMLCLK);
-+static DEFINE_PRCMU_CLK(hsitxclk,	0x0, 19, HSITXCLK);
-+static DEFINE_PRCMU_CLK(hsirxclk,	0x0, 20, HSIRXCLK);
-+static DEFINE_PRCMU_CLK(hdmiclk,	0x0, 21, HDMICLK);
-+static DEFINE_PRCMU_CLK(apeatclk,	0x0, 22, APEATCLK);
-+static DEFINE_PRCMU_CLK(apetraceclk,	0x0, 23, APETRACECLK);
-+static DEFINE_PRCMU_CLK(mcdeclk,	0x0, 24, MCDECLK);
-+static DEFINE_PRCMU_CLK(ipi2clk,	0x0, 25, IPI2CCLK);
-+static DEFINE_PRCMU_CLK(dsialtclk,	0x0, 26, DSIALTCLK); /* v1 */
-+static DEFINE_PRCMU_CLK(dmaclk,		0x0, 27, DMACLK);
-+static DEFINE_PRCMU_CLK(b2r2clk,	0x0, 28, B2R2CLK);
-+static DEFINE_PRCMU_CLK(tvclk,		0x0, 29, TVCLK);
-+static DEFINE_PRCMU_CLK(uniproclk,	0x0, 30, UNIPROCLK); /* v1 */
-+static DEFINE_PRCMU_CLK_RATE(sspclk,	0x0, 31, SSPCLK, 48000000); /* v1 */
-+
-+/* Bank 1 */
-+static DEFINE_PRCMU_CLK(rngclk,		0x4, 0, RNGCLK); /* v1 */
-+static DEFINE_PRCMU_CLK(uiccclk,	0x4, 1, UICCCLK); /* v1 */
-+
-+/*
-+ * PRCC level clock gating
-+ * Format: per#, clk, PCKEN bit, KCKEN bit, parent
-+ */
-+
-+/* Peripheral Cluster #1 */
-+static DEFINE_PRCC_CLK(1, msp3,		11, 10, &clk_msp1clk);
-+static DEFINE_PRCC_CLK(1, i2c4,		10, 9, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(1, gpio0,	9, -1, NULL);
-+static DEFINE_PRCC_CLK(1, slimbus0,	8,  8, &clk_slimclk);
-+static DEFINE_PRCC_CLK(1, spi3,		7, -1, NULL);
-+static DEFINE_PRCC_CLK(1, i2c2,		6,  6, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(1, sdi0,		5,  5, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(1, msp1,		4,  4, &clk_msp1clk);
-+static DEFINE_PRCC_CLK(1, msp0,		3,  3, &clk_msp02clk);
-+static DEFINE_PRCC_CLK(1, i2c1,		2,  2, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(1, uart1,	1,  1, &clk_uartclk);
-+static DEFINE_PRCC_CLK(1, uart0,	0,  0, &clk_uartclk);
-+
-+/* Peripheral Cluster #2 */
-+static DEFINE_PRCC_CLK(2, gpio1,	11, -1, NULL);
-+static DEFINE_PRCC_CLK(2, ssitx,	10,  7, NULL);
-+static DEFINE_PRCC_CLK(2, ssirx,	 9,  6, NULL);
-+static DEFINE_PRCC_CLK(2, spi0,		8, -1, NULL);
-+static DEFINE_PRCC_CLK(2, sdi3,		7,  5, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(2, sdi1,		6,  4, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(2, msp2,		5,  3, &clk_msp02clk);
-+static DEFINE_PRCC_CLK(2, sdi4,		4,  2, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(2, pwl,		3,  1, NULL);
-+static DEFINE_PRCC_CLK(2, spi1,		2, -1, NULL);
-+static DEFINE_PRCC_CLK(2, spi2,		1, -1, NULL);
-+static DEFINE_PRCC_CLK(2, i2c3,		0,  0, &clk_i2cclk);
-+
-+/* Peripheral Cluster #3 */
-+static DEFINE_PRCC_CLK(3, gpio2,	8, -1, NULL);
-+static DEFINE_PRCC_CLK(3, sdi5,		7,  7, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(3, uart2,	6,  6, &clk_uartclk);
-+static DEFINE_PRCC_CLK(3, ske,		5,  5, &clk_32khz);
-+static DEFINE_PRCC_CLK(3, sdi2,		4,  4, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(3, i2c0,		3,  3, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(3, ssp1,		2,  2, &clk_sspclk);
-+static DEFINE_PRCC_CLK(3, ssp0,		1,  1, &clk_sspclk);
-+static DEFINE_PRCC_CLK(3, fsmc,		0, -1, NULL);
-+
-+/* Peripheral Cluster #4 is in the always on domain */
-+
-+/* Peripheral Cluster #5 */
-+static DEFINE_PRCC_CLK(5, gpio3,	1, -1, NULL);
-+static DEFINE_PRCC_CLK(5, usb,		0,  0, NULL);
-+
-+/* Peripheral Cluster #6 */
-+
-+/* MTU ID in data */
-+static DEFINE_PRCC_CLK_CUSTOM(6, mtu1, 9, -1, NULL, clk_mtu_get_rate, 1);
-+static DEFINE_PRCC_CLK_CUSTOM(6, mtu0, 8, -1, NULL, clk_mtu_get_rate, 0);
-+static DEFINE_PRCC_CLK(6, cfgreg,	7,  7, NULL);
-+static DEFINE_PRCC_CLK(6, hash1,	6, -1, NULL);
-+static DEFINE_PRCC_CLK(6, unipro,	5,  1, &clk_uniproclk);
-+static DEFINE_PRCC_CLK(6, pka,		4, -1, NULL);
-+static DEFINE_PRCC_CLK(6, hash0,	3, -1, NULL);
-+static DEFINE_PRCC_CLK(6, cryp0,	2, -1, NULL);
-+static DEFINE_PRCC_CLK(6, cryp1,    1, -1, NULL);
-+static DEFINE_PRCC_CLK(6, rng,	0,  0, &clk_rngclk);
-+
-+static struct clk clk_dummy_apb_pclk = {
-+	.name = "apb_pclk",
-+};
-+
-+static struct clk_lookup u8500_clks[] = {
-+	CLK(dummy_apb_pclk, NULL,	"apb_pclk"),
-+
-+	/* Peripheral Cluster #1 */
-+	CLK(gpio0,	"gpio.0",	NULL),
-+	CLK(gpio0,	"gpio.1",	NULL),
-+	CLK(slimbus0,	"slimbus0",	NULL),
-+	CLK(i2c2,	"nmk-i2c.2",	NULL),
-+	CLK(sdi0,	"sdi0",		NULL),
-+	CLK(msp0,	"ux500-msp-i2s.0",	NULL),
-+	CLK(i2c1,	"nmk-i2c.1",	NULL),
-+	CLK(uart1,	"uart1",	NULL),
-+	CLK(uart0,	"uart0",	NULL),
-+
-+	/* Peripheral Cluster #3 */
-+	CLK(gpio2,	"gpio.2",	NULL),
-+	CLK(gpio2,	"gpio.3",	NULL),
-+	CLK(gpio2,	"gpio.4",	NULL),
-+	CLK(gpio2,	"gpio.5",	NULL),
-+	CLK(sdi5,	"sdi5",		NULL),
-+	CLK(uart2,	"uart2",	NULL),
-+	CLK(ske,	"ske",		NULL),
-+	CLK(ske,	"nmk-ske-keypad",	NULL),
-+	CLK(sdi2,	"sdi2",		NULL),
-+	CLK(i2c0,	"nmk-i2c.0",	NULL),
-+	CLK(fsmc,	"fsmc",		NULL),
-+
-+	/* Peripheral Cluster #5 */
-+	CLK(gpio3,	"gpio.8",	NULL),
-+
-+	/* Peripheral Cluster #6 */
-+	CLK(hash1,	"hash1",	NULL),
-+	CLK(pka,	"pka",		NULL),
-+	CLK(hash0,	"hash0",	NULL),
-+	CLK(cryp0,	"cryp0",	NULL),
-+	CLK(cryp1,  "cryp1",    NULL),
-+
-+	/* PRCMU level clock gating */
-+
-+	/* Bank 0 */
-+	CLK(svaclk,	"sva",		NULL),
-+	CLK(siaclk,	"sia",		NULL),
-+	CLK(sgaclk,	"sga",		NULL),
-+	CLK(slimclk,	"slim",		NULL),
-+	CLK(lcdclk,	"lcd",		NULL),
-+	CLK(bmlclk,	"bml",		NULL),
-+	CLK(hsitxclk,	"stm-hsi.0",	NULL),
-+	CLK(hsirxclk,	"stm-hsi.1",	NULL),
-+	CLK(hdmiclk,	"hdmi",		NULL),
-+	CLK(apeatclk,	"apeat",	NULL),
-+	CLK(apetraceclk,	"apetrace",	NULL),
-+	CLK(mcdeclk,	"mcde",		NULL),
-+	CLK(ipi2clk,	"ipi2",		NULL),
-+	CLK(dmaclk,	"dma40.0",	NULL),
-+	CLK(b2r2clk,	"b2r2",		NULL),
-+	CLK(tvclk,	"tv",		NULL),
-+
-+	/* Peripheral Cluster #1 */
-+	CLK(i2c4,	"nmk-i2c.4",	NULL),
-+	CLK(spi3,	"spi3",		NULL),
-+	CLK(msp1,	"ux500-msp-i2s.1",	NULL),
-+	CLK(msp3,	"ux500-msp-i2s.3",	NULL),
-+
-+	/* Peripheral Cluster #2 */
-+	CLK(gpio1,	"gpio.6",	NULL),
-+	CLK(gpio1,	"gpio.7",	NULL),
-+	CLK(ssitx,	"ssitx",	NULL),
-+	CLK(ssirx,	"ssirx",	NULL),
-+	CLK(spi0,	"spi0",		NULL),
-+	CLK(sdi3,	"sdi3",		NULL),
-+	CLK(sdi1,	"sdi1",		NULL),
-+	CLK(msp2,	"ux500-msp-i2s.2",	NULL),
-+	CLK(sdi4,	"sdi4",		NULL),
-+	CLK(pwl,	"pwl",		NULL),
-+	CLK(spi1,	"spi1",		NULL),
-+	CLK(spi2,	"spi2",		NULL),
-+	CLK(i2c3,	"nmk-i2c.3",	NULL),
-+
-+	/* Peripheral Cluster #3 */
-+	CLK(ssp1,	"ssp1",		NULL),
-+	CLK(ssp0,	"ssp0",		NULL),
-+
-+	/* Peripheral Cluster #5 */
-+	CLK(usb,	"musb-ux500.0",	"usb"),
-+
-+	/* Peripheral Cluster #6 */
-+	CLK(mtu1,	"mtu1",		NULL),
-+	CLK(mtu0,	"mtu0",		NULL),
-+	CLK(cfgreg,	"cfgreg",	NULL),
-+	CLK(hash1,	"hash1",	NULL),
-+	CLK(unipro,	"unipro",	NULL),
-+	CLK(rng,	"rng",		NULL),
-+
-+	/* PRCMU level clock gating */
-+
-+	/* Bank 0 */
-+	CLK(uniproclk,	"uniproclk",	NULL),
-+	CLK(dsialtclk,	"dsialt",	NULL),
-+
-+	/* Bank 1 */
-+	CLK(rngclk,	"rng",		NULL),
-+	CLK(uiccclk,	"uicc",		NULL),
-+};
-+
-+#ifdef CONFIG_DEBUG_FS
-+/*
-+ *	debugfs support to trace clock tree hierarchy and attributes with
-+ *	powerdebug
-+ */
-+static struct dentry *clk_debugfs_root;
-+
-+void __init clk_debugfs_add_table(struct clk_lookup *cl, size_t num)
-+{
-+	while (num--) {
-+		/* Check that the clock has not been already registered */
-+		if (!(cl->clk->list.prev != cl->clk->list.next))
-+			list_add_tail(&cl->clk->list, &clk_list);
-+
-+		cl++;
-+	}
-+}
-+
-+static ssize_t usecount_dbg_read(struct file *file, char __user *buf,
-+						  size_t size, loff_t *off)
-+{
-+	struct clk *clk = file->f_dentry->d_inode->i_private;
-+	char cusecount[128];
-+	unsigned int len;
-+
-+	len = sprintf(cusecount, "%u\n", clk->enabled);
-+	return simple_read_from_buffer(buf, size, off, cusecount, len);
-+}
-+
-+static ssize_t rate_dbg_read(struct file *file, char __user *buf,
-+					  size_t size, loff_t *off)
-+{
-+	struct clk *clk = file->f_dentry->d_inode->i_private;
-+	char crate[128];
-+	unsigned int rate;
-+	unsigned int len;
-+
-+	rate = clk_get_rate(clk);
-+	len = sprintf(crate, "%u\n", rate);
-+	return simple_read_from_buffer(buf, size, off, crate, len);
-+}
-+
-+static const struct file_operations usecount_fops = {
-+	.read = usecount_dbg_read,
-+};
-+
-+static const struct file_operations set_rate_fops = {
-+	.read = rate_dbg_read,
-+};
-+
-+static struct dentry *clk_debugfs_register_dir(struct clk *c,
-+						struct dentry *p_dentry)
-+{
-+	struct dentry *d, *clk_d;
-+	const char *p = c->name;
-+
-+	if (!p)
-+		p = "BUG";
-+
-+	clk_d = debugfs_create_dir(p, p_dentry);
-+	if (!clk_d)
-+		return NULL;
-+
-+	d = debugfs_create_file("usecount", S_IRUGO,
-+				clk_d, c, &usecount_fops);
-+	if (!d)
-+		goto err_out;
-+	d = debugfs_create_file("rate", S_IRUGO,
-+				clk_d, c, &set_rate_fops);
-+	if (!d)
-+		goto err_out;
-+	/*
-+	 * TODO : not currently available in ux500
-+	 * d = debugfs_create_x32("flags", S_IRUGO, clk_d, (u32 *)&c->flags);
-+	 * if (!d)
-+	 *	goto err_out;
-+	 */
-+
-+	return clk_d;
-+
-+err_out:
-+	debugfs_remove_recursive(clk_d);
-+	return NULL;
-+}
-+
-+static int clk_debugfs_register_one(struct clk *c)
-+{
-+	struct clk *pa = c->parent_periph;
-+	struct clk *bpa = c->parent_cluster;
-+
-+	if (!(bpa && !pa)) {
-+		c->dent = clk_debugfs_register_dir(c,
-+				pa ? pa->dent : clk_debugfs_root);
-+		if (!c->dent)
-+			return -ENOMEM;
-+	}
-+
-+	if (bpa) {
-+		c->dent_bus = clk_debugfs_register_dir(c,
-+				bpa->dent_bus ? bpa->dent_bus : bpa->dent);
-+		if ((!c->dent_bus) &&  (c->dent)) {
-+			debugfs_remove_recursive(c->dent);
-+			c->dent = NULL;
-+			return -ENOMEM;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static int clk_debugfs_register(struct clk *c)
-+{
-+	int err;
-+	struct clk *pa = c->parent_periph;
-+	struct clk *bpa = c->parent_cluster;
-+
-+	if (pa && (!pa->dent && !pa->dent_bus)) {
-+		err = clk_debugfs_register(pa);
-+		if (err)
-+			return err;
-+	}
-+
-+	if (bpa && (!bpa->dent && !bpa->dent_bus)) {
-+		err = clk_debugfs_register(bpa);
-+		if (err)
-+			return err;
-+	}
-+
-+	if ((!c->dent) && (!c->dent_bus)) {
-+		err = clk_debugfs_register_one(c);
-+		if (err)
-+			return err;
-+	}
-+	return 0;
-+}
-+
-+int __init clk_debugfs_init(void)
-+{
-+	struct clk *c;
-+	struct dentry *d;
-+	int err;
-+
-+	d = debugfs_create_dir("clock", NULL);
-+	if (!d)
-+		return -ENOMEM;
-+	clk_debugfs_root = d;
-+
-+	list_for_each_entry(c, &clk_list, list) {
-+		err = clk_debugfs_register(c);
-+		if (err)
-+			goto err_out;
-+	}
-+	return 0;
-+err_out:
-+	debugfs_remove_recursive(clk_debugfs_root);
-+	return err;
-+}
-+
-+#endif /* defined(CONFIG_DEBUG_FS) */
-+
-+unsigned long clk_smp_twd_rate = 500000000;
-+
-+unsigned long clk_smp_twd_get_rate(struct clk *clk)
-+{
-+	return clk_smp_twd_rate;
-+}
-+
-+static struct clk clk_smp_twd = {
-+	.get_rate = clk_smp_twd_get_rate,
-+	.name =  "smp_twd",
-+};
-+
-+static struct clk_lookup clk_smp_twd_lookup = {
-+	.dev_id = "smp_twd",
-+	.clk = &clk_smp_twd,
-+};
-+
-+#ifdef CONFIG_CPU_FREQ
-+
-+static int clk_twd_cpufreq_transition(struct notifier_block *nb,
-+				      unsigned long state, void *data)
-+{
-+	struct cpufreq_freqs *f = data;
-+
-+	if (state == CPUFREQ_PRECHANGE) {
-+		/* Save frequency in simple Hz */
-+		clk_smp_twd_rate = (f->new * 1000) / 2;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block clk_twd_cpufreq_nb = {
-+	.notifier_call = clk_twd_cpufreq_transition,
-+};
-+
-+int clk_init_smp_twd_cpufreq(void)
-+{
-+	return cpufreq_register_notifier(&clk_twd_cpufreq_nb,
-+				  CPUFREQ_TRANSITION_NOTIFIER);
-+}
-+
-+#endif
-+
-+int __init clk_init(void)
-+{
-+	clkdev_add_table(u8500_clks, ARRAY_SIZE(u8500_clks));
-+	clkdev_add(&clk_smp_twd_lookup);
-+
-+#ifdef CONFIG_DEBUG_FS
-+	clk_debugfs_add_table(u8500_clks, ARRAY_SIZE(u8500_clks));
-+#endif
-+	return 0;
-+}
-Index: arm-test.git/arch/arm/mach-ux500/clock.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ arm-test.git/arch/arm/mach-ux500/clock.h	2013-01-24 11:30:19.402046175 -0500
-@@ -0,0 +1,164 @@
-+/*
-+ *  Copyright (C) 2010 ST-Ericsson
-+ *  Copyright (C) 2009 STMicroelectronics
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+/**
-+ * struct clkops - ux500 clock operations
-+ * @enable:	function to enable the clock
-+ * @disable:	function to disable the clock
-+ * @get_rate:	function to get the current clock rate
-+ *
-+ * This structure contains function pointers to functions that will be used to
-+ * control the clock.  All of these functions are optional.  If get_rate is
-+ * NULL, the rate in the struct clk will be used.
-+ */
-+struct clkops {
-+	void (*enable) (struct clk *);
-+	void (*disable) (struct clk *);
-+	unsigned long (*get_rate) (struct clk *);
-+	int (*set_parent)(struct clk *, struct clk *);
-+};
-+
-+/**
-+ * struct clk - ux500 clock structure
-+ * @ops:		pointer to clkops struct used to control this clock
-+ * @name:		name, for debugging
-+ * @enabled:		refcount. positive if enabled, zero if disabled
-+ * @get_rate:		custom callback for getting the clock rate
-+ * @data:		custom per-clock data for example for the get_rate
-+ *			callback
-+ * @rate:		fixed rate for clocks which don't implement
-+ * 			ops->getrate
-+ * @prcmu_cg_off:	address offset of the combined enable/disable register
-+ * 			(used on u8500v1)
-+ * @prcmu_cg_bit:	bit in the combined enable/disable register (used on
-+ * 			u8500v1)
-+ * @prcmu_cg_mgt:	address of the enable/disable register (used on
-+ * 			u8500ed)
-+ * @cluster:		peripheral cluster number
-+ * @prcc_bus:		bit for the bus clock in the peripheral's CLKRST
-+ * @prcc_kernel:	bit for the kernel clock in the peripheral's CLKRST.
-+ * 			-1 if no kernel clock exists.
-+ * @parent_cluster:	pointer to parent's cluster clk struct
-+ * @parent_periph:	pointer to parent's peripheral clk struct
-+ *
-+ * Peripherals are organised into clusters, and each cluster has an associated
-+ * bus clock.  Some peripherals also have a parent peripheral clock.
-+ *
-+ * In order to enable a clock for a peripheral, we need to enable:
-+ * 	(1) the parent cluster (bus) clock at the PRCMU level
-+ * 	(2) the parent peripheral clock (if any) at the PRCMU level
-+ * 	(3) the peripheral's bus & kernel clock at the PRCC level
-+ *
-+ * (1) and (2) are handled by defining clk structs (DEFINE_PRCMU_CLK) for each
-+ * of the cluster and peripheral clocks, and hooking these as the parents of
-+ * the individual peripheral clocks.
-+ *
-+ * (3) is handled by specifying the bits in the PRCC control registers required
-+ * to enable these clocks and modifying them in the ->enable and
-+ * ->disable callbacks of the peripheral clocks (DEFINE_PRCC_CLK).
-+ *
-+ * This structure describes both the PRCMU-level clocks and PRCC-level clocks.
-+ * The prcmu_* fields are only used for the PRCMU clocks, and the cluster,
-+ * prcc, and parent pointers are only used for the PRCC-level clocks.
-+ */
-+struct clk {
-+	const struct clkops	*ops;
-+	const char 		*name;
-+	unsigned int		enabled;
-+	unsigned long		(*get_rate)(struct clk *);
-+	void			*data;
-+
-+	unsigned long		rate;
-+	struct list_head	list;
-+
-+	/* These three are only for PRCMU clks */
-+
-+	unsigned int		prcmu_cg_off;
-+	unsigned int		prcmu_cg_bit;
-+	unsigned int		prcmu_cg_mgt;
-+
-+	/* The rest are only for PRCC clks */
-+
-+	int			cluster;
-+	unsigned int		prcc_bus;
-+	unsigned int		prcc_kernel;
-+
-+	struct clk		*parent_cluster;
-+	struct clk		*parent_periph;
-+#if defined(CONFIG_DEBUG_FS)
-+	struct dentry		*dent;		/* For visible tree hierarchy */
-+	struct dentry		*dent_bus;	/* For visible tree hierarchy */
-+#endif
-+};
-+
-+#define DEFINE_PRCMU_CLK(_name, _cg_off, _cg_bit, _reg)		\
-+struct clk clk_##_name = {					\
-+		.name		= #_name,			\
-+		.ops    	= &clk_prcmu_ops, 		\
-+		.prcmu_cg_off	= _cg_off, 			\
-+		.prcmu_cg_bit	= _cg_bit,			\
-+		.prcmu_cg_mgt	= PRCM_##_reg##_MGT		\
-+	}
-+
-+#define DEFINE_PRCMU_CLK_RATE(_name, _cg_off, _cg_bit, _reg, _rate)	\
-+struct clk clk_##_name = {						\
-+		.name		= #_name,				\
-+		.ops    	= &clk_prcmu_ops, 			\
-+		.prcmu_cg_off	= _cg_off, 				\
-+		.prcmu_cg_bit	= _cg_bit,				\
-+		.rate		= _rate,				\
-+		.prcmu_cg_mgt	= PRCM_##_reg##_MGT			\
-+	}
-+
-+#define DEFINE_PRCC_CLK(_pclust, _name, _bus_en, _kernel_en, _kernclk)	\
-+struct clk clk_##_name = {						\
-+		.name		= #_name,				\
-+		.ops    	= &clk_prcc_ops, 			\
-+		.cluster 	= _pclust,				\
-+		.prcc_bus 	= _bus_en, 				\
-+		.prcc_kernel 	= _kernel_en, 				\
-+		.parent_cluster = &clk_per##_pclust##clk,		\
-+		.parent_periph 	= _kernclk				\
-+	}
-+
-+#define DEFINE_PRCC_CLK_CUSTOM(_pclust, _name, _bus_en, _kernel_en, _kernclk, _callback, _data) \
-+struct clk clk_##_name = {						\
-+		.name		= #_name,				\
-+		.ops		= &clk_prcc_ops,			\
-+		.cluster	= _pclust,				\
-+		.prcc_bus	= _bus_en,				\
-+		.prcc_kernel	= _kernel_en,				\
-+		.parent_cluster = &clk_per##_pclust##clk,		\
-+		.parent_periph	= _kernclk,				\
-+		.get_rate	= _callback,				\
-+		.data		= (void *) _data			\
-+	}
-+
-+
-+#define CLK(_clk, _devname, _conname)			\
-+	{						\
-+		.clk	= &clk_##_clk,			\
-+		.dev_id	= _devname,			\
-+		.con_id = _conname,			\
-+	}
-+
-+int __init clk_db8500_ed_fixup(void);
-+int __init clk_init(void);
-+
-+#ifdef CONFIG_DEBUG_FS
-+int clk_debugfs_init(void);
-+#else
-+static inline int clk_debugfs_init(void) { return 0; }
-+#endif
-+
-+#ifdef CONFIG_CPU_FREQ
-+int clk_init_smp_twd_cpufreq(void);
-+#else
-+static inline int clk_init_smp_twd_cpufreq(void) { return 0; }
-+#endif
-Index: arm-test.git/arch/arm/mach-ux500/cpu.c
-===================================================================
---- arm-test.git.orig/arch/arm/mach-ux500/cpu.c	2013-01-24 11:26:15.000000000 -0500
-+++ arm-test.git/arch/arm/mach-ux500/cpu.c	2013-01-24 11:40:20.547446502 -0500
-@@ -8,6 +8,7 @@
- 
- #include <linux/platform_device.h>
- #include <linux/io.h>
-+#include <linux/clk.h>
- #include <linux/mfd/db8500-prcmu.h>
- #include <linux/clksrc-dbx500-prcmu.h>
- #include <linux/sys_soc.h>
-@@ -17,7 +18,6 @@
- #include <linux/of.h>
- #include <linux/of_irq.h>
- #include <linux/irq.h>
--#include <linux/platform_data/clk-ux500.h>
- 
- #include <asm/hardware/gic.h>
- #include <asm/mach/map.h>
-@@ -28,6 +28,8 @@
- 
- #include "board-mop500.h"
- 
-+#include "clock.h"
-+
- void __iomem *_PRCMU_BASE;
- 
- /*
-@@ -73,18 +75,13 @@ void __init ux500_init_irq(void)
- 	 */
- 	if (cpu_is_u8500_family())
- 		db8500_prcmu_early_init();
--
--	if (cpu_is_u8500_family())
--		u8500_clk_init();
--	else if (cpu_is_u9540())
--		u9540_clk_init();
--	else if (cpu_is_u8540())
--		u8540_clk_init();
-+	clk_init();
- }
- 
- void __init ux500_init_late(void)
- {
--	mop500_uib_init();
-+	clk_debugfs_init();
-+	clk_init_smp_twd_cpufreq();
- }
- 
- static const char * __init ux500_get_machine(void)
-Index: arm-test.git/drivers/clk/Makefile
-===================================================================
---- arm-test.git.orig/drivers/clk/Makefile	2013-01-24 11:29:36.000000000 -0500
-+++ arm-test.git/drivers/clk/Makefile	2013-01-24 11:32:35.297073843 -0500
-@@ -18,7 +18,6 @@ ifeq ($(CONFIG_COMMON_CLK), y)
- obj-$(CONFIG_ARCH_MMP)		+= mmp/
- endif
- obj-$(CONFIG_MACH_LOONGSON1)	+= clk-ls1x.o
--obj-$(CONFIG_ARCH_U8500)	+= ux500/
- obj-$(CONFIG_ARCH_VT8500)	+= clk-vt8500.o
- obj-$(CONFIG_ARCH_SUNXI)	+= clk-sunxi.o
- obj-$(CONFIG_ARCH_ZYNQ)		+= clk-zynq.o
-
-
+> ---
+> V5->V6:
+> 	remove {get|put}_online_cpus from virtnet_del_vqs (Jason)
+> V4->V5:
+> 	Add get/put_online_cpus to avoid CPUs go up and down during operations (Rusty)
+> 
+> V3->V4:
+> 	move vq_index into virtnet_info	(Jason)
+> 	change the mapping value when not setting affinity (Jason)
+> 	address the comments about select_queue (Rusty)
+> 
+>  drivers/net/virtio_net.c | 58 +++++++++++++++++++++++++++++++++++++++---------
+>  1 file changed, 47 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index a6fcf15..70cd957 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -123,6 +123,9 @@ struct virtnet_info {
+>  
+>  	/* Does the affinity hint is set for virtqueues? */
+>  	bool affinity_hint_set;
+> +
+> +	/* Per-cpu variable to show the mapping from CPU to virtqueue */
+> +	int __percpu *vq_index;
+>  };
+>  
+>  struct skb_vnet_hdr {
+> @@ -1016,6 +1019,7 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
+>  static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+>  {
+>  	int i;
+> +	int cpu;
+>  
+>  	/* In multiqueue mode, when the number of cpu is equal to the number of
+>  	 * queue pairs, we let the queue pairs to be private to one cpu by
+> @@ -1029,16 +1033,29 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+>  			return;
+>  	}
+>  
+> -	for (i = 0; i < vi->max_queue_pairs; i++) {
+> -		int cpu = set ? i : -1;
+> -		virtqueue_set_affinity(vi->rq[i].vq, cpu);
+> -		virtqueue_set_affinity(vi->sq[i].vq, cpu);
+> -	}
+> +	if (set) {
+> +		i = 0;
+> +		for_each_online_cpu(cpu) {
+> +			virtqueue_set_affinity(vi->rq[i].vq, cpu);
+> +			virtqueue_set_affinity(vi->sq[i].vq, cpu);
+> +			*per_cpu_ptr(vi->vq_index, cpu) = i;
+> +			i++;
+> +		}
+>  
+> -	if (set)
+>  		vi->affinity_hint_set = true;
+> -	else
+> +	} else {
+> +		for(i = 0; i < vi->max_queue_pairs; i++) {
+> +			virtqueue_set_affinity(vi->rq[i].vq, -1);
+> +			virtqueue_set_affinity(vi->sq[i].vq, -1);
+> +		}
+> +
+> +		i = 0;
+> +		for_each_online_cpu(cpu)
+> +			*per_cpu_ptr(vi->vq_index, cpu) =
+> +				++i % vi->curr_queue_pairs;
+> +
+>  		vi->affinity_hint_set = false;
+> +	}
+>  }
+>  
+>  static void virtnet_get_ringparam(struct net_device *dev,
+> @@ -1087,7 +1104,9 @@ static int virtnet_set_channels(struct net_device *dev,
+>  		netif_set_real_num_tx_queues(dev, queue_pairs);
+>  		netif_set_real_num_rx_queues(dev, queue_pairs);
+>  
+> +		get_online_cpus();
+>  		virtnet_set_affinity(vi, true);
+> +		put_online_cpus();
+>  	}
+>  
+>  	return err;
+> @@ -1127,12 +1146,19 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
+>  
+>  /* To avoid contending a lock hold by a vcpu who would exit to host, select the
+>   * txq based on the processor id.
+> - * TODO: handle cpu hotplug.
+>   */
+>  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
+>  {
+> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
+> -		  smp_processor_id();
+> +	int txq;
+> +	struct virtnet_info *vi = netdev_priv(dev);
+> +
+> +	if (skb_rx_queue_recorded(skb)) {
+> +		txq = skb_get_rx_queue(skb);
+> +	} else {
+> +		txq = *__this_cpu_ptr(vi->vq_index);
+> +		if (txq == -1)
+> +			txq = 0;
+> +	}
+>  
+>  	while (unlikely(txq >= dev->real_num_tx_queues))
+>  		txq -= dev->real_num_tx_queues;
+> @@ -1371,7 +1397,10 @@ static int init_vqs(struct virtnet_info *vi)
+>  	if (ret)
+>  		goto err_free;
+>  
+> +	get_online_cpus();
+>  	virtnet_set_affinity(vi, true);
+> +	put_online_cpus();
+> +
+>  	return 0;
+>  
+>  err_free:
+> @@ -1453,6 +1482,10 @@ static int virtnet_probe(struct virtio_device *vdev)
+>  	if (vi->stats == NULL)
+>  		goto free;
+>  
+> +	vi->vq_index = alloc_percpu(int);
+> +	if (vi->vq_index == NULL)
+> +		goto free_stats;
+> +
+>  	mutex_init(&vi->config_lock);
+>  	vi->config_enable = true;
+>  	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
+> @@ -1476,7 +1509,7 @@ static int virtnet_probe(struct virtio_device *vdev)
+>  	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
+>  	err = init_vqs(vi);
+>  	if (err)
+> -		goto free_stats;
+> +		goto free_index;
+>  
+>  	netif_set_real_num_tx_queues(dev, 1);
+>  	netif_set_real_num_rx_queues(dev, 1);
+> @@ -1520,6 +1553,8 @@ free_recv_bufs:
+>  free_vqs:
+>  	cancel_delayed_work_sync(&vi->refill);
+>  	virtnet_del_vqs(vi);
+> +free_index:
+> +	free_percpu(vi->vq_index);
+>  free_stats:
+>  	free_percpu(vi->stats);
+>  free:
+> @@ -1554,6 +1589,7 @@ static void virtnet_remove(struct virtio_device *vdev)
+>  
+>  	flush_work(&vi->config_work);
+>  
+> +	free_percpu(vi->vq_index);
+>  	free_percpu(vi->stats);
+>  	free_netdev(vi->dev);
+>  }
+> -- 
+> 1.8.1
