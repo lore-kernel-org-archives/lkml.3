@@ -1,85 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004Ab3AXIPH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 03:15:07 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:40230 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777Ab3AXIPC (ORCPT
+	id S1752415Ab3AXI3x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 03:29:53 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:36669 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab3AXI3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 03:15:02 -0500
-Message-ID: <5100ED7A.303@linux.vnet.ibm.com>
-Date: Thu, 24 Jan 2013 16:14:50 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 24 Jan 2013 03:29:47 -0500
+Message-ID: <5100F060.7050908@linux.vnet.ibm.com>
+Date: Thu, 24 Jan 2013 13:57:12 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
-        mingo@kernel.org, a.p.zijlstra@chello.nl
-Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
-References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com> <50FD08E1.8000302@linux.vnet.ibm.com> <1358761496.4994.118.camel@marge.simpson.net> <50FE0ADC.6060701@linux.vnet.ibm.com> <1358841795.5782.255.camel@marge.simpson.net> <50FE5433.1070801@linux.vnet.ibm.com> <1358865692.5782.420.camel@marge.simpson.net> <50FF4EA0.1070000@linux.vnet.ibm.com> <1358915494.5752.46.camel@marge.simpson.net> <50FF7086.4020509@linux.vnet.ibm.com> <1358922520.5752.91.camel@marge.simpson.net> <50FF8CD8.4060105@linux.vnet.ibm.com>	 <1358929257.5752.109.camel@marge.simp! son.net>	 <50FF9F92.60202@linux.vnet.ibm.com> <1358930968.5752.123.camel@marge.simpson.net> <50FFA695.6010407@linux.vnet.ibm.com> <1358932694.5752.126.camel@marge.simpson.net> <1358933555.5752.132.camel@marge.simpson.net> <5100CE1F.7080704@linux.vnet.ibm.com> <1359010272.5833.39.camel@marge.simpson.net> <5100DF95.3020909@linux.vnet.ibm.com> <1359013623.5833.52.camel@marge.simpson.net>
-In-Reply-To: <1359013623.5833.52.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Jones <drjones@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi.kivity@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [PATCH V3 RESEND RFC 0/2] kvm: Improving undercommit scenarios
+References: <20130122073854.24731.9426.sendpatchset@codeblue.in.ibm.com> <20130123135707.GA5817@hawk.usersys.redhat.com>
+In-Reply-To: <20130123135707.GA5817@hawk.usersys.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012408-5140-0000-0000-000002AB6AA1
+x-cbid: 13012408-5490-0000-0000-000002DE1F1B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 03:47 PM, Mike Galbraith wrote:
-> On Thu, 2013-01-24 at 15:15 +0800, Michael Wang wrote: 
->> On 01/24/2013 02:51 PM, Mike Galbraith wrote:
->>> On Thu, 2013-01-24 at 14:01 +0800, Michael Wang wrote:
->>>
->>>> I've enabled WAKE flag on my box like you did, but still can't see
->>>> regression, and I've just tested on a power server with 64 cpu, also
->>>> failed to reproduce the issue (not compared with virgin yet, but can't
->>>> see collapse).
->>>
->>> I'm not surprised.  I'm seeing enough inconsistent crap to come to the
->>> conclusion that stock scheduler knobs flat can't be used on a largish
->>> box, they're just too preempt-happy, leading to weird crap.
->>>
->>> My 2 missing nodes came back, and the very same kernel that highly
->>> repeatably collapsed with 2 nodes does not with 4 nodes, and 2 nodes
->>> does not collapse with only preemption knob tweaking, and that's
->>> bullshit.  Virgin shows instability in the mid-range, make a tiny tweak
->>> that should have little if any effect there, and that instability
->>> vanishes entirely.  Test runs are not consistent enough boot to boot etc
->>> etc.  Either stock knobs suck on NUMA boxen, or this box is possessed.
+On 01/23/2013 07:27 PM, Andrew Jones wrote:
+> On Tue, Jan 22, 2013 at 01:08:54PM +0530, Raghavendra K T wrote:
+>>   In some special scenarios like #vcpu <= #pcpu, PLE handler may
+>> prove very costly, because there is no need to iterate over vcpus
+>> and do unsuccessful yield_to burning CPU.
 >>
->> Mike, I wonder the reason why change back to the old way make collapse
->> away may not because there are logical error in new balance path, it's
->> just changed the cost of select_task_rq(), whatever it's more or less,
->> it's accidentally achieve the same effect as you tweak the knob, so
->> that's the reason why it looks like old is better than new.
-> 
-> That's what I'm saying, it's a useless crap side-effect of a preempt
-> happy kernel.  Results with these knobs are just not stable.  Results go
-> wildly unstable with 2 nodes vs 4 in this box, but can be stabilized in
-> all with preemption knob adjustment.. or phase of moon might make them
-> appear stable.. or not.
+>>   The first patch optimizes all the yield_to by bailing out when there
+>>   is no need to continue in yield_to (i.e., when there is only one task
+>>   in source and target rq).
+>>
+>>   Second patch uses that in PLE handler. Further when a yield_to fails
+>>   we do not immediately go out of PLE handler instead we try thrice
+>>   to have better statistical possibility of false return. Otherwise that
+>>   would affect moderate overcommit cases.
+>>
+>>   Result on 3.7.0-rc6 kernel shows around 140% improvement for ebizzy 1x and
+>>   around 51% for dbench 1x  with 32 core PLE machine with 32 vcpu guest.
+>>
+>>
+>> base = 3.7.0-rc6
+>> machine: 32 core mx3850 x5 PLE mc
+>>
+>> --+-----------+-----------+-----------+------------+-----------+
+>>                 ebizzy (rec/sec higher is beter)
+>> --+-----------+-----------+-----------+------------+-----------+
+>>      base        stdev       patched     stdev       %improve
+>> --+-----------+-----------+-----------+------------+-----------+
+>> 1x   2511.3000    21.5409    6051.8000   170.2592   140.98276
+>> 2x   2679.4000   332.4482    2692.3000   251.4005     0.48145
+>> 3x   2253.5000   266.4243    2192.1667   178.9753    -2.72169
+>> --+-----------+-----------+-----------+------------+-----------+
+>>
+>> --+-----------+-----------+-----------+------------+-----------+
+>>          dbench (throughput in MB/sec. higher is better)
+>> --+-----------+-----------+-----------+------------+-----------+
+>>      base        stdev       patched     stdev       %improve
+>> --+-----------+-----------+-----------+------------+-----------+
+>> 1x  6677.4080   638.5048    10098.0060   3449.7026     51.22643
+>> 2x  2012.6760    64.7642    2019.0440     62.6702       0.31639
+>> 3x  1302.0783    40.8336    1292.7517     27.0515      -0.71629
+>> --+-----------+-----------+-----------+------------+-----------+
+>>
+>> Here is the refernce of no ple result.
+>>   ebizzy-1x_nople 7592.6000 rec/sec
+>>   dbench_1x_nople 7853.6960 MB/sec
+>
+> I'm not sure how much we should trust ebizzy results,
 
-Yeah, it's time to stop blame the patch now, it's not the real killer on
-your box.
+Infact in my box ebizzy is giving very consistent result.
 
-Well, at least it's worth to be tortured on it, we found several points
-I missed, we are more familiar with the balance path, and we found some
-places we could do better, all these are because your kindly help, it's
-nice to work with you ;-)
+but even
+> so, the dbench results are stranger. The percent error is huge
+> (34%) and somehow we do much better for 1x overcommit with PLE
+> enabled then without (for the patched version). How does that
+> happen? How many guests are running in the 1x test?
 
-Now it's time to work on v3 I think, let's see what we could get this time.
+Yes, dbench 1x result has big variance. I was running 4 guests
+with 3 guests idle for 1x case.
 
-Regards,
-Michael Wang
+  And are the
+> throughput results the combined throughput of all of them? I
+> wonder if this jump in throughput is just the guests' perceived
+> throughput, but wrong due to bad virtual time keeping.  Can we
+> run a long-lasting benchmark and measure the elapsed time with
+> a clock external from the guests?
 
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Are you saying guest time keeping is not reliable and hence resulting
+in high variance.  dbench tests are 3 minute + 30sec warmup tests, and
+look very consistent in 2x,3x,4x cases..
+
+I am happy to go ahead and test with whatever you suggest.
+
+But in general I am seeing undercommit cases improve very well
+especially for large guests. Vinod had posted Aim7 benchmark results
+which had supported that for lower overcommits. However for near 1x
+cases he saw variations but definite improvements around 100-200%
+IIRC against base PLE.
 
