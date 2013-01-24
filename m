@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946024Ab3AXVag (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:30:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40316 "EHLO mail.kernel.org"
+	id S1161053Ab3AXVbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:31:13 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40272 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756988Ab3AXVOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:14:43 -0500
+	id S1756985Ab3AXVOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:14:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 37/46] module: fix missing module_mutex unlock
-Date: Thu, 24 Jan 2013 13:13:15 -0800
-Message-Id: <20130124211149.542636401@linuxfoundation.org>
+        Prarit Bhargava <prarit@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 36/46] module: put modules in list much earlier.
+Date: Thu, 24 Jan 2013 13:13:14 -0800
+Message-Id: <20130124211149.244643977@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
 References: <20130124211135.862755794@linuxfoundation.org>
@@ -27,40 +26,204 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-commit ee61abb3223e28a1a14a8429c0319755d20d3e40 upstream.
+commit 1fb9341ac34825aa40354e74d9a2c69df7d2c304 upstream.
 
-Commit 1fb9341ac348 ("module: put modules in list much earlier") moved
-some of the module initialization code around, and in the process
-changed the exit paths too.  But for the duplicate export symbol error
-case the change made the ddebug_cleanup path jump to after the module
-mutex unlock, even though it happens with the mutex held.
+Prarit's excellent bug report:
+> In recent Fedora releases (F17 & F18) some users have reported seeing
+> messages similar to
+>
+> [   15.478160] kvm: Could not allocate 304 bytes percpu data
+> [   15.478174] PERCPU: allocation failed, size=304 align=32, alloc from
+> reserved chunk failed
+>
+> during system boot.  In some cases, users have also reported seeing this
+> message along with a failed load of other modules.
+>
+> What is happening is systemd is loading an instance of the kvm module for
+> each cpu found (see commit e9bda3b).  When the module load occurs the kernel
+> currently allocates the modules percpu data area prior to checking to see
+> if the module is already loaded or is in the process of being loaded.  If
+> the module is already loaded, or finishes load, the module loading code
+> releases the current instance's module's percpu data.
 
-Rusty has some patches to split this function up into some helper
-functions, hopefully the mess of complex goto targets will go away
-eventually.
+Now we have a new state MODULE_STATE_UNFORMED, we can insert the
+module into the list (and thus guarantee its uniqueness) before we
+allocate the per-cpu region.
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Tested-by: Prarit Bhargava <prarit@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/module.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/module.c |   90 ++++++++++++++++++++++++++++++--------------------------
+ lib/bug.c       |    1 
+ 2 files changed, 50 insertions(+), 41 deletions(-)
 
 --- a/kernel/module.c
 +++ b/kernel/module.c
-@@ -3100,8 +3100,8 @@ again:
- 	/* module_bug_cleanup needs module_mutex protection */
+@@ -2958,7 +2958,7 @@ static bool finished_loading(const char
+ 	bool ret;
+ 
  	mutex_lock(&module_mutex);
- 	module_bug_cleanup(mod);
--	mutex_unlock(&module_mutex);
-  ddebug_cleanup:
+-	mod = find_module(name);
++	mod = find_module_all(name, true);
+ 	ret = !mod || mod->state == MODULE_STATE_LIVE
+ 		|| mod->state == MODULE_STATE_GOING;
+ 	mutex_unlock(&module_mutex);
+@@ -2991,6 +2991,32 @@ static struct module *load_module(void _
+ 		goto free_copy;
+ 	}
+ 
++	/*
++	 * We try to place it in the list now to make sure it's unique
++	 * before we dedicate too many resources.  In particular,
++	 * temporary percpu memory exhaustion.
++	 */
++	mod->state = MODULE_STATE_UNFORMED;
++again:
++	mutex_lock(&module_mutex);
++	if ((old = find_module_all(mod->name, true)) != NULL) {
++		if (old->state == MODULE_STATE_COMING
++		    || old->state == MODULE_STATE_UNFORMED) {
++			/* Wait in case it fails to load. */
++			mutex_unlock(&module_mutex);
++			err = wait_event_interruptible(module_wq,
++					       finished_loading(mod->name));
++			if (err)
++				goto free_module;
++			goto again;
++		}
++		err = -EEXIST;
++		mutex_unlock(&module_mutex);
++		goto free_module;
++	}
++	list_add_rcu(&mod->list, &modules);
 +	mutex_unlock(&module_mutex);
- 	dynamic_debug_remove(info.debug);
++
+ #ifdef CONFIG_MODULE_SIG
+ 	mod->sig_ok = info.sig_ok;
+ 	if (!mod->sig_ok)
+@@ -3000,7 +3026,7 @@ static struct module *load_module(void _
+ 	/* Now module is in final location, initialize linked lists, etc. */
+ 	err = module_unload_init(mod);
+ 	if (err)
+-		goto free_module;
++		goto unlink_mod;
+ 
+ 	/* Now we've got everything in the final locations, we can
+ 	 * find optional sections. */
+@@ -3035,54 +3061,33 @@ static struct module *load_module(void _
+ 		goto free_arch_cleanup;
+ 	}
+ 
+-	/* Mark state as coming so strong_try_module_get() ignores us. */
+-	mod->state = MODULE_STATE_COMING;
+-
+-	/* Now sew it into the lists so we can get lockdep and oops
+-	 * info during argument parsing.  No one should access us, since
+-	 * strong_try_module_get() will fail.
+-	 * lockdep/oops can run asynchronous, so use the RCU list insertion
+-	 * function to insert in a way safe to concurrent readers.
+-	 * The mutex protects against concurrent writers.
+-	 */
+-again:
+-	mutex_lock(&module_mutex);
+-	if ((old = find_module(mod->name)) != NULL) {
+-		if (old->state == MODULE_STATE_COMING) {
+-			/* Wait in case it fails to load. */
+-			mutex_unlock(&module_mutex);
+-			err = wait_event_interruptible(module_wq,
+-					       finished_loading(mod->name));
+-			if (err)
+-				goto free_arch_cleanup;
+-			goto again;
+-		}
+-		err = -EEXIST;
+-		goto unlock;
+-	}
+-
+-	/* This has to be done once we're sure module name is unique. */
+ 	dynamic_debug_setup(info.debug, info.num_debug);
+ 
+-	/* Find duplicate symbols */
++	mutex_lock(&module_mutex);
++	/* Find duplicate symbols (must be called under lock). */
+ 	err = verify_export_symbols(mod);
+ 	if (err < 0)
+-		goto ddebug;
++		goto ddebug_cleanup;
+ 
++	/* This relies on module_mutex for list integrity. */
+ 	module_bug_finalize(info.hdr, info.sechdrs, mod);
+-	list_add_rcu(&mod->list, &modules);
++
++	/* Mark state as coming so strong_try_module_get() ignores us,
++	 * but kallsyms etc. can see us. */
++	mod->state = MODULE_STATE_COMING;
++
+ 	mutex_unlock(&module_mutex);
+ 
+ 	/* Module is ready to execute: parsing args may do that. */
+ 	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp,
+ 			 -32768, 32767, &ddebug_dyndbg_module_param_cb);
+ 	if (err < 0)
+-		goto unlink;
++		goto bug_cleanup;
+ 
+ 	/* Link in to syfs. */
+ 	err = mod_sysfs_setup(mod, &info, mod->kp, mod->num_kp);
+ 	if (err < 0)
+-		goto unlink;
++		goto bug_cleanup;
+ 
+ 	/* Get rid of temporary copy. */
+ 	free_copy(&info);
+@@ -3091,16 +3096,13 @@ again:
+ 	trace_module_load(mod);
+ 	return mod;
+ 
+- unlink:
++ bug_cleanup:
++	/* module_bug_cleanup needs module_mutex protection */
+ 	mutex_lock(&module_mutex);
+-	/* Unlink carefully: kallsyms could be walking list. */
+-	list_del_rcu(&mod->list);
+ 	module_bug_cleanup(mod);
+-	wake_up_all(&module_wq);
+- ddebug:
+-	dynamic_debug_remove(info.debug);
+- unlock:
+ 	mutex_unlock(&module_mutex);
++ ddebug_cleanup:
++	dynamic_debug_remove(info.debug);
  	synchronize_sched();
  	kfree(mod->args);
+  free_arch_cleanup:
+@@ -3109,6 +3111,12 @@ again:
+ 	free_modinfo(mod);
+  free_unload:
+ 	module_unload_free(mod);
++ unlink_mod:
++	mutex_lock(&module_mutex);
++	/* Unlink carefully: kallsyms could be walking list. */
++	list_del_rcu(&mod->list);
++	wake_up_all(&module_wq);
++	mutex_unlock(&module_mutex);
+  free_module:
+ 	module_deallocate(mod, &info);
+  free_copy:
+--- a/lib/bug.c
++++ b/lib/bug.c
+@@ -55,6 +55,7 @@ static inline unsigned long bug_addr(con
+ }
+ 
+ #ifdef CONFIG_MODULES
++/* Updates are protected by module mutex */
+ static LIST_HEAD(module_bug_list);
+ 
+ static const struct bug_entry *module_find_bug(unsigned long bugaddr)
 
 
