@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab3AXJsF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 04:48:05 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:54942 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752869Ab3AXJr7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 04:47:59 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1753071Ab3AXJwk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 04:52:40 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:43346 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752731Ab3AXJwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 04:52:38 -0500
+Message-ID: <51010461.20604@imgtec.com>
+Date: Thu, 24 Jan 2013 09:52:33 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] vhost-net: fall back to vmalloc if high-order allocation fails
-Date: Thu, 24 Jan 2013 09:45:50 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B711E@saturn3.aculab.com>
-In-Reply-To: <87k3r31vbc.fsf@silenus.orebokech.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] vhost-net: fall back to vmalloc if high-order allocation fails
-Thread-Index: Ac35qo0ZiCxfFowiSim2BiKXxTNlLQAaS1xQ
-References: <87k3r31vbc.fsf@silenus.orebokech.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Romain Francoise" <romain@orebokech.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Cc: <kvm@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: Arnd Bergmann <arnd@arndb.de>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH v2 00/76] Synopsys ARC Linux kernel Port
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <201301181512.14441.arnd@arndb.de> <5100F6AD.5050001@synopsys.com>
+In-Reply-To: <5100F6AD.5050001@synopsys.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_01_24_09_52_34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	n = kmalloc(sizeof *n, GFP_KERNEL | __GFP_NOWARN);
-> +	if (!n)
-> +		n = vmalloc(sizeof *n);
+Hi Vineet,
 
-I'm slightly confused by this construct.
-I thought kmalloc(... GFP_KERNEL) would sleep waiting for
-memory (rather than return NULL).
+On 24/01/13 08:54, Vineet Gupta wrote:
+> (3) That branch will be ARC patches on top of Linus's 3.8 rc4. Actually for my
+> development, I'd also cherry picked a few patches from linux-next (soft and hard
+> dependencies from several different *next trees) - hard ones being
+> 
+> f13a366 CONFIG_GENERIC_SIGALTSTACK build breakage with asm-generic/syscalls.h [Al]
 
-I realise that (for multi-page sizes) that kmalloc() and
-vmalloc() both need to find a contiguous block of kernel
-virtual addresses - in different address ranges, and
-that vmalloc() then has to find physical memory pages
-(which will not be contiguous).
+FYI this one has now been merged into Linus' master.
 
-I think this means that kmalloc() is likely to be faster
-(if it doesn't have to sleep), but that vmalloc() is
-allocating from a much larger resource.
-
-This make me that that large allocations that are not
-temporary should probably be allocated with vmalloc().
-
-Is there a 'NO_SLEEP' flag to kmalloc()? is that all
-GFP_ATOMIC requests? If so you might try a non-sleeping
-kmalloc() with a vmalloc() if it fails.
-
-This all looks as though there should be a GFP_NONCONTIG
-flag (or similar) so that kmalloc() can make a decision itself.
-
-Of at least a wrapper - like the one for free().
-
-	David
-
-
+Cheers
+James
 
