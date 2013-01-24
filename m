@@ -1,110 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757145Ab3AXVY2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:24:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41148 "EHLO mail.kernel.org"
+	id S1422660Ab3AXVYk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:24:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40919 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757150Ab3AXVS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:18:59 -0500
+	id S932119Ab3AXVQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:16:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bart Westgeest <bart@elbrys.com>, Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 09/15] staging: usbip: changed function return type to void
-Date: Thu, 24 Jan 2013 13:18:33 -0800
-Message-Id: <20130124211727.217712287@linuxfoundation.org>
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Abdallah Chatila <abdallah.chatila@ericsson.com>
+Subject: [ 19/22] drm/i915: Implement WaDisableHiZPlanesWhenMSAAEnabled
+Date: Thu, 24 Jan 2013 13:15:40 -0800
+Message-Id: <20130124211510.921387461@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130124211723.489089115@linuxfoundation.org>
-References: <20130124211723.489089115@linuxfoundation.org>
+In-Reply-To: <20130124211504.701368763@linuxfoundation.org>
+References: <20130124211504.701368763@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bart Westgeest <bart@elbrys.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit ac2b41acfa3efe4650102067a99251587a806d70 upstream.
+commit 4283908ef7f11a72c3b80dd4cf026f1a86429f82 upstream.
 
-The function usbip_pad_iso never returns anything but 0 (success).
+Quoting from Bspec, 3D_CHICKEN1, bit 10
 
-Signed-off-by: Bart Westgeest <bart@elbrys.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+This bit needs to be set always to "1", Project: DevSNB "
+
+Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Abdallah Chatila <abdallah.chatila@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/usbip/usbip_common.c |   11 ++++-------
- drivers/staging/usbip/usbip_common.h |    2 +-
- drivers/staging/usbip/vhci_rx.c      |    3 +--
- 3 files changed, 6 insertions(+), 10 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h      |    3 +++
+ drivers/gpu/drm/i915/intel_display.c |    4 ++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/staging/usbip/usbip_common.c
-+++ b/drivers/staging/usbip/usbip_common.c
-@@ -761,26 +761,25 @@ EXPORT_SYMBOL_GPL(usbip_recv_iso);
-  * buffer and iso packets need to be stored and be in propeper endian in urb
-  * before calling this function
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -27,6 +27,8 @@
+ 
+ #define _PIPE(pipe, a, b) ((a) + (pipe)*((b)-(a)))
+ 
++#define _MASKED_BIT_ENABLE(a) (((a) << 16) | (a))
++
+ /*
+  * The Bridge device's PCI config space has information about the
+  * fb aperture size and the amount of pre-reserved memory.
+@@ -433,6 +435,7 @@
+  * the enables for writing to the corresponding low bit.
   */
--int usbip_pad_iso(struct usbip_device *ud, struct urb *urb)
-+void usbip_pad_iso(struct usbip_device *ud, struct urb *urb)
- {
- 	int np = urb->number_of_packets;
- 	int i;
--	int ret;
- 	int actualoffset = urb->actual_length;
+ #define _3D_CHICKEN	0x02084
++#define _3D_CHICKEN_HIZ_PLANE_DISABLE_MSAA_4X_SNB	(1 << 10)
+ #define _3D_CHICKEN2	0x0208c
+ /* Disables pipelining of read flushes past the SF-WIZ interface.
+  * Required on all Ironlake steppings according to the B-Spec, but the
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -8592,6 +8592,10 @@ static void gen6_init_clock_gating(struc
+ 		   I915_READ(ILK_DISPLAY_CHICKEN2) |
+ 		   ILK_ELPIN_409_SELECT);
  
- 	if (!usb_pipeisoc(urb->pipe))
--		return 0;
-+		return;
- 
- 	/* if no packets or length of data is 0, then nothing to unpack */
- 	if (np == 0 || urb->actual_length == 0)
--		return 0;
-+		return;
- 
- 	/*
- 	 * if actual_length is transfer_buffer_length then no padding is
- 	 * present.
- 	*/
- 	if (urb->actual_length == urb->transfer_buffer_length)
--		return 0;
-+		return;
- 
- 	/*
- 	 * loop over all packets from last to first (to prevent overwritting
-@@ -792,8 +791,6 @@ int usbip_pad_iso(struct usbip_device *u
- 			urb->transfer_buffer + actualoffset,
- 			urb->iso_frame_desc[i].actual_length);
- 	}
--
--	return ret;
- }
- EXPORT_SYMBOL_GPL(usbip_pad_iso);
- 
---- a/drivers/staging/usbip/usbip_common.h
-+++ b/drivers/staging/usbip/usbip_common.h
-@@ -327,7 +327,7 @@ int usbip_recv_xbuff(struct usbip_device
- /* some members of urb must be substituted before. */
- int usbip_recv_iso(struct usbip_device *ud, struct urb *urb);
- /* some members of urb must be substituted before. */
--int usbip_pad_iso(struct usbip_device *ud, struct urb *urb);
-+void usbip_pad_iso(struct usbip_device *ud, struct urb *urb);
- void *usbip_alloc_iso_desc_pdu(struct urb *urb, ssize_t *bufflen);
- 
- /* usbip_event.c */
---- a/drivers/staging/usbip/vhci_rx.c
-+++ b/drivers/staging/usbip/vhci_rx.c
-@@ -94,8 +94,7 @@ static void vhci_recv_ret_submit(struct
- 		return;
- 
- 	/* restore the padding in iso packets */
--	if (usbip_pad_iso(ud, urb) < 0)
--		return;
-+	usbip_pad_iso(ud, urb);
- 
- 	if (usbip_dbg_flag_vhci_rx)
- 		usbip_dump_urb(urb);
++	/* WaDisableHiZPlanesWhenMSAAEnabled */
++	I915_WRITE(_3D_CHICKEN,
++		   _MASKED_BIT_ENABLE(_3D_CHICKEN_HIZ_PLANE_DISABLE_MSAA_4X_SNB));
++
+ 	I915_WRITE(WM3_LP_ILK, 0);
+ 	I915_WRITE(WM2_LP_ILK, 0);
+ 	I915_WRITE(WM1_LP_ILK, 0);
 
 
