@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab3AXLUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:20:36 -0500
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:47396 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754307Ab3AXLKp (ORCPT
+	id S1755192Ab3AXLUr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:20:47 -0500
+Received: from hermes.synopsys.com ([198.182.44.81]:34144 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753837Ab3AXLKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jan 2013 06:10:45 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v3 24/71] ARC: Page Table Management
-Date: Thu, 24 Jan 2013 16:35:57 +0530
-Message-ID: <1359025589-22277-14-git-send-email-vgupta@synopsys.com>
+CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Joern Rennecke <joern.rennecke@embecosm.com>
+Subject: [PATCH v3 13/71] ARC: String library
+Date: Thu, 24 Jan 2013 16:35:53 +0530
+Message-ID: <1359025589-22277-10-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
 References: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
@@ -23,665 +24,739 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- arch/arc/include/asm/page.h    |   92 +++++++++
- arch/arc/include/asm/pgalloc.h |  134 +++++++++++++
- arch/arc/include/asm/pgtable.h |  401 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 627 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/include/asm/pgalloc.h
- create mode 100644 arch/arc/include/asm/pgtable.h
+Hand optimised asm code for ARC700 pipeline.
+Originally written/optimized by Joern Rennecke
 
-diff --git a/arch/arc/include/asm/page.h b/arch/arc/include/asm/page.h
-index 7cd1224..d111d0c 100644
---- a/arch/arc/include/asm/page.h
-+++ b/arch/arc/include/asm/page.h
-@@ -35,6 +35,98 @@
- 
- #define PAGE_MASK	(~(PAGE_SIZE-1))
- 
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Joern Rennecke <joern.rennecke@embecosm.com>
+---
+ arch/arc/include/asm/string.h |   40 +++++++++++++
+ arch/arc/lib/memcmp.S         |  124 +++++++++++++++++++++++++++++++++++++++++
+ arch/arc/lib/memcpy-700.S     |   66 ++++++++++++++++++++++
+ arch/arc/lib/memset.S         |   59 +++++++++++++++++++
+ arch/arc/lib/strchr-700.S     |  123 ++++++++++++++++++++++++++++++++++++++++
+ arch/arc/lib/strcmp.S         |   96 +++++++++++++++++++++++++++++++
+ arch/arc/lib/strcpy-700.S     |   70 +++++++++++++++++++++++
+ arch/arc/lib/strlen.S         |   83 +++++++++++++++++++++++++++
+ 8 files changed, 661 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/include/asm/string.h
+ create mode 100644 arch/arc/lib/memcmp.S
+ create mode 100644 arch/arc/lib/memcpy-700.S
+ create mode 100644 arch/arc/lib/memset.S
+ create mode 100644 arch/arc/lib/strchr-700.S
+ create mode 100644 arch/arc/lib/strcmp.S
+ create mode 100644 arch/arc/lib/strcpy-700.S
+ create mode 100644 arch/arc/lib/strlen.S
+
+diff --git a/arch/arc/include/asm/string.h b/arch/arc/include/asm/string.h
+new file mode 100644
+index 0000000..87676c8
+--- /dev/null
++++ b/arch/arc/include/asm/string.h
+@@ -0,0 +1,40 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * vineetg: May 2011
++ *  -We had half-optimised memset/memcpy, got better versions of those
++ *  -Added memcmp, strchr, strcpy, strcmp, strlen
++ *
++ * Amit Bhor: Codito Technologies 2004
++ */
++
++#ifndef _ASM_ARC_STRING_H
++#define _ASM_ARC_STRING_H
++
++#include <linux/types.h>
++
 +#ifdef __KERNEL__
 +
-+#ifndef __ASSEMBLY__
++#define __HAVE_ARCH_MEMSET
++#define __HAVE_ARCH_MEMCPY
++#define __HAVE_ARCH_MEMCMP
++#define __HAVE_ARCH_STRCHR
++#define __HAVE_ARCH_STRCPY
++#define __HAVE_ARCH_STRCMP
++#define __HAVE_ARCH_STRLEN
 +
-+#define get_user_page(vaddr)		__get_free_page(GFP_KERNEL)
-+#define free_user_page(page, addr)	free_page(addr)
++extern void *memset(void *ptr, int, __kernel_size_t);
++extern void *memcpy(void *, const void *, __kernel_size_t);
++extern void memzero(void *ptr, __kernel_size_t n);
++extern int memcmp(const void *, const void *, __kernel_size_t);
++extern char *strchr(const char *s, int c);
++extern char *strcpy(char *dest, const char *src);
++extern int strcmp(const char *cs, const char *ct);
++extern __kernel_size_t strlen(const char *);
 +
-+/* TBD: for now don't worry about VIPT D$ aliasing */
-+#define clear_page(paddr)		memset((paddr), 0, PAGE_SIZE)
-+#define copy_page(to, from)		memcpy((to), (from), PAGE_SIZE)
-+
-+#define clear_user_page(addr, vaddr, pg)	clear_page(addr)
-+#define copy_user_page(vto, vfrom, vaddr, pg)	copy_page(vto, vfrom)
-+
-+#undef STRICT_MM_TYPECHECKS
-+
-+#ifdef STRICT_MM_TYPECHECKS
-+/*
-+ * These are used to make use of C type-checking..
-+ */
-+typedef struct {
-+	unsigned long pte;
-+} pte_t;
-+typedef struct {
-+	unsigned long pgd;
-+} pgd_t;
-+typedef struct {
-+	unsigned long pgprot;
-+} pgprot_t;
-+typedef unsigned long pgtable_t;
-+
-+#define pte_val(x)      ((x).pte)
-+#define pgd_val(x)      ((x).pgd)
-+#define pgprot_val(x)   ((x).pgprot)
-+
-+#define __pte(x)        ((pte_t) { (x) })
-+#define __pgd(x)        ((pgd_t) { (x) })
-+#define __pgprot(x)     ((pgprot_t) { (x) })
-+
-+#else /* !STRICT_MM_TYPECHECKS */
-+
-+typedef unsigned long pte_t;
-+typedef unsigned long pgd_t;
-+typedef unsigned long pgprot_t;
-+typedef unsigned long pgtable_t;
-+
-+#define pte_val(x)	(x)
-+#define pgd_val(x)	(x)
-+#define pgprot_val(x)	(x)
-+#define __pte(x)	(x)
-+#define __pgprot(x)	(x)
-+
-+#endif
-+
-+#define ARCH_PFN_OFFSET     (CONFIG_LINUX_LINK_BASE >> PAGE_SHIFT)
-+
-+#define pfn_valid(pfn)      (((pfn) - ARCH_PFN_OFFSET) < max_mapnr)
-+
-+/*
-+ * __pa, __va, virt_to_page (ALERT: deprecated, don't use them)
-+ *
-+ * These macros have historically been misnamed
-+ * virt here means link-address/program-address as embedded in object code.
-+ * So if kernel img is linked at 0x8000_0000 onwards, 0x8010_0000 will be
-+ * 128th page, and virt_to_page( ) will return the struct page corresp to it.
-+ * mem_map[ ] is an array of struct page for each page frame in the system
-+ *
-+ * Independent of where linux is linked at, link-addr = physical address
-+ * So the old macro  __pa = vaddr + PAGE_OFFSET - CONFIG_LINUX_LINK_BASE
-+ * would have been wrong in case kernel is not at 0x8zs
-+ */
-+#define __pa(vaddr)  ((unsigned long)vaddr)
-+#define __va(paddr)  ((void *)((unsigned long)(paddr)))
-+
-+#define virt_to_page(kaddr)	\
-+	(mem_map + ((__pa(kaddr) - CONFIG_LINUX_LINK_BASE) >> PAGE_SHIFT))
-+
-+#define virt_addr_valid(kaddr)  pfn_valid(__pa(kaddr) >> PAGE_SHIFT)
-+
-+/* Default Permissions for page, used in mmap.c */
-+#ifdef CONFIG_ARC_STACK_NONEXEC
-+#define VM_DATA_DEFAULT_FLAGS   (VM_READ | VM_WRITE | VM_MAYREAD | VM_MAYWRITE)
-+#else
-+#define VM_DATA_DEFAULT_FLAGS   (VM_READ | VM_WRITE | VM_EXEC | \
-+				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
-+#endif
-+
-+#define WANT_PAGE_VIRTUAL   1
-+
-+#include <asm-generic/memory_model.h>   /* page_to_pfn, pfn_to_page */
-+#include <asm-generic/getorder.h>
-+
- #endif /* !__ASSEMBLY__ */
- 
- #endif /* __KERNEL__ */
-diff --git a/arch/arc/include/asm/pgalloc.h b/arch/arc/include/asm/pgalloc.h
++#endif /* __KERNEL__ */
++#endif /* _ASM_ARC_STRING_H */
+diff --git a/arch/arc/lib/memcmp.S b/arch/arc/lib/memcmp.S
 new file mode 100644
-index 0000000..36a9f20
+index 0000000..bc813d5
 --- /dev/null
-+++ b/arch/arc/include/asm/pgalloc.h
-@@ -0,0 +1,134 @@
++++ b/arch/arc/lib/memcmp.S
+@@ -0,0 +1,124 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ *
-+ * vineetg: June 2011
-+ *  -"/proc/meminfo | grep PageTables" kept on increasing
-+ *   Recently added pgtable dtor was not getting called.
-+ *
-+ * vineetg: May 2011
-+ *  -Variable pg-sz means that Page Tables could be variable sized themselves
-+ *    So calculate it based on addr traversal split [pgd-bits:pte-bits:xxx]
-+ *  -Page Table size capped to max 1 to save memory - hence verified.
-+ *  -Since these deal with constants, gcc compile-time optimizes them.
-+ *
-+ * vineetg: Nov 2010
-+ *  -Added pgtable ctor/dtor used for pgtable mem accounting
-+ *
-+ * vineetg: April 2010
-+ *  -Switched pgtable_t from being struct page * to unsigned long
-+ *      =Needed so that Page Table allocator (pte_alloc_one) is not forced to
-+ *       to deal with struct page. Thay way in future we can make it allocate
-+ *       multiple PG Tbls in one Page Frame
-+ *      =sweet side effect is avoiding calls to ugly page_address( ) from the
-+ *       pg-tlb allocator sub-sys (pte_alloc_one, ptr_free, pmd_populate
-+ *
-+ *  Amit Bhor, Sameer Dhavale: Codito Technologies 2004
 + */
 +
-+#ifndef _ASM_ARC_PGALLOC_H
-+#define _ASM_ARC_PGALLOC_H
++#include <asm/linkage.h>
 +
-+#include <linux/mm.h>
-+#include <linux/log2.h>
++#ifdef __LITTLE_ENDIAN__
++#define WORD2 r2
++#define SHIFT r3
++#else /* BIG ENDIAN */
++#define WORD2 r3
++#define SHIFT r2
++#endif
 +
-+static inline void
-+pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd, pte_t *pte)
-+{
-+	pmd_set(pmd, pte);
-+}
++ARC_ENTRY memcmp
++	or	r12,r0,r1
++	asl_s	r12,r12,30
++	sub	r3,r2,1
++	brls	r2,r12,.Lbytewise
++	ld	r4,[r0,0]
++	ld	r5,[r1,0]
++	lsr.f	lp_count,r3,3
++	lpne	.Loop_end
++	ld_s	WORD2,[r0,4]
++	ld_s	r12,[r1,4]
++	brne	r4,r5,.Leven
++	ld.a	r4,[r0,8]
++	ld.a	r5,[r1,8]
++	brne	WORD2,r12,.Lodd
++.Loop_end:
++	asl_s	SHIFT,SHIFT,3
++	bhs_s	.Last_cmp
++	brne	r4,r5,.Leven
++	ld	r4,[r0,4]
++	ld	r5,[r1,4]
++#ifdef __LITTLE_ENDIAN__
++	nop_s
++	; one more load latency cycle
++.Last_cmp:
++	xor	r0,r4,r5
++	bset	r0,r0,SHIFT
++	sub_s	r1,r0,1
++	bic_s	r1,r1,r0
++	norm	r1,r1
++	b.d	.Leven_cmp
++	and	r1,r1,24
++.Leven:
++	xor	r0,r4,r5
++	sub_s	r1,r0,1
++	bic_s	r1,r1,r0
++	norm	r1,r1
++	; slow track insn
++	and	r1,r1,24
++.Leven_cmp:
++	asl	r2,r4,r1
++	asl	r12,r5,r1
++	lsr_s	r2,r2,1
++	lsr_s	r12,r12,1
++	j_s.d	[blink]
++	sub	r0,r2,r12
++	.balign	4
++.Lodd:
++	xor	r0,WORD2,r12
++	sub_s	r1,r0,1
++	bic_s	r1,r1,r0
++	norm	r1,r1
++	; slow track insn
++	and	r1,r1,24
++	asl_s	r2,r2,r1
++	asl_s	r12,r12,r1
++	lsr_s	r2,r2,1
++	lsr_s	r12,r12,1
++	j_s.d	[blink]
++	sub	r0,r2,r12
++#else /* BIG ENDIAN */
++.Last_cmp:
++	neg_s	SHIFT,SHIFT
++	lsr	r4,r4,SHIFT
++	lsr	r5,r5,SHIFT
++	; slow track insn
++.Leven:
++	sub.f	r0,r4,r5
++	mov.ne	r0,1
++	j_s.d	[blink]
++	bset.cs	r0,r0,31
++.Lodd:
++	cmp_s	WORD2,r12
 +
-+static inline void
-+pmd_populate(struct mm_struct *mm, pmd_t *pmd, pgtable_t ptep)
-+{
-+	pmd_set(pmd, (pte_t *) ptep);
-+}
-+
-+static inline int __get_order_pgd(void)
-+{
-+	return get_order(PTRS_PER_PGD * 4);
-+}
-+
-+static inline pgd_t *pgd_alloc(struct mm_struct *mm)
-+{
-+	int num, num2;
-+	pgd_t *ret = (pgd_t *) __get_free_pages(GFP_KERNEL, __get_order_pgd());
-+
-+	if (ret) {
-+		num = USER_PTRS_PER_PGD + USER_KERNEL_GUTTER / PGDIR_SIZE;
-+		memzero(ret, num * sizeof(pgd_t));
-+
-+		num2 = VMALLOC_SIZE / PGDIR_SIZE;
-+		memcpy(ret + num, swapper_pg_dir + num, num2 * sizeof(pgd_t));
-+
-+		memzero(ret + num + num2,
-+			       (PTRS_PER_PGD - num - num2) * sizeof(pgd_t));
-+
-+	}
-+	return ret;
-+}
-+
-+static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
-+{
-+	free_pages((unsigned long)pgd, __get_order_pgd());
-+}
-+
-+
-+/*
-+ * With software-only page-tables, addr-split for traversal is tweakable and
-+ * that directly governs how big tables would be at each level.
-+ * Further, the MMU page size is configurable.
-+ * Thus we need to programatically assert the size constraint
-+ * All of this is const math, allowing gcc to do constant folding/propagation.
-+ */
-+
-+static inline int __get_order_pte(void)
-+{
-+	return get_order(PTRS_PER_PTE * 4);
-+}
-+
-+static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
-+					unsigned long address)
-+{
-+	pte_t *pte;
-+
-+	pte = (pte_t *) __get_free_pages(GFP_KERNEL | __GFP_REPEAT | __GFP_ZERO,
-+					 __get_order_pte());
-+
-+	return pte;
-+}
-+
-+static inline pgtable_t
-+pte_alloc_one(struct mm_struct *mm, unsigned long address)
-+{
-+	pgtable_t pte_pg;
-+
-+	pte_pg = __get_free_pages(GFP_KERNEL | __GFP_REPEAT, __get_order_pte());
-+	if (pte_pg) {
-+		memzero((void *)pte_pg, PTRS_PER_PTE * 4);
-+		pgtable_page_ctor(virt_to_page(pte_pg));
-+	}
-+
-+	return pte_pg;
-+}
-+
-+static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
-+{
-+	free_pages((unsigned long)pte, __get_order_pte()); /* takes phy addr */
-+}
-+
-+static inline void pte_free(struct mm_struct *mm, pgtable_t ptep)
-+{
-+	pgtable_page_dtor(virt_to_page(ptep));
-+	free_pages(ptep, __get_order_pte());
-+}
-+
-+#define __pte_free_tlb(tlb, pte, addr)  pte_free((tlb)->mm, pte)
-+
-+#define check_pgt_cache()   do { } while (0)
-+#define pmd_pgtable(pmd) pmd_page_vaddr(pmd)
-+
-+#endif /* _ASM_ARC_PGALLOC_H */
-diff --git a/arch/arc/include/asm/pgtable.h b/arch/arc/include/asm/pgtable.h
++	mov_s	r0,1
++	j_s.d	[blink]
++	bset.cs	r0,r0,31
++#endif /* ENDIAN */
++	.balign	4
++.Lbytewise:
++	breq	r2,0,.Lnil
++	ldb	r4,[r0,0]
++	ldb	r5,[r1,0]
++	lsr.f	lp_count,r3
++	lpne	.Lbyte_end
++	ldb_s	r3,[r0,1]
++	ldb	r12,[r1,1]
++	brne	r4,r5,.Lbyte_even
++	ldb.a	r4,[r0,2]
++	ldb.a	r5,[r1,2]
++	brne	r3,r12,.Lbyte_odd
++.Lbyte_end:
++	bcc	.Lbyte_even
++	brne	r4,r5,.Lbyte_even
++	ldb_s	r3,[r0,1]
++	ldb_s	r12,[r1,1]
++.Lbyte_odd:
++	j_s.d	[blink]
++	sub	r0,r3,r12
++.Lbyte_even:
++	j_s.d	[blink]
++	sub	r0,r4,r5
++.Lnil:
++	j_s.d	[blink]
++	mov	r0,0
++ARC_EXIT memcmp
+diff --git a/arch/arc/lib/memcpy-700.S b/arch/arc/lib/memcpy-700.S
 new file mode 100644
-index 0000000..dcb07015
+index 0000000..b64cc10
 --- /dev/null
-+++ b/arch/arc/include/asm/pgtable.h
-@@ -0,0 +1,401 @@
++++ b/arch/arc/lib/memcpy-700.S
+@@ -0,0 +1,66 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ *
-+ * vineetg: May 2011
-+ *  -Folded PAGE_PRESENT (used by VM) and PAGE_VALID (used by MMU) into 1.
-+ *     They are semantically the same although in different contexts
-+ *     VALID marks a TLB entry exists and it will only happen if PRESENT
-+ *  - Utilise some unused free bits to confine PTE flags to 12 bits
-+ *     This is a must for 4k pg-sz
-+ *
-+ * vineetg: Mar 2011 - changes to accomodate MMU TLB Page Descriptor mods
-+ *  -TLB Locking never really existed, except for initial specs
-+ *  -SILENT_xxx not needed for our port
-+ *  -Per my request, MMU V3 changes the layout of some of the bits
-+ *     to avoid a few shifts in TLB Miss handlers.
-+ *
-+ * vineetg: April 2010
-+ *  -PGD entry no longer contains any flags. If empty it is 0, otherwise has
-+ *   Pg-Tbl ptr. Thus pmd_present(), pmd_valid(), pmd_set( ) become simpler
-+ *
-+ * vineetg: April 2010
-+ *  -Switched form 8:11:13 split for page table lookup to 11:8:13
-+ *  -this speeds up page table allocation itself as we now have to memset 1K
-+ *    instead of 8k per page table.
-+ * -TODO: Right now page table alloc is 8K and rest 7K is unused
-+ *    need to optimise it
-+ *
-+ * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
 + */
 +
-+#ifndef _ASM_ARC_PGTABLE_H
-+#define _ASM_ARC_PGTABLE_H
++#include <asm/linkage.h>
 +
-+#include <asm/page.h>
-+#include <asm/mmu.h>
-+#include <asm-generic/pgtable-nopmd.h>
++ARC_ENTRY memcpy
++	or	r3,r0,r1
++	asl_s	r3,r3,30
++	mov_s	r5,r0
++	brls.d	r2,r3,.Lcopy_bytewise
++	sub.f	r3,r2,1
++	ld_s	r12,[r1,0]
++	asr.f	lp_count,r3,3
++	bbit0.d	r3,2,.Lnox4
++	bmsk_s	r2,r2,1
++	st.ab	r12,[r5,4]
++	ld.a	r12,[r1,4]
++.Lnox4:
++	lppnz	.Lendloop
++	ld_s	r3,[r1,4]
++	st.ab	r12,[r5,4]
++	ld.a	r12,[r1,8]
++	st.ab	r3,[r5,4]
++.Lendloop:
++	breq	r2,0,.Last_store
++	ld	r3,[r5,0]
++#ifdef __LITTLE_ENDIAN__
++	add3	r2,-1,r2
++	; uses long immediate
++	xor_s	r12,r12,r3
++	bmsk	r12,r12,r2
++    xor_s	r12,r12,r3
++#else /* BIG ENDIAN */
++	sub3	r2,31,r2
++	; uses long immediate
++        xor_s	r3,r3,r12
++        bmsk	r3,r3,r2
++        xor_s	r12,r12,r3
++#endif /* ENDIAN */
++.Last_store:
++	j_s.d	[blink]
++	st	r12,[r5,0]
 +
-+/**************************************************************************
-+ * Page Table Flags
++	.balign	4
++.Lcopy_bytewise:
++	jcs	[blink]
++	ldb_s	r12,[r1,0]
++	lsr.f	lp_count,r3
++	bhs_s	.Lnox1
++	stb.ab	r12,[r5,1]
++	ldb.a	r12,[r1,1]
++.Lnox1:
++	lppnz	.Lendbloop
++	ldb_s	r3,[r1,1]
++	stb.ab	r12,[r5,1]
++	ldb.a	r12,[r1,2]
++	stb.ab	r3,[r5,1]
++.Lendbloop:
++	j_s.d	[blink]
++	stb	r12,[r5,0]
++ARC_EXIT memcpy
+diff --git a/arch/arc/lib/memset.S b/arch/arc/lib/memset.S
+new file mode 100644
+index 0000000..9b2d88d
+--- /dev/null
++++ b/arch/arc/lib/memset.S
+@@ -0,0 +1,59 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
-+ * ARC700 MMU only deals with softare managed TLB entries.
-+ * Page Tables are purely for Linux VM's consumption and the bits below are
-+ * suited to that (uniqueness). Hence some are not implemented in the TLB and
-+ * some have different value in TLB.
-+ * e.g. MMU v2: K_READ bit is 8 and so is GLOBAL (possible becoz they live in
-+ *      seperate PD0 and PD1, which combined forms a translation entry)
-+ *      while for PTE perspective, they are 8 and 9 respectively
-+ * with MMU v3: Most bits (except SHARED) represent the exact hardware pos
-+ *      (saves some bit shift ops in TLB Miss hdlrs)
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
 +
-+#if (CONFIG_ARC_MMU_VER <= 2)
++#include <asm/linkage.h>
 +
-+#define _PAGE_ACCESSED      (1<<1)	/* Page is accessed (S) */
-+#define _PAGE_CACHEABLE     (1<<2)	/* Page is cached (H) */
-+#define _PAGE_EXECUTE       (1<<3)	/* Page has user execute perm (H) */
-+#define _PAGE_WRITE         (1<<4)	/* Page has user write perm (H) */
-+#define _PAGE_READ          (1<<5)	/* Page has user read perm (H) */
-+#define _PAGE_K_EXECUTE     (1<<6)	/* Page has kernel execute perm (H) */
-+#define _PAGE_K_WRITE       (1<<7)	/* Page has kernel write perm (H) */
-+#define _PAGE_K_READ        (1<<8)	/* Page has kernel perm (H) */
-+#define _PAGE_GLOBAL        (1<<9)	/* Page is global (H) */
-+#define _PAGE_MODIFIED      (1<<10)	/* Page modified (dirty) (S) */
-+#define _PAGE_FILE          (1<<10)	/* page cache/ swap (S) */
-+#define _PAGE_PRESENT       (1<<11)	/* TLB entry is valid (H) */
++#define SMALL	7 /* Must be at least 6 to deal with alignment/loop issues.  */
 +
++ARC_ENTRY memset
++	mov_s	r4,r0
++	or	r12,r0,r2
++	bmsk.f	r12,r12,1
++	extb_s	r1,r1
++	asl	r3,r1,8
++	beq.d	.Laligned
++	or_s	r1,r1,r3
++	brls	r2,SMALL,.Ltiny
++	add	r3,r2,r0
++	stb	r1,[r3,-1]
++	bclr_s	r3,r3,0
++	stw	r1,[r3,-2]
++	bmsk.f	r12,r0,1
++	add_s	r2,r2,r12
++	sub.ne	r2,r2,4
++	stb.ab	r1,[r4,1]
++	and	r4,r4,-2
++	stw.ab	r1,[r4,2]
++	and	r4,r4,-4
++.Laligned:	; This code address should be aligned for speed.
++	asl	r3,r1,16
++	lsr.f	lp_count,r2,2
++	or_s	r1,r1,r3
++	lpne	.Loop_end
++	st.ab	r1,[r4,4]
++.Loop_end:
++	j_s	[blink]
++
++	.balign	4
++.Ltiny:
++	mov.f	lp_count,r2
++	lpne	.Ltiny_end
++	stb.ab	r1,[r4,1]
++.Ltiny_end:
++	j_s	[blink]
++ARC_EXIT memset
++
++; memzero: @r0 = mem, @r1 = size_t
++; memset:  @r0 = mem, @r1 = char, @r2 = size_t
++
++ARC_ENTRY memzero
++    ; adjust bzero args to memset args
++    mov r2, r1
++    mov r1, 0
++    b  memset    ;tail call so need to tinker with blink
++ARC_EXIT memzero
+diff --git a/arch/arc/lib/strchr-700.S b/arch/arc/lib/strchr-700.S
+new file mode 100644
+index 0000000..99c1047
+--- /dev/null
++++ b/arch/arc/lib/strchr-700.S
+@@ -0,0 +1,123 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/* ARC700 has a relatively long pipeline and branch prediction, so we want
++   to avoid branches that are hard to predict.  On the other hand, the
++   presence of the norm instruction makes it easier to operate on whole
++   words branch-free.  */
++
++#include <asm/linkage.h>
++
++ARC_ENTRY strchr
++	extb_s	r1,r1
++	asl	r5,r1,8
++	bmsk	r2,r0,1
++	or	r5,r5,r1
++	mov_s	r3,0x01010101
++	breq.d	r2,r0,.Laligned
++	asl	r4,r5,16
++	sub_s	r0,r0,r2
++	asl	r7,r2,3
++	ld_s	r2,[r0]
++#ifdef __LITTLE_ENDIAN__
++	asl	r7,r3,r7
 +#else
-+
-+/* PD1 */
-+#define _PAGE_CACHEABLE     (1<<0)	/* Page is cached (H) */
-+#define _PAGE_EXECUTE       (1<<1)	/* Page has user execute perm (H) */
-+#define _PAGE_WRITE         (1<<2)	/* Page has user write perm (H) */
-+#define _PAGE_READ          (1<<3)	/* Page has user read perm (H) */
-+#define _PAGE_K_EXECUTE     (1<<4)	/* Page has kernel execute perm (H) */
-+#define _PAGE_K_WRITE       (1<<5)	/* Page has kernel write perm (H) */
-+#define _PAGE_K_READ        (1<<6)	/* Page has kernel perm (H) */
-+#define _PAGE_ACCESSED      (1<<7)	/* Page is accessed (S) */
-+
-+/* PD0 */
-+#define _PAGE_GLOBAL        (1<<8)	/* Page is global (H) */
-+#define _PAGE_PRESENT       (1<<9)	/* TLB entry is valid (H) */
-+#define _PAGE_SHARED_CODE   (1<<10)	/* Shared Code page with cmn vaddr
-+					   usable for shared TLB entries (H) */
-+
-+#define _PAGE_MODIFIED      (1<<11)	/* Page modified (dirty) (S) */
-+#define _PAGE_FILE          (1<<12)	/* page cache/ swap (S) */
-+
-+#define _PAGE_SHARED_CODE_H (1<<31)	/* Hardware counterpart of above */
++	lsr	r7,r3,r7
 +#endif
++	or	r5,r5,r4
++	ror	r4,r3
++	sub	r12,r2,r7
++	bic_s	r12,r12,r2
++	and	r12,r12,r4
++	brne.d	r12,0,.Lfound0_ua
++	xor	r6,r2,r5
++	ld.a	r2,[r0,4]
++	sub	r12,r6,r7
++	bic	r12,r12,r6
++	and	r7,r12,r4
++	breq	r7,0,.Loop ; For speed, we want this branch to be unaligned.
++	b	.Lfound_char ; Likewise this one.
++; /* We require this code address to be unaligned for speed...  */
++.Laligned:
++	ld_s	r2,[r0]
++	or	r5,r5,r4
++	ror	r4,r3
++; /* ... so that this code address is aligned, for itself and ...  */
++.Loop:
++	sub	r12,r2,r3
++	bic_s	r12,r12,r2
++	and	r12,r12,r4
++	brne.d	r12,0,.Lfound0
++	xor	r6,r2,r5
++	ld.a	r2,[r0,4]
++	sub	r12,r6,r3
++	bic	r12,r12,r6
++	and	r7,r12,r4
++	breq	r7,0,.Loop /* ... so that this branch is unaligned.  */
++	; Found searched-for character.  r0 has already advanced to next word.
++#ifdef __LITTLE_ENDIAN__
++/* We only need the information about the first matching byte
++   (i.e. the least significant matching byte) to be exact,
++   hence there is no problem with carry effects.  */
++.Lfound_char:
++	sub	r3,r7,1
++	bic	r3,r3,r7
++	norm	r2,r3
++	sub_s	r0,r0,1
++	asr_s	r2,r2,3
++	j.d	[blink]
++	sub_s	r0,r0,r2
 +
-+/* Kernel allowed all permissions for all pages */
-+#define _K_PAGE_PERMS  (_PAGE_K_EXECUTE | _PAGE_K_WRITE | _PAGE_K_READ)
++	.balign	4
++.Lfound0_ua:
++	mov	r3,r7
++.Lfound0:
++	sub	r3,r6,r3
++	bic	r3,r3,r6
++	and	r2,r3,r4
++	or_s	r12,r12,r2
++	sub_s	r3,r12,1
++	bic_s	r3,r3,r12
++	norm	r3,r3
++	add_s	r0,r0,3
++	asr_s	r12,r3,3
++	asl.f	0,r2,r3
++	sub_s	r0,r0,r12
++	j_s.d	[blink]
++	mov.pl	r0,0
++#else /* BIG ENDIAN */
++.Lfound_char:
++	lsr	r7,r7,7
 +
-+#ifdef CONFIG_ARC_CACHE_PAGES
-+#define _PAGE_DEF_CACHEABLE _PAGE_CACHEABLE
++	bic	r2,r7,r6
++	norm	r2,r2
++	sub_s	r0,r0,4
++	asr_s	r2,r2,3
++	j.d	[blink]
++	add_s	r0,r0,r2
++
++.Lfound0_ua:
++	mov_s	r3,r7
++.Lfound0:
++	asl_s	r2,r2,7
++	or	r7,r6,r4
++	bic_s	r12,r12,r2
++	sub	r2,r7,r3
++	or	r2,r2,r6
++	bic	r12,r2,r12
++	bic.f	r3,r4,r12
++	norm	r3,r3
++
++	add.pl	r3,r3,1
++	asr_s	r12,r3,3
++	asl.f	0,r2,r3
++	add_s	r0,r0,r12
++	j_s.d	[blink]
++	mov.mi	r0,0
++#endif /* ENDIAN */
++ARC_EXIT strchr
+diff --git a/arch/arc/lib/strcmp.S b/arch/arc/lib/strcmp.S
+new file mode 100644
+index 0000000..5dc802b
+--- /dev/null
++++ b/arch/arc/lib/strcmp.S
+@@ -0,0 +1,96 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/* This is optimized primarily for the ARC700.
++   It would be possible to speed up the loops by one cycle / word
++   respective one cycle / byte by forcing double source 1 alignment, unrolling
++   by a factor of two, and speculatively loading the second word / byte of
++   source 1; however, that would increase the overhead for loop setup / finish,
++   and strcmp might often terminate early.  */
++
++#include <asm/linkage.h>
++
++ARC_ENTRY strcmp
++	or	r2,r0,r1
++	bmsk_s	r2,r2,1
++	brne	r2,0,.Lcharloop
++	mov_s	r12,0x01010101
++	ror	r5,r12
++.Lwordloop:
++	ld.ab	r2,[r0,4]
++	ld.ab	r3,[r1,4]
++	nop_s
++	sub	r4,r2,r12
++	bic	r4,r4,r2
++	and	r4,r4,r5
++	brne	r4,0,.Lfound0
++	breq	r2,r3,.Lwordloop
++#ifdef	__LITTLE_ENDIAN__
++	xor	r0,r2,r3	; mask for difference
++	sub_s	r1,r0,1
++	bic_s	r0,r0,r1	; mask for least significant difference bit
++	sub	r1,r5,r0
++	xor	r0,r5,r1	; mask for least significant difference byte
++	and_s	r2,r2,r0
++	and_s	r3,r3,r0
++#endif /* LITTLE ENDIAN */
++	cmp_s	r2,r3
++	mov_s	r0,1
++	j_s.d	[blink]
++	bset.lo	r0,r0,31
++
++	.balign	4
++#ifdef __LITTLE_ENDIAN__
++.Lfound0:
++	xor	r0,r2,r3	; mask for difference
++	or	r0,r0,r4	; or in zero indicator
++	sub_s	r1,r0,1
++	bic_s	r0,r0,r1	; mask for least significant difference bit
++	sub	r1,r5,r0
++	xor	r0,r5,r1	; mask for least significant difference byte
++	and_s	r2,r2,r0
++	and_s	r3,r3,r0
++	sub.f	r0,r2,r3
++	mov.hi	r0,1
++	j_s.d	[blink]
++	bset.lo	r0,r0,31
++#else /* BIG ENDIAN */
++	/* The zero-detection above can mis-detect 0x01 bytes as zeroes
++	   because of carry-propagateion from a lower significant zero byte.
++	   We can compensate for this by checking that bit0 is zero.
++	   This compensation is not necessary in the step where we
++	   get a low estimate for r2, because in any affected bytes
++	   we already have 0x00 or 0x01, which will remain unchanged
++	   when bit 7 is cleared.  */
++	.balign	4
++.Lfound0:
++	lsr	r0,r4,8
++	lsr_s	r1,r2
++	bic_s	r2,r2,r0	; get low estimate for r2 and get ...
++	bic_s	r0,r0,r1	; <this is the adjusted mask for zeros>
++	or_s	r3,r3,r0	; ... high estimate r3 so that r2 > r3 will ...
++	cmp_s	r3,r2		; ... be independent of trailing garbage
++	or_s	r2,r2,r0	; likewise for r3 > r2
++	bic_s	r3,r3,r0
++	rlc	r0,0		; r0 := r2 > r3 ? 1 : 0
++	cmp_s	r2,r3
++	j_s.d	[blink]
++	bset.lo	r0,r0,31
++#endif /* ENDIAN */
++
++	.balign	4
++.Lcharloop:
++	ldb.ab	r2,[r0,1]
++	ldb.ab	r3,[r1,1]
++	nop_s
++	breq	r2,0,.Lcmpend
++	breq	r2,r3,.Lcharloop
++.Lcmpend:
++	j_s.d	[blink]
++	sub	r0,r2,r3
++ARC_EXIT strcmp
+diff --git a/arch/arc/lib/strcpy-700.S b/arch/arc/lib/strcpy-700.S
+new file mode 100644
+index 0000000..b7ca4ae
+--- /dev/null
++++ b/arch/arc/lib/strcpy-700.S
+@@ -0,0 +1,70 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/* If dst and src are 4 byte aligned, copy 8 bytes at a time.
++   If the src is 4, but not 8 byte aligned, we first read 4 bytes to get
++   it 8 byte aligned.  Thus, we can do a little read-ahead, without
++   dereferencing a cache line that we should not touch.
++   Note that short and long instructions have been scheduled to avoid
++   branch stalls.
++   The beq_s to r3z could be made unaligned & long to avoid a stall
++   there, but the it is not likely to be taken often, and it
++   would also be likey to cost an unaligned mispredict at the next call.  */
++
++#include <asm/linkage.h>
++
++ARC_ENTRY strcpy
++	or	r2,r0,r1
++	bmsk_s	r2,r2,1
++	brne.d	r2,0,charloop
++	mov_s	r10,r0
++	ld_s	r3,[r1,0]
++	mov	r8,0x01010101
++	bbit0.d	r1,2,loop_start
++	ror	r12,r8
++	sub	r2,r3,r8
++	bic_s	r2,r2,r3
++	tst_s	r2,r12
++	bne	r3z
++	mov_s	r4,r3
++	.balign 4
++loop:
++	ld.a	r3,[r1,4]
++	st.ab	r4,[r10,4]
++loop_start:
++	ld.a	r4,[r1,4]
++	sub	r2,r3,r8
++	bic_s	r2,r2,r3
++	tst_s	r2,r12
++	bne_s	r3z
++	st.ab	r3,[r10,4]
++	sub	r2,r4,r8
++	bic	r2,r2,r4
++	tst	r2,r12
++	beq	loop
++	mov_s	r3,r4
++#ifdef __LITTLE_ENDIAN__
++r3z:	bmsk.f	r1,r3,7
++	lsr_s	r3,r3,8
 +#else
-+#define _PAGE_DEF_CACHEABLE (0)
++r3z:	lsr.f	r1,r3,24
++	asl_s	r3,r3,8
 +#endif
++	bne.d	r3z
++	stb.ab	r1,[r10,1]
++	j_s	[blink]
 +
-+/* Helper for every "user" page
-+ * -kernel can R/W/X
-+ * -by default cached, unless config otherwise
-+ * -present in memory
-+ */
-+#define ___DEF (_PAGE_PRESENT | _K_PAGE_PERMS | _PAGE_DEF_CACHEABLE)
++	.balign	4
++charloop:
++	ldb.ab	r3,[r1,1]
 +
-+/* Set of bits not changed in pte_modify */
-+#define _PAGE_CHG_MASK	(PAGE_MASK | _PAGE_ACCESSED | _PAGE_MODIFIED)
 +
-+/* More Abbrevaited helpers */
-+#define PAGE_U_NONE     __pgprot(___DEF)
-+#define PAGE_U_R        __pgprot(___DEF | _PAGE_READ)
-+#define PAGE_U_W_R      __pgprot(___DEF | _PAGE_READ | _PAGE_WRITE)
-+#define PAGE_U_X_R      __pgprot(___DEF | _PAGE_READ | _PAGE_EXECUTE)
-+#define PAGE_U_X_W_R    __pgprot(___DEF | _PAGE_READ | _PAGE_WRITE | \
-+						       _PAGE_EXECUTE)
-+
-+#define PAGE_SHARED	PAGE_U_W_R
-+
-+/* While kernel runs out of unstrslated space, vmalloc/modules use a chunk of
-+ * kernel vaddr space - visible in all addr spaces, but kernel mode only
-+ * Thus Global, all-kernel-access, no-user-access, cached
-+ */
-+#define PAGE_KERNEL          __pgprot(___DEF | _PAGE_GLOBAL)
-+
-+/* ioremap */
-+#define PAGE_KERNEL_NO_CACHE __pgprot(_PAGE_PRESENT | _K_PAGE_PERMS | \
-+						     _PAGE_GLOBAL)
-+
-+/**************************************************************************
-+ * Mapping of vm_flags (Generic VM) to PTE flags (arch specific)
-+ *
-+ * Certain cases have 1:1 mapping
-+ *  e.g. __P101 means VM_READ, VM_EXEC and !VM_SHARED
-+ *       which directly corresponds to  PAGE_U_X_R
-+ *
-+ * Other rules which cause the divergence from 1:1 mapping
-+ *
-+ *  1. Although ARC700 can do exclusive execute/write protection (meaning R
-+ *     can be tracked independet of X/W unlike some other CPUs), still to
-+ *     keep things consistent with other archs:
-+ *      -Write implies Read:   W => R
-+ *      -Execute implies Read: X => R
-+ *
-+ *  2. Pvt Writable doesn't have Write Enabled initially: Pvt-W => !W
-+ *     This is to enable COW mechanism
-+ */
-+	/* xwr */
-+#define __P000  PAGE_U_NONE
-+#define __P001  PAGE_U_R
-+#define __P010  PAGE_U_R	/* Pvt-W => !W */
-+#define __P011  PAGE_U_R	/* Pvt-W => !W */
-+#define __P100  PAGE_U_X_R	/* X => R */
-+#define __P101  PAGE_U_X_R
-+#define __P110  PAGE_U_X_R	/* Pvt-W => !W and X => R */
-+#define __P111  PAGE_U_X_R	/* Pvt-W => !W */
-+
-+#define __S000  PAGE_U_NONE
-+#define __S001  PAGE_U_R
-+#define __S010  PAGE_U_W_R	/* W => R */
-+#define __S011  PAGE_U_W_R
-+#define __S100  PAGE_U_X_R	/* X => R */
-+#define __S101  PAGE_U_X_R
-+#define __S110  PAGE_U_X_W_R	/* X => R */
-+#define __S111  PAGE_U_X_W_R
-+
-+/****************************************************************
-+ * Page Table Lookup split
-+ *
-+ * We implement 2 tier paging and since this is all software, we are free
-+ * to customize the span of a PGD / PTE entry to suit us
-+ *
-+ *			32 bit virtual address
-+ * -------------------------------------------------------
-+ * | BITS_FOR_PGD    |  BITS_FOR_PTE    |  BITS_IN_PAGE  |
-+ * -------------------------------------------------------
-+ *       |                  |                |
-+ *       |                  |                --> off in page frame
-+ *       |		    |
-+ *       |                  ---> index into Page Table
-+ *       |
-+ *       ----> index into Page Directory
-+ */
-+
-+#define BITS_IN_PAGE	PAGE_SHIFT
-+
-+/* Optimal Sizing of Pg Tbl - based on MMU page size */
-+#if defined(CONFIG_ARC_PAGE_SIZE_8K)
-+#define BITS_FOR_PTE	8
-+#elif defined(CONFIG_ARC_PAGE_SIZE_16K)
-+#define BITS_FOR_PTE	8
-+#elif defined(CONFIG_ARC_PAGE_SIZE_4K)
-+#define BITS_FOR_PTE	9
-+#endif
-+
-+#define BITS_FOR_PGD	(32 - BITS_FOR_PTE - BITS_IN_PAGE)
-+
-+#define PGDIR_SHIFT	(BITS_FOR_PTE + BITS_IN_PAGE)
-+#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)	/* vaddr span, not PDG sz */
-+#define PGDIR_MASK	(~(PGDIR_SIZE-1))
-+
-+#ifdef __ASSEMBLY__
-+#define	PTRS_PER_PTE	(1 << BITS_FOR_PTE)
-+#define	PTRS_PER_PGD	(1 << BITS_FOR_PGD)
-+#else
-+#define	PTRS_PER_PTE	(1UL << BITS_FOR_PTE)
-+#define	PTRS_PER_PGD	(1UL << BITS_FOR_PGD)
-+#endif
++	brne.d	r3,0,charloop
++	stb.ab	r3,[r10,1]
++	j	[blink]
++ARC_EXIT strcpy
+diff --git a/arch/arc/lib/strlen.S b/arch/arc/lib/strlen.S
+new file mode 100644
+index 0000000..39759e0
+--- /dev/null
++++ b/arch/arc/lib/strlen.S
+@@ -0,0 +1,83 @@
 +/*
-+ * Number of entries a user land program use.
-+ * TASK_SIZE is the maximum vaddr that can be used by a userland program.
-+ */
-+#define	USER_PTRS_PER_PGD	(TASK_SIZE / PGDIR_SIZE)
-+
-+/*
-+ * No special requirements for lowest virtual address we permit any user space
-+ * mapping to be mapped at.
-+ */
-+#define FIRST_USER_ADDRESS      0
-+
-+
-+/****************************************************************
-+ * Bucket load of VM Helpers
-+ */
-+
-+#ifndef __ASSEMBLY__
-+
-+#define pte_ERROR(e) \
-+	pr_crit("%s:%d: bad pte %08lx.\n", __FILE__, __LINE__, pte_val(e))
-+#define pgd_ERROR(e) \
-+	pr_crit("%s:%d: bad pgd %08lx.\n", __FILE__, __LINE__, pgd_val(e))
-+
-+/* the zero page used for uninitialized and anonymous pages */
-+extern char empty_zero_page[PAGE_SIZE];
-+#define ZERO_PAGE(vaddr)	(virt_to_page(empty_zero_page))
-+
-+#define pte_unmap(pte)		do { } while (0)
-+#define pte_unmap_nested(pte)		do { } while (0)
-+
-+#define set_pte(pteptr, pteval)	((*(pteptr)) = (pteval))
-+#define set_pmd(pmdptr, pmdval)	(*(pmdptr) = pmdval)
-+
-+/* find the page descriptor of the Page Tbl ref by PMD entry */
-+#define pmd_page(pmd)		virt_to_page(pmd_val(pmd) & PAGE_MASK)
-+
-+/* find the logical addr (phy for ARC) of the Page Tbl ref by PMD entry */
-+#define pmd_page_vaddr(pmd)	(pmd_val(pmd) & PAGE_MASK)
-+
-+/* In a 2 level sys, setup the PGD entry with PTE value */
-+static inline void pmd_set(pmd_t *pmdp, pte_t *ptep)
-+{
-+	pmd_val(*pmdp) = (unsigned long)ptep;
-+}
-+
-+#define pte_none(x)			(!pte_val(x))
-+#define pte_present(x)			(pte_val(x) & _PAGE_PRESENT)
-+#define pte_clear(mm, addr, ptep)	set_pte_at(mm, addr, ptep, __pte(0))
-+
-+#define pmd_none(x)			(!pmd_val(x))
-+#define	pmd_bad(x)			((pmd_val(x) & ~PAGE_MASK))
-+#define pmd_present(x)			(pmd_val(x))
-+#define pmd_clear(xp)			do { pmd_val(*(xp)) = 0; } while (0)
-+
-+#define pte_page(x) (mem_map + \
-+		(unsigned long)(((pte_val(x) - PAGE_OFFSET) >> PAGE_SHIFT)))
-+
-+#define mk_pte(page, pgprot)						\
-+({									\
-+	pte_t pte;							\
-+	pte_val(pte) = __pa(page_address(page)) + pgprot_val(pgprot);	\
-+	pte;								\
-+})
-+
-+/* TBD: Non linear mapping stuff */
-+static inline int pte_file(pte_t pte)
-+{
-+	return pte_val(pte) & _PAGE_FILE;
-+}
-+
-+#define PTE_FILE_MAX_BITS	30
-+#define pgoff_to_pte(x)         __pte(x)
-+#define pte_to_pgoff(x)		(pte_val(x) >> 2)
-+#define pte_pfn(pte)		(pte_val(pte) >> PAGE_SHIFT)
-+#define pfn_pte(pfn, prot)	(__pte(((pfn) << PAGE_SHIFT) | pgprot_val(prot)))
-+#define __pte_index(addr)	(((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1))
-+
-+/*
-+ * pte_offset gets a @ptr to PMD entry (PGD in our 2-tier paging system)
-+ * and returns ptr to PTE entry corresponding to @addr
-+ */
-+#define pte_offset(dir, addr) ((pte_t *)(pmd_page_vaddr(*dir)) +\
-+					 __pte_index(addr))
-+
-+/* No mapping of Page Tables in high mem etc, so following same as above */
-+#define pte_offset_kernel(dir, addr)		pte_offset(dir, addr)
-+#define pte_offset_map(dir, addr)		pte_offset(dir, addr)
-+
-+/* Zoo of pte_xxx function */
-+#define pte_read(pte)		(pte_val(pte) & _PAGE_READ)
-+#define pte_write(pte)		(pte_val(pte) & _PAGE_WRITE)
-+#define pte_dirty(pte)		(pte_val(pte) & _PAGE_MODIFIED)
-+#define pte_young(pte)		(pte_val(pte) & _PAGE_ACCESSED)
-+#define pte_special(pte)	(0)
-+
-+#define PTE_BIT_FUNC(fn, op) \
-+	static inline pte_t pte_##fn(pte_t pte) { pte_val(pte) op; return pte; }
-+
-+PTE_BIT_FUNC(wrprotect,	&= ~(_PAGE_WRITE));
-+PTE_BIT_FUNC(mkwrite,	|= (_PAGE_WRITE));
-+PTE_BIT_FUNC(mkclean,	&= ~(_PAGE_MODIFIED));
-+PTE_BIT_FUNC(mkdirty,	|= (_PAGE_MODIFIED));
-+PTE_BIT_FUNC(mkold,	&= ~(_PAGE_ACCESSED));
-+PTE_BIT_FUNC(mkyoung,	|= (_PAGE_ACCESSED));
-+PTE_BIT_FUNC(exprotect,	&= ~(_PAGE_EXECUTE));
-+PTE_BIT_FUNC(mkexec,	|= (_PAGE_EXECUTE));
-+
-+static inline pte_t pte_mkspecial(pte_t pte) { return pte; }
-+
-+static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
-+{
-+	return __pte((pte_val(pte) & _PAGE_CHG_MASK) | pgprot_val(newprot));
-+}
-+
-+/* Macro to mark a page protection as uncacheable */
-+#define pgprot_noncached(prot)	(__pgprot(pgprot_val(prot) & ~_PAGE_CACHEABLE))
-+
-+static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
-+			      pte_t *ptep, pte_t pteval)
-+{
-+	set_pte(ptep, pteval);
-+}
-+
-+/*
-+ * All kernel related VM pages are in init's mm.
-+ */
-+#define pgd_offset_k(address)	pgd_offset(&init_mm, address)
-+#define pgd_index(addr)		((addr) >> PGDIR_SHIFT)
-+#define pgd_offset(mm, addr)	(((mm)->pgd)+pgd_index(addr))
-+
-+/*
-+ * Macro to quickly access the PGD entry, utlising the fact that some
-+ * arch may cache the pointer to Page Directory of "current" task
-+ * in a MMU register
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
-+ * Thus task->mm->pgd (3 pointer dereferences, cache misses etc simply
-+ * becomes read a register
-+ *
-+ * ********CAUTION*******:
-+ * Kernel code might be dealing with some mm_struct of NON "current"
-+ * Thus use this macro only when you are certain that "current" is current
-+ * e.g. when dealing with signal frame setup code etc
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
-+#define pgd_offset_fast(mm, addr)	\
-+({					\
-+	pgd_t *pgd_base = (pgd_t *) read_aux_reg(ARC_REG_SCRATCH_DATA0);  \
-+	pgd_base + pgd_index(addr);	\
-+})
 +
-+extern void paging_init(void);
-+extern pgd_t swapper_pg_dir[] __aligned(PAGE_SIZE);
-+void update_mmu_cache(struct vm_area_struct *vma, unsigned long address,
-+		      pte_t *ptep);
++#include <asm/linkage.h>
 +
-+/* Encode swap {type,off} tuple into PTE
-+ * We reserve 13 bits for 5-bit @type, keeping bits 12-5 zero, ensuring that
-+ * both PAGE_FILE and PAGE_PRESENT are zero in a PTE holding swap "identifier"
-+ */
-+#define __swp_entry(type, off)	((swp_entry_t) { \
-+					((type) & 0x1f) | ((off) << 13) })
++ARC_ENTRY strlen
++	or	r3,r0,7
++	ld	r2,[r3,-7]
++	ld.a	r6,[r3,-3]
++	mov	r4,0x01010101
++	; uses long immediate
++#ifdef __LITTLE_ENDIAN__
++	asl_s	r1,r0,3
++	btst_s	r0,2
++	asl	r7,r4,r1
++	ror	r5,r4
++	sub	r1,r2,r7
++	bic_s	r1,r1,r2
++	mov.eq	r7,r4
++	sub	r12,r6,r7
++	bic	r12,r12,r6
++	or.eq	r12,r12,r1
++	and	r12,r12,r5
++	brne	r12,0,.Learly_end
++#else /* BIG ENDIAN */
++	ror	r5,r4
++	btst_s	r0,2
++	mov_s	r1,31
++	sub3	r7,r1,r0
++	sub	r1,r2,r4
++	bic_s	r1,r1,r2
++	bmsk	r1,r1,r7
++	sub	r12,r6,r4
++	bic	r12,r12,r6
++	bmsk.ne	r12,r12,r7
++	or.eq	r12,r12,r1
++	and	r12,r12,r5
++	brne	r12,0,.Learly_end
++#endif /* ENDIAN */
 +
-+/* Decode a PTE containing swap "identifier "into constituents */
-+#define __swp_type(pte_lookalike)	(((pte_lookalike).val) & 0x1f)
-+#define __swp_offset(pte_lookalike)	((pte_lookalike).val << 13)
-+
-+/* NOPs, to keep generic kernel happy */
-+#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
-+#define __swp_entry_to_pte(x)	((pte_t) { (x).val })
-+
-+#define kern_addr_valid(addr)	(1)
-+
-+/*
-+ * remap a physical page `pfn' of size `size' with page protection `prot'
-+ * into virtual address `from'
-+ */
-+#define io_remap_pfn_range(vma, from, pfn, size, prot) \
-+			remap_pfn_range(vma, from, pfn, size, prot)
-+
-+#include <asm-generic/pgtable.h>
-+
-+/*
-+ * No page table caches to initialise
-+ */
-+#define pgtable_cache_init()   do { } while (0)
-+
-+#endif /* __ASSEMBLY__ */
-+
-+#endif
++.Loop:
++	ld_s	r2,[r3,4]
++	ld.a	r6,[r3,8]
++	; stall for load result
++	sub	r1,r2,r4
++	bic_s	r1,r1,r2
++	sub	r12,r6,r4
++	bic	r12,r12,r6
++	or	r12,r12,r1
++	and	r12,r12,r5
++	breq r12,0,.Loop
++.Lend:
++	and.f	r1,r1,r5
++	sub.ne	r3,r3,4
++	mov.eq	r1,r12
++#ifdef __LITTLE_ENDIAN__
++	sub_s	r2,r1,1
++	bic_s	r2,r2,r1
++	norm	r1,r2
++	sub_s	r0,r0,3
++	lsr_s	r1,r1,3
++	sub	    r0,r3,r0
++	j_s.d	[blink]
++	sub	    r0,r0,r1
++#else /* BIG ENDIAN */
++	lsr_s	r1,r1,7
++	mov.eq	r2,r6
++	bic_s	r1,r1,r2
++	norm	r1,r1
++	sub	    r0,r3,r0
++	lsr_s	r1,r1,3
++	j_s.d	[blink]
++	add	    r0,r0,r1
++#endif /* ENDIAN */
++.Learly_end:
++	b.d	.Lend
++	sub_s.ne r1,r1,r1
++ARC_EXIT strlen
 -- 
 1.7.4.1
 
