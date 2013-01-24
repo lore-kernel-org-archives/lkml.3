@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab3AXRQj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 12:16:39 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:57563 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658Ab3AXRQg (ORCPT
+	id S1754199Ab3AXRRp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 12:17:45 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:52317 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab3AXRRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 12:16:36 -0500
+	Thu, 24 Jan 2013 12:17:43 -0500
+Date: Thu, 24 Jan 2013 09:17:40 -0800
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH 6/6] Drivers: hv: Execute shutdown in a thread context
+Message-ID: <20130124171740.GA5420@kroah.com>
+References: <1358991737-22675-1-git-send-email-kys@microsoft.com>
+ <1358991765-22715-1-git-send-email-kys@microsoft.com>
+ <1358991765-22715-6-git-send-email-kys@microsoft.com>
+ <alpine.LNX.2.00.1301241108590.31600@pobox.suse.cz>
+ <53da151ef8494d5084ef5aa089b9f102@SN2PR03MB061.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-In-Reply-To: <20130124055042.GE22654@blaptop>
-References: <1358848018-3679-1-git-send-email-ezequiel.garcia@free-electrons.com>
-	<20130123042714.GD2723@blaptop>
-	<CALF0-+V6D1Ka9SNyrgRAgTSGLUTp_9y4vYwauSx1qCfU-JOwjA@mail.gmail.com>
-	<20130124055042.GE22654@blaptop>
-Date: Thu, 24 Jan 2013 14:16:35 -0300
-Message-ID: <CALF0-+VRF=ZK7YH8AkrFM2T4QQ4xz8-MdceSHr4biALxZfGdzA@mail.gmail.com>
-Subject: Re: [RFC/PATCH] scripts/tracing: Add trace_analyze.py tool
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Tim Bird <tim.bird@am.sony.com>, Pekka Enberg <penberg@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53da151ef8494d5084ef5aa089b9f102@SN2PR03MB061.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 2:50 AM, Minchan Kim <minchan@kernel.org> wrote:
-> On Wed, Jan 23, 2013 at 06:37:56PM -0300, Ezequiel Garcia wrote:
->
->>
->> > 2. Does it support alloc_pages family?
->> >    kmem event trace already supports it. If it supports, maybe we can replace
->> >    CONFIG_PAGE_OWNER hack.
->> >
->>
->> Mmm.. no, it doesn't support alloc_pages and friends, for we found
->> no reason to do it.
->> However, it sounds like a nice idea, on a first thought.
->>
->> I'll review CONFIG_PAGE_OWNER patches and see if I can come up with something.
->
-> Thanks!
->
+On Thu, Jan 24, 2013 at 05:06:27PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Jiri Kosina [mailto:jkosina@suse.cz]
+> > Sent: Thursday, January 24, 2013 5:10 AM
+> > To: KY Srinivasan
+> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> > jasowang@redhat.com; davem@davemloft.net;
+> > James.Bottomley@HansenPartnership.com
+> > Subject: Re: [PATCH 6/6] Drivers: hv: Execute shutdown in a thread context
+> > 
+> > On Wed, 23 Jan 2013, K. Y. Srinivasan wrote:
+> > 
+> > > Execute the shutdown code in a thread context. With recent changes made to
+> > the
+> > > shutdown code, shutdown code cannot be invoked from an interrupt context.
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > ---
+> > >  drivers/hv/hv_util.c |   12 +++++++++++-
+> > >  1 files changed, 11 insertions(+), 1 deletions(-)
+> > >
+> > > diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+> > > index 8b7868a..aceb67f 100644
+> > > --- a/drivers/hv/hv_util.c
+> > > +++ b/drivers/hv/hv_util.c
+> > > @@ -49,6 +49,16 @@ static struct hv_util_service util_kvp = {
+> > >  	.util_deinit = hv_kvp_deinit,
+> > >  };
+> > >
+> > > +static void perform_shutdown(struct work_struct *dummy)
+> > > +{
+> > > +		orderly_poweroff(true);
+> > > +}
+> > 
+> > Is there any particular reason for this kind of crazy indentation?
+> I don't know how this extra tab crept through! Greg, if you want I can resend
+> this patch minus the extra tab. Let me know.
 
-I'm searching CONFIG_PAGE_OWNER patches, but I could only find this one
-for v2.6.13:
+I'll edit it by hand, but someone owes me a beer for it...  :)
 
-http://www.kernel.org/pub/linux/kernel/people/akpm/patches/2.6/2.6.13-rc3/2.6.13-rc3-mm1/broken-out/page-owner-tracking-leak-detector.patch
-
-Is there a more recent one?
-
--- 
-    Ezequiel
+greg k-h
