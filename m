@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab3AXDaj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:30:39 -0500
-Received: from mga03.intel.com ([143.182.124.21]:14248 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754590Ab3AXDaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:30:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,525,1355126400"; 
-   d="scan'208";a="247742606"
-From: Alex Shi <alex.shi@intel.com>
-To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de
-Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, alex.shi@intel.com
-Subject: [PATCH 3/4] sched: consider runnable load average in move_tasks
-Date: Thu, 24 Jan 2013 11:30:42 +0800
-Message-Id: <1358998243-23176-4-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1358998243-23176-1-git-send-email-alex.shi@intel.com>
-References: <1358998243-23176-1-git-send-email-alex.shi@intel.com>
+	id S1754728Ab3AXDas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:30:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44303 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614Ab3AXDaJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 22:30:09 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 40/74] radeon/kms: force rn50 chip to always report connected on analog output
+Date: Thu, 24 Jan 2013 01:26:52 -0200
+Message-Id: <1358998046-613-41-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Except using runnable load average in background, move_tasks is also
-the key functions in load balance. We need consider the runnable load
-average in it in order to the apple to apple load comparison.
+3.5.7.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
+------------------
+
+From: Jerome Glisse <jglisse@redhat.com>
+
+commit 51861d4eebc2ddc25c77084343d060fa79f6e291 upstream.
+
+Those rn50 chip are often connected to console remoting hw and load
+detection often fails with those. Just don't try to load detect and
+report connect.
+
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/sched/fair.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+ drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9148bcc..876a6a0 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4192,6 +4192,15 @@ static unsigned long task_h_load(struct task_struct *p);
+diff --git a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+index 8148cf8..e03f90e 100644
+--- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
++++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+@@ -618,6 +618,14 @@ static enum drm_connector_status radeon_legacy_primary_dac_detect(struct drm_enc
+ 	enum drm_connector_status found = connector_status_disconnected;
+ 	bool color = true;
  
- static const unsigned int sched_nr_migrate_break = 32;
- 
-+static unsigned long task_h_load_avg(struct task_struct *p)
-+{
-+	u32 period = p->se.avg.runnable_avg_period;
-+	if (!period)
-+		return 0;
++	/* just don't bother on RN50 those chip are often connected to remoting
++	 * console hw and often we get failure to load detect those. So to make
++	 * everyone happy report the encoder as always connected.
++	 */
++	if (ASIC_IS_RN50(rdev)) {
++		return connector_status_connected;
++	}
 +
-+	return task_h_load(p) * p->se.avg.runnable_avg_sum / period;
-+}
-+
- /*
-  * move_tasks tries to move up to imbalance weighted load from busiest to
-  * this_rq, as part of a balancing operation within domain "sd".
-@@ -4227,7 +4236,7 @@ static int move_tasks(struct lb_env *env)
- 		if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
- 			goto next;
- 
--		load = task_h_load(p);
-+		load = task_h_load_avg(p);
- 
- 		if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
- 			goto next;
+ 	/* save the regs we need */
+ 	vclk_ecp_cntl = RREG32_PLL(RADEON_VCLK_ECP_CNTL);
+ 	crtc_ext_cntl = RREG32(RADEON_CRTC_EXT_CNTL);
 -- 
-1.7.0.1
+1.7.9.5
 
