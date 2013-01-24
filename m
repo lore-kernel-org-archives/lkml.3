@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961Ab3AXVOg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:14:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40015 "EHLO mail.kernel.org"
+	id S1757003Ab3AXVOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:14:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39979 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030205Ab3AXVNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:13:53 -0500
+	id S932076Ab3AXVNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:13:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bian Yu <bianyu@kedacom.com>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 04/46] libata: ahci: Fix lack of command retry after a success error handler.
-Date: Thu, 24 Jan 2013 13:12:42 -0800
-Message-Id: <20130124211137.543244364@linuxfoundation.org>
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: [ 08/46] evm: checking if removexattr is not a NULL
+Date: Thu, 24 Jan 2013 13:12:46 -0800
+Message-Id: <20130124211138.750381407@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
 References: <20130124211135.862755794@linuxfoundation.org>
@@ -25,32 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bian Yu <bianyu@kedacom.com>
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 
-commit 1eaca39a84170b369fe61fb1da3c1e8606859e99 upstream.
+commit a67adb997419fb53540d4a4f79c6471c60bc69b6 upstream.
 
-It should be a mistake introduced by commit 8d899e70c1b3afff.
+The following lines of code produce a kernel oops.
 
-qc->flags can't be set AC_ERR_*
+fd = socket(PF_FILE, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0);
+fchmod(fd, 0666);
 
-Signed-off-by: Bian Yu <bianyu@kedacom.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+[  139.922364] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[  139.924982] IP: [<  (null)>]   (null)
+[  139.924982] *pde = 00000000
+[  139.924982] Oops: 0000 [#5] SMP
+[  139.924982] Modules linked in: fuse dm_crypt dm_mod i2c_piix4 serio_raw evdev binfmt_misc button
+[  139.924982] Pid: 3070, comm: acpid Tainted: G      D      3.8.0-rc2-kds+ #465 Bochs Bochs
+[  139.924982] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
+[  139.924982] EIP is at 0x0
+[  139.924982] EAX: cf5ef000 EBX: cf5ef000 ECX: c143d600 EDX: c15225f2
+[  139.924982] ESI: cf4d2a1c EDI: cf4d2a1c EBP: cc02df10 ESP: cc02dee4
+[  139.924982]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[  139.924982] CR0: 80050033 CR2: 00000000 CR3: 0c059000 CR4: 000006d0
+[  139.924982] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[  139.924982] DR6: ffff0ff0 DR7: 00000400
+[  139.924982] Process acpid (pid: 3070, ti=cc02c000 task=d7705340 task.ti=cc02c000)
+[  139.924982] Stack:
+[  139.924982]  c1203c88 00000000 cc02def4 cf4d2a1c ae21eefa 471b60d5 1083c1ba c26a5940
+[  139.924982]  e891fb5e 00000041 00000004 cc02df1c c1203964 00000000 cc02df4c c10e20c3
+[  139.924982]  00000002 00000000 00000000 22222222 c1ff2222 cf5ef000 00000000 d76efb08
+[  139.924982] Call Trace:
+[  139.924982]  [<c1203c88>] ? evm_update_evmxattr+0x5b/0x62
+[  139.924982]  [<c1203964>] evm_inode_post_setattr+0x22/0x26
+[  139.924982]  [<c10e20c3>] notify_change+0x25f/0x281
+[  139.924982]  [<c10cbf56>] chmod_common+0x59/0x76
+[  139.924982]  [<c10e27a1>] ? put_unused_fd+0x33/0x33
+[  139.924982]  [<c10cca09>] sys_fchmod+0x39/0x5c
+[  139.924982]  [<c13f4f30>] syscall_call+0x7/0xb
+[  139.924982] Code:  Bad EIP value.
+
+This happens because sockets do not define the removexattr operation.
+Before removing the xattr, verify the removexattr function pointer is
+not NULL.
+
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-eh.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/integrity/evm/evm_crypto.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -2094,7 +2094,7 @@ static unsigned int ata_eh_speed_down(st
-  */
- static inline int ata_eh_worth_retry(struct ata_queued_cmd *qc)
- {
--	if (qc->flags & AC_ERR_MEDIA)
-+	if (qc->err_mask & AC_ERR_MEDIA)
- 		return 0;	/* don't retry media errors */
- 	if (qc->flags & ATA_QCFLAG_IO)
- 		return 1;	/* otherwise retry anything from fs stack */
+--- a/security/integrity/evm/evm_crypto.c
++++ b/security/integrity/evm/evm_crypto.c
+@@ -205,9 +205,9 @@ int evm_update_evmxattr(struct dentry *d
+ 		rc = __vfs_setxattr_noperm(dentry, XATTR_NAME_EVM,
+ 					   &xattr_data,
+ 					   sizeof(xattr_data), 0);
+-	}
+-	else if (rc == -ENODATA)
++	} else if (rc == -ENODATA && inode->i_op->removexattr) {
+ 		rc = inode->i_op->removexattr(dentry, XATTR_NAME_EVM);
++	}
+ 	return rc;
+ }
+ 
 
 
