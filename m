@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab3AXX1P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 18:27:15 -0500
-Received: from casper.infradead.org ([85.118.1.10]:41732 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab3AXX1G (ORCPT
+	id S1756726Ab3AXXbu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 18:31:50 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:48667 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756448Ab3AXXbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 18:27:06 -0500
-Message-ID: <5101C386.4050802@infradead.org>
-Date: Thu, 24 Jan 2013 15:28:06 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: linux-next: Tree for Jan 24 (extcon-max77693)
-References: <20130124171309.9742ea16b3cb15cc9e5ca3a4@canb.auug.org.au>
-In-Reply-To: <20130124171309.9742ea16b3cb15cc9e5ca3a4@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 24 Jan 2013 18:31:43 -0500
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Consult] Plan: personal contributes plan for 2013
+In-Reply-To: Your message of "Wed, 23 Jan 2013 19:32:41 +0800."
+             <50FFCA59.5070903@asianux.com>
+From: Valdis.Kletnieks@vt.edu
+References: <50FFCA59.5070903@asianux.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1359070263_1950P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Thu, 24 Jan 2013 18:31:03 -0500
+Message-ID: <30811.1359070263@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020203.5101C439.0071,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/13 22:13, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20130123:
-> 
+--==_Exmh_1359070263_1950P
+Content-Type: text/plain; charset=us-ascii
+
+On Wed, 23 Jan 2013 19:32:41 +0800, Chen Gang said:
+
+> Plan Details:
+>
+> 10 patches per month: (at least)
+
+Even Dave Miller only averages 12-15 patches a month, and he does it for a
+living, and they're all in the one part of the kernel he maintains.  It's going
+to be a really hard time for a newcomer to get up to speed enough to produce a
+useful and usable patch every 3 days on the average, especially across multiple
+areas of the kernel.
+
+More realistic goal:
+
+1) Get a patch accepted.
+2) Get another patch accepted.
+3) Re-evaluate how many patches you can actually do.
 
 
-on i386, when CONFIG_INPUT is not enabled:
+--==_Exmh_1359070263_1950P
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
- drivers/built-in.o: In function `max77693_muic_remove':
-extcon-max77693.c:(.text+0x664853): undefined reference to `input_unregister_device'
-drivers/built-in.o: In function `max77693_muic_probe':
-extcon-max77693.c:(.text+0x664971): undefined reference to `input_allocate_device'
-extcon-max77693.c:(.text+0x6649c1): undefined reference to `input_set_capability'
-extcon-max77693.c:(.text+0x6649d6): undefined reference to `input_set_capability'
-extcon-max77693.c:(.text+0x6649eb): undefined reference to `input_set_capability'
-extcon-max77693.c:(.text+0x664a00): undefined reference to `input_set_capability'
-extcon-max77693.c:(.text+0x664a15): undefined reference to `input_set_capability'
-extcon-max77693.c:(.text+0x664a20): undefined reference to `input_register_device'
-drivers/built-in.o: In function `max77693_muic_adc_handler':
-extcon-max77693.c:(.text+0x665318): undefined reference to `input_event'
-extcon-max77693.c:(.text+0x66532a): undefined reference to `input_event'
-make[1]: *** [vmlinux] Error 1
+iQIVAwUBUQHENwdmEQWDXROgAQLDTA/9F4CNd/aMH/ygxoYtdVaP/MVvvrld88DI
+Desp5JqNxwQyIgSYNC4/DMHGrCOe39YEJHyrN6t3kVfIrA7slaN1fdV00m81v9Kx
+e3mSfuLC7z1lZPljoT9j75A9MYkte9FFbgTSpY+JNkMrskgkwYexUHwjKNw0vrgo
+ec5VMWYLJeK3U3wVoJoIIJBqiCS9gvt5Nxz8FcdXu73PT2Bn/OrKmJrgJMROJxcQ
+C0bKkISLTDVO+O15eui1JbjG3ewiifGW+72LwpiBObEPWwBIYmUhan2aq8LEcKtS
+qfURLLfQM4RdkhkHHBmZYqiRs+HNa6gwW7GlUdHXFYhQwbMbDOG2n0ciN/M0d7XQ
+1OcyHJAQGVH4Lm5OYvfEXPUAFulSKZxMBRyqdJX+iEsgQJFjWciuQsD+7LtWAmYN
+m9tFDxBlNox59c0QxcerOweqaA/9IT4xaADL2+T8LjCpTx4TYeyjLJ5NO2qYqShY
+A3EbuLhFdbgR3nFROC2V9PfY92G0i8vbfDYgfpDsI+u019J4A5yrIBmlLnBDCIrX
+2yPtsjZ55XfY6rLJX8BfRQsiE5OvYx0uEXqtvhP6d1ynO6Vbot4BlZaopxK5PcGt
+eYWuiyWLGimeqRyoZfALOUP6F7F/X3bgKqWE5YD+LiimLa22CPHZcysp6gksruIq
+5Raa1JIPtxA=
+=v0wH
+-----END PGP SIGNATURE-----
 
+--==_Exmh_1359070263_1950P--
 
-
-Needs
-	depends on INPUT
-??
-
-
--- 
-~Randy
