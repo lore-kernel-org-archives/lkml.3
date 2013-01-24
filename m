@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab3AXPLT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:11:19 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:43455 "EHLO
+	id S1754744Ab3AXPPI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:15:08 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:38653 "EHLO
 	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab3AXPLP (ORCPT
+	with ESMTP id S1754573Ab3AXPLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:11:15 -0500
+	Thu, 24 Jan 2013 10:11:18 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v7 03/18] perf/x86: add flags to event constraints
-Date: Thu, 24 Jan 2013 16:10:27 +0100
-Message-Id: <1359040242-8269-4-git-send-email-eranian@google.com>
+Subject: [PATCH v7 04/18] perf, core: Add a concept of a weightened sample v2
+Date: Thu, 24 Jan 2013 16:10:28 +0100
+Message-Id: <1359040242-8269-5-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359040242-8269-1-git-send-email-eranian@google.com>
 References: <1359040242-8269-1-git-send-email-eranian@google.com>
@@ -21,148 +21,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a flags field to each event constraint.
-It can be used to store event specific features which can
-then later be used by scheduling code or low-level x86 code.
+From: Andi Kleen <ak@linux.intel.com>
 
-The flags are propagated into event->hw.flags during the
-get_event_constraint() call. They are cleared during the
-put_event_constraint() call.
+For some events it's useful to weight sample with a hardware
+provided number. This expresses how expensive the action the
+sample represent was.  This allows the profiler to scale
+the samples to be more informative to the programmer.
 
-This mechanism is going to be used by the PEBS-LL patches.
-It avoids defining yet another table to hold event specific
-information.
+There is already the period which is used similarly, but it means
+something different, so I chose to not overload it. Instead
+a new sample type for WEIGHT is added.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Can be used for multiple things. Initially it is used for TSX abort costs
+and profiling by memory latencies (so to make expensive load appear higher
+up in the histograms)  The concept is quite generic and can be extended
+to many other kinds of events or architectures, as long as the hardware
+provides suitable auxillary values. In principle it could be also
+used for software tracpoints.
+
+This adds the generic glue. A new optional sample format for a 64bit
+weight value.
+
+v2: Move weight format to the end. Remove *_FORMAT_WEIGHT
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c              |    2 +-
- arch/x86/kernel/cpu/perf_event.h              |    8 +++++---
- arch/x86/kernel/cpu/perf_event_intel.c        |    6 +++++-
- arch/x86/kernel/cpu/perf_event_intel_ds.c     |    4 +++-
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    2 +-
- include/linux/perf_event.h                    |    1 +
- 6 files changed, 16 insertions(+), 7 deletions(-)
+ include/linux/perf_event.h      |    2 ++
+ include/uapi/linux/perf_event.h |    6 +++++-
+ kernel/events/core.c            |    6 ++++++
+ 3 files changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 794f30e..63f8dcf 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1487,7 +1487,7 @@ static int __init init_hw_perf_events(void)
- 
- 	unconstrained = (struct event_constraint)
- 		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
--				   0, x86_pmu.num_counters, 0);
-+				   0, x86_pmu.num_counters, 0, 0);
- 
- 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
- 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 3f4380c..3f10cfe 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -59,6 +59,7 @@ struct event_constraint {
- 	u64	cmask;
- 	int	weight;
- 	int	overlap;
-+	int	flags;
- };
- 
- struct amd_nb {
-@@ -170,16 +171,17 @@ struct cpu_hw_events {
- 	void				*kfree_on_online;
- };
- 
--#define __EVENT_CONSTRAINT(c, n, m, w, o) {\
-+#define __EVENT_CONSTRAINT(c, n, m, w, o, f) {\
- 	{ .idxmsk64 = (n) },		\
- 	.code = (c),			\
- 	.cmask = (m),			\
- 	.weight = (w),			\
- 	.overlap = (o),			\
-+	.flags = f,			\
- }
- 
- #define EVENT_CONSTRAINT(c, n, m)	\
--	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0)
-+	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0, 0)
- 
- /*
-  * The overlap flag marks event constraints with overlapping counter
-@@ -203,7 +205,7 @@ struct cpu_hw_events {
-  * and its counter masks must be kept at a minimum.
-  */
- #define EVENT_CONSTRAINT_OVERLAP(c, n, m)	\
--	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 1)
-+	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 1, 0)
- 
- /*
-  * Constraint on the Event code.
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 93b9e11..67a8dd6 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1367,8 +1367,11 @@ x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- 
- 	if (x86_pmu.event_constraints) {
- 		for_each_event_constraint(c, x86_pmu.event_constraints) {
--			if ((event->hw.config & c->cmask) == c->code)
-+			if ((event->hw.config & c->cmask) == c->code) {
-+				/* hw.flags zeroed at initialization */
-+				event->hw.flags |= c->flags;
- 				return c;
-+			}
- 		}
- 	}
- 
-@@ -1413,6 +1416,7 @@ intel_put_shared_regs_event_constraints(struct cpu_hw_events *cpuc,
- static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
- 					struct perf_event *event)
- {
-+	event->hw.flags = 0;
- 	intel_put_shared_regs_event_constraints(cpuc, event);
- }
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 826054a..f30d85b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -430,8 +430,10 @@ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
- 
- 	if (x86_pmu.pebs_constraints) {
- 		for_each_event_constraint(c, x86_pmu.pebs_constraints) {
--			if ((event->hw.config & c->cmask) == c->code)
-+			if ((event->hw.config & c->cmask) == c->code) {
-+				event->hw.flags |= c->flags;
- 				return c;
-+			}
- 		}
- 	}
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index b43200d..75da9e1 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2438,7 +2438,7 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
- 
- 	type->unconstrainted = (struct event_constraint)
- 		__EVENT_CONSTRAINT(0, (1ULL << type->num_counters) - 1,
--				0, type->num_counters, 0);
-+				0, type->num_counters, 0, 0);
- 
- 	for (i = 0; i < type->num_boxes; i++) {
- 		pmus[i].func_id = -1;
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 6bfb2faa..484cfbc 100644
+index 484cfbc..bb2429d 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -128,6 +128,7 @@ struct hw_perf_event {
- 			int		event_base_rdpmc;
- 			int		idx;
- 			int		last_cpu;
-+			int		flags;
+@@ -584,6 +584,7 @@ struct perf_sample_data {
+ 	struct perf_branch_stack	*br_stack;
+ 	struct perf_regs_user		regs_user;
+ 	u64				stack_user_size;
++	u64				weight;
+ };
  
- 			struct hw_perf_event_extra extra_reg;
- 			struct hw_perf_event_extra branch_reg;
+ static inline void perf_sample_data_init(struct perf_sample_data *data,
+@@ -597,6 +598,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
+ 	data->regs_user.regs = NULL;
+ 	data->stack_user_size = 0;
++	data->weight = 0;
+ }
+ 
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 4f63c05..3e6c394 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -132,8 +132,10 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
+ 	PERF_SAMPLE_REGS_USER			= 1U << 12,
+ 	PERF_SAMPLE_STACK_USER			= 1U << 13,
++	PERF_SAMPLE_WEIGHT			= 1U << 14,
++
++	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
+ 
+-	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
+ };
+ 
+ /*
+@@ -587,6 +589,8 @@ enum perf_event_type {
+ 	 * 	{ u64			size;
+ 	 * 	  char			data[size];
+ 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
++	 *
++	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 301079d..749bdf4 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -952,6 +952,9 @@ static void perf_event__header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_PERIOD)
+ 		size += sizeof(data->period);
+ 
++	if (sample_type & PERF_SAMPLE_WEIGHT)
++		size += sizeof(data->weight);
++
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		size += event->read_size;
+ 
+@@ -4169,6 +4172,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 		perf_output_sample_ustack(handle,
+ 					  data->stack_user_size,
+ 					  data->regs_user.regs);
++
++	if (sample_type & PERF_SAMPLE_WEIGHT)
++		perf_output_put(handle, data->weight);
+ }
+ 
+ void perf_prepare_sample(struct perf_event_header *header,
 -- 
 1.7.9.5
 
