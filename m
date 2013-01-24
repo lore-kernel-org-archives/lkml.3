@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab3AXVTi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:19:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41126 "EHLO mail.kernel.org"
+	id S1945899Ab3AXVTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:19:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41116 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932197Ab3AXVSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757140Ab3AXVSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jan 2013 16:18:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Joel D. Diaz" <joeldiaz@us.ibm.com>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <JBottomley@Parallels.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [ 05/15] SCSI: sd: Reshuffle init_sd to avoid crash
-Date: Thu, 24 Jan 2013 13:18:29 -0800
-Message-Id: <20130124211725.321468728@linuxfoundation.org>
+        Colin Ian King <colin.king@canonical.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 03/15] PCI: Allow pcie_aspm=force even when FADT indicates it is unsupported
+Date: Thu, 24 Jan 2013 13:18:27 -0800
+Message-Id: <20130124211724.627862088@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211723.489089115@linuxfoundation.org>
 References: <20130124211723.489089115@linuxfoundation.org>
@@ -27,66 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Joel D. Diaz" <joeldiaz@us.ibm.com>
+From: Colin Ian King <colin.king@canonical.com>
 
-commit afd5e34b2bb34881d3a789e62486814a49b47faa upstream.
+commit 9e16721498b0c3d3ebfa0b503c63d35c0a4c0642 upstream.
 
-scsi_register_driver will register a prep_fn() function, which
-in turn migh need to use the sd_cdp_pool for DIF.
-Which hasn't been initialised at this point, leading to
-a crash. So reshuffle the init_sd() and exit_sd() paths
-to have the driver registered last.
+Right now using pcie_aspm=force will not enable ASPM if the FADT indicates
+ASPM is unsupported.  However, the semantics of force should probably allow
+for this, especially as they did before 3c076351c4 ("PCI: Rework ASPM
+disable code")
 
-Signed-off-by: Joel D. Diaz <joeldiaz@us.ibm.com>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Cc: CAI Qian <caiqian@redhat.com>
+This patch just skips the clearing of any ASPM setup that the firmware has
+carried out on this bus if pcie_aspm=force is being used.
+
+Reference: http://bugs.launchpad.net/bugs/962038
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/sd.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/pci/pcie/aspm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2826,10 +2826,6 @@ static int __init init_sd(void)
- 	if (err)
- 		goto err_out;
+--- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -790,6 +790,9 @@ void pcie_clear_aspm(struct pci_bus *bus
+ {
+ 	struct pci_dev *child;
  
--	err = scsi_register_driver(&sd_template.gendrv);
--	if (err)
--		goto err_out_class;
--
- 	sd_cdb_cache = kmem_cache_create("sd_ext_cdb", SD_EXT_CDB_SIZE,
- 					 0, 0, NULL);
- 	if (!sd_cdb_cache) {
-@@ -2843,8 +2839,15 @@ static int __init init_sd(void)
- 		goto err_out_cache;
- 	}
- 
-+	err = scsi_register_driver(&sd_template.gendrv);
-+	if (err)
-+		goto err_out_driver;
++	if (aspm_force)
++		return;
 +
- 	return 0;
- 
-+err_out_driver:
-+	mempool_destroy(sd_cdb_pool);
-+
- err_out_cache:
- 	kmem_cache_destroy(sd_cdb_cache);
- 
-@@ -2867,10 +2870,10 @@ static void __exit exit_sd(void)
- 
- 	SCSI_LOG_HLQUEUE(3, printk("exit_sd: exiting sd driver\n"));
- 
-+	scsi_unregister_driver(&sd_template.gendrv);
- 	mempool_destroy(sd_cdb_pool);
- 	kmem_cache_destroy(sd_cdb_cache);
- 
--	scsi_unregister_driver(&sd_template.gendrv);
- 	class_unregister(&sd_disk_class);
- 
- 	for (i = 0; i < SD_MAJORS; i++)
+ 	/*
+ 	 * Clear any ASPM setup that the firmware has carried out on this bus
+ 	 */
 
 
