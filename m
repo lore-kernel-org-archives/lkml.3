@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab3AXPBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:01:31 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:42835 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341Ab3AXPB0 (ORCPT
+	id S1754825Ab3AXPB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:01:29 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:40502 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754767Ab3AXPBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:01:26 -0500
+	Thu, 24 Jan 2013 10:01:24 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: tj@kernel.org, pmatouse@redhat.com,
         "James E.J. Bottomley" <JBottomley@parallels.com>,
         linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 12/13] sg_io: remove remnants of sysfs SG_IO filters
-Date: Thu, 24 Jan 2013 16:00:48 +0100
-Message-Id: <1359039649-17734-13-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 11/13] sg_io: add list of commands that were in the consulted list but are disabled
+Date: Thu, 24 Jan 2013 16:00:47 +0100
+Message-Id: <1359039649-17734-12-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
 References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
@@ -22,37 +22,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some defines and structs remained when support was removed for SG_IO
-filters in sysfs.  Remove them.
+To aid future modifications of the list, add a list of commands
+that were in the version of the SCSI commands list I consulted,
+but I considered too dangerous to enable by default for unprivileged
+users.
 
 Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
 Cc: linux-scsi@kernel.org
 Cc: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- include/linux/genhd.h |    9 ---------
- 1 files changed, 0 insertions(+), 9 deletions(-)
+ block/scsi_ioctl.c |  102 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 102 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 79b8bba..d3bc249 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -144,15 +144,6 @@ enum {
- 	DISK_EVENT_EJECT_REQUEST		= 1 << 1, /* eject requested */
- };
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index fea0c5d..27b844c 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -336,6 +336,108 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	sgio_bitmap_set(0x31,                               S, write); // OBJECT POSITION
+ 	sgio_bitmap_set(0x34,                               S, write); // GET DATA BUFFER STATUS
  
--#define BLK_SCSI_MAX_CMDS	(256)
--#define BLK_SCSI_CMD_PER_LONG	(BLK_SCSI_MAX_CMDS / (sizeof(long) * 8))
--
--struct blk_scsi_cmd_filter {
--	unsigned long read_ok[BLK_SCSI_CMD_PER_LONG];
--	unsigned long write_ok[BLK_SCSI_CMD_PER_LONG];
--	struct kobject kobj;
--};
--
- struct disk_part_tbl {
- 	struct rcu_head rcu_head;
- 	int len;
++#if 0
++	/*
++	 * Starting from here are commands that are always privileged.
++	 * I'm listing them anyway, as a reference to the version of
++	 * the command list that I used.
++	 */
++
++	/* control, privileged, universal except possibly RBC */
++
++	sgio_bitmap_set(0x1D,                    ~B          , write); // SEND DIAGNOSTIC
++	sgio_bitmap_set(0x3B, -1                             , write); // WRITE BUFFER
++
++	/* control, privileged */
++
++	sgio_bitmap_set(0x5E, D|T|L|P|W|  O|M|A|E|      F    , write); // PERSISTENT RESERVE IN
++	sgio_bitmap_set(0x5F, D|T|L|P|W|  O|M|A|E|      F    , write); // PERSISTENT RESERVE OUT
++	sgio_bitmap_set(0x83, D|T|L|P|W|  O|        K|V      , write); // Third-party Copy OUT
++	sgio_bitmap_set(0x84, D|T|L|P|W|  O|        K|V      , write); // Third-party Copy IN
++	sgio_bitmap_set(0x86, D|T|  P|W|  O|M|A|E|B|K|V      , write); // ACCESS CONTROL IN
++	sgio_bitmap_set(0x87, D|T|  P|W|  O|M|A|E|B|K|V      , write); // ACCESS CONTROL OUT
++	sgio_bitmap_set(0x8C, D|T|    W|  O|M|    B|  V      , write); // READ ATTRIBUTE
++	sgio_bitmap_set(0x8D, D|T|    W|  O|M|    B|  V      , write); // WRITE ATTRIBUTE
++	sgio_bitmap_set(0xA2, D|T|      R|            V      , write); // SECURITY PROTOCOL IN
++	sgio_bitmap_set(0xA4, D|T|L|  W|  O|M|A|E|B|K|V      , write); // MAINTENANCE OUT
++	sgio_bitmap_set(0xA9,                         V      , write); // SERVICE ACTION OUT(12)
++	sgio_bitmap_set(0xB5, D|T|      R|            V      , write); // SECURITY PROTOCOL OUT
++	sgio_bitmap_set(0xBA, D|      W|  O|M|A|E            , write); // REDUNDANCY GROUP (IN)
++	sgio_bitmap_set(0xBB, D|      W|  O|M|A|E            , write); // REDUNDANCY GROUP (OUT)
++	sgio_bitmap_set(0xBC, D|      W|  O|M|A|E            , write); // SPARE (IN)
++	sgio_bitmap_set(0xBD, D|      W|  O|M|A|E            , write); // SPARE (OUT)
++	sgio_bitmap_set(0xBE, D|      W|  O|M|A|E            , write); // VOLUME SET (IN)
++	sgio_bitmap_set(0xBF, D|      W|  O|M|A|E            , write); // VOLUME SET (OUT)
++
++	/* control, privileged, obsolete */
++
++	sgio_bitmap_set(0x16, D|T|L|P|W|  O|M|A|E|  K        , write); // RESERVE(6)
++	sgio_bitmap_set(0x16,               M                , write); // RESERVE ELEMENT(6)
++	sgio_bitmap_set(0x17, D|T|L|P|W|  O|M|A|E|  K        , write); // RELEASE(6)
++	sgio_bitmap_set(0x17,               M                , write); // RELEASE ELEMENT(6)
++	sgio_bitmap_set(0x33, D|      W|R|O                  , write); // SET LIMITS(10)
++	sgio_bitmap_set(0x36, D|      W|  O|        K        , write); // LOCK UNLOCK CACHE(10)
++	sgio_bitmap_set(0x40, D|T|L|P|W|R|O|M                , write); // CHANGE DEFINITION
++	sgio_bitmap_set(0x56, D|T|L|P|W|  O|M|A|E            , write); // RESERVE(10)
++	sgio_bitmap_set(0x56,               M                , write); // RESERVE ELEMENT(10)
++	sgio_bitmap_set(0x57, D|T|L|P|W|  O|M|A|E            , write); // RELEASE(10)
++	sgio_bitmap_set(0x57,               M                , write); // RELEASE ELEMENT(10)
++	sgio_bitmap_set(0x81, D                              , write); // REBUILD(16)
++	sgio_bitmap_set(0x82, D                              , write); // REGENERATE(16)
++	sgio_bitmap_set(0x92, D|      W|  O                  , write); // LOCK UNLOCK CACHE(16)
++	sgio_bitmap_set(0xA5,   T|    W|  O|M                , write); // MOVE MEDIUM
++	sgio_bitmap_set(0xA7, D|T|    W|  O                  , write); // MOVE MEDIUM ATTACHED
++	sgio_bitmap_set(0xB3, D|      W|R|O                  , write); // SET LIMITS(12)
++
++	/* others: multiplexed */
++
++	sgio_bitmap_set(0x7E, D|T|      R|  M|A|E|B|  V      , write); // extended CDB
++	sgio_bitmap_set(0x7F, D|                        F    , write); // variable length CDB
++	sgio_bitmap_set(0x9F,                         V      , write); // SERVICE ACTION OUT(16)
++
++	/* others: vendor specific */
++
++	sgio_bitmap_set(0x01,     L                          , write);
++	sgio_bitmap_set(0x02, D|T|L|P|W|R|  M                , write);
++	sgio_bitmap_set(0x05, D|  L|P|W|R|  M                , write);
++	sgio_bitmap_set(0x06, D|T|L|P|W|R|  M                , write);
++	sgio_bitmap_set(0x07,   T|L                          , write);
++	sgio_bitmap_set(0x08,     L|        M                , write);
++	sgio_bitmap_set(0x09, D|T|L|P|W|R|  M                , write);
++	sgio_bitmap_set(0x0A,               M                , write);
++	sgio_bitmap_set(0x0B,               M                , write);
++	sgio_bitmap_set(0x0C, D|T|L|P|W|R|  M                , write);
++	sgio_bitmap_set(0x0D, D|T|L|P|W|R|  M                , write);
++	sgio_bitmap_set(0x0E, D|T|L|P|W|R|  M                , write);
++	sgio_bitmap_set(0x0F, D|  L|P|W|R|  M                , write);
++	sgio_bitmap_set(0x10, D|    P|W|R                    , write);
++	sgio_bitmap_set(0x11, D|  L|P|W|R                    , write);
++	sgio_bitmap_set(0x13, D|  L|P|W|R                    , write);
++	sgio_bitmap_set(0x14, D|    P|W|R                    , write);
++	sgio_bitmap_set(0x19, D|  L|P|W|R                    , write);
++	sgio_bitmap_set(0x20, D|      W|R|O|        K        , write);
++	sgio_bitmap_set(0x21, D|      W|R|O|        K        , write);
++	sgio_bitmap_set(0x22, D|      W|R|O|        K        , write);
++	sgio_bitmap_set(0x23, D|      W|  O|        K        , write);
++	sgio_bitmap_set(0x24, D|      W|R                    , write);
++	sgio_bitmap_set(0x26, D|      W|R                    , write);
++	sgio_bitmap_set(0x27, D|      W|R                    , write);
++	sgio_bitmap_set(0x2D, D                              , write);
++
++	/* others: reserved */
++
++	sgio_bitmap_set(0x1F, 0                              , write);
++	sgio_bitmap_set(0x49, 0                              , write);
++	sgio_bitmap_set(0x4F, 0                              , write);
++	sgio_bitmap_set(0x59, 0                              , write);
++	sgio_bitmap_set(0x98, 0                              , write);
++	sgio_bitmap_set(0x99, 0                              , write);
++	sgio_bitmap_set(0x9A, 0                              , write);
++	sgio_bitmap_set(0x9B, 0                              , write);
++	sgio_bitmap_set(0x9C, 0                              , write);
++	sgio_bitmap_set(0x9D, 0                              , write); //       SERVICE ACTION BIDIRECTIONAL
++#endif
++
+ #undef D
+ #undef T
+ #undef L
 -- 
 1.7.1
 
