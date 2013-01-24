@@ -1,177 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab3AXNHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 08:07:52 -0500
-Received: from mga11.intel.com ([192.55.52.93]:27637 "EHLO mga11.intel.com"
+	id S1753406Ab3AXNJj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 08:09:39 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:46570 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752863Ab3AXNHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 08:07:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,529,1355126400"; 
-   d="scan'208";a="281651096"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v3.5] dw_dmac: return proper residue value
-Date: Thu, 24 Jan 2013 15:07:29 +0200
-Message-Id: <1359032849-25551-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <CAOh2x=kqEzw9cvg=WLpjEbF50aTKCUUVd9GzNg8PqtBx_BpYLg@mail.gmail.com>
-References: <CAOh2x=kqEzw9cvg=WLpjEbF50aTKCUUVd9GzNg8PqtBx_BpYLg@mail.gmail.com>
+	id S1752863Ab3AXNJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 08:09:32 -0500
+Date: Thu, 24 Jan 2013 14:12:22 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: suravee.suthikulpanit@amd.com
+Cc: iommu@lists.linux-foundation.org, joro@8bytes.org,
+        linux-kernel@vger.kernel.org, udovdh@xs4all.nl,
+        ssg.sos.patches@mpdtxmail.amd.com
+Subject: Re: [PATCH 1/1 V3] AMD Family15h Model10-1Fh erratum 746 Workaround
+Message-ID: <20130124131222.GF13463@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	suravee.suthikulpanit@amd.com, iommu@lists.linux-foundation.org,
+	joro@8bytes.org, linux-kernel@vger.kernel.org, udovdh@xs4all.nl,
+	ssg.sos.patches@mpdtxmail.amd.com
+References: <1359030615-2145-1-git-send-email-suravee.suthikulpanit@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1359030615-2145-1-git-send-email-suravee.suthikulpanit@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the driver returns full length of the active descriptor which is
-wrong. We have to go throught the active descriptor and substract the length of
-each sent children in the chain from the total length along with the actual
-data in the DMA channel registers.
+On Thu, Jan 24, 2013 at 06:30:15AM -0600, suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+> 
+> Changes in V3:
+> 	* Add proper commit message
+> 	* Change logic to avoid unnecessary indentaion
+> 
+> Changes in V2:
+> 	* Fix logic that check the processor model.
+> 	* Clear write enable bit after apply workaround
+> 	* Change function name 
 
-The cyclic case is not handled by this patch due to len field in the descriptor
-structure is left untouched by the original code.
+Changelogs need to be after the diffstat, see below. They should be
+part of the commit message only when they contain important information
+pertaining to the fix itself and those pieces which are needed for patch
+tracking and not to be in changelog should go after the "---" so that
+git doesn't pick them up in the commit message.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Commit Message:
+> Erratum 746: IOMMU Logging May Stall Transaction
+> Workaround:  BIOS should disable L2B micellaneous clock gating by setting 
+>              L2_L2B_CK_GATE_CONTROL[CKGateL2BMiscDisable](D0F2xF4_x90[2]) = 1b
+
+This commit message is kinda laconic: it says it all for AMD folk who
+stare at RGs all the time but not to normal users. I've attached a
+corrected version of this patch so that you can see what I mean. And
+I've taken the text from the RG and made it a bit more readable so that
+I can piss off Eric again :-).
+
+> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+
+This patch is adding trailing whitespace:
+
+Apply? [y]es/[n]o/[e]dit/[v]iew patch/[a]ccept all y
+Applying: AMD Family15h Model10-1Fh erratum 746 Workaround
+/w/kernel/linux-2.6/.git/rebase-apply/patch:18: trailing whitespace.
+        if ((boot_cpu_data.x86 != 0x15) || 
+/w/kernel/linux-2.6/.git/rebase-apply/patch:22: trailing whitespace.
+
+/w/kernel/linux-2.6/.git/rebase-apply/patch:24: trailing whitespace.
+        pci_read_config_dword(iommu->dev, 0xf4, &value); 
+/w/kernel/linux-2.6/.git/rebase-apply/patch:48: trailing whitespace.
+
+warning: 4 lines add whitespace errors.
+
+You can catch stuff like that when running your patch through
+scripts/checkpatch.pl:
+
+ERROR: trailing whitespace
+#36: FILE: drivers/iommu/amd_iommu_init.c:987:
++^Iif ((boot_cpu_data.x86 != 0x15) || $
+
+ERROR: trailing whitespace
+#40: FILE: drivers/iommu/amd_iommu_init.c:991:
++^I$
+
+ERROR: trailing whitespace
+#42: FILE: drivers/iommu/amd_iommu_init.c:993:
++^Ipci_read_config_dword(iommu->dev, 0xf4, &value); $
+
+ERROR: trailing whitespace
+#66: FILE: drivers/iommu/amd_iommu_init.c:1206:
++^I$
+
+total: 4 errors, 2 warnings, 46 lines checked
+
+NOTE: whitespace errors detected, you may wish to use scripts/cleanpatch or
+      scripts/cleanfile
+
+Your patch has style problems, please review.
+
+If any of these errors are false positives, please report
+them to the maintainer, see CHECKPATCH in MAINTAINERS.
+
+
+> diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+> index 81837b0..934b017 100644
+> --- a/drivers/iommu/amd_iommu_init.c
+> +++ b/drivers/iommu/amd_iommu_init.c
+> @@ -975,6 +975,38 @@ static void __init free_iommu_all(void)
+>  }
+>  
+>  /*
+> + * AMD family15h Model 10h-1fh erratum 746 (IOMMU Logging May Stall Translations)
+> + * Workaround:
+> + *     BIOS should disable L2B micellaneous clock gating by setting
+> + *     L2_L2B_CK_GATE_CONTROL[CKGateL2BMiscDisable](D0F2xF4_x90[2]) = 1b
+> + */
+> +static void __init amd_iommu_erratum_746_workaround(struct amd_iommu *iommu)
+> +{
+> +	u32 value;
+> +
+> +	if ((boot_cpu_data.x86 != 0x15) || 
+> +	    (boot_cpu_data.x86_model < 0x10) ||
+> +	    (boot_cpu_data.x86_model > 0x1f))
+> +		return;
+> +	
+> +	pci_write_config_dword(iommu->dev, 0xf0, 0x90);
+> +	pci_read_config_dword(iommu->dev, 0xf4, &value); 
+> +
+> +	if (value & BIT(2))
+> +		return;
+> +
+> +	/* Select NB indirect register 0x90 and enable writing */
+> +	pci_write_config_dword(iommu->dev, 0xf0, 0x90 | (1 << 8));
+> +
+> +	pci_write_config_dword(iommu->dev, 0xf4, value | 0x4);
+> +	pr_info("AMD-Vi: Applying erratum 746 workaround for IOMMU at %s\n",
+> +	 dev_name(&iommu->dev->dev));
+
+This should be aligned with "AMD-Vi... " above.
+
+> +
+> +	/* Clear the enable writing bit */
+> +	pci_write_config_dword(iommu->dev, 0xf0, 0x90);
+> +}
+> +
+> +/*
+>   * This function clues the initialization function for one IOMMU
+>   * together and also allocates the command buffer and programs the
+>   * hardware. It does NOT enable the IOMMU. This is done afterwards.
+> @@ -1171,6 +1203,8 @@ static int iommu_init_pci(struct amd_iommu *iommu)
+>  		for (i = 0; i < 0x83; i++)
+>  			iommu->stored_l2[i] = iommu_read_l2(iommu, i);
+>  	}
+> +	
+> +	amd_iommu_erratum_746_workaround(iommu);
+>  
+>  	return pci_enable_device(iommu->dev);
+
+Ok, here it is, take a look.
+
 ---
- drivers/dma/dw_dmac.c      |   47 ++++++++++++++++++++++++++++++++++++++++++--
- drivers/dma/dw_dmac_regs.h |    1 +
- 2 files changed, 46 insertions(+), 2 deletions(-)
+>From 6ed43106e7fbe32c84e07f3c50591b8577964009 Mon Sep 17 00:00:00 2001
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Date: Thu, 24 Jan 2013 06:30:15 -0600
+Subject: [PATCH] iommu, AMD: Add an erratum 746 workaround
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 3b788c8..b5c3f3a 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -284,6 +284,7 @@ static void dwc_dostart(struct dw_dma_chan *dwc, struct dw_desc *first)
- 
- 		dwc_initialize(dwc);
- 
-+		dwc->residue = first->total_len;
- 		dwc->tx_node_active = &first->tx_list;
- 
- 		/* Submit first block */
-@@ -387,6 +388,15 @@ static void dwc_complete_all(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 		dwc_descriptor_complete(dwc, desc, true);
+The IOMMU may stop processing page translations due to a perceived lack
+of credits for writing upstream peripheral page service request (PPR)
+or event logs. If the L2B miscellaneous clock gating feature is enabled
+the IOMMU does not properly register credits after the log request has
+completed, leading to a potential system hang.
+
+BIOSes are supposed to disable L2B micellaneous clock gating by setting
+L2_L2B_CK_GATE_CONTROL[CKGateL2BMiscDisable](D0F2xF4_x90[2]) = 1b. This
+patch corrects that for those which do not enable this workaround.
+
+Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+---
+Changelog:
+
+v3:
+      * Add proper commit message
+      * Change logic to avoid unnecessary indentaion
+
+v2:
+      * Fix logic that check the processor model.
+      * Clear write enable bit after apply workaround
+      * Change function name
+
+ drivers/iommu/amd_iommu_init.c | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 81837b0710a9..ed3539b1e460 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -975,6 +975,38 @@ static void __init free_iommu_all(void)
  }
  
-+/* Returns how many bytes were already received from source */
-+static inline u32 dwc_get_sent(struct dw_dma_chan *dwc)
+ /*
++ * AMD family15h Model 10h-1fh erratum 746 (IOMMU Logging May Stall Translations)
++ * Workaround:
++ *     BIOS should disable L2B micellaneous clock gating by setting
++ *     L2_L2B_CK_GATE_CONTROL[CKGateL2BMiscDisable](D0F2xF4_x90[2]) = 1b
++ */
++static void __init amd_iommu_erratum_746_workaround(struct amd_iommu *iommu)
 +{
-+	u32 ctlhi = channel_readl(dwc, CTL_HI);
-+	u32 ctllo = channel_readl(dwc, CTL_LO);
++	u32 value;
 +
-+	return (ctlhi & DWC_CTLH_BLOCK_TS_MASK) * (1 << (ctllo >> 4 & 7));
++	if ((boot_cpu_data.x86 != 0x15) ||
++	    (boot_cpu_data.x86_model < 0x10) ||
++	    (boot_cpu_data.x86_model > 0x1f))
++		return;
++
++	pci_write_config_dword(iommu->dev, 0xf0, 0x90);
++	pci_read_config_dword(iommu->dev, 0xf4, &value);
++
++	if (value & BIT(2))
++		return;
++
++	/* Select NB indirect register 0x90 and enable writing */
++	pci_write_config_dword(iommu->dev, 0xf0, 0x90 | (1 << 8));
++
++	pci_write_config_dword(iommu->dev, 0xf4, value | 0x4);
++	pr_info("AMD-Vi: Applying erratum 746 workaround for IOMMU at %s\n",
++		dev_name(&iommu->dev->dev));
++
++	/* Clear the enable writing bit */
++	pci_write_config_dword(iommu->dev, 0xf0, 0x90);
 +}
 +
- static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- {
- 	dma_addr_t llp;
-@@ -414,6 +424,12 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 
- 			head = &desc->tx_list;
- 			if (active != head) {
-+				/* Update desc to reflect last sent one */
-+				if (active != head->next)
-+					desc = to_dw_desc(active->prev);
-+
-+				dwc->residue -= desc->len;
-+
- 				child = to_dw_desc(active);
- 
- 				/* Submit next block */
-@@ -426,6 +442,9 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 			/* We are done here */
- 			clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
- 		}
-+
-+		dwc->residue = 0;
-+
- 		spin_unlock_irqrestore(&dwc->lock, flags);
- 
- 		dwc_complete_all(dw, dwc);
-@@ -433,6 +452,7 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
++/*
+  * This function clues the initialization function for one IOMMU
+  * together and also allocates the command buffer and programs the
+  * hardware. It does NOT enable the IOMMU. This is done afterwards.
+@@ -1172,6 +1204,8 @@ static int iommu_init_pci(struct amd_iommu *iommu)
+ 			iommu->stored_l2[i] = iommu_read_l2(iommu, i);
  	}
  
- 	if (list_empty(&dwc->active_list)) {
-+		dwc->residue = 0;
- 		spin_unlock_irqrestore(&dwc->lock, flags);
- 		return;
- 	}
-@@ -447,6 +467,9 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 			(unsigned long long)llp);
- 
- 	list_for_each_entry_safe(desc, _desc, &dwc->active_list, desc_node) {
-+		/* initial residue value */
-+		dwc->residue = desc->total_len;
++	amd_iommu_erratum_746_workaround(iommu);
 +
- 		/* check first descriptors addr */
- 		if (desc->txd.phys == llp) {
- 			spin_unlock_irqrestore(&dwc->lock, flags);
-@@ -456,16 +479,21 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 		/* check first descriptors llp */
- 		if (desc->lli.llp == llp) {
- 			/* This one is currently in progress */
-+			dwc->residue -= dwc_get_sent(dwc);
- 			spin_unlock_irqrestore(&dwc->lock, flags);
- 			return;
- 		}
- 
--		list_for_each_entry(child, &desc->tx_list, desc_node)
-+		dwc->residue -= desc->len;
-+		list_for_each_entry(child, &desc->tx_list, desc_node) {
- 			if (child->lli.llp == llp) {
- 				/* Currently in progress */
-+				dwc->residue -= dwc_get_sent(dwc);
- 				spin_unlock_irqrestore(&dwc->lock, flags);
- 				return;
- 			}
-+			dwc->residue -= child->len;
-+		}
- 
- 		/*
- 		 * No descriptors so far seem to be in progress, i.e.
-@@ -1056,6 +1084,21 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 	return 0;
+ 	return pci_enable_device(iommu->dev);
  }
  
-+static inline u32 dwc_get_residue(struct dw_dma_chan *dwc)
-+{
-+	unsigned long flags;
-+	u32 residue;
-+
-+	spin_lock_irqsave(&dwc->lock, flags);
-+
-+	residue = dwc->residue;
-+	if (test_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags) && residue)
-+		residue -= dwc_get_sent(dwc);
-+
-+	spin_unlock_irqrestore(&dwc->lock, flags);
-+	return residue;
-+}
-+
- static enum dma_status
- dwc_tx_status(struct dma_chan *chan,
- 	      dma_cookie_t cookie,
-@@ -1072,7 +1115,7 @@ dwc_tx_status(struct dma_chan *chan,
- 	}
- 
- 	if (ret != DMA_SUCCESS)
--		dma_set_residue(txstate, dwc_first_active(dwc)->len);
-+		dma_set_residue(txstate, dwc_get_residue(dwc));
- 
- 	if (dwc->paused)
- 		return DMA_PAUSED;
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index 833b4cf..88dd8eb 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -203,6 +203,7 @@ struct dw_dma_chan {
- 	struct list_head	active_list;
- 	struct list_head	queue;
- 	struct list_head	free_list;
-+	u32			residue;
- 	struct dw_cyclic_desc	*cdesc;
- 
- 	unsigned int		descs_allocated;
 -- 
-1.7.10.4
+1.8.1.rc3
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
