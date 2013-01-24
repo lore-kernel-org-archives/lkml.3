@@ -1,91 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422631Ab3AXVQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:16:49 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40498 "EHLO mail.kernel.org"
+	id S1945910Ab3AXVQz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:16:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40611 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161015Ab3AXVO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:14:59 -0500
+	id S1945891Ab3AXVPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:15:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shuah Khan <shuah.khan@hp.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>
-Subject: [ 45/46] ioat: Fix DMA memory sync direction correct flag
-Date: Thu, 24 Jan 2013 13:13:23 -0800
-Message-Id: <20130124211151.256678639@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 00/22] 3.4.28-stable review
+Date: Thu, 24 Jan 2013 13:15:21 -0800
+Message-Id: <20130124211504.701368763@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
-References: <20130124211135.862755794@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.4.28 release.
+There are 22 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Sat Jan 26 21:13:38 UTC 2013.
+Anything received after that time might be too late.
 
-From: Shuah Khan <shuah.khan@hp.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.28-rc1.gz
+and the diffstat can be found below.
 
-commit ac4989874af56435c308bdde9ad9c837a26f8b23 upstream.
+thanks,
 
-ioat does DMA memory sync with DMA_TO_DEVICE direction on a buffer allocated
-for DMA_FROM_DEVICE dma, resulting in the following warning from dma debug.
-Fixed the dma_sync_single_for_device() call to use the correct direction.
+greg k-h
 
-[  226.288947] WARNING: at lib/dma-debug.c:990 check_sync+0x132/0x550()
-[  226.288948] Hardware name: ProLiant DL380p Gen8
-[  226.288951] ioatdma 0000:00:04.0: DMA-API: device driver syncs DMA memory with different direction [device address=0x00000000ffff7000] [size=4096 bytes] [mapped with DMA_FROM_DEVICE] [synced with DMA_TO_DEVICE]
-[  226.288953] Modules linked in: iTCO_wdt(+) sb_edac(+) ioatdma(+) microcode serio_raw pcspkr edac_core hpwdt(+) iTCO_vendor_support hpilo(+) dca acpi_power_meter ata_generic pata_acpi sd_mod crc_t10dif ata_piix libata hpsa tg3 netxen_nic(+) sunrpc dm_mirror dm_region_hash dm_log dm_mod
-[  226.288967] Pid: 1055, comm: work_for_cpu Tainted: G        W    3.3.0-0.20.el7.x86_64 #1
-[  226.288968] Call Trace:
-[  226.288974]  [<ffffffff810644cf>] warn_slowpath_common+0x7f/0xc0
-[  226.288977]  [<ffffffff810645c6>] warn_slowpath_fmt+0x46/0x50
-[  226.288980]  [<ffffffff81345502>] check_sync+0x132/0x550
-[  226.288983]  [<ffffffff81345c9f>] debug_dma_sync_single_for_device+0x3f/0x50
-[  226.288988]  [<ffffffff81661002>] ? wait_for_common+0x72/0x180
-[  226.288995]  [<ffffffffa019590f>] ioat_xor_val_self_test+0x3e5/0x832 [ioatdma]
-[  226.288999]  [<ffffffff811a5739>] ? kfree+0x259/0x270
-[  226.289004]  [<ffffffffa0195d77>] ioat3_dma_self_test+0x1b/0x20 [ioatdma]
-[  226.289008]  [<ffffffffa01952c3>] ioat_probe+0x2f8/0x348 [ioatdma]
-[  226.289011]  [<ffffffffa0195f51>] ioat3_dma_probe+0x1d5/0x2aa [ioatdma]
-[  226.289016]  [<ffffffffa0194d12>] ioat_pci_probe+0x139/0x17c [ioatdma]
-[  226.289020]  [<ffffffff81354b8c>] local_pci_probe+0x5c/0xd0
-[  226.289023]  [<ffffffff81083e50>] ? destroy_work_on_stack+0x20/0x20
-[  226.289025]  [<ffffffff81083e68>] do_work_for_cpu+0x18/0x30
-[  226.289029]  [<ffffffff8108d997>] kthread+0xb7/0xc0
-[  226.289033]  [<ffffffff8166cef4>] kernel_thread_helper+0x4/0x10
-[  226.289036]  [<ffffffff81662d20>] ? _raw_spin_unlock_irq+0x30/0x50
-[  226.289038]  [<ffffffff81663234>] ? retint_restore_args+0x13/0x13
-[  226.289041]  [<ffffffff8108d8e0>] ? kthread_worker_fn+0x1a0/0x1a0
-[  226.289044]  [<ffffffff8166cef0>] ? gs_change+0x13/0x13
-[  226.289045] ---[ end trace e1618afc7a606089 ]---
-[  226.289047] Mapped at:
-[  226.289048]  [<ffffffff81345307>] debug_dma_map_page+0x87/0x150
-[  226.289050]  [<ffffffffa019653c>] dma_map_page.constprop.18+0x70/0xb34 [ioatdma]
-[  226.289054]  [<ffffffffa0195702>] ioat_xor_val_self_test+0x1d8/0x832 [ioatdma]
-[  226.289058]  [<ffffffffa0195d77>] ioat3_dma_self_test+0x1b/0x20 [ioatdma]
-[  226.289061]  [<ffffffffa01952c3>] ioat_probe+0x2f8/0x348 [ioatdma]
+-------------
+Pseudo-Shortlog of commits:
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.28-rc1
 
----
- drivers/dma/ioat/dma_v3.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Shuah Khan <shuah.khan@hp.com>
+    ioat: Fix DMA memory sync direction correct flag
 
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -951,7 +951,7 @@ static int __devinit ioat_xor_val_self_t
- 			goto free_resources;
- 		}
- 	}
--	dma_sync_single_for_device(dev, dest_dma, PAGE_SIZE, DMA_TO_DEVICE);
-+	dma_sync_single_for_device(dev, dest_dma, PAGE_SIZE, DMA_FROM_DEVICE);
- 
- 	/* skip validate if the capability is not present */
- 	if (!dma_has_cap(DMA_XOR_VAL, dma_chan->device->cap_mask))
+Thomas Schlichter <thomas.schlichter@web.de>
+    ACPI / processor: Get power info before updating the C-states
+
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+    ACPI / cpuidle: Fix NULL pointer issues when cpuidle is disabled
+
+Daniel Vetter <daniel.vetter@ffwll.ch>
+    drm/i915: Implement WaDisableHiZPlanesWhenMSAAEnabled
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: usb-audio: Fix regression by disconnection-race-fix patch
+
+Alan Cox <alan@linux.intel.com>
+    ahci: Add identifiers for ASM106x devices
+
+Zhenzhong Duan <zhenzhong.duan@oracle.com>
+    drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it exists
+
+Zhenzhong Duan <zhenzhong.duan@oracle.com>
+    drivers/firmware/dmi_scan.c: check dmi version when get system uuid
+
+Joel D. Diaz <joeldiaz@us.ibm.com>
+    SCSI: sd: Reshuffle init_sd to avoid crash
+
+Pratyush Anand <pratyush.anand@st.com>
+    usb: dwc3: gadget: fix ep->maxburst for ep0
+
+Alan Stern <stern@rowland.harvard.edu>
+    USB: UHCI: fix IRQ race during initialization
+
+Bjorn Helgaas <bhelgaas@google.com>
+    PCI: shpchp: Handle push button event asynchronously
+
+Yijing Wang <wangyijing@huawei.com>
+    PCI: pciehp: Use per-slot workqueues to avoid deadlock
+
+Colin Ian King <colin.king@canonical.com>
+    PCI: Allow pcie_aspm=force even when FADT indicates it is unsupported
+
+Betty Dall <betty.dall@hp.com>
+    PCI/AER: pci_get_domain_bus_and_slot() call missing required pci_dev_put()
+
+Oleg Nesterov <oleg@redhat.com>
+    wake_up_process() should be never used to wakeup a TASK_STOPPED/TRACED task
+
+Oleg Nesterov <oleg@redhat.com>
+    ptrace: ensure arch_ptrace/ptrace_request can never race with SIGKILL
+
+Oleg Nesterov <oleg@redhat.com>
+    ptrace: introduce signal_wake_up_state() and ptrace_signal_wake_up()
+
+Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+    evm: checking if removexattr is not a NULL
+
+Steven Rostedt <srostedt@redhat.com>
+    ftrace: Be first to run code modification on modules
+
+Hugh Daschbach <hugh.daschbach@enmotus.com>
+    libata: ahci: Add support for Enmotus Bobcat device.
+
+Chris Wilson <chris@chris-wilson.co.uk>
+    drm/i915: Invalidate the relocation presumed_offsets along the slow path
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                   |  4 +-
+ drivers/acpi/processor_idle.c              |  4 ++
+ drivers/ata/ahci.c                         | 13 +++++-
+ drivers/dma/ioat/dma_v3.c                  |  2 +-
+ drivers/firmware/dmi_scan.c                | 78 +++++++++++++++++++++++++-------
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c | 21 +++++++++
+ drivers/gpu/drm/i915/i915_reg.h            |  3 ++
+ drivers/gpu/drm/i915/intel_display.c       |  4 ++
+ drivers/pci/hotplug/pciehp.h               |  2 +-
+ drivers/pci/hotplug/pciehp_core.c          | 11 +----
+ drivers/pci/hotplug/pciehp_ctrl.c          |  8 ++--
+ drivers/pci/hotplug/pciehp_hpc.c           | 11 ++++-
+ drivers/pci/hotplug/shpchp.h               |  1 -
+ drivers/pci/hotplug/shpchp_core.c          | 10 ----
+ drivers/pci/hotplug/shpchp_ctrl.c          |  2 +-
+ drivers/pci/pcie/aer/aerdrv_core.c         |  1 +
+ drivers/pci/pcie/aspm.c                    |  3 ++
+ drivers/scsi/sd.c                          | 13 ++++--
+ drivers/usb/dwc3/gadget.c                  |  1 +
+ drivers/usb/host/uhci-hcd.c                | 15 +++---
+ include/linux/sched.h                      | 11 ++++-
+ kernel/ptrace.c                            | 72 +++++++++++++++++++++++------
+ kernel/sched/core.c                        |  3 +-
+ kernel/signal.c                            | 19 ++++----
+ kernel/trace/ftrace.c                      |  2 +-
+ security/integrity/evm/evm_crypto.c        |  4 +-
+ sound/usb/endpoint.c                       |  6 +--
+ 27 files changed, 231 insertions(+), 93 deletions(-)
 
 
