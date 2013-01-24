@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab3AXDpo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:45:44 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59125 "EHLO
+	id S1754074Ab3AXDph (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:45:37 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59121 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222Ab3AXDp0 (ORCPT
+	with ESMTP id S1754356Ab3AXDpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:45:26 -0500
+	Wed, 23 Jan 2013 22:45:25 -0500
 From: "Patil, Rachna" <rachna@ti.com>
 To: <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
@@ -20,9 +20,9 @@ CC: Samuel Ortiz <sameo@linux.intel.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
         <gururaja.hebbar@ti.com>, "Patil, Rachna" <rachna@ti.com>
-Subject: [PATCH v4 1/8] input: ti_am335x_tsc: Step enable bits made configurable
-Date: Thu, 24 Jan 2013 09:15:05 +0530
-Message-ID: <1358999112-31192-2-git-send-email-rachna@ti.com>
+Subject: [PATCH v4 4/8] MFD: ti_am335x_tscadc: add device tree binding information
+Date: Thu, 24 Jan 2013 09:15:08 +0530
+Message-ID: <1358999112-31192-5-git-send-email-rachna@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358999112-31192-1-git-send-email-rachna@ti.com>
 References: <1358999112-31192-1-git-send-email-rachna@ti.com>
@@ -34,75 +34,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Patil, Rachna" <rachna@ti.com>
 
-Current code has hard coded value written to
-step enable bits. Now the bits are updated based
-on how many steps are needed to be configured got
-from platform data.
-
-The user needs to take care not to exceed
-the count more than 16. While using ADC and TSC
-one should take care to set this parameter correctly.
-
 Signed-off-by: Patil, Rachna <rachna@ti.com>
 ---
- drivers/input/touchscreen/ti_am335x_tsc.c |   10 ++++++++--
- include/linux/mfd/ti_am335x_tscadc.h      |    1 -
- 2 files changed, 8 insertions(+), 3 deletions(-)
+Changes in v4:
+	Subnodes and their properties documentation added.
+	Non-standard properties prefixed with vendor name.
 
-diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-index 51e7b87..da652e0 100644
---- a/drivers/input/touchscreen/ti_am335x_tsc.c
-+++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-@@ -39,6 +39,7 @@ struct titsc {
- 	unsigned int		irq;
- 	unsigned int		wires;
- 	unsigned int		x_plate_resistance;
-+	unsigned int		enable_bits;
- 	bool			pen_down;
- 	int			steps_to_configure;
- };
-@@ -57,6 +58,7 @@ static void titsc_writel(struct titsc *tsc, unsigned int reg,
- static void titsc_step_config(struct titsc *ts_dev)
- {
- 	unsigned int	config;
-+	unsigned int	stepenable = 0;
- 	int i, total_steps;
- 
- 	/* Configure the Step registers */
-@@ -128,7 +130,11 @@ static void titsc_step_config(struct titsc *ts_dev)
- 	titsc_writel(ts_dev, REG_STEPDELAY(total_steps + 2),
- 			STEPCONFIG_OPENDLY);
- 
--	titsc_writel(ts_dev, REG_SE, STPENB_STEPENB_TC);
-+	for (i = 0; i <= (total_steps + 2); i++)
-+		stepenable |= 1 << i;
-+	ts_dev->enable_bits = stepenable;
+ .../devicetree/bindings/mfd/ti_am335x_tscadc.txt   |   52 ++++++++++++++++++++
+ 1 file changed, 52 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/ti_am335x_tscadc.txt
+
+diff --git a/Documentation/devicetree/bindings/mfd/ti_am335x_tscadc.txt b/Documentation/devicetree/bindings/mfd/ti_am335x_tscadc.txt
+new file mode 100644
+index 0000000..0100771
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/ti_am335x_tscadc.txt
+@@ -0,0 +1,52 @@
++Texas Instruments - TSC / ADC multi-functional device
 +
-+	titsc_writel(ts_dev, REG_SE, ts_dev->enable_bits);
- }
- 
- static void titsc_read_coordinates(struct titsc *ts_dev,
-@@ -250,7 +256,7 @@ static irqreturn_t titsc_irq(int irq, void *dev)
- 
- 	titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
- 
--	titsc_writel(ts_dev, REG_SE, STPENB_STEPENB_TC);
-+	titsc_writel(ts_dev, REG_SE, ts_dev->enable_bits);
- 	return IRQ_HANDLED;
- }
- 
-diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-index c79ad5d..23e4f33 100644
---- a/include/linux/mfd/ti_am335x_tscadc.h
-+++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -47,7 +47,6 @@
- #define STEPENB_MASK		(0x1FFFF << 0)
- #define STEPENB(val)		((val) << 0)
- #define STPENB_STEPENB		STEPENB(0x1FFFF)
--#define STPENB_STEPENB_TC	STEPENB(0x1FFF)
- 
- /* IRQ enable */
- #define IRQENB_HW_PEN		BIT(0)
++ti_tscadc is a multi-function device with touchscreen and ADC on chip.
++This document describes the binding for mfd device.
++
++Required properties:
++- compatible: "ti,ti-tscadc"
++- reg: Specifies the address of MFD block
++- interrupts: IRQ line connected to the main SoC
++- interrupt-parent: The parent interrupt controller
++
++Optional properties:
++- ti,hwmods: Hardware information related to TSC/ADC MFD device
++
++Sub-nodes:
++Device			Description
++------			-----------
++tsc			Touchscreen
++adc			Analog to digital converter
++
++Sub-node device required properties:
++tsc:
++- ti,wires:  4/5/8 wire touchscreen support on the platform.
++- ti,x-plate-resistance: X plate resistance.
++- ti,steps-to-configure: A step is configured to read a single co-ordinate value,
++			can be applied more number of times for better results.
++- ti,wire-config: Order for connecting wires on touchscreen.
++
++adc:
++- ti,adc-channels: Number of ADC channels used.
++
++Example:
++
++	tscadc: tscadc@44e0d000 {
++		compatible = "ti,ti-tscadc";
++		reg = <0x44e0d000 0x1000>;
++
++		interrupt-parent = <&intc>;
++		interrupts = <16>;
++		ti,hwmods = "adc_tsc";
++
++		tsc {
++			ti,wires = <4>;
++			ti,x-plate-resistance = <200>;
++			ti,steps-to-configure = <5>;
++			ti,wire-config = <0x00 0x11 0x22 0x33>;
++		};
++
++		adc {
++			ti,adc-channels = <4>;
++		};
++	};
 -- 
 1.7.9.5
 
