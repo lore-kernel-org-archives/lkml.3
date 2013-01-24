@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab3AXN3W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 08:29:22 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26755 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753092Ab3AXN3Q (ORCPT
+	id S1753682Ab3AXNcF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 08:32:05 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:37354 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab3AXNcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 08:29:16 -0500
-X-Authority-Analysis: v=2.0 cv=QcjkT7nv c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=7UwS5AP4EsIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=tqG-MREYpvAA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=yPCof4ZbAAAA:8 a=JiJ64MnnBwk5KDO_vOYA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=7DSvI1NPTFQA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1359034154.21576.142.camel@gandalf.local.home>
-Subject: [PATCH][GIT PULL] tracing: Fix unsigned int compare of zero in
- recursion check
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Date: Thu, 24 Jan 2013 08:29:14 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Jan 2013 08:32:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <1357847443-3878-1-git-send-email-jacob.shin@amd.com>
+References: <1357847443-3878-1-git-send-email-jacob.shin@amd.com>
+Date: Thu, 24 Jan 2013 14:31:59 +0100
+Message-ID: <CABPqkBS-cE3T6ccVDGtzgQBKM_bC9vugzWzP94ycYz4dWujp2g@mail.gmail.com>
+Subject: Re: [PATCH RESEND V5 0/6] perf, amd: Enable AMD family 15h
+ northbridge counters
+From: Stephane Eranian <eranian@google.com>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 10, 2013 at 8:50 PM, Jacob Shin <jacob.shin@amd.com> wrote:
+> The following patchset enables 4 additional performance counters in
+> AMD family 15h processors that count northbridge events -- such as
+> number of DRAM accesses.
+>
+In order for me to test this patch set more thoroughly it would help if you
+could also provide me a patch to add the Fam15h uncore events to libpfm4.
+In the past, Robert Richter took care of this. I hope you can fill his role for
+this. So please, if you could send me the patch quickly, that would help
+the review of your patch.
 
-Ingo,
-
-I've put this on top of the patches I posted for linux-next, as
-those were the patches that contained the bug this fixed.
-
-Please pull the latest tip/perf/core tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/core
-
-Head SHA1: d41032a83b4683481cadff84bbf8e0eafeaba830
-
-
-Steven Rostedt (1):
-      tracing: Fix unsigned int compare of zero in recursion check
-
-----
- kernel/trace/trace_functions.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
----------------------------
-commit d41032a83b4683481cadff84bbf8e0eafeaba830
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Thu Jan 24 07:52:34 2013 -0500
-
-    tracing: Fix unsigned int compare of zero in recursion check
-    
-    Dan's smatch found a compare bug with the result of the
-    trace_test_and_set_recursion() and comparing to less than
-    zero. If the function fails, it returns -1, but was saved in
-    an unsigned int, which will never be less than zero and will
-    ignore the result of the test if a recursion did happen.
-    
-    Luckily this is the last of the recursion tests, as the
-    infrastructure of ftrace would catch recursions before it
-    got here, except for some few exceptions.
-    
-    Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index 1c327ef..6011525 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -61,7 +61,7 @@ function_trace_call(unsigned long ip, unsigned long parent_ip,
- 	struct trace_array *tr = func_trace;
- 	struct trace_array_cpu *data;
- 	unsigned long flags;
--	unsigned int bit;
-+	int bit;
- 	int cpu;
- 	int pc;
- 
+Thanks.
 
 
+
+> This patchset is based on previous work done by Robert Richter
+> <rric@kernel.org> :
+>
+> https://lkml.org/lkml/2012/6/19/324
+>
+> The main differences are:
+>
+> * The northbridge counters are indexed contiguously right above the
+>   core performance counters.
+>
+> * MSR address offset calculations are moved to architecture specific
+>   files.
+>
+> * Interrups are set up to be delivered only to a single core.
+>
+> V5:
+> Rebased against latest tip
+>
+> V4:
+> * Moved interrupt core select set up back to event constraints
+>   function, sicne during ->hw_config time we do not yet know on which
+>   CPU the the event will run on.
+> * Tested on and made minor revisions to make sure that the patchset is
+>   compatible with upcoming AMD Family 16h processors, and will support
+>   core and NB counters without any further patches.
+>
+> V3:
+> Addressed the following feedback/comments from Robert's review
+> * https://lkml.org/lkml/2012/11/16/484
+> * https://lkml.org/lkml/2012/11/26/162
+>
+> V2:
+> Separate out Robert's patches, and add properly ordered certificate of
+> origins.
+>
+> Jacob Shin (4):
+>   perf, amd: Use proper naming scheme for AMD bit field definitions
+>   perf, x86: Move MSR address offset calculation to architecture
+>     specific files
+>   perf, x86: Allow for architecture specific RDPMC indexes
+>   perf, amd: Enable northbridge performance counters on AMD family 15h
+>
+> Robert Richter (2):
+>   perf, amd: Rework northbridge event constraints handler
+>   perf, amd: Generalize northbridge constraints code for family 15h
+>
+>  arch/x86/include/asm/cpufeature.h     |    2 +
+>  arch/x86/include/asm/perf_event.h     |   13 +-
+>  arch/x86/include/uapi/asm/msr-index.h |    2 +
+>  arch/x86/kernel/cpu/perf_event.c      |    2 +-
+>  arch/x86/kernel/cpu/perf_event.h      |   25 ++-
+>  arch/x86/kernel/cpu/perf_event_amd.c  |  318 +++++++++++++++++++++++++--------
+>  6 files changed, 268 insertions(+), 94 deletions(-)
+>
+> --
+> 1.7.9.5
+>
+>
