@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab3AXDfN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:35:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44443 "EHLO
+	id S1753504Ab3AXDfl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:35:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44430 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755072Ab3AXDbr (ORCPT
+	with ESMTP id S1754934Ab3AXDbe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:31:47 -0500
+	Wed, 23 Jan 2013 22:31:34 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ilija Hadzic <ihadzic@research.bell-labs.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
+Cc: Hans de Goede <hdegoede@redhat.com>, Dave Airlie <airlied@redhat.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 66/74] drm/radeon: fix NULL pointer dereference in UMS mode
-Date: Thu, 24 Jan 2013 01:27:18 -0200
-Message-Id: <1358998046-613-67-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 63/74] udldrmfb: udl_get_edid: drop unneeded i--
+Date: Thu, 24 Jan 2013 01:27:15 -0200
+Message-Id: <1358998046-613-64-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,43 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilija Hadzic <ihadzic@research.bell-labs.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit ff4bd0827764e10a428a9d39e6814c5478863f94 upstream.
+commit 7b4cf994e4c6ba48872bb25253cc393b7fb74c82 upstream.
 
-In UMS mode parser->rdev is NULL, so dereferencing
-will cause an oops.
+This is a left-over from when udl_get_edid returned the amount of bytes
+successfully read, which it no longer does.
 
-Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_cs.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/udl/udl_connector.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_cs.c b/drivers/gpu/drm/radeon/radeon_cs.c
-index c84eb1a..66d81ae 100644
---- a/drivers/gpu/drm/radeon/radeon_cs.c
-+++ b/drivers/gpu/drm/radeon/radeon_cs.c
-@@ -274,7 +274,7 @@ int radeon_cs_parser_init(struct radeon_cs_parser *p, void *data)
- 				  p->chunks[p->chunk_ib_idx].length_dw);
- 			return -EINVAL;
+diff --git a/drivers/gpu/drm/udl/udl_connector.c b/drivers/gpu/drm/udl/udl_connector.c
+index b7780dd..3234224 100644
+--- a/drivers/gpu/drm/udl/udl_connector.c
++++ b/drivers/gpu/drm/udl/udl_connector.c
+@@ -40,7 +40,6 @@ static u8 *udl_get_edid(struct udl_device *udl)
+ 				      HZ);
+ 		if (ret < 1) {
+ 			DRM_ERROR("Read EDID byte %d failed err %x\n", i, ret);
+-			i--;
+ 			goto error;
  		}
--		if ((p->rdev->flags & RADEON_IS_AGP)) {
-+		if (p->rdev && (p->rdev->flags & RADEON_IS_AGP)) {
- 			p->chunks[p->chunk_ib_idx].kpage[0] = kmalloc(PAGE_SIZE, GFP_KERNEL);
- 			p->chunks[p->chunk_ib_idx].kpage[1] = kmalloc(PAGE_SIZE, GFP_KERNEL);
- 			if (p->chunks[p->chunk_ib_idx].kpage[0] == NULL ||
-@@ -613,7 +613,8 @@ static int radeon_cs_update_pages(struct radeon_cs_parser *p, int pg_idx)
- 	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
- 	int i;
- 	int size = PAGE_SIZE;
--	bool copy1 = (p->rdev->flags & RADEON_IS_AGP) ? false : true;
-+	bool copy1 = (p->rdev && (p->rdev->flags & RADEON_IS_AGP)) ?
-+		false : true;
- 
- 	for (i = ibc->last_copied_page + 1; i < pg_idx; i++) {
- 		if (DRM_COPY_FROM_USER(p->ib.ptr + (i * (PAGE_SIZE/4)),
+ 		block[i] = rbuf[1];
 -- 
 1.7.9.5
 
