@@ -1,94 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030199Ab3AXUUx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:20:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34524 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755873Ab3AXUUj (ORCPT
+	id S1161007Ab3AXUVF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:21:05 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49524 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030184Ab3AXUUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:20:39 -0500
-Date: Thu, 24 Jan 2013 12:20:21 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-03d8c5dc53d2e883bd3badb6436a33fc64e2f638@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        namhyung.kim@lge.com, namhyung@kernel.org, rostedt@goodmis.org,
-        tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, namhyung.kim@lge.com, tglx@linutronix.de,
-        namhyung@kernel.org, dzickus@redhat.com
-In-Reply-To: <1356576585-28782-1-git-send-email-namhyung@kernel.org>
-References: <1356576585-28782-1-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] watchdog: Use local_clock for get_timestamp()
-Git-Commit-ID: 03d8c5dc53d2e883bd3badb6436a33fc64e2f638
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 12:20:27 -0800 (PST)
+	Thu, 24 Jan 2013 15:20:49 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 00/35] x86, boot, 64bit: Add support for loading ramdisk and bzImage above 4G
+Date: Thu, 24 Jan 2013 12:19:41 -0800
+Message-Id: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  03d8c5dc53d2e883bd3badb6436a33fc64e2f638
-Gitweb:     http://git.kernel.org/tip/03d8c5dc53d2e883bd3badb6436a33fc64e2f638
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 27 Dec 2012 11:49:44 +0900
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 24 Jan 2013 15:13:36 +0100
+Now we have limit kdump reseved under 896M, because kexec has the limitation.
+and also bzImage need to stay under 4g.
 
-watchdog: Use local_clock for get_timestamp()
+To make kexec/kdump could use range above 4g, we need to make bzImage and
+ramdisk could be loaded above 4g.
+During booting bzImage will be unpacked on same postion and stay high.
 
-The get_timestamp() function is always called with current cpu,
-thus using local_clock() would be more appropriate and it makes
-the code shorter and cleaner IMHO.
+The patches add fields in setup_header and boot_params to
+1. get info about ramdisk position info above 4g from bootloader/kexec
+2. get info about cmd_line_ptr info above 4g from bootloader/kexec
+3. set xloadflags bit0 in header for bzImage and bootloader/kexec load
+   could check that to decide if it could to put bzImage high.
+4. use sentinel to make sure ext_* fields in boot_params could be used.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1356576585-28782-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/watchdog.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+This patches is tested with kexec tools with local changes and they are sent
+to kexec list later.
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 75a2ab3..082ca68 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -112,9 +112,9 @@ static int get_softlockup_thresh(void)
-  * resolution, and we don't need to waste time with a big divide when
-  * 2^30ns == 1.074s.
-  */
--static unsigned long get_timestamp(int this_cpu)
-+static unsigned long get_timestamp(void)
- {
--	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
-+	return local_clock() >> 30LL;  /* 2^30 ~= 10^9 */
- }
- 
- static void set_sample_period(void)
-@@ -132,9 +132,7 @@ static void set_sample_period(void)
- /* Commands for resetting the watchdog */
- static void __touch_watchdog(void)
- {
--	int this_cpu = smp_processor_id();
--
--	__this_cpu_write(watchdog_touch_ts, get_timestamp(this_cpu));
-+	__this_cpu_write(watchdog_touch_ts, get_timestamp());
- }
- 
- void touch_softlockup_watchdog(void)
-@@ -195,7 +193,7 @@ static int is_hardlockup(void)
- 
- static int is_softlockup(unsigned long touch_ts)
- {
--	unsigned long now = get_timestamp(smp_processor_id());
-+	unsigned long now = get_timestamp();
- 
- 	/* Warn about unreasonable delays: */
- 	if (time_after(now, touch_ts + get_softlockup_thresh()))
+could be found at:
+
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-boot
+
+and it is on top of linus's tree 2013-01-24
+plus tip:x86/mm, tip:x86/mm2
+
+Thanks a lot for Stefano Stabellini on testing the branch with all xen configurations.
+Thanks a lot for Konrad on testing with various iommu setups.
+Thanks a lot for Borislav Petkov on reviewing and suggestion to make comments and changelog
+a lot more readable.
+
+-v2: add ext_cmd_line_ptr support, and handle boot_param/cmd_line is above
+     4G case.
+-v3: according to hpa, use xloadflags instead code32_start_offset.
+     0x200 will not be changed...
+-v4: move ext_ramdisk_image/ext_ramdisk_size/ext_cmd_line_ptr to boot_params.
+     add handling cross GB boundary case.
+-v5: put spare pages in BRK,so could avoid wasting about 4 pages.
+     add check for bit USE_EXT_BOOT_PARAMS in xloadflags
+-v6: use sentinel according to HPA
+     add kdump load high support.
+-v7: move sentinel from 0x1f0 to 0x1ef... according to HPA.
+     Use HPA's #PF handler version instead of ioremap.
+-v7u1: update changelog and comments, so it could break KGDB...
+-v7u2: update changelog and comments, and clear more fields for sentinel.
+     Update swiotlb autoswitch off patch.
+     Fix crash with xen PV guest with 2G.
+
+H. Peter Anvin (1):
+  x86, 64bit: early #PF handler set page table
+
+Yinghai Lu (34):
+  x86, mm: Fix page table early allocation offset checking
+  x86: Handle multiple exactmaps and out of order exactmap
+  x86, mm: Introduce memmap=reserveram
+  x86: Clean up e820 add kernel range
+  x86, 64bit, mm: Make pgd next calculation consistent with pud/pmd
+  x86, realmode: Set real_mode permissions early
+  x86, 64bit, mm: Add generic kernel/ident mapping helper
+  x86, 64bit: Copy zero-page early
+  x86, 64bit, realmode: Use init_level4_pgt to set trapmoline_pgd directly
+  x86, realmode: Separate real_mode reserve and setup
+  x86, 64bit: #PF handler set page to cover only 2M per #PF
+  x86, 64bit: Don't set max_pfn_mapped wrong value early on native path
+  x86: Merge early_reserve_initrd for 32bit and 64bit
+  x86: Add get_ramdisk_image/size()
+  x86, boot: Add get_cmd_line_ptr()
+  x86, boot: Move checking of cmd_line_ptr out of common path
+  x86, boot: Pass cmd_line_ptr with unsigned long instead
+  x86, boot: Move verify_cpu.S and no_longmode down
+  x86, boot: Move lldt/ltr out of 64bit code section
+  x86, kexec: Remove 1024G limitation for kexec buffer on 64bit
+  x86, kexec: Set ident mapping for kernel that is above max_pfn
+  x86, kexec: Replace ident_mapping_init and init_level4_page
+  x86, kexec, 64bit: Only set ident mapping for ram.
+  x86, boot: Add fields to support load bzImage and ramdisk above 4G
+  x86, boot: Update comments about entries for 64bit image
+  x86, boot: Not need to check setup_header version for setup_data
+  memblock: Add memblock_mem_size()
+  x86, kdump: Remove crashkernel range find limit for 64bit
+  x86: Add Crash kernel low reservation
+  x86: Merge early kernel reserve for 32bit and 64bit
+  x86, 64bit, mm: Mark data/bss/brk to nx
+  x86, 64bit, mm: hibernate use generic mapping_init
+  mm: Add alloc_bootmem_low_pages_nopanic()
+  x86: Don't panic if can not alloc buffer for swiotlb
+
+ Documentation/kernel-parameters.txt     |    3 +
+ Documentation/x86/boot.txt              |   53 +++++++-
+ Documentation/x86/zero-page.txt         |    4 +
+ arch/mips/cavium-octeon/dma-octeon.c    |    3 +-
+ arch/x86/boot/boot.h                    |   18 ++-
+ arch/x86/boot/cmdline.c                 |   12 +-
+ arch/x86/boot/compressed/cmdline.c      |   12 +-
+ arch/x86/boot/compressed/head_64.S      |   48 ++++---
+ arch/x86/boot/compressed/misc.c         |   19 +++
+ arch/x86/boot/header.S                  |   12 +-
+ arch/x86/boot/setup.ld                  |    7 ++
+ arch/x86/include/asm/init.h             |    9 ++
+ arch/x86/include/asm/kexec.h            |    6 +-
+ arch/x86/include/asm/page.h             |    4 +
+ arch/x86/include/asm/pgtable_64_types.h |    4 +
+ arch/x86/include/asm/processor.h        |    1 +
+ arch/x86/include/asm/realmode.h         |    3 +-
+ arch/x86/include/uapi/asm/bootparam.h   |   24 +++-
+ arch/x86/kernel/e820.c                  |   31 ++++-
+ arch/x86/kernel/head32.c                |   20 ---
+ arch/x86/kernel/head64.c                |  131 ++++++++++++++-----
+ arch/x86/kernel/head_64.S               |  210 +++++++++++++++++++------------
+ arch/x86/kernel/machine_kexec_64.c      |  171 ++++++++-----------------
+ arch/x86/kernel/setup.c                 |  164 +++++++++++++++++-------
+ arch/x86/kernel/traps.c                 |    9 ++
+ arch/x86/mm/init.c                      |   20 ++-
+ arch/x86/mm/init_64.c                   |   97 ++++++++++++--
+ arch/x86/power/hibernate_64.c           |   66 ++++------
+ arch/x86/realmode/init.c                |   45 ++++---
+ drivers/xen/swiotlb-xen.c               |    4 +-
+ include/linux/bootmem.h                 |    5 +
+ include/linux/kexec.h                   |    3 +
+ include/linux/memblock.h                |    1 +
+ include/linux/swiotlb.h                 |    2 +-
+ kernel/kexec.c                          |   34 ++++-
+ lib/swiotlb.c                           |   47 ++++---
+ mm/bootmem.c                            |    8 ++
+ mm/memblock.c                           |   17 +++
+ mm/nobootmem.c                          |    8 ++
+ 39 files changed, 887 insertions(+), 448 deletions(-)
+
+-- 
+1.7.10.4
+
