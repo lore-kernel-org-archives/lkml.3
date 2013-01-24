@@ -1,188 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab3AXJ3v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 04:29:51 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46247 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052Ab3AXJ3i (ORCPT
+	id S1752934Ab3AXJd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 04:33:58 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:50514 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752532Ab3AXJdy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 04:29:38 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-61-5100ff003be2
-Date: Thu, 24 Jan 2013 18:29:36 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [PATCH v2 15/17] workqueue: remove global_cwq
-Message-ID: <20130124092936.GA2424@lge.com>
-References: <1358386969-945-1-git-send-email-tj@kernel.org>
- <1358386969-945-16-git-send-email-tj@kernel.org>
- <20130123180957.GF2373@mtj.dyndns.org>
+	Thu, 24 Jan 2013 04:33:54 -0500
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "rob@landley.net" <rob@landley.net>, "Girdwood, Liam" <lrg@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [alsa-devel] [PATCH V2 2/2] ASoC: Davinci: machine: Add device
+ tree binding
+Thread-Topic: [alsa-devel] [PATCH V2 2/2] ASoC: Davinci: machine: Add device
+ tree binding
+Thread-Index: AQHN+YEX5mdJGMimIk6+yhi+9UfYCZhX8ngw
+Date: Thu, 24 Jan 2013 09:33:34 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EB52FD9@DBDE01.ent.ti.com>
+References: <1357293277-25543-1-git-send-email-gururaja.hebbar@ti.com>
+ <1357293277-25543-3-git-send-email-gururaja.hebbar@ti.com>
+ <20130104122612.GM4627@opensource.wolfsonmicro.com>
+ <1BAFE6F6C881BF42822005164F1491C33EB50DCF@DBDE01.ent.ti.com>
+ <20130123154804.GB4565@opensource.wolfsonmicro.com>
+In-Reply-To: <20130123154804.GB4565@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130123180957.GF2373@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Tejun.
+On Wed, Jan 23, 2013 at 21:18:12, Mark Brown wrote:
+> On Wed, Jan 23, 2013 at 12:39:35PM +0000, Hebbar, Gururaja wrote:
+> > On Fri, Jan 04, 2013 at 17:56:12, Mark Brown wrote:
+> 
+> > > The CODEC driver biases should be changed over to be supplies, this
+> > > makes the above much more natural - the routing there is a hack for
+> > > older versions of ASoc.  Otherwise this looks fine.
+> 
+> > ON TLV320AIC3x Codec, MIC Bias power on/off share the same register bits
+> > with Bias voltage output.
+> 
+> So you need to use an event to write the actual enable bit.
 
-On Wed, Jan 23, 2013 at 10:09:57AM -0800, Tejun Heo wrote:
-> global_cwq is now nothing but a container for per-cpu standard
-> worker_pools.  Declare the worker pools directly as
-> cpu/unbound_std_worker_pools[] and remove global_cwq.
-> 
-> * ____cacheline_aligned_in_smp moved from global_cwq to worker_pool.
->   This probably would have made sense even before this change as we
->   want each pool to be aligned.
-> 
-> * get_gcwq() is replaced with std_worker_pools() which returns the
->   pointer to the standard pool array for a given CPU.
-> 
-> * __alloc_workqueue_key() updated to use get_std_worker_pool() instead
->   of open-coding pool determination.
-> 
-> This is part of an effort to remove global_cwq and make worker_pool
-> the top level abstraction, which in turn will help implementing worker
-> pools with user-specified attributes.
-> 
-> v2: Joonsoo pointed out that it'd better to align struct worker_pool
->     rather than the array so that every pool is aligned.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Joonsoo Kim <js1304@gmail.com>
-> ---
-> Rebased on top of the current wq/for-3.9 and Joonsoo's comments
-> applied.
-> 
-> Thanks.
-> 
->  kernel/workqueue.c          |   46 ++++++++++++++++----------------------------
->  kernel/workqueue_internal.h |    1 
->  2 files changed, 17 insertions(+), 30 deletions(-)
-> 
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -144,16 +144,6 @@ struct worker_pool {
->  
->  	struct mutex		assoc_mutex;	/* protect POOL_DISASSOCIATED */
->  	struct ida		worker_ida;	/* L: for worker IDs */
-> -};
-> -
-> -/*
-> - * Global per-cpu workqueue.  There's one and only one for each cpu
-> - * and all works are queued and processed here regardless of their
-> - * target workqueues.
-> - */
-> -struct global_cwq {
-> -	struct worker_pool	pools[NR_STD_WORKER_POOLS];
-> -						/* normal and highpri pools */
->  } ____cacheline_aligned_in_smp;
->  
->  /*
-> @@ -250,8 +240,8 @@ EXPORT_SYMBOL_GPL(system_freezable_wq);
->  #include <trace/events/workqueue.h>
->  
->  #define for_each_std_worker_pool(pool, cpu)				\
-> -	for ((pool) = &get_gcwq((cpu))->pools[0];			\
-> -	     (pool) < &get_gcwq((cpu))->pools[NR_STD_WORKER_POOLS]; (pool)++)
-> +	for ((pool) = &std_worker_pools(cpu)[0];			\
-> +	     (pool) < &std_worker_pools(cpu)[NR_STD_WORKER_POOLS]; (pool)++)
->  
->  #define for_each_busy_worker(worker, i, pos, pool)			\
->  	hash_for_each(pool->busy_hash, i, pos, worker, hentry)
-> @@ -427,19 +417,19 @@ static LIST_HEAD(workqueues);
->  static bool workqueue_freezing;		/* W: have wqs started freezing? */
->  
->  /*
-> - * The almighty global cpu workqueues.  nr_running is the only field
-> - * which is expected to be used frequently by other cpus via
-> - * try_to_wake_up().  Put it in a separate cacheline.
-> + * The CPU standard worker pools.  nr_running is the only field which is
-> + * expected to be used frequently by other cpus via try_to_wake_up().  Put
-> + * it in a separate cacheline.
->   */
-> -static DEFINE_PER_CPU(struct global_cwq, global_cwq);
-> +static DEFINE_PER_CPU(struct worker_pool [NR_STD_WORKER_POOLS],
-> +		      cpu_std_worker_pools);
->  static DEFINE_PER_CPU_SHARED_ALIGNED(atomic_t, pool_nr_running[NR_STD_WORKER_POOLS]);
+Yes. Bias Enable/Disable is possible using SND_SOC_DAPM_SUPPLY. However the 
+actual Bias voltage should be user selectable.
 
-AFAIK, worker_pool can be accessed by other cpus.
-So, I think that we also need "DEFINE_PER_CPU_SHARED_ALIGNED(struct worker_pool [], xxx)".
+> 
+> > SGTL5000 --> Single register for MIC BIAS enable & output impedance of MIC
+> > Bias. The driver uses SND_SOC_DAPM_POST_PMU & SND_SOC_DAPM_PRE_PMD macro to
+> > handle the MIC Bias enable & disable event.
+> 
+> This is the way these things should be handled.
 
->  /*
-> - * Global cpu workqueue and nr_running counter for unbound gcwq.  The pools
-> - * for online CPUs have POOL_DISASSOCIATED set, and all their workers have
-> - * WORKER_UNBOUND set.
-> + * Standard worker pools and nr_running counter for unbound CPU.  The pools
-> + * have POOL_DISASSOCIATED set, and all workers have WORKER_UNBOUND set.
->   */
-> -static struct global_cwq unbound_global_cwq;
-> +static struct worker_pool unbound_std_worker_pools[NR_STD_WORKER_POOLS];
->  static atomic_t unbound_pool_nr_running[NR_STD_WORKER_POOLS] = {
->  	[0 ... NR_STD_WORKER_POOLS - 1]	= ATOMIC_INIT(0),	/* always 0 */
->  };
-> @@ -450,17 +440,17 @@ static DEFINE_IDR(worker_pool_idr);
->  
->  static int worker_thread(void *__worker);
->  
-> -static struct global_cwq *get_gcwq(unsigned int cpu)
-> +static struct worker_pool *std_worker_pools(int cpu)
->  {
->  	if (cpu != WORK_CPU_UNBOUND)
-> -		return &per_cpu(global_cwq, cpu);
-> +		return per_cpu(cpu_std_worker_pools, cpu);
->  	else
-> -		return &unbound_global_cwq;
-> +		return unbound_std_worker_pools;
->  }
->  
->  static int std_worker_pool_pri(struct worker_pool *pool)
->  {
-> -	return pool - get_gcwq(pool->cpu)->pools;
-> +	return pool - std_worker_pools(pool->cpu);
->  }
->  
->  /* allocate ID and assign it to @pool */
-> @@ -487,9 +477,9 @@ static struct worker_pool *worker_pool_b
->  
->  static struct worker_pool *get_std_worker_pool(int cpu, bool highpri)
->  {
-> -	struct global_cwq *gcwq = get_gcwq(cpu);
-> +	struct worker_pool *pools = std_worker_pools(cpu);
->  
-> -	return &gcwq->pools[highpri];
-> +	return &pools[highpri];
->  }
->  
->  static atomic_t *get_pool_nr_running(struct worker_pool *pool)
-> @@ -3269,11 +3259,9 @@ struct workqueue_struct *__alloc_workque
->  
->  	for_each_cwq_cpu(cpu, wq) {
->  		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
-> -		struct global_cwq *gcwq = get_gcwq(cpu);
-> -		int pool_idx = (bool)(flags & WQ_HIGHPRI);
->  
->  		BUG_ON((unsigned long)cwq & WORK_STRUCT_FLAG_MASK);
-> -		cwq->pool = &gcwq->pools[pool_idx];
-> +		cwq->pool = get_std_worker_pool(cpu, flags & WQ_HIGHPRI);
->  		cwq->wq = wq;
->  		cwq->flush_color = -1;
->  		cwq->max_active = max_active;
-> --- a/kernel/workqueue_internal.h
-> +++ b/kernel/workqueue_internal.h
-> @@ -10,7 +10,6 @@
->  #include <linux/workqueue.h>
->  #include <linux/kthread.h>
->  
-> -struct global_cwq;
->  struct worker_pool;
->  
->  /*
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+However, as mentioned before, TLV320AIC3x Codec there is no separate 
+enable/disable bit. It is mixed with Bias Voltage settings.
+
+So it is either 
+	a. Bias is disabled 
+	b. Bias is enabled with some voltage. This voltage should be user 
+         configurable.
+
+So, by just using the SND_SOC_DAPM_POST_PMU & SND_SOC_DAPM_PRE_PMD I can mask 
+& handle one particular voltage. 
+
+Now I am not able understand how to make this user configurable using
+SND_SOC_DAPM_xx macro.
+
+
+I believe the below code change [1] should work in this situation. What is your opinion?
+
+
+
+Thanks & Regards
+Gururaja
+
+diff --git a/sound/soc/codecs/tlv320aic3x.c b/sound/soc/codecs/tlv320aic3x.c
+index 5708a97..2c17e46 100644
+--- a/sound/soc/codecs/tlv320aic3x.c
++++ b/sound/soc/codecs/tlv320aic3x.c
+@@ -268,6 +268,11 @@ static DECLARE_TLV_DB_SCALE(adc_tlv, 0, 50, 0);
+  */
+ static DECLARE_TLV_DB_SCALE(output_stage_tlv, -5900, 50, 1);
+ 
++static const char *mic_bias_level_txt[] = { "off", "2V", "2.5V", "AVDD" };
++
++static const struct soc_enum mic_bias_level =
++SOC_ENUM_SINGLE(MICBIAS_CTRL, 6, 4, mic_bias_level_txt);
++
+ static const struct snd_kcontrol_new aic3x_snd_controls[] = {
+ 	/* Output */
+ 	SOC_DOUBLE_R_TLV("PCM Playback Volume",
+@@ -391,6 +396,9 @@ static const struct snd_kcontrol_new aic3x_snd_controls[] = {
+ 	SOC_DOUBLE_R("PGA Capture Switch", LADC_VOL, RADC_VOL, 7, 0x01, 1),
+ 
+ 	SOC_ENUM("ADC HPF Cut-off", aic3x_enum[ADC_HPF_ENUM]),
++
++	/* Mic Bias Level */
++	SOC_ENUM("Mic Bias Level", mic_bias_level),
+ };
+ 
+ /*
+@@ -596,12 +604,7 @@ static const struct snd_soc_dapm_widget aic3x_dapm_widgets[] = {
+ 			 AIC3X_ASD_INTF_CTRLA, 0, 3, 3, 0),
+ 
+ 	/* Mic Bias */
+-	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "Mic Bias 2V",
+-			 MICBIAS_CTRL, 6, 3, 1, 0),
+-	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "Mic Bias 2.5V",
+-			 MICBIAS_CTRL, 6, 3, 2, 0),
+-	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "Mic Bias AVDD",
+-			 MICBIAS_CTRL, 6, 3, 3, 0),
++	SND_SOC_DAPM_SUPPLY("Mic Bias", MICBIAS_CTRL, 6, 0, NULL, 0),
+ 
+ 	/* Output mixers */
+ 	SND_SOC_DAPM_MIXER("Left Line Mixer", SND_SOC_NOPM, 0, 0,
+diff --git a/sound/soc/davinci/davinci-evm.c b/sound/soc/davinci/davinci-evm.c
+index 82d29a5..37b8e78 100644
+--- a/sound/soc/davinci/davinci-evm.c
++++ b/sound/soc/davinci/davinci-evm.c
+@@ -128,9 +128,9 @@ static const struct snd_soc_dapm_route audio_map[] = {
+ 	{"Line Out", NULL, "RLOUT"},
+ 
+ 	/* Mic connected to (MIC3L | MIC3R) */
+-	{"MIC3L", NULL, "Mic Bias 2V"},
+-	{"MIC3R", NULL, "Mic Bias 2V"},
+-	{"Mic Bias 2V", NULL, "Mic Jack"},
++	{"MIC3L", NULL, "Mic Bias"},
++	{"MIC3R", NULL, "Mic Bias"},
++	{"Mic Bias", NULL, "Mic Jack"},
+ 
+ 	/* Line In connected to (LINE1L | LINE2L), (LINE1R | LINE2R) */
+ 	{"LINE1L", NULL, "Line In"},
+
+
+
+
