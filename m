@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161007Ab3AXUVF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:21:05 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:49524 "EHLO
+	id S1030224Ab3AXUVP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:21:15 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49628 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030184Ab3AXUUt (ORCPT
+	with ESMTP id S1030202Ab3AXUU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:20:49 -0500
+	Thu, 24 Jan 2013 15:20:57 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
@@ -16,141 +16,78 @@ Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Jason Wessel <jason.wessel@windriver.com>,
         Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 00/35] x86, boot, 64bit: Add support for loading ramdisk and bzImage above 4G
-Date: Thu, 24 Jan 2013 12:19:41 -0800
-Message-Id: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 02/35] x86: Handle multiple exactmaps and out of order exactmap
+Date: Thu, 24 Jan 2013 12:19:43 -0800
+Message-Id: <1359058816-7615-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
+References: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we have limit kdump reseved under 896M, because kexec has the limitation.
-and also bzImage need to stay under 4g.
+Current code expect that we only have one exactmap and exactmap need to
+first one in memmap=.
 
-To make kexec/kdump could use range above 4g, we need to make bzImage and
-ramdisk could be loaded above 4g.
-During booting bzImage will be unpacked on same postion and stay high.
+memmap=exactmap will throw away all original entries, but also until
+then user defined (through other provided memmap= parameters) areas.
+That means all memmap= boot parameters passed before a memmap=exactmap
+parameter are not recognized.
 
-The patches add fields in setup_header and boot_params to
-1. get info about ramdisk position info above 4g from bootloader/kexec
-2. get info about cmd_line_ptr info above 4g from bootloader/kexec
-3. set xloadflags bit0 in header for bzImage and bootloader/kexec load
-   could check that to decide if it could to put bzImage high.
-4. use sentinel to make sure ext_* fields in boot_params could be used.
+Without this fix:
+	memmap=x@y memmap=exactmap memmap=i#k
+only i#k would get recognized.  This is wrong.
 
-This patches is tested with kexec tools with local changes and they are sent
-to kexec list later.
+This fix will scan the boot_command_line to find if there is exactmap at
+first and only throw away all original e820 entries once, and then parse
+other memmap= option.
 
-could be found at:
+-v2: incorporate change log from Thomas Renninger.
 
-        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-boot
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Thomas Renninger <trenn@suse.de>
+---
+ arch/x86/kernel/e820.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-and it is on top of linus's tree 2013-01-24
-plus tip:x86/mm, tip:x86/mm2
-
-Thanks a lot for Stefano Stabellini on testing the branch with all xen configurations.
-Thanks a lot for Konrad on testing with various iommu setups.
-Thanks a lot for Borislav Petkov on reviewing and suggestion to make comments and changelog
-a lot more readable.
-
--v2: add ext_cmd_line_ptr support, and handle boot_param/cmd_line is above
-     4G case.
--v3: according to hpa, use xloadflags instead code32_start_offset.
-     0x200 will not be changed...
--v4: move ext_ramdisk_image/ext_ramdisk_size/ext_cmd_line_ptr to boot_params.
-     add handling cross GB boundary case.
--v5: put spare pages in BRK,so could avoid wasting about 4 pages.
-     add check for bit USE_EXT_BOOT_PARAMS in xloadflags
--v6: use sentinel according to HPA
-     add kdump load high support.
--v7: move sentinel from 0x1f0 to 0x1ef... according to HPA.
-     Use HPA's #PF handler version instead of ioremap.
--v7u1: update changelog and comments, so it could break KGDB...
--v7u2: update changelog and comments, and clear more fields for sentinel.
-     Update swiotlb autoswitch off patch.
-     Fix crash with xen PV guest with 2G.
-
-H. Peter Anvin (1):
-  x86, 64bit: early #PF handler set page table
-
-Yinghai Lu (34):
-  x86, mm: Fix page table early allocation offset checking
-  x86: Handle multiple exactmaps and out of order exactmap
-  x86, mm: Introduce memmap=reserveram
-  x86: Clean up e820 add kernel range
-  x86, 64bit, mm: Make pgd next calculation consistent with pud/pmd
-  x86, realmode: Set real_mode permissions early
-  x86, 64bit, mm: Add generic kernel/ident mapping helper
-  x86, 64bit: Copy zero-page early
-  x86, 64bit, realmode: Use init_level4_pgt to set trapmoline_pgd directly
-  x86, realmode: Separate real_mode reserve and setup
-  x86, 64bit: #PF handler set page to cover only 2M per #PF
-  x86, 64bit: Don't set max_pfn_mapped wrong value early on native path
-  x86: Merge early_reserve_initrd for 32bit and 64bit
-  x86: Add get_ramdisk_image/size()
-  x86, boot: Add get_cmd_line_ptr()
-  x86, boot: Move checking of cmd_line_ptr out of common path
-  x86, boot: Pass cmd_line_ptr with unsigned long instead
-  x86, boot: Move verify_cpu.S and no_longmode down
-  x86, boot: Move lldt/ltr out of 64bit code section
-  x86, kexec: Remove 1024G limitation for kexec buffer on 64bit
-  x86, kexec: Set ident mapping for kernel that is above max_pfn
-  x86, kexec: Replace ident_mapping_init and init_level4_page
-  x86, kexec, 64bit: Only set ident mapping for ram.
-  x86, boot: Add fields to support load bzImage and ramdisk above 4G
-  x86, boot: Update comments about entries for 64bit image
-  x86, boot: Not need to check setup_header version for setup_data
-  memblock: Add memblock_mem_size()
-  x86, kdump: Remove crashkernel range find limit for 64bit
-  x86: Add Crash kernel low reservation
-  x86: Merge early kernel reserve for 32bit and 64bit
-  x86, 64bit, mm: Mark data/bss/brk to nx
-  x86, 64bit, mm: hibernate use generic mapping_init
-  mm: Add alloc_bootmem_low_pages_nopanic()
-  x86: Don't panic if can not alloc buffer for swiotlb
-
- Documentation/kernel-parameters.txt     |    3 +
- Documentation/x86/boot.txt              |   53 +++++++-
- Documentation/x86/zero-page.txt         |    4 +
- arch/mips/cavium-octeon/dma-octeon.c    |    3 +-
- arch/x86/boot/boot.h                    |   18 ++-
- arch/x86/boot/cmdline.c                 |   12 +-
- arch/x86/boot/compressed/cmdline.c      |   12 +-
- arch/x86/boot/compressed/head_64.S      |   48 ++++---
- arch/x86/boot/compressed/misc.c         |   19 +++
- arch/x86/boot/header.S                  |   12 +-
- arch/x86/boot/setup.ld                  |    7 ++
- arch/x86/include/asm/init.h             |    9 ++
- arch/x86/include/asm/kexec.h            |    6 +-
- arch/x86/include/asm/page.h             |    4 +
- arch/x86/include/asm/pgtable_64_types.h |    4 +
- arch/x86/include/asm/processor.h        |    1 +
- arch/x86/include/asm/realmode.h         |    3 +-
- arch/x86/include/uapi/asm/bootparam.h   |   24 +++-
- arch/x86/kernel/e820.c                  |   31 ++++-
- arch/x86/kernel/head32.c                |   20 ---
- arch/x86/kernel/head64.c                |  131 ++++++++++++++-----
- arch/x86/kernel/head_64.S               |  210 +++++++++++++++++++------------
- arch/x86/kernel/machine_kexec_64.c      |  171 ++++++++-----------------
- arch/x86/kernel/setup.c                 |  164 +++++++++++++++++-------
- arch/x86/kernel/traps.c                 |    9 ++
- arch/x86/mm/init.c                      |   20 ++-
- arch/x86/mm/init_64.c                   |   97 ++++++++++++--
- arch/x86/power/hibernate_64.c           |   66 ++++------
- arch/x86/realmode/init.c                |   45 ++++---
- drivers/xen/swiotlb-xen.c               |    4 +-
- include/linux/bootmem.h                 |    5 +
- include/linux/kexec.h                   |    3 +
- include/linux/memblock.h                |    1 +
- include/linux/swiotlb.h                 |    2 +-
- kernel/kexec.c                          |   34 ++++-
- lib/swiotlb.c                           |   47 ++++---
- mm/bootmem.c                            |    8 ++
- mm/memblock.c                           |   17 +++
- mm/nobootmem.c                          |    8 ++
- 39 files changed, 887 insertions(+), 448 deletions(-)
-
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index d32abea..dc0b9f0 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -835,6 +835,8 @@ static int __init parse_memopt(char *p)
+ }
+ early_param("mem", parse_memopt);
+ 
++static bool __initdata exactmap_parsed;
++
+ static int __init parse_memmap_one(char *p)
+ {
+ 	char *oldp;
+@@ -844,6 +846,10 @@ static int __init parse_memmap_one(char *p)
+ 		return -EINVAL;
+ 
+ 	if (!strncmp(p, "exactmap", 8)) {
++		if (exactmap_parsed)
++			return 0;
++
++		exactmap_parsed = true;
+ #ifdef CONFIG_CRASH_DUMP
+ 		/*
+ 		 * If we are doing a crash dump, we still need to know
+@@ -879,6 +885,12 @@ static int __init parse_memmap_one(char *p)
+ }
+ static int __init parse_memmap_opt(char *str)
+ {
++	char *p = boot_command_line;
++
++	p = strstr(p, "exactmap");
++	if (p)
++		parse_memmap_one("exactmap");
++
+ 	while (str) {
+ 		char *k = strchr(str, ',');
+ 
 -- 
 1.7.10.4
 
