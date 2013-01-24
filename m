@@ -1,300 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3AXKd0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:33:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752489Ab3AXKdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:33:17 -0500
-Date: Thu, 24 Jan 2013 12:37:25 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V6 3/3] tuntap: allow polling/writing/reading when
- detached
-Message-ID: <20130124103725.GA9368@redhat.com>
-References: <1358351078-58915-1-git-send-email-jasowang@redhat.com>
- <1358351078-58915-4-git-send-email-jasowang@redhat.com>
- <20130116170356.GC4257@redhat.com>
- <50F750E4.4040002@redhat.com>
- <5101091C.90301@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5101091C.90301@redhat.com>
+	id S1753446Ab3AXKdr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:33:47 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58030 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753332Ab3AXKdi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 05:33:38 -0500
+Message-ID: <1359023612.2394.17.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 1/8] mm: use vm_unmapped_area() on parisc architecture
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, David Howells <dhowells@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-parisc@vger.kernel.org,
+        linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org
+Date: Thu, 24 Jan 2013 10:33:32 +0000
+In-Reply-To: <1358990991-21316-2-git-send-email-walken@google.com>
+References: <1358990991-21316-1-git-send-email-walken@google.com>
+	 <1358990991-21316-2-git-send-email-walken@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.6.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 06:12:44PM +0800, Jason Wang wrote:
-> On 01/17/2013 09:16 AM, Jason Wang wrote:
-> > On 01/17/2013 01:03 AM, Michael S. Tsirkin wrote:
-> >> On Wed, Jan 16, 2013 at 11:44:38PM +0800, Jason Wang wrote:
-> >>> We forbid polling, writing and reading when the file were detached, this may
-> >>> complex the user in several cases:
-> >>>
-> >>> - when guest pass some buffers to vhost/qemu and then disable some queues,
-> >>>   host/qemu needs to do its own cleanup on those buffers which is complex
-> >>>   sometimes. We can do this simply by allowing a user can still write to an
-> >>>   disabled queue. Write to an disabled queue will cause the packet pass to the
-> >>>   kernel and read will get nothing.
-> >>> - align the polling behavior with macvtap which never fails when the queue is
-> >>>   created. This can simplify the polling errors handling of its user (e.g vhost)
-> >>>
-> >>> In order to achieve this, tfile->tun were not assign to NULL when detached. And
-> >>> tfile->tun were converted to be RCU protected in order to let the data path can
-> >>> check whether the file is deated in a lockless manner. This will be used to
-> >>> prevent the flow caches from being updated for a detached queue.
-> >>>
-> >>> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> >>> ---
-> >>>  drivers/net/tun.c |   45 ++++++++++++++++++++++++++-------------------
-> >>>  1 files changed, 26 insertions(+), 19 deletions(-)
-> >>>
-> >>> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> >>> index c81680d..ec539a9 100644
-> >>> --- a/drivers/net/tun.c
-> >>> +++ b/drivers/net/tun.c
-> >>> @@ -139,7 +139,7 @@ struct tun_file {
-> >>>  	unsigned int flags;
-> >>>  	u16 queue_index;
-> >>>  	struct list_head next;
-> >>> -	struct tun_struct *detached;
-> >>> +	struct tun_struct __rcu *detached;
-> >>>  };
-> >>>  
-> >>>  struct tun_flow_entry {
-> >>> @@ -295,11 +295,12 @@ static void tun_flow_cleanup(unsigned long data)
-> >>>  }
-> >>>  
-> >>>  static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
-> >>> -			    u16 queue_index)
-> >>> +			    struct tun_file *tfile)
-> >>>  {
-> >>>  	struct hlist_head *head;
-> >>>  	struct tun_flow_entry *e;
-> >>>  	unsigned long delay = tun->ageing_time;
-> >>> +	u16 queue_index = tfile->queue_index;
-> >>>  
-> >>>  	if (!rxhash)
-> >>>  		return;
-> >>> @@ -308,7 +309,7 @@ static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
-> >>>  
-> >>>  	rcu_read_lock();
-> >>>  
-> >>> -	if (tun->numqueues == 1)
-> >>> +	if (tun->numqueues == 1 || rcu_dereference(tfile->detached))
-> >>>  		goto unlock;
-> >>>  
-> >>>  	e = tun_flow_find(head, rxhash);
-> >> Sorry, still an issue with this one.
-> > No problem, thanks for the checking.
-> >>                 u16 index = tfile->queue_index;
-> >>                 BUG_ON(index >= tun->numqueues);
-> >>                 dev = tun->dev;
-> >>
-> >>                 rcu_assign_pointer(tun->tfiles[index],
-> >>                                    tun->tfiles[tun->numqueues - 1]);
-> >>                 rcu_assign_pointer(tfile->tun, NULL);
-> >>                 ntfile = rtnl_dereference(tun->tfiles[index]);
-> >>                 ntfile->queue_index = index;
-> >>
-> >>                 --tun->numqueues;
-> >>                 if (clean)
-> >>                         sock_put(&tfile->sk);
-> >>                 else
-> >>                         tun_disable_queue(tun, tfile);
-> >>
-> >> You should first disable queue then synchronize network
-> >> only then play with tfiles array.
-> >> As it is you might have removed file from array but
-> >> did not set detached flag yet, so queue_index
-> >> above is stable.
-> > I think the code is ok here. With this patch, before synchronize_net(), 
-> > the only thing we do for the tfile that will be detached is to set the
-> > tfile->detached (tun_disable_queue), and the queue_index is kept
-> > unchanged. So if the data path don't see the new value of detached, it
-> > still can treat the tfile is undetached and do the sending and receiving
-> > as usual. We only do the cleanup after the synchronization which all
-> > reader are guaranteed to see the new detached value.
-> >
-> > For the tfile that will be moved to the new place, some (should be very
-> > little) OOO will occur which I think is acceptable and can be optimized
-> > in the future.
+On Wed, 2013-01-23 at 17:29 -0800, Michel Lespinasse wrote:
+> Update the parisc arch_get_unmapped_area function to make use of
+> vm_unmapped_area() instead of implementing a brute force search.
 > 
-> Having a thought about this patch, looks like it's suboptimal since:
+> Signed-off-by: Michel Lespinasse <walken@google.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
 > 
-> - If we can make sure no packets were sent to the disabled queue and
-> stop the vhost thread during switching (then it can flush). There's no
-> need for this patch.
-
-This assumes synchronization in userspace/vhost, this will make
-datapath slower without real need.
-
-> - Allowing writing/polling to a detached fd
-
-It's not a detached fd - it's attached to tun.
-We just disabled receiving packets on it.
-
-> is strange and can hide the
-> bugs of userspace / guest driver.
-
-That's a good thing, you don't want a fragile interface.
-
+> ---
+>  arch/parisc/kernel/sys_parisc.c |   46 ++++++++++++++------------------------
+>  1 files changed, 17 insertions(+), 29 deletions(-)
 > 
-> So looks like we'd better drop this patch?
+> diff --git a/arch/parisc/kernel/sys_parisc.c b/arch/parisc/kernel/sys_parisc.c
+> index f76c10863c62..6ab138088076 100644
+> --- a/arch/parisc/kernel/sys_parisc.c
+> +++ b/arch/parisc/kernel/sys_parisc.c
+> @@ -35,18 +35,15 @@
+>  
+>  static unsigned long get_unshared_area(unsigned long addr, unsigned long len)
+>  {
+> -	struct vm_area_struct *vma;
+> +	struct vm_unmapped_area_info info;
+>  
+> -	addr = PAGE_ALIGN(addr);
+> -
+> -	for (vma = find_vma(current->mm, addr); ; vma = vma->vm_next) {
+> -		/* At this point:  (!vma || addr < vma->vm_end). */
+> -		if (TASK_SIZE - len < addr)
+> -			return -ENOMEM;
+> -		if (!vma || addr + len <= vma->vm_start)
+> -			return addr;
+> -		addr = vma->vm_end;
+> -	}
+> +	info.flags = 0;
+> +	info.length = len;
+> +	info.low_limit = PAGE_ALIGN(addr);
+> +	info.high_limit = TASK_SIZE;
+> +	info.align_mask = 0;
+> +	info.align_offset = 0;
+> +	return vm_unmapped_area(&info);
+>  }
+>  
+>  #define DCACHE_ALIGN(addr) (((addr) + (SHMLBA - 1)) &~ (SHMLBA - 1))
 
-I actually think it's the right approach.
-And since you clarified I think the patch is allright.
+This macro is now redundant and can be removed.
 
-> >> On enable, clear detached last thing.
-> >>
-> >>> @@ -384,16 +385,16 @@ static void tun_set_real_num_queues(struct tun_struct *tun)
-> >>>  
-> >>>  static void tun_disable_queue(struct tun_struct *tun, struct tun_file *tfile)
-> >>>  {
-> >>> -	tfile->detached = tun;
-> >>> +	rcu_assign_pointer(tfile->detached, tun);
-> >>>  	list_add_tail(&tfile->next, &tun->disabled);
-> >>>  	++tun->numdisabled;
-> >>>  }
-> >>>  
-> >>>  static struct tun_struct *tun_enable_queue(struct tun_file *tfile)
-> >>>  {
-> >>> -	struct tun_struct *tun = tfile->detached;
-> >>> +	struct tun_struct *tun = rtnl_dereference(tfile->detached);
-> >>>  
-> >>> -	tfile->detached = NULL;
-> >>> +	rcu_assign_pointer(tfile->detached, NULL);
-> >>>  	list_del_init(&tfile->next);
-> >>>  	--tun->numdisabled;
-> >>>  	return tun;
-> >>> @@ -402,26 +403,27 @@ static struct tun_struct *tun_enable_queue(struct tun_file *tfile)
-> >>>  static void __tun_detach(struct tun_file *tfile, bool clean)
-> >>>  {
-> >>>  	struct tun_file *ntfile;
-> >>> -	struct tun_struct *tun;
-> >>> +	struct tun_struct *tun, *detached;
-> >>>  	struct net_device *dev;
-> >>>  
-> >>>  	tun = rtnl_dereference(tfile->tun);
-> >>> +	detached = rtnl_dereference(tfile->detached);
-> >>>  
-> >>> -	if (tun) {
-> >>> +	if (tun && !detached) {
-> >>>  		u16 index = tfile->queue_index;
-> >>>  		BUG_ON(index >= tun->numqueues);
-> >>>  		dev = tun->dev;
-> >>>  
-> >>>  		rcu_assign_pointer(tun->tfiles[index],
-> >>>  				   tun->tfiles[tun->numqueues - 1]);
-> >>> -		rcu_assign_pointer(tfile->tun, NULL);
-> >>>  		ntfile = rtnl_dereference(tun->tfiles[index]);
-> >>>  		ntfile->queue_index = index;
-> >>>  
-> >>>  		--tun->numqueues;
-> >>> -		if (clean)
-> >>> +		if (clean) {
-> >>> +			rcu_assign_pointer(tfile->tun, NULL);
-> >>>  			sock_put(&tfile->sk);
-> >>> -		else
-> >>> +		} else
-> >>>  			tun_disable_queue(tun, tfile);
-> >>>  
-> >>>  		synchronize_net();
-> >>> @@ -429,7 +431,7 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
-> >>>  		/* Drop read queue */
-> >>>  		skb_queue_purge(&tfile->sk.sk_receive_queue);
-> >>>  		tun_set_real_num_queues(tun);
-> >>> -	} else if (tfile->detached && clean) {
-> >>> +	} else if (detached && clean) {
-> >>>  		tun = tun_enable_queue(tfile);
-> >>>  		sock_put(&tfile->sk);
-> >>>  	}
-> >>> @@ -466,6 +468,10 @@ static void tun_detach_all(struct net_device *dev)
-> >>>  		rcu_assign_pointer(tfile->tun, NULL);
-> >>>  		--tun->numqueues;
-> >>>  	}
-> >>> +	list_for_each_entry(tfile, &tun->disabled, next) {
-> >>> +		wake_up_all(&tfile->wq.wait);
-> >>> +		rcu_assign_pointer(tfile->tun, NULL);
-> >>> +	}
-> >>>  	BUG_ON(tun->numqueues != 0);
-> >>>  
-> >>>  	synchronize_net();
-> >>> @@ -496,7 +502,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
-> >>>  		goto out;
-> >>>  
-> >>>  	err = -EINVAL;
-> >>> -	if (rtnl_dereference(tfile->tun))
-> >>> +	if (rtnl_dereference(tfile->tun) && !rtnl_dereference(tfile->detached))
-> >>>  		goto out;
-> >>>  
-> >>>  	err = -EBUSY;
-> >>> @@ -504,7 +510,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
-> >>>  		goto out;
-> >>>  
-> >>>  	err = -E2BIG;
-> >>> -	if (!tfile->detached &&
-> >>> +	if (!rtnl_dereference(tfile->detached) &&
-> >>>  	    tun->numqueues + tun->numdisabled == MAX_TAP_QUEUES)
-> >>>  		goto out;
-> >>>  
-> >>> @@ -521,7 +527,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
-> >>>  	rcu_assign_pointer(tun->tfiles[tun->numqueues], tfile);
-> >>>  	tun->numqueues++;
-> >>>  
-> >>> -	if (tfile->detached)
-> >>> +	if (rtnl_dereference(tfile->detached))
-> >>>  		tun_enable_queue(tfile);
-> >>>  	else
-> >>>  		sock_hold(&tfile->sk);
-> >>> @@ -1195,7 +1201,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
-> >>>  	tun->dev->stats.rx_packets++;
-> >>>  	tun->dev->stats.rx_bytes += len;
-> >>>  
-> >>> -	tun_flow_update(tun, rxhash, tfile->queue_index);
-> >>> +	tun_flow_update(tun, rxhash, tfile);
-> >>>  	return total_len;
-> >>>  }
-> >>>  
-> >>> @@ -1552,7 +1558,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
-> >>>  	struct net_device *dev;
-> >>>  	int err;
-> >>>  
-> >>> -	if (tfile->detached)
-> >>> +	if (rtnl_dereference(tfile->detached))
-> >>>  		return -EINVAL;
-> >>>  
-> >>>  	dev = __dev_get_by_name(net, ifr->ifr_name);
-> >>> @@ -1796,7 +1802,7 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
-> >>>  	rtnl_lock();
-> >>>  
-> >>>  	if (ifr->ifr_flags & IFF_ATTACH_QUEUE) {
-> >>> -		tun = tfile->detached;
-> >>> +		tun = rtnl_dereference(tfile->detached);
-> >>>  		if (!tun) {
-> >>>  			ret = -EINVAL;
-> >>>  			goto unlock;
-> >>> @@ -1807,7 +1813,8 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
-> >>>  		ret = tun_attach(tun, file);
-> >>>  	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
-> >>>  		tun = rtnl_dereference(tfile->tun);
-> >>> -		if (!tun || !(tun->flags & TUN_TAP_MQ))
-> >>> +		if (!tun || !(tun->flags & TUN_TAP_MQ) ||
-> >>> +		    rtnl_dereference(tfile->detached))
-> >>>  			ret = -EINVAL;
-> >>>  		else
-> >>>  			__tun_detach(tfile, false);
-> >>> -- 
-> >>> 1.7.1
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> Please read the FAQ at  http://www.tux.org/lkml/
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> @@ -63,30 +60,21 @@ static unsigned long get_unshared_area(unsigned long addr, unsigned long len)
+>   */
+>  static int get_offset(struct address_space *mapping)
+>  {
+> -	int offset = (unsigned long) mapping << (PAGE_SHIFT - 8);
+> -	return offset & 0x3FF000;
+> +	return (unsigned long) mapping >> 8;
+
+I'm not sure I agree with this shift (but I think the original was wrong
+as well so the comment probably needs updating.)  Trying to derive
+entropy from the mapping address is always nasty.  Mostly they're
+embedded in the inode, so the right shift should be something like
+log2(sizeof(inode)) + 1 and since the inode size is usually somewhere
+between 512 and 1024 bytes, that comes out to 10 I think.
+
+>  }
+>  
+>  static unsigned long get_shared_area(struct address_space *mapping,
+>  		unsigned long addr, unsigned long len, unsigned long pgoff)
+>  {
+> -	struct vm_area_struct *vma;
+> -	int offset = mapping ? get_offset(mapping) : 0;
+> -
+> -	offset = (offset + (pgoff << PAGE_SHIFT)) & 0x3FF000;
+> +	struct vm_unmapped_area_info info;
+>  
+> -	addr = DCACHE_ALIGN(addr - offset) + offset;
+> -
+> -	for (vma = find_vma(current->mm, addr); ; vma = vma->vm_next) {
+> -		/* At this point:  (!vma || addr < vma->vm_end). */
+> -		if (TASK_SIZE - len < addr)
+> -			return -ENOMEM;
+> -		if (!vma || addr + len <= vma->vm_start)
+> -			return addr;
+> -		addr = DCACHE_ALIGN(vma->vm_end - offset) + offset;
+> -		if (addr < vma->vm_end) /* handle wraparound */
+> -			return -ENOMEM;
+> -	}
+> +	info.flags = 0;
+> +	info.length = len;
+> +	info.low_limit = PAGE_ALIGN(addr);
+> +	info.high_limit = TASK_SIZE;
+> +	info.align_mask = PAGE_MASK & (SHMLBA - 1);
+> +	info.align_offset = (get_offset(mapping) + pgoff) << PAGE_SHIFT;
+> +	return vm_unmapped_area(&info);
+>  }
+>  
+>  unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr,
+
+Other than that, I think this will work, but I'd like to test it.
+
+James
+
+
