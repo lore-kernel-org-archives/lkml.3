@@ -1,135 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab3AXPHb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:07:31 -0500
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:37746 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658Ab3AXPH3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:07:29 -0500
-X-Greylist: delayed 382 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Jan 2013 10:07:29 EST
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: tj@kernel.org, pmatouse@redhat.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 05/13] sg_io: whitelist a few more commands for rare & obsolete device types
-Date: Thu, 24 Jan 2013 16:00:41 +0100
-Message-Id: <1359039649-17734-6-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
-References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
+	id S1754246Ab3AXPH4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:07:56 -0500
+Received: from mga03.intel.com ([143.182.124.21]:63589 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753220Ab3AXPHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 10:07:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,530,1355126400"; 
+   d="scan'208";a="194724367"
+Message-ID: <51014E34.60309@intel.com>
+Date: Thu, 24 Jan 2013 23:07:32 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
+        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
+ power awareness scheduling
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com> <20130124094439.GB13463@pd.tnic>
+In-Reply-To: <20130124094439.GB13463@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Start cleaning up the table, moving out of the way four
-rare & obsolete device types: "processor devices", printers,
-communication devices (network cards) and scanners.  Add
-missing commands for these four device types.
+On 01/24/2013 05:44 PM, Borislav Petkov wrote:
+> On Thu, Jan 24, 2013 at 11:06:42AM +0800, Alex Shi wrote:
+>> Since the runnable info needs 345ms to accumulate, balancing
+>> doesn't do well for many tasks burst waking. After talking with Mike
+>> Galbraith, we are agree to just use runnable avg in power friendly 
+>> scheduling and keep current instant load in performance scheduling for 
+>> low latency.
+>>
+>> So the biggest change in this version is removing runnable load avg in
+>> balance and just using runnable data in power balance.
+>>
+>> The patchset bases on Linus' tree, includes 3 parts,
+>> ** 1, bug fix and fork/wake balancing clean up. patch 1~5,
+>> ----------------------
+>> the first patch remove one domain level. patch 2~5 simplified fork/wake
+>> balancing, it can increase 10+% hackbench performance on our 4 sockets
+>> SNB EP machine.
+> 
+> Ok, I see some benchmarking results here and there in the commit
+> messages but since this is touching the scheduler, you probably would
+> need to make sure it doesn't introduce performance regressions vs
+> mainline with a comprehensive set of benchmarks.
+> 
 
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- block/scsi_ioctl.c |   49 ++++++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 40 insertions(+), 9 deletions(-)
+Thanks a lot for your comments, Borislav! :)
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index c266546..084b943 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -141,7 +141,7 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 	sgio_bitmap_set(0x03, -1                             , read);  // REQUEST SENSE
- 	sgio_bitmap_set(0x12, -1                             , read);  // INQUIRY
- 	sgio_bitmap_set(0x1A, -1                             , read);  // MODE SENSE(6)
--	sgio_bitmap_set(0x1B, D|T|L|  W|R|O|M|A|  B|K|V|F|  S, read);  // START STOP UNIT
-+	sgio_bitmap_set(0x1B, D|T|    W|R|O|M|A|  B|K|V|F    , read);  // START STOP UNIT
- 	sgio_bitmap_set(0x1C,                    ~B          , read);  // RECEIVE DIAGNOSTIC RESULTS
- 	sgio_bitmap_set(0x2B, D|T|    W|R|O|M|      K        , read);  // SEEK(10)
- 	sgio_bitmap_set(0x3C,                    ~B          , read);  // READ BUFFER
-@@ -163,21 +163,21 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 
- 	/* input */
- 
--	sgio_bitmap_set(0x08, D|T|  P|W|  O|              C  , read);  // READ(6)
--	sgio_bitmap_set(0x25, D|      W|R|O|      B|K|      S, read);  // READ CAPACITY(10)
--	sgio_bitmap_set(0x28, D|      W|R|O|      B|K|    C  , read);  // READ(10)
-+	sgio_bitmap_set(0x08, D|T|    W|  O                  , read);  // READ(6)
-+	sgio_bitmap_set(0x25, D|      W|R|O|      B|K        , read);  // READ CAPACITY(10)
-+	sgio_bitmap_set(0x28, D|      W|R|O|      B|K        , read);  // READ(10)
- 	sgio_bitmap_set(0x2F, D|      W|R|O                  , read);  // VERIFY(10)
- 	sgio_bitmap_set(0x37, D|          O|M                , read);  // READ DEFECT DATA(10)
- 	sgio_bitmap_set(0x3E, D|      W|  O                  , read);  // READ LONG(10)
- 	sgio_bitmap_set(0x88, D|T|    W|  O|      B          , read);  // READ(16)
- 	sgio_bitmap_set(0x8F, D|T|    W|  O|      B          , read);  // VERIFY(16)
--	sgio_bitmap_set(0xA8, D|      W|R|O|              C  , read);  // READ(12)
-+	sgio_bitmap_set(0xA8, D|      W|R|O                  , read);  // READ(12)
- 
- 	/* write */
- 
--	sgio_bitmap_set(0x04, D|T|L|    R|O                  , write); // FORMAT UNIT
--	sgio_bitmap_set(0x0A, D|T|L|P|W|  O|              C  , write); // WRITE(6)
--	sgio_bitmap_set(0x2A, D|      W|R|O|      B|K|    C|S, write); // WRITE(10)
-+	sgio_bitmap_set(0x04, D|T|      R|O                  , write); // FORMAT UNIT
-+	sgio_bitmap_set(0x0A, D|T|    W|  O                  , write); // WRITE(6)
-+	sgio_bitmap_set(0x2A, D|      W|R|O|      B|K        , write); // WRITE(10)
- 	sgio_bitmap_set(0x2E, D|      W|R|O|      B|K        , write); // WRITE AND VERIFY(10)
- 	sgio_bitmap_set(0x35, D|      W|R|O|      B|K        , write); // SYNCHRONIZE CACHE(10)
- 	sgio_bitmap_set(0x3F, D|      W|  O                  , write); // WRITE LONG(10)
-@@ -185,11 +185,24 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 	sgio_bitmap_set(0x48, D|                  B          , write); // SANITIZE
- 	sgio_bitmap_set(0x51, D                              , write); // XPWRITE(10)
- 	sgio_bitmap_set(0x8A, D|T|    W|  O|      B          , write); // WRITE(16)
--	sgio_bitmap_set(0xAA, D|      W|R|O|              C  , write); // WRITE(12)
-+	sgio_bitmap_set(0xAA, D|      W|R|O                  , write); // WRITE(12)
- 	sgio_bitmap_set(0xAC,             O                  , write); // ERASE(12)
- 	sgio_bitmap_set(0xAE, D|      W|  O                  , write); // WRITE AND VERIFY(12)
- 	sgio_bitmap_set(0xEA, D|      W|  O                  , write); // WRITE_LONG_2 ??
- 
-+	/* processor device */
-+
-+	sgio_bitmap_set(0x08,       P                        , read);  // RECEIVE
-+	sgio_bitmap_set(0x0A,       P                        , write); // SEND(6)
-+
-+	/* printer */
-+
-+	sgio_bitmap_set(0x04,     L                          , write); // FORMAT
-+	sgio_bitmap_set(0x0A,     L                          , write); // PRINT
-+	sgio_bitmap_set(0x0B,     L                          , write); // SLEW AND PRINT
-+	sgio_bitmap_set(0x10,     L                          , write); // SYNCHRONIZE BUFFER
-+	sgio_bitmap_set(0x1B,     L                          , write); // STOP PRINT
-+
- 	/* (mostly) MMC */
- 
- 	sgio_bitmap_set(0x23,           R                    , read);  // READ FORMAT CAPACITIES
-@@ -232,6 +245,24 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 
- 	sgio_bitmap_set(0x19,   T                            , write); // ERASE(6)
- 
-+	/* communication devices (obsolete) */
-+
-+	sgio_bitmap_set(0x08,                             C  , write); // GET MESSAGE(6)
-+	sgio_bitmap_set(0x0A,                             C  , write); // SEND MESSAGE(6)
-+	sgio_bitmap_set(0x28,                             C  , write); // GET MESSAGE(10)
-+	sgio_bitmap_set(0x2A,                             C  , write); // SEND MESSAGE(10)
-+	sgio_bitmap_set(0xA8,                             C  , write); // GET MESSAGE(12)
-+	sgio_bitmap_set(0xAA,                             C  , write); // SEND MESSAGE(12)
-+
-+	/* scanners (obsolete) */
-+
-+	sgio_bitmap_set(0x1B,                               S, write); // SCAN
-+	sgio_bitmap_set(0x24,                               S, write); // SET WINDOW
-+	sgio_bitmap_set(0x25,                               S, write); // GET WINDOW
-+	sgio_bitmap_set(0x2A,                               S, write); // SEND(10)
-+	sgio_bitmap_set(0x31,                               S, write); // OBJECT POSITION
-+	sgio_bitmap_set(0x34,                               S, write); // GET DATA BUFFER STATUS
-+
- #undef D
- #undef T
- #undef L
+For this patchset, the code will just check current policy, if it is
+performance, the code patch will back to original performance code at
+once. So there should no performance change on performance policy.
+
+I once tested the balance policy performance with benchmark
+kbuild/hackbench/aim9/dbench/tbench on version 2, only hackbench has a
+bit drop ~3%. others have no clear change.
+
+> And, AFAICR, mainline does by default the 'performance' scheme by
+> spreading out tasks to idle cores, so have you tried comparing vanilla
+> mainline to your patchset in the 'performance' setting so that you can
+> make sure there are no problems there? And not only hackbench or a
+> microbenchmark but aim9 (I saw that in a commit message somewhere) and
+> whatever else multithreaded benchmark you can get your hands on.
+> 
+> Also, you might want to run it on other machines too, not only SNB :-)
+
+Anyway I will redo the performance testing on this version again on all
+machine. but doesn't expect something change. :)
+
+> And what about ARM, maybe someone there can run your patchset too?
+> 
+> So, it would be cool to see comprehensive results from all those runs
+> and see what the numbers say.
+> 
+> Thanks.
+> 
+
+
 -- 
-1.7.1
-
-
+Thanks
+    Alex
