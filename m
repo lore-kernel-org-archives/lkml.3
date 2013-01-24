@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab3AXCOI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 21:14:08 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22856 "EHLO
+	id S1753164Ab3AXCPF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 21:15:05 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19874 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821Ab3AXCOE (ORCPT
+	with ESMTP id S1752821Ab3AXCPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 21:14:04 -0500
-X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=ZoOfVPop1ywAl072e9cA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Wed, 23 Jan 2013 21:15:01 -0500
+X-Authority-Analysis: v=2.0 cv=QcjkT7nv c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=GZx67sIXCSYdLagy0AIA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-ID: <1358993640.21576.132.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.4.27-rt39
+Message-ID: <1358993700.21576.133.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.0.60-rt85
 From: Steven Rostedt <rostedt@goodmis.org>
 To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>
-Date: Wed, 23 Jan 2013 21:14:00 -0500
+Date: Wed, 23 Jan 2013 21:15:00 -0500
 Content-Type: text/plain; charset="ISO-8859-15"
 X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
@@ -29,10 +29,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Dear RT Folks,
 
-I'm pleased to announce the 3.4.27-rt39 stable release.
+I'm pleased to announce the 3.0.60-rt85 stable release.
 
 
-This release is just an update to the new stable 3.4.27 version
+This release is just an update to the new stable 3.0.60 version
 and no RT specific changes have been made.
 
 
@@ -40,16 +40,16 @@ You can get this release via the git tree at:
 
   git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
 
-  Head SHA1: 7b2d77dea363da22d2b57db9e23dac688bf4a7b6
+  Head SHA1: 79528cb08ec898b361894003c492c403d77a5fa1
 
 
-Or to build 3.4.27-rt39 directly, the following patches should be applied:
+Or to build 3.0.60-rt85 directly, the following patches should be applied:
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.27.xz
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.60.xz
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.27-rt39.patch.xz
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.60-rt85.patch.xz
 
 
 
