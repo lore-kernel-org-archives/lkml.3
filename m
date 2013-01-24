@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab3AXVP5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:15:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40243 "EHLO mail.kernel.org"
+	id S932121Ab3AXVQG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:16:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40272 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756951Ab3AXVOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:14:33 -0500
+	id S1756962Ab3AXVOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:14:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Benoit Goby <benoit@android.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 29/46] usb: gadget: FunctionFS: Fix missing braces in parse_opts
-Date: Thu, 24 Jan 2013 13:13:07 -0800
-Message-Id: <20130124211146.915074493@linuxfoundation.org>
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>, Jean Delvare <khali@linux-fr.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Abdallah Chatila <abdallah.chatila@ericsson.com>
+Subject: [ 32/46] drivers/firmware/dmi_scan.c: check dmi version when get system uuid
+Date: Thu, 24 Jan 2013 13:13:10 -0800
+Message-Id: <20130124211148.017753563@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
 References: <20130124211135.862755794@linuxfoundation.org>
@@ -26,44 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benoit Goby <benoit@android.com>
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
 
-commit b810075002c9f25a6da83cecda39d789000a04a9 upstream.
+commit f1d8e614d74b09531b9a85e812485340f3df7b1c upstream.
 
-Add missing braces around an if block in ffs_fs_parse_opts. This broke
-parsing the uid/gid mount options and causes mount to fail when using
-uid/gid. This has been introduced by commit b9b73f7c (userns: Convert usb
-functionfs to use kuid/kgid where appropriate) in 3.7.
+As of version 2.6 of the SMBIOS specification, the first 3 fields of the
+UUID are supposed to be little-endian encoded.
 
-Signed-off-by: Benoit Goby <benoit@android.com>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Also a minor fix to match variable meaning and mute checkpatch.pl
+
+[akpm@linux-foundation.org: tweak code comment]
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Cc: Feng Jin <joe.jin@oracle.com>
+Cc: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Abdallah Chatila <abdallah.chatila@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/f_fs.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/firmware/dmi_scan.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -1153,15 +1153,15 @@ static int ffs_fs_parse_opts(struct ffs_
- 					pr_err("%s: unmapped value: %lu\n", opts, value);
- 					return -EINVAL;
- 				}
--			}
--			else if (!memcmp(opts, "gid", 3))
-+			} else if (!memcmp(opts, "gid", 3)) {
- 				data->perms.gid = make_kgid(current_user_ns(), value);
- 				if (!gid_valid(data->perms.gid)) {
- 					pr_err("%s: unmapped value: %lu\n", opts, value);
- 					return -EINVAL;
- 				}
--			else
-+			} else {
- 				goto invalid;
-+			}
- 			break;
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -16,6 +16,7 @@
+  */
+ static char dmi_empty_string[] = "        ";
  
- 		default:
++static u16 __initdata dmi_ver;
+ /*
+  * Catch too early calls to dmi_check_system():
+  */
+@@ -161,8 +162,10 @@ static void __init dmi_save_uuid(const s
+ 		return;
+ 
+ 	for (i = 0; i < 16 && (is_ff || is_00); i++) {
+-		if(d[i] != 0x00) is_ff = 0;
+-		if(d[i] != 0xFF) is_00 = 0;
++		if (d[i] != 0x00)
++			is_00 = 0;
++		if (d[i] != 0xFF)
++			is_ff = 0;
+ 	}
+ 
+ 	if (is_ff || is_00)
+@@ -172,7 +175,15 @@ static void __init dmi_save_uuid(const s
+ 	if (!s)
+ 		return;
+ 
+-	sprintf(s, "%pUB", d);
++	/*
++	 * As of version 2.6 of the SMBIOS specification, the first 3 fields of
++	 * the UUID are supposed to be little-endian encoded.  The specification
++	 * says that this is the defacto standard.
++	 */
++	if (dmi_ver >= 0x0206)
++		sprintf(s, "%pUL", d);
++	else
++		sprintf(s, "%pUB", d);
+ 
+         dmi_ident[slot] = s;
+ }
+@@ -414,6 +425,7 @@ static int __init dmi_present(const char
+ 		 * DMI version 0.0 means that the real version is taken from
+ 		 * the SMBIOS version, which we don't know at this point.
+ 		 */
++		dmi_ver = (buf[14] & 0xf0) << 4 | (buf[14] & 0x0f);
+ 		if (buf[14] != 0)
+ 			printk(KERN_INFO "DMI %d.%d present.\n",
+ 			       buf[14] >> 4, buf[14] & 0xF);
 
 
