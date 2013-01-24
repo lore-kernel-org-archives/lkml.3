@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945985Ab3AXV1F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:27:05 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40692 "EHLO mail.kernel.org"
+	id S1946012Ab3AXV1Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:27:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40681 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756951Ab3AXVQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:16:11 -0500
+	id S1756938Ab3AXVQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:16:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Betty Dall <betty.dall@hp.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Shuah Khan <shuah.khan@hp.com>
-Subject: [ 08/22] PCI/AER: pci_get_domain_bus_and_slot() call missing required pci_dev_put()
-Date: Thu, 24 Jan 2013 13:15:29 -0800
-Message-Id: <20130124211507.412528097@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 07/22] wake_up_process() should be never used to wakeup a TASK_STOPPED/TRACED task
+Date: Thu, 24 Jan 2013 13:15:28 -0800
+Message-Id: <20130124211507.071788775@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211504.701368763@linuxfoundation.org>
 References: <20130124211504.701368763@linuxfoundation.org>
@@ -26,32 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Betty Dall <betty.dall@hp.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit a82b6af37d20bfe6e99a4d890f1cf1d89059929f upstream.
+commit 9067ac85d533651b98c2ff903182a20cbb361fcb upstream.
 
-The function aer_recover_queue() calls pci_get_domain_bus_and_slot(), which
-requires that the caller decrement the reference count with pci_dev_put().
-This patch adds the missing call to pci_dev_put().
+wake_up_process() should never wakeup a TASK_STOPPED/TRACED task.
+Change it to use TASK_NORMAL and add the WARN_ON().
 
-Signed-off-by: Betty Dall <betty.dall@hp.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Reviewed-by: Shuah Khan <shuah.khan@hp.com>
+TASK_ALL has no other users, probably can be killed.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pcie/aer/aerdrv_core.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/sched/core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/pci/pcie/aer/aerdrv_core.c
-+++ b/drivers/pci/pcie/aer/aerdrv_core.c
-@@ -637,6 +637,7 @@ static void aer_recover_work_func(struct
- 			continue;
- 		}
- 		do_recovery(pdev, entry.severity);
-+		pci_dev_put(pdev);
- 	}
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1688,7 +1688,8 @@ out:
+  */
+ int wake_up_process(struct task_struct *p)
+ {
+-	return try_to_wake_up(p, TASK_ALL, 0);
++	WARN_ON(task_is_stopped_or_traced(p));
++	return try_to_wake_up(p, TASK_NORMAL, 0);
  }
- #endif
+ EXPORT_SYMBOL(wake_up_process);
+ 
 
 
