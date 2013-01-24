@@ -1,118 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab3AXPfD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:35:03 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:41490 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab3AXPe7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:34:59 -0500
-From: Gu1 <gu1@aeroxteam.fr>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>,
-        Amit Daniel Kachhap <amit.kachhap@linaro.org>
-Cc: Gu1 <gu1@aeroxteam.fr>
-Subject: [PATCH] Thermal: fix iteration over CPU frequency list
-Date: Thu, 24 Jan 2013 16:24:05 +0100
-Message-Id: <1359041045-24341-1-git-send-email-gu1@aeroxteam.fr>
-X-Mailer: git-send-email 1.8.1.1
+	id S1753019Ab3AXPgd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:36:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58434 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751740Ab3AXPgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 10:36:32 -0500
+Message-ID: <510154C1.4060601@zytor.com>
+Date: Thu, 24 Jan 2013 09:35:29 -0600
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Borislav Petkov <bp@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        ling.ma.program@gmail.com, mingo@redhat.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, Ma Ling <ling.ml@alipay.com>
+Subject: Re: [Suggestion] [x86]: Compiler Option Os is better on latest x86
+References: <1356503537-4987-1-git-send-email-ling.ma@alipay.com> <20130124141733.GA14876@gmail.com> <20130124144612.GC13471@pd.tnic> <51014B9A.5080500@zytor.com> <20130124152544.GA13504@pd.tnic>
+In-Reply-To: <20130124152544.GA13504@pd.tnic>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In different places in the Thermal code, the CPU frequency list is iterated
-in an incorrect way, leading to endless loops when the frequency list contains
-a CPUFREQ_TABLE_INVALID entry, which is the case by default in the the Exynos
-4x12 cpufreq driver, for example.
+On 01/24/2013 09:25 AM, Borislav Petkov wrote:
+> On Thu, Jan 24, 2013 at 08:56:26AM -0600, H. Peter Anvin wrote:
+>> There has been occasional talk about a -Ok(ernel) option to gcc, but
+>> that would require someone to go through gcc and figure out what bits
+>> makes sense and which don't...
+> 
+> Yep, such an option has a great potential for us and, if done right,
+> would be very cool. It could probably be taught to insert HWEIGHT,
+> RDRAND, CLFLUSH and whatever other insns we have the inline asm versions
+> for... and query CPUID before that... uuh, nice stuff.
+> 
+> The alternative would be to fork gcc and call it kcc...
+> 
+> /me runs away pretty quickly without even turning back :-)
+> 
 
-The frequency list is iterated with a while loop, and when a
-CPUFREQ_TABLE_INVALID entry is encountered, the continue; statement is used to
-skip it, but the index is not incremented, causing an endless loop.
+I don't expect we'll be teaching gcc about the alternatives mechanism.
+-Ok was about optimization, basically a "sane -Os".
 
-A similar bug was fixed by hongbo.zhang in commit:
-  Thermal: fix bug of counting cpu frequencies
-
-Signed-off-by: Gu1 <gu1@aeroxteam.fr>
----
- drivers/thermal/cpu_cooling.c    | 8 +++-----
- drivers/thermal/exynos_thermal.c | 9 +++++----
- 2 files changed, 8 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-index 836828e..51acd26 100644
---- a/drivers/thermal/cpu_cooling.c
-+++ b/drivers/thermal/cpu_cooling.c
-@@ -123,7 +123,7 @@ static int is_cpufreq_valid(int cpu)
-  */
- static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
- {
--	int ret = 0, i = 0;
-+	int ret = 0, i;
- 	unsigned long level_index;
- 	bool descend = false;
- 	struct cpufreq_frequency_table *table =
-@@ -131,7 +131,7 @@ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
- 	if (!table)
- 		return ret;
- 
--	while (table[i].frequency != CPUFREQ_TABLE_END) {
-+	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
- 		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
- 			continue;
- 
-@@ -145,7 +145,6 @@ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
- 		/*return if level matched and table in descending order*/
- 		if (descend && i == level)
- 			return table[i].frequency;
--		i++;
- 	}
- 	i--;
- 
-@@ -154,13 +153,12 @@ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
- 	level_index = i - level;
- 
- 	/*Scan the table in reverse order and match the level*/
--	while (i >= 0) {
-+	for (; i >= 0; i--) {
- 		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
- 			continue;
- 		/*return if level matched*/
- 		if (i == level_index)
- 			return table[i].frequency;
--		i--;
- 	}
- 	return ret;
- }
-diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
-index 224751e..fa9e1d7 100644
---- a/drivers/thermal/exynos_thermal.c
-+++ b/drivers/thermal/exynos_thermal.c
-@@ -233,7 +233,8 @@ static int exynos_get_crit_temp(struct thermal_zone_device *thermal,
- 
- static int exynos_get_frequency_level(unsigned int cpu, unsigned int freq)
- {
--	int i = 0, ret = -EINVAL;
-+	int i, ret = -EINVAL;
-+	unsigned int count = 0;
- 	struct cpufreq_frequency_table *table = NULL;
- #ifdef CONFIG_CPU_FREQ
- 	table = cpufreq_frequency_get_table(cpu);
-@@ -241,12 +242,12 @@ static int exynos_get_frequency_level(unsigned int cpu, unsigned int freq)
- 	if (!table)
- 		return ret;
- 
--	while (table[i].frequency != CPUFREQ_TABLE_END) {
-+	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
- 		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
- 			continue;
- 		if (table[i].frequency == freq)
--			return i;
--		i++;
-+			return count;
-+		count++;
- 	}
- 	return ret;
- }
--- 
-1.8.1.1
+	-hpa
 
