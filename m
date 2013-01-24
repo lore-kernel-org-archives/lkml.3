@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab3AYDEH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 22:04:07 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:47820 "EHLO bear.ext.ti.com"
+	id S1756899Ab3AYDER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 22:04:17 -0500
+Received: from ozlabs.org ([203.10.76.45]:48255 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755841Ab3AYDBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 22:01:10 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <rob.herring@calxeda.com>, <rob@landley.net>, <balbi@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-CC: <grant.likely@secretlab.ca>, <gregkh@linuxfoundation.org>, <kishon@ti.com>
-Subject: [PATCH v3 11/11] usb: dwc3: core: stray statements are removed
-Date: Fri, 25 Jan 2013 08:30:55 +0530
-Message-ID: <1359082855-7404-12-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359082855-7404-1-git-send-email-kishon@ti.com>
-References: <1359082855-7404-1-git-send-email-kishon@ti.com>
+	id S1756796Ab3AYDDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 22:03:24 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Kyle McMartin <kyle@redhat.com>, linux-kernel@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>, jstancek@redhat.com,
+        Stephan Mueller <stephan.mueller@atsec.com>
+Subject: Re: [PATCH] MODSIGN: flag modules that use cryptoapi and only panic if those are unsigned
+In-Reply-To: <20130124190610.GI6538@redacted.bos.redhat.com>
+References: <20130122184357.GD6538@redacted.bos.redhat.com> <8615.1358940375@warthog.procyon.org.uk> <50FFFF48.6020608@atsec.com> <20130124190610.GI6538@redacted.bos.redhat.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Fri, 25 Jan 2013 10:06:01 +1030
+Message-ID: <874ni6qhlq.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional change. Stray statements where removed from dwc3 core.
+Kyle McMartin <kyle@redhat.com> writes:
+> After thinking about it a while, this seems like the best way to solve
+> the problem, although it does still kind of offend my delicate
+> sensibilities...
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/usb/dwc3/core.c |    3 ---
- 1 file changed, 3 deletions(-)
+You're far too polite.  This patch was horrible, partial and ugly.
 
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index af189d5..ee1fa18 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -558,9 +558,6 @@ err0:
- static int dwc3_remove(struct platform_device *pdev)
- {
- 	struct dwc3	*dwc = platform_get_drvdata(pdev);
--	struct resource	*res;
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
- 	usb_phy_set_suspend(dwc->usb2_phy, 1);
- 	usb_phy_set_suspend(dwc->usb3_phy, 1);
--- 
-1.7.9.5
+Stephan Mueller <stephan.mueller@atsec.com> wrote:
+> FIPS requires the module (in our case the static kernel binary with its
+> kernel crypto API plus all the crypto kernel modules) to be unavailable
+> if the module signature fails. That is an unconditional requirement.
 
+"the module signature" here being the signature of any crypto module,
+I'm guessing from Kyle's awful patch.  Any crypto module, or just some?
+Presumably any module used by any crypto module, too?
+
+Because you can panic when a !sig_ok module registers a crypto
+algorithm.  Or you can panic when anyone registers a crypto algorithm
+after any module has failed the signature check.
+
+But it doesn't make much sense to pick on the crypto modules, since
+they're not well isolated from the rest of the kernel.
+
+Thanks,
+Rusty.
