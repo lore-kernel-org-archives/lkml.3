@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab3AXC66 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 21:58:58 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:4041 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944Ab3AXC6t (ORCPT
+	id S1753350Ab3AXDBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:01:46 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:64241 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752758Ab3AXDBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 21:58:49 -0500
-From: Yijing Wang <wangyijing@huawei.com>
-To: Rob Landley <rob@landley.net>, Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, Andrew Murray <andrew.murray@arm.com>,
-        Joe Lawrence <Joe.Lawrence@stratus.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v2] PCI: Document PCIE BUS MPS parameters
-Date: Thu, 24 Jan 2013 10:58:08 +0800
-Message-ID: <1358996288-31200-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Wed, 23 Jan 2013 22:01:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+In-Reply-To: <51009F6D.5040001@samsung.com>
+References: <1358954692-5625-1-git-send-email-tobetter@gmail.com>
+	<51009F6D.5040001@samsung.com>
+Date: Thu, 24 Jan 2013 12:01:36 +0900
+Message-ID: <CADoNuNeEv4B0F0iseSYHy+koC8jAGb_zyOZjOw_C6ObneOjOiQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Add MSHC compatible for Exynos4412
+From: Dongjin Kim <tobetter@gmail.com>
+To: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: "unlisted-recipients: ,Chris Ball" <cjb@laptop.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Will Newton <will.newton@imgtec.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v0->v1: Update MPS parameters as non-arch and add MRRS
-		description into pcie_bus_perf parameter suggested
-		by Andrew Murray.
-v1->v2: Update some semantic problems and add MPS and MRRS
-		explanation suggested by Joe Lawrence and Randy Dunlap.
+Hi Jaehoon,
 
-Document PCIE BUS MPS parameters pcie_bus_tune_off, pcie_bus_safe,
-pcie_bus_peer2peer, pcie_bus_perf into Documentation/kernel-parameters.txt.
-These parameters were introduced by Jon Mason <mason@myri.com> at
-commit 5f39e6705 and commit b03e7495a8.
+Yes, completely agree with you but I wanted to keep "exynos5250_"
+before Exynos4210's drv_data is sorted out. Anyway "exynos5_" would be
+ok, I think.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- Documentation/kernel-parameters.txt |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
+Regards,
+Dongjin.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 363e348..0bb279f 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2227,6 +2227,22 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 				This sorting is done to get a device
- 				order compatible with older (<= 2.4) kernels.
- 		nobfsort	Don't sort PCI devices into breadth-first order.
-+		pcie_bus_tune_off	Disable PCIe MPS (Max Payload Size)
-+				turning and using the BIOS-configured MPS defaults.
-+		pcie_bus_safe	Use the smallest common denominator MPS
-+				of the entire tree below a root complex for every
-+				device on that fabric. Can avoid inconsistent MPS
-+				problem caused by hotplug.
-+		pcie_bus_perf	Configure pcie device MPS to the largest
-+				allowable MPS based on its parent bus. Also set
-+				MRRS (Max Read Request Size) to the largest supported
-+				value (no larger than the MPS that the device or bus
-+				can support) for Max performance.
-+		pcie_bus_peer2peer	Make the system-wide MPS the smallest
-+				possible value (128B). This configuration could prevent
-+				peer to peer DMA transmission from working by having
-+				the MPS on one root port different than the MPS on
-+				another.
- 		cbiosize=nn[KMG]	The fixed amount of bus space which is
- 				reserved for the CardBus bridge's IO window.
- 				The default value is 256 bytes.
--- 
-1.7.1
-
-
+On Thu, Jan 24, 2013 at 11:41 AM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+> On 01/24/2013 12:24 AM, Dongjin Kim wrote:
+>> This patch adds the compatible string for MSHC controller of Exynos4412, and
+>> reuse the controller specific properties with Exynos5250 since those have same
+>> features.
+>>
+>> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+>> ---
+>>  drivers/mmc/host/dw_mmc-exynos.c |    2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
+>> index 0cb9bcb..4f7685f 100644
+>> --- a/drivers/mmc/host/dw_mmc-exynos.c
+>> +++ b/drivers/mmc/host/dw_mmc-exynos.c
+>> @@ -204,6 +204,8 @@ static const struct dw_mci_drv_data exynos5250_drv_data = {
+>>  };
+>>
+>>  static const struct of_device_id dw_mci_exynos_match[] = {
+>> +     { .compatible = "samsung,exynos4412-dw-mshc",
+>> +                     .data = &exynos5250_drv_data, },
+> If we can use the same drv_data, should be changed to more generic name, not "exynos5250_".
+>
+> Best Regards,
+> Jaehoon Chung
+>>       { .compatible = "samsung,exynos5250-dw-mshc",
+>>                       .data = &exynos5250_drv_data, },
+>>       {},
+>>
+>
