@@ -1,112 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab3AXMaV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 07:30:21 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:43545 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143Ab3AXMaO (ORCPT
+	id S1754499Ab3AXMas (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 07:30:48 -0500
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:28024
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753092Ab3AXMak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 07:30:14 -0500
-Date: Thu, 24 Jan 2013 13:30:10 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Anton Arapov <anton@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Christoph Hellwig <hch@infradead.org>, Josh Stone <jistone@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] uprobes: pre-filtering
-Message-ID: <20130124123010.GA4755@gmail.com>
-References: <20130113185916.GA25831@redhat.com>
- <20130124121720.GA3104@gmail.com>
- <CAMeizLf1XTwaLLE2eBm+XMRQZPgBY=dUkEcpaDYdupB0T3+2Lg@mail.gmail.com>
+	Thu, 24 Jan 2013 07:30:40 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz154dId799hzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1155h)
+X-WSS-ID: 0MH4QQW-02-4ZZ-02
+X-M-MSG: 
+From: <suravee.suthikulpanit@amd.com>
+To: <iommu@lists.linux-foundation.org>, <joro@8bytes.org>
+CC: <bp@alien8.de>, <linux-kernel@vger.kernel.org>, <udovdh@xs4all.nl>,
+        <ssg.sos.patches@mpdtxmail.amd.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Subject: [PATCH 1/1 V3] AMD Family15h Model10-1Fh erratum 746 Workaround
+Date: Thu, 24 Jan 2013 06:30:15 -0600
+Message-ID: <1359030615-2145-1-git-send-email-suravee.suthikulpanit@amd.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMeizLf1XTwaLLE2eBm+XMRQZPgBY=dUkEcpaDYdupB0T3+2Lg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
 
-* Anton Arapov <anton@redhat.com> wrote:
+Changes in V3:
+	* Add proper commit message
+	* Change logic to avoid unnecessary indentaion
 
-> Hello Ingo,
-> 
-> On Thu, Jan 24, 2013 at 11:17 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > * Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> >> Ingo, please pull from
-> >>
-> >>   git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
-> >>
-> >> Mostly pre-filtering. This needs more work and perhaps more functionality.
-> >> In particular, perhaps dup_mmap() should remove the unwanted breakpoints.
-> >> And we can add more ->filter() hooks to, say, speedup uprobe_register().
-> >> Plus we can do some optimizations to avoid register_for_each_vma() in
-> >> case when we know that all mm's were previously acked/nacked.
-> >>
-> >> Srikar, the only patch you did not ack explicitely is 1fecb96d
-> >> "Do not allocate current->utask unnecessary", but afaics you do not
-> >> object.
-> >>
-> >> And the patch from Josh which exports uprobe_register/unregister for modules.
-> >> Christoph (cc'ed) doesn't like this change, but I disagree. Whatever you
-> >> think about systemtap it is the widely used tool, and uprobes can have other
-> >> out-of-tree users. This is like kprobes, kprobe_register() is exported but
-> >> it doesn't have a modular in-kernel user too. I do not see why should we
-> >> limit the usage of uprobes.
-> >>
-> >>
-> >>
-> >> Josh Stone (1):
-> >>       uprobes: Add exports for module use
-> >>
-> >> Oleg Nesterov (26):
-> >>       uprobes: Move __set_bit(UPROBE_SKIP_SSTEP) into alloc_uprobe()
-> >>       uprobes: Kill the "uprobe != NULL" check in uprobe_unregister()
-> >>       uprobes: Kill the pointless inode/uc checks in register/unregister
-> >>       uprobes: Kill uprobe_consumer->filter()
-> >>       uprobes: Introduce filter_chain()
-> >>       uprobes: _unregister() should always do register_for_each_vma(false)
-> >>       uprobes: _register() should always do register_for_each_vma(true)
-> >>       uprobes: Introduce uprobe->register_rwsem
-> >>       uprobes: Change filter_chain() to iterate ->consumers list
-> >>       uprobes: Kill UPROBE_RUN_HANDLER flag
-> >>       uprobes: Kill uprobe->copy_mutex
-> >>       uprobes: Kill uprobe_events, use RB_EMPTY_ROOT() instead
-> >>       uprobes: Introduce uprobe_is_active()
-> >>       uprobes: Kill uprobes_mutex[], separate alloc_uprobe() and __uprobe_register()
-> >>       uprobes: Rationalize the usage of filter_chain()
-> >>       uprobes: Reintroduce uprobe_consumer->filter()
-> >>       uprobes: Teach handler_chain() to filter out the probed task
-> >>       uprobes/x86: Change __skip_sstep() to actually skip the whole insn
-> >>       uprobes: Change handle_swbp() to expose bp_vaddr to handler_chain()
-> >>       uprobes: Move alloc_page() from xol_add_vma() to xol_alloc_area()
-> >>       uprobes: Fold xol_alloc_area() into get_xol_area()
-> >>       uprobes: Turn add_utask() into get_utask()
-> >>       uprobes: Do not play with utask in xol_get_insn_slot()
-> >>       uprobes: Fix utask->xol_vaddr leak in pre_ssout()
-> >>       uprobes: Do not allocate current->utask unnecessary
-> >>       uprobes: Kill the bogus IS_ERR_VALUE(xol_vaddr) check
-> >>
-> >>  arch/x86/kernel/uprobes.c   |    4 +-
-> >>  include/linux/uprobes.h     |   17 ++-
-> >>  kernel/events/uprobes.c     |  433 ++++++++++++++++++++++---------------------
-> >>  kernel/ptrace.c             |    6 +
-> >>  kernel/trace/trace_uprobe.c |    5 +-
-> >>  5 files changed, 243 insertions(+), 222 deletions(-)
-> >
-> > The kernel side looks good to me - but how does 'perf uprobe'
-> > make use of it in practice, how can I test it?
-> 
-> I'm not sure whether you looking into testing specific changes in this
-> pull, [...]
+Changes in V2:
+	* Fix logic that check the processor model.
+	* Clear write enable bit after apply workaround
+	* Change function name 
 
-Yes, I was curious about specifically testing the filtering 
-callback changes in this pull request.
+Commit Message:
+Erratum 746: IOMMU Logging May Stall Transaction
+Workaround:  BIOS should disable L2B micellaneous clock gating by setting 
+             L2_L2B_CK_GATE_CONTROL[CKGateL2BMiscDisable](D0F2xF4_x90[2]) = 1b
 
-Thanks,
+Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
 
-	Ingo
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 81837b0..934b017 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -975,6 +975,38 @@ static void __init free_iommu_all(void)
+ }
+ 
+ /*
++ * AMD family15h Model 10h-1fh erratum 746 (IOMMU Logging May Stall Translations)
++ * Workaround:
++ *     BIOS should disable L2B micellaneous clock gating by setting
++ *     L2_L2B_CK_GATE_CONTROL[CKGateL2BMiscDisable](D0F2xF4_x90[2]) = 1b
++ */
++static void __init amd_iommu_erratum_746_workaround(struct amd_iommu *iommu)
++{
++	u32 value;
++
++	if ((boot_cpu_data.x86 != 0x15) || 
++	    (boot_cpu_data.x86_model < 0x10) ||
++	    (boot_cpu_data.x86_model > 0x1f))
++		return;
++	
++	pci_write_config_dword(iommu->dev, 0xf0, 0x90);
++	pci_read_config_dword(iommu->dev, 0xf4, &value); 
++
++	if (value & BIT(2))
++		return;
++
++	/* Select NB indirect register 0x90 and enable writing */
++	pci_write_config_dword(iommu->dev, 0xf0, 0x90 | (1 << 8));
++
++	pci_write_config_dword(iommu->dev, 0xf4, value | 0x4);
++	pr_info("AMD-Vi: Applying erratum 746 workaround for IOMMU at %s\n",
++	 dev_name(&iommu->dev->dev));
++
++	/* Clear the enable writing bit */
++	pci_write_config_dword(iommu->dev, 0xf0, 0x90);
++}
++
++/*
+  * This function clues the initialization function for one IOMMU
+  * together and also allocates the command buffer and programs the
+  * hardware. It does NOT enable the IOMMU. This is done afterwards.
+@@ -1171,6 +1203,8 @@ static int iommu_init_pci(struct amd_iommu *iommu)
+ 		for (i = 0; i < 0x83; i++)
+ 			iommu->stored_l2[i] = iommu_read_l2(iommu, i);
+ 	}
++	
++	amd_iommu_erratum_746_workaround(iommu);
+ 
+ 	return pci_enable_device(iommu->dev);
+ }
+-- 
+1.7.10.4
+
+
