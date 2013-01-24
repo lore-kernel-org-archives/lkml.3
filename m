@@ -1,184 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161003Ab3AXUdj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:33:39 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50146 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755848Ab3AXUIk (ORCPT
+	id S1756725Ab3AXUer (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:34:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34782 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756558Ab3AXUd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:08:40 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 08/74] perf evsel: Introduce event fallback method
-Date: Thu, 24 Jan 2013 17:07:17 -0300
-Message-Id: <1359058103-31645-9-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
-In-Reply-To: <1359058103-31645-1-git-send-email-acme@infradead.org>
-References: <1359058103-31645-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
+	Thu, 24 Jan 2013 15:33:29 -0500
+Date: Thu, 24 Jan 2013 12:33:10 -0800
+From: tip-bot for Shawn Bohrer <sbohrer@rgmadvisors.com>
+Message-ID: <tip-df42ae62b3a0bd1a04b68f467a84150af6274a09@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        bitbucket@online.de, sbohrer@rgmadvisors.com, rostedt@goodmis.org,
+        stable@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, sbohrer@rgmadvisors.com, stable@kernel.org,
+        bitbucket@online.de, tglx@linutronix.de
+In-Reply-To: <1358186131-29494-1-git-send-email-sbohrer@rgmadvisors.com>
+References: <1358186131-29494-1-git-send-email-sbohrer@rgmadvisors.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched/rt:
+  Use root_domain of rt_rq not current processor
+Git-Commit-ID: df42ae62b3a0bd1a04b68f467a84150af6274a09
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 12:33:17 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Commit-ID:  df42ae62b3a0bd1a04b68f467a84150af6274a09
+Gitweb:     http://git.kernel.org/tip/df42ae62b3a0bd1a04b68f467a84150af6274a09
+Author:     Shawn Bohrer <sbohrer@rgmadvisors.com>
+AuthorDate: Mon, 14 Jan 2013 11:55:31 -0600
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 24 Jan 2013 16:37:57 +0100
 
-The only fallback right now is for HW cpu-cycles -> SW cpu-clock, that
-was done in the same way in both 'top' and 'record'.
+sched/rt: Use root_domain of rt_rq not current processor
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-58l1mgibh9oa9m0pd3fasxa5@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+When the system has multiple domains do_sched_rt_period_timer()
+can run on any CPU and may iterate over all rt_rq in
+cpu_online_mask.  This means when balance_runtime() is run for a
+given rt_rq that rt_rq may be in a different rd than the current
+processor.  Thus if we use smp_processor_id() to get rd in
+do_balance_runtime() we may borrow runtime from a rt_rq that is
+not part of our rd.
+
+This changes do_balance_runtime to get the rd from the passed in
+rt_rq ensuring that we borrow runtime only from the correct rd
+for the given rt_rq.
+
+This fixes a BUG at kernel/sched/rt.c:687! in __disable_runtime
+when we try reclaim runtime lent to other rt_rq but runtime has
+been lent to a rt_rq in another rd.
+
+Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Mike Galbraith <bitbucket@online.de>
+Cc: peterz@infradead.org
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/1358186131-29494-1-git-send-email-sbohrer@rgmadvisors.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/builtin-record.c | 23 +++--------------------
- tools/perf/builtin-top.c    | 20 +++-----------------
- tools/perf/util/evsel.c     | 28 ++++++++++++++++++++++++++++
- tools/perf/util/evsel.h     |  3 +++
- 4 files changed, 37 insertions(+), 37 deletions(-)
+ kernel/sched/rt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index a4b9726..b8d0a39 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -224,6 +224,7 @@ static bool perf_evlist__equal(struct perf_evlist *evlist,
- 
- static int perf_record__open(struct perf_record *rec)
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 418feb0..4f02b28 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -566,7 +566,7 @@ static inline struct rt_bandwidth *sched_rt_bandwidth(struct rt_rq *rt_rq)
+ static int do_balance_runtime(struct rt_rq *rt_rq)
  {
-+	char msg[128];
- 	struct perf_evsel *pos;
- 	struct perf_evlist *evlist = rec->evlist;
- 	struct perf_session *session = rec->session;
-@@ -249,27 +250,9 @@ try_again:
- 				goto out;
- 			}
+ 	struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
+-	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
++	struct root_domain *rd = rq_of_rt_rq(rt_rq)->rd;
+ 	int i, weight, more = 0;
+ 	u64 rt_period;
  
--			/*
--			 * If it's cycles then fall back to hrtimer
--			 * based cpu-clock-tick sw counter, which
--			 * is always available even if no PMU support.
--			 *
--			 * PPC returns ENXIO until 2.6.37 (behavior changed
--			 * with commit b0a873e).
--			 */
--			if ((err == ENOENT || err == ENXIO)
--					&& attr->type == PERF_TYPE_HARDWARE
--					&& attr->config == PERF_COUNT_HW_CPU_CYCLES) {
--
-+			if (perf_evsel__fallback(pos, err, msg, sizeof(msg))) {
- 				if (verbose)
--					ui__warning("The cycles event is not supported, "
--						    "trying to fall back to cpu-clock-ticks\n");
--				attr->type = PERF_TYPE_SOFTWARE;
--				attr->config = PERF_COUNT_SW_CPU_CLOCK;
--				if (pos->name) {
--					free(pos->name);
--					pos->name = NULL;
--				}
-+					ui__warning("%s\n", msg);
- 				goto try_again;
- 			}
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 74fca61..8d41d0b 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -892,6 +892,7 @@ static void perf_top__mmap_read(struct perf_top *top)
- 
- static void perf_top__start_counters(struct perf_top *top)
- {
-+	char msg[128];
- 	struct perf_evsel *counter;
- 	struct perf_evlist *evlist = top->evlist;
- 	struct perf_record_opts *opts = &top->record_opts;
-@@ -909,25 +910,10 @@ try_again:
- 				ui__error_paranoid();
- 				goto out_err;
- 			}
--			/*
--			 * If it's cycles then fall back to hrtimer
--			 * based cpu-clock-tick sw counter, which
--			 * is always available even if no PMU support:
--			 */
--			if ((err == ENOENT || err == ENXIO) &&
--			    (attr->type == PERF_TYPE_HARDWARE) &&
--			    (attr->config == PERF_COUNT_HW_CPU_CYCLES)) {
- 
-+			if (perf_evsel__fallback(counter, err, msg, sizeof(msg))) {
- 				if (verbose)
--					ui__warning("Cycles event not supported,\n"
--						    "trying to fall back to cpu-clock-ticks\n");
--
--				attr->type = PERF_TYPE_SOFTWARE;
--				attr->config = PERF_COUNT_SW_CPU_CLOCK;
--				if (counter->name) {
--					free(counter->name);
--					counter->name = NULL;
--				}
-+					ui__warning("%s\n", msg);
- 				goto try_again;
- 			}
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index ee6ee3f..0c88e5c 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1378,3 +1378,31 @@ int perf_evsel__fprintf(struct perf_evsel *evsel,
- 	fputc('\n', fp);
- 	return ++printed;
- }
-+
-+bool perf_evsel__fallback(struct perf_evsel *evsel, int err,
-+			  char *msg, size_t msgsize)
-+{
-+	if ((err == ENOENT || err == ENXIO) &&
-+	    evsel->attr.type   == PERF_TYPE_HARDWARE &&
-+	    evsel->attr.config == PERF_COUNT_HW_CPU_CYCLES) {
-+		/*
-+		 * If it's cycles then fall back to hrtimer based
-+		 * cpu-clock-tick sw counter, which is always available even if
-+		 * no PMU support.
-+		 *
-+		 * PPC returns ENXIO until 2.6.37 (behavior changed with commit
-+		 * b0a873e).
-+		 */
-+		scnprintf(msg, msgsize, "%s",
-+"The cycles event is not supported, trying to fall back to cpu-clock-ticks");
-+
-+		evsel->attr.type   = PERF_TYPE_SOFTWARE;
-+		evsel->attr.config = PERF_COUNT_SW_CPU_CLOCK;
-+
-+		free(evsel->name);
-+		evsel->name = NULL;
-+		return true;
-+	}
-+
-+	return false;
-+}
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 9cb8a02..26d8cfd 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -251,4 +251,7 @@ struct perf_attr_details {
- 
- int perf_evsel__fprintf(struct perf_evsel *evsel,
- 			struct perf_attr_details *details, FILE *fp);
-+
-+bool perf_evsel__fallback(struct perf_evsel *evsel, int err,
-+			  char *msg, size_t msgsize);
- #endif /* __PERF_EVSEL_H */
--- 
-1.8.1.1.361.gec3ae6e
-
