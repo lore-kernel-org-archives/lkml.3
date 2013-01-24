@@ -1,91 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945955Ab3AXVUO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:20:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40947 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932210Ab3AXVQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:16:47 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shuah Khan <shuah.khan@hp.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>
-Subject: [ 22/22] ioat: Fix DMA memory sync direction correct flag
-Date: Thu, 24 Jan 2013 13:15:43 -0800
-Message-Id: <20130124211511.839225239@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130124211504.701368763@linuxfoundation.org>
-References: <20130124211504.701368763@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S932285Ab3AXVUU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:20:20 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:46001 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756251Ab3AXVSy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:18:54 -0500
+Date: Thu, 24 Jan 2013 13:18:50 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Hillf Danton <dhillf@gmail.com>, Benjamin LaHaise <bcrl@kvack.org>,
+        linux-kernel@vger.kernel.org, linux-aio@kvack.org, zab@zabbo.net,
+        akpm@linux-foundation.org
+Subject: Re: next-20130117 - kernel BUG with aio
+Message-ID: <20130124211850.GH26407@google.com>
+References: <3544.1358774694@turing-police.cc.vt.edu>
+ <CAJd=RBBBbv07aoOTF=PNy1FpCyuRV7fnQEGX_DXEYFSSknKtqQ@mail.gmail.com>
+ <2553.1358890098@turing-police.cc.vt.edu>
+ <CAJd=RBCHRDzyjY_hOZCj6rHBXzb3f5wWxdqXYuLbQXLe2n4JeA@mail.gmail.com>
+ <13450.1359048141@turing-police.cc.vt.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <13450.1359048141@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Jan 24, 2013 at 12:22:21PM -0500, Valdis.Kletnieks@vt.edu wrote:
+> On Wed, 23 Jan 2013 20:10:03 +0800, Hillf Danton said:
+> 
+> > Try again?
+> > ---
+> >
+> > --- a/fs/aio.c	Tue Jan 22 21:37:54 2013
+> > +++ b/fs/aio.c	Wed Jan 23 20:06:14 2013
+> 
+> Now seeing this:
+> 
+> [ 2941.495370] ------------[ cut here ]------------
+> [ 2941.495379] WARNING: at fs/aio.c:336 put_ioctx+0x1cb/0x252()
+> 
+> Same warn location, but different traceback?
 
-------------------
+Finally reproduced it (thanks to Zach Brown for the idea - using a
+loopback device) - it's triggered when there's outstanding kiocbs when
+we're trying to tear down the kioctx.
 
-From: Shuah Khan <shuah.khan@hp.com>
+Found a couple bugs once I was able to reproduce it. Besides the null
+pointer deref that Hillf posted a patch for, cancellation was fubar -
+kiocb_cancel() shouldn't be marking the kiocb as cancelled if it didn't
+have a cancel callback.
 
-commit ac4989874af56435c308bdde9ad9c837a26f8b23 upstream.
+The other two bugs I found were both a result of the fact that
+aio_run_iocb() touches the kiocb after passing it off to a method that
+may call aio_complete() on it - which is something I originally missed.
 
-ioat does DMA memory sync with DMA_TO_DEVICE direction on a buffer allocated
-for DMA_FROM_DEVICE dma, resulting in the following warning from dma debug.
-Fixed the dma_sync_single_for_device() call to use the correct direction.
+Digression: When I was refactoring, I was hoping to be able to change
+the kiocb refcounting so that the refcount's just initialized to one,
+and the initial refcount is dropped when aio_complete() is called - and
+since nothing outside of the aio code messes with the kiocb refcount, it
+might be possible to get rid of the kiocb refcount entirely if I can
+figure out how to deal with cancellation.
 
-[  226.288947] WARNING: at lib/dma-debug.c:990 check_sync+0x132/0x550()
-[  226.288948] Hardware name: ProLiant DL380p Gen8
-[  226.288951] ioatdma 0000:00:04.0: DMA-API: device driver syncs DMA memory with different direction [device address=0x00000000ffff7000] [size=4096 bytes] [mapped with DMA_FROM_DEVICE] [synced with DMA_TO_DEVICE]
-[  226.288953] Modules linked in: iTCO_wdt(+) sb_edac(+) ioatdma(+) microcode serio_raw pcspkr edac_core hpwdt(+) iTCO_vendor_support hpilo(+) dca acpi_power_meter ata_generic pata_acpi sd_mod crc_t10dif ata_piix libata hpsa tg3 netxen_nic(+) sunrpc dm_mirror dm_region_hash dm_log dm_mod
-[  226.288967] Pid: 1055, comm: work_for_cpu Tainted: G        W    3.3.0-0.20.el7.x86_64 #1
-[  226.288968] Call Trace:
-[  226.288974]  [<ffffffff810644cf>] warn_slowpath_common+0x7f/0xc0
-[  226.288977]  [<ffffffff810645c6>] warn_slowpath_fmt+0x46/0x50
-[  226.288980]  [<ffffffff81345502>] check_sync+0x132/0x550
-[  226.288983]  [<ffffffff81345c9f>] debug_dma_sync_single_for_device+0x3f/0x50
-[  226.288988]  [<ffffffff81661002>] ? wait_for_common+0x72/0x180
-[  226.288995]  [<ffffffffa019590f>] ioat_xor_val_self_test+0x3e5/0x832 [ioatdma]
-[  226.288999]  [<ffffffff811a5739>] ? kfree+0x259/0x270
-[  226.289004]  [<ffffffffa0195d77>] ioat3_dma_self_test+0x1b/0x20 [ioatdma]
-[  226.289008]  [<ffffffffa01952c3>] ioat_probe+0x2f8/0x348 [ioatdma]
-[  226.289011]  [<ffffffffa0195f51>] ioat3_dma_probe+0x1d5/0x2aa [ioatdma]
-[  226.289016]  [<ffffffffa0194d12>] ioat_pci_probe+0x139/0x17c [ioatdma]
-[  226.289020]  [<ffffffff81354b8c>] local_pci_probe+0x5c/0xd0
-[  226.289023]  [<ffffffff81083e50>] ? destroy_work_on_stack+0x20/0x20
-[  226.289025]  [<ffffffff81083e68>] do_work_for_cpu+0x18/0x30
-[  226.289029]  [<ffffffff8108d997>] kthread+0xb7/0xc0
-[  226.289033]  [<ffffffff8166cef4>] kernel_thread_helper+0x4/0x10
-[  226.289036]  [<ffffffff81662d20>] ? _raw_spin_unlock_irq+0x30/0x50
-[  226.289038]  [<ffffffff81663234>] ? retint_restore_args+0x13/0x13
-[  226.289041]  [<ffffffff8108d8e0>] ? kthread_worker_fn+0x1a0/0x1a0
-[  226.289044]  [<ffffffff8166cef0>] ? gs_change+0x13/0x13
-[  226.289045] ---[ end trace e1618afc7a606089 ]---
-[  226.289047] Mapped at:
-[  226.289048]  [<ffffffff81345307>] debug_dma_map_page+0x87/0x150
-[  226.289050]  [<ffffffffa019653c>] dma_map_page.constprop.18+0x70/0xb34 [ioatdma]
-[  226.289054]  [<ffffffffa0195702>] ioat_xor_val_self_test+0x1d8/0x832 [ioatdma]
-[  226.289058]  [<ffffffffa0195d77>] ioat3_dma_self_test+0x1b/0x20 [ioatdma]
-[  226.289061]  [<ffffffffa01952c3>] ioat_probe+0x2f8/0x348 [ioatdma]
+Anyways - that didn't work out, or at least it's going to take more
+work. The two bugs that resulted from that were:
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ - The "aio: kill ki_retry" patch dropped the second kiocb ref that
+   io_submit_one drops when it returns. But aio_rw_vect_retry() touches
+   the kiocb after passing it off to f_op->aio_(read|write) which will
+   call aio_complete(), so this is a use after free.
 
----
- drivers/dma/ioat/dma_v3.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ - The "aio: smoosh struct kiocb" patch assumed that some of the fields
+   in struct kiocb aren't needed after aio_complete() has been called.
+   This is _almost_ true, but again aio_rw_vect_retry() looks at those
+   fields which ends up determining whether aio_run_iocb() calls
+   aio_complete() itself.
 
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -951,7 +951,7 @@ static int __devinit ioat_xor_val_self_t
- 			goto free_resources;
- 		}
- 	}
--	dma_sync_single_for_device(dev, dest_dma, PAGE_SIZE, DMA_TO_DEVICE);
-+	dma_sync_single_for_device(dev, dest_dma, PAGE_SIZE, DMA_FROM_DEVICE);
- 
- 	/* skip validate if the capability is not present */
- 	if (!dma_has_cap(DMA_XOR_VAL, dma_chan->device->cap_mask))
+   This seems _ridiculously_ sketchy to me, or at least convoluted...
+   but it'll take awhile to figure out how to clean that up and I'm not
+   in a great hurry to do so.
 
 
+So, Andrew - that "smoosh struct kiocb" patch should just be dropped,
+even if I fixed that issue clearly the idea is a lot less safe than I
+thought. I've got patches for the other stuff I'm going to mail out
+momentarily.
+
+Ben, Zach - the cancellation stuff (both the fix and the
+other changes) need more review, and we need a saner way of testing
+cancellation. Maybe it'd be worth implementing cancellation for regular
+block devices just so that we have a way of testing it :/
