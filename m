@@ -1,104 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab3AXTGV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:06:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12797 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752538Ab3AXTGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:06:18 -0500
-Date: Thu, 24 Jan 2013 14:06:10 -0500
-From: Kyle McMartin <kyle@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, rusty@rustcorp.com.au,
-        jstancek@redhat.com, Stephan Mueller <stephan.mueller@atsec.com>
-Subject: [PATCH] MODSIGN: flag modules that use cryptoapi and only panic if
- those are unsigned
-Message-ID: <20130124190610.GI6538@redacted.bos.redhat.com>
-References: <20130122184357.GD6538@redacted.bos.redhat.com>
- <8615.1358940375@warthog.procyon.org.uk>
- <50FFFF48.6020608@atsec.com>
+	id S1755519Ab3AXTGr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:06:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33220 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893Ab3AXTGo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 14:06:44 -0500
+Date: Thu, 24 Jan 2013 11:06:18 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-ujpujgscq2f2oodxuso5nobc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf evsel:
+  No need to always ask for PERF_FORMAT_TOTAL_TIME_{ENABLED,RUNNING}
+Git-Commit-ID: 62b807f64948f55776b1cc57298966d915b1a402
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <50FFFF48.6020608@atsec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 11:06:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After thinking about it a while, this seems like the best way to solve
-the problem, although it does still kind of offend my delicate
-sensibilities...
+Commit-ID:  62b807f64948f55776b1cc57298966d915b1a402
+Gitweb:     http://git.kernel.org/tip/62b807f64948f55776b1cc57298966d915b1a402
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 10 Dec 2012 16:04:40 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 11 Dec 2012 17:17:17 -0300
 
-Doing this check in the crypto layer seems kind of like a layering
-violation to me (and, to be honest, I think it'd be a gross-hack getting
-from the callee back to the caller module.)
+perf evsel: No need to always ask for PERF_FORMAT_TOTAL_TIME_{ENABLED,RUNNING}
 
-Instead, doing it in kernel/module.c and looking at the undefined symbol
-list again looks to me like an ordering problem since we're doing the
-signature check before we've even done the elf header check. We'd have
-to move the panic to a part of the module code that may not necessarily
-make sense.
+This is needed, so far, just in 'perf stat', to scale counters, so don't
+unconditionally ask for them in the perf_evsel__config() method.
 
-Whereas checking the undefined symbol list at modpost time is fairly
-logical, and adding a new MODULE_INFO entry in the CONFIG_CRYPTO_FIPS
-case is a well understood thing to do, and should catch all the crypto
-registrations regardless of where they exist in-tree...
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-ujpujgscq2f2oodxuso5nobc@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/tests/attr/base-record        | 2 +-
+ tools/perf/tests/attr/test-record-group  | 4 ++--
+ tools/perf/tests/attr/test-record-group1 | 4 ++--
+ tools/perf/util/evsel.c                  | 2 --
+ 4 files changed, 5 insertions(+), 7 deletions(-)
 
-Seems to build and work with both values of CONFIG_CRYPTO_FIPS.
-
-Thoughts?
-
-Signed-off-by: Kyle McMartin <kyle@redhat.com>
-
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2459,8 +2459,10 @@ static int module_sig_check(struct load_info *info)
- 		return 0;
- 	}
+diff --git a/tools/perf/tests/attr/base-record b/tools/perf/tests/attr/base-record
+index f9d0464..5bc3880 100644
+--- a/tools/perf/tests/attr/base-record
++++ b/tools/perf/tests/attr/base-record
+@@ -7,7 +7,7 @@ size=96
+ config=0
+ sample_period=4000
+ sample_type=263
+-read_format=3
++read_format=0
+ disabled=1
+ inherit=1
+ pinned=0
+diff --git a/tools/perf/tests/attr/test-record-group b/tools/perf/tests/attr/test-record-group
+index 0df34ca..57739ca 100644
+--- a/tools/perf/tests/attr/test-record-group
++++ b/tools/perf/tests/attr/test-record-group
+@@ -6,14 +6,14 @@ args    = --group -e cycles,instructions kill >/dev/null 2>&1
+ fd=1
+ group_fd=-1
+ sample_type=327
+-read_format=7
++read_format=4
  
--	/* Not having a signature is only an error if we're strict. */
--	if (err < 0 && fips_enabled)
-+	/* Not having a signature is only an error if we're strict, and
-+	 * the module registers a crypto algorithm (checked in modpost)
-+	 */
-+	if (err < 0 && fips_enabled && !get_modinfo(info, "crypto_fips"))
- 		panic("Module verification failed with error %d in FIPS mode\n",
- 		      err);
- 	if (err == -ENOKEY && !sig_enforce)
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index ff36c50..79f46e2 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -1888,6 +1888,23 @@ static void add_staging_flag(struct buffer *b, const char *name)
- 		buf_printf(b, "\nMODULE_INFO(staging, \"Y\");\n");
- }
+ [event-2:base-record]
+ fd=2
+ group_fd=1
+ config=1
+ sample_type=327
+-read_format=7
++read_format=4
+ mmap=0
+ comm=0
+ enable_on_exec=0
+diff --git a/tools/perf/tests/attr/test-record-group1 b/tools/perf/tests/attr/test-record-group1
+index 18bd926..4d688a1 100644
+--- a/tools/perf/tests/attr/test-record-group1
++++ b/tools/perf/tests/attr/test-record-group1
+@@ -6,7 +6,7 @@ args    = -e '{cycles,instructions}' kill >/tmp/krava 2>&1
+ fd=1
+ group_fd=-1
+ sample_type=327
+-read_format=7
++read_format=4
  
-+static void add_crypto_flag(struct buffer *b, struct module *mod)
-+{
-+#if defined(CONFIG_CRYPTO_FIPS)
-+	struct symbol *s;
-+
-+	/* iterate unresolved symbols looking for...
-+	 *  - crypto_register_algs
-+	 */
-+	for (s = mod->unres; s; s = s->next) {
-+		if (strcmp("crypto_register_algs", s->name) == 0)
-+			buf_printf(b, "\nMODULE_INFO(crypto_fips, \"Y\");\n");
-+	}
-+#else
-+	return;
-+#endif /*CONFIG_CRYPTO_FIPS*/
-+}
-+
- /**
-  * Record CRCs for unresolved symbols
-  **/
-@@ -2202,6 +2219,7 @@ int main(int argc, char **argv)
- 		add_header(&buf, mod);
- 		add_intree_flag(&buf, !external_module);
- 		add_staging_flag(&buf, mod->name);
-+		add_crypto_flag(&buf, mod);
- 		err |= add_versions(&buf, mod);
- 		add_depends(&buf, mod, modules);
- 		add_moddevtable(&buf, mod);
+ [event-2:base-record]
+ fd=2
+@@ -14,7 +14,7 @@ group_fd=1
+ type=0
+ config=1
+ sample_type=327
+-read_format=7
++read_format=4
+ mmap=0
+ comm=0
+ enable_on_exec=0
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index e62d3ae..2492d32 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -465,8 +465,6 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 
+ 	attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
+ 	attr->inherit	    = !opts->no_inherit;
+-	attr->read_format   = PERF_FORMAT_TOTAL_TIME_ENABLED |
+-			      PERF_FORMAT_TOTAL_TIME_RUNNING;
+ 
+ 	perf_evsel__set_sample_bit(evsel, IP);
+ 	perf_evsel__set_sample_bit(evsel, TID);
