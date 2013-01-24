@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab3AXPSp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:18:45 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:44062 "EHLO relay.sw.ru"
+	id S1755040Ab3AXPRj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:17:39 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:6988 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755160Ab3AXPRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:17:42 -0500
+	id S1754060Ab3AXPRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 10:17:36 -0500
 From: Lord Glauber Costa of Sealand <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         ccross@google.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Turner <pjt@google.com>, Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v6 07/12] sched: document the cpu cgroup.
-Date: Thu, 24 Jan 2013 19:17:37 +0400
-Message-Id: <1359040662-8055-8-git-send-email-glommer@parallels.com>
+Subject: [PATCH v6 10/12] sched: record per-cgroup number of context switches
+Date: Thu, 24 Jan 2013 19:17:40 +0400
+Message-Id: <1359040662-8055-11-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359040662-8055-1-git-send-email-glommer@parallels.com>
 References: <1359040662-8055-1-git-send-email-glommer@parallels.com>
@@ -23,105 +23,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Glauber Costa <glommer@parallels.com>
 
-The CPU cgroup is so far, undocumented. Although data exists in the
-Documentation directory about its functioning, it is usually spread,
-and/or presented in the context of something else. This file
-consolidates all cgroup-related information about it.
+Context switches are, to this moment, a property of the runqueue. When
+running containers, we would like to be able to present a separate
+figure for each container (or cgroup, in this context).
+
+The chosen way to accomplish this is to increment a per cfs_rq or
+rt_rq, depending on the task, for each of the sched entities involved,
+up to the parent. It is trivial to note that for the parent cgroup, we
+always add 1 by doing this. Also, we are not introducing any hierarchy
+walks in here. An already existent walk is reused.
+There are, however, two main issues:
+
+ 1. the traditional context switch code only increment nr_switches when
+ a different task is being inserted in the rq. Eventually, albeit not
+ likely, we will pick the same task as before. Since for cfq and rt we
+ only now which task will be next after the walk, we need to do the walk
+ again, decrementing 1. Since this is by far not likely, it seems a fair
+ price to pay.
+
+ 2. Those figures do not include switches from and to the idle or stop
+ task. Those need to be recorded separately, which will happen in a
+ follow up patch.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Turner <pjt@google.com>
 ---
- Documentation/cgroups/cpu.txt | 82 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 82 insertions(+)
- create mode 100644 Documentation/cgroups/cpu.txt
+ kernel/sched/fair.c  | 18 ++++++++++++++++++
+ kernel/sched/rt.c    | 15 +++++++++++++--
+ kernel/sched/sched.h |  3 +++
+ 3 files changed, 34 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/cgroups/cpu.txt b/Documentation/cgroups/cpu.txt
-new file mode 100644
-index 0000000..e0ea075
---- /dev/null
-+++ b/Documentation/cgroups/cpu.txt
-@@ -0,0 +1,82 @@
-+CPU Controller
-+--------------
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index d59a106..0dd9c50 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3609,6 +3609,8 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev)
+ 		prev->sched_class->put_prev_task(rq, prev);
+ 
+ 	do {
++		if (likely(prev))
++			cfs_rq->nr_switches++;
+ 		se = pick_next_entity(cfs_rq);
+ 		set_next_entity(cfs_rq, se);
+ 		cfs_rq = group_cfs_rq(se);
+@@ -3618,6 +3620,22 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev)
+ 	if (hrtick_enabled(rq))
+ 		hrtick_start_fair(rq, p);
+ 
++	/*
++	 * This condition is extremely unlikely, and most of the time will just
++	 * consist of this unlikely branch, which is extremely cheap. But we
++	 * still need to have it, because when we first loop through cfs_rq's,
++	 * we can't possibly know which task we will pick. The call to
++	 * set_next_entity above is not meant to mess up the tree in this case,
++	 * so this should give us the same chain, in the same order.
++	 */
++	if (unlikely(p == prev)) {
++		se = &p->se;
++		for_each_sched_entity(se) {
++			cfs_rq = cfs_rq_of(se);
++			cfs_rq->nr_switches--;
++		}
++	}
 +
-+The CPU controller is responsible for grouping tasks together that will be
-+viewed by the scheduler as a single unit. The CFS scheduler will first divide
-+CPU time equally between all entities in the same level, and then proceed by
-+doing the same in the next level. Basic use cases for that are described in the
-+main cgroup documentation file, cgroups.txt.
+ 	return p;
+ }
+ 
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 80c58fe..19ceed9 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1364,13 +1364,16 @@ static struct sched_rt_entity *pick_next_rt_entity(struct rq *rq,
+ 	return next;
+ }
+ 
+-static struct task_struct *_pick_next_task_rt(struct rq *rq)
++static struct task_struct *
++_pick_next_task_rt(struct rq *rq, struct task_struct *prev)
+ {
+ 	struct sched_rt_entity *rt_se;
+ 	struct task_struct *p;
+ 	struct rt_rq *rt_rq  = &rq->rt;
+ 
+ 	do {
++		if (likely(prev))
++			rt_rq->rt_nr_switches++;
+ 		rt_se = pick_next_rt_entity(rq, rt_rq);
+ 		BUG_ON(!rt_se);
+ 		rt_rq = group_rt_rq(rt_se);
+@@ -1379,6 +1382,14 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
+ 	p = rt_task_of(rt_se);
+ 	p->se.exec_start = rq->clock_task;
+ 
++	/* See fair.c for an explanation on this */
++	if (unlikely(p == prev)) {
++		for_each_sched_rt_entity(rt_se) {
++			rt_rq = rt_rq_of_se(rt_se);
++			rt_rq->rt_nr_switches--;
++		}
++	}
 +
-+Users of this functionality should be aware that deep hierarchies will of
-+course impose scheduler overhead, since the scheduler will have to take extra
-+steps and look up additional data structures to make its final decision.
+ 	return p;
+ }
+ 
+@@ -1397,7 +1408,7 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
+ 	if (prev)
+ 		prev->sched_class->put_prev_task(rq, prev);
+ 
+-	p = _pick_next_task_rt(rq);
++	p = _pick_next_task_rt(rq, prev);
+ 
+ 	/* The running task is never eligible for pushing */
+ 	if (p)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 640aa14..a426abc 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -229,6 +229,7 @@ struct cfs_rq {
+ 	unsigned int nr_spread_over;
+ #endif
+ 
++	u64 nr_switches;
+ #ifdef CONFIG_SMP
+ /*
+  * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+@@ -298,6 +299,8 @@ static inline int rt_bandwidth_enabled(void)
+ struct rt_rq {
+ 	struct rt_prio_array active;
+ 	unsigned int rt_nr_running;
++	u64 rt_nr_switches;
 +
-+Through the CPU controller, the scheduler is also able to cap the CPU
-+utilization of a particular group. This is particularly useful in environments
-+in which CPU is paid for by the hour, and one values predictability over
-+performance.
-+
-+CPU Accounting
-+--------------
-+
-+The CPU cgroup will also provide additional files under the prefix "cpuacct".
-+Those files provide accounting statistics and were previously provided by the
-+separate cpuacct controller. Although the cpuacct controller will still be kept
-+around for compatibility reasons, its usage is discouraged. If both the CPU and
-+cpuacct controllers are present in the system, distributors are encouraged to
-+always mount them together.
-+
-+Files
-+-----
-+
-+The CPU controller exposes the following files to the user:
-+
-+ - cpu.shares: The weight of each group living in the same hierarchy, that
-+ translates into the amount of CPU it is expected to get. Upon cgroup creation,
-+ each group gets assigned a default of 1024. The percentage of CPU assigned to
-+ the cgroup is the value of shares divided by the sum of all shares in all
-+ cgroups in the same level.
-+
-+ - cpu.cfs_period_us: The duration in microseconds of each scheduler period, for
-+ bandwidth decisions. This defaults to 100000us or 100ms. Larger periods will
-+ improve throughput at the expense of latency, since the scheduler will be able
-+ to sustain a cpu-bound workload for longer. The opposite of true for smaller
-+ periods. Note that this only affects non-RT tasks that are scheduled by the
-+ CFS scheduler.
-+
-+- cpu.cfs_quota_us: The maximum time in microseconds during each cfs_period_us
-+  in for the current group will be allowed to run. For instance, if it is set to
-+  half of cpu_period_us, the cgroup will only be able to peak run for 50 % of
-+  the time. One should note that this represents aggregate time over all CPUs
-+  in the system. Therefore, in order to allow full usage of two CPUs, for
-+  instance, one should set this value to twice the value of cfs_period_us.
-+
-+- cpu.stat: statistics about the bandwidth controls. No data will be presented
-+  if cpu.cfs_quota_us is not set. The file presents three
-+  numbers:
-+	nr_periods: how many full periods have been elapsed.
-+	nr_throttled: number of times we exausted the full allowed bandwidth
-+	throttled_time: total time the tasks were not run due to being overquota
-+
-+ - cpu.rt_runtime_us and cpu.rt_period_us: Those files are the RT-tasks
-+   analogous to the CFS files cfs_quota_us and cfs_period_us. One important
-+   difference, though, is that while the cfs quotas are upper bounds that
-+   won't necessarily be met, the rt runtimes form a stricter guarantee.
-+   Therefore, no overlap is allowed. Implications of that are that given a
-+   hierarchy with multiple children, the sum of all rt_runtime_us may not exceed
-+   the runtime of the parent. Also, a rt_runtime_us of 0, means that no rt tasks
-+   can ever be run in this cgroup. For more information about rt tasks runtime
-+   assignments, see scheduler/sched-rt-group.txt
-+
-+ - cpuacct.usage: The aggregate CPU time, in nanoseconds, consumed by all tasks
-+   in this group.
-+
-+ - cpuacct.usage_percpu: The CPU time, in nanoseconds, consumed by all tasks in
-+   this group, separated by CPU. The format is an space-separated array of time
-+   values, one for each present CPU.
-+
-+ - cpuacct.stat: aggregate user and system time consumed by tasks in this group.
-+   The format is
-+	user: x
-+	system: y
-+
+ #if defined CONFIG_SMP || defined CONFIG_RT_GROUP_SCHED
+ 	struct {
+ 		int curr; /* highest queued rt task prio */
 -- 
 1.8.1
 
