@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab3AXEPK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 23:15:10 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:49171 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab3AXEO5 (ORCPT
+	id S1753664Ab3AXEP4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 23:15:56 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:34308 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104Ab3AXEPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 23:14:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <1358883152.21576.55.camel@gandalf.local.home>
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
-	<20130122073315.13822.27093.stgit@srivatsabhat.in.ibm.com>
-	<1358883152.21576.55.camel@gandalf.local.home>
-Date: Wed, 23 Jan 2013 20:14:56 -0800
-Message-ID: <CANN689HOmiO-5714UiyuOcjrRYW2DkR4cPLgt96f5YeB9Ws3RQ@mail.gmail.com>
-Subject: Re: [PATCH v5 01/45] percpu_rwlock: Introduce the global
- reader-writer lock backend
-From: Michel Lespinasse <walken@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, tglx@linutronix.de,
-        peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 23 Jan 2013 23:15:49 -0500
+Date: Thu, 24 Jan 2013 15:15:37 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Liang Li <liang.li@windriver.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Greg KH <greg@kroah.com>
+Subject: Re: linux-next: Tree for Jan 23 (pch_uart.c)
+Message-Id: <20130124151537.12c139821173713bf858fa40@canb.auug.org.au>
+In-Reply-To: <20130124023054.GA21851@localhost>
+References: <20130123174336.47c0113740a14da7f6a92187@canb.auug.org.au>
+	<51007226.1040604@infradead.org>
+	<20130124130616.ee95e032326b1afee6716419@canb.auug.org.au>
+	<20130124023054.GA21851@localhost>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__24_Jan_2013_15_15_37_+1100_bSRIaIXoUN5RA3YZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 11:32 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2013-01-22 at 13:03 +0530, Srivatsa S. Bhat wrote:
->> A straight-forward (and obvious) algorithm to implement Per-CPU Reader-Writer
->> locks can also lead to too many deadlock possibilities which can make it very
->> hard/impossible to use. This is explained in the example below, which helps
->> justify the need for a different algorithm to implement flexible Per-CPU
->> Reader-Writer locks.
->>
->> We can use global rwlocks as shown below safely, without fear of deadlocks:
->>
->> Readers:
->>
->>          CPU 0                                CPU 1
->>          ------                               ------
->>
->> 1.    spin_lock(&random_lock);             read_lock(&my_rwlock);
->>
->>
->> 2.    read_lock(&my_rwlock);               spin_lock(&random_lock);
->>
->>
->> Writer:
->>
->>          CPU 2:
->>          ------
->>
->>        write_lock(&my_rwlock);
->>
+--Signature=_Thu__24_Jan_2013_15_15_37_+1100_bSRIaIXoUN5RA3YZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Thu, 24 Jan 2013 10:30:54 +0800 Liang Li <liang.li@windriver.com> wrote:
 >
-> I thought global locks are now fair. That is, a reader will block if a
-> writer is waiting. Hence, the above should deadlock on the current
-> rwlock_t types.
+> Should I add a fix for the compile error .. or do squash then send out
+> refreshed patch ?
 
-I believe you are mistaken here. struct rw_semaphore is fair (and
-blocking), but rwlock_t is unfair. The reason we can't easily make
-rwlock_t fair is because tasklist_lock currently depends on the
-rwlock_t unfairness - tasklist_lock readers typically don't disable
-local interrupts, and tasklist_lock may be acquired again from within
-an interrupt, which would deadlock if rwlock_t was fair and a writer
-was queued by the time the interrupt is processed.
+You need to send a fix patch to Greg based on his tty tree
+(git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git).
 
-> We need to fix those locations (or better yet, remove all rwlocks ;-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-tasklist_lock is the main remaining user. I'm not sure about removing
-rwlock_t, but I would like to at least make it fair somehow :)
+--Signature=_Thu__24_Jan_2013_15_15_37_+1100_bSRIaIXoUN5RA3YZ
+Content-Type: application/pgp-signature
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRALVpAAoJEECxmPOUX5FEWv4P+wVISo3NRpYkCycQ/CPf15N/
+kop2HPPBXEtWLXtXKgJU44QhTLdYMNtW2ZIU5DLW9ep/k2zPW2N93TfNAk7rjnTx
+oi1tEzGzNskHaTJnfomKuqnklJ6yljmeIKvqAMOP8Osh6FIsIEXl1tbGr0wh1Tqt
+l3+Xu9CnymabhxND6AnNmoiYHoh5S7x6reAK3YWOhZ8qaa5wFknPsxrv2+YrnFYQ
+dreJsjVMUt+y6E5QPu8PuvI7fNZ/HoVRJYl8043qXk5CmJM9vBUR+jvH1+cPg8FE
+PMMjhtLpL2M8kgb3mgcToavJRTHUHclKg5O4L30iu97SZntjTCkKy5ZL9g+HWACs
+6hdUhM0aKBDs6Jf9oc1UpFn0BvIXzRPH3vZw763B3if5sUBWFi3qxfFi11S6HjvC
+Z7gWLXVUONRI9CylUCQnHnQ42TYBP8JmciFc2orljaYcw06UxRL3qOIO4CeG/vVF
+9gIDct6E5ckRlp6c1tDGZvS5QQUwSVoGfXQ10RRoTa4UnNGiKq3aGE87qn0+TBpz
+VuQ4dJhvbK5NBcSRqSv8TiO1PjDS/cQA0ZqburU2NQymCi0oOInnyCSrTlKkb7bw
+enDBI+izCFWdDsndZs6RYpj+s8PIEyfts111YqFrq6gkL1jBFgYGzkPpc8nGoI7y
+FtsVejpxNwAC0vyM/KUC
+=kAaW
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__24_Jan_2013_15_15_37_+1100_bSRIaIXoUN5RA3YZ--
