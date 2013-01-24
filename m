@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228Ab3AXVRW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:17:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40659 "EHLO mail.kernel.org"
+	id S1756277Ab3AXVRe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:17:34 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40705 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932122Ab3AXVQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:16:06 -0500
+	id S1757020Ab3AXVQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:16:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 03/22] ftrace: Be first to run code modification on modules
-Date: Thu, 24 Jan 2013 13:15:24 -0800
-Message-Id: <20130124211505.656158953@linuxfoundation.org>
+        Colin Ian King <colin.king@canonical.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 09/22] PCI: Allow pcie_aspm=force even when FADT indicates it is unsupported
+Date: Thu, 24 Jan 2013 13:15:30 -0800
+Message-Id: <20130124211507.874894460@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211504.701368763@linuxfoundation.org>
 References: <20130124211504.701368763@linuxfoundation.org>
@@ -27,73 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Colin Ian King <colin.king@canonical.com>
 
-commit c1bf08ac26e92122faab9f6c32ea8aba94612dae upstream.
+commit 9e16721498b0c3d3ebfa0b503c63d35c0a4c0642 upstream.
 
-If some other kernel subsystem has a module notifier, and adds a kprobe
-to a ftrace mcount point (now that kprobes work on ftrace points),
-when the ftrace notifier runs it will fail and disable ftrace, as well
-as kprobes that are attached to ftrace points.
+Right now using pcie_aspm=force will not enable ASPM if the FADT indicates
+ASPM is unsupported.  However, the semantics of force should probably allow
+for this, especially as they did before 3c076351c4 ("PCI: Rework ASPM
+disable code")
 
-Here's the error:
+This patch just skips the clearing of any ASPM setup that the firmware has
+carried out on this bus if pcie_aspm=force is being used.
 
- WARNING: at kernel/trace/ftrace.c:1618 ftrace_bug+0x239/0x280()
- Hardware name: Bochs
- Modules linked in: fat(+) stap_56d28a51b3fe546293ca0700b10bcb29__8059(F) nfsv4 auth_rpcgss nfs dns_resolver fscache xt_nat iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack lockd sunrpc ppdev parport_pc parport microcode virtio_net i2c_piix4 drm_kms_helper ttm drm i2c_core [last unloaded: bid_shared]
- Pid: 8068, comm: modprobe Tainted: GF            3.7.0-0.rc8.git0.1.fc19.x86_64 #1
- Call Trace:
-  [<ffffffff8105e70f>] warn_slowpath_common+0x7f/0xc0
-  [<ffffffff81134106>] ? __probe_kernel_read+0x46/0x70
-  [<ffffffffa0180000>] ? 0xffffffffa017ffff
-  [<ffffffffa0180000>] ? 0xffffffffa017ffff
-  [<ffffffff8105e76a>] warn_slowpath_null+0x1a/0x20
-  [<ffffffff810fd189>] ftrace_bug+0x239/0x280
-  [<ffffffff810fd626>] ftrace_process_locs+0x376/0x520
-  [<ffffffff810fefb7>] ftrace_module_notify+0x47/0x50
-  [<ffffffff8163912d>] notifier_call_chain+0x4d/0x70
-  [<ffffffff810882f8>] __blocking_notifier_call_chain+0x58/0x80
-  [<ffffffff81088336>] blocking_notifier_call_chain+0x16/0x20
-  [<ffffffff810c2a23>] sys_init_module+0x73/0x220
-  [<ffffffff8163d719>] system_call_fastpath+0x16/0x1b
- ---[ end trace 9ef46351e53bbf80 ]---
- ftrace failed to modify [<ffffffffa0180000>] init_once+0x0/0x20 [fat]
-  actual: cc:bb:d2:4b:e1
-
-A kprobe was added to the init_once() function in the fat module on load.
-But this happened before ftrace could have touched the code. As ftrace
-didn't run yet, the kprobe system had no idea it was a ftrace point and
-simply added a breakpoint to the code (0xcc in the cc:bb:d2:4b:e1).
-
-Then when ftrace went to modify the location from a call to mcount/fentry
-into a nop, it didn't see a call op, but instead it saw the breakpoint op
-and not knowing what to do with it, ftrace shut itself down.
-
-The solution is to simply give the ftrace module notifier the max priority.
-This should have been done regardless, as the core code ftrace modification
-also happens very early on in boot up. This makes the module modification
-closer to core modification.
-
-Link: http://lkml.kernel.org/r/20130107140333.593683061@goodmis.org
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Reported-by: Frank Ch. Eigler <fche@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reference: http://bugs.launchpad.net/bugs/962038
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pci/pcie/aspm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3869,7 +3869,7 @@ static int ftrace_module_notify(struct n
+--- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -798,6 +798,9 @@ void pcie_clear_aspm(struct pci_bus *bus
+ {
+ 	struct pci_dev *child;
  
- struct notifier_block ftrace_module_nb = {
- 	.notifier_call = ftrace_module_notify,
--	.priority = 0,
-+	.priority = INT_MAX,	/* Run before anything that can use kprobes */
- };
- 
- extern unsigned long __start_mcount_loc[];
++	if (aspm_force)
++		return;
++
+ 	/*
+ 	 * Clear any ASPM setup that the firmware has carried out on this bus
+ 	 */
 
 
