@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945973Ab3AXVXp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:23:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41195 "EHLO mail.kernel.org"
+	id S1757066Ab3AXVYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:24:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41181 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932269Ab3AXVTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:19:07 -0500
+	id S932235Ab3AXVTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:19:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Cox <alan@linux.intel.com>, Jeff Garzik <jgarzik@redhat.com>,
-        Abdallah Chatila <abdallah.chatila@ericsson.com>
-Subject: [ 11/15] ahci: Add identifiers for ASM106x devices
-Date: Thu, 24 Jan 2013 13:18:35 -0800
-Message-Id: <20130124211727.847446491@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Don Zickus <dzickus@redhat.com>,
+        "Huang, Adrian (ISS Linux TW)" <adrian.huang@hp.com>
+Subject: [ 04/15] USB: UHCI: fix IRQ race during initialization
+Date: Thu, 24 Jan 2013 13:18:28 -0800
+Message-Id: <20130124211724.989791486@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211723.489089115@linuxfoundation.org>
 References: <20130124211723.489089115@linuxfoundation.org>
@@ -26,50 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 7b4f6ecacb14f384adc1a5a67ad95eb082c02bd1 upstream.
+commit 0f815a0a700bc10547449bde6c106051a035a1b9 upstream.
 
-They don't always appear as AHCI class devices but instead as IDE class.
+This patch (as1644) fixes a race that occurs during startup in
+uhci-hcd.  If the IRQ line is shared with other devices, it's possible
+for the handler routine to be called before the data structures are
+fully initialized.
 
-Based on an initial patch by Hiroaki Nito
+The problem is fixed by adding a check to the IRQ handler routine.  If
+the initialization hasn't finished yet, the routine will return
+immediately.
 
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=42804
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Signed-off-by: Abdallah Chatila <abdallah.chatila@ericsson.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Don Zickus <dzickus@redhat.com>
+Tested-by: "Huang, Adrian (ISS Linux TW)" <adrian.huang@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c      |    6 ++++++
- include/linux/pci_ids.h |    2 ++
- 2 files changed, 8 insertions(+)
+ drivers/usb/host/uhci-hcd.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -402,6 +402,12 @@ static const struct pci_device_id ahci_p
- 	/* Promise */
- 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
+--- a/drivers/usb/host/uhci-hcd.c
++++ b/drivers/usb/host/uhci-hcd.c
+@@ -446,6 +446,10 @@ static irqreturn_t uhci_irq(struct usb_h
+ 		return IRQ_NONE;
+ 	uhci_writew(uhci, status, USBSTS);		/* Clear it */
  
-+ 	/* Asmedia */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0601), board_ahci },	/* ASM1060 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0602), board_ahci },	/* ASM1060 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
++	spin_lock(&uhci->lock);
++	if (unlikely(!uhci->is_initialized))	/* not yet configured */
++		goto done;
 +
- 	/* Generic, PCI class code for AHCI */
- 	{ PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
- 	  PCI_CLASS_STORAGE_SATA_AHCI, 0xffffff, board_ahci },
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2390,6 +2390,8 @@
+ 	if (status & ~(USBSTS_USBINT | USBSTS_ERROR | USBSTS_RD)) {
+ 		if (status & USBSTS_HSE)
+ 			dev_err(uhci_dev(uhci), "host system error, "
+@@ -454,7 +458,6 @@ static irqreturn_t uhci_irq(struct usb_h
+ 			dev_err(uhci_dev(uhci), "host controller process "
+ 					"error, something bad happened!\n");
+ 		if (status & USBSTS_HCH) {
+-			spin_lock(&uhci->lock);
+ 			if (uhci->rh_state >= UHCI_RH_RUNNING) {
+ 				dev_err(uhci_dev(uhci),
+ 					"host controller halted, "
+@@ -472,15 +475,15 @@ static irqreturn_t uhci_irq(struct usb_h
+ 				 * pending unlinks */
+ 				mod_timer(&hcd->rh_timer, jiffies);
+ 			}
+-			spin_unlock(&uhci->lock);
+ 		}
+ 	}
  
- #define PCI_VENDOR_ID_AZWAVE		0x1a3b
+-	if (status & USBSTS_RD)
++	if (status & USBSTS_RD) {
++		spin_unlock(&uhci->lock);
+ 		usb_hcd_poll_rh_status(hcd);
+-	else {
+-		spin_lock(&uhci->lock);
++	} else {
+ 		uhci_scan_schedule(uhci);
++ done:
+ 		spin_unlock(&uhci->lock);
+ 	}
  
-+#define PCI_VENDOR_ID_ASMEDIA		0x1b21
-+
- #define PCI_VENDOR_ID_TEKRAM		0x1de1
- #define PCI_DEVICE_ID_TEKRAM_DC290	0xdc29
+@@ -658,9 +661,9 @@ static int uhci_start(struct usb_hcd *hc
+ 	 */
+ 	mb();
  
++	spin_lock_irq(&uhci->lock);
+ 	configure_hc(uhci);
+ 	uhci->is_initialized = 1;
+-	spin_lock_irq(&uhci->lock);
+ 	start_rh(uhci);
+ 	spin_unlock_irq(&uhci->lock);
+ 	return 0;
 
 
