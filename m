@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab3AXMBJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 07:01:09 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57563 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753830Ab3AXMBE (ORCPT
+	id S1754141Ab3AXMCo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 07:02:44 -0500
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:54553 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065Ab3AXMCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 07:01:04 -0500
-Date: Thu, 24 Jan 2013 20:00:51 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        davinci-linux-open-source@linux.davincidsp.com, anilkumar@ti.com,
-        tony@atomide.com, hs@denx.de, lrg@ti.com, sameo@linux.intel.com,
-        khilman@ti.com, linux@arm.linux.org.uk, rob@landley.net,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca
-Subject: Re: [PATCH 5/6] ARM: regulator: add tps6507x device tree data
-Message-ID: <20130124120050.GP4955@opensource.wolfsonmicro.com>
-References: <1359024920-32190-1-git-send-email-manishv.b@ti.com>
- <1359024920-32190-6-git-send-email-manishv.b@ti.com>
+	Thu, 24 Jan 2013 07:02:39 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IYV9cRr2u6rjcP4B"
-Content-Disposition: inline
-In-Reply-To: <1359024920-32190-6-git-send-email-manishv.b@ti.com>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1358856404-8975-7-git-send-email-stigge@antcom.de>
+References: <1358856404-8975-1-git-send-email-stigge@antcom.de>
+	<1358856404-8975-7-git-send-email-stigge@antcom.de>
+Date: Thu, 24 Jan 2013 13:02:38 +0100
+Message-ID: <CAOY=C6H5xETt5UNXUfRkGW9q+bj0y2R3sXNvW87XXvQcYoL_-g@mail.gmail.com>
+Subject: Re: [PATCH 6/6 v14] gpio: Add block gpio to several gpio drivers
+From: Stijn Devriendt <highguy@gmail.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, sr@denx.de, wg@grandegger.com, mark.rutland@arm.com,
+        nicolas.ferre@atmel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---IYV9cRr2u6rjcP4B
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Thu, Jan 24, 2013 at 04:25:19PM +0530, Vishwanathrao Badarkhe, Manish wrote:
-
+On Tue, Jan 22, 2013 at 1:06 PM, Roland Stigge <stigge@antcom.de> wrote:
+> This patch adds block GPIO support to several gpio drivers.
+>
+> This implements block GPIO only for some selected drivers since block GPIO is
+> an optional feature which may not be suitable for every GPIO hardware. (With
+> automatic fallback to the single GPIO functions if not available in a driver.)
+>
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+>
+> For pinctrl-at91.c:
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>
 > ---
->  arch/arm/boot/dts/tps6507x.dtsi |   47 +++++++++++++++++++++++++++++++++++++++
+>
+> +static void lpc32xx_gpio_set_block_p3(struct gpio_chip *chip,
+> +                                     unsigned long mask,
+> +                                     unsigned long values)
+> +{
+> +       struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
+> +       u32 set_bits = values & mask;
+> +       u32 clr_bits = ~values & mask;
+> +
+> +       /* States of GPIO 0-5 start at bit 25 */
+> +       set_bits <<= 25;
+> +       clr_bits <<= 25;
+> +
+> +       /* Note: On LPC32xx, GPOs can only be set at once or cleared at once,
+> +        *       but not set and cleared at once
+> +        */
+> +       if (set_bits)
+> +               __raw_writel(set_bits, group->gpio_grp->outp_set);
+> +       if (clr_bits)
+> +               __raw_writel(clr_bits, group->gpio_grp->outp_clr);
+> +}
+> +
 
-Why are you putting this in arch/arm?
+In my patch, I go out of the way of this kind of thing for a simple reason:
+You may generate incorrect timing by doing this.
 
---IYV9cRr2u6rjcP4B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+As a fictive example, consider the i2c-bitbang driver, which you could optimize
+by using block-gpio with sda/scl in a single block. By offering the
+block-gpio API
+even when you cannot set all bits at once, you could cause timing issues.
+You might be toggling the clock line before pushing out data, for example.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+The same holds below, for a driver that has separate hi/lo bits.
 
-iQIcBAEBAgAGBQJRASHyAAoJELSic+t+oim9XVcP/i8d2OXORqtJb2RwAGdUtzVA
-QvsP5eABuMJNDLrIzcbVm+aHKhjXUnBk0Z6wCWLgOzGwsn5uUAaMzAKK15mbXQeg
-C6o0NMA+lGsRUM8k2GNkeIFwrkX/+ly9c1+KVUo20hpqoPeOrVW0bMVpPip4y/Ry
-5V2nP5K6YW22iPkZUBOpbIo1V2mJcH2qy0USGkjJO4CdjfYb01wg5D4hotdz/mfg
-scJp2NBwm35yg0ShLm0hwUGEHSbF3uhrQask6HD0A8BK+4YwuRXUGRllV7lL/ZpL
-wqrot4SZgSu0MjLX+zGYZwMx+5Tmc50abpxkA5322QlBJFeqEdYOY3RND1w/avKH
-cDsHi+se8CVxW8+AVvzOCAHx+7kRPXz+ITNlz8dTQoQZsinJVCUV0RXtYiPs5NY4
-QR7vqvnIdQraLp1piBUMAzNpavR8twJH1z4QR5+ugYElJ2cZ+OUOG5X8ElYRe+FQ
-hNA07QP18xIdj+jlZa91PbyxXRXK1VaC9CJlVYNim5VNuwwpmLlFwSgXp337tW6J
-ZmYW7ieCohbFqlbUtWEzk7pOpDlG7kRyAg7taqXc1SVHoy3kXZFatYWJxrf22de6
-Mysb06hWn652ux7QpXTZkSX3ejPVX61reQjprDoAYmNqYJpCZL1ozy0yKnhEVHei
-TVTNhNSfsdMMfsF6TkdC
-=vriK
------END PGP SIGNATURE-----
-
---IYV9cRr2u6rjcP4B--
+Regards,
+Stijn
