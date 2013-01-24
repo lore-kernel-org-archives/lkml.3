@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab3AXXbu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 18:31:50 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:48667 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756448Ab3AXXbn (ORCPT
+	id S1755954Ab3AXXpR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 18:45:17 -0500
+Received: from talus.maths.usyd.edu.au ([129.78.68.1]:41252 "EHLO
+	talus.maths.usyd.edu.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755248Ab3AXXpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 18:31:43 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Consult] Plan: personal contributes plan for 2013
-In-Reply-To: Your message of "Wed, 23 Jan 2013 19:32:41 +0800."
-             <50FFCA59.5070903@asianux.com>
-From: Valdis.Kletnieks@vt.edu
-References: <50FFCA59.5070903@asianux.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1359070263_1950P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 24 Jan 2013 18:31:03 -0500
-Message-ID: <30811.1359070263@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020203.5101C439.0071,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	Thu, 24 Jan 2013 18:45:11 -0500
+X-smtpdoor-from: psz@maths.usyd.edu.au
+X-smtpdoor-want-Message-ID: <201301242343.r0ONhjXR024947@como.maths.usyd.edu.au>
+Date: Fri, 25 Jan 2013 10:43:45 +1100
+From: paul.szabo@sydney.edu.au
+Message-Id: <201301242343.r0ONhjXR024947@como.maths.usyd.edu.au>
+To: fengguang.wu@intel.com
+Subject: Re: [PATCH] Negative (setpoint-dirty) in bdi_position_ratio()
+Cc: 695182@bugs.debian.org, akpm@linux-foundation.org, jack@suse.cz,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20130124145707.GB12745@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1359070263_1950P
-Content-Type: text/plain; charset=us-ascii
+Dear Fengguang,
 
-On Wed, 23 Jan 2013 19:32:41 +0800, Chen Gang said:
+> Or more simple, you may show us the OOM dmesg which will contain the
+> number of dirty pages. ...
 
-> Plan Details:
->
-> 10 patches per month: (at least)
+Do you mean kern.log lines like:
 
-Even Dave Miller only averages 12-15 patches a month, and he does it for a
-living, and they're all in the one part of the kernel he maintains.  It's going
-to be a really hard time for a newcomer to get up to speed enough to produce a
-useful and usable patch every 3 days on the average, especially across multiple
-areas of the kernel.
+[  744.754199] bash invoked oom-killer: gfp_mask=0xd0, order=1, oom_adj=0, oom_score_adj=0
+[  744.754202] bash cpuset=/ mems_allowed=0
+[  744.754204] Pid: 3836, comm: bash Not tainted 3.2.0-4-686-pae #1 Debian 3.2.32-1
+...
+[  744.754354] active_anon:13497 inactive_anon:129 isolated_anon:0
+[  744.754354]  active_file:2664 inactive_file:4144756 isolated_file:0
+[  744.754355]  unevictable:0 dirty:510 writeback:0 unstable:0
+[  744.754356]  free:11867217 slab_reclaimable:68289 slab_unreclaimable:7204
+[  744.754356]  mapped:8066 shmem:250 pagetables:519 bounce:0
+[  744.754361] DMA free:4260kB min:784kB low:980kB high:1176kB active_anon:0kB inactive_anon:0kB active_file:4kB inactive_file:0kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15784kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:11628kB slab_unreclaimable:4kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:499 all_unreclaimable? yes
+[  744.754364] lowmem_reserve[]: 0 867 62932 62932
+[  744.754369] Normal free:43788kB min:44112kB low:55140kB high:66168kB active_anon:0kB inactive_anon:0kB active_file:912kB inactive_file:0kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:887976kB mlocked:0kB dirty:0kB writeback:0kB mapped:4kB shmem:0kB slab_reclaimable:261528kB slab_unreclaimable:28812kB kernel_stack:3096kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:16060 all_unreclaimable? yes
+[  744.754372] lowmem_reserve[]: 0 0 496525 496525
+[  744.754377] HighMem free:47420820kB min:512kB low:789888kB high:1579264kB active_anon:53988kB inactive_anon:516kB active_file:9740kB inactive_file:16579320kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:63555300kB mlocked:0kB dirty:2040kB writeback:0kB mapped:32260kB shmem:1000kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB pagetables:2076kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
+[  744.754380] lowmem_reserve[]: 0 0 0 0
+[  744.754381] DMA: 445*4kB 36*8kB 3*16kB 1*32kB 1*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 1*2048kB 0*4096kB = 4260kB
+[  744.754386] Normal: 1132*4kB 620*8kB 237*16kB 70*32kB 38*64kB 26*128kB 20*256kB 14*512kB 4*1024kB 3*2048kB 0*4096kB = 43808kB
+[  744.754390] HighMem: 226*4kB 242*8kB 155*16kB 66*32kB 10*64kB 1*128kB 1*256kB 0*512kB 1*1024kB 2*2048kB 11574*4096kB = 47420680kB
+[  744.754395] 4148173 total pagecache pages
+[  744.754396] 0 pages in swap cache
+[  744.754397] Swap cache stats: add 0, delete 0, find 0/0
+[  744.754397] Free swap  = 0kB
+[  744.754398] Total swap = 0kB
+[  744.900649] 16777200 pages RAM
+[  744.900650] 16549378 pages HighMem
+[  744.900651] 664304 pages reserved
+[  744.900652] 4162276 pages shared
+[  744.900653] 104263 pages non-shared
 
-More realistic goal:
+? (The above and similar were reported to http://bugs.debian.org/695182 .)
+Do you want me to log and report something else?
 
-1) Get a patch accepted.
-2) Get another patch accepted.
-3) Re-evaluate how many patches you can actually do.
+I believe the above crash may be provoked simply by running:
+  n=0; while [ $n -lt 99 ]; do dd bs=1M count=1024 if=/dev/zero of=x$n; (( n = $n + 1 )); done &
+on any PAE machine with over 32GB RAM. Oddly the problem does not seem
+to occur when using mem=32g or lower on the kernel boot line (or on
+machines with less than 32GB RAM).
 
+Cheers, Paul
 
---==_Exmh_1359070263_1950P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUQHENwdmEQWDXROgAQLDTA/9F4CNd/aMH/ygxoYtdVaP/MVvvrld88DI
-Desp5JqNxwQyIgSYNC4/DMHGrCOe39YEJHyrN6t3kVfIrA7slaN1fdV00m81v9Kx
-e3mSfuLC7z1lZPljoT9j75A9MYkte9FFbgTSpY+JNkMrskgkwYexUHwjKNw0vrgo
-ec5VMWYLJeK3U3wVoJoIIJBqiCS9gvt5Nxz8FcdXu73PT2Bn/OrKmJrgJMROJxcQ
-C0bKkISLTDVO+O15eui1JbjG3ewiifGW+72LwpiBObEPWwBIYmUhan2aq8LEcKtS
-qfURLLfQM4RdkhkHHBmZYqiRs+HNa6gwW7GlUdHXFYhQwbMbDOG2n0ciN/M0d7XQ
-1OcyHJAQGVH4Lm5OYvfEXPUAFulSKZxMBRyqdJX+iEsgQJFjWciuQsD+7LtWAmYN
-m9tFDxBlNox59c0QxcerOweqaA/9IT4xaADL2+T8LjCpTx4TYeyjLJ5NO2qYqShY
-A3EbuLhFdbgR3nFROC2V9PfY92G0i8vbfDYgfpDsI+u019J4A5yrIBmlLnBDCIrX
-2yPtsjZ55XfY6rLJX8BfRQsiE5OvYx0uEXqtvhP6d1ynO6Vbot4BlZaopxK5PcGt
-eYWuiyWLGimeqRyoZfALOUP6F7F/X3bgKqWE5YD+LiimLa22CPHZcysp6gksruIq
-5Raa1JIPtxA=
-=v0wH
------END PGP SIGNATURE-----
-
---==_Exmh_1359070263_1950P--
-
+Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
+School of Mathematics and Statistics   University of Sydney    Australia
