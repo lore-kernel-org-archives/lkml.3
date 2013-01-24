@@ -1,48 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab3AXIle (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 03:41:34 -0500
-Received: from mga03.intel.com ([143.182.124.21]:11430 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751100Ab3AXIla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 03:41:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,528,1355126400"; 
-   d="scan'208";a="194619425"
-Message-ID: <1359017171.18561.29.camel@suxuemin.sh.intel.com>
-Subject: Re: [PATCH V3] drm_crtc: check if fb_create return NULL
-From: "Su, Xuemin" <xuemin.su@intel.com>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com,
-        bo.he@intel.com
-Date: Thu, 24 Jan 2013 16:46:11 +0800
-In-Reply-To: <87bocfugln.fsf@intel.com>
-References: <1358987804.18561.22.camel@suxuemin.sh.intel.com>
-	 <87bocfugln.fsf@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1752360Ab3AXIp2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 03:45:28 -0500
+Received: from sd-mail-sa-02.sanoma.fi ([158.127.18.162]:37637 "EHLO
+	sd-mail-sa-02.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab3AXIpW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 03:45:22 -0500
+Message-ID: <20130124104518.13058kllaldbmoio@www.dalek.fi>
+Date: Thu, 24 Jan 2013 10:45:18 +0200
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+To: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Cc: Tom St Denis <tstdenis@elliptictech.com>, linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        David Miller <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] CMAC support for CryptoAPI, fixed patch issues,
+ indent, and testmgr build issues
+References: <1776726593.108228.1358952383104.JavaMail.root@elliptictech.com>
+ <20130123173510.14986sla4qsstz8k@www.dalek.fi>
+ <51000CEE.9060109@linux-ipv6.org> <51000EEF.7090308@linux-ipv6.org>
+In-Reply-To: <51000EEF.7090308@linux-ipv6.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-24 at 10:31 +0200, Jani Nikula wrote:
-> >  	}
-> > +	/* some buggy driver may return NULL here, which may cause panic */
-> > +	BUG_ON(!fb);
-> 
-> I fail to see the benefit of this compared to just letting it oops...
-> 
-> >  	or->fb_id = fb->base.id;
-> 
-> ...right here.
-> 
-> 
-For PATCH V3, I think a BUG_ON may give the user clearer information
-about the reason of panic. Easier to debug.
-I submitted a PATCH V2 yesterday which gives a warning and then return
--EVAL if fb==NULL, preventing the panic. Do you think this is
-acceptable?
+Quoting YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>:
+
+> YOSHIFUJI Hideaki wrote:
+>> Jussi Kivilinna wrote:
+>>
+>>>>>> diff --git a/include/uapi/linux/pfkeyv2.h
+>>>>>> b/include/uapi/linux/pfkeyv2.h
+>>>>>> index 0b80c80..d61898e 100644
+>>>>>> --- a/include/uapi/linux/pfkeyv2.h
+>>>>>> +++ b/include/uapi/linux/pfkeyv2.h
+>>>>>> @@ -296,6 +296,7 @@ struct sadb_x_kmaddress {
+>>>>>>  #define SADB_X_AALG_SHA2_512HMAC    7
+>>>>>>  #define SADB_X_AALG_RIPEMD160HMAC    8
+>>>>>>  #define SADB_X_AALG_AES_XCBC_MAC    9
+>>>>>> +#define SADB_X_AALG_AES_CMAC_MAC    10
+>>>>>>  #define SADB_X_AALG_NULL        251    /* kame */
+>>>>>>  #define SADB_AALG_MAX            251
+>>>>>
+>>>>> Should these values be based on IANA assigned IPSEC AH transform
+>>>>> identifiers?
+>>>>>
+>>>>> https://www.iana.org/assignments/isakmp-registry/isakmp-registry.xml#isakmp-registry-6
+>>>>
+>>>> There is no CMAC entry apparently ... despite the fact that CMAC  
+>>>> is a proposed RFC standard for IPsec.
+>>>>
+>>>> It might be safer to move that to 14 since it's currently  
+>>>> unassigned and then go through whatever channels are required to  
+>>>> allocate it.  Mostly this affects key setting.  So this means my  
+>>>> patch would break AH_RSA setkey calls (which the kernel doesn't  
+>>>> support anyways).
+>>>>
+>>>
+>>> Problem seems to be that PFKEYv2 does not quite work with IKEv2,  
+>>> and XFRM API should be used instead. There is new numbers assigned  
+>>> for IKEv2:  
+>>> https://www.iana.org/assignments/ikev2-parameters/ikev2-parameters.xml#ikev2-parameters-7
+>>>
+>>> For new SADB_X_AALG_*, I'd think you should use value from  
+>>> "Reserved for private use" range. Maybe 250?
+>>
+>> We can choose any value unless we do not break existing
+>> binaries.  When IKE used, the daemon is responsible
+>> for translation.
+>
+> I meant, we can choose any values "if" we do not break ...
+>
+
+Ok, so giving '10' to AES-CMAC is fine after all?
+
+And if I'd want to add Camellia-CTR and Camellia-CCM support, I can  
+choose next free numbers from SADB_X_EALG_*?
+
+-Jussi
+
 
