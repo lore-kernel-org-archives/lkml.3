@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab3AXVOs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:14:48 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39979 "EHLO mail.kernel.org"
+	id S1161014Ab3AXVO6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:14:58 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40003 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932076Ab3AXVNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:13:50 -0500
+	id S1030204Ab3AXVNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:13:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [ 08/46] evm: checking if removexattr is not a NULL
-Date: Thu, 24 Jan 2013 13:12:46 -0800
-Message-Id: <20130124211138.750381407@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Arjan van de Ven <arjan@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 10/46] async: fix __lowest_in_progress()
+Date: Thu, 24 Jan 2013 13:12:48 -0800
+Message-Id: <20130124211139.518807401@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
 References: <20130124211135.862755794@linuxfoundation.org>
@@ -27,70 +26,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit a67adb997419fb53540d4a4f79c6471c60bc69b6 upstream.
+commit f56c3196f251012de9b3ebaff55732a9074fdaae upstream.
 
-The following lines of code produce a kernel oops.
+Commit 083b804c4d3e ("async: use workqueue for worker pool") made it
+possible that async jobs are moved from pending to running out-of-order.
+While pending async jobs will be queued and dispatched for execution in
+the same order, nothing guarantees they'll enter "1) move self to the
+running queue" of async_run_entry_fn() in the same order.
 
-fd = socket(PF_FILE, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0);
-fchmod(fd, 0666);
+Before the conversion, async implemented its own worker pool.  An async
+worker, upon being woken up, fetches the first item from the pending
+list, which kept the executing lists sorted.  The conversion to
+workqueue was done by adding work_struct to each async_entry and async
+just schedules the work item.  The queueing and dispatching of such work
+items are still in order but now each worker thread is associated with a
+specific async_entry and moves that specific async_entry to the
+executing list.  So, depending on which worker reaches that point
+earlier, which is non-deterministic, we may end up moving an async_entry
+with larger cookie before one with smaller one.
 
-[  139.922364] BUG: unable to handle kernel NULL pointer dereference at   (null)
-[  139.924982] IP: [<  (null)>]   (null)
-[  139.924982] *pde = 00000000
-[  139.924982] Oops: 0000 [#5] SMP
-[  139.924982] Modules linked in: fuse dm_crypt dm_mod i2c_piix4 serio_raw evdev binfmt_misc button
-[  139.924982] Pid: 3070, comm: acpid Tainted: G      D      3.8.0-rc2-kds+ #465 Bochs Bochs
-[  139.924982] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
-[  139.924982] EIP is at 0x0
-[  139.924982] EAX: cf5ef000 EBX: cf5ef000 ECX: c143d600 EDX: c15225f2
-[  139.924982] ESI: cf4d2a1c EDI: cf4d2a1c EBP: cc02df10 ESP: cc02dee4
-[  139.924982]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[  139.924982] CR0: 80050033 CR2: 00000000 CR3: 0c059000 CR4: 000006d0
-[  139.924982] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-[  139.924982] DR6: ffff0ff0 DR7: 00000400
-[  139.924982] Process acpid (pid: 3070, ti=cc02c000 task=d7705340 task.ti=cc02c000)
-[  139.924982] Stack:
-[  139.924982]  c1203c88 00000000 cc02def4 cf4d2a1c ae21eefa 471b60d5 1083c1ba c26a5940
-[  139.924982]  e891fb5e 00000041 00000004 cc02df1c c1203964 00000000 cc02df4c c10e20c3
-[  139.924982]  00000002 00000000 00000000 22222222 c1ff2222 cf5ef000 00000000 d76efb08
-[  139.924982] Call Trace:
-[  139.924982]  [<c1203c88>] ? evm_update_evmxattr+0x5b/0x62
-[  139.924982]  [<c1203964>] evm_inode_post_setattr+0x22/0x26
-[  139.924982]  [<c10e20c3>] notify_change+0x25f/0x281
-[  139.924982]  [<c10cbf56>] chmod_common+0x59/0x76
-[  139.924982]  [<c10e27a1>] ? put_unused_fd+0x33/0x33
-[  139.924982]  [<c10cca09>] sys_fchmod+0x39/0x5c
-[  139.924982]  [<c13f4f30>] syscall_call+0x7/0xb
-[  139.924982] Code:  Bad EIP value.
+This broke __lowest_in_progress().  running->domain may not be properly
+sorted and is not guaranteed to contain lower cookies than pending list
+when not empty.  Fix it by ensuring sort-inserting to the running list
+and always looking at both pending and running when trying to determine
+the lowest cookie.
 
-This happens because sockets do not define the removexattr operation.
-Before removing the xattr, verify the removexattr function pointer is
-not NULL.
+Over time, the async synchronization implementation became quite messy.
+We better restructure it such that each async_entry is linked to two
+lists - one global and one per domain - and not move it when execution
+starts.  There's no reason to distinguish pending and running.  They
+behave the same for synchronization purposes.
 
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/integrity/evm/evm_crypto.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/async.c |   27 ++++++++++++++++++++-------
+ 1 file changed, 20 insertions(+), 7 deletions(-)
 
---- a/security/integrity/evm/evm_crypto.c
-+++ b/security/integrity/evm/evm_crypto.c
-@@ -205,9 +205,9 @@ int evm_update_evmxattr(struct dentry *d
- 		rc = __vfs_setxattr_noperm(dentry, XATTR_NAME_EVM,
- 					   &xattr_data,
- 					   sizeof(xattr_data), 0);
--	}
--	else if (rc == -ENODATA)
-+	} else if (rc == -ENODATA && inode->i_op->removexattr) {
- 		rc = inode->i_op->removexattr(dentry, XATTR_NAME_EVM);
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -86,18 +86,27 @@ static atomic_t entry_count;
+  */
+ static async_cookie_t  __lowest_in_progress(struct async_domain *running)
+ {
++	async_cookie_t first_running = next_cookie;	/* infinity value */
++	async_cookie_t first_pending = next_cookie;	/* ditto */
+ 	struct async_entry *entry;
+ 
++	/*
++	 * Both running and pending lists are sorted but not disjoint.
++	 * Take the first cookies from both and return the min.
++	 */
+ 	if (!list_empty(&running->domain)) {
+ 		entry = list_first_entry(&running->domain, typeof(*entry), list);
+-		return entry->cookie;
++		first_running = entry->cookie;
+ 	}
+ 
+-	list_for_each_entry(entry, &async_pending, list)
+-		if (entry->running == running)
+-			return entry->cookie;
++	list_for_each_entry(entry, &async_pending, list) {
++		if (entry->running == running) {
++			first_pending = entry->cookie;
++			break;
++		}
 +	}
- 	return rc;
+ 
+-	return next_cookie;	/* "infinity" value */
++	return min(first_running, first_pending);
  }
  
+ static async_cookie_t  lowest_in_progress(struct async_domain *running)
+@@ -118,13 +127,17 @@ static void async_run_entry_fn(struct wo
+ {
+ 	struct async_entry *entry =
+ 		container_of(work, struct async_entry, work);
++	struct async_entry *pos;
+ 	unsigned long flags;
+ 	ktime_t uninitialized_var(calltime), delta, rettime;
+ 	struct async_domain *running = entry->running;
+ 
+-	/* 1) move self to the running queue */
++	/* 1) move self to the running queue, make sure it stays sorted */
+ 	spin_lock_irqsave(&async_lock, flags);
+-	list_move_tail(&entry->list, &running->domain);
++	list_for_each_entry_reverse(pos, &running->domain, list)
++		if (entry->cookie < pos->cookie)
++			break;
++	list_move_tail(&entry->list, &pos->list);
+ 	spin_unlock_irqrestore(&async_lock, flags);
+ 
+ 	/* 2) run (and print duration) */
 
 
