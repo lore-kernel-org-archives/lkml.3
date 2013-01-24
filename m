@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3AXMWg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 07:22:36 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:56365 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab3AXMWb (ORCPT
+	id S1753852Ab3AXM1f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 07:27:35 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56993 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953Ab3AXM12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 07:22:31 -0500
-Date: Thu, 24 Jan 2013 13:22:23 +0100
-From: Leandro Lucarella <leandro.lucarella@sociomantic.com>
-To: Rick Jones <rick.jones2@hp.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Doubts about listen backlog and tcp_max_syn_backlog
-Message-ID: <20130124122223.GQ4608@sociomantic.com>
-References: <20130122161038.GG4608@sociomantic.com>
- <1358873142.3464.3964.camel@edumazet-glaptop>
- <20130122165929.GH4608@sociomantic.com>
- <1358874800.3464.4002.camel@edumazet-glaptop>
- <50FED7CE.1030008@hp.com>
- <20130122184245.GJ4608@sociomantic.com>
- <50FF0C25.9000300@hp.com>
- <20130123104736.GK4608@sociomantic.com>
- <510039C8.7040401@hp.com>
+	Thu, 24 Jan 2013 07:27:28 -0500
+Date: Thu, 24 Jan 2013 04:27:00 -0800
+From: tip-bot for Jan Beulich <JBeulich@suse.com>
+Message-ID: <tip-444723dccc3c855fe88ea138cdec46f30e707b74@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, jbeulich@suse.com, rostedt@goodmis.org,
+        heukelum@mailshack.com, JBeulich@suse.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, jbeulich@suse.com, rostedt@goodmis.org,
+        heukelum@mailshack.com, JBeulich@suse.com, tglx@linutronix.de
+In-Reply-To: <51010C9302000078000B9045@nat28.tlf.novell.com>
+References: <51010C9302000078000B9045@nat28.tlf.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86-64:
+  Fix unwind annotations in recent NMI changes
+Git-Commit-ID: 444723dccc3c855fe88ea138cdec46f30e707b74
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <510039C8.7040401@hp.com>
-X-Paranoid: Just because you're paranoid, don't mean they're not after you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:lQp2G5zVYgLz0h93QN9hJO4qfylxNe41YyAX3pEFDWv
- iz+gTWWIWNjok9oJYvzgwpy3RNCcjHAULxWZrW/OqZYEHnhJ8j
- sv+3TqR+JMTGp4FHHeT1S9hSVOx9e8Rp4Szd1euqX5/+x5preO
- TfjnDTGvvLej1mcRstaEY3wFw6OyZFhk9vqWYAwdtk9IY7cutr
- N9cTqPF9XMevqPdV6EXHShrpgkaDdOLTYEWboPa/tzeQr/6Wnz
- NguEXe4M1J9eYflzzfi3yVaOIWeEl7SdxQs/9McOJeztyuK/I4
- /JOr3rqAcJABFg3AKSnhoQKNyxkszB6NdYLAFkFUDrAPpI6OQN
- q9GRslyoExK19wzGyCuPILQNJmhjVY1UMNBKCS1EL2hmCuF3PY
- 0xJL4MaaHbiOA==
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 04:27:06 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 11:28:08AM -0800, Rick Jones wrote:
-> >Then if syncookies are enabled, the time spent in connect() shouldn't be
-> >bigger than 3 seconds even if SYNs are being "dropped" by listen, right?
-> 
-> Do you mean if "ESTABLISHED" connections are dropped because the
-> listen queue is full?  I don't think I would put that as "SYNs being
-> dropped by listen" - too easy to confuse that with an actual
-> dropping of a SYN segment.
+Commit-ID:  444723dccc3c855fe88ea138cdec46f30e707b74
+Gitweb:     http://git.kernel.org/tip/444723dccc3c855fe88ea138cdec46f30e707b74
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Thu, 24 Jan 2013 09:27:31 +0000
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 24 Jan 2013 10:56:32 +0100
 
-I was just kind of quoting the name given by netstat: "SYNs to LISTEN
-sockets dropped" (for kernel 3.0, I noticed newer kernels don't have
-this stat anymore, or the name was changed). I still don't know if we
-are talking about the same thing.
+x86-64: Fix unwind annotations in recent NMI changes
 
-> But yes, I would not expect a connect() call to remain incomplete
-> for any longer than it took to receive an SYN|ACK from the other
-> end.
+While in one case a plain annotation is necessary, in the other
+case the stack adjustment can simply be folded into the
+immediately preceding RESTORE_ALL, thus getting the correct
+annotation for free.
 
-So the only reason to experience these high times spent in connect()
-should be because a SYN or SYN|ACK was actually loss in a lower layer,
-like an error in the network device or a transmission error?
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alexander van Heukelum <heukelum@mailshack.com>
+Link: http://lkml.kernel.org/r/51010C9302000078000B9045@nat28.tlf.novell.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/entry_64.S | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-> That would be 3 (,9, 21, etc...) seconds on a kernel with 3
-> seconds as the initial retransmission timeout.
-
-Which can't be changed without recompiling, right?
-
-Thanks!
-
--- 
-Leandro Lucarella
-sociomantic labs GmbH
-http://www.sociomantic.com
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 07a7a04..cb3c591 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1781,6 +1781,7 @@ first_nmi:
+ 	 * Leave room for the "copied" frame
+ 	 */
+ 	subq $(5*8), %rsp
++	CFI_ADJUST_CFA_OFFSET 5*8
+ 
+ 	/* Copy the stack frame to the Saved frame */
+ 	.rept 5
+@@ -1863,10 +1864,8 @@ end_repeat_nmi:
+ nmi_swapgs:
+ 	SWAPGS_UNSAFE_STACK
+ nmi_restore:
+-	RESTORE_ALL 8
+-
+-	/* Pop the extra iret frame */
+-	addq $(5*8), %rsp
++	/* Pop the extra iret frame at once */
++	RESTORE_ALL 6*8
+ 
+ 	/* Clear the NMI executing stack variable */
+ 	movq $0, 5*8(%rsp)
