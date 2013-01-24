@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055Ab3AXDaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:30:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44298 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015Ab3AXDaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:30:05 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Axel Lin <axel.lin@ingics.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 39/74] regulator: max8998: Ensure enough delay time for max8998_set_voltage_buck_time_sel
-Date: Thu, 24 Jan 2013 01:26:51 -0200
-Message-Id: <1358998046-613-40-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	id S1754548Ab3AXDaj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:30:39 -0500
+Received: from mga03.intel.com ([143.182.124.21]:14248 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754590Ab3AXDaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 22:30:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,525,1355126400"; 
+   d="scan'208";a="247742606"
+From: Alex Shi <alex.shi@intel.com>
+To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de
+Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, alex.shi@intel.com
+Subject: [PATCH 3/4] sched: consider runnable load average in move_tasks
+Date: Thu, 24 Jan 2013 11:30:42 +0800
+Message-Id: <1358998243-23176-4-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1358998243-23176-1-git-send-email-alex.shi@intel.com>
+References: <1358998243-23176-1-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.4 -stable review patch.  If anyone has any objections, please let me know.
+Except using runnable load average in background, move_tasks is also
+the key functions in load balance. We need consider the runnable load
+average in it in order to the apple to apple load comparison.
 
-------------------
-
-From: Axel Lin <axel.lin@ingics.com>
-
-commit 81d0a6ae7befb24c06f4aa4856af7f8d1f612171 upstream.
-
-Use DIV_ROUND_UP to prevent truncation by integer division issue.
-This ensures we return enough delay time.
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- drivers/regulator/max8998.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched/fair.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
-index 5e56df0..b3b2984 100644
---- a/drivers/regulator/max8998.c
-+++ b/drivers/regulator/max8998.c
-@@ -447,7 +447,7 @@ static int max8998_set_voltage_buck_time_sel(struct regulator_dev *rdev,
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9148bcc..876a6a0 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4192,6 +4192,15 @@ static unsigned long task_h_load(struct task_struct *p);
  
- 	difference = (new_selector - old_selector) * desc->step / 1000;
- 	if (difference > 0)
--		return difference / ((val & 0x0f) + 1);
-+		return DIV_ROUND_UP(difference, (val & 0x0f) + 1);
+ static const unsigned int sched_nr_migrate_break = 32;
  
- 	return 0;
- }
++static unsigned long task_h_load_avg(struct task_struct *p)
++{
++	u32 period = p->se.avg.runnable_avg_period;
++	if (!period)
++		return 0;
++
++	return task_h_load(p) * p->se.avg.runnable_avg_sum / period;
++}
++
+ /*
+  * move_tasks tries to move up to imbalance weighted load from busiest to
+  * this_rq, as part of a balancing operation within domain "sd".
+@@ -4227,7 +4236,7 @@ static int move_tasks(struct lb_env *env)
+ 		if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
+ 			goto next;
+ 
+-		load = task_h_load(p);
++		load = task_h_load_avg(p);
+ 
+ 		if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
+ 			goto next;
 -- 
-1.7.9.5
+1.7.0.1
 
