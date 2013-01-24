@@ -1,163 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975Ab3AXLQw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:16:52 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5745 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754392Ab3AXLMO (ORCPT
+	id S1754392Ab3AXLRT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:17:19 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35637 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753969Ab3AXLQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:12:14 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 24 Jan 2013 03:11:30 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <linux-tegra@vger.kernel.org>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, Jason Cooper <jason@lakedaemon.net>,
-        Shawn Guo <shawn.guo@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [v4 3/6] ARM: dt: tegra114: Add new SoC base, Tegra114 SoC
-Date: Thu, 24 Jan 2013 13:10:23 +0200
-Message-ID: <1359025829-22306-4-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359025829-22306-1-git-send-email-hdoyu@nvidia.com>
-References: <1359025829-22306-1-git-send-email-hdoyu@nvidia.com>
+	Thu, 24 Jan 2013 06:16:59 -0500
+Date: Thu, 24 Jan 2013 19:16:52 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] regmap updates for v3.4
+Message-ID: <20130124111651.GN4955@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CaPKgh3XHpq3rEUV"
+Content-Disposition: inline
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initial support for Tegra 114 SoC. This is expected to be included in
-the board DTS files, Tegra 114 SoC based evaluation board family.
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- arch/arm/boot/dts/tegra114.dtsi |  114 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 114 insertions(+)
- create mode 100644 arch/arm/boot/dts/tegra114.dtsi
+--CaPKgh3XHpq3rEUV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
-new file mode 100644
-index 0000000..c567916
---- /dev/null
-+++ b/arch/arm/boot/dts/tegra114.dtsi
-@@ -0,0 +1,114 @@
-+/include/ "skeleton.dtsi"
-+
-+/ {
-+	compatible = "nvidia,tegra114";
-+	interrupt-parent = <&gic>;
-+
-+	gic: interrupt-controller {
-+		compatible = "arm,cortex-a15-gic";
-+		#interrupt-cells = <3>;
-+		interrupt-controller;
-+		reg = <0x50041000 0x1000>,
-+		      <0x50042000 0x1000>,
-+		      <0x50044000 0x2000>,
-+		      <0x50046000 0x2000>;
-+		interrupts = <1 9 0xf04>;
-+	};
-+
-+	timer@60005000 {
-+		compatible = "nvidia,tegra114-timer", "nvidia,tegra20-timer";
-+		reg = <0x60005000 0x400>;
-+		interrupts = <0 0 0x04
-+			      0 1 0x04
-+			      0 41 0x04
-+			      0 42 0x04
-+			      0 121 0x04
-+			      0 122 0x04>;
-+	};
-+
-+	tegra_car: clock {
-+		compatible = "nvidia,tegra114-car, nvidia,tegra30-car";
-+		reg = <0x60006000 0x1000>;
-+		#clock-cells = <1>;
-+	};
-+
-+	serial@70006000 {
-+		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
-+		reg = <0x70006000 0x40>;
-+		reg-shift = <2>;
-+		interrupts = <0 36 0x04>;
-+		status = "disabled";
-+	};
-+
-+	serial@70006040 {
-+		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
-+		reg = <0x70006040 0x40>;
-+		reg-shift = <2>;
-+		interrupts = <0 37 0x04>;
-+		status = "disabled";
-+	};
-+
-+	serial@70006200 {
-+		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
-+		reg = <0x70006200 0x100>;
-+		reg-shift = <2>;
-+		interrupts = <0 46 0x04>;
-+		status = "disabled";
-+	};
-+
-+	serial@70006300 {
-+		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
-+		reg = <0x70006300 0x100>;
-+		reg-shift = <2>;
-+		interrupts = <0 90 0x04>;
-+		status = "disabled";
-+	};
-+
-+	rtc {
-+		compatible = "nvidia,tegra114-rtc", "nvidia,tegra20-rtc";
-+		reg = <0x7000e000 0x100>;
-+		interrupts = <0 2 0x04>;
-+	};
-+
-+	pmc {
-+		compatible = "nvidia,tegra114-pmc", "nvidia,tegra30-pmc";
-+		reg = <0x7000e400 0x400>;
-+	};
-+
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a15";
-+			reg = <0>;
-+		};
-+
-+		cpu@1 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a15";
-+			reg = <1>;
-+		};
-+
-+		cpu@2 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a15";
-+			reg = <2>;
-+		};
-+
-+		cpu@3 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a15";
-+			reg = <3>;
-+		};
-+	};
-+
-+	timer {
-+		compatible = "arm,armv7-timer";
-+		interrupts = <1 13 0xf08>,
-+			     <1 14 0xf08>,
-+			     <1 11 0xf08>,
-+			     <1 10 0xf08>;
-+	};
-+};
--- 
-1.7.9.5
+The following changes since commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619:
 
+  Linux 3.8-rc4 (2013-01-17 19:25:45 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-fix-3.8-rc4
+
+for you to fetch changes up to af4ca6a8086505d135676f9c904c9d67cbb8d81b:
+
+  Merge remote-tracking branch 'regmap/fix/debugfs' into tmp (2013-01-24 19:04:16 +0800)
+
+----------------------------------------------------------------
+
+regmap: Fixes for v3.8
+
+One more oversight in the debugfs code was reported and fixed, plus a
+documentation fix.
+
+----------------------------------------------------------------
+Mark Brown (2):
+      regmap: debugfs: Fix seeking from the cache
+      Merge remote-tracking branch 'regmap/fix/debugfs' into tmp
+
+Nestor Ovroy (1):
+      regmap: fix small typo in regmap_bulk_write comment
+
+ drivers/base/regmap/regmap-debugfs.c |    2 --
+ drivers/base/regmap/regmap.c         |    2 +-
+ 2 files changed, 1 insertion(+), 3 deletions(-)
+
+--CaPKgh3XHpq3rEUV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRARf4AAoJELSic+t+oim9edkP/3R+6kbVo5eZxFQ/AqSriAUq
+JX7d9RFFFkX25oGZfKPjBL0KGmQCPWiKzzMSMV+PTundMbJt0IvHlehceVwvNdAG
+F5L4mwVgGm5dgNHl59xIi+m95K0eNPJ4CPSZ/ikjxEGrweg4HhDHsU3zQWLhBcbT
+6F1Y2hR1Vp6MNo5nGqy0rLihEng8hy7qfoB/YNNCZg5C8EkDLdibLjwgc9dGgmMe
+okCXnnQ76GpocMMVt5cSvPoSqB5qeADLtd144F9hGqEiZml8/LuUW9Mqt8jGH1kj
+Tyj1wilTm14YJ/1DvwWjJAdG3rUHhuzEnDX6zK6x2344Op2Mi+5JX5AfFgni4m+9
+2fz93a5SCQ0mP4ab71EpBUMLLWANSrkPnAPDlgFSuvcJC0r9XqREosSPeC9zTPCg
++hXOOM1RjxDVR9XG2er/m+8Qh8L1fa+cvg2dmHpK60ZhBZxlQ3y7GTVYOLFFct5U
+yHKktbCYNKA0F2cgtlXF3u6GxSWbkKvbxOjBTxcKIRtgS2sRXv4dEW6o142C1k5F
+/Lt2mc/1mv94F9Uz0L6SuwVNiTpb52fqYGvkC5tHSxfxDHxDlm2JL34PvPf4ssg6
+ugEkbpxQv4DE9mmH+SYzjiiu1mG/0mMkKzomfZb2G4/mfXSMJFgmb+VrwvdVs88D
+iUV07kk+3UUYwcVjQZ97
+=swmN
+-----END PGP SIGNATURE-----
+
+--CaPKgh3XHpq3rEUV--
