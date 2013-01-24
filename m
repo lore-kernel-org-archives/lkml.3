@@ -1,32 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab3AXPRB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:17:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45003 "EHLO mx1.redhat.com"
+	id S1754738Ab3AXPRZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:17:25 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:33324 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753354Ab3AXPRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:17:00 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1358955044-27407-3-git-send-email-mmarek@suse.cz>
-References: <1358955044-27407-3-git-send-email-mmarek@suse.cz> <1358955044-27407-1-git-send-email-mmarek@suse.cz>
-To: Michal Marek <mmarek@suse.cz>
-Cc: dhowells@redhat.com, rusty@ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] MODSIGN: Specify the hash algorithm on sign-file command line
-Date: Thu, 24 Jan 2013 15:16:15 +0000
-Message-ID: <28698.1359040575@warthog.procyon.org.uk>
+	id S1752993Ab3AXPRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 10:17:23 -0500
+From: Lord Glauber Costa of Sealand <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        ccross@google.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>, Glauber Costa <glommer@parallels.com>,
+        Mike Galbraith <mgalbraith@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v6 01/12] don't call cpuacct_charge in stop_task.c
+Date: Thu, 24 Jan 2013 19:17:31 +0400
+Message-Id: <1359040662-8055-2-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1359040662-8055-1-git-send-email-glommer@parallels.com>
+References: <1359040662-8055-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Marek <mmarek@suse.cz> wrote:
+From: Glauber Costa <glommer@parallels.com>
 
-> -mod_sign_cmd = perl $(srctree)/scripts/sign-file $(MODSECKEY) $(MODPUBKEY)
-> +mod_sign_cmd = perl $(srctree)/scripts/sign-file -a $(CONFIG_MODULE_SIG_HASH) $(MODSECKEY) $(MODPUBKEY)
+Commit 8f618968 changed stop_task to do the same bookkeping as the
+other classes. However, the call to cpuacct_charge() doesn't affect
+the scheduler decisions at all, and doesn't need to be moved over.
 
-It's mandatory, so it shouldn't really have a "-a" flag.
+Moreover, being a kthread, the migration thread won't belong to any
+cgroup anyway, rendering this call quite useless.
 
-David
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Mike Galbraith <mgalbraith@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/sched/stop_task.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index da5eb5b..fda1cbe 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -68,7 +68,6 @@ static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+ 	account_group_exec_runtime(curr, delta_exec);
+ 
+ 	curr->se.exec_start = rq->clock_task;
+-	cpuacct_charge(curr, delta_exec);
+ }
+ 
+ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
+-- 
+1.8.1
+
