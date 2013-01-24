@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab3AXUHu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:07:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34298 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755536Ab3AXUHn (ORCPT
+	id S1755823Ab3AXUIi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:08:38 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53903
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755587Ab3AXUIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:07:43 -0500
-Date: Thu, 24 Jan 2013 12:07:28 -0800
-From: tip-bot for Dave Jones <davej@redhat.com>
-Message-ID: <tip-e3f0f36ddf1b2743a0d4ea312996536a9c37e1c7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        akpm@linux-foundation.org, davej@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, tglx@linutronix.de, davej@redhat.com
-In-Reply-To: <20130118175847.GA27662@redhat.com>
-References: <20130118175847.GA27662@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86/apic:
-  Remove noisy zero-mask warning from default_send_IPI_mask_logical()
-Git-Commit-ID: e3f0f36ddf1b2743a0d4ea312996536a9c37e1c7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 12:07:34 -0800 (PST)
+	Thu, 24 Jan 2013 15:08:32 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 21/74] perf tests: Fix PYTHONPATH for python-use test tracepoints
+Date: Thu, 24 Jan 2013 17:07:30 -0300
+Message-Id: <1359058103-31645-22-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
+In-Reply-To: <1359058103-31645-1-git-send-email-acme@infradead.org>
+References: <1359058103-31645-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e3f0f36ddf1b2743a0d4ea312996536a9c37e1c7
-Gitweb:     http://git.kernel.org/tip/e3f0f36ddf1b2743a0d4ea312996536a9c37e1c7
-Author:     Dave Jones <davej@redhat.com>
-AuthorDate: Fri, 18 Jan 2013 12:58:47 -0500
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 24 Jan 2013 12:12:42 +0100
+From: Jiri Olsa <jolsa@redhat.com>
 
-x86/apic: Remove noisy zero-mask warning from default_send_IPI_mask_logical()
+If there's not OUTPUT variable defined the PYTHONPATH ends up with
+/python. We need to remove the extra '/'.
 
-Since circa 3.5, we've had dozens of reports of people hitting
-this warning. Forwarded reports have been met with silence, so
-just remove the warning if no-one cares.
-
-Example reports:
-
-  https://bugzilla.redhat.com/show_bug.cgi?id=797687
-  https://bugzilla.redhat.com/show_bug.cgi?id=867174
-  https://bugzilla.redhat.com/show_bug.cgi?id=894865
-
-Signed-off-by: Dave Jones <davej@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20130118175847.GA27662@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/n/tip-h1hzfyfcdxjnuq9fin2cjwlr@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/kernel/apic/ipi.c | 2 +-
+ tools/perf/Makefile | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/apic/ipi.c b/arch/x86/kernel/apic/ipi.c
-index cce91bf..7434d85 100644
---- a/arch/x86/kernel/apic/ipi.c
-+++ b/arch/x86/kernel/apic/ipi.c
-@@ -106,7 +106,7 @@ void default_send_IPI_mask_logical(const struct cpumask *cpumask, int vector)
- 	unsigned long mask = cpumask_bits(cpumask)[0];
- 	unsigned long flags;
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 3158f45..1539eb4 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -958,7 +958,7 @@ $(OUTPUT)tests/attr.o: tests/attr.c $(OUTPUT)PERF-CFLAGS
  
--	if (WARN_ONCE(!mask, "empty IPI mask"))
-+	if (!mask)
- 		return;
+ $(OUTPUT)tests/python-use.o: tests/python-use.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
+-		-DPYTHONPATH='"$(OUTPUT)/python"' \
++		-DPYTHONPATH='"$(OUTPUT)python"' \
+ 		-DPYTHON='"$(PYTHON_WORD)"' \
+ 		$<
  
- 	local_irq_save(flags);
+-- 
+1.8.1.1.361.gec3ae6e
+
