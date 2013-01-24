@@ -1,268 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab3AXXxO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 18:53:14 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6838 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab3AXXxG (ORCPT
+	id S1755574Ab3AXXzx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 18:55:53 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:53089 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754597Ab3AXXzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 18:53:06 -0500
-X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=1lp5RE5RrrwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=CpGQe48J6BUA:10 a=fmDjJsrZAAAA:8 a=C_IRinGWAAAA:8 a=MRHyUqWkLcQPHUEgpLMA:9 a=PUjeQqilurYA:10 a=YK30HMD7P3IA:10 a=si9q_4b84H0A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1359071583.21576.167.camel@gandalf.local.home>
-Subject: Re: [RFC] Hack to use mkdir/rmdir in debugfs
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Thu, 24 Jan 2013 18:53:03 -0500
-In-Reply-To: <28808.1359067162@turing-police.cc.vt.edu>
-References: <1358910114.21576.86.camel@gandalf.local.home>
-	 <20130123040846.GA2638@kroah.com>
-	 <1358915495.21576.102.camel@gandalf.local.home>
-	 <1358916249.21576.105.camel@gandalf.local.home>
-	 <28808.1359067162@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Jan 2013 18:55:45 -0500
+Date: Thu, 24 Jan 2013 15:55:41 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Amit Kale <akale@stec-inc.com>
+Cc: Jason Warr <jason@warr.net>, "thornber@redhat.com" <thornber@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>,
+        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+Subject: Re: [dm-devel] Announcement: STEC EnhanceIO SSD caching software for
+ Linux kernel
+Message-ID: <20130124235541.GR26407@google.com>
+References: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD>
+ <CAMM=eLdgD8GKeK48SU2rfC49u3H4WRf9-xFxM4ymVPbKkx+mCw@mail.gmail.com>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D70CE@MYMBX.MY.STEC-INC.AD>
+ <20130116104546.GA3869@raspberrypi>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D720A@MYMBX.MY.STEC-INC.AD>
+ <20130117132620.GA2438@raspberrypi>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7248@MYMBX.MY.STEC-INC.AD>
+ <50F844A3.9020300@warr.net>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D72F1@MYMBX.MY.STEC-INC.AD>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D72F1@MYMBX.MY.STEC-INC.AD>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-24 at 17:39 -0500, Valdis.Kletnieks@vt.edu wrote:
-
-> > +static int instance_rmdir(struct inode *inode, struct dentry *dentry)
-> > +{
-> > +	struct dentry *parent;
-> > +	int ret;
-> > +
-> > +	/* Paranoid: Make sure the parent is the "instances" directory */
-> > +	parent = hlist_entry(inode->i_dentry.first, struct dentry, d_alias);
-> > +	if (WARN_ON_ONCE(parent != trace_instance_dir))
-> > +		return -ENOENT;
-> > +
-> > +	/* The caller did a dget() on dentry */
-> > +	mutex_unlock(&dentry->d_inode->i_mutex);
-> > +
-> > +	/*
-> > +	 * The inode mutex is locked, but debugfs_create_dir() will also
-> > +	 * take the mutex. As the instances directory can not be destroyed
-> > +	 * or changed in any other way, it is safe to unlock it, and
-> > +	 * let the dentry try. If two users try to make the same dir at
-> > +	 * the same time, then the instance_delete() will determine the
-> > +	 * winner.
-> > +	 */
-> > +	mutex_unlock(&inode->i_mutex);
+On Fri, Jan 18, 2013 at 05:08:37PM +0800, Amit Kale wrote:
+> > From: Jason Warr [mailto:jason@warr.net]
+> > On 01/17/2013 11:53 AM, Amit Kale wrote:
+> > >>> 9. Performance - Throughput is generally most important. Latency is
+> > >> >   also one more performance comparison point. Performance under
+> > >> >   different load classes can be measured.
+> > >> >
+> > >> >   I think latency is more important than throughput.  Spindles are
+> > >> >   pretty good at throughput.  In fact the mq policy tries to spot
+> > when
+> > >> >   we're doing large linear ios and stops hit counting; best leave
+> > this
+> > >> >   stuff on the spindle.
+> > > I disagree. Latency is taken care of automatically when the number of
+> > application threads rises.
+> > >
+> > 
+> > Can you explain what you mean by that in a little more detail?
 > 
-> Looks like the rmdir comment was slice-n-miced from the mkdir one?
+> Let's say latency of a block device is 10ms for 4kB requests. With single threaded IO, the throughput will be 4kB/10ms = 400kB/s. If the device is capable of more throughput, a multithreaded IO will generate more throughput. So with 2 threads the throughput will be roughly 800kB/s. We can keep increasing the number of threads resulting in an approximately linear throughput. It'll saturate at the maximum capacity the device has. So it could saturate at perhaps at 8MB/s. Increasing the number of threads beyond this will not increase throughput.
 > 
-> What exactly *are* the race condition rules here, especially for mkdir
-> racing against an rmdir?
+> This is a simplistic computation. Throughput, latency and number of threads are related in a more complex relationship. Latency is still important, but throughput is more important.
+> 
+> The way all this matters for SSD caching is, caching will typically show a higher latency compared to the base SSD, even for a 100% hit ratio. It may be possible to reach the maximum throughput achievable with the base SSD using a high number of threads. Let's say an SSD shows 450MB/s with 4 threads. A cache may show 440MB/s with 8 threads.
 
-Note, after the i_mutex is released, new mutexes are grabbed to test if
-we can create or delete a file:
+Going through the cache should only (measurably) increase latency for
+writes, not reads (assuming they're cache hits, not misses). It sounds
+like you're talking about the overhead for keeping the index up to date,
+which is only a factor for writes, but I'm not quite sure since you talk
+about hit rate.
 
-static int new_instance_create(const char *name)
-{
-        enum ring_buffer_flags rb_flags;
-        struct trace_array *tr;
-        int ret;
-        int i;
+I don't know of any reason why throughput or latency should be noticably
+worse than raw for reads from cache.
 
-        mutex_lock(&trace_types_lock);
+But for writes, yeah - as number of of concurrent IOs goes up, you can
+amortize the metadata writes more and more so throughput compared to raw
+goes up. I don't think latency would change much vs. raw, you're always
+going to have an extra metadata write to wait on... though there are
+tricks you can do so the metadata write and data write can go down in
+parallel. Bcache doesn't do those yet.
 
-        ret = -EEXIST;
-        list_for_each_entry(tr, &ftrace_trace_arrays, list) {
-                if (tr->name && strcmp(tr->name, name) == 0)
-                        goto out_unlock;
-        }
-
-        ret = -ENOMEM;
-        tr = kzalloc(sizeof(*tr), GFP_KERNEL);
-        if (!tr)
-                goto out_unlock;
-
-        tr->name = kstrdup(name, GFP_KERNEL);
-        if (!tr->name)
-                goto out_free_tr;
-
-        raw_spin_lock_init(&tr->start_lock);
-
-        tr->current_trace = &nop_trace;
-
-        INIT_LIST_HEAD(&tr->systems);
-        INIT_LIST_HEAD(&tr->events);
-
-        rb_flags = trace_flags & TRACE_ITER_OVERWRITE ? RB_FL_OVERWRITE : 0;
-
-        tr->buffer = ring_buffer_alloc(trace_buf_size, rb_flags);
-        if (!tr->buffer)
-                goto out_free_tr;
-
-        tr->data = alloc_percpu(struct trace_array_cpu);
-        if (!tr->data)
-                goto out_free_tr;
-
-        for_each_tracing_cpu(i) {
-                memset(per_cpu_ptr(tr->data, i), 0, sizeof(struct trace_array_cpu));
-                per_cpu_ptr(tr->data, i)->trace_cpu.cpu = i;
-                per_cpu_ptr(tr->data, i)->trace_cpu.tr = tr;
-        }
-
-        /* Holder for file callbacks */
-        tr->trace_cpu.cpu = RING_BUFFER_ALL_CPUS;
-        tr->trace_cpu.tr = tr;
-
-        tr->dir = debugfs_create_dir(name, trace_instance_dir);
-        if (!tr->dir)
-                goto out_free_tr;
-
-        ret = event_trace_add_tracer(tr->dir, tr);
-        if (ret)
-                goto out_free_tr;
-
-        init_tracer_debugfs(tr, tr->dir);
-
-        list_add(&tr->list, &ftrace_trace_arrays);
-
-        mutex_unlock(&trace_types_lock);
-
-        return 0;
-
- out_free_tr:
-        if (tr->buffer)
-                ring_buffer_free(tr->buffer);
-        kfree(tr->name);
-        kfree(tr);
-
- out_unlock:
-        mutex_unlock(&trace_types_lock);
-
-        return ret;
-
-}
-
-static int instance_delete(const char *name)
-{
-        struct trace_array *tr;
-        int found = 0;
-        int ret;
-
-        mutex_lock(&trace_types_lock);
-
-        ret = -ENODEV;
-        list_for_each_entry(tr, &ftrace_trace_arrays, list) {
-                if (tr->name && strcmp(tr->name, name) == 0) {
-                        found = 1;
-                        break;
-                }
-        }
-        if (!found)
-                goto out_unlock;
-
-        list_del(&tr->list);
-
-        event_trace_del_tracer(tr);
-        debugfs_remove_recursive(tr->dir);
-        free_percpu(tr->data);
-        ring_buffer_free(tr->buffer);
-
-        kfree(tr->name);
-        kfree(tr);
-
-        ret = 0;
-
- out_unlock:
-        mutex_unlock(&trace_types_lock);
-
-        return ret;
-}
-
-
-The trace_types_lock protects the ftrace_trace_arrays, which holds the
-descriptors for the entities that can be created or removed. The
-debugfs_remove_recursive(), and debugfs_create_dir() etc, are children
-of the inode i_mutex that we released. Basically, the trace_types_lock
-takes over for creating and destroying directories. It's the same type
-of protection I had when I had the "new" and "free" files that would
-create the directory when echoing in "new" and delete one when echoing
-in "free". There's really no difference. I'm only using the mkdir/rmdir
-interface to trigger the exact same interface I had before. They both
-have the same locking.
-
-There is no rename or any other manipulation here. Even the parent
-directory can't change (no way to delete it).
-
-As for races, I've been running this little script to test it out, and
-it works fine:
-
--- Steve
-
-----
-#!/bin/bash
-
-if [ ! -d /debug/tracing/instances ]; then
-	echo "No instances directory"
-	exit 0
-fi
-
-cd /debug/tracing/instances
-
-instance_slam() {
-	while :; do
-		mkdir x
-		mkdir y
-		mkdir z
-		rmdir x
-		rmdir y
-		rmdir z
-	done 2>/dev/null
-}
-
-instance_slam &
-x=`jobs -l`
-p1=`echo $x | cut -d' ' -f2`
-echo $p1
-
-instance_slam &
-x=`jobs -l | tail -1`
-p2=`echo $x | cut -d' ' -f2`
-echo $p2
-
-instance_slam &
-x=`jobs -l | tail -1`
-p3=`echo $x | cut -d' ' -f2`
-echo $p3
-
-instance_slam &
-x=`jobs -l | tail -1`
-p4=`echo $x | cut -d' ' -f2`
-echo $p4
-
-instance_slam &
-x=`jobs -l | tail -1`
-p5=`echo $x | cut -d' ' -f2`
-echo $p5
-
-for i in `seq 120`; do
-	ls
-	sleep 1
-done
-kill -9 $p1 
-kill -9 $p2
-kill -9 $p3
-kill -9 $p4
-kill -9 $p5
-
-mkdir x y z
-ls x y z
-rmdir x y z
-exit
-
-
+_But_, you only have to pay the metadata write penalty when you see a
+cache flush/FUA write. In the absense of cache flushes/FUA, for
+metadata purposes you can basically treat a stream as sequential writes
+as going down in parallel.
