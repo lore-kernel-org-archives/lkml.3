@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab3AXUx0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:53:26 -0500
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:55386 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755885Ab3AXUxS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:53:18 -0500
-Message-ID: <1359060797.1325.33.camel@x61.thuisdomein>
-Subject: [PATCH] Silence warning if CONFIG_LOCKDEP isn't set
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 24 Jan 2013 21:53:17 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 24 Jan 2013 20:53:16.0999 (UTC) FILETIME=[D593B570:01CDFA74]
-X-RcptDomain: vger.kernel.org
+	id S1756764Ab3AXU6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:58:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17935 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755701Ab3AXU6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 15:58:19 -0500
+Date: Thu, 24 Jan 2013 17:58:13 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] perf tools: some 'perf script' fixes
+Message-ID: <20130124205813.GC14382@infradead.org>
+References: <cover.1358527965.git.tom.zanussi@linux.intel.com>
+ <20130124182736.GA14382@infradead.org>
+ <1359059633.1544.11.camel@empanada>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359059633.1544.11.camel@empanada>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit c9a4962881929df7f1ef6e63e1b9da304faca4dd ("nfsd: make
-client_lock per net") compiling nfs4state.o without CONFIG_LOCKDEP set,
-triggers this GCC warning:
-    fs/nfsd/nfs4state.c: In function ‘free_client’:
-    fs/nfsd/nfs4state.c:1051:19: warning: unused variable ‘nn’ [-Wunused-variable]
+Em Thu, Jan 24, 2013 at 02:33:53PM -0600, Tom Zanussi escreveu:
+> On Thu, 2013-01-24 at 15:27 -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Fri, Jan 18, 2013 at 01:51:24PM -0600, Tom Zanussi escreveu:
+> > > This patchset fixes various problems I hit while doing a run-through
+> > > of the existing 'perf script' scripts.
+> > > 
+> > > Also, sometimes when running rwtop I get a 'failed to read event
+> > > header' error, which this patch fixes:
+> > > 
+> > > https://lkml.org/lkml/2012/9/14/401
+> > > 
+> > > Not sure if that was meant to get picked up, but it fixed that
+> > > particular problem here for me.
+> > 
+> > David, can you please resubmit it with an explanation in the commit
+> > message?
+> > 
+> > Tom, can I add a Tested-by: you to such patch?
+> > 
+> 
+> Yeah, sure.
+> 
+> Tested-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 
-The cause of that warning is that lockdep_assert_held() compiles away if
-CONFIG_LOCKDEP is not set. Silence this warning by using the argument to
-lockdep_assert_held() as a nop if CONFIG_LOCKDEP is not set.
+David, perhaps you should just add a local readn variant for 'script'
+till we find a more general solution, at least it fixes script's case.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Compile tested only.
-
-1) This patch triggers a checkpatch false positive:
-    WARNING: Single statement macros should not use a do {} while (0) loop
-
-2) Review is rather needed here, since I'm not sure what, if any, the
-downsides are of this patch for all other "calls" of
-lockdep_assert_held(). Besides, a cleaner solution might be to simply
-drop lockdep_assert_held() in free_client(). There are only three
-callers of that function and it seems obvious that all three do hold
-'client_lock'.
-
- include/linux/lockdep.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-index 2bca44b..f05631e 100644
---- a/include/linux/lockdep.h
-+++ b/include/linux/lockdep.h
-@@ -410,7 +410,7 @@ struct lock_class_key { };
+- Arnaldo
  
- #define lockdep_depth(tsk)	(0)
- 
--#define lockdep_assert_held(l)			do { } while (0)
-+#define lockdep_assert_held(l)			do { (void)(l); } while (0)
- 
- #define lockdep_recursing(tsk)			(0)
- 
--- 
-1.7.11.7
-
+> Thanks,
+> 
+> Tom
+> 
+> > > Tom Zanussi (4):
+> > >   perf/tools: reinstate 'signed' field flag for tracepoints
+> > >   perf script: don't display trace info when invoking scripts
+> > >   perf tools: hook up perf_scripting_context->pevent
+> > >   perf script: remove workqueue-stats script
+> > 
+> > Thanks, applied to my perf/core branch at:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux
+> > 
+> > - Arnaldo
+> 
