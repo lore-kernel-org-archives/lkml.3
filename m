@@ -1,209 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab3AXAvK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 19:51:10 -0500
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:59730
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751885Ab3AXAvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 19:51:00 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
-        JBeulich@suse.com, bp@alien8.de
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
-Date: Wed, 23 Jan 2013 17:17:39 -0800
-Message-Id: <1358990259-22551-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752832Ab3AXA76 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 19:59:58 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:64118 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241Ab3AXA7x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 19:59:53 -0500
+X-AuditID: cbfee61b-b7fb06d000000f28-75-510087879891
+Message-id: <5100878F.1010500@samsung.com>
+Date: Thu, 24 Jan 2013 09:59:59 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] extcon: arizona: Use regulated mode for microphone
+ supply when detecting
+References: <1358957029-5421-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1358957029-5421-5-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-reply-to: <1358957029-5421-5-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zLd32doZAg3VrxC0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG9duXWQtWqFV8bDrD3MD4Ua6LkYNDQsBE4uE0li5GTiBTTOLC
+	vfVsXYxcHEICyxglln9ZwgSRMJF4e28CO0RiOqPE06+/mCGcTiaJ718eMYJM4hXQkrjeUQRi
+	sgioSkzYaArSywYU3f/iBhtIWFQgQuJXPwdImFdAUOLH5HssIGERoPG/71eChJkFCiTmHe0A
+	mycskCxx5qktSFhIYC6jxJK1iiBhToFQiXV35SCqdST2t05jg7DlJTaveQt2loRAM7vEh1c/
+	wI5nERCQ+Db5EAvEs7ISmw4wQ/wkKXFwxQ2WCYxis5DcMwvJ2FlIxi5gZF7FKJpakFxQnJSe
+	a6RXnJhbXJqXrpecn7uJERIH0jsYVzVYHGIU4GBU4uGtUGcIFGJNLCuuzD3EKMHBrCTCq1YP
+	FOJNSaysSi3Kjy8qzUktPsSYDHTgRGYp0eR8YIzmlcQbGhsYGxpaGpqZWpoakCasJM7LeOpJ
+	gJBAemJJanZqakFqEcwWJg5OqQZGo2eqi5ks2A/1Hz4779MVxT1W0ouXroj6ZKF4LOfLhB/f
+	1YU87h8CBlPiDXnNyFy78o+zDly+vUJgyyPGU4Fz7TmjnNKbP0vGX33flH5t75Tg5MdWks7O
+	y2fzm3h6vT58J9hu9W7GwiqJBxp/d4S/snl22P6aRwPv6XUPAno++0t/+Rp9oSdUiaU4I9FQ
+	i7moOBEAdHTnT8cCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t9jQd32doZAg5cT+Swu75rD5sDo8XmT
+	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
+	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxvXbl1kLVqhVfGw6w9zA
+	+FGui5GTQ0LAROLtvQnsELaYxIV769m6GLk4hASmM0o8/fqLGcLpZJL4/uURYxcjBwevgJbE
+	9Y4iEJNFQFViwkZTkF42oOj+FzfYQMKiAhESv/o5QMK8AoISPybfYwEJiwCt+n2/EiTMLFAg
+	Me9oB9g8YYFkiTNPbUHCQgJzGSWWrFUECXMKhEqsuysHUa0jsb91GhuELS+xec1b5gmMArOQ
+	zJ+FpGwWkrIFjMyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYLj7Jn0DsZVDRaHGAU4GJV4
+	eCvUGQKFWBPLiitzDzFKcDArifCq1QOFeFMSK6tSi/Lji0pzUosPMSYDPT+RWUo0OR+YAvJK
+	4g2NTcyMLI3MjE3MjY1JE1YS52U89SRASCA9sSQ1OzW1ILUIZgsTB6dUAyNvCvPfNnHnp9PL
+	I5fcrD3tGXvv9ATLKZohUf+Zf1g/fM7WkHtmW2P0tY/Fd8oXhe/n8+at7ZTqX+Ku2ZC38UqC
+	/M2wh96Z9zwOqQX9yJzVXqDibXtmbnWQnzh73f5N15/KKXXYevwxMdyqtq1jz4MdPPpTv0/R
+	Dd/1Y1L338txFx96xPxW3KvEUpyRaKjFXFScCACSlPn19wIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Starting with win8, vmbus interrupts can be delivered on any VCPU in the guest
-and furthermore can be concurrently active on multiple VCPUs. Support this
-interrupt delivery model by setting up a separate IDT entry for Hyper-V vmbus.
-interrupts. I would like to thank Jan Beulich <JBeulich@suse.com> and
-Thomas Gleixner <tglx@linutronix.de>, for their help.
+On 01/24/2013 01:03 AM, Mark Brown wrote:
+> When starting microphone detection some headsets should be exposed to
+> the fully regulated microphone bias in order to ensure that they behave
+> in an optimal fashion.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/extcon/extcon-arizona.c |   62 +++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 62 insertions(+)
+> 
+> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> index d7e1047..3aacacc 100644
+> --- a/drivers/extcon/extcon-arizona.c
+> +++ b/drivers/extcon/extcon-arizona.c
+> @@ -27,6 +27,8 @@
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/extcon.h>
+>  
+> +#include <sound/soc.h>
+> +
+>  #include <linux/mfd/arizona/core.h>
+>  #include <linux/mfd/arizona/pdata.h>
+>  #include <linux/mfd/arizona/registers.h>
+> @@ -113,6 +115,40 @@ static void arizona_extcon_set_mode(struct arizona_extcon_info *info, int mode)
+>  	dev_dbg(arizona->dev, "Set jack polarity to %d\n", mode);
+>  }
+>  
+> +static void arizona_extcon_pulse_micbias(struct arizona_extcon_info *info)
+> +{
+> +	struct arizona *arizona = info->arizona;
+> +	const char *widget;
+> +	int ret;
+> +
+> +	if (arizona->dapm) {
+> +		switch (info->micd_modes[0].bias) {
+> +		case 1:
+> +			widget = "MICBIAS1";
+> +			break;
+> +		case 2:
+> +			widget = "MICBIAS2";
+> +			break;
+> +		case 3:
+> +			widget = "MICBIAS3";
+> +			break;
+> +		default:
+> +			widget = "MICVDD";
+> +			break;
+> +		}
+> +
+> +		ret = snd_soc_dapm_force_enable_pin(arizona->dapm, widget);
+> +		if (ret != 0)
+> +			dev_warn(arizona->dev, "Failed to enable %s: %d\n",
+> +				 widget, ret);
+> +
+> +		ret = snd_soc_dapm_disable_pin(arizona->dapm, widget);
+> +		if (ret != 0)
+> +			dev_warn(arizona->dev, "Failed to disable %s: %d\n",
+> +				 widget, ret);
+> +	}
+> +}
+> +
+>  static void arizona_start_mic(struct arizona_extcon_info *info)
+>  {
+>  	struct arizona *arizona = info->arizona;
+> @@ -122,6 +158,15 @@ static void arizona_start_mic(struct arizona_extcon_info *info)
+>  	/* Microphone detection can't use idle mode */
+>  	pm_runtime_get(info->dev);
+>  
+> +	if (info->detecting) {
+> +		ret = regulator_allow_bypass(info->micvdd, false);
+> +		if (ret != 0) {
+> +			dev_err(arizona->dev,
+> +				"Failed to regulate MICVDD: %d\n",
+> +				ret);
+> +		}
+> +	}
+> +
+>  	ret = regulator_enable(info->micvdd);
+>  	if (ret != 0) {
+>  		dev_err(arizona->dev, "Failed to enable MICVDD: %d\n",
+> @@ -151,6 +196,7 @@ static void arizona_stop_mic(struct arizona_extcon_info *info)
+>  {
+>  	struct arizona *arizona = info->arizona;
+>  	bool change;
+> +	int ret;
+>  
+>  	regmap_update_bits_check(arizona->regmap, ARIZONA_MIC_DETECT_1,
+>  				 ARIZONA_MICD_ENA, 0,
+> @@ -162,6 +208,12 @@ static void arizona_stop_mic(struct arizona_extcon_info *info)
+>  		regmap_write(arizona->regmap, 0x80, 0x0);
+>  	}
+>  
+> +	ret = regulator_allow_bypass(info->micvdd, true);
+> +	if (ret != 0) {
+> +		dev_err(arizona->dev, "Failed to bypass MICVDD: %d\n",
+> +			ret);
+> +	}
+> +
+>  	if (change) {
+>  		regulator_disable(info->micvdd);
+>  		pm_runtime_mark_last_busy(info->dev);
+> @@ -564,6 +616,8 @@ static void arizona_start_hpdet_acc_id(struct arizona_extcon_info *info)
+>  
+>  	info->hpdet_active = true;
+>  
+> +	arizona_extcon_pulse_micbias(info);
+> +
+>  	ret = regmap_update_bits(arizona->regmap, 0x225, 0x4000, 0x4000);
+>  	if (ret != 0)
+>  		dev_warn(arizona->dev, "Failed to do magic: %d\n", ret);
+> @@ -649,6 +703,13 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+>  			dev_err(arizona->dev, "Headset report failed: %d\n",
+>  				ret);
+>  
+> +		/* Don't need to regulate for button detection */
+> +		ret = regulator_allow_bypass(info->micvdd, false);
+> +		if (ret != 0) {
+> +			dev_err(arizona->dev, "Failed to bypass MICVDD: %d\n",
+> +				ret);
+> +		}
+> +
+>  		info->mic = true;
+>  		info->detecting = false;
+>  		goto handled;
+> @@ -716,6 +777,7 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+>  			input_report_key(info->input,
+>  					 arizona_lvl_to_key[i].report, 0);
+>  		input_sync(info->input);
+> +		arizona_extcon_pulse_micbias(info);
+>  	}
+>  
+>  handled:
 
-In this version of the patch, based on the feedback, I have merged the IDT vector
-for Xen and Hyper-V and made the necessary adjustments.
+This patch happen build error related to soc-dapm. You should add 'CONFIG_SND_SOC'
+dependency to drivers/extcon/Kconfig for extcon-arizona driver.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- arch/x86/include/asm/irq_vectors.h |    4 +-
- arch/x86/include/asm/mshyperv.h    |    4 +++
- arch/x86/kernel/cpu/mshyperv.c     |   39 ++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/entry_32.S         |    9 +++++++-
- arch/x86/kernel/entry_64.S         |    7 +++++-
- drivers/xen/events.c               |    6 ++--
- 6 files changed, 62 insertions(+), 7 deletions(-)
+drivers/built-in.o: In function `arizona_extcon_pulse_micbias':
+/home/cwchoi00/kernel/git.kernel.org/extcon/drivers/extcon/extcon-arizona.c:140: undefined reference
+to `snd_soc_dapm_force_enable_pin'
+/home/cwchoi00/kernel/git.kernel.org/extcon/drivers/extcon/extcon-arizona.c:145: undefined reference
+to `snd_soc_dapm_disable_pin'
+/home/cwchoi00/kernel/git.kernel.org/extcon/drivers/extcon/extcon-arizona.c:145: undefined reference
+to `snd_soc_dapm_disable_pin'
 
-diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
-index 1508e51..d09850b 100644
---- a/arch/x86/include/asm/irq_vectors.h
-+++ b/arch/x86/include/asm/irq_vectors.h
-@@ -109,8 +109,8 @@
- 
- #define UV_BAU_MESSAGE			0xf5
- 
--/* Xen vector callback to receive events in a HVM domain */
--#define XEN_HVM_EVTCHN_CALLBACK		0xf3
-+/* Vector on which hypervisor callbacks will be delivered */
-+#define HYPERVISOR_CALLBACK_VECTOR 	0xf3
- 
- /*
-  * Local APIC timer IRQ vector is on a different priority level,
-diff --git a/arch/x86/include/asm/mshyperv.h b/arch/x86/include/asm/mshyperv.h
-index 79ce568..c2934be 100644
---- a/arch/x86/include/asm/mshyperv.h
-+++ b/arch/x86/include/asm/mshyperv.h
-@@ -11,4 +11,8 @@ struct ms_hyperv_info {
- 
- extern struct ms_hyperv_info ms_hyperv;
- 
-+void hyperv_callback_vector(void);
-+void hyperv_vector_handler(struct pt_regs *regs);
-+void hv_register_vmbus_handler(int irq, irq_handler_t handler);
-+
- #endif
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 0a630dd..3689622 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -14,10 +14,15 @@
- #include <linux/time.h>
- #include <linux/clocksource.h>
- #include <linux/module.h>
-+#include <linux/hardirq.h>
-+#include <linux/interrupt.h>
- #include <asm/processor.h>
- #include <asm/hypervisor.h>
- #include <asm/hyperv.h>
- #include <asm/mshyperv.h>
-+#include <asm/desc.h>
-+#include <asm/idle.h>
-+#include <asm/irq_regs.h>
- 
- struct ms_hyperv_info ms_hyperv;
- EXPORT_SYMBOL_GPL(ms_hyperv);
-@@ -69,6 +74,11 @@ static void __init ms_hyperv_init_platform(void)
- 	       ms_hyperv.features, ms_hyperv.hints);
- 
- 	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
-+
-+	/*
-+	 * Setup the IDT for hypervisor callback.
-+	 */
-+	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, hyperv_callback_vector);
- }
- 
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
-@@ -77,3 +87,32 @@ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
- 	.init_platform		= ms_hyperv_init_platform,
- };
- EXPORT_SYMBOL(x86_hyper_ms_hyperv);
-+
-+static int vmbus_irq = -1;
-+static irq_handler_t vmbus_isr;
-+
-+void hv_register_vmbus_handler(int irq, irq_handler_t handler)
-+{
-+	vmbus_irq = irq;
-+	vmbus_isr = handler;
-+}
-+EXPORT_SYMBOL_GPL(hv_register_vmbus_handler);
-+
-+void hyperv_vector_handler(struct pt_regs *regs)
-+{
-+	struct pt_regs *old_regs = set_irq_regs(regs);
-+	struct irq_desc *desc;
-+
-+	irq_enter();
-+#ifdef CONFIG_X86
-+	exit_idle();
-+#endif
-+
-+	desc = irq_to_desc(vmbus_irq);
-+
-+	if (desc)
-+		generic_handle_irq_desc(vmbus_irq, desc);
-+
-+	irq_exit();
-+	set_irq_regs(old_regs);
-+}
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index e9dd4c4..7d2bb62 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1047,11 +1047,18 @@ ENTRY(xen_failsafe_callback)
- 	_ASM_EXTABLE(4b,9b)
- ENDPROC(xen_failsafe_callback)
- 
--BUILD_INTERRUPT3(xen_hvm_callback_vector, XEN_HVM_EVTCHN_CALLBACK,
-+BUILD_INTERRUPT3(xen_hvm_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
- 		xen_evtchn_do_upcall)
- 
- #endif	/* CONFIG_XEN */
- 
-+#if IS_ENABLED(CONFIG_HYPERV)
-+
-+BUILD_INTERRUPT3(hyperv_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
-+	hyperv_vector_handler)
-+
-+#endif /* CONFIG_HYPERV */
-+
- #ifdef CONFIG_FUNCTION_TRACER
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 1975122..803ca69 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1446,11 +1446,16 @@ ENTRY(xen_failsafe_callback)
- 	CFI_ENDPROC
- END(xen_failsafe_callback)
- 
--apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
-+apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
- 	xen_hvm_callback_vector xen_evtchn_do_upcall
- 
- #endif /* CONFIG_XEN */
- 
-+#if IS_ENABLED(CONFIG_HYPERV)
-+apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
-+	hyperv_callback_vector hyperv_vector_handler
-+#endif /* CONFIG_HYPERV */
-+
- /*
-  * Some functions should be protected against kprobes
-  */
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 4293c57..5c2e92e 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1787,7 +1787,7 @@ void xen_callback_vector(void)
- 	int rc;
- 	uint64_t callback_via;
- 	if (xen_have_vector_callback) {
--		callback_via = HVM_CALLBACK_VECTOR(XEN_HVM_EVTCHN_CALLBACK);
-+		callback_via = HVM_CALLBACK_VECTOR(HYPERVISOR_CALLBACK_VECTOR);
- 		rc = xen_set_callback_via(callback_via);
- 		if (rc) {
- 			printk(KERN_ERR "Request for Xen HVM callback vector"
-@@ -1798,8 +1798,8 @@ void xen_callback_vector(void)
- 		printk(KERN_INFO "Xen HVM callback vector for event delivery is "
- 				"enabled\n");
- 		/* in the restore case the vector has already been allocated */
--		if (!test_bit(XEN_HVM_EVTCHN_CALLBACK, used_vectors))
--			alloc_intr_gate(XEN_HVM_EVTCHN_CALLBACK, xen_hvm_callback_vector);
-+		if (!test_bit(HYPERVISOR_CALLBACK_VECTOR, used_vectors))
-+			alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, xen_hvm_callback_vector);
- 	}
- }
- #else
--- 
-1.7.4.1
+Thanks,
+Chanwoo Choi
 
