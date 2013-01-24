@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945899Ab3AXVTs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:19:48 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41116 "EHLO mail.kernel.org"
+	id S1945920Ab3AXVT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:19:59 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41163 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757140Ab3AXVSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:18:55 -0500
+	id S1757144Ab3AXVS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:18:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Colin Ian King <colin.king@canonical.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 03/15] PCI: Allow pcie_aspm=force even when FADT indicates it is unsupported
-Date: Thu, 24 Jan 2013 13:18:27 -0800
-Message-Id: <20130124211724.627862088@linuxfoundation.org>
+        Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        Ram Gupta <ram.gupta5@gmail.com>
+Subject: [ 08/15] serial: 8250, increase PASS_LIMIT
+Date: Thu, 24 Jan 2013 13:18:32 -0800
+Message-Id: <20130124211726.749523382@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211723.489089115@linuxfoundation.org>
 References: <20130124211723.489089115@linuxfoundation.org>
@@ -26,38 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Ian King <colin.king@canonical.com>
+From: Jiri Slaby <jirislaby@gmail.com>
 
-commit 9e16721498b0c3d3ebfa0b503c63d35c0a4c0642 upstream.
+commit e7328ae1848966181a7ac47e8ae6cddbd2cf55f3 upstream.
 
-Right now using pcie_aspm=force will not enable ASPM if the FADT indicates
-ASPM is unsupported.  However, the semantics of force should probably allow
-for this, especially as they did before 3c076351c4 ("PCI: Rework ASPM
-disable code")
+With virtual machines like qemu, it's pretty common to see "too much
+work for irq4" messages nowadays. This happens when a bunch of output
+is printed on the emulated serial console. This is caused by too low
+PASS_LIMIT. When ISR loops more than the limit, it spits the message.
 
-This patch just skips the clearing of any ASPM setup that the firmware has
-carried out on this bus if pcie_aspm=force is being used.
+I've been using a kernel with doubled the limit and I couldn't see no
+problems. Maybe it's time to get rid of the message now?
 
-Reference: http://bugs.launchpad.net/bugs/962038
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Ram Gupta <ram.gupta5@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pcie/aspm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/tty/serial/8250.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pci/pcie/aspm.c
-+++ b/drivers/pci/pcie/aspm.c
-@@ -790,6 +790,9 @@ void pcie_clear_aspm(struct pci_bus *bus
- {
- 	struct pci_dev *child;
+--- a/drivers/tty/serial/8250.c
++++ b/drivers/tty/serial/8250.c
+@@ -81,7 +81,7 @@ static unsigned int skip_txen_test; /* f
+ #define DEBUG_INTR(fmt...)	do { } while (0)
+ #endif
  
-+	if (aspm_force)
-+		return;
-+
- 	/*
- 	 * Clear any ASPM setup that the firmware has carried out on this bus
- 	 */
+-#define PASS_LIMIT	256
++#define PASS_LIMIT	512
+ 
+ #define BOTH_EMPTY 	(UART_LSR_TEMT | UART_LSR_THRE)
+ 
 
 
