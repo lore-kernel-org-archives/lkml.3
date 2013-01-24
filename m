@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab3AXJZe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 04:25:34 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:48070 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752591Ab3AXJZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 04:25:30 -0500
-Date: Thu, 24 Jan 2013 10:28:21 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
-        JBeulich@suse.com
-Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
- special hypervisor interrupts
-Message-ID: <20130124092821.GA13463@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"K. Y. Srinivasan" <kys@microsoft.com>, x86@kernel.org,
-	gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-	devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-	jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
-	JBeulich@suse.com
-References: <1358992569-22826-1-git-send-email-kys@microsoft.com>
+	id S1752869Ab3AXJ1T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 04:27:19 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:46986 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752614Ab3AXJ1P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 04:27:15 -0500
+Message-ID: <5100FE61.1030004@linux.vnet.ibm.com>
+Date: Thu, 24 Jan 2013 17:26:57 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1358992569-22826-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Galbraith <bitbucket@online.de>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
+        mingo@kernel.org, a.p.zijlstra@chello.nl
+Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
+References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com> <50FE0ADC.6060701@linux.vnet.ibm.com> <1358841795.5782.255.camel@marge.simpson.net> <50FE5433.1070801@linux.vnet.ibm.com> <1358865692.5782.420.camel@marge.simpson.net> <50FF4EA0.1070000@linux.vnet.ibm.com> <1358915494.5752.46.camel@marge.simpson.net> <50FF7086.4020509@linux.vnet.ibm.com> <1358922520.5752.91.camel@marge.simpson.net> <50FF8CD8.4060105@linux.vnet.ibm.com>	 <1358929257.5752.109.camel@marge.simp! son.net>	 <50FF9F92.60202@linux.vnet.ibm.com> <1358930968.5752.123.camel@marge.simpson.net> <50FFA695.6010407@linux.vnet.ibm.com> <1358932694.5752.126.camel@marge.simpson.net> <1358933555.5752.132.camel@marge.simpson.net> <5100CE1F.7080704@linux.vnet.ibm.com> <1359010272.5833.39.camel@marge.simpson.net> <5100DF95.3020909@linux.vnet.ibm.com> <1359013623.5833.52.camel@marge.simpson.net> <5100ED7A.303@linux.vnet.ibm.com> <1359018455.5833.64.camel@marge.simpson.net>
+In-Reply-To: <1359018455.5833.64.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012409-4790-0000-0000-0000069C9679
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 05:56:09PM -0800, K. Y. Srinivasan wrote:
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 1975122..803ca69 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -1446,11 +1446,16 @@ ENTRY(xen_failsafe_callback)
->  	CFI_ENDPROC
->  END(xen_failsafe_callback)
->  
-> -apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
-> +apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
->  	xen_hvm_callback_vector xen_evtchn_do_upcall
->  
->  #endif /* CONFIG_XEN */
->  
-> +#if IS_ENABLED(CONFIG_HYPERV)
-> +apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
-> +	hyperv_callback_vector hyperv_vector_handler
-> +#endif /* CONFIG_HYPERV */
+On 01/24/2013 05:07 PM, Mike Galbraith wrote:
+> On Thu, 2013-01-24 at 16:14 +0800, Michael Wang wrote:
+> 
+>> Now it's time to work on v3 I think, let's see what we could get this time.
+> 
+> Maybe v3 can try to not waste so much ram on affine map?
 
-arch/x86/built-in.o: In function `_set_gate':
-/w/kernel/linux-2.6/arch/x86/include/asm/desc.h:328: undefined reference to `hyperv_callback_vector'
-make: *** [vmlinux] Error 1
+Yeah, that has been a question in my mind at very beginning, but how...
 
-because, of course:
+> 
+> Even better would be if it could just go away, along with relic of the
+> bad old days wake_affine(), and we make the balance path so damn light
+> but clever that select_idle_sibling() can go away too... and a pony ;-)
 
-# CONFIG_HYPERV is not set
+Hmm...may be, I need some consideration here, a totally balance path,
+interesting...
 
-But, I have a more serious pet-peeve with the whole hypervisors
-detection stuff: we're building arch/x86/kernel/cpu/hypervisor.c
-unconditionally and yet, we have CONFIG_PARAVIRT_GUEST to ask the user
-whether she wants to enable some options for running linux as a guest.
+But I think we still need the clean code which sbm bring to us, do we?
 
-And actually, it would be better to put all that virt-related stuff
-under a config option called HYPERVISOR or whatever, under "Processor
-type and features" which opens a menu with all virt stuff for people and
-distros to select.
+Regards,
+Michael Wang
 
-This way, init_hypervisor_platform and the rest of hypervisors stuff
-won't run needlessly on baremetal and setups who don't want that.
+> 
+> -Mike
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Any non-starter reasons for not doing that?
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
