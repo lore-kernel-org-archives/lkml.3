@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab3AXWNl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 17:13:41 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:60255 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754597Ab3AXWNd (ORCPT
+	id S1756147Ab3AXWOE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 17:14:04 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:32834 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754597Ab3AXWN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 17:13:33 -0500
-Date: Thu, 24 Jan 2013 14:13:27 -0800
-From: Tejun Heo <tj@kernel.org>
-To: aris@redhat.com
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v2 3/4] device_cgroup: make may_access() stronger
-Message-ID: <20130124221327.GX2373@mtj.dyndns.org>
-References: <20130124194957.198022148@napanee.usersys.redhat.com>
- <20130124194957.663514303@napanee.usersys.redhat.com>
+	Thu, 24 Jan 2013 17:13:56 -0500
+Date: Thu, 24 Jan 2013 14:13:52 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>, jack@suse.cz, tytso@mit.edu
+Cc: Valdis.Kletnieks@vt.edu, Hillf Danton <dhillf@gmail.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org, zab@zabbo.net, linux-fsdevel@vger.kernel.org
+Subject: Re: next-20130117 - kernel BUG with aio
+Message-ID: <20130124221352.GK26407@google.com>
+References: <3544.1358774694@turing-police.cc.vt.edu>
+ <CAJd=RBBBbv07aoOTF=PNy1FpCyuRV7fnQEGX_DXEYFSSknKtqQ@mail.gmail.com>
+ <2553.1358890098@turing-police.cc.vt.edu>
+ <CAJd=RBCHRDzyjY_hOZCj6rHBXzb3f5wWxdqXYuLbQXLe2n4JeA@mail.gmail.com>
+ <13450.1359048141@turing-police.cc.vt.edu>
+ <20130124211850.GH26407@google.com>
+ <20130124132759.c892fb4c.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130124194957.663514303@napanee.usersys.redhat.com>
+In-Reply-To: <20130124132759.c892fb4c.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Jan 24, 2013 at 01:27:59PM -0800, Andrew Morton wrote:
+> Please also take a look at Jan's recent
+> http://www.spinics.net/lists/linux-fsdevel/msg61738.html and have a
+> think about how this plays with your patchset.
 
-On Thu, Jan 24, 2013 at 02:50:00PM -0500, aris@redhat.com wrote:
-> In order to revalidate local exceptions for the hierarchy change propagation,
-> make may_access() stronger.
+I can't think of any possible interactions - none of my aio stuff messes
+with the way the fput() happens; the aio code does call fput() when the
+kiocb is freed and my patches do touch _that_ code but none of the
+behaviour there changes.
 
-It would be nice to explain what "stronger" actually means.
+Might be worth documenting this though, I can't think of any reason it'd
+be obvious looking at the aio code that the fput() has to happen after
+aio_complete(). As with the bugs I just sent you patches for it's not
+terribly clear who owns what in the kiocb when.
 
-> --- github.orig/security/device_cgroup.c	2013-01-24 10:40:46.384253615 -0500
-> +++ github/security/device_cgroup.c	2013-01-24 10:41:07.513567697 -0500
-> @@ -353,13 +353,15 @@ 	return 0;
->   *		won't have more privileges than its parent or to
->   *		verify if a certain access is allowed.
->   * @dev_cgroup: dev cgroup to be tested against
-> + * @behavior: behavior of the exception
+Reading those patches though - the main change is to call
+inode_dio_done() before calling aio_complete(). All inode_dio_done()
+does though is issue a wakeup - to whatever called inode_dio_wait().
 
-Should come after @refex?
+That means whatever called inode_dio_wait() needs its own ref on the
+inode, and from a cursory glance at the code it is _not_ at all clear to
+me that's the case - if inode_dio_wait() is merely finishing things for
+that specific IO that need to be done in process context, I can easily
+imagine it not being the case.
 
->   * @refex: new exception
->   */
-> -static int may_access(struct dev_cgroup *dev_cgroup,
-> -		      struct dev_exception_item *refex)
-> +static bool may_access(struct dev_cgroup *dev_cgroup,
-> +		       struct dev_exception_item *refex,
-> +		       enum devcg_behavior behavior)
->  {
->  	struct dev_exception_item *ex;
-> -	bool match = false;
-> +	int match = false;
->  
->  	rcu_lockdep_assert(rcu_read_lock_held() ||
->  			   lockdep_is_held(&devcgroup_mutex),
-> @@ -380,18 +382,28 @@ 		if (ex->minor != ~0 && ex->minor != re
->  		break;
->  	}
->  
-> -	/*
-> -	 * In two cases we'll consider this new exception valid:
-> -	 * - the dev cgroup has its default policy to allow + exception list:
-> -	 *   the new exception should *not* match any of the exceptions
-> -	 *   (behavior == DEVCG_DEFAULT_ALLOW, !match)
-> -	 * - the dev cgroup has its default policy to deny + exception list:
-> -	 *   the new exception *should* match the exceptions
-> -	 *   (behavior == DEVCG_DEFAULT_DENY, match)
-> -	 */
-> -	if ((dev_cgroup->behavior == DEVCG_DEFAULT_DENY) == match)
-> -		return 1;
-> -	return 0;
-> +	if (dev_cgroup->behavior == DEVCG_DEFAULT_ALLOW) {
-> +		if (behavior == DEVCG_DEFAULT_ALLOW) {
-> +			/* the exception will deny access to certain devices */
-> +			return true;
-> +		} else {
-> +			/* the exception will allow access to certain devices */
-> +			if (match)
-> +				/*
-> +				 * a new exception allowing access shouldn't
-> +				 * match an parent's exception
-> +				 */
-> +				return false;
-> +			return true;
-> +		}
-> +	} else {
-> +		/* only behavior == DEVCG_DEFAULT_DENY allowed here */
-> +		if (match)
-> +			/* parent has an exception that matches the proposed */
-> +			return true;
-> +		else
-> +			return false;
+Assuming whatever does call inode_dio_wait() does have its own ref,
+there was only a real use after free when nothing was waiting on the
+inode.
 
-It would be nice if there were a separate patch to decompress the
-logic separate from adding new logic.
-
-Thanks.
-
--- 
-tejun
+Similarly for the ext4 code to write unwritten extents - and having seen
+and helped chase a bug in that code before, that code _definitely_ needs
+auditing.
