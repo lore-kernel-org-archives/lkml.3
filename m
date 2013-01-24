@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab3AXRiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 12:38:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59675 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab3AXRh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 12:37:58 -0500
-Message-ID: <5101710F.9060409@zytor.com>
-Date: Thu, 24 Jan 2013 11:36:15 -0600
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1754614Ab3AXRpg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 12:45:36 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:61793 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab3AXRpe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 12:45:34 -0500
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, "K. Y. Srinivasan" <kys@microsoft.com>,
-        x86@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-        tglx@linutronix.de, JBeulich@suse.com
-Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as special
- hypervisor interrupts
-References: <1358992569-22826-1-git-send-email-kys@microsoft.com> <20130124092821.GA13463@pd.tnic> <04854149-91a3-4834-b2bb-de301c8241c9@email.android.com> <20130124173555.GJ13463@pd.tnic>
-In-Reply-To: <20130124173555.GJ13463@pd.tnic>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1356702623-9430-1-git-send-email-js1304@gmail.com>
+References: <1356702623-9430-1-git-send-email-js1304@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 24 Jan 2013 10:45:13 -0700
+Message-ID: <CAErSpo5_dgH1Au3QChVrhqBY_Fm54+Aw_ZiwGf2JSsgQaR1dug@mail.gmail.com>
+Subject: Re: [PATCH] x86, reboot: skip reboot_fixups in early boot phase
+To: Joonsoo Kim <js1304@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 11:35 AM, Borislav Petkov wrote:
-> On Thu, Jan 24, 2013 at 06:11:32AM -0600, H. Peter Anvin wrote:
->> Sounds great in theory at least, as long as it doesn't mean pushing a
->> bunch of #ifdefs into other code.
-> 
-> Just one set in hypervisor.h but this is the RightWay™ we do it in the
-> kernel :-).
-> 
-> Anyway, it turned out to be easier than I thought, just two patches
-> which I'll be sending as a reply to this message. I'll run more
-> randconfig tests on them, anyone sees issues please let me know.
-> 
+On Fri, Dec 28, 2012 at 6:50 AM, Joonsoo Kim <js1304@gmail.com> wrote:
+> During early boot phase, PCI bus subsystem is not yet initialized.
+> If panic is occured in early boot phase and panic_timeout is set,
+> code flow go into emergency_restart() and hit mach_reboot_fixups(), then
+> encounter another panic. When second panic, we can't hold a panic_lock, so
+> code flow go into panic_smp_self_stop() which prevent system to restart.
+>
+> For avoid second panic, skip reboot_fixups in early boot phase.
+> It makes panic_timeout works in early boot phase.
+>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+>
+> diff --git a/arch/x86/kernel/reboot_fixups_32.c b/arch/x86/kernel/reboot_fixups_32.c
+> index c8e41e9..b9b8ec9 100644
+> --- a/arch/x86/kernel/reboot_fixups_32.c
+> +++ b/arch/x86/kernel/reboot_fixups_32.c
+> @@ -89,6 +89,10 @@ void mach_reboot_fixups(void)
+>         if (in_interrupt())
+>                 return;
+>
+> +       /* During early boot phase, PCI is not yet initialized */
+> +       if (system_state == SYSTEM_BOOTING)
+> +               return;
+> +
+>         for (i=0; i < ARRAY_SIZE(fixups_table); i++) {
+>                 cur = &(fixups_table[i]);
+>                 dev = pci_get_device(cur->vendor, cur->device, NULL);
 
-Awesome :)
+I guess you're saying that if we call pci_get_device() too early, it
+panics?  Did you figure out why that happens?
 
-	-hpa
+If we call pci_get_device() before PCI has been initialized, it would
+be good if it just returned NULL, indicating that we didn't find any
+matching device.  I looked briefly, and I thought that's what would
+happen, but apparently I'm missing something.
 
-
+Bjorn
