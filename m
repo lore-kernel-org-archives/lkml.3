@@ -1,65 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730Ab3AXEbq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 23:31:46 -0500
-Received: from mail.windriver.com ([147.11.1.11]:59545 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680Ab3AXEbj (ORCPT
+	id S1753872Ab3AXEcT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 23:32:19 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:54575 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab3AXEcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 23:31:39 -0500
-From: Liang Li <liang.li@windriver.com>
-To: <gregkh@linuxfoundation.org>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <liang.li@windriver.com>, <sfr@canb.auug.org.au>, <rdunlap@infradead.org>,
-        <linux-next@vger.kernel.org>
-Subject: [PATCH] serial: pch_uart: fix sysrq handling for pch_uart
-Date: Thu, 24 Jan 2013 12:31:27 +0800
-Message-ID: <1359001887-1016-1-git-send-email-liang.li@windriver.com>
-X-Mailer: git-send-email 1.7.11.4
+	Wed, 23 Jan 2013 23:32:11 -0500
+Message-ID: <5100B8CC.4080406@linux.vnet.ibm.com>
+Date: Thu, 24 Jan 2013 10:00:04 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Tejun Heo <tj@kernel.org>
+CC: tglx@linutronix.de, peterz@infradead.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        walken@google.com
+Subject: Re: [PATCH v5 04/45] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <20130122073347.13822.85876.stgit@srivatsabhat.in.ibm.com> <20130123185522.GG2373@mtj.dyndns.org> <51003B20.2060506@linux.vnet.ibm.com> <20130123195740.GI2373@mtj.dyndns.org>
+In-Reply-To: <20130123195740.GI2373@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012404-0260-0000-0000-000002724E25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When PCH_UART_CONSOLE and SERIAL_CORE_CONSOLE is not set neither, the
-uart_port will have no 'sysrq' member hence their will need a '#ifdef'
-in pch_uart.c to handle the case, otherwise we'll see compile error
-like this:
+On 01/24/2013 01:27 AM, Tejun Heo wrote:
+> Hello, Srivatsa.
+> 
+> On Thu, Jan 24, 2013 at 01:03:52AM +0530, Srivatsa S. Bhat wrote:
+>> Hmm.. I split it up into steps to help explain the reasoning behind
+>> the code sufficiently, rather than spring all of the intricacies at
+>> one go (which would make it very hard to write the changelog/comments
+>> also). The split made it easier for me to document it well in the
+>> changelog, because I could deal with reasonable chunks of code/complexity
+>> at a time. IMHO that helps people reading it for the first time to
+>> understand the logic easily.
+> 
+> I don't know.  It's a judgement call I guess.  I personally would much
+> prefer having ample documentation as comments in the source itself or
+> as a separate Documentation/ file as that's what most people are gonna
+> be looking at to figure out what's going on.  Maybe just compact it a
+> bit and add more in-line documentation instead?
+> 
 
-  CC [M]  drivers/tty/serial/pch_uart.o
-drivers/tty/serial/pch_uart.c: In function 'pch_uart_hal_read':
-drivers/tty/serial/pch_uart.c:572:11: error: 'struct uart_port' has no member named 'sysrq'
-make[4]: *** [drivers/tty/serial/pch_uart.o] Error 1
+OK, I'll think about this.
 
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Liang Li <liang.li@windriver.com>
----
-Hi Greg,
+>>> The only two options are either punishing writers or identifying and
+>>> updating all such possible deadlocks.  percpu_rwsem does the former,
+>>> right?  I don't know how feasible the latter would be.
+>>
+>> I don't think we can avoid looking into all the possible deadlocks,
+>> as long as we use rwlocks inside get/put_online_cpus_atomic() (assuming
+>> rwlocks are fair). Even with Oleg's idea of using synchronize_sched()
+>> at the writer, we still need to take care of locking rules, because the
+>> synchronize_sched() only helps avoid the memory barriers at the reader,
+>> and doesn't help get rid of the rwlocks themselves.
+> 
+> Well, percpu_rwlock don't have to use rwlock for the slow path.  It
+> can implement its own writer starving locking scheme.  It's not like
+> implementing slow path global rwlock logic is difficult.
+>
 
-This is for 'tty-next' of your tty tree. Thanks.
+Great idea! So probably I could use atomic ops or something similar in the
+slow path to implement the scheme we need...
 
- drivers/tty/serial/pch_uart.c | 2 ++
- 1 file changed, 2 insertions(+)
+>> CPU 0                          CPU 1
+>>
+>> read_lock(&rwlock)
+>>
+>>                               write_lock(&rwlock) //spins, because CPU 0
+>>                               //has acquired the lock for read
+>>
+>> read_lock(&rwlock)
+>>    ^^^^^
+>> What happens here? Does CPU 0 start spinning (and hence deadlock) or will
+>> it continue realizing that it already holds the rwlock for read?
+> 
+> I don't think rwlock allows nesting write lock inside read lock.
+> read_lock(); write_lock() will always deadlock.
+> 
 
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index 1ddfc66..7a6c989 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -569,10 +569,12 @@ static int pch_uart_hal_read(struct eg20t_port *priv, unsigned char *buf,
- 			if (uart_handle_break(port))
- 				continue;
- 		}
-+#ifdef SUPPORT_SYSRQ
- 		if (port->sysrq) {
- 			if (uart_handle_sysrq_char(port, rbr))
- 				continue;
- 		}
-+#endif
- 
- 		buf[i++] = rbr;
- 	}
--- 
-1.7.11.4
+Sure, I understand that :-) My question was, what happens when *two* CPUs
+are involved, as in, the read_lock() is invoked only on CPU 0 whereas the
+write_lock() is invoked on CPU 1.
+
+For example, the same scenario shown above, but with slightly different
+timing, will NOT result in a deadlock:
+
+Scenario 2:
+  CPU 0                                CPU 1
+
+read_lock(&rwlock)
+
+
+read_lock(&rwlock) //doesn't spin
+
+                                    write_lock(&rwlock) //spins, because CPU 0
+                                    //has acquired the lock for read
+
+
+So I was wondering whether the "fairness" logic of rwlocks would cause
+the second read_lock() to spin (in the first scenario shown above) because
+a writer is already waiting (and hence new readers should spin) and thus
+cause a deadlock.
+
+Regards,
+Srivatsa S. Bhat
 
