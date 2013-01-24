@@ -1,106 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab3AXTGI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:06:08 -0500
-Received: from na01-bl2-obe.ptr.protection.outlook.com ([65.55.169.23]:18572
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1755513Ab3AXTGV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:06:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12797 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752667Ab3AXTGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:06:06 -0500
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -1
-X-BigFish: PS-1(z551biz98dI9371I542I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz31h2a8h668h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB062;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: Jan Beulich <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: RE: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
- special hypervisor interrupts
-Thread-Topic: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
- special hypervisor interrupts
-Thread-Index: AQHN+c0MrCoyWgAlfk2jp/FeLEmABphYK3yAgAB21tCAAAYiAIAAKTrAgAAEqICAAACTQA==
-Date: Thu, 24 Jan 2013 19:03:42 +0000
-Message-ID: <462e0bc4257744428139d5dbc91192be@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1358990259-22551-1-git-send-email-kys@microsoft.com>
- <5101035D02000078000B8FFD@nat28.tlf.novell.com>
- <27092660926e4d3f80394697cc0dc858@SN2PR03MB061.namprd03.prod.outlook.com>
- <51016C3202000078000B943E@nat28.tlf.novell.com>
- <f6cbfec9c014433fa54af61d8f436ebb@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130124185943.GA19194@aepfle.de>
-In-Reply-To: <20130124185943.GA19194@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [66.235.28.166]
-Content-Type: text/plain; charset="utf-8"
+	id S1752538Ab3AXTGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 14:06:18 -0500
+Date: Thu, 24 Jan 2013 14:06:10 -0500
+From: Kyle McMartin <kyle@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>, rusty@rustcorp.com.au,
+        jstancek@redhat.com, Stephan Mueller <stephan.mueller@atsec.com>
+Subject: [PATCH] MODSIGN: flag modules that use cryptoapi and only panic if
+ those are unsigned
+Message-ID: <20130124190610.GI6538@redacted.bos.redhat.com>
+References: <20130122184357.GD6538@redacted.bos.redhat.com>
+ <8615.1358940375@warthog.procyon.org.uk>
+ <50FFFF48.6020608@atsec.com>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB062.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%ZYTOR.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUTRONIX.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%ALIEN8.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(51704002)(13464002)(24454001)(377454001)(50466001)(54356001)(33646001)(53806001)(6806001)(74662001)(74502001)(47976001)(16676001)(47736001)(50986001)(76482001)(54316002)(49866001)(79102001)(47446002)(63696002)(44976002)(4396001)(51856001)(31966008)(59766001)(77982001)(56776001)(56816002)(5343635001)(46102001)(23676001)(47776003)(24736002)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB023;H:TK5EX14HUBC103.redmond.corp.microsoft.com;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 073631BD3D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FFFF48.6020608@atsec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0OJ68g7013758
 
+After thinking about it a while, this seems like the best way to solve
+the problem, although it does still kind of offend my delicate
+sensibilities...
 
+Doing this check in the crypto layer seems kind of like a layering
+violation to me (and, to be honest, I think it'd be a gross-hack getting
+from the callee back to the caller module.)
 
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Thursday, January 24, 2013 2:00 PM
-> To: KY Srinivasan
-> Cc: Jan Beulich; bp@alien8.de; apw@canonical.com; x86@kernel.org;
-> tglx@linutronix.de; devel@linuxdriverproject.org; gregkh@linuxfoundation.org;
-> jasowang@redhat.com; linux-kernel@vger.kernel.org; hpa@zytor.com
-> Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
-> special hypervisor interrupts
-> 
-> On Thu, Jan 24, KY Srinivasan wrote:
-> 
-> 
-> > > Question is - considering you stated that this is supported
-> > > starting in Win8, doesn't Hyper-V itself announce that
-> > > capability in some explicit way?
-> >
-> > Thanks Jan. Unfortunately I don't think tis interrupt delivery model
-> > is specified via a "feature" bit (I will check with the Windows guys).
-> > Perhaps, we can have a Hyper-V specific compilation switch to address
-> > the Xen emulation issue.
-> 
-> Would that really help if both pvops XEN_PVHVM and HYPERV are enabled in
-> the config? I assume at this point the access to the DMI data is not yet
-> possible.
+Instead, doing it in kernel/module.c and looking at the undefined symbol
+list again looks to me like an ordering problem since we're doing the
+signature check before we've even done the elf header check. We'd have
+to move the panic to a part of the module code that may not necessarily
+make sense.
 
-I was under the impression that only Dom0 Xen would emulate Hyper-V.
+Whereas checking the undefined symbol list at modpost time is fairly
+logical, and adding a new MODULE_INFO entry in the CONFIG_CRYPTO_FIPS
+case is a well understood thing to do, and should catch all the crypto
+registrations regardless of where they exist in-tree...
 
+Seems to build and work with both values of CONFIG_CRYPTO_FIPS.
 
-K. Y
-> 
-> Olaf
-> 
+Thoughts?
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Signed-off-by: Kyle McMartin <kyle@redhat.com>
+
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2459,8 +2459,10 @@ static int module_sig_check(struct load_info *info)
+ 		return 0;
+ 	}
+ 
+-	/* Not having a signature is only an error if we're strict. */
+-	if (err < 0 && fips_enabled)
++	/* Not having a signature is only an error if we're strict, and
++	 * the module registers a crypto algorithm (checked in modpost)
++	 */
++	if (err < 0 && fips_enabled && !get_modinfo(info, "crypto_fips"))
+ 		panic("Module verification failed with error %d in FIPS mode\n",
+ 		      err);
+ 	if (err == -ENOKEY && !sig_enforce)
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index ff36c50..79f46e2 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -1888,6 +1888,23 @@ static void add_staging_flag(struct buffer *b, const char *name)
+ 		buf_printf(b, "\nMODULE_INFO(staging, \"Y\");\n");
+ }
+ 
++static void add_crypto_flag(struct buffer *b, struct module *mod)
++{
++#if defined(CONFIG_CRYPTO_FIPS)
++	struct symbol *s;
++
++	/* iterate unresolved symbols looking for...
++	 *  - crypto_register_algs
++	 */
++	for (s = mod->unres; s; s = s->next) {
++		if (strcmp("crypto_register_algs", s->name) == 0)
++			buf_printf(b, "\nMODULE_INFO(crypto_fips, \"Y\");\n");
++	}
++#else
++	return;
++#endif /*CONFIG_CRYPTO_FIPS*/
++}
++
+ /**
+  * Record CRCs for unresolved symbols
+  **/
+@@ -2202,6 +2219,7 @@ int main(int argc, char **argv)
+ 		add_header(&buf, mod);
+ 		add_intree_flag(&buf, !external_module);
+ 		add_staging_flag(&buf, mod->name);
++		add_crypto_flag(&buf, mod);
+ 		err |= add_versions(&buf, mod);
+ 		add_depends(&buf, mod, modules);
+ 		add_moddevtable(&buf, mod);
