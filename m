@@ -1,73 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751489Ab3AXFPR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 00:15:17 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:32986 "EHLO arroyo.ext.ti.com"
+	id S1751711Ab3AXFVF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 00:21:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54005 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750762Ab3AXFPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 00:15:09 -0500
-Message-ID: <5100C325.6020102@ti.com>
-Date: Thu, 24 Jan 2013 10:44:13 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1750810Ab3AXFU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 00:20:58 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1359001345-3446-1-git-send-email-airlied@gmail.com>
+References: <1359001345-3446-1-git-send-email-airlied@gmail.com>
 MIME-Version: 1.0
-To: Matt Porter <mporter@ti.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 00/14] DMA Engine support for AM33XX
-References: <1358281974-8411-1-git-send-email-mporter@ti.com> <50FEB6B2.5020303@ti.com> <20130123022133.GA5727@opensource.wolfsonmicro.com> <20130123213736.GC5256@beef>
-In-Reply-To: <20130123213736.GC5256@beef>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] vgacon/vt: clear buffer attributes when we load a 512 character font
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 23 Jan 2013 23:20:45 -0600
+To: Dave Airlie <airlied@gmail.com>, dri-devel@lists.freedesktop.org
+CC: linux-kernel@vger.kernel.org
+Message-ID: <b2122295-0a35-4aba-90f3-8306b92af78b@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt,
+We should clear this bit presumably on switching either from or to 512-char mode, since the bit doesn't really make sense either way.
 
-On 1/24/2013 3:07 AM, Matt Porter wrote:
-> On Wed, Jan 23, 2013 at 10:21:42AM +0800, Mark Brown wrote:
->> On Tue, Jan 22, 2013 at 09:26:34PM +0530, Sekhar Nori wrote:
->>> On 1/16/2013 2:02 AM, Matt Porter wrote:
->>
->>>> This series adds DMA Engine support for AM33xx, which uses
->>>> an EDMA DMAC. The EDMA DMAC has been previously supported by only
->>>> a private API implementation (much like the situation with OMAP
->>>> DMA) found on the DaVinci family of SoCs.
->>
->>> Will you take this series through the OMAP tree? Only 1/14 touches
->>> mach-davinci and I am mostly okay with it except some changes I just
->>> requested Matt to make in another thread.
->>
->> Is this series somewhere near actually getting merged then? It seemed
->> like there was lots of stuff going on.
+Dave Airlie <airlied@gmail.com> wrote:
+
+>From: Dave Airlie <airlied@redhat.com>
+>
+>When we switch from 256->512 byte font rendering mode, it means the
+>current contents of the screen is being reinterpreted. The bit that
+>holds
+>the high bit of the 9-bit font, may have been previously set, and thus
+>the new font misrenders.
+>
+>The problem case we see is grub2 writes spaces with the bit set, so it
+>ends up with data like 0x820, which gets reinterpreted into 0x120 char
+>which the font translates into G with a circumflex. This flashes up on
+>screen at boot and is quite ugly.
+>
+>A current side effect of this patch though is that any rendering on the
+>screen changes color to a slightly darker color, but at least the
+>screen
+>no longer corrupts.
+>
+>Signed-off-by: Dave Airlie <airlied@redhat.com>
+>---
+> drivers/tty/vt/vt.c            |  2 +-
+> drivers/video/console/vgacon.c | 19 ++++++++++++-------
+> include/linux/vt_kern.h        |  1 +
+> 3 files changed, 14 insertions(+), 8 deletions(-)
+>
+>diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+>index 8fd8968..c8067ae 100644
+>--- a/drivers/tty/vt/vt.c
+>+++ b/drivers/tty/vt/vt.c
+>@@ -638,7 +638,7 @@ static inline void save_screen(struct vc_data *vc)
+>  *	Redrawing of screen
+>  */
 > 
-> The issues raised by Sekhar and Santosh were reasonably minor and will
-> be addressed. My major concern is that the dependency on some api to
-> fetch dmaengine driver SG limitations is not resolved. That's being
-> discussed in https://lkml.org/lkml/2013/1/10/432
+>-static void clear_buffer_attributes(struct vc_data *vc)
+>+void clear_buffer_attributes(struct vc_data *vc)
+> {
+> 	unsigned short *p = (unsigned short *)vc->vc_origin;
+> 	int count = vc->vc_screenbuf_size / 2;
+>diff --git a/drivers/video/console/vgacon.c
+>b/drivers/video/console/vgacon.c
+>index d449a74..271b5d0 100644
+>--- a/drivers/video/console/vgacon.c
+>+++ b/drivers/video/console/vgacon.c
+>@@ -1064,7 +1064,7 @@ static int vgacon_do_font_op(struct vgastate
+>*state,char *arg,int set,int ch512)
+> 	unsigned short video_port_status = vga_video_port_reg + 6;
+> 	int font_select = 0x00, beg, i;
+> 	char *charmap;
+>-	
+>+	bool clear_attribs = false;
+> 	if (vga_video_type != VIDEO_TYPE_EGAM) {
+> 		charmap = (char *) VGA_MAP_MEM(colourmap, 0);
+> 		beg = 0x0e;
+>@@ -1169,12 +1169,6 @@ static int vgacon_do_font_op(struct vgastate
+>*state,char *arg,int set,int ch512)
+> 
+> 	/* if 512 char mode is already enabled don't re-enable it. */
+> 	if ((set) && (ch512 != vga_512_chars)) {
+>-		/* attribute controller */
+>-		for (i = 0; i < MAX_NR_CONSOLES; i++) {
+>-			struct vc_data *c = vc_cons[i].d;
+>-			if (c && c->vc_sw == &vga_con)
+>-				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
+>-		}
+> 		vga_512_chars = ch512;
+> 		/* 256-char: enable intensity bit
+> 		   512-char: disable intensity bit */
+>@@ -1185,8 +1179,19 @@ static int vgacon_do_font_op(struct vgastate
+>*state,char *arg,int set,int ch512)
+> 		   it means, but it works, and it appears necessary */
+> 		inb_p(video_port_status);
+> 		vga_wattr(state->vgabase, VGA_AR_ENABLE_DISPLAY, 0);	
+>+		clear_attribs = true;
+> 	}
+> 	raw_spin_unlock_irq(&vga_lock);
+>+
+>+	if (clear_attribs) {
+>+		for (i = 0; i < MAX_NR_CONSOLES; i++) {
+>+			struct vc_data *c = vc_cons[i].d;
+>+			if (c && c->vc_sw == &vga_con) {
+>+				clear_buffer_attributes(c);
+>+				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
+>+			}
+>+		}
+>+	}
+> 	return 0;
+> }
+> 
+>diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
+>index 50ae7d0..1f55665 100644
+>--- a/include/linux/vt_kern.h
+>+++ b/include/linux/vt_kern.h
+>@@ -47,6 +47,7 @@ int con_set_cmap(unsigned char __user *cmap);
+> int con_get_cmap(unsigned char __user *cmap);
+> void scrollback(struct vc_data *vc, int lines);
+> void scrollfront(struct vc_data *vc, int lines);
+>+void clear_buffer_attributes(struct vc_data *vc);
+>void update_region(struct vc_data *vc, unsigned long start, int count);
+> void redraw_screen(struct vc_data *vc, int is_switch);
+> #define update_screen(x) redraw_screen(x, 0)
 
-It might be worth posting the patches which don't have dependencies and
-are ready for acceptance as a separate series. That way at least some of
-these patches have a good chance of getting into v3.9 if not the entire
-series.
-
-Thanks,
-Sekhar
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
