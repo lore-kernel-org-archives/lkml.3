@@ -1,140 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab3AXLQa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:16:30 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:47439 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754324Ab3AXLQU (ORCPT
+	id S1754975Ab3AXLQw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:16:52 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5745 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754392Ab3AXLMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:16:20 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v3 68/71] ARC: [Review] Multi-platform image #8: platform registers SMP callbacks
-Date: Thu, 24 Jan 2013 16:36:28 +0530
-Message-ID: <1359025589-22277-45-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
-References: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
+	Thu, 24 Jan 2013 06:12:14 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 24 Jan 2013 03:11:30 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: <linux-tegra@vger.kernel.org>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Olof Johansson <olof@lixom.net>, Jason Cooper <jason@lakedaemon.net>,
+        Shawn Guo <shawn.guo@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [v4 3/6] ARM: dt: tegra114: Add new SoC base, Tegra114 SoC
+Date: Thu, 24 Jan 2013 13:10:23 +0200
+Message-ID: <1359025829-22306-4-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359025829-22306-1-git-send-email-hdoyu@nvidia.com>
+References: <1359025829-22306-1-git-send-email-hdoyu@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platforms export their SMP callbacks by populating arc_smp_ops.
-The population itself needs to be done pretty early, from init_early
-callback.
+Initial support for Tegra 114 SoC. This is expected to be included in
+the board DTS files, Tegra 114 SoC based evaluation board family.
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
 ---
- arch/arc/plat-arcfpga/include/plat/smp.h |    1 +
- arch/arc/plat-arcfpga/platform.c         |    4 +++
- arch/arc/plat-arcfpga/smp.c              |   41 ++++++++++++++++-------------
- 3 files changed, 28 insertions(+), 18 deletions(-)
+ arch/arm/boot/dts/tegra114.dtsi |  114 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 114 insertions(+)
+ create mode 100644 arch/arm/boot/dts/tegra114.dtsi
 
-diff --git a/arch/arc/plat-arcfpga/include/plat/smp.h b/arch/arc/plat-arcfpga/include/plat/smp.h
-index 27822ac..c09eb4c 100644
---- a/arch/arc/plat-arcfpga/include/plat/smp.h
-+++ b/arch/arc/plat-arcfpga/include/plat/smp.h
-@@ -111,6 +111,7 @@ extern void idu_irq_set_tgtcpu(uint8_t irq, uint32_t mask);
- extern void idu_irq_set_mode(uint8_t irq, uint8_t dest_mode, uint8_t trig_mode);
- 
- extern void iss_model_init_smp(unsigned int cpu);
-+extern void iss_model_init_early_smp(void);
- 
- #endif	/* CONFIG_SMP */
- 
-diff --git a/arch/arc/plat-arcfpga/platform.c b/arch/arc/plat-arcfpga/platform.c
-index 4024f10..4e20a1a 100644
---- a/arch/arc/plat-arcfpga/platform.c
-+++ b/arch/arc/plat-arcfpga/platform.c
-@@ -162,6 +162,10 @@ static void __init plat_fpga_early_init(void)
- 	setup_bvci_lat_unit();
- 
- 	arc_fpga_serial_init();
+diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
+new file mode 100644
+index 0000000..c567916
+--- /dev/null
++++ b/arch/arm/boot/dts/tegra114.dtsi
+@@ -0,0 +1,114 @@
++/include/ "skeleton.dtsi"
 +
-+#ifdef CONFIG_SMP
-+	iss_model_init_early_smp();
-+#endif
- }
- 
- static struct of_dev_auxdata plat_auxdata_lookup[] __initdata = {
-diff --git a/arch/arc/plat-arcfpga/smp.c b/arch/arc/plat-arcfpga/smp.c
-index 68a53b1..91b5534 100644
---- a/arch/arc/plat-arcfpga/smp.c
-+++ b/arch/arc/plat-arcfpga/smp.c
-@@ -24,25 +24,10 @@ static char smp_cpuinfo_buf[128];
-  *-------------------------------------------------------------------
-  */
- 
--const char *arc_platform_smp_cpuinfo(void)
--{
--#define IS_AVAIL1(var, str)    ((var) ? str : "")
--
--	struct bcr_mp mp;
--
--	READ_BCR(ARC_REG_MP_BCR, mp);
--
--	sprintf(smp_cpuinfo_buf, "Extn [700-SMP]: v%d, arch(%d) %s %s %s\n",
--		mp.ver, mp.mp_arch, IS_AVAIL1(mp.scu, "SCU"),
--		IS_AVAIL1(mp.idu, "IDU"), IS_AVAIL1(mp.sdu, "SDU"));
--
--	return smp_cpuinfo_buf;
--}
--
- /*
-  * Master kick starting another CPU
-  */
--void arc_platform_smp_wakeup_cpu(int cpu, unsigned long pc)
-+static void iss_model_smp_wakeup_cpu(int cpu, unsigned long pc)
- {
- 	/* setup the start PC */
- 	write_aux_reg(ARC_AUX_XTL_REG_PARAM, pc);
-@@ -103,19 +88,39 @@ void iss_model_init_smp(unsigned int cpu)
- 	smp_ipi_irq_setup(cpu, IDU_INTERRUPT_0 + cpu);
- }
- 
--void arc_platform_ipi_send(const struct cpumask *callmap)
-+static void iss_model_ipi_send(void *arg)
- {
-+	struct cpumask *callmap = arg;
- 	unsigned int cpu;
- 
- 	for_each_cpu(cpu, callmap)
- 		idu_irq_assert(cpu);
- }
- 
--void arc_platform_ipi_clear(int cpu, int irq)
-+static void iss_model_ipi_clear(int cpu, int irq)
- {
- 	idu_irq_clear(IDU_INTERRUPT_0 + cpu);
- }
- 
-+void iss_model_init_early_smp(void)
-+{
-+#define IS_AVAIL1(var, str)    ((var) ? str : "")
++/ {
++	compatible = "nvidia,tegra114";
++	interrupt-parent = <&gic>;
 +
-+	struct bcr_mp mp;
++	gic: interrupt-controller {
++		compatible = "arm,cortex-a15-gic";
++		#interrupt-cells = <3>;
++		interrupt-controller;
++		reg = <0x50041000 0x1000>,
++		      <0x50042000 0x1000>,
++		      <0x50044000 0x2000>,
++		      <0x50046000 0x2000>;
++		interrupts = <1 9 0xf04>;
++	};
 +
-+	READ_BCR(ARC_REG_MP_BCR, mp);
++	timer@60005000 {
++		compatible = "nvidia,tegra114-timer", "nvidia,tegra20-timer";
++		reg = <0x60005000 0x400>;
++		interrupts = <0 0 0x04
++			      0 1 0x04
++			      0 41 0x04
++			      0 42 0x04
++			      0 121 0x04
++			      0 122 0x04>;
++	};
 +
-+	sprintf(smp_cpuinfo_buf, "Extn [ISS-SMP]: v%d, arch(%d) %s %s %s\n",
-+		mp.ver, mp.mp_arch, IS_AVAIL1(mp.scu, "SCU"),
-+		IS_AVAIL1(mp.idu, "IDU"), IS_AVAIL1(mp.sdu, "SDU"));
++	tegra_car: clock {
++		compatible = "nvidia,tegra114-car, nvidia,tegra30-car";
++		reg = <0x60006000 0x1000>;
++		#clock-cells = <1>;
++	};
 +
-+	plat_smp_ops.info = smp_cpuinfo_buf;
++	serial@70006000 {
++		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
++		reg = <0x70006000 0x40>;
++		reg-shift = <2>;
++		interrupts = <0 36 0x04>;
++		status = "disabled";
++	};
 +
-+	plat_smp_ops.cpu_kick = iss_model_smp_wakeup_cpu;
-+	plat_smp_ops.ipi_send = iss_model_ipi_send;
-+	plat_smp_ops.ipi_clear = iss_model_ipi_clear;
-+}
++	serial@70006040 {
++		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
++		reg = <0x70006040 0x40>;
++		reg-shift = <2>;
++		interrupts = <0 37 0x04>;
++		status = "disabled";
++	};
 +
- /*
-  *-------------------------------------------------------------------
-  * Low level Platform IPI Providers
++	serial@70006200 {
++		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
++		reg = <0x70006200 0x100>;
++		reg-shift = <2>;
++		interrupts = <0 46 0x04>;
++		status = "disabled";
++	};
++
++	serial@70006300 {
++		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
++		reg = <0x70006300 0x100>;
++		reg-shift = <2>;
++		interrupts = <0 90 0x04>;
++		status = "disabled";
++	};
++
++	rtc {
++		compatible = "nvidia,tegra114-rtc", "nvidia,tegra20-rtc";
++		reg = <0x7000e000 0x100>;
++		interrupts = <0 2 0x04>;
++	};
++
++	pmc {
++		compatible = "nvidia,tegra114-pmc", "nvidia,tegra30-pmc";
++		reg = <0x7000e400 0x400>;
++	};
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0>;
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <1>;
++		};
++
++		cpu@2 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <2>;
++		};
++
++		cpu@3 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <3>;
++		};
++	};
++
++	timer {
++		compatible = "arm,armv7-timer";
++		interrupts = <1 13 0xf08>,
++			     <1 14 0xf08>,
++			     <1 11 0xf08>,
++			     <1 10 0xf08>;
++	};
++};
 -- 
-1.7.4.1
+1.7.9.5
 
