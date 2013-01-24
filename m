@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab3AXVOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:14:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39964 "EHLO mail.kernel.org"
+	id S1756919Ab3AXVOY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:14:24 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39989 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756820Ab3AXVNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:13:48 -0500
+	id S1030193Ab3AXVNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:13:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 07/46] ftrace: Be first to run code modification on modules
-Date: Thu, 24 Jan 2013 13:12:45 -0800
-Message-Id: <20130124211138.485008655@linuxfoundation.org>
+        Alexander Graf <agraf@suse.de>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 09/46] virtio-blk: Dont free ida when disk is in use
+Date: Thu, 24 Jan 2013 13:12:47 -0800
+Message-Id: <20130124211139.223231133@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
 References: <20130124211135.862755794@linuxfoundation.org>
@@ -27,73 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Alexander Graf <agraf@suse.de>
 
-commit c1bf08ac26e92122faab9f6c32ea8aba94612dae upstream.
+commit f4953fe6c4aeada2d5cafd78aa97587a46d2d8f9 upstream.
 
-If some other kernel subsystem has a module notifier, and adds a kprobe
-to a ftrace mcount point (now that kprobes work on ftrace points),
-when the ftrace notifier runs it will fail and disable ftrace, as well
-as kprobes that are attached to ftrace points.
+When a file system is mounted on a virtio-blk disk, we then remove it
+and then reattach it, the reattached disk gets the same disk name and
+ids as the hot removed one.
 
-Here's the error:
+This leads to very nasty effects - mostly rendering the newly attached
+device completely unusable.
 
- WARNING: at kernel/trace/ftrace.c:1618 ftrace_bug+0x239/0x280()
- Hardware name: Bochs
- Modules linked in: fat(+) stap_56d28a51b3fe546293ca0700b10bcb29__8059(F) nfsv4 auth_rpcgss nfs dns_resolver fscache xt_nat iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack lockd sunrpc ppdev parport_pc parport microcode virtio_net i2c_piix4 drm_kms_helper ttm drm i2c_core [last unloaded: bid_shared]
- Pid: 8068, comm: modprobe Tainted: GF            3.7.0-0.rc8.git0.1.fc19.x86_64 #1
- Call Trace:
-  [<ffffffff8105e70f>] warn_slowpath_common+0x7f/0xc0
-  [<ffffffff81134106>] ? __probe_kernel_read+0x46/0x70
-  [<ffffffffa0180000>] ? 0xffffffffa017ffff
-  [<ffffffffa0180000>] ? 0xffffffffa017ffff
-  [<ffffffff8105e76a>] warn_slowpath_null+0x1a/0x20
-  [<ffffffff810fd189>] ftrace_bug+0x239/0x280
-  [<ffffffff810fd626>] ftrace_process_locs+0x376/0x520
-  [<ffffffff810fefb7>] ftrace_module_notify+0x47/0x50
-  [<ffffffff8163912d>] notifier_call_chain+0x4d/0x70
-  [<ffffffff810882f8>] __blocking_notifier_call_chain+0x58/0x80
-  [<ffffffff81088336>] blocking_notifier_call_chain+0x16/0x20
-  [<ffffffff810c2a23>] sys_init_module+0x73/0x220
-  [<ffffffff8163d719>] system_call_fastpath+0x16/0x1b
- ---[ end trace 9ef46351e53bbf80 ]---
- ftrace failed to modify [<ffffffffa0180000>] init_once+0x0/0x20 [fat]
-  actual: cc:bb:d2:4b:e1
+Trying what happens when I do the same thing with a USB device, I saw
+that the sd node simply doesn't get free'd when a device gets forcefully
+removed.
 
-A kprobe was added to the init_once() function in the fat module on load.
-But this happened before ftrace could have touched the code. As ftrace
-didn't run yet, the kprobe system had no idea it was a ftrace point and
-simply added a breakpoint to the code (0xcc in the cc:bb:d2:4b:e1).
+Imitate the same behavior for vd devices. This way broken vd devices
+simply are never free'd and newly attached ones keep working just fine.
 
-Then when ftrace went to modify the location from a call to mcount/fentry
-into a nop, it didn't see a call op, but instead it saw the breakpoint op
-and not knowing what to do with it, ftrace shut itself down.
-
-The solution is to simply give the ftrace module notifier the max priority.
-This should have been done regardless, as the core code ftrace modification
-also happens very early on in boot up. This makes the module modification
-closer to core modification.
-
-Link: http://lkml.kernel.org/r/20130107140333.593683061@goodmis.org
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Reported-by: Frank Ch. Eigler <fche@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/virtio_blk.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3998,7 +3998,7 @@ static int ftrace_module_notify(struct n
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -889,6 +889,7 @@ static void __devexit virtblk_remove(str
+ {
+ 	struct virtio_blk *vblk = vdev->priv;
+ 	int index = vblk->index;
++	int refc;
  
- struct notifier_block ftrace_module_nb = {
- 	.notifier_call = ftrace_module_notify,
--	.priority = 0,
-+	.priority = INT_MAX,	/* Run before anything that can use kprobes */
- };
+ 	/* Prevent config work handler from accessing the device. */
+ 	mutex_lock(&vblk->config_lock);
+@@ -903,11 +904,15 @@ static void __devexit virtblk_remove(str
  
- extern unsigned long __start_mcount_loc[];
+ 	flush_work(&vblk->config_work);
+ 
++	refc = atomic_read(&disk_to_dev(vblk->disk)->kobj.kref.refcount);
+ 	put_disk(vblk->disk);
+ 	mempool_destroy(vblk->pool);
+ 	vdev->config->del_vqs(vdev);
+ 	kfree(vblk);
+-	ida_simple_remove(&vd_index_ida, index);
++
++	/* Only free device id if we don't have any users */
++	if (refc == 1)
++		ida_simple_remove(&vd_index_ida, index);
+ }
+ 
+ #ifdef CONFIG_PM
 
 
