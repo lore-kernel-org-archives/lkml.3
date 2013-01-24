@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636Ab3AXJDe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 04:03:34 -0500
-Received: from mga02.intel.com ([134.134.136.20]:18866 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507Ab3AXJD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 04:03:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,528,1355126400"; 
-   d="scan'208";a="251644590"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: "Su\, Xuemin" <xuemin.su@intel.com>
-Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com,
-        bo.he@intel.com
-Subject: Re: [PATCH V3] drm_crtc: check if fb_create return NULL
-In-Reply-To: <1359017171.18561.29.camel@suxuemin.sh.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <1358987804.18561.22.camel@suxuemin.sh.intel.com> <87bocfugln.fsf@intel.com> <1359017171.18561.29.camel@suxuemin.sh.intel.com>
-User-Agent: Notmuch/0.14+267~g79b3518 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 24 Jan 2013 11:04:40 +0200
-Message-ID: <878v7juf2v.fsf@intel.com>
+	id S1752595Ab3AXJFd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 04:05:33 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:44061 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab3AXJFV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 04:05:21 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <sameo@linux.intel.com>
+CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
+        <sshtylyov@mvista.com>, <bjorn@mork.no>, <linux@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>, <mturquette@linaro.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <rogerq@ti.com>
+Subject: [PATCH v10 20/20] mfd: omap-usb-host: get rid of build warning
+Date: Thu, 24 Jan 2013 11:04:56 +0200
+Message-ID: <1359018296-5015-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <20130123233617.9205.88295@quantum>
+References: <20130123233617.9205.88295@quantum>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jan 2013, "Su, Xuemin" <xuemin.su@intel.com> wrote:
-> On Thu, 2013-01-24 at 10:31 +0200, Jani Nikula wrote:
->> >  	}
->> > +	/* some buggy driver may return NULL here, which may cause panic */
->> > +	BUG_ON(!fb);
->> 
->> I fail to see the benefit of this compared to just letting it oops...
->> 
->> >  	or->fb_id = fb->base.id;
->> 
->> ...right here.
->> 
->> 
-> For PATCH V3, I think a BUG_ON may give the user clearer information
-> about the reason of panic. Easier to debug.
+Fixes the below build warning when driver is built-in.
 
-Ah, sorry, never mind, I missed Daniel's comment. The benefit of the
-BUG_ON() is making it clear what's expected of the drivers.
+drivers/mfd/omap-usb-host.c:750:12: warning:
+‘usbhs_omap_remove’ defined but not used [-Wunused-function]
 
-Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/mfd/omap-usb-host.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index b21ca76..6b5edf6 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -791,7 +791,7 @@ static struct platform_driver usbhs_omap_driver = {
+ 		.owner		= THIS_MODULE,
+ 		.pm		= &usbhsomap_dev_pm_ops,
+ 	},
+-	.remove		= __exit_p(usbhs_omap_remove),
++	.remove		= usbhs_omap_remove,
+ };
+ 
+ MODULE_AUTHOR("Keshava Munegowda <keshava_mgowda@ti.com>");
+-- 
+1.7.4.1
+
