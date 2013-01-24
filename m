@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab3AXL5F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:57:05 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:44486 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab3AXL4v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:56:51 -0500
-Date: Thu, 24 Jan 2013 12:51:23 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] irq_work changes for 3.9
-Message-ID: <20130124115123.GC32574@gmail.com>
-References: <1358345841-29136-1-git-send-email-fweisbec@gmail.com>
+	id S1754046Ab3AXMAN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 07:00:13 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:56937 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753830Ab3AXMAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 07:00:10 -0500
+Message-ID: <51012244.9070002@imgtec.com>
+Date: Thu, 24 Jan 2013 12:00:04 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358345841-29136-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: Arnd Bergmann <arnd@arndb.de>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH v2 00/76] Synopsys ARC Linux kernel Port
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <201301181512.14441.arnd@arndb.de> <5100F6AD.5050001@synopsys.com> <51010461.20604@imgtec.com> <510108B9.3020205@synopsys.com>
+In-Reply-To: <510108B9.3020205@synopsys.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_01_24_12_00_05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 24/01/13 10:11, Vineet Gupta wrote:
+> On Thursday 24 January 2013 03:22 PM, James Hogan wrote:
+>> Hi Vineet,
+>>
+>> On 24/01/13 08:54, Vineet Gupta wrote:
+>>> (3) That branch will be ARC patches on top of Linus's 3.8 rc4. Actually for my
+>>> development, I'd also cherry picked a few patches from linux-next (soft and hard
+>>> dependencies from several different *next trees) - hard ones being
+>>>
+>>> f13a366 CONFIG_GENERIC_SIGALTSTACK build breakage with asm-generic/syscalls.h [Al]
+>> FYI this one has now been merged into Linus' master.
+>>
+>> Cheers
+>> James
+>>
+> 
+> OK thanks - but I'd rather have the patches based on a well known checkpoint - so
+> maybe wait for next rc.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+In that case you may like to merge Al's for-linus branch in the mean
+time, or the commit you want directly, since it's definitely gone into
+the master without being rebased.
 
-> Hi Ingo,
-> 
-> The printk changes for full dynticks support are still pending while
-> we don't know Linus's opinion about these. Meanwhile here is the
-> part of it that I think is uncontroversial. This way we can make
-> the next submission attempt to Linus a bit more simple.
-> 
-> These three patches are general fixes for irq work. The two first
-> patches fix tight races on global irq work claiming that prevent the irq work
-> subsystem from dropping a work enqueuing attempt because it thinks it's
-> already pending while it may be already executing or executed.
-> 
-> The last patch just extends irq work support everywhere. It's also a
-> kconfig cleanup.
-> 
-> The branch can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> 	core/irq_work
-> 
-> Head is: 6147a9d8070e1c9d16d57eb53a14942b95b28dc4
-> 
-> Thanks.
-> 
-> ---
-> Frederic Weisbecker (3):
->   irq_work: Fix racy IRQ_WORK_BUSY flag setting
->   irq_work: Fix racy check on work pending flag
->   irq_work: Remove CONFIG_HAVE_IRQ_WORK
-> 
->  arch/alpha/Kconfig                  |    1 -
->  arch/arm/Kconfig                    |    1 -
->  arch/arm64/Kconfig                  |    1 -
->  arch/blackfin/Kconfig               |    1 -
->  arch/frv/Kconfig                    |    1 -
->  arch/hexagon/Kconfig                |    1 -
->  arch/mips/Kconfig                   |    1 -
->  arch/parisc/Kconfig                 |    1 -
->  arch/powerpc/Kconfig                |    1 -
->  arch/s390/Kconfig                   |    1 -
->  arch/sh/Kconfig                     |    1 -
->  arch/sparc/Kconfig                  |    1 -
->  arch/x86/Kconfig                    |    1 -
->  drivers/staging/iio/trigger/Kconfig |    1 -
->  init/Kconfig                        |    4 ----
->  kernel/irq_work.c                   |   21 +++++++++++++++------
->  16 files changed, 15 insertions(+), 24 deletions(-)
+> Any ideas about other questions on the thread - given that several next trees are
+> still involved.
 
-Pulled into tip:irq/core, thanks Frederic!
+Stephen said it's fine to merge other trees as long as you let them know
+so they don't rebase, or ask them which branch is best to use that won't
+rebase. See the following thread:
+https://lkml.org/lkml/2013/1/11/187
 
-	Ingo
+> metag doesn't seem to be on linux-next yet ?
+
+Not yet, although I think it's almost ready. I need to solicit some acks.
+
+Cheers
+James
+
