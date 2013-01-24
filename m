@@ -1,487 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab3AXTur (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:50:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34755 "EHLO mx1.redhat.com"
+	id S1755631Ab3AXTyu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:54:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16129 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209Ab3AXTuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:50:05 -0500
-Message-Id: <20130124194957.842303201@napanee.usersys.redhat.com>
-User-Agent: quilt/0.48-1
-Date: Thu, 24 Jan 2013 14:50:01 -0500
-From: aris@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH v2 4/4] device_cgroup: propagate local changes down the hierarchy
-References: <20130124194957.198022148@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=propagate.patch
+	id S1755538Ab3AXTyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 14:54:44 -0500
+Date: Thu, 24 Jan 2013 13:54:27 -0600
+From: Clark Williams <williams@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2] sched: add a tuning knob to allow changing RR
+ tmeslice
+Message-ID: <20130124135427.1748d057@redhat.com>
+In-Reply-To: <20130124165955.GA9324@gmail.com>
+References: <20121108195113.2dd51d43@redhat.com>
+	<20130124165955.GA9324@gmail.com>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/rvckKy/1O6UqZ/Qn9=CPsmK"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes all changes propagate down in hierarchy respecting when
-possible local configurations.
+--Sig_/rvckKy/1O6UqZ/Qn9=CPsmK
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Behavior changes will clean up exceptions in all the children except when the
-parent changes the behavior from allow to deny and the child's behavior was
-already deny, in which case the local exceptions will be reused. The inverse
-is not possible: you can't have a parent with behavior deny and a child with
-behavior accept.
+On Thu, 24 Jan 2013 17:59:55 +0100
+Ingo Molnar <mingo@kernel.org> wrote:
 
-New exceptions allowing additional access to devices won't be propagated, but
-it'll be possible to add an exception to access all of part of the newly
-allowed device(s).
+>=20
+> * Clark Williams <williams@redhat.com> wrote:
+>=20
+> > This version stores the user-input value in a separate=20
+> > location from the jiffies values used by the scheduler, to=20
+> > prevent a race condition.
+> >=20
+> > Subject: [PATCH v2] sched: add a tuning knob to allow changing=20
+> > RR timeslice
+>=20
+> looks useful.
+>=20
+> > @@ -2010,7 +2010,7 @@ static void task_tick_rt(struct rq *rq, struct
+> > task_struct *p, int queued) if (--p->rt.time_slice)
+> >  		return;
+> > =20
+> > -	p->rt.time_slice =3D RR_TIMESLICE;
+> > +	p->rt.time_slice =3D sched_rr_timeslice;
+> > =20
+> >  	/*
+> >  	 * Requeue to the end of queue if we (and all of our
+> > ancestors) are the @@ -2041,7 +2041,7 @@ static unsigned int
+> > get_rr_interval_rt(struct rq *rq, struct task_struct *task)
+> >  	 * Time slice is 0 for SCHED_FIFO tasks
+>=20
+> Patch wont apply due to patch corruption, alas.
+>=20
+>=20
 
-New exceptions disallowing access to devices will be propagated down and the
-local group's exceptions will be revalidated for the new situation.
-Example:
-      A
-     / \
-        B
+Easily fixed. Modified for 3.8-rc4:
 
-    group        behavior          exceptions
-    A            allow             "b 8:* rwm", "c 116:1 rw"
-    B            deny              "c 1:3 rwm", "c 116:2 rwm", "b 3:* rwm"
+commit 0e2d40c5c84d06670f85cc212591f27f69f59c62
+Author: Clark Williams <williams@redhat.com>
+Date:   Thu Jan 24 13:51:01 2013 -0600
 
-If a new exception is added to group A:
-	# echo "c 116:* r" > A/devices.deny
-it'll propagate down and after revalidating B's local exceptions, the exception
-"c 116:2 rwm" will be removed.
+    [kernel] sched: add a tuning knob to allow changing RR timeslice
+   =20
+    Add a /proc/sys/kernel scheduler knob named sched_rr_timeslice_ms
+    that allows global changing of the SCHED_RR timeslice value. User
+    visable value is in milliseconds but is stored as jiffies.  Setting
+    to 0 (zero) resets to the default (currently 100ms).
+   =20
+    Signed-off-by: Clark Williams <williams@redhat.com>
 
-In case parent behavior or exceptions change and local settings are not
-allowed anymore, they'll be deleted.
-
-v2: instead of keeping the local settings that won't apply anymore, remove them
-
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-
----
- security/device_cgroup.c |  296 ++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 252 insertions(+), 44 deletions(-)
-
---- github.orig/security/device_cgroup.c	2013-01-24 10:41:07.513567697 -0500
-+++ github/security/device_cgroup.c	2013-01-24 10:41:15.545687094 -0500
-@@ -89,28 +89,38 @@ static int devcgroup_can_attach(struct c
- 	return 0;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 6fc8f45..d803690 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2082,6 +2082,11 @@ int sched_rt_handler(struct ctl_table *table, int wr=
+ite,
+ 		void __user *buffer, size_t *lenp,
+ 		loff_t *ppos);
+=20
++extern int sched_rr_timeslice;
++extern int sched_rr_handler(struct ctl_table *table, int write,
++		void __user *buffer, size_t *lenp,
++		loff_t *ppos);
++
+ #ifdef CONFIG_SCHED_AUTOGROUP
+ extern unsigned int sysctl_sched_autogroup_enabled;
+=20
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 257002c..5675074 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7507,6 +7507,24 @@ static int sched_rt_global_constraints(void)
  }
- 
-+static int dev_exception_copy(struct list_head *dest,
-+			      struct dev_exception_item *ex)
+ #endif /* CONFIG_RT_GROUP_SCHED */
+=20
++int sched_rr_handler(struct ctl_table *table, int write,
++		void __user *buffer, size_t *lenp,
++		loff_t *ppos)
 +{
-+	struct dev_exception_item *new;
++	int ret;
++	static DEFINE_MUTEX(mutex);
 +
-+	new = kmemdup(ex, sizeof(*ex), GFP_KERNEL);
-+	if (!new)
-+		return -ENOMEM;
-+	list_add_tail_rcu(&new->list, dest);
-+	return 0;
-+}
-+
- /*
-  * called under devcgroup_mutex
-  */
- static int dev_exceptions_copy(struct list_head *dest, struct list_head *orig)
- {
--	struct dev_exception_item *ex, *tmp, *new;
-+	struct dev_exception_item *ex, *tmp;
- 
- 	lockdep_assert_held(&devcgroup_mutex);
- 
- 	list_for_each_entry(ex, orig, list) {
--		new = kmemdup(ex, sizeof(*ex), GFP_KERNEL);
--		if (!new)
-+		if (dev_exception_copy(dest, ex))
- 			goto free_and_exit;
--		list_add_tail(&new->list, dest);
- 	}
- 
- 	return 0;
- 
- free_and_exit:
- 	list_for_each_entry_safe(ex, tmp, dest, list) {
--		list_del(&ex->list);
--		kfree(ex);
-+		list_del_rcu(&ex->list);
-+		kfree_rcu(ex, rcu);
- 	}
- 	return -ENOMEM;
- }
-@@ -202,32 +212,80 @@ static int dev_exception_add(struct dev_
- 	return rc;
- }
- 
--static void __dev_exception_clean(struct dev_cgroup *dev_cgroup)
-+static void dev_exception_clean(struct list_head *exceptions)
- {
- 	struct dev_exception_item *ex, *tmp;
- 
--	list_for_each_entry_safe(ex, tmp, &dev_cgroup->exceptions, list) {
--		list_del_rcu(&ex->list);
--		kfree_rcu(ex, rcu);
--	}
--	list_for_each_entry_safe(ex, tmp, &dev_cgroup->local.exceptions,
--				 list) {
-+	list_for_each_entry_safe(ex, tmp, exceptions, list) {
- 		list_del_rcu(&ex->list);
- 		kfree_rcu(ex, rcu);
- 	}
- }
- 
-+static void __dev_exception_clean_all(struct dev_cgroup *dev_cgroup)
-+{
-+	dev_exception_clean(&dev_cgroup->exceptions);
-+	dev_exception_clean(&dev_cgroup->local.exceptions);
-+}
-+
- /**
-  * dev_exception_clean - frees all entries of the exception list
-  * @dev_cgroup: dev_cgroup with the exception list to be cleaned
-  *
-  * called under devcgroup_mutex
-  */
--static void dev_exception_clean(struct dev_cgroup *dev_cgroup)
-+static void dev_exception_clean_all(struct dev_cgroup *dev_cgroup)
- {
- 	lockdep_assert_held(&devcgroup_mutex);
- 
--	__dev_exception_clean(dev_cgroup);
-+	__dev_exception_clean_all(dev_cgroup);
-+}
-+
-+static inline bool is_devcg_online(const struct dev_cgroup *devcg)
-+{
-+	return (devcg->behavior != DEVCG_DEFAULT_NONE);
-+}
-+
-+/**
-+ * devcg_for_each_child - traverse online children of a device cgroup
-+ * @child_cs: loop cursor pointing to the current child
-+ * @pos_cgrp: used for iteration
-+ * @parent_cs: target device cgroup to walk children of
-+ *
-+ * Walk @child_cs through the online children of @parent_cs.  Must be used
-+ * with RCU read locked.
-+ */
-+#define devcg_for_each_child(pos_cgrp, root)				\
-+	cgroup_for_each_child((pos_cgrp), (root))			\
-+		if (is_devcg_online(cgroup_to_devcgroup((pos_cgrp))))
-+
-+static int devcgroup_online(struct cgroup *cgroup)
-+{
-+	struct dev_cgroup *dev_cgroup, *parent_dev_cgroup = NULL;
-+	int ret = 0;
-+
-+	dev_cgroup = cgroup_to_devcgroup(cgroup);
-+	if (cgroup->parent)
-+		parent_dev_cgroup = cgroup_to_devcgroup(cgroup->parent);
-+
-+	if (parent_dev_cgroup == NULL)
-+		dev_cgroup->behavior = DEVCG_DEFAULT_ALLOW;
-+	else {
-+		mutex_lock(&devcgroup_mutex);
-+		ret = dev_exceptions_copy(&dev_cgroup->exceptions,
-+					  &parent_dev_cgroup->exceptions);
-+		if (!ret)
-+			dev_cgroup->behavior = parent_dev_cgroup->behavior;
-+		mutex_unlock(&devcgroup_mutex);
-+	}
-+
++	mutex_lock(&mutex);
++	ret =3D proc_dointvec(table, write, buffer, lenp, ppos);
++	/* make sure that internally we keep jiffies */
++	/* also, writing zero resets timeslice to default */
++	if (!ret && write)=20
++		sched_rr_timeslice =3D sched_rr_timeslice <=3D 0 ?=20
++			RR_TIMESLICE : msecs_to_jiffies(sched_rr_timeslice);
++	mutex_unlock(&mutex);
 +	return ret;
 +}
 +
-+static void devcgroup_offline(struct cgroup *cgroup)
-+{
-+	struct dev_cgroup *dev_cgroup = cgroup_to_devcgroup(cgroup);
-+	dev_cgroup->behavior = DEVCG_DEFAULT_NONE;
- }
- 
- /*
-@@ -235,9 +293,8 @@ static void dev_exception_clean(struct d
-  */
- static struct cgroup_subsys_state *devcgroup_css_alloc(struct cgroup *cgroup)
+ int sched_rt_handler(struct ctl_table *table, int write,
+ 		void __user *buffer, size_t *lenp,
+ 		loff_t *ppos)
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 418feb0..6c54e83 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -11,6 +11,8 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *=
+rt_b, int overrun);
+=20
+ struct rt_bandwidth def_rt_bandwidth;
+=20
++int sched_rr_timeslice =3D RR_TIMESLICE;
++
+ static enum hrtimer_restart sched_rt_period_timer(struct hrtimer *timer)
  {
--	struct dev_cgroup *dev_cgroup, *parent_dev_cgroup;
-+	struct dev_cgroup *dev_cgroup;
- 	struct cgroup *parent_cgroup;
--	int ret;
- 
- 	dev_cgroup = kzalloc(sizeof(*dev_cgroup), GFP_KERNEL);
- 	if (!dev_cgroup)
-@@ -245,23 +302,9 @@ static struct cgroup_subsys_state *devcg
- 	INIT_LIST_HEAD(&dev_cgroup->exceptions);
- 	INIT_LIST_HEAD(&dev_cgroup->local.exceptions);
- 	dev_cgroup->local.behavior = DEVCG_DEFAULT_NONE;
-+	dev_cgroup->behavior = DEVCG_DEFAULT_NONE;
- 	parent_cgroup = cgroup->parent;
- 
--	if (parent_cgroup == NULL)
--		dev_cgroup->behavior = DEVCG_DEFAULT_ALLOW;
--	else {
--		parent_dev_cgroup = cgroup_to_devcgroup(parent_cgroup);
--		mutex_lock(&devcgroup_mutex);
--		ret = dev_exceptions_copy(&dev_cgroup->exceptions,
--					  &parent_dev_cgroup->exceptions);
--		dev_cgroup->behavior = parent_dev_cgroup->behavior;
--		mutex_unlock(&devcgroup_mutex);
--		if (ret) {
--			kfree(dev_cgroup);
--			return ERR_PTR(ret);
--		}
--	}
--
- 	return &dev_cgroup->css;
+ 	struct rt_bandwidth *rt_b =3D
+@@ -2010,7 +2012,7 @@ static void task_tick_rt(struct rq *rq, struct task_s=
+truct *p, int queued)
+ 	if (--p->rt.time_slice)
+ 		return;
+=20
+-	p->rt.time_slice =3D RR_TIMESLICE;
++	p->rt.time_slice =3D sched_rr_timeslice;
+=20
+ 	/*
+ 	 * Requeue to the end of queue if we (and all of our ancestors) are the
+@@ -2041,7 +2043,7 @@ static unsigned int get_rr_interval_rt(struct rq *rq,=
+ struct task_struct *task)
+ 	 * Time slice is 0 for SCHED_FIFO tasks
+ 	 */
+ 	if (task->policy =3D=3D SCHED_RR)
+-		return RR_TIMESLICE;
++		return sched_rr_timeslice;
+ 	else
+ 		return 0;
  }
- 
-@@ -270,7 +313,7 @@ static void devcgroup_css_free(struct cg
- 	struct dev_cgroup *dev_cgroup;
- 
- 	dev_cgroup = cgroup_to_devcgroup(cgroup);
--	__dev_exception_clean(dev_cgroup);
-+	__dev_exception_clean_all(dev_cgroup);
- 	kfree(dev_cgroup);
- }
- 
-@@ -436,6 +479,154 @@ static inline int may_allow_all(struct d
- 	return parent->behavior == DEVCG_DEFAULT_ALLOW;
- }
- 
-+/**
-+ * revalidate_exceptions - walks through the exception list and revalidates
-+ *			     the exceptions based on parents' behavior and
-+ *			     exceptions. Called with devcgroup_mutex held.
-+ * @devcg: cgroup which exceptions will be checked
-+ *
-+ * returns: 0 in success, -ENOMEM in case of out of memory
-+ */
-+static int revalidate_exceptions(struct dev_cgroup *devcg)
-+{
-+	struct dev_exception_item *ex;
-+	struct list_head *this, *tmp;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index c88878d..1eabf86 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -403,6 +403,14 @@ static struct ctl_table kern_table[] =3D {
+ 		.mode		=3D 0644,
+ 		.proc_handler	=3D sched_rt_handler,
+ 	},
++	{
++		.procname	=3D "sched_rr_timeslice_ms",
++		.data		=3D &sched_rr_timeslice,
++		.maxlen		=3D sizeof(int),
++		.mode		=3D 0644,
++		.proc_handler	=3D sched_rr_handler,
++	},
 +
-+	list_for_each_safe(this, tmp, &devcg->local.exceptions) {
-+		ex = container_of(this, struct dev_exception_item, list);
-+		if (parent_has_perm(devcg, ex)) {
-+			if (dev_exception_copy(&devcg->exceptions, ex))
-+				goto error;
-+		} else
-+			__dev_exception_rm(&devcg->local.exceptions, ex);
-+	}
-+	return 0;
-+
-+error:
-+	dev_exception_clean(&devcg->exceptions);
-+	return -ENOMEM;
-+}
-+
-+/**
-+ * propagate_behavior - propagates a change in the behavior to the children
-+ * @devcg: device cgroup that changed behavior
-+ *
-+ * returns: 0 in case of success, != 0 in case of error
-+ */
-+static int propagate_behavior(struct dev_cgroup *devcg)
-+{
-+	struct cgroup *root = devcg->css.cgroup, *pos, *saved = NULL,
-+			*prev = NULL, *ptr;
-+	struct dev_cgroup *parent;
-+	int rc = 0;
-+
-+	while (1) {
-+		rcu_read_lock();
-+		pos = NULL;
-+		devcg_for_each_child(ptr, root) {
-+			if (saved && prev != saved) {
-+				prev = pos;
-+				continue;
-+			}
-+			pos = ptr;
-+			break;
-+		}
-+		rcu_read_unlock();
-+
-+		if (!pos)
-+			break;
-+
-+		devcg = cgroup_to_devcgroup(pos);
-+		/* we may have raced and this cgroup is being removed */
-+		if (pos->parent == NULL) {
-+			saved = pos;
-+			continue;
-+		}
-+		parent = cgroup_to_devcgroup(pos->parent);
-+
-+		/* first copy parent's state */
-+		devcg->behavior = parent->behavior;
-+		dev_exception_clean(&devcg->exceptions);
-+		rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
-+		if (rc) {
-+			devcg->behavior = DEVCG_DEFAULT_DENY;
-+			break;
-+		}
-+
-+		if (devcg->local.behavior == DEVCG_DEFAULT_DENY &&
-+		    devcg->behavior == DEVCG_DEFAULT_ALLOW) {
-+			devcg->behavior = DEVCG_DEFAULT_DENY;
-+		}
-+		if (devcg->local.behavior == devcg->behavior)
-+			rc = revalidate_exceptions(devcg);
-+		if (rc)
-+			break;
-+		saved = pos;
-+	}
-+
-+	return rc;
-+}
-+
-+/**
-+ * propagate_exception - propagates a new exception to the children
-+ * @devcg: device cgroup that added a new exception
-+ *
-+ * returns: 0 in case of success, != 0 in case of error
-+ */
-+static int propagate_exception(struct dev_cgroup *devcg)
-+{
-+	struct cgroup *root = devcg->css.cgroup, *pos, *saved = NULL,
-+			*prev = NULL, *ptr;
-+	struct dev_cgroup *parent;
-+	int rc = 0;
-+
-+	while(1) {
-+		rcu_read_lock();
-+		pos = NULL;
-+		devcg_for_each_child(ptr, root) {
-+			if (saved && prev != saved) {
-+				prev = pos;
-+				continue;
-+			}
-+			pos = ptr;
-+			break;
-+		}
-+		rcu_read_unlock();
-+
-+		if (!pos)
-+			break;
-+
-+		devcg = cgroup_to_devcgroup(pos);
-+		/* we may have raced and this cgroup is being removed */
-+		if (pos->parent == NULL) {
-+			saved = pos;
-+			continue;
-+		}
-+		parent = cgroup_to_devcgroup(pos->parent);
-+
-+		dev_exception_clean(&devcg->exceptions);
-+		if (devcg->behavior == parent->behavior) {
-+			rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
-+			if (rc) {
-+				devcg->behavior = DEVCG_DEFAULT_DENY;
-+				break;
-+			}
-+			rc = revalidate_exceptions(devcg);
-+			if (rc)
-+				break;
-+		} else {
-+			/* we never give more permissions to the child */
-+			WARN_ONCE(devcg->behavior == DEVCG_DEFAULT_ALLOW,
-+				  "devcg: parent/child behavior is inconsistent");
-+			rc = revalidate_exceptions(devcg);
-+			if (rc)
-+				break;
-+		}
-+		saved = pos;
-+	}
-+	return rc;
-+}
-+
- /*
-  * Modify the exception list using allow/deny rules.
-  * CAP_SYS_ADMIN is needed for this.  It's at least separate from CAP_MKNOD
-@@ -474,25 +665,26 @@ 	memset(&ex, 0, sizeof(ex));
- 		case DEVCG_ALLOW:
- 			if (!may_allow_all(parent))
- 				return -EPERM;
--			dev_exception_clean(devcgroup);
-+			dev_exception_clean_all(devcgroup);
- 			if (parent)
- 				rc = dev_exceptions_copy(&devcgroup->exceptions,
- 							 &parent->exceptions);
- 			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
- 			devcgroup->local.behavior = DEVCG_DEFAULT_ALLOW;
--
- 			if (rc)
- 				return rc;
-+			rc = propagate_behavior(devcgroup);
- 			break;
- 		case DEVCG_DENY:
--			dev_exception_clean(devcgroup);
-+			dev_exception_clean_all(devcgroup);
- 			devcgroup->behavior = DEVCG_DEFAULT_DENY;
- 			devcgroup->local.behavior = DEVCG_DEFAULT_DENY;
-+			rc = propagate_behavior(devcgroup);
- 			break;
- 		default:
--			return -EINVAL;
-+			rc = -EINVAL;
- 		}
--		return 0;
-+		return rc;
- 	case 'b':
- 		ex.type = DEV_BLOCK;
- 		break;
-@@ -578,9 +770,14 @@ 		case '\0':
- 		 */
- 		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
- 			dev_exception_rm(devcgroup, &ex);
--			return 0;
-+			rc = propagate_exception(devcgroup);
-+			return rc;
- 		}
--		return dev_exception_add(devcgroup, &ex);
-+		rc = dev_exception_add(devcgroup, &ex);
-+		if (!rc)
-+			/* if a local behavior wasn't explicitely choosen, pick it */
-+			devcgroup->local.behavior = devcgroup->behavior;
-+		break;
- 	case DEVCG_DENY:
- 		/*
- 		 * If the default policy is to deny by default, try to remove
-@@ -589,13 +786,22 @@ 			return 0;
- 		 */
- 		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
- 			dev_exception_rm(devcgroup, &ex);
--			return 0;
-+			rc = propagate_exception(devcgroup);
-+			return rc;
- 		}
--		return dev_exception_add(devcgroup, &ex);
-+		rc = dev_exception_add(devcgroup, &ex);
-+		if (rc)
-+			return rc;
-+		/* we only propagate new restrictions */
-+		rc = propagate_exception(devcgroup);
-+		if (!rc)
-+			/* if a local behavior wasn't explicitely choosen, pick it */
-+			devcgroup->local.behavior = devcgroup->behavior;
-+		break;
- 	default:
--		return -EINVAL;
-+		rc = -EINVAL;
- 	}
--	return 0;
-+	return rc;
- }
- 
- static int devcgroup_access_write(struct cgroup *cgrp, struct cftype *cft,
-@@ -633,6 +839,8 @@ struct cgroup_subsys devices_subsys = {
- 	.name = "devices",
- 	.can_attach = devcgroup_can_attach,
- 	.css_alloc = devcgroup_css_alloc,
-+	.css_online = devcgroup_online,
-+	.css_offline = devcgroup_offline,
- 	.css_free = devcgroup_css_free,
- 	.subsys_id = devices_subsys_id,
- 	.base_cftypes = dev_cgroup_files,
+ #ifdef CONFIG_SCHED_AUTOGROUP
+ 	{
+ 		.procname	=3D "sched_autogroup_enabled",
 
+
+--Sig_/rvckKy/1O6UqZ/Qn9=CPsmK
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEARECAAYFAlEBkXMACgkQHyuj/+TTEp14NQCg5H5R8ze7zzOuwNNNrCbgLDMw
+R1QAni/xtcDXdWK+a+WWNSRpQoAycYm3
+=IbKB
+-----END PGP SIGNATURE-----
+
+--Sig_/rvckKy/1O6UqZ/Qn9=CPsmK--
