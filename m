@@ -1,67 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab3AXURM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:17:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34470 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932096Ab3AXUQ5 (ORCPT
+	id S932168Ab3AXURb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:17:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50180 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755932Ab3AXUIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:16:57 -0500
-Date: Thu, 24 Jan 2013 12:16:45 -0800
-From: tip-bot for Bjorn Helgaas <bhelgaas@google.com>
-Message-ID: <tip-6125bc8b86d9da75ddac77e38f41afbf9f5de3e3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        bhelgaas@google.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, tglx@linutronix.de
-In-Reply-To: <20130104224146.15189.14874.stgit@bhelgaas.mtv.corp.google.com>
-References: <20130104224146.15189.14874.stgit@bhelgaas.mtv.corp.google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] x86/time/rtc: Don'
- t print extended CMOS year when reading RTC
-Git-Commit-ID: 6125bc8b86d9da75ddac77e38f41afbf9f5de3e3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 12:16:51 -0800 (PST)
+	Thu, 24 Jan 2013 15:08:48 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 49/74] perf report: Update documentation for sort keys
+Date: Thu, 24 Jan 2013 17:07:58 -0300
+Message-Id: <1359058103-31645-50-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
+In-Reply-To: <1359058103-31645-1-git-send-email-acme@infradead.org>
+References: <1359058103-31645-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6125bc8b86d9da75ddac77e38f41afbf9f5de3e3
-Gitweb:     http://git.kernel.org/tip/6125bc8b86d9da75ddac77e38f41afbf9f5de3e3
-Author:     Bjorn Helgaas <bhelgaas@google.com>
-AuthorDate: Fri, 4 Jan 2013 15:41:47 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 24 Jan 2013 14:56:35 +0100
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-x86/time/rtc: Don't print extended CMOS year when reading RTC
+Add description of sort keys to the perf-report document and also add
+missing cpu and srcline keys to the command line help string.
 
-We shouldn't print the current century every time we read the
-RTC.
-
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20130104224146.15189.14874.stgit@bhelgaas.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1356599507-14226-11-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/kernel/rtc.c | 1 -
- 1 file changed, 1 deletion(-)
+ tools/perf/Documentation/perf-report.txt | 38 +++++++++++++++++++++++++++++---
+ tools/perf/builtin-report.c              |  4 ++--
+ 2 files changed, 37 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
-index 801602b..2e8f3d3 100644
---- a/arch/x86/kernel/rtc.c
-+++ b/arch/x86/kernel/rtc.c
-@@ -149,7 +149,6 @@ unsigned long mach_get_cmos_time(void)
- 	if (century) {
- 		century = bcd2bin(century);
- 		year += century * 100;
--		printk(KERN_INFO "Extended CMOS year: %d\n", century * 100);
- 	} else
- 		year += CMOS_YEARS_OFFS;
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index f4d91be..848a0dc 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -57,11 +57,44 @@ OPTIONS
  
+ -s::
+ --sort=::
+-	Sort by key(s): pid, comm, dso, symbol, parent, srcline.
++	Sort histogram entries by given key(s) - multiple keys can be specified
++	in CSV format.  Following sort keys are available:
++	pid, comm, dso, symbol, parent, cpu, srcline.
++
++	Each key has following meaning:
++
++	- comm: command (name) of the task which can be read via /proc/<pid>/comm
++	- pid: command and tid of the task
++	- dso: name of library or module executed at the time of sample
++	- symbol: name of function executed at the time of sample
++	- parent: name of function matched to the parent regex filter. Unmatched
++	entries are displayed as "[other]".
++	- cpu: cpu number the task ran at the time of sample
++	- srcline: filename and line number executed at the time of sample.  The
++	DWARF debuggin info must be provided.
++
++	By default, comm, dso and symbol keys are used.
++	(i.e. --sort comm,dso,symbol)
++
++	If --branch-stack option is used, following sort keys are also
++	available:
++	dso_from, dso_to, symbol_from, symbol_to, mispredict.
++
++	- dso_from: name of library or module branched from
++	- dso_to: name of library or module branched to
++	- symbol_from: name of function branched from
++	- symbol_to: name of function branched to
++	- mispredict: "N" for predicted branch, "Y" for mispredicted branch
++
++	And default sort keys are changed to comm, dso_from, symbol_from, dso_to
++	and symbol_to, see '--branch-stack'.
+ 
+ -p::
+ --parent=<regex>::
+-        regex filter to identify parent, see: '--sort parent'
++        A regex filter to identify parent. The parent is a caller of this
++	function and searched through the callchain, thus it requires callchain
++	information recorded. The pattern is in the exteneded regex format and
++	defaults to "\^sys_|^do_page_fault", see '--sort parent'.
+ 
+ -x::
+ --exclude-other::
+@@ -74,7 +107,6 @@ OPTIONS
+ 
+ -t::
+ --field-separator=::
+-
+ 	Use a special separator character and don't pad with spaces, replacing
+ 	all occurrences of this separator in symbol names (and other output)
+ 	with a '.' character, that thus it's the only non valid separator.
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 13cdf61..47a8644 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -595,8 +595,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "stdio", &report.use_stdio,
+ 		    "Use the stdio interface"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
+-		   " dso_from, symbol_to, symbol_from, mispredict"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
++		   " dso_to, dso_from, symbol_to, symbol_from, mispredict"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+-- 
+1.8.1.1.361.gec3ae6e
+
