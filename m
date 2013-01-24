@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030190Ab3AXUMv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:12:51 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54111
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756012Ab3AXUJK (ORCPT
+	id S1756127Ab3AXUM4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:12:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34308 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755988Ab3AXUI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:09:10 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Vince Weaver <vincent.weaver@maine.edu>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 40/74] perf: Missing field in PERF_RECORD_SAMPLE documentation
-Date: Thu, 24 Jan 2013 17:07:49 -0300
-Message-Id: <1359058103-31645-41-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
-In-Reply-To: <1359058103-31645-1-git-send-email-acme@infradead.org>
-References: <1359058103-31645-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 24 Jan 2013 15:08:58 -0500
+Date: Thu, 24 Jan 2013 12:08:38 -0800
+From: tip-bot for Cong Ding <dinggnu@gmail.com>
+Message-ID: <tip-b9975dabe3f0a6e4d1af52c47f66b5558df207a3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, sasha.levin@oracle.com, hpa@zytor.com,
+        mingo@kernel.org, dinggnu@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
+        linux-kernel@vger.kernel.org, dinggnu@gmail.com, tglx@linutronix.de
+In-Reply-To: <1358199561-15518-1-git-send-email-dinggnu@gmail.com>
+References: <1358199561-15518-1-git-send-email-dinggnu@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86/apb/timer: Remove unnecessary "if"
+Git-Commit-ID: b9975dabe3f0a6e4d1af52c47f66b5558df207a3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 12:08:43 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vince Weaver <vincent.weaver@maine.edu>
+Commit-ID:  b9975dabe3f0a6e4d1af52c47f66b5558df207a3
+Gitweb:     http://git.kernel.org/tip/b9975dabe3f0a6e4d1af52c47f66b5558df207a3
+Author:     Cong Ding <dinggnu@gmail.com>
+AuthorDate: Mon, 14 Jan 2013 22:39:18 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 24 Jan 2013 13:03:26 +0100
 
-While trying to write a perf_event/mmap test for my perf_event
-test-suite I came across a missing field description in the
-PERF_RECORD_SAMPLE documentation in perf_event.h
+x86/apb/timer: Remove unnecessary "if"
 
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1301081439300.24507@vincent-weaver-1.um.maine.edu
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+adev has no chance to be NULL, so we don't need to check it. It
+is also dereferenced just before the check .
+
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Link: http://lkml.kernel.org/r/1358199561-15518-1-git-send-email-dinggnu@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/uapi/linux/perf_event.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/kernel/apb_timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 4f63c05..9fa9c62 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -579,7 +579,8 @@ enum perf_event_type {
- 	 *	{ u32			size;
- 	 *	  char                  data[size];}&& PERF_SAMPLE_RAW
- 	 *
--	 *	{ u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
-+	 *	{ u64                   nr;
-+	 *        { u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
- 	 *
- 	 * 	{ u64			abi; # enum perf_sample_regs_abi
- 	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
--- 
-1.8.1.1.361.gec3ae6e
-
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index afdc3f75..cf92735 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -240,7 +240,7 @@ static int apbt_cpuhp_notify(struct notifier_block *n,
+ 		dw_apb_clockevent_pause(adev->timer);
+ 		if (system_state == SYSTEM_RUNNING) {
+ 			pr_debug("skipping APBT CPU %lu offline\n", cpu);
+-		} else if (adev) {
++		} else {
+ 			pr_debug("APBT clockevent for cpu %lu offline\n", cpu);
+ 			dw_apb_clockevent_stop(adev->timer);
+ 		}
