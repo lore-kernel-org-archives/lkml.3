@@ -1,65 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886Ab3AXGxR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 01:53:17 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:38477 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab3AXGxI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 01:53:08 -0500
-From: Philip Avinash <avinashphilip@ti.com>
-To: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
-        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>
-CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <hvaibhav@ti.com>,
-        Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH] mtd: devices: elm: Removes <xx> literals in elm DT node
-Date: Thu, 24 Jan 2013 12:23:30 +0530
-Message-ID: <9580c5839ea64e09ddd61610ce922d7cd1adc861.1359010256.git.avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751828Ab3AXGzR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 01:55:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26343 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751141Ab3AXGzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 01:55:14 -0500
+From: Dave Airlie <airlied@gmail.com>
+To: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: [PATCH] fbcon: don't lose the console font across generic->chip driver switch
+Date: Thu, 24 Jan 2013 16:19:51 +1000
+Message-Id: <1359008391-10330-1-git-send-email-airlied@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of removing generalized dependency, replace <xx> literal fields
-in DT compatible field with <52> for am335x platforms.
+From: Dave Airlie <airlied@redhat.com>
 
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+If grub2 loads efifb/vesafb, then when systemd starts it can set the console
+font on that framebuffer device, however when we then load the native KMS
+driver, the first thing it does is tear down the generic framebuffer driver.
+
+The thing is the generic code is doing the right thing, it frees the font
+because otherwise it would leak memory. However we can assume that if you
+are removing the generic firmware driver (vesa/efi/offb), that a new driver
+*should* be loading soon after, so we effectively leak the font.
+
+However the old code left a dangling pointer in vc->vc_font.data and we
+can now reuse that dangling pointer to load the font into the new
+driver, now that we aren't freeing it.
+
+I'm open for better suggestions on this, but this does work in my brief
+test here.
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=892340
+
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 ---
- Documentation/devicetree/bindings/mtd/elm.txt |    2 +-
- drivers/mtd/devices/elm.c                     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/console/fbcon.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mtd/elm.txt b/Documentation/devicetree/bindings/mtd/elm.txt
-index e43c668..8c1528c 100644
---- a/Documentation/devicetree/bindings/mtd/elm.txt
-+++ b/Documentation/devicetree/bindings/mtd/elm.txt
-@@ -10,7 +10,7 @@ Optional properties:
+diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+index fdefa8f..f8dbe76 100644
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -990,7 +990,7 @@ static const char *fbcon_startup(void)
+ 	}
  
- Example:
- elm: elm@0 {
--	compatible	= "ti,am33xx-elm";
-+	compatible = "ti,am3352-elm";
- 	reg = <0x48080000 0x2000>;
- 	interrupts = <4>;
- };
-diff --git a/drivers/mtd/devices/elm.c b/drivers/mtd/devices/elm.c
-index f78f43f..f034239 100644
---- a/drivers/mtd/devices/elm.c
-+++ b/drivers/mtd/devices/elm.c
-@@ -381,7 +381,7 @@ static int elm_remove(struct platform_device *pdev)
+ 	/* Setup default font */
+-	if (!p->fontdata) {
++	if (!p->fontdata && !vc->vc_font.data) {
+ 		if (!fontname[0] || !(font = find_font(fontname)))
+ 			font = get_default_font(info->var.xres,
+ 						info->var.yres,
+@@ -1000,6 +1000,8 @@ static const char *fbcon_startup(void)
+ 		vc->vc_font.height = font->height;
+ 		vc->vc_font.data = (void *)(p->fontdata = font->data);
+ 		vc->vc_font.charcount = 256; /* FIXME  Need to support more fonts */
++	} else {
++		p->fontdata = vc->vc_font.data;
+ 	}
  
- #ifdef CONFIG_OF
- static const struct of_device_id elm_of_match[] = {
--	{ .compatible = "ti,am33xx-elm" },
-+	{ .compatible = "ti,am3352-elm" },
- 	{},
- };
- MODULE_DEVICE_TABLE(of, elm_of_match);
+ 	cols = FBCON_SWAP(ops->rotate, info->var.xres, info->var.yres);
+@@ -1159,9 +1161,9 @@ static void fbcon_init(struct vc_data *vc, int init)
+ 	ops->p = &fb_display[fg_console];
+ }
+ 
+-static void fbcon_free_font(struct display *p)
++static void fbcon_free_font(struct display *p, bool freefont)
+ {
+-	if (p->userfont && p->fontdata && (--REFCOUNT(p->fontdata) == 0))
++	if (freefont && p->userfont && p->fontdata && (--REFCOUNT(p->fontdata) == 0))
+ 		kfree(p->fontdata - FONT_EXTRA_WORDS * sizeof(int));
+ 	p->fontdata = NULL;
+ 	p->userfont = 0;
+@@ -1173,8 +1175,8 @@ static void fbcon_deinit(struct vc_data *vc)
+ 	struct fb_info *info;
+ 	struct fbcon_ops *ops;
+ 	int idx;
++	bool free_font = true;
+ 
+-	fbcon_free_font(p);
+ 	idx = con2fb_map[vc->vc_num];
+ 
+ 	if (idx == -1)
+@@ -1185,6 +1187,8 @@ static void fbcon_deinit(struct vc_data *vc)
+ 	if (!info)
+ 		goto finished;
+ 
++	if (info->flags & FBINFO_MISC_FIRMWARE)
++		free_font = false;
+ 	ops = info->fbcon_par;
+ 
+ 	if (!ops)
+@@ -1196,6 +1200,8 @@ static void fbcon_deinit(struct vc_data *vc)
+ 	ops->flags &= ~FBCON_FLAGS_INIT;
+ finished:
+ 
++	fbcon_free_font(p, free_font);
++
+ 	if (!con_is_bound(&fb_con))
+ 		fbcon_exit();
+ 
 -- 
-1.7.9.5
+1.8.1
 
