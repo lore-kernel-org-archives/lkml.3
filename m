@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161027Ab3AXUQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:16:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34404 "EHLO
+	id S1422637Ab3AXUQX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:16:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34435 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756325Ab3AXUOl (ORCPT
+	with ESMTP id S1161002Ab3AXUQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:14:41 -0500
-Date: Thu, 24 Jan 2013 12:14:26 -0800
-From: "tip-bot for Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Message-ID: <tip-5e45a7c83c6c8bd53c718caaf0fdff0ffabf8d8f@git.kernel.org>
+	Thu, 24 Jan 2013 15:16:10 -0500
+Date: Thu, 24 Jan 2013 12:15:35 -0800
+From: tip-bot for Zhu Yanhai <gaoyang.zyh@taobao.com>
+Message-ID: <tip-a59f4e079d19464eebb9b06513a1d4f55fdae5ba@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, tglx@linutronix.de
+        torvalds@linux-foundation.org, pjt@google.com, peterz@infradead.org,
+        rostedt@goodmis.org, akpm@linux-foundation.org, tglx@linutronix.de,
+        gaoyang.zyh@taobao.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, srivatsa.bhat@linux.vnet.ibm.com
-In-Reply-To: <20130108130547.32733.79507.stgit@srivatsabhat.in.ibm.com>
-References: <20130108130547.32733.79507.stgit@srivatsabhat.in.ibm.com>
+        torvalds@linux-foundation.org, peterz@infradead.org, pjt@google.com,
+        rostedt@goodmis.org, akpm@linux-foundation.org, tglx@linutronix.de,
+        gaoyang.zyh@taobao.com
+In-Reply-To: <1357621012-15039-1-git-send-email-gaoyang.zyh@taobao.com>
+References: <1357621012-15039-1-git-send-email-gaoyang.zyh@taobao.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] lockdep: Rename print_unlock_inbalance_bug()
-  to print_unlock_imbalance_bug()
-Git-Commit-ID: 5e45a7c83c6c8bd53c718caaf0fdff0ffabf8d8f
+Subject: [tip:sched/core] sched: Fix the broken sched_rr_get_interval()
+Git-Commit-ID: a59f4e079d19464eebb9b06513a1d4f55fdae5ba
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,68 +31,59 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 12:14:32 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 12:15:42 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5e45a7c83c6c8bd53c718caaf0fdff0ffabf8d8f
-Gitweb:     http://git.kernel.org/tip/5e45a7c83c6c8bd53c718caaf0fdff0ffabf8d8f
-Author:     Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-AuthorDate: Tue, 8 Jan 2013 18:35:58 +0530
+Commit-ID:  a59f4e079d19464eebb9b06513a1d4f55fdae5ba
+Gitweb:     http://git.kernel.org/tip/a59f4e079d19464eebb9b06513a1d4f55fdae5ba
+Author:     Zhu Yanhai <gaoyang.zyh@taobao.com>
+AuthorDate: Tue, 8 Jan 2013 12:56:52 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 24 Jan 2013 14:34:41 +0100
+CommitDate: Thu, 24 Jan 2013 14:41:00 +0100
 
-lockdep: Rename print_unlock_inbalance_bug() to print_unlock_imbalance_bug()
+sched: Fix the broken sched_rr_get_interval()
 
-Fix the typo in the function name (s/inbalance/imbalance)
+The caller of sched_sliced() should pass se.cfs_rq and se as the
+arguments, however in sched_rr_get_interval() we gave it
+rq.cfs_rq and se, which made the following computation obviously
+wrong.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: rostedt@goodmis.org
-Cc: peterz@infradead.org
-Link: http://lkml.kernel.org/r/20130108130547.32733.79507.stgit@srivatsabhat.in.ibm.com
+The change was introduced by commit:
+
+  77034937dc45 sched: fix crash in sys_sched_rr_get_interval()
+
+... 5 years ago, while it had been the correct 'cfs_rq_of' before
+the commit. The change seems to be irrelevant to the commit
+msg, which was to return a 0 timeslice for tasks that are on an
+idle runqueue. So I believe that was just a plain typo.
+
+Signed-off-by: Zhu Yanhai <gaoyang.zyh@taobao.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Turner <pjt@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1357621012-15039-1-git-send-email-gaoyang.zyh@taobao.com
+[ Since this is an ABI and an old bug, we'll test this via a
+  slow upstream route, to hopefully discover any app breakage. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/lockdep.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/sched/fair.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 7981e5b..5cf12e7 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -3203,7 +3203,7 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 5eea870..a7a19ff 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6101,7 +6101,7 @@ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task
+ 	 * idle runqueue:
+ 	 */
+ 	if (rq->cfs.load.weight)
+-		rr_interval = NS_TO_JIFFIES(sched_slice(&rq->cfs, se));
++		rr_interval = NS_TO_JIFFIES(sched_slice(cfs_rq_of(se), se));
+ 
+ 	return rr_interval;
  }
- 
- static int
--print_unlock_inbalance_bug(struct task_struct *curr, struct lockdep_map *lock,
-+print_unlock_imbalance_bug(struct task_struct *curr, struct lockdep_map *lock,
- 			   unsigned long ip)
- {
- 	if (!debug_locks_off())
-@@ -3246,7 +3246,7 @@ static int check_unlock(struct task_struct *curr, struct lockdep_map *lock,
- 		return 0;
- 
- 	if (curr->lockdep_depth <= 0)
--		return print_unlock_inbalance_bug(curr, lock, ip);
-+		return print_unlock_imbalance_bug(curr, lock, ip);
- 
- 	return 1;
- }
-@@ -3317,7 +3317,7 @@ __lock_set_class(struct lockdep_map *lock, const char *name,
- 			goto found_it;
- 		prev_hlock = hlock;
- 	}
--	return print_unlock_inbalance_bug(curr, lock, ip);
-+	return print_unlock_imbalance_bug(curr, lock, ip);
- 
- found_it:
- 	lockdep_init_map(lock, name, key, 0);
-@@ -3384,7 +3384,7 @@ lock_release_non_nested(struct task_struct *curr,
- 			goto found_it;
- 		prev_hlock = hlock;
- 	}
--	return print_unlock_inbalance_bug(curr, lock, ip);
-+	return print_unlock_imbalance_bug(curr, lock, ip);
- 
- found_it:
- 	if (hlock->instance == lock)
