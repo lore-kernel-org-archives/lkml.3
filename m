@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab3AXKzj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:55:39 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:58114 "EHLO bear.ext.ti.com"
+	id S1754326Ab3AXKzt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:55:49 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:58115 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754141Ab3AXKy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754150Ab3AXKy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jan 2013 05:54:57 -0500
 From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
 To: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
@@ -15,9 +15,9 @@ CC: <anilkumar@ti.com>, <tony@atomide.com>, <hs@denx.de>,
         <sameo@linux.intel.com>, <khilman@ti.com>, <linux@arm.linux.org.uk>,
         <rob@landley.net>, <rob.herring@calxeda.com>,
         <grant.likely@secretlab.ca>, <manishv.b@ti.com>
-Subject: [PATCH 1/6] ARM: davinci: da850: add OF_DEV_AUXDATA entry for I2C0
-Date: Thu, 24 Jan 2013 16:25:15 +0530
-Message-ID: <1359024920-32190-2-git-send-email-manishv.b@ti.com>
+Subject: [PATCH 5/6] ARM: regulator: add tps6507x device tree data
+Date: Thu, 24 Jan 2013 16:25:19 +0530
+Message-ID: <1359024920-32190-6-git-send-email-manishv.b@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359024920-32190-1-git-send-email-manishv.b@ti.com>
 References: <1359024920-32190-1-git-send-email-manishv.b@ti.com>
@@ -27,37 +27,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add OF_DEV_AUXDATA for I2C0 controller driver in da850 board
-dt file to use I2C0 clock.
+Add device tree data for tps6507x regulator by adding
+all tps6507x regulator nodes. Regulators are initialized
+based on compatible name provided in tps6507x DT file.
+
+All tps6507x PMIC regulator device tree nodes are placed
+in a separate device tree include file (tps6507x.dtsi).
+tps6507x.dtsi file is created using datasheet
+http://www.ti.com/lit/ds/symlink/tps65070.pdf
+
+Tested on da850-evm.
 
 Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
 ---
- arch/arm/mach-davinci/da8xx-dt.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+ arch/arm/boot/dts/tps6507x.dtsi |   47 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 47 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/boot/dts/tps6507x.dtsi
 
-diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
-index 37c27af..100d644 100644
---- a/arch/arm/mach-davinci/da8xx-dt.c
-+++ b/arch/arm/mach-davinci/da8xx-dt.c
-@@ -37,11 +37,17 @@ static void __init da8xx_init_irq(void)
- 	of_irq_init(da8xx_irq_match);
- }
- 
-+struct of_dev_auxdata da850_evm_auxdata_lookup[] __initdata = {
-+	OF_DEV_AUXDATA("ti,davinci-i2c", 0x01c22000, "i2c_davinci.1", NULL),
-+	{}
-+};
+diff --git a/arch/arm/boot/dts/tps6507x.dtsi b/arch/arm/boot/dts/tps6507x.dtsi
+new file mode 100644
+index 0000000..4ae483e
+--- /dev/null
++++ b/arch/arm/boot/dts/tps6507x.dtsi
+@@ -0,0 +1,47 @@
++/*
++ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
- #ifdef CONFIG_ARCH_DAVINCI_DA850
- 
- static void __init da850_init_machine(void)
- {
--	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+	of_platform_populate(NULL, of_default_bus_match_table,
-+				da850_evm_auxdata_lookup, NULL);
- 
- 	da8xx_uart_clk_enable();
- }
++/*
++ * Integrated Power Management Chip
++ * http://www.ti.com/lit/ds/symlink/tps65070.pdf
++ */
++
++&tps {
++	compatible = "ti,tps6507x";
++
++	regulators {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		vdcdc1_reg: regulator@0 {
++			reg = <0>;
++			regulator-compatible = "VDCDC1";
++		};
++
++		vdcdc2_reg: regulator@1 {
++			reg = <1>;
++			regulator-compatible = "VDCDC2";
++		};
++
++		vdcdc3_reg: regulator@2 {
++			reg = <2>;
++			regulator-compatible = "VDCDC3";
++		};
++
++		ldo1_reg: regulator@3 {
++			reg = <3>;
++			regulator-compatible = "LDO1";
++		};
++
++		ldo2_reg: regulator@4 {
++			reg = <4>;
++			regulator-compatible = "LDO2";
++		};
++
++	};
++};
 -- 
 1.7.4.1
 
