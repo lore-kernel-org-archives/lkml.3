@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185Ab3AXBQi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 20:16:38 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60957
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752766Ab3AXBQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 20:16:00 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, davem@davemloft.net, jkosina@suse.cz,
-        James.Bottomley@HansenPartnership.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 2/6] Drivers: hv: Use consolidated GUID definitions
-Date: Wed, 23 Jan 2013 17:42:41 -0800
-Message-Id: <1358991765-22715-2-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1358991765-22715-1-git-send-email-kys@microsoft.com>
-References: <1358991737-22675-1-git-send-email-kys@microsoft.com>
- <1358991765-22715-1-git-send-email-kys@microsoft.com>
+	id S1752869Ab3AXB3S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 20:29:18 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61108 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241Ab3AXB3J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 20:29:09 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-b2-51008e62f178
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        js1304@gmail.com, Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 0/3] introduce static_vm for ARM-specific static mapped area
+Date: Thu, 24 Jan 2013 10:28:51 +0900
+Message-Id: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the consolidated GUID definitions in the util and balloon drivers.
+In current implementation, we used ARM-specific flag, that is,
+VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
+The purpose of static mapped area is to re-use static mapped area when
+entire physical address range of the ioremap request can be covered
+by this area.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/hv/hv_balloon.c |    4 +---
- drivers/hv/hv_util.c    |   24 ++++++++++++------------
- 2 files changed, 13 insertions(+), 15 deletions(-)
+This implementation causes needless overhead for some cases.
+For example, assume that there is only one static mapped area and
+vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
+deciding whether it is matched or not. Moreover, even if there is
+no static mapped area and vmlist has 300 areas, every time we call
+ioremap, we check 300 areas in now.
 
-diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index c02a33e..ce6f984 100644
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -1012,9 +1012,7 @@ static int balloon_remove(struct hv_device *dev)
- static const struct hv_vmbus_device_id id_table[] = {
- 	/* Dynamic Memory Class ID */
- 	/* 525074DC-8985-46e2-8057-A307DC18A502 */
--	{ VMBUS_DEVICE(0xdc, 0x74, 0x50, 0X52, 0x85, 0x89, 0xe2, 0x46,
--		       0x80, 0x57, 0xa3, 0x07, 0xdc, 0x18, 0xa5, 0x02)
--	},
-+	{ HV_DM_GUID, },
- 	{ },
- };
- 
-diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
-index a62a760..8b7868a 100644
---- a/drivers/hv/hv_util.c
-+++ b/drivers/hv/hv_util.c
-@@ -314,21 +314,21 @@ static int util_remove(struct hv_device *dev)
- 
- static const struct hv_vmbus_device_id id_table[] = {
- 	/* Shutdown guid */
--	{ VMBUS_DEVICE(0x31, 0x60, 0x0B, 0X0E, 0x13, 0x52, 0x34, 0x49,
--		       0x81, 0x8B, 0x38, 0XD9, 0x0C, 0xED, 0x39, 0xDB)
--	  .driver_data = (unsigned long)&util_shutdown },
-+	{ HV_SHUTDOWN_GUID,
-+	  .driver_data = (unsigned long)&util_shutdown
-+	},
- 	/* Time synch guid */
--	{ VMBUS_DEVICE(0x30, 0xe6, 0x27, 0x95, 0xae, 0xd0, 0x7b, 0x49,
--		       0xad, 0xce, 0xe8, 0x0a, 0xb0, 0x17, 0x5c, 0xaf)
--	  .driver_data = (unsigned long)&util_timesynch },
-+	{ HV_TS_GUID,
-+	  .driver_data = (unsigned long)&util_timesynch
-+	},
- 	/* Heartbeat guid */
--	{ VMBUS_DEVICE(0x39, 0x4f, 0x16, 0x57, 0x15, 0x91, 0x78, 0x4e,
--		       0xab, 0x55, 0x38, 0x2f, 0x3b, 0xd5, 0x42, 0x2d)
--	  .driver_data = (unsigned long)&util_heartbeat },
-+	{ HV_HEART_BEAT_GUID,
-+	  .driver_data = (unsigned long)&util_heartbeat
-+	},
- 	/* KVP guid */
--	{ VMBUS_DEVICE(0xe7, 0xf4, 0xa0, 0xa9, 0x45, 0x5a, 0x96, 0x4d,
--		       0xb8, 0x27, 0x8a, 0x84, 0x1e, 0x8c, 0x3,  0xe6)
--	  .driver_data = (unsigned long)&util_kvp },
-+	{ HV_KVP_GUID,
-+	  .driver_data = (unsigned long)&util_kvp
-+	},
- 	{ },
- };
- 
+If we construct a extra list for static mapped area, we can eliminate
+above mentioned overhead.
+With a extra list, if there is one static mapped area,
+we just check only one area and proceed next operation quickly.
+
+In fact, it is not a critical problem, because ioremap is not frequently
+used. But reducing overhead is better idea.
+
+Another reason for doing this work is for removing vm_struct list management,
+entirely. For more information, look at the following link.
+http://lkml.org/lkml/2012/12/6/184
+
+
+Changelog
+v2->v3:
+  coverletter: refer a link related to this work
+  [2/3]: drop @flags of find_static_vm_vaddr
+  Rebased on v3.8-rc4
+
+v1->v2: 
+  [2/3]: patch description is improved.
+  Rebased on v3.7-rc7
+
+Joonsoo Kim (3):
+  ARM: vmregion: remove vmregion code entirely
+  ARM: static_vm: introduce an infrastructure for static mapped area
+  ARM: mm: use static_vm for managing static mapped areas
+
+ arch/arm/include/asm/mach/static_vm.h |   51 ++++++++
+ arch/arm/mm/Makefile                  |    2 +-
+ arch/arm/mm/ioremap.c                 |   69 ++++-------
+ arch/arm/mm/mm.h                      |   10 --
+ arch/arm/mm/mmu.c                     |   54 +++++----
+ arch/arm/mm/static_vm.c               |   94 +++++++++++++++
+ arch/arm/mm/vmregion.c                |  205 ---------------------------------
+ arch/arm/mm/vmregion.h                |   31 -----
+ 8 files changed, 204 insertions(+), 312 deletions(-)
+ create mode 100644 arch/arm/include/asm/mach/static_vm.h
+ create mode 100644 arch/arm/mm/static_vm.c
+ delete mode 100644 arch/arm/mm/vmregion.c
+ delete mode 100644 arch/arm/mm/vmregion.h
+
 -- 
-1.7.4.1
+1.7.9.5
 
