@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab3AXUXy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:23:54 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50711 "EHLO
+	id S1756298Ab3AXUYI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:24:08 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:50748 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756420Ab3AXUWY (ORCPT
+	with ESMTP id S1756436Ab3AXUW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:22:24 -0500
+	Thu, 24 Jan 2013 15:22:26 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
@@ -15,231 +15,103 @@ Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Jan Kiszka <jan.kiszka@web.de>,
         Jason Wessel <jason.wessel@windriver.com>,
         Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 23/35] x86, kexec: Replace ident_mapping_init and init_level4_page
-Date: Thu, 24 Jan 2013 12:20:04 -0800
-Message-Id: <1359058816-7615-24-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>
+Subject: [PATCH 31/35] x86: Merge early kernel reserve for 32bit and 64bit
+Date: Thu, 24 Jan 2013 12:20:12 -0800
+Message-Id: <1359058816-7615-32-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
 References: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now ident_mapping_init is checking if pgd/pud is present for every 2M,
-so several 2Ms are in same PUD, it will keep checking if pud is there
-with same pud.
+They are the same, and we could move them out from head32/64.c to setup.c.
 
-init_level4_page just does not check existing pgd/pud.
-
-We could use generic mapping_init with different settings in info to
-replace those two local grown version functions.
+We are using memblock, and it could handle overlapping properly, so
+we don't need to reserve some at first to hold the location, and just
+need to make sure we reserve them before we are using memblock to find
+free mem to use.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Alexander Duyck <alexander.h.duyck@intel.com>
 ---
- arch/x86/kernel/machine_kexec_64.c |  161 ++++++------------------------------
- 1 file changed, 26 insertions(+), 135 deletions(-)
+ arch/x86/kernel/head32.c |    9 ---------
+ arch/x86/kernel/head64.c |    9 ---------
+ arch/x86/kernel/setup.c  |    9 +++++++++
+ 3 files changed, 9 insertions(+), 18 deletions(-)
 
-diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-index be14ee1..d2d7e02 100644
---- a/arch/x86/kernel/machine_kexec_64.c
-+++ b/arch/x86/kernel/machine_kexec_64.c
-@@ -16,144 +16,12 @@
- #include <linux/io.h>
- #include <linux/suspend.h>
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index b071d41..17f7792 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -30,9 +30,6 @@ static void __init i386_default_early_setup(void)
  
-+#include <asm/init.h>
- #include <asm/pgtable.h>
- #include <asm/tlbflush.h>
- #include <asm/mmu_context.h>
- #include <asm/debugreg.h>
- 
--static int init_one_level2_page(struct kimage *image, pgd_t *pgd,
--				unsigned long addr)
--{
--	pud_t *pud;
--	pmd_t *pmd;
--	struct page *page;
--	int result = -ENOMEM;
--
--	addr &= PMD_MASK;
--	pgd += pgd_index(addr);
--	if (!pgd_present(*pgd)) {
--		page = kimage_alloc_control_pages(image, 0);
--		if (!page)
--			goto out;
--		pud = (pud_t *)page_address(page);
--		clear_page(pud);
--		set_pgd(pgd, __pgd(__pa(pud) | _KERNPG_TABLE));
--	}
--	pud = pud_offset(pgd, addr);
--	if (!pud_present(*pud)) {
--		page = kimage_alloc_control_pages(image, 0);
--		if (!page)
--			goto out;
--		pmd = (pmd_t *)page_address(page);
--		clear_page(pmd);
--		set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
--	}
--	pmd = pmd_offset(pud, addr);
--	if (!pmd_present(*pmd))
--		set_pmd(pmd, __pmd(addr | __PAGE_KERNEL_LARGE_EXEC));
--	result = 0;
--out:
--	return result;
--}
--
--static int ident_mapping_init(struct kimage *image, pgd_t *level4p,
--				unsigned long mstart, unsigned long mend)
--{
--	int result;
--
--	mstart = round_down(mstart, PMD_SIZE);
--	mend   = round_up(mend - 1, PMD_SIZE);
--
--	while (mstart < mend) {
--		result = init_one_level2_page(image, level4p, mstart);
--		if (result)
--			return result;
--
--		mstart += PMD_SIZE;
--	}
--
--	return 0;
--}
--
--static void init_level2_page(pmd_t *level2p, unsigned long addr)
--{
--	unsigned long end_addr;
--
--	addr &= PAGE_MASK;
--	end_addr = addr + PUD_SIZE;
--	while (addr < end_addr) {
--		set_pmd(level2p++, __pmd(addr | __PAGE_KERNEL_LARGE_EXEC));
--		addr += PMD_SIZE;
--	}
--}
--
--static int init_level3_page(struct kimage *image, pud_t *level3p,
--				unsigned long addr, unsigned long last_addr)
--{
--	unsigned long end_addr;
--	int result;
--
--	result = 0;
--	addr &= PAGE_MASK;
--	end_addr = addr + PGDIR_SIZE;
--	while ((addr < last_addr) && (addr < end_addr)) {
--		struct page *page;
--		pmd_t *level2p;
--
--		page = kimage_alloc_control_pages(image, 0);
--		if (!page) {
--			result = -ENOMEM;
--			goto out;
--		}
--		level2p = (pmd_t *)page_address(page);
--		init_level2_page(level2p, addr);
--		set_pud(level3p++, __pud(__pa(level2p) | _KERNPG_TABLE));
--		addr += PUD_SIZE;
--	}
--	/* clear the unused entries */
--	while (addr < end_addr) {
--		pud_clear(level3p++);
--		addr += PUD_SIZE;
--	}
--out:
--	return result;
--}
--
--
--static int init_level4_page(struct kimage *image, pgd_t *level4p,
--				unsigned long addr, unsigned long last_addr)
--{
--	unsigned long end_addr;
--	int result;
--
--	result = 0;
--	addr &= PAGE_MASK;
--	end_addr = addr + (PTRS_PER_PGD * PGDIR_SIZE);
--	while ((addr < last_addr) && (addr < end_addr)) {
--		struct page *page;
--		pud_t *level3p;
--
--		page = kimage_alloc_control_pages(image, 0);
--		if (!page) {
--			result = -ENOMEM;
--			goto out;
--		}
--		level3p = (pud_t *)page_address(page);
--		result = init_level3_page(image, level3p, addr, last_addr);
--		if (result)
--			goto out;
--		set_pgd(level4p++, __pgd(__pa(level3p) | _KERNPG_TABLE));
--		addr += PGDIR_SIZE;
--	}
--	/* clear the unused entries */
--	while (addr < end_addr) {
--		pgd_clear(level4p++);
--		addr += PGDIR_SIZE;
--	}
--out:
--	return result;
--}
--
- static void free_transition_pgtable(struct kimage *image)
+ void __init i386_start_kernel(void)
  {
- 	free_page((unsigned long)image->arch.pud);
-@@ -203,15 +71,37 @@ err:
- 	return result;
+-	memblock_reserve(__pa_symbol(_text),
+-			 (unsigned long)__bss_stop - (unsigned long)_text);
+-
+ 	/* Call the subarch specific early setup function */
+ 	switch (boot_params.hdr.hardware_subarch) {
+ 	case X86_SUBARCH_MRST:
+@@ -46,11 +43,5 @@ void __init i386_start_kernel(void)
+ 		break;
+ 	}
+ 
+-	/*
+-	 * At this point everything still needed from the boot loader
+-	 * or BIOS or kernel text should be early reserved or marked not
+-	 * RAM in e820. All other memory is free game.
+-	 */
+-
+ 	start_kernel();
  }
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index e63d29a..d9d7c75 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -184,16 +184,7 @@ void __init x86_64_start_reservations(char *real_mode_data)
+ 	if (!boot_params.hdr.version)
+ 		copy_bootdata(__va(real_mode_data));
  
-+static void *alloc_pgt_page(void *data)
-+{
-+	struct kimage *image = (struct kimage *)data;
-+	struct page *page;
-+	void *p = NULL;
-+
-+	page = kimage_alloc_control_pages(image, 0);
-+	if (page) {
-+		p = page_address(page);
-+		clear_page(p);
-+	}
-+
-+	return p;
-+}
-+
- static int init_pgtable(struct kimage *image, unsigned long start_pgtable)
+-	memblock_reserve(__pa_symbol(_text),
+-			 (unsigned long)__bss_stop - (unsigned long)_text);
+-
+ 	reserve_ebda_region();
+ 
+-	/*
+-	 * At this point everything still needed from the boot loader
+-	 * or BIOS or kernel text should be early reserved or marked not
+-	 * RAM in e820. All other memory is free game.
+-	 */
+-
+ 	start_kernel();
+ }
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 4d6179f..be6e435 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -805,8 +805,17 @@ early_param("reservelow", parse_reservelow);
+ 
+ void __init setup_arch(char **cmdline_p)
  {
-+	struct x86_mapping_info info = {
-+		.alloc_pgt_page	= alloc_pgt_page,
-+		.context	= image,
-+		.pmd_flag	= __PAGE_KERNEL_LARGE_EXEC,
-+	};
- 	unsigned long mstart, mend;
- 	pgd_t *level4p;
- 	int result;
- 	int i;
++	memblock_reserve(__pa_symbol(_text),
++			 (unsigned long)__bss_stop - (unsigned long)_text);
++
+ 	early_reserve_initrd();
  
- 	level4p = (pgd_t *)__va(start_pgtable);
--	result = init_level4_page(image, level4p, 0, max_pfn << PAGE_SHIFT);
-+	clear_page(level4p);
-+	result = kernel_ident_mapping_init(&info, level4p,
-+						0, max_pfn << PAGE_SHIFT);
- 	if (result)
- 		return result;
- 
-@@ -225,7 +115,8 @@ static int init_pgtable(struct kimage *image, unsigned long start_pgtable)
- 		mstart = image->segment[i].mem;
- 		mend   = mstart + image->segment[i].memsz;
- 
--		result = ident_mapping_init(image, level4p, mstart, mend);
-+		result = kernel_ident_mapping_init(&info,
-+						 level4p, mstart, mend);
- 
- 		if (result)
- 			return result;
++	/*
++	 * At this point everything still needed from the boot loader
++	 * or BIOS or kernel text should be early reserved or marked not
++	 * RAM in e820. All other memory is free game.
++	 */
++
+ #ifdef CONFIG_X86_32
+ 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+ 	visws_early_detect();
 -- 
 1.7.10.4
 
