@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab3AXPJZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:09:25 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:45348 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753371Ab3AXPJX (ORCPT
+	id S1754552Ab3AXPLM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:11:12 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:42666 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026Ab3AXPLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:09:23 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
+	Thu, 24 Jan 2013 10:11:09 -0500
+From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
-Cc: tj@kernel.org, pmatouse@redhat.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 08/13] sg_io: whitelist a few more commands for tapes
-Date: Thu, 24 Jan 2013 16:00:44 +0100
-Message-Id: <1359039649-17734-9-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
-References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH v7 01/18] perf, x86: Support CPU specific sysfs events
+Date: Thu, 24 Jan 2013 16:10:25 +0100
+Message-Id: <1359040242-8269-2-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359040242-8269-1-git-send-email-eranian@google.com>
+References: <1359040242-8269-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tapes have no problematic overlap, but quite a few commands
-are missing that are useful when operating tapes with /dev/sg.
-This patch adds them.
+From: Andi Kleen <ak@linux.intel.com>
 
-START STOP UNIT, FORMAT UNIT and SEEK(10) have similar meanings
-but different names for tapes, so move them to the tape section
-of the whitelist.
+Add a way for the CPU initialization code to register additional events,
+and merge them into the events attribute directory. Used in the next
+patch.
 
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- block/scsi_ioctl.c |   28 ++++++++++++++++++++++++----
- 1 files changed, 24 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |   33 +++++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event.h |    1 +
+ 2 files changed, 34 insertions(+)
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 6af330a..49cd98a 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -141,9 +141,9 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 	sgio_bitmap_set(0x03, -1                             , read);  // REQUEST SENSE
- 	sgio_bitmap_set(0x12, -1                             , read);  // INQUIRY
- 	sgio_bitmap_set(0x1A, -1                             , read);  // MODE SENSE(6)
--	sgio_bitmap_set(0x1B, D|T|    W|R|O|  A|  B|K|V|F    , read);  // START STOP UNIT
-+	sgio_bitmap_set(0x1B, D|      W|R|O|  A|  B|K|  F    , read);  // START STOP UNIT
- 	sgio_bitmap_set(0x1C,                    ~B          , read);  // RECEIVE DIAGNOSTIC RESULTS
--	sgio_bitmap_set(0x2B, D|T|    W|R|O|        K        , read);  // SEEK(10)
-+	sgio_bitmap_set(0x2B, D|      W|R|O|        K        , read);  // SEEK(10)
- 	sgio_bitmap_set(0x3C,                    ~B          , read);  // READ BUFFER
- 	sgio_bitmap_set(0x4D, -1                             , read);  // LOG SENSE
- 	sgio_bitmap_set(0x5A, -1                             , read);  // MODE SENSE(10)
-@@ -175,7 +175,7 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 6774c17..015668c 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1335,6 +1335,30 @@ static void __init filter_events(struct attribute **attrs)
+ 	}
+ }
  
- 	/* write */
- 
--	sgio_bitmap_set(0x04, D|T|      R|O                  , write); // FORMAT UNIT
-+	sgio_bitmap_set(0x04, D|        R|O                  , write); // FORMAT UNIT
- 	sgio_bitmap_set(0x0A, D|T|    W|  O                  , write); // WRITE(6)
- 	sgio_bitmap_set(0x2A, D|      W|R|O|      B|K        , write); // WRITE(10)
- 	sgio_bitmap_set(0x2E, D|      W|R|O|      B|K        , write); // WRITE AND VERIFY(10)
-@@ -219,7 +219,7 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 	sgio_bitmap_set(0x23,           R                    , read);  // READ FORMAT CAPACITIES
- 	sgio_bitmap_set(0x42,           R                    , read);  // READ SUB-CHANNEL
- 	sgio_bitmap_set(0x43,           R                    , read);  // READ TOC/PMA/ATIP
--	sgio_bitmap_set(0x44,   T|      R|            V      , read);  // READ HEADER
-+	sgio_bitmap_set(0x44,           R                    , read);  // READ HEADER
- 	sgio_bitmap_set(0x45,           R                    , read);  // PLAY AUDIO(10)
- 	sgio_bitmap_set(0x46,           R                    , read);  // GET CONFIGURATION
- 	sgio_bitmap_set(0x47,           R                    , read);  // PLAY AUDIO MSF
-@@ -257,7 +257,27 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 
- 	/* (mostly) tape */
- 
-+	sgio_bitmap_set(0x01,   T                            , read);  // REWIND
-+	sgio_bitmap_set(0x05,   T                            , read);  // READ BLOCK LIMITS
-+	sgio_bitmap_set(0x0F,   T                            , read);  // READ REVERSE(6)
-+	sgio_bitmap_set(0x13,   T                            , read);  // VERIFY(6)
-+	sgio_bitmap_set(0x1B,   T|                    V      , read);  // LOAD UNLOAD
-+	sgio_bitmap_set(0x2B,   T                            , read);  // LOCATE(10)
-+	sgio_bitmap_set(0x34,   T                            , read);  // READ POSITION
-+	sgio_bitmap_set(0x44,   T|                    V      , read);  // REPORT DENSITY SUPPORT
-+	sgio_bitmap_set(0x81,   T                            , read);  // READ REVERSE(16)
-+	sgio_bitmap_set(0x92,   T                            , read);  // LOCATE(16)
++/* Merge two pointer arrays */
++static __init struct attribute **merge_attr(struct attribute **a,
++					    struct attribute **b)
++{
++	struct attribute **new;
++	int j, i;
 +
-+	sgio_bitmap_set(0x04,   T                            , write); // FORMAT MEDIUM
-+	sgio_bitmap_set(0x0B,   T                            , write); // SET CAPACITY
-+	sgio_bitmap_set(0x10,   T                            , write); // WRITE FILEMARKS(6)
-+	sgio_bitmap_set(0x11,   T                            , write); // SPACE(6)
-+	sgio_bitmap_set(0x14,   T|L                          , write); // RECOVER BUFFERED DATA
- 	sgio_bitmap_set(0x19,   T                            , write); // ERASE(6)
-+	sgio_bitmap_set(0x80,   T                            , write); // WRITE FILEMARKS(16)
-+	sgio_bitmap_set(0x82,   T                            , write); // ALLOW OVERWRITE
-+	sgio_bitmap_set(0x91,   T                            , write); // SPACE(16)
-+	sgio_bitmap_set(0x93,   T                            , write); // ERASE(16)
++	for (j = 0; a[j]; j++)
++		;
++	for (i = 0; b[i]; i++)
++		j++;
++	j++;
++	new = kmalloc(sizeof(struct attribute *) * j, GFP_KERNEL);
++	if (!new)
++		return NULL;
++	j = 0;
++	for (i = 0; a[i]; i++)
++		new[j++] = a[i];
++	for (i = 0; b[i]; i++)
++		new[j++] = b[i];
++	new[j] = NULL;
++	return new;
++}
++
+ static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
+ 			  char *page)
+ {
+@@ -1476,6 +1500,15 @@ static int __init init_hw_perf_events(void)
+ 	else
+ 		filter_events(x86_pmu_events_group.attrs);
  
- 	/* communication devices (obsolete) */
++	if (x86_pmu.cpu_events) {
++		struct attribute *tmp;
++
++		tmp = merge_attr(x86_pmu_events_group.attrs,
++				 x86_pmu.cpu_events);
++		if (!WARN_ON(!tmp))
++			x86_pmu_events_group.attrs = tmp;
++	}
++
+ 	pr_info("... version:                %d\n",     x86_pmu.version);
+ 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
+ 	pr_info("... generic registers:      %d\n",     x86_pmu.num_counters);
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 115c1ea..4170043 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -355,6 +355,7 @@ struct x86_pmu {
+ 	struct attribute **format_attrs;
  
+ 	ssize_t		(*events_sysfs_show)(char *page, u64 config);
++	struct attribute **cpu_events;
+ 
+ 	/*
+ 	 * CPU Hotplug hooks
 -- 
-1.7.1
-
+1.7.9.5
 
