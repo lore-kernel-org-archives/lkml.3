@@ -1,90 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab3AXTPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:15:19 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:37092 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab3AXTPR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:15:17 -0500
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
-        Naveen Krishna <naveenkrishna.ch@gmail.com>
-Subject: Re: [PATCH] iio: adc: add exynos5 adc driver under iio framwork
-Date: Thu, 24 Jan 2013 20:15:14 +0100
-Message-ID: <1523320.h6ZorTqNLc@flatron>
-User-Agent: KMail/4.9.5 (Linux/3.7.2-gentoo; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51017B4D.7000105@metafoo.de>
-References: <1358775470-21278-1-git-send-email-ch.naveen@samsung.com> <CAD=FV=VRKqeRxvcV1-aQCbu0FoTpMiVVXoNiVEx5SxLe3N_tgQ@mail.gmail.com> <51017B4D.7000105@metafoo.de>
+	id S1755264Ab3AXTQF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:16:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33417 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755075Ab3AXTQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 14:16:00 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <f6cbfec9c014433fa54af61d8f436ebb@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1358990259-22551-1-git-send-email-kys@microsoft.com> <5101035D02000078000B8FFD@nat28.tlf.novell.com> <27092660926e4d3f80394697cc0dc858@SN2PR03MB061.namprd03.prod.outlook.com> <51016C3202000078000B943E@nat28.tlf.novell.com> <f6cbfec9c014433fa54af61d8f436ebb@SN2PR03MB061.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: RE: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 24 Jan 2013 13:10:15 -0600
+To: KY Srinivasan <kys@microsoft.com>, Jan Beulich <JBeulich@suse.com>
+CC: "olaf@aepfle.de" <olaf@aepfle.de>, "bp@alien8.de" <bp@alien8.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <52cb66cd-8a8f-461c-adc4-0026afb8c1fd@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+I also have to point out the obvious problem with Xen masquerading as HyperV without implementing the same feature set...
 
-On Thursday 24 of January 2013 19:19:57 Lars-Peter Clausen wrote:
-> On 01/24/2013 05:12 PM, Doug Anderson wrote:
-> > Lars,
-> > 
-> > Thank you for your comments / thoughts...
-> 
-> Hi,
-> 
-> > On Thu, Jan 24, 2013 at 1:54 AM, Lars-Peter Clausen <lars@metafoo.de> 
-wrote:
-> >> adc: adc@12D10000 {
-> >> 
-> >>         #io-channel-cells = <1>;
-> >>         io-channel-output-names = "adc1", "adc2", ...;
-> >>         
-> >>         ncp15wb473@0 {
-> >>         
-> >>                 compatible = "ntc,ncp15wb473";
-> >>                 ...
-> >>                 io-channels = <&adc 0>; // First ADC channel
-> > 
-> > I'm not an expert, but I think the typical way is:
-> > * No need to include a handle to &adc.  It's logically our parent.  In
-> > a similar way i2c devices don't specify their parent bus--they are
-> > just listed under it.
-> > * The "0" should be specified with reg = <0>
-> 
-> The relationship between the IIO sensor device and the consumer device
-> is not always a parent child relationship. In this case it makes sense
-> to have the ADC as the parent for the thermistors. But for other cases
-> this may not be true. E.g. take a touchscreen or power monitoring
-> platform device which uses the IIO device to do measurements.
+KY Srinivasan <kys@microsoft.com> wrote:
 
-The policy is to use children with reg property only inside a node 
-representing a bus controller through which the child device is being 
-accessed (like I2C, SPI).
+>
+>
+>> -----Original Message-----
+>> From: Jan Beulich [mailto:JBeulich@suse.com]
+>> Sent: Thursday, January 24, 2013 11:16 AM
+>> To: KY Srinivasan
+>> Cc: olaf@aepfle.de; bp@alien8.de; apw@canonical.com; x86@kernel.org;
+>> tglx@linutronix.de; devel@linuxdriverproject.org;
+>gregkh@linuxfoundation.org;
+>> jasowang@redhat.com; linux-kernel@vger.kernel.org; hpa@zytor.com
+>> Subject: RE: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts
+>as
+>> special hypervisor interrupts
+>> 
+>> >>> On 24.01.13 at 17:07, KY Srinivasan <kys@microsoft.com> wrote:
+>> 
+>> >
+>> >> -----Original Message-----
+>> >> From: Jan Beulich [mailto:JBeulich@suse.com]
+>> >> Sent: Thursday, January 24, 2013 3:48 AM
+>> >> To: KY Srinivasan
+>> >> Cc: olaf@aepfle.de; bp@alien8.de; apw@canonical.com;
+>x86@kernel.org;
+>> >> tglx@linutronix.de; devel@linuxdriverproject.org;
+>> > gregkh@linuxfoundation.org;
+>> >> jasowang@redhat.com; linux-kernel@vger.kernel.org; hpa@zytor.com
+>> >> Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus
+>interrupts as
+>> >> special hypervisor interrupts
+>> >>
+>> >> >>> On 24.01.13 at 02:17, "K. Y. Srinivasan" <kys@microsoft.com>
+>wrote:
+>> >> > @@ -69,6 +74,11 @@ static void __init
+>ms_hyperv_init_platform(void)
+>> >> >  	       ms_hyperv.features, ms_hyperv.hints);
+>> >> >
+>> >> >  	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+>> >> > +
+>> >> > +	/*
+>> >> > +	 * Setup the IDT for hypervisor callback.
+>> >> > +	 */
+>> >> > +	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR,
+>> >> hyperv_callback_vector);
+>> >>
+>> >> Isn't doing this unconditionally here as problematic as the call
+>to
+>> >> clocksource_register_hz() turned out to be when Xen's Hyper-V
+>> >> shim reacts to the CPUID inquiry above?
+>> >
+>> > I was not sure what to make this conditional on at run-time. To the
+>extent
+>> > that Xen emulation of Hyper-V is complete, this will be a problem.
+>Does Xen
+>> > return all the "feature bits" of Hyper-V. I could discriminate on a
+>feature
+>> > that
+>> > Xen does not plan to emulate.
+>> 
+>> I've no idea what plans there might be, but that's the code
+>> there is currently:
+>> 
+>> int cpuid_viridian_leaves(unsigned int leaf, unsigned int *eax,
+>>                           unsigned int *ebx, unsigned int *ecx,
+>>                           unsigned int *edx)
+>> {
+>>     struct domain *d = current->domain;
+>> 
+>>     if ( !is_viridian_domain(d) )
+>>         return 0;
+>> 
+>>     leaf -= 0x40000000;
+>>     if ( leaf > 6 )
+>>         return 0;
+>> 
+>>     *eax = *ebx = *ecx = *edx = 0;
+>>     switch ( leaf )
+>>     {
+>>     case 0:
+>>         *eax = 0x40000006; /* Maximum leaf */
+>>         *ebx = 0x7263694d; /* Magic numbers  */
+>>         *ecx = 0x666F736F;
+>>         *edx = 0x76482074;
+>>         break;
+>>     case 1:
+>>         *eax = 0x31237648; /* Version number */
+>>         break;
+>>     case 2:
+>>         /* Hypervisor information, but only if the guest has set its
+>>            own version number. */
+>>         if ( d->arch.hvm_domain.viridian.guest_os_id.raw == 0 )
+>>             break;
+>>         *eax = 1; /* Build number */
+>>         *ebx = (xen_major_version() << 16) | xen_minor_version();
+>>         *ecx = 0; /* SP */
+>>         *edx = 0; /* Service branch and number */
+>>         break;
+>>     case 3:
+>>         /* Which hypervisor MSRs are available to the guest */
+>>         *eax = (CPUID3A_MSR_APIC_ACCESS |
+>>                 CPUID3A_MSR_HYPERCALL   |
+>>                 CPUID3A_MSR_VP_INDEX);
+>>         break;
+>>     case 4:
+>>         /* Recommended hypercall usage. */
+>>         if ( (d->arch.hvm_domain.viridian.guest_os_id.raw == 0) ||
+>>              (d->arch.hvm_domain.viridian.guest_os_id.fields.os < 4)
+>)
+>>             break;
+>>         *eax = (CPUID4A_MSR_BASED_APIC |
+>>                 CPUID4A_RELAX_TIMER_INT);
+>>         *ebx = 2047; /* long spin count */
+>>         break;
+>>     }
+>> 
+>>     return 1;
+>> }
+>> 
+>> Question is - considering you stated that this is supported
+>> starting in Win8, doesn't Hyper-V itself announce that
+>> capability in some explicit way?
+>
+>Thanks Jan. Unfortunately I don't think tis interrupt delivery model is
+>specified via a "feature" bit (I will check with the Windows guys).
+>Perhaps, we
+>can have a Hyper-V specific compilation switch to address the Xen
+>emulation issue.
+>
+>Regards,
+>
+>K. Y  
+>> 
+>> Jan
+>> 
+>> 
 
-I would see IIO bindings similar to what we have with GPIOs, interrupts or 
-regulators, so io-channels = <&iio-controller channel> seems fine (or 
-rather iio-channels) with the node under appropriate parent.
-
-> > To implement this I'd imagine that we'll need a new API call, right?
-> > In this case the thermistor driver won't know the name of the channel.
-> > 
-> >  It can find the ADC (the struct device and probably other things) and
-> > 
-> > knows a channel index.  Am I understanding properly?
-> 
-> This can be done by adding a new api call, but it would be best if both
-> dt and non-dt based consumers can use the same function. I outlined one
-> possible solution how this can be done in the previous mail to Naveen.
-
-In case of the solution I mentioned, implementation would be almost 
-identical to what is done with GPIOs (see drivers/gpio/gpiolib-of.c).
-
-Best regards,
-Tomasz
-
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
