@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881Ab3AXBEB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 20:04:01 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46000 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752078Ab3AXBDw (ORCPT
+	id S1752934Ab3AXBKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 20:10:30 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:44518 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab3AXBKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 20:03:52 -0500
-Date: Thu, 24 Jan 2013 12:03:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>, Tom Herbert <therbert@google.com>
-Subject: linux-next: manual merge of the net-next tree with the mips tree
-Message-Id: <20130124120342.242bd830dff336322018e0be@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_Jan_2013_12_03_42_+1100_h_qRkXBuoT/Ylq/J"
+	Wed, 23 Jan 2013 20:10:22 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-1b-510089fd4e27
+Message-id: <51008A05.9030408@samsung.com>
+Date: Thu, 24 Jan 2013 10:10:29 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] extcon: arizona: Disable debouce for accessory removal
+ detection
+References: <1358957029-5421-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-reply-to: <1358957029-5421-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t8zPd2/nQyBBmdbOS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGmt19LAVnmCuuzTnE2sD4nqmLkZNDQsBEon9zMyuELSZx4d56
+	ti5GLg4hgWWMEu/fH2WEKbq9/jELRGIRo8TfaUtYIZxOJonJ+7+wg1TxCmhJnF/+D8jm4GAR
+	UJU4cUICJMwGFN7/4gYbSFhUIELiVz8HRLWgxI/J91hAwiJA83/frwQJMwsUSMw72gG2Vlgg
+	WmLG1n9gw4UEQiRals5nA7E5BUIlJh9czQRRryOxv3UaG4QtL7F5zVtmkMskBJrZJV7uX80M
+	kmAREJD4NvkQ2C4JAVmJTQeYId6SlDi44gbLBEaxWUgumoVk7CwkYxcwMq9iFE0tSC4oTkrP
+	NdQrTswtLs1L10vOz93ECIkHqR2MKxssDjEKcDAq8fAqqDIECrEmlhVX5h5ilOBgVhLhVasH
+	CvGmJFZWpRblxxeV5qQWH2JMBjpwIrOUaHI+MFbzSuINjQ2MDQ0tDc1MLU0NSBNWEudlPPUk
+	QEggPbEkNTs1tSC1CGYLEwenVAOjgNoP3yMT/iVdDjPy6XOPTVj9YVWy0lrVO1Ih0nNMF+eG
+	K27u3+Ah9r/qAP+M2R6VtgvYHzjf3X55stLkyCMTlxbrLrzWdOC76D/bn99ifmS5dR6b8vfO
+	DcbO8rqlITd+tv3yevx+3c4EJja1vxEKGwwYF64OcN+31cdw+j32339nvN553mOdkxJLcUai
+	oRZzUXEiABTdFTjLAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOIsWRmVeSWpSXmKPExsVy+t9jAd2/nQyBBtv2M1lc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjDW7+1gKzjBXXJtziLWB
+	8T1TFyMnh4SAicTt9Y9ZIGwxiQv31rN1MXJxCAksYpT4O20JK4TTySQxef8XdpAqXgEtifPL
+	/wHZHBwsAqoSJ05IgITZgML7X9xgAwmLCkRI/OrngKgWlPgx+R4LSFgEaNfv+5UgYWaBAol5
+	RzsYQWxhgWiJGVv/gQ0XEgiRaFk6nw3E5hQIlZh8cDUTRL2OxP7WaWwQtrzE5jVvmScwCsxC
+	smEWkrJZSMoWMDKvYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiOtmdSOxhXNlgcYhTgYFTi
+	4VVQZQgUYk0sK67MPcQowcGsJMKrVg8U4k1JrKxKLcqPLyrNSS0+xJgM9P5EZinR5HxgIsgr
+	iTc0NjEzsjQyMzYxNzYmTVhJnJfx1JMAIYH0xJLU7NTUgtQimC1MHJxSDYwix2w37/KTa/hx
+	itFht/HU9L/5gs4XZ8g6nvi9v707qyLDwikpYbXsPd1bp1n7b0Wr/OZRELm4yybWf2OLd1/A
+	6YLOzsrXqs/n2qY38r9PCtmw3+DD4e7t333frHqT/00saNv088dL2w43FOzVaP1U8tnzjq3/
+	0azZEpzrDAtX7DU/P+Wk3QElluKMREMt5qLiRACYu3UX+gIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Jan_2013_12_03_42_+1100_h_qRkXBuoT/Ylq/J
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/24/2013 01:03 AM, Mark Brown wrote:
+> Ensure we clamp as quickly as possible after removal by disabling the
+> debounce while there is an accessory present.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/extcon/extcon-arizona.c |    9 +++++++++
+>  1 file changed, 9 insertions(+)
 
-Hi all,
+Patches 1-4 applied.
 
-Today's linux-next merge of the net-next tree got a conflict in
-arch/mips/include/uapi/asm/socket.h between commit c4ff4842935c ("MIPS:
-Whitespace cleanup") from the mips tree and commit 055dc21a1d1d
-("soreuseport: infrastructure") from the net-next tree.
+Patch 5 failed to build, so I sent reply related to build error of Patch 5.
 
-Also, that net-next tree patch can't be right (it removes an "#if 0" but
-not the matching "#endif") - I fixed that as well.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/mips/include/uapi/asm/socket.h
-index cc208f9,7e27236..0000000
---- a/arch/mips/include/uapi/asm/socket.h
-+++ b/arch/mips/include/uapi/asm/socket.h
-@@@ -28,12 -28,11 +28,10 @@@
-  #define SO_LINGER	0x0080	/* Block on close of a reliable
-  				   socket to transmit pending data.  */
-  #define SO_OOBINLINE 0x0100	/* Receive out-of-band data in-band.  */
-- #if 0
-- To add: #define SO_REUSEPORT 0x0200	/* Allow local address and port reuse=
-.	*/
-- #endif
-+ #define SO_REUSEPORT 0x0200	/* Allow local address and port reuse.  */
- -#endif
- =20
-  #define SO_TYPE		0x1008	/* Compatible name for SO_STYLE.  */
- -#define SO_STYLE	SO_TYPE	/* Synonym */
- +#define SO_STYLE	SO_TYPE /* Synonym */
-  #define SO_ERROR	0x1007	/* get error status and clear */
-  #define SO_SNDBUF	0x1001	/* Send buffer size. */
-  #define SO_RCVBUF	0x1002	/* Receive buffer. */
-
---Signature=_Thu__24_Jan_2013_12_03_42_+1100_h_qRkXBuoT/Ylq/J
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRAIhuAAoJEECxmPOUX5FEQ1YP/jtJ2cJ4Ru6Zm+3/krE17wOR
-1Na22SozGiHSl191c7rz+ZbTBMw6xO+OI9Qev9uADNlxrCqTJBTYq4jJ+B5LNQoe
-F9fCddBIf4uquOvs7l8PojK84DOWD5O+e+MWOmpGk98HRRG0k/vv5b0uaSB2SEwG
-nTkNtGPmXHSFqKi9Kl6yPppo44I20G+nTfgJjpcy9V6f41NAEtWL7Td+pqwSL0pD
-WDHodCPU85AMbPXV977lFSZ4hVmQv4CTkMYuyM11cJaDfa7/tSaNIiePHo4lSAnK
-UblxpLs56b1e826HdNSfIgvE3MtPBtxEiwsKjk9F+J5a+OBKq2XXVB72h6JCVOwT
-uHPDJhiZGzZW7UjcjMyIhlxuF8TZEjQRmw66F47/ITp19TtaPcOO/mQ+xiw5WFiv
-jr9XDEIV5AnGk4SztxuZ7ydw2MeQARsTPgNlDFXVZlNSkyDWaXjDTaaaFCdMy7sS
-7oKXHvam1qfi/rXRpd9OmmKb8f0j9vBBFrXxnuB5daEvnhvfc/oFFCjj4nai/uON
-7mZdxpllmWfimXP0Nwv6L+74toKT3Tzn3pjXqxMXgIzdsyat/mL6P7+S12SBzFgc
-H7iKF/a0VPIo79LuhPfhZ2mLAhEEIwjwRHP6bSRHu5axH9Ph4hHND/791IyL8I1Q
-u+wAyaypePJ+qTZ3B2By
-=16p1
------END PGP SIGNATURE-----
-
---Signature=_Thu__24_Jan_2013_12_03_42_+1100_h_qRkXBuoT/Ylq/J--
+Thanks,
+Chanwoo Choi
