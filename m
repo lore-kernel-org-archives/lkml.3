@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab3AXLHv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:07:51 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:42799 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054Ab3AXLHo (ORCPT
+	id S1753354Ab3AXLI1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:08:27 -0500
+Received: from kiruna.synopsys.com ([198.182.44.80]:51381 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920Ab3AXLIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:07:44 -0500
+	Thu, 24 Jan 2013 06:08:19 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v3 10/71] ARC: Checksum/byteorder/swab routines
-Date: Thu, 24 Jan 2013 16:35:51 +0530
-Message-ID: <1359025589-22277-8-git-send-email-vgupta@synopsys.com>
+CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v3 15/71] ARC: Interrupt Handling
+Date: Thu, 24 Jan 2013 16:35:55 +0530
+Message-ID: <1359025589-22277-12-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
 References: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
@@ -23,25 +24,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TBD: do_csum still needs to be written in asm
+This contains:
+-bootup arch IRQ init: init_IRQ(), arc_init_IRQ()
+-generic IRQ subsystem glue: arch_do_IRQ()
+-basic IRQ chip setup for in-core intc
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/arc/include/asm/byteorder.h |   18 +++++++
- arch/arc/include/asm/checksum.h  |  101 ++++++++++++++++++++++++++++++++++++++
- arch/arc/include/asm/swab.h      |   98 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 217 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/include/asm/byteorder.h
- create mode 100644 arch/arc/include/asm/checksum.h
- create mode 100644 arch/arc/include/asm/swab.h
+ arch/arc/include/asm/arcregs.h |    3 +
+ arch/arc/include/asm/hw_irq.h  |    7 +++
+ arch/arc/include/asm/irq.h     |   22 ++++++++
+ arch/arc/kernel/irq.c          |  107 +++++++++++++++++++++++++++++++++++++++-
+ arch/arc/plat-arcfpga/irq.c    |   15 ++++++
+ 5 files changed, 152 insertions(+), 2 deletions(-)
+ create mode 100644 arch/arc/include/asm/hw_irq.h
+ create mode 100644 arch/arc/include/asm/irq.h
+ create mode 100644 arch/arc/plat-arcfpga/irq.c
 
-diff --git a/arch/arc/include/asm/byteorder.h b/arch/arc/include/asm/byteorder.h
+diff --git a/arch/arc/include/asm/arcregs.h b/arch/arc/include/asm/arcregs.h
+index 8ca8faf..3fccb04 100644
+--- a/arch/arc/include/asm/arcregs.h
++++ b/arch/arc/include/asm/arcregs.h
+@@ -11,6 +11,9 @@
+ 
+ #ifdef __KERNEL__
+ 
++/* Build Configuration Registers */
++#define ARC_REG_VECBASE_BCR	0x68
++
+ /* status32 Bits Positions */
+ #define STATUS_H_BIT		0	/* CPU Halted */
+ #define STATUS_E1_BIT		1	/* Int 1 enable */
+diff --git a/arch/arc/include/asm/hw_irq.h b/arch/arc/include/asm/hw_irq.h
 new file mode 100644
-index 0000000..9da71d4
+index 0000000..fd565ab
 --- /dev/null
-+++ b/arch/arc/include/asm/byteorder.h
-@@ -0,0 +1,18 @@
++++ b/arch/arc/include/asm/hw_irq.h
+@@ -0,0 +1,7 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
+diff --git a/arch/arc/include/asm/irq.h b/arch/arc/include/asm/irq.h
+new file mode 100644
+index 0000000..ca4aeba
+--- /dev/null
++++ b/arch/arc/include/asm/irq.h
+@@ -0,0 +1,22 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
@@ -50,227 +83,159 @@ index 0000000..9da71d4
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef __ASM_ARC_BYTEORDER_H
-+#define __ASM_ARC_BYTEORDER_H
++#ifndef __ASM_ARC_IRQ_H
++#define __ASM_ARC_IRQ_H
 +
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+#include <linux/byteorder/big_endian.h>
-+#else
-+#include <linux/byteorder/little_endian.h>
++/* Platform Independent IRQs */
++#define TIMER0_IRQ      3
++#define TIMER1_IRQ      4
++
++#include <asm-generic/irq.h>
++
++extern void __init arc_init_IRQ(void);
++extern void __init plat_init_IRQ(void);
++extern int __init get_hw_config_num_irq(void);
++
 +#endif
+diff --git a/arch/arc/kernel/irq.c b/arch/arc/kernel/irq.c
+index c4e9b25..2f399eb 100644
+--- a/arch/arc/kernel/irq.c
++++ b/arch/arc/kernel/irq.c
+@@ -9,8 +9,111 @@
+ 
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
+-#include <asm/irqflags.h>
+-#include <asm/arcregs.h>
++#include <asm/sections.h>
++#include <asm/irq.h>
 +
-+#endif /* ASM_ARC_BYTEORDER_H */
-diff --git a/arch/arc/include/asm/checksum.h b/arch/arc/include/asm/checksum.h
-new file mode 100644
-index 0000000..1095729
---- /dev/null
-+++ b/arch/arc/include/asm/checksum.h
-@@ -0,0 +1,101 @@
 +/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ * Early Hardware specific Interrupt setup
++ * -Called very early (start_kernel -> setup_arch -> setup_processor)
++ * -Platform Independent (must for any ARC700)
++ * -Needed for each CPU (hence not foldable into init_IRQ)
++ *
++ * what it does ?
++ * -setup Vector Table Base Reg - in case Linux not linked at 0x8000_0000
++ * -Disable all IRQs (on CPU side)
++ */
++void __init arc_init_IRQ(void)
++{
++	int level_mask = level_mask;
++
++	write_aux_reg(AUX_INTR_VEC_BASE, _int_vec_base_lds);
++
++	/* Disable all IRQs: enable them as devices request */
++	write_aux_reg(AUX_IENABLE, 0);
++}
++
++/*
++ * ARC700 core includes a simple on-chip intc supporting
++ * -per IRQ enable/disable
++ * -2 levels of interrupts (high/low)
++ * -all interrupts being level triggered
++ *
++ * To reduce platform code, we assume all IRQs directly hooked-up into intc.
++ * Platforms with external intc, hence cascaded IRQs, are free to over-ride
++ * below, per IRQ.
++ */
++
++static void arc_mask_irq(struct irq_data *data)
++{
++	arch_mask_irq(data->irq);
++}
++
++static void arc_unmask_irq(struct irq_data *data)
++{
++	arch_unmask_irq(data->irq);
++}
++
++static struct irq_chip onchip_intc = {
++	.name           = "ARC In-core Intc",
++	.irq_mask	= arc_mask_irq,
++	.irq_unmask	= arc_unmask_irq,
++};
++
++void __init init_onchip_IRQ(void)
++{
++	int i;
++
++	for (i = 0; i < NR_IRQS; i++)
++		irq_set_chip_and_handler(i, &onchip_intc, handle_level_irq);
++
++#ifdef CONFIG_SMP
++	irq_set_chip_and_handler(TIMER0_IRQ, &onchip_intc, handle_percpu_irq);
++#endif
++}
++
++/*
++ * Late Interrupt system init called from start_kernel for Boot CPU only
++ *
++ * Since slab must already be initialized, platforms can start doing any
++ * needed request_irq( )s
++ */
++void __init init_IRQ(void)
++{
++	init_onchip_IRQ();
++	plat_init_IRQ();
++}
++
++/*
++ * "C" Entry point for any ARC ISR, called from low level vector handler
++ * @irq is the vector number read from ICAUSE reg of on-chip intc
++ */
++void arch_do_IRQ(unsigned int irq, struct pt_regs *regs)
++{
++	struct pt_regs *old_regs = set_irq_regs(regs);
++
++	irq_enter();
++	generic_handle_irq(irq);
++	irq_exit();
++	set_irq_regs(old_regs);
++}
++
++int __init get_hw_config_num_irq(void)
++{
++	uint32_t val = read_aux_reg(ARC_REG_VECBASE_BCR);
++
++	switch (val & 0x03) {
++	case 0:
++		return 16;
++	case 1:
++		return 32;
++	case 2:
++		return 8;
++	default:
++		return 0;
++	}
++
++	return 0;
++}
+ 
+ void arch_local_irq_enable(void)
+ {
+diff --git a/arch/arc/plat-arcfpga/irq.c b/arch/arc/plat-arcfpga/irq.c
+new file mode 100644
+index 0000000..ed72636
+--- /dev/null
++++ b/arch/arc/plat-arcfpga/irq.c
+@@ -0,0 +1,15 @@
++/*
++ * ARC FPGA Platform IRQ hookups
++ *
++ * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ *
-+ * Joern Rennecke  <joern.rennecke@embecosm.com>: Jan 2012
-+ *  -Insn Scheduling improvements to csum core routines.
-+ *      = csum_fold( ) largely derived from ARM version.
-+ *      = ip_fast_cum( ) to have module scheduling
-+ *  -gcc 4.4.x broke networking. Alias analysis needed to be primed.
-+ *   worked around by adding memory clobber to ip_fast_csum( )
-+ *
-+ * vineetg: May 2010
-+ *  -Rewrote ip_fast_cscum( ) and csum_fold( ) with fast inline asm
 + */
 +
-+#ifndef _ASM_ARC_CHECKSUM_H
-+#define _ASM_ARC_CHECKSUM_H
++#include <linux/interrupt.h>
 +
-+/*
-+ *	Fold a partial checksum
-+ *
-+ *  The 2 swords comprising the 32bit sum are added, any carry to 16th bit
-+ *  added back and final sword result inverted.
-+ */
-+static inline __sum16 csum_fold(__wsum s)
++void __init plat_init_IRQ(void)
 +{
-+	unsigned r = s << 16 | s >> 16;	/* ror */
-+	s = ~s;
-+	s -= r;
-+	return s >> 16;
 +}
-+
-+/*
-+ *	This is a version of ip_compute_csum() optimized for IP headers,
-+ *	which always checksum on 4 octet boundaries.
-+ */
-+static inline __sum16
-+ip_fast_csum(const void *iph, unsigned int ihl)
-+{
-+	const void *ptr = iph;
-+	unsigned int tmp, tmp2, sum;
-+
-+	__asm__(
-+	"	ld.ab  %0, [%3, 4]		\n"
-+	"	ld.ab  %2, [%3, 4]		\n"
-+	"	sub    %1, %4, 2		\n"
-+	"	lsr.f  lp_count, %1, 1		\n"
-+	"	bcc    0f			\n"
-+	"	add.f  %0, %0, %2		\n"
-+	"	ld.ab  %2, [%3, 4]		\n"
-+	"0:	lp     1f			\n"
-+	"	ld.ab  %1, [%3, 4]		\n"
-+	"	adc.f  %0, %0, %2		\n"
-+	"	ld.ab  %2, [%3, 4]		\n"
-+	"	adc.f  %0, %0, %1		\n"
-+	"1:	adc.f  %0, %0, %2		\n"
-+	"	add.cs %0,%0,1			\n"
-+	: "=&r"(sum), "=r"(tmp), "=&r"(tmp2), "+&r" (ptr)
-+	: "r"(ihl)
-+	: "cc", "lp_count", "memory");
-+
-+	return csum_fold(sum);
-+}
-+
-+/*
-+ * TCP pseudo Header is 12 bytes:
-+ * SA [4], DA [4], zeroes [1], Proto[1], TCP Seg(hdr+data) Len [2]
-+ */
-+static inline __wsum
-+csum_tcpudp_nofold(__be32 saddr, __be32 daddr, unsigned short len,
-+		   unsigned short proto, __wsum sum)
-+{
-+	__asm__ __volatile__(
-+	"	add.f %0, %0, %1	\n"
-+	"	adc.f %0, %0, %2	\n"
-+	"	adc.f %0, %0, %3	\n"
-+	"	adc.f %0, %0, %4	\n"
-+	"	adc   %0, %0, 0		\n"
-+	: "+&r"(sum)
-+	: "r"(saddr), "r"(daddr),
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	  "r"(len),
-+#else
-+	  "r"(len << 8),
-+#endif
-+	  "r"(htons(proto))
-+	: "cc");
-+
-+	return sum;
-+}
-+
-+#define csum_fold csum_fold
-+#define ip_fast_csum ip_fast_csum
-+#define csum_tcpudp_nofold csum_tcpudp_nofold
-+
-+#include <asm-generic/checksum.h>
-+
-+#endif /* _ASM_ARC_CHECKSUM_H */
-diff --git a/arch/arc/include/asm/swab.h b/arch/arc/include/asm/swab.h
-new file mode 100644
-index 0000000..095599a
---- /dev/null
-+++ b/arch/arc/include/asm/swab.h
-@@ -0,0 +1,98 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * vineetg: May 2011
-+ *  -Support single cycle endian-swap insn in ARC700 4.10
-+ *
-+ * vineetg: June 2009
-+ *  -Better htonl implementation (5 instead of 9 ALU instructions)
-+ *  -Hardware assisted single cycle bswap (Use Case of ARC custom instrn)
-+ */
-+
-+#ifndef __ASM_ARC_SWAB_H
-+#define __ASM_ARC_SWAB_H
-+
-+#include <linux/types.h>
-+
-+/* Native single cycle endian swap insn */
-+#ifdef CONFIG_ARC_HAS_SWAPE
-+
-+#define __arch_swab32(x)		\
-+({					\
-+	unsigned int tmp = x;		\
-+	__asm__(			\
-+	"	swape	%0, %1	\n"	\
-+	: "=r" (tmp)			\
-+	: "r" (tmp));			\
-+	tmp;				\
-+})
-+
-+#else
-+
-+/* Several ways of Endian-Swap Emulation for ARC
-+ * 0: kernel generic
-+ * 1: ARC optimised "C"
-+ * 2: ARC Custom instruction
-+ */
-+#define ARC_BSWAP_TYPE	1
-+
-+#if (ARC_BSWAP_TYPE == 1)		/******* Software only ********/
-+
-+/* The kernel default implementation of htonl is
-+ *		return  x<<24 | x>>24 |
-+ *		 (x & (__u32)0x0000ff00UL)<<8 | (x & (__u32)0x00ff0000UL)>>8;
-+ *
-+ * This generates 9 instructions on ARC (excluding the ld/st)
-+ *
-+ * 8051fd8c:	ld     r3,[r7,20]	; Mem op : Get the value to be swapped
-+ * 8051fd98:	asl    r5,r3,24		; get  3rd Byte
-+ * 8051fd9c:	lsr    r2,r3,24		; get  0th Byte
-+ * 8051fda0:	and    r4,r3,0xff00
-+ * 8051fda8:	asl    r4,r4,8		; get 1st Byte
-+ * 8051fdac:	and    r3,r3,0x00ff0000
-+ * 8051fdb4:	or     r2,r2,r5		; combine 0th and 3rd Bytes
-+ * 8051fdb8:	lsr    r3,r3,8		; 2nd Byte at correct place in Dst Reg
-+ * 8051fdbc:	or     r2,r2,r4		; combine 0,3 Bytes with 1st Byte
-+ * 8051fdc0:	or     r2,r2,r3		; combine 0,3,1 Bytes with 2nd Byte
-+ * 8051fdc4:	st     r2,[r1,20]	; Mem op : save result back to mem
-+ *
-+ * Joern suggested a better "C" algorithm which is great since
-+ * (1) It is portable to any architecure
-+ * (2) At the same time it takes advantage of ARC ISA (rotate intrns)
-+ */
-+
-+#define __arch_swab32(x)					\
-+({	unsigned long __in = (x), __tmp;			\
-+	__tmp = __in << 8 | __in >> 24; /* ror tmp,in,24 */	\
-+	__in = __in << 24 | __in >> 8; /* ror in,in,8 */	\
-+	__tmp ^= __in;						\
-+	__tmp &= 0xff00ff;					\
-+	__tmp ^ __in;						\
-+})
-+
-+#elif (ARC_BSWAP_TYPE == 2)	/* Custom single cycle bwap instruction */
-+
-+#define __arch_swab32(x)						\
-+({									\
-+	unsigned int tmp = x;						\
-+	__asm__(							\
-+	"	.extInstruction	bswap, 7, 0x00, SUFFIX_NONE, SYNTAX_2OP	\n"\
-+	"	bswap  %0, %1						\n"\
-+	: "=r" (tmp)							\
-+	: "r" (tmp));							\
-+	tmp;								\
-+})
-+
-+#endif /* ARC_BSWAP_TYPE=zzz */
-+
-+#endif /* CONFIG_ARC_HAS_SWAPE */
-+
-+#if !defined(__STRICT_ANSI__) || defined(__KERNEL__)
-+#define __SWAB_64_THRU_32__
-+#endif
-+
-+#endif
 -- 
 1.7.4.1
 
