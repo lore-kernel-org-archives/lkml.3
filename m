@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756472Ab3AXWuz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 17:50:55 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:54347 "EHLO hydra.sisk.pl"
+	id S1756522Ab3AXWyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 17:54:47 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:54363 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755623Ab3AXWur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 17:50:47 -0500
+	id S1756305Ab3AXWyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 17:54:40 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH] ACPI / scan: Make it clear that acpi_bus_trim() cannot fail
-Date: Thu, 24 Jan 2013 23:56:50 +0100
-Message-ID: <1511096.zmfmBrfdmu@vostro.rjw.lan>
+To: shuox.liu@intel.com
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, pavel@ucw.cz,
+        len.brown@intel.com, yanmin_zhang@linux.intel.com,
+        Yanmin Zhang <yanmin.zhang@intel.com>
+Subject: Re: [PATCH] PM / Runtime: Add new helper function: pm_runtime_active()
+Date: Fri, 25 Jan 2013 00:00:43 +0100
+Message-ID: <45313302.HOtnqx7V8P@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1358931241-32375-1-git-send-email-shuox.liu@intel.com>
+References: <1358931241-32375-1-git-send-email-shuox.liu@intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -22,123 +24,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Wednesday, January 23, 2013 04:54:01 PM shuox.liu@intel.com wrote:
+> From: ShuoX Liu <shuox.liu@intel.com>
+> 
+> This boolean function simply returns whether or not the runtime
+> status of the device is 'active'. The typical scenario is driver
+> calls pm_runtime_get firstly, then check pm_runtime_active in
+> atomic environment.
+> 
+> Also add entry to Documentation/power/runtime.txt
 
-Since acpi_bus_trim() cannot fail, change its definition to a void
-function, so that its callers don't check the return value in vain
-and update the callers.
+Well, why not if that helps.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
-
-On top of current linux-pm.git/linux-next.
+Applied to linux-pm.git/linux-next.
 
 Thanks,
 Rafael
 
----
- drivers/acpi/dock.c                |    8 ++------
- drivers/acpi/scan.c                |   12 +++---------
- drivers/pci/hotplug/acpiphp_glue.c |   10 +++-------
- include/acpi/acpi_bus.h            |    2 +-
- 4 files changed, 9 insertions(+), 23 deletions(-)
 
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -127,13 +127,8 @@ void acpi_bus_hot_remove_device(void *co
- 	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
- 		"Hot-removing device %s...\n", dev_name(&device->dev)));
- 
--	if (acpi_bus_trim(device)) {
--		printk(KERN_ERR PREFIX
--				"Removing device failed\n");
--		goto err_out;
--	}
--
--	/* device has been freed */
-+	acpi_bus_trim(device);
-+	/* Device node has been released. */
- 	device = NULL;
- 
- 	/* power off device */
-@@ -1656,7 +1651,7 @@ static acpi_status acpi_bus_remove(acpi_
- 	return AE_OK;
- }
- 
--int acpi_bus_trim(struct acpi_device *start)
-+void acpi_bus_trim(struct acpi_device *start)
- {
- 	/*
- 	 * Execute acpi_bus_device_detach() as a post-order callback to detach
-@@ -1672,7 +1667,6 @@ int acpi_bus_trim(struct acpi_device *st
- 	acpi_walk_namespace(ACPI_TYPE_ANY, start->handle, ACPI_UINT32_MAX, NULL,
- 			    acpi_bus_remove, NULL, NULL);
- 	acpi_bus_remove(start->handle, 0, NULL, NULL);
--	return 0;
- }
- EXPORT_SYMBOL_GPL(acpi_bus_trim);
- 
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -386,7 +386,7 @@ int acpi_bus_register_driver(struct acpi
- void acpi_bus_unregister_driver(struct acpi_driver *driver);
- int acpi_bus_scan(acpi_handle handle);
- void acpi_bus_hot_remove_device(void *context);
--int acpi_bus_trim(struct acpi_device *start);
-+void acpi_bus_trim(struct acpi_device *start);
- acpi_status acpi_bus_get_ejd(acpi_handle handle, acpi_handle * ejd);
- int acpi_match_device_ids(struct acpi_device *device,
- 			  const struct acpi_device_id *ids);
-Index: linux-pm/drivers/acpi/dock.c
-===================================================================
---- linux-pm.orig/drivers/acpi/dock.c
-+++ linux-pm/drivers/acpi/dock.c
-@@ -336,13 +336,9 @@ static struct acpi_device * dock_create_
- static void dock_remove_acpi_device(acpi_handle handle)
- {
- 	struct acpi_device *device;
--	int ret;
- 
--	if (!acpi_bus_get_device(handle, &device)) {
--		ret = acpi_bus_trim(device);
--		if (ret)
--			pr_debug("error removing bus, %x\n", -ret);
--	}
-+	if (!acpi_bus_get_device(handle, &device))
-+		acpi_bus_trim(device);
- }
- 
- /**
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -742,8 +742,7 @@ static int acpiphp_bus_add(struct acpiph
- 		/* this shouldn't be in here, so remove
- 		 * the bus then re-add it...
- 		 */
--		ret_val = acpi_bus_trim(device);
--		dbg("acpi_bus_trim return %x\n", ret_val);
-+		acpi_bus_trim(device);
- 	}
- 
- 	ret_val = acpi_bus_scan(func->handle);
-@@ -772,11 +771,8 @@ static int acpiphp_bus_trim(acpi_handle
- 		return retval;
- 	}
- 
--	retval = acpi_bus_trim(device);
--	if (retval)
--		err("cannot remove from acpi list\n");
--
--	return retval;
-+	acpi_bus_trim(device);
-+	return 0;
- }
- 
- static void acpiphp_set_acpi_region(struct acpiphp_slot *slot)
-
+> Signed-off-by: Yanmin Zhang <yanmin.zhang@intel.com>
+> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+> ---
+>  Documentation/power/runtime_pm.txt |    4 ++++
+>  include/linux/pm_runtime.h         |    7 +++++++
+>  2 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/power/runtime_pm.txt b/Documentation/power/runtime_pm.txt
+> index 03591a7..6c9f5d9 100644
+> --- a/Documentation/power/runtime_pm.txt
+> +++ b/Documentation/power/runtime_pm.txt
+> @@ -426,6 +426,10 @@ drivers/base/power/runtime.c and include/linux/pm_runtime.h:
+>        'power.runtime_error' is set or 'power.disable_depth' is greater than
+>        zero)
+>  
+> +  bool pm_runtime_active(struct device *dev);
+> +    - return true if the device's runtime PM status is 'active' or its
+> +      'power.disable_depth' field is not equal to zero, or false otherwise
+> +
+>    bool pm_runtime_suspended(struct device *dev);
+>      - return true if the device's runtime PM status is 'suspended' and its
+>        'power.disable_depth' field is equal to zero, or false otherwise
+> diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
+> index f271860..c785c21 100644
+> --- a/include/linux/pm_runtime.h
+> +++ b/include/linux/pm_runtime.h
+> @@ -80,6 +80,12 @@ static inline bool pm_runtime_suspended(struct device *dev)
+>  		&& !dev->power.disable_depth;
+>  }
+>  
+> +static inline bool pm_runtime_active(struct device *dev)
+> +{
+> +	return dev->power.runtime_status == RPM_ACTIVE
+> +		|| dev->power.disable_depth;
+> +}
+> +
+>  static inline bool pm_runtime_status_suspended(struct device *dev)
+>  {
+>  	return dev->power.runtime_status == RPM_SUSPENDED;
+> @@ -132,6 +138,7 @@ static inline void pm_runtime_put_noidle(struct device *dev) {}
+>  static inline bool device_run_wake(struct device *dev) { return false; }
+>  static inline void device_set_run_wake(struct device *dev, bool enable) {}
+>  static inline bool pm_runtime_suspended(struct device *dev) { return false; }
+> +static inline bool pm_runtime_active(struct device *dev) { return true; }
+>  static inline bool pm_runtime_status_suspended(struct device *dev) { return false; }
+>  static inline bool pm_runtime_enabled(struct device *dev) { return false; }
+>  
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
