@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030187Ab3AXVvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:51:10 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:44344 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278Ab3AXVu7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:50:59 -0500
+	id S1030203Ab3AXVw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:52:57 -0500
+Received: from mx2.fusionio.com ([66.114.96.31]:40809 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755638Ab3AXVwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:52:47 -0500
+X-ASG-Debug-ID: 1359064366-0421b503014ebb0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Thu, 24 Jan 2013 16:52:45 -0500
+From: Chris Mason <chris.mason@fusionio.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Btrfs fixes
+Message-ID: <20130124215245.GG10162@shiny.int.fusionio.com>
+X-ASG-Orig-Subj: Re: [GIT PULL] Btrfs fixes
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20130123004833.GA30526@shiny>
 MIME-Version: 1.0
-In-Reply-To: <CAKocOOPvK5S92ESU12yN5U=8fjSDFtDMrjJAmqxkqqTrzFzVCA@mail.gmail.com>
-References: <20130109132409.GB18395@phenom.dumpdata.com>
-	<CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
-	<87d2xeul5v.fsf@xmission.com>
-	<CAE9FiQX-OxTzt3BPh3nSLQxDUBGR=eKob5AqXYzy=Lw9NYTaGw@mail.gmail.com>
-	<CAE9FiQVsbDfLOyv=D4_BLtrKpp+Ydj7pren8Cu3rNGztbj=w=w@mail.gmail.com>
-	<20130111163548.GB25620@phenom.dumpdata.com>
-	<CAE9FiQVts6aTaRFM3aKWj46RCRiheM5gS55h=LVveaGXk_kR8g@mail.gmail.com>
-	<CAE9FiQVTfTisOrrQhv0vmsgA8Asaj5EUE5s93OFyTHfA+dWdfQ@mail.gmail.com>
-	<CAE9FiQWU6mnWxnzDtaR51H7GTbYmKgb0zy6xRCGYO4+oyc82Gg@mail.gmail.com>
-	<20130118155535.GJ9973@phenom.dumpdata.com>
-	<20130124153924.GA5943@konrad-lan.dumpdata.com>
-	<CAKocOONcM4HK1ZtUJb7C1xVCEWcz_pG2UZ0hzxGpxSmBSYa1Ww@mail.gmail.com>
-	<CAKocOOPvK5S92ESU12yN5U=8fjSDFtDMrjJAmqxkqqTrzFzVCA@mail.gmail.com>
-Date: Thu, 24 Jan 2013 13:50:58 -0800
-X-Google-Sender-Auth: k5mU6-w2m2WfZdeabkuOpnLRcwQ
-Message-ID: <CAE9FiQVvO+mgZxKmA4aGS0ujngux97kK7F0JkA4oYVhVEi_bGw@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130123004833.GA30526@shiny>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1359064366
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.120805
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 11:22 AM, Shuah Khan <shuahkhan@gmail.com> wrote:
->>
->> I still have the AMD system I tested earlier versions of this work. I
->> started compiles with these patches on 3.7 and will let you know the
->> status.
->
-> Tested 3.8-rc4 with the patches on AMD system with IOMMU on. Looks
-> good. I can't test low memory paths on this system very easily without
-> mucking with the code and force it treat it as low memory. So I just
-> tested the normal path. My main goal was to make sure AMD iommu driver
-> can still enable switolb and it does.
+On Tue, Jan 22, 2013 at 05:48:33PM -0700, Chris Mason wrote:
+> Hi Linus,
+> 
+> My for-linus branch has our batch of btrfs fixes:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+> 
+> We've been hammering away at a crc corruption as well, which I was
+> really hoping to get into this pull.  It isn't nailed down yet, but we
+> were finally able to get a solid way to reproduce.  The only good
+> news is it isn't a recent regression.
 
-good.
+Update on this, we've tracked down the crc errors and are doing final
+checks on the patches.  Linus are you planning on taking this pull?  If
+not I can just fold the new stuff into a bigger request.
 
->
-> If you would like to me test the error cases, please let me know.
-
-please check
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-x86-boot
-
-and boot your test setups with memmap=4095$1M
-
-Thanks
-
-Yinghai
+-chris
