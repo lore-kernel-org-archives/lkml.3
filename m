@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab3AXJjg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 04:39:36 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:37232 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753007Ab3AXJjP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 04:39:15 -0500
-Date: Thu, 24 Jan 2013 10:39:07 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
-        namhyung.kim@lge.com
-Subject: Re: [PATCH v6 2/2] perf stat: add interval printing
-Message-ID: <20130124093907.GA24621@gmail.com>
-References: <1358860732-4435-1-git-send-email-eranian@google.com>
- <1358860732-4435-3-git-send-email-eranian@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358860732-4435-3-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753059Ab3AXJjZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 04:39:25 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:31932 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752824Ab3AXJjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 04:39:06 -0500
+X-IronPort-AV: E=Sophos;i="4.84,529,1355068800"; 
+   d="scan'208";a="6640643"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: akpm@linux-foundation.org, rjw@sisk.pl, len.brown@intel.com,
+        mingo@redhat.com, tglx@linutronix.de, minchan.kim@gmail.com,
+        rientjes@google.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        glommer@parallels.com, jiang.liu@huawei.com, julian.calaby@gmail.com,
+        sfr@canb.auug.org.au, guz.fnst@cn.fujitsu.com
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
+Subject: [PATCH 2/2] cpu-hotplug,memory-hotplug: Remove __cpuinit declaration of numa_clear_node().
+Date: Thu, 24 Jan 2013 17:38:07 +0800
+Message-Id: <1359020287-11661-3-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1359020287-11661-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1359020287-11661-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/24 17:37:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/24 17:38:02,
+	Serialize complete at 2013/01/24 17:38:02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+numa_clear_node() will be used by check_and_unmap_cpu_on_node()
+when we do node hotplug. So it is no longer a __cpuinit function.
+Do not declare it as a __cpuinit function, otherwise it will cause
+section mismatch warning when compiling.
 
-* Stephane Eranian <eranian@google.com> wrote:
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/mm/numa.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> This patch adds a new printing mode for perf stat.
-> It allows internval printing. That means perf stat
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 0624c85..6864b08 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -100,7 +100,7 @@ void __cpuinit numa_set_node(int cpu, int node)
+ 	set_cpu_numa_node(cpu, node);
+ }
+ 
+-void __cpuinit numa_clear_node(int cpu)
++void numa_clear_node(int cpu)
+ {
+ 	numa_set_node(cpu, NUMA_NO_NODE);
+ }
+-- 
+1.7.1
 
-s/rnv/rv
-
-> can now print event deltas at regular time interval.
-> This is useful to detect phases in programs.
-> 
-> The -I option enables interval printing. It expects
-> an interval duration in milliseconds. Minimum is
-> 100ms. Once, activated perf stat prints events deltas
-> since last printout. All modes are supported.
-> 
-> $ perf stat -I 1000 -e cycles noploop 10
-> noploop for 10 seconds
->  #           time             counts events
->       1.000109853      2,388,560,546 cycles
->       2.000262846      2,393,332,358 cycles
->       3.000354131      2,393,176,537 cycles
->       4.000439503      2,393,203,790 cycles
->       5.000527075      2,393,167,675 cycles
->       6.000609052      2,393,203,670 cycles
->       7.000691082      2,393,175,678 cycles
-
-Looks useful!
-
-Thanks,
-
-	Ingo
