@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab3AXKLR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:11:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33037 "EHLO mx2.suse.de"
+	id S1753195Ab3AXKMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:12:24 -0500
+Received: from mga02.intel.com ([134.134.136.20]:25504 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752824Ab3AXKLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:11:09 -0500
-Date: Thu, 24 Jan 2013 11:11:01 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, davem@davemloft.net,
-        James.Bottomley@HansenPartnership.com
-Subject: Re: [PATCH 5/6] Drivers: hid: hid-hyperv: Use consolidated GUID
- definitions
-In-Reply-To: <1358991765-22715-5-git-send-email-kys@microsoft.com>
-Message-ID: <alpine.LNX.2.00.1301241110210.31600@pobox.suse.cz>
-References: <1358991737-22675-1-git-send-email-kys@microsoft.com> <1358991765-22715-1-git-send-email-kys@microsoft.com> <1358991765-22715-5-git-send-email-kys@microsoft.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752923Ab3AXKMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 05:12:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,528,1355126400"; 
+   d="scan'208";a="251672843"
+Date: Thu, 24 Jan 2013 18:13:05 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/2] mutex: use spin_[un]lock instead of
+ arch_spin_[un]lock
+Message-ID: <20130124101305.GE12678@yliu-dev.sh.intel.com>
+References: <1359019365-23646-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <1359019365-23646-2-git-send-email-yuanhan.liu@linux.intel.com>
+ <20130124095807.GA26351@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130124095807.GA26351@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jan 2013, K. Y. Srinivasan wrote:
-
-> Use the consolidated GUID definitions in the Hyper-V mouse driver.
+On Thu, Jan 24, 2013 at 10:58:07AM +0100, Ingo Molnar wrote:
 > 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> * Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
+> 
+> > Use spin_[un]lock instead of arch_spin_[un]lock in mutex-debug.h so
+> > that we can collect the lock statistics of spin_lock_mutex from
+> > /proc/lock_stat.
+> > 
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+> > ---
+> >  kernel/mutex-debug.h |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/kernel/mutex-debug.h b/kernel/mutex-debug.h
+> > index 0799fd3..556c0bc 100644
+> > --- a/kernel/mutex-debug.h
+> > +++ b/kernel/mutex-debug.h
+> > @@ -43,13 +43,13 @@ static inline void mutex_clear_owner(struct mutex *lock)
+> >  							\
+> >  		DEBUG_LOCKS_WARN_ON(in_interrupt());	\
+> >  		local_irq_save(flags);			\
+> > -		arch_spin_lock(&(lock)->rlock.raw_lock);\
+> > +		spin_lock(lock);			\
+> 
+> But in that case it could probably use the spin_lock_irqsave() 
+> primitive, right?
 
-Acked-by: Jiri Kosina <jkosina@suse.cz>
+Right, in that case I should use spin_lock_irqsave.
 
-Greg, I guess you are taking this as a whole?
+But one question, why we use spin_lock at kernel/mutex.h,
+while use 'local_irq_save(); arch_spin_lock' at kernel/mutex-debug.h?
+
+Shouldn't we keep it consistent? Say use spin_lock_irqsave?
 
 Thanks.
 
-> ---
->  drivers/hid/hid-hyperv.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
+	--yliu
 > 
-> diff --git a/drivers/hid/hid-hyperv.c b/drivers/hid/hid-hyperv.c
-> index 3d62781..aa3fec0 100644
-> --- a/drivers/hid/hid-hyperv.c
-> +++ b/drivers/hid/hid-hyperv.c
-> @@ -568,8 +568,7 @@ static int mousevsc_remove(struct hv_device *dev)
->  
->  static const struct hv_vmbus_device_id id_table[] = {
->  	/* Mouse guid */
-> -	{ VMBUS_DEVICE(0x9E, 0xB6, 0xA8, 0xCF, 0x4A, 0x5B, 0xc0, 0x4c,
-> -		       0xB9, 0x8B, 0x8B, 0xA1, 0xA1, 0xF3, 0xF9, 0x5A) },
-> +	{ HV_MOUSE_GUID, },
->  	{ },
->  };
->  
-> -- 
-> 1.7.4.1
+> >  		DEBUG_LOCKS_WARN_ON(l->magic != l);	\
+> >  	} while (0)
+> >  
+> >  #define spin_unlock_mutex(lock, flags)				\
+> >  	do {							\
+> > -		arch_spin_unlock(&(lock)->rlock.raw_lock);	\
+> > +		spin_unlock(lock);				\
+> >  		local_irq_restore(flags);			\
+> >  		preempt_check_resched();			\
 > 
-
--- 
-Jiri Kosina
-SUSE Labs
+> And here spin_unlock_irqrestore().
+> 
+> Thanks,
+> 
+> 	Ingo
