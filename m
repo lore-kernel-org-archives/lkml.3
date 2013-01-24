@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab3AXLkE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:40:04 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44335 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956Ab3AXLkA (ORCPT
+	id S1753759Ab3AXLol (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:44:41 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:54035 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab3AXLoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:40:00 -0500
-Date: Thu, 24 Jan 2013 12:39:48 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, grundler@chromium.org,
-        devicetree-discuss@lists.ozlabs.org, ben-linux@fluff.org,
-        khali@linux-fr.org, naveen@chromium.org
-Subject: Re: [PATCH 1/2] i2c-core: Add gpio based bus arbitration
- implementation
-Message-ID: <20130124113948.GD12933@pengutronix.de>
-References: <1355464254-12768-1-git-send-email-ch.naveen@samsung.com>
- <1355464254-12768-2-git-send-email-ch.naveen@samsung.com>
- <50CB4E99.9060506@wwwdotorg.org>
- <20121215142135.GB22033@opensource.wolfsonmicro.com>
- <20130124111329.GC12933@pengutronix.de>
- <20130124111845.GO4955@opensource.wolfsonmicro.com>
+	Thu, 24 Jan 2013 06:44:32 -0500
+Message-ID: <51011E9D.7050409@ti.com>
+Date: Thu, 24 Jan 2013 12:44:29 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="a2FkP9tdjPU2nyhF"
-Content-Disposition: inline
-In-Reply-To: <20130124111845.GO4955@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 0/2] Input: twl6040-vibra cleanups (devm_* conversion,
+ system wq)
+References: <1358177678-16509-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1358177678-16509-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dmitry,
 
---a2FkP9tdjPU2nyhF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/14/2013 04:34 PM, Peter Ujfalusi wrote:
+> Hi Dmitry,
+> 
+> Changes since v2:
+> - twl4030-vibra patches are left out (they have been applied)
+> - Do not use devm_input_allocate_device() in twl6040-vibra
 
-On Thu, Jan 24, 2013 at 07:18:47PM +0800, Mark Brown wrote:
-> On Thu, Jan 24, 2013 at 12:13:29PM +0100, Wolfram Sang wrote:
-> > On Sat, Dec 15, 2012 at 11:21:36PM +0900, Mark Brown wrote:
->=20
-> > > also get things like read operations which appear as multiple
-> > > transactions on the I2C bus so require something higher level than wh=
-at
-> > > multi-master provides.
->=20
-> > I don't get what you mean here. Can you elaborate?
->=20
-> A read is typically implemented as a write of the register address
-> followed by a read of the value, usually with the ability to free the
-> bus in between.  If two devices attempt to access the register map
-> simultaneously this results in the address going wrong.
+Do you want me to resend this two patch for 3.9?
 
-Could happen. But in what situations will one not use repeated start
-here? Especially when designing a multi-master bus?
+Regards,
+Péter
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> 
+> Changes since v1:
+> - Use devm_input_allocate_device()
+> - swtich drivers to use system workqueue
+> 
+> Cover letter from v1 (resend set):
+> 
+> This series seams to got lost:
+> https://lkml.org/lkml/2012/6/15/128
+> 
+> Can you take it for 3.9?
+> 
+> Convert the twl4030, twl6040 vibra drivers to use devm_ at probe time to clean
+> up the code a bit.
+> The twl6040-vibra driver needed bigger change since the ordering of the
+> initialization was not correct.
+> 
+> Regards,
+> Peter
+> ---
+> Peter Ujfalusi (2):
+>   Input: twl6040-vibra: Code cleanup in probe with devm_* conversion
+>   input: twl6040-vibra: Use system workqueue
+> 
+>  drivers/input/misc/twl6040-vibra.c | 100 +++++++++++++++----------------------
+>  1 file changed, 41 insertions(+), 59 deletions(-)
+> 
 
---a2FkP9tdjPU2nyhF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlEBHYQACgkQD27XaX1/VRsAdQCdHPM40PqJBYznKnHAljriBDlU
-XOsAnAkqEGcQ6Y34Ge9EqF0qt6/HfHEQ
-=pzuW
------END PGP SIGNATURE-----
-
---a2FkP9tdjPU2nyhF--
