@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161028Ab3AXUlq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:41:46 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34946 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030184Ab3AXUli (ORCPT
+	id S1030202Ab3AXUmH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:42:07 -0500
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:40755 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030184Ab3AXUlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:41:38 -0500
-Date: Thu, 24 Jan 2013 12:41:18 -0800
-From: tip-bot for Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Message-ID: <tip-73b664ceb5f815c38def1c68912b83f83455e9eb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        bhelgaas@google.com, tglx@linutronix.de,
-        maarten.lankhorst@canonical.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, tglx@linutronix.de,
-        maarten.lankhorst@canonical.com
-In-Reply-To: <50A612AA.7040206@canonical.com>
-References: <50A612AA.7040206@canonical.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/dma-debug: Bump PREALLOC_DMA_DEBUG_ENTRIES
-Git-Commit-ID: 73b664ceb5f815c38def1c68912b83f83455e9eb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 24 Jan 2013 15:41:55 -0500
+Date: Thu, 24 Jan 2013 15:42:03 -0500
+From: Matt Porter <mporter@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 00/14] DMA Engine support for AM33XX
+Message-ID: <20130124204203.GD5256@beef>
+References: <1358281974-8411-1-git-send-email-mporter@ti.com>
+ <50FEB6B2.5020303@ti.com>
+ <20130123022133.GA5727@opensource.wolfsonmicro.com>
+ <20130123213736.GC5256@beef>
+ <d07dbfd50690423b903803720152c0dc@DLEE74.ent.ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 12:41:24 -0800 (PST)
+In-Reply-To: <d07dbfd50690423b903803720152c0dc@DLEE74.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  73b664ceb5f815c38def1c68912b83f83455e9eb
-Gitweb:     http://git.kernel.org/tip/73b664ceb5f815c38def1c68912b83f83455e9eb
-Author:     Maarten Lankhorst <maarten.lankhorst@canonical.com>
-AuthorDate: Fri, 16 Nov 2012 11:17:14 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 24 Jan 2013 17:34:18 +0100
+On Thu, Jan 24, 2013 at 05:14:13AM +0000, Sekhar Nori wrote:
+> Matt,
+> 
+> On 1/24/2013 3:07 AM, Matt Porter wrote:
+> > On Wed, Jan 23, 2013 at 10:21:42AM +0800, Mark Brown wrote:
+> >> On Tue, Jan 22, 2013 at 09:26:34PM +0530, Sekhar Nori wrote:
+> >>> On 1/16/2013 2:02 AM, Matt Porter wrote:
+> >>
+> >>>> This series adds DMA Engine support for AM33xx, which uses
+> >>>> an EDMA DMAC. The EDMA DMAC has been previously supported by only
+> >>>> a private API implementation (much like the situation with OMAP
+> >>>> DMA) found on the DaVinci family of SoCs.
+> >>
+> >>> Will you take this series through the OMAP tree? Only 1/14 touches
+> >>> mach-davinci and I am mostly okay with it except some changes I just
+> >>> requested Matt to make in another thread.
+> >>
+> >> Is this series somewhere near actually getting merged then? It seemed
+> >> like there was lots of stuff going on.
+> > 
+> > The issues raised by Sekhar and Santosh were reasonably minor and will
+> > be addressed. My major concern is that the dependency on some api to
+> > fetch dmaengine driver SG limitations is not resolved. That's being
+> > discussed in https://lkml.org/lkml/2013/1/10/432
+> 
+> It might be worth posting the patches which don't have dependencies and
+> are ready for acceptance as a separate series. That way at least some of
+> these patches have a good chance of getting into v3.9 if not the entire
+> series.
 
-x86/dma-debug: Bump PREALLOC_DMA_DEBUG_ENTRIES
+Yes a good idea and seems to be the best option. I've dropped the mmc
+support from the series for the next version. I'll repost the separately
+when we have an api to support it.
 
-I ran out of free entries when I had CONFIG_DMA_API_DEBUG
-enabled. Some other archs seem to default to 65536, so increase
-this limit for x86 too.
-
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Link: http://lkml.kernel.org/r/50A612AA.7040206@canonical.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-----
----
- arch/x86/kernel/pci-dma.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
-index 0f5dec5..872079a 100644
---- a/arch/x86/kernel/pci-dma.c
-+++ b/arch/x86/kernel/pci-dma.c
-@@ -56,7 +56,7 @@ struct device x86_dma_fallback_dev = {
- EXPORT_SYMBOL(x86_dma_fallback_dev);
- 
- /* Number of entries preallocated for DMA-API debugging */
--#define PREALLOC_DMA_DEBUG_ENTRIES       32768
-+#define PREALLOC_DMA_DEBUG_ENTRIES       65536
- 
- int dma_set_mask(struct device *dev, u64 mask)
- {
+-Matt
