@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757066Ab3AXVYO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:24:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41181 "EHLO mail.kernel.org"
+	id S1757145Ab3AXVY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:24:28 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41148 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932235Ab3AXVTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:19:01 -0500
+	id S1757150Ab3AXVS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:18:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Don Zickus <dzickus@redhat.com>,
-        "Huang, Adrian (ISS Linux TW)" <adrian.huang@hp.com>
-Subject: [ 04/15] USB: UHCI: fix IRQ race during initialization
-Date: Thu, 24 Jan 2013 13:18:28 -0800
-Message-Id: <20130124211724.989791486@linuxfoundation.org>
+        Bart Westgeest <bart@elbrys.com>, Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 09/15] staging: usbip: changed function return type to void
+Date: Thu, 24 Jan 2013 13:18:33 -0800
+Message-Id: <20130124211727.217712287@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211723.489089115@linuxfoundation.org>
 References: <20130124211723.489089115@linuxfoundation.org>
@@ -27,79 +25,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Bart Westgeest <bart@elbrys.com>
 
-commit 0f815a0a700bc10547449bde6c106051a035a1b9 upstream.
+commit ac2b41acfa3efe4650102067a99251587a806d70 upstream.
 
-This patch (as1644) fixes a race that occurs during startup in
-uhci-hcd.  If the IRQ line is shared with other devices, it's possible
-for the handler routine to be called before the data structures are
-fully initialized.
+The function usbip_pad_iso never returns anything but 0 (success).
 
-The problem is fixed by adding a check to the IRQ handler routine.  If
-the initialization hasn't finished yet, the routine will return
-immediately.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Don Zickus <dzickus@redhat.com>
-Tested-by: "Huang, Adrian (ISS Linux TW)" <adrian.huang@hp.com>
+Signed-off-by: Bart Westgeest <bart@elbrys.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/uhci-hcd.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/staging/usbip/usbip_common.c |   11 ++++-------
+ drivers/staging/usbip/usbip_common.h |    2 +-
+ drivers/staging/usbip/vhci_rx.c      |    3 +--
+ 3 files changed, 6 insertions(+), 10 deletions(-)
 
---- a/drivers/usb/host/uhci-hcd.c
-+++ b/drivers/usb/host/uhci-hcd.c
-@@ -446,6 +446,10 @@ static irqreturn_t uhci_irq(struct usb_h
- 		return IRQ_NONE;
- 	uhci_writew(uhci, status, USBSTS);		/* Clear it */
+--- a/drivers/staging/usbip/usbip_common.c
++++ b/drivers/staging/usbip/usbip_common.c
+@@ -761,26 +761,25 @@ EXPORT_SYMBOL_GPL(usbip_recv_iso);
+  * buffer and iso packets need to be stored and be in propeper endian in urb
+  * before calling this function
+  */
+-int usbip_pad_iso(struct usbip_device *ud, struct urb *urb)
++void usbip_pad_iso(struct usbip_device *ud, struct urb *urb)
+ {
+ 	int np = urb->number_of_packets;
+ 	int i;
+-	int ret;
+ 	int actualoffset = urb->actual_length;
  
-+	spin_lock(&uhci->lock);
-+	if (unlikely(!uhci->is_initialized))	/* not yet configured */
-+		goto done;
-+
- 	if (status & ~(USBSTS_USBINT | USBSTS_ERROR | USBSTS_RD)) {
- 		if (status & USBSTS_HSE)
- 			dev_err(uhci_dev(uhci), "host system error, "
-@@ -454,7 +458,6 @@ static irqreturn_t uhci_irq(struct usb_h
- 			dev_err(uhci_dev(uhci), "host controller process "
- 					"error, something bad happened!\n");
- 		if (status & USBSTS_HCH) {
--			spin_lock(&uhci->lock);
- 			if (uhci->rh_state >= UHCI_RH_RUNNING) {
- 				dev_err(uhci_dev(uhci),
- 					"host controller halted, "
-@@ -472,15 +475,15 @@ static irqreturn_t uhci_irq(struct usb_h
- 				 * pending unlinks */
- 				mod_timer(&hcd->rh_timer, jiffies);
- 			}
--			spin_unlock(&uhci->lock);
- 		}
+ 	if (!usb_pipeisoc(urb->pipe))
+-		return 0;
++		return;
+ 
+ 	/* if no packets or length of data is 0, then nothing to unpack */
+ 	if (np == 0 || urb->actual_length == 0)
+-		return 0;
++		return;
+ 
+ 	/*
+ 	 * if actual_length is transfer_buffer_length then no padding is
+ 	 * present.
+ 	*/
+ 	if (urb->actual_length == urb->transfer_buffer_length)
+-		return 0;
++		return;
+ 
+ 	/*
+ 	 * loop over all packets from last to first (to prevent overwritting
+@@ -792,8 +791,6 @@ int usbip_pad_iso(struct usbip_device *u
+ 			urb->transfer_buffer + actualoffset,
+ 			urb->iso_frame_desc[i].actual_length);
  	}
+-
+-	return ret;
+ }
+ EXPORT_SYMBOL_GPL(usbip_pad_iso);
  
--	if (status & USBSTS_RD)
-+	if (status & USBSTS_RD) {
-+		spin_unlock(&uhci->lock);
- 		usb_hcd_poll_rh_status(hcd);
--	else {
--		spin_lock(&uhci->lock);
-+	} else {
- 		uhci_scan_schedule(uhci);
-+ done:
- 		spin_unlock(&uhci->lock);
- 	}
+--- a/drivers/staging/usbip/usbip_common.h
++++ b/drivers/staging/usbip/usbip_common.h
+@@ -327,7 +327,7 @@ int usbip_recv_xbuff(struct usbip_device
+ /* some members of urb must be substituted before. */
+ int usbip_recv_iso(struct usbip_device *ud, struct urb *urb);
+ /* some members of urb must be substituted before. */
+-int usbip_pad_iso(struct usbip_device *ud, struct urb *urb);
++void usbip_pad_iso(struct usbip_device *ud, struct urb *urb);
+ void *usbip_alloc_iso_desc_pdu(struct urb *urb, ssize_t *bufflen);
  
-@@ -658,9 +661,9 @@ static int uhci_start(struct usb_hcd *hc
- 	 */
- 	mb();
+ /* usbip_event.c */
+--- a/drivers/staging/usbip/vhci_rx.c
++++ b/drivers/staging/usbip/vhci_rx.c
+@@ -94,8 +94,7 @@ static void vhci_recv_ret_submit(struct
+ 		return;
  
-+	spin_lock_irq(&uhci->lock);
- 	configure_hc(uhci);
- 	uhci->is_initialized = 1;
--	spin_lock_irq(&uhci->lock);
- 	start_rh(uhci);
- 	spin_unlock_irq(&uhci->lock);
- 	return 0;
+ 	/* restore the padding in iso packets */
+-	if (usbip_pad_iso(ud, urb) < 0)
+-		return;
++	usbip_pad_iso(ud, urb);
+ 
+ 	if (usbip_dbg_flag_vhci_rx)
+ 		usbip_dump_urb(urb);
 
 
