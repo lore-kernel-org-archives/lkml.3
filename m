@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab3AXVcz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:32:55 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40214 "EHLO mail.kernel.org"
+	id S1756996Ab3AXVdG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:33:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40206 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756653Ab3AXVO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:14:26 -0500
+	id S1756924Ab3AXVOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:14:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 17/46] ALSA: hda - Add Conexant CX20755/20756/20757 codec IDs
-Date: Thu, 24 Jan 2013 13:12:55 -0800
-Message-Id: <20130124211142.308917636@linuxfoundation.org>
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Subject: [ 23/46] PCI: shpchp: Handle push button event asynchronously
+Date: Thu, 24 Jan 2013 13:13:01 -0800
+Message-Id: <20130124211144.513774786@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
 References: <20130124211135.862755794@linuxfoundation.org>
@@ -25,43 +26,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 42c364ace52ae6b4699105b39f2559c256b6cd4c upstream.
+commit d347e75847c1fb299c97736638f45e6ea39702d4 upstream.
 
-These are just compatible with other CX2075x codecs.
+Use non-ordered workqueue for attention button events.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Attention button events on each slot can be handled asynchronously. So
+we should use non-ordered workqueue. This patch also removes ordered
+workqueue in shpchp as a result.
+
+486b10b9f4 ("PCI: pciehp: Handle push button event asynchronously") made
+the same change to pciehp.  I split this out from a patch by Yijing Wang
+<wangyijing@huawei.com> so we fix one thing at a time and to make the
+shpchp history correspond more closely with the pciehp history.
+
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_conexant.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/pci/hotplug/shpchp.h      |    1 -
+ drivers/pci/hotplug/shpchp_core.c |   10 ----------
+ drivers/pci/hotplug/shpchp_ctrl.c |    2 +-
+ 3 files changed, 1 insertion(+), 12 deletions(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4580,6 +4580,12 @@ static const struct hda_codec_preset snd
- 	  .patch = patch_conexant_auto },
- 	{ .id = 0x14f15111, .name = "CX20753/4",
- 	  .patch = patch_conexant_auto },
-+	{ .id = 0x14f15113, .name = "CX20755",
-+	  .patch = patch_conexant_auto },
-+	{ .id = 0x14f15114, .name = "CX20756",
-+	  .patch = patch_conexant_auto },
-+	{ .id = 0x14f15115, .name = "CX20757",
-+	  .patch = patch_conexant_auto },
- 	{} /* terminator */
- };
+--- a/drivers/pci/hotplug/shpchp.h
++++ b/drivers/pci/hotplug/shpchp.h
+@@ -47,7 +47,6 @@ extern bool shpchp_poll_mode;
+ extern int shpchp_poll_time;
+ extern bool shpchp_debug;
+ extern struct workqueue_struct *shpchp_wq;
+-extern struct workqueue_struct *shpchp_ordered_wq;
  
-@@ -4603,6 +4609,9 @@ MODULE_ALIAS("snd-hda-codec-id:14f150b9"
- MODULE_ALIAS("snd-hda-codec-id:14f1510f");
- MODULE_ALIAS("snd-hda-codec-id:14f15110");
- MODULE_ALIAS("snd-hda-codec-id:14f15111");
-+MODULE_ALIAS("snd-hda-codec-id:14f15113");
-+MODULE_ALIAS("snd-hda-codec-id:14f15114");
-+MODULE_ALIAS("snd-hda-codec-id:14f15115");
+ #define dbg(format, arg...)						\
+ do {									\
+--- a/drivers/pci/hotplug/shpchp_core.c
++++ b/drivers/pci/hotplug/shpchp_core.c
+@@ -40,7 +40,6 @@ bool shpchp_debug;
+ bool shpchp_poll_mode;
+ int shpchp_poll_time;
+ struct workqueue_struct *shpchp_wq;
+-struct workqueue_struct *shpchp_ordered_wq;
  
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Conexant HD-audio codec");
+ #define DRIVER_VERSION	"0.4"
+ #define DRIVER_AUTHOR	"Dan Zink <dan.zink@compaq.com>, Greg Kroah-Hartman <greg@kroah.com>, Dely Sy <dely.l.sy@intel.com>"
+@@ -181,7 +180,6 @@ void cleanup_slots(struct controller *ct
+ 		list_del(&slot->slot_list);
+ 		cancel_delayed_work(&slot->work);
+ 		flush_workqueue(shpchp_wq);
+-		flush_workqueue(shpchp_ordered_wq);
+ 		pci_hp_deregister(slot->hotplug_slot);
+ 	}
+ }
+@@ -370,17 +368,10 @@ static int __init shpcd_init(void)
+ 	if (!shpchp_wq)
+ 		return -ENOMEM;
+ 
+-	shpchp_ordered_wq = alloc_ordered_workqueue("shpchp_ordered", 0);
+-	if (!shpchp_ordered_wq) {
+-		destroy_workqueue(shpchp_wq);
+-		return -ENOMEM;
+-	}
+-
+ 	retval = pci_register_driver(&shpc_driver);
+ 	dbg("%s: pci_register_driver = %d\n", __func__, retval);
+ 	info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
+ 	if (retval) {
+-		destroy_workqueue(shpchp_ordered_wq);
+ 		destroy_workqueue(shpchp_wq);
+ 	}
+ 	return retval;
+@@ -390,7 +381,6 @@ static void __exit shpcd_cleanup(void)
+ {
+ 	dbg("unload_shpchpd()\n");
+ 	pci_unregister_driver(&shpc_driver);
+-	destroy_workqueue(shpchp_ordered_wq);
+ 	destroy_workqueue(shpchp_wq);
+ 	info(DRIVER_DESC " version: " DRIVER_VERSION " unloaded\n");
+ }
+--- a/drivers/pci/hotplug/shpchp_ctrl.c
++++ b/drivers/pci/hotplug/shpchp_ctrl.c
+@@ -453,7 +453,7 @@ void shpchp_queue_pushbutton_work(struct
+ 		kfree(info);
+ 		goto out;
+ 	}
+-	queue_work(shpchp_ordered_wq, &info->work);
++	queue_work(shpchp_wq, &info->work);
+  out:
+ 	mutex_unlock(&p_slot->lock);
+ }
 
 
