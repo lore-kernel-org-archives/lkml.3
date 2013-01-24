@@ -1,71 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab3AXWmQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 17:42:16 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:35920 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755773Ab3AXWmK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 17:42:10 -0500
-Date: Thu, 24 Jan 2013 14:42:03 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 02/13] sg_io: reorganize list of allowed commands
-Message-ID: <20130124224203.GA2373@mtj.dyndns.org>
-References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
- <1359039649-17734-3-git-send-email-pbonzini@redhat.com>
+	id S1756206Ab3AXWoq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 17:44:46 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:54340 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755623Ab3AXWok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 17:44:40 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH 33/35] x86, 64bit, mm: hibernate use generic mapping_init
+Date: Thu, 24 Jan 2013 23:50:41 +0100
+Message-ID: <3179011.uLpFQkKUJq@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1359058816-7615-34-git-send-email-yinghai@kernel.org>
+References: <1359058816-7615-1-git-send-email-yinghai@kernel.org> <1359058816-7615-34-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359039649-17734-3-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 04:00:38PM +0100, Paolo Bonzini wrote:
-> +#define sgio_bitmap_set(cmd, mask, rw) \
-> +	if ((mask) != 0) __set_bit((cmd), filter->rw##_ok)
+On Thursday, January 24, 2013 12:20:14 PM Yinghai Lu wrote:
+> We should set mappings only for usable memory ranges under max_pfn
+> Otherwise causes same problem that is fixed by
+> 
+> 	x86, mm: Only direct map addresses that are marked as E820_RAM
+> 
+> Make it only map range in pfn_mapped array.
+
+Well.
+
+While I don't have fundamental objections, I can't really ACK the patch,
+because I haven't been following arch/x86 development for several months
+and I can't really say how this is supposed to work after the change.
+
+Thanks,
+Rafael
+
+
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: linux-pm@vger.kernel.org
+> ---
+>  arch/x86/power/hibernate_64.c |   66 ++++++++++++++---------------------------
+>  1 file changed, 22 insertions(+), 44 deletions(-)
+> 
+> diff --git a/arch/x86/power/hibernate_64.c b/arch/x86/power/hibernate_64.c
+> index 460f314..a0fde91 100644
+> --- a/arch/x86/power/hibernate_64.c
+> +++ b/arch/x86/power/hibernate_64.c
+> @@ -11,6 +11,8 @@
+>  #include <linux/gfp.h>
+>  #include <linux/smp.h>
+>  #include <linux/suspend.h>
 > +
-> +#define D (1u << TYPE_DISK)           /* Direct Access Block Device (SBC-3) */
-> +#define T (1u << TYPE_TAPE)           /* Sequential Access Device (SSC-3) */
-> +#define L (1u << TYPE_PRINTER)        /* Printer Device (SSC) */
-> +#define P (1u << TYPE_PROCESSOR)      /* Processor Device (SPC-2) */
-> +#define W (1u << TYPE_WORM)           /* Write Once Block Device (SBC) */
-> +#define R (1u << TYPE_ROM)            /* C/DVD Device (MMC-6) */
-> +#define S (1u << TYPE_SCANNER)        /* Scanner device (obsolete) */
-> +#define O (1u << TYPE_MOD)            /* Optical Memory Block Device (SBC) */
-> +#define M (1u << TYPE_MEDIUM_CHANGER) /* Media Changer Device (SMC-3) */
-> +#define C (1u << TYPE_COMM)           /* Communication devices (obsolete) */
-> +#define A (1u << TYPE_RAID)           /* Storage Array Device (SCC-2) */
-> +#define E (1u << TYPE_ENCLOSURE)      /* SCSI Enclosure Services device (SES-2) */
-> +#define B (1u << TYPE_RBC)            /* Simplified Direct-Access (Reduced Block) device (RBC) */
-> +#define K (1u << 0x0f)                /* Optical Card Reader/Writer device (OCRW) */
-> +#define V (1u << 0x10)                /* Automation/Device Interface device (ADC-2) */
-
-Can we please add TYPE_* constants for these two too?
-
-> +#define F (1u << TYPE_OSD)            /* Object-based Storage Device (OSD-2) */
+> +#include <asm/init.h>
+>  #include <asm/proto.h>
+>  #include <asm/page.h>
+>  #include <asm/pgtable.h>
+> @@ -39,41 +41,21 @@ pgd_t *temp_level4_pgt;
+>  
+>  void *relocated_restore_code;
+>  
+> -static int res_phys_pud_init(pud_t *pud, unsigned long address, unsigned long end)
+> +static void *alloc_pgt_page(void *context)
+>  {
+> -	long i, j;
+> -
+> -	i = pud_index(address);
+> -	pud = pud + i;
+> -	for (; i < PTRS_PER_PUD; pud++, i++) {
+> -		unsigned long paddr;
+> -		pmd_t *pmd;
+> -
+> -		paddr = address + i*PUD_SIZE;
+> -		if (paddr >= end)
+> -			break;
+> -
+> -		pmd = (pmd_t *)get_safe_page(GFP_ATOMIC);
+> -		if (!pmd)
+> -			return -ENOMEM;
+> -		set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
+> -		for (j = 0; j < PTRS_PER_PMD; pmd++, j++, paddr += PMD_SIZE) {
+> -			unsigned long pe;
+> -
+> -			if (paddr >= end)
+> -				break;
+> -			pe = __PAGE_KERNEL_LARGE_EXEC | paddr;
+> -			pe &= __supported_pte_mask;
+> -			set_pmd(pmd, __pmd(pe));
+> -		}
+> -	}
+> -	return 0;
+> +	return (void *)get_safe_page(GFP_ATOMIC);
+>  }
+>  
+>  static int set_up_temporary_mappings(void)
+>  {
+> -	unsigned long start, end, next;
+> -	int error;
+> +	struct x86_mapping_info info = {
+> +		.alloc_pgt_page	= alloc_pgt_page,
+> +		.pmd_flag	= __PAGE_KERNEL_LARGE_EXEC,
+> +		.kernel_mapping = true,
+> +	};
+> +	unsigned long mstart, mend;
+> +	int result;
+> +	int i;
+>  
+>  	temp_level4_pgt = (pgd_t *)get_safe_page(GFP_ATOMIC);
+>  	if (!temp_level4_pgt)
+> @@ -84,21 +66,17 @@ static int set_up_temporary_mappings(void)
+>  		init_level4_pgt[pgd_index(__START_KERNEL_map)]);
+>  
+>  	/* Set up the direct mapping from scratch */
+> -	start = (unsigned long)pfn_to_kaddr(0);
+> -	end = (unsigned long)pfn_to_kaddr(max_pfn);
+> -
+> -	for (; start < end; start = next) {
+> -		pud_t *pud = (pud_t *)get_safe_page(GFP_ATOMIC);
+> -		if (!pud)
+> -			return -ENOMEM;
+> -		next = start + PGDIR_SIZE;
+> -		if (next > end)
+> -			next = end;
+> -		if ((error = res_phys_pud_init(pud, __pa(start), __pa(next))))
+> -			return error;
+> -		set_pgd(temp_level4_pgt + pgd_index(start),
+> -			mk_kernel_pgd(__pa(pud)));
+> +	for (i = 0; i < nr_pfn_mapped; i++) {
+> +		mstart = pfn_mapped[i].start << PAGE_SHIFT;
+> +		mend   = pfn_mapped[i].end << PAGE_SHIFT;
 > +
-> +	/* control, universal except possibly RBC, read */
+> +		result = kernel_ident_mapping_init(&info, temp_level4_pgt,
+> +						   mstart, mend);
 > +
-> +	sgio_bitmap_set(0x00, -1                             , read);  // TEST UNIT READY
-
-Hmmm... why are we not using symbolic constants for commands?  If it's
-because of horizontal real estate, we can abbreviate
-sgio_bitmap_set(), no?  Also, wouldn't it be better to have ALL
-instead of -1?  Also, the custom formatting is nice but can we at
-least not use //?
-
-One other thing is I would much prefer if the table was made static
-const first.  As we only allow compile-time defined tables, there's no
-point in dynamically initializing these and the above can be static
-initializers.
-
-Thanks.
-
+> +		if (result)
+> +			return result;
+>  	}
+> +
+>  	return 0;
+>  }
+>  
+> 
 -- 
-tejun
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
