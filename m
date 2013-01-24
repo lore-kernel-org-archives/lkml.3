@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab3AXDix (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:38:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44320 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab3AXDaV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:30:21 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 43/74] target: Fix use-after-free in LUN RESET handling
-Date: Thu, 24 Jan 2013 01:26:55 -0200
-Message-Id: <1358998046-613-44-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	id S1753008Ab3AXDjU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:39:20 -0500
+Received: from mga03.intel.com ([143.182.124.21]:14248 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754347Ab3AXDaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 22:30:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,525,1355126400"; 
+   d="scan'208";a="247742567"
+From: Alex Shi <alex.shi@intel.com>
+To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de
+Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, alex.shi@intel.com
+Subject: [PATCH 2/4] sched: compute runnable load avg in cpu_load and cpu_avg_load_per_task
+Date: Thu, 24 Jan 2013 11:30:41 +0800
+Message-Id: <1358998243-23176-3-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1358998243-23176-1-git-send-email-alex.shi@intel.com>
+References: <1358998243-23176-1-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.4 -stable review patch.  If anyone has any objections, please let me know.
+They are the base values in load balance, update them with rq runnable
+load average, then the load balance will consider runnable load avg
+naturally.
 
-------------------
-
-From: Roland Dreier <roland@purestorage.com>
-
-commit 72b59d6ee8adaa51f70377db0a1917ed489bead8 upstream.
-
-If a backend IO takes a really long then an initiator might abort a
-command, and then when it gives up on the abort, send a LUN reset too,
-all before we process any of the original command or the abort.  (The
-abort will wait for the backend IO to complete too)
-
-When the backend IO final completes (or fails), the abort handling
-will proceed and queue up a "return aborted status" operation.  Then,
-while that's still pending, the LUN reset might find the original
-command still on the LUN's list of commands and try to return aborted
-status again, which leads to a use-after free when the first
-se_tfo->queue_status call frees the command and then the second
-se_tfo->queue_status call runs.
-
-Fix this by removing a command from the LUN state_list when we first
-are about to queue aborted status; we shouldn't do anything
-LUN-related after we've started returning status, so this seems like
-the correct thing to do.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[ herton: adjust context ]
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- drivers/target/target_core_transport.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ kernel/sched/core.c |    8 ++++++++
+ kernel/sched/fair.c |    4 ++--
+ 2 files changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index cf05182..d6c73e8 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -586,9 +586,6 @@ static void transport_lun_remove_cmd(struct se_cmd *cmd)
- 
- void transport_cmd_finish_abort(struct se_cmd *cmd, int remove)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4f4714e..f25b8d8 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2539,7 +2539,11 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+ void update_idle_cpu_load(struct rq *this_rq)
  {
--	if (!(cmd->se_cmd_flags & SCF_SCSI_TMR_CDB))
--		transport_lun_remove_cmd(cmd);
--
- 	if (transport_cmd_check_stop_to_fabric(cmd))
- 		return;
- 	if (remove) {
-@@ -4296,6 +4293,8 @@ void transport_send_task_abort(struct se_cmd *cmd)
- 	}
- 	cmd->scsi_status = SAM_STAT_TASK_ABORTED;
+ 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
++#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++	unsigned long load = (unsigned long)this_rq->cfs.runnable_load_avg;
++#else
+ 	unsigned long load = this_rq->load.weight;
++#endif
+ 	unsigned long pending_updates;
  
-+	transport_lun_remove_cmd(cmd);
-+
- 	pr_debug("Setting SAM_STAT_TASK_ABORTED status for CDB: 0x%02x,"
- 		" ITT: 0x%08x\n", cmd->t_task_cdb[0],
- 		cmd->se_tfo->get_task_tag(cmd));
+ 	/*
+@@ -2589,7 +2593,11 @@ static void update_cpu_load_active(struct rq *this_rq)
+ 	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+ 	 */
+ 	this_rq->last_load_update_tick = jiffies;
++#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++	__update_cpu_load(this_rq, this_rq->cfs.runnable_load_avg, 1);
++#else
+ 	__update_cpu_load(this_rq, this_rq->load.weight, 1);
++#endif
+ 
+ 	calc_load_account_active(this_rq);
+ }
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7697171..9148bcc 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2909,7 +2909,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ /* Used instead of source_load when we know the type == 0 */
+ static unsigned long weighted_cpuload(const int cpu)
+ {
+-	return cpu_rq(cpu)->load.weight;
++	return (unsigned long)cpu_rq(cpu)->cfs.runnable_load_avg;
+ }
+ 
+ /*
+@@ -2956,7 +2956,7 @@ static unsigned long cpu_avg_load_per_task(int cpu)
+ 	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
+ 
+ 	if (nr_running)
+-		return rq->load.weight / nr_running;
++		return (unsigned long)rq->cfs.runnable_load_avg / nr_running;
+ 
+ 	return 0;
+ }
 -- 
-1.7.9.5
+1.7.0.1
 
