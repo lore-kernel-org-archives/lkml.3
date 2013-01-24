@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab3AXJkF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 04:40:05 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:57211 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab3AXJj5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 04:39:57 -0500
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, sachin.kamat@linaro.org
-Subject: [PATCH 1/1] pinctrl: core: Make pinctrl_release static
-Date: Thu, 24 Jan 2013 15:01:00 +0530
-Message-Id: <1359019860-3428-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752993Ab3AXJlw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 04:41:52 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:37654 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752731Ab3AXJls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 04:41:48 -0500
+Date: Thu, 24 Jan 2013 10:44:39 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Alex Shi <alex.shi@intel.com>
+Cc: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
+ power awareness scheduling
+Message-ID: <20130124094439.GB13463@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Alex Shi <alex.shi@intel.com>, torvalds@linux-foundation.org,
+	mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+	akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+	namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
+	gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+	viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'pinctrl_release' is used only in this file. Hence make it static.
+On Thu, Jan 24, 2013 at 11:06:42AM +0800, Alex Shi wrote:
+> Since the runnable info needs 345ms to accumulate, balancing
+> doesn't do well for many tasks burst waking. After talking with Mike
+> Galbraith, we are agree to just use runnable avg in power friendly 
+> scheduling and keep current instant load in performance scheduling for 
+> low latency.
+> 
+> So the biggest change in this version is removing runnable load avg in
+> balance and just using runnable data in power balance.
+> 
+> The patchset bases on Linus' tree, includes 3 parts,
+> ** 1, bug fix and fork/wake balancing clean up. patch 1~5,
+> ----------------------
+> the first patch remove one domain level. patch 2~5 simplified fork/wake
+> balancing, it can increase 10+% hackbench performance on our 4 sockets
+> SNB EP machine.
 
-Without this patch we get the following sparse error:
-drivers/pinctrl/core.c:815:6: warning:
-symbol 'pinctrl_release' was not declared. Should it be static?
+Ok, I see some benchmarking results here and there in the commit
+messages but since this is touching the scheduler, you probably would
+need to make sure it doesn't introduce performance regressions vs
+mainline with a comprehensive set of benchmarks.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/pinctrl/core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+And, AFAICR, mainline does by default the 'performance' scheme by
+spreading out tasks to idle cores, so have you tried comparing vanilla
+mainline to your patchset in the 'performance' setting so that you can
+make sure there are no problems there? And not only hackbench or a
+microbenchmark but aim9 (I saw that in a commit message somewhere) and
+whatever else multithreaded benchmark you can get your hands on.
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 5a2fe9a..b0a8e9a 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -812,7 +812,7 @@ static void pinctrl_put_locked(struct pinctrl *p, bool inlist)
-  * pinctrl_release() - release the pinctrl handle
-  * @kref: the kref in the pinctrl being released
-  */
--void pinctrl_release(struct kref *kref)
-+static void pinctrl_release(struct kref *kref)
- {
- 	struct pinctrl *p = container_of(kref, struct pinctrl, users);
- 
+Also, you might want to run it on other machines too, not only SNB :-)
+And what about ARM, maybe someone there can run your patchset too?
+
+So, it would be cool to see comprehensive results from all those runs
+and see what the numbers say.
+
+Thanks.
+
 -- 
-1.7.4.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
