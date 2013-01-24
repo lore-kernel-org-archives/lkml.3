@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3AXLQH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:16:07 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:47416 "EHLO
+	id S1755200Ab3AXLQa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:16:30 -0500
+Received: from vaxjo.synopsys.com ([198.182.60.75]:47439 "EHLO
 	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754811Ab3AXLM6 (ORCPT
+	with ESMTP id S1754324Ab3AXLQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:12:58 -0500
+	Thu, 24 Jan 2013 06:16:20 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v3 46/71] ARC: stacktracing APIs based on dw2 unwinder
-Date: Thu, 24 Jan 2013 16:36:11 +0530
-Message-ID: <1359025589-22277-28-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v3 68/71] ARC: [Review] Multi-platform image #8: platform registers SMP callbacks
+Date: Thu, 24 Jan 2013 16:36:28 +0530
+Message-ID: <1359025589-22277-45-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
 References: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
@@ -23,272 +23,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- arch/arc/Kconfig             |    4 +
- arch/arc/kernel/stacktrace.c |  215 +++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 217 insertions(+), 2 deletions(-)
+Platforms export their SMP callbacks by populating arc_smp_ops.
+The population itself needs to be done pretty early, from init_early
+callback.
 
-diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 0979d8e..84b23fa 100644
---- a/arch/arc/Kconfig
-+++ b/arch/arc/Kconfig
-@@ -60,6 +60,10 @@ config GENERIC_HWEIGHT
- config BINFMT_ELF
- 	def_bool y
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+---
+ arch/arc/plat-arcfpga/include/plat/smp.h |    1 +
+ arch/arc/plat-arcfpga/platform.c         |    4 +++
+ arch/arc/plat-arcfpga/smp.c              |   41 ++++++++++++++++-------------
+ 3 files changed, 28 insertions(+), 18 deletions(-)
+
+diff --git a/arch/arc/plat-arcfpga/include/plat/smp.h b/arch/arc/plat-arcfpga/include/plat/smp.h
+index 27822ac..c09eb4c 100644
+--- a/arch/arc/plat-arcfpga/include/plat/smp.h
++++ b/arch/arc/plat-arcfpga/include/plat/smp.h
+@@ -111,6 +111,7 @@ extern void idu_irq_set_tgtcpu(uint8_t irq, uint32_t mask);
+ extern void idu_irq_set_mode(uint8_t irq, uint8_t dest_mode, uint8_t trig_mode);
  
-+config STACKTRACE_SUPPORT
-+	def_bool y
-+	select STACKTRACE
+ extern void iss_model_init_smp(unsigned int cpu);
++extern void iss_model_init_early_smp(void);
+ 
+ #endif	/* CONFIG_SMP */
+ 
+diff --git a/arch/arc/plat-arcfpga/platform.c b/arch/arc/plat-arcfpga/platform.c
+index 4024f10..4e20a1a 100644
+--- a/arch/arc/plat-arcfpga/platform.c
++++ b/arch/arc/plat-arcfpga/platform.c
+@@ -162,6 +162,10 @@ static void __init plat_fpga_early_init(void)
+ 	setup_bvci_lat_unit();
+ 
+ 	arc_fpga_serial_init();
 +
- config HAVE_LATENCYTOP_SUPPORT
- 	def_bool y
++#ifdef CONFIG_SMP
++	iss_model_init_early_smp();
++#endif
+ }
  
-diff --git a/arch/arc/kernel/stacktrace.c b/arch/arc/kernel/stacktrace.c
-index b9d1646..a63ff84 100644
---- a/arch/arc/kernel/stacktrace.c
-+++ b/arch/arc/kernel/stacktrace.c
-@@ -1,13 +1,206 @@
+ static struct of_dev_auxdata plat_auxdata_lookup[] __initdata = {
+diff --git a/arch/arc/plat-arcfpga/smp.c b/arch/arc/plat-arcfpga/smp.c
+index 68a53b1..91b5534 100644
+--- a/arch/arc/plat-arcfpga/smp.c
++++ b/arch/arc/plat-arcfpga/smp.c
+@@ -24,25 +24,10 @@ static char smp_cpuinfo_buf[128];
+  *-------------------------------------------------------------------
+  */
+ 
+-const char *arc_platform_smp_cpuinfo(void)
+-{
+-#define IS_AVAIL1(var, str)    ((var) ? str : "")
+-
+-	struct bcr_mp mp;
+-
+-	READ_BCR(ARC_REG_MP_BCR, mp);
+-
+-	sprintf(smp_cpuinfo_buf, "Extn [700-SMP]: v%d, arch(%d) %s %s %s\n",
+-		mp.ver, mp.mp_arch, IS_AVAIL1(mp.scu, "SCU"),
+-		IS_AVAIL1(mp.idu, "IDU"), IS_AVAIL1(mp.sdu, "SDU"));
+-
+-	return smp_cpuinfo_buf;
+-}
+-
  /*
-+ *	stacktrace.c : stacktracing APIs needed by rest of kernel
-+ *			(wrappers over ARC dwarf based unwinder)
-+ *
-  * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-+ *
-+ *  vineetg: aug 2009
-+ *  -Implemented CONFIG_STACKTRACE APIs, primarily save_stack_trace_tsk( )
-+ *   for displaying task's kernel mode call stack in /proc/<pid>/stack
-+ *  -Iterator based approach to have single copy of unwinding core and APIs
-+ *   needing unwinding, implement the logic in iterator regarding:
-+ *      = which frame onwards to start capture
-+ *      = which frame to stop capturing (wchan)
-+ *      = specifics of data structs where trace is saved(CONFIG_STACKTRACE etc)
-+ *
-+ *  vineetg: March 2009
-+ *  -Implemented correct versions of thread_saved_pc() and get_wchan()
-+ *
-+ *  rajeshwarr: 2008
-+ *  -Initial implementation
+  * Master kick starting another CPU
   */
- 
- #include <linux/ptrace.h>
- #include <linux/export.h>
-+#include <linux/stacktrace.h>
-+#include <linux/kallsyms.h>
-+#include <asm/arcregs.h>
-+#include <asm/unwind.h>
-+#include <asm/switch_to.h>
-+
-+/*-------------------------------------------------------------------------
-+ *              Unwinder Iterator
-+ *-------------------------------------------------------------------------
-+ */
-+
-+#ifdef CONFIG_ARC_DW2_UNWIND
-+
-+static void seed_unwind_frame_info(struct task_struct *tsk,
-+				   struct pt_regs *regs,
-+				   struct unwind_frame_info *frame_info)
-+{
-+	if (tsk == NULL && regs == NULL) {
-+		unsigned long fp, sp, blink, ret;
-+		frame_info->task = current;
-+
-+		__asm__ __volatile__(
-+			"mov %0,r27\n\t"
-+			"mov %1,r28\n\t"
-+			"mov %2,r31\n\t"
-+			"mov %3,r63\n\t"
-+			: "=r"(fp), "=r"(sp), "=r"(blink), "=r"(ret)
-+		);
-+
-+		frame_info->regs.r27 = fp;
-+		frame_info->regs.r28 = sp;
-+		frame_info->regs.r31 = blink;
-+		frame_info->regs.r63 = ret;
-+		frame_info->call_frame = 0;
-+	} else if (regs == NULL) {
-+
-+		frame_info->task = tsk;
-+
-+		frame_info->regs.r27 = KSTK_FP(tsk);
-+		frame_info->regs.r28 = KSTK_ESP(tsk);
-+		frame_info->regs.r31 = KSTK_BLINK(tsk);
-+		frame_info->regs.r63 = (unsigned int)__switch_to;
-+
-+		/* In the prologue of __switch_to, first FP is saved on stack
-+		 * and then SP is copied to FP. Dwarf assumes cfa as FP based
-+		 * but we didn't save FP. The value retrieved above is FP's
-+		 * state in previous frame.
-+		 * As a work around for this, we unwind from __switch_to start
-+		 * and adjust SP accordingly. The other limitation is that
-+		 * __switch_to macro is dwarf rules are not generated for inline
-+		 * assembly code
-+		 */
-+		frame_info->regs.r27 = 0;
-+		frame_info->regs.r28 += 64;
-+		frame_info->call_frame = 0;
-+
-+	} else {
-+		frame_info->task = tsk;
-+
-+		frame_info->regs.r27 = regs->fp;
-+		frame_info->regs.r28 = regs->sp;
-+		frame_info->regs.r31 = regs->blink;
-+		frame_info->regs.r63 = regs->ret;
-+		frame_info->call_frame = 0;
-+	}
-+}
-+
-+#endif
-+
-+static noinline unsigned int
-+arc_unwind_core(struct task_struct *tsk, struct pt_regs *regs,
-+		int (*consumer_fn) (unsigned int, void *), void *arg)
-+{
-+#ifdef CONFIG_ARC_DW2_UNWIND
-+	int ret = 0;
-+	unsigned int address;
-+	struct unwind_frame_info frame_info;
-+
-+	seed_unwind_frame_info(tsk, regs, &frame_info);
-+
-+	while (1) {
-+		address = UNW_PC(&frame_info);
-+
-+		if (address && __kernel_text_address(address)) {
-+			if (consumer_fn(address, arg) == -1)
-+				break;
-+		}
-+
-+		ret = arc_unwind(&frame_info);
-+
-+		if (ret == 0) {
-+			frame_info.regs.r63 = frame_info.regs.r31;
-+			continue;
-+		} else {
-+			break;
-+		}
-+	}
-+
-+	return address;		/* return the last address it saw */
-+#else
-+	/* On ARC, only Dward based unwinder works. fp based backtracing is
-+	 * not possible (-fno-omit-frame-pointer) because of the way function
-+	 * prelogue is setup (callee regs saved and then fp set and not other
-+	 * way around
-+	 */
-+	pr_warn("CONFIG_ARC_DW2_UNWIND needs to be enabled\n");
-+	return 0;
-+
-+#endif
-+}
-+
-+/*-------------------------------------------------------------------------
-+ * callbacks called by unwinder iterator to implement kernel APIs
-+ *
-+ * The callback can return -1 to force the iterator to stop, which by default
-+ * keeps going till the bottom-most frame.
-+ *-------------------------------------------------------------------------
-+ */
-+
-+/* Call-back which plugs into unwinding core to dump the stack in
-+ * case of panic/OOPs/BUG etc
-+ */
-+static int __print_sym(unsigned int address, void *unused)
-+{
-+	__print_symbol("  %s\n", address);
-+	return 0;
-+}
-+
-+#ifdef CONFIG_STACKTRACE
-+
-+/* Call-back which plugs into unwinding core to capture the
-+ * traces needed by kernel on /proc/<pid>/stack
-+ */
-+static int __collect_all(unsigned int address, void *arg)
-+{
-+	struct stack_trace *trace = arg;
-+
-+	if (trace->skip > 0)
-+		trace->skip--;
-+	else
-+		trace->entries[trace->nr_entries++] = address;
-+
-+	if (trace->nr_entries >= trace->max_entries)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+static int __collect_all_but_sched(unsigned int address, void *arg)
-+{
-+	struct stack_trace *trace = arg;
-+
-+	if (in_sched_functions(address))
-+		return 0;
-+
-+	if (trace->skip > 0)
-+		trace->skip--;
-+	else
-+		trace->entries[trace->nr_entries++] = address;
-+
-+	if (trace->nr_entries >= trace->max_entries)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+#endif
-+
-+static int __get_first_nonsched(unsigned int address, void *unused)
-+{
-+	if (in_sched_functions(address))
-+		return 0;
-+
-+	return -1;
-+}
- 
- /*-------------------------------------------------------------------------
-  *              APIs expected by various kernel sub-systems
-@@ -16,7 +209,8 @@
- 
- noinline void show_stacktrace(struct task_struct *tsk, struct pt_regs *regs)
+-void arc_platform_smp_wakeup_cpu(int cpu, unsigned long pc)
++static void iss_model_smp_wakeup_cpu(int cpu, unsigned long pc)
  {
--	pr_info("\nStack Trace: NOT Available\n");
-+	pr_info("\nStack Trace:\n");
-+	arc_unwind_core(tsk, regs, __print_sym, NULL);
+ 	/* setup the start PC */
+ 	write_aux_reg(ARC_AUX_XTL_REG_PARAM, pc);
+@@ -103,19 +88,39 @@ void iss_model_init_smp(unsigned int cpu)
+ 	smp_ipi_irq_setup(cpu, IDU_INTERRUPT_0 + cpu);
  }
- EXPORT_SYMBOL(show_stacktrace);
  
-@@ -39,5 +233,22 @@ EXPORT_SYMBOL(dump_stack);
-  */
- unsigned int get_wchan(struct task_struct *tsk)
+-void arc_platform_ipi_send(const struct cpumask *callmap)
++static void iss_model_ipi_send(void *arg)
  {
--	return 0;
-+	return arc_unwind_core(tsk, NULL, __get_first_nonsched, NULL);
-+}
-+
-+#ifdef CONFIG_STACKTRACE
-+
-+/*
-+ * API required by CONFIG_STACKTRACE, CONFIG_LATENCYTOP.
-+ * A typical use is when /proc/<pid>/stack is queried by userland
-+ */
-+void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
-+{
-+	arc_unwind_core(tsk, NULL, __collect_all_but_sched, trace);
-+}
-+
-+void save_stack_trace(struct stack_trace *trace)
-+{
-+	arc_unwind_core(current, NULL, __collect_all, trace);
++	struct cpumask *callmap = arg;
+ 	unsigned int cpu;
+ 
+ 	for_each_cpu(cpu, callmap)
+ 		idu_irq_assert(cpu);
  }
-+#endif
+ 
+-void arc_platform_ipi_clear(int cpu, int irq)
++static void iss_model_ipi_clear(int cpu, int irq)
+ {
+ 	idu_irq_clear(IDU_INTERRUPT_0 + cpu);
+ }
+ 
++void iss_model_init_early_smp(void)
++{
++#define IS_AVAIL1(var, str)    ((var) ? str : "")
++
++	struct bcr_mp mp;
++
++	READ_BCR(ARC_REG_MP_BCR, mp);
++
++	sprintf(smp_cpuinfo_buf, "Extn [ISS-SMP]: v%d, arch(%d) %s %s %s\n",
++		mp.ver, mp.mp_arch, IS_AVAIL1(mp.scu, "SCU"),
++		IS_AVAIL1(mp.idu, "IDU"), IS_AVAIL1(mp.sdu, "SDU"));
++
++	plat_smp_ops.info = smp_cpuinfo_buf;
++
++	plat_smp_ops.cpu_kick = iss_model_smp_wakeup_cpu;
++	plat_smp_ops.ipi_send = iss_model_ipi_send;
++	plat_smp_ops.ipi_clear = iss_model_ipi_clear;
++}
++
+ /*
+  *-------------------------------------------------------------------
+  * Low level Platform IPI Providers
 -- 
 1.7.4.1
 
