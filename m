@@ -1,83 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab3AXKeu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:34:50 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:54727 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531Ab3AXKef (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:34:35 -0500
-Message-ID: <1359023666.5833.105.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
-From: Mike Galbraith <bitbucket@online.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
-        mingo@kernel.org, a.p.zijlstra@chello.nl
-Date: Thu, 24 Jan 2013 11:34:26 +0100
-In-Reply-To: <5100FE61.1030004@linux.vnet.ibm.com>
-References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com>
-	 <50FE0ADC.6060701@linux.vnet.ibm.com>
-	 <1358841795.5782.255.camel@marge.simpson.net>
-	 <50FE5433.1070801@linux.vnet.ibm.com>
-	 <1358865692.5782.420.camel@marge.simpson.net>
-	 <50FF4EA0.1070000@linux.vnet.ibm.com>
-	 <1358915494.5752.46.camel@marge.simpson.net>
-	 <50FF7086.4020509@linux.vnet.ibm.com>
-	 <1358922520.5752.91.camel@marge.simpson.net>
-	 <50FF8CD8.4060105@linux.vnet.ibm.com>
-	 <1358929257.5752.109.camel@marge.simp! son.net>
-	 <50FF9F92.60202@linux.vnet.ibm.com>
-	 <1358930968.5752.123.camel@marge.simpson.net>
-	 <50FFA695.6010407@linux.vnet.ibm.com>
-	 <1358932694.5752.126.camel@marge.simpson.net>
-	 <1358933555.5752.132.camel@marge.simpson.net>
-	 <5100CE1F.7080704@linux.vnet.ibm.com>
-	 <1359010272.5833.39.camel@marge.simpson.net>
-	 <5100DF95.3020909@linux.vnet.ibm.com>
-	 <1359013623.5833.52.camel@marge.simpson.net>
-	 <5100ED7A.303@linux.vnet.ibm.com>
-	 <1359018455.5833.64.camel@marge.simpson.net>
-	 <5100FE61.1030004@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:CnRECuitLYno6xXlo1cwJjm4VVkg3fEpTsZYq4wyoPT
- v7Kmh66KE7qYa60B0EshIjj5WvVofNnGaKLs/jh38pS9iKPTRx
- hUlEP2pcGS6vVyJ20qFRu514l0CCongfzamCfbMkPV4WeUmwL7
- qQxRRrfWYHiEornJMn3/e2XzUaPmfHaRroxiW5qzyys88x8lxR
- OHFW2cdbdhRXHU+NofmpRTWqJhjDX05DwrtX6Ms+49qREmKPTv
- MdVrIL1ENKvsSYXGfjW8GTxh7oAA6np+8dcQ+UYjXnWJN1IRz8
- m8VO74K6DxuQyXPMFrXmw8iKempXhTPflTRpz0nx426jKlScrh
- CvvqxMOMny15Fd3/rfHKWt9OqUcSBMWcPZHdkgJx/bZUFw7ulA
- Ab0cRzYaU+zSw==
+	id S1752980Ab3AXKep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:34:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54826 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753483Ab3AXKee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 05:34:34 -0500
+Date: Thu, 24 Jan 2013 12:38:42 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V6 2/3] vhost_net: handle polling errors when setting
+ backend
+Message-ID: <20130124103842.GD9368@redhat.com>
+References: <1358351078-58915-1-git-send-email-jasowang@redhat.com>
+ <1358351078-58915-3-git-send-email-jasowang@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358351078-58915-3-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-24 at 17:26 +0800, Michael Wang wrote: 
-> On 01/24/2013 05:07 PM, Mike Galbraith wrote:
-> > On Thu, 2013-01-24 at 16:14 +0800, Michael Wang wrote:
-> > 
-> >> Now it's time to work on v3 I think, let's see what we could get this time.
-> > 
-> > Maybe v3 can try to not waste so much ram on affine map?
+On Wed, Jan 16, 2013 at 11:44:37PM +0800, Jason Wang wrote:
+> Currently, the polling errors were ignored, which can lead following issues:
 > 
-> Yeah, that has been a question in my mind at very beginning, but how...
-
-Allocate at domain build time the max we can acquire via hotplug?
-> > Even better would be if it could just go away, along with relic of the
-> > bad old days wake_affine(), and we make the balance path so damn light
-> > but clever that select_idle_sibling() can go away too... and a pony ;-)
+> - vhost remove itself unconditionally from waitqueue when stopping the poll,
+>   this may crash the kernel since the previous attempt of starting may fail to
+>   add itself to the waitqueue
+> - userspace may think the backend were successfully set even when the polling
+>   failed.
 > 
-> Hmm...may be, I need some consideration here, a totally balance path,
-> interesting...
+> Solve this by:
+> 
+> - check poll->wqh before trying to remove from waitqueue
+> - report polling errors in vhost_poll_start(), tx_poll_start(), the return value
+>   will be checked and returned when userspace want to set the backend
+> 
+> After this fix, there still could be a polling failure after backend is set, it
+> will addressed by the next patch.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Unification is the right target, hitting it might not be so easy though.
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-> But I think we still need the clean code which sbm bring to us, do we?
-
-Sure, if it makes things perform better.
-
--Mike
-
+> ---
+>  drivers/vhost/net.c   |   27 ++++++++++++++++++---------
+>  drivers/vhost/vhost.c |   18 +++++++++++++++---
+>  drivers/vhost/vhost.h |    2 +-
+>  3 files changed, 34 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index d10ad6f..959b1cd 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -165,12 +165,16 @@ static void tx_poll_stop(struct vhost_net *net)
+>  }
+>  
+>  /* Caller must have TX VQ lock */
+> -static void tx_poll_start(struct vhost_net *net, struct socket *sock)
+> +static int tx_poll_start(struct vhost_net *net, struct socket *sock)
+>  {
+> +	int ret;
+> +
+>  	if (unlikely(net->tx_poll_state != VHOST_NET_POLL_STOPPED))
+> -		return;
+> -	vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
+> -	net->tx_poll_state = VHOST_NET_POLL_STARTED;
+> +		return 0;
+> +	ret = vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
+> +	if (!ret)
+> +		net->tx_poll_state = VHOST_NET_POLL_STARTED;
+> +	return ret;
+>  }
+>  
+>  /* In case of DMA done not in order in lower device driver for some reason.
+> @@ -642,20 +646,23 @@ static void vhost_net_disable_vq(struct vhost_net *n,
+>  		vhost_poll_stop(n->poll + VHOST_NET_VQ_RX);
+>  }
+>  
+> -static void vhost_net_enable_vq(struct vhost_net *n,
+> +static int vhost_net_enable_vq(struct vhost_net *n,
+>  				struct vhost_virtqueue *vq)
+>  {
+>  	struct socket *sock;
+> +	int ret;
+>  
+>  	sock = rcu_dereference_protected(vq->private_data,
+>  					 lockdep_is_held(&vq->mutex));
+>  	if (!sock)
+> -		return;
+> +		return 0;
+>  	if (vq == n->vqs + VHOST_NET_VQ_TX) {
+>  		n->tx_poll_state = VHOST_NET_POLL_STOPPED;
+> -		tx_poll_start(n, sock);
+> +		ret = tx_poll_start(n, sock);
+>  	} else
+> -		vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
+> +		ret = vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
+> +
+> +	return ret;
+>  }
+>  
+>  static struct socket *vhost_net_stop_vq(struct vhost_net *n,
+> @@ -833,7 +840,9 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+>  		r = vhost_init_used(vq);
+>  		if (r)
+>  			goto err_used;
+> -		vhost_net_enable_vq(n, vq);
+> +		r = vhost_net_enable_vq(n, vq);
+> +		if (r)
+> +			goto err_used;
+>  
+>  		oldubufs = vq->ubufs;
+>  		vq->ubufs = ubufs;
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index 34389f7..9759249 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -77,26 +77,38 @@ void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
+>  	init_poll_funcptr(&poll->table, vhost_poll_func);
+>  	poll->mask = mask;
+>  	poll->dev = dev;
+> +	poll->wqh = NULL;
+>  
+>  	vhost_work_init(&poll->work, fn);
+>  }
+>  
+>  /* Start polling a file. We add ourselves to file's wait queue. The caller must
+>   * keep a reference to a file until after vhost_poll_stop is called. */
+> -void vhost_poll_start(struct vhost_poll *poll, struct file *file)
+> +int vhost_poll_start(struct vhost_poll *poll, struct file *file)
+>  {
+>  	unsigned long mask;
+> +	int ret = 0;
+>  
+>  	mask = file->f_op->poll(file, &poll->table);
+>  	if (mask)
+>  		vhost_poll_wakeup(&poll->wait, 0, 0, (void *)mask);
+> +	if (mask & POLLERR) {
+> +		if (poll->wqh)
+> +			remove_wait_queue(poll->wqh, &poll->wait);
+> +		ret = -EINVAL;
+> +	}
+> +
+> +	return ret;
+>  }
+>  
+>  /* Stop polling a file. After this function returns, it becomes safe to drop the
+>   * file reference. You must also flush afterwards. */
+>  void vhost_poll_stop(struct vhost_poll *poll)
+>  {
+> -	remove_wait_queue(poll->wqh, &poll->wait);
+> +	if (poll->wqh) {
+> +		remove_wait_queue(poll->wqh, &poll->wait);
+> +		poll->wqh = NULL;
+> +	}
+>  }
+>  
+>  static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
+> @@ -792,7 +804,7 @@ long vhost_vring_ioctl(struct vhost_dev *d, int ioctl, void __user *argp)
+>  		fput(filep);
+>  
+>  	if (pollstart && vq->handle_kick)
+> -		vhost_poll_start(&vq->poll, vq->kick);
+> +		r = vhost_poll_start(&vq->poll, vq->kick);
+>  
+>  	mutex_unlock(&vq->mutex);
+>  
+> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> index 2639c58..17261e2 100644
+> --- a/drivers/vhost/vhost.h
+> +++ b/drivers/vhost/vhost.h
+> @@ -42,7 +42,7 @@ void vhost_work_queue(struct vhost_dev *dev, struct vhost_work *work);
+>  
+>  void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
+>  		     unsigned long mask, struct vhost_dev *dev);
+> -void vhost_poll_start(struct vhost_poll *poll, struct file *file);
+> +int vhost_poll_start(struct vhost_poll *poll, struct file *file);
+>  void vhost_poll_stop(struct vhost_poll *poll);
+>  void vhost_poll_flush(struct vhost_poll *poll);
+>  void vhost_poll_queue(struct vhost_poll *poll);
+> -- 
+> 1.7.1
