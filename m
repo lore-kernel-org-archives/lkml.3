@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab3AXRdA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 12:33:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59524 "EHLO mail.zytor.com"
+	id S1754179Ab3AXRdT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 12:33:19 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:37477 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740Ab3AXRc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 12:32:58 -0500
-Message-ID: <51017028.3020001@zytor.com>
-Date: Thu, 24 Jan 2013 11:32:24 -0600
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753389Ab3AXRdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 12:33:05 -0500
+Date: Thu, 24 Jan 2013 18:35:55 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, x86@kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, tglx@linutronix.de, JBeulich@suse.com
+Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
+ special hypervisor interrupts
+Message-ID: <20130124173555.GJ13463@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	"K. Y. Srinivasan" <kys@microsoft.com>, x86@kernel.org,
+	gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+	devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+	jasowang@redhat.com, tglx@linutronix.de, JBeulich@suse.com
+References: <1358992569-22826-1-git-send-email-kys@microsoft.com>
+ <20130124092821.GA13463@pd.tnic>
+ <04854149-91a3-4834-b2bb-de301c8241c9@email.android.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3, v2] x86: xor-block handling adjustments
-References: <5093E40902000078000A6147@nat28.tlf.novell.com> <20130124171554.GC11772@gmail.com>
-In-Reply-To: <20130124171554.GC11772@gmail.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <04854149-91a3-4834-b2bb-de301c8241c9@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 11:15 AM, Ingo Molnar wrote:
-> 
-> * Jan Beulich <JBeulich@suse.com> wrote:
-> 
->> v2 of this series is merely updated on top of the changes between
->> 3.6 and 3.7-rc (which includes the dropping of what previously was
->> the second patch in a four patch series).
->>
->> 1: unify SSE-base xor-block routines
->> 2: add alternative SSE implementation only prefetching once per 64-byte line
->> 3: make virtualization friendly
->>
->> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> 
-> Looks useful. Wondering what the status is: hpa, was your 
-> concern resolved, do you think we can apply these?
-> 
+On Thu, Jan 24, 2013 at 06:11:32AM -0600, H. Peter Anvin wrote:
+> Sounds great in theory at least, as long as it doesn't mean pushing a
+> bunch of #ifdefs into other code.
 
-I don't see anything wrong, except that I can't *find* patch 3/3 either
-in my inbox nor on LKML...
+Just one set in hypervisor.h but this is the RightWay™ we do it in the
+kernel :-).
 
-	-hpa
+Anyway, it turned out to be easier than I thought, just two patches
+which I'll be sending as a reply to this message. I'll run more
+randconfig tests on them, anyone sees issues please let me know.
 
+Thanks.
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
