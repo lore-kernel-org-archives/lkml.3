@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab3AXMTN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 07:19:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56920 "EHLO mail.zytor.com"
+	id S1753722Ab3AXMT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 07:19:59 -0500
+Received: from antcom.de ([188.40.178.216]:40930 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752902Ab3AXMTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 07:19:09 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAPM=9tzqfDb7wtwRbDcYYcoB_HBLWksP8NYggsfj_GcNu=CY-A@mail.gmail.com>
-References: <1359001345-3446-1-git-send-email-airlied@gmail.com> <b2122295-0a35-4aba-90f3-8306b92af78b@email.android.com> <CAPM=9tzqfDb7wtwRbDcYYcoB_HBLWksP8NYggsfj_GcNu=CY-A@mail.gmail.com>
+	id S1752916Ab3AXMTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 07:19:54 -0500
+Message-ID: <510126E7.5090802@antcom.de>
+Date: Thu, 24 Jan 2013 13:19:51 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.11) Gecko/20121123 Icedove/10.0.11
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] vgacon/vt: clear buffer attributes when we load a 512 character font
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 24 Jan 2013 06:18:58 -0600
-To: Dave Airlie <airlied@gmail.com>
-CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Message-ID: <1ef10934-f81f-4a4b-b4a9-4d499e9721bc@email.android.com>
+To: Stijn Devriendt <highguy@gmail.com>
+CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, sr@denx.de, wg@grandegger.com, mark.rutland@arm.com,
+        nicolas.ferre@atmel.com
+Subject: Re: [PATCH 6/6 v14] gpio: Add block gpio to several gpio drivers
+References: <1358856404-8975-1-git-send-email-stigge@antcom.de> <1358856404-8975-7-git-send-email-stigge@antcom.de> <CAOY=C6H5xETt5UNXUfRkGW9q+bj0y2R3sXNvW87XXvQcYoL_-g@mail.gmail.com>
+In-Reply-To: <CAOY=C6H5xETt5UNXUfRkGW9q+bj0y2R3sXNvW87XXvQcYoL_-g@mail.gmail.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The characters will morph anyway, it is just a matter off having them randomly scream with the intensity bit.
+On 01/24/2013 01:02 PM, Stijn Devriendt wrote:
+>> +static void lpc32xx_gpio_set_block_p3(struct gpio_chip *chip,
+>> +                                     unsigned long mask,
+>> +                                     unsigned long values)
+>> +{
+>> +       struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
+>> +       u32 set_bits = values & mask;
+>> +       u32 clr_bits = ~values & mask;
+>> +
+>> +       /* States of GPIO 0-5 start at bit 25 */
+>> +       set_bits <<= 25;
+>> +       clr_bits <<= 25;
+>> +
+>> +       /* Note: On LPC32xx, GPOs can only be set at once or cleared at once,
+>> +        *       but not set and cleared at once
+>> +        */
+>> +       if (set_bits)
+>> +               __raw_writel(set_bits, group->gpio_grp->outp_set);
+>> +       if (clr_bits)
+>> +               __raw_writel(clr_bits, group->gpio_grp->outp_clr);
+>> +}
+>> +
+> 
+> In my patch, I go out of the way of this kind of thing for a simple reason:
+> You may generate incorrect timing by doing this.
 
-512-character mode is definitely useful... we get much wider language coverage with 512 than with 256, which is why most distros use a 512 console font.
+You are right, certain things like synchronous on+off is not really
+possible.
 
-Dave Airlie <airlied@gmail.com> wrote:
+However, the above at least supports switching on simulaneously, and
+switching off simultaneously, which is an improvement in certain cases
+(and this certain hardware part doesn't support more). Maybe this
+certain driver behaviour can be documented even better than just in the
+driver source.
 
->On Thu, Jan 24, 2013 at 3:20 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> We should clear this bit presumably on switching either from or to
->512-char mode, since the bit doesn't really make sense either way.
->
->Yeah the only problem going from 512-char is that chars above 256 will
->morph into garbage chars below 256, like ctrl chars, I don't really
->want to face into doing some sort of safe translation out of 512-char
->mode, from reading around the net, 512 char mode doesn't seem all that
->brilliantly useful.
->
->Dave.
+If there is consensus that everything else in the patch set is settled,
+and we just don't want to support behaviour like the above - well, we
+can still drop it.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Thanks for the note,
+
+Roland
+
