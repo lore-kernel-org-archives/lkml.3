@@ -1,169 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab3AXTrQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:47:16 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33903 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab3AXTrI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:47:08 -0500
-Date: Thu, 24 Jan 2013 11:46:35 -0800
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Message-ID: <tip-f684199f5de805ac50ea5bdec2b082882586a777@git.kernel.org>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, ananth@in.ibm.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, ananth@in.ibm.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20120928081522.3560.75469.stgit@ltc138.sdl.hitachi.co.jp>
-References: <20120928081522.3560.75469.stgit@ltc138.sdl.hitachi.co.jp>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] kprobes/x86: Move kprobes stuff under arch/x86/
- kernel/kprobes/
-Git-Commit-ID: f684199f5de805ac50ea5bdec2b082882586a777
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1755517Ab3AXTrj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:47:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751951Ab3AXTrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 14:47:32 -0500
+Date: Thu, 24 Jan 2013 20:47:18 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Vinson Lee <vlee@twitter.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Fix build with older versions of bison.
+Message-ID: <20130124194718.GB18404@krava.redhat.com>
+References: <1352843407-30618-1-git-send-email-vlee@twitter.com>
+ <20130123215831.GD6687@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 11:46:41 -0800 (PST)
+In-Reply-To: <20130123215831.GD6687@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f684199f5de805ac50ea5bdec2b082882586a777
-Gitweb:     http://git.kernel.org/tip/f684199f5de805ac50ea5bdec2b082882586a777
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Fri, 28 Sep 2012 17:15:22 +0900
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 21 Jan 2013 13:22:37 -0500
+On Wed, Jan 23, 2013 at 06:58:31PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Nov 13, 2012 at 01:50:07PM -0800, Vinson Lee escreveu:
+> > This patch fixes this build error with older versions of bison.
+> 
+> Sorry for leaving this patch unapplied, fell thru the cracks.
+> 
+> But can you please explain what the patch does?
 
-kprobes/x86: Move kprobes stuff under arch/x86/kernel/kprobes/
+right.. the patch looks ok, but more info in change log would be nice
 
-Move arch-dep kprobes stuff under arch/x86/kernel/kprobes.
+jirka
 
-Link: http://lkml.kernel.org/r/20120928081522.3560.75469.stgit@ltc138.sdl.hitachi.co.jp
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-[ fixed whitespace and s/__attribute__((packed))/__packed/ ]
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/kernel/Makefile                               | 4 +---
- arch/x86/kernel/kprobes/Makefile                       | 7 +++++++
- arch/x86/kernel/{kprobes-common.h => kprobes/common.h} | 0
- arch/x86/kernel/{kprobes.c => kprobes/core.c}          | 6 +++---
- arch/x86/kernel/{kprobes-ftrace.c => kprobes/ftrace.c} | 2 +-
- arch/x86/kernel/{kprobes-opt.c => kprobes/opt.c}       | 2 +-
- 6 files changed, 13 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index cc5d31f..ac3b3d0 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -65,9 +65,7 @@ obj-$(CONFIG_X86_TSC)		+= trace_clock.o
- obj-$(CONFIG_KEXEC)		+= machine_kexec_$(BITS).o
- obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
- obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
--obj-$(CONFIG_KPROBES)		+= kprobes.o
--obj-$(CONFIG_OPTPROBES)		+= kprobes-opt.o
--obj-$(CONFIG_KPROBES_ON_FTRACE)	+= kprobes-ftrace.o
-+obj-y				+= kprobes/
- obj-$(CONFIG_MODULES)		+= module.o
- obj-$(CONFIG_DOUBLEFAULT) 	+= doublefault_32.o
- obj-$(CONFIG_KGDB)		+= kgdb.o
-diff --git a/arch/x86/kernel/kprobes/Makefile b/arch/x86/kernel/kprobes/Makefile
-new file mode 100644
-index 0000000..0d33169
---- /dev/null
-+++ b/arch/x86/kernel/kprobes/Makefile
-@@ -0,0 +1,7 @@
-+#
-+# Makefile for kernel probes
-+#
-+
-+obj-$(CONFIG_KPROBES)		+= core.o
-+obj-$(CONFIG_OPTPROBES)		+= opt.o
-+obj-$(CONFIG_KPROBES_ON_FTRACE)	+= ftrace.o
-diff --git a/arch/x86/kernel/kprobes-common.h b/arch/x86/kernel/kprobes/common.h
-similarity index 100%
-rename from arch/x86/kernel/kprobes-common.h
-rename to arch/x86/kernel/kprobes/common.h
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes/core.c
-similarity index 99%
-rename from arch/x86/kernel/kprobes.c
-rename to arch/x86/kernel/kprobes/core.c
-index 18114bf..e124554 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -58,7 +58,7 @@
- #include <asm/insn.h>
- #include <asm/debugreg.h>
- 
--#include "kprobes-common.h"
-+#include "common.h"
- 
- void jprobe_return_end(void);
- 
-@@ -78,7 +78,7 @@ DEFINE_PER_CPU(struct kprobe_ctlblk, kprobe_ctlblk);
- 	 * Groups, and some special opcodes can not boost.
- 	 * This is non-const and volatile to keep gcc from statically
- 	 * optimizing it out, as variable_test_bit makes gcc think only
--	 * *(unsigned long*) is used. 
-+	 * *(unsigned long*) is used.
- 	 */
- static volatile u32 twobyte_is_boostable[256 / 32] = {
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f          */
-@@ -117,7 +117,7 @@ static void __kprobes __synthesize_relative_insn(void *from, void *to, u8 op)
- 	struct __arch_relative_insn {
- 		u8 op;
- 		s32 raddr;
--	} __attribute__((packed)) *insn;
-+	} __packed *insn;
- 
- 	insn = (struct __arch_relative_insn *)from;
- 	insn->raddr = (s32)((long)(to) - ((long)(from) + 5));
-diff --git a/arch/x86/kernel/kprobes-ftrace.c b/arch/x86/kernel/kprobes/ftrace.c
-similarity index 98%
-rename from arch/x86/kernel/kprobes-ftrace.c
-rename to arch/x86/kernel/kprobes/ftrace.c
-index 70a81c7..23ef5c5 100644
---- a/arch/x86/kernel/kprobes-ftrace.c
-+++ b/arch/x86/kernel/kprobes/ftrace.c
-@@ -23,7 +23,7 @@
- #include <linux/preempt.h>
- #include <linux/ftrace.h>
- 
--#include "kprobes-common.h"
-+#include "common.h"
- 
- static int __skip_singlestep(struct kprobe *p, struct pt_regs *regs,
- 			     struct kprobe_ctlblk *kcb)
-diff --git a/arch/x86/kernel/kprobes-opt.c b/arch/x86/kernel/kprobes/opt.c
-similarity index 99%
-rename from arch/x86/kernel/kprobes-opt.c
-rename to arch/x86/kernel/kprobes/opt.c
-index c5e410e..76dc6f0 100644
---- a/arch/x86/kernel/kprobes-opt.c
-+++ b/arch/x86/kernel/kprobes/opt.c
-@@ -37,7 +37,7 @@
- #include <asm/insn.h>
- #include <asm/debugreg.h>
- 
--#include "kprobes-common.h"
-+#include "common.h"
- 
- unsigned long __recover_optprobed_insn(kprobe_opcode_t *buf, unsigned long addr)
- {
+> 
+> - Arnaldo
+>  
+> >     CC util/sysfs.o
+> >     BISON util/pmu-bison.c
+> > util/pmu.y:2.14-24: syntax error, unexpected string, expecting =
+> > make: *** [util/pmu-bison.c] Error 1
+> > 
+> > Signed-off-by: Vinson Lee <vlee@twitter.com>
+> > Cc: stable@vger.kernel.org # 3.4+
+> > ---
+> >  tools/perf/Makefile            |    4 ++--
+> >  tools/perf/util/parse-events.y |    1 -
+> >  tools/perf/util/pmu.y          |    1 -
+> >  3 files changed, 2 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> > index 00deed4..c2fb5bc 100644
+> > --- a/tools/perf/Makefile
+> > +++ b/tools/perf/Makefile
+> > @@ -241,13 +241,13 @@ $(OUTPUT)util/parse-events-flex.c: util/parse-events.l $(OUTPUT)util/parse-event
+> >  	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
+> >  
+> >  $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
+> > -	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
+> > +	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c -p parse_events_
+> >  
+> >  $(OUTPUT)util/pmu-flex.c: util/pmu.l $(OUTPUT)util/pmu-bison.c
+> >  	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
+> >  
+> >  $(OUTPUT)util/pmu-bison.c: util/pmu.y
+> > -	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
+> > +	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c -p perf_pmu_
+> >  
+> >  $(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
+> >  $(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
+> > diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+> > index cd88209..85cdaed 100644
+> > --- a/tools/perf/util/parse-events.y
+> > +++ b/tools/perf/util/parse-events.y
+> > @@ -1,5 +1,4 @@
+> >  %pure-parser
+> > -%name-prefix "parse_events_"
+> >  %parse-param {void *_data}
+> >  %parse-param {void *scanner}
+> >  %lex-param {void* scanner}
+> > diff --git a/tools/perf/util/pmu.y b/tools/perf/util/pmu.y
+> > index ec89804..bfd7e85 100644
+> > --- a/tools/perf/util/pmu.y
+> > +++ b/tools/perf/util/pmu.y
+> > @@ -1,5 +1,4 @@
+> >  
+> > -%name-prefix "perf_pmu_"
+> >  %parse-param {struct list_head *format}
+> >  %parse-param {char *name}
+> >  
+> > -- 
+> > 1.5.4.3
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
