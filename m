@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030202Ab3AXUmH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:42:07 -0500
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:40755 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030184Ab3AXUlz (ORCPT
+	id S1756149Ab3AXUn5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:43:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34999 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755749Ab3AXUnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:41:55 -0500
-Date: Thu, 24 Jan 2013 15:42:03 -0500
-From: Matt Porter <mporter@ti.com>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 00/14] DMA Engine support for AM33XX
-Message-ID: <20130124204203.GD5256@beef>
-References: <1358281974-8411-1-git-send-email-mporter@ti.com>
- <50FEB6B2.5020303@ti.com>
- <20130123022133.GA5727@opensource.wolfsonmicro.com>
- <20130123213736.GC5256@beef>
- <d07dbfd50690423b903803720152c0dc@DLEE74.ent.ti.com>
+	Thu, 24 Jan 2013 15:43:51 -0500
+Date: Thu, 24 Jan 2013 12:43:37 -0800
+From: tip-bot for Sasha Levin <sasha.levin@oracle.com>
+Message-ID: <tip-47dd80e801c32c114bcc6767ad190361c8b70172@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, sasha.levin@oracle.com, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <1352753446-24109-1-git-send-email-sasha.levin@oracle.com>
+References: <1352753446-24109-1-git-send-email-sasha.levin@oracle.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] lockdep: Be nice about building from userspace
+Git-Commit-ID: 47dd80e801c32c114bcc6767ad190361c8b70172
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <d07dbfd50690423b903803720152c0dc@DLEE74.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 12:43:43 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 05:14:13AM +0000, Sekhar Nori wrote:
-> Matt,
-> 
-> On 1/24/2013 3:07 AM, Matt Porter wrote:
-> > On Wed, Jan 23, 2013 at 10:21:42AM +0800, Mark Brown wrote:
-> >> On Tue, Jan 22, 2013 at 09:26:34PM +0530, Sekhar Nori wrote:
-> >>> On 1/16/2013 2:02 AM, Matt Porter wrote:
-> >>
-> >>>> This series adds DMA Engine support for AM33xx, which uses
-> >>>> an EDMA DMAC. The EDMA DMAC has been previously supported by only
-> >>>> a private API implementation (much like the situation with OMAP
-> >>>> DMA) found on the DaVinci family of SoCs.
-> >>
-> >>> Will you take this series through the OMAP tree? Only 1/14 touches
-> >>> mach-davinci and I am mostly okay with it except some changes I just
-> >>> requested Matt to make in another thread.
-> >>
-> >> Is this series somewhere near actually getting merged then? It seemed
-> >> like there was lots of stuff going on.
-> > 
-> > The issues raised by Sekhar and Santosh were reasonably minor and will
-> > be addressed. My major concern is that the dependency on some api to
-> > fetch dmaengine driver SG limitations is not resolved. That's being
-> > discussed in https://lkml.org/lkml/2013/1/10/432
-> 
-> It might be worth posting the patches which don't have dependencies and
-> are ready for acceptance as a separate series. That way at least some of
-> these patches have a good chance of getting into v3.9 if not the entire
-> series.
+Commit-ID:  47dd80e801c32c114bcc6767ad190361c8b70172
+Gitweb:     http://git.kernel.org/tip/47dd80e801c32c114bcc6767ad190361c8b70172
+Author:     Sasha Levin <sasha.levin@oracle.com>
+AuthorDate: Mon, 12 Nov 2012 15:50:46 -0500
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 24 Jan 2013 17:54:50 +0100
 
-Yes a good idea and seems to be the best option. I've dropped the mmc
-support from the series for the next version. I'll repost the separately
-when we have an api to support it.
+lockdep: Be nice about building from userspace
 
--Matt
+Lockdep is an awesome piece of code which detects locking issues
+which are relevant both to userspace and kernelspace. We can
+easily make lockdep work in userspace since there is really no
+kernel spacific magic going on in the code.
+
+All we need is to wrap two functions which are used by lockdep
+and are very kernel specific.
+
+Doing that will allow tools located in tools/ to easily utilize
+lockdep's code for their own use.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: penberg@kernel.org
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1352753446-24109-1-git-send-email-sasha.levin@oracle.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/lockdep.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 5cf12e7..c783e80 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -584,6 +584,7 @@ static int very_verbose(struct lock_class *class)
+ /*
+  * Is this the address of a static object:
+  */
++#ifdef __KERNEL__
+ static int static_obj(void *obj)
+ {
+ 	unsigned long start = (unsigned long) &_stext,
+@@ -610,6 +611,7 @@ static int static_obj(void *obj)
+ 	 */
+ 	return is_module_address(addr) || is_module_percpu_address(addr);
+ }
++#endif
+ 
+ /*
+  * To make lock name printouts unique, we calculate a unique
+@@ -4109,6 +4111,7 @@ void debug_check_no_locks_held(struct task_struct *task)
+ 		print_held_locks_bug(task);
+ }
+ 
++#ifdef __KERNEL__
+ void debug_show_all_locks(void)
+ {
+ 	struct task_struct *g, *p;
+@@ -4166,6 +4169,7 @@ retry:
+ 		read_unlock(&tasklist_lock);
+ }
+ EXPORT_SYMBOL_GPL(debug_show_all_locks);
++#endif
+ 
+ /*
+  * Careful: only use this function if you are sure that
