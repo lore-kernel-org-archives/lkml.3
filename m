@@ -1,54 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab3AXPeZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:34:25 -0500
-Received: from mx1.fusionio.com ([66.114.96.30]:54312 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750996Ab3AXPeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:34:23 -0500
-X-ASG-Debug-ID: 1359041662-03d6a508b8552900001-xx1T2L
-X-Barracuda-Envelope-From: JBacik@fusionio.com
-Date: Thu, 24 Jan 2013 10:34:20 -0500
-From: Josef Bacik <jbacik@fusionio.com>
-To: Cong Ding <dinggnu@gmail.com>
-CC: Chris Mason <clmason@fusionio.com>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] btrfs: fix potential null pointer dereference bug
-Message-ID: <20130124153420.GC2349@localhost.localdomain>
-X-ASG-Orig-Subj: Re: [PATCH] btrfs: fix potential null pointer dereference bug
-References: <1358609265-347-1-git-send-email-dinggnu@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1358609265-347-1-git-send-email-dinggnu@gmail.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1359041662
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.120779
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1754288Ab3AXPfD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:35:03 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:41490 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab3AXPe7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 10:34:59 -0500
+From: Gu1 <gu1@aeroxteam.fr>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel Kachhap <amit.kachhap@linaro.org>
+Cc: Gu1 <gu1@aeroxteam.fr>
+Subject: [PATCH] Thermal: fix iteration over CPU frequency list
+Date: Thu, 24 Jan 2013 16:24:05 +0100
+Message-Id: <1359041045-24341-1-git-send-email-gu1@aeroxteam.fr>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 19, 2013 at 08:27:45AM -0700, Cong Ding wrote:
-> The bug happens when rb_node == NULL. It causes variable node to be NULL and
-> then the NULL pointer is dereferenced this line:
-> 	BUG_ON((struct btrfs_root *)node->data != root);
-> 
-> Based on my analysis, function tree_search should not return NULL to variable
-> rb_node in this case (otherwise here has to be something unknown thing wrong),
-> so I replace "if (rb_node)" with UG_ON(!rb_node).
-> 
-> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+In different places in the Thermal code, the CPU frequency list is iterated
+in an incorrect way, leading to endless loops when the frequency list contains
+a CPUFREQ_TABLE_INVALID entry, which is the case by default in the the Exynos
+4x12 cpufreq driver, for example.
 
-I don't want to add more BUG_ON()'s, just return an error.
+The frequency list is iterated with a while loop, and when a
+CPUFREQ_TABLE_INVALID entry is encountered, the continue; statement is used to
+skip it, but the index is not incremented, causing an endless loop.
 
-Josef
+A similar bug was fixed by hongbo.zhang in commit:
+  Thermal: fix bug of counting cpu frequencies
+
+Signed-off-by: Gu1 <gu1@aeroxteam.fr>
+---
+ drivers/thermal/cpu_cooling.c    | 8 +++-----
+ drivers/thermal/exynos_thermal.c | 9 +++++----
+ 2 files changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index 836828e..51acd26 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -123,7 +123,7 @@ static int is_cpufreq_valid(int cpu)
+  */
+ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
+ {
+-	int ret = 0, i = 0;
++	int ret = 0, i;
+ 	unsigned long level_index;
+ 	bool descend = false;
+ 	struct cpufreq_frequency_table *table =
+@@ -131,7 +131,7 @@ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
+ 	if (!table)
+ 		return ret;
+ 
+-	while (table[i].frequency != CPUFREQ_TABLE_END) {
++	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+ 		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+ 			continue;
+ 
+@@ -145,7 +145,6 @@ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
+ 		/*return if level matched and table in descending order*/
+ 		if (descend && i == level)
+ 			return table[i].frequency;
+-		i++;
+ 	}
+ 	i--;
+ 
+@@ -154,13 +153,12 @@ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
+ 	level_index = i - level;
+ 
+ 	/*Scan the table in reverse order and match the level*/
+-	while (i >= 0) {
++	for (; i >= 0; i--) {
+ 		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+ 			continue;
+ 		/*return if level matched*/
+ 		if (i == level_index)
+ 			return table[i].frequency;
+-		i--;
+ 	}
+ 	return ret;
+ }
+diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+index 224751e..fa9e1d7 100644
+--- a/drivers/thermal/exynos_thermal.c
++++ b/drivers/thermal/exynos_thermal.c
+@@ -233,7 +233,8 @@ static int exynos_get_crit_temp(struct thermal_zone_device *thermal,
+ 
+ static int exynos_get_frequency_level(unsigned int cpu, unsigned int freq)
+ {
+-	int i = 0, ret = -EINVAL;
++	int i, ret = -EINVAL;
++	unsigned int count = 0;
+ 	struct cpufreq_frequency_table *table = NULL;
+ #ifdef CONFIG_CPU_FREQ
+ 	table = cpufreq_frequency_get_table(cpu);
+@@ -241,12 +242,12 @@ static int exynos_get_frequency_level(unsigned int cpu, unsigned int freq)
+ 	if (!table)
+ 		return ret;
+ 
+-	while (table[i].frequency != CPUFREQ_TABLE_END) {
++	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+ 		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+ 			continue;
+ 		if (table[i].frequency == freq)
+-			return i;
+-		i++;
++			return count;
++		count++;
+ 	}
+ 	return ret;
+ }
+-- 
+1.8.1.1
+
