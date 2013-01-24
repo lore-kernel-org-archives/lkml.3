@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab3AXCPF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 21:15:05 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19874 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821Ab3AXCPB (ORCPT
+	id S1753194Ab3AXCVM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 21:21:12 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:16813 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752917Ab3AXCVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 21:15:01 -0500
-X-Authority-Analysis: v=2.0 cv=QcjkT7nv c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=GZx67sIXCSYdLagy0AIA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358993700.21576.133.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.0.60-rt85
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Wed, 23 Jan 2013 21:15:00 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Wed, 23 Jan 2013 21:21:07 -0500
+Message-ID: <51009A7F.6050104@huawei.com>
+Date: Thu, 24 Jan 2013 10:20:47 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Rob Landley <rob@landley.net>, Bjorn Helgaas <bhelgaas@google.com>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jon Mason <jdmason@kudzu.us>, <linux-pci@vger.kernel.org>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>
+Subject: Re: [Update][PATCH] PCI: Document PCIE BUS MPS parameters
+References: <1358944092-28884-1-git-send-email-wangyijing@huawei.com> <510074C7.6090203@infradead.org> <510094A4.3040806@huawei.com> <51009645.5040406@infradead.org>
+In-Reply-To: <51009645.5040406@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2013/1/24 10:02, Randy Dunlap wrote:
+> On 01/23/13 17:55, Yijing Wang wrote:
+>> Hi Randy,
+>>    Thanks for your review and comments! please refer to inlined comments below.
+>>
+>> On 2013/1/24 7:39, Randy Dunlap wrote:
+>>> On 01/23/13 04:28, Yijing Wang wrote:
+> 
+>>>
+>>> What is (are) MRRS?
+>>
+>> MRRS is "Max Read Request Size" and MPS is "Max Payload Size".
+>> Need use "Max Read Request Size" instead of MRRS ?
+> 
+> Where is MRRS documented?
 
-Dear RT Folks,
+The description of MRRS can be found at PCIe Spec 2.0/3.0 7.8.4 Device Control Register.
 
-I'm pleased to announce the 3.0.60-rt85 stable release.
+> 
+> I would probably do it like so:
+> 
+> Also set MRRS (Max Read Request Size) to the ....
 
+Hmm, I will explain MPS and MRRS when they appear first time like,
 
-This release is just an update to the new stable 3.0.60 version
-and no RT specific changes have been made.
+pcie_bus_tune_off   Disable PCIe MPS (Max Payload Size) turning and using
+		the BIOS-configured MPS defaults.
 
+pcie_bus_perf	......Also set MRRS (Max Read Request Size) to the......
 
-You can get this release via the git tree at:
+Thanks!
+Yijing
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 79528cb08ec898b361894003c492c403d77a5fa1
-
-
-Or to build 3.0.60-rt85 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.60.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.60-rt85.patch.xz
+> 
 
 
-
-Enjoy,
-
--- Steve
-
-
+-- 
+Thanks!
+Yijing
 
