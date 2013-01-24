@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627Ab3AXN2x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 08:28:53 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:35776 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab3AXN2r (ORCPT
+	id S1753752Ab3AXN3W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 08:29:22 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26755 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092Ab3AXN3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 08:28:47 -0500
-Date: Thu, 24 Jan 2013 14:28:41 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        aquini@redhat.com, walken@google.com, eric.dumazet@gmail.com,
-        lwoodman@redhat.com, jeremy@goop.org,
-        Jan Beulich <JBeulich@novell.com>, knoel@redhat.com,
-        chegu_vinod@hp.com, raghavendra.kt@linux.vnet.ibm.com,
-        mingo@redhat.com
-Subject: Re: [PATCH 0/5] x86,smp: make ticket spinlock proportional backoff
- w/ auto tuning
-Message-ID: <20130124132841.GB5302@gmail.com>
-References: <20130108172632.1126898a@annuminas.surriel.com>
- <1357831182.5841.21.camel@marge.simpson.net>
- <50EEDEC1.9020708@redhat.com>
- <1357846213.5755.30.camel@marge.simpson.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357846213.5755.30.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 Jan 2013 08:29:16 -0500
+X-Authority-Analysis: v=2.0 cv=QcjkT7nv c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=7UwS5AP4EsIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=tqG-MREYpvAA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=yPCof4ZbAAAA:8 a=JiJ64MnnBwk5KDO_vOYA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=7DSvI1NPTFQA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1359034154.21576.142.camel@gandalf.local.home>
+Subject: [PATCH][GIT PULL] tracing: Fix unsigned int compare of zero in
+ recursion check
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Date: Thu, 24 Jan 2013 08:29:14 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Mike Galbraith <bitbucket@online.de> wrote:
+Ingo,
 
-> On Thu, 2013-01-10 at 10:31 -0500, Rik van Riel wrote: 
-> > On 01/10/2013 10:19 AM, Mike Galbraith wrote:
-> > > On Tue, 2013-01-08 at 17:26 -0500, Rik van Riel wrote:
-> > >
-> > >> Please let me know if you manage to break this code in any way,
-> > >> so I can fix it...
-> > >
-> > > I didn't break it, but did let it play with rq->lock contention.  Using
-> > > cyclictest -Smp99 -i 100 -d 0, with 3 rt tasks for pull_rt_task() to
-> > > pull around appears to have been a ~dead heat.
-> > 
-> > Good to hear that the code seems to be robust. It seems to
-> > help prevent performance degradation in some workloads, and
-> > nobody seems to have found regressions yet.
-> 
-> I had hoped for a bit of positive, but a wash isn't surprising 
-> given the profile.  I tried tbench too, didn't expect to see 
-> anything at all there, and got that.. so both results are 
-> positive in that respect.
+I've put this on top of the patches I posted for linux-next, as
+those were the patches that contained the bug this fixed.
 
-Ok, that's good.
+Please pull the latest tip/perf/core tree, which can be found at:
 
-Rik, mind re-sending the latest series with all the acks and 
-Reviewed-by's added?
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/core
 
-Thanks,
+Head SHA1: d41032a83b4683481cadff84bbf8e0eafeaba830
 
-	Ingo
+
+Steven Rostedt (1):
+      tracing: Fix unsigned int compare of zero in recursion check
+
+----
+ kernel/trace/trace_functions.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+---------------------------
+commit d41032a83b4683481cadff84bbf8e0eafeaba830
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Thu Jan 24 07:52:34 2013 -0500
+
+    tracing: Fix unsigned int compare of zero in recursion check
+    
+    Dan's smatch found a compare bug with the result of the
+    trace_test_and_set_recursion() and comparing to less than
+    zero. If the function fails, it returns -1, but was saved in
+    an unsigned int, which will never be less than zero and will
+    ignore the result of the test if a recursion did happen.
+    
+    Luckily this is the last of the recursion tests, as the
+    infrastructure of ftrace would catch recursions before it
+    got here, except for some few exceptions.
+    
+    Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index 1c327ef..6011525 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -61,7 +61,7 @@ function_trace_call(unsigned long ip, unsigned long parent_ip,
+ 	struct trace_array *tr = func_trace;
+ 	struct trace_array_cpu *data;
+ 	unsigned long flags;
+-	unsigned int bit;
++	int bit;
+ 	int cpu;
+ 	int pc;
+ 
+
+
