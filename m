@@ -1,138 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab3AXRwj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 12:52:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48316 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740Ab3AXRwh (ORCPT
+	id S1753886Ab3AXRz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 12:55:58 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:54395 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658Ab3AXRzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 12:52:37 -0500
-Date: Thu, 24 Jan 2013 15:52:27 -0200
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Ben Skeggs <bskeggs@redhat.com>
-Subject: Re: [PATCH 59/74] drm/nv17-50: restore fence buffer on resume
-Message-ID: <20130124175226.GC3038@herton-Z68MA-D2H-B3>
-References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
- <1358998046-613-60-git-send-email-herton.krzesinski@canonical.com>
- <20130124173652.GA3123@joi.lan>
+	Thu, 24 Jan 2013 12:55:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130124173652.GA3123@joi.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFTL4hxPPddCmhcPrdZgWVSy3Z+9_Jr9ruT9L5qhq6yFuuEDNQ@mail.gmail.com>
+References: <1354537588-25831-1-git-send-email-vincent.guittot@linaro.org>
+	<1354537588-25831-2-git-send-email-vincent.guittot@linaro.org>
+	<CAFTL4hxPPddCmhcPrdZgWVSy3Z+9_Jr9ruT9L5qhq6yFuuEDNQ@mail.gmail.com>
+Date: Thu, 24 Jan 2013 18:55:53 +0100
+Message-ID: <CAKfTPtBJVwKurUjUkUfJefpzYpFi7KVfee9-4-OX2o_mmtW+Ag@mail.gmail.com>
+Subject: Re: [PATCH Resend 1/3] sched: fix nr_busy_cpus with coupled cpuidle
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, ccross@android.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 06:36:52PM +0100, Marcin Slusarz wrote:
-> On Thu, Jan 24, 2013 at 01:27:11AM -0200, Herton Ronaldo Krzesinski wrote:
-> > 3.5.7.4 -stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Marcin Slusarz <marcin.slusarz@gmail.com>
-> > 
-> > commit f20ebd034eab43fd38c58b11c5bb5fb125e5f7d7 upstream.
-> > 
-> > Since commit 5e120f6e4b3f35b741c5445dfc755f50128c3c44 "drm/nouveau/fence:
-> > convert to exec engine, and improve channel sync" nouveau fence sync
-> > implementation for nv17-50 and nvc0+ started to rely on state of fence buffer
-> > left by previous sync operation. But as pinned bo's (where fence state is
-> > stored) are not saved+restored across suspend/resume, we need to do it
-> > manually.
-> > 
-> > nvc0+ was fixed by commit d6ba6d215a538a58f0f0026f0961b0b9125e8042
-> > "drm/nvc0/fence: restore pre-suspend fence buffer context on resume".
-> > 
-> > Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=50121
-> > 
-> > Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-> > Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-> > [ herton: backport for 3.5, looks like we only need to call
-> >   nouveau_bo_wr32 on nv10_fence_init ]
-> > Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-> > ---
-> >  drivers/gpu/drm/nouveau/nv10_fence.c |    3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/drivers/gpu/drm/nouveau/nv10_fence.c b/drivers/gpu/drm/nouveau/nv10_fence.c
-> > index 8a1b750..18932a6 100644
-> > --- a/drivers/gpu/drm/nouveau/nv10_fence.c
-> > +++ b/drivers/gpu/drm/nouveau/nv10_fence.c
-> > @@ -155,6 +155,9 @@ nv10_fence_fini(struct drm_device *dev, int engine, bool suspend)
-> >  static int
-> >  nv10_fence_init(struct drm_device *dev, int engine)
-> >  {
-> > +	struct nv10_fence_priv *priv = nv_engine(dev, engine);
-> > +
-> > +	nouveau_bo_wr32(priv->bo, 0, priv->sequence);
-> >  	return 0;
-> >  }
-> >  
-> > -- 
-> 
-> As I already mentioned in linked bug report, this backport will crash on module
-> load for nv10-nv17 cards. priv->bo is created only for chipsets >= nv17.
-> 
-> You need to add "if (priv->bo)" before nouveau_bo_wr32.
+On 24 January 2013 17:44, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 2012/12/3 Vincent Guittot <vincent.guittot@linaro.org>:
+>> With the coupled cpuidle driver (but probably also with other drivers),
+>> a CPU loops in a temporary safe state while waiting for other CPUs of its
+>> cluster to be ready to enter the coupled C-state. If an IRQ or a softirq
+>> occurs, the CPU will stay in this internal loop if there is no need
+>> to resched. The SCHED softirq clears the NOHZ and increases
+>> nr_busy_cpus. If there is no need to resched, we will not call
+>> set_cpu_sd_state_idle because of this internal loop in a cpuidle state.
+>> We have to call set_cpu_sd_state_idle in tick_nohz_irq_exit which is used
+>> to handle such situation.
+>
+> I'm a bit confused with this.
+>
+> set_cpu_sd_state_busy() is only called from nohz_kick_needed(). And it
+> checks idle_cpu() before doing anything. So if no task is going to be
+> scheduled, idle_cpu() prevents from calling set_cpu_sd_state_busy().
+>
+> I'm probably missing something.
 
-Indeed, thanks. I didn't noticed it on nv10_fence_create. This is the
-fixed patch:
+Hi Frederic
 
->From 93b7083831b7c1e5f6e6c8b9f79268b5a52a316d Mon Sep 17 00:00:00 2001
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-Date: Tue, 25 Dec 2012 18:13:22 +0100
-Subject: [PATCH] drm/nv17-50: restore fence buffer on resume
+I can't find back the trace that i had saved with the issue but IIRC
+the sequence is:
+The CPU is kicked for ILB
+The wake_list of the CPU becomes not empty so cpu id not idle
+CPU wakes up, updates is timer framework and call nohz_kick_needed the
+execute the ILB sequence
+we don't go out of the cpuidle driver function because we don't need
+to resched so we don't clear the busy state
 
-commit f20ebd034eab43fd38c58b11c5bb5fb125e5f7d7 upstream.
+I'm going to look for the saved trace to check the sequence above
 
-Since commit 5e120f6e4b3f35b741c5445dfc755f50128c3c44 "drm/nouveau/fence:
-convert to exec engine, and improve channel sync" nouveau fence sync
-implementation for nv17-50 and nvc0+ started to rely on state of fence buffer
-left by previous sync operation. But as pinned bo's (where fence state is
-stored) are not saved+restored across suspend/resume, we need to do it
-manually.
+Vincent
 
-nvc0+ was fixed by commit d6ba6d215a538a58f0f0026f0961b0b9125e8042
-"drm/nvc0/fence: restore pre-suspend fence buffer context on resume".
-
-Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=50121
-
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-[ herton: backport for 3.5, looks like we only need to call
-  nouveau_bo_wr32 on nv10_fence_init. Also check priv->bo as it's
-  conditionally allocated at nv10_fence_create, reported by Marcin
-  Slusarz ]
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/gpu/drm/nouveau/nv10_fence.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/gpu/drm/nouveau/nv10_fence.c b/drivers/gpu/drm/nouveau/nv10_fence.c
-index 8a1b750..c20370c 100644
---- a/drivers/gpu/drm/nouveau/nv10_fence.c
-+++ b/drivers/gpu/drm/nouveau/nv10_fence.c
-@@ -155,6 +155,10 @@ nv10_fence_fini(struct drm_device *dev, int engine, bool suspend)
- static int
- nv10_fence_init(struct drm_device *dev, int engine)
- {
-+	struct nv10_fence_priv *priv = nv_engine(dev, engine);
-+
-+	if (priv->bo)
-+		nouveau_bo_wr32(priv->bo, 0, priv->sequence);
- 	return 0;
- }
- 
--- 
-1.7.9.5
-
-> 
-> Marcin
-> 
-
--- 
-[]'s
-Herton
+>
+> Thanks.
+>
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>>  kernel/time/tick-sched.c |    2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+>> index 955d35b..b8d74ea 100644
+>> --- a/kernel/time/tick-sched.c
+>> +++ b/kernel/time/tick-sched.c
+>> @@ -570,6 +570,8 @@ void tick_nohz_irq_exit(void)
+>>         if (!ts->inidle)
+>>                 return;
+>>
+>> +       set_cpu_sd_state_idle();
+>> +
+>>         /* Cancel the timer because CPU already waken up from the C-states*/
+>>         menu_hrtimer_cancel();
+>>         __tick_nohz_idle_enter(ts);
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
