@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab3AXKyo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:54:44 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:42458 "EHLO
+	id S1753925Ab3AXKzC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:55:02 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:42502 "EHLO
 	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab3AXKwr (ORCPT
+	with ESMTP id S1753371Ab3AXKyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:52:47 -0500
+	Thu, 24 Jan 2013 05:54:38 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v3 23/71] ARC: Cache Flush Management
-Date: Thu, 24 Jan 2013 16:20:25 +0530
-Message-ID: <1359024639-21915-12-git-send-email-vgupta@synopsys.com>
+CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH v3 20/71] ARC: Signal handling
+Date: Thu, 24 Jan 2013 16:20:22 +0530
+Message-ID: <1359024639-21915-9-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359024639-21915-1-git-send-email-vgupta@synopsys.com>
 References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com>
@@ -23,197 +24,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* ARC700 has VIPT L1 Caches
-* Caches don't snoop and are not coherent
-* Given the PAGE_SIZE and Cache associativity, we don't support aliasing
-  D$ configurations (yet), but do allow aliasing I$ configs
+Includes following fixes courtesy review by Al-Viro
+
+* Tracer poke to Callee-regs were lost
+
+  Before going off into do_signal( ) we save the user-mode callee regs
+  (as they are not saved by default as part of pt_regs). This is to make
+  sure that that a Tracer (if tracing related signal) is able to do likes
+  of PEEKUSR(callee-reg).
+
+  However in return path we were simply discarding the user-mode callee
+  regs, which would break a POKEUSR(callee-reg) from a tracer.
+
+* Issue related to multiple syscall restarts are addressed in next patch
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
 ---
- arch/arc/include/asm/arcregs.h    |   80 ++++
- arch/arc/include/asm/cache.h      |   54 +++
- arch/arc/include/asm/cachectl.h   |   28 ++
- arch/arc/include/asm/cacheflush.h |   67 ++++
- arch/arc/mm/cache_arc700.c        |  725 +++++++++++++++++++++++++++++++++++++
- 5 files changed, 954 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/include/asm/cachectl.h
- create mode 100644 arch/arc/include/asm/cacheflush.h
- create mode 100644 arch/arc/mm/cache_arc700.c
+ arch/arc/Kconfig                  |    1 +
+ arch/arc/include/asm/entry.h      |   35 ++++
+ arch/arc/include/asm/sigcontext.h |   23 +++
+ arch/arc/include/asm/signal.h     |   27 +++
+ arch/arc/kernel/entry.S           |   11 +-
+ arch/arc/kernel/signal.c          |  359 +++++++++++++++++++++++++++++++++++++
+ 6 files changed, 453 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arc/include/asm/sigcontext.h
+ create mode 100644 arch/arc/include/asm/signal.h
+ create mode 100644 arch/arc/kernel/signal.c
 
-diff --git a/arch/arc/include/asm/arcregs.h b/arch/arc/include/asm/arcregs.h
-index 5131bb3..c6e2805 100644
---- a/arch/arc/include/asm/arcregs.h
-+++ b/arch/arc/include/asm/arcregs.h
-@@ -58,6 +58,33 @@
- #define TIMER_CTRL_IE		(1 << 0) /* Interupt when Count reachs limit */
- #define TIMER_CTRL_NH		(1 << 1) /* Count only when CPU NOT halted */
+diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+index a4e9806..756beff 100644
+--- a/arch/arc/Kconfig
++++ b/arch/arc/Kconfig
+@@ -20,6 +20,7 @@ config ARC
+ 	select GENERIC_KERNEL_EXECVE
+ 	select GENERIC_KERNEL_THREAD
+ 	select GENERIC_PENDING_IRQ if SMP
++	select GENERIC_SIGALTSTACK
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select MODULES_USE_ELF_RELA
+diff --git a/arch/arc/include/asm/entry.h b/arch/arc/include/asm/entry.h
+index 63705b1..6b42bf5 100644
+--- a/arch/arc/include/asm/entry.h
++++ b/arch/arc/include/asm/entry.h
+@@ -166,6 +166,41 @@
+ .endm
  
-+/* Instruction cache related Auxiliary registers */
-+#define ARC_REG_IC_BCR		0x77	/* Build Config reg */
-+#define ARC_REG_IC_IVIC		0x10
-+#define ARC_REG_IC_CTRL		0x11
-+#define ARC_REG_IC_IVIL		0x19
-+#if (CONFIG_ARC_MMU_VER > 2)
-+#define ARC_REG_IC_PTAG		0x1E
-+#endif
+ /*--------------------------------------------------------------
++ * RESTORE_CALLEE_SAVED_USER:
++ * This is called after do_signal where tracer might have changed callee regs
++ * thus we need to restore the reg file.
++ * Special case handling is required for r25 in case it is used by kernel
++ *  for caching task ptr. Ptrace would have modified on-kernel-stack value of
++ *  r25, which needs to be shoved back into task->thread.user_r25 where from
++ *  Low level exception/ISR return code will retrieve to populate with rest of
++ *  callee reg-file.
++ *-------------------------------------------------------------*/
++.macro RESTORE_CALLEE_SAVED_USER
 +
-+/* Bit val in IC_CTRL */
-+#define IC_CTRL_CACHE_DISABLE   0x1
++	add     sp, sp, 4   /* skip "callee_regs->stack_place_holder" */
 +
-+/* Data cache related Auxiliary registers */
-+#define ARC_REG_DC_BCR		0x72
-+#define ARC_REG_DC_IVDC		0x47
-+#define ARC_REG_DC_CTRL		0x48
-+#define ARC_REG_DC_IVDL		0x4A
-+#define ARC_REG_DC_FLSH		0x4B
-+#define ARC_REG_DC_FLDL		0x4C
-+#if (CONFIG_ARC_MMU_VER > 2)
-+#define ARC_REG_DC_PTAG		0x5C
-+#endif
-+
-+/* Bit val in DC_CTRL */
-+#define DC_CTRL_INV_MODE_FLUSH  0x40
-+#define DC_CTRL_FLUSH_STATUS    0x100
-+
- /*
-  * Floating Pt Registers
-  * Status regs are read-only (build-time) so need not be saved/restored
-@@ -132,6 +159,31 @@
- 
- #endif
- 
-+#define READ_BCR(reg, into)				\
-+{							\
-+	unsigned int tmp;				\
-+	tmp = read_aux_reg(reg);			\
-+	if (sizeof(tmp) == sizeof(into)) {		\
-+		into = *((typeof(into) *)&tmp);		\
-+	} else {					\
-+		extern void bogus_undefined(void);	\
-+		bogus_undefined();			\
-+	}						\
-+}
-+
-+#define WRITE_BCR(reg, into)				\
-+{							\
-+	unsigned int tmp;				\
-+	if (sizeof(tmp) == sizeof(into)) {		\
-+		tmp = (*(unsigned int *)(into));	\
-+		write_aux_reg(reg, tmp);		\
-+	} else  {					\
-+		extern void bogus_undefined(void);	\
-+		bogus_undefined();			\
-+	}						\
-+}
-+
-+
- #ifdef CONFIG_ARC_FPU_SAVE_RESTORE
- /* These DPFP regs need to be saved/restored across ctx-sw */
- struct arc_fpu {
-@@ -141,6 +193,34 @@ struct arc_fpu {
- };
- #endif
- 
-+/*
-+ ***************************************************************
-+ * Build Configuration Registers, with encoded hardware config
-+ */
-+
-+struct bcr_cache {
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	unsigned int pad:12, line_len:4, sz:4, config:4, ver:8;
++#ifdef CONFIG_ARC_CURR_IN_REG
++	ld.ab   r12, [sp, 4]
++	st      r12, [r25, TASK_THREAD + THREAD_USER_R25]
 +#else
-+	unsigned int ver:8, config:4, sz:4, line_len:4, pad:12;
-+#endif
-+};
-+
-+/*
-+ *******************************************************************
-+ * Generic structures to hold build configuration used at runtime
-+ */
-+
-+struct cpuinfo_arc_cache {
-+	unsigned int has_aliasing, sz, line_len, assoc, ver;
-+};
-+
-+struct cpuinfo_arc {
-+	struct cpuinfo_arc_cache icache, dcache;
-+};
-+
-+extern struct cpuinfo_arc cpuinfo_arc700[];
-+
- #endif /* __ASEMBLY__ */
- 
- #endif /* __KERNEL__ */
-diff --git a/arch/arc/include/asm/cache.h b/arch/arc/include/asm/cache.h
-index 30c72a4..6632273 100644
---- a/arch/arc/include/asm/cache.h
-+++ b/arch/arc/include/asm/cache.h
-@@ -18,4 +18,58 @@
- 
- #define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
- 
-+#define ARC_ICACHE_WAYS	2
-+#define ARC_DCACHE_WAYS	4
-+
-+/* Helpers */
-+#define ARC_ICACHE_LINE_LEN	L1_CACHE_BYTES
-+#define ARC_DCACHE_LINE_LEN	L1_CACHE_BYTES
-+
-+#define ICACHE_LINE_MASK	(~(ARC_ICACHE_LINE_LEN - 1))
-+#define DCACHE_LINE_MASK	(~(ARC_DCACHE_LINE_LEN - 1))
-+
-+#if ARC_ICACHE_LINE_LEN != ARC_DCACHE_LINE_LEN
-+#error "Need to fix some code as I/D cache lines not same"
-+#else
-+#define is_not_cache_aligned(p)	((unsigned long)p & (~DCACHE_LINE_MASK))
++	ld.ab   r25, [sp, 4]
 +#endif
 +
-+#ifndef __ASSEMBLY__
++	ld.ab   r24, [sp, 4]
++	ld.ab   r23, [sp, 4]
++	ld.ab   r22, [sp, 4]
++	ld.ab   r21, [sp, 4]
++	ld.ab   r20, [sp, 4]
++	ld.ab   r19, [sp, 4]
++	ld.ab   r18, [sp, 4]
++	ld.ab   r17, [sp, 4]
++	ld.ab   r16, [sp, 4]
++	ld.ab   r15, [sp, 4]
++	ld.ab   r14, [sp, 4]
++	ld.ab   r13, [sp, 4]
++.endm
 +
-+/* Uncached access macros */
-+#define arc_read_uncached_32(ptr)	\
-+({					\
-+	unsigned int __ret;		\
-+	__asm__ __volatile__(		\
-+	"	ld.di %0, [%1]	\n"	\
-+	: "=r"(__ret)			\
-+	: "r"(ptr));			\
-+	__ret;				\
-+})
-+
-+#define arc_write_uncached_32(ptr, data)\
-+({					\
-+	__asm__ __volatile__(		\
-+	"	st.di %0, [%1]	\n"	\
-+	:				\
-+	: "r"(data), "r"(ptr));		\
-+})
-+
-+/* used to give SHMLBA a value to avoid Cache Aliasing */
-+extern unsigned int ARC_shmlba;
-+
-+#define ARCH_DMA_MINALIGN      L1_CACHE_BYTES
-+
-+/*
-+ * ARC700 doesn't cache any access in top 256M.
-+ * Ideal for wiring memory mapped peripherals as we don't need to do
-+ * explicit uncached accesses (LD.di/ST.di) hence more portable drivers
-+ */
-+#define ARC_UNCACHED_ADDR_SPACE	0xc0000000
-+
-+extern void arc_cache_init(void);
-+extern char *arc_cache_mumbojumbo(int cpu_id, char *buf, int len);
-+extern void __init read_decode_cache_bcr(void);
-+#endif
-+
- #endif /* _ASM_CACHE_H */
-diff --git a/arch/arc/include/asm/cachectl.h b/arch/arc/include/asm/cachectl.h
++/*--------------------------------------------------------------
+  * Super FAST Restore callee saved regs by simply re-adjusting SP
+  *-------------------------------------------------------------*/
+ .macro DISCARD_CALLEE_SAVED_USER
+diff --git a/arch/arc/include/asm/sigcontext.h b/arch/arc/include/asm/sigcontext.h
 new file mode 100644
-index 0000000..51c73f0
+index 0000000..f21b541
 --- /dev/null
-+++ b/arch/arc/include/asm/cachectl.h
-@@ -0,0 +1,28 @@
++++ b/arch/arc/include/asm/sigcontext.h
+@@ -0,0 +1,23 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
@@ -222,32 +124,27 @@ index 0000000..51c73f0
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef __ARC_ASM_CACHECTL_H
-+#define __ARC_ASM_CACHECTL_H
++#ifndef _ASM_ARC_SIGCONTEXT_H
++#define _ASM_ARC_SIGCONTEXT_H
++
++#include <asm/ptrace.h>
 +
 +/*
-+ * ARC ABI flags defined for Android's finegrained cacheflush requirements
++ * Signal context structure - contains all info to do with the state
++ * before the signal handler was invoked.  Note: only add new entries
++ * to the end of the structure.
 + */
-+#define CF_I_INV	0x0002
-+#define CF_D_FLUSH	0x0010
-+#define CF_D_FLUSH_INV	0x0020
++struct sigcontext {
++	struct pt_regs regs;
++};
 +
-+#define CF_DEFAULT	(CF_I_INV | CF_D_FLUSH)
-+
-+/*
-+ * Standard flags expected by cacheflush system call users
-+ */
-+#define ICACHE	CF_I_INV
-+#define DCACHE	CF_D_FLUSH
-+#define BCACHE	(CF_I_INV | CF_D_FLUSH)
-+
-+#endif
-diff --git a/arch/arc/include/asm/cacheflush.h b/arch/arc/include/asm/cacheflush.h
++#endif /* _ASM_ARC_SIGCONTEXT_H */
+diff --git a/arch/arc/include/asm/signal.h b/arch/arc/include/asm/signal.h
 new file mode 100644
-index 0000000..97ee96f
+index 0000000..fad62f7
 --- /dev/null
-+++ b/arch/arc/include/asm/cacheflush.h
-@@ -0,0 +1,67 @@
++++ b/arch/arc/include/asm/signal.h
+@@ -0,0 +1,27 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
@@ -255,74 +152,63 @@ index 0000000..97ee96f
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
-+ *  vineetg: May 2011: for Non-aliasing VIPT D-cache following can be NOPs
-+ *   -flush_cache_dup_mm (fork)
-+ *   -likewise for flush_cache_mm (exit/execve)
-+ *   -likewise for flush_cache_{range,page} (munmap, exit, COW-break)
-+ *
-+ *  vineetg: April 2008
-+ *   -Added a critical CacheLine flush to copy_to_user_page( ) which
-+ *     was causing gdbserver to not setup breakpoints consistently
++ * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
 + */
 +
-+#ifndef _ASM_CACHEFLUSH_H
-+#define _ASM_CACHEFLUSH_H
-+
-+#include <linux/mm.h>
-+
-+void flush_cache_all(void);
-+
-+void flush_icache_range(unsigned long start, unsigned long end);
-+void flush_icache_page(struct vm_area_struct *vma, struct page *page);
-+void flush_icache_range_vaddr(unsigned long paddr, unsigned long u_vaddr,
-+				     int len);
-+
-+#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE 1
-+
-+void flush_dcache_page(struct page *page);
-+
-+void dma_cache_wback_inv(unsigned long start, unsigned long sz);
-+void dma_cache_inv(unsigned long start, unsigned long sz);
-+void dma_cache_wback(unsigned long start, unsigned long sz);
-+
-+#define flush_dcache_mmap_lock(mapping)		do { } while (0)
-+#define flush_dcache_mmap_unlock(mapping)	do { } while (0)
-+
-+/* TBD: optimize this */
-+#define flush_cache_vmap(start, end)		flush_cache_all()
-+#define flush_cache_vunmap(start, end)		flush_cache_all()
++#ifndef _ASM_ARC_SIGNAL_H
++#define _ASM_ARC_SIGNAL_H
 +
 +/*
-+ * VM callbacks when entire/range of user-space V-P mappings are
-+ * torn-down/get-invalidated
-+ *
-+ * Currently we don't support D$ aliasing configs for our VIPT caches
-+ * NOPS for VIPT Cache with non-aliasing D$ configurations only
++ * This is much needed for ARC sigreturn optimization.
++ * This allows uClibc to piggback the addr of a sigreturn stub in sigaction,
++ * which allows sigreturn based re-entry into kernel after handling signal.
++ * W/o this kernel needs to "synthesize" the sigreturn trampoline on user
++ * mode stack which in turn forces the following:
++ * -TLB Flush (after making the stack page executable)
++ * -Cache line Flush (to make I/D Cache lines coherent)
 + */
-+#define flush_cache_dup_mm(mm)			/* called on fork */
-+#define flush_cache_mm(mm)			/* called on munmap/exit */
-+#define flush_cache_range(mm, u_vstart, u_vend)
-+#define flush_cache_page(vma, u_vaddr, pfn)	/* PF handling/COW-break */
++#define SA_RESTORER	0x04000000
 +
-+#define copy_to_user_page(vma, page, vaddr, dst, src, len)		\
-+do {									\
-+	memcpy(dst, src, len);						\
-+	if (vma->vm_flags & VM_EXEC)					\
-+		flush_icache_range_vaddr((unsigned long)(dst), vaddr, len);\
-+} while (0)
++#include <asm-generic/signal.h>
 +
-+#define copy_from_user_page(vma, page, vaddr, dst, src, len)		\
-+	memcpy(dst, src, len);						\
-+
-+#endif
-diff --git a/arch/arc/mm/cache_arc700.c b/arch/arc/mm/cache_arc700.c
++#endif /* _ASM_ARC_SIGNAL_H */
+diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
+index ed08ac1..d625b77 100644
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -470,7 +470,11 @@ resume_user_mode_begin:
+ 
+ 	bbit0  r9, TIF_SIGPENDING, .Lchk_notify_resume
+ 
+-	; save CALLEE Regs.
++	; Normal Trap/IRQ entry only saves Scratch (caller-saved) regs
++	; in pt_reg since the "C" ABI (kernel code) will automatically
++	; save/restore callee-saved regs.
++	;
++	; However, here we need to explicitly save callee regs because
+ 	; (i)  If this signal causes coredump - full regfile needed
+ 	; (ii) If signal is SIGTRAP/SIGSTOP, task is being traced thus
+ 	;      tracer might call PEEKUSR(CALLEE reg)
+@@ -484,8 +488,9 @@ resume_user_mode_begin:
+ 
+ 	bl  @do_signal
+ 
+-	; unwind SP for cheap discard of Callee saved Regs
+-	DISCARD_CALLEE_SAVED_USER
++	; Ideally we want to discard the Callee reg above, however if this was
++	; a tracing signal, tracer could have done a POKEUSR(CALLEE reg)
++	RESTORE_CALLEE_SAVED_USER
+ 
+ 	b      resume_user_mode_begin	; loop back to start of U mode ret
+ 
+diff --git a/arch/arc/kernel/signal.c b/arch/arc/kernel/signal.c
 new file mode 100644
-index 0000000..670f65b
+index 0000000..887a383
 --- /dev/null
-+++ b/arch/arc/mm/cache_arc700.c
-@@ -0,0 +1,725 @@
++++ b/arch/arc/kernel/signal.c
+@@ -0,0 +1,359 @@
 +/*
-+ * ARC700 VIPT Cache Management
++ * Signal Handling for ARC
 + *
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
@@ -330,721 +216,355 @@ index 0000000..670f65b
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
-+ *  vineetg: May 2011: for Non-aliasing VIPT D-cache following can be NOPs
-+ *   -flush_cache_dup_mm (fork)
-+ *   -likewise for flush_cache_mm (exit/execve)
-+ *   -likewise for flush_cache_range,flush_cache_page (munmap, exit, COW-break)
++ * vineetg: Jan 2010 (Restarting of timer related syscalls)
 + *
-+ * vineetg: Apr 2011
-+ *  -Now that MMU can support larger pg sz (16K), the determiniation of
-+ *   aliasing shd not be based on assumption of 8k pg
++ * vineetg: Nov 2009 (Everything needed for TIF_RESTORE_SIGMASK)
++ *  -do_signal() supports TIF_RESTORE_SIGMASK
++ *  -do_signal() no loner needs oldset, required by OLD sys_sigsuspend
++ *  -sys_rt_sigsuspend() now comes from generic code, so discard arch implemen
++ *  -sys_sigsuspend() no longer needs to fudge ptregs, hence that arg removed
++ *  -sys_sigsuspend() no longer loops for do_signal(), sets TIF_xxx and leaves
++ *   the job to do_signal()
 + *
-+ * vineetg: Mar 2011
-+ *  -optimised version of flush_icache_range( ) for making I/D coherent
-+ *   when vaddr is available (agnostic of num of aliases)
++ * vineetg: July 2009
++ *  -Modified Code to support the uClibc provided userland sigreturn stub
++ *   to avoid kernel synthesing it on user stack at runtime, costing TLB
++ *   probes and Cache line flushes.
 + *
-+ * vineetg: Mar 2011
-+ *  -Added documentation about I-cache aliasing on ARC700 and the way it
-+ *   was handled up until MMU V2.
-+ *  -Spotted a three year old bug when killing the 4 aliases, which needs
-+ *   bottom 2 bits, so we need to do paddr | {0x00, 0x01, 0x02, 0x03}
-+ *                        instead of paddr | {0x00, 0x01, 0x10, 0x11}
-+ *   (Rajesh you owe me one now)
++ * vineetg: July 2009
++ *  -In stash_usr_regs( ) and restore_usr_regs( ), save/restore of user regs
++ *   in done in block copy rather than one word at a time.
++ *   This saves around 2K of code and improves LMBench lat_sig <catch>
 + *
-+ * vineetg: Dec 2010
-+ *  -Off-by-one error when computing num_of_lines to flush
-+ *   This broke signal handling with bionic which uses synthetic sigret stub
++ * rajeshwarr: Feb 2009
++ *  - Support for Realtime Signals
 + *
-+ * vineetg: Mar 2010
-+ *  -GCC can't generate ZOL for core cache flush loops.
-+ *   Conv them into iterations based as opposed to while (start < end) types
++ * vineetg: Aug 11th 2008: Bug #94183
++ *  -ViXS were still seeing crashes when using insmod to load drivers.
++ *   It turned out that the code to change Execute permssions for TLB entries
++ *   of user was not guarded for interrupts (mod_tlb_permission)
++ *   This was cauing TLB entries to be overwritten on unrelated indexes
 + *
-+ * Vineetg: July 2009
-+ *  -In I-cache flush routine we used to chk for aliasing for every line INV.
-+ *   Instead now we setup routines per cache geometry and invoke them
-+ *   via function pointers.
++ * Vineetg: July 15th 2008: Bug #94183
++ *  -Exception happens in Delay slot of a JMP, and before user space resumes,
++ *   Signal is delivered (Ctrl + C) = >SIGINT.
++ *   setup_frame( ) sets up PC,SP,BLINK to enable user space signal handler
++ *   to run, but doesn't clear the Delay slot bit from status32. As a result,
++ *   on resuming user mode, signal handler branches off to BTA of orig JMP
++ *  -FIX: clear the DE bit from status32 in setup_frame( )
 + *
-+ * Vineetg: Jan 2009
-+ *  -Cache Line flush routines used to flush an extra line beyond end addr
-+ *   because check was while (end >= start) instead of (end > start)
-+ *     =Some call sites had to work around by doing -1, -4 etc to end param
-+ *     =Some callers didnt care. This was spec bad in case of INV routines
-+ *      which would discard valid data (cause of the horrible ext2 bug
-+ *      in ARC IDE driver)
-+ *
-+ * vineetg: June 11th 2008: Fixed flush_icache_range( )
-+ *  -Since ARC700 caches are not coherent (I$ doesnt snoop D$) both need
-+ *   to be flushed, which it was not doing.
-+ *  -load_module( ) passes vmalloc addr (Kernel Virtual Addr) to the API,
-+ *   however ARC cache maintenance OPs require PHY addr. Thus need to do
-+ *   vmalloc_to_phy.
-+ *  -Also added optimisation there, that for range > PAGE SIZE we flush the
-+ *   entire cache in one shot rather than line by line. For e.g. a module
-+ *   with Code sz 600k, old code flushed 600k worth of cache (line-by-line),
-+ *   while cache is only 16 or 32k.
++ * Rahul Trivedi, Kanika Nema: Codito Technologies 2004
 + */
 +
-+#include <linux/module.h>
-+#include <linux/mm.h>
-+#include <linux/sched.h>
-+#include <linux/cache.h>
-+#include <linux/mmu_context.h>
-+#include <linux/syscalls.h>
++#include <linux/signal.h>
++#include <linux/ptrace.h>
++#include <linux/personality.h>
 +#include <linux/uaccess.h>
-+#include <asm/cacheflush.h>
-+#include <asm/cachectl.h>
-+#include <asm/setup.h>
++#include <linux/syscalls.h>
++#include <linux/tracehook.h>
++#include <asm/ucontext.h>
 +
++#define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
 +
-+#ifdef CONFIG_ARC_HAS_ICACHE
-+static void __ic_line_inv_no_alias(unsigned long, int);
-+static void __ic_line_inv_2_alias(unsigned long, int);
-+static void __ic_line_inv_4_alias(unsigned long, int);
++struct rt_sigframe {
++	struct siginfo info;
++	struct ucontext uc;
++#define MAGIC_SIGALTSTK		0x07302004
++	unsigned int sigret_magic;
++};
 +
-+/* Holds the ptr to flush routine, dependign on size due to aliasing issues */
-+static void (*___flush_icache_rtn) (unsigned long, int);
-+#endif
-+
-+/*
-+ * Read the Cache Build Confuration Registers, Decode them and save into
-+ * the cpuinfo structure for later use.
-+ * No Validation done here, simply read/convert the BCRs
-+ */
-+void __init read_decode_cache_bcr(void)
++static int
++stash_usr_regs(struct rt_sigframe __user *sf, struct pt_regs *regs,
++	       sigset_t *set)
 +{
-+	struct bcr_cache ibcr, dbcr;
-+	struct cpuinfo_arc_cache *p_ic, *p_dc;
-+	unsigned int cpu = smp_processor_id();
++	int err;
++	err = __copy_to_user(&(sf->uc.uc_mcontext.regs), regs, sizeof(*regs));
++	err |= __copy_to_user(&sf->uc.uc_sigmask, set, sizeof(sigset_t));
 +
-+	p_ic = &cpuinfo_arc700[cpu].icache;
-+	READ_BCR(ARC_REG_IC_BCR, ibcr);
-+
-+	if (ibcr.config == 0x3)
-+		p_ic->assoc = 2;
-+	p_ic->line_len = 8 << ibcr.line_len;
-+	p_ic->sz = 0x200 << ibcr.sz;
-+	p_ic->ver = ibcr.ver;
-+
-+	p_dc = &cpuinfo_arc700[cpu].dcache;
-+	READ_BCR(ARC_REG_DC_BCR, dbcr);
-+
-+	if (dbcr.config == 0x2)
-+		p_dc->assoc = 4;
-+	p_dc->line_len = 16 << dbcr.line_len;
-+	p_dc->sz = 0x200 << dbcr.sz;
-+	p_dc->ver = dbcr.ver;
++	return err;
 +}
 +
-+/*
-+ * 1. Validate the Cache Geomtery (compile time config matches hardware)
-+ * 2. If I-cache suffers from aliasing, setup work arounds (difft flush rtn)
-+ *    (aliasing D-cache configurations are not supported YET)
-+ * 3. Enable the Caches, setup default flush mode for D-Cache
-+ * 3. Calculate the SHMLBA used by user space
-+ */
-+void __init arc_cache_init(void)
++static int restore_usr_regs(struct pt_regs *regs, struct rt_sigframe __user *sf)
 +{
-+	unsigned int temp;
-+#ifdef CONFIG_ARC_CACHE
-+	unsigned int cpu = smp_processor_id();
-+#endif
-+#ifdef CONFIG_ARC_HAS_ICACHE
-+	struct cpuinfo_arc_cache *ic;
-+#endif
-+#ifdef CONFIG_ARC_HAS_DCACHE
-+	struct cpuinfo_arc_cache *dc;
-+#endif
-+	int way_pg_ratio = way_pg_ratio;
++	sigset_t set;
++	int err;
 +
-+#ifdef CONFIG_ARC_HAS_ICACHE
-+	ic = &cpuinfo_arc700[cpu].icache;
-+
-+	/*
-+	 * if Cache way size is <= page size then no aliasing exhibited
-+	 * otherwise ratio determines num of aliases.
-+	 * e.g. 32K I$, 2 way set assoc, 8k pg size
-+	 *       way-sz = 32k/2 = 16k
-+	 *       way-pg-ratio = 16k/8k = 2, so 2 aliases possible
-+	 *       (meaning 1 line could be in 2 possible locations).
-+	 */
-+	way_pg_ratio = ic->sz / ARC_ICACHE_WAYS / PAGE_SIZE;
-+	switch (way_pg_ratio) {
-+	case 0:
-+	case 1:
-+		___flush_icache_rtn = __ic_line_inv_no_alias;
-+		break;
-+	case 2:
-+		___flush_icache_rtn = __ic_line_inv_2_alias;
-+		break;
-+	case 4:
-+		___flush_icache_rtn = __ic_line_inv_4_alias;
-+		break;
-+	default:
-+		panic("Unsupported I-Cache Sz\n");
-+	}
-+#endif
-+
-+	/* Enable/disable I-Cache */
-+	temp = read_aux_reg(ARC_REG_IC_CTRL);
-+
-+#ifdef CONFIG_ARC_HAS_ICACHE
-+	temp &= ~IC_CTRL_CACHE_DISABLE;
-+#else
-+	temp |= IC_CTRL_CACHE_DISABLE;
-+#endif
-+
-+	write_aux_reg(ARC_REG_IC_CTRL, temp);
-+
-+#ifdef CONFIG_ARC_HAS_DCACHE
-+	dc = &cpuinfo_arc700[cpu].dcache;
-+
-+	/* check for D-Cache aliasing */
-+	if ((dc->sz / ARC_DCACHE_WAYS) > PAGE_SIZE)
-+		panic("D$ aliasing not handled right now\n");
-+#endif
-+
-+	/* Set the default Invalidate Mode to "simpy discard dirty lines"
-+	 *  as this is more frequent then flush before invalidate
-+	 * Ofcourse we toggle this default behviour when desired
-+	 */
-+	temp = read_aux_reg(ARC_REG_DC_CTRL);
-+	temp &= ~DC_CTRL_INV_MODE_FLUSH;
-+
-+#ifdef CONFIG_ARC_HAS_DCACHE
-+	/* Enable D-Cache: Clear Bit 0 */
-+	write_aux_reg(ARC_REG_DC_CTRL, temp & ~IC_CTRL_CACHE_DISABLE);
-+#else
-+	/* Flush D cache */
-+	write_aux_reg(ARC_REG_DC_FLSH, 0x1);
-+	/* Disable D cache */
-+	write_aux_reg(ARC_REG_DC_CTRL, temp | IC_CTRL_CACHE_DISABLE);
-+#endif
-+
-+	return;
-+}
-+
-+#define OP_INV		0x1
-+#define OP_FLUSH	0x2
-+#define OP_FLUSH_N_INV	0x3
-+
-+#ifdef CONFIG_ARC_HAS_DCACHE
-+
-+/***************************************************************
-+ * Machine specific helpers for Entire D-Cache or Per Line ops
-+ */
-+
-+static inline void wait_for_flush(void)
-+{
-+	while (read_aux_reg(ARC_REG_DC_CTRL) & DC_CTRL_FLUSH_STATUS)
-+		;
-+}
-+
-+/*
-+ * Operation on Entire D-Cache
-+ * @cacheop = {OP_INV, OP_FLUSH, OP_FLUSH_N_INV}
-+ * Note that constant propagation ensures all the checks are gone
-+ * in generated code
-+ */
-+static inline void __dc_entire_op(const int cacheop)
-+{
-+	unsigned long flags, tmp = tmp;
-+	int aux;
-+
-+	local_irq_save(flags);
-+
-+	if (cacheop == OP_FLUSH_N_INV) {
-+		/* Dcache provides 2 cmd: FLUSH or INV
-+		 * INV inturn has sub-modes: DISCARD or FLUSH-BEFORE
-+		 * flush-n-inv is achieved by INV cmd but with IM=1
-+		 * Default INV sub-mode is DISCARD, which needs to be toggled
-+		 */
-+		tmp = read_aux_reg(ARC_REG_DC_CTRL);
-+		write_aux_reg(ARC_REG_DC_CTRL, tmp | DC_CTRL_INV_MODE_FLUSH);
++	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
++	if (err == 0) {
++		sigdelsetmask(&set, ~_BLOCKABLE);
++		set_current_blocked(&set);
 +	}
 +
-+	if (cacheop & OP_INV)	/* Inv or flush-n-inv use same cmd reg */
-+		aux = ARC_REG_DC_IVDC;
++	err |= __copy_from_user(regs, &(sf->uc.uc_mcontext.regs),
++				sizeof(*regs));
++
++	return err;
++}
++
++static inline int is_do_ss_needed(unsigned int magic)
++{
++	if (MAGIC_SIGALTSTK == magic)
++		return 1;
 +	else
-+		aux = ARC_REG_DC_FLSH;
-+
-+	write_aux_reg(aux, 0x1);
-+
-+	if (cacheop & OP_FLUSH)	/* flush / flush-n-inv both wait */
-+		wait_for_flush();
-+
-+	/* Switch back the DISCARD ONLY Invalidate mode */
-+	if (cacheop == OP_FLUSH_N_INV)
-+		write_aux_reg(ARC_REG_DC_CTRL, tmp & ~DC_CTRL_INV_MODE_FLUSH);
-+
-+	local_irq_restore(flags);
++		return 0;
 +}
 +
-+/*
-+ * Per Line Operation on D-Cache
-+ * Doesn't deal with type-of-op/IRQ-disabling/waiting-for-flush-to-complete
-+ * It's sole purpose is to help gcc generate ZOL
-+ */
-+static inline void __dc_line_loop(unsigned long start, unsigned long sz,
-+					  int aux_reg)
++SYSCALL_DEFINE0(rt_sigreturn)
 +{
-+	int num_lines, slack;
++	struct rt_sigframe __user *sf;
++	unsigned int magic;
++	int err;
++	struct pt_regs *regs = current_pt_regs();
 +
-+	/* Ensure we properly floor/ceil the non-line aligned/sized requests
-+	 * and have @start - aligned to cache line and integral @num_lines.
-+	 * This however can be avoided for page sized since:
-+	 *  -@start will be cache-line aligned already (being page aligned)
-+	 *  -@sz will be integral multiple of line size (being page sized).
++	/* Always make any pending restarted system calls return -EINTR */
++	current_thread_info()->restart_block.fn = do_no_restart_syscall;
++
++	/* Since we stacked the signal on a word boundary,
++	 * then 'sp' should be word aligned here.  If it's
++	 * not, then the user is trying to mess with us.
 +	 */
-+	if (!(__builtin_constant_p(sz) && sz == PAGE_SIZE)) {
-+		slack = start & ~DCACHE_LINE_MASK;
-+		sz += slack;
-+		start -= slack;
-+	}
++	if (regs->sp & 3)
++		goto badframe;
 +
-+	num_lines = DIV_ROUND_UP(sz, ARC_DCACHE_LINE_LEN);
++	sf = (struct rt_sigframe __force __user *)(regs->sp);
 +
-+	while (num_lines-- > 0) {
-+#if (CONFIG_ARC_MMU_VER > 2)
-+		/*
-+		 * Just as for I$, in MMU v3, D$ ops also require
-+		 * "tag" bits in DC_PTAG, "index" bits in FLDL,IVDL ops
-+		 * But we pass phy addr for both. This works since Linux
-+		 * doesn't support aliasing configs for D$, yet.
-+		 * Thus paddr is enough to provide both tag and index.
-+		 */
-+		write_aux_reg(ARC_REG_DC_PTAG, start);
-+#endif
-+		write_aux_reg(aux_reg, start);
-+		start += ARC_DCACHE_LINE_LEN;
-+	}
-+}
++	if (!access_ok(VERIFY_READ, sf, sizeof(*sf)))
++		goto badframe;
 +
-+/*
-+ * D-Cache : Per Line INV (discard or wback+discard) or FLUSH (wback)
-+ */
-+static inline void __dc_line_op(unsigned long start, unsigned long sz,
-+					const int cacheop)
-+{
-+	unsigned long flags, tmp = tmp;
-+	int aux;
++	err = restore_usr_regs(regs, sf);
++	err |= __get_user(magic, &sf->sigret_magic);
++	if (err)
++		goto badframe;
 +
-+	local_irq_save(flags);
++	if (unlikely(is_do_ss_needed(magic)))
++		if (restore_altstack(&sf->uc.uc_stack))
++			goto badframe;
 +
-+	if (cacheop == OP_FLUSH_N_INV) {
-+		/*
-+		 * Dcache provides 2 cmd: FLUSH or INV
-+		 * INV inturn has sub-modes: DISCARD or FLUSH-BEFORE
-+		 * flush-n-inv is achieved by INV cmd but with IM=1
-+		 * Default INV sub-mode is DISCARD, which needs to be toggled
-+		 */
-+		tmp = read_aux_reg(ARC_REG_DC_CTRL);
-+		write_aux_reg(ARC_REG_DC_CTRL, tmp | DC_CTRL_INV_MODE_FLUSH);
-+	}
++	return regs->r0;
 +
-+	if (cacheop & OP_INV)	/* Inv / flush-n-inv use same cmd reg */
-+		aux = ARC_REG_DC_IVDL;
-+	else
-+		aux = ARC_REG_DC_FLDL;
-+
-+	__dc_line_loop(start, sz, aux);
-+
-+	if (cacheop & OP_FLUSH)	/* flush / flush-n-inv both wait */
-+		wait_for_flush();
-+
-+	/* Switch back the DISCARD ONLY Invalidate mode */
-+	if (cacheop == OP_FLUSH_N_INV)
-+		write_aux_reg(ARC_REG_DC_CTRL, tmp & ~DC_CTRL_INV_MODE_FLUSH);
-+
-+	local_irq_restore(flags);
-+}
-+
-+#else
-+
-+#define __dc_entire_op(cacheop)
-+#define __dc_line_op(start, sz, cacheop)
-+
-+#endif /* CONFIG_ARC_HAS_DCACHE */
-+
-+
-+#ifdef CONFIG_ARC_HAS_ICACHE
-+
-+/*
-+ *		I-Cache Aliasing in ARC700 VIPT caches
-+ *
-+ * For fetching code from I$, ARC700 uses vaddr (embedded in program code)
-+ * to "index" into SET of cache-line and paddr from MMU to match the TAG
-+ * in the WAYS of SET.
-+ *
-+ * However the CDU iterface (to flush/inv) lines from software, only takes
-+ * paddr (to have simpler hardware interface). For simpler cases, using paddr
-+ * alone suffices.
-+ * e.g. 2-way-set-assoc, 16K I$ (8k MMU pg sz, 32b cache line size):
-+ *      way_sz = cache_sz / num_ways = 16k/2 = 8k
-+ *      num_sets = way_sz / line_sz = 8k/32 = 256 => 8 bits
-+ *   Ignoring the bottom 5 bits corresp to the off within a 32b cacheline,
-+ *   bits req for calc set-index = bits 12:5 (0 based). Since this range fits
-+ *   inside the bottom 13 bits of paddr, which are same for vaddr and paddr
-+ *   (with 8k pg sz), paddr alone can be safely used by CDU to unambigously
-+ *   locate a cache-line.
-+ *
-+ * However for a difft sized cache, say 32k I$, above math yields need
-+ * for 14 bits of vaddr to locate a cache line, which can't be provided by
-+ * paddr, since the bit 13 (0 based) might differ between the two.
-+ *
-+ * This lack of extra bits needed for correct line addressing, defines the
-+ * classical problem of Cache aliasing with VIPT architectures
-+ * num_aliases = 1 << extra_bits
-+ * e.g. 2-way-set-assoc, 32K I$ with 8k MMU pg sz => 2 aliases
-+ *      2-way-set-assoc, 64K I$ with 8k MMU pg sz => 4 aliases
-+ *      2-way-set-assoc, 16K I$ with 8k MMU pg sz => NO aliases
-+ *
-+ * ------------------
-+ * MMU v1/v2 (Fixed Page Size 8k)
-+ * ------------------
-+ * The solution was to provide CDU with these additonal vaddr bits. These
-+ * would be bits [x:13], x would depend on cache-geom.
-+ * H/w folks chose [17:13] to be a future safe range, and moreso these 5 bits
-+ * of vaddr could easily be "stuffed" in the paddr as bits [4:0] since the
-+ * orig 5 bits of paddr were anyways ignored by CDU line ops, as they
-+ * represent the offset within cache-line. The adv of using this "clumsy"
-+ * interface for additional info was no new reg was needed in CDU.
-+ *
-+ * 17:13 represented the max num of bits passable, actual bits needed were
-+ * fewer, based on the num-of-aliases possible.
-+ * -for 2 alias possibility, only bit 13 needed (32K cache)
-+ * -for 4 alias possibility, bits 14:13 needed (64K cache)
-+ *
-+ * Since vaddr was not available for all instances of I$ flush req by core
-+ * kernel, the only safe way (non-optimal though) was to kill all possible
-+ * lines which could represent an alias (even if they didnt represent one
-+ * in execution).
-+ * e.g. for 64K I$, 4 aliases possible, so we did
-+ *      flush start
-+ *      flush start | 0x01
-+ *      flush start | 0x2
-+ *      flush start | 0x3
-+ *
-+ * The penalty was invoking the operation itself, since tag match is anyways
-+ * paddr based, a line which didn't represent an alias would not match the
-+ * paddr, hence wont be killed
-+ *
-+ * Note that aliasing concerns are independent of line-sz for a given cache
-+ * geometry (size + set_assoc) because the extra bits required by line-sz are
-+ * reduced from the set calc.
-+ * e.g. 2-way-set-assoc, 32K I$ with 8k MMU pg sz and using math above
-+ *  32b line-sz: 9 bits set-index-calc, 5 bits offset-in-line => 1 extra bit
-+ *  64b line-sz: 8 bits set-index-calc, 6 bits offset-in-line => 1 extra bit
-+ *
-+ * ------------------
-+ * MMU v3
-+ * ------------------
-+ * This ver of MMU supports var page sizes (1k-16k) - Linux will support
-+ * 8k (default), 16k and 4k.
-+ * However from hardware perspective, smaller page sizes aggrevate aliasing
-+ * meaning more vaddr bits needed to disambiguate the cache-line-op ;
-+ * the existing scheme of piggybacking won't work for certain configurations.
-+ * Two new registers IC_PTAG and DC_PTAG inttoduced.
-+ * "tag" bits are provided in PTAG, index bits in existing IVIL/IVDL/FLDL regs
-+ */
-+
-+/***********************************************************
-+ * Machine specific helpers for per line I-Cache invalidate.
-+ * 3 routines to accpunt for 1, 2, 4 aliases possible
-+ */
-+
-+static void __ic_line_inv_no_alias(unsigned long start, int num_lines)
-+{
-+	while (num_lines-- > 0) {
-+#if (CONFIG_ARC_MMU_VER > 2)
-+		write_aux_reg(ARC_REG_IC_PTAG, start);
-+#endif
-+		write_aux_reg(ARC_REG_IC_IVIL, start);
-+		start += ARC_ICACHE_LINE_LEN;
-+	}
-+}
-+
-+static void __ic_line_inv_2_alias(unsigned long start, int num_lines)
-+{
-+	while (num_lines-- > 0) {
-+
-+#if (CONFIG_ARC_MMU_VER > 2)
-+		/*
-+		 *  MMU v3, CDU prog model (for line ops) now uses a new IC_PTAG
-+		 * reg to pass the "tag" bits and existing IVIL reg only looks
-+		 * at bits relevant for "index" (details above)
-+		 * Programming Notes:
-+		 * -when writing tag to PTAG reg, bit chopping can be avoided,
-+		 *  CDU ignores non-tag bits.
-+		 * -Ideally "index" must be computed from vaddr, but it is not
-+		 *  avail in these rtns. So to be safe, we kill the lines in all
-+		 *  possible indexes corresp to num of aliases possible for
-+		 *  given cache config.
-+		 */
-+		write_aux_reg(ARC_REG_IC_PTAG, start);
-+		write_aux_reg(ARC_REG_IC_IVIL,
-+				  start & ~(0x1 << PAGE_SHIFT));
-+		write_aux_reg(ARC_REG_IC_IVIL, start | (0x1 << PAGE_SHIFT));
-+#else
-+		write_aux_reg(ARC_REG_IC_IVIL, start);
-+		write_aux_reg(ARC_REG_IC_IVIL, start | 0x01);
-+#endif
-+		start += ARC_ICACHE_LINE_LEN;
-+	}
-+}
-+
-+static void __ic_line_inv_4_alias(unsigned long start, int num_lines)
-+{
-+	while (num_lines-- > 0) {
-+
-+#if (CONFIG_ARC_MMU_VER > 2)
-+		write_aux_reg(ARC_REG_IC_PTAG, start);
-+
-+		write_aux_reg(ARC_REG_IC_IVIL,
-+				  start & ~(0x3 << PAGE_SHIFT));
-+		write_aux_reg(ARC_REG_IC_IVIL,
-+				  start & ~(0x2 << PAGE_SHIFT));
-+		write_aux_reg(ARC_REG_IC_IVIL,
-+				  start & ~(0x1 << PAGE_SHIFT));
-+		write_aux_reg(ARC_REG_IC_IVIL, start | (0x3 << PAGE_SHIFT));
-+#else
-+		write_aux_reg(ARC_REG_IC_IVIL, start);
-+		write_aux_reg(ARC_REG_IC_IVIL, start | 0x01);
-+		write_aux_reg(ARC_REG_IC_IVIL, start | 0x02);
-+		write_aux_reg(ARC_REG_IC_IVIL, start | 0x03);
-+#endif
-+		start += ARC_ICACHE_LINE_LEN;
-+	}
-+}
-+
-+static void __ic_line_inv(unsigned long start, unsigned long sz)
-+{
-+	unsigned long flags;
-+	int num_lines, slack;
-+
-+	/*
-+	 * Ensure we properly floor/ceil the non-line aligned/sized requests
-+	 * and have @start - aligned to cache line, and integral @num_lines
-+	 * However page sized flushes can be compile time optimised.
-+	 *  -@start will be cache-line aligned already (being page aligned)
-+	 *  -@sz will be integral multiple of line size (being page sized).
-+	 */
-+	if (!(__builtin_constant_p(sz) && sz == PAGE_SIZE)) {
-+		slack = start & ~ICACHE_LINE_MASK;
-+		sz += slack;
-+		start -= slack;
-+	}
-+
-+	num_lines = DIV_ROUND_UP(sz, ARC_ICACHE_LINE_LEN);
-+
-+	local_irq_save(flags);
-+	(*___flush_icache_rtn) (start, num_lines);
-+	local_irq_restore(flags);
-+}
-+
-+/* Unlike routines above, having vaddr for flush op (along with paddr),
-+ * prevents the need to speculatively kill the lines in multiple sets
-+ * based on ratio of way_sz : pg_sz
-+ */
-+static void __ic_line_inv_vaddr(unsigned long phy_start,
-+					 unsigned long vaddr, unsigned long sz)
-+{
-+	unsigned long flags;
-+	int num_lines, slack;
-+	unsigned int addr;
-+
-+	slack = phy_start & ~ICACHE_LINE_MASK;
-+	sz += slack;
-+	phy_start -= slack;
-+	num_lines = DIV_ROUND_UP(sz, ARC_ICACHE_LINE_LEN);
-+
-+#if (CONFIG_ARC_MMU_VER > 2)
-+	vaddr &= ~ICACHE_LINE_MASK;
-+	addr = phy_start;
-+#else
-+	/* bits 17:13 of vaddr go as bits 4:0 of paddr */
-+	addr = phy_start | ((vaddr >> 13) & 0x1F);
-+#endif
-+
-+	local_irq_save(flags);
-+	while (num_lines-- > 0) {
-+#if (CONFIG_ARC_MMU_VER > 2)
-+		/* tag comes from phy addr */
-+		write_aux_reg(ARC_REG_IC_PTAG, addr);
-+
-+		/* index bits come from vaddr */
-+		write_aux_reg(ARC_REG_IC_IVIL, vaddr);
-+		vaddr += ARC_ICACHE_LINE_LEN;
-+#else
-+		/* this paddr contains vaddrs bits as needed */
-+		write_aux_reg(ARC_REG_IC_IVIL, addr);
-+#endif
-+		addr += ARC_ICACHE_LINE_LEN;
-+	}
-+	local_irq_restore(flags);
-+}
-+
-+#else
-+
-+#define __ic_line_inv(start, sz)
-+#define __ic_line_inv_vaddr(pstart, vstart, sz)
-+
-+#endif /* CONFIG_ARC_HAS_ICACHE */
-+
-+
-+/***********************************************************
-+ * Exported APIs
-+ */
-+
-+/* TBD: use pg_arch_1 to optimize this */
-+void flush_dcache_page(struct page *page)
-+{
-+	__dc_line_op((unsigned long)page_address(page), PAGE_SIZE, OP_FLUSH);
-+}
-+EXPORT_SYMBOL(flush_dcache_page);
-+
-+
-+void dma_cache_wback_inv(unsigned long start, unsigned long sz)
-+{
-+	__dc_line_op(start, sz, OP_FLUSH_N_INV);
-+}
-+EXPORT_SYMBOL(dma_cache_wback_inv);
-+
-+void dma_cache_inv(unsigned long start, unsigned long sz)
-+{
-+	__dc_line_op(start, sz, OP_INV);
-+}
-+EXPORT_SYMBOL(dma_cache_inv);
-+
-+void dma_cache_wback(unsigned long start, unsigned long sz)
-+{
-+	__dc_line_op(start, sz, OP_FLUSH);
-+}
-+EXPORT_SYMBOL(dma_cache_wback);
-+
-+/*
-+ * This is API for making I/D Caches consistent when modifying code
-+ * (loadable modules, kprobes,  etc)
-+ * This is called on insmod, with kernel virtual address for CODE of
-+ * the module. ARC cache maintenance ops require PHY address thus we
-+ * need to convert vmalloc addr to PHY addr
-+ */
-+void flush_icache_range(unsigned long kstart, unsigned long kend)
-+{
-+	unsigned int tot_sz, off, sz;
-+	unsigned long phy, pfn;
-+	unsigned long flags;
-+
-+	/* printk("Kernel Cache Cohenercy: %lx to %lx\n",kstart, kend); */
-+
-+	/* This is not the right API for user virtual address */
-+	if (kstart < TASK_SIZE) {
-+		BUG_ON("Flush icache range for user virtual addr space");
-+		return;
-+	}
-+
-+	/* Shortcut for bigger flush ranges.
-+	 * Here we don't care if this was kernel virtual or phy addr
-+	 */
-+	tot_sz = kend - kstart;
-+	if (tot_sz > PAGE_SIZE) {
-+		flush_cache_all();
-+		return;
-+	}
-+
-+	/* Case: Kernel Phy addr (0x8000_0000 onwards) */
-+	if (likely(kstart > PAGE_OFFSET)) {
-+		__ic_line_inv(kstart, kend - kstart);
-+		__dc_line_op(kstart, kend - kstart, OP_FLUSH);
-+		return;
-+	}
-+
-+	/*
-+	 * Case: Kernel Vaddr (0x7000_0000 to 0x7fff_ffff)
-+	 * (1) ARC Cache Maintenance ops only take Phy addr, hence special
-+	 *     handling of kernel vaddr.
-+	 *
-+	 * (2) Despite @tot_sz being < PAGE_SIZE (bigger cases handled already),
-+	 *     it still needs to handle  a 2 page scenario, where the range
-+	 *     straddles across 2 virtual pages and hence need for loop
-+	 */
-+	while (tot_sz > 0) {
-+		off = kstart % PAGE_SIZE;
-+		pfn = vmalloc_to_pfn((void *)kstart);
-+		phy = (pfn << PAGE_SHIFT) + off;
-+		sz = min_t(unsigned int, tot_sz, PAGE_SIZE - off);
-+		local_irq_save(flags);
-+		__dc_line_op(phy, sz, OP_FLUSH);
-+		__ic_line_inv(phy, sz);
-+		local_irq_restore(flags);
-+		kstart += sz;
-+		tot_sz -= sz;
-+	}
-+}
-+
-+/*
-+ * Optimised ver of flush_icache_range() with spec callers: ptrace/signals
-+ * where vaddr is also available. This allows passing both vaddr and paddr
-+ * bits to CDU for cache flush, short-circuting the current pessimistic algo
-+ * which kills all possible aliases.
-+ * An added adv of knowing that vaddr is user-vaddr avoids various checks
-+ * and handling for k-vaddr, k-paddr as done in orig ver above
-+ */
-+void flush_icache_range_vaddr(unsigned long paddr, unsigned long u_vaddr,
-+			      int len)
-+{
-+	__ic_line_inv_vaddr(paddr, u_vaddr, len);
-+	__dc_line_op(paddr, len, OP_FLUSH);
-+}
-+
-+/*
-+ * XXX: This also needs to be optim using pg_arch_1
-+ * This is called when a page-cache page is about to be mapped into a
-+ * user process' address space.  It offers an opportunity for a
-+ * port to ensure d-cache/i-cache coherency if necessary.
-+ */
-+void flush_icache_page(struct vm_area_struct *vma, struct page *page)
-+{
-+	if (!(vma->vm_flags & VM_EXEC))
-+		return;
-+
-+	__ic_line_inv((unsigned long)page_address(page), PAGE_SIZE);
-+}
-+
-+void flush_icache_all(void)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+
-+	write_aux_reg(ARC_REG_IC_IVIC, 1);
-+
-+	/* lr will not complete till the icache inv operation is not over */
-+	read_aux_reg(ARC_REG_IC_CTRL);
-+	local_irq_restore(flags);
-+}
-+
-+noinline void flush_cache_all(void)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+
-+	flush_icache_all();
-+	__dc_entire_op(OP_FLUSH_N_INV);
-+
-+	local_irq_restore(flags);
-+
-+}
-+
-+/**********************************************************************
-+ * Explicit Cache flush request from user space via syscall
-+ * Needed for JITs which generate code on the fly
-+ */
-+SYSCALL_DEFINE3(cacheflush, uint32_t, start, uint32_t, sz, uint32_t, flags)
-+{
-+	/* TBD: optimize this */
-+	flush_cache_all();
++badframe:
++	force_sig(SIGSEGV, current);
 +	return 0;
++}
++
++/*
++ * Determine which stack to use..
++ */
++static inline void __user *get_sigframe(struct k_sigaction *ka,
++					struct pt_regs *regs,
++					unsigned long framesize)
++{
++	unsigned long sp = regs->sp;
++	void __user *frame;
++
++	/* This is the X/Open sanctioned signal stack switching */
++	if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
++		sp = current->sas_ss_sp + current->sas_ss_size;
++
++	/* No matter what happens, 'sp' must be word
++	 * aligned otherwise nasty things could happen
++	 */
++
++	/* ATPCS B01 mandates 8-byte alignment */
++	frame = (void __user *)((sp - framesize) & ~7);
++
++	/* Check that we can actually write to the signal frame */
++	if (!access_ok(VERIFY_WRITE, frame, framesize))
++		frame = NULL;
++
++	return frame;
++}
++
++/*
++ * translate the signal
++ */
++static inline int map_sig(int sig)
++{
++	struct thread_info *thread = current_thread_info();
++	if (thread->exec_domain && thread->exec_domain->signal_invmap
++	    && sig < 32)
++		sig = thread->exec_domain->signal_invmap[sig];
++	return sig;
++}
++
++static int
++setup_rt_frame(int signo, struct k_sigaction *ka, siginfo_t *info,
++	       sigset_t *set, struct pt_regs *regs)
++{
++	struct rt_sigframe __user *sf;
++	unsigned int magic = 0;
++	int err = 0;
++
++	sf = get_sigframe(ka, regs, sizeof(struct rt_sigframe));
++	if (!sf)
++		return 1;
++
++	/*
++	 * SA_SIGINFO requires 3 args to signal handler:
++	 *  #1: sig-no (common to any handler)
++	 *  #2: struct siginfo
++	 *  #3: struct ucontext (completely populated)
++	 */
++	if (unlikely(ka->sa.sa_flags & SA_SIGINFO)) {
++		err |= copy_siginfo_to_user(&sf->info, info);
++		err |= __put_user(0, &sf->uc.uc_flags);
++		err |= __put_user(NULL, &sf->uc.uc_link);
++		err |= __save_altstack(&sf->uc.uc_stack, regs->sp);
++
++		/* setup args 2 and 3 fo ruse rmode handler */
++		regs->r1 = (unsigned long)&sf->info;
++		regs->r2 = (unsigned long)&sf->uc;
++
++		/*
++		 * small optim to avoid unconditonally calling do_sigaltstack
++		 * in sigreturn path, now that we only have rt_sigreturn
++		 */
++		magic = MAGIC_SIGALTSTK;
++	}
++
++	/*
++	 * w/o SA_SIGINFO, struct ucontext is partially populated (only
++	 * uc_mcontext/uc_sigmask) for kernel's normal user state preservation
++	 * during signal handler execution. This works for SA_SIGINFO as well
++	 * although the semantics are now overloaded (the same reg state can be
++	 * inspected by userland: but are they allowed to fiddle with it ?
++	 */
++	err |= stash_usr_regs(sf, regs, set);
++	err |= __put_user(magic, &sf->sigret_magic);
++	if (err)
++		return err;
++
++	/* #1 arg to the user Signal handler */
++	regs->r0 = map_sig(signo);
++
++	/* setup PC of user space signal handler */
++	regs->ret = (unsigned long)ka->sa.sa_handler;
++
++	/*
++	 * handler returns using sigreturn stub provided already by userpsace
++	 */
++	BUG_ON(!(ka->sa.sa_flags & SA_RESTORER));
++	regs->blink = (unsigned long)ka->sa.sa_restorer;
++
++	/* User Stack for signal handler will be above the frame just carved */
++	regs->sp = (unsigned long)sf;
++
++	/*
++	 * Bug 94183, Clear the DE bit, so that when signal handler
++	 * starts to run, it doesn't use BTA
++	 */
++	regs->status32 &= ~STATUS_DE_MASK;
++	regs->status32 |= STATUS_L_MASK;
++
++	return err;
++}
++
++static void arc_restart_syscall(struct k_sigaction *ka, struct pt_regs *regs)
++{
++	switch (regs->r0) {
++	case -ERESTART_RESTARTBLOCK:
++	case -ERESTARTNOHAND:
++		/*
++		 * ERESTARTNOHAND means that the syscall should
++		 * only be restarted if there was no handler for
++		 * the signal, and since we only get here if there
++		 * is a handler, we don't restart
++		 */
++		regs->r0 = -EINTR;   /* ERESTART_xxx is internal */
++		break;
++
++	case -ERESTARTSYS:
++		/*
++		 * ERESTARTSYS means to restart the syscall if
++		 * there is no handler or the handler was
++		 * registered with SA_RESTART
++		 */
++		if (!(ka->sa.sa_flags & SA_RESTART)) {
++			regs->r0 = -EINTR;
++			break;
++		}
++		/* fallthrough */
++
++	case -ERESTARTNOINTR:
++		/*
++		 * ERESTARTNOINTR means that the syscall should
++		 * be called again after the signal handler returns.
++		 * Setup reg state just as it was before doing the trap
++		 * r0 has been clobbered with sys call ret code thus it
++		 * needs to be reloaded with orig first arg to syscall
++		 * in orig_r0. Rest of relevant reg-file:
++		 * r8 (syscall num) and (r1 - r7) will be reset to
++		 * their orig user space value when we ret from kernel
++		 */
++		regs->r0 = regs->orig_r0;
++		regs->ret -= 4;
++		break;
++	}
++}
++
++/*
++ * OK, we're invoking a handler
++ */
++static void
++handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
++	      struct pt_regs *regs)
++{
++	sigset_t *oldset = sigmask_to_save();
++	int ret;
++
++	/* Set up the stack frame */
++	ret = setup_rt_frame(sig, ka, info, oldset, regs);
++
++	if (ret)
++		force_sigsegv(sig, current);
++	else
++		signal_delivered(sig, info, ka, regs, 0);
++}
++
++void do_signal(struct pt_regs *regs)
++{
++	struct k_sigaction ka;
++	siginfo_t info;
++	int signr;
++	int restart_scall;
++
++	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
++
++	/* Are we from a system call? */
++	restart_scall = in_syscall(regs);
++
++	if (signr > 0) {
++		if (restart_scall)
++			arc_restart_syscall(&ka, regs);
++
++		handle_signal(signr, &ka, &info, regs);
++		return;
++	}
++
++	if (restart_scall) {
++		/* No handler for syscall: restart it */
++		if (regs->r0 == -ERESTARTNOHAND ||
++		    regs->r0 == -ERESTARTSYS || regs->r0 == -ERESTARTNOINTR) {
++			regs->r0 = regs->orig_r0;
++			regs->ret -= 4;
++		} else if (regs->r0 == -ERESTART_RESTARTBLOCK) {
++			regs->r8 = __NR_restart_syscall;
++			regs->ret -= 4;
++		}
++	}
++
++	/* If there's no signal to deliver, restore the saved sigmask back */
++	restore_saved_sigmask();
++}
++
++void do_notify_resume(struct pt_regs *regs)
++{
++	/*
++	 * ASM glue gaurantees that this is only called when returning to
++	 * user mode
++	 */
++	if (test_and_clear_thread_flag(TIF_NOTIFY_RESUME))
++		tracehook_notify_resume(regs);
 +}
 -- 
 1.7.4.1
