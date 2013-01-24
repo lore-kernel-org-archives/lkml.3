@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab3AXSos (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 13:44:48 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:65284 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190Ab3AXSoo (ORCPT
+	id S1755338Ab3AXSpF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 13:45:05 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:47297 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755144Ab3AXSo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 13:44:44 -0500
-Message-ID: <51018118.10800@gmail.com>
-Date: Thu, 24 Jan 2013 11:44:40 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Thu, 24 Jan 2013 13:44:59 -0500
+Date: Thu, 24 Jan 2013 10:44:54 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: [PATCH v2 15/17] workqueue: remove global_cwq
+Message-ID: <20130124184454.GO2373@mtj.dyndns.org>
+References: <1358386969-945-1-git-send-email-tj@kernel.org>
+ <1358386969-945-16-git-send-email-tj@kernel.org>
+ <20130123180957.GF2373@mtj.dyndns.org>
+ <20130124092936.GA2424@lge.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Tom Zanussi <tom.zanussi@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] perf tools: some 'perf script' fixes
-References: <cover.1358527965.git.tom.zanussi@linux.intel.com> <20130124182736.GA14382@infradead.org>
-In-Reply-To: <20130124182736.GA14382@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130124092936.GA2424@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/24/13 11:27 AM, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Jan 18, 2013 at 01:51:24PM -0600, Tom Zanussi escreveu:
->> This patchset fixes various problems I hit while doing a run-through
->> of the existing 'perf script' scripts.
->>
->> Also, sometimes when running rwtop I get a 'failed to read event
->> header' error, which this patch fixes:
->>
->> https://lkml.org/lkml/2012/9/14/401
->>
->> Not sure if that was meant to get picked up, but it fixed that
->> particular problem here for me.
->
-> David, can you please resubmit it with an explanation in the commit
-> message?
+Hey, Joonsoo.
 
-As part of other perf related activities I have noticed that readn is 
-used in some places that we will want it to return immediately -- e.g., 
-evsel.c. So, this might not be the proper fix for all use cases.
+On Thu, Jan 24, 2013 at 06:29:36PM +0900, Joonsoo Kim wrote:
+> > -static DEFINE_PER_CPU(struct global_cwq, global_cwq);
+> > +static DEFINE_PER_CPU(struct worker_pool [NR_STD_WORKER_POOLS],
+> > +		      cpu_std_worker_pools);
+> >  static DEFINE_PER_CPU_SHARED_ALIGNED(atomic_t, pool_nr_running[NR_STD_WORKER_POOLS]);
+> 
+> AFAIK, worker_pool can be accessed by other cpus.
+> So, I think that we also need "DEFINE_PER_CPU_SHARED_ALIGNED(struct worker_pool [], xxx)".
 
-David
+Hmmm... yean.  I think I'll just move pool_nr_running into
+worker_pool.  Will prep a separate patch.
 
+Thanks.
 
+-- 
+tejun
