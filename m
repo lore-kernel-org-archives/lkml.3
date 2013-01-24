@@ -1,137 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab3AXQPg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 11:15:36 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:59185 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab3AXQPe convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
-	Thu, 24 Jan 2013 11:15:34 -0500
-Message-Id: <51016C3202000078000B943E@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Thu, 24 Jan 2013 16:15:30 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "KY Srinivasan" <kys@microsoft.com>
-Cc: "olaf@aepfle.de" <olaf@aepfle.de>, "bp@alien8.de" <bp@alien8.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
+	id S1754847Ab3AXQTN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 11:19:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:62894 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754749Ab3AXQTK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 11:19:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,530,1355126400"; 
+   d="scan'208";a="251831696"
+From: "Metzger, Markus T" <markus.t.metzger@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: "mingo@redhat.com" <mingo@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: RE: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
- special hypervisor interrupts
-References: <1358990259-22551-1-git-send-email-kys@microsoft.com>
- <5101035D02000078000B8FFD@nat28.tlf.novell.com>
- <27092660926e4d3f80394697cc0dc858@SN2PR03MB061.namprd03.prod.outlook.com>
-In-Reply-To: <27092660926e4d3f80394697cc0dc858@SN2PR03MB061.namprd03.prod.outlook.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        Mark Kettenis <kettenis@gnu.org>, Pedro Alves <palves@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        "gdb-patches@sourceware.org" <gdb-patches@sourceware.org>
+Subject: RE: [PATCH] x86, perf, bts: disable BTS from Nehalem to Ivy Bridge
+Thread-Topic: [PATCH] x86, perf, bts: disable BTS from Nehalem to Ivy Bridge
+Thread-Index: AQHN+koPtQ7h4eFQpEO6XdiO7PVjgJhYoJ1g
+Date: Thu, 24 Jan 2013 16:17:26 +0000
+Message-ID: <A78C989F6D9628469189715575E55B2307B648E7@IRSMSX102.ger.corp.intel.com>
+References: <1354876511-25294-1-git-send-email-markus.t.metzger@intel.com>
+ <20130124154637.GB32146@gmail.com>
+In-Reply-To: <20130124154637.GB32146@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.182]
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 24.01.13 at 17:07, KY Srinivasan <kys@microsoft.com> wrote:
+> -----Original Message-----
+> From: gdb-patches-owner@sourceware.org [mailto:gdb-patches-owner@sourceware.org] On Behalf Of Ingo Molnar
+> Sent: Thursday, January 24, 2013 4:47 PM
 
+
+> > Starting with Nehalem, the BTS "from" information may in some cases be
+> > incorrect (AAJ122).
+> >
+> > This has been detected while adding branch tracing support to gdb, where it
+> > results in sporadic test fails.
+> >
+> > Disable BTS support on Nehalem, Westmere, Sandy Bridge, and Ivy Bridge.
 > 
->> -----Original Message-----
->> From: Jan Beulich [mailto:JBeulich@suse.com]
->> Sent: Thursday, January 24, 2013 3:48 AM
->> To: KY Srinivasan
->> Cc: olaf@aepfle.de; bp@alien8.de; apw@canonical.com; x86@kernel.org;
->> tglx@linutronix.de; devel@linuxdriverproject.org; 
-> gregkh@linuxfoundation.org;
->> jasowang@redhat.com; linux-kernel@vger.kernel.org; hpa@zytor.com 
->> Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
->> special hypervisor interrupts
->> 
->> >>> On 24.01.13 at 02:17, "K. Y. Srinivasan" <kys@microsoft.com> wrote:
->> > @@ -69,6 +74,11 @@ static void __init ms_hyperv_init_platform(void)
->> >  	       ms_hyperv.features, ms_hyperv.hints);
->> >
->> >  	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
->> > +
->> > +	/*
->> > +	 * Setup the IDT for hypervisor callback.
->> > +	 */
->> > +	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR,
->> hyperv_callback_vector);
->> 
->> Isn't doing this unconditionally here as problematic as the call to
->> clocksource_register_hz() turned out to be when Xen's Hyper-V
->> shim reacts to the CPUID inquiry above?
-> 
-> I was not sure what to make this conditional on at run-time. To the extent
-> that Xen emulation of Hyper-V is complete, this will be a problem. Does Xen
-> return all the "feature bits" of Hyper-V. I could discriminate on a feature 
-> that
-> Xen does not plan to emulate.
+> But the failures are rare, so the BTS data is still correct
+> statistically, by and large, right? So why not just keep it
+> as-is and teach tooling to be more robust about implausible
+> trace entries? It has to be ready for that eventuality *anyway*.
 
-I've no idea what plans there might be, but that's the code
-there is currently:
+Yes, the fails are rare. They are frequent enough, however, to cause sporadic test fails.
 
-int cpuid_viridian_leaves(unsigned int leaf, unsigned int *eax,
-                          unsigned int *ebx, unsigned int *ecx,
-                          unsigned int *edx)
-{
-    struct domain *d = current->domain;
+The problem is that you can't reliably detect such fails. In the worst case, GDB would show wrong but plausible trace. Typically, GDB just shows garbage (i.e. impossible trace) in such cases.
 
-    if ( !is_viridian_domain(d) )
-        return 0;
+I'm afraid one might endlessly debate whether the feature as-is is useful or not. It is working fine on Atom so I chose to disable it on core.
 
-    leaf -= 0x40000000;
-    if ( leaf > 6 )
-        return 0;
+The GDB folks would rather not disable the feature inside GDB; they prefer that it is disabled in the kernel. There will be an additional check inside GDB to support older kernel versions.
 
-    *eax = *ebx = *ecx = *edx = 0;
-    switch ( leaf )
-    {
-    case 0:
-        *eax = 0x40000006; /* Maximum leaf */
-        *ebx = 0x7263694d; /* Magic numbers  */
-        *ecx = 0x666F736F;
-        *edx = 0x76482074;
-        break;
-    case 1:
-        *eax = 0x31237648; /* Version number */
-        break;
-    case 2:
-        /* Hypervisor information, but only if the guest has set its
-           own version number. */
-        if ( d->arch.hvm_domain.viridian.guest_os_id.raw == 0 )
-            break;
-        *eax = 1; /* Build number */
-        *ebx = (xen_major_version() << 16) | xen_minor_version();
-        *ecx = 0; /* SP */
-        *edx = 0; /* Service branch and number */
-        break;
-    case 3:
-        /* Which hypervisor MSRs are available to the guest */
-        *eax = (CPUID3A_MSR_APIC_ACCESS |
-                CPUID3A_MSR_HYPERCALL   |
-                CPUID3A_MSR_VP_INDEX);
-        break;
-    case 4:
-        /* Recommended hypercall usage. */
-        if ( (d->arch.hvm_domain.viridian.guest_os_id.raw == 0) ||
-             (d->arch.hvm_domain.viridian.guest_os_id.fields.os < 4) )
-            break;
-        *eax = (CPUID4A_MSR_BASED_APIC |
-                CPUID4A_RELAX_TIMER_INT);
-        *ebx = 2047; /* long spin count */
-        break;
-    }
-
-    return 1;
-}
-
-Question is - considering you stated that this is supported
-starting in Win8, doesn't Hyper-V itself announce that
-capability in some explicit way?
-
-Jan
+Regards,
+markus.
+Intel GmbH
+Dornacher Strasse 1
+85622 Feldkirchen/Muenchen, Deutschland
+Sitz der Gesellschaft: Feldkirchen bei Muenchen
+Geschaeftsfuehrer: Christian Lamprechter, Hannes Schwaderer, Douglas Lusk
+Registergericht: Muenchen HRB 47456
+Ust.-IdNr./VAT Registration No.: DE129385895
+Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
 
