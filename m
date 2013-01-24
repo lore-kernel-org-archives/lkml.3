@@ -1,91 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337Ab3AXABA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 19:01:00 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:58902 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab3AXAAy (ORCPT
+	id S1752614Ab3AXACL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 19:02:11 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:45549 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752407Ab3AXACH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 19:00:54 -0500
-X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jan 2013 19:00:53 EST
+	Wed, 23 Jan 2013 19:02:07 -0500
+Date: Wed, 23 Jan 2013 16:02:02 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] more USB fixes for 3.8-rc4
+Message-ID: <20130124000202.GA12566@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20130123230608.GJ2373@mtj.dyndns.org>
-References: <1357731938-8417-1-git-send-email-glommer@parallels.com>
-	<CAMbhsRQ7B4Uu1Wukfay+m4K7CVXtVbsTTEd6JHrwC2s+NcEFNA@mail.gmail.com>
-	<50FD3123.6090003@parallels.com>
-	<20130123010226.GF5359@htj.dyndns.org>
-	<CAMbhsRSDbKUz7OT3Y0bGfYqgp3yMgwk8oHx0rpsX+XDFWTMqkw@mail.gmail.com>
-	<20130123165657.GC2373@mtj.dyndns.org>
-	<CAMbhsRRj9svWubn01wb+f=jSwVWC5u7DqJ5c8P23vAp0E2L8Rg@mail.gmail.com>
-	<20130123230608.GJ2373@mtj.dyndns.org>
-Date: Wed, 23 Jan 2013 15:53:30 -0800
-Message-ID: <CAMbhsRSAPL3P-EhD4HBChsgr66xYuEg4o2JtbFX=tz9w7RCeGQ@mail.gmail.com>
-Subject: Re: [PATCH v5 00/11] per-cgroup cpu-stat
-From: Colin Cross <ccross@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 3:06 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Collin.
->
-> On Wed, Jan 23, 2013 at 02:41:46PM -0800, Colin Cross wrote:
->> I think some of it is just historic, we previously did not group
->> application threads in the scheduler, so it would cause a change in
->> behavior if we started grouping them.  I will investigate switching to
->> a co-mounted hierarchy so hopefully you can deprecate cpuacct in the
->> future.
->
-> Yeah, it's gonna be many years, if ever, before we can actually
-> deprecate cpuacct and multiple hierarchies but it would be really nice
-> to move at least popular uses away from them sooner than later.
->
-> Also, maybe I'm misunderstanding what you were saying but isn't it the
-> case that only single application is "foreground" in at least vanilla
-> android?  Maybe multi-window support is scheduled for future releases
-> but it wouldn't count as behavior change in that case, right?
+The following changes since commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619:
 
-Not exactly.  Only one "app" is ever foreground, but there are
-numerous other app-like things in their own process containers that
-the user is aware of, and therefore gets foreground resources.  For
-example, a service that is playing music in the background may get
-treated like a foreground app.  Also, a foreground app may spawn
-threads and request that they run in the background, so a single
-container for an app is not sufficient.
+  Linux 3.8-rc4 (2013-01-17 19:25:45 -0800)
 
-> At any rate, IMHO, it's simply the better and correct to not depend on
-> the number of threads in use as a measure of CPU resource
-> distribution.
->
->> We can't factor the number of threads into the policy decision,
->> because it depends on how many threads are runnable at any time in any
->> particular application, and we have no way to track that.  It would
->> have to be a cgroup scheduler feature.
->
-> My understanding of android is very limited but the number of threads
-> in dalvik apps are controlled by the base system rather than
-> application itself, no?  If so, factoring that into scheduling params
-> shouldn't be difficult.  For native processes, if the number of
-> threads just *have* to be factored in some way, we can resort to
-> sampling.  That said, as native apps can easily thread-bomb out of
-> fairness, there are way more reasons to avoid basing the resource
-> policy decision on the number of threads in use.
+are available in the git repository at:
 
-A pure-dalvik app will spawn threads through a controlled interface
-that could count threads (but still could not count threads that are
-runnable vs. sleeping), but any app can use JNI to link to a native
-library and use pthreads directly if it wants to.  I agree per-app
-containers may have some fairness advantages between multiple apps, I
-just have to figure out what it will mean for apps vs. system
-services, etc
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.8-rc4
 
-> Thanks.
->
-> --
-> tejun
+for you to fetch changes up to dba63b2f733ebfd89bbb15e8fe8ca10fd3871a7f:
+
+  USB: EHCI: fix build error in ehci-mxc (2013-01-23 11:27:08 -0800)
+
+----------------------------------------------------------------
+more USB fixes for 3.8-rc4
+
+Here are some more USB fixes for the 3.8-rc4 tree.
+
+Some gadget driver fixes, and finally resolved the ehci-mxc driver build issues
+(it's just some code moving around and being deleted).
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Alan Stern (4):
+      USB: UHCI: fix IRQ race during initialization
+      USB: EHCI: fix incorrect configuration test
+      USB: EHCI: add a name for the platform-private field
+      USB: EHCI: fix build error in ehci-mxc
+
+Benoit Goby (1):
+      usb: gadget: FunctionFS: Fix missing braces in parse_opts
+
+Greg Kroah-Hartman (1):
+      Merge tag 'fixes-for-v3.8-rc5' of git://git.kernel.org/.../balbi/usb into usb-linus
+
+Peter Chen (3):
+      usb: gadget: fsl-mxc-udc: replace cpu_is_xxx() with platform_device_id
+      usb: gadget: fsl_mxc_udc: replace MX35_IO_ADDRESS to ioremap
+      ARM: i.MX clock: Change the connection-id for fsl-usb2-udc
+
+Pratyush Anand (1):
+      usb: dwc3: gadget: fix ep->maxburst for ep0
+
+Roger Quadros (1):
+      USB: EHCI: Move definition of EHCI_STATS to ehci.h
+
+Sergei Shtylyov (1):
+      usb: musb: cppi_dma: drop '__init' annotation
+
+ arch/arm/mach-imx/clk-imx25.c                     |   6 ++--
+ arch/arm/mach-imx/clk-imx27.c                     |   6 ++--
+ arch/arm/mach-imx/clk-imx31.c                     |   6 ++--
+ arch/arm/mach-imx/clk-imx35.c                     |   6 ++--
+ arch/arm/mach-imx/clk-imx51-imx53.c               |   6 ++--
+ arch/arm/mach-imx/devices/devices-common.h        |   1 +
+ arch/arm/mach-imx/devices/platform-fsl-usb2-udc.c |  15 ++++-----
+ drivers/usb/dwc3/gadget.c                         |   1 +
+ drivers/usb/gadget/f_fs.c                         |   6 ++--
+ drivers/usb/gadget/fsl_mxc_udc.c                  |  40 +++++++++++++++---------
+ drivers/usb/gadget/fsl_udc_core.c                 |  42 ++++++++++++++-----------
+ drivers/usb/gadget/fsl_usb2_udc.h                 |   5 +--
+ drivers/usb/host/Kconfig                          |   2 +-
+ drivers/usb/host/Makefile                         |   1 +
+ drivers/usb/host/ehci-hcd.c                       |  12 ++------
+ drivers/usb/host/ehci-mxc.c                       | 120 ++++++++++++++++++++++++++++++------------------------------------------
+ drivers/usb/host/ehci.h                           |   7 +++++
+ drivers/usb/host/uhci-hcd.c                       |  15 +++++----
+ drivers/usb/musb/cppi_dma.c                       |   4 +--
+ drivers/usb/serial/io_ti.c                        |   3 ++
+ drivers/usb/serial/option.c                       |   9 +++++-
+ 21 files changed, 165 insertions(+), 148 deletions(-)
