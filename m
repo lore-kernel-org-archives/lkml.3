@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab3AXLOL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:14:11 -0500
-Received: from hermes.synopsys.com ([198.182.44.81]:34229 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754865Ab3AXLOE (ORCPT
+	id S1755229Ab3AXLPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:15:16 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:43000 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753780Ab3AXLOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:14:04 -0500
+	Thu, 24 Jan 2013 06:14:20 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v3 53/71] ARC: [plat-arfpga] BVCI Latency Unit setup
-Date: Thu, 24 Jan 2013 16:36:17 +0530
-Message-ID: <1359025589-22277-34-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v3 67/71] ARC: [Review] Multi-platform image #7: SMP common code to use callbacks
+Date: Thu, 24 Jan 2013 16:36:27 +0530
+Message-ID: <1359025589-22277-44-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
 References: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
@@ -23,134 +23,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- arch/arc/plat-arcfpga/Kconfig    |   32 +++++++++++++++++++++
- arch/arc/plat-arcfpga/platform.c |   56 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 88 insertions(+), 0 deletions(-)
+This again is for switch from singleton platform SMP API to
+multi-platform paradigm
 
-diff --git a/arch/arc/plat-arcfpga/Kconfig b/arch/arc/plat-arcfpga/Kconfig
-index 38752bf..9912d9c 100644
---- a/arch/arc/plat-arcfpga/Kconfig
-+++ b/arch/arc/plat-arcfpga/Kconfig
-@@ -44,4 +44,36 @@ config ARC_SERIAL_BAUD
- 	help
- 	  Baud rate for the ARC UART
+Platform code is not yet setup to populate the callbacks, that happens
+in next commit
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ arch/arc/include/asm/smp.h |   36 +++++++++++++++---------------------
+ arch/arc/kernel/smp.c      |   16 +++++++++++++---
+ 2 files changed, 28 insertions(+), 24 deletions(-)
+
+diff --git a/arch/arc/include/asm/smp.h b/arch/arc/include/asm/smp.h
+index 0cff3a5..c4fb211 100644
+--- a/arch/arc/include/asm/smp.h
++++ b/arch/arc/include/asm/smp.h
+@@ -31,6 +31,7 @@ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
+  */
+ extern void __init smp_init_cpus(void);
+ extern void __init first_lines_of_secondary(void);
++extern const char *arc_platform_smp_cpuinfo(void);
  
-+menuconfig ARC_HAS_BVCI_LAT_UNIT
-+	bool "BVCI Bus Latency Unit"
-+	depends on ARC_BOARD_ML509 || ARC_BOARD_ANGEL4
-+	help
-+	  IP to add artifical latency to BVCI Bus Based FPGA builds.
-+	  The default latency (even worst case) for FPGA is non-realistic
-+	  (~10 SDRAM, ~5 SSRAM).
-+
-+config BVCI_LAT_UNITS
-+	hex "Latency Unit(s) Bitmap"
-+	default "0x0"
-+	depends on ARC_HAS_BVCI_LAT_UNIT
-+	help
-+	  There are multiple Latency Units corresponding to the many
-+	  interfaces of the system bus arbiter (both CPU side as well as
-+	  the peripheral side).
-+	  To add latency to ALL memory transaction, choose Unit 0, otherwise
-+	  for finer grainer - interface wise latency, specify a bitmap (1 bit
-+	  per unit) of all units. e.g. 1,2,12 will be 0x1003
-+
-+	  Unit  0 - System Arb and Mem Controller
-+	  Unit  1 - I$ and System Bus
-+	  Unit  2 - D$ and System Bus
-+	  ..
-+	  Unit 12 - IDE Disk controller and System Bus
-+
-+config BVCI_LAT_CYCLES
-+	int "Latency Value in cycles"
-+	range 0 63
-+	default "30"
-+	depends on ARC_HAS_BVCI_LAT_UNIT
-+
- endif
-diff --git a/arch/arc/plat-arcfpga/platform.c b/arch/arc/plat-arcfpga/platform.c
-index 33bcac8..b7f63e3 100644
---- a/arch/arc/plat-arcfpga/platform.c
-+++ b/arch/arc/plat-arcfpga/platform.c
-@@ -12,6 +12,7 @@
- #include <linux/init.h>
- #include <linux/device.h>
- #include <linux/platform_device.h>
-+#include <linux/io.h>
- #include <linux/console.h>
- #include <linux/of_platform.h>
- #include <asm/setup.h>
-@@ -19,6 +20,59 @@
- #include <asm/clk.h>
- #include <plat/memmap.h>
+ /*
+  * API expected BY platform smp code (FROM arch smp code)
+@@ -41,29 +42,22 @@ extern void __init first_lines_of_secondary(void);
+ extern int smp_ipi_irq_setup(int cpu, int irq);
  
-+/*-----------------------BVCI Latency Unit -----------------------------*/
+ /*
+- * APIs expected FROM platform smp code
+- *
+- * arc_platform_smp_cpuinfo:
+- *	returns a string containing info for /proc/cpuinfo
+- *
+- * arc_platform_smp_wait_to_boot:
+- *	Called from early bootup code for non-Master CPUs to "park" them
++ * struct plat_smp_ops	- SMP callbacks provided by platform to ARC SMP
+  *
+- * arc_platform_smp_wakeup_cpu:
+- *	Called from __cpu_up (Master CPU) to kick start another one
+- *
+- * arc_platform_ipi_send:
+- *	Takes @cpumask to which IPI(s) would be sent.
+- *	The actual msg-id/buffer is manager in arch-common code
+- *
+- * arc_platform_ipi_clear:
+- *	Takes @cpu which got IPI at @irq to do any IPI clearing
++ * @info:		SoC SMP specific info for /proc/cpuinfo etc
++ * @cpu_kick:		For Master to kickstart a cpu (optionally at a PC)
++ * @ipi_send:		To send IPI to a @cpumask
++ * @ips_clear:		To clear IPI received by @cpu at @irq
+  */
+-extern const char *arc_platform_smp_cpuinfo(void);
+-extern void arc_platform_smp_wait_to_boot(int cpu);
+-extern void arc_platform_smp_wakeup_cpu(int cpu, unsigned long pc);
+-extern void arc_platform_ipi_send(const struct cpumask *callmap);
+-extern void arc_platform_ipi_clear(int cpu, int irq);
++struct plat_smp_ops {
++	const char 	*info;
++	void		(*cpu_kick)(int cpu, unsigned long pc);
++	void		(*ipi_send)(void *callmap);
++	void		(*ipi_clear)(int cpu, int irq);
++};
 +
-+#ifdef CONFIG_ARC_HAS_BVCI_LAT_UNIT
-+
-+int lat_cycles = CONFIG_BVCI_LAT_CYCLES;
-+
-+/* BVCI Bus Profiler: Latency Unit */
-+static void __init setup_bvci_lat_unit(void)
-+{
-+#define MAX_BVCI_UNITS 12
-+
-+	unsigned int i;
-+	unsigned int *base = (unsigned int *)BVCI_LAT_UNIT_BASE;
-+	const unsigned long units_req = CONFIG_BVCI_LAT_UNITS;
-+	const unsigned int REG_UNIT = 21;
-+	const unsigned int REG_VAL = 22;
-+
-+	/*
-+	 * There are multiple Latency Units corresponding to the many
-+	 * interfaces of the system bus arbiter (both CPU side as well as
-+	 * the peripheral side).
-+	 *
-+	 * Unit  0 - System Arb and Mem Controller - adds latency to all
-+	 *	    memory trasactions
-+	 * Unit  1 - I$ and System Bus
-+	 * Unit  2 - D$ and System Bus
-+	 * ..
-+	 * Unit 12 - IDE Disk controller and System Bus
-+	 *
-+	 * The programmers model requires writing to lat_unit reg first
-+	 * and then the latency value (cycles) to lat_value reg
-+	 */
-+
-+	if (CONFIG_BVCI_LAT_UNITS == 0) {
-+		writel(0, base + REG_UNIT);
-+		writel(lat_cycles, base + REG_VAL);
-+		pr_info("BVCI Latency for all Memory Transactions %d cycles\n",
-+			lat_cycles);
-+	} else {
-+		for_each_set_bit(i, &units_req, MAX_BVCI_UNITS) {
-+			writel(i + 1, base + REG_UNIT); /* loop is 0 based */
-+			writel(lat_cycles, base + REG_VAL);
-+			pr_info("BVCI Latency for Unit[%d] = %d cycles\n",
-+				(i + 1), lat_cycles);
-+		}
-+	}
-+}
-+#else
-+static void __init setup_bvci_lat_unit(void)
-+{
-+}
-+#endif
-+
- /*----------------------- Platform Devices -----------------------------*/
++/* TBD: stop exporting it for direct population by platform */
++extern struct plat_smp_ops  plat_smp_ops;
  
- static unsigned long arc_uart_info[] = {
-@@ -106,6 +160,8 @@ void __init arc_platform_early_init(void)
- {
- 	pr_info("[plat-arcfpga]: registering early dev resources\n");
+ #endif  /* CONFIG_SMP */
  
-+	setup_bvci_lat_unit();
+diff --git a/arch/arc/kernel/smp.c b/arch/arc/kernel/smp.c
+index 8ee010f..3af3e06 100644
+--- a/arch/arc/kernel/smp.c
++++ b/arch/arc/kernel/smp.c
+@@ -37,6 +37,8 @@
+ arch_spinlock_t smp_atomic_ops_lock = __ARCH_SPIN_LOCK_UNLOCKED;
+ arch_spinlock_t smp_bitops_lock = __ARCH_SPIN_LOCK_UNLOCKED;
+ 
++struct plat_smp_ops  plat_smp_ops;
 +
- 	arc_fpga_serial_init();
+ /* XXX: per cpu ? Only needed once in early seconday boot */
+ struct task_struct *secondary_idle_tsk;
+ 
+@@ -105,6 +107,11 @@ void __attribute__((weak)) arc_platform_smp_wait_to_boot(int cpu)
+ 	"	b 1b	\n");
  }
  
++const char *arc_platform_smp_cpuinfo(void)
++{
++	return plat_smp_ops.info;
++}
++
+ /*
+  * The very first "C" code executed by secondary
+  * Called from asm stub in head.S
+@@ -156,7 +163,8 @@ int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *idle)
+ 	pr_info("Idle Task [%d] %p", cpu, idle);
+ 	pr_info("Trying to bring up CPU%u ...\n", cpu);
+ 
+-	arc_platform_smp_wakeup_cpu(cpu,
++	if (plat_smp_ops.cpu_kick)
++		plat_smp_ops.cpu_kick(cpu,
+ 				(unsigned long)first_lines_of_secondary);
+ 
+ 	/* wait for 1 sec after kicking the secondary */
+@@ -225,7 +233,8 @@ static void ipi_send_msg(const struct cpumask *callmap, enum ipi_msg_type msg)
+ 	}
+ 
+ 	/* Call the platform specific cross-CPU call function  */
+-	arc_platform_ipi_send(callmap);
++	if (plat_smp_ops.ipi_send)
++		plat_smp_ops.ipi_send((void *)callmap);
+ 
+ 	local_irq_restore(flags);
+ }
+@@ -299,7 +308,8 @@ irqreturn_t do_IPI(int irq, void *dev_id)
+ 	struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
+ 	unsigned long ops;
+ 
+-	arc_platform_ipi_clear(cpu, irq);
++	if (plat_smp_ops.ipi_clear)
++		plat_smp_ops.ipi_clear(cpu, irq);
+ 
+ 	/*
+ 	 * XXX: is this loop really needed
 -- 
 1.7.4.1
 
