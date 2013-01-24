@@ -1,106 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945978Ab3AXVUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:20:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40930 "EHLO mail.kernel.org"
+	id S1422686Ab3AXVUy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:20:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41274 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932203Ab3AXVQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:16:45 -0500
+	id S1422642Ab3AXVT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:19:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 20/22] ACPI / cpuidle: Fix NULL pointer issues when cpuidle is disabled
-Date: Thu, 24 Jan 2013 13:15:41 -0800
-Message-Id: <20130124211511.247224787@linuxfoundation.org>
+        Shuah Khan <shuah.khan@hp.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>
+Subject: [ 15/15] ioat: Fix DMA memory sync direction correct flag
+Date: Thu, 24 Jan 2013 13:18:39 -0800
+Message-Id: <20130124211729.429168479@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130124211504.701368763@linuxfoundation.org>
-References: <20130124211504.701368763@linuxfoundation.org>
+In-Reply-To: <20130124211723.489089115@linuxfoundation.org>
+References: <20130124211723.489089115@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Shuah Khan <shuah.khan@hp.com>
 
-commit b88a634a903d9670aa5f2f785aa890628ce0dece upstream.
+commit ac4989874af56435c308bdde9ad9c837a26f8b23 upstream.
 
-If cpuidle is disabled, that means that:
+ioat does DMA memory sync with DMA_TO_DEVICE direction on a buffer allocated
+for DMA_FROM_DEVICE dma, resulting in the following warning from dma debug.
+Fixed the dma_sync_single_for_device() call to use the correct direction.
 
-	per_cpu(acpi_cpuidle_device, pr->id)
+[  226.288947] WARNING: at lib/dma-debug.c:990 check_sync+0x132/0x550()
+[  226.288948] Hardware name: ProLiant DL380p Gen8
+[  226.288951] ioatdma 0000:00:04.0: DMA-API: device driver syncs DMA memory with different direction [device address=0x00000000ffff7000] [size=4096 bytes] [mapped with DMA_FROM_DEVICE] [synced with DMA_TO_DEVICE]
+[  226.288953] Modules linked in: iTCO_wdt(+) sb_edac(+) ioatdma(+) microcode serio_raw pcspkr edac_core hpwdt(+) iTCO_vendor_support hpilo(+) dca acpi_power_meter ata_generic pata_acpi sd_mod crc_t10dif ata_piix libata hpsa tg3 netxen_nic(+) sunrpc dm_mirror dm_region_hash dm_log dm_mod
+[  226.288967] Pid: 1055, comm: work_for_cpu Tainted: G        W    3.3.0-0.20.el7.x86_64 #1
+[  226.288968] Call Trace:
+[  226.288974]  [<ffffffff810644cf>] warn_slowpath_common+0x7f/0xc0
+[  226.288977]  [<ffffffff810645c6>] warn_slowpath_fmt+0x46/0x50
+[  226.288980]  [<ffffffff81345502>] check_sync+0x132/0x550
+[  226.288983]  [<ffffffff81345c9f>] debug_dma_sync_single_for_device+0x3f/0x50
+[  226.288988]  [<ffffffff81661002>] ? wait_for_common+0x72/0x180
+[  226.288995]  [<ffffffffa019590f>] ioat_xor_val_self_test+0x3e5/0x832 [ioatdma]
+[  226.288999]  [<ffffffff811a5739>] ? kfree+0x259/0x270
+[  226.289004]  [<ffffffffa0195d77>] ioat3_dma_self_test+0x1b/0x20 [ioatdma]
+[  226.289008]  [<ffffffffa01952c3>] ioat_probe+0x2f8/0x348 [ioatdma]
+[  226.289011]  [<ffffffffa0195f51>] ioat3_dma_probe+0x1d5/0x2aa [ioatdma]
+[  226.289016]  [<ffffffffa0194d12>] ioat_pci_probe+0x139/0x17c [ioatdma]
+[  226.289020]  [<ffffffff81354b8c>] local_pci_probe+0x5c/0xd0
+[  226.289023]  [<ffffffff81083e50>] ? destroy_work_on_stack+0x20/0x20
+[  226.289025]  [<ffffffff81083e68>] do_work_for_cpu+0x18/0x30
+[  226.289029]  [<ffffffff8108d997>] kthread+0xb7/0xc0
+[  226.289033]  [<ffffffff8166cef4>] kernel_thread_helper+0x4/0x10
+[  226.289036]  [<ffffffff81662d20>] ? _raw_spin_unlock_irq+0x30/0x50
+[  226.289038]  [<ffffffff81663234>] ? retint_restore_args+0x13/0x13
+[  226.289041]  [<ffffffff8108d8e0>] ? kthread_worker_fn+0x1a0/0x1a0
+[  226.289044]  [<ffffffff8166cef0>] ? gs_change+0x13/0x13
+[  226.289045] ---[ end trace e1618afc7a606089 ]---
+[  226.289047] Mapped at:
+[  226.289048]  [<ffffffff81345307>] debug_dma_map_page+0x87/0x150
+[  226.289050]  [<ffffffffa019653c>] dma_map_page.constprop.18+0x70/0xb34 [ioatdma]
+[  226.289054]  [<ffffffffa0195702>] ioat_xor_val_self_test+0x1d8/0x832 [ioatdma]
+[  226.289058]  [<ffffffffa0195d77>] ioat3_dma_self_test+0x1b/0x20 [ioatdma]
+[  226.289061]  [<ffffffffa01952c3>] ioat_probe+0x2f8/0x348 [ioatdma]
 
-is set to NULL as the acpi_processor_power_init ends up failing at
-
-	 retval = cpuidle_register_driver(&acpi_idle_driver)
-
-(in acpi_processor_power_init) and never sets the per_cpu idle
-device.  So when acpi_processor_hotplug on CPU online notification
-tries to reference said device it crashes:
-
-cpu 3 spinlock event irq 62
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
-IP: [<ffffffff81381013>] acpi_processor_setup_cpuidle_cx+0x3f/0x105
-PGD a259b067 PUD ab38b067 PMD 0
-Oops: 0002 [#1] SMP
-odules linked in: dm_multipath dm_mod xen_evtchn iscsi_boot_sysfs iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi libcrc32c crc32c nouveau mxm_wmi wmi radeon ttm sg sr_mod sd_mod cdrom ata_generic ata_piix libata crc32c_intel scsi_mod atl1c i915 fbcon tileblit font bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
-CPU 1
-Pid: 3047, comm: bash Not tainted 3.8.0-rc3upstream-00250-g165c029 #1 MSI MS-7680/H61M-P23 (MS-7680)
-RIP: e030:[<ffffffff81381013>]  [<ffffffff81381013>] acpi_processor_setup_cpuidle_cx+0x3f/0x105
-RSP: e02b:ffff88001742dca8  EFLAGS: 00010202
-RAX: 0000000000010be9 RBX: ffff8800a0a61800 RCX: ffff880105380000
-RDX: 0000000000000003 RSI: 0000000000000200 RDI: ffff8800a0a61800
-RBP: ffff88001742dce8 R08: ffffffff81812360 R09: 0000000000000200
-R10: aaaaaaaaaaaaaaaa R11: 0000000000000001 R12: ffff8800a0a61800
-R13: 00000000ffffff01 R14: 0000000000000000 R15: ffffffff81a907a0
-FS:  00007fd6942f7700(0000) GS:ffff880105280000(0000) knlGS:0000000000000000
-CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000004 CR3: 00000000a6773000 CR4: 0000000000042660
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process bash (pid: 3047, threadinfo ffff88001742c000, task ffff880017944000)
-Stack:
- 0000000000000150 ffff880100f59e00 ffff88001742dcd8 ffff8800a0a61800
- 0000000000000000 00000000ffffff01 0000000000000000 ffffffff81a907a0
- ffff88001742dd18 ffffffff813815b1 ffff88001742dd08 ffffffff810ae336
-Call Trace:
- [<ffffffff813815b1>] acpi_processor_hotplug+0x7c/0x9f
- [<ffffffff810ae336>] ? schedule_delayed_work_on+0x16/0x20
- [<ffffffff8137ee8f>] acpi_cpu_soft_notify+0x90/0xca
- [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
- [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
- [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
- [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
- [<ffffffff81652e18>] cpu_up+0xd9/0xec
- [<ffffffff8164a254>] store_online+0x94/0xd0
- [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
- [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
-
-This patch fixes it.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/processor_idle.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/dma/ioat/dma_v3.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -1018,6 +1018,9 @@ static int acpi_processor_setup_cpuidle_
- 		return -EINVAL;
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -949,7 +949,7 @@ static int __devinit ioat_xor_val_self_t
+ 			goto free_resources;
+ 		}
  	}
+-	dma_sync_single_for_device(dev, dest_dma, PAGE_SIZE, DMA_TO_DEVICE);
++	dma_sync_single_for_device(dev, dest_dma, PAGE_SIZE, DMA_FROM_DEVICE);
  
-+	if (!dev)
-+		return -EINVAL;
-+
- 	dev->cpu = pr->id;
- 
- 	if (max_cstate == 0)
+ 	/* skip validate if the capability is not present */
+ 	if (!dma_has_cap(DMA_XOR_VAL, dma_chan->device->cap_mask))
 
 
