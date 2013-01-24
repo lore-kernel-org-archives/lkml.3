@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab3AXWW7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 17:22:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36081 "EHLO mx2.suse.de"
+	id S1030185Ab3AXWZw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 17:25:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36829 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753511Ab3AXWWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 17:22:51 -0500
-Message-ID: <5101B42D.2090709@suse.cz>
-Date: Thu, 24 Jan 2013 23:22:37 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	id S1754838Ab3AXWZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 17:25:43 -0500
+Date: Thu, 24 Jan 2013 14:25:37 -0800
+From: Zach Brown <zab@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        Hillf Danton <dhillf@gmail.com>, Benjamin LaHaise <bcrl@kvack.org>,
+        linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: next-20130117 - kernel BUG with aio
+Message-ID: <20130124222537.GF14246@lenny.home.zabbo.net>
+References: <3544.1358774694@turing-police.cc.vt.edu>
+ <CAJd=RBBBbv07aoOTF=PNy1FpCyuRV7fnQEGX_DXEYFSSknKtqQ@mail.gmail.com>
+ <2553.1358890098@turing-police.cc.vt.edu>
+ <CAJd=RBCHRDzyjY_hOZCj6rHBXzb3f5wWxdqXYuLbQXLe2n4JeA@mail.gmail.com>
+ <13450.1359048141@turing-police.cc.vt.edu>
+ <20130124211850.GH26407@google.com>
+ <20130124132759.c892fb4c.akpm@linux-foundation.org>
+ <20130124213958.GJ26407@google.com>
 MIME-Version: 1.0
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: linux-kbuild@vger.kernel.org, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mod/file2alias: make modalias generation safe for cross
- compiling
-References: <m2txqbu6yg.fsf@igel.home>
-In-Reply-To: <m2txqbu6yg.fsf@igel.home>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130124213958.GJ26407@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 20.1.2013 17:58, Andreas Schwab napsal(a):
-> Use the target compiler to compute the offsets for the fields of the
-> device_id structures, so that it won't be broken by different alignments
-> between the host and target ABIs.
-> 
-> This also fixes missing endian corrections for some modaliases.
-> 
-> Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-> ---
-> This has been tested with an allmodconfig cross build of the m68k
-> kernel.  This is the difference in the generated module aliases before
-> and after the patch:
+> No, I didn't see that bug until after I'd fixed the other three, but as
+> far as I can tell everything's fixed with the patches I'm about to mail
+> out - my test VM has been running for the past two days without errors,
+> it's kill -9'ing a process that's got iocbs in flight to a loopback
+> device every two seconds.
 
-Nice! I merged your patch to kbuild.git#kbuild.
+I'm really worried that this patch series hasn't seen significant enough
+testing to justify being queued.
 
-Thanks,
-Michal
+I'll be first in line for blame for not finding the time to finish my
+review of the series.
+
+What specific tests has this gone through?  The aio tests in xfstests /
+ltp?  (And as you discovered while chasing this bug, whatever platform
+you were running on doesn't seem slow enough to catch some paths.. run
+all the tests over loop?)
+
+Jeff, can you suggest a more modern testing regime for the aio core?
+It's been so long since I had to hammer on this stuff..
+
+- z
