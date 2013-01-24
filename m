@@ -1,42 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab3AXNuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 08:50:40 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:36350 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753286Ab3AXNud (ORCPT
+	id S1754179Ab3AXN5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 08:57:11 -0500
+Received: from mga14.intel.com ([143.182.124.37]:19441 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753488Ab3AXN5C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 08:50:33 -0500
-Date: Thu, 24 Jan 2013 22:50:22 +0900 (JST)
-Message-Id: <20130124.225022.525573019471019215.kou1.ono@gmail.com>
-To: pebolle@tiscali.nl
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: linux-3.7.4: BUG: unable to handle kernel NULL pointer
- dereference at target_fabric_port_link
-From: Kouichi ONO <kou1.ono@gmail.com>
-In-Reply-To: <1359021353.1325.1.camel@x61.thuisdomein>
-References: <20130124.010724.710820132553071688.kou1.ono@gmail.com>
-	<1359021353.1325.1.camel@x61.thuisdomein>
-X-Mailer: xcite1.60> Mew version 6.5rc2 on Emacs 24.2 / Mule 6.0
- (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Jan 2013 08:57:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,529,1355126400"; 
+   d="scan'208";a="247913849"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: RE: [PATCH V3 1/2] Xen stub driver for memory hotplug
+Thread-Topic: [PATCH V3 1/2] Xen stub driver for memory hotplug
+Thread-Index: AQHN+aOWqS241vW3Tky5AAt8/VgAKZhYgUmg
+Date: Thu, 24 Jan 2013 13:56:56 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923353DC766@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC82923353C24AD@SHSMSX101.ccr.corp.intel.com>
+ <20130123195455.GA18022@phenom.dumpdata.com>
+In-Reply-To: <20130123195455.GA18022@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
-
-> On Thu, 2013-01-24 at 01:07 +0900, Kouichi ONO wrote:
-> > At target_fabric_port_link(), struct se_device *dev is used before set?
+>> +#include <linux/kernel.h>
+>> +#include <linux/init.h>
+>> +#include <linux/export.h>
+>> +#include <linux/types.h>
+>> +#include <linux/acpi.h>
+>> +#include <acpi/acpi_drivers.h>
+>> +#include <xen/acpi.h>
+>> +
+>> +/*--------------------------------------------
+>> +	stub driver for Xen memory hotplug
+>> +--------------------------------------------*/
+>> +
+>> +#ifdef CONFIG_ACPI
+>> +
+>> +static const struct acpi_device_id memory_device_ids[] = {
+>> +	{ACPI_MEMORY_DEVICE_HID, 0},
+>> +	{"", 0},
+>> +};
+>> +
+>> +struct acpi_driver xen_stub_memory_device_driver = {
+>> +	/* same name as native memory driver to block native loaded */
+>> +	.name = "acpi_memhotplug", +	.class = ACPI_MEMORY_DEVICE_CLASS,
+>> +	.ids = memory_device_ids,
+>> +};
+>> +EXPORT_SYMBOL_GPL(xen_stub_memory_device_driver);
 > 
-> It seems the (stable specific) patch in
-> http://article.gmane.org/gmane.linux.kernel.stable/40880 should fix
-> that.
+> Instead of having this, could you have a function that would
+> unregister this if required.
+> 
+> xen_stub_memory_device_uninit(void)
+> 
+> which would unregister the above mentioned structure?
+> 
 
-This patch fixed a problem.
+Yup, updated by EXPORT_SYMBOL_GPL 2 funcs:
+xen_stub_memory_device_init()
+xen_stub_memory_device_exit()
 
-Thanks a lot!
-
- Kouichi ONO
+Thanks,
+Jinsong
