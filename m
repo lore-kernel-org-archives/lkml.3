@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337Ab3AXM2r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 07:28:47 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:53285 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754084Ab3AXM23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 07:28:29 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [Update][PATCH 0/5] ACPI / PM: Export power information to user space
-Date: Thu, 24 Jan 2013 13:34:31 +0100
-Message-ID: <2285025.HJbzHTbVLh@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130124003440.GD10969@kroah.com>
-References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <1551140.kO91IOVbjI@vostro.rjw.lan> <20130124003440.GD10969@kroah.com>
+	id S1754519Ab3AXM3P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 07:29:15 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:47793 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754377Ab3AXM2y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 07:28:54 -0500
+Date: Thu, 24 Jan 2013 13:28:49 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: mingo@elte.hu, paul.gortmaker@windriver.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
+Subject: Re: [GIT PULL rcu/urgent] Fixes for RCU regressions in 3.8
+Message-ID: <20130124122849.GC3104@gmail.com>
+References: <20130111160813.GA14503@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130111160813.GA14503@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 23, 2013 04:34:40 PM Greg Kroah-Hartman wrote:
-> On Wed, Jan 23, 2013 at 06:56:43PM +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, January 22, 2013 03:15:52 AM Rafael J. Wysocki wrote:
-> > > On Monday, January 21, 2013 02:03:03 PM Rafael J. Wysocki wrote:
-> > > > On Monday, January 21, 2013 01:48:55 AM Rafael J. Wysocki wrote:
-> > > > > On Sunday, January 20, 2013 03:51:40 PM Rafael J. Wysocki wrote:
-> > > > > > Hi Greg,
-> > > > > > 
-> > > > > > The following patch series is about exporting ACPI power resources to user
-> > > > > > space that will be necessary for PM diagnostics on new platforms (powertop is
-> > > > > > the target).  Still, existing systems can also benefit from that, like my
-> > > > > > oldish HP nx6325 on which the patches have been tested.
-> > > > > > 
-> > > > > > Patch [1/3] shouldn't be really controverisal, as it only makes it possible
-> > > > > > to read power resources' reference counters from user space in a quite
-> > > > > > straightforward way.
-> > > > > > 
-> > > > > > Patch [3/3], however, exposes lists of power resources associated with
-> > > > > > different power states of devices using ACPI PM as sysfs subdirectories
-> > > > > > containing symbolic links and that requires some sysfs changes made by
-> > > > > > patch [2/3].
-> > > > > > 
-> > > > > > Admittedly, my sysfs skills are limited so please let me know if those
-> > > > > > changes make sense and are acceptable from your perspective.  If not, then
-> > > > > > please kindly advise what I can do instead of them.
-> > > > > > 
-> > > > > > The patches apply on top of the current linux-next branch of the linux-pm.git
-> > > > > > tree.
-> > > > > 
-> > > > > Refreshed with Documentation/ABI files as requested.
-> > > > 
-> > > > Well, that version wasn't really a good one, due to mistakes in the docs
-> > > > mostly, so a new one follows (with better docs hopefully).
-> > > > 
-> > > > Besides, I thought I'd include a patch that exposes ACPI power state
-> > > > information, because it kind of belongs to the lot.  It goes as the new [1/4].
-> > > > 
-> > > > [2/4] is the previous [1/3] and so on.
-> > > 
-> > > Here it goes again after the changes we discussed earlier today.
-> > > 
-> > > I think I've addressed all of the comments, but if I overlooked something,
-> > > please let me know.
-> > 
-> > So, the following is an update containing a patch ([1/5]) that fixes the
-> > "creation of sysfs files after the device have been registered" problem.
-> > Hopefully. :-)
-> > 
-> > Patches [2-3/5] are the previous [1-2/4] and they are almost identical as
-> > before, so I added the ACKs you gave for them.  Patch [4/5] is the sysfs one
-> > with the internal function placed in the internal header.  Patch [5/5] is
-> > a rework of the one exposing the lists of power resources as directories
-> > containing symbolic links.
-> > 
-> > Please let me know if you are fine with this.
+
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+
+> Hello, Ingo,
 > 
-> These all look great, thanks for fixing up the acpi device notification
-> mess, and the sysfs header file locations.  Feel free to take all of
-> these through your tree.
+> Paul Gortmaker found some problems with no-CBs-CPU support in 3.8
+> mainline, and kindly supplied fixes.  The first problem is soft-lockup
+> complaints that can occur on systems running with no-CBs CPUs that have
+> long periods of time where RCU is completely idle, which can happen on
+> some embedded systems.  The second problem is a documentation error
+> for the "rcutree.rcu_nocb_poll" boot parameter.  In this case, Paul Gortmaker
+> (rightly) noted that the need for "rcutree." was inconsistent with the
+> "rcu_nocbs=<cpumap>" boot parameter.  The fix therefore to make the boot
+> parameter named "rcu_nocb_poll".
+> 
+> These problems only affect kernels built with the new CONFIG_RCU_NOCB_CPU
+> kernel parameter, but still should be fixed.
+> 
+> These fixes are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
+> 
+> 							Thanx, Paul
+> 
+> ------------------>
+> Paul Gortmaker (2):
+>       rcu: Prevent soft-lockup complaints about no-CBs CPUs
+>       rcu: Make rcu_nocb_poll an early_param instead of module_param
+> 
+>  Documentation/kernel-parameters.txt |    2 +-
+>  kernel/rcutree_plugin.h             |   13 ++++++++++---
+>  2 files changed, 11 insertions(+), 4 deletions(-)
 
-I will, thanks a lot for reviewing!
+Pulled, thanks a lot Paul!
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+	Ingo
