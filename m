@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756394Ab3AXU07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:26:59 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:26611 "EHLO
+	id S1756563Ab3AXU1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:27:07 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26583 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756224Ab3AXUVu (ORCPT
+	with ESMTP id S1756199Ab3AXUVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:21:50 -0500
+	Thu, 24 Jan 2013 15:21:48 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
@@ -15,130 +15,95 @@ Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Jan Kiszka <jan.kiszka@web.de>,
         Jason Wessel <jason.wessel@windriver.com>,
         Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org
-Subject: [PATCH 33/35] x86, 64bit, mm: hibernate use generic mapping_init
-Date: Thu, 24 Jan 2013 12:20:14 -0800
-Message-Id: <1359058816-7615-34-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 15/35] x86: Add get_ramdisk_image/size()
+Date: Thu, 24 Jan 2013 12:19:56 -0800
+Message-Id: <1359058816-7615-16-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
 References: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should set mappings only for usable memory ranges under max_pfn
-Otherwise causes same problem that is fixed by
+There are several places to find ramdisk information early for reserving
+and relocating.
 
-	x86, mm: Only direct map addresses that are marked as E820_RAM
+Use functions to make code more readable and consistent.
 
-Make it only map range in pfn_mapped array.
+Later will add ext_ramdisk_image/size in those functions to support
+loading ramdisk above 4g.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: linux-pm@vger.kernel.org
 ---
- arch/x86/power/hibernate_64.c |   66 ++++++++++++++---------------------------
- 1 file changed, 22 insertions(+), 44 deletions(-)
+ arch/x86/kernel/setup.c |   29 +++++++++++++++++++++--------
+ 1 file changed, 21 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/power/hibernate_64.c b/arch/x86/power/hibernate_64.c
-index 460f314..a0fde91 100644
---- a/arch/x86/power/hibernate_64.c
-+++ b/arch/x86/power/hibernate_64.c
-@@ -11,6 +11,8 @@
- #include <linux/gfp.h>
- #include <linux/smp.h>
- #include <linux/suspend.h>
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 2a683a2..83ebdc5 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -294,12 +294,25 @@ static void __init reserve_brk(void)
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 
++static u64 __init get_ramdisk_image(void)
++{
++	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
 +
-+#include <asm/init.h>
- #include <asm/proto.h>
- #include <asm/page.h>
- #include <asm/pgtable.h>
-@@ -39,41 +41,21 @@ pgd_t *temp_level4_pgt;
- 
- void *relocated_restore_code;
- 
--static int res_phys_pud_init(pud_t *pud, unsigned long address, unsigned long end)
-+static void *alloc_pgt_page(void *context)
++	return ramdisk_image;
++}
++static u64 __init get_ramdisk_size(void)
++{
++	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
++
++	return ramdisk_size;
++}
++
+ #define MAX_MAP_CHUNK	(NR_FIX_BTMAPS << PAGE_SHIFT)
+ static void __init relocate_initrd(void)
  {
--	long i, j;
--
--	i = pud_index(address);
--	pud = pud + i;
--	for (; i < PTRS_PER_PUD; pud++, i++) {
--		unsigned long paddr;
--		pmd_t *pmd;
--
--		paddr = address + i*PUD_SIZE;
--		if (paddr >= end)
--			break;
--
--		pmd = (pmd_t *)get_safe_page(GFP_ATOMIC);
--		if (!pmd)
--			return -ENOMEM;
--		set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
--		for (j = 0; j < PTRS_PER_PMD; pmd++, j++, paddr += PMD_SIZE) {
--			unsigned long pe;
--
--			if (paddr >= end)
--				break;
--			pe = __PAGE_KERNEL_LARGE_EXEC | paddr;
--			pe &= __supported_pte_mask;
--			set_pmd(pmd, __pmd(pe));
--		}
--	}
--	return 0;
-+	return (void *)get_safe_page(GFP_ATOMIC);
- }
- 
- static int set_up_temporary_mappings(void)
- {
--	unsigned long start, end, next;
--	int error;
-+	struct x86_mapping_info info = {
-+		.alloc_pgt_page	= alloc_pgt_page,
-+		.pmd_flag	= __PAGE_KERNEL_LARGE_EXEC,
-+		.kernel_mapping = true,
-+	};
-+	unsigned long mstart, mend;
-+	int result;
-+	int i;
- 
- 	temp_level4_pgt = (pgd_t *)get_safe_page(GFP_ATOMIC);
- 	if (!temp_level4_pgt)
-@@ -84,21 +66,17 @@ static int set_up_temporary_mappings(void)
- 		init_level4_pgt[pgd_index(__START_KERNEL_map)]);
- 
- 	/* Set up the direct mapping from scratch */
--	start = (unsigned long)pfn_to_kaddr(0);
--	end = (unsigned long)pfn_to_kaddr(max_pfn);
--
--	for (; start < end; start = next) {
--		pud_t *pud = (pud_t *)get_safe_page(GFP_ATOMIC);
--		if (!pud)
--			return -ENOMEM;
--		next = start + PGDIR_SIZE;
--		if (next > end)
--			next = end;
--		if ((error = res_phys_pud_init(pud, __pa(start), __pa(next))))
--			return error;
--		set_pgd(temp_level4_pgt + pgd_index(start),
--			mk_kernel_pgd(__pa(pud)));
-+	for (i = 0; i < nr_pfn_mapped; i++) {
-+		mstart = pfn_mapped[i].start << PAGE_SHIFT;
-+		mend   = pfn_mapped[i].end << PAGE_SHIFT;
-+
-+		result = kernel_ident_mapping_init(&info, temp_level4_pgt,
-+						   mstart, mend);
-+
-+		if (result)
-+			return result;
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+-	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_image = get_ramdisk_image();
++	u64 ramdisk_size  = get_ramdisk_size();
+ 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
+ 	u64 ramdisk_here;
+ 	unsigned long slop, clen, mapaddr;
+@@ -338,8 +351,8 @@ static void __init relocate_initrd(void)
+ 		ramdisk_size  -= clen;
  	}
-+
- 	return 0;
- }
+ 
+-	ramdisk_image = boot_params.hdr.ramdisk_image;
+-	ramdisk_size  = boot_params.hdr.ramdisk_size;
++	ramdisk_image = get_ramdisk_image();
++	ramdisk_size  = get_ramdisk_size();
+ 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
+ 		" [mem %#010llx-%#010llx]\n",
+ 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
+@@ -363,8 +376,8 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
+ static void __init early_reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+-	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_image = get_ramdisk_image();
++	u64 ramdisk_size  = get_ramdisk_size();
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 
+ 	if (!boot_params.hdr.type_of_loader ||
+@@ -376,8 +389,8 @@ static void __init early_reserve_initrd(void)
+ static void __init reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+-	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_image = get_ramdisk_image();
++	u64 ramdisk_size  = get_ramdisk_size();
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 	u64 mapped_size;
  
 -- 
 1.7.10.4
