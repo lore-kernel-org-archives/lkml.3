@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab3AXTcj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:32:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33670 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751951Ab3AXTch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:32:37 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130124192359.GA22484@aepfle.de>
-References: <1358990259-22551-1-git-send-email-kys@microsoft.com> <5101035D02000078000B8FFD@nat28.tlf.novell.com> <27092660926e4d3f80394697cc0dc858@SN2PR03MB061.namprd03.prod.outlook.com> <51016C3202000078000B943E@nat28.tlf.novell.com> <f6cbfec9c014433fa54af61d8f436ebb@SN2PR03MB061.namprd03.prod.outlook.com> <20130124185943.GA19194@aepfle.de> <4d9be218-acf5-45a6-aeda-cee592fd74c8@email.android.com> <20130124192359.GA22484@aepfle.de>
+	id S1755290Ab3AXTcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:32:46 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54477 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754932Ab3AXTck (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 14:32:40 -0500
+Message-ID: <51018C55.6000709@wwwdotorg.org>
+Date: Thu, 24 Jan 2013 11:32:37 -0800
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 24 Jan 2013 13:30:52 -0600
-To: Olaf Hering <olaf@aepfle.de>
-CC: KY Srinivasan <kys@microsoft.com>, Jan Beulich <JBeulich@suse.com>,
-        "bp@alien8.de" <bp@alien8.de>, "apw@canonical.com" <apw@canonical.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <e8da7a46-c0f6-4590-87a4-e9860fb4ccab@email.android.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "linux@prisktech.co.nz" <linux@prisktech.co.nz>,
+        "josh.cartwright@ni.com" <josh.cartwright@ni.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/7] clk: tegra: Use common of_clk_init() function
+References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com> <1357282858-2112-2-git-send-email-pgaikwad@nvidia.com> <50E703A8.1080808@wwwdotorg.org> <50E793A0.4020702@nvidia.com> <20130124192043.10623.60751@quantum>
+In-Reply-To: <20130124192043.10623.60751@quantum>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And there is no evidence of Xen in CPUID?
+On 01/24/2013 11:20 AM, Mike Turquette wrote:
+> Quoting Prashant Gaikwad (2013-01-04 18:44:48)
+>> On Friday 04 January 2013 10:00 PM, Stephen Warren wrote:
+>>> On 01/04/2013 12:00 AM, Prashant Gaikwad wrote:
+>>>> Use common of_clk_init() function for clocks initialization.
+>>>>   drivers/clk/tegra/clk-tegra20.c |    3 ++-
+>>>>   drivers/clk/tegra/clk-tegra30.c |    3 ++-
+>>> Oh, so this series is written assuming that the Tegra CCF rework is
+>>> already applied then? That makes the dependencies quite painful, since I
+>>> think we'll end up with the following order being needed:
+>>>
+>>> 1) clk: Add composite clock type
+>>>     -> This would usually go through the clk tree.
+>>> 2) The Tegra CCF rework series
+>>>     -> This must go through the Tegra tree due to lots of dependencies
+>>>     and merge conflicts with other Tegra patches.
+>>> 3) This series
+>>>     -> This would usually go through the clk tree.
+>>>
+>>> Is it possible to re-order the dependencies as (1) (3) (2), so that Mike
+>>> can apply (1) and (3) to the clock tree, then I can use the clk tree as
+>>> the basis for a branch in the Tegra tree to apply (2) and all the other
+>>> Tegra patches that will conflict with (2)?
+>>
+>> If Mike approves the concept and implementation in (1) and (3) then I 
+>> will repost (2) and (3) with dependencies re-ordered.
+> 
+> Patch (1) still has some unaddressed comments, and is not a real
+> dependency for this series.
 
-Olaf Hering <olaf@aepfle.de> wrote:
+I assume "Patch (1)" refers to the list of series a couple emails above,
+not the first patch in the series you're replying to; that threw me for
+a moment.
 
->On Thu, Jan 24, H. Peter Anvin wrote:
->
->> Can't you discover Xen emulation by looking for Xen first?  Or does
->Xen go "stealth"?
->
->The current code looks at cpuid to decide what the host type is. One
->thing to detect a Xen host is to look for the DIM strings, which still
->have "Xen HVM DomU" or similar.
->
->Olaf
+> Since all of the patches have received their
+> Tested-by's then I propose to merge all patches from this series into
+> clk-next, which exception of patch 2/7 (the Tegra patch).
+> 
+> This reduces your Tegra CCF conversion dependencies and you can role the
+> necessary of_clk_init change into your Tegra CCF conversion branch (it
+> has my implicit Ack and can be taken through your tree).
+> 
+> Let me know if this is OK for you.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+OK, I'm happy to merge your clock tree into the Tegra tree and then
+apply 2/7 on top of the Tegra CCF work.
