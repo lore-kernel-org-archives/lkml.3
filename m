@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab3AXPQS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:16:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46534 "EHLO mx2.suse.de"
+	id S1754584Ab3AXPQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:16:47 -0500
+Received: from mga14.intel.com ([143.182.124.37]:40961 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab3AXPQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:16:16 -0500
-Date: Thu, 24 Jan 2013 16:16:03 +0100
-From: Jan Kara <jack@suse.cz>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: paul.szabo@sydney.edu.au, linux-mm@kvack.org, 695182@bugs.debian.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH] Negative (setpoint-dirty) in bdi_position_ratio()
-Message-ID: <20130124151603.GD21818@quack.suse.cz>
-References: <201301200002.r0K02Atl031280@como.maths.usyd.edu.au>
- <20130124145707.GB12745@localhost>
+	id S1752763Ab3AXPQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 10:16:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,530,1355126400"; 
+   d="scan'208";a="247941584"
+Message-ID: <51015059.8010505@intel.com>
+Date: Thu, 24 Jan 2013 23:16:41 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130124145707.GB12745@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ingo Molnar <mingo@kernel.org>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] sched: compute runnable load avg in cpu_load and
+ cpu_avg_load_per_task
+References: <1358998243-23176-1-git-send-email-alex.shi@intel.com> <1358998243-23176-3-git-send-email-alex.shi@intel.com> <20130124100823.GE26351@gmail.com>
+In-Reply-To: <20130124100823.GE26351@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 24-01-13 22:57:07, Wu Fengguang wrote:
-> Hi Paul,
+On 01/24/2013 06:08 PM, Ingo Molnar wrote:
 > 
-> > (This patch does not solve the PAE OOM issue.)
+> * Alex Shi <alex.shi@intel.com> wrote:
 > 
-> You may try the below debug patch. The only way the writeback patches
-> should trigger OOM, I think, is for the number of dirty/writeback
-> pages going out of control.
+>> @@ -2539,7 +2539,11 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>>  void update_idle_cpu_load(struct rq *this_rq)
+>>  {
+>>  	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+>> +#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
+>> +	unsigned long load = (unsigned long)this_rq->cfs.runnable_load_avg;
+>> +#else
+>>  	unsigned long load = this_rq->load.weight;
+>> +#endif
 > 
-> Or more simple, you may show us the OOM dmesg which will contain the
-> number of dirty pages. Or run this in a continuous loop during your
-> tests, and see how the dirty numbers change before OOM:
-  I think he found the culprit of the problem being min_free_kbytes was not
-properly reflected in the dirty throttling. But the patch has been already
-picked up by Andrew so I didn't forward it to you. Paul please correct me
-if I'm wrong.
+> I'd not make it conditional - just calculate runnable_load_avg 
+> all the time (even if group scheduling is disabled) and use it 
+> consistently. The last thing we want is to bifurcate scheduler 
+> balancer behavior even further.
 
-								Honza
+Very glad to see you being back, Ingo! :)
 
-> 
-> while :
-> do
->         grep -E '(Dirty|Writeback)' /proc/meminfo
->         sleep 1
-> done
+This patch set is following my power aware scheduling patchset. But for
+a separate workable runnable load engaged balancing. only needs the
+other 3 patches, that already sent you at another patchset
+
+[patch v4 06/18] sched: give initial value for runnable avg of sched
+[patch v4 07/18] sched: set initial load avg of new forked task
+[patch v4 08/18] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
+
+
 > 
 > Thanks,
-> Fengguang
 > 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 50f0824..cf1165a 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1147,6 +1147,16 @@ pause:
->  		if (task_ratelimit)
->  			break;
->  
-> +		if (nr_dirty > dirty_thresh + dirty_thresh / 2) {
-> +			if (printk_ratelimit())
-> +				printk(KERN_WARNING "nr_dirty=%lu dirty_thresh=%lu task_ratelimit=%lu dirty_ratelimit=%lu pos_ratio=%lu\n",
-> +				       nr_dirty,
-> +				       dirty_thresh,
-> +				       task_ratelimit,
-> +				       dirty_ratelimit,
-> +				       pos_ratio);
-> +		}
-> +
->  		/*
->  		 * In the case of an unresponding NFS server and the NFS dirty
->  		 * pages exceeds dirty_thresh, give the other good bdi's a pipe
+> 	Ingo
+> 
+
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks
+    Alex
