@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab3AXDcb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:32:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44438 "EHLO
+	id S1755310Ab3AXDch (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:32:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44468 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755008Ab3AXDbl (ORCPT
+	with ESMTP id S1755086Ab3AXDcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:31:41 -0500
+	Wed, 23 Jan 2013 22:32:04 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Maia Kozheva <sikon@ubuntu.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Leann Ogasawara <leann.ogasawara@canonical.com>,
+Cc: Thomas Mingarelli <thomas.mingarelli@hp.com>,
+        Joerg Roedel <joro@8bytes.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 65/74] rt2800usb: Add support for 2001:3c1e (D-Link DWA-125 rev B1) USB Wi-Fi adapter
-Date: Thu, 24 Jan 2013 01:27:17 -0200
-Message-Id: <1358998046-613-66-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 71/74] intel-iommu: Prevent devices with RMRRs from being placed into SI Domain
+Date: Thu, 24 Jan 2013 01:27:23 -0200
+Message-Id: <1358998046-613-72-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
@@ -29,44 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maia Kozheva <sikon@ubuntu.com>
+From: Tom Mingarelli <thomas.mingarelli@hp.com>
 
-commit fd7b9270120ca7e53fbf0469febe0c68acf6a0a2 upstream.
+commit ea2447f700cab264019b52e2b417d689e052dcfd upstream.
 
-D-Link DWA-125/B1 is a relatively new USB Wi-Fi adapter, using a
-Ralink chipset supported by the rt2800usb driver. Currently, to work
-around the problem (it's missing in all present kernel versions,
-up to and including 3.7.x), I had to add this to /etc/rc.local:
+This patch is to prevent non-USB devices that have RMRRs associated with them from
+being placed into the SI Domain during init. This fixes the issue where the RMRR info
+for devices being placed in and out of the SI Domain gets lost.
 
-echo 2001 3c1e >> /sys/bus/usb/drivers/rt2800usb/new_id
-
-After that, the device works without problems. Been using it for over
-a week with no bugs in sight.
-
-The attached patch is trivial and simply adds the new USB ID to the
-list of devices handled by rt2800usb.
-
-Signed-off-by: Maia Kozheva <sikon@ubuntu.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Cc: Leann Ogasawara <leann.ogasawara@canonical.com>
-BugLink: http://bugs.launchpad.net/bugs/1085351
+Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
+Tested-by: Shuah Khan <shuah.khan@hp.com>
+Reviewed-by: Donald Dutile <ddutile@redhat.com>
+Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/iommu/intel-iommu.c |   31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
-index 6b4226b..fe42f76 100644
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -1005,6 +1005,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
- 	{ USB_DEVICE(0x07d1, 0x3c15) },
- 	{ USB_DEVICE(0x07d1, 0x3c16) },
- 	{ USB_DEVICE(0x2001, 0x3c1b) },
-+	{ USB_DEVICE(0x2001, 0x3c1e) },
- 	/* Draytek */
- 	{ USB_DEVICE(0x07fa, 0x7712) },
- 	/* DVICO */
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index f3e77a5..92f5912 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -2326,8 +2326,39 @@ static int domain_add_dev_info(struct dmar_domain *domain,
+ 	return 0;
+ }
+ 
++static bool device_has_rmrr(struct pci_dev *dev)
++{
++	struct dmar_rmrr_unit *rmrr;
++	int i;
++
++	for_each_rmrr_units(rmrr) {
++		for (i = 0; i < rmrr->devices_cnt; i++) {
++			/*
++			 * Return TRUE if this RMRR contains the device that
++			 * is passed in.
++			 */
++			if (rmrr->devices[i] == dev)
++				return true;
++		}
++	}
++	return false;
++}
++
+ static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
+ {
++
++	/*
++	 * We want to prevent any device associated with an RMRR from
++	 * getting placed into the SI Domain. This is done because
++	 * problems exist when devices are moved in and out of domains
++	 * and their respective RMRR info is lost. We exempt USB devices
++	 * from this process due to their usage of RMRRs that are known
++	 * to not be needed after BIOS hand-off to OS.
++	 */
++	if (device_has_rmrr(pdev) &&
++	    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
++		return 0;
++
+ 	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
+ 		return 1;
+ 
 -- 
 1.7.9.5
 
