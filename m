@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170Ab3AXPRl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:17:41 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:13405 "EHLO relay.sw.ru"
+	id S1754815Ab3AXPSp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:18:45 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:44062 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754633Ab3AXPRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:17:36 -0500
+	id S1755160Ab3AXPRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 10:17:42 -0500
 From: Lord Glauber Costa of Sealand <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         ccross@google.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Turner <pjt@google.com>, Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v6 11/12] sched: change nr_context_switches calculation.
-Date: Thu, 24 Jan 2013 19:17:41 +0400
-Message-Id: <1359040662-8055-12-git-send-email-glommer@parallels.com>
+Subject: [PATCH v6 07/12] sched: document the cpu cgroup.
+Date: Thu, 24 Jan 2013 19:17:37 +0400
+Message-Id: <1359040662-8055-8-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359040662-8055-1-git-send-email-glommer@parallels.com>
 References: <1359040662-8055-1-git-send-email-glommer@parallels.com>
@@ -23,91 +23,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Glauber Costa <glommer@parallels.com>
 
-This patch changes the calculation of nr_context_switches. The variable
-"nr_switches" is now used to account for the number of transition to the
-idle task, or stop task. It is removed from the schedule() path.
-
-The total calculation can be made using the fact that the transitions to
-fair and rt classes are recorded in the root_task_group. One can easily
-derive the total figure by adding those quantities together.
+The CPU cgroup is so far, undocumented. Although data exists in the
+Documentation directory about its functioning, it is usually spread,
+and/or presented in the context of something else. This file
+consolidates all cgroup-related information about it.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Turner <pjt@google.com>
 ---
- kernel/sched/core.c      | 17 +++++++++++++++--
- kernel/sched/idle_task.c |  3 +++
- kernel/sched/stop_task.c |  2 ++
- 3 files changed, 20 insertions(+), 2 deletions(-)
+ Documentation/cgroups/cpu.txt | 82 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 82 insertions(+)
+ create mode 100644 Documentation/cgroups/cpu.txt
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c36df03..6bb56f0 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2001,13 +2001,27 @@ unsigned long nr_uninterruptible(void)
- 	return sum;
- }
- 
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+#define cfs_nr_switches(tg, cpu) (tg)->cfs_rq[cpu]->nr_switches
-+#else
-+#define cfs_nr_switches(tg, cpu) cpu_rq(cpu)->cfs.nr_switches
-+#endif
-+#ifdef CONFIG_RT_GROUP_SCHED
-+#define rt_nr_switches(tg, cpu) (tg)->rt_rq[cpu]->rt_nr_switches
-+#else
-+#define rt_nr_switches(tg, cpu) cpu_rq(cpu)->rt.rt_nr_switches
-+#endif
+diff --git a/Documentation/cgroups/cpu.txt b/Documentation/cgroups/cpu.txt
+new file mode 100644
+index 0000000..e0ea075
+--- /dev/null
++++ b/Documentation/cgroups/cpu.txt
+@@ -0,0 +1,82 @@
++CPU Controller
++--------------
 +
- unsigned long long nr_context_switches(void)
- {
- 	int i;
- 	unsigned long long sum = 0;
- 
--	for_each_possible_cpu(i)
-+	for_each_possible_cpu(i) {
-+		sum += cfs_nr_switches(&root_task_group, i);
-+		sum += rt_nr_switches(&root_task_group, i);
- 		sum += cpu_rq(i)->nr_switches;
-+	}
- 
- 	return sum;
- }
-@@ -2929,7 +2943,6 @@ need_resched:
- 	rq->skip_clock_update = 0;
- 
- 	if (likely(prev != next)) {
--		rq->nr_switches++;
- 		rq->curr = next;
- 		++*switch_count;
- 
-diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-index 07e6027..652d98c 100644
---- a/kernel/sched/idle_task.c
-+++ b/kernel/sched/idle_task.c
-@@ -28,6 +28,9 @@ pick_next_task_idle(struct rq *rq, struct task_struct *prev)
- 	if (prev)
- 		prev->sched_class->put_prev_task(rq, prev);
- 
-+	if (prev != rq->idle)
-+		rq->nr_switches++;
++The CPU controller is responsible for grouping tasks together that will be
++viewed by the scheduler as a single unit. The CFS scheduler will first divide
++CPU time equally between all entities in the same level, and then proceed by
++doing the same in the next level. Basic use cases for that are described in the
++main cgroup documentation file, cgroups.txt.
 +
- 	schedstat_inc(rq, sched_goidle);
- 	return rq->idle;
- }
-diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
-index 5f10918..d1e9b82 100644
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -32,6 +32,8 @@ pick_next_task_stop(struct rq *rq, struct task_struct *prev)
- 		stop->se.exec_start = rq->clock_task;
- 		if (prev)
- 			prev->sched_class->put_prev_task(rq, prev);
-+		if (prev != rq->stop)
-+			rq->nr_switches++;
- 		return stop;
- 	}
- 
++Users of this functionality should be aware that deep hierarchies will of
++course impose scheduler overhead, since the scheduler will have to take extra
++steps and look up additional data structures to make its final decision.
++
++Through the CPU controller, the scheduler is also able to cap the CPU
++utilization of a particular group. This is particularly useful in environments
++in which CPU is paid for by the hour, and one values predictability over
++performance.
++
++CPU Accounting
++--------------
++
++The CPU cgroup will also provide additional files under the prefix "cpuacct".
++Those files provide accounting statistics and were previously provided by the
++separate cpuacct controller. Although the cpuacct controller will still be kept
++around for compatibility reasons, its usage is discouraged. If both the CPU and
++cpuacct controllers are present in the system, distributors are encouraged to
++always mount them together.
++
++Files
++-----
++
++The CPU controller exposes the following files to the user:
++
++ - cpu.shares: The weight of each group living in the same hierarchy, that
++ translates into the amount of CPU it is expected to get. Upon cgroup creation,
++ each group gets assigned a default of 1024. The percentage of CPU assigned to
++ the cgroup is the value of shares divided by the sum of all shares in all
++ cgroups in the same level.
++
++ - cpu.cfs_period_us: The duration in microseconds of each scheduler period, for
++ bandwidth decisions. This defaults to 100000us or 100ms. Larger periods will
++ improve throughput at the expense of latency, since the scheduler will be able
++ to sustain a cpu-bound workload for longer. The opposite of true for smaller
++ periods. Note that this only affects non-RT tasks that are scheduled by the
++ CFS scheduler.
++
++- cpu.cfs_quota_us: The maximum time in microseconds during each cfs_period_us
++  in for the current group will be allowed to run. For instance, if it is set to
++  half of cpu_period_us, the cgroup will only be able to peak run for 50 % of
++  the time. One should note that this represents aggregate time over all CPUs
++  in the system. Therefore, in order to allow full usage of two CPUs, for
++  instance, one should set this value to twice the value of cfs_period_us.
++
++- cpu.stat: statistics about the bandwidth controls. No data will be presented
++  if cpu.cfs_quota_us is not set. The file presents three
++  numbers:
++	nr_periods: how many full periods have been elapsed.
++	nr_throttled: number of times we exausted the full allowed bandwidth
++	throttled_time: total time the tasks were not run due to being overquota
++
++ - cpu.rt_runtime_us and cpu.rt_period_us: Those files are the RT-tasks
++   analogous to the CFS files cfs_quota_us and cfs_period_us. One important
++   difference, though, is that while the cfs quotas are upper bounds that
++   won't necessarily be met, the rt runtimes form a stricter guarantee.
++   Therefore, no overlap is allowed. Implications of that are that given a
++   hierarchy with multiple children, the sum of all rt_runtime_us may not exceed
++   the runtime of the parent. Also, a rt_runtime_us of 0, means that no rt tasks
++   can ever be run in this cgroup. For more information about rt tasks runtime
++   assignments, see scheduler/sched-rt-group.txt
++
++ - cpuacct.usage: The aggregate CPU time, in nanoseconds, consumed by all tasks
++   in this group.
++
++ - cpuacct.usage_percpu: The CPU time, in nanoseconds, consumed by all tasks in
++   this group, separated by CPU. The format is an space-separated array of time
++   values, one for each present CPU.
++
++ - cpuacct.stat: aggregate user and system time consumed by tasks in this group.
++   The format is
++	user: x
++	system: y
++
 -- 
 1.8.1
 
