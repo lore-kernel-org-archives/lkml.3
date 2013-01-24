@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab3AXTcq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:32:46 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54477 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754932Ab3AXTck (ORCPT
+	id S1754974Ab3AXTgz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:36:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33730 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab3AXTgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:32:40 -0500
-Message-ID: <51018C55.6000709@wwwdotorg.org>
-Date: Thu, 24 Jan 2013 11:32:37 -0800
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 24 Jan 2013 14:36:53 -0500
+Date: Thu, 24 Jan 2013 11:36:04 -0800
+From: tip-bot for Shan Wei <davidshan@tencent.com>
+Message-ID: <tip-d8a0349c0cea477322c66ea9362f10c62fad5f62@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        davidshan@tencent.com, rostedt@goodmis.org, cl@linux.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        davidshan@tencent.com, rostedt@goodmis.org, tglx@linutronix.de,
+        cl@linux.com
+In-Reply-To: <50A1A800.3020102@gmail.com>
+References: <50A1A800.3020102@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing: Use this_cpu_ptr per-cpu helper
+Git-Commit-ID: d8a0349c0cea477322c66ea9362f10c62fad5f62
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "linux@prisktech.co.nz" <linux@prisktech.co.nz>,
-        "josh.cartwright@ni.com" <josh.cartwright@ni.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/7] clk: tegra: Use common of_clk_init() function
-References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com> <1357282858-2112-2-git-send-email-pgaikwad@nvidia.com> <50E703A8.1080808@wwwdotorg.org> <50E793A0.4020702@nvidia.com> <20130124192043.10623.60751@quantum>
-In-Reply-To: <20130124192043.10623.60751@quantum>
-X-Enigmail-Version: 1.4.6
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 11:36:11 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 11:20 AM, Mike Turquette wrote:
-> Quoting Prashant Gaikwad (2013-01-04 18:44:48)
->> On Friday 04 January 2013 10:00 PM, Stephen Warren wrote:
->>> On 01/04/2013 12:00 AM, Prashant Gaikwad wrote:
->>>> Use common of_clk_init() function for clocks initialization.
->>>>   drivers/clk/tegra/clk-tegra20.c |    3 ++-
->>>>   drivers/clk/tegra/clk-tegra30.c |    3 ++-
->>> Oh, so this series is written assuming that the Tegra CCF rework is
->>> already applied then? That makes the dependencies quite painful, since I
->>> think we'll end up with the following order being needed:
->>>
->>> 1) clk: Add composite clock type
->>>     -> This would usually go through the clk tree.
->>> 2) The Tegra CCF rework series
->>>     -> This must go through the Tegra tree due to lots of dependencies
->>>     and merge conflicts with other Tegra patches.
->>> 3) This series
->>>     -> This would usually go through the clk tree.
->>>
->>> Is it possible to re-order the dependencies as (1) (3) (2), so that Mike
->>> can apply (1) and (3) to the clock tree, then I can use the clk tree as
->>> the basis for a branch in the Tegra tree to apply (2) and all the other
->>> Tegra patches that will conflict with (2)?
->>
->> If Mike approves the concept and implementation in (1) and (3) then I 
->> will repost (2) and (3) with dependencies re-ordered.
-> 
-> Patch (1) still has some unaddressed comments, and is not a real
-> dependency for this series.
+Commit-ID:  d8a0349c0cea477322c66ea9362f10c62fad5f62
+Gitweb:     http://git.kernel.org/tip/d8a0349c0cea477322c66ea9362f10c62fad5f62
+Author:     Shan Wei <davidshan@tencent.com>
+AuthorDate: Tue, 13 Nov 2012 09:53:04 +0800
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Mon, 21 Jan 2013 13:22:30 -0500
 
-I assume "Patch (1)" refers to the list of series a couple emails above,
-not the first patch in the series you're replying to; that threw me for
-a moment.
+tracing: Use this_cpu_ptr per-cpu helper
 
-> Since all of the patches have received their
-> Tested-by's then I propose to merge all patches from this series into
-> clk-next, which exception of patch 2/7 (the Tegra patch).
-> 
-> This reduces your Tegra CCF conversion dependencies and you can role the
-> necessary of_clk_init change into your Tegra CCF conversion branch (it
-> has my implicit Ack and can be taken through your tree).
-> 
-> Let me know if this is OK for you.
+typeof(&buffer) is a pointer to array of 1024 char, or char (*)[1024].
+But, typeof(&buffer[0]) is a pointer to char which match the return type of get_trace_buf().
+As well-known, the value of &buffer is equal to &buffer[0].
+so return this_cpu_ptr(&percpu_buffer->buffer[0]) can avoid type cast.
 
-OK, I'm happy to merge your clock tree into the Tegra tree and then
-apply 2/7 on top of the Tegra CCF work.
+Link: http://lkml.kernel.org/r/50A1A800.3020102@gmail.com
+
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Shan Wei <davidshan@tencent.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/blktrace.c | 2 +-
+ kernel/trace/trace.c    | 5 +----
+ 2 files changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+index c0bd030..71259e2 100644
+--- a/kernel/trace/blktrace.c
++++ b/kernel/trace/blktrace.c
+@@ -147,7 +147,7 @@ void __trace_note_message(struct blk_trace *bt, const char *fmt, ...)
+ 		return;
+ 
+ 	local_irq_save(flags);
+-	buf = per_cpu_ptr(bt->msg_data, smp_processor_id());
++	buf = this_cpu_ptr(bt->msg_data);
+ 	va_start(args, fmt);
+ 	n = vscnprintf(buf, BLK_TN_MAX_MSG, fmt, args);
+ 	va_end(args);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 3c13e46..f8b7c62 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1517,7 +1517,6 @@ static struct trace_buffer_struct *trace_percpu_nmi_buffer;
+ static char *get_trace_buf(void)
+ {
+ 	struct trace_buffer_struct *percpu_buffer;
+-	struct trace_buffer_struct *buffer;
+ 
+ 	/*
+ 	 * If we have allocated per cpu buffers, then we do not
+@@ -1535,9 +1534,7 @@ static char *get_trace_buf(void)
+ 	if (!percpu_buffer)
+ 		return NULL;
+ 
+-	buffer = per_cpu_ptr(percpu_buffer, smp_processor_id());
+-
+-	return buffer->buffer;
++	return this_cpu_ptr(&percpu_buffer->buffer[0]);
+ }
+ 
+ static int alloc_percpu_trace_buffer(void)
