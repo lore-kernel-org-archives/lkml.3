@@ -1,173 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054Ab3AXIBp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 03:01:45 -0500
-Received: from mga11.intel.com ([192.55.52.93]:21620 "EHLO mga11.intel.com"
+	id S1753241Ab3AXICF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 03:02:05 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39591 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751420Ab3AXIBi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 03:01:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,528,1355126400"; 
-   d="scan'208";a="281557144"
-Message-ID: <1359014483.12502.94.camel@smile>
-Subject: Re: [PATCH v2 4/4] dw_dmac: return proper residue value
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Date: Thu, 24 Jan 2013 10:01:23 +0200
-In-Reply-To: <CAOh2x=mx8n53pU42Xx+J3VgMg+ZAWnSNyuDB-2nm5K67MnMTyQ@mail.gmail.com>
-References: <1358955452-20960-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1358955452-20960-5-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CAOh2x=mx8n53pU42Xx+J3VgMg+ZAWnSNyuDB-2nm5K67MnMTyQ@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	id S1751653Ab3AXICD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 03:02:03 -0500
+From: Philip Avinash <avinashphilip@ti.com>
+To: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>
+CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <hvaibhav@ti.com>,
+        <zonque@gmail.com>, <jacmet@sunsite.dk>,
+        Philip Avinash <avinashphilip@ti.com>
+Subject: [PATCH v2 0/3] Add device tree support for NAND flash in am335x-evm
+Date: Thu, 24 Jan 2013 13:32:26 +0530
+Message-ID: <cover.1359007746.git.avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-24 at 10:37 +0530, Viresh Kumar wrote: 
-> On Wed, Jan 23, 2013 at 9:07 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> > diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> 
-> >  static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
-> >  {
-> >         dma_addr_t llp;
-> > @@ -410,6 +441,8 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
-> >                          */
-> >                         desc = dwc_first_active(dwc);
-> >
-> > +                       dwc_update_residue(dwc, desc);
-> > +
-> >                         if (dwc->tx_node_active != &desc->tx_list) {
-> >                                 child = to_dw_desc(dwc->tx_node_active);
-> 
-> Is there a point updating residue here? I don't have a very good knowledge of
-> nollp transfers but this is what i know...
-> 
-> The above "if" will pass if we are still doing transfers and fail if
-> all transfers are done.
-> After the end of each LLI we receive an interrupt, where we queue next
-> LLI. Better
-> would be to initialize dwc->residue at dwc_dostart() with total
-> length, start decrementing
-> it with desc->len for every lli interrupt we get 
+This patch series adds device tree support for NAND flash in am335x-evm.
+Also ELM node is populated in device tree and been used for BCH error
+correction in NAND flash part. Also this patch series ensures RBL ecc
+layout maintained in Linux kernel with BCH8 ecc scheme.
 
-It's mostly okay, but we have to handle few cases:
-- we have only first (master) descriptor
-- we have a chain of the descriptors: master + children
-- we have finished last transfer
+This patch series based on [1] and depends on [2].
 
->From my point of view we can't fully get rid of dwc_update_residue(),
-but modify it a bit (drop away for loop).
+1. http://git.kernel.org/?p=linux/kernel/git/bcousson/linux-omap-dt.git;a=tree;h=refs/heads/for_3.9/dts;hb=refs/heads/for_3.9/dts
 
-> and if call for
-> getting residue comes in
-> middle of transfer, simple return residue - dwc_get_sent(desc) without
-> updating residue
-> field...
+2.mtd: devices: elm: Removes <xx> literals in elm DT node
+  https://lkml.org/lkml/2013/1/24/30
 
-Where? In the tx_status to call something which returns dwc->residue -
-dwc_get_sent() ?
+Philip Avinash (1):
+  ARM: dts: AM33XX: Add NAND flash device tree data to am335x-evm
 
-> 
-> > @@ -436,6 +469,9 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
-> >
-> >         if (test_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags)) {
-> >                 dev_vdbg(chan2dev(&dwc->chan), "%s: soft LLP mode\n", __func__);
-> > +
-> > +               dwc_update_residue(dwc, dwc_first_active(dwc));
-> > +
-> 
-> same is applicable here too and so you can get rid of
-> dwc_update_residue() routine.
+Philip, Avinash (2):
+  ARM: dts: AM33XX: Add ELM node
+  ARM: dts: AM33XX: Add GPMC node
 
-Same thoughts as above are applicable to this.
-
-> >                 spin_unlock_irqrestore(&dwc->lock, flags);
-> >                 return;
-> >         }
-> > @@ -444,6 +480,9 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
-> >                         (unsigned long long)llp);
-> >
-> >         list_for_each_entry_safe(desc, _desc, &dwc->active_list, desc_node) {
-> > +               /* initial residue value */
-> > +               dwc->residue = desc->total_len;
-> > +
-> >                 /* check first descriptors addr */
-> >                 if (desc->txd.phys == llp) {
-> >                         spin_unlock_irqrestore(&dwc->lock, flags);
-> > @@ -453,16 +492,21 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
-> >                 /* check first descriptors llp */
-> >                 if (desc->lli.llp == llp) {
-> >                         /* This one is currently in progress */
-> > +                       dwc->residue -= dwc_get_sent(dwc);
-> >                         spin_unlock_irqrestore(&dwc->lock, flags);
-> >                         return;
-> >                 }
-> >
-> > -               list_for_each_entry(child, &desc->tx_list, desc_node)
-> > +               dwc->residue -= desc->len;
-> > +               list_for_each_entry(child, &desc->tx_list, desc_node) {
-> >                         if (child->lli.llp == llp) {
-> >                                 /* Currently in progress */
-> > +                               dwc->residue -= dwc_get_sent(dwc);
-> >                                 spin_unlock_irqrestore(&dwc->lock, flags);
-> >                                 return;
-> >                         }
-> > +                       dwc->residue -= child->len;
-> > +               }
-> >
-> >                 /*
-> >                  * No descriptors so far seem to be in progress, i.e.
-> > @@ -1058,6 +1102,7 @@ dwc_tx_status(struct dma_chan *chan,
-> >               struct dma_tx_state *txstate)
-> >  {
-> >         struct dw_dma_chan      *dwc = to_dw_dma_chan(chan);
-> > +       unsigned long           flags;
-> >         enum dma_status         ret;
-> >
-> >         ret = dma_cookie_status(chan, cookie, txstate);
-> > @@ -1067,8 +1112,12 @@ dwc_tx_status(struct dma_chan *chan,
-> >                 ret = dma_cookie_status(chan, cookie, txstate);
-> >         }
-> >
-> > +       spin_lock_irqsave(&dwc->lock, flags);
-> > +
-> 
-> why do you need locking here?
-
-What about the case when one CPU is getting an interrupt and runs
-scan_descriptors when the other, for example, in the middle of
-tx_status? So, I'm afraid the dma_set_residue(txstate, dwc->residue) is
-not atomic and we might end up with random numbers here.
-
-> >         if (ret != DMA_SUCCESS)
-> > -               dma_set_residue(txstate, dwc_first_active(dwc)->len);
-> > +               dma_set_residue(txstate, dwc->residue);
-> > +
-> > +       spin_unlock_irqrestore(&dwc->lock, flags);
-> >
-> >         if (dwc->paused)
-> >                 return DMA_PAUSED;
-> > diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-> > index 833b4cf..88dd8eb 100644
-> > --- a/drivers/dma/dw_dmac_regs.h
-> > +++ b/drivers/dma/dw_dmac_regs.h
-> > @@ -203,6 +203,7 @@ struct dw_dma_chan {
-> >         struct list_head        active_list;
-> >         struct list_head        queue;
-> >         struct list_head        free_list;
-> > +       u32                     residue;
-> >         struct dw_cyclic_desc   *cdesc;
-> >
-> >         unsigned int            descs_allocated;
+ arch/arm/boot/dts/am335x-evm.dts |   98 +++++++++++++++++++++++++++++++++++++-
+ arch/arm/boot/dts/am33xx.dtsi    |   20 ++++++++
+ 2 files changed, 117 insertions(+), 1 deletion(-)
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+1.7.9.5
+
