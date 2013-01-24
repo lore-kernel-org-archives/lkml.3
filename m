@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab3AXDa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:30:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44309 "EHLO
+	id S1754763Ab3AXDg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:36:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44365 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754631Ab3AXDaO (ORCPT
+	with ESMTP id S1754614Ab3AXDax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:30:14 -0500
+	Wed, 23 Jan 2013 22:30:53 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mark Rustad <mark.d.rustad@intel.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Oliver Neukum <oneukum@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 41/74] tcm_fc: Do not indicate retry capability to initiators
-Date: Thu, 24 Jan 2013 01:26:53 -0200
-Message-Id: <1358998046-613-42-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 52/74] USB: hub: handle claim of enabled remote wakeup after reset
+Date: Thu, 24 Jan 2013 01:27:04 -0200
+Message-Id: <1358998046-613-53-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,38 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+From: Oliver Neukum <oliver@neukum.org>
 
-commit f2eeba214bcd0215b7f558cab6420e5fd153042b upstream.
+commit 07e72b95f5038cc82304b9a4a2eb7f9fc391ea68 upstream.
 
-When generating a PRLI response to an initiator, clear the
-FCP_SPPF_RETRY bit in the response.
+Some touchscreens have buggy firmware which claims
+remote wakeup to be enabled after a reset. They nevertheless
+crash if the feature is cleared by the host.
+Add a check for reset resume before checking for
+an enabled remote wakeup feature. On compliant
+devices the feature must be cleared after a reset anyway.
 
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Reviewed-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
-Acked by Robert Love <robert.w.love@intel.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/target/tcm_fc/tfc_sess.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/hub.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/target/tcm_fc/tfc_sess.c b/drivers/target/tcm_fc/tfc_sess.c
-index a426c40..34d7b25 100644
---- a/drivers/target/tcm_fc/tfc_sess.c
-+++ b/drivers/target/tcm_fc/tfc_sess.c
-@@ -397,10 +397,10 @@ static int ft_prli_locked(struct fc_rport_priv *rdata, u32 spp_len,
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 2532bdc..92c0229 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2840,7 +2840,7 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
+ static int finish_port_resume(struct usb_device *udev)
+ {
+ 	int	status = 0;
+-	u16	devstatus;
++	u16	devstatus = 0;
  
- 	/*
- 	 * OR in our service parameters with other provider (initiator), if any.
--	 * TBD XXX - indicate RETRY capability?
- 	 */
- fill:
- 	fcp_parm = ntohl(spp->spp_params);
-+	fcp_parm &= ~FCP_SPPF_RETRY;
- 	spp->spp_params = htonl(fcp_parm | FCP_SPPF_TARG_FCN);
- 	return FC_SPP_RESP_ACK;
- }
+ 	/* caller owns the udev device lock */
+ 	dev_dbg(&udev->dev, "%s\n",
+@@ -2885,7 +2885,13 @@ static int finish_port_resume(struct usb_device *udev)
+ 	if (status) {
+ 		dev_dbg(&udev->dev, "gone after usb resume? status %d\n",
+ 				status);
+-	} else if (udev->actconfig) {
++	/*
++	 * There are a few quirky devices which violate the standard
++	 * by claiming to have remote wakeup enabled after a reset,
++	 * which crash if the feature is cleared, hence check for
++	 * udev->reset_resume
++	 */
++	} else if (udev->actconfig && !udev->reset_resume) {
+ 		le16_to_cpus(&devstatus);
+ 		if (devstatus & (1 << USB_DEVICE_REMOTE_WAKEUP)) {
+ 			status = usb_control_msg(udev,
 -- 
 1.7.9.5
 
