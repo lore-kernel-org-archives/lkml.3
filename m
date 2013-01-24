@@ -1,120 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756996Ab3AXVdG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:33:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40206 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756924Ab3AXVOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:14:25 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Subject: [ 23/46] PCI: shpchp: Handle push button event asynchronously
-Date: Thu, 24 Jan 2013 13:13:01 -0800
-Message-Id: <20130124211144.513774786@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
-References: <20130124211135.862755794@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1756998Ab3AXVdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:33:25 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31685 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756555Ab3AXVdH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:33:07 -0500
+X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=YyIrxvMppY0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=W0fAN9IbdjwA:10 a=U3mvYQgqbpKD95cSg6EA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1359063185.21576.157.camel@gandalf.local.home>
+Subject: Re: [PATCHv2] tools lib traceevent: Handle dynamic array's element
+ size properly
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Thu, 24 Jan 2013 16:33:05 -0500
+In-Reply-To: <20130124212840.GD14382@infradead.org>
+References: <1359060403-32422-1-git-send-email-jolsa@redhat.com>
+	 <1359061993.21576.156.camel@gandalf.local.home>
+	 <20130124212840.GD14382@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 2013-01-24 at 18:28 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Jan 24, 2013 at 04:13:13PM -0500, Steven Rostedt escreveu:
+> > On Thu, 2013-01-24 at 21:46 +0100, Jiri Olsa wrote:
+> > >  
+> > > +static unsigned int type_size(char *name)
+> > 
+> > Sorry to nitpick, but please make that const char *name.
+> 
+> Agreed, no need to resubmit, I'll fix that up.
 
-------------------
+I'm sure Tom St Denis appreciates it.
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+> 
+> > The rest looks good.
+> 
+> Thanks, adding your Acked-by,
 
-commit d347e75847c1fb299c97736638f45e6ea39702d4 upstream.
+Sure. But I probably should test it too ;-)
 
-Use non-ordered workqueue for attention button events.
-
-Attention button events on each slot can be handled asynchronously. So
-we should use non-ordered workqueue. This patch also removes ordered
-workqueue in shpchp as a result.
-
-486b10b9f4 ("PCI: pciehp: Handle push button event asynchronously") made
-the same change to pciehp.  I split this out from a patch by Yijing Wang
-<wangyijing@huawei.com> so we fix one thing at a time and to make the
-shpchp history correspond more closely with the pciehp history.
-
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/pci/hotplug/shpchp.h      |    1 -
- drivers/pci/hotplug/shpchp_core.c |   10 ----------
- drivers/pci/hotplug/shpchp_ctrl.c |    2 +-
- 3 files changed, 1 insertion(+), 12 deletions(-)
-
---- a/drivers/pci/hotplug/shpchp.h
-+++ b/drivers/pci/hotplug/shpchp.h
-@@ -47,7 +47,6 @@ extern bool shpchp_poll_mode;
- extern int shpchp_poll_time;
- extern bool shpchp_debug;
- extern struct workqueue_struct *shpchp_wq;
--extern struct workqueue_struct *shpchp_ordered_wq;
- 
- #define dbg(format, arg...)						\
- do {									\
---- a/drivers/pci/hotplug/shpchp_core.c
-+++ b/drivers/pci/hotplug/shpchp_core.c
-@@ -40,7 +40,6 @@ bool shpchp_debug;
- bool shpchp_poll_mode;
- int shpchp_poll_time;
- struct workqueue_struct *shpchp_wq;
--struct workqueue_struct *shpchp_ordered_wq;
- 
- #define DRIVER_VERSION	"0.4"
- #define DRIVER_AUTHOR	"Dan Zink <dan.zink@compaq.com>, Greg Kroah-Hartman <greg@kroah.com>, Dely Sy <dely.l.sy@intel.com>"
-@@ -181,7 +180,6 @@ void cleanup_slots(struct controller *ct
- 		list_del(&slot->slot_list);
- 		cancel_delayed_work(&slot->work);
- 		flush_workqueue(shpchp_wq);
--		flush_workqueue(shpchp_ordered_wq);
- 		pci_hp_deregister(slot->hotplug_slot);
- 	}
- }
-@@ -370,17 +368,10 @@ static int __init shpcd_init(void)
- 	if (!shpchp_wq)
- 		return -ENOMEM;
- 
--	shpchp_ordered_wq = alloc_ordered_workqueue("shpchp_ordered", 0);
--	if (!shpchp_ordered_wq) {
--		destroy_workqueue(shpchp_wq);
--		return -ENOMEM;
--	}
--
- 	retval = pci_register_driver(&shpc_driver);
- 	dbg("%s: pci_register_driver = %d\n", __func__, retval);
- 	info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
- 	if (retval) {
--		destroy_workqueue(shpchp_ordered_wq);
- 		destroy_workqueue(shpchp_wq);
- 	}
- 	return retval;
-@@ -390,7 +381,6 @@ static void __exit shpcd_cleanup(void)
- {
- 	dbg("unload_shpchpd()\n");
- 	pci_unregister_driver(&shpc_driver);
--	destroy_workqueue(shpchp_ordered_wq);
- 	destroy_workqueue(shpchp_wq);
- 	info(DRIVER_DESC " version: " DRIVER_VERSION " unloaded\n");
- }
---- a/drivers/pci/hotplug/shpchp_ctrl.c
-+++ b/drivers/pci/hotplug/shpchp_ctrl.c
-@@ -453,7 +453,7 @@ void shpchp_queue_pushbutton_work(struct
- 		kfree(info);
- 		goto out;
- 	}
--	queue_work(shpchp_ordered_wq, &info->work);
-+	queue_work(shpchp_wq, &info->work);
-  out:
- 	mutex_unlock(&p_slot->lock);
- }
+-- Steve
 
 
