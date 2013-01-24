@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab3AXN20 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 08:28:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23937 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753248Ab3AXN2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 08:28:19 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <510104DB.9040403@imgtec.com>
-References: <510104DB.9040403@imgtec.com> <50FFCAC4.1050002@synopsys.com> <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-66-git-send-email-vgupta@synopsys.com> <10760.1358945425@warthog.procyon.org.uk> <5100CAAF.8090702@synopsys.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        James Hogan <james.hogan@imgtec.com>
-Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH v2 65/76] ARC: UAPI Disintegrate arch/arc/include/asm
-Date: Thu, 24 Jan 2013 13:28:12 +0000
-Message-ID: <26124.1359034092@warthog.procyon.org.uk>
+	id S1753627Ab3AXN2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 08:28:53 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:35776 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab3AXN2r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 08:28:47 -0500
+Date: Thu, 24 Jan 2013 14:28:41 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        aquini@redhat.com, walken@google.com, eric.dumazet@gmail.com,
+        lwoodman@redhat.com, jeremy@goop.org,
+        Jan Beulich <JBeulich@novell.com>, knoel@redhat.com,
+        chegu_vinod@hp.com, raghavendra.kt@linux.vnet.ibm.com,
+        mingo@redhat.com
+Subject: Re: [PATCH 0/5] x86,smp: make ticket spinlock proportional backoff
+ w/ auto tuning
+Message-ID: <20130124132841.GB5302@gmail.com>
+References: <20130108172632.1126898a@annuminas.surriel.com>
+ <1357831182.5841.21.camel@marge.simpson.net>
+ <50EEDEC1.9020708@redhat.com>
+ <1357846213.5755.30.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357846213.5755.30.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Hogan <james.hogan@imgtec.com> wrote:
 
-> > BTW looking at metag port, it seems that <asm/setup.h> does #include
-> > <uapi/asm/setup.h>, but latter doesn't exist in the repository - is it
-> > generated for you James or is this same issue which David elucidated to
-> > above ?
+* Mike Galbraith <bitbucket@online.de> wrote:
+
+> On Thu, 2013-01-10 at 10:31 -0500, Rik van Riel wrote: 
+> > On 01/10/2013 10:19 AM, Mike Galbraith wrote:
+> > > On Tue, 2013-01-08 at 17:26 -0500, Rik van Riel wrote:
+> > >
+> > >> Please let me know if you manage to break this code in any way,
+> > >> so I can fix it...
+> > >
+> > > I didn't break it, but did let it play with rq->lock contention.  Using
+> > > cyclictest -Smp99 -i 100 -d 0, with 3 rt tasks for pull_rt_task() to
+> > > pull around appears to have been a ~dead heat.
+> > 
+> > Good to hear that the code seems to be robust. It seems to
+> > help prevent performance degradation in some workloads, and
+> > nobody seems to have found regressions yet.
 > 
-> We have generic-y += setup.h in arch/metag/include/uapi/asm/Kbuild for this
+> I had hoped for a bit of positive, but a wash isn't surprising 
+> given the profile.  I tried tbench too, didn't expect to see 
+> anything at all there, and got that.. so both results are 
+> positive in that respect.
 
-Vineet can't do that as his COMMAND_LINE_SIZE is different to the standard and
-also not placed in his UAPI setup.h.
+Ok, that's good.
 
-So far, only user-mode Linux and x86 don't put COMMAND_LINE_SIZE in
-uapi/asm/setup.h.  Everything else does.
+Rik, mind re-sending the latest series with all the acks and 
+Reviewed-by's added?
 
-	grep -r 'define\s*COMMAND_LINE_SIZE' arch/*/include | grep -v /uapi/
+Thanks,
 
-Not sure if that's needed to build a bootloader or not.
-
-David
+	Ingo
