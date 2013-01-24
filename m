@@ -1,145 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab3AXUdH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:33:07 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50151 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849Ab3AXUIl (ORCPT
+	id S1756281Ab3AXUdW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:33:22 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54057
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755618Ab3AXUIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jan 2013 15:08:41 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 10/74] perf test: Check for linking problems in the python binding
-Date: Thu, 24 Jan 2013 17:07:19 -0300
-Message-Id: <1359058103-31645-11-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 31/74] perf ui/gtk: Setup browser window early
+Date: Thu, 24 Jan 2013 17:07:40 -0300
+Message-Id: <1359058103-31645-32-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1359058103-31645-1-git-send-email-acme@infradead.org>
 References: <1359058103-31645-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-It just will add the O= builddir to PYTHONPATH and try to 'use perf',
-which will, in verbose mode show the python backtrace with the missing
-symbols, such as in the problem fixed in the patch after this one:
+The ui__error/warning functions use gtk infobar or statusbar and pr_*
+functions use statusbar too.  But after perf gtk context created but
+those infobar and/or statusbar not yet set up, calling one of those
+functions will get a segment fault.
 
-  # perf test -v 15
-  15: Try 'use perf' in python, checking link problems       :
-  --- start ---
-  Traceback (most recent call last):
-    File "<stdin>", line 1, in <module>
-  ImportError: /home/acme/git/build/perf//python/perf.so: undefined symbol: test_attr__enabled
-  ---- end ----
-  Try 'use perf' in python, checking link problems: FAILED!
-  #
+Although current code has no problem, move these setting as early as
+possible so that it can prevent the segfault from future change.
 
-Loooong overdue, done.
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-zmd2oq9gz6t1u145ub7qm2nv@git.kernel.org
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1356078018-31905-3-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile             |  4 ++++
- tools/perf/tests/builtin-test.c |  4 ++++
- tools/perf/tests/python-use.c   | 23 +++++++++++++++++++++++
- tools/perf/tests/tests.h        |  1 +
- 4 files changed, 32 insertions(+)
- create mode 100644 tools/perf/tests/python-use.c
+ tools/perf/ui/gtk/hists.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index c9f72b1..d0d7957 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -488,6 +488,7 @@ LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
- LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
- LIB_OBJS += $(OUTPUT)tests/pmu.o
- LIB_OBJS += $(OUTPUT)tests/hists_link.o
-+LIB_OBJS += $(OUTPUT)tests/python-use.o
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 26912f8..c03da79 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -180,6 +180,17 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
  
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-@@ -955,6 +956,9 @@ $(OUTPUT)tests/attr.o: tests/attr.c $(OUTPUT)PERF-CFLAGS
- 		'-DBINDIR="$(bindir_SQ)"' \
- 		$<
+ 	notebook = gtk_notebook_new();
  
-+$(OUTPUT)tests/python-use.o: tests/python-use.c $(OUTPUT)PERF-CFLAGS
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPYTHONPATH='"$(OUTPUT)/python"' $<
++	gtk_box_pack_start(GTK_BOX(vbox), notebook, TRUE, TRUE, 0);
 +
- $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
++	info_bar = perf_gtk__setup_info_bar();
++	if (info_bar)
++		gtk_box_pack_start(GTK_BOX(vbox), info_bar, FALSE, FALSE, 0);
++
++	statbar = perf_gtk__setup_statusbar();
++	gtk_box_pack_start(GTK_BOX(vbox), statbar, FALSE, FALSE, 0);
++
++	gtk_container_add(GTK_CONTAINER(window), vbox);
++
+ 	list_for_each_entry(pos, &evlist->entries, node) {
+ 		struct hists *hists = &pos->hists;
+ 		const char *evname = perf_evsel__name(pos);
+@@ -199,17 +210,6 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
+ 		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scrolled_window, tab_label);
+ 	}
  
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 479d104..a164e4c 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -73,6 +73,10 @@ static struct test {
- 		.func = test__hists_link,
- 	},
- 	{
-+		.desc = "Try 'use perf' in python, checking link problems",
-+		.func = test__python_use,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/python-use.c b/tools/perf/tests/python-use.c
-new file mode 100644
-index 0000000..15301f4
---- /dev/null
-+++ b/tools/perf/tests/python-use.c
-@@ -0,0 +1,23 @@
-+/*
-+ * Just test if we can load the python binding.
-+ */
-+
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include "tests.h"
-+
-+extern int verbose;
-+
-+int test__python_use(void)
-+{
-+	char *cmd;
-+	int ret;
-+
-+	if (asprintf(&cmd, "echo \"import sys ; sys.path.append('%s'); import perf\" | python %s",
-+		     PYTHONPATH, verbose ? "" : "2> /dev/null") < 0)
-+		return -1;
-+
-+	ret = system(cmd) ? -1 : 0;
-+	free(cmd);
-+	return ret;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 0bf1069..0ded425 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -16,5 +16,6 @@ int test__attr(void);
- int test__dso_data(void);
- int test__parse_events(void);
- int test__hists_link(void);
-+int test__python_use(void);
+-	gtk_box_pack_start(GTK_BOX(vbox), notebook, TRUE, TRUE, 0);
+-
+-	info_bar = perf_gtk__setup_info_bar();
+-	if (info_bar)
+-		gtk_box_pack_start(GTK_BOX(vbox), info_bar, FALSE, FALSE, 0);
+-
+-	statbar = perf_gtk__setup_statusbar();
+-	gtk_box_pack_start(GTK_BOX(vbox), statbar, FALSE, FALSE, 0);
+-
+-	gtk_container_add(GTK_CONTAINER(window), vbox);
+-
+ 	gtk_widget_show_all(window);
  
- #endif /* TESTS_H */
+ 	perf_gtk__resize_window(window);
 -- 
 1.8.1.1.361.gec3ae6e
 
