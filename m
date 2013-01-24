@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab3AXACL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 19:02:11 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:45549 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab3AXACH (ORCPT
+	id S1752504Ab3AXASZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 19:18:25 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:42413 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008Ab3AXASS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 19:02:07 -0500
-Date: Wed, 23 Jan 2013 16:02:02 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] more USB fixes for 3.8-rc4
-Message-ID: <20130124000202.GA12566@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 23 Jan 2013 19:18:18 -0500
+Subject: Re: [RFC PATCH 4/6] kernel: faster queue spinlock implementation
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1358896415-28569-5-git-send-email-walken@google.com>
+References: <1358896415-28569-1-git-send-email-walken@google.com>
+	 <1358896415-28569-5-git-send-email-walken@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Jan 2013 16:18:14 -0800
+Message-ID: <1358986694.12374.1267.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619:
+On Tue, 2013-01-22 at 15:13 -0800, Michel Lespinasse wrote:
+>  {
+> -	__q_spin_unlock(lock, node);
+> -	preempt_enable_no_resched();
+> -	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
+> +	unsigned int cpu, i;
+> +	struct q_spinlock_token *token;
+> +	for_each_possible_cpu(cpu)
+> +		for (i = 0; i < 2; i++) {
+> +			token = kmalloc(sizeof(struct q_spinlock_alloc_token),
+> +					GFP_KERNEL);
+> +			BUG_ON(!token);
+> +			token->wait = false;
+> +			per_cpu(q_spinlock_token[i], cpu) = token;
+> +		}
 
-  Linux 3.8-rc4 (2013-01-17 19:25:45 -0800)
+You might use kmalloc_node(...   , cpu_to_node(cpu)) to spread these
+tokens on all nodes.
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.8-rc4
-
-for you to fetch changes up to dba63b2f733ebfd89bbb15e8fe8ca10fd3871a7f:
-
-  USB: EHCI: fix build error in ehci-mxc (2013-01-23 11:27:08 -0800)
-
-----------------------------------------------------------------
-more USB fixes for 3.8-rc4
-
-Here are some more USB fixes for the 3.8-rc4 tree.
-
-Some gadget driver fixes, and finally resolved the ehci-mxc driver build issues
-(it's just some code moving around and being deleted).
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Alan Stern (4):
-      USB: UHCI: fix IRQ race during initialization
-      USB: EHCI: fix incorrect configuration test
-      USB: EHCI: add a name for the platform-private field
-      USB: EHCI: fix build error in ehci-mxc
-
-Benoit Goby (1):
-      usb: gadget: FunctionFS: Fix missing braces in parse_opts
-
-Greg Kroah-Hartman (1):
-      Merge tag 'fixes-for-v3.8-rc5' of git://git.kernel.org/.../balbi/usb into usb-linus
-
-Peter Chen (3):
-      usb: gadget: fsl-mxc-udc: replace cpu_is_xxx() with platform_device_id
-      usb: gadget: fsl_mxc_udc: replace MX35_IO_ADDRESS to ioremap
-      ARM: i.MX clock: Change the connection-id for fsl-usb2-udc
-
-Pratyush Anand (1):
-      usb: dwc3: gadget: fix ep->maxburst for ep0
-
-Roger Quadros (1):
-      USB: EHCI: Move definition of EHCI_STATS to ehci.h
-
-Sergei Shtylyov (1):
-      usb: musb: cppi_dma: drop '__init' annotation
-
- arch/arm/mach-imx/clk-imx25.c                     |   6 ++--
- arch/arm/mach-imx/clk-imx27.c                     |   6 ++--
- arch/arm/mach-imx/clk-imx31.c                     |   6 ++--
- arch/arm/mach-imx/clk-imx35.c                     |   6 ++--
- arch/arm/mach-imx/clk-imx51-imx53.c               |   6 ++--
- arch/arm/mach-imx/devices/devices-common.h        |   1 +
- arch/arm/mach-imx/devices/platform-fsl-usb2-udc.c |  15 ++++-----
- drivers/usb/dwc3/gadget.c                         |   1 +
- drivers/usb/gadget/f_fs.c                         |   6 ++--
- drivers/usb/gadget/fsl_mxc_udc.c                  |  40 +++++++++++++++---------
- drivers/usb/gadget/fsl_udc_core.c                 |  42 ++++++++++++++-----------
- drivers/usb/gadget/fsl_usb2_udc.h                 |   5 +--
- drivers/usb/host/Kconfig                          |   2 +-
- drivers/usb/host/Makefile                         |   1 +
- drivers/usb/host/ehci-hcd.c                       |  12 ++------
- drivers/usb/host/ehci-mxc.c                       | 120 ++++++++++++++++++++++++++++++------------------------------------------
- drivers/usb/host/ehci.h                           |   7 +++++
- drivers/usb/host/uhci-hcd.c                       |  15 +++++----
- drivers/usb/musb/cppi_dma.c                       |   4 +--
- drivers/usb/serial/io_ti.c                        |   3 ++
- drivers/usb/serial/option.c                       |   9 +++++-
- 21 files changed, 165 insertions(+), 148 deletions(-)
