@@ -1,34 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab3AXEoR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 23:44:17 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:48181 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016Ab3AXEoH (ORCPT
+	id S1753858Ab3AXErH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 23:47:07 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13886 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab3AXEq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 23:44:07 -0500
+	Wed, 23 Jan 2013 23:46:57 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 23 Jan 2013 20:45:21 -0800
+Message-ID: <5100BC87.30301@nvidia.com>
+Date: Thu, 24 Jan 2013 10:15:59 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1358955452-20960-2-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1358955452-20960-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1358955452-20960-2-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Thu, 24 Jan 2013 10:07:42 +0530
-X-Google-Sender-Auth: W8Nx_5vAZBVIEnfRdQmU6FL92Fw
-Message-ID: <CAOh2x=mwXk8aFbAEBdvWufC=0N-m2vA98-R26j6Wc-69PU24uA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] dw_dmac: remove unnecessary tx_list field in dw_dma_chan
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Axel Lin <axel.lin@ingics.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        AnilKumar Ch <anilkumar@ti.com>
+Subject: Re: [PATCH 2/2] regulator: tps65910: Fix using wrong dev argument
+ for calling of_regulator_match
+References: <1358994450.20257.1.camel@phoenix> <1358994705.20257.4.camel@phoenix>
+In-Reply-To: <1358994705.20257.4.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 9:07 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> The soft LLP mode is working for active descriptor only. So, we do not need to
-> have a copy of its pointer.
+On Thursday 24 January 2013 08:01 AM, Axel Lin wrote:
+> The dev parameter is the device requesting the data.
+> In this case it should be &pdev->dev rather than pdev->dev.parent.
 >
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> The dev parameter is used to call devm_kzalloc in of_get_regulator_init_data(),
+> which means this fixes a memory leak because the memory is allocated every time
+> probe() is called, thus it should be freed when this driver is unloaded.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Agree with the change.
+Acked-by: Laxman Dewangan<ldewangan@nvidia.com>
+
