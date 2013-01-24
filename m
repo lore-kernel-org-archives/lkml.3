@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751282Ab3AXH3C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 02:29:02 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34039 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab3AXH24 (ORCPT
+	id S1753132Ab3AXHrI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 02:47:08 -0500
+Received: from relay.parallels.com ([195.214.232.42]:40677 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab3AXHrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 02:28:56 -0500
-Date: Thu, 24 Jan 2013 08:28:46 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-i2c@vger.kernel.org,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Jean Delvare <khali@linux-fr.org>, dirk.brandewie@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] i2c-designware: add Intel Lynxpoint support
-Message-ID: <20130124072846.GO8364@nekote.pengutronix.de>
-References: <1358418667-4533-1-git-send-email-mika.westerberg@linux.intel.com>
+	Thu, 24 Jan 2013 02:47:04 -0500
+Date: Thu, 24 Jan 2013 11:46:02 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Andrey Vagin <avagin@openvz.org>, <netdev@vger.kernel.org>,
+        <criu@openvz.org>, <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, Eric Dumazet <edumazet@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 1/2] tcp: make tcp_timestamp dependent on tcp_sock
+Message-ID: <20130124074602.GD8877@paralelels.com>
+References: <1358953314-12979-1-git-send-email-avagin@openvz.org>
+ <1358953314-12979-2-git-send-email-avagin@openvz.org>
+ <1358958317.12374.814.camel@edumazet-glaptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="koi8-r"
 Content-Disposition: inline
-In-Reply-To: <1358418667-4533-1-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <1358958317.12374.814.camel@edumazet-glaptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Originating-IP: [10.30.16.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 12:31:03PM +0200, Mika Westerberg wrote:
-> Hi all,
+On Wed, Jan 23, 2013 at 08:25:17AM -0800, Eric Dumazet wrote:
+> > @@ -1142,9 +1145,11 @@ static inline void tcp_openreq_init(struct request_sock *req,
+> >  static inline void tcp_synack_rtt_meas(struct sock *sk,
+> >  				       struct request_sock *req)
+> >  {
+> > +	const struct tcp_sock *tp = tcp_sk(sk);
+> > +
+> >  	if (tcp_rsk(req)->snt_synack)
+> >  		tcp_valid_rtt_meas(sk,
+> > -		    tcp_time_stamp - tcp_rsk(req)->snt_synack);
+> > +		    tcp_time_stamp(tp) - tcp_rsk(req)->snt_synack);
+> >  }
+> >  
 > 
-> This series adds support for the Intel Lynxpoint Low Power Subsystem I2C
-> controllers. They are compatible with the DesignWare I2C controller.
+> This first chunk looks not needed.
 > 
-> Patches [1/4] and [2/4] are fixes that are necessary to get the driver
-> working on Lynxpoint.
+> Can SYN_RECV sockets be live-migrated ? Probably not.
 > 
-> Patch [3/4] brings minimal runtime PM support for the designware platform
-> driver. This is useful if the PM subsystem/domain implements runtime PM,
-> like in case of ACPI.
+> Quite frankly I am sure there is an issue for timewait (not real
+> sockets).
 > 
-> Patch [4/4] finally implements ACPI enumeration support for the designware
-> platform driver and adds Lynxpoint ACPI IDs.
+> Have you really tested this patch, or is it an RFC ?
 
-I can't tell much about ACPI usage, but rest looks good to me. Applied
-to next.
+I set RFC, when I'm not sure, that this idea is right and want to get
+opinions and comments before spend a lot of time.
+
+I have tested this patch. I have a virtuall machine, where I test
+kernels. SSH is used for accessing this VM. My test dumps an outside
+TCP connection, then reboots the VM and restores the TCP connection.
+Without this patch the tcp connection are not restored correctly, but
+with this patch it works properly.
+
+A timestamp offset is zero by default, so I did not catch any bugs.
+I will test my patches more carefully.
+
+Thank you all for the comments and sorry for noise in the ML.
+
+> 
+> 
