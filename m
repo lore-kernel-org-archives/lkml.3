@@ -1,321 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab3AXB3t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 20:29:49 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61108 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab3AXB3N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 20:29:13 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-c8-51008e63e1b7
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        js1304@gmail.com, Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v3 3/3] ARM: mm: use static_vm for managing static mapped areas
-Date: Thu, 24 Jan 2013 10:28:54 +0900
-Message-Id: <1358990934-4893-4-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1753136Ab3AXB35 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 20:29:57 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:45944
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752582Ab3AXB31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 20:29:27 -0500
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
+        JBeulich@suse.com, bp@alien8.de
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
+Date: Wed, 23 Jan 2013 17:56:09 -0800
+Message-Id: <1358992569-22826-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joonsoo Kim <js1304@gmail.com>
+Starting with win8, vmbus interrupts can be delivered on any VCPU in the guest
+and furthermore can be concurrently active on multiple VCPUs. Support this
+interrupt delivery model by setting up a separate IDT entry for Hyper-V vmbus.
+interrupts. I would like to thank Jan Beulich <JBeulich@suse.com> and
+Thomas Gleixner <tglx@linutronix.de>, for their help.
 
-A static mapped area is ARM-specific, so it is better not to use
-generic vmalloc data structure, that is, vmlist and vmlist_lock
-for managing static mapped area. And it causes some needless overhead and
-reducing this overhead is better idea.
+In this version of the patch, based on the feedback, I have merged the IDT vector
+for Xen and Hyper-V and made the necessary adjustments.
 
-Now, we have newly introduced static_vm infrastructure.
-With it, we don't need to iterate all mapped areas. Instead, we just
-iterate static mapped areas. It helps to reduce an overhead of finding
-matched area. And architecture dependency on vmalloc layer is removed,
-so it will help to maintainability for vmalloc layer.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ arch/x86/include/asm/irq_vectors.h |    4 +-
+ arch/x86/include/asm/mshyperv.h    |    4 +++
+ arch/x86/kernel/cpu/mshyperv.c     |   39 ++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/entry_32.S         |    9 +++++++-
+ arch/x86/kernel/entry_64.S         |    7 +++++-
+ drivers/xen/events.c               |    6 ++--
+ 6 files changed, 62 insertions(+), 7 deletions(-)
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/arch/arm/include/asm/mach/static_vm.h b/arch/arm/include/asm/mach/static_vm.h
-index 72c8339..24672b1 100644
---- a/arch/arm/include/asm/mach/static_vm.h
-+++ b/arch/arm/include/asm/mach/static_vm.h
-@@ -32,6 +32,12 @@ struct static_vm {
- 	const void		*caller;
- };
+diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
+index 1508e51..d09850b 100644
+--- a/arch/x86/include/asm/irq_vectors.h
++++ b/arch/x86/include/asm/irq_vectors.h
+@@ -109,8 +109,8 @@
  
-+#define STATIC_VM_MEM		0x00000001
-+#define STATIC_VM_EMPTY		0x00000002
+ #define UV_BAU_MESSAGE			0xf5
+ 
+-/* Xen vector callback to receive events in a HVM domain */
+-#define XEN_HVM_EVTCHN_CALLBACK		0xf3
++/* Vector on which hypervisor callbacks will be delivered */
++#define HYPERVISOR_CALLBACK_VECTOR 	0xf3
+ 
+ /*
+  * Local APIC timer IRQ vector is on a different priority level,
+diff --git a/arch/x86/include/asm/mshyperv.h b/arch/x86/include/asm/mshyperv.h
+index 79ce568..c2934be 100644
+--- a/arch/x86/include/asm/mshyperv.h
++++ b/arch/x86/include/asm/mshyperv.h
+@@ -11,4 +11,8 @@ struct ms_hyperv_info {
+ 
+ extern struct ms_hyperv_info ms_hyperv;
+ 
++void hyperv_callback_vector(void);
++void hyperv_vector_handler(struct pt_regs *regs);
++void hv_register_vmbus_handler(int irq, irq_handler_t handler);
 +
-+/* mtype should be less than 28 */
-+#define STATIC_VM_MTYPE(mt)	(1UL << ((mt) + 4))
+ #endif
+diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
+index 0a630dd..3689622 100644
+--- a/arch/x86/kernel/cpu/mshyperv.c
++++ b/arch/x86/kernel/cpu/mshyperv.c
+@@ -14,10 +14,15 @@
+ #include <linux/time.h>
+ #include <linux/clocksource.h>
+ #include <linux/module.h>
++#include <linux/hardirq.h>
++#include <linux/interrupt.h>
+ #include <asm/processor.h>
+ #include <asm/hypervisor.h>
+ #include <asm/hyperv.h>
+ #include <asm/mshyperv.h>
++#include <asm/desc.h>
++#include <asm/idle.h>
++#include <asm/irq_regs.h>
+ 
+ struct ms_hyperv_info ms_hyperv;
+ EXPORT_SYMBOL_GPL(ms_hyperv);
+@@ -69,6 +74,11 @@ static void __init ms_hyperv_init_platform(void)
+ 	       ms_hyperv.features, ms_hyperv.hints);
+ 
+ 	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
 +
- extern struct static_vm *static_vmlist;
- extern spinlock_t static_vmlist_lock;
- 
-diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
-index 88fd86c..2c0d3a1 100644
---- a/arch/arm/mm/ioremap.c
-+++ b/arch/arm/mm/ioremap.c
-@@ -36,6 +36,7 @@
- #include <asm/system_info.h>
- 
- #include <asm/mach/map.h>
-+#include <asm/mach/static_vm.h>
- #include <asm/mach/pci.h>
- #include "mm.h"
- 
-@@ -197,7 +198,8 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
- 	const struct mem_type *type;
- 	int err;
- 	unsigned long addr;
-- 	struct vm_struct * area;
-+	struct vm_struct *area;
-+	phys_addr_t paddr = __pfn_to_phys(pfn);
- 
- #ifndef CONFIG_ARM_LPAE
- 	/*
-@@ -219,24 +221,17 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
- 	/*
- 	 * Try to reuse one of the static mapping whenever possible.
- 	 */
--	read_lock(&vmlist_lock);
--	for (area = vmlist; area; area = area->next) {
--		if (!size || (sizeof(phys_addr_t) == 4 && pfn >= 0x100000))
--			break;
--		if (!(area->flags & VM_ARM_STATIC_MAPPING))
--			continue;
--		if ((area->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
--			continue;
--		if (__phys_to_pfn(area->phys_addr) > pfn ||
--		    __pfn_to_phys(pfn) + size-1 > area->phys_addr + area->size-1)
--			continue;
--		/* we can drop the lock here as we know *area is static */
--		read_unlock(&vmlist_lock);
--		addr = (unsigned long)area->addr;
--		addr += __pfn_to_phys(pfn) - area->phys_addr;
--		return (void __iomem *) (offset + addr);
-+	if (size && !((sizeof(phys_addr_t) == 4 && pfn >= 0x100000))) {
-+		struct static_vm *static_vm;
-+
-+		static_vm = find_static_vm_paddr(__pfn_to_phys(pfn), size,
-+				STATIC_VM_MEM | STATIC_VM_MTYPE(mtype));
-+		if (static_vm) {
-+			addr = (unsigned long)static_vm->vaddr;
-+			addr += paddr - static_vm->paddr;
-+			return (void __iomem *) (offset + addr);
-+		}
- 	}
--	read_unlock(&vmlist_lock);
- 
- 	/*
- 	 * Don't allow RAM to be mapped - this causes problems with ARMv6+
-@@ -248,7 +243,7 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
-  	if (!area)
-  		return NULL;
-  	addr = (unsigned long)area->addr;
--	area->phys_addr = __pfn_to_phys(pfn);
-+	area->phys_addr = paddr;
- 
- #if !defined(CONFIG_SMP) && !defined(CONFIG_ARM_LPAE)
- 	if (DOMAIN_IO == 0 &&
-@@ -346,34 +341,20 @@ __arm_ioremap_exec(unsigned long phys_addr, size_t size, bool cached)
- void __iounmap(volatile void __iomem *io_addr)
- {
- 	void *addr = (void *)(PAGE_MASK & (unsigned long)io_addr);
--	struct vm_struct *vm;
--
--	read_lock(&vmlist_lock);
--	for (vm = vmlist; vm; vm = vm->next) {
--		if (vm->addr > addr)
--			break;
--		if (!(vm->flags & VM_IOREMAP))
--			continue;
--		/* If this is a static mapping we must leave it alone */
--		if ((vm->flags & VM_ARM_STATIC_MAPPING) &&
--		    (vm->addr <= addr) && (vm->addr + vm->size > addr)) {
--			read_unlock(&vmlist_lock);
--			return;
--		}
-+	struct static_vm *static_vm;
-+
-+	static_vm = find_static_vm_vaddr(addr);
-+	if (static_vm)
-+		return;
-+
- #if !defined(CONFIG_SMP) && !defined(CONFIG_ARM_LPAE)
--		/*
--		 * If this is a section based mapping we need to handle it
--		 * specially as the VM subsystem does not know how to handle
--		 * such a beast.
--		 */
--		if ((vm->addr == addr) &&
--		    (vm->flags & VM_ARM_SECTION_MAPPING)) {
-+	{
-+		struct vm_struct *vm;
-+		vm = find_vm_area(addr);
-+		if (vm && (vm->flags & VM_ARM_SECTION_MAPPING))
- 			unmap_area_sections((unsigned long)vm->addr, vm->size);
--			break;
--		}
--#endif
- 	}
--	read_unlock(&vmlist_lock);
-+#endif
- 
- 	vunmap(addr);
- }
-diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
-index a8ee92d..3ae75e5 100644
---- a/arch/arm/mm/mm.h
-+++ b/arch/arm/mm/mm.h
-@@ -52,16 +52,6 @@ extern void __flush_dcache_page(struct address_space *mapping, struct page *page
- /* (super)section-mapped I/O regions used by ioremap()/iounmap() */
- #define VM_ARM_SECTION_MAPPING	0x80000000
- 
--/* permanent static mappings from iotable_init() */
--#define VM_ARM_STATIC_MAPPING	0x40000000
--
--/* empty mapping */
--#define VM_ARM_EMPTY_MAPPING	0x20000000
--
--/* mapping type (attributes) for permanent static mappings */
--#define VM_ARM_MTYPE(mt)		((mt) << 20)
--#define VM_ARM_MTYPE_MASK	(0x1f << 20)
--
- /* consistent regions used by dma_alloc_attrs() */
- #define VM_ARM_DMA_CONSISTENT	0x20000000
- 
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index 9f06102..b799b69 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -31,6 +31,7 @@
- 
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-+#include <asm/mach/static_vm.h>
- #include <asm/mach/pci.h>
- 
- #include "mm.h"
-@@ -757,21 +758,28 @@ void __init iotable_init(struct map_desc *io_desc, int nr)
- {
- 	struct map_desc *md;
- 	struct vm_struct *vm;
-+	struct static_vm *static_vm;
- 
- 	if (!nr)
- 		return;
- 
- 	vm = early_alloc_aligned(sizeof(*vm) * nr, __alignof__(*vm));
-+	static_vm = early_alloc_aligned(sizeof(*static_vm) * nr,
-+						__alignof__(*static_vm));
- 
- 	for (md = io_desc; nr; md++, nr--) {
- 		create_mapping(md);
-+
- 		vm->addr = (void *)(md->virtual & PAGE_MASK);
- 		vm->size = PAGE_ALIGN(md->length + (md->virtual & ~PAGE_MASK));
- 		vm->phys_addr = __pfn_to_phys(md->pfn);
--		vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
--		vm->flags |= VM_ARM_MTYPE(md->type);
-+		vm->flags = VM_IOREMAP;
- 		vm->caller = iotable_init;
-+
-+		init_static_vm(static_vm, vm, STATIC_VM_MEM |
-+						STATIC_VM_MTYPE(md->type));
- 		vm_area_add_early(vm++);
-+		insert_static_vm(static_vm++);
- 	}
- }
- 
-@@ -779,13 +787,20 @@ void __init vm_reserve_area_early(unsigned long addr, unsigned long size,
- 				  void *caller)
- {
- 	struct vm_struct *vm;
-+	struct static_vm *static_vm;
- 
- 	vm = early_alloc_aligned(sizeof(*vm), __alignof__(*vm));
-+	static_vm = early_alloc_aligned(sizeof(*static_vm),
-+					__alignof__(*static_vm));
-+
- 	vm->addr = (void *)addr;
- 	vm->size = size;
--	vm->flags = VM_IOREMAP | VM_ARM_EMPTY_MAPPING;
-+	vm->flags = VM_IOREMAP;
- 	vm->caller = caller;
-+
-+	init_static_vm(static_vm, vm, STATIC_VM_EMPTY);
- 	vm_area_add_early(vm);
-+	insert_static_vm(static_vm);
- }
- 
- #ifndef CONFIG_ARM_LPAE
-@@ -810,15 +825,19 @@ static void __init pmd_empty_section_gap(unsigned long addr)
- 
- static void __init fill_pmd_gaps(void)
- {
--	struct vm_struct *vm;
-+	struct static_vm *area;
- 	unsigned long addr, next = 0;
- 	pmd_t *pmd;
- 
--	/* we're still single threaded hence no lock needed here */
--	for (vm = vmlist; vm; vm = vm->next) {
--		if (!(vm->flags & (VM_ARM_STATIC_MAPPING | VM_ARM_EMPTY_MAPPING)))
--			continue;
--		addr = (unsigned long)vm->addr;
 +	/*
-+	 * We should not take a lock here, because pmd_empty_section_gap()
-+	 * invokes vm_reserve_area_early(), and then it call insert_static_vm()
-+	 * which try to take a lock.
-+	 * We're still single thread, so traverse whole list without a lock
-+	 * is safe for now. And inserting new entry is also safe.
++	 * Setup the IDT for hypervisor callback.
 +	 */
-+	for (area = static_vmlist; area; area = area->next) {
-+		addr = (unsigned long)area->vaddr;
- 		if (addr < next)
- 			continue;
++	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, hyperv_callback_vector);
+ }
  
-@@ -838,7 +857,7 @@ static void __init fill_pmd_gaps(void)
- 		 * If so and the second section entry for this PMD is empty
- 		 * then we block the corresponding virtual address.
- 		 */
--		addr += vm->size;
-+		addr += area->size;
- 		if ((addr & ~PMD_MASK) == SECTION_SIZE) {
- 			pmd = pmd_off_k(addr) + 1;
- 			if (pmd_none(*pmd))
-@@ -857,19 +876,12 @@ static void __init fill_pmd_gaps(void)
- #if defined(CONFIG_PCI) && !defined(CONFIG_NEED_MACH_IO_H)
- static void __init pci_reserve_io(void)
- {
--	struct vm_struct *vm;
--	unsigned long addr;
-+	struct static_vm *static_vm;
+ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
+@@ -77,3 +87,32 @@ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
+ 	.init_platform		= ms_hyperv_init_platform,
+ };
+ EXPORT_SYMBOL(x86_hyper_ms_hyperv);
++
++static int vmbus_irq = -1;
++static irq_handler_t vmbus_isr;
++
++void hv_register_vmbus_handler(int irq, irq_handler_t handler)
++{
++	vmbus_irq = irq;
++	vmbus_isr = handler;
++}
++EXPORT_SYMBOL_GPL(hv_register_vmbus_handler);
++
++void hyperv_vector_handler(struct pt_regs *regs)
++{
++	struct pt_regs *old_regs = set_irq_regs(regs);
++	struct irq_desc *desc;
++
++	irq_enter();
++#ifdef CONFIG_X86
++	exit_idle();
++#endif
++
++	desc = irq_to_desc(vmbus_irq);
++
++	if (desc)
++		generic_handle_irq_desc(vmbus_irq, desc);
++
++	irq_exit();
++	set_irq_regs(old_regs);
++}
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index e9dd4c4..7d2bb62 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1047,11 +1047,18 @@ ENTRY(xen_failsafe_callback)
+ 	_ASM_EXTABLE(4b,9b)
+ ENDPROC(xen_failsafe_callback)
  
--	/* we're still single threaded hence no lock needed here */
--	for (vm = vmlist; vm; vm = vm->next) {
--		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
--			continue;
--		addr = (unsigned long)vm->addr;
--		addr &= ~(SZ_2M - 1);
--		if (addr == PCI_IO_VIRT_BASE)
--			return;
-+	static_vm = find_static_vm_vaddr((void *)PCI_IO_VIRT_BASE);
-+	if (static_vm)
-+		return;
+-BUILD_INTERRUPT3(xen_hvm_callback_vector, XEN_HVM_EVTCHN_CALLBACK,
++BUILD_INTERRUPT3(xen_hvm_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
+ 		xen_evtchn_do_upcall)
  
--	}
- 	vm_reserve_area_early(PCI_IO_VIRT_BASE, SZ_2M, pci_reserve_io);
+ #endif	/* CONFIG_XEN */
+ 
++#if IS_ENABLED(CONFIG_HYPERV)
++
++BUILD_INTERRUPT3(hyperv_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
++	hyperv_vector_handler)
++
++#endif /* CONFIG_HYPERV */
++
+ #ifdef CONFIG_FUNCTION_TRACER
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ 
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 1975122..803ca69 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1446,11 +1446,16 @@ ENTRY(xen_failsafe_callback)
+ 	CFI_ENDPROC
+ END(xen_failsafe_callback)
+ 
+-apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
++apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
+ 	xen_hvm_callback_vector xen_evtchn_do_upcall
+ 
+ #endif /* CONFIG_XEN */
+ 
++#if IS_ENABLED(CONFIG_HYPERV)
++apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
++	hyperv_callback_vector hyperv_vector_handler
++#endif /* CONFIG_HYPERV */
++
+ /*
+  * Some functions should be protected against kprobes
+  */
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 4293c57..5c2e92e 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1787,7 +1787,7 @@ void xen_callback_vector(void)
+ 	int rc;
+ 	uint64_t callback_via;
+ 	if (xen_have_vector_callback) {
+-		callback_via = HVM_CALLBACK_VECTOR(XEN_HVM_EVTCHN_CALLBACK);
++		callback_via = HVM_CALLBACK_VECTOR(HYPERVISOR_CALLBACK_VECTOR);
+ 		rc = xen_set_callback_via(callback_via);
+ 		if (rc) {
+ 			printk(KERN_ERR "Request for Xen HVM callback vector"
+@@ -1798,8 +1798,8 @@ void xen_callback_vector(void)
+ 		printk(KERN_INFO "Xen HVM callback vector for event delivery is "
+ 				"enabled\n");
+ 		/* in the restore case the vector has already been allocated */
+-		if (!test_bit(XEN_HVM_EVTCHN_CALLBACK, used_vectors))
+-			alloc_intr_gate(XEN_HVM_EVTCHN_CALLBACK, xen_hvm_callback_vector);
++		if (!test_bit(HYPERVISOR_CALLBACK_VECTOR, used_vectors))
++			alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, xen_hvm_callback_vector);
+ 	}
  }
  #else
 -- 
-1.7.9.5
+1.7.4.1
 
