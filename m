@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439Ab3AXDcK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:32:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44422 "EHLO
+	id S1755260Ab3AXDcR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:32:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44426 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454Ab3AXDb1 (ORCPT
+	with ESMTP id S1754899Ab3AXDbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:31:27 -0500
+	Wed, 23 Jan 2013 22:31:31 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Hans de Goede <hdegoede@redhat.com>, Dave Airlie <airlied@redhat.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 61/74] udldrmfb: Fix EDID not working with monitors with EDID extension blocks
-Date: Thu, 24 Jan 2013 01:27:13 -0200
-Message-Id: <1358998046-613-62-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 62/74] udldrmfb: udl_get_edid: usb_control_msg buffer must not be on the stack
+Date: Thu, 24 Jan 2013 01:27:14 -0200
+Message-Id: <1358998046-613-63-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
@@ -29,45 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hans de Goede <hdegoede@redhat.com>
 
-commit c930812fe5ebe725760422c9c351d1f6fde1502d upstream.
+commit 242187b362555849e8c971dfbbfd55f8bd9fa717 upstream.
 
-udldrmfb only reads the main EDID block, and if that advertises extensions
-the drm_edid code expects them to be present, and starts reading beyond the
-buffer udldrmfb passes it.
-
-Although it may be possible to read more EDID info with the udl we simpy don't
-know how, and even if trial and error gets it working on one device, that is
-no guarantee it will work on other revisions. So this patch does a simple fix
-in the form of patching the EDID info to report 0 extension blocks, this
-fixes udldrmfb only doing 1024x768 on monitors with EDID extension blocks.
+The buffer passed to usb_control_msg may end up in scatter-gather list, and
+may thus not be on the stack. Having it on the stack usually works on x86, but
+not on other archs.
 
 Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
-[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/udl/udl_connector.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/gpu/drm/udl/udl_connector.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/gpu/drm/udl/udl_connector.c b/drivers/gpu/drm/udl/udl_connector.c
-index 8d9dc44..1230bc0 100644
+index 1230bc0..b7780dd 100644
 --- a/drivers/gpu/drm/udl/udl_connector.c
 +++ b/drivers/gpu/drm/udl/udl_connector.c
-@@ -59,6 +59,14 @@ static int udl_get_modes(struct drm_connector *connector)
+@@ -22,13 +22,17 @@
+ static u8 *udl_get_edid(struct udl_device *udl)
+ {
+ 	u8 *block;
+-	char rbuf[3];
++	char *rbuf;
+ 	int ret, i;
  
- 	connector->display_info.raw_edid = (char *)edid;
+ 	block = kmalloc(EDID_LENGTH, GFP_KERNEL);
+ 	if (block == NULL)
+ 		return NULL;
  
-+	/*
-+	 * We only read the main block, but if the monitor reports extension
-+	 * blocks then the drm edid code expects them to be present, so patch
-+	 * the extension count to 0.
-+	 */
-+	edid->checksum += edid->extensions;
-+	edid->extensions = 0;
++	rbuf = kmalloc(2, GFP_KERNEL);
++	if (rbuf == NULL)
++		goto error;
 +
- 	drm_mode_connector_update_edid_property(connector, edid);
- 	ret = drm_add_edid_modes(connector, edid);
- 	connector->display_info.raw_edid = NULL;
+ 	for (i = 0; i < EDID_LENGTH; i++) {
+ 		ret = usb_control_msg(udl->ddev->usbdev,
+ 				      usb_rcvctrlpipe(udl->ddev->usbdev, 0), (0x02),
+@@ -42,10 +46,12 @@ static u8 *udl_get_edid(struct udl_device *udl)
+ 		block[i] = rbuf[1];
+ 	}
+ 
++	kfree(rbuf);
+ 	return block;
+ 
+ error:
+ 	kfree(block);
++	kfree(rbuf);
+ 	return NULL;
+ }
+ 
 -- 
 1.7.9.5
 
