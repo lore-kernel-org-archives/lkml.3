@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab3AXVOO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:14:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39909 "EHLO mail.kernel.org"
+	id S1756899Ab3AXVOS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:14:18 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39964 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756795Ab3AXVNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:13:41 -0500
+	id S1756820Ab3AXVNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:13:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@fwll.ch>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 03/46] drm/i915: Invalidate the relocation presumed_offsets along the slow path
-Date: Thu, 24 Jan 2013 13:12:41 -0800
-Message-Id: <20130124211137.129423458@linuxfoundation.org>
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 07/46] ftrace: Be first to run code modification on modules
+Date: Thu, 24 Jan 2013 13:12:45 -0800
+Message-Id: <20130124211138.485008655@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
 References: <20130124211135.862755794@linuxfoundation.org>
@@ -27,71 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit 262b6d363fcff16359c93bd58c297f961f6e6273 upstream.
+commit c1bf08ac26e92122faab9f6c32ea8aba94612dae upstream.
 
-In the slow path, we are forced to copy the relocations prior to
-acquiring the struct mutex in order to handle pagefaults. We forgo
-copying the new offsets back into the relocation entries in order to
-prevent a recursive locking bug should we trigger a pagefault whilst
-holding the mutex for the reservations of the execbuffer. Therefore, we
-need to reset the presumed_offsets just in case the objects are rebound
-back into their old locations after relocating for this exexbuffer - if
-that were to happen we would assume the relocations were valid and leave
-the actual pointers to the kernels dangling, instant hang.
+If some other kernel subsystem has a module notifier, and adds a kprobe
+to a ftrace mcount point (now that kprobes work on ftrace points),
+when the ftrace notifier runs it will fail and disable ftrace, as well
+as kprobes that are attached to ftrace points.
 
-Fixes regression from commit bcf50e2775bbc3101932d8e4ab8c7902aa4163b4
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Sun Nov 21 22:07:12 2010 +0000
+Here's the error:
 
-    drm/i915: Handle pagefaults in execbuffer user relocations
+ WARNING: at kernel/trace/ftrace.c:1618 ftrace_bug+0x239/0x280()
+ Hardware name: Bochs
+ Modules linked in: fat(+) stap_56d28a51b3fe546293ca0700b10bcb29__8059(F) nfsv4 auth_rpcgss nfs dns_resolver fscache xt_nat iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack lockd sunrpc ppdev parport_pc parport microcode virtio_net i2c_piix4 drm_kms_helper ttm drm i2c_core [last unloaded: bid_shared]
+ Pid: 8068, comm: modprobe Tainted: GF            3.7.0-0.rc8.git0.1.fc19.x86_64 #1
+ Call Trace:
+  [<ffffffff8105e70f>] warn_slowpath_common+0x7f/0xc0
+  [<ffffffff81134106>] ? __probe_kernel_read+0x46/0x70
+  [<ffffffffa0180000>] ? 0xffffffffa017ffff
+  [<ffffffffa0180000>] ? 0xffffffffa017ffff
+  [<ffffffff8105e76a>] warn_slowpath_null+0x1a/0x20
+  [<ffffffff810fd189>] ftrace_bug+0x239/0x280
+  [<ffffffff810fd626>] ftrace_process_locs+0x376/0x520
+  [<ffffffff810fefb7>] ftrace_module_notify+0x47/0x50
+  [<ffffffff8163912d>] notifier_call_chain+0x4d/0x70
+  [<ffffffff810882f8>] __blocking_notifier_call_chain+0x58/0x80
+  [<ffffffff81088336>] blocking_notifier_call_chain+0x16/0x20
+  [<ffffffff810c2a23>] sys_init_module+0x73/0x220
+  [<ffffffff8163d719>] system_call_fastpath+0x16/0x1b
+ ---[ end trace 9ef46351e53bbf80 ]---
+ ftrace failed to modify [<ffffffffa0180000>] init_once+0x0/0x20 [fat]
+  actual: cc:bb:d2:4b:e1
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=55984
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Daniel Vetter <daniel.vetter@fwll.ch>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+A kprobe was added to the init_once() function in the fat module on load.
+But this happened before ftrace could have touched the code. As ftrace
+didn't run yet, the kprobe system had no idea it was a ftrace point and
+simply added a breakpoint to the code (0xcc in the cc:bb:d2:4b:e1).
+
+Then when ftrace went to modify the location from a call to mcount/fentry
+into a nop, it didn't see a call op, but instead it saw the breakpoint op
+and not knowing what to do with it, ftrace shut itself down.
+
+The solution is to simply give the ftrace module notifier the max priority.
+This should have been done regardless, as the core code ftrace modification
+also happens very early on in boot up. This makes the module modification
+closer to core modification.
+
+Link: http://lkml.kernel.org/r/20130107140333.593683061@goodmis.org
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reported-by: Frank Ch. Eigler <fche@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ kernel/trace/ftrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -548,6 +548,8 @@ i915_gem_execbuffer_relocate_slow(struct
- 	total = 0;
- 	for (i = 0; i < count; i++) {
- 		struct drm_i915_gem_relocation_entry __user *user_relocs;
-+		u64 invalid_offset = (u64)-1;
-+		int j;
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3998,7 +3998,7 @@ static int ftrace_module_notify(struct n
  
- 		user_relocs = (void __user *)(uintptr_t)exec[i].relocs_ptr;
+ struct notifier_block ftrace_module_nb = {
+ 	.notifier_call = ftrace_module_notify,
+-	.priority = 0,
++	.priority = INT_MAX,	/* Run before anything that can use kprobes */
+ };
  
-@@ -558,6 +560,25 @@ i915_gem_execbuffer_relocate_slow(struct
- 			goto err;
- 		}
- 
-+		/* As we do not update the known relocation offsets after
-+		 * relocating (due to the complexities in lock handling),
-+		 * we need to mark them as invalid now so that we force the
-+		 * relocation processing next time. Just in case the target
-+		 * object is evicted and then rebound into its old
-+		 * presumed_offset before the next execbuffer - if that
-+		 * happened we would make the mistake of assuming that the
-+		 * relocations were valid.
-+		 */
-+		for (j = 0; j < exec[i].relocation_count; j++) {
-+			if (copy_to_user(&user_relocs[j].presumed_offset,
-+					 &invalid_offset,
-+					 sizeof(invalid_offset))) {
-+				ret = -EFAULT;
-+				mutex_lock(&dev->struct_mutex);
-+				goto err;
-+			}
-+		}
-+
- 		reloc_offset[i] = total;
- 		total += exec[i].relocation_count;
- 	}
+ extern unsigned long __start_mcount_loc[];
 
 
