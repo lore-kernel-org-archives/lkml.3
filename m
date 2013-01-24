@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030231Ab3AXUZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:25:40 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:26957 "EHLO
+	id S1945893Ab3AXUZx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:25:53 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26826 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756371Ab3AXUWO (ORCPT
+	with ESMTP id S1755579Ab3AXUWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:22:14 -0500
+	Thu, 24 Jan 2013 15:22:06 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
@@ -15,100 +15,72 @@ Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Jan Kiszka <jan.kiszka@web.de>,
         Jason Wessel <jason.wessel@windriver.com>,
         Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 22/35] x86, kexec: Set ident mapping for kernel that is above max_pfn
-Date: Thu, 24 Jan 2013 12:20:03 -0800
-Message-Id: <1359058816-7615-23-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 19/35] x86, boot: Move verify_cpu.S and no_longmode down
+Date: Thu, 24 Jan 2013 12:20:00 -0800
+Message-Id: <1359058816-7615-20-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
 References: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When first kernel is booted with memmap= or mem=  to limit max_pfn.
-kexec can load second kernel above that max_pfn.
+We need to move some code to 32bit section in following patch:
 
-We need to set ident mapping for whole image in this case instead of just
-for first 2M.
+   x86, boot: Move lldt/ltr out of 64bit code section
+
+but that will push startup_64 down from 0x200.
+
+According to hpa, we can not change startup_64 position and that
+is an ABI.
+
+We could move function verify_cpu and no_longmode down, because
+verify_cpu is used via function call and no_longmode will not
+return, then we don't need to add extra code for jumping back.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/kernel/machine_kexec_64.c |   43 +++++++++++++++++++++++++++++++-----
- 1 file changed, 37 insertions(+), 6 deletions(-)
+ arch/x86/boot/compressed/head_64.S |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-index b3ea9db..be14ee1 100644
---- a/arch/x86/kernel/machine_kexec_64.c
-+++ b/arch/x86/kernel/machine_kexec_64.c
-@@ -56,6 +56,25 @@ out:
- 	return result;
- }
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 2c4b171..fb984c0 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -176,14 +176,6 @@ ENTRY(startup_32)
+ 	lret
+ ENDPROC(startup_32)
  
-+static int ident_mapping_init(struct kimage *image, pgd_t *level4p,
-+				unsigned long mstart, unsigned long mend)
-+{
-+	int result;
-+
-+	mstart = round_down(mstart, PMD_SIZE);
-+	mend   = round_up(mend - 1, PMD_SIZE);
-+
-+	while (mstart < mend) {
-+		result = init_one_level2_page(image, level4p, mstart);
-+		if (result)
-+			return result;
-+
-+		mstart += PMD_SIZE;
-+	}
-+
-+	return 0;
-+}
-+
- static void init_level2_page(pmd_t *level2p, unsigned long addr)
- {
- 	unsigned long end_addr;
-@@ -184,22 +203,34 @@ err:
- 	return result;
- }
- 
+-no_longmode:
+-	/* This isn't an x86-64 CPU so hang */
+-1:
+-	hlt
+-	jmp     1b
 -
- static int init_pgtable(struct kimage *image, unsigned long start_pgtable)
- {
-+	unsigned long mstart, mend;
- 	pgd_t *level4p;
- 	int result;
-+	int i;
-+
- 	level4p = (pgd_t *)__va(start_pgtable);
- 	result = init_level4_page(image, level4p, 0, max_pfn << PAGE_SHIFT);
- 	if (result)
- 		return result;
-+
+-#include "../../kernel/verify_cpu.S"
+-
  	/*
--	 * image->start may be outside 0 ~ max_pfn, for example when
--	 * jump back to original kernel from kexeced kernel
-+	 * segments's mem ranges could be outside 0 ~ max_pfn,
-+	 * for example when jump back to original kernel from kexeced kernel.
-+	 * or first kernel is booted with user mem map, and second kernel
-+	 * could be loaded out of that range.
- 	 */
--	result = init_one_level2_page(image, level4p, image->start);
--	if (result)
--		return result;
-+	for (i = 0; i < image->nr_segments; i++) {
-+		mstart = image->segment[i].mem;
-+		mend   = mstart + image->segment[i].memsz;
-+
-+		result = ident_mapping_init(image, level4p, mstart, mend);
-+
-+		if (result)
-+			return result;
-+	}
-+
- 	return init_transition_pgtable(image, level4p);
- }
+ 	 * Be careful here startup_64 needs to be at a predictable
+ 	 * address so I can export it in an ELF header.  Bootloaders
+@@ -349,6 +341,15 @@ relocated:
+  */
+ 	jmp	*%rbp
  
++	.code32
++no_longmode:
++	/* This isn't an x86-64 CPU so hang */
++1:
++	hlt
++	jmp     1b
++
++#include "../../kernel/verify_cpu.S"
++
+ 	.data
+ gdt:
+ 	.word	gdt_end - gdt
 -- 
 1.7.10.4
 
