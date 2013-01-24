@@ -1,144 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab3AXLRb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:17:31 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16528 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753991Ab3AXLMD (ORCPT
+	id S1755127Ab3AXLRt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:17:49 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:42933 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754755Ab3AXLL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:12:03 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 24 Jan 2013 03:10:25 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <linux-tegra@vger.kernel.org>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, Jason Cooper <jason@lakedaemon.net>,
-        Shawn Guo <shawn.guo@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [v4 6/6] ARM: tegra: Add initial support for Tegra114 SoC.
-Date: Thu, 24 Jan 2013 13:10:26 +0200
-Message-ID: <1359025829-22306-7-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359025829-22306-1-git-send-email-hdoyu@nvidia.com>
-References: <1359025829-22306-1-git-send-email-hdoyu@nvidia.com>
+	Thu, 24 Jan 2013 06:11:59 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH v3 39/71] ARC: Futex support
+Date: Thu, 24 Jan 2013 16:36:07 +0530
+Message-ID: <1359025589-22277-24-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
+References: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
 Content-Type: text/plain
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new Tegra 114 SoC support.
-
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arm/mach-tegra/Kconfig             |   10 +++++++
- arch/arm/mach-tegra/Makefile            |    1 +
- arch/arm/mach-tegra/board-dt-tegra114.c |   48 +++++++++++++++++++++++++++++++
- arch/arm/mach-tegra/common.c            |    1 +
- 4 files changed, 60 insertions(+)
- create mode 100644 arch/arm/mach-tegra/board-dt-tegra114.c
+ arch/arc/include/asm/futex.h |  151 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 151 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/include/asm/futex.h
 
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index abc688f..eada60f 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -45,6 +45,16 @@ config ARCH_TEGRA_3x_SOC
- 	  Support for NVIDIA Tegra T30 processor family, based on the
- 	  ARM CortexA9MP CPU and the ARM PL310 L2 cache controller
- 
-+config ARCH_TEGRA_114_SOC
-+	bool "Enable support for Tegra114 family"
-+	select ARM_GIC
-+	select CPU_V7
-+	select ARM_L1_CACHE_SHIFT_6
-+	select ARM_ARCH_TIMER
-+	help
-+	  Support for NVIDIA Tegra T114 processor family, based on the
-+	  ARM CortexA15MP CPU
-+
- config TEGRA_PCI
- 	bool "PCI Express support"
- 	depends on ARCH_TEGRA_2x_SOC
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index 432f2a5..e1eaf30 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -28,6 +28,7 @@ obj-$(CONFIG_TEGRA_PCI)			+= pcie.o
- 
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= board-dt-tegra20.o
- obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= board-dt-tegra30.o
-+obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= board-dt-tegra114.o
- 
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= board-harmony-pcie.o
- 
-diff --git a/arch/arm/mach-tegra/board-dt-tegra114.c b/arch/arm/mach-tegra/board-dt-tegra114.c
+diff --git a/arch/arc/include/asm/futex.h b/arch/arc/include/asm/futex.h
 new file mode 100644
-index 0000000..3ed17ce
+index 0000000..4dc64dd
 --- /dev/null
-+++ b/arch/arm/mach-tegra/board-dt-tegra114.c
-@@ -0,0 +1,48 @@
++++ b/arch/arc/include/asm/futex.h
+@@ -0,0 +1,151 @@
 +/*
-+ * NVIDIA Tegra114 device tree board support
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
-+ * Copyright (C) 2013 NVIDIA Corporation
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
++ * Vineetg: August 2010: From Android kernel work
 + */
 +
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/clocksource.h>
++#ifndef _ASM_FUTEX_H
++#define _ASM_FUTEX_H
 +
-+#include <asm/mach/arch.h>
-+#include <asm/hardware/gic.h>
++#include <linux/futex.h>
++#include <linux/preempt.h>
++#include <linux/uaccess.h>
++#include <asm/errno.h>
 +
-+#include "board.h"
-+#include "common.h"
++#define __futex_atomic_op(insn, ret, oldval, uaddr, oparg)\
++							\
++	__asm__ __volatile__(				\
++	"1:	ld  %1, [%2]			\n"	\
++		insn				"\n"	\
++	"2:	st  %0, [%2]			\n"	\
++	"	mov %0, 0			\n"	\
++	"3:					\n"	\
++	"	.section .fixup,\"ax\"		\n"	\
++	"	.align  4			\n"	\
++	"4:	mov %0, %4			\n"	\
++	"	b   3b				\n"	\
++	"	.previous			\n"	\
++	"	.section __ex_table,\"a\"	\n"	\
++	"	.align  4			\n"	\
++	"	.word   1b, 4b			\n"	\
++	"	.word   2b, 4b			\n"	\
++	"	.previous			\n"	\
++							\
++	: "=&r" (ret), "=&r" (oldval)			\
++	: "r" (uaddr), "r" (oparg), "ir" (-EFAULT)	\
++	: "cc", "memory")
 +
-+static void __init tegra114_dt_init(void)
++static inline int futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
 +{
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++	int op = (encoded_op >> 28) & 7;
++	int cmp = (encoded_op >> 24) & 15;
++	int oparg = (encoded_op << 8) >> 20;
++	int cmparg = (encoded_op << 20) >> 20;
++	int oldval = 0, ret;
++
++	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
++		oparg = 1 << oparg;
++
++	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(int)))
++		return -EFAULT;
++
++	pagefault_disable();	/* implies preempt_disable() */
++
++	switch (op) {
++	case FUTEX_OP_SET:
++		__futex_atomic_op("mov %0, %3", ret, oldval, uaddr, oparg);
++		break;
++	case FUTEX_OP_ADD:
++		__futex_atomic_op("add %0, %1, %3", ret, oldval, uaddr, oparg);
++		break;
++	case FUTEX_OP_OR:
++		__futex_atomic_op("or  %0, %1, %3", ret, oldval, uaddr, oparg);
++		break;
++	case FUTEX_OP_ANDN:
++		__futex_atomic_op("bic %0, %1, %3", ret, oldval, uaddr, oparg);
++		break;
++	case FUTEX_OP_XOR:
++		__futex_atomic_op("xor %0, %1, %3", ret, oldval, uaddr, oparg);
++		break;
++	default:
++		ret = -ENOSYS;
++	}
++
++	pagefault_enable();	/* subsumes preempt_enable() */
++
++	if (!ret) {
++		switch (cmp) {
++		case FUTEX_OP_CMP_EQ:
++			ret = (oldval == cmparg);
++			break;
++		case FUTEX_OP_CMP_NE:
++			ret = (oldval != cmparg);
++			break;
++		case FUTEX_OP_CMP_LT:
++			ret = (oldval < cmparg);
++			break;
++		case FUTEX_OP_CMP_GE:
++			ret = (oldval >= cmparg);
++			break;
++		case FUTEX_OP_CMP_LE:
++			ret = (oldval <= cmparg);
++			break;
++		case FUTEX_OP_CMP_GT:
++			ret = (oldval > cmparg);
++			break;
++		default:
++			ret = -ENOSYS;
++		}
++	}
++	return ret;
 +}
 +
-+static const char * const tegra114_dt_board_compat[] = {
-+	"nvidia,tegra114",
-+	NULL,
-+};
++/* Compare-xchg with preemption disabled.
++ *  Notes:
++ *      -Best-Effort: Exchg happens only if compare succeeds.
++ *          If compare fails, returns; leaving retry/looping to upper layers
++ *      -successful cmp-xchg: return orig value in @addr (same as cmp val)
++ *      -Compare fails: return orig value in @addr
++ *      -user access r/w fails: return -EFAULT
++ */
++static inline int
++futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr, u32 oldval,
++					u32 newval)
++{
++	u32 val;
 +
-+DT_MACHINE_START(TEGRA114_DT, "NVIDIA Tegra114 (Flattened Device Tree)")
-+	.smp		= smp_ops(tegra_smp_ops),
-+	.map_io		= tegra_map_common_io,
-+	.init_early	= tegra30_init_early,
-+	.init_irq	= tegra_dt_init_irq,
-+	.handle_irq	= gic_handle_irq,
-+	.init_time	= clocksource_of_init,
-+	.init_machine	= tegra114_dt_init,
-+	.init_late	= tegra_init_late,
-+	.restart	= tegra_assert_system_reset,
-+	.dt_compat	= tegra114_dt_board_compat,
-+MACHINE_END
-diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
-index 87dd69c..2f13513 100644
---- a/arch/arm/mach-tegra/common.c
-+++ b/arch/arm/mach-tegra/common.c
-@@ -59,6 +59,7 @@ u32 tegra_uart_config[4] = {
- 
- #ifdef CONFIG_OF
- static const struct of_device_id tegra_dt_irq_match[] __initconst = {
-+	{ .compatible = "arm,cortex-a15-gic", .data = gic_of_init },
- 	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init },
- 	{ }
- };
++	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(int)))
++		return -EFAULT;
++
++	pagefault_disable();	/* implies preempt_disable() */
++
++	/* TBD : can use llock/scond */
++	__asm__ __volatile__(
++	"1:	ld    %0, [%3]	\n"
++	"	brne  %0, %1, 3f	\n"
++	"2:	st    %2, [%3]	\n"
++	"3:	\n"
++	"	.section .fixup,\"ax\"	\n"
++	"4:	mov %0, %4	\n"
++	"	b   3b	\n"
++	"	.previous	\n"
++	"	.section __ex_table,\"a\"	\n"
++	"	.align  4	\n"
++	"	.word   1b, 4b	\n"
++	"	.word   2b, 4b	\n"
++	"	.previous\n"
++	: "=&r"(val)
++	: "r"(oldval), "r"(newval), "r"(uaddr), "ir"(-EFAULT)
++	: "cc", "memory");
++
++	pagefault_enable();	/* subsumes preempt_enable() */
++
++	*uval = val;
++	return val;
++}
++
++#endif
 -- 
-1.7.9.5
+1.7.4.1
 
