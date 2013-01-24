@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab3AXCmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 21:42:20 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35816 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242Ab3AXCmM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 21:42:12 -0500
-From: <xufengzhang.main@gmail.com>
-To: <vyasevich@gmail.com>, <nhorman@tuxdriver.com>, <davem@davemloft.net>
-CC: <linux-sctp@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] sctp: set association state to established in dupcook_a handler
-Date: Thu, 24 Jan 2013 10:44:34 +0800
-Message-ID: <1358995474-28369-1-git-send-email-xufengzhang.main@gmail.com>
-X-Mailer: git-send-email 1.7.0.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753397Ab3AXCnA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 21:43:00 -0500
+Received: from ozlabs.org ([203.10.76.45]:42538 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753008Ab3AXCmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 21:42:54 -0500
+Message-ID: <1358995372.17813.2.camel@concordia>
+Subject: Re: [PATCH] perf: Fix compile warnings in tests/attr.c
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, linuxppc-dev@ozlabs.org,
+        Anton Blanchard <anton@au1.ibm.com>, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
+        mingo <mingo@elte.hu>
+Date: Thu, 24 Jan 2013 13:42:52 +1100
+In-Reply-To: <20130123185733.GA22906@us.ibm.com>
+References: <20130119013052.GA24693@us.ibm.com>
+	 <20130121135906.GD1995@krava.brq.redhat.com>
+	 <20130121213823.GA4774@us.ibm.com> <1358898333.29791.14.camel@concordia>
+	 <20130123185733.GA22906@us.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
+On Wed, 2013-01-23 at 10:57 -0800, Sukadev Bhattiprolu wrote:
+> Michael Ellerman [michael@ellerman.id.au] wrote:
+> | > | make: *** [tests/attr.o] Error 1
+> | > | 
+> | > | i386 compiles fine
+> | > 
+> | > __u64 is 'unsigned long long' on x86 and PRIu64 is 'llu' which is fine.
+> | > 
+> | > __u64 is 'unsigned long' on Power and PRIu64 is 'lu' which is again fine.
+> | > 
+> | > But __u64 is 'unsigned long long' on x86_64, but PRIu64 is '%lu' bc __WORDSIZE
+> | > is 64.
+> | 
+> | 
+> | This is a bit of a mess, but let me see if I can help explain it.
+> 
+> Yes it is :-) thanks for explaining it.
+> 
+> | 
+> | The root of the problem is that you're mixing up the kernel type __u64,
+> | with the userspace format specifier PRIu64.
+> 
+> struct perf_event_attr is shared with user space and is using __u64. Should
+> it use uint64_t instead ?
 
-While sctp handling a duplicate COOKIE-ECHO and the action is
-'Association restart', sctp_sf_do_dupcook_a() will processing
-the unexpected COOKIE-ECHO for peer restart, but it does not set
-the association state to SCTP_STATE_ESTABLISHED, so the association
-could stuck in SCTP_STATE_SHUTDOWN_PENDING state forever.
-This violates the sctp specification:
-  RFC 4960 5.2.4. Handle a COOKIE ECHO when a TCB Exists
-  Action
-  A) In this case, the peer may have restarted. .....
-     After this, the endpoint shall enter the ESTABLISHED state.
+Absolutely not. That's the whole reason we have __u64, it's so we can
+define it in the kernel but share it with userspace, and not have it
+conflict with any userspace types.
 
-To resolve this problem, adding a SCTP_CMD_NEW_STATE cmd to the
-command list before SCTP_CMD_REPLY cmd, this will set the restart
-association to SCTP_STATE_ESTABLISHED state properly and also avoid
-I-bit being set in the DATA chunk header when COOKIE_ACK is bundled
-with DATA chunks.
 
-Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
----
-v2:
-- Put the SCTP_CMD_NEW_STATE command before SCTP_CMD_REPLY and after SCTP_CMD_EVENT_ULP
-  suggested by Vlad and Neil
-- Improve the last paragraph of the commit header
- 
- net/sctp/sm_statefuns.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+> | PRIu64 is the format specifier for printing a uint64_t, it _may_ also be
+> | the right specifier for a __u64, but there's no guarantee of that - as
+> | you have discovered.
+> | 
+> | Inside the kernel both x86 and powerpc use unsigned long long always, in
+> | 32-bit and 64-bit code. That means in the kernel we can always use %llu.
+> | 
+> | On x86 that definition is also exported to userspace, so on x86 __u64 is
+> | always unsigned long long. As you noticed this potentially differs from
+> | uint64_t, which can be confusing. However it means in x86 userspace code
+> | you can always print a __u64 with %llu.
+> | 
+> | On powerpc we default to using definitions that match userspace, so
+> | __u64 changes depending on your wordsize, and so you must use PRIu64
+> | etc. to print them.
+> 
+> Well, using __u64 and PRIu64 seems breaks x86-64...
 
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index 618ec7e..5131fcf 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -1779,8 +1779,10 @@ static sctp_disposition_t sctp_sf_do_dupcook_a(struct net *net,
- 
- 	/* Update the content of current association. */
- 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
--	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
- 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
-+	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
-+			SCTP_STATE(SCTP_STATE_ESTABLISHED));
-+	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
- 	return SCTP_DISPOSITION_CONSUME;
- 
- nomem_ev:
--- 
-1.7.0.2
+Yes, see the previous paragraph.
+
+> | There is however support in recent powerpc kernels to switch to using
+> | unsigned long long even on 64-bit. See commit 2c9c6ce.
+> | 
+> | You need to define __SANE_USERSPACE_TYPES__ before including types.h.
+> | Then you can always use %llu to print __u64.
+> 
+> but __SANE_USERSPACE_TYPES__ with __u64 and %llu seems to work on x86,
+> x86-64, powerpc.
+
+> Will modify my patch to add __SANE_USERSPACE_TYPES__ but leave the %llu
+> as is.
+
+Right. It will only work with newer kernel headers, but that's basically
+unsolvable.
+
+cheers
 
