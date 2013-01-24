@@ -1,225 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab3AXPTu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:19:50 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:46404 "EHLO relay.sw.ru"
+	id S1754650Ab3AXPVl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:21:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19149 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754108Ab3AXPTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:19:44 -0500
-From: Lord Glauber Costa of Sealand <glommer@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        ccross@google.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>, Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Michal Hocko <mhocko@suse.cz>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH v6 06/12] cpuacct: don't actually do anything.
-Date: Thu, 24 Jan 2013 19:17:36 +0400
-Message-Id: <1359040662-8055-7-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1359040662-8055-1-git-send-email-glommer@parallels.com>
-References: <1359040662-8055-1-git-send-email-glommer@parallels.com>
+	id S1752384Ab3AXPVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 10:21:38 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1358955044-27407-4-git-send-email-mmarek@suse.cz>
+References: <1358955044-27407-4-git-send-email-mmarek@suse.cz> <1358955044-27407-1-git-send-email-mmarek@suse.cz>
+To: Michal Marek <mmarek@suse.cz>
+Cc: dhowells@redhat.com, rusty@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] MODSIGN: Add -s <signature> option to sign-file
+Date: Thu, 24 Jan 2013 15:20:53 +0000
+Message-ID: <28810.1359040853@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@parallels.com>
++die "Can't read private key\n" if !$signature_file && !-r $private_key;
++die "Can't read signature file\n" if $signature_file && !-r $signature_file;
 
-All the information we have that is needed for cpuusage (and
-cpuusage_percpu) is present in schedstats. It is already recorded
-in a sane hierarchical way.
+Please bracket the if condition.
 
-If we have CONFIG_SCHEDSTATS, we don't really need to do any extra
-work. All former functions become empty inlines.
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: Paul Turner <pjt@google.com>
----
- kernel/sched/core.c  | 102 ++++++++++++++++++++++++++++++++++++++++++---------
- kernel/sched/sched.h |  10 +++--
- 2 files changed, 90 insertions(+), 22 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index a62b771..f8a9acf 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7267,6 +7267,7 @@ void sched_move_task(struct task_struct *tsk)
- 	task_rq_unlock(rq, tsk, &flags);
- }
- 
-+#ifndef CONFIG_SCHEDSTATS
- void task_group_charge(struct task_struct *tsk, u64 cputime)
- {
- 	struct task_group *tg;
-@@ -7284,6 +7285,7 @@ void task_group_charge(struct task_struct *tsk, u64 cputime)
- 
- 	rcu_read_unlock();
- }
-+#endif
- #endif /* CONFIG_CGROUP_SCHED */
- 
- #if defined(CONFIG_RT_GROUP_SCHED) || defined(CONFIG_CFS_BANDWIDTH)
-@@ -7640,22 +7642,92 @@ cpu_cgroup_exit(struct cgroup *cgrp, struct cgroup *old_cgrp,
- 	sched_move_task(task);
- }
- 
--static u64 task_group_cpuusage_read(struct task_group *tg, int cpu)
-+/*
-+ * Take rq->lock to make 64-bit write safe on 32-bit platforms.
-+ */
-+static inline void lock_rq_dword(int cpu)
- {
--	u64 *cpuusage = per_cpu_ptr(tg->cpuusage, cpu);
--	u64 data;
--
- #ifndef CONFIG_64BIT
--	/*
--	 * Take rq->lock to make 64-bit read safe on 32-bit platforms.
--	 */
- 	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
--	data = *cpuusage;
-+#endif
-+}
-+
-+static inline void unlock_rq_dword(int cpu)
-+{
-+#ifndef CONFIG_64BIT
- 	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
-+#endif
-+}
-+
-+#ifdef CONFIG_SCHEDSTATS
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+static inline u64 cfs_exec_clock(struct task_group *tg, int cpu)
-+{
-+	return tg->cfs_rq[cpu]->exec_clock - tg->cfs_rq[cpu]->prev_exec_clock;
-+}
-+
-+static inline void cfs_exec_clock_reset(struct task_group *tg, int cpu)
-+{
-+	tg->cfs_rq[cpu]->prev_exec_clock = tg->cfs_rq[cpu]->exec_clock;
-+}
- #else
--	data = *cpuusage;
-+static inline u64 cfs_exec_clock(struct task_group *tg, int cpu)
-+{
-+}
-+
-+static inline void cfs_exec_clock_reset(struct task_group *tg, int cpu)
-+{
-+}
-+#endif
-+#ifdef CONFIG_RT_GROUP_SCHED
-+static inline u64 rt_exec_clock(struct task_group *tg, int cpu)
-+{
-+	return tg->rt_rq[cpu]->exec_clock - tg->rt_rq[cpu]->prev_exec_clock;
-+}
-+
-+static inline void rt_exec_clock_reset(struct task_group *tg, int cpu)
-+{
-+	tg->rt_rq[cpu]->prev_exec_clock = tg->rt_rq[cpu]->exec_clock;
-+}
-+#else
-+static inline u64 rt_exec_clock(struct task_group *tg, int cpu)
-+{
-+	return 0;
-+}
-+
-+static inline void rt_exec_clock_reset(struct task_group *tg, int cpu)
-+{
-+}
- #endif
- 
-+static u64 task_group_cpuusage_read(struct task_group *tg, int cpu)
-+{
-+	u64 ret = 0;
-+
-+	lock_rq_dword(cpu);
-+	ret = cfs_exec_clock(tg, cpu) + rt_exec_clock(tg, cpu);
-+	unlock_rq_dword(cpu);
-+
-+	return ret;
-+}
-+
-+static void task_group_cpuusage_write(struct task_group *tg, int cpu, u64 val)
-+{
-+	lock_rq_dword(cpu);
-+	cfs_exec_clock_reset(tg, cpu);
-+	rt_exec_clock_reset(tg, cpu);
-+	unlock_rq_dword(cpu);
-+}
-+#else
-+static u64 task_group_cpuusage_read(struct task_group *tg, int cpu)
-+{
-+	u64 *cpuusage = per_cpu_ptr(tg->cpuusage, cpu);
-+	u64 data;
-+
-+	lock_rq_dword(cpu);
-+	data = *cpuusage;
-+	unlock_rq_dword(cpu);
-+
- 	return data;
- }
- 
-@@ -7663,17 +7735,11 @@ static void task_group_cpuusage_write(struct task_group *tg, int cpu, u64 val)
- {
- 	u64 *cpuusage = per_cpu_ptr(tg->cpuusage, cpu);
- 
--#ifndef CONFIG_64BIT
--	/*
--	 * Take rq->lock to make 64-bit write safe on 32-bit platforms.
--	 */
--	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
-+	lock_rq_dword(cpu);
- 	*cpuusage = val;
--	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
--#else
--	*cpuusage = val;
--#endif
-+	unlock_rq_dword(cpu);
- }
-+#endif
- 
- /* return total cpu usage (in nanoseconds) of a group */
- static u64 cpucg_cpuusage_read(struct cgroup *cgrp, struct cftype *cft)
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 01ca8a4..640aa14 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -597,8 +597,6 @@ static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
- #endif
- }
- 
--extern void task_group_charge(struct task_struct *tsk, u64 cputime);
--
- #else /* CONFIG_CGROUP_SCHED */
- 
- static inline void set_task_rq(struct task_struct *p, unsigned int cpu) { }
-@@ -606,10 +604,14 @@ static inline struct task_group *task_group(struct task_struct *p)
- {
- 	return NULL;
- }
--static inline void task_group_charge(struct task_struct *tsk, u64 cputime) { }
--
- #endif /* CONFIG_CGROUP_SCHED */
- 
-+#if defined(CONFIG_CGROUP_SCHED) && !defined(CONFIG_SCHEDSTATS)
-+extern void task_group_charge(struct task_struct *tsk, u64 cputime);
-+#else
-+static inline void task_group_charge(struct task_struct *tsk, u64 cputime) {}
-+#endif
-+
- static inline void __set_task_cpu(struct task_struct *p, unsigned int cpu)
- {
- 	set_task_rq(p, cpu);
--- 
-1.8.1
-
+David
