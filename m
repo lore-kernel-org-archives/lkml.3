@@ -1,142 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab3AXUtl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:49:41 -0500
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:49322 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755539Ab3AXUtf (ORCPT
+	id S1756738Ab3AXUvA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:51:00 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:53155 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756080Ab3AXUuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:49:35 -0500
-Date: Thu, 24 Jan 2013 15:49:43 -0500
-From: Matt Porter <mporter@ti.com>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Cc: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 00/14] DMA Engine support for AM33XX
-Message-ID: <20130124204943.GE5256@beef>
-References: <1358281974-8411-1-git-send-email-mporter@ti.com>
- <50FFC48B.80902@ti.com>
- <20130123204917.GA5256@beef>
- <8ea1d227d84648f68e670c56f27c481e@DFLE72.ent.ti.com>
+	Thu, 24 Jan 2013 15:50:52 -0500
+Date: Thu, 24 Jan 2013 12:50:50 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Robin Holt <holt@sgi.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: How should I proceed to get commit 891348c to 3.0.y?
+Message-ID: <20130124205050.GA2206@kroah.com>
+References: <20130124152851.GF3460@sgi.com>
+ <20130124181535.GB12106@kroah.com>
+ <20130124183010.GF3438@sgi.com>
+ <20130124200034.GB24705@kroah.com>
+ <20130124201420.GI3438@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8ea1d227d84648f68e670c56f27c481e@DFLE72.ent.ti.com>
+In-Reply-To: <20130124201420.GI3438@sgi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 05:12:05AM +0000, Shilimkar, Santosh wrote:
-> On Thursday 24 January 2013 02:19 AM, Matt Porter wrote:
-> > On Wed, Jan 23, 2013 at 04:37:55PM +0530, Santosh Shilimkar wrote:
-> >> Matt,
-> >>
-> >> On Wednesday 16 January 2013 02:02 AM, Matt Porter wrote:
-> >>
-> >> [..]
-> >>
-> >>> This series adds DMA Engine support for AM33xx, which uses
-> >>> an EDMA DMAC. The EDMA DMAC has been previously supported by only
-> >>> a private API implementation (much like the situation with OMAP
-> >>> DMA) found on the DaVinci family of SoCs.
-> >>>
-> >>> The series applies on top of 3.8-rc3 and the following patches:
-> >>>
-> >>> 	- TPS65910 REGMAP_IRQ build fix:
-> >>> 	  https://patchwork.kernel.org/patch/1857701/
-> >>> 	- dmaengine DT support from Vinod's dmaengine_dt branch in
-> >>> 	  git://git.infradead.org/users/vkoul/slave-dma.git since
-> >>> 	  027478851791df751176398be02a3b1c5f6aa824
-> >>> 	- edma dmaengine driver fix:
-> >>> 	  https://patchwork.kernel.org/patch/1961521/
-> >>> 	- dmaengine dma_get_channel_caps v2:
-> >>> 	  https://patchwork.kernel.org/patch/1961601/
-> >>> 	- dmaengine edma driver channel caps support v2:
-> >>> 	  https://patchwork.kernel.org/patch/1961591/
-> >>>
-> >>> The approach taken is similar to how OMAP DMA is being converted to
-> >>> DMA Engine support. With the functional EDMA private API already
-> >>> existing in mach-davinci/dma.c, we first move that to an ARM common
-> >>> area so it can be shared. Adding DT and runtime PM support to the
-> >>> private EDMA API implementation allows it to run on AM33xx. AM33xx
-> >>> *only* boots using DT so we leverage Jon's generic DT DMA helpers to
-> >>> register EDMA DMAC with the of_dma framework and then add support
-> >>> for calling the dma_request_slave_channel() API to both the mmc
-> >>> and spi drivers.
-> >>>
-> >>> With this series both BeagleBone and the AM335x EVM have working
-> >>> MMC and SPI support.
-> >>>
-> >>> This is tested on BeagleBone with a SPI framebuffer driver and MMC
-> >>> rootfs. A trivial gpio DMA event misc driver was used to test the
-> >>> crossbar DMA event support. It is also tested on the AM335x EVM
-> >>> with the onboard SPI flash and MMC rootfs. The branch at
-> >>> https://github.com/ohporter/linux/tree/edma-dmaengine-am33xx-v4
-> >>> has the complete series, dependencies, and some test
-> >>> drivers/defconfigs.
-> >>>
-> >>> Regression testing was done on AM180x-EVM (which also makes use
-> >>> of the EDMA dmaengine driver and the EDMA private API) using SD,
-> >>> SPI flash, and the onboard audio supported by the ASoC Davinci
-> >>> driver. Regression testing was also done on a BeagleBoard xM
-> >>> booting from the legacy board file using MMC rootfs.
-> >>>
-> >>> Matt Porter (14):
-> >>>    ARM: davinci: move private EDMA API to arm/common
-> >>>    ARM: edma: remove unused transfer controller handlers
-> >>>    ARM: edma: add AM33XX support to the private EDMA API
-> >>>    dmaengine: edma: enable build for AM33XX
-> >>>    dmaengine: edma: Add TI EDMA device tree binding
-> >>>    ARM: dts: add AM33XX EDMA support
-> >>>    dmaengine: add dma_request_slave_channel_compat()
-> >>>    mmc: omap_hsmmc: convert to dma_request_slave_channel_compat()
-> >>>    mmc: omap_hsmmc: set max_segs based on dma engine limitations
-> >>>    mmc: omap_hsmmc: add generic DMA request support to the DT binding
-> >>>    ARM: dts: add AM33XX MMC support
-> >>>    spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
-> >>>    spi: omap2-mcspi: add generic DMA request support to the DT binding
-> >>>    ARM: dts: add AM33XX SPI DMA support
-> >>>
-> >> While going through the series and testing it out, I observed an issue
-> >> with MMC driver. You need patch in the end of the email to avoid the
-> >> issue. Same is attached in case mailer damages it. Can you please
-> >> add it with your series if you agree ?
-> >
-> > Yes, by inspection this makes sense. As you noticed, we've been relying
-> > on the fact that DMA resources still don't come from DT, we only use our
-> > DT data in conjunction with the DMA OF helpers to do channel filtering.
-> > I was figuring we would address that separately later, but I see how
-> > even omap4 has this issue with DMA resources named with "tx1", for
-> > example. A good followup once this series is taken will be to only
-> > use hwmod resources on a !populated-dt platform like we do for other
-> > resources now. Baby steps. :)
-> >
-> We are already on it :-)
+On Thu, Jan 24, 2013 at 02:14:20PM -0600, Robin Holt wrote:
+> On Thu, Jan 24, 2013 at 12:00:34PM -0800, Greg KH wrote:
+> > On Thu, Jan 24, 2013 at 12:30:10PM -0600, Robin Holt wrote:
+> > > On Thu, Jan 24, 2013 at 10:15:35AM -0800, Greg KH wrote:
+> > > > On Thu, Jan 24, 2013 at 09:28:51AM -0600, Robin Holt wrote:
+> > > > > 
+> > > > > I missed the email from 12/31 indicating commit 891348c was pulled from
+> > > > > the 3.0.y stable tree due to a build breakage.
+> > > > > 
+> > > > > That commit requires the enum defined in traps.h by commit c940826.  That,
+> > > > > in turn depends on commit 228bdaa95f which depends upon earlier commits.
+> > > > > 
+> > > > > How should I proceed?  Should I give you a patch that uses the constants
+> > > > > in xpc_main.c? Should I add a patch which just pulls the enum portion of
+> > > > > commit c940826 into traps.h? Any other direction you think this should go?
+> > > > 
+> > > > I think the last one makes the most sense as that makes it all
+> > > > self-contained and sensible, right?
+> > > 
+> > > git diff c940826~..c940826 -- arch/x86/include/asm/traps.h | patch -p1
+> > > git commit -a -c c940826
+> > > 
+> > > Then fixed it up to add a Signed-off-by: Robin Holt <holt@sgi.com>
+> > > 
+> > > I then did a make x86_64_defconfig, make menuconfig to get SGI_XP
+> > > selected.  I ran into a compile error where traps.h line 56 was failing
+> > > on __kprobes not being defined.  I added the #include <linux/kprobes.h>
+> > > and now it builds.
+> > > 
+> > > Here is the munged commit I currently have.  With that 891348c can be
+> > > cherry-picked and will build.  How should I proceed?  Is this enough
+> > > for you to make progress?  Should I clear out those Signed-off-by
+> > > lines for the submitter and HPA or should those stay?
+> > 
+> > They should stay.  resend this saying where the patch came from, and I
+> > will be glad to apply it.  Also tell me what the original patch you
+> > wanted me to apply was as well, I forgot it :)
+> 
+> I changed the "Author:" line to me and added my own Signed-off-by:
+> line.
+> 
+> The original commit which needed this fixup was 891348c
+> 
+> Thanks,
+> Robin
+> 
+> commit b4ff8081e86ebf7bb8c1d4c93dfaaf81a4539ee6
+> Author: Robin Holt <holt@sgi.com>
+> Date:   Fri Mar 9 16:07:10 2012 -0800
+> 
+>     x86: Use enum instead of literals for trap values [PARTIAL]
+>     
+>     The traps are referred to by their numbers and it can be difficult to
+>     understand them while reading the code without context. This patch adds
+>     enumeration of the trap numbers and replaces the numbers with the correct
+>     enum for x86.
+>     
+>     Signed-off-by: Kees Cook <keescook@chromium.org>
+>     Link: http://lkml.kernel.org/r/20120310000710.GA32667@www.outflux.net
+>     Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+>     Signed-off-by: Robin Holt <holt@sgi.com>
 
-Great!
+No, don't loose the authorship info.
 
-> > Thanks for the catch, I'll add this in with your tested line as well for
-> > the series.
+{sigh}
 
-BTW, since I'm dropping mmc support from this series, I'll move your
-patch into a separate series with only the mmc pieces.
+Ok, I've edited this up by hand and included it, and the original patch
+in the 3.0-stable tree, you should have an email about it now.  Please
+verify I got it all right.
 
--Matt
+greg k-h
