@@ -1,65 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531Ab3AXKfR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:35:17 -0500
-Received: from mga01.intel.com ([192.55.52.88]:52229 "EHLO mga01.intel.com"
+	id S1753488Ab3AXKf2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:35:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3046 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224Ab3AXKer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:34:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,528,1355126400"; 
-   d="scan'208";a="281604431"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v3 3/4] dw_dmac: fill individual length of descriptor
-Date: Thu, 24 Jan 2013 12:34:19 +0200
-Message-Id: <1359023660-29084-4-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1359023660-29084-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1359023660-29084-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1753631Ab3AXKen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 05:34:43 -0500
+Date: Thu, 24 Jan 2013 12:38:52 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V6 3/3] tuntap: allow polling/writing/reading when
+ detached
+Message-ID: <20130124103852.GE9368@redhat.com>
+References: <1358351078-58915-1-git-send-email-jasowang@redhat.com>
+ <1358351078-58915-4-git-send-email-jasowang@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358351078-58915-4-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will be useful to have the length of the transfer in the descriptor. The
-cyclic transfer functions remained untouched.
+On Wed, Jan 16, 2013 at 11:44:38PM +0800, Jason Wang wrote:
+> We forbid polling, writing and reading when the file were detached, this may
+> complex the user in several cases:
+> 
+> - when guest pass some buffers to vhost/qemu and then disable some queues,
+>   host/qemu needs to do its own cleanup on those buffers which is complex
+>   sometimes. We can do this simply by allowing a user can still write to an
+>   disabled queue. Write to an disabled queue will cause the packet pass to the
+>   kernel and read will get nothing.
+> - align the polling behavior with macvtap which never fails when the queue is
+>   created. This can simplify the polling errors handling of its user (e.g vhost)
+> 
+> In order to achieve this, tfile->tun were not assign to NULL when detached. And
+> tfile->tun were converted to be RCU protected in order to let the data path can
+> check whether the file is deated in a lockless manner. This will be used to
+> prevent the flow caches from being updated for a detached queue.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/dma/dw_dmac.c |    3 +++
- 1 file changed, 3 insertions(+)
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 7b5a088..3b788c8 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -759,6 +759,7 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 		desc->lli.dar = dest + offset;
- 		desc->lli.ctllo = ctllo;
- 		desc->lli.ctlhi = xfer_count;
-+		desc->len = xfer_count << src_width;
- 
- 		if (!first) {
- 			first = desc;
-@@ -857,6 +858,7 @@ slave_sg_todev_fill_desc:
- 			}
- 
- 			desc->lli.ctlhi = dlen >> mem_width;
-+			desc->len = dlen;
- 
- 			if (!first) {
- 				first = desc;
-@@ -915,6 +917,7 @@ slave_sg_fromdev_fill_desc:
- 				len = 0;
- 			}
- 			desc->lli.ctlhi = dlen >> reg_width;
-+			desc->len = dlen;
- 
- 			if (!first) {
- 				first = desc;
--- 
-1.7.10.4
-
+> ---
+>  drivers/net/tun.c |   45 ++++++++++++++++++++++++++-------------------
+>  1 files changed, 26 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index c81680d..ec539a9 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -139,7 +139,7 @@ struct tun_file {
+>  	unsigned int flags;
+>  	u16 queue_index;
+>  	struct list_head next;
+> -	struct tun_struct *detached;
+> +	struct tun_struct __rcu *detached;
+>  };
+>  
+>  struct tun_flow_entry {
+> @@ -295,11 +295,12 @@ static void tun_flow_cleanup(unsigned long data)
+>  }
+>  
+>  static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
+> -			    u16 queue_index)
+> +			    struct tun_file *tfile)
+>  {
+>  	struct hlist_head *head;
+>  	struct tun_flow_entry *e;
+>  	unsigned long delay = tun->ageing_time;
+> +	u16 queue_index = tfile->queue_index;
+>  
+>  	if (!rxhash)
+>  		return;
+> @@ -308,7 +309,7 @@ static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
+>  
+>  	rcu_read_lock();
+>  
+> -	if (tun->numqueues == 1)
+> +	if (tun->numqueues == 1 || rcu_dereference(tfile->detached))
+>  		goto unlock;
+>  
+>  	e = tun_flow_find(head, rxhash);
+> @@ -384,16 +385,16 @@ static void tun_set_real_num_queues(struct tun_struct *tun)
+>  
+>  static void tun_disable_queue(struct tun_struct *tun, struct tun_file *tfile)
+>  {
+> -	tfile->detached = tun;
+> +	rcu_assign_pointer(tfile->detached, tun);
+>  	list_add_tail(&tfile->next, &tun->disabled);
+>  	++tun->numdisabled;
+>  }
+>  
+>  static struct tun_struct *tun_enable_queue(struct tun_file *tfile)
+>  {
+> -	struct tun_struct *tun = tfile->detached;
+> +	struct tun_struct *tun = rtnl_dereference(tfile->detached);
+>  
+> -	tfile->detached = NULL;
+> +	rcu_assign_pointer(tfile->detached, NULL);
+>  	list_del_init(&tfile->next);
+>  	--tun->numdisabled;
+>  	return tun;
+> @@ -402,26 +403,27 @@ static struct tun_struct *tun_enable_queue(struct tun_file *tfile)
+>  static void __tun_detach(struct tun_file *tfile, bool clean)
+>  {
+>  	struct tun_file *ntfile;
+> -	struct tun_struct *tun;
+> +	struct tun_struct *tun, *detached;
+>  	struct net_device *dev;
+>  
+>  	tun = rtnl_dereference(tfile->tun);
+> +	detached = rtnl_dereference(tfile->detached);
+>  
+> -	if (tun) {
+> +	if (tun && !detached) {
+>  		u16 index = tfile->queue_index;
+>  		BUG_ON(index >= tun->numqueues);
+>  		dev = tun->dev;
+>  
+>  		rcu_assign_pointer(tun->tfiles[index],
+>  				   tun->tfiles[tun->numqueues - 1]);
+> -		rcu_assign_pointer(tfile->tun, NULL);
+>  		ntfile = rtnl_dereference(tun->tfiles[index]);
+>  		ntfile->queue_index = index;
+>  
+>  		--tun->numqueues;
+> -		if (clean)
+> +		if (clean) {
+> +			rcu_assign_pointer(tfile->tun, NULL);
+>  			sock_put(&tfile->sk);
+> -		else
+> +		} else
+>  			tun_disable_queue(tun, tfile);
+>  
+>  		synchronize_net();
+> @@ -429,7 +431,7 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
+>  		/* Drop read queue */
+>  		skb_queue_purge(&tfile->sk.sk_receive_queue);
+>  		tun_set_real_num_queues(tun);
+> -	} else if (tfile->detached && clean) {
+> +	} else if (detached && clean) {
+>  		tun = tun_enable_queue(tfile);
+>  		sock_put(&tfile->sk);
+>  	}
+> @@ -466,6 +468,10 @@ static void tun_detach_all(struct net_device *dev)
+>  		rcu_assign_pointer(tfile->tun, NULL);
+>  		--tun->numqueues;
+>  	}
+> +	list_for_each_entry(tfile, &tun->disabled, next) {
+> +		wake_up_all(&tfile->wq.wait);
+> +		rcu_assign_pointer(tfile->tun, NULL);
+> +	}
+>  	BUG_ON(tun->numqueues != 0);
+>  
+>  	synchronize_net();
+> @@ -496,7 +502,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+>  		goto out;
+>  
+>  	err = -EINVAL;
+> -	if (rtnl_dereference(tfile->tun))
+> +	if (rtnl_dereference(tfile->tun) && !rtnl_dereference(tfile->detached))
+>  		goto out;
+>  
+>  	err = -EBUSY;
+> @@ -504,7 +510,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+>  		goto out;
+>  
+>  	err = -E2BIG;
+> -	if (!tfile->detached &&
+> +	if (!rtnl_dereference(tfile->detached) &&
+>  	    tun->numqueues + tun->numdisabled == MAX_TAP_QUEUES)
+>  		goto out;
+>  
+> @@ -521,7 +527,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+>  	rcu_assign_pointer(tun->tfiles[tun->numqueues], tfile);
+>  	tun->numqueues++;
+>  
+> -	if (tfile->detached)
+> +	if (rtnl_dereference(tfile->detached))
+>  		tun_enable_queue(tfile);
+>  	else
+>  		sock_hold(&tfile->sk);
+> @@ -1195,7 +1201,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+>  	tun->dev->stats.rx_packets++;
+>  	tun->dev->stats.rx_bytes += len;
+>  
+> -	tun_flow_update(tun, rxhash, tfile->queue_index);
+> +	tun_flow_update(tun, rxhash, tfile);
+>  	return total_len;
+>  }
+>  
+> @@ -1552,7 +1558,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>  	struct net_device *dev;
+>  	int err;
+>  
+> -	if (tfile->detached)
+> +	if (rtnl_dereference(tfile->detached))
+>  		return -EINVAL;
+>  
+>  	dev = __dev_get_by_name(net, ifr->ifr_name);
+> @@ -1796,7 +1802,7 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
+>  	rtnl_lock();
+>  
+>  	if (ifr->ifr_flags & IFF_ATTACH_QUEUE) {
+> -		tun = tfile->detached;
+> +		tun = rtnl_dereference(tfile->detached);
+>  		if (!tun) {
+>  			ret = -EINVAL;
+>  			goto unlock;
+> @@ -1807,7 +1813,8 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
+>  		ret = tun_attach(tun, file);
+>  	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
+>  		tun = rtnl_dereference(tfile->tun);
+> -		if (!tun || !(tun->flags & TUN_TAP_MQ))
+> +		if (!tun || !(tun->flags & TUN_TAP_MQ) ||
+> +		    rtnl_dereference(tfile->detached))
+>  			ret = -EINVAL;
+>  		else
+>  			__tun_detach(tfile, false);
+> -- 
+> 1.7.1
