@@ -1,102 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab3AXUYn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:24:43 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:51038 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756482Ab3AXUWt (ORCPT
+	id S1755874Ab3AXUY4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:24:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34583 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756515Ab3AXUXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:22:49 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 34/35] mm: Add alloc_bootmem_low_pages_nopanic()
-Date: Thu, 24 Jan 2013 12:20:15 -0800
-Message-Id: <1359058816-7615-35-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
-References: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 24 Jan 2013 15:23:00 -0500
+Date: Thu, 24 Jan 2013 12:22:42 -0800
+From: tip-bot for Fabio Estevam <fabio.estevam@freescale.com>
+Message-ID: <tip-2d58000fd2020255af63ee92c8d0ef615f6c4ade@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fabio.estevam@freescale.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fabio.estevam@freescale.com, tglx@linutronix.de
+In-Reply-To: <1356434680-10045-1-git-send-email-festevam@gmail.com>
+References: <1356434680-10045-1-git-send-email-festevam@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Fix print format for u64
+Git-Commit-ID: 2d58000fd2020255af63ee92c8d0ef615f6c4ade
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 12:22:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to panic in some case, like for swiotlb preallocating.
+Commit-ID:  2d58000fd2020255af63ee92c8d0ef615f6c4ade
+Gitweb:     http://git.kernel.org/tip/2d58000fd2020255af63ee92c8d0ef615f6c4ade
+Author:     Fabio Estevam <fabio.estevam@freescale.com>
+AuthorDate: Tue, 25 Dec 2012 09:24:40 -0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 24 Jan 2013 15:50:08 +0100
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+sched: Fix print format for u64
+
+commit c566e8e9 ("sched: Aggregate total task_group load")
+introduced the following build warnings:
+
+  kernel/sched/debug.c:225:2: warning: format '%ld' expects argument of type 'long int', but argument 4 has type 'u64' [-Wformat]
+  kernel/sched/debug.c:225:2: warning: format '%ld' expects argument of type 'long int', but argument 3 has type 'u64' [-Wformat]
+
+Use %llu format to print a u64 value as per
+Documentation/printk-formats.txt.
+
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: peterz@infradead.org
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/1356434680-10045-1-git-send-email-festevam@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/bootmem.h |    5 +++++
- mm/bootmem.c            |    8 ++++++++
- mm/nobootmem.c          |    8 ++++++++
- 3 files changed, 21 insertions(+)
+ kernel/sched/debug.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
-index 3f778c2..3cd16ba 100644
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -99,6 +99,9 @@ void *___alloc_bootmem_node_nopanic(pg_data_t *pgdat,
- extern void *__alloc_bootmem_low(unsigned long size,
- 				 unsigned long align,
- 				 unsigned long goal);
-+void *__alloc_bootmem_low_nopanic(unsigned long size,
-+				 unsigned long align,
-+				 unsigned long goal);
- extern void *__alloc_bootmem_low_node(pg_data_t *pgdat,
- 				      unsigned long size,
- 				      unsigned long align,
-@@ -132,6 +135,8 @@ extern void *__alloc_bootmem_low_node(pg_data_t *pgdat,
- 
- #define alloc_bootmem_low(x) \
- 	__alloc_bootmem_low(x, SMP_CACHE_BYTES, 0)
-+#define alloc_bootmem_low_pages_nopanic(x) \
-+	__alloc_bootmem_low_nopanic(x, PAGE_SIZE, 0)
- #define alloc_bootmem_low_pages(x) \
- 	__alloc_bootmem_low(x, PAGE_SIZE, 0)
- #define alloc_bootmem_low_pages_node(pgdat, x) \
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index b93376c..2b0bcb0 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -833,6 +833,14 @@ void * __init __alloc_bootmem_low(unsigned long size, unsigned long align,
- 	return ___alloc_bootmem(size, align, goal, ARCH_LOW_ADDRESS_LIMIT);
- }
- 
-+void * __init __alloc_bootmem_low_nopanic(unsigned long size,
-+					  unsigned long align,
-+					  unsigned long goal)
-+{
-+	return ___alloc_bootmem_nopanic(size, align, goal,
-+					ARCH_LOW_ADDRESS_LIMIT);
-+}
-+
- /**
-  * __alloc_bootmem_low_node - allocate low boot memory from a specific node
-  * @pgdat: node to allocate from
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 03d152a..5e07d36 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -391,6 +391,14 @@ void * __init __alloc_bootmem_low(unsigned long size, unsigned long align,
- 	return ___alloc_bootmem(size, align, goal, ARCH_LOW_ADDRESS_LIMIT);
- }
- 
-+void * __init __alloc_bootmem_low_nopanic(unsigned long size,
-+					  unsigned long align,
-+					  unsigned long goal)
-+{
-+	return ___alloc_bootmem_nopanic(size, align, goal,
-+					ARCH_LOW_ADDRESS_LIMIT);
-+}
-+
- /**
-  * __alloc_bootmem_low_node - allocate low boot memory from a specific node
-  * @pgdat: node to allocate from
--- 
-1.7.10.4
-
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 2cd3c1b..8c2fc39 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -222,7 +222,7 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 			cfs_rq->runnable_load_avg);
+ 	SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
+ 			cfs_rq->blocked_load_avg);
+-	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_avg",
++	SEQ_printf(m, "  .%-30s: %llu\n", "tg_load_avg",
+ 			atomic64_read(&cfs_rq->tg->load_avg));
+ 	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
+ 			cfs_rq->tg_load_contrib);
