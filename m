@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab3AXDe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:34:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44448 "EHLO
+	id S1753721Ab3AXDfN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:35:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44443 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755109Ab3AXDbt (ORCPT
+	with ESMTP id S1755072Ab3AXDbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:31:49 -0500
+	Wed, 23 Jan 2013 22:31:47 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Ilija Hadzic <ihadzic@research.bell-labs.com>,
         Alex Deucher <alexander.deucher@amd.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 67/74] drm/radeon: fix a bogus kfree
-Date: Thu, 24 Jan 2013 01:27:19 -0200
-Message-Id: <1358998046-613-68-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 66/74] drm/radeon: fix NULL pointer dereference in UMS mode
+Date: Thu, 24 Jan 2013 01:27:18 -0200
+Message-Id: <1358998046-613-67-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
@@ -30,39 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ilija Hadzic <ihadzic@research.bell-labs.com>
 
-commit a6b7e1a02b77ab8fe8775d20a88c53d8ba55482e upstream.
+commit ff4bd0827764e10a428a9d39e6814c5478863f94 upstream.
 
-parser->chunks[.].kpage[.] is not always kmalloc-ed
-by the parser initialization, so parser_fini should
-not try to kfree it if it didn't allocate it.
-
-This patch fixes a kernel oops that can be provoked
-in UMS mode.
+In UMS mode parser->rdev is NULL, so dereferencing
+will cause an oops.
 
 Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/radeon/r600_cs.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_cs.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/r600_cs.c b/drivers/gpu/drm/radeon/r600_cs.c
-index 1119e31..c05e88a 100644
---- a/drivers/gpu/drm/radeon/r600_cs.c
-+++ b/drivers/gpu/drm/radeon/r600_cs.c
-@@ -2330,8 +2330,10 @@ static void r600_cs_parser_fini(struct radeon_cs_parser *parser, int error)
- 	kfree(parser->relocs);
- 	for (i = 0; i < parser->nchunks; i++) {
- 		kfree(parser->chunks[i].kdata);
--		kfree(parser->chunks[i].kpage[0]);
--		kfree(parser->chunks[i].kpage[1]);
-+		if (parser->rdev && (parser->rdev->flags & RADEON_IS_AGP)) {
-+			kfree(parser->chunks[i].kpage[0]);
-+			kfree(parser->chunks[i].kpage[1]);
-+		}
- 	}
- 	kfree(parser->chunks);
- 	kfree(parser->chunks_array);
+diff --git a/drivers/gpu/drm/radeon/radeon_cs.c b/drivers/gpu/drm/radeon/radeon_cs.c
+index c84eb1a..66d81ae 100644
+--- a/drivers/gpu/drm/radeon/radeon_cs.c
++++ b/drivers/gpu/drm/radeon/radeon_cs.c
+@@ -274,7 +274,7 @@ int radeon_cs_parser_init(struct radeon_cs_parser *p, void *data)
+ 				  p->chunks[p->chunk_ib_idx].length_dw);
+ 			return -EINVAL;
+ 		}
+-		if ((p->rdev->flags & RADEON_IS_AGP)) {
++		if (p->rdev && (p->rdev->flags & RADEON_IS_AGP)) {
+ 			p->chunks[p->chunk_ib_idx].kpage[0] = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 			p->chunks[p->chunk_ib_idx].kpage[1] = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 			if (p->chunks[p->chunk_ib_idx].kpage[0] == NULL ||
+@@ -613,7 +613,8 @@ static int radeon_cs_update_pages(struct radeon_cs_parser *p, int pg_idx)
+ 	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
+ 	int i;
+ 	int size = PAGE_SIZE;
+-	bool copy1 = (p->rdev->flags & RADEON_IS_AGP) ? false : true;
++	bool copy1 = (p->rdev && (p->rdev->flags & RADEON_IS_AGP)) ?
++		false : true;
+ 
+ 	for (i = ibc->last_copied_page + 1; i < pg_idx; i++) {
+ 		if (DRM_COPY_FROM_USER(p->ib.ptr + (i * (PAGE_SIZE/4)),
 -- 
 1.7.9.5
 
