@@ -1,103 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab3AXRX1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 12:23:27 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:50645 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab3AXRXZ (ORCPT
+	id S1754474Ab3AXRYT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 12:24:19 -0500
+Received: from na01-bl2-obe.ptr.protection.outlook.com ([65.55.169.27]:8412
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751749Ab3AXRYP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 12:23:25 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>,
-        Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org
-Subject: Re: next-20130117 - kernel BUG with aio
-In-Reply-To: Your message of "Wed, 23 Jan 2013 20:10:03 +0800."
-             <CAJd=RBCHRDzyjY_hOZCj6rHBXzb3f5wWxdqXYuLbQXLe2n4JeA@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <3544.1358774694@turing-police.cc.vt.edu> <CAJd=RBBBbv07aoOTF=PNy1FpCyuRV7fnQEGX_DXEYFSSknKtqQ@mail.gmail.com> <2553.1358890098@turing-police.cc.vt.edu>
-            <CAJd=RBCHRDzyjY_hOZCj6rHBXzb3f5wWxdqXYuLbQXLe2n4JeA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1359048141_1950P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 24 Jan 2013 12:22:21 -0500
-Message-ID: <13450.1359048141@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.51016DCE.0076,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	Thu, 24 Jan 2013 12:24:15 -0500
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -2
+X-BigFish: PS-2(zz98dI9371I542I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275ch8275dh8275bhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Jiri Kosina <jkosina@suse.cz>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: RE: [PATCH 6/6] Drivers: hv: Execute shutdown in a thread context
+Thread-Topic: [PATCH 6/6] Drivers: hv: Execute shutdown in a thread context
+Thread-Index: AQHN+dCsx+V+FBWESk2aq+oN9Eqam5hYQkaAgABz/iCAAAOHAIAAAV+Q
+Date: Thu, 24 Jan 2013 17:23:00 +0000
+Message-ID: <f5cf858caf664d089e8a6cde0ef37273@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1358991737-22675-1-git-send-email-kys@microsoft.com>
+ <1358991765-22715-1-git-send-email-kys@microsoft.com>
+ <1358991765-22715-6-git-send-email-kys@microsoft.com>
+ <alpine.LNX.2.00.1301241108590.31600@pobox.suse.cz>
+ <53da151ef8494d5084ef5aa089b9f102@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130124171740.GA5420@kroah.com>
+In-Reply-To: <20130124171740.GA5420@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [66.235.28.166]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PR03MB063.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%HANSENPARTNERSHIP.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%DAVEMLOFT.NET$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC105.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC105.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377454001)(199002)(189002)(24454001)(13464002)(51704002)(56776001)(31966008)(76482001)(44976002)(63696002)(59766001)(56816002)(23726001)(74502001)(5343655001)(5343645001)(33646001)(47776003)(54356001)(74662001)(46406002)(47446002)(53806001)(4396001)(5343635001)(49866001)(50466001)(54316002)(6806001)(47736001)(47976001)(51856001)(79102001)(50986001)(77982001)(46102001)(16676001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB038;H:TK5EX14HUBC105.redmond.corp.microsoft.com;RD:;A:1;MX:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 073631BD3D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1359048141_1950P
-Content-Type: text/plain; charset=us-ascii
-
-On Wed, 23 Jan 2013 20:10:03 +0800, Hillf Danton said:
-
-> Try again?
-> ---
->
-> --- a/fs/aio.c	Tue Jan 22 21:37:54 2013
-> +++ b/fs/aio.c	Wed Jan 23 20:06:14 2013
-
-Now seeing this:
-
-[ 2941.495370] ------------[ cut here ]------------
-[ 2941.495379] WARNING: at fs/aio.c:336 put_ioctx+0x1cb/0x252()
-
-Same warn location, but different traceback?
-
-[ 2941.495407] Call Trace:
-[ 2941.495415]  [<ffffffff8102f5ad>] warn_slowpath_common+0x7e/0x97
-[ 2941.495419]  [<ffffffff8102f5db>] warn_slowpath_null+0x15/0x17
-[ 2941.495423]  [<ffffffff8115247b>] put_ioctx+0x1cb/0x252
-[ 2941.495428]  [<ffffffff81617fc3>] ? sub_preempt_count+0x33/0x46
-[ 2941.495433]  [<ffffffff81050448>] ? abort_exclusive_wait+0x89/0x89
-[ 2941.495438]  [<ffffffff81152529>] kill_ioctx_work+0x27/0x2b
-[ 2941.495443]  [<ffffffff81603ded>] process_one_work+0x26f/0x4be
-[ 2941.495447]  [<ffffffff81603d27>] ? process_one_work+0x1a9/0x4be
-[ 2941.495453]  [<ffffffff810483c5>] ? spin_lock_irq+0x9/0xb
-[ 2941.495457]  [<ffffffff8104b0f9>] worker_thread+0x1b6/0x28e
-[ 2941.495461]  [<ffffffff8104af43>] ? rescuer_thread+0x1a5/0x1a5
-[ 2941.495466]  [<ffffffff8104f7cc>] kthread+0x9d/0xa5
-[ 2941.495471]  [<ffffffff8104f72f>] ? __kthread_parkme+0x60/0x60
-[ 2941.495475]  [<ffffffff8161b06c>] ret_from_fork+0x7c/0xb0
-[ 2941.495479]  [<ffffffff8104f72f>] ? __kthread_parkme+0x60/0x60
-[ 2941.495483] ---[ end trace 8e545cd216c853ec ]---
-
-Obviously VirtualBox 4.2.6 on my laptop is going out of its way to
-get indigestion at this patch series. :)
 
 
---==_Exmh_1359048141_1950P
-Content-Type: application/pgp-signature
+> -----Original Message-----
+> From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, January 24, 2013 12:18 PM
+> To: KY Srinivasan
+> Cc: Jiri Kosina; olaf@aepfle.de; jasowang@redhat.com; linux-
+> kernel@vger.kernel.org; James.Bottomley@HansenPartnership.com;
+> apw@canonical.com; devel@linuxdriverproject.org; davem@davemloft.net
+> Subject: Re: [PATCH 6/6] Drivers: hv: Execute shutdown in a thread context
+> 
+> On Thu, Jan 24, 2013 at 05:06:27PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Jiri Kosina [mailto:jkosina@suse.cz]
+> > > Sent: Thursday, January 24, 2013 5:10 AM
+> > > To: KY Srinivasan
+> > > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> > > jasowang@redhat.com; davem@davemloft.net;
+> > > James.Bottomley@HansenPartnership.com
+> > > Subject: Re: [PATCH 6/6] Drivers: hv: Execute shutdown in a thread context
+> > >
+> > > On Wed, 23 Jan 2013, K. Y. Srinivasan wrote:
+> > >
+> > > > Execute the shutdown code in a thread context. With recent changes made
+> to
+> > > the
+> > > > shutdown code, shutdown code cannot be invoked from an interrupt
+> context.
+> > > >
+> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > > ---
+> > > >  drivers/hv/hv_util.c |   12 +++++++++++-
+> > > >  1 files changed, 11 insertions(+), 1 deletions(-)
+> > > >
+> > > > diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+> > > > index 8b7868a..aceb67f 100644
+> > > > --- a/drivers/hv/hv_util.c
+> > > > +++ b/drivers/hv/hv_util.c
+> > > > @@ -49,6 +49,16 @@ static struct hv_util_service util_kvp = {
+> > > >  	.util_deinit = hv_kvp_deinit,
+> > > >  };
+> > > >
+> > > > +static void perform_shutdown(struct work_struct *dummy)
+> > > > +{
+> > > > +		orderly_poweroff(true);
+> > > > +}
+> > >
+> > > Is there any particular reason for this kind of crazy indentation?
+> > I don't know how this extra tab crept through! Greg, if you want I can resend
+> > this patch minus the extra tab. Let me know.
+> 
+> I'll edit it by hand, but someone owes me a beer for it...  :)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+You got it!
 
-iQIVAwUBUQFtzQdmEQWDXROgAQLikA//cuDTlWj2VBWMJ8abZMPTLGtJNLa55BVn
-3crAVj+Mv9iznmZ2+vwOsPDHZCO4tehhNrCWWiAX7n3rnhb04OLsppy3lgkSQWTB
-YCL5LmhG1VAgUNp7lsrVJpani2erPRLr4zPdu1DjEGpjFfBIgOHuts+RA23xFu8l
-L/BQYWCP1WvhV7ksPbP7UyltPOac0CzkdZdE3BjlA70vcFMywH/L/I/ZVAg7Ti1e
-FZO/ZXN0dK8YougTc/ebSN6Tn03tquA1GhrQ/qGCMXdLHf4Kn+byFtNJvau88b/N
-Tzjg7sr9gPNVHzipUhWzl1K7efobnDO6tCsZXc7d3Pv8anxtugbRDraDAuGtahDk
-gdxuCD9NlKvhdyu+v0sdVydssjSo7WZ3QEV0W5yRDnzHHgqU+XPA4UdyTEpIZvm1
-o7Gj3LRGb5aFeQr8oaGuYBAcop2IDLz0AwGYsUFgD5i+3QuSXNSghKMW6Qa5e/SZ
-Z4Fk3+OrvYWwv+NnJPED0/pLE+g17fil8gIAdlcX/WczM2oM+mOgAc9SFeELYx2X
-kthvjMcHIRqsG9/+lhPvBouzKCrnIaskuBQjTTxwQcugn9mHsJpKB6iMRjp0gW24
-3eySm+l5vB0P5KA7i89ZBP8AVozwas0jPaP/JFvTzb/U8dxFYOHt+nP7b54I7TU9
-wuCb7C1D6T0=
-=+dZw
------END PGP SIGNATURE-----
+Regards,
 
---==_Exmh_1359048141_1950P--
+K. Y
+> 
+> greg k-h
+> 
+
 
