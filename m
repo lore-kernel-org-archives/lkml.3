@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab3AXW6y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 17:58:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9966 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755909Ab3AXW6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 17:58:47 -0500
-Date: Thu, 24 Jan 2013 19:58:28 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv2] tools lib traceevent: Handle dynamic array's element
- size properly
-Message-ID: <20130124225828.GE14382@infradead.org>
-References: <1359060403-32422-1-git-send-email-jolsa@redhat.com>
- <1359061993.21576.156.camel@gandalf.local.home>
- <20130124212840.GD14382@infradead.org>
- <1359063185.21576.157.camel@gandalf.local.home>
+	id S1756586Ab3AXW7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 17:59:11 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:50753 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756447Ab3AXW6w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 17:58:52 -0500
+Date: Thu, 24 Jan 2013 14:58:45 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 02/13] sg_io: reorganize list of allowed commands
+Message-ID: <20130124225845.GD2373@mtj.dyndns.org>
+References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
+ <1359039649-17734-3-git-send-email-pbonzini@redhat.com>
+ <20130124224203.GA2373@mtj.dyndns.org>
+ <20130124224921.GB2373@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1359063185.21576.157.camel@gandalf.local.home>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20130124224921.GB2373@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jan 24, 2013 at 04:33:05PM -0500, Steven Rostedt escreveu:
-> On Thu, 2013-01-24 at 18:28 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Thu, Jan 24, 2013 at 04:13:13PM -0500, Steven Rostedt escreveu:
-> > > On Thu, 2013-01-24 at 21:46 +0100, Jiri Olsa wrote:
-> > > >  
-> > > > +static unsigned int type_size(char *name)
-> > > 
-> > > Sorry to nitpick, but please make that const char *name.
-> > 
-> > Agreed, no need to resubmit, I'll fix that up.
+On Thu, Jan 24, 2013 at 02:49:21PM -0800, Tejun Heo wrote:
+> On Thu, Jan 24, 2013 at 02:42:03PM -0800, Tejun Heo wrote:
+> > One other thing is I would much prefer if the table was made static
+> > const first.  As we only allow compile-time defined tables, there's no
+> > point in dynamically initializing these and the above can be static
+> > initializers.
 > 
-> I'm sure Tom St Denis appreciates it.
+> On the similar line of thoughts, wouldn't it be better to have the
+> table organized by the device type first?  It would be much easier to
+> comprehend which commands are allowed for each device type that way
+> and FWIW it would be more cacheline friendly.  e.g. something like,
 > 
-> > 
-> > > The rest looks good.
-> > 
-> > Thanks, adding your Acked-by,
+> #define M(opcode)	(1 << opcode)
 > 
-> Sure. But I probably should test it too ;-)
+> #define COMMON	\
+> 	M(READ_6) | M(WRITE_6) | ....
+> 
+> static const whatever_type blk_cmd_filter_disk = {
+> 	COMMON				|
+> 	M(CMD_SPECIFIC_TO_THIS_TYPE0)	|
+> 	M(CMD_SPECIFIC_TO_THIS_TYPE2)	|
+> 	...
+> };
 
-ROFL
+Oops, there are way more bits than in the longest integer, so you
+can't statically initialize them in pretty way (maybe it's possible
+but I can't think of anything pretty).  We can still initialize the
+table once during boot and throw away the init code, I guess.  Also, I
+still think device -> command organization would be better than
+commmand -> device.
 
-- Arnaldo
+Thanks.
+
+-- 
+tejun
