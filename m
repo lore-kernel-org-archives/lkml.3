@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112Ab3AXVPV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:15:21 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40100 "EHLO mail.kernel.org"
+	id S932155Ab3AXVPa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:15:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40125 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756854Ab3AXVOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:14:07 -0500
+	id S1755909Ab3AXVOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:14:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tammy Yang <tammy.yang@canonical.com>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 16/46] ALSA: hda - Fix mute led for another HP machine
-Date: Thu, 24 Jan 2013 13:12:54 -0800
-Message-Id: <20130124211141.914694747@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [ 18/46] arm64: makefile: fix uname munging when setting ARCH on native machine
+Date: Thu, 24 Jan 2013 13:12:56 -0800
+Message-Id: <20130124211142.689606600@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
 References: <20130124211135.862755794@linuxfoundation.org>
@@ -27,31 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit e04340375a314166e14519fca9e5b9e9394b2d7a upstream.
+commit f1b99392caf120d7533da260318fae0eb5053737 upstream.
 
-This machine also has the "HP_Mute_LED_0_A" string in DMI information.
+By popular demand, arch/aarch64 is now known as arch/arm64. However,
+uname -m (and indeed the GNU triplet) still use aarch64 as the machine
+string.
 
-BugLink: https://bugs.launchpad.net/bugs/1096789
-Tested-by: Tammy Yang <tammy.yang@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This patch fixes native builds of both the kernel and perf tools by
+updating the relevant Makefiles to munge the output of uname -m and
+set the ARCH variable appropriately.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ Makefile            |    2 +-
+ tools/perf/Makefile |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6211,6 +6211,7 @@ static const struct snd_pci_quirk alc269
- 	SND_PCI_QUIRK(0x1025, 0x0349, "Acer AOD260", ALC269_FIXUP_INV_DMIC),
- 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_MIC2_MUTE_LED),
- 	SND_PCI_QUIRK(0x103c, 0x1972, "HP Pavilion 17", ALC269_FIXUP_MIC1_MUTE_LED),
-+	SND_PCI_QUIRK(0x103c, 0x1977, "HP Pavilion 14", ALC269_FIXUP_MIC1_MUTE_LED),
- 	SND_PCI_QUIRK(0x1043, 0x1427, "Asus Zenbook UX31E", ALC269VB_FIXUP_DMIC),
- 	SND_PCI_QUIRK(0x1043, 0x1517, "Asus Zenbook UX31A", ALC269VB_FIXUP_DMIC),
- 	SND_PCI_QUIRK(0x1043, 0x1a13, "Asus G73Jw", ALC269_FIXUP_ASUS_G73JW),
+--- a/Makefile
++++ b/Makefile
+@@ -169,7 +169,7 @@ SUBARCH := $(shell uname -m | sed -e s/i
+ 				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+ 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+ 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+-				  -e s/sh[234].*/sh/ )
++				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
+ 
+ # Cross compiling and selecting different set of gcc/bin-utils
+ # ---------------------------------------------------------------------------
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -58,7 +58,7 @@ ARCH ?= $(shell echo $(uname_M) | sed -e
+ 				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+ 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+ 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+-				  -e s/sh[234].*/sh/ )
++				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
+ NO_PERF_REGS := 1
+ 
+ CC = $(CROSS_COMPILE)gcc
 
 
