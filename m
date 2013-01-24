@@ -1,130 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055Ab3AXKQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:16:29 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1821 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab3AXKQX (ORCPT
+	id S1753022Ab3AXKTD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:19:03 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:34674 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199Ab3AXKTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:16:23 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 24 Jan 2013 02:14:48 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH] arm: tegra: dt: Add reset GPIO information to PHY DT node
-Date: Thu, 24 Jan 2013 15:46:46 +0530
-Message-ID: <1359022606-13359-1-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 24 Jan 2013 05:19:00 -0500
+Date: Thu, 24 Jan 2013 11:18:54 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kyle McMartin <kyle@redhat.com>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com
+Subject: Re: [PATCH] CONFIG_PANIC_ON_OOPS should be shown if DEBUG_KERNEL
+Message-ID: <20130124101854.GC27602@gmail.com>
+References: <20130122192102.GE6538@redacted.bos.redhat.com>
+ <20130123140440.8a4b1e3f.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130123140440.8a4b1e3f.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As reset GPIO information is PHY specific detail, adding
-it to PHY DT node.
 
-Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
----
- .../bindings/usb/nvidia,tegra20-usb-phy.txt        |    3 +++
- arch/arm/boot/dts/tegra20-harmony.dts              |    4 ++++
- arch/arm/boot/dts/tegra20-paz00.dts                |    4 ++++
- arch/arm/boot/dts/tegra20-seaboard.dts             |    4 ++++
- arch/arm/boot/dts/tegra20-trimslice.dts            |    4 ++++
- arch/arm/boot/dts/tegra20-ventana.dts              |    4 ++++
- 6 files changed, 23 insertions(+), 0 deletions(-)
+* Andrew Morton <akpm@linux-foundation.org> wrote:
 
-diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
-index 84a4c12..6bdaba2 100644
---- a/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
-+++ b/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
-@@ -7,6 +7,9 @@ Required properties :
-  - reg : Address and length of the register set for the USB PHY interface.
-  - phy_type : Should be one of "ulpi" or "utmi".
- 
-+Required properties for phy_type == ulpi:
-+  - nvidia,phy-reset-gpio : The GPIO used to reset the PHY.
-+
- Optional properties:
-   - nvidia,has-legacy-mode : boolean indicates whether this controller can
-     operate in legacy mode (as APX 2500 / 2600). In legacy mode some
-diff --git a/arch/arm/boot/dts/tegra20-harmony.dts b/arch/arm/boot/dts/tegra20-harmony.dts
-index 96f4ccd..61d027f 100644
---- a/arch/arm/boot/dts/tegra20-harmony.dts
-+++ b/arch/arm/boot/dts/tegra20-harmony.dts
-@@ -431,6 +431,10 @@
- 		status = "okay";
- 	};
- 
-+	usb-phy@c5004400 {
-+		nvidia,phy-reset-gpio = <&gpio 169 0>; /* gpio PV1 */
-+	};
-+
- 	sdhci@c8000200 {
- 		status = "okay";
- 		cd-gpios = <&gpio 69 0>; /* gpio PI5 */
-diff --git a/arch/arm/boot/dts/tegra20-paz00.dts b/arch/arm/boot/dts/tegra20-paz00.dts
-index e4034b6..54d6fce 100644
---- a/arch/arm/boot/dts/tegra20-paz00.dts
-+++ b/arch/arm/boot/dts/tegra20-paz00.dts
-@@ -430,6 +430,10 @@
- 		status = "okay";
- 	};
- 
-+	usb-phy@c5004400 {
-+		nvidia,phy-reset-gpio = <&gpio 168 0>; /* gpio PV0 */
-+	};
-+
- 	sdhci@c8000000 {
- 		status = "okay";
- 		cd-gpios = <&gpio 173 0>; /* gpio PV5 */
-diff --git a/arch/arm/boot/dts/tegra20-seaboard.dts b/arch/arm/boot/dts/tegra20-seaboard.dts
-index 0b48359..37b3a57 100644
---- a/arch/arm/boot/dts/tegra20-seaboard.dts
-+++ b/arch/arm/boot/dts/tegra20-seaboard.dts
-@@ -572,6 +572,10 @@
- 		status = "okay";
- 	};
- 
-+	usb-phy@c5004400 {
-+		nvidia,phy-reset-gpio = <&gpio 169 0>; /* gpio PV1 */
-+	};
-+
- 	sdhci@c8000000 {
- 		status = "okay";
- 		power-gpios = <&gpio 86 0>; /* gpio PK6 */
-diff --git a/arch/arm/boot/dts/tegra20-trimslice.dts b/arch/arm/boot/dts/tegra20-trimslice.dts
-index adf6024..5d79e4f 100644
---- a/arch/arm/boot/dts/tegra20-trimslice.dts
-+++ b/arch/arm/boot/dts/tegra20-trimslice.dts
-@@ -314,6 +314,10 @@
- 		status = "okay";
- 	};
- 
-+	usb-phy@c5004400 {
-+		nvidia,phy-reset-gpio = <&gpio 168 0>; /* gpio PV0 */
-+	};
-+
- 	sdhci@c8000000 {
- 		status = "okay";
- 		bus-width = <4>;
-diff --git a/arch/arm/boot/dts/tegra20-ventana.dts b/arch/arm/boot/dts/tegra20-ventana.dts
-index 5b15c30..425c890 100644
---- a/arch/arm/boot/dts/tegra20-ventana.dts
-+++ b/arch/arm/boot/dts/tegra20-ventana.dts
-@@ -508,6 +508,10 @@
- 		status = "okay";
- 	};
- 
-+	usb-phy@c5004400 {
-+		nvidia,phy-reset-gpio = <&gpio 169 0>; /* gpio PV1 */
-+	};
-+
- 	sdhci@c8000000 {
- 		status = "okay";
- 		power-gpios = <&gpio 86 0>; /* gpio PK6 */
--- 
-1.7.0.4
+> On Tue, 22 Jan 2013 14:21:03 -0500
+> Kyle McMartin <kyle@redhat.com> wrote:
+> 
+> > CONFIG_EXPERT is a bit silly a place for this, and hides it
+> > unnecessarily. CONFIG_DEBUG_KERNEL makes much more sense.
+> > 
+> > Signed-off-by: Kyle McMartin <kyle@redhat.com>
+> > 
+> > --- a/lib/Kconfig.debug
+> > +++ b/lib/Kconfig.debug
+> > @@ -243,7 +243,7 @@ config BOOTPARAM_SOFTLOCKUP_PANIC_VALUE
+> >  	default 1 if BOOTPARAM_SOFTLOCKUP_PANIC
+> >  
+> >  config PANIC_ON_OOPS
+> > -	bool "Panic on Oops" if EXPERT
+> > +	bool "Panic on Oops" if DEBUG_KERNEL
+> >  	default n
+> >  	help
+> >  	  Say Y here to enable the kernel to panic when it oopses. This
+> 
+> hm, I'm not sure that it should depend on anything.  Where's the benefit?
 
+Agreed.
+
+(The 'default n' is superfuous as well, while at it.)
+
+Thanks,
+
+	Ingo
