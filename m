@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3AXDJc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:09:32 -0500
-Received: from mga01.intel.com ([192.55.52.88]:7626 "EHLO mga01.intel.com"
+	id S1754194Ab3AXDJm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:09:42 -0500
+Received: from mga01.intel.com ([192.55.52.88]:6092 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753405Ab3AXDHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:07:47 -0500
+	id S1753158Ab3AXDIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 22:08:02 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,525,1355126400"; 
-   d="scan'208";a="277725060"
+   d="scan'208";a="277725102"
 From: Alex Shi <alex.shi@intel.com>
 To: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
         tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
@@ -16,9 +16,9 @@ To: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
 Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
         linux-kernel@vger.kernel.org, alex.shi@intel.com
-Subject: [patch v4 12/18] sched: add power aware scheduling in fork/exec/wake
-Date: Thu, 24 Jan 2013 11:06:54 +0800
-Message-Id: <1358996820-23036-13-git-send-email-alex.shi@intel.com>
+Subject: [patch v4 18/18] sched: lazy power balance
+Date: Thu, 24 Jan 2013 11:07:00 +0800
+Message-Id: <1358996820-23036-19-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
 References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
@@ -26,298 +26,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add power aware scheduling in fork/exec/wake. It try to
-select cpu from the busiest while still has utilization group. That's
-will save power for other groups.
+When active task number in sched domain waves around the power friendly
+scheduling creteria, scheduling will thresh between the power friendly
+balance and performance balance, bring unnecessary task migration.
+The typical benchmark is 'make -j x'.
 
-The trade off is adding a power aware statistics collection in group
-seeking. But since the collection just happened in power scheduling
-eligible condition, the worst case of hackbench testing just drops
-about 2% with powersaving/balance policy. No clear change for
-performance policy.
+To remove such issue, introduce a u64 perf_lb_record variable to record
+performance load balance history. If there is no performance LB for
+continuing 32 times load balancing, or no LB for 8 times max_interval ms,
+or only 4 times performance LB in last 64 times load balancing, then we
+accept a powersaving LB. Otherwise, give up this power awareness
+LB chance.
 
-I had tried to use rq utilisation in this balancing, but since the
-utilisation need much time to accumulate itself(345ms). It's bad for
-any burst balancing. So I use instant rq utilisation -- nr_running.
+With this patch, the worst case for power scheduling -- kbuild, gets
+similar performance/power value among different policy.
+
+BTW, the lazy balance shows the performance gain when j is up to 32.
+
+On my SNB EP 2 sockets machine with 8 cores * HT: 'make -j x' results:
+
+		powersaving		balance		performance
+x = 1    175.603 /417 13          175.220 /416 13        176.073 /407 13
+x = 2    192.215 /218 23          194.522 /202 25        217.393 /200 23
+x = 4    205.226 /124 39          208.823 /114 42        230.425 /105 41
+x = 8    236.369 /71 59           249.005 /65 61         257.661 /62 62
+x = 16   283.842 /48 73           307.465 /40 81         309.336 /39 82
+x = 32   325.197 /32 96           333.503 /32 93         336.138 /32 92
+
+data explains: 175.603 /417 13
+	175.603: avagerage Watts
+	417: seconds(compile time)
+	13:  scaled performance/power = 1000000 / seconds / watts
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c | 230 ++++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 179 insertions(+), 51 deletions(-)
+ include/linux/sched.h |  1 +
+ kernel/sched/fair.c   | 67 +++++++++++++++++++++++++++++++++++++++++----------
+ 2 files changed, 55 insertions(+), 13 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 66b05e1..5051990 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -941,6 +941,7 @@ struct sched_domain {
+ 	unsigned long last_balance;	/* init to jiffies. units in jiffies */
+ 	unsigned int balance_interval;	/* initialise to 1. units in ms. */
+ 	unsigned int nr_balance_failed; /* initialise to 0 */
++	u64	perf_lb_record;	/* performance balance record */
+ 
+ 	u64 last_update;
+ 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 20363fb..7c7d9db 100644
+index a83ad90..262d7ec 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -3318,25 +3318,189 @@ done:
+@@ -4497,6 +4497,58 @@ static inline void update_sd_lb_power_stats(struct lb_env *env,
+ 	}
  }
  
- /*
-- * sched_balance_self: balance the current task (running on cpu) in domains
-+ * sd_lb_stats - Structure to store the statistics of a sched_domain
-+ *		during load balancing.
++#define PERF_LB_HH_MASK		0xffffffff00000000ULL
++#define PERF_LB_LH_MASK		0xffffffffULL
++
++/**
++ * need_perf_balance - Check if the performance load balance needed
++ * in the sched_domain.
++ *
++ * @env: The load balancing environment.
++ * @sds: Variable containing the statistics of the sched_domain
 + */
-+struct sd_lb_stats {
-+	struct sched_group *busiest; /* Busiest group in this sd */
-+	struct sched_group *this;  /* Local group in this sd */
-+	unsigned long total_load;  /* Total load of all groups in sd */
-+	unsigned long total_pwr;   /*	Total power of all groups in sd */
-+	unsigned long avg_load;	   /* Average load across all groups in sd */
-+
-+	/** Statistics of this group */
-+	unsigned long this_load;
-+	unsigned long this_load_per_task;
-+	unsigned long this_nr_running;
-+	unsigned int  this_has_capacity;
-+	unsigned int  this_idle_cpus;
-+
-+	/* Statistics of the busiest group */
-+	unsigned int  busiest_idle_cpus;
-+	unsigned long max_load;
-+	unsigned long busiest_load_per_task;
-+	unsigned long busiest_nr_running;
-+	unsigned long busiest_group_capacity;
-+	unsigned int  busiest_has_capacity;
-+	unsigned int  busiest_group_weight;
-+
-+	int group_imb; /* Is there imbalance in this sd */
-+
-+	/* Varibles of power awaring scheduling */
-+	unsigned int  sd_utils;	/* sum utilizations of this domain */
-+	unsigned long sd_capacity;	/* capacity of this domain */
-+	struct sched_group *group_leader; /* Group which relieves group_min */
-+	unsigned long min_load_per_task; /* load_per_task in group_min */
-+	unsigned int  leader_util;	/* sum utilizations of group_leader */
-+	unsigned int  min_util;		/* sum utilizations of group_min */
-+};
-+
-+/*
-+ * sg_lb_stats - stats of a sched_group required for load_balancing
-+ */
-+struct sg_lb_stats {
-+	unsigned long avg_load; /*Avg load across the CPUs of the group */
-+	unsigned long group_load; /* Total load over the CPUs of the group */
-+	unsigned long sum_nr_running; /* Nr tasks running in the group */
-+	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
-+	unsigned long group_capacity;
-+	unsigned long idle_cpus;
-+	unsigned long group_weight;
-+	int group_imb; /* Is there an imbalance in the group ? */
-+	int group_has_capacity; /* Is there extra capacity in the group? */
-+	unsigned int group_utils;	/* sum utilizations of group */
-+
-+	unsigned long sum_shared_running;	/* 0 on non-NUMA */
-+};
-+
-+static inline int
-+fix_small_capacity(struct sched_domain *sd, struct sched_group *group);
-+
-+/*
-+ * Try to collect the task running number and capacity of the group.
-+ */
-+static void get_sg_power_stats(struct sched_group *group,
-+	struct sched_domain *sd, struct sg_lb_stats *sgs)
++static int need_perf_balance(struct lb_env *env, struct sd_lb_stats *sds)
 +{
-+	int i;
++	env->sd->perf_lb_record <<= 1;
 +
-+	for_each_cpu(i, sched_group_cpus(group)) {
-+		struct rq *rq = cpu_rq(i);
-+
-+		sgs->group_utils += rq->nr_running;
++	if (env->perf_lb) {
++		env->sd->perf_lb_record |= 0x1;
++		return 1;
 +	}
 +
-+	sgs->group_capacity = DIV_ROUND_CLOSEST(group->sgp->power,
-+						SCHED_POWER_SCALE);
-+	if (!sgs->group_capacity)
-+		sgs->group_capacity = fix_small_capacity(sd, group);
-+	sgs->group_weight = group->group_weight;
-+}
++	/*
++	 * The situation isn't eligible for performance balance. If this_cpu
++	 * is not eligible or the timing is not suitable for lazy powersaving
++	 * balance, we will stop both powersaving and performance balance.
++	 */
++	if (env->power_lb && sds->this == sds->group_leader
++			&& sds->group_leader != sds->group_min) {
++		int interval;
 +
-+/*
-+ * Try to collect the task running number and capacity of the doamin.
-+ */
-+static void get_sd_power_stats(struct sched_domain *sd,
-+		struct task_struct *p, struct sd_lb_stats *sds)
-+{
-+	struct sched_group *group;
-+	struct sg_lb_stats sgs;
-+	int sd_min_delta = INT_MAX;
-+	int cpu = task_cpu(p);
++		/* powersaving balance interval set as 8 * max_interval */
++		interval = msecs_to_jiffies(8 * env->sd->max_interval);
++		if (time_after(jiffies, env->sd->last_balance + interval))
++			env->sd->perf_lb_record = 0;
 +
-+	group = sd->groups;
-+	do {
-+		long g_delta;
-+		unsigned long threshold;
++		/*
++		 * A eligible timing is no performance balance in last 32
++		 * balance and performance balance is no more than 4 times
++		 * in last 64 balance, or no balance in powersaving interval
++		 * time.
++		 */
++		if ((hweight64(env->sd->perf_lb_record & PERF_LB_HH_MASK) <= 4)
++			&& !(env->sd->perf_lb_record & PERF_LB_LH_MASK)) {
 +
-+		if (!cpumask_test_cpu(cpu, sched_group_mask(group)))
-+			continue;
-+
-+		memset(&sgs, 0, sizeof(sgs));
-+		get_sg_power_stats(group, sd, &sgs);
-+
-+		if (sched_policy == SCHED_POLICY_POWERSAVING)
-+			threshold = sgs.group_weight;
-+		else
-+			threshold = sgs.group_capacity;
-+
-+		g_delta = threshold - sgs.group_utils;
-+
-+		if (g_delta > 0 && g_delta < sd_min_delta) {
-+			sd_min_delta = g_delta;
-+			sds->group_leader = group;
++			env->imbalance = sds->min_load_per_task;
++			return 0;
 +		}
 +
-+		sds->sd_utils += sgs.group_utils;
-+		sds->total_pwr += group->sgp->power;
-+	} while  (group = group->next, group != sd->groups);
-+
-+	sds->sd_capacity = DIV_ROUND_CLOSEST(sds->total_pwr,
-+						SCHED_POWER_SCALE);
++	}
++	env->power_lb = 0;
++	sds->group_min = NULL;
++	return 0;
 +}
 +
-+/*
-+ * Execute power policy if this domain is not full.
-+ */
-+static inline int get_sd_sched_policy(struct sched_domain *sd,
-+	int cpu, struct task_struct *p, struct sd_lb_stats *sds)
-+{
-+	unsigned long threshold;
-+
-+	if (sched_policy == SCHED_POLICY_PERFORMANCE)
-+		return SCHED_POLICY_PERFORMANCE;
-+
-+	memset(sds, 0, sizeof(*sds));
-+	get_sd_power_stats(sd, p, sds);
-+
-+	if (sched_policy == SCHED_POLICY_POWERSAVING)
-+		threshold = sd->span_weight;
-+	else
-+		threshold = sds->sd_capacity;
-+
-+	/* still can hold one more task in this domain */
-+	if (sds->sd_utils < threshold)
-+		return sched_policy;
-+
-+	return SCHED_POLICY_PERFORMANCE;
-+}
-+
-+/*
-+ * If power policy is eligible for this domain, and it has task allowed cpu.
-+ * we will select CPU from this domain.
-+ */
-+static int get_cpu_for_power_policy(struct sched_domain *sd, int cpu,
-+		struct task_struct *p, struct sd_lb_stats *sds)
-+{
-+	int policy;
-+	int new_cpu = -1;
-+
-+	policy = get_sd_sched_policy(sd, cpu, p, sds);
-+	if (policy != SCHED_POLICY_PERFORMANCE && sds->group_leader)
-+		new_cpu = find_idlest_cpu(sds->group_leader, p, cpu);
-+
-+	return new_cpu;
-+}
-+
-+/*
-+ * select_task_rq_fair: balance the current task (running on cpu) in domains
-  * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
-  * SD_BALANCE_EXEC.
-  *
-- * Balance, ie. select the least loaded group.
-- *
-  * Returns the target CPU number, or the same CPU if no balancing is needed.
-  *
-  * preempt must be disabled.
-  */
- static int
--select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
-+select_task_rq_fair(struct task_struct *p, int sd_flag, int flags)
- {
- 	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
- 	int new_cpu = cpu;
- 	int want_affine = 0;
--	int sync = wake_flags & WF_SYNC;
-+	int sync = flags & WF_SYNC;
-+	struct sd_lb_stats sds;
- 
- 	if (p->nr_cpus_allowed == 1)
- 		return prev_cpu;
-@@ -3362,11 +3526,20 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 			break;
- 		}
- 
--		if (tmp->flags & sd_flag)
-+		if (tmp->flags & sd_flag) {
- 			sd = tmp;
-+
-+			new_cpu = get_cpu_for_power_policy(sd, cpu, p, &sds);
-+			if (new_cpu != -1)
-+				goto unlock;
-+		}
- 	}
- 
- 	if (affine_sd) {
-+		new_cpu = get_cpu_for_power_policy(affine_sd, cpu, p, &sds);
-+		if (new_cpu != -1)
-+			goto unlock;
-+
- 		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
- 			prev_cpu = cpu;
- 
-@@ -4167,51 +4340,6 @@ static unsigned long task_h_load(struct task_struct *p)
- #endif
- 
- /********** Helpers for find_busiest_group ************************/
--/*
-- * sd_lb_stats - Structure to store the statistics of a sched_domain
-- * 		during load balancing.
-- */
--struct sd_lb_stats {
--	struct sched_group *busiest; /* Busiest group in this sd */
--	struct sched_group *this;  /* Local group in this sd */
--	unsigned long total_load;  /* Total load of all groups in sd */
--	unsigned long total_pwr;   /*	Total power of all groups in sd */
--	unsigned long avg_load;	   /* Average load across all groups in sd */
--
--	/** Statistics of this group */
--	unsigned long this_load;
--	unsigned long this_load_per_task;
--	unsigned long this_nr_running;
--	unsigned long this_has_capacity;
--	unsigned int  this_idle_cpus;
--
--	/* Statistics of the busiest group */
--	unsigned int  busiest_idle_cpus;
--	unsigned long max_load;
--	unsigned long busiest_load_per_task;
--	unsigned long busiest_nr_running;
--	unsigned long busiest_group_capacity;
--	unsigned long busiest_has_capacity;
--	unsigned int  busiest_group_weight;
--
--	int group_imb; /* Is there imbalance in this sd */
--};
--
--/*
-- * sg_lb_stats - stats of a sched_group required for load_balancing
-- */
--struct sg_lb_stats {
--	unsigned long avg_load; /*Avg load across the CPUs of the group */
--	unsigned long group_load; /* Total load over the CPUs of the group */
--	unsigned long sum_nr_running; /* Nr tasks running in the group */
--	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
--	unsigned long group_capacity;
--	unsigned long idle_cpus;
--	unsigned long group_weight;
--	int group_imb; /* Is there an imbalance in the group ? */
--	int group_has_capacity; /* Is there extra capacity in the group? */
--};
--
  /**
   * get_sd_load_idx - Obtain the load index for a given sched domain.
   * @sd: The sched_domain whose load_idx is to be obtained.
+@@ -5087,7 +5139,6 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+ }
+ 
+ /******* find_busiest_group() helpers end here *********************/
+-
+ /**
+  * find_busiest_group - Returns the busiest group within the sched_domain
+  * if there is an imbalance. If there isn't an imbalance, and
+@@ -5120,18 +5171,8 @@ find_busiest_group(struct lb_env *env, int *balance)
+ 	 */
+ 	update_sd_lb_stats(env, balance, &sds);
+ 
+-	if (!env->perf_lb && !env->power_lb)
+-		return  NULL;
+-
+-	if (env->power_lb) {
+-		if (sds.this == sds.group_leader &&
+-				sds.group_leader != sds.group_min) {
+-			env->imbalance = sds.min_load_per_task;
+-			return sds.group_min;
+-		}
+-		env->power_lb = 0;
+-		return NULL;
+-	}
++	if (!need_perf_balance(env, &sds))
++		return sds.group_min;
+ 
+ 	/*
+ 	 * this_cpu is not the appropriate cpu to perform load balancing at
 -- 
 1.7.12
 
