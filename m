@@ -1,101 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab3AXKAm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:00:42 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:50617 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042Ab3AXKAi (ORCPT
+	id S1753376Ab3AXKAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:00:55 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56865 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753233Ab3AXKAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:00:38 -0500
-X-Auth-Info: YZg+7LDAt9QMids+2ISqaC4OB2yztd2TyuWHkpkZUb8=
-Message-ID: <5101144B.1090600@denx.de>
-Date: Thu, 24 Jan 2013 12:00:27 +0100
-From: Heiko Schocher <hs@denx.de>
-Organization: DENX Software Engineering
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 24 Jan 2013 05:00:41 -0500
+Date: Thu, 24 Jan 2013 18:00:34 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: AnilKumar Ch <anilkumar@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] regulator: tps65217: Fix using wrong dev argument
+ for calling of_regulator_match
+Message-ID: <20130124100002.GD4955@opensource.wolfsonmicro.com>
+References: <1358994450.20257.1.camel@phoenix>
+ <20130124045246.GA4955@opensource.wolfsonmicro.com>
+ <CAFRkauDdbYH2jm_TXypjhe0rWyEOpS-JqZ1G4-WZmFKFJngbkw@mail.gmail.com>
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LDOC <linux-doc@vger.kernel.org>, devicetree-discuss@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH RFC] media: tvp514x: add OF support
-References: <1359018740-6399-1-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1359018740-6399-1-git-send-email-prabhakar.lad@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lc9FT7cWel8HagAv"
+Content-Disposition: inline
+In-Reply-To: <CAFRkauDdbYH2jm_TXypjhe0rWyEOpS-JqZ1G4-WZmFKFJngbkw@mail.gmail.com>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Prabhakar,
 
-On 24.01.2013 10:12, Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
-> 
-> add OF support for the tvp514x driver.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> ---
->  This patch is on top of following patches:
->  1: https://patchwork.kernel.org/patch/1930941/
->  2: http://patchwork.linuxtv.org/patch/16193/
->  3: https://patchwork.kernel.org/patch/1944901/
-> 
->  .../devicetree/bindings/media/i2c/tvp514x.txt      |   30 ++++++++++
->  drivers/media/i2c/tvp514x.c                        |   60 ++++++++++++++++++--
->  2 files changed, 85 insertions(+), 5 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/media/i2c/tvp514x.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/media/i2c/tvp514x.txt b/Documentation/devicetree/bindings/media/i2c/tvp514x.txt
-> new file mode 100644
-> index 0000000..3cce323
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/media/i2c/tvp514x.txt
-> @@ -0,0 +1,30 @@
+--lc9FT7cWel8HagAv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-[...]
-> diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
-> index a4f0a70..0e2b15c 100644
-> --- a/drivers/media/i2c/tvp514x.c
-> +++ b/drivers/media/i2c/tvp514x.c
-> @@ -12,6 +12,7 @@
->   *     Hardik Shah <hardik.shah@ti.com>
->   *     Manjunath Hadli <mrh@ti.com>
->   *     Karicheri Muralidharan <m-karicheri2@ti.com>
-> + *     Prabhakar Lad <prabhakar.lad@ti.com>
->   *
->   * This package is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License version 2 as
-> @@ -930,6 +931,50 @@ static struct tvp514x_decoder tvp514x_dev = {
->  
->  };
->  
-> +#if defined(CONFIG_OF)
-> +static const struct of_device_id tvp514x_of_match[] = {
-> +	{.compatible = "ti,tvp514x-decoder", },
-> +	{},
-> +}
+On Thu, Jan 24, 2013 at 04:22:59PM +0800, Axel Lin wrote:
 
-Missing semicolon here. Without, gcc throws here an error
-when compiling this driver as a module.
+> This patch does not change "node" argument ( the second parameter of
+> of_regulator_match()), so it should not break the OF bindings.
 
-> +MODULE_DEVICE_TABLE(of, tvp514x_of_match);
-> +
-[...]
+Ugh, right - the argument is just confusingly named when the context is
+missing.  No problem.
 
-bye,
-Heiko
--- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+--lc9FT7cWel8HagAv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRAQYuAAoJELSic+t+oim9dFcP/ixixIbOw/c1jpXDc2u5zWG8
+OMZV50y2P8aWR788uB4ZY69Xp0a6gpy3zAnjEguO+FMvWxyoXVV/V5UAbuxHrGUO
+7k1Y+4n01MoRC5EIr3jy1MXtQ6mNWZOgIyy4v0aqXYLMDgEQQT/tpT+18qV5LzXZ
+ZhQ5HdfKyfwaVApbAccFnS+m1KjxQqJBRWQot4QjEzj1h+QwA+mqh0sPl5IiXJ++
+29MambetJ4x4SllPKzC/4EX8ulM7vceKC7SUa01yHhM2dqDGnRdig8ut33wyIMVW
+imbszuqWBBdQXLr7Rs0ailN28/pR1ocnHqyR9naySYcV/US1RYXFXSEmBbwXT427
+qV//e5WV4e1S/BR8m/xnxC9kIut69V4FIZZhtFYpQ/HwDpi48hVC3a4LTAz/pd+i
+v5UAMOT9/aib6cugGkyy3XatoPzv47T/PnI2w/5pb/PZ5gaWQ78maysUdbv7VIj1
+kC6+ajlwbL15VahjrW6NUvRmN+lEvoLOvqyXhggtqWvDRbZOKJq9CduYsSCJ3fsY
+OMcah0E5MUnkZbzGcmk6uEh637yfqhDeGibWQmo3nPG3baZ2w8Fzin2IWFwkLOgS
+ZMKVakhtkteYTH7r6ZT+KJi8MFHt/7E0Qyufr5niAowe2UrZ/p54yl5W2cfYM09G
+kGLxGLVbuZ+ewnOGOwYR
+=iFxc
+-----END PGP SIGNATURE-----
+
+--lc9FT7cWel8HagAv--
