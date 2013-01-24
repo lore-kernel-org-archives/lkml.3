@@ -1,91 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945970Ab3AXVWK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:22:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33636 "EHLO mx2.suse.de"
+	id S1945938Ab3AXVUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:20:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41106 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1945981Ab3AXVUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:20:39 -0500
-From: Michal Marek <mmarek@suse.cz>
-To: dhowells@redhat.com, rusty@ozlabs.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/4] MODSIGN: Simplify Makefile with a Kconfig helper
-Date: Thu, 24 Jan 2013 22:20:26 +0100
-Message-Id: <1359062429-27295-1-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.7.3.1
+	id S1756837Ab3AXVSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:18:54 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 02/15] ftrace: Be first to run code modification on modules
+Date: Thu, 24 Jan 2013 13:18:26 -0800
+Message-Id: <20130124211724.203776440@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130124211723.489089115@linuxfoundation.org>
+References: <20130124211723.489089115@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
-v2: Check in kernel/Makefile that CONFIG_MODULE_SIG_HASH is set
+3.0-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Steven Rostedt <srostedt@redhat.com>
+
+commit c1bf08ac26e92122faab9f6c32ea8aba94612dae upstream.
+
+If some other kernel subsystem has a module notifier, and adds a kprobe
+to a ftrace mcount point (now that kprobes work on ftrace points),
+when the ftrace notifier runs it will fail and disable ftrace, as well
+as kprobes that are attached to ftrace points.
+
+Here's the error:
+
+ WARNING: at kernel/trace/ftrace.c:1618 ftrace_bug+0x239/0x280()
+ Hardware name: Bochs
+ Modules linked in: fat(+) stap_56d28a51b3fe546293ca0700b10bcb29__8059(F) nfsv4 auth_rpcgss nfs dns_resolver fscache xt_nat iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack lockd sunrpc ppdev parport_pc parport microcode virtio_net i2c_piix4 drm_kms_helper ttm drm i2c_core [last unloaded: bid_shared]
+ Pid: 8068, comm: modprobe Tainted: GF            3.7.0-0.rc8.git0.1.fc19.x86_64 #1
+ Call Trace:
+  [<ffffffff8105e70f>] warn_slowpath_common+0x7f/0xc0
+  [<ffffffff81134106>] ? __probe_kernel_read+0x46/0x70
+  [<ffffffffa0180000>] ? 0xffffffffa017ffff
+  [<ffffffffa0180000>] ? 0xffffffffa017ffff
+  [<ffffffff8105e76a>] warn_slowpath_null+0x1a/0x20
+  [<ffffffff810fd189>] ftrace_bug+0x239/0x280
+  [<ffffffff810fd626>] ftrace_process_locs+0x376/0x520
+  [<ffffffff810fefb7>] ftrace_module_notify+0x47/0x50
+  [<ffffffff8163912d>] notifier_call_chain+0x4d/0x70
+  [<ffffffff810882f8>] __blocking_notifier_call_chain+0x58/0x80
+  [<ffffffff81088336>] blocking_notifier_call_chain+0x16/0x20
+  [<ffffffff810c2a23>] sys_init_module+0x73/0x220
+  [<ffffffff8163d719>] system_call_fastpath+0x16/0x1b
+ ---[ end trace 9ef46351e53bbf80 ]---
+ ftrace failed to modify [<ffffffffa0180000>] init_once+0x0/0x20 [fat]
+  actual: cc:bb:d2:4b:e1
+
+A kprobe was added to the init_once() function in the fat module on load.
+But this happened before ftrace could have touched the code. As ftrace
+didn't run yet, the kprobe system had no idea it was a ftrace point and
+simply added a breakpoint to the code (0xcc in the cc:bb:d2:4b:e1).
+
+Then when ftrace went to modify the location from a call to mcount/fentry
+into a nop, it didn't see a call op, but instead it saw the breakpoint op
+and not knowing what to do with it, ftrace shut itself down.
+
+The solution is to simply give the ftrace module notifier the max priority.
+This should have been done regardless, as the core code ftrace modification
+also happens very early on in boot up. This makes the module modification
+closer to core modification.
+
+Link: http://lkml.kernel.org/r/20130107140333.593683061@goodmis.org
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reported-by: Frank Ch. Eigler <fche@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
 ---
- init/Kconfig    |    9 +++++++++
- kernel/Makefile |   22 +++-------------------
- 2 files changed, 12 insertions(+), 19 deletions(-)
+ kernel/trace/ftrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 6fdd6e3..ba7d1c1 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1634,6 +1634,15 @@ config MODULE_SIG_SHA512
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3460,7 +3460,7 @@ static int ftrace_module_notify(struct n
  
- endchoice
+ struct notifier_block ftrace_module_nb = {
+ 	.notifier_call = ftrace_module_notify,
+-	.priority = 0,
++	.priority = INT_MAX,	/* Run before anything that can use kprobes */
+ };
  
-+config MODULE_SIG_HASH
-+	string
-+	depends on MODULE_SIG
-+	default "sha1" if MODULE_SIG_SHA1
-+	default "sha224" if MODULE_SIG_SHA224
-+	default "sha256" if MODULE_SIG_SHA256
-+	default "sha384" if MODULE_SIG_SHA384
-+	default "sha512" if MODULE_SIG_SHA512
-+
- endif # MODULES
- 
- config INIT_ALL_POSSIBLE
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 86e3285..fe5dfb0 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -148,23 +148,7 @@ kernel/modsign_pubkey.o: signing_key.x509 extra_certificates
- # fail and that the kernel may be used afterwards.
- #
- ###############################################################################
--sign_key_with_hash :=
--ifeq ($(CONFIG_MODULE_SIG_SHA1),y)
--sign_key_with_hash := -sha1
--endif
--ifeq ($(CONFIG_MODULE_SIG_SHA224),y)
--sign_key_with_hash := -sha224
--endif
--ifeq ($(CONFIG_MODULE_SIG_SHA256),y)
--sign_key_with_hash := -sha256
--endif
--ifeq ($(CONFIG_MODULE_SIG_SHA384),y)
--sign_key_with_hash := -sha384
--endif
--ifeq ($(CONFIG_MODULE_SIG_SHA512),y)
--sign_key_with_hash := -sha512
--endif
--ifeq ($(sign_key_with_hash),)
-+ifndef CONFIG_MODULE_SIG_HASH
- $(error Could not determine digest type to use from kernel config)
- endif
- 
-@@ -177,8 +161,8 @@ signing_key.priv signing_key.x509: x509.genkey
- 	@echo "### needs to be run as root, and uses a hardware random"
- 	@echo "### number generator if one is available."
- 	@echo "###"
--	openssl req -new -nodes -utf8 $(sign_key_with_hash) -days 36500 -batch \
--		-x509 -config x509.genkey \
-+	openssl req -new -nodes -utf8 -$(CONFIG_MODULE_SIG_HASH) -days 36500 \
-+		-batch -x509 -config x509.genkey \
- 		-outform DER -out signing_key.x509 \
- 		-keyout signing_key.priv
- 	@echo "###"
--- 
-1.7.8.3
+ extern unsigned long __start_mcount_loc[];
+
 
