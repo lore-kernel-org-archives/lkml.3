@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab3AXQdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 11:33:45 -0500
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:65175 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab3AXQdn (ORCPT
+	id S1753354Ab3AXQoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 11:44:10 -0500
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:45027 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab3AXQoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 11:33:43 -0500
+	Thu, 24 Jan 2013 11:44:08 -0500
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <5100FA77.3020405@atmel.com>
-References: <5100FA77.3020405@atmel.com>
-Date: Thu, 24 Jan 2013 08:33:42 -0800
-Message-ID: <CAOesGMjvE30TDVGVr8_0cjSTze1ouZFcvu7or4tM1vCuaZfTDg@mail.gmail.com>
-Subject: Re: [GIT PULL] at91: fixes for 3.8-rc5
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Richard Genoud <richard.genoud@gmail.com>, linux-arm@overkiz.com,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Joachim Eastwood <manabian@gmail.com>
+In-Reply-To: <1354537588-25831-2-git-send-email-vincent.guittot@linaro.org>
+References: <1354537588-25831-1-git-send-email-vincent.guittot@linaro.org>
+	<1354537588-25831-2-git-send-email-vincent.guittot@linaro.org>
+Date: Thu, 24 Jan 2013 17:44:05 +0100
+Message-ID: <CAFTL4hxPPddCmhcPrdZgWVSy3Z+9_Jr9ruT9L5qhq6yFuuEDNQ@mail.gmail.com>
+Subject: Re: [PATCH Resend 1/3] sched: fix nr_busy_cpus with coupled cpuidle
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, ccross@android.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 1:10 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> Arnd, Olof,
->
-> Here is the pull request related to the fixes series that I sent
-> earlier this week. Changes are obvious and are very constrained in
-> AT91-related material.
->
-> The following changes since commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619:
->
->   Linux 3.8-rc4 (2013-01-17 19:25:45 -0800)
->
-> are available in the git repository at:
->
->   git://github.com/at91linux/linux-at91.git tags/at91-fixes
+2012/12/3 Vincent Guittot <vincent.guittot@linaro.org>:
+> With the coupled cpuidle driver (but probably also with other drivers),
+> a CPU loops in a temporary safe state while waiting for other CPUs of its
+> cluster to be ready to enter the coupled C-state. If an IRQ or a softirq
+> occurs, the CPU will stay in this internal loop if there is no need
+> to resched. The SCHED softirq clears the NOHZ and increases
+> nr_busy_cpus. If there is no need to resched, we will not call
+> set_cpu_sd_state_idle because of this internal loop in a cpuidle state.
+> We have to call set_cpu_sd_state_idle in tick_nohz_irq_exit which is used
+> to handle such situation.
 
-Pulled.
+I'm a bit confused with this.
 
+set_cpu_sd_state_busy() is only called from nohz_kick_needed(). And it
+checks idle_cpu() before doing anything. So if no task is going to be
+scheduled, idle_cpu() prevents from calling set_cpu_sd_state_busy().
 
--Olof
+I'm probably missing something.
+
+Thanks.
+
+>
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>  kernel/time/tick-sched.c |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 955d35b..b8d74ea 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -570,6 +570,8 @@ void tick_nohz_irq_exit(void)
+>         if (!ts->inidle)
+>                 return;
+>
+> +       set_cpu_sd_state_idle();
+> +
+>         /* Cancel the timer because CPU already waken up from the C-states*/
+>         menu_hrtimer_cancel();
+>         __tick_nohz_idle_enter(ts);
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
