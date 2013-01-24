@@ -1,91 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab3AXK1G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:27:06 -0500
-Received: from mga03.intel.com ([143.182.124.21]:13769 "EHLO mga03.intel.com"
+	id S1752782Ab3AXK2H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:28:07 -0500
+Received: from mout.gmx.net ([212.227.15.18]:59589 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752782Ab3AXK06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:26:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,528,1355126400"; 
-   d="scan'208";a="194645940"
-Date: Thu, 24 Jan 2013 18:27:47 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 2/2] mutex: use spin_[un]lock instead of
- arch_spin_[un]lock
-Message-ID: <20130124102747.GF12678@yliu-dev.sh.intel.com>
-References: <1359019365-23646-1-git-send-email-yuanhan.liu@linux.intel.com>
- <1359019365-23646-2-git-send-email-yuanhan.liu@linux.intel.com>
- <20130124095807.GA26351@gmail.com>
- <20130124101305.GE12678@yliu-dev.sh.intel.com>
- <20130124101450.GA27602@gmail.com>
+	id S1752747Ab3AXK17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 05:27:59 -0500
+Cc: linux-kernel@vger.kernel.org, dave.anglin@bell.net, jejb@parisc-linux.org,
+        linux-parisc@vger.kernel.org, torvalds@linux-foundation.org
+Content-Type: text/plain; charset="utf-8"
+Date: Thu, 24 Jan 2013 11:27:56 +0100
+From: "Helge Deller" <deller@gmx.de>
+In-Reply-To: <CAMuHMdViEAXdm=iYXeejdnxw_Xj_7HF63DcUojwBm-G+UeSeuw@mail.gmail.com>
+Message-ID: <20130124102756.213380@gmx.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130124101450.GA27602@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <50FF006C.7070803@gmx.de>
+ <CAMuHMdViEAXdm=iYXeejdnxw_Xj_7HF63DcUojwBm-G+UeSeuw@mail.gmail.com>
+Subject: Re: [GIT PULL] parisc fixes for v3.8-rc5
+To: Geert Uytterhoeven <geert@linux-m68k.org>, deller@gmx.de
+X-Authenticated: #1045983
+X-Flags: 0001
+X-Mailer: WWW-Mail 6100 (Global Message Exchange)
+X-Priority: 3
+X-Provags-ID: V01U2FsdGVkX18MBm8Fe20M4rfynzgD0p2KOSz6Km6TaVsIdpXEOO
+ 1HqKN+t8H793qEWtuUDBDX9Aus8DZPX18q7Q== 
+Content-Transfer-Encoding: 8bit
+X-GMX-UID: +2lzcT4yeSEqX76WZHQhtEt+IGRvb8DP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 11:14:50AM +0100, Ingo Molnar wrote:
-> 
-> * Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
-> 
-> > On Thu, Jan 24, 2013 at 10:58:07AM +0100, Ingo Molnar wrote:
-> > > 
-> > > * Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
-> > > 
-> > > > Use spin_[un]lock instead of arch_spin_[un]lock in mutex-debug.h so
-> > > > that we can collect the lock statistics of spin_lock_mutex from
-> > > > /proc/lock_stat.
-> > > > 
-> > > > Cc: Ingo Molnar <mingo@kernel.org>
-> > > > Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-> > > > ---
-> > > >  kernel/mutex-debug.h |    4 ++--
-> > > >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/kernel/mutex-debug.h b/kernel/mutex-debug.h
-> > > > index 0799fd3..556c0bc 100644
-> > > > --- a/kernel/mutex-debug.h
-> > > > +++ b/kernel/mutex-debug.h
-> > > > @@ -43,13 +43,13 @@ static inline void mutex_clear_owner(struct mutex *lock)
-> > > >  							\
-> > > >  		DEBUG_LOCKS_WARN_ON(in_interrupt());	\
-> > > >  		local_irq_save(flags);			\
-> > > > -		arch_spin_lock(&(lock)->rlock.raw_lock);\
-> > > > +		spin_lock(lock);			\
-> > > 
-> > > But in that case it could probably use the spin_lock_irqsave() 
-> > > primitive, right?
-> > 
-> > Right, in that case I should use spin_lock_irqsave.
-> > 
-> > But one question, why we use spin_lock at kernel/mutex.h, 
-> > while use 'local_irq_save(); arch_spin_lock' at 
-> > kernel/mutex-debug.h?
-> > 
-> > Shouldn't we keep it consistent? Say use spin_lock_irqsave?
-> 
-> I think we did it to increase performance with lockdep enabled - 
-> this particular lockdep annotation, given the short codepaths, 
-> is not that hard to verify - and if it breaks it will break a 
-> thousand mutex locking places in the kernel.
+Hi Geert,
 
-Thanks for the explanation.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+> On Tue, Jan 22, 2013 at 10:11 PM, Helge Deller <deller@gmx.de> wrote:
+> > please consider pulling the following 4 patches for 3.8-rc5 which
+> improve
+> > the stability of the linux kernel on the parisc architecture.
 > 
-> So maybe it's better to leave it alone - maybe add a comment 
-> that explains the reason.
+> I think you forgot https://patchwork.kernel.org/patch/1917351/
 
-Sorry, I may not get your point clearly. Should I make another patch to
-convert 'local_irq_save(..); arch_spin_lock(..);' at kernel/mutex-debug.h
-to spin_lock_irqsave() then?
+I did not scheduled it as bug fix for 3.8, since the HPUX support is broken in the parisc tree anyway.
 
-Thanks.
+But I did not forgot your patch either. It's in my local git repository and will go in for kernel 3.9. That's why it's in state "accepted" in patchwork already.
+I hope that's OK for you?
 
-	--yliu
+Helge
