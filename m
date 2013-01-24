@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab3AXIqj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 03:46:39 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:17243 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab3AXIqc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 03:46:32 -0500
-Message-ID: <5100F4ED.9000004@atmel.com>
-Date: Thu, 24 Jan 2013 09:46:37 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <richard.genoud@gmail.com>, <linux-arm@overkiz.com>,
-        <manabian@gmail.com>, <dgilbert@interlog.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Josh Wu <josh.wu@atmel.com>, Bo Shen <voice.shen@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [PATCH 7/9] ARM: at91/at91_dt_defconfig: remove memory specification
- to cmdline
-References: <cover.1358934163.git.nicolas.ferre@atmel.com> <2e06e92c758b768baaacc061aafa7f710b74ea02.1358934163.git.nicolas.ferre@atmel.com> <20130123102057.GJ7360@game.jcrosoft.org>
-In-Reply-To: <20130123102057.GJ7360@game.jcrosoft.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	id S1752301Ab3AXIs0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 03:48:26 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:41668 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab3AXIsU convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
+	Thu, 24 Jan 2013 03:48:20 -0500
+Message-Id: <5101035D02000078000B8FFD@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Thu, 24 Jan 2013 08:48:13 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: <olaf@aepfle.de>, <bp@alien8.de>, <apw@canonical.com>, <x86@kernel.org>,
+        <tglx@linutronix.de>, <devel@linuxdriverproject.org>,
+        <gregkh@linuxfoundation.org>, <jasowang@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
+ special hypervisor interrupts
+References: <1358990259-22551-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1358990259-22551-1-git-send-email-kys@microsoft.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2013 11:20 AM, Jean-Christophe PLAGNIOL-VILLARD :
-> On 10:48 Wed 23 Jan     , Nicolas Ferre wrote:
->> No need for this cmdline option as we are using DT.
->> Moreover this defconfig is targeted to multiple SoC/boards: this option
->> was nonsense.
-> just keep the console the rest is a nonsense too
-> 
-> as on 9g45 the initrd will be at 0x7xxxxxxx
+>>> On 24.01.13 at 02:17, "K. Y. Srinivasan" <kys@microsoft.com> wrote:
+> @@ -69,6 +74,11 @@ static void __init ms_hyperv_init_platform(void)
+>  	       ms_hyperv.features, ms_hyperv.hints);
+>  
+>  	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+> +
+> +	/*
+> +	 * Setup the IDT for hypervisor callback.
+> +	 */
+> +	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, hyperv_callback_vector);
 
-Understood, but I prefer to keep a "root" option at least, so I keep it
-like this.
+Isn't doing this unconditionally here as problematic as the call to
+clocksource_register_hz() turned out to be when Xen's Hyper-V
+shim reacts to the CPUID inquiry above?
 
-> the console too but as the patch serie to support via DT is not yet mainline
-> we can keep it
+> @@ -77,3 +87,32 @@ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
+>  	.init_platform		= ms_hyperv_init_platform,
+>  };
+>  EXPORT_SYMBOL(x86_hyper_ms_hyperv);
+> +
+> +static int vmbus_irq = -1;
+> +static irq_handler_t vmbus_isr;
+> +
+> +void hv_register_vmbus_handler(int irq, irq_handler_t handler)
+> +{
+> +	vmbus_irq = irq;
+> +	vmbus_isr = handler;
+> +}
+> +EXPORT_SYMBOL_GPL(hv_register_vmbus_handler);
+> +
+> +void hyperv_vector_handler(struct pt_regs *regs)
+> +{
+> +	struct pt_regs *old_regs = set_irq_regs(regs);
+> +	struct irq_desc *desc;
+> +
+> +	irq_enter();
+> +#ifdef CONFIG_X86
+> +	exit_idle();
+> +#endif
 
-Ok for this.
+This being in a file underneath arch/x86 - why the conditional?
 
-> 
-> Best Regards,
-> J.
->>
->> Reported-by: Josh Wu <josh.wu@atmel.com>
->> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->> ---
->>  arch/arm/configs/at91_dt_defconfig | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/configs/at91_dt_defconfig b/arch/arm/configs/at91_dt_defconfig
->> index b175577..a353ff6 100644
->> --- a/arch/arm/configs/at91_dt_defconfig
->> +++ b/arch/arm/configs/at91_dt_defconfig
->> @@ -31,7 +31,7 @@ CONFIG_ZBOOT_ROM_TEXT=0x0
->>  CONFIG_ZBOOT_ROM_BSS=0x0
->>  CONFIG_ARM_APPENDED_DTB=y
->>  CONFIG_ARM_ATAG_DTB_COMPAT=y
->> -CONFIG_CMDLINE="mem=128M console=ttyS0,115200 initrd=0x21100000,25165824 root=/dev/ram0 rw"
->> +CONFIG_CMDLINE="console=ttyS0,115200 initrd=0x21100000,25165824 root=/dev/ram0 rw"
->>  CONFIG_KEXEC=y
->>  CONFIG_AUTO_ZRELADDR=y
->>  # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
->> -- 
->> 1.8.0
->>
-> 
-> 
+Jan
 
-
--- 
-Nicolas Ferre
