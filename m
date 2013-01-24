@@ -1,57 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab3AXC1z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 21:27:55 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:50784 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab3AXC1t (ORCPT
+	id S1753288Ab3AXCbK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 21:31:10 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:55282 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752988Ab3AXCbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 21:27:49 -0500
-Message-ID: <1358994450.20257.1.camel@phoenix>
-Subject: [PATCH 1/2] regulator: tps65217: Fix using wrong dev argument for
- calling of_regulator_match
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: AnilKumar Ch <anilkumar@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 24 Jan 2013 10:27:30 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 23 Jan 2013 21:31:06 -0500
+Date: Thu, 24 Jan 2013 10:30:54 +0800
+From: Liang Li <liang.li@windriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Randy Dunlap <rdunlap@infradead.org>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Greg KH <greg@kroah.com>
+Subject: Re: linux-next: Tree for Jan 23 (pch_uart.c)
+Message-ID: <20130124023054.GA21851@localhost>
+Reply-To: Liang Li <liang.li@windriver.com>
+References: <20130123174336.47c0113740a14da7f6a92187@canb.auug.org.au>
+ <51007226.1040604@infradead.org>
+ <20130124130616.ee95e032326b1afee6716419@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130124130616.ee95e032326b1afee6716419@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dev parameter is the device requestiong the data.
-In this case it should be &pdev->dev rather than pdev->dev.parent.
+On 2013-01-24 10:06, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> On Wed, 23 Jan 2013 15:28:38 -0800 Randy Dunlap <rdunlap@infradead.org> wrote:
+> >
+> > on i386:
+> > 
+> >   CC [M]  drivers/tty/serial/pch_uart.o
+> > drivers/tty/serial/pch_uart.c: In function 'pch_uart_hal_read':
+> > drivers/tty/serial/pch_uart.c:572:11: error: 'struct uart_port' has no member named 'sysrq'
+> > make[4]: *** [drivers/tty/serial/pch_uart.o] Error 1
+> > 
+> > 
+> > 
+> > when SERIAL_PCH_UART_CONSOLE is not enabled.
+> 
 
-The dev parameter is used to call devm_kzalloc in of_get_regulator_init_data(),
-which means this fixes a memory leak because the memory is allocated every time
-probe() is called, thus it should be freed when this driver is unloaded.
+Seems so .. but I have SERIAL_PCH_UART_CONSOLE and MAGIC_SYSRQ off
+both .. then still has no issue on my side. So I guess that is because
+I have CONFIG_SERIAL_CORE_CONSOLE then it works here:
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/tps65217-regulator.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+#if defined(CONFIG_SERIAL_CORE_CONSOLE) || defined(SUPPORT_SYSRQ)
+	unsigned long		sysrq;			/* sysrq timeout */
+#endif
 
-diff --git a/drivers/regulator/tps65217-regulator.c b/drivers/regulator/tps65217-regulator.c
-index 73dce76..df39518 100644
---- a/drivers/regulator/tps65217-regulator.c
-+++ b/drivers/regulator/tps65217-regulator.c
-@@ -305,8 +305,8 @@ static struct tps65217_board *tps65217_parse_dt(struct platform_device *pdev)
- 	if (!regs)
- 		return NULL;
+In serial_core.h.
+
+> Caused by commit 1f9db0921f21 ("pch_uart: add sysrq support") from the
+> tty tree. (added cc's)
+> 
+
+Sorry, I think we need the below fix to work with
+'CONFIG_SERIAL_CORE_CONSOLE is not set' && 'PCH_UART_CONSOLE is not
+set' case:
+
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index c5ee7d45..4771aac 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -573,10 +573,12 @@ static int pch_uart_hal_read(struct eg20t_port *priv, unsigned char *buf,
+ 			if (uart_handle_break(port))
+ 				continue;
+ 		}
++#ifdef SUPPORT_SYSRQ
+ 		if (port->sysrq) {
+ 			if (uart_handle_sysrq_char(port, rbr))
+ 				continue;
+ 		}
++#endif
  
--	count = of_regulator_match(pdev->dev.parent, regs,
--				reg_matches, TPS65217_NUM_REGULATOR);
-+	count = of_regulator_match(&pdev->dev, regs, reg_matches,
-+				   TPS65217_NUM_REGULATOR);
- 	of_node_put(regs);
- 	if ((count < 0) || (count > TPS65217_NUM_REGULATOR))
- 		return NULL;
--- 
-1.7.9.5
+ 		buf[i++] = rbr;
+ 	}
 
+---
+
+Should I add a fix for the compile error .. or do squash then send out
+refreshed patch ?
+
+Best regards,
+Liang Li
+
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
 
