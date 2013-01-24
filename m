@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab3AXCXD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 21:23:03 -0500
-Received: from mail.kernel.org ([198.145.19.201]:33856 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752917Ab3AXCWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 21:22:55 -0500
-Date: Wed, 23 Jan 2013 18:24:25 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sven =?iso-8859-1?Q?K=F6hler?= <sven.koehler@gmail.com>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.7.4
-Message-ID: <20130124022425.GA5721@kroah.com>
-References: <20130121195420.GA6534@kroah.com>
- <kdq4sd$g3c$1@ger.gmane.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <kdq4sd$g3c$1@ger.gmane.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753261Ab3AXC1z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 21:27:55 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:50784 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab3AXC1t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 21:27:49 -0500
+Message-ID: <1358994450.20257.1.camel@phoenix>
+Subject: [PATCH 1/2] regulator: tps65217: Fix using wrong dev argument for
+ calling of_regulator_match
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: AnilKumar Ch <anilkumar@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 24 Jan 2013 10:27:30 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 03:06:29AM +0100, Sven Köhler wrote:
-> Hi,
-> 
-> I had to revert this, because it resulted in
-> 
->   LD      init/built-in.o
-> arch/x86/built-in.o: In function `setup_arch':
-> (.init.text+0x359e): undefined reference to `early_pci_allowed'
-> arch/x86/built-in.o: In function `setup_arch':
-> (.init.text+0x35b2): undefined reference to `read_pci_config_16'
-> arch/x86/built-in.o: In function `setup_arch':
-> (.init.text+0x35cb): undefined reference to `read_pci_config_16'
-> make[1]: *** [vmlinux] Fehler 1
-> make: *** [sub-make] Fehler 2
-> 
-> I'm building a Xen domU kernel without modules (one big binary of
-> everything).
+The dev parameter is the device requestiong the data.
+In this case it should be &pdev->dev rather than pdev->dev.parent.
+
+The dev parameter is used to call devm_kzalloc in of_get_regulator_init_data(),
+which means this fixes a memory leak because the memory is allocated every time
+probe() is called, thus it should be freed when this driver is unloaded.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/tps65217-regulator.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/regulator/tps65217-regulator.c b/drivers/regulator/tps65217-regulator.c
+index 73dce76..df39518 100644
+--- a/drivers/regulator/tps65217-regulator.c
++++ b/drivers/regulator/tps65217-regulator.c
+@@ -305,8 +305,8 @@ static struct tps65217_board *tps65217_parse_dt(struct platform_device *pdev)
+ 	if (!regs)
+ 		return NULL;
+ 
+-	count = of_regulator_match(pdev->dev.parent, regs,
+-				reg_matches, TPS65217_NUM_REGULATOR);
++	count = of_regulator_match(&pdev->dev, regs, reg_matches,
++				   TPS65217_NUM_REGULATOR);
+ 	of_node_put(regs);
+ 	if ((count < 0) || (count > TPS65217_NUM_REGULATOR))
+ 		return NULL;
+-- 
+1.7.9.5
 
 
-You had to revert _what_?
 
-confused,
-
-greg k-h
