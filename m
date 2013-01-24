@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab3AXVQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:16:06 -0500
+	id S1756975Ab3AXVQO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:16:14 -0500
 Received: from mail.kernel.org ([198.145.19.201]:40272 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756962Ab3AXVOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:14:37 -0500
+	id S1756941Ab3AXVOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:14:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        Feng Jin <joe.jin@oracle.com>, Jean Delvare <khali@linux-fr.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Abdallah Chatila <abdallah.chatila@ericsson.com>
-Subject: [ 32/46] drivers/firmware/dmi_scan.c: check dmi version when get system uuid
-Date: Thu, 24 Jan 2013 13:13:10 -0800
-Message-Id: <20130124211148.017753563@linuxfoundation.org>
+        Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 28/46] usb: dwc3: gadget: fix ep->maxburst for ep0
+Date: Thu, 24 Jan 2013 13:13:06 -0800
+Message-Id: <20130124211146.446746393@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
 References: <20130124211135.862755794@linuxfoundation.org>
@@ -29,75 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+From: Pratyush Anand <pratyush.anand@st.com>
 
-commit f1d8e614d74b09531b9a85e812485340f3df7b1c upstream.
+commit 6048e4c69d80600baba35856651056860d5d8f5a upstream.
 
-As of version 2.6 of the SMBIOS specification, the first 3 fields of the
-UUID are supposed to be little-endian encoded.
+dwc3_gadget_set_ep_config expects maxburst as incremented by 1. So, by
+default initialize ep->maxburst to 1 for ep0.
 
-Also a minor fix to match variable meaning and mute checkpatch.pl
-
-[akpm@linux-foundation.org: tweak code comment]
-Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Cc: Feng Jin <joe.jin@oracle.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Abdallah Chatila <abdallah.chatila@ericsson.com>
+Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/dmi_scan.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ drivers/usb/dwc3/gadget.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -16,6 +16,7 @@
-  */
- static char dmi_empty_string[] = "        ";
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1605,6 +1605,7 @@ static int __devinit dwc3_gadget_init_en
  
-+static u16 __initdata dmi_ver;
- /*
-  * Catch too early calls to dmi_check_system():
-  */
-@@ -161,8 +162,10 @@ static void __init dmi_save_uuid(const s
- 		return;
- 
- 	for (i = 0; i < 16 && (is_ff || is_00); i++) {
--		if(d[i] != 0x00) is_ff = 0;
--		if(d[i] != 0xFF) is_00 = 0;
-+		if (d[i] != 0x00)
-+			is_00 = 0;
-+		if (d[i] != 0xFF)
-+			is_ff = 0;
- 	}
- 
- 	if (is_ff || is_00)
-@@ -172,7 +175,15 @@ static void __init dmi_save_uuid(const s
- 	if (!s)
- 		return;
- 
--	sprintf(s, "%pUB", d);
-+	/*
-+	 * As of version 2.6 of the SMBIOS specification, the first 3 fields of
-+	 * the UUID are supposed to be little-endian encoded.  The specification
-+	 * says that this is the defacto standard.
-+	 */
-+	if (dmi_ver >= 0x0206)
-+		sprintf(s, "%pUL", d);
-+	else
-+		sprintf(s, "%pUB", d);
- 
-         dmi_ident[slot] = s;
- }
-@@ -414,6 +425,7 @@ static int __init dmi_present(const char
- 		 * DMI version 0.0 means that the real version is taken from
- 		 * the SMBIOS version, which we don't know at this point.
- 		 */
-+		dmi_ver = (buf[14] & 0xf0) << 4 | (buf[14] & 0x0f);
- 		if (buf[14] != 0)
- 			printk(KERN_INFO "DMI %d.%d present.\n",
- 			       buf[14] >> 4, buf[14] & 0xF);
+ 		if (epnum == 0 || epnum == 1) {
+ 			dep->endpoint.maxpacket = 512;
++			dep->endpoint.maxburst = 1;
+ 			dep->endpoint.ops = &dwc3_gadget_ep0_ops;
+ 			if (!epnum)
+ 				dwc->gadget.ep0 = &dep->endpoint;
 
 
