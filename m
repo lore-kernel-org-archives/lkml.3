@@ -1,31 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab3AXPSB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:18:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44899 "EHLO mx1.redhat.com"
+	id S1755170Ab3AXPRl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:17:41 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:13405 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754485Ab3AXPR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:17:57 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1358955044-27407-3-git-send-email-mmarek@suse.cz>
-References: <1358955044-27407-3-git-send-email-mmarek@suse.cz> <1358955044-27407-1-git-send-email-mmarek@suse.cz>
-To: Michal Marek <mmarek@suse.cz>
-Cc: dhowells@redhat.com, rusty@ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] MODSIGN: Specify the hash algorithm on sign-file command line
-Date: Thu, 24 Jan 2013 15:17:12 +0000
-Message-ID: <28722.1359040632@warthog.procyon.org.uk>
+	id S1754633Ab3AXPRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 10:17:36 -0500
+From: Lord Glauber Costa of Sealand <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        ccross@google.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>, Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v6 11/12] sched: change nr_context_switches calculation.
+Date: Thu, 24 Jan 2013 19:17:41 +0400
+Message-Id: <1359040662-8055-12-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1359040662-8055-1-git-send-email-glommer@parallels.com>
+References: <1359040662-8055-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Marek <mmarek@suse.cz> wrote:
+From: Glauber Costa <glommer@parallels.com>
 
-> +our ($opt_v, $opt_a);
+This patch changes the calculation of nr_context_switches. The variable
+"nr_switches" is now used to account for the number of transition to the
+idle task, or stop task. It is removed from the schedule() path.
 
-Should this be 'our' or 'my'?
+The total calculation can be made using the fact that the transitions to
+fair and rt classes are recorded in the root_task_group. One can easily
+derive the total figure by adding those quantities together.
 
-David
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Turner <pjt@google.com>
+---
+ kernel/sched/core.c      | 17 +++++++++++++++--
+ kernel/sched/idle_task.c |  3 +++
+ kernel/sched/stop_task.c |  2 ++
+ 3 files changed, 20 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c36df03..6bb56f0 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2001,13 +2001,27 @@ unsigned long nr_uninterruptible(void)
+ 	return sum;
+ }
+ 
++#ifdef CONFIG_FAIR_GROUP_SCHED
++#define cfs_nr_switches(tg, cpu) (tg)->cfs_rq[cpu]->nr_switches
++#else
++#define cfs_nr_switches(tg, cpu) cpu_rq(cpu)->cfs.nr_switches
++#endif
++#ifdef CONFIG_RT_GROUP_SCHED
++#define rt_nr_switches(tg, cpu) (tg)->rt_rq[cpu]->rt_nr_switches
++#else
++#define rt_nr_switches(tg, cpu) cpu_rq(cpu)->rt.rt_nr_switches
++#endif
++
+ unsigned long long nr_context_switches(void)
+ {
+ 	int i;
+ 	unsigned long long sum = 0;
+ 
+-	for_each_possible_cpu(i)
++	for_each_possible_cpu(i) {
++		sum += cfs_nr_switches(&root_task_group, i);
++		sum += rt_nr_switches(&root_task_group, i);
+ 		sum += cpu_rq(i)->nr_switches;
++	}
+ 
+ 	return sum;
+ }
+@@ -2929,7 +2943,6 @@ need_resched:
+ 	rq->skip_clock_update = 0;
+ 
+ 	if (likely(prev != next)) {
+-		rq->nr_switches++;
+ 		rq->curr = next;
+ 		++*switch_count;
+ 
+diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
+index 07e6027..652d98c 100644
+--- a/kernel/sched/idle_task.c
++++ b/kernel/sched/idle_task.c
+@@ -28,6 +28,9 @@ pick_next_task_idle(struct rq *rq, struct task_struct *prev)
+ 	if (prev)
+ 		prev->sched_class->put_prev_task(rq, prev);
+ 
++	if (prev != rq->idle)
++		rq->nr_switches++;
++
+ 	schedstat_inc(rq, sched_goidle);
+ 	return rq->idle;
+ }
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index 5f10918..d1e9b82 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -32,6 +32,8 @@ pick_next_task_stop(struct rq *rq, struct task_struct *prev)
+ 		stop->se.exec_start = rq->clock_task;
+ 		if (prev)
+ 			prev->sched_class->put_prev_task(rq, prev);
++		if (prev != rq->stop)
++			rq->nr_switches++;
+ 		return stop;
+ 	}
+ 
+-- 
+1.8.1
+
