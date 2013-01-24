@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab3AXLKw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:10:52 -0500
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:51392 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753498Ab3AXLJw (ORCPT
+	id S1753652Ab3AXLK6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:10:58 -0500
+Received: from alvesta.synopsys.com ([198.182.60.77]:42896 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462Ab3AXLKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:09:52 -0500
+	Thu, 24 Jan 2013 06:10:23 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v3 38/71] ARC: ptrace support
-Date: Thu, 24 Jan 2013 16:36:06 +0530
-Message-ID: <1359025589-22277-23-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v3 43/71] ARC: Diagnostics: show_regs() etc
+Date: Thu, 24 Jan 2013 16:36:10 +0530
+Message-ID: <1359025589-22277-27-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
 References: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
@@ -24,310 +24,378 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arc/Kconfig         |    1 +
- arch/arc/kernel/Makefile |    3 +
- arch/arc/kernel/entry.S  |   68 +++++++++++++++++++++++
- arch/arc/kernel/ptrace.c |  136 +++++++++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 206 insertions(+), 2 deletions(-)
+ arch/arc/kernel/troubleshoot.c |  305 ++++++++++++++++++++++++++++++++++++++++
+ arch/arc/mm/tlbex.S            |   20 +++
+ 2 files changed, 325 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 03347cb..409b937 100644
---- a/arch/arc/Kconfig
-+++ b/arch/arc/Kconfig
-@@ -22,6 +22,7 @@ config ARC
- 	select GENERIC_PENDING_IRQ if SMP
- 	select GENERIC_SIGALTSTACK
- 	select GENERIC_SMP_IDLE_THREAD
-+	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_GENERIC_HARDIRQS
- 	select HAVE_MEMBLOCK
- 	select IRQ_DOMAIN
-diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
-index 8a55e99..1f01d35 100644
---- a/arch/arc/kernel/Makefile
-+++ b/arch/arc/kernel/Makefile
-@@ -5,6 +5,9 @@
- # it under the terms of the GNU General Public License version 2 as
- # published by the Free Software Foundation.
- 
-+# Pass UTS_MACHINE for user_regset definition
-+CFLAGS_ptrace.o		+= -DUTS_MACHINE='"$(UTS_MACHINE)"'
-+
- obj-y	:= arcksyms.o setup.o irq.o time.o reset.o ptrace.o entry.o process.o
- obj-y	+= signal.o traps.o sys.o troubleshoot.o stacktrace.o clk.o
- 
-diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
-index 69d0d37..76697ae 100644
---- a/arch/arc/kernel/entry.S
-+++ b/arch/arc/kernel/entry.S
-@@ -7,6 +7,13 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  *
-+ * vineetg: Feb 2011 (ptrace low level code fixes)
-+ *  -traced syscall return code (r0) was not saved into pt_regs for restoring
-+ *   into user reg-file when traded task rets to user space.
-+ *  -syscalls needing arch-wrappers (mainly for passing sp as pt_regs)
-+ *   were not invoking post-syscall trace hook (jumping directly into
-+ *   ret_from_system_call)
-+ *
-  * vineetg: Nov 2010:
-  *  -Vector table jumps (@8 bytes) converted into branches (@4 bytes)
-  *  -To maintain the slot size of 8 bytes/vector, added nop, which is
-@@ -347,6 +354,50 @@ ARC_ENTRY EV_Extension
- 	b   ret_from_exception
- ARC_EXIT EV_Extension
- 
-+;######################### System Call Tracing #########################
-+
-+tracesys:
-+	; save EFA in case tracer wants the PC of traced task
-+	; using ERET won't work since next-PC has already committed
-+	lr  r12, [efa]
-+	GET_CURR_TASK_FIELD_PTR   TASK_THREAD, r11
-+	st  r12, [r11, THREAD_FAULT_ADDR]
-+
-+	; PRE Sys Call Ptrace hook
-+	mov r0, sp			; pt_regs needed
-+	bl  @syscall_trace_entry
-+
-+	; Tracing code now returns the syscall num (orig or modif)
-+	mov r8, r0
-+
-+	; Do the Sys Call as we normally would.
-+	; Validate the Sys Call number
-+	cmp     r8,  NR_syscalls
-+	mov.hi  r0, -ENOSYS
-+	bhi     tracesys_exit
-+
-+	; Restore the sys-call args. Mere invocation of the hook abv could have
-+	; clobbered them (since they are in scratch regs). The tracer could also
-+	; have deliberately changed the syscall args: r0-r7
-+	ld  r0, [sp, PT_r0]
-+	ld  r1, [sp, PT_r1]
-+	ld  r2, [sp, PT_r2]
-+	ld  r3, [sp, PT_r3]
-+	ld  r4, [sp, PT_r4]
-+	ld  r5, [sp, PT_r5]
-+	ld  r6, [sp, PT_r6]
-+	ld  r7, [sp, PT_r7]
-+	ld.as   r9, [sys_call_table, r8]
-+	jl      [r9]        ; Entry into Sys Call Handler
-+
-+tracesys_exit:
-+	st  r0, [sp, PT_r0]     ; sys call return value in pt_regs
-+
-+	;POST Sys Call Ptrace Hook
-+	bl  @syscall_trace_exit
-+	b   ret_from_exception ; NOT ret_from_system_call at is saves r0 which
-+	; we'd done before calling post hook above
-+
- ;################### Break Point TRAP ##########################
- 
- 	; ======= (5b) Trap is due to Break-Point =========
-@@ -412,6 +463,11 @@ ARC_ENTRY EV_Trap
- 	; Before doing anything, return from CPU Exception Mode
- 	FAKE_RET_FROM_EXCPN r11
- 
-+	; If syscall tracing ongoing, invoke pre-pos-hooks
-+	GET_CURR_THR_INFO_FLAGS   r10
-+	btst r10, TIF_SYSCALL_TRACE
-+	bnz tracesys  ; this never comes back
-+
- 	;============ This is normal System Call case ==========
- 	; Sys-call num shd not exceed the total system calls avail
- 	cmp     r8,  NR_syscalls
-@@ -608,6 +664,10 @@ ARC_ENTRY sys_fork_wrapper
- 	bl  @sys_fork
- 	DISCARD_CALLEE_SAVED_USER
- 
-+	GET_CURR_THR_INFO_FLAGS   r10
-+	btst r10, TIF_SYSCALL_TRACE
-+	bnz  tracesys_exit
-+
- 	b ret_from_system_call
- ARC_EXIT sys_fork_wrapper
- 
-@@ -616,6 +676,10 @@ ARC_ENTRY sys_vfork_wrapper
- 	bl  @sys_vfork
- 	DISCARD_CALLEE_SAVED_USER
- 
-+	GET_CURR_THR_INFO_FLAGS   r10
-+	btst r10, TIF_SYSCALL_TRACE
-+	bnz  tracesys_exit
-+
- 	b ret_from_system_call
- ARC_EXIT sys_vfork_wrapper
- 
-@@ -624,5 +688,9 @@ ARC_ENTRY sys_clone_wrapper
- 	bl  @sys_clone
- 	DISCARD_CALLEE_SAVED_USER
- 
-+	GET_CURR_THR_INFO_FLAGS   r10
-+	btst r10, TIF_SYSCALL_TRACE
-+	bnz  tracesys_exit
-+
- 	b ret_from_system_call
- ARC_EXIT sys_clone_wrapper
-diff --git a/arch/arc/kernel/ptrace.c b/arch/arc/kernel/ptrace.c
-index 1cf944a..c6a81c5 100644
---- a/arch/arc/kernel/ptrace.c
-+++ b/arch/arc/kernel/ptrace.c
-@@ -7,6 +7,122 @@
+diff --git a/arch/arc/kernel/troubleshoot.c b/arch/arc/kernel/troubleshoot.c
+index 80bfe2a..7c10873 100644
+--- a/arch/arc/kernel/troubleshoot.c
++++ b/arch/arc/kernel/troubleshoot.c
+@@ -6,12 +6,317 @@
   */
  
  #include <linux/ptrace.h>
-+#include <linux/tracehook.h>
-+#include <linux/regset.h>
-+#include <linux/unistd.h>
-+#include <linux/elf.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/fs.h>
++#include <linux/kdev_t.h>
++#include <linux/fs_struct.h>
++#include <linux/proc_fs.h>
++#include <linux/file.h>
++#include <asm/arcregs.h>
 +
-+static struct callee_regs *task_callee_regs(struct task_struct *tsk)
++/*
++ * Common routine to print scratch regs (r0-r12) or callee regs (r13-r25)
++ *   -Prints 3 regs per line and a CR.
++ *   -To continue, callee regs right after scratch, special handling of CR
++ */
++static noinline void print_reg_file(long *reg_rev, int start_num)
 +{
-+	struct callee_regs *tmp = (struct callee_regs *)tsk->thread.callee_reg;
-+	return tmp;
++	unsigned int i;
++	char buf[512];
++	int n = 0, len = sizeof(buf);
++
++	/* weird loop because pt_regs regs rev r12..r0, r25..r13 */
++	for (i = start_num; i < start_num + 13; i++) {
++		n += scnprintf(buf + n, len - n, "r%02u: 0x%08lx\t",
++			       i, (unsigned long)*reg_rev);
++
++		if (((i + 1) % 3) == 0)
++			n += scnprintf(buf + n, len - n, "\n");
++
++		reg_rev--;
++	}
++
++	if (start_num != 0)
++		n += scnprintf(buf + n, len - n, "\n\n");
++
++	pr_info("%s", buf);
 +}
 +
-+static int genregs_get(struct task_struct *target,
-+		       const struct user_regset *regset,
-+		       unsigned int pos, unsigned int count,
-+		       void *kbuf, void __user *ubuf)
++static void show_callee_regs(struct callee_regs *cregs)
 +{
-+	const struct pt_regs *ptregs = task_pt_regs(target);
-+	const struct callee_regs *cregs = task_callee_regs(target);
-+	int ret = 0;
-+	unsigned int stop_pc_val;
++	print_reg_file(&(cregs->r13), 13);
++}
 +
-+#define REG_O_CHUNK(START, END, PTR)	\
-+	if (!ret)	\
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, PTR, \
-+			offsetof(struct user_regs_struct, START), \
-+			offsetof(struct user_regs_struct, END));
++void print_task_path_n_nm(struct task_struct *tsk, char *buf)
++{
++	struct path path;
++	char *path_nm = NULL;
++	struct mm_struct *mm;
++	struct file *exe_file;
 +
-+#define REG_O_ONE(LOC, PTR)	\
-+	if (!ret)		\
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, PTR, \
-+			offsetof(struct user_regs_struct, LOC), \
-+			offsetof(struct user_regs_struct, LOC) + 4);
++	mm = get_task_mm(tsk);
++	if (!mm)
++		goto done;
 +
-+	REG_O_CHUNK(scratch, callee, ptregs);
-+	REG_O_CHUNK(callee, efa, cregs);
-+	REG_O_CHUNK(efa, stop_pc, &target->thread.fault_address);
++	exe_file = get_mm_exe_file(mm);
++	mmput(mm);
 +
-+	if (!ret) {
-+		if (in_brkpt_trap(ptregs)) {
-+			stop_pc_val = target->thread.fault_address;
-+			pr_debug("\t\tstop_pc (brk-pt)\n");
-+		} else {
-+			stop_pc_val = ptregs->ret;
-+			pr_debug("\t\tstop_pc (others)\n");
++	if (exe_file) {
++		path = exe_file->f_path;
++		path_get(&exe_file->f_path);
++		fput(exe_file);
++		path_nm = d_path(&path, buf, 255);
++		path_put(&path);
++	}
++
++done:
++	pr_info("%s, TGID %u\n", path_nm, tsk->tgid);
++}
++EXPORT_SYMBOL(print_task_path_n_nm);
++
++static void show_faulting_vma(unsigned long address, char *buf)
++{
++	struct vm_area_struct *vma;
++	struct inode *inode;
++	unsigned long ino = 0;
++	dev_t dev = 0;
++	char *nm = buf;
++
++	vma = find_vma(current->active_mm, address);
++
++	/* check against the find_vma( ) behaviour which returns the next VMA
++	 * if the container VMA is not found
++	 */
++	if (vma && (vma->vm_start <= address)) {
++		struct file *file = vma->vm_file;
++		if (file) {
++			struct path *path = &file->f_path;
++			nm = d_path(path, buf, PAGE_SIZE - 1);
++			inode = vma->vm_file->f_path.dentry->d_inode;
++			dev = inode->i_sb->s_dev;
++			ino = inode->i_ino;
 +		}
-+
-+		REG_O_ONE(stop_pc, &stop_pc_val);
-+	}
-+
-+	return ret;
++		pr_info("    @off 0x%lx in [%s]\n"
++			"    VMA: 0x%08lx to 0x%08lx\n\n",
++		       address - vma->vm_start, nm, vma->vm_start, vma->vm_end);
++	} else
++		pr_info("    @No matching VMA found\n");
 +}
 +
-+static int genregs_set(struct task_struct *target,
-+		       const struct user_regset *regset,
-+		       unsigned int pos, unsigned int count,
-+		       const void *kbuf, const void __user *ubuf)
++static void show_ecr_verbose(struct pt_regs *regs)
 +{
-+	const struct pt_regs *ptregs = task_pt_regs(target);
-+	const struct callee_regs *cregs = task_callee_regs(target);
-+	int ret = 0;
++	unsigned int vec, cause_code, cause_reg;
++	unsigned long address;
 +
-+#define REG_IN_CHUNK(FIRST, NEXT, PTR)	\
-+	if (!ret)			\
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, \
-+			(void *)(PTR), \
-+			offsetof(struct user_regs_struct, FIRST), \
-+			offsetof(struct user_regs_struct, NEXT));
++	cause_reg = current->thread.cause_code;
++	pr_info("\n[ECR]: 0x%08x => ", cause_reg);
 +
-+#define REG_IN_ONE(LOC, PTR)		\
-+	if (!ret)			\
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, \
-+			(void *)(PTR), \
-+			offsetof(struct user_regs_struct, LOC), \
-+			offsetof(struct user_regs_struct, LOC) + 4);
++	/* For Data fault, this is data address not instruction addr */
++	address = current->thread.fault_address;
 +
-+#define REG_IGNORE_ONE(LOC)		\
-+	if (!ret)			\
-+		ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf, \
-+			offsetof(struct user_regs_struct, LOC), \
-+			offsetof(struct user_regs_struct, LOC) + 4);
++	vec = cause_reg >> 16;
++	cause_code = (cause_reg >> 8) & 0xFF;
 +
-+	/* TBD: disallow updates to STATUS32, orig_r8 etc*/
-+	REG_IN_CHUNK(scratch, callee, ptregs);	/* pt_regs[bta..orig_r8] */
-+	REG_IN_CHUNK(callee, efa, cregs);	/* callee_regs[r25..r13] */
-+	REG_IGNORE_ONE(efa);			/* efa update invalid */
-+	REG_IN_ONE(stop_pc, &ptregs->ret);	/* stop_pc: PC update */
++	/* For DTLB Miss or ProtV, display the memory involved too */
++	if (vec == ECR_V_DTLB_MISS) {
++		pr_cont("Invalid (%s) @ 0x%08lx by insn @ 0x%08lx\n",
++		       (cause_code == 0x01) ? "Read From" :
++		       ((cause_code == 0x02) ? "Write to" : "EX"),
++		       address, regs->ret);
++	} else if (vec == ECR_V_ITLB_MISS) {
++		pr_cont("Insn could not be fetched\n");
++	} else if (vec == ECR_V_MACH_CHK) {
++		pr_cont("%s\n", (cause_code == 0x0) ?
++					"Double Fault" : "Other Fatal Err");
 +
-+	return ret;
-+}
-+
-+enum arc_getset {
-+	REGSET_GENERAL,
-+};
-+
-+static const struct user_regset arc_regsets[] = {
-+	[REGSET_GENERAL] = {
-+	       .core_note_type = NT_PRSTATUS,
-+	       .n = ELF_NGREG,
-+	       .size = sizeof(unsigned long),
-+	       .align = sizeof(unsigned long),
-+	       .get = genregs_get,
-+	       .set = genregs_set,
++	} else if (vec == ECR_V_PROTV) {
++		if (cause_code == ECR_C_PROTV_INST_FETCH)
++			pr_cont("Execute from Non-exec Page\n");
++		else if (cause_code == ECR_C_PROTV_LOAD)
++			pr_cont("Read from Non-readable Page\n");
++		else if (cause_code == ECR_C_PROTV_STORE)
++			pr_cont("Write to Non-writable Page\n");
++		else if (cause_code == ECR_C_PROTV_XCHG)
++			pr_cont("Data exchange protection violation\n");
++		else if (cause_code == ECR_C_PROTV_MISALIG_DATA)
++			pr_cont("Misaligned r/w from 0x%08lx\n", address);
++	} else if (vec == ECR_V_INSN_ERR) {
++		pr_cont("Illegal Insn\n");
++	} else {
++		pr_cont("Check Programmer's Manual\n");
 +	}
-+};
-+
-+static const struct user_regset_view user_arc_view = {
-+	.name		= UTS_MACHINE,
-+	.e_machine	= EM_ARCOMPACT,
-+	.regsets	= arc_regsets,
-+	.n		= ARRAY_SIZE(arc_regsets)
-+};
-+
-+const struct user_regset_view *task_user_regset_view(struct task_struct *task)
-+{
-+	return &user_arc_view;
 +}
++
++/************************************************************************
++ *  API called by rest of kernel
++ ***********************************************************************/
  
- void ptrace_disable(struct task_struct *child)
+ void show_regs(struct pt_regs *regs)
  {
-@@ -16,11 +132,27 @@ long arch_ptrace(struct task_struct *child, long request,
- 		 unsigned long addr, unsigned long data)
- {
- 	int ret = -EIO;
++	struct task_struct *tsk = current;
++	struct callee_regs *cregs;
++	char *buf;
 +
-+	pr_debug("REQ=%ld: ADDR =0x%lx, DATA=0x%lx)\n", request, addr, data);
++	buf = (char *)__get_free_page(GFP_TEMPORARY);
++	if (!buf)
++		return;
 +
-+	switch (request) {
-+	default:
-+		ret = ptrace_request(child, request, addr, data);
-+		break;
-+	}
++	print_task_path_n_nm(tsk, buf);
 +
- 	return ret;
++	if (current->thread.cause_code)
++		show_ecr_verbose(regs);
++
++	pr_info("[EFA]: 0x%08lx\n", current->thread.fault_address);
++	pr_info("[ERET]: 0x%08lx (PC of Faulting Instr)\n", regs->ret);
++
++	show_faulting_vma(regs->ret, buf);	/* faulting code, not data */
++
++	/* can't use print_vma_addr() yet as it doesn't check for
++	 * non-inclusive vma
++	 */
++
++	/* print special regs */
++	pr_info("status32: 0x%08lx\n", regs->status32);
++	pr_info(" SP: 0x%08lx\tFP: 0x%08lx\n", regs->sp, regs->fp);
++	pr_info("BTA: 0x%08lx\tBLINK: 0x%08lx\n",
++		regs->bta, regs->blink);
++	pr_info("LPS: 0x%08lx\tLPE: 0x%08lx\tLPC: 0x%08lx\n",
++	       regs->lp_start, regs->lp_end, regs->lp_count);
++
++	/* print regs->r0 thru regs->r12
++	 * Sequential printing was generating horrible code
++	 */
++	print_reg_file(&(regs->r0), 0);
++
++	/* If Callee regs were saved, display them too */
++	cregs = (struct callee_regs *)current->thread.callee_reg;
++	if (cregs)
++		show_callee_regs(cregs);
++
++	free_page((unsigned long)buf);
  }
  
-+asmlinkage int syscall_trace_entry(struct pt_regs *regs)
+ void show_kernel_fault_diag(const char *str, struct pt_regs *regs,
+ 			    unsigned long address, unsigned long cause_reg)
+ {
++	current->thread.fault_address = address;
++	current->thread.cause_code = cause_reg;
++
++	/* Caller and Callee regs */
++	show_regs(regs);
++
++	/* Show stack trace if this Fatality happened in kernel mode */
++	if (!user_mode(regs))
++		show_stacktrace(current, regs);
+ }
++
++#ifdef CONFIG_DEBUG_FS
++
++#include <linux/module.h>
++#include <linux/fs.h>
++#include <linux/mount.h>
++#include <linux/pagemap.h>
++#include <linux/init.h>
++#include <linux/namei.h>
++#include <linux/debugfs.h>
++
++static struct dentry *test_dentry;
++static struct dentry *test_dir;
++static struct dentry *test_u32_dentry;
++
++static u32 clr_on_read = 1;
++
++#ifdef CONFIG_ARC_DBG_TLB_MISS_COUNT
++u32 numitlb, numdtlb, num_pte_not_present;
++
++static int fill_display_data(char *kbuf)
 +{
-+	if (tracehook_report_syscall_entry(regs))
-+		return ULONG_MAX;
- 
--const struct user_regset_view *task_user_regset_view(struct task_struct *task)
-+	return regs->r8;
++	size_t num = 0;
++	num += sprintf(kbuf + num, "I-TLB Miss %x\n", numitlb);
++	num += sprintf(kbuf + num, "D-TLB Miss %x\n", numdtlb);
++	num += sprintf(kbuf + num, "PTE not present %x\n", num_pte_not_present);
++
++	if (clr_on_read)
++		numitlb = numdtlb = num_pte_not_present = 0;
++
++	return num;
 +}
 +
-+asmlinkage void syscall_trace_exit(struct pt_regs *regs)
- {
--	return (const struct user_regset_view *)NULL;
-+	tracehook_report_syscall_exit(regs, 0);
- }
++static int tlb_stats_open(struct inode *inode, struct file *file)
++{
++	file->private_data = (void *)__get_free_page(GFP_KERNEL);
++	return 0;
++}
++
++/* called on user read(): display the couters */
++static ssize_t tlb_stats_output(struct file *file,	/* file descriptor */
++				char __user *user_buf,	/* user buffer */
++				size_t len,		/* length of buffer */
++				loff_t *offset)		/* offset in the file */
++{
++	size_t num;
++	char *kbuf = (char *)file->private_data;
++
++	/* All of the data can he shoved in one iteration */
++	if (*offset != 0)
++		return 0;
++
++	num = fill_display_data(kbuf);
++
++	/* simple_read_from_buffer() is helper for copy to user space
++	   It copies up to @2 (num) bytes from kernel buffer @4 (kbuf) at offset
++	   @3 (offset) into the user space address starting at @1 (user_buf).
++	   @5 (len) is max size of user buffer
++	 */
++	return simple_read_from_buffer(user_buf, num, offset, kbuf, len);
++}
++
++/* called on user write : clears the counters */
++static ssize_t tlb_stats_clear(struct file *file, const char __user *user_buf,
++			       size_t length, loff_t *offset)
++{
++	numitlb = numdtlb = num_pte_not_present = 0;
++	return length;
++}
++
++static int tlb_stats_close(struct inode *inode, struct file *file)
++{
++	free_page((unsigned long)(file->private_data));
++	return 0;
++}
++
++static const struct file_operations tlb_stats_file_ops = {
++	.read = tlb_stats_output,
++	.write = tlb_stats_clear,
++	.open = tlb_stats_open,
++	.release = tlb_stats_close
++};
++#endif
++
++static int __init arc_debugfs_init(void)
++{
++	test_dir = debugfs_create_dir("arc", NULL);
++
++#ifdef CONFIG_ARC_DBG_TLB_MISS_COUNT
++	test_dentry = debugfs_create_file("tlb_stats", 0444, test_dir, NULL,
++					  &tlb_stats_file_ops);
++#endif
++
++	test_u32_dentry =
++	    debugfs_create_u32("clr_on_read", 0444, test_dir, &clr_on_read);
++
++	return 0;
++}
++
++module_init(arc_debugfs_init);
++
++static void __exit arc_debugfs_exit(void)
++{
++	debugfs_remove(test_u32_dentry);
++	debugfs_remove(test_dentry);
++	debugfs_remove(test_dir);
++}
++module_exit(arc_debugfs_exit);
++
++#endif
+diff --git a/arch/arc/mm/tlbex.S b/arch/arc/mm/tlbex.S
+index fc5b971..164b021 100644
+--- a/arch/arc/mm/tlbex.S
++++ b/arch/arc/mm/tlbex.S
+@@ -133,6 +133,14 @@ ex_saved_reg1:
+ 	lsr     r0, r2, (PAGE_SHIFT - 2)
+ 	and     r0, r0, ( (PTRS_PER_PTE - 1) << 2)
+ 	ld.aw   r0, [r1, r0]            ; get PTE and PTE ptr for fault addr
++#ifdef CONFIG_ARC_DBG_TLB_MISS_COUNT
++	and.f 0, r0, _PAGE_PRESENT
++	bz   1f
++	ld   r2, [num_pte_not_present]
++	add  r2, r2, 1
++	st   r2, [num_pte_not_present]
++1:
++#endif
+ 
+ .endm
+ 
+@@ -219,6 +227,12 @@ ARC_ENTRY EV_TLBMissI
+ 
+ 	TLBMISS_FREEUP_REGS
+ 
++#ifdef CONFIG_ARC_DBG_TLB_MISS_COUNT
++	ld  r0, [@numitlb]
++	add r0, r0, 1
++	st  r0, [@numitlb]
++#endif
++
+ 	;----------------------------------------------------------------
+ 	; Get the PTE corresponding to V-addr accessed
+ 	LOAD_FAULT_PTE
+@@ -252,6 +266,12 @@ ARC_ENTRY EV_TLBMissD
+ 
+ 	TLBMISS_FREEUP_REGS
+ 
++#ifdef CONFIG_ARC_DBG_TLB_MISS_COUNT
++	ld  r0, [@numdtlb]
++	add r0, r0, 1
++	st  r0, [@numdtlb]
++#endif
++
+ 	;----------------------------------------------------------------
+ 	; Get the PTE corresponding to V-addr accessed
+ 	; If PTE exists, it will setup, r0 = PTE, r1 = Ptr to PTE
 -- 
 1.7.4.1
 
