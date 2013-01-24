@@ -1,45 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab3AXQ60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 11:58:26 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:40042 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab3AXQ6Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 11:58:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAJn8CcE2eXK83-Jsia37dLoEwVjhQ=SiDru5fFzWGp+bzEScWA@mail.gmail.com>
-References: <20130107113144.GA7544@redhat.com>
-	<20130109183248.GA8293@somewhere.redhat.com>
-	<CAJn8CcE2eXK83-Jsia37dLoEwVjhQ=SiDru5fFzWGp+bzEScWA@mail.gmail.com>
-Date: Thu, 24 Jan 2013 17:58:20 +0100
-Message-ID: <CAFTL4hzhdXkh2cy_iCr1iQJ5boJ=k1D61s+Z48YUk-JuENG7cw@mail.gmail.com>
-Subject: Re: [PATCH v2 repost] sched: cputime: avoid multiplication overflow
- (in common cases)
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        akpm@linux-foundation.org, Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754687Ab3AXQ7p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 11:59:45 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:45154 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752667Ab3AXQ7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 11:59:44 -0500
+X-SBRS: None
+X-MesageID: 4957388
+X-Ironport-Server: ftlpip01.citrite.net
+X-Remote-IP: 75.150.106.249
+X-Policy: $Relay
+X-IronPort-AV: E=Sophos;i="4.84,530,1355097600"; 
+   d="scan'208";a="4957388"
+From: Ben Guthro <benjamin.guthro@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Cc: Ben Guthro <benjamin.guthro@citrix.com>
+Subject: [PATCH] xen: Re-upload processor PM data to hypervisor after S3 resume
+Date: Thu, 24 Jan 2013 11:59:19 -0500
+Message-Id: <1359046759-11376-1-git-send-email-benjamin.guthro@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/24 Xiaotian Feng <xtfeng@gmail.com>:
-> On Thu, Jan 10, 2013 at 2:33 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> --- a/kernel/sched/cputime.c
->> +++ b/kernel/sched/cputime.c
->> @@ -509,11 +509,11 @@ EXPORT_SYMBOL_GPL(vtime_account);
->>  # define nsecs_to_cputime(__nsecs)     nsecs_to_jiffies(__nsecs)
->>  #endif
->>
->> -static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
->> +static cputime_t scale_utime(cputime_t stime, cputime_t rtime, cputime_t total)
->
-> s/scale_utime/scale_stime.
+Upon resume, it was found that ACPI C-states were missing from non-boot CPUs.
+This change registers a syscore_ops handler for this case, and performs a
+subset of the xen_acpi_processor_init() functionality to achieve this case.
 
-Whoops! :-)
+Signed-Off-By: Ben Guthro <benjamin.guthro@citrix.com>
+---
+ drivers/xen/xen-acpi-processor.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-Thanks I'm fixing this.
+diff --git a/drivers/xen/xen-acpi-processor.c b/drivers/xen/xen-acpi-processor.c
+index 316df65..1510c64 100644
+--- a/drivers/xen/xen-acpi-processor.c
++++ b/drivers/xen/xen-acpi-processor.c
+@@ -25,6 +25,7 @@
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/types.h>
++#include <linux/syscore_ops.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
+ #include <acpi/processor.h>
+@@ -467,6 +468,26 @@ static void free_acpi_perf_data(void)
+ 	free_percpu(acpi_perf_data);
+ }
+ 
++static void xen_acpi_processor_resume(void)
++{
++	int i;
++	printk(KERN_INFO "Resuming Xen processor info\n");
++
++	for_each_possible_cpu(i) {
++		struct acpi_processor *_pr;
++		_pr = per_cpu(processors, i /* APIC ID */);
++		if (!_pr)
++			continue;
++
++		__clear_bit(_pr->acpi_id, acpi_ids_done);
++		(void)upload_pm_data(_pr);
++	}
++}
++
++static struct syscore_ops xap_syscore_ops = {
++	.resume			= xen_acpi_processor_resume,
++};
++
+ static int __init xen_acpi_processor_init(void)
+ {
+ 	struct acpi_processor *pr_backup = NULL;
+@@ -532,6 +553,8 @@ static int __init xen_acpi_processor_init(void)
+ 	if (rc)
+ 		goto err_unregister;
+ 
++	register_syscore_ops(&xap_syscore_ops);
++
+ 	return 0;
+ err_unregister:
+ 	for_each_possible_cpu(i) {
+@@ -550,6 +573,7 @@ static void __exit xen_acpi_processor_exit(void)
+ 	int i;
+ 
+ 	kfree(acpi_ids_done);
++	unregister_syscore_ops(&xap_syscore_ops);
+ 	for_each_possible_cpu(i) {
+ 		struct acpi_processor_performance *perf;
+ 		perf = per_cpu_ptr(acpi_perf_data, i);
+-- 
+1.7.9.5
+
