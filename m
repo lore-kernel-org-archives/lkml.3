@@ -1,78 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab3AXCGd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 21:06:33 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:35993 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591Ab3AXCGZ (ORCPT
+	id S1753022Ab3AXCJK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 21:09:10 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:43697 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab3AXCJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 21:06:25 -0500
-Date: Thu, 24 Jan 2013 13:06:16 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Greg KH <greg@kroah.com>,
-        Liang Li <liang.li@windriver.com>
-Subject: Re: linux-next: Tree for Jan 23 (pch_uart.c)
-Message-Id: <20130124130616.ee95e032326b1afee6716419@canb.auug.org.au>
-In-Reply-To: <51007226.1040604@infradead.org>
-References: <20130123174336.47c0113740a14da7f6a92187@canb.auug.org.au>
-	<51007226.1040604@infradead.org>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_Jan_2013_13_06_16_+1100_lzefWPhmnFZe8ttf"
+	Wed, 23 Jan 2013 21:09:03 -0500
+X-Greylist: delayed 867 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jan 2013 21:09:03 EST
+MIME-Version: 1.0
+In-Reply-To: <20130109183248.GA8293@somewhere.redhat.com>
+References: <20130107113144.GA7544@redhat.com>
+	<20130109183248.GA8293@somewhere.redhat.com>
+Date: Thu, 24 Jan 2013 09:46:56 +0800
+Message-ID: <CAJn8CcE2eXK83-Jsia37dLoEwVjhQ=SiDru5fFzWGp+bzEScWA@mail.gmail.com>
+Subject: Re: [PATCH v2 repost] sched: cputime: avoid multiplication overflow
+ (in common cases)
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        akpm@linux-foundation.org, Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Jan_2013_13_06_16_+1100_lzefWPhmnFZe8ttf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, 23 Jan 2013 15:28:38 -0800 Randy Dunlap <rdunlap@infradead.org> wro=
-te:
+On Thu, Jan 10, 2013 at 2:33 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Mon, Jan 07, 2013 at 12:31:45PM +0100, Stanislaw Gruszka wrote:
+>> We scale stime, utime values based on rtime (sum_exec_runtime converted
+>> to jiffies). During scaling we multiple rtime * utime, what seems to be
+>> fine, since both values are converted to u64, but is not.
+>>
+>> Let assume HZ is 1000 - 1ms tick. Process consist of 64 threads, run
+>> for 1 day, threads utilize 100% cpu on user space. Machine has 64 cpus.
+>>
+>> Process rtime = utime will be 64 * 24 * 60 * 60 * 1000 jiffies, what is
+>> 0x149970000. Multiplication rtime * utime result is 0x1a855771100000000,
+>> which can not be covered in 64 bits.
+>>
+>> Result of overflow is stall of utime values visible in user space
+>> (prev_utime in kernel), even if application still consume lot of CPU
+>> time.
+>>
+>> Probably good fix for the problem, will be using 128 bit variable and
+>> proper mul128 and div_u128_u64 primitives. While mul128 is on it's
+>> way to kernel, there is no 128 bit division yet. I'm not sure, if we
+>> want to add it to kernel. Perhaps we could also change the way how
+>> stime and utime are calculated, but I don't know how, so I come with
+>> the below solution for the problem.
+>>
+>> To avoid overflow patch change value we scale to min(stime, utime). This
+>> is more like workaround, but will work for processes, which perform
+>> mostly on user space or mostly on kernel space. Unfortunately processes,
+>> which perform on kernel and user space equally, and additionally utilize
+>> lot of CPU time, still will hit this overflow pretty quickly. However
+>> such processes seems to be uncommon.
+>>
+>> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 >
-> on i386:
->=20
->   CC [M]  drivers/tty/serial/pch_uart.o
-> drivers/tty/serial/pch_uart.c: In function 'pch_uart_hal_read':
-> drivers/tty/serial/pch_uart.c:572:11: error: 'struct uart_port' has no me=
-mber named 'sysrq'
-> make[4]: *** [drivers/tty/serial/pch_uart.o] Error 1
->=20
->=20
->=20
-> when SERIAL_PCH_UART_CONSOLE is not enabled.
+> I can easily imagine that overflow to happen with user time on intensive
+> CPU bound loads, or may be guests.
+>
+> But can we easily reach the same for system time? Even on intensive I/O bound
+> loads we shouldn't spend that much time in the kernel. Most of it probably goes
+> to idle.
+>
+> What do you think?
+>
+> If that assumption is right in most cases, the following patch should solve the
+> issue:
+>
+> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> index 293b202..0650dd4 100644
+> --- a/kernel/sched/cputime.c
+> +++ b/kernel/sched/cputime.c
+> @@ -509,11 +509,11 @@ EXPORT_SYMBOL_GPL(vtime_account);
+>  # define nsecs_to_cputime(__nsecs)     nsecs_to_jiffies(__nsecs)
+>  #endif
+>
+> -static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
+> +static cputime_t scale_utime(cputime_t stime, cputime_t rtime, cputime_t total)
 
-Caused by commit 1f9db0921f21 ("pch_uart: add sysrq support") from the
-tty tree. (added cc's)
+s/scale_utime/scale_stime.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__24_Jan_2013_13_06_16_+1100_lzefWPhmnFZe8ttf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRAJcYAAoJEECxmPOUX5FEWPsP/jV0tMxWMa1LO2QHtGHK9wks
-N4IN5FCljAJrVlUN5lkxxjJP0mcGm9mMJiDm3ZK/uIgw1wNhVhefkv+U4cm1kAc8
-K16QU/hd60hWU+j/P705tPJvfGMQq2vhrlGWgV8AndgsKGjML3ZzkotHlvuNSEFZ
-JbBtRQ2aVS0CtonHisBPvaW5pqsGHbb+spYrSeg7Cp+Y9TSe36Rgl070YHlcOsiA
-FklLW87MOEvrPe5bVGtttNu3x0tKtHKRN83eGC3GdvKqwffG2VVYZaY4sV+ZSHXE
-bOhm0hLuHAFus9Dq3vRZUcykugZ8/klIDkld38i2PuGCNKQ+/LCHfxbXVmgXmoY9
-IPq+ZsHqs458ml3s8Ky59blF/T2cXd5L24SBwPfCFTtm1byIhS0qenzOLrIlBgsa
-X7Jpyf+BcY5pWdBZBXJZSVz2ASy7hIsj/OpmalDmbOToGWQTgW4jJHx5EQP84An4
-fxaBRUvfjFRjdssp6chKohsrIsygcDoEMM5BGSD+mPdTK707Qm74QtNTNEl7+Hle
-rvji/nmOnSvhTXWS/d9G/XI4K8Bd7LdWhIT+nR1aaRdAe+Mi+gzkO5L7oCYIIUQG
-+zxMqn6RY+xvDM/VI81qFwAQKOq52VjHN4RVl2u/CM4y7Xx86f0SMUprHlZUkQNE
-IiwWZPV39dNTJBqATko1
-=x012
------END PGP SIGNATURE-----
-
---Signature=_Thu__24_Jan_2013_13_06_16_+1100_lzefWPhmnFZe8ttf--
+>  {
+>         u64 temp = (__force u64) rtime;
+>
+> -       temp *= (__force u64) utime;
+> +       temp *= (__force u64) stime;
+>
+>         if (sizeof(cputime_t) == 4)
+>                 temp = div_u64(temp, (__force u32) total);
+> @@ -531,10 +531,10 @@ static void cputime_adjust(struct task_cputime *curr,
+>                            struct cputime *prev,
+>                            cputime_t *ut, cputime_t *st)
+>  {
+> -       cputime_t rtime, utime, total;
+> +       cputime_t rtime, stime, total;
+>
+> -       utime = curr->utime;
+> -       total = utime + curr->stime;
+> +       stime = curr->stime;
+> +       total = stime + curr->utime;
+>
+>         /*
+>          * Tick based cputime accounting depend on random scheduling
+> @@ -549,17 +549,17 @@ static void cputime_adjust(struct task_cputime *curr,
+>         rtime = nsecs_to_cputime(curr->sum_exec_runtime);
+>
+>         if (total)
+> -               utime = scale_utime(utime, rtime, total);
+> +               stime = scale_stime(stime, rtime, total);
+>         else
+> -               utime = rtime;
+> +               stime = rtime;
+>
+>         /*
+>          * If the tick based count grows faster than the scheduler one,
+>          * the result of the scaling may go backward.
+>          * Let's enforce monotonicity.
+>          */
+> -       prev->utime = max(prev->utime, utime);
+> -       prev->stime = max(prev->stime, rtime - prev->utime);
+> +       prev->stime = max(prev->stime, stime);
+> +       prev->utime = max(prev->utime, rtime - prev->stime);
+>
+>         *ut = prev->utime;
+>         *st = prev->stime;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
