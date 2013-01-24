@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab3AXPBF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:01:05 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:35111 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab3AXPBA (ORCPT
+	id S1754743Ab3AXPBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:01:15 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:35295 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754663Ab3AXPBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:01:00 -0500
+	Thu, 24 Jan 2013 10:01:12 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: tj@kernel.org, pmatouse@redhat.com,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Doug Gilbert <dgilbert@interlog.com>,
         "James E.J. Bottomley" <JBottomley@parallels.com>,
         linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 01/13] sg_io: pass request_queue to blk_verify_command
-Date: Thu, 24 Jan 2013 16:00:37 +0100
-Message-Id: <1359039649-17734-2-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 06/13] sg_io: whitelist a few more commands for multimedia devices
+Date: Thu, 24 Jan 2013 16:00:42 +0100
+Message-Id: <1359039649-17734-7-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
 References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
@@ -24,99 +22,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adjust the blk_verify_command function to let it look at per-queue
-data.  This will be done in the next patch.
+Strangely, a couple of MMC commands were never included.  Add them too.
 
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Doug Gilbert <dgilbert@interlog.com>
 Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
 Cc: linux-scsi@kernel.org
 Cc: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- block/bsg.c            |    2 +-
- block/scsi_ioctl.c     |    7 ++++---
- drivers/scsi/sg.c      |    3 ++-
- include/linux/blkdev.h |    3 ++-
- 4 files changed, 9 insertions(+), 6 deletions(-)
+ block/scsi_ioctl.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/block/bsg.c b/block/bsg.c
-index ff64ae3..eb5ad59 100644
---- a/block/bsg.c
-+++ b/block/bsg.c
-@@ -187,7 +187,7 @@ static int blk_fill_sgv4_hdr_rq(struct request_queue *q, struct request *rq,
- 		return -EFAULT;
- 
- 	if (hdr->subprotocol == BSG_SUB_PROTOCOL_SCSI_CMD) {
--		if (blk_verify_command(rq->cmd, has_write_perm))
-+		if (blk_verify_command(q, rq->cmd, has_write_perm))
- 			return -EPERM;
- 	} else if (!capable(CAP_SYS_RAWIO))
- 		return -EPERM;
 diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 9a87daa..a737562 100644
+index 084b943..ec930f0 100644
 --- a/block/scsi_ioctl.c
 +++ b/block/scsi_ioctl.c
-@@ -196,7 +196,8 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 	__set_bit(GPCMD_SET_READ_AHEAD, filter->write_ok);
- }
+@@ -220,11 +220,14 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	sgio_bitmap_set(0x52,           R                    , read);  // READ TRACK INFORMATION
+ 	sgio_bitmap_set(0x5C,           R                    , read);  // READ BUFFER CAPACITY
+ 	sgio_bitmap_set(0xA4,           R                    , read);  // REPORT KEY
++	sgio_bitmap_set(0xA5,           R                    , read);  // PLAY AUDIO(12)
++	sgio_bitmap_set(0xAB,           R|            V      , read);  // SERVICE ACTION IN(12)
+ 	sgio_bitmap_set(0xAC,           R                    , read);  // GET PERFORMANCE
+ 	sgio_bitmap_set(0xAD,           R                    , read);  // READ DVD STRUCTURE
+ 	sgio_bitmap_set(0xB9,           R                    , read);  // READ CD MSF
+ 	sgio_bitmap_set(0xBA,           R                    , read);  // SCAN
+ 	sgio_bitmap_set(0xBC,           R                    , read);  // PLAY CD
++	sgio_bitmap_set(0xBD,           R                    , read);  // MECHANISM STATUS
+ 	sgio_bitmap_set(0xBE,           R                    , read);  // READ CD
  
--int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm)
-+int blk_verify_command(struct request_queue *q,
-+		       unsigned char *cmd, fmode_t has_write_perm)
- {
- 	struct blk_cmd_filter *filter = &blk_default_cmd_filter;
- 
-@@ -225,7 +226,7 @@ static int blk_fill_sghdr_rq(struct request_queue *q, struct request *rq,
- {
- 	if (copy_from_user(rq->cmd, hdr->cmdp, hdr->cmd_len))
- 		return -EFAULT;
--	if (blk_verify_command(rq->cmd, mode & FMODE_WRITE))
-+	if (blk_verify_command(q, rq->cmd, mode & FMODE_WRITE))
- 		return -EPERM;
- 
- 	/*
-@@ -472,7 +473,7 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
- 	if (in_len && copy_from_user(buffer, sic->data + cmdlen, in_len))
- 		goto error;
- 
--	err = blk_verify_command(rq->cmd, mode & FMODE_WRITE);
-+	err = blk_verify_command(q, rq->cmd, mode & FMODE_WRITE);
- 	if (err)
- 		goto error;
- 
-diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-index be2c9a6..cab816f 100644
---- a/drivers/scsi/sg.c
-+++ b/drivers/scsi/sg.c
-@@ -217,11 +217,12 @@ static void sg_put_dev(Sg_device *sdp);
- static int sg_allow_access(struct file *filp, unsigned char *cmd)
- {
- 	struct sg_fd *sfp = filp->private_data;
-+	struct request_queue *q = sfp->parentdp->device->request_queue;
- 
- 	if (sfp->parentdp->device->type == TYPE_SCANNER)
- 		return 0;
- 
--	return blk_verify_command(cmd, filp->f_mode & FMODE_WRITE);
-+	return blk_verify_command(q, cmd, filp->f_mode & FMODE_WRITE);
- }
- 
- static int get_exclude(Sg_device *sdp)
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index f94bc83..0782336 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1061,7 +1061,8 @@ static inline int sb_issue_zeroout(struct super_block *sb, sector_t block,
- 				    gfp_mask);
- }
- 
--extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
-+extern int blk_verify_command(struct request_queue *q,
-+			      unsigned char *cmd, fmode_t has_write_perm);
- 
- enum blk_default_limits {
- 	BLK_MAX_SEGMENTS	= 128,
+ 	sgio_bitmap_set(0x53, D|        R                    , write); // RESERVE TRACK / XDWRITEREAD(10)
 -- 
 1.7.1
 
