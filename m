@@ -1,76 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab3AXQTN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 11:19:13 -0500
-Received: from mga02.intel.com ([134.134.136.20]:62894 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754749Ab3AXQTK convert rfc822-to-8bit (ORCPT
+	id S1754963Ab3AXQ1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 11:27:42 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59604 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754689Ab3AXQ1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 11:19:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,530,1355126400"; 
-   d="scan'208";a="251831696"
-From: "Metzger, Markus T" <markus.t.metzger@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: "mingo@redhat.com" <mingo@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Kettenis <kettenis@gnu.org>, Pedro Alves <palves@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        "gdb-patches@sourceware.org" <gdb-patches@sourceware.org>
-Subject: RE: [PATCH] x86, perf, bts: disable BTS from Nehalem to Ivy Bridge
-Thread-Topic: [PATCH] x86, perf, bts: disable BTS from Nehalem to Ivy Bridge
-Thread-Index: AQHN+koPtQ7h4eFQpEO6XdiO7PVjgJhYoJ1g
-Date: Thu, 24 Jan 2013 16:17:26 +0000
-Message-ID: <A78C989F6D9628469189715575E55B2307B648E7@IRSMSX102.ger.corp.intel.com>
-References: <1354876511-25294-1-git-send-email-markus.t.metzger@intel.com>
- <20130124154637.GB32146@gmail.com>
-In-Reply-To: <20130124154637.GB32146@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.182]
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 24 Jan 2013 11:27:39 -0500
+Date: Thu, 24 Jan 2013 11:27:38 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Vivek Gautam <gautam.vivek@samsung.com>
+cc: linux-usb@vger.kernel.org, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <balbi@ti.com>, <kgene.kim@samsung.com>,
+        <thomas.abraham@linaro.org>, <rob.herring@calxeda.com>,
+        <grant.likely@secretlab.ca>, <sylvester.nawrocki@gmail.com>,
+        <dianders@chromium.org>, <jg1.han@samsung.com>, <cpgs@samsung.com>
+Subject: Re: [PATCH v2 1/2] usb: ehci-s5p/ohci-exynos: Fix compatible strings
+ for the device
+In-Reply-To: <1359035130-22667-2-git-send-email-gautam.vivek@samsung.com>
+Message-ID: <Pine.LNX.4.44L0.1301241127270.2163-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: gdb-patches-owner@sourceware.org [mailto:gdb-patches-owner@sourceware.org] On Behalf Of Ingo Molnar
-> Sent: Thursday, January 24, 2013 4:47 PM
+On Thu, 24 Jan 2013, Vivek Gautam wrote:
 
-
-> > Starting with Nehalem, the BTS "from" information may in some cases be
-> > incorrect (AAJ122).
-> >
-> > This has been detected while adding branch tracing support to gdb, where it
-> > results in sporadic test fails.
-> >
-> > Disable BTS support on Nehalem, Westmere, Sandy Bridge, and Ivy Bridge.
+> Using specific chip in compatible strings. Newer SOCs can claim
+> device by using older string in the compatible list.
 > 
-> But the failures are rare, so the BTS data is still correct
-> statistically, by and large, right? So why not just keep it
-> as-is and teach tooling to be more robust about implausible
-> trace entries? It has to be ready for that eventuality *anyway*.
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
 
-Yes, the fails are rare. They are frequent enough, however, to cause sporadic test fails.
-
-The problem is that you can't reliably detect such fails. In the worst case, GDB would show wrong but plausible trace. Typically, GDB just shows garbage (i.e. impossible trace) in such cases.
-
-I'm afraid one might endlessly debate whether the feature as-is is useful or not. It is working fine on Atom so I chose to disable it on core.
-
-The GDB folks would rather not disable the feature inside GDB; they prefer that it is disabled in the kernel. There will be an additional check inside GDB to support older kernel versions.
-
-Regards,
-markus.
-Intel GmbH
-Dornacher Strasse 1
-85622 Feldkirchen/Muenchen, Deutschland
-Sitz der Gesellschaft: Feldkirchen bei Muenchen
-Geschaeftsfuehrer: Christian Lamprechter, Hannes Schwaderer, Douglas Lusk
-Registergericht: Muenchen HRB 47456
-Ust.-IdNr./VAT Registration No.: DE129385895
-Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
