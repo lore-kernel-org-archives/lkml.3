@@ -1,209 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab3AXB35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 20:29:57 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:45944
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752582Ab3AXB31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 20:29:27 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
-        JBeulich@suse.com, bp@alien8.de
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
-Date: Wed, 23 Jan 2013 17:56:09 -0800
-Message-Id: <1358992569-22826-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753010Ab3AXB3k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 20:29:40 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61108 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752711Ab3AXB3M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 20:29:12 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-c4-51008e637395
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        js1304@gmail.com, Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 2/3] ARM: static_vm: introduce an infrastructure for static mapped area
+Date: Thu, 24 Jan 2013 10:28:53 +0900
+Message-Id: <1358990934-4893-3-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Starting with win8, vmbus interrupts can be delivered on any VCPU in the guest
-and furthermore can be concurrently active on multiple VCPUs. Support this
-interrupt delivery model by setting up a separate IDT entry for Hyper-V vmbus.
-interrupts. I would like to thank Jan Beulich <JBeulich@suse.com> and
-Thomas Gleixner <tglx@linutronix.de>, for their help.
+From: Joonsoo Kim <js1304@gmail.com>
 
-In this version of the patch, based on the feedback, I have merged the IDT vector
-for Xen and Hyper-V and made the necessary adjustments.
+In current implementation, we used ARM-specific flag, that is,
+VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
+The purpose of static mapped area is to re-use static mapped area when
+entire physical address range of the ioremap request can be covered
+by this area.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- arch/x86/include/asm/irq_vectors.h |    4 +-
- arch/x86/include/asm/mshyperv.h    |    4 +++
- arch/x86/kernel/cpu/mshyperv.c     |   39 ++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/entry_32.S         |    9 +++++++-
- arch/x86/kernel/entry_64.S         |    7 +++++-
- drivers/xen/events.c               |    6 ++--
- 6 files changed, 62 insertions(+), 7 deletions(-)
+This implementation causes needless overhead for some cases.
+For example, assume that there is only one static mapped area and
+vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
+deciding whether it is matched or not. Moreover, even if there is
+no static mapped area and vmlist has 300 areas, every time we call
+ioremap, we check 300 areas in now.
 
-diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
-index 1508e51..d09850b 100644
---- a/arch/x86/include/asm/irq_vectors.h
-+++ b/arch/x86/include/asm/irq_vectors.h
-@@ -109,8 +109,8 @@
- 
- #define UV_BAU_MESSAGE			0xf5
- 
--/* Xen vector callback to receive events in a HVM domain */
--#define XEN_HVM_EVTCHN_CALLBACK		0xf3
-+/* Vector on which hypervisor callbacks will be delivered */
-+#define HYPERVISOR_CALLBACK_VECTOR 	0xf3
- 
- /*
-  * Local APIC timer IRQ vector is on a different priority level,
-diff --git a/arch/x86/include/asm/mshyperv.h b/arch/x86/include/asm/mshyperv.h
-index 79ce568..c2934be 100644
---- a/arch/x86/include/asm/mshyperv.h
-+++ b/arch/x86/include/asm/mshyperv.h
-@@ -11,4 +11,8 @@ struct ms_hyperv_info {
- 
- extern struct ms_hyperv_info ms_hyperv;
- 
-+void hyperv_callback_vector(void);
-+void hyperv_vector_handler(struct pt_regs *regs);
-+void hv_register_vmbus_handler(int irq, irq_handler_t handler);
+If we construct a extra list for static mapped area, we can eliminate
+above mentioned overhead.
+With a extra list, if there is one static mapped area,
+we just check only one area and proceed next operation quickly.
+
+In fact, it is not a critical problem, because ioremap is not frequently
+used. But reducing overhead is better idea.
+
+Another reason for doing this work is for removing architecture dependency
+on vmalloc layer. I think that vmlist and vmlist_lock is internal data
+structure for vmalloc layer. Some codes for debugging and stat inevitably
+use vmlist and vmlist_lock. But it is preferable that they are used
+as least as possible in outside of vmalloc.c
+
+Now, I introduce an ARM-specific infrastructure for static mapped area. In
+the following patch, we will use this and resolve above mentioned problem.
+
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+diff --git a/arch/arm/include/asm/mach/static_vm.h b/arch/arm/include/asm/mach/static_vm.h
+new file mode 100644
+index 0000000..72c8339
+--- /dev/null
++++ b/arch/arm/include/asm/mach/static_vm.h
+@@ -0,0 +1,45 @@
++/*
++ * arch/arm/include/asm/mach/static_vm.h
++ *
++ * Copyright (C) 2012 LG Electronics, Joonsoo Kim <iamjoonsoo.kim@lge.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
 +
- #endif
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 0a630dd..3689622 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -14,10 +14,15 @@
- #include <linux/time.h>
- #include <linux/clocksource.h>
- #include <linux/module.h>
-+#include <linux/hardirq.h>
-+#include <linux/interrupt.h>
- #include <asm/processor.h>
- #include <asm/hypervisor.h>
- #include <asm/hyperv.h>
- #include <asm/mshyperv.h>
-+#include <asm/desc.h>
-+#include <asm/idle.h>
-+#include <asm/irq_regs.h>
- 
- struct ms_hyperv_info ms_hyperv;
- EXPORT_SYMBOL_GPL(ms_hyperv);
-@@ -69,6 +74,11 @@ static void __init ms_hyperv_init_platform(void)
- 	       ms_hyperv.features, ms_hyperv.hints);
- 
- 	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
++#ifndef _ASM_MACH_STATIC_VM_H
++#define _ASM_MACH_STATIC_VM_H
 +
-+	/*
-+	 * Setup the IDT for hypervisor callback.
-+	 */
-+	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, hyperv_callback_vector);
- }
++#include <linux/types.h>
++#include <linux/vmalloc.h>
++
++struct static_vm {
++	struct static_vm	*next;
++	void			*vaddr;
++	unsigned long		size;
++	unsigned long		flags;
++	phys_addr_t		paddr;
++	const void		*caller;
++};
++
++extern struct static_vm *static_vmlist;
++extern spinlock_t static_vmlist_lock;
++
++extern struct static_vm *find_static_vm_paddr(phys_addr_t paddr,
++			size_t size, unsigned long flags);
++extern struct static_vm *find_static_vm_vaddr(void *vaddr);
++extern void init_static_vm(struct static_vm *static_vm,
++			struct vm_struct *vm, unsigned long flags);
++extern void insert_static_vm(struct static_vm *vm);
++
++#endif /* _ASM_MACH_STATIC_VM_H */
+diff --git a/arch/arm/mm/Makefile b/arch/arm/mm/Makefile
+index 4e333fa..57b329a 100644
+--- a/arch/arm/mm/Makefile
++++ b/arch/arm/mm/Makefile
+@@ -6,7 +6,7 @@ obj-y				:= dma-mapping.o extable.o fault.o init.o \
+ 				   iomap.o
  
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
-@@ -77,3 +87,32 @@ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
- 	.init_platform		= ms_hyperv_init_platform,
- };
- EXPORT_SYMBOL(x86_hyper_ms_hyperv);
+ obj-$(CONFIG_MMU)		+= fault-armv.o flush.o idmap.o ioremap.o \
+-				   mmap.o pgd.o mmu.o
++				   mmap.o pgd.o mmu.o static_vm.o
+ 
+ ifneq ($(CONFIG_MMU),y)
+ obj-y				+= nommu.o
+diff --git a/arch/arm/mm/static_vm.c b/arch/arm/mm/static_vm.c
+new file mode 100644
+index 0000000..265d8e9
+--- /dev/null
++++ b/arch/arm/mm/static_vm.c
+@@ -0,0 +1,94 @@
++/*
++ * arch/arm/mm/static_vm.c
++ *
++ * Copyright (C) 2012 LG Electronics, Joonsoo Kim <iamjoonsoo.kim@lge.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
 +
-+static int vmbus_irq = -1;
-+static irq_handler_t vmbus_isr;
++#include <linux/spinlock.h>
 +
-+void hv_register_vmbus_handler(int irq, irq_handler_t handler)
++#include <asm/mach/static_vm.h>
++
++struct static_vm *static_vmlist;
++DEFINE_SPINLOCK(static_vmlist_lock);
++
++struct static_vm *find_static_vm_paddr(phys_addr_t paddr,
++			size_t size, unsigned long flags)
 +{
-+	vmbus_irq = irq;
-+	vmbus_isr = handler;
-+}
-+EXPORT_SYMBOL_GPL(hv_register_vmbus_handler);
++	struct static_vm *area;
 +
-+void hyperv_vector_handler(struct pt_regs *regs)
++	spin_lock(&static_vmlist_lock);
++	for (area = static_vmlist; area; area = area->next) {
++		if ((area->flags & flags) != flags)
++			continue;
++
++		if (area->paddr > paddr ||
++			paddr + size - 1 > area->paddr + area->size - 1)
++			continue;
++
++		spin_unlock(&static_vmlist_lock);
++		return area;
++	}
++	spin_unlock(&static_vmlist_lock);
++
++	return NULL;
++}
++
++struct static_vm *find_static_vm_vaddr(void *vaddr)
 +{
-+	struct pt_regs *old_regs = set_irq_regs(regs);
-+	struct irq_desc *desc;
++	struct static_vm *area;
 +
-+	irq_enter();
-+#ifdef CONFIG_X86
-+	exit_idle();
-+#endif
++	spin_lock(&static_vmlist_lock);
++	for (area = static_vmlist; area; area = area->next) {
++		/* static_vmlist is ascending order */
++		if (area->vaddr > vaddr)
++			break;
 +
-+	desc = irq_to_desc(vmbus_irq);
++		if (area->vaddr <= vaddr && area->vaddr + area->size > vaddr) {
++			spin_unlock(&static_vmlist_lock);
++			return area;
++		}
++	}
++	spin_unlock(&static_vmlist_lock);
 +
-+	if (desc)
-+		generic_handle_irq_desc(vmbus_irq, desc);
-+
-+	irq_exit();
-+	set_irq_regs(old_regs);
++	return NULL;
 +}
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index e9dd4c4..7d2bb62 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1047,11 +1047,18 @@ ENTRY(xen_failsafe_callback)
- 	_ASM_EXTABLE(4b,9b)
- ENDPROC(xen_failsafe_callback)
- 
--BUILD_INTERRUPT3(xen_hvm_callback_vector, XEN_HVM_EVTCHN_CALLBACK,
-+BUILD_INTERRUPT3(xen_hvm_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
- 		xen_evtchn_do_upcall)
- 
- #endif	/* CONFIG_XEN */
- 
-+#if IS_ENABLED(CONFIG_HYPERV)
 +
-+BUILD_INTERRUPT3(hyperv_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
-+	hyperv_vector_handler)
++void init_static_vm(struct static_vm *static_vm,
++				struct vm_struct *vm, unsigned long flags)
++{
++	static_vm->vaddr = vm->addr;
++	static_vm->size = vm->size;
++	static_vm->paddr = vm->phys_addr;
++	static_vm->caller = vm->caller;
++	static_vm->flags = flags;
++}
 +
-+#endif /* CONFIG_HYPERV */
++void insert_static_vm(struct static_vm *vm)
++{
++	struct static_vm *tmp, **p;
 +
- #ifdef CONFIG_FUNCTION_TRACER
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 1975122..803ca69 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1446,11 +1446,16 @@ ENTRY(xen_failsafe_callback)
- 	CFI_ENDPROC
- END(xen_failsafe_callback)
- 
--apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
-+apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
- 	xen_hvm_callback_vector xen_evtchn_do_upcall
- 
- #endif /* CONFIG_XEN */
- 
-+#if IS_ENABLED(CONFIG_HYPERV)
-+apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
-+	hyperv_callback_vector hyperv_vector_handler
-+#endif /* CONFIG_HYPERV */
-+
- /*
-  * Some functions should be protected against kprobes
-  */
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 4293c57..5c2e92e 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1787,7 +1787,7 @@ void xen_callback_vector(void)
- 	int rc;
- 	uint64_t callback_via;
- 	if (xen_have_vector_callback) {
--		callback_via = HVM_CALLBACK_VECTOR(XEN_HVM_EVTCHN_CALLBACK);
-+		callback_via = HVM_CALLBACK_VECTOR(HYPERVISOR_CALLBACK_VECTOR);
- 		rc = xen_set_callback_via(callback_via);
- 		if (rc) {
- 			printk(KERN_ERR "Request for Xen HVM callback vector"
-@@ -1798,8 +1798,8 @@ void xen_callback_vector(void)
- 		printk(KERN_INFO "Xen HVM callback vector for event delivery is "
- 				"enabled\n");
- 		/* in the restore case the vector has already been allocated */
--		if (!test_bit(XEN_HVM_EVTCHN_CALLBACK, used_vectors))
--			alloc_intr_gate(XEN_HVM_EVTCHN_CALLBACK, xen_hvm_callback_vector);
-+		if (!test_bit(HYPERVISOR_CALLBACK_VECTOR, used_vectors))
-+			alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, xen_hvm_callback_vector);
- 	}
- }
- #else
++	spin_lock(&static_vmlist_lock);
++	for (p = &static_vmlist; (tmp = *p) != NULL; p = &tmp->next) {
++		if (tmp->vaddr >= vm->vaddr) {
++			BUG_ON(tmp->vaddr < vm->vaddr + vm->size);
++			break;
++		} else
++			BUG_ON(tmp->vaddr + tmp->size > vm->vaddr);
++	}
++	vm->next = *p;
++	*p = vm;
++	spin_unlock(&static_vmlist_lock);
++}
 -- 
-1.7.4.1
+1.7.9.5
 
