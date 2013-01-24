@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab3AXJlw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 04:41:52 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37654 "EHLO mail.skyhub.de"
+	id S1753033Ab3AXJnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 04:43:45 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:43010 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752731Ab3AXJls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 04:41:48 -0500
-Date: Thu, 24 Jan 2013 10:44:39 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Alex Shi <alex.shi@intel.com>
-Cc: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-Message-ID: <20130124094439.GB13463@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Alex Shi <alex.shi@intel.com>, torvalds@linux-foundation.org,
-	mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-	akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-	namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
-	gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-	viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+	id S1752731Ab3AXJnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 04:43:41 -0500
+Date: Thu, 24 Jan 2013 10:43:37 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Cc: Tom St Denis <tstdenis@elliptictech.com>, linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        David Miller <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] CMAC support for CryptoAPI, fixed patch issues, indent,
+ and testmgr build issues
+Message-ID: <20130124094337.GJ9147@secunet.com>
+References: <1776726593.108228.1358952383104.JavaMail.root@elliptictech.com>
+ <20130123173510.14986sla4qsstz8k@www.dalek.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+In-Reply-To: <20130123173510.14986sla4qsstz8k@www.dalek.fi>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 24 Jan 2013 09:43:37.0557 (UTC) FILETIME=[48C36850:01CDFA17]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 11:06:42AM +0800, Alex Shi wrote:
-> Since the runnable info needs 345ms to accumulate, balancing
-> doesn't do well for many tasks burst waking. After talking with Mike
-> Galbraith, we are agree to just use runnable avg in power friendly 
-> scheduling and keep current instant load in performance scheduling for 
-> low latency.
+On Wed, Jan 23, 2013 at 05:35:10PM +0200, Jussi Kivilinna wrote:
 > 
-> So the biggest change in this version is removing runnable load avg in
-> balance and just using runnable data in power balance.
+> Problem seems to be that PFKEYv2 does not quite work with IKEv2, and
+> XFRM API should be used instead. There is new numbers assigned for
+> IKEv2: https://www.iana.org/assignments/ikev2-parameters/ikev2-parameters.xml#ikev2-parameters-7
 > 
-> The patchset bases on Linus' tree, includes 3 parts,
-> ** 1, bug fix and fork/wake balancing clean up. patch 1~5,
-> ----------------------
-> the first patch remove one domain level. patch 2~5 simplified fork/wake
-> balancing, it can increase 10+% hackbench performance on our 4 sockets
-> SNB EP machine.
+> For new SADB_X_AALG_*, I'd think you should use value from "Reserved
+> for private use" range. Maybe 250?
 
-Ok, I see some benchmarking results here and there in the commit
-messages but since this is touching the scheduler, you probably would
-need to make sure it doesn't introduce performance regressions vs
-mainline with a comprehensive set of benchmarks.
+This would be an option, but we have just a few slots for private
+algorithms.
 
-And, AFAICR, mainline does by default the 'performance' scheme by
-spreading out tasks to idle cores, so have you tried comparing vanilla
-mainline to your patchset in the 'performance' setting so that you can
-make sure there are no problems there? And not only hackbench or a
-microbenchmark but aim9 (I saw that in a commit message somewhere) and
-whatever else multithreaded benchmark you can get your hands on.
+> 
+> But maybe better solution might be to not make AES-CMAC (or other
+> new algorithms) available throught PFKEY API at all, just XFRM?
+> 
 
-Also, you might want to run it on other machines too, not only SNB :-)
-And what about ARM, maybe someone there can run your patchset too?
+It is probably the best to make new algorithms unavailable for pfkey
+as long as they have no official ikev1 iana transform identifier.
 
-So, it would be cool to see comprehensive results from all those runs
-and see what the numbers say.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+But how to do that? Perhaps we can assign SADB_X_AALG_NOPFKEY to
+the private value 255 and return -EINVAL if pfkey tries to register
+such an algorithm. The netlink interface does not use these
+identifiers, everything should work as expected. So it should be
+possible to use these algoritms with iproute2 and the most modern
+ike deamons.
