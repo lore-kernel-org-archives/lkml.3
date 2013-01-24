@@ -1,58 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab3AXJyo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 04:54:44 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:43382 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752731Ab3AXJyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 04:54:39 -0500
-Message-ID: <510104DB.9040403@imgtec.com>
-Date: Thu, 24 Jan 2013 09:54:35 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: David Howells <dhowells@redhat.com>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <arnd@arndb.de>
-Subject: Re: [PATCH v2 65/76] ARC: UAPI Disintegrate arch/arc/include/asm
-References: <50FFCAC4.1050002@synopsys.com> <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-66-git-send-email-vgupta@synopsys.com> <10760.1358945425@warthog.procyon.org.uk> <5100CAAF.8090702@synopsys.com>
-In-Reply-To: <5100CAAF.8090702@synopsys.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1753145Ab3AXJz7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 04:55:59 -0500
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:58244 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750966Ab3AXJz4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 04:55:56 -0500
+Message-ID: <1359021353.1325.1.camel@x61.thuisdomein>
+Subject: Re: linux-3.7.4: BUG: unable to handle kernel NULL pointer
+ dereference at target_fabric_port_link
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Kouichi ONO <kou1.ono@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Thu, 24 Jan 2013 10:55:53 +0100
+In-Reply-To: <20130124.010724.710820132553071688.kou1.ono@gmail.com>
+References: <20130124.010724.710820132553071688.kou1.ono@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_01_24_09_54_36
+X-OriginalArrivalTime: 24 Jan 2013 09:55:53.0697 (UTC) FILETIME=[FF897510:01CDFA18]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vineet,
+On Thu, 2013-01-24 at 01:07 +0900, Kouichi ONO wrote:
+> At target_fabric_port_link(), struct se_device *dev is used before set?
 
-On 24/01/13 05:46, Vineet Gupta wrote:
-> On Wednesday 23 January 2013 06:20 PM, David Howells wrote:
->> Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
->>
->>> I generated this patch using the scripts you provided. If these look OK to
->>> you, can you please ACK.
->>
->> You need to take a look at uapi/asm/setup.h.  It's created as an empty file -
->> which will get discarded by patch.  Do you actually need a UAPI instance of
->> that?
->>
->> David
->>
-> 
-> Given that setup.h is exported by include/uapi/asm-generic/Kbuild.asm (as part of
-> userspace header ABI) there's no way we can avoid it's uapi sibling - even if
-> empty. But to workaround patch discarding it, I will add a placeholder comment in
-> generated setup.h (just like you did for arch/cris). Would that take care of it ?
-> 
-> BTW looking at metag port, it seems that <asm/setup.h> does #include
-> <uapi/asm/setup.h>, but latter doesn't exist in the repository - is it generated
-> for you James or is this same issue which David elucidated to above ?
+It seems the (stable specific) patch in
+http://article.gmane.org/gmane.linux.kernel.stable/40880 should fix
+that.
 
-We have generic-y += setup.h in arch/metag/include/uapi/asm/Kbuild for this
 
-Cheers
-James
+Paul Bolle
 
