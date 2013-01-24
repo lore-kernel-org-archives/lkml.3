@@ -1,214 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388Ab3AXS6Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 13:58:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33024 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab3AXS6U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 13:58:20 -0500
-Date: Thu, 24 Jan 2013 10:57:46 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-9nfesdfpnx7zp96yn3tmfbx0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols:
-  Generalize filter in __fprintf_buildid methods
-Git-Commit-ID: 417c2ff6806fd9183cb36682dcf32c4d068aba5e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1755443Ab3AXS7O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 13:59:14 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44194 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755179Ab3AXS7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 13:59:11 -0500
+Message-ID: <51018463.4040908@ti.com>
+Date: Fri, 25 Jan 2013 00:28:43 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 10:57:52 -0800 (PST)
+To: Roger Quadros <rogerq@ti.com>
+CC: <tony@atomide.com>, <balbi@ti.com>, <linux@arm.linux.org.uk>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v1 4/6] drivers: usb: musb: omap: make use of the new
+ PHY lib APIs
+References: <1358848694-20145-1-git-send-email-kishon@ti.com> <1358848694-20145-5-git-send-email-kishon@ti.com> <50FE9DA6.4030507@ti.com>
+In-Reply-To: <50FE9DA6.4030507@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  417c2ff6806fd9183cb36682dcf32c4d068aba5e
-Gitweb:     http://git.kernel.org/tip/417c2ff6806fd9183cb36682dcf32c4d068aba5e
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 7 Dec 2012 09:53:58 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sun, 9 Dec 2012 08:46:07 -0300
+Hi,
 
-perf symbols: Generalize filter in __fprintf_buildid methods
+On Tuesday 22 January 2013 07:39 PM, Roger Quadros wrote:
+> On 01/22/2013 11:58 AM, Kishon Vijay Abraham I wrote:
+>> New PHY lib APIs like usb_add_phy_dev() and devm_usb_get_phy_dev() are
+>> used in MUSB (OMAP), in order to make use of the binding information
+>> provided in the board file (of OMAP platforms).
+>> All the platforms should be modified similar to this to add and get the
+>> PHY.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>   drivers/usb/musb/omap2430.c   |    2 +-
+>>   drivers/usb/otg/twl4030-usb.c |    3 ++-
+>>   drivers/usb/phy/omap-usb2.c   |    3 ++-
+>>   3 files changed, 5 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+>> index bf6cfe0..1a8cf6d 100644
+>> --- a/drivers/usb/musb/omap2430.c
+>> +++ b/drivers/usb/musb/omap2430.c
+>> @@ -345,7 +345,7 @@ static int omap2430_musb_init(struct musb *musb)
+>>   	 * up through ULPI.  TWL4030-family PMICs include one,
+>>   	 * which needs a driver, drivers aren't always needed.
+>>   	 */
+>> -	musb->xceiv = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+>> +	musb->xceiv = devm_usb_get_phy_dev(dev, 0);
+>>   	if (IS_ERR_OR_NULL(musb->xceiv)) {
+>>   		pr_err("HS USB OTG: no transceiver configured\n");
+>>   		return -ENODEV;
+>> diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
+>> index 0a70193..a994715 100644
+>> --- a/drivers/usb/otg/twl4030-usb.c
+>> +++ b/drivers/usb/otg/twl4030-usb.c
+>> @@ -610,6 +610,7 @@ static int twl4030_usb_probe(struct platform_device *pdev)
+>>   	twl->phy.dev		= twl->dev;
+>>   	twl->phy.label		= "twl4030";
+>>   	twl->phy.otg		= otg;
+>> +	twl->phy.type		= USB_PHY_TYPE_USB2;
+>
+> What is the need to set phy.type? I think this should be deprecated along with the old API.
 
-We had that 'with_hits' filter to show just the build ids for DSOs that
-had samples, make that generic so that we can use it in the upcoming
-buildid-cache --missing feature, to show just the build ids that are not
-in the cache.
+The *type* field as such is not deprecated. Adding and getting a PHY 
+using *type* is deprecated.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-9nfesdfpnx7zp96yn3tmfbx0@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-buildid-list.c |  7 ++++++-
- tools/perf/util/dso.c             |  4 ++--
- tools/perf/util/dso.h             |  2 +-
- tools/perf/util/machine.h         |  8 ++++----
- tools/perf/util/session.c         |  6 +++---
- tools/perf/util/session.h         |  4 ++--
- tools/perf/util/symbol.c          | 12 ++++++------
- 7 files changed, 24 insertions(+), 19 deletions(-)
-
-diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
-index 4c770d2..e74366a 100644
---- a/tools/perf/builtin-buildid-list.c
-+++ b/tools/perf/builtin-buildid-list.c
-@@ -44,6 +44,11 @@ static int filename__fprintf_build_id(const char *name, FILE *fp)
- 	return fprintf(fp, "%s\n", sbuild_id);
- }
- 
-+static bool dso__skip_buildid(struct dso *dso, int with_hits)
-+{
-+	return with_hits && !dso->hit;
-+}
-+
- static int perf_session__list_build_ids(bool force, bool with_hits)
- {
- 	struct perf_session *session;
-@@ -66,7 +71,7 @@ static int perf_session__list_build_ids(bool force, bool with_hits)
- 	if (with_hits || session->fd_pipe)
- 		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
- 
--	perf_session__fprintf_dsos_buildid(session, stdout, with_hits);
-+	perf_session__fprintf_dsos_buildid(session, stdout, dso__skip_buildid, with_hits);
- 	perf_session__delete(session);
- out:
- 	return 0;
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index be43785..6f7d5a9 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -539,13 +539,13 @@ struct dso *__dsos__findnew(struct list_head *head, const char *name)
- }
- 
- size_t __dsos__fprintf_buildid(struct list_head *head, FILE *fp,
--			       bool with_hits)
-+			       bool (skip)(struct dso *dso, int parm), int parm)
- {
- 	struct dso *pos;
- 	size_t ret = 0;
- 
- 	list_for_each_entry(pos, head, node) {
--		if (with_hits && !pos->hit)
-+		if (skip && skip(pos, parm))
- 			continue;
- 		ret += dso__fprintf_buildid(pos, fp);
- 		ret += fprintf(fp, " %s\n", pos->long_name);
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index e032769..450199a 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -138,7 +138,7 @@ struct dso *__dsos__findnew(struct list_head *head, const char *name);
- bool __dsos__read_build_ids(struct list_head *head, bool with_hits);
- 
- size_t __dsos__fprintf_buildid(struct list_head *head, FILE *fp,
--			       bool with_hits);
-+			       bool (skip)(struct dso *dso, int parm), int parm);
- size_t __dsos__fprintf(struct list_head *head, FILE *fp);
- 
- size_t dso__fprintf_buildid(struct dso *dso, FILE *fp);
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index b7cde74..646ad13 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -129,11 +129,11 @@ int machine__load_kallsyms(struct machine *machine, const char *filename,
- int machine__load_vmlinux_path(struct machine *machine, enum map_type type,
- 			       symbol_filter_t filter);
- 
--size_t machine__fprintf_dsos_buildid(struct machine *machine,
--				     FILE *fp, bool with_hits);
-+size_t machine__fprintf_dsos_buildid(struct machine *machine, FILE *fp,
-+				     bool (skip)(struct dso *dso, int parm), int parm);
- size_t machines__fprintf_dsos(struct rb_root *machines, FILE *fp);
--size_t machines__fprintf_dsos_buildid(struct rb_root *machines,
--				      FILE *fp, bool with_hits);
-+size_t machines__fprintf_dsos_buildid(struct rb_root *machines, FILE *fp,
-+				     bool (skip)(struct dso *dso, int parm), int parm);
- 
- void machine__destroy_kernel_maps(struct machine *machine);
- int __machine__create_kernel_maps(struct machine *machine, struct dso *kernel);
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index aa5e582..8d04dfb 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1552,10 +1552,10 @@ size_t perf_session__fprintf_dsos(struct perf_session *self, FILE *fp)
- }
- 
- size_t perf_session__fprintf_dsos_buildid(struct perf_session *self, FILE *fp,
--					  bool with_hits)
-+					  bool (skip)(struct dso *dso, int parm), int parm)
- {
--	size_t ret = machine__fprintf_dsos_buildid(&self->host_machine, fp, with_hits);
--	return ret + machines__fprintf_dsos_buildid(&self->machines, fp, with_hits);
-+	size_t ret = machine__fprintf_dsos_buildid(&self->host_machine, fp, skip, parm);
-+	return ret + machines__fprintf_dsos_buildid(&self->machines, fp, skip, parm);
- }
- 
- size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp)
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index c18fabd..8c23025 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -115,8 +115,8 @@ size_t perf_session__fprintf(struct perf_session *self, FILE *fp);
- 
- size_t perf_session__fprintf_dsos(struct perf_session *self, FILE *fp);
- 
--size_t perf_session__fprintf_dsos_buildid(struct perf_session *self,
--					  FILE *fp, bool with_hits);
-+size_t perf_session__fprintf_dsos_buildid(struct perf_session *session, FILE *fp,
-+					  bool (fn)(struct dso *dso, int parm), int parm);
- 
- size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp);
- 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 295f8d4..e5ba984 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1315,21 +1315,21 @@ size_t machines__fprintf_dsos(struct rb_root *machines, FILE *fp)
- }
- 
- size_t machine__fprintf_dsos_buildid(struct machine *machine, FILE *fp,
--				     bool with_hits)
-+				     bool (skip)(struct dso *dso, int parm), int parm)
- {
--	return __dsos__fprintf_buildid(&machine->kernel_dsos, fp, with_hits) +
--	       __dsos__fprintf_buildid(&machine->user_dsos, fp, with_hits);
-+	return __dsos__fprintf_buildid(&machine->kernel_dsos, fp, skip, parm) +
-+	       __dsos__fprintf_buildid(&machine->user_dsos, fp, skip, parm);
- }
- 
--size_t machines__fprintf_dsos_buildid(struct rb_root *machines,
--				      FILE *fp, bool with_hits)
-+size_t machines__fprintf_dsos_buildid(struct rb_root *machines, FILE *fp,
-+				     bool (skip)(struct dso *dso, int parm), int parm)
- {
- 	struct rb_node *nd;
- 	size_t ret = 0;
- 
- 	for (nd = rb_first(machines); nd; nd = rb_next(nd)) {
- 		struct machine *pos = rb_entry(nd, struct machine, rb_node);
--		ret += machine__fprintf_dsos_buildid(pos, fp, with_hits);
-+		ret += machine__fprintf_dsos_buildid(pos, fp, skip, parm);
- 	}
- 	return ret;
- }
+Thanks
+Kishon
