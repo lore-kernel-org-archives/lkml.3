@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab3AXDmv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:42:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44206 "EHLO
+	id S1755316Ab3AXDnH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:43:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44196 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934Ab3AXD3C (ORCPT
+	with ESMTP id S1754084Ab3AXD2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:29:02 -0500
+	Wed, 23 Jan 2013 22:28:54 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Fabrizio Narni <shibotto@gmail.com>, <mus.svz@gmail.com>,
-        Mattia Dongili <malattia@linux.it>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 22/74] sony-laptop: fix SNC buffer calls when SN06 returns Integers
-Date: Thu, 24 Jan 2013 01:26:34 -0200
-Message-Id: <1358998046-613-23-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 20/74] drm/i915; Only increment the user-pin-count after successfully pinning the bo
+Date: Thu, 24 Jan 2013 01:26:32 -0200
+Message-Id: <1358998046-613-21-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
@@ -29,67 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mattia Dongili <malattia@linux.it>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit dcbeec264d73b7228ffdfe767eab69b2353099b1 upstream.
+commit 93be8788e648817d62fda33e2998eb6ca6ebf3a3 upstream.
 
-SN06 in some cases returns an Integer instead of a buffer. While the
-code handling the return value was trying to cope with the difference,
-the memcpy call was not making any difference between the two types of
-acpi_object union. This regression was introduced in 3.5.
-While there also rework the return value logic to improve readability.
+As along the error path we do not correct the user pin-count for the
+failure, we may end up with userspace believing that it has a pinned
+object at offset 0 (when interrupted by a signal for example).
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=48671
-Cc: Fabrizio Narni <shibotto@gmail.com>
-Cc: <mus.svz@gmail.com>
-Signed-off-by: Mattia Dongili <malattia@linux.it>
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/platform/x86/sony-laptop.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/platform/x86/sony-laptop.c b/drivers/platform/x86/sony-laptop.c
-index d456ff0..d4a6172 100644
---- a/drivers/platform/x86/sony-laptop.c
-+++ b/drivers/platform/x86/sony-laptop.c
-@@ -784,28 +784,29 @@ static int sony_nc_int_call(acpi_handle handle, char *name, int *value,
- static int sony_nc_buffer_call(acpi_handle handle, char *name, u64 *value,
- 		void *buffer, size_t buflen)
- {
-+	int ret = 0;
- 	size_t len = len;
- 	union acpi_object *object = __call_snc_method(handle, name, value);
- 
- 	if (!object)
- 		return -EINVAL;
- 
--	if (object->type == ACPI_TYPE_BUFFER)
-+	if (object->type == ACPI_TYPE_BUFFER) {
- 		len = MIN(buflen, object->buffer.length);
-+		memcpy(buffer, object->buffer.pointer, len);
- 
--	else if (object->type == ACPI_TYPE_INTEGER)
-+	} else if (object->type == ACPI_TYPE_INTEGER) {
- 		len = MIN(buflen, sizeof(object->integer.value));
-+		memcpy(buffer, &object->integer.value, len);
- 
--	else {
-+	} else {
- 		pr_warn("Invalid acpi_object: expected 0x%x got 0x%x\n",
- 				ACPI_TYPE_BUFFER, object->type);
--		kfree(object);
--		return -EINVAL;
-+		ret = -EINVAL;
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 4dc8a9b..7605f40 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -3125,14 +3125,15 @@ i915_gem_pin_ioctl(struct drm_device *dev, void *data,
+ 		goto out;
  	}
  
--	memcpy(buffer, object->buffer.pointer, len);
- 	kfree(object);
--	return 0;
-+	return ret;
- }
+-	obj->user_pin_count++;
+-	obj->pin_filp = file;
+-	if (obj->user_pin_count == 1) {
++	if (obj->user_pin_count == 0) {
+ 		ret = i915_gem_object_pin(obj, args->alignment, true);
+ 		if (ret)
+ 			goto out;
+ 	}
  
- struct sony_nc_handles {
++	obj->user_pin_count++;
++	obj->pin_filp = file;
++
+ 	/* XXX - flush the CPU caches for pinned objects
+ 	 * as the X server doesn't manage domains yet
+ 	 */
 -- 
 1.7.9.5
 
