@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161061Ab3AXVdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:33:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40176 "EHLO mail.kernel.org"
+	id S1161033Ab3AXVeP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:34:15 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40146 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755885Ab3AXVOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:14:19 -0500
+	id S1756862Ab3AXVOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:14:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Colin Ian King <colin.king@canonical.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 21/46] PCI: Allow pcie_aspm=force even when FADT indicates it is unsupported
-Date: Thu, 24 Jan 2013 13:12:59 -0800
-Message-Id: <20130124211144.003058072@linuxfoundation.org>
+        Betty Dall <betty.dall@hp.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Shuah Khan <shuah.khan@hp.com>
+Subject: [ 20/46] PCI/AER: pci_get_domain_bus_and_slot() call missing required pci_dev_put()
+Date: Thu, 24 Jan 2013 13:12:58 -0800
+Message-Id: <20130124211143.740914602@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
 References: <20130124211135.862755794@linuxfoundation.org>
@@ -26,38 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Ian King <colin.king@canonical.com>
+From: Betty Dall <betty.dall@hp.com>
 
-commit 9e16721498b0c3d3ebfa0b503c63d35c0a4c0642 upstream.
+commit a82b6af37d20bfe6e99a4d890f1cf1d89059929f upstream.
 
-Right now using pcie_aspm=force will not enable ASPM if the FADT indicates
-ASPM is unsupported.  However, the semantics of force should probably allow
-for this, especially as they did before 3c076351c4 ("PCI: Rework ASPM
-disable code")
+The function aer_recover_queue() calls pci_get_domain_bus_and_slot(), which
+requires that the caller decrement the reference count with pci_dev_put().
+This patch adds the missing call to pci_dev_put().
 
-This patch just skips the clearing of any ASPM setup that the firmware has
-carried out on this bus if pcie_aspm=force is being used.
-
-Reference: http://bugs.launchpad.net/bugs/962038
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: Betty Dall <betty.dall@hp.com>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-by: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pcie/aspm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/pci/pcie/aer/aerdrv_core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pci/pcie/aspm.c
-+++ b/drivers/pci/pcie/aspm.c
-@@ -773,6 +773,9 @@ void pcie_clear_aspm(struct pci_bus *bus
- {
- 	struct pci_dev *child;
- 
-+	if (aspm_force)
-+		return;
-+
- 	/*
- 	 * Clear any ASPM setup that the firmware has carried out on this bus
- 	 */
+--- a/drivers/pci/pcie/aer/aerdrv_core.c
++++ b/drivers/pci/pcie/aer/aerdrv_core.c
+@@ -616,6 +616,7 @@ static void aer_recover_work_func(struct
+ 			continue;
+ 		}
+ 		do_recovery(pdev, entry.severity);
++		pci_dev_put(pdev);
+ 	}
+ }
+ #endif
 
 
