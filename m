@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab3AXTWY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:22:24 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:42584 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab3AXTWW (ORCPT
+	id S1754620Ab3AXTYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:24:18 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:32079 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab3AXTYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:22:22 -0500
+	Thu, 24 Jan 2013 14:24:15 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/ll3c7qES2M
+X-RZG-CLASS-ID: mo00
+Date: Thu, 24 Jan 2013 20:23:59 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: KY Srinivasan <kys@microsoft.com>, Jan Beulich <JBeulich@suse.com>,
+        "bp@alien8.de" <bp@alien8.de>, "apw@canonical.com" <apw@canonical.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
+ special hypervisor interrupts
+Message-ID: <20130124192359.GA22484@aepfle.de>
+References: <1358990259-22551-1-git-send-email-kys@microsoft.com>
+ <5101035D02000078000B8FFD@nat28.tlf.novell.com>
+ <27092660926e4d3f80394697cc0dc858@SN2PR03MB061.namprd03.prod.outlook.com>
+ <51016C3202000078000B943E@nat28.tlf.novell.com>
+ <f6cbfec9c014433fa54af61d8f436ebb@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130124185943.GA19194@aepfle.de>
+ <4d9be218-acf5-45a6-aeda-cee592fd74c8@email.android.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKocOONcM4HK1ZtUJb7C1xVCEWcz_pG2UZ0hzxGpxSmBSYa1Ww@mail.gmail.com>
-References: <20130109132409.GB18395@phenom.dumpdata.com>
-	<CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
-	<87d2xeul5v.fsf@xmission.com>
-	<CAE9FiQX-OxTzt3BPh3nSLQxDUBGR=eKob5AqXYzy=Lw9NYTaGw@mail.gmail.com>
-	<CAE9FiQVsbDfLOyv=D4_BLtrKpp+Ydj7pren8Cu3rNGztbj=w=w@mail.gmail.com>
-	<20130111163548.GB25620@phenom.dumpdata.com>
-	<CAE9FiQVts6aTaRFM3aKWj46RCRiheM5gS55h=LVveaGXk_kR8g@mail.gmail.com>
-	<CAE9FiQVTfTisOrrQhv0vmsgA8Asaj5EUE5s93OFyTHfA+dWdfQ@mail.gmail.com>
-	<CAE9FiQWU6mnWxnzDtaR51H7GTbYmKgb0zy6xRCGYO4+oyc82Gg@mail.gmail.com>
-	<20130118155535.GJ9973@phenom.dumpdata.com>
-	<20130124153924.GA5943@konrad-lan.dumpdata.com>
-	<CAKocOONcM4HK1ZtUJb7C1xVCEWcz_pG2UZ0hzxGpxSmBSYa1Ww@mail.gmail.com>
-Date: Thu, 24 Jan 2013 12:22:20 -0700
-Message-ID: <CAKocOOPvK5S92ESU12yN5U=8fjSDFtDMrjJAmqxkqqTrzFzVCA@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4d9be218-acf5-45a6-aeda-cee592fd74c8@email.android.com>
+User-Agent: Mutt/1.5.21.rev5632 (2013-01-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 9:51 AM, Shuah Khan <shuahkhan@gmail.com> wrote:
-> On Thu, Jan 24, 2013 at 8:39 AM, Konrad Rzeszutek Wilk
-> <konrad@kernel.org> wrote:
->> On Fri, Jan 18, 2013 at 10:55:35AM -0500, Konrad Rzeszutek Wilk wrote:
->>> On Mon, Jan 14, 2013 at 10:19:22PM -0800, Yinghai Lu wrote:
->>> > On Fri, Jan 11, 2013 at 9:49 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> > > On Fri, Jan 11, 2013 at 8:52 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> > >>>
->>> > >>> I need to check this patch out and then also test-run them on IA64, AMD-VI, Calgary-X
->>> > >>> GART and Intel VT-d to make a sanity test.
->>> > >>
->>> > >> that will be great, and please check attached two patches, or you want
->>> > >> to me update
->>> > >> for-x86-boot branch and you test that instead?
->>> > >>
->>> > >> but if you want to check memmap=4095M$1M, then will need to test on
->>> > >> newer branch.
->>> > >
->>> > >
->>> > > I updated the for-x86-boot branch.
->>> > >
->>> > > git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->>> > > for-x86-boot
->>> > >
->>> >
->>> > Konrad,
->>> >
->>> > Did you get chance to test that branch on your setups?
->>>
->>> I tested it on the IA64 box - it worked without any hiccups. Going to
->>> try the Calgary-X and the rest of the machines over the weekend.
->>
->> Worked without issues on AMD GART, AMD Vi, Intel VT-d, and on boxes
->> without any IOMMU.
->>
->> I am having trouble getting my Calgary-X box to power on, so that
->> testing is taking a bit longer.
->>
->
-> I still have the AMD system I tested earlier versions of this work. I
-> started compiles with these patches on 3.7 and will let you know the
-> status.
+On Thu, Jan 24, H. Peter Anvin wrote:
 
-Tested 3.8-rc4 with the patches on AMD system with IOMMU on. Looks
-good. I can't test low memory paths on this system very easily without
-mucking with the code and force it treat it as low memory. So I just
-tested the normal path. My main goal was to make sure AMD iommu driver
-can still enable switolb and it does.
+> Can't you discover Xen emulation by looking for Xen first?  Or does Xen go "stealth"?
 
-If you would like to me test the error cases, please let me know.
+The current code looks at cpuid to decide what the host type is. One
+thing to detect a Xen host is to look for the DIM strings, which still
+have "Xen HVM DomU" or similar.
 
--- Shuah
+Olaf
