@@ -1,61 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab3AXKaz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:30:55 -0500
-Received: from mail-da0-f53.google.com ([209.85.210.53]:65412 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489Ab3AXKas (ORCPT
+	id S1753423Ab3AXKc1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:32:27 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:59328 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752489Ab3AXKcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:30:48 -0500
-Date: Thu, 24 Jan 2013 18:30:40 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: linux-next: build failure after merge of the final tree (akpm
- tree related)
-Message-ID: <20130124103040.GB10025@kernel.org>
-References: <20130124165448.a27de37fb29ecceac235a7e0@canb.auug.org.au>
+	Thu, 24 Jan 2013 05:32:19 -0500
+Date: Thu, 24 Jan 2013 11:32:13 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi.kivity@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V3 RESEND RFC 1/2] sched: Bail out of yield_to when
+ source and target runqueue has one task
+Message-ID: <20130124103213.GD27602@gmail.com>
+References: <20130122073854.24731.9426.sendpatchset@codeblue.in.ibm.com>
+ <20130122073913.24731.65118.sendpatchset@codeblue.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130124165448.a27de37fb29ecceac235a7e0@canb.auug.org.au>
+In-Reply-To: <20130122073913.24731.65118.sendpatchset@codeblue.in.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 04:54:48PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (sparc32 defconfig)
-> failed like this:
-> 
-> arch/sparc/mm/init_32.c: In function 'show_mem':
-> arch/sparc/mm/init_32.c:60:23: error: invalid operands to binary << (have 'atomic_long_t' and 'int')
-> 
-> Caused by commit "swap: add per-partition lock for swapfile" from the
-> akpm tree.
-> 
-> I have reverted that commit for today.
 
-can you please apply this:
+* Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
 
+> From: Peter Zijlstra <peterz@infradead.org>
+> 
+> In case of undercomitted scenarios, especially in large guests
+> yield_to overhead is significantly high. when run queue length of
+> source and target is one, take an opportunity to bail out and return
+> -ESRCH. This return condition can be further exploited to quickly come
+> out of PLE handler.
+> 
+> (History: Raghavendra initially worked on break out of kvm ple handler upon
+>  seeing source runqueue length = 1, but it had to export rq length).
+>  Peter came up with the elegant idea of return -ESRCH in scheduler core.
+> 
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Raghavendra, Checking the rq length of target vcpu condition added.(thanks Avi)
+> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> Acked-by: Andrew Jones <drjones@redhat.com>
+> Tested-by: Chegu Vinod <chegu_vinod@hp.com>
+> ---
+> 
+>  kernel/sched/core.c |   25 +++++++++++++++++++------
+>  1 file changed, 19 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 2d8927f..fc219a5 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
+>   * It's the caller's job to ensure that the target task struct
+>   * can't go away on us before we can do any checks.
+>   *
+> - * Returns true if we indeed boosted the target task.
+> + * Returns:
+> + *	true (>0) if we indeed boosted the target task.
+> + *	false (0) if we failed to boost the target.
+> + *	-ESRCH if there's no task to yield to.
+>   */
+>  bool __sched yield_to(struct task_struct *p, bool preempt)
+>  {
+> @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+>  
+>  again:
+>  	p_rq = task_rq(p);
+> +	/*
+> +	 * If we're the only runnable task on the rq and target rq also
+> +	 * has only one task, there's absolutely no point in yielding.
+> +	 */
+> +	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
+> +		yielded = -ESRCH;
+> +		goto out_irq;
+> +	}
 
----
- arch/sparc/mm/init_32.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Looks good to me in principle.
 
-Index: linux/arch/sparc/mm/init_32.c
-===================================================================
---- linux.orig/arch/sparc/mm/init_32.c	2012-08-06 16:00:44.133458270 +0800
-+++ linux/arch/sparc/mm/init_32.c	2013-01-24 18:28:23.242077473 +0800
-@@ -57,7 +57,7 @@ void show_mem(unsigned int filter)
- 	printk("Mem-info:\n");
- 	show_free_areas(filter);
- 	printk("Free swap:       %6ldkB\n",
--	       nr_swap_pages << (PAGE_SHIFT-10));
-+	       get_nr_swap_pages() << (PAGE_SHIFT-10));
- 	printk("%ld pages of RAM\n", totalram_pages);
- 	printk("%ld free pages\n", nr_free_pages());
- }
+Would be nice to get more consistent benchmark numbers. Once 
+those are unambiguously showing that this is a win:
+
+  Acked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks,
+
+	Ingo
