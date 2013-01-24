@@ -1,137 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab3AXDNS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:13:18 -0500
-Received: from mga14.intel.com ([143.182.124.37]:55789 "EHLO mga14.intel.com"
+	id S1753531Ab3AXDXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:23:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27669 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752933Ab3AXDNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:13:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,525,1355126400"; 
-   d="scan'208";a="194551522"
-Message-ID: <5100A6F7.4080109@intel.com>
-Date: Thu, 24 Jan 2013 11:13:59 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1753144Ab3AXDXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 22:23:00 -0500
+Message-ID: <5100A90C.2030406@redhat.com>
+Date: Thu, 24 Jan 2013 11:22:52 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Venki Pallipadi <venki@google.com>,
-        Robin Randhawa <robin.randhawa@arm.com>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, srikar@linux.vnet.ibm.com
-Subject: Re: sched: Consequences of integrating the Per Entity Load Tracking
- Metric into the Load Balancer
-References: <50E3B61A.3040808@linux.vnet.ibm.com> <1357114354.5586.39.camel@marge.simpson.net> <50E55F99.6090104@linux.vnet.ibm.com> <1357373590.5690.172.camel@marge.simpson.net> <1357489955.5717.21.camel@marge.simpson.net> <50EA5D41.4090502@linux.vnet.ibm.com> <1357544184.5792.140.camel@marge.simpson.net> <50EBDBB7.5060803@linux.vnet.ibm.com> <50F6B455.2040508@intel.com> <87k3rcl75q.fsf@sejong.aot.lge.com> <50F7FF79.6080603@intel.com>
-In-Reply-To: <50F7FF79.6080603@intel.com>
+To: David Miller <davem@davemloft.net>
+CC: mst@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stephen@networkplumber.org
+Subject: Re: [PATCH 2/2] tuntap: limit the number of flow caches
+References: <1358949553-30309-1-git-send-email-jasowang@redhat.com> <1358949553-30309-2-git-send-email-jasowang@redhat.com> <20130123.135024.1407137924304146015.davem@davemloft.net>
+In-Reply-To: <20130123.135024.1407137924304146015.davem@davemloft.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
+On 01/24/2013 02:50 AM, David Miller wrote:
+> From: Jason Wang <jasowang@redhat.com>
+> Date: Wed, 23 Jan 2013 21:59:13 +0800
+>
+>> We create new flow caches when a new flow is identified by tuntap, This may lead
+>> some issues:
 >>
->> Maybe we can skip local group since it's a bottom-up search so we know
->> there's no idle cpu in the lower domain from the prior iteration.
+>> - userspace may produce a huge amount of short live flows to exhaust host memory
+>> - the unlimited number of flow caches may produce a long list which increase the
+>>   time in the linear searching
 >>
-> 
-> I did this change but seems results are worse on my machines, guess start seeking idle cpu bottom up is a bad idea.
-> The following is full version with above change.
-> 
+>> Solve this by introducing a limit of total number of flow caches.
+>>
+>> Cc: Stephen Hemminger <stephen@networkplumber.org>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+> Applied, but really flow caches are an extremely broken concept especially
+> when external entities control the population of such caches.
+>
+> We removed the routing cache of the ipv4 networking code exactly because
+> this kind of crap does not work at all.
+>
+> Next you're going to have to add a delicately managed garbage
+> collection scheme for this tuntap flow cache, and that will be tuned
+> endlessly, when the real issue is that fundamentally this does not
+> work.
+>
+> Instead, make the full lookup scale properly and use appropriate data
+> structures.  It won't be as fast as a simple hash table demux, but
+> it'll actually be immune to growth issues and DoS attacks and give
+> consistent and repeatable lookup performance regardless of traffic
+> patterns.
 
-also tried to keep top-down seeking mode, and will return any idle cpu
-instead of the first cpu in a idle group. But the result doesn't show
-better on benchmark hackbench.
+Ok, I will rework it in 3.9.
 
-===
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 5eea870..fb85094 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3169,6 +3169,7 @@ static int wake_affine(struct sched_domain *sd,
-struct task_struct *p, int sync)
-  		return 1;
- 	}
-+	/* bias toward prev cpu */
- 	return 0;
- }
- @@ -3252,7 +3253,8 @@ find_idlest_cpu(struct sched_group *group, struct
-task_struct *p, int this_cpu)
- /*
-  * Try and locate an idle CPU in the sched_domain.
-  */
--static int select_idle_sibling(struct task_struct *p, int target)
-+static int select_idle_sibling(struct task_struct *p,
-+				struct sched_domain *affine_sd, int sync)
- {
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
-@@ -3264,20 +3266,23 @@ static int select_idle_sibling(struct
-task_struct *p, int target)
- 	 * If the task is going to be woken-up on this cpu and if it is
- 	 * already idle, then it is the right target.
- 	 */
--	if (target == cpu && idle_cpu(cpu))
-+	if (idle_cpu(cpu))
- 		return cpu;
-  	/*
- 	 * If the task is going to be woken-up on the cpu where it previously
- 	 * ran and if it is currently idle, then it the right target.
- 	 */
--	if (target == prev_cpu && idle_cpu(prev_cpu))
-+	if (cpu != prev_cpu && idle_cpu(prev_cpu))
- 		return prev_cpu;
- +	if (cpu != prev_cpu && !wake_affine(affine_sd, p, sync))
-+		cpu = prev_cpu;
-+
- 	/*
- 	 * Otherwise, iterate the domains and find an elegible idle cpu.
- 	 */
--	sd = rcu_dereference(per_cpu(sd_llc, target));
-+	sd = rcu_dereference(per_cpu(sd_llc, cpu));
- 	for_each_lower_domain(sd) {
- 		sg = sd->groups;
- 		do {
-@@ -3290,7 +3295,7 @@ static int select_idle_sibling(struct task_struct
-*p, int target)
- 					goto next;
- 			}
- -			target = cpumask_first_and(sched_group_cpus(sg),
-+			cpu = cpumask_first_and(sched_group_cpus(sg),
- 					tsk_cpus_allowed(p));
- 			goto done;
- next:
-@@ -3298,7 +3303,7 @@ next:
- 		} while (sg != sd->groups);
- 	}
- done:
--	return target;
-+	return cpu;
- }
-  /*
-@@ -3351,10 +3356,7 @@ select_task_rq_fair(struct task_struct *p, int
-sd_flag, int wake_flags)
- 	}
-  	if (affine_sd) {
--		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
--			prev_cpu = cpu;
--
--		new_cpu = select_idle_sibling(p, prev_cpu);
-+		new_cpu = select_idle_sibling(p, affine_sd, sync);
- 		goto unlock;
- 	}
+Thanks
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
