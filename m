@@ -1,44 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab3AXGNi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 01:13:38 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:39269 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750771Ab3AXGNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 01:13:19 -0500
-Date: Thu, 24 Jan 2013 07:13:15 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Miller <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: linux-next: New trees - ipsec and ipsec-next
-Message-ID: <20130124061315.GI9147@secunet.com>
+	id S1752255Ab3AXGbP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 01:31:15 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:61581 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab3AXGbI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 01:31:08 -0500
+Message-ID: <5100D4FE.9080205@huawei.com>
+Date: Thu, 24 Jan 2013 14:30:22 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 24 Jan 2013 06:13:16.0234 (UTC) FILETIME=[E5DE5AA0:01CDF9F9]
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH v2 1/6] cgroup: initialize cgrp->dentry before css_alloc()
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Stephen,
+With this change, we're guaranteed that cgroup_path() won't see NULL
+cgrp->dentry, and thus we can remove the NULL check in it.
 
-could you please add the ipsec and ipsec-next tree to linux-next?
+(Well, it's not true, because dummptop.dentry is always NULL)
 
-The ipsec tree is intended to cover fixes for the ipsec networking
-subsystem and the ipsec-next tree to cover changes for ipsec with
-linux-next as target.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-The trees are located at:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/klassert/ipsec.git master
-git://git.kernel.org/pub/scm/linux/kernel/git/klassert/ipsec-next.git master
-
-The ipsec tree follows David Miller's net tree, the ipsec-next tree follows
-the net-next tree. So they should be merged after net and net-next.
-
-Both trees were pulled recently, so they are currently empty.
-
-Thanks!
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index ad3359f..b9a76e2 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1767,7 +1767,7 @@ int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen)
+ 	rcu_lockdep_assert(rcu_read_lock_held() || cgroup_lock_is_held(),
+ 			   "cgroup_path() called without proper locking");
+ 
+-	if (!dentry || cgrp == dummytop) {
++	if (cgrp == dummytop) {
+ 		/*
+ 		 * Inactive subsystems have no dentry for their root
+ 		 * cgroup
+@@ -4153,6 +4153,9 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 
+ 	init_cgroup_housekeeping(cgrp);
+ 
++	dentry->d_fsdata = cgrp;
++	cgrp->dentry = dentry;
++
+ 	cgrp->parent = parent;
+ 	cgrp->root = parent->root;
+ 	cgrp->top_cgroup = parent->top_cgroup;
+@@ -4190,8 +4193,6 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	lockdep_assert_held(&dentry->d_inode->i_mutex);
+ 
+ 	/* allocation complete, commit to creation */
+-	dentry->d_fsdata = cgrp;
+-	cgrp->dentry = dentry;
+ 	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
+ 	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
+ 	root->number_of_cgroups++;
+-- 
+1.8.0.2
