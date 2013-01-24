@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab3AXSiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 13:38:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60866 "EHLO
+	id S1754755Ab3AXSjO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 13:39:14 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60883 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab3AXSiA (ORCPT
+	with ESMTP id S1751919Ab3AXSjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 13:38:00 -0500
-Date: Thu, 24 Jan 2013 10:37:28 -0800
+	Thu, 24 Jan 2013 13:39:12 -0500
+Date: Thu, 24 Jan 2013 10:38:31 -0800
 From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-b56e53312d445967f6bdb91e5667c56755e47450@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, penberg@kernel.org,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        rostedt@goodmis.org, ak@linux.intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, penberg@kernel.org, peterz@infradead.org,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        rostedt@goodmis.org, dsahern@gmail.com, ak@linux.intel.com,
-        tglx@linutronix.de
-In-Reply-To: <1352911664-24620-3-git-send-email-namhyung@kernel.org>
-References: <1352911664-24620-3-git-send-email-namhyung@kernel.org>
+Message-ID: <tip-3cde41b0d63d0550ac9c8352f1ce0ea516690f46@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@kernel.org
+In-Reply-To: <1352867990-658-1-git-send-email-namhyung@kernel.org>
+References: <1352867990-658-1-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui/helpline: Introduce ui_helpline__vshow()
-Git-Commit-ID: b56e53312d445967f6bdb91e5667c56755e47450
+Subject: [tip:perf/core] perf tools: Don'
+ t check configuration on make clean
+Git-Commit-ID: 3cde41b0d63d0550ac9c8352f1ce0ea516690f46
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,215 +30,140 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 10:37:33 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 10:38:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b56e53312d445967f6bdb91e5667c56755e47450
-Gitweb:     http://git.kernel.org/tip/b56e53312d445967f6bdb91e5667c56755e47450
+Commit-ID:  3cde41b0d63d0550ac9c8352f1ce0ea516690f46
+Gitweb:     http://git.kernel.org/tip/3cde41b0d63d0550ac9c8352f1ce0ea516690f46
 Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 15 Nov 2012 01:47:41 +0900
+AuthorDate: Wed, 14 Nov 2012 13:39:50 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Sun, 9 Dec 2012 08:46:04 -0300
 
-perf ui/helpline: Introduce ui_helpline__vshow()
+perf tools: Don't check configuration on make clean
 
-The ui_helpline__vshow() will be used for pr_* functions.
+Current perf build process checks various system configuration on
+invocation to make.  But this is not needed just for cleaning.
+
+To do that, move some of python related variables out of conditional
+since 'clean' target needs them.  Normal path should not be affected by
+this.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1352911664-24620-3-git-send-email-namhyung@kernel.org
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1352867990-658-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/gtk/helpline.c | 23 ++++++++++++-----------
- tools/perf/ui/helpline.c     | 12 ++++++++++++
- tools/perf/ui/helpline.h     | 22 ++--------------------
- tools/perf/ui/tui/helpline.c | 29 +++++++++++++++--------------
- tools/perf/util/debug.c      |  6 ++----
- 5 files changed, 43 insertions(+), 49 deletions(-)
+ tools/perf/Documentation/Makefile |  2 ++
+ tools/perf/Makefile               | 28 ++++++++++++++++------------
+ 2 files changed, 18 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/ui/gtk/helpline.c b/tools/perf/ui/gtk/helpline.c
-index 5db4432..3388cbd 100644
---- a/tools/perf/ui/gtk/helpline.c
-+++ b/tools/perf/ui/gtk/helpline.c
-@@ -24,17 +24,7 @@ static void gtk_helpline_push(const char *msg)
- 			   pgctx->statbar_ctx_id, msg);
- }
+diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
+index ef6d22e..f6e5901 100644
+--- a/tools/perf/Documentation/Makefile
++++ b/tools/perf/Documentation/Makefile
+@@ -222,10 +222,12 @@ install-pdf: pdf
+ #install-html: html
+ #	'$(SHELL_PATH_SQ)' ./install-webdoc.sh $(DESTDIR)$(htmldir)
  
--static struct ui_helpline gtk_helpline_fns = {
--	.pop	= gtk_helpline_pop,
--	.push	= gtk_helpline_push,
--};
--
--void perf_gtk__init_helpline(void)
--{
--	helpline_fns = &gtk_helpline_fns;
--}
--
--int perf_gtk__show_helpline(const char *fmt, va_list ap)
-+static int gtk_helpline_show(const char *fmt, va_list ap)
- {
- 	int ret;
- 	char *ptr;
-@@ -54,3 +44,14 @@ int perf_gtk__show_helpline(const char *fmt, va_list ap)
++ifneq ($(MAKECMDGOALS),clean)
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	$(QUIET_SUBDIR0)../ $(QUIET_SUBDIR1) $(OUTPUT)PERF-VERSION-FILE
  
- 	return ret;
- }
+ -include $(OUTPUT)PERF-VERSION-FILE
++endif
+ 
+ #
+ # Determine "include::" file references in asciidoc files.
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 8fca560..08da9fc 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -153,6 +153,7 @@ INSTALL = install
+ # explicitly what architecture to check for. Fix this up for yours..
+ SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
+ 
++ifneq ($(MAKECMDGOALS),clean)
+ -include config/feature-tests.mak
+ 
+ ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
+@@ -206,6 +207,7 @@ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
+ 	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
+ 	BASIC_CFLAGS += -I.
+ endif
++endif # MAKECMDGOALS != clean
+ 
+ # Guard against environment variables
+ BUILTIN_OBJS =
+@@ -230,11 +232,19 @@ endif
+ LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
+ TE_LIB := -L$(TE_PATH) -ltraceevent
+ 
++export LIBTRACEEVENT
 +
-+static struct ui_helpline gtk_helpline_fns = {
-+	.pop	= gtk_helpline_pop,
-+	.push	= gtk_helpline_push,
-+	.show	= gtk_helpline_show,
-+};
++# python extension build directories
++PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
++PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
++PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
++export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
 +
-+void perf_gtk__init_helpline(void)
-+{
-+	helpline_fns = &gtk_helpline_fns;
-+}
-diff --git a/tools/perf/ui/helpline.c b/tools/perf/ui/helpline.c
-index a49bcf3..700fb3c 100644
---- a/tools/perf/ui/helpline.c
-+++ b/tools/perf/ui/helpline.c
-@@ -16,9 +16,16 @@ static void nop_helpline__push(const char *msg __maybe_unused)
- {
- }
- 
-+static int nop_helpline__show(const char *fmt __maybe_unused,
-+			       va_list ap __maybe_unused)
-+{
-+	return 0;
-+}
++python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
 +
- static struct ui_helpline default_helpline_fns = {
- 	.pop	= nop_helpline__pop,
- 	.push	= nop_helpline__push,
-+	.show	= nop_helpline__show,
- };
+ PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
+ PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py
  
- struct ui_helpline *helpline_fns = &default_helpline_fns;
-@@ -59,3 +66,8 @@ void ui_helpline__puts(const char *msg)
- 	ui_helpline__pop();
- 	ui_helpline__push(msg);
- }
-+
-+int ui_helpline__vshow(const char *fmt, va_list ap)
-+{
-+	return helpline_fns->show(fmt, ap);
-+}
-diff --git a/tools/perf/ui/helpline.h b/tools/perf/ui/helpline.h
-index baa28a4..46181f4 100644
---- a/tools/perf/ui/helpline.h
-+++ b/tools/perf/ui/helpline.h
-@@ -9,6 +9,7 @@
- struct ui_helpline {
- 	void (*pop)(void);
- 	void (*push)(const char *msg);
-+	int  (*show)(const char *fmt, va_list ap);
- };
- 
- extern struct ui_helpline *helpline_fns;
-@@ -20,28 +21,9 @@ void ui_helpline__push(const char *msg);
- void ui_helpline__vpush(const char *fmt, va_list ap);
- void ui_helpline__fpush(const char *fmt, ...);
- void ui_helpline__puts(const char *msg);
-+int  ui_helpline__vshow(const char *fmt, va_list ap);
- 
- extern char ui_helpline__current[512];
+-export LIBTRACEEVENT
 -
--#ifdef NEWT_SUPPORT
- extern char ui_helpline__last_msg[];
--int ui_helpline__show_help(const char *format, va_list ap);
--#else
--static inline int ui_helpline__show_help(const char *format __maybe_unused,
--					 va_list ap __maybe_unused)
--{
--	return 0;
--}
--#endif /* NEWT_SUPPORT */
+ $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
+ 	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
+ 	  --quiet build_ext; \
+@@ -514,6 +524,7 @@ PERFLIBS = $(LIB_FILE) $(LIBTRACEEVENT)
+ #
+ # Platform specific tweaks
+ #
++ifneq ($(MAKECMDGOALS),clean)
+ 
+ # We choose to avoid "if .. else if .. else .. endif endif"
+ # because maintaining the nesting to match is a pain.  If
+@@ -703,7 +714,7 @@ disable-python = $(eval $(disable-python_code))
+ define disable-python_code
+   BASIC_CFLAGS += -DNO_LIBPYTHON
+   $(if $(1),$(warning No $(1) was found))
+-  $(warning Python support won't be built)
++  $(warning Python support will not be built)
+ endef
+ 
+ override PYTHON := \
+@@ -711,19 +722,10 @@ override PYTHON := \
+ 
+ ifndef PYTHON
+   $(call disable-python,python interpreter)
+-  python-clean :=
+ else
+ 
+   PYTHON_WORD := $(call shell-wordify,$(PYTHON))
+ 
+-  # python extension build directories
+-  PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
+-  PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
+-  PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
+-  export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
 -
--#ifdef GTK2_SUPPORT
--int perf_gtk__show_helpline(const char *format, va_list ap);
--#else
--static inline int perf_gtk__show_helpline(const char *format __maybe_unused,
--					  va_list ap __maybe_unused)
--{
--	return 0;
--}
--#endif /* GTK2_SUPPORT */
+-  python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
+-
+   ifdef NO_LIBPYTHON
+     $(call disable-python)
+   else
+@@ -839,6 +841,8 @@ ifdef ASCIIDOC8
+ 	export ASCIIDOC8
+ endif
  
- #endif /* _PERF_UI_HELPLINE_H_ */
-diff --git a/tools/perf/ui/tui/helpline.c b/tools/perf/ui/tui/helpline.c
-index 2884d2f..1c8b9af 100644
---- a/tools/perf/ui/tui/helpline.c
-+++ b/tools/perf/ui/tui/helpline.c
-@@ -8,6 +8,8 @@
- #include "../ui.h"
- #include "../libslang.h"
- 
-+char ui_helpline__last_msg[1024];
++endif # MAKECMDGOALS != clean
 +
- static void tui_helpline__pop(void)
- {
- }
-@@ -23,20 +25,7 @@ static void tui_helpline__push(const char *msg)
- 	strncpy(ui_helpline__current, msg, sz)[sz - 1] = '\0';
- }
+ # Shell quote (do not use $(call) to accommodate ancient setups);
  
--struct ui_helpline tui_helpline_fns = {
--	.pop	= tui_helpline__pop,
--	.push	= tui_helpline__push,
--};
--
--void ui_helpline__init(void)
--{
--	helpline_fns = &tui_helpline_fns;
--	ui_helpline__puts(" ");
--}
--
--char ui_helpline__last_msg[1024];
--
--int ui_helpline__show_help(const char *format, va_list ap)
-+static int tui_helpline__show(const char *format, va_list ap)
- {
- 	int ret;
- 	static int backlog;
-@@ -55,3 +44,15 @@ int ui_helpline__show_help(const char *format, va_list ap)
- 
- 	return ret;
- }
-+
-+struct ui_helpline tui_helpline_fns = {
-+	.pop	= tui_helpline__pop,
-+	.push	= tui_helpline__push,
-+	.show	= tui_helpline__show,
-+};
-+
-+void ui_helpline__init(void)
-+{
-+	helpline_fns = &tui_helpline_fns;
-+	ui_helpline__puts(" ");
-+}
-diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-index 39861a2a..391c9a9 100644
---- a/tools/perf/util/debug.c
-+++ b/tools/perf/util/debug.c
-@@ -23,10 +23,8 @@ int eprintf(int level, const char *fmt, ...)
- 
- 	if (verbose >= level) {
- 		va_start(args, fmt);
--		if (use_browser == 1)
--			ret = ui_helpline__show_help(fmt, args);
--		else if (use_browser == 2)
--			ret = perf_gtk__show_helpline(fmt, args);
-+		if (use_browser > 1)
-+			ui_helpline__vshow(fmt, args);
- 		else
- 			ret = vfprintf(stderr, fmt, args);
- 		va_end(args);
+ ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
