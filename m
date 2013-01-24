@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab3AXTDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:03:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33136 "EHLO
+	id S1755445Ab3AXTEl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:04:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33171 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319Ab3AXTDl (ORCPT
+	with ESMTP id S1752667Ab3AXTEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:03:41 -0500
-Date: Thu, 24 Jan 2013 11:03:06 -0800
+	Thu, 24 Jan 2013 14:04:39 -0500
+Date: Thu, 24 Jan 2013 11:04:10 -0800
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-13p2ov2rg166y73j9uazukma@git.kernel.org>
+Message-ID: <tip-1z4xcmbud30lamklfe80oopu@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
@@ -19,9 +19,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf test:
-  Use perf_evsel__newtp constructor in the tracepoint tests
-Git-Commit-ID: a60d79535c21dca4e24d08abf8ab56e2f860af71
+Subject: [tip:perf/core] perf evsel:
+  Introduce method to request IDs be used
+Git-Commit-ID: 7a5a5ca5fe3df8636c96b49591c23baf7c415dd4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,21 +30,34 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 11:03:12 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 11:04:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a60d79535c21dca4e24d08abf8ab56e2f860af71
-Gitweb:     http://git.kernel.org/tip/a60d79535c21dca4e24d08abf8ab56e2f860af71
+Commit-ID:  7a5a5ca5fe3df8636c96b49591c23baf7c415dd4
+Gitweb:     http://git.kernel.org/tip/7a5a5ca5fe3df8636c96b49591c23baf7c415dd4
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 10 Dec 2012 15:11:43 -0300
+AuthorDate: Mon, 10 Dec 2012 15:21:30 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 10 Dec 2012 15:11:43 -0300
+CommitDate: Mon, 10 Dec 2012 15:21:30 -0300
 
-perf test: Use perf_evsel__newtp constructor in the tracepoint tests
+perf evsel: Introduce method to request IDs be used
 
-Removing one trace_event__id function, not used anymore.
+When mmaping multiple events we need to find the right evsel that
+matches an event in the ring buffer.
+
+For that we need to set the PERF_FORMAT_ID bit in
+perf_event_attr.read_format so that when we read the event fds we get
+that id to then hash it and be able later to use perf_evlist__id2evsel
+to find the right evsel.
+
+We also need to set the PERF_SAMPLE_ID bit in
+perf_event_attr.sample_type to ask for that id to be stashed in each
+sample, so that we can demux it.
+
+So add a perf_evsel__set_sample_id() method to do those two things in
+one operation.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -54,235 +67,73 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-13p2ov2rg166y73j9uazukma@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
+Link: http://lkml.kernel.org/n/tip-1z4xcmbud30lamklfe80oopu@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile                      |  1 -
- tools/perf/tests/mmap-basic.c            | 37 ++++++++++----------------------
- tools/perf/tests/open-syscall-all-cpus.c | 18 +++-------------
- tools/perf/tests/open-syscall.c          | 17 +++------------
- tools/perf/tests/tests.h                 |  3 ---
- tools/perf/tests/util.c                  | 30 --------------------------
- 6 files changed, 17 insertions(+), 89 deletions(-)
+ tools/perf/builtin-top.c      | 6 ++----
+ tools/perf/tests/mmap-basic.c | 3 +--
+ tools/perf/util/evsel.c       | 6 ++++++
+ tools/perf/util/evsel.h       | 2 ++
+ 4 files changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 2a07b95..10aa24c 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -487,7 +487,6 @@ LIB_OBJS += $(OUTPUT)tests/rdpmc.o
- LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
- LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
- LIB_OBJS += $(OUTPUT)tests/pmu.o
--LIB_OBJS += $(OUTPUT)tests/util.o
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 31a7c51..a306474 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -910,10 +910,8 @@ static void perf_top__start_counters(struct perf_top *top)
+ 			attr->sample_freq = top->freq;
+ 		}
  
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+-		if (evlist->nr_entries > 1) {
+-			perf_evsel__set_sample_bit(counter, ID);
+-			attr->read_format |= PERF_FORMAT_ID;
+-		}
++		if (evlist->nr_entries > 1)
++			perf_evsel__set_sample_id(counter);
+ 
+ 		if (perf_target__has_cpu(&top->target))
+ 			perf_evsel__set_sample_bit(counter, CPU);
 diff --git a/tools/perf/tests/mmap-basic.c b/tools/perf/tests/mmap-basic.c
-index 8682ecf..4743b6d 100644
+index 4743b6d..cdd5075 100644
 --- a/tools/perf/tests/mmap-basic.c
 +++ b/tools/perf/tests/mmap-basic.c
-@@ -22,36 +22,16 @@ int test__basic_mmap(void)
- 	struct thread_map *threads;
- 	struct cpu_map *cpus;
- 	struct perf_evlist *evlist;
--	struct perf_event_attr attr = {
--		.type		= PERF_TYPE_TRACEPOINT,
--		.read_format	= PERF_FORMAT_ID,
--		.sample_type	= PERF_SAMPLE_ID,
--		.watermark	= 0,
--	};
- 	cpu_set_t cpu_set;
- 	const char *syscall_names[] = { "getsid", "getppid", "getpgrp",
- 					"getpgid", };
- 	pid_t (*syscalls[])(void) = { (void *)getsid, getppid, getpgrp,
- 				      (void*)getpgid };
- #define nsyscalls ARRAY_SIZE(syscall_names)
--	int ids[nsyscalls];
- 	unsigned int nr_events[nsyscalls],
- 		     expected_nr_events[nsyscalls], i, j;
- 	struct perf_evsel *evsels[nsyscalls], *evsel;
- 
--	for (i = 0; i < nsyscalls; ++i) {
--		char name[64];
--
--		snprintf(name, sizeof(name), "sys_enter_%s", syscall_names[i]);
--		ids[i] = trace_event__id(name);
--		if (ids[i] < 0) {
--			pr_debug("Is debugfs mounted on /sys/kernel/debug?\n");
--			return -1;
--		}
--		nr_events[i] = 0;
--		expected_nr_events[i] = random() % 257;
--	}
--
- 	threads = thread_map__new(-1, getpid(), UINT_MAX);
- 	if (threads == NULL) {
- 		pr_debug("thread_map__new\n");
-@@ -79,18 +59,20 @@ int test__basic_mmap(void)
- 		goto out_free_cpus;
- 	}
- 
--	/* anonymous union fields, can't be initialized above */
--	attr.wakeup_events = 1;
--	attr.sample_period = 1;
--
- 	for (i = 0; i < nsyscalls; ++i) {
--		attr.config = ids[i];
--		evsels[i] = perf_evsel__new(&attr, i);
-+		char name[64];
-+
-+		snprintf(name, sizeof(name), "sys_enter_%s", syscall_names[i]);
-+		evsels[i] = perf_evsel__newtp("syscalls", name, i);
- 		if (evsels[i] == NULL) {
- 			pr_debug("perf_evsel__new\n");
- 			goto out_free_evlist;
+@@ -70,8 +70,7 @@ int test__basic_mmap(void)
  		}
  
-+		evsels[i]->attr.wakeup_events = 1;
-+		evsels[i]->attr.read_format |= PERF_FORMAT_ID;
-+		perf_evsel__set_sample_bit(evsels[i], ID);
-+
+ 		evsels[i]->attr.wakeup_events = 1;
+-		evsels[i]->attr.read_format |= PERF_FORMAT_ID;
+-		perf_evsel__set_sample_bit(evsels[i], ID);
++		perf_evsel__set_sample_id(evsels[i]);
+ 
  		perf_evlist__add(evlist, evsels[i]);
  
- 		if (perf_evsel__open(evsels[i], cpus, threads) < 0) {
-@@ -99,6 +81,9 @@ int test__basic_mmap(void)
- 				 strerror(errno));
- 			goto out_close_fd;
- 		}
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index fc80f5a..9dde7e9 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -68,6 +68,12 @@ void __perf_evsel__reset_sample_bit(struct perf_evsel *evsel,
+ 	}
+ }
+ 
++void perf_evsel__set_sample_id(struct perf_evsel *evsel)
++{
++	perf_evsel__set_sample_bit(evsel, ID);
++	evsel->attr.read_format |= PERF_FORMAT_ID;
++}
 +
-+		nr_events[i] = 0;
-+		expected_nr_events[i] = 1 + rand() % 127;
- 	}
- 
- 	if (perf_evlist__mmap(evlist, 128, true) < 0) {
-diff --git a/tools/perf/tests/open-syscall-all-cpus.c b/tools/perf/tests/open-syscall-all-cpus.c
-index 31072ab..9b920a0 100644
---- a/tools/perf/tests/open-syscall-all-cpus.c
-+++ b/tools/perf/tests/open-syscall-all-cpus.c
-@@ -7,20 +7,12 @@
- int test__open_syscall_event_on_all_cpus(void)
+ void perf_evsel__init(struct perf_evsel *evsel,
+ 		      struct perf_event_attr *attr, int idx)
  {
- 	int err = -1, fd, cpu;
--	struct thread_map *threads;
- 	struct cpu_map *cpus;
- 	struct perf_evsel *evsel;
--	struct perf_event_attr attr;
- 	unsigned int nr_open_calls = 111, i;
- 	cpu_set_t cpu_set;
--	int id = trace_event__id("sys_enter_open");
-+	struct thread_map *threads = thread_map__new(-1, getpid(), UINT_MAX);
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 7398539..5c08977 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -129,6 +129,8 @@ void __perf_evsel__reset_sample_bit(struct perf_evsel *evsel,
+ #define perf_evsel__reset_sample_bit(evsel, bit) \
+ 	__perf_evsel__reset_sample_bit(evsel, PERF_SAMPLE_##bit)
  
--	if (id < 0) {
--		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
--		return -1;
--	}
--
--	threads = thread_map__new(-1, getpid(), UINT_MAX);
- 	if (threads == NULL) {
- 		pr_debug("thread_map__new\n");
- 		return -1;
-@@ -32,15 +24,11 @@ int test__open_syscall_event_on_all_cpus(void)
- 		goto out_thread_map_delete;
- 	}
++void perf_evsel__set_sample_id(struct perf_evsel *evsel);
++
+ int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
+ 			   const char *filter);
  
--
- 	CPU_ZERO(&cpu_set);
- 
--	memset(&attr, 0, sizeof(attr));
--	attr.type = PERF_TYPE_TRACEPOINT;
--	attr.config = id;
--	evsel = perf_evsel__new(&attr, 0);
-+	evsel = perf_evsel__newtp("syscalls", "sys_enter_open", 0);
- 	if (evsel == NULL) {
--		pr_debug("perf_evsel__new\n");
-+		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
- 		goto out_thread_map_delete;
- 	}
- 
-diff --git a/tools/perf/tests/open-syscall.c b/tools/perf/tests/open-syscall.c
-index 98be8b5..befc067 100644
---- a/tools/perf/tests/open-syscall.c
-+++ b/tools/perf/tests/open-syscall.c
-@@ -6,29 +6,18 @@
- int test__open_syscall_event(void)
- {
- 	int err = -1, fd;
--	struct thread_map *threads;
- 	struct perf_evsel *evsel;
--	struct perf_event_attr attr;
- 	unsigned int nr_open_calls = 111, i;
--	int id = trace_event__id("sys_enter_open");
-+	struct thread_map *threads = thread_map__new(-1, getpid(), UINT_MAX);
- 
--	if (id < 0) {
--		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
--		return -1;
--	}
--
--	threads = thread_map__new(-1, getpid(), UINT_MAX);
- 	if (threads == NULL) {
- 		pr_debug("thread_map__new\n");
- 		return -1;
- 	}
- 
--	memset(&attr, 0, sizeof(attr));
--	attr.type = PERF_TYPE_TRACEPOINT;
--	attr.config = id;
--	evsel = perf_evsel__new(&attr, 0);
-+	evsel = perf_evsel__newtp("syscalls", "sys_enter_open", 0);
- 	if (evsel == NULL) {
--		pr_debug("perf_evsel__new\n");
-+		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
- 		goto out_thread_map_delete;
- 	}
- 
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index fc121ed..0fd94657 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -16,7 +16,4 @@ int test__attr(void);
- int test__dso_data(void);
- int test__parse_events(void);
- 
--/* Util */
--int trace_event__id(const char *evname);
--
- #endif /* TESTS_H */
-diff --git a/tools/perf/tests/util.c b/tools/perf/tests/util.c
-deleted file mode 100644
-index 748f2e8..0000000
---- a/tools/perf/tests/util.c
-+++ /dev/null
-@@ -1,30 +0,0 @@
--#include <stdio.h>
--#include <unistd.h>
--#include <stdlib.h>
--#include <sys/types.h>
--#include <sys/stat.h>
--#include <fcntl.h>
--#include "tests.h"
--#include "debugfs.h"
--
--int trace_event__id(const char *evname)
--{
--	char *filename;
--	int err = -1, fd;
--
--	if (asprintf(&filename,
--		     "%s/syscalls/%s/id",
--		     tracing_events_path, evname) < 0)
--		return -1;
--
--	fd = open(filename, O_RDONLY);
--	if (fd >= 0) {
--		char id[16];
--		if (read(fd, id, sizeof(id)) > 0)
--			err = atoi(id);
--		close(fd);
--	}
--
--	free(filename);
--	return err;
--}
