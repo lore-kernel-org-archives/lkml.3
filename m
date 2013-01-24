@@ -1,95 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab3AXHJE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 02:09:04 -0500
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:11714
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752294Ab3AXHIj (ORCPT
+	id S1752360Ab3AXHPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 02:15:46 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:41372 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab3AXHPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 02:08:39 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <artem.bityutskiy@linux.intel.com>, <computersforpeace@gmail.com>,
-        <shmulik.ladkani@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v2 3/3] mtd: add the new detection method for the unparsable nand chips
-Date: Thu, 24 Jan 2013 14:11:41 +0800
-Message-ID: <1359007901-26464-4-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1359007901-26464-1-git-send-email-b32955@freescale.com>
-References: <1359007901-26464-1-git-send-email-b32955@freescale.com>
+	Thu, 24 Jan 2013 02:15:42 -0500
+Message-ID: <5100DF95.3020909@linux.vnet.ibm.com>
+Date: Thu, 24 Jan 2013 15:15:33 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+To: Mike Galbraith <bitbucket@online.de>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
+        mingo@kernel.org, a.p.zijlstra@chello.nl
+Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
+References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com> <50FCF212.3010504@linux.vnet.ibm.com> <1358759355.4994.108.camel@marge.simpson.net> <50FD08E1.8000302@linux.vnet.ibm.com> <1358761496.4994.118.camel@marge.simpson.net> <50FE0ADC.6060701@linux.vnet.ibm.com> <1358841795.5782.255.camel@marge.simpson.net> <50FE5433.1070801@linux.vnet.ibm.com> <1358865692.5782.420.camel@marge.simpson.net> <50FF4EA0.1070000@linux.vnet.ibm.com> <1358915494.5752.46.camel@marge.simpson.net> <50FF7086.4020509@linux.vnet.ibm.com> <1358922520.5752.91.camel@marge.simpson.net> <50FF8CD8.4060105@linux.vnet.ibm.com>	 <1358929257.5752.109.camel@marge.simp! son.net>	 <50FF9F92.60202@linux.vnet.ibm.com> <1358930968.5752.123.camel@marge.simpson.net> <50FFA695.6010407@linux.vnet.ibm.com> <1358932694.5752.126.camel@marge.simpson.net> <1358933555.5752.132.camel@marge.simpson.net> <5100CE1F.7080704@linux.vnet.ibm.com> <1359010272.5833.39.camel@marge.simpson.net>
+In-Reply-To: <1359010272.5833.39.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012407-9574-0000-0000-0000064FB560
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the new detection method find_nand_type_by_fullid() for the
-unparsable nand chips. The new detection method is called firstly
-before all the other detection methods.
+On 01/24/2013 02:51 PM, Mike Galbraith wrote:
+> On Thu, 2013-01-24 at 14:01 +0800, Michael Wang wrote:
+> 
+>> I've enabled WAKE flag on my box like you did, but still can't see
+>> regression, and I've just tested on a power server with 64 cpu, also
+>> failed to reproduce the issue (not compared with virgin yet, but can't
+>> see collapse).
+> 
+> I'm not surprised.  I'm seeing enough inconsistent crap to come to the
+> conclusion that stock scheduler knobs flat can't be used on a largish
+> box, they're just too preempt-happy, leading to weird crap.
+> 
+> My 2 missing nodes came back, and the very same kernel that highly
+> repeatably collapsed with 2 nodes does not with 4 nodes, and 2 nodes
+> does not collapse with only preemption knob tweaking, and that's
+> bullshit.  Virgin shows instability in the mid-range, make a tiny tweak
+> that should have little if any effect there, and that instability
+> vanishes entirely.  Test runs are not consistent enough boot to boot etc
+> etc.  Either stock knobs suck on NUMA boxen, or this box is possessed.
 
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
- drivers/mtd/nand/nand_base.c |   33 ++++++++++++++++++++++++++++++++-
- 1 files changed, 32 insertions(+), 1 deletions(-)
+Mike, I wonder the reason why change back to the old way make collapse
+away may not because there are logical error in new balance path, it's
+just changed the cost of select_task_rq(), whatever it's more or less,
+it's accidentally achieve the same effect as you tweak the knob, so
+that's the reason why it looks like old is better than new.
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 0e80ec4..7f0431d 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -3152,6 +3152,29 @@ static void nand_decode_bbm_options(struct mtd_info *mtd,
- 		chip->bbt_options |= NAND_BBT_SCAN2NDPAGE;
- }
- 
-+static struct nand_flash_dev *find_nand_type_by_fullid(struct mtd_info *mtd,
-+				struct nand_chip *chip, u8 *id_data, int *busw)
-+{
-+	struct nand_flash_dev *type = nand_flash_full_ids;
-+
-+	for (; type->name != NULL; type++) {
-+		if (!strncmp(type->id, id_data, type->id_len)) {
-+			mtd->writesize = type->pagesize;
-+			mtd->erasesize = type->erasesize;
-+			mtd->oobsize = type->oobsize;
-+
-+			chip->cellinfo = id_data[2];
-+			chip->chipsize = (uint64_t)type->chipsize << 20;
-+			chip->options |= type->options;
-+
-+			*busw = type->options & NAND_BUSWIDTH_16;
-+
-+			break;
-+		}
-+	}
-+	return type;
-+}
-+
- /*
-  * Get the flash and manufacturer id and lookup if the type is supported.
-  */
-@@ -3200,8 +3223,16 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
- 		return ERR_PTR(-ENODEV);
- 	}
- 
--	if (!type)
-+	if (!type) {
-+		/*
-+		 * Some nand chips's information can not be paresed out
-+		 * from the id data. So, try your luck in the full-id table.
-+		 */
-+		type = find_nand_type_by_fullid(mtd, chip, id_data, &busw);
-+		if (type->name != NULL)
-+			goto ident_done;
- 		type = nand_flash_ids;
-+	}
- 
- 	for (; type->name != NULL; type++)
- 		if (*dev_id == type->id[1])
--- 
-1.7.0.4
+Regards,
+Michael Wang
 
+> 
+> -Mike
+> 
 
