@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab3AXLwM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:52:12 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:33753 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752956Ab3AXLwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:52:07 -0500
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-CC: Koen Kooi <koen@dominion.thruhere.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        "eballetbo@gmail.com" <eballetbo@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        "javier@dowhile0.org" <javier@dowhile0.org>,
-        "linux-omap@vger.kernel.org List" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v1 0/6] USB: Add support for multiple PHYs of same type
-Thread-Topic: [PATCH v1 0/6] USB: Add support for multiple PHYs of same type
-Thread-Index: AQHN+IcwvzF5Bpzvl0aL3abwJ4uoyphVIJQAgAABCoCAAAjQgIAADPUAgAG5MuD//612gIABwaqA
-Date: Thu, 24 Jan 2013 11:51:45 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA92B0B@DBDE01.ent.ti.com>
-References: <1358848694-20145-1-git-send-email-kishon@ti.com>
- <2D906ABA-71F2-4843-9DBE-F82527A1240A@dominion.thruhere.net>
- <50FEB3FD.3050001@ti.com> <50FEBB61.9000707@ti.com>
- <B9531499-0746-44DA-BDBB-999D4CA31E63@dominion.thruhere.net>
- <C8443D0743D26F4388EA172BF4E2A7A93EA922F5@DBDE01.ent.ti.com>
- <50FFF31D.2070908@ti.com>
-In-Reply-To: <50FFF31D.2070908@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="utf-8"
+	id S1753906Ab3AXLxJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:53:09 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:60041 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868Ab3AXLxB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 06:53:01 -0500
 MIME-Version: 1.0
+In-Reply-To: <20130124102756.213380@gmx.net>
+References: <50FF006C.7070803@gmx.de>
+	<CAMuHMdViEAXdm=iYXeejdnxw_Xj_7HF63DcUojwBm-G+UeSeuw@mail.gmail.com>
+	<20130124102756.213380@gmx.net>
+Date: Thu, 24 Jan 2013 12:52:59 +0100
+X-Google-Sender-Auth: 063hbkAxVBZpESkVTEjcqrRDiVM
+Message-ID: <CAMuHMdUHs7dz9M6wjJgyTUOGxueUrN6S9b_a7c_Gnd1KmqQPhw@mail.gmail.com>
+Subject: Re: [GIT PULL] parisc fixes for v3.8-rc5
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Helge Deller <deller@gmx.de>
+Cc: linux-kernel@vger.kernel.org, dave.anglin@bell.net, jejb@parisc-linux.org,
+        linux-parisc@vger.kernel.org, torvalds@linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0OBqPbi011247
 
-Hi Kishon,
+Hi Helge,
 
-On Wed, Jan 23, 2013 at 19:56:37, ABRAHAM, KISHON VIJAY wrote:
-> On Wednesday 23 January 2013 07:28 PM, Mohammed, Afzal wrote:
+On Thu, Jan 24, 2013 at 11:27 AM, Helge Deller <deller@gmx.de> wrote:
+> From: Geert Uytterhoeven <geert@linux-m68k.org>
+>> On Tue, Jan 22, 2013 at 10:11 PM, Helge Deller <deller@gmx.de> wrote:
+>> > please consider pulling the following 4 patches for 3.8-rc5 which
+>> improve
+>> > the stability of the linux kernel on the parisc architecture.
+>>
+>> I think you forgot https://patchwork.kernel.org/patch/1917351/
+>
+> I did not scheduled it as bug fix for 3.8, since the HPUX support is broken in the parisc tree anyway.
 
-> > USB first instance of am335x works in mainline as of now.
+IC, I didn't know that.
 
-> Can you check if this series indeed breaks am335x?
-> 
-> Thanks for your help.
+> But I did not forgot your patch either. It's in my local git repository and will go in for kernel 3.9. That's why it's in state "accepted" in patchwork already.
+> I hope that's OK for you?
 
-Do you have a tree having these changes, it would be easier for me.
+Sure, it's up to you.
 
-Regards
-Afzal
+It's just one of the three issues preventing you from having a green
+parisc-allmodconfig build on http://kisskb.ellerman.id.au/kisskb/matrix/.
 
+Gr{oetje,eeting}s,
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
