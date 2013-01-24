@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422633Ab3AXUZa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:25:30 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50943 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454Ab3AXUWj (ORCPT
+	id S1030231Ab3AXUZk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:25:40 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26957 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756371Ab3AXUWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:22:39 -0500
+	Thu, 24 Jan 2013 15:22:14 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
@@ -15,10 +15,10 @@ Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Jan Kiszka <jan.kiszka@web.de>,
         Jason Wessel <jason.wessel@windriver.com>,
         Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Rob Landley <rob@landley.net>
-Subject: [PATCH 30/35] x86: Add Crash kernel low reservation
-Date: Thu, 24 Jan 2013 12:20:11 -0800
-Message-Id: <1359058816-7615-31-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 22/35] x86, kexec: Set ident mapping for kernel that is above max_pfn
+Date: Thu, 24 Jan 2013 12:20:03 -0800
+Message-Id: <1359058816-7615-23-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
 References: <1359058816-7615-1-git-send-email-yinghai@kernel.org>
@@ -27,223 +27,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During kdump kernel's booting stage, it need to find low ram for
-swiotlb buffer when system does not support intel iommu/dmar remapping.
+When first kernel is booted with memmap= or mem=  to limit max_pfn.
+kexec can load second kernel above that max_pfn.
 
-kexed-tools is appending memmap=exactmap and range from /proc/iomem
-with "Crash kernel", and that range is above 4G for 64bit after boot
-protocol 2.12.
-
-We need to add another range in /proc/iomem like "Crash kernel low",
-so kexec-tools could find that info and append to kdump kernel
-command line.
-
-Try to reserve some under 4G if the normal "Crash kernel" is above 4G.
-
-User could specify the size with crashkernel_low=XX[KMG].
-
--v2: fix warning that is found by Fengguang's test robot.
--v3: move out get_mem_size change to another patch, to solve compiling
-     warning that is found by Borislav Petkov <bp@alien8.de>
--v4: user must specify crashkernel_low if system does not support
-     intel or amd iommu.
+We need to set ident mapping for whole image in this case instead of just
+for first 2M.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Eric Biederman <ebiederm@xmission.com>
-Cc: Rob Landley <rob@landley.net>
 ---
- Documentation/kernel-parameters.txt |    3 +++
- arch/x86/kernel/setup.c             |   42 +++++++++++++++++++++++++++++++++--
- include/linux/kexec.h               |    3 +++
- kernel/kexec.c                      |   34 +++++++++++++++++++++++-----
- 4 files changed, 75 insertions(+), 7 deletions(-)
+ arch/x86/kernel/machine_kexec_64.c |   43 +++++++++++++++++++++++++++++++-----
+ 1 file changed, 37 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 363e348..da0e077 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -594,6 +594,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			is selected automatically. Check
- 			Documentation/kdump/kdump.txt for further details.
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index b3ea9db..be14ee1 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -56,6 +56,25 @@ out:
+ 	return result;
+ }
  
-+	crashkernel_low=size[KMG]
-+			[KNL, x86] parts under 4G.
-+
- 	crashkernel=range1:size1[,range2:size2,...][@offset]
- 			[KNL] Same as above, but depends on the memory
- 			in the running system. The syntax of range is
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 563c99d..4d6179f 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -508,8 +508,44 @@ static void __init memblock_x86_reserve_range_setup_data(void)
- # define CRASH_KERNEL_ADDR_MAX	MAXMEM
- #endif
- 
-+static void __init reserve_crashkernel_low(void)
++static int ident_mapping_init(struct kimage *image, pgd_t *level4p,
++				unsigned long mstart, unsigned long mend)
 +{
-+#ifdef CONFIG_X86_64
-+	const unsigned long long alignment = 16<<20;	/* 16M */
-+	unsigned long long low_base = 0, low_size = 0;
-+	unsigned long total_low_mem;
-+	unsigned long long base;
-+	int ret;
++	int result;
 +
-+	total_low_mem = memblock_mem_size(1UL<<(32-PAGE_SHIFT));
-+	ret = parse_crashkernel_low(boot_command_line, total_low_mem,
-+						&low_size, &base);
-+	if (ret != 0 || low_size <= 0)
-+		return;
++	mstart = round_down(mstart, PMD_SIZE);
++	mend   = round_up(mend - 1, PMD_SIZE);
 +
-+	low_base = memblock_find_in_range(low_size, (1ULL<<32),
-+					low_size, alignment);
++	while (mstart < mend) {
++		result = init_one_level2_page(image, level4p, mstart);
++		if (result)
++			return result;
 +
-+	if (!low_base) {
-+		pr_info("crashkernel low reservation failed - No suitable area found.\n");
-+
-+		return;
++		mstart += PMD_SIZE;
 +	}
 +
-+	memblock_reserve(low_base, low_size);
-+	pr_info("Reserving %ldMB of low memory at %ldMB for crashkernel (System low RAM: %ldMB)\n",
-+			(unsigned long)(low_size >> 20),
-+			(unsigned long)(low_base >> 20),
-+			(unsigned long)(total_low_mem >> 20));
-+	crashk_low_res.start = low_base;
-+	crashk_low_res.end   = low_base + low_size - 1;
-+	insert_resource(&iomem_resource, &crashk_low_res);
-+#endif
++	return 0;
 +}
 +
- static void __init reserve_crashkernel(void)
+ static void init_level2_page(pmd_t *level2p, unsigned long addr)
  {
-+	const unsigned long long alignment = 16<<20;	/* 16M */
- 	unsigned long long total_mem;
- 	unsigned long long crash_size, crash_base;
- 	int ret;
-@@ -523,8 +559,6 @@ static void __init reserve_crashkernel(void)
+ 	unsigned long end_addr;
+@@ -184,22 +203,34 @@ err:
+ 	return result;
+ }
  
- 	/* 0 means: find the address automatically */
- 	if (crash_base <= 0) {
--		const unsigned long long alignment = 16<<20;	/* 16M */
 -
- 		/*
- 		 *  kexec want bzImage is below CRASH_KERNEL_ADDR_MAX
- 		 */
-@@ -535,6 +569,7 @@ static void __init reserve_crashkernel(void)
- 			pr_info("crashkernel reservation failed - No suitable area found.\n");
- 			return;
- 		}
-+
- 	} else {
- 		unsigned long long start;
- 
-@@ -556,6 +591,9 @@ static void __init reserve_crashkernel(void)
- 	crashk_res.start = crash_base;
- 	crashk_res.end   = crash_base + crash_size - 1;
- 	insert_resource(&iomem_resource, &crashk_res);
-+
-+	if (crash_base >= (1ULL<<32))
-+		reserve_crashkernel_low();
- }
- #else
- static void __init reserve_crashkernel(void)
-diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-index d0b8458..d2e6927 100644
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -191,6 +191,7 @@ extern struct kimage *kexec_crash_image;
- /* Location of a reserved region to hold the crash kernel.
-  */
- extern struct resource crashk_res;
-+extern struct resource crashk_low_res;
- typedef u32 note_buf_t[KEXEC_NOTE_BYTES/4];
- extern note_buf_t __percpu *crash_notes;
- extern u32 vmcoreinfo_note[VMCOREINFO_NOTE_SIZE/4];
-@@ -199,6 +200,8 @@ extern size_t vmcoreinfo_max_size;
- 
- int __init parse_crashkernel(char *cmdline, unsigned long long system_ram,
- 		unsigned long long *crash_size, unsigned long long *crash_base);
-+int parse_crashkernel_low(char *cmdline, unsigned long long system_ram,
-+		unsigned long long *crash_size, unsigned long long *crash_base);
- int crash_shrink_memory(unsigned long new_size);
- size_t crash_get_memory_size(void);
- void crash_free_reserved_phys_range(unsigned long begin, unsigned long end);
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 5e4bd78..2436ffc 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -54,6 +54,12 @@ struct resource crashk_res = {
- 	.end   = 0,
- 	.flags = IORESOURCE_BUSY | IORESOURCE_MEM
- };
-+struct resource crashk_low_res = {
-+	.name  = "Crash kernel low",
-+	.start = 0,
-+	.end   = 0,
-+	.flags = IORESOURCE_BUSY | IORESOURCE_MEM
-+};
- 
- int kexec_should_crash(struct task_struct *p)
+ static int init_pgtable(struct kimage *image, unsigned long start_pgtable)
  {
-@@ -1369,10 +1375,11 @@ static int __init parse_crashkernel_simple(char 		*cmdline,
-  * That function is the entry point for command line parsing and should be
-  * called from the arch-specific code.
-  */
--int __init parse_crashkernel(char 		 *cmdline,
-+static int __init __parse_crashkernel(char *cmdline,
- 			     unsigned long long system_ram,
- 			     unsigned long long *crash_size,
--			     unsigned long long *crash_base)
-+			     unsigned long long *crash_base,
-+				const char *name)
- {
- 	char 	*p = cmdline, *ck_cmdline = NULL;
- 	char	*first_colon, *first_space;
-@@ -1382,16 +1389,16 @@ int __init parse_crashkernel(char 		 *cmdline,
- 	*crash_base = 0;
- 
- 	/* find crashkernel and use the last one if there are more */
--	p = strstr(p, "crashkernel=");
-+	p = strstr(p, name);
- 	while (p) {
- 		ck_cmdline = p;
--		p = strstr(p+1, "crashkernel=");
-+		p = strstr(p+1, name);
- 	}
- 
- 	if (!ck_cmdline)
- 		return -EINVAL;
- 
--	ck_cmdline += 12; /* strlen("crashkernel=") */
-+	ck_cmdline += strlen(name);
- 
++	unsigned long mstart, mend;
+ 	pgd_t *level4p;
+ 	int result;
++	int i;
++
+ 	level4p = (pgd_t *)__va(start_pgtable);
+ 	result = init_level4_page(image, level4p, 0, max_pfn << PAGE_SHIFT);
+ 	if (result)
+ 		return result;
++
  	/*
- 	 * if the commandline contains a ':', then that's the extended
-@@ -1409,6 +1416,23 @@ int __init parse_crashkernel(char 		 *cmdline,
- 	return 0;
+-	 * image->start may be outside 0 ~ max_pfn, for example when
+-	 * jump back to original kernel from kexeced kernel
++	 * segments's mem ranges could be outside 0 ~ max_pfn,
++	 * for example when jump back to original kernel from kexeced kernel.
++	 * or first kernel is booted with user mem map, and second kernel
++	 * could be loaded out of that range.
+ 	 */
+-	result = init_one_level2_page(image, level4p, image->start);
+-	if (result)
+-		return result;
++	for (i = 0; i < image->nr_segments; i++) {
++		mstart = image->segment[i].mem;
++		mend   = mstart + image->segment[i].memsz;
++
++		result = ident_mapping_init(image, level4p, mstart, mend);
++
++		if (result)
++			return result;
++	}
++
+ 	return init_transition_pgtable(image, level4p);
  }
  
-+int __init parse_crashkernel(char *cmdline,
-+			     unsigned long long system_ram,
-+			     unsigned long long *crash_size,
-+			     unsigned long long *crash_base)
-+{
-+	return __parse_crashkernel(cmdline, system_ram, crash_size, crash_base,
-+					"crashkernel=");
-+}
-+
-+int __init parse_crashkernel_low(char *cmdline,
-+			     unsigned long long system_ram,
-+			     unsigned long long *crash_size,
-+			     unsigned long long *crash_base)
-+{
-+	return __parse_crashkernel(cmdline, system_ram, crash_size, crash_base,
-+					"crashkernel_low=");
-+}
- 
- static void update_vmcoreinfo_note(void)
- {
 -- 
 1.7.10.4
 
