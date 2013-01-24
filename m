@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945941Ab3AXV3B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:29:01 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40485 "EHLO mail.kernel.org"
+	id S1757039Ab3AXV3K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:29:10 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40331 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1160999Ab3AXVO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:14:57 -0500
+	id S1757011Ab3AXVOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:14:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: [ 46/46] dma: tegra: implement flags parameters for cyclic transfer
-Date: Thu, 24 Jan 2013 13:13:24 -0800
-Message-Id: <20130124211151.374591048@linuxfoundation.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 44/46] intel_idle: Dont register CPU notifier if we are not running.
+Date: Thu, 24 Jan 2013 13:13:22 -0800
+Message-Id: <20130124211151.145340368@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
 References: <20130124211135.862755794@linuxfoundation.org>
@@ -26,54 +27,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laxman Dewangan <ldewangan@nvidia.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit b9bb37f5486ba05d2b557dbf1aeb754fef618985 upstream.
+commit 6f8c2e7933679f54b6478945dc72e59ef9a3d5e0 upstream.
 
-The flag parameter is added in the cyclic transfer request.
-Use the flag option of:
-- DMA_PREP_INTERRUPT for enabling interrupt.
-- DMA_CTRL_ACK for deciding whether ack is requred or not for
-  descriptor.
+The 'intel_idle_probe' probes the CPU and sets the CPU notifier.
+But if later on during the module initialization we fail (say
+in cpuidle_register_driver), we stop loading, but we neglect
+to unregister the CPU notifier.  This means that during CPU
+hotplug events the system will fail:
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+calling  intel_idle_init+0x0/0x326 @ 1
+intel_idle: MWAIT substates: 0x1120
+intel_idle: v0.4 model 0x2A
+intel_idle: lapic_timer_reliable_states 0xffffffff
+intel_idle: intel_idle yielding to none
+initcall intel_idle_init+0x0/0x326 returned -19 after 14 usecs
+
+... some time later, offlining and onlining a CPU:
+
+cpu 3 spinlock event irq 62
+BUG: unable to ] __cpuidle_register_device+0x1c/0x120
+PGD 99b8b067 PUD 99b95067 PMD 0
+Oops: 0000 [#1] SMP
+Modules linked in: xen_evtchn nouveau mxm_wmi wmi radeon ttm i915 fbcon tileblit font atl1c bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
+CPU 0
+Pid: 2302, comm: udevd Not tainted 3.8.0-rc3upstream-00249-g09ad159 #1 MSI MS-7680/H61M-P23 (MS-7680)
+RIP: e030:[<ffffffff814d956c>]  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
+RSP: e02b:ffff88009dacfcb8  EFLAGS: 00010286
+RAX: 0000000000000000 RBX: ffff880105380000 RCX: 000000000000001c
+RDX: 0000000000000000 RSI: 0000000000000055 RDI: ffff880105380000
+RBP: ffff88009dacfce8 R08: ffffffff81a4f048 R09: 0000000000000008
+R10: 0000000000000008 R11: 0000000000000000 R12: ffff880105380000
+R13: 00000000ffffffdd R14: 0000000000000000 R15: ffffffff81a523d0
+FS:  00007f37bd83b7a0(0000) GS:ffff880105200000(0000) knlGS:0000000000000000
+CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000008 CR3: 00000000a09ea000 CR4: 0000000000042660
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process udevd (pid: 2302, threadinfo ffff88009dace000, task ffff88009afb47f0)
+Stack:
+ ffffffff8107f2d0 ffffffff810c2fb7 ffff88009dacfce8 00000000ffffffea
+ ffff880105380000 00000000ffffffdd ffff88009dacfd08 ffffffff814d9882
+ 0000000000000003 ffff880105380000 ffff88009dacfd28 ffffffff81340afd
+Call Trace:
+ [<ffffffff8107f2d0>] ? collect_cpu_info_local+0x30/0x30
+ [<ffffffff810c2fb7>] ? __might_sleep+0xe7/0x100
+ [<ffffffff814d9882>] cpuidle_register_device+0x32/0x70
+ [<ffffffff81340afd>] intel_idle_cpu_init+0xad/0x110
+ [<ffffffff81340bc8>] cpu_hotplug_notify+0x68/0x80
+ [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
+ [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
+ [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
+ [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
+ [<ffffffff81652e18>] cpu_up+0xd9/0xec
+ [<ffffffff8164a254>] store_online+0x94/0xd0
+ [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
+ [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
+ [<ffffffff811a1024>] vfs_write+0xb4/0x130
+ [<ffffffff811a17ea>] sys_write+0x5a/0xa0
+ [<ffffffff816643a9>] system_call_fastpath+0x16/0x1b
+Code: 03 18 00 c9 c3 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 48 83 ec 30 48 89 5d e8 4c 89 65 f0 48 89 fb 4c 89 6d f8 e8 84 08 00 00 <48> 8b 78 08 49 89 c4 e8 f8 7f c1 ff 89 c2 b8 ea ff ff ff 84 d2
+RIP  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
+ RSP <ffff88009dacfcb8>
+
+This patch fixes that by moving the CPU notifier registration
+as the last item to be done by the module.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/tegra20-apb-dma.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/idle/intel_idle.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -266,6 +266,7 @@ static struct tegra_dma_desc *tegra_dma_
- 		if (async_tx_test_ack(&dma_desc->txd)) {
- 			list_del(&dma_desc->node);
- 			spin_unlock_irqrestore(&tdc->lock, flags);
-+			dma_desc->txd.flags = 0;
- 			return dma_desc;
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -460,8 +460,6 @@ static int intel_idle_probe(void)
+ 	else
+ 		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
+ 
+-	register_cpu_notifier(&cpu_hotplug_notifier);
+-
+ 	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
+ 		" model 0x%X\n", boot_cpu_data.x86_model);
+ 
+@@ -624,6 +622,7 @@ static int __init intel_idle_init(void)
+ 			return retval;
  		}
  	}
-@@ -1050,7 +1051,9 @@ struct dma_async_tx_descriptor *tegra_dm
- 					TEGRA_APBDMA_AHBSEQ_WRAP_SHIFT;
- 	ahb_seq |= TEGRA_APBDMA_AHBSEQ_BUS_WIDTH_32;
++	register_cpu_notifier(&cpu_hotplug_notifier);
  
--	csr |= TEGRA_APBDMA_CSR_FLOW | TEGRA_APBDMA_CSR_IE_EOC;
-+	csr |= TEGRA_APBDMA_CSR_FLOW;
-+	if (flags & DMA_PREP_INTERRUPT)
-+		csr |= TEGRA_APBDMA_CSR_IE_EOC;
- 	csr |= tdc->dma_sconfig.slave_id << TEGRA_APBDMA_CSR_REQ_SEL_SHIFT;
- 
- 	apb_seq |= TEGRA_APBDMA_APBSEQ_WRAP_WORD_1;
-@@ -1095,7 +1098,8 @@ struct dma_async_tx_descriptor *tegra_dm
- 		mem += len;
- 	}
- 	sg_req->last_sg = true;
--	dma_desc->txd.flags = 0;
-+	if (flags & DMA_CTRL_ACK)
-+		dma_desc->txd.flags = DMA_CTRL_ACK;
- 
- 	/*
- 	 * Make sure that mode should not be conflicting with currently
+ 	return 0;
+ }
 
 
