@@ -1,68 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab3AXBsw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 20:48:52 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35071 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241Ab3AXBsq (ORCPT
+	id S1752936Ab3AXB4V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 20:56:21 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:49586 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241Ab3AXB4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 20:48:46 -0500
-Date: Thu, 24 Jan 2013 01:48:40 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [tracepoint] cargo-culting considered harmful...
-Message-ID: <20130124014840.GA4503@ZenIV.linux.org.uk>
-References: <20130123225523.GY4939@ZenIV.linux.org.uk>
- <20130123155147.25fe49a2.akpm@linux-foundation.org>
+	Wed, 23 Jan 2013 20:56:12 -0500
+Message-ID: <510094A4.3040806@huawei.com>
+Date: Thu, 24 Jan 2013 09:55:48 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130123155147.25fe49a2.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Rob Landley <rob@landley.net>, Bjorn Helgaas <bhelgaas@google.com>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jon Mason <jdmason@kudzu.us>, <linux-pci@vger.kernel.org>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>
+Subject: Re: [Update][PATCH] PCI: Document PCIE BUS MPS parameters
+References: <1358944092-28884-1-git-send-email-wangyijing@huawei.com> <510074C7.6090203@infradead.org>
+In-Reply-To: <510074C7.6090203@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 03:51:47PM -0800, Andrew Morton wrote:
+Hi Randy,
+   Thanks for your review and comments! please refer to inlined comments below.
 
-> > note that
-> > 	* file->f_path is already pinned down by open(), path_get() does not
-> > provide anything extra.
-> > 	* file->f_path.dentry is already pinned by open() *and* path_get()
-> > just above that dget().
-> > 	* ->d_name.name *IS* *NOT* *PROTECTED* by pinning dentry down,
-> > whether it's done once or thrice.
+On 2013/1/24 7:39, Randy Dunlap wrote:
+> On 01/23/13 04:28, Yijing Wang wrote:
+>> Document PCIE BUS MPS parameters pcie_bus_tune_off, pcie_bus_safe,
+>> pcie_bus_peer2peer, pcie_bus_perf into Documentation/kernel-parameters.txt.
+>> These parameters were introduced by Jon Mason <mason@myri.com> at
+>> commit 5f39e6705 and commit b03e7495a8. Document these into
+>> kernel-parameters.txt can help users to understand and use the parameters.
+>>
+>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+>> ---
+>>  Documentation/kernel-parameters.txt |   15 +++++++++++++++
+>>  1 files changed, 15 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> index 363e348..1fb269b 100644
+>> --- a/Documentation/kernel-parameters.txt
+>> +++ b/Documentation/kernel-parameters.txt
+>> @@ -2227,6 +2227,21 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>  				This sorting is done to get a device
+>>  				order compatible with older (<= 2.4) kernels.
+>>  		nobfsort	Don't sort PCI devices into breadth-first order.
+>> +		pcie_bus_tune_off	Disable PCI-E MPS turning and using
+>> +				the BIOS configured MPS defaults.
 > 
-> I guess the first two are obvious (or at least, expected).  But the
-> third isn't.
+> 				    BIOS-configured
 
-->d_name.name is changed by rename() (as one could expect).  Grabbing
-a reference to dentry will not prevent rename() from happening.  ->i_mutex
-on parent will, but you either need to play with retries (grab reference
-to parent, grab ->i_mutex, check that it's still our parent, if we'd lost
-the race and someone had renamed the sucker - unlock ->i_mutex, dput,
-repeat) *or* to have our dentry looked up with parent locked, with ->i_mutex
-on said parent still held (which happens to cover the majority of valid
-uses in fs code - ->lookup(), ->create(), ->unlink(), rename(), etc. are
-all called that way, so the name of dentry passed to such methods is stable
-for the duration of the method).
+Will update it.
 
-->d_lock on dentry is also sufficient, but that obviously means that you
-can't block while holding it.
+> 
+>> +		pcie_bus_safe	Use the smallest common denominator MPS
+>> +				of the entire tree below a root complex for every device
+>> +				on that fabric. Can avoid inconsistent mps problem caused
+> 
+> s/mps/MPS/
+> i.e., use "MPS" consistently.
 
-> Where should a kernel developer go to learn these things? 
-> include/linux/dcache.h doesn't mention d_name locking rules, nor does
-> Documentation/filesystems/vfs.txt.
+Will use mps consistently.
 
-See directory locking rules in there; the crucial point is that dentry
-name is changed by rename() *and* that results of a race can be worse than
-just running into a partially rewritten name - long names are allocated
-separately and walking through a stale pointer you might end up in freed
-memory.
+> 
+>> +				by hotplug.
+>> +		pcie_bus_perf	Configure pcie device MPS to the largest allowable
+>> +				MPS based on its parent bus. And also set MRRS to the
+> 
+> "And also" is redundant.  Just say Also.
 
-It's a mess, unfortunately, and $BIGNUM other uses of ->i_mutex make it only
-nastier.  Once in a while I go hunting for races in that area, usally with
-a bunch of fixes coming out of such run ;-/
+Ok.
+
+> 
+> What is (are) MRRS?
+
+MRRS is "Max Read Request Size" and MPS is "Max Payload Size".
+Need use "Max Read Request Size" instead of MRRS ?
+
+> 
+>> +				largest supported value but cannot be configured larger
+>> +				than the MPS the device or the bus can support for Max
+>> +				performance.
+>> +		pcie_bus_peer2peer	Make the system wide MPS the smallest
+> 
+> 					         system-wide
+
+Will update it.
+
+> 
+>> +				possible value (128B).This configuration could prevent it
+> 
+> 				                      ^ Space before "This"
+> 
+
+Thanks for reminder.
+
+>> +				from working by having the MPS on one root port different
+>> +				than the MPS on another.
+>>  		cbiosize=nn[KMG]	The fixed amount of bus space which is
+>>  				reserved for the CardBus bridge's IO window.
+>>  				The default value is 256 bytes.
+>>
+> 
+> 
+
+
+-- 
+Thanks!
+Yijing
+
