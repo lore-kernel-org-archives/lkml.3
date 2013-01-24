@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3AXAZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 19:25:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32849 "EHLO mx1.redhat.com"
+	id S1752667Ab3AXA3s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 19:29:48 -0500
+Received: from mga14.intel.com ([143.182.124.37]:37046 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752319Ab3AXAZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 19:25:46 -0500
-Subject: [PATCH] vfio-pci: Enable PCIe extended capabilities on v1
-To: alex.williamson@redhat.com, kvm@vger.kernel.org
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 23 Jan 2013 17:25:45 -0700
-Message-ID: <20130124002535.2830.40861.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1752346Ab3AXA3m convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 19:29:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,525,1355126400"; 
+   d="scan'208";a="247695860"
+From: "Su, Xuemin" <xuemin.su@intel.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+CC: "airlied@linux.ie" <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
+        "He, Bo" <bo.he@intel.com>
+Subject: RE: [PATCH V2 RESEND] drm_crtc: check if fb_create return NULL
+Thread-Topic: [PATCH V2 RESEND] drm_crtc: check if fb_create return NULL
+Thread-Index: AQHN+RfYTM6B2JdxT0+KNrbIp+OCAJhWJruAgAF5mjA=
+Date: Thu, 24 Jan 2013 00:27:36 +0000
+Message-ID: <CDD08C147402274194A8DDD9DBEF5593411BF4@SHSMSX101.ccr.corp.intel.com>
+References: <1358911167.18561.20.camel@suxuemin.sh.intel.com>
+ <20130123095337.GQ31870@phenom.ffwll.local>
+In-Reply-To: <20130123095337.GQ31870@phenom.ffwll.local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even PCIe 1.x had extended config space.
+-----Original Message-----
+>From: Daniel Vetter [mailto:daniel.vetter@ffwll.ch] On Behalf Of Daniel Vetter
+>Sent: Wednesday, January 23, 2013 5:54 PM
+>To: Su, Xuemin
+>Cc: airlied@linux.ie; dri-devel@lists.freedesktop.org; linux-kernel@vger.kernel.org; yanmin_zhang@linux.intel.com; He, Bo
+>Subject: Re: [PATCH V2 RESEND] drm_crtc: check if fb_create return NULL
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/vfio/pci/vfio_pci_config.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+>Imo just BUG_ON(!fb); and call it a day. Makes it pretty clear what's expected of the drivers.
+>-Daniel
 
-diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
-index 6985149..f1dde2c 100644
---- a/drivers/vfio/pci/vfio_pci_config.c
-+++ b/drivers/vfio/pci/vfio_pci_config.c
-@@ -985,12 +985,12 @@ static int vfio_cap_len(struct vfio_pci_device *vdev, u8 cap, u8 pos)
- 		if (ret)
- 			return pcibios_err_to_errno(ret);
- 
-+		vdev->extended_caps = true;
-+
- 		if ((word & PCI_EXP_FLAGS_VERS) == 1)
- 			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V1;
--		else {
--			vdev->extended_caps = true;
-+		else
- 			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V2;
--		}
- 	case PCI_CAP_ID_HT:
- 		ret = pci_read_config_byte(pdev, pos + 3, &byte);
- 		if (ret)
+Thanks, I will upload PATCH V3.
+Xuemin
 
