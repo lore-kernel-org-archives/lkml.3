@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab3AXD3d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:29:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44212 "EHLO
+	id S1754361Ab3AXD3s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:29:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44229 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab3AXD3H (ORCPT
+	with ESMTP id S1754291Ab3AXD3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:29:07 -0500
+	Wed, 23 Jan 2013 22:29:17 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Thomas Hartmann <hartmann@ict.tuwien.ac.at>,
+Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        Nickolai Zeldovich <nickolai@csail.mit.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 23/74] staging: r8712u: Add new device ID
-Date: Thu, 24 Jan 2013 01:26:35 -0200
-Message-Id: <1358998046-613-24-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 26/74] staging: speakup: avoid out-of-range access in synth_add()
+Date: Thu, 24 Jan 2013 01:26:38 -0200
+Message-Id: <1358998046-613-27-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
@@ -29,35 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
 
-commit da849a92d3bafaf24d770e971c2c9e5c3f60b5d1 upstream.
+commit 6102c48bd421074a33e102f2ebda3724e8d275f9 upstream.
 
-The ISY IWL 1000 USB WLAN stick with USB ID 050d:11f1 is a clone of
-the Belkin F7D1101 V1 device.
+Check that array index is in-bounds before accessing the synths[] array.
 
-Reported-by: Thomas Hartmann <hartmann@ict.tuwien.ac.at>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Thomas Hartmann <hartmann@ict.tuwien.ac.at>
+Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Cc: Nickolai Zeldovich <nickolai@csail.mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/staging/rtl8712/usb_intf.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/speakup/synth.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/rtl8712/usb_intf.c b/drivers/staging/rtl8712/usb_intf.c
-index 69f616c..1bc8097 100644
---- a/drivers/staging/rtl8712/usb_intf.c
-+++ b/drivers/staging/rtl8712/usb_intf.c
-@@ -66,6 +66,8 @@ static struct usb_device_id rtl871x_usb_id_tbl[] = {
- 	{USB_DEVICE(0x0B05, 0x1791)}, /* 11n mode disable */
- 	/* Belkin */
- 	{USB_DEVICE(0x050D, 0x945A)},
-+	/* ISY IWL - Belkin clone */
-+	{USB_DEVICE(0x050D, 0x11F1)},
- 	/* Corega */
- 	{USB_DEVICE(0x07AA, 0x0047)},
- 	/* D-Link */
+diff --git a/drivers/staging/speakup/synth.c b/drivers/staging/speakup/synth.c
+index 217fd4a..5710fc5 100644
+--- a/drivers/staging/speakup/synth.c
++++ b/drivers/staging/speakup/synth.c
+@@ -423,7 +423,7 @@ int synth_add(struct spk_synth *in_synth)
+ 	int i;
+ 	int status = 0;
+ 	mutex_lock(&spk_mutex);
+-	for (i = 0; synths[i] != NULL && i < MAXSYNTHS; i++)
++	for (i = 0; i < MAXSYNTHS && synths[i] != NULL; i++)
+ 		/* synth_remove() is responsible for rotating the array down */
+ 		if (in_synth == synths[i]) {
+ 			mutex_unlock(&spk_mutex);
 -- 
 1.7.9.5
 
