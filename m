@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab3AXMh6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 07:37:58 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:5184 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab3AXMhw (ORCPT
+	id S1754560Ab3AXMkC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 07:40:02 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:49896 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065Ab3AXMjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 07:37:52 -0500
-Date: Thu, 24 Jan 2013 07:37:50 -0500 (EST)
-From: Tom St Denis <tstdenis@elliptictech.com>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Message-ID: <909599053.113808.1359031070783.JavaMail.root@elliptictech.com>
-In-Reply-To: <20130124123210.GK9147@secunet.com>
-Subject: Re: [PATCH] CMAC support for CryptoAPI, fixed patch issues, indent,
- and testmgr build issues
+	Thu, 24 Jan 2013 07:39:55 -0500
+Date: Thu, 24 Jan 2013 07:39:39 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: xufengzhang.main@gmail.com
+Cc: vyasevich@gmail.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] sctp: set association state to established in
+ dupcook_a handler
+Message-ID: <20130124123939.GA20658@hmsreliant.think-freely.org>
+References: <1358995474-28369-1-git-send-email-xufengzhang.main@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.17.19.112]
-X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC24 (Linux)/7.2.1_GA_2790)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358995474-28369-1-git-send-email-xufengzhang.main@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------ Original Message -----
-> From: "Steffen Klassert" <steffen.klassert@secunet.com>
-> To: "Jussi Kivilinna" <jussi.kivilinna@mbnet.fi>
-> Cc: "Herbert Xu" <herbert@gondor.apana.org.au>, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-> linux-crypto@vger.kernel.org, "Tom St Denis" <tstdenis@elliptictech.com>, "David Miller" <davem@davemloft.net>
-> Sent: Thursday, 24 January, 2013 7:32:10 AM
-> Subject: Re: [PATCH] CMAC support for CryptoAPI, fixed patch issues, indent, and testmgr build issues
+On Thu, Jan 24, 2013 at 10:44:34AM +0800, xufengzhang.main@gmail.com wrote:
+> From: Xufeng Zhang <xufeng.zhang@windriver.com>
 > 
-> On Thu, Jan 24, 2013 at 01:25:46PM +0200, Jussi Kivilinna wrote:
-> > 
-> > Maybe it would be cleaner to not mess with pfkeyv2.h at all, but
-> > instead mark algorithms that do not support pfkey with flag. See
-> > patch below.
-> > 
+> While sctp handling a duplicate COOKIE-ECHO and the action is
+> 'Association restart', sctp_sf_do_dupcook_a() will processing
+> the unexpected COOKIE-ECHO for peer restart, but it does not set
+> the association state to SCTP_STATE_ESTABLISHED, so the association
+> could stuck in SCTP_STATE_SHUTDOWN_PENDING state forever.
+> This violates the sctp specification:
+>   RFC 4960 5.2.4. Handle a COOKIE ECHO when a TCB Exists
+>   Action
+>   A) In this case, the peer may have restarted. .....
+>      After this, the endpoint shall enter the ESTABLISHED state.
 > 
-> Yes, would be an option too. I would be fine with that,
-> but let's here if someone else has an opinion on this.
-> Anyway, we need a solution to integrate Tom's patch soon.
+> To resolve this problem, adding a SCTP_CMD_NEW_STATE cmd to the
+> command list before SCTP_CMD_REPLY cmd, this will set the restart
+> association to SCTP_STATE_ESTABLISHED state properly and also avoid
+> I-bit being set in the DATA chunk header when COOKIE_ACK is bundled
+> with DATA chunks.
+> 
+> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+> ---
+> v2:
+> - Put the SCTP_CMD_NEW_STATE command before SCTP_CMD_REPLY and after SCTP_CMD_EVENT_ULP
+>   suggested by Vlad and Neil
+> - Improve the last paragraph of the commit header
+>  
+>  net/sctp/sm_statefuns.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+> index 618ec7e..5131fcf 100644
+> --- a/net/sctp/sm_statefuns.c
+> +++ b/net/sctp/sm_statefuns.c
+> @@ -1779,8 +1779,10 @@ static sctp_disposition_t sctp_sf_do_dupcook_a(struct net *net,
+>  
+>  	/* Update the content of current association. */
+>  	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
+> -	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
+>  	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
+> +	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
+> +			SCTP_STATE(SCTP_STATE_ESTABLISHED));
+> +	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
+>  	return SCTP_DISPOSITION_CONSUME;
+>  
+>  nomem_ev:
+> -- 
+> 1.7.0.2
+> 
+> 
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-Has anyone addressed the testmgr issues too?  I wasn't able to run the self-tests so I don't even know if the vectors were copied correctly.
-
-Also a question for the netdev folk, in order to be timely would it be acceptable to patch ah4 and then ah6 with the AEAD changes?  Or would the team require both to be patched simultaneously?
- 
-Tom
