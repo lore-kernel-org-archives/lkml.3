@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab3AXRhJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 12:37:09 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:52927 "EHLO mail.skyhub.de"
+	id S1754745Ab3AXRiA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 12:38:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59675 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754288Ab3AXRhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 12:37:04 -0500
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: X86 ML <x86@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
+	id S1753042Ab3AXRh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 12:37:58 -0500
+Message-ID: <5101710F.9060409@zytor.com>
+Date: Thu, 24 Jan 2013 11:36:15 -0600
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, "K. Y. Srinivasan" <kys@microsoft.com>,
+        x86@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 1/2] x86, Kconfig: Move PARAVIRT_DEBUG into the paravirt menu
-Date: Thu, 24 Jan 2013 18:39:53 +0100
-Message-Id: <1359049194-17505-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.1.rc3
+        tglx@linutronix.de, JBeulich@suse.com
+Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as special
+ hypervisor interrupts
+References: <1358992569-22826-1-git-send-email-kys@microsoft.com> <20130124092821.GA13463@pd.tnic> <04854149-91a3-4834-b2bb-de301c8241c9@email.android.com> <20130124173555.GJ13463@pd.tnic>
 In-Reply-To: <20130124173555.GJ13463@pd.tnic>
-References: <20130124173555.GJ13463@pd.tnic>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+On 01/24/2013 11:35 AM, Borislav Petkov wrote:
+> On Thu, Jan 24, 2013 at 06:11:32AM -0600, H. Peter Anvin wrote:
+>> Sounds great in theory at least, as long as it doesn't mean pushing a
+>> bunch of #ifdefs into other code.
+> 
+> Just one set in hypervisor.h but this is the RightWay™ we do it in the
+> kernel :-).
+> 
+> Anyway, it turned out to be easier than I thought, just two patches
+> which I'll be sending as a reply to this message. I'll run more
+> randconfig tests on them, anyone sees issues please let me know.
+> 
 
-This should be under the PARAVIRT_GUEST menu.
+Awesome :)
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/Kconfig | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+	-hpa
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 1014e9ea88d4..fb3f76510be1 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -674,8 +674,6 @@ config PARAVIRT_SPINLOCKS
- config PARAVIRT_CLOCK
- 	bool
- 
--endif
--
- config PARAVIRT_DEBUG
- 	bool "paravirt-ops debugging"
- 	depends on PARAVIRT && DEBUG_KERNEL
-@@ -683,6 +681,8 @@ config PARAVIRT_DEBUG
- 	  Enable to debug paravirt_ops internals.  Specifically, BUG if
- 	  a paravirt_op is missing when it is called.
- 
-+endif #PARAVIRT_GUEST
-+
- config NO_BOOTMEM
- 	def_bool y
- 
--- 
-1.8.1.rc3
 
