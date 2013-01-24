@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab3AXLKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 06:10:44 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:42875 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837Ab3AXLJm (ORCPT
+	id S1754346Ab3AXLKw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 06:10:52 -0500
+Received: from us01smtp2.synopsys.com ([198.182.44.80]:51392 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498Ab3AXLJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 06:09:42 -0500
+	Thu, 24 Jan 2013 06:09:52 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v3 12/71] ARC: Spinlock/rwlock/mutex primitives
-Date: Thu, 24 Jan 2013 16:35:52 +0530
-Message-ID: <1359025589-22277-9-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v3 38/71] ARC: ptrace support
+Date: Thu, 24 Jan 2013 16:36:06 +0530
+Message-ID: <1359025589-22277-23-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
 References: <1359025589-22277-1-git-send-email-vgupta@synopsys.com>
@@ -26,220 +26,308 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arc/include/asm/mutex.h          |    9 ++
- arch/arc/include/asm/spinlock.h       |  144 +++++++++++++++++++++++++++++++++
- arch/arc/include/asm/spinlock_types.h |   35 ++++++++
- 3 files changed, 188 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/include/asm/mutex.h
- create mode 100644 arch/arc/include/asm/spinlock.h
- create mode 100644 arch/arc/include/asm/spinlock_types.h
+ arch/arc/Kconfig         |    1 +
+ arch/arc/kernel/Makefile |    3 +
+ arch/arc/kernel/entry.S  |   68 +++++++++++++++++++++++
+ arch/arc/kernel/ptrace.c |  136 +++++++++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 206 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arc/include/asm/mutex.h b/arch/arc/include/asm/mutex.h
-new file mode 100644
-index 0000000..3be5e64
---- /dev/null
-+++ b/arch/arc/include/asm/mutex.h
-@@ -0,0 +1,9 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
+diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+index 03347cb..409b937 100644
+--- a/arch/arc/Kconfig
++++ b/arch/arc/Kconfig
+@@ -22,6 +22,7 @@ config ARC
+ 	select GENERIC_PENDING_IRQ if SMP
+ 	select GENERIC_SIGALTSTACK
+ 	select GENERIC_SMP_IDLE_THREAD
++	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select HAVE_MEMBLOCK
+ 	select IRQ_DOMAIN
+diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
+index 8a55e99..1f01d35 100644
+--- a/arch/arc/kernel/Makefile
++++ b/arch/arc/kernel/Makefile
+@@ -5,6 +5,9 @@
+ # it under the terms of the GNU General Public License version 2 as
+ # published by the Free Software Foundation.
+ 
++# Pass UTS_MACHINE for user_regset definition
++CFLAGS_ptrace.o		+= -DUTS_MACHINE='"$(UTS_MACHINE)"'
++
+ obj-y	:= arcksyms.o setup.o irq.o time.o reset.o ptrace.o entry.o process.o
+ obj-y	+= signal.o traps.o sys.o troubleshoot.o stacktrace.o clk.o
+ 
+diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
+index 69d0d37..76697ae 100644
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -7,6 +7,13 @@
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
+  *
++ * vineetg: Feb 2011 (ptrace low level code fixes)
++ *  -traced syscall return code (r0) was not saved into pt_regs for restoring
++ *   into user reg-file when traded task rets to user space.
++ *  -syscalls needing arch-wrappers (mainly for passing sp as pt_regs)
++ *   were not invoking post-syscall trace hook (jumping directly into
++ *   ret_from_system_call)
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
+  * vineetg: Nov 2010:
+  *  -Vector table jumps (@8 bytes) converted into branches (@4 bytes)
+  *  -To maintain the slot size of 8 bytes/vector, added nop, which is
+@@ -347,6 +354,50 @@ ARC_ENTRY EV_Extension
+ 	b   ret_from_exception
+ ARC_EXIT EV_Extension
+ 
++;######################### System Call Tracing #########################
 +
-+#include <asm-generic/mutex-xchg.h>
-diff --git a/arch/arc/include/asm/spinlock.h b/arch/arc/include/asm/spinlock.h
-new file mode 100644
-index 0000000..f158197
---- /dev/null
-+++ b/arch/arc/include/asm/spinlock.h
-@@ -0,0 +1,144 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
++tracesys:
++	; save EFA in case tracer wants the PC of traced task
++	; using ERET won't work since next-PC has already committed
++	lr  r12, [efa]
++	GET_CURR_TASK_FIELD_PTR   TASK_THREAD, r11
++	st  r12, [r11, THREAD_FAULT_ADDR]
 +
-+#ifndef __ASM_SPINLOCK_H
-+#define __ASM_SPINLOCK_H
++	; PRE Sys Call Ptrace hook
++	mov r0, sp			; pt_regs needed
++	bl  @syscall_trace_entry
 +
-+#include <asm/spinlock_types.h>
-+#include <asm/processor.h>
-+#include <asm/barrier.h>
++	; Tracing code now returns the syscall num (orig or modif)
++	mov r8, r0
 +
-+#define arch_spin_is_locked(x)	((x)->slock != __ARCH_SPIN_LOCK_UNLOCKED__)
-+#define arch_spin_lock_flags(lock, flags)	arch_spin_lock(lock)
-+#define arch_spin_unlock_wait(x) \
-+	do { while (arch_spin_is_locked(x)) cpu_relax(); } while (0)
++	; Do the Sys Call as we normally would.
++	; Validate the Sys Call number
++	cmp     r8,  NR_syscalls
++	mov.hi  r0, -ENOSYS
++	bhi     tracesys_exit
 +
-+static inline void arch_spin_lock(arch_spinlock_t *lock)
++	; Restore the sys-call args. Mere invocation of the hook abv could have
++	; clobbered them (since they are in scratch regs). The tracer could also
++	; have deliberately changed the syscall args: r0-r7
++	ld  r0, [sp, PT_r0]
++	ld  r1, [sp, PT_r1]
++	ld  r2, [sp, PT_r2]
++	ld  r3, [sp, PT_r3]
++	ld  r4, [sp, PT_r4]
++	ld  r5, [sp, PT_r5]
++	ld  r6, [sp, PT_r6]
++	ld  r7, [sp, PT_r7]
++	ld.as   r9, [sys_call_table, r8]
++	jl      [r9]        ; Entry into Sys Call Handler
++
++tracesys_exit:
++	st  r0, [sp, PT_r0]     ; sys call return value in pt_regs
++
++	;POST Sys Call Ptrace Hook
++	bl  @syscall_trace_exit
++	b   ret_from_exception ; NOT ret_from_system_call at is saves r0 which
++	; we'd done before calling post hook above
++
+ ;################### Break Point TRAP ##########################
+ 
+ 	; ======= (5b) Trap is due to Break-Point =========
+@@ -412,6 +463,11 @@ ARC_ENTRY EV_Trap
+ 	; Before doing anything, return from CPU Exception Mode
+ 	FAKE_RET_FROM_EXCPN r11
+ 
++	; If syscall tracing ongoing, invoke pre-pos-hooks
++	GET_CURR_THR_INFO_FLAGS   r10
++	btst r10, TIF_SYSCALL_TRACE
++	bnz tracesys  ; this never comes back
++
+ 	;============ This is normal System Call case ==========
+ 	; Sys-call num shd not exceed the total system calls avail
+ 	cmp     r8,  NR_syscalls
+@@ -608,6 +664,10 @@ ARC_ENTRY sys_fork_wrapper
+ 	bl  @sys_fork
+ 	DISCARD_CALLEE_SAVED_USER
+ 
++	GET_CURR_THR_INFO_FLAGS   r10
++	btst r10, TIF_SYSCALL_TRACE
++	bnz  tracesys_exit
++
+ 	b ret_from_system_call
+ ARC_EXIT sys_fork_wrapper
+ 
+@@ -616,6 +676,10 @@ ARC_ENTRY sys_vfork_wrapper
+ 	bl  @sys_vfork
+ 	DISCARD_CALLEE_SAVED_USER
+ 
++	GET_CURR_THR_INFO_FLAGS   r10
++	btst r10, TIF_SYSCALL_TRACE
++	bnz  tracesys_exit
++
+ 	b ret_from_system_call
+ ARC_EXIT sys_vfork_wrapper
+ 
+@@ -624,5 +688,9 @@ ARC_ENTRY sys_clone_wrapper
+ 	bl  @sys_clone
+ 	DISCARD_CALLEE_SAVED_USER
+ 
++	GET_CURR_THR_INFO_FLAGS   r10
++	btst r10, TIF_SYSCALL_TRACE
++	bnz  tracesys_exit
++
+ 	b ret_from_system_call
+ ARC_EXIT sys_clone_wrapper
+diff --git a/arch/arc/kernel/ptrace.c b/arch/arc/kernel/ptrace.c
+index 1cf944a..c6a81c5 100644
+--- a/arch/arc/kernel/ptrace.c
++++ b/arch/arc/kernel/ptrace.c
+@@ -7,6 +7,122 @@
+  */
+ 
+ #include <linux/ptrace.h>
++#include <linux/tracehook.h>
++#include <linux/regset.h>
++#include <linux/unistd.h>
++#include <linux/elf.h>
++
++static struct callee_regs *task_callee_regs(struct task_struct *tsk)
 +{
-+	unsigned int tmp = __ARCH_SPIN_LOCK_LOCKED__;
-+
-+	__asm__ __volatile__(
-+	"1:	ex  %0, [%1]		\n"
-+	"	breq  %0, %2, 1b	\n"
-+	: "+&r" (tmp)
-+	: "r"(&(lock->slock)), "ir"(__ARCH_SPIN_LOCK_LOCKED__)
-+	: "memory");
++	struct callee_regs *tmp = (struct callee_regs *)tsk->thread.callee_reg;
++	return tmp;
 +}
 +
-+static inline int arch_spin_trylock(arch_spinlock_t *lock)
++static int genregs_get(struct task_struct *target,
++		       const struct user_regset *regset,
++		       unsigned int pos, unsigned int count,
++		       void *kbuf, void __user *ubuf)
 +{
-+	unsigned int tmp = __ARCH_SPIN_LOCK_LOCKED__;
-+
-+	__asm__ __volatile__(
-+	"1:	ex  %0, [%1]		\n"
-+	: "+r" (tmp)
-+	: "r"(&(lock->slock))
-+	: "memory");
-+
-+	return (tmp == __ARCH_SPIN_LOCK_UNLOCKED__);
-+}
-+
-+static inline void arch_spin_unlock(arch_spinlock_t *lock)
-+{
-+	lock->slock = __ARCH_SPIN_LOCK_UNLOCKED__;
-+	smp_mb();
-+}
-+
-+/*
-+ * Read-write spinlocks, allowing multiple readers but only one writer.
-+ *
-+ * The spinlock itself is contained in @counter and access to it is
-+ * serialized with @lock_mutex.
-+ *
-+ * Unfair locking as Writers could be starved indefinitely by Reader(s)
-+ */
-+
-+/* Would read_trylock() succeed? */
-+#define arch_read_can_lock(x)	((x)->counter > 0)
-+
-+/* Would write_trylock() succeed? */
-+#define arch_write_can_lock(x)	((x)->counter == __ARCH_RW_LOCK_UNLOCKED__)
-+
-+/* 1 - lock taken successfully */
-+static inline int arch_read_trylock(arch_rwlock_t *rw)
-+{
++	const struct pt_regs *ptregs = task_pt_regs(target);
++	const struct callee_regs *cregs = task_callee_regs(target);
 +	int ret = 0;
++	unsigned int stop_pc_val;
 +
-+	arch_spin_lock(&(rw->lock_mutex));
++#define REG_O_CHUNK(START, END, PTR)	\
++	if (!ret)	\
++		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, PTR, \
++			offsetof(struct user_regs_struct, START), \
++			offsetof(struct user_regs_struct, END));
 +
-+	/*
-+	 * zero means writer holds the lock exclusively, deny Reader.
-+	 * Otherwise grant lock to first/subseq reader
-+	 */
-+	if (rw->counter > 0) {
-+		rw->counter--;
-+		ret = 1;
++#define REG_O_ONE(LOC, PTR)	\
++	if (!ret)		\
++		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, PTR, \
++			offsetof(struct user_regs_struct, LOC), \
++			offsetof(struct user_regs_struct, LOC) + 4);
++
++	REG_O_CHUNK(scratch, callee, ptregs);
++	REG_O_CHUNK(callee, efa, cregs);
++	REG_O_CHUNK(efa, stop_pc, &target->thread.fault_address);
++
++	if (!ret) {
++		if (in_brkpt_trap(ptregs)) {
++			stop_pc_val = target->thread.fault_address;
++			pr_debug("\t\tstop_pc (brk-pt)\n");
++		} else {
++			stop_pc_val = ptregs->ret;
++			pr_debug("\t\tstop_pc (others)\n");
++		}
++
++		REG_O_ONE(stop_pc, &stop_pc_val);
 +	}
 +
-+	arch_spin_unlock(&(rw->lock_mutex));
-+
-+	smp_mb();
 +	return ret;
 +}
 +
-+/* 1 - lock taken successfully */
-+static inline int arch_write_trylock(arch_rwlock_t *rw)
++static int genregs_set(struct task_struct *target,
++		       const struct user_regset *regset,
++		       unsigned int pos, unsigned int count,
++		       const void *kbuf, const void __user *ubuf)
 +{
++	const struct pt_regs *ptregs = task_pt_regs(target);
++	const struct callee_regs *cregs = task_callee_regs(target);
 +	int ret = 0;
 +
-+	arch_spin_lock(&(rw->lock_mutex));
++#define REG_IN_CHUNK(FIRST, NEXT, PTR)	\
++	if (!ret)			\
++		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, \
++			(void *)(PTR), \
++			offsetof(struct user_regs_struct, FIRST), \
++			offsetof(struct user_regs_struct, NEXT));
 +
-+	/*
-+	 * If reader(s) hold lock (lock < __ARCH_RW_LOCK_UNLOCKED__),
-+	 * deny writer. Otherwise if unlocked grant to writer
-+	 * Hence the claim that Linux rwlocks are unfair to writers.
-+	 * (can be starved for an indefinite time by readers).
-+	 */
-+	if (rw->counter == __ARCH_RW_LOCK_UNLOCKED__) {
-+		rw->counter = 0;
-+		ret = 1;
-+	}
-+	arch_spin_unlock(&(rw->lock_mutex));
++#define REG_IN_ONE(LOC, PTR)		\
++	if (!ret)			\
++		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, \
++			(void *)(PTR), \
++			offsetof(struct user_regs_struct, LOC), \
++			offsetof(struct user_regs_struct, LOC) + 4);
++
++#define REG_IGNORE_ONE(LOC)		\
++	if (!ret)			\
++		ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf, \
++			offsetof(struct user_regs_struct, LOC), \
++			offsetof(struct user_regs_struct, LOC) + 4);
++
++	/* TBD: disallow updates to STATUS32, orig_r8 etc*/
++	REG_IN_CHUNK(scratch, callee, ptregs);	/* pt_regs[bta..orig_r8] */
++	REG_IN_CHUNK(callee, efa, cregs);	/* callee_regs[r25..r13] */
++	REG_IGNORE_ONE(efa);			/* efa update invalid */
++	REG_IN_ONE(stop_pc, &ptregs->ret);	/* stop_pc: PC update */
 +
 +	return ret;
 +}
 +
-+static inline void arch_read_lock(arch_rwlock_t *rw)
++enum arc_getset {
++	REGSET_GENERAL,
++};
++
++static const struct user_regset arc_regsets[] = {
++	[REGSET_GENERAL] = {
++	       .core_note_type = NT_PRSTATUS,
++	       .n = ELF_NGREG,
++	       .size = sizeof(unsigned long),
++	       .align = sizeof(unsigned long),
++	       .get = genregs_get,
++	       .set = genregs_set,
++	}
++};
++
++static const struct user_regset_view user_arc_view = {
++	.name		= UTS_MACHINE,
++	.e_machine	= EM_ARCOMPACT,
++	.regsets	= arc_regsets,
++	.n		= ARRAY_SIZE(arc_regsets)
++};
++
++const struct user_regset_view *task_user_regset_view(struct task_struct *task)
 +{
-+	while (!arch_read_trylock(rw))
-+		cpu_relax();
++	return &user_arc_view;
++}
+ 
+ void ptrace_disable(struct task_struct *child)
+ {
+@@ -16,11 +132,27 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		 unsigned long addr, unsigned long data)
+ {
+ 	int ret = -EIO;
++
++	pr_debug("REQ=%ld: ADDR =0x%lx, DATA=0x%lx)\n", request, addr, data);
++
++	switch (request) {
++	default:
++		ret = ptrace_request(child, request, addr, data);
++		break;
++	}
++
+ 	return ret;
+ }
+ 
++asmlinkage int syscall_trace_entry(struct pt_regs *regs)
++{
++	if (tracehook_report_syscall_entry(regs))
++		return ULONG_MAX;
+ 
+-const struct user_regset_view *task_user_regset_view(struct task_struct *task)
++	return regs->r8;
 +}
 +
-+static inline void arch_write_lock(arch_rwlock_t *rw)
-+{
-+	while (!arch_write_trylock(rw))
-+		cpu_relax();
-+}
-+
-+static inline void arch_read_unlock(arch_rwlock_t *rw)
-+{
-+	arch_spin_lock(&(rw->lock_mutex));
-+	rw->counter++;
-+	arch_spin_unlock(&(rw->lock_mutex));
-+}
-+
-+static inline void arch_write_unlock(arch_rwlock_t *rw)
-+{
-+	arch_spin_lock(&(rw->lock_mutex));
-+	rw->counter = __ARCH_RW_LOCK_UNLOCKED__;
-+	arch_spin_unlock(&(rw->lock_mutex));
-+}
-+
-+#define arch_read_lock_flags(lock, flags)	arch_read_lock(lock)
-+#define arch_write_lock_flags(lock, flags)	arch_write_lock(lock)
-+
-+#define arch_spin_relax(lock)	cpu_relax()
-+#define arch_read_relax(lock)	cpu_relax()
-+#define arch_write_relax(lock)	cpu_relax()
-+
-+#endif /* __ASM_SPINLOCK_H */
-diff --git a/arch/arc/include/asm/spinlock_types.h b/arch/arc/include/asm/spinlock_types.h
-new file mode 100644
-index 0000000..8276bfd
---- /dev/null
-+++ b/arch/arc/include/asm/spinlock_types.h
-@@ -0,0 +1,35 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __ASM_SPINLOCK_TYPES_H
-+#define __ASM_SPINLOCK_TYPES_H
-+
-+typedef struct {
-+	volatile unsigned int slock;
-+} arch_spinlock_t;
-+
-+#define __ARCH_SPIN_LOCK_UNLOCKED__	0
-+#define __ARCH_SPIN_LOCK_LOCKED__	1
-+
-+#define __ARCH_SPIN_LOCK_UNLOCKED	{ __ARCH_SPIN_LOCK_UNLOCKED__ }
-+#define __ARCH_SPIN_LOCK_LOCKED		{ __ARCH_SPIN_LOCK_LOCKED__ }
-+
-+/*
-+ * Unlocked:     0x01_00_00_00
-+ * Read lock(s): 0x00_FF_00_00 to say 0x01
-+ * Write lock:   0x0, but only possible if prior value "unlocked" 0x0100_0000
-+ */
-+typedef struct {
-+	volatile unsigned int	counter;
-+	arch_spinlock_t		lock_mutex;
-+} arch_rwlock_t;
-+
-+#define __ARCH_RW_LOCK_UNLOCKED__	0x01000000
-+#define __ARCH_RW_LOCK_UNLOCKED		{ .counter = __ARCH_RW_LOCK_UNLOCKED__ }
-+
-+#endif
++asmlinkage void syscall_trace_exit(struct pt_regs *regs)
+ {
+-	return (const struct user_regset_view *)NULL;
++	tracehook_report_syscall_exit(regs, 0);
+ }
 -- 
 1.7.4.1
 
