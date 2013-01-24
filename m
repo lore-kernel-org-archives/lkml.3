@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab3AXJiI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 04:38:08 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:33624 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab3AXJiB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 04:38:01 -0500
-Date: Thu, 24 Jan 2013 09:37:54 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 1/1] ARM: ux500: Disable Power Supply and Battery
- Management by default
-Message-ID: <20130124093754.GR15873@gmail.com>
-References: <1358175470-5041-1-git-send-email-lee.jones@linaro.org>
- <CACRpkdYydqJ+BVsh7P411zCod+83f2pVV5tPsKfoWPYUnOVpDQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdYydqJ+BVsh7P411zCod+83f2pVV5tPsKfoWPYUnOVpDQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752989Ab3AXJjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 04:39:08 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:47489 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752554Ab3AXJjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 04:39:01 -0500
+X-IronPort-AV: E=Sophos;i="4.84,529,1355068800"; 
+   d="scan'208";a="6640641"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: akpm@linux-foundation.org, rjw@sisk.pl, len.brown@intel.com,
+        mingo@redhat.com, tglx@linutronix.de, minchan.kim@gmail.com,
+        rientjes@google.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        glommer@parallels.com, jiang.liu@huawei.com, julian.calaby@gmail.com,
+        sfr@canb.auug.org.au, guz.fnst@cn.fujitsu.com
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
+Subject: [PATCH 1/2] cpu_hotplug: Remove __cpuinitdata declaration of __apicid_to_node[].
+Date: Thu, 24 Jan 2013 17:38:06 +0800
+Message-Id: <1359020287-11661-2-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1359020287-11661-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1359020287-11661-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/24 17:37:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/24 17:38:01,
+	Serialize complete at 2013/01/24 17:38:01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jan 2013, Linus Walleij wrote:
+__apicid_to_node[] will be used by acpi_unmap_lsapic() when we do
+node hotplug. So it is no longer an init data. Do not declare
+__apicid_to_node[] as a __cpuinitdata, otherwise it will cause
+section mismatch warning when compiling.
 
-> On Mon, Jan 14, 2013 at 3:57 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > The AB8500 Battery Management collection of drivers are more than a
-> > little bit broken. There is lots of work still on-going in that area
-> > and it's improving day by day; however, it's not ready to be enabled
-> > by default just yet.
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Is this going for fixes (v3.8?)
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/mm/numa.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Sorry, I thought I answer this, but clearly I didn't.
-
-Can you take this into the -rcs please? It's preventing from a few of
-the platforms from booting.
-
-> For v3.9 I think you've submitted a whole lot of patches
-> actually fixing it up?
-> 
-> Anyway: Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> since you certainly know the status of this driver better than
-> me.
-> 
-> Yours,
-> Linus Walleij
-
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 9b31ed5..0624c85 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -56,7 +56,7 @@ early_param("numa", numa_setup);
+ /*
+  * apicid, cpu, node mappings
+  */
+-s16 __apicid_to_node[MAX_LOCAL_APIC] __cpuinitdata = {
++s16 __apicid_to_node[MAX_LOCAL_APIC] = {
+ 	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
+ };
+ 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.1
+
