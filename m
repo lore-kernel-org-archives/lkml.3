@@ -1,40 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751184Ab3AXIaw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 03:30:52 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:43510 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418Ab3AXIan (ORCPT
+	id S1751828Ab3AXIc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 03:32:56 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:56388 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717Ab3AXIcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 03:30:43 -0500
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Philip Avinash <avinashphilip@ti.com>
-Cc: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
-        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, nsekhar@ti.com,
-        linux-kernel@vger.kernel.org, gururaja.hebbar@ti.com,
-        linux-mtd@lists.infradead.org
-Subject: Re: [PATCH] mtd: devices: elm: Removes <xx> literals in elm DT node
-References: <9580c5839ea64e09ddd61610ce922d7cd1adc861.1359010256.git.avinashphilip@ti.com>
-Date: Thu, 24 Jan 2013 09:30:38 +0100
-In-Reply-To: <9580c5839ea64e09ddd61610ce922d7cd1adc861.1359010256.git.avinashphilip@ti.com>
-	(Philip Avinash's message of "Thu, 24 Jan 2013 12:23:30 +0530")
-Message-ID: <8738xr2dap.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Thu, 24 Jan 2013 03:32:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <b2122295-0a35-4aba-90f3-8306b92af78b@email.android.com>
+References: <1359001345-3446-1-git-send-email-airlied@gmail.com>
+	<b2122295-0a35-4aba-90f3-8306b92af78b@email.android.com>
+Date: Thu, 24 Jan 2013 18:32:50 +1000
+Message-ID: <CAPM=9tzqfDb7wtwRbDcYYcoB_HBLWksP8NYggsfj_GcNu=CY-A@mail.gmail.com>
+Subject: Re: [PATCH] vgacon/vt: clear buffer attributes when we load a 512
+ character font
+From: Dave Airlie <airlied@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Philip" == Philip Avinash <avinashphilip@ti.com> writes:
+On Thu, Jan 24, 2013 at 3:20 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> We should clear this bit presumably on switching either from or to 512-char mode, since the bit doesn't really make sense either way.
 
- Philip> As part of removing generalized dependency, replace <xx>
- Philip> literal fields in DT compatible field with <52> for am335x
- Philip> platforms.
+Yeah the only problem going from 512-char is that chars above 256 will
+morph into garbage chars below 256, like ctrl chars, I don't really
+want to face into doing some sort of safe translation out of 512-char
+mode, from reading around the net, 512 char mode doesn't seem all that
+brilliantly useful.
 
-Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
-
--- 
-Bye, Peter Korsgaard
+Dave.
