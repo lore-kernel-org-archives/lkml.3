@@ -1,91 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab3AXDjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:39:20 -0500
-Received: from mga03.intel.com ([143.182.124.21]:14248 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754347Ab3AXDaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:30:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,525,1355126400"; 
-   d="scan'208";a="247742567"
-From: Alex Shi <alex.shi@intel.com>
-To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de
-Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, alex.shi@intel.com
-Subject: [PATCH 2/4] sched: compute runnable load avg in cpu_load and cpu_avg_load_per_task
-Date: Thu, 24 Jan 2013 11:30:41 +0800
-Message-Id: <1358998243-23176-3-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1358998243-23176-1-git-send-email-alex.shi@intel.com>
-References: <1358998243-23176-1-git-send-email-alex.shi@intel.com>
+	id S1754430Ab3AXDjb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:39:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44291 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754556Ab3AXDaB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 22:30:01 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 38/74] Revert "ALSA: hda - Shut up pins at power-saving mode with Conexnat codecs"
+Date: Thu, 24 Jan 2013 01:26:50 -0200
+Message-Id: <1358998046-613-39-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are the base values in load balance, update them with rq runnable
-load average, then the load balance will consider runnable load avg
-naturally.
+3.5.7.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
+------------------
+
+From: David Henningsson <david.henningsson@canonical.com>
+
+commit 7ed4165e2d01bdbbb4c1086eb73eadf0f64cbbf0 upstream.
+
+This reverts commit 697c373e34613609cb5450f98b91fefb6e910588.
+
+The original patch was meant to remove clicking, but in fact caused even
+more clicking instead.
+
+Thanks to c4pp4 for doing most of the work with this bug.
+
+BugLink: https://bugs.launchpad.net/bugs/886975
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ herton: s/CONFIG_PM/CONFIG_SND_HDA_POWER_SAVE/, adjust context ]
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/sched/core.c |    8 ++++++++
- kernel/sched/fair.c |    4 ++--
- 2 files changed, 10 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_conexant.c |   16 ----------------
+ 1 file changed, 16 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4f4714e..f25b8d8 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2539,7 +2539,11 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
- void update_idle_cpu_load(struct rq *this_rq)
- {
- 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
-+#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
-+	unsigned long load = (unsigned long)this_rq->cfs.runnable_load_avg;
-+#else
- 	unsigned long load = this_rq->load.weight;
-+#endif
- 	unsigned long pending_updates;
- 
- 	/*
-@@ -2589,7 +2593,11 @@ static void update_cpu_load_active(struct rq *this_rq)
- 	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
- 	 */
- 	this_rq->last_load_update_tick = jiffies;
-+#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
-+	__update_cpu_load(this_rq, this_rq->cfs.runnable_load_avg, 1);
-+#else
- 	__update_cpu_load(this_rq, this_rq->load.weight, 1);
-+#endif
- 
- 	calc_load_account_active(this_rq);
- }
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7697171..9148bcc 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2909,7 +2909,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- /* Used instead of source_load when we know the type == 0 */
- static unsigned long weighted_cpuload(const int cpu)
- {
--	return cpu_rq(cpu)->load.weight;
-+	return (unsigned long)cpu_rq(cpu)->cfs.runnable_load_avg;
- }
- 
- /*
-@@ -2956,7 +2956,7 @@ static unsigned long cpu_avg_load_per_task(int cpu)
- 	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
- 
- 	if (nr_running)
--		return rq->load.weight / nr_running;
-+		return (unsigned long)rq->cfs.runnable_load_avg / nr_running;
- 
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index 808d5fd..908fc7f 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -553,24 +553,12 @@ static int conexant_build_controls(struct hda_codec *codec)
  	return 0;
  }
+ 
+-#ifdef CONFIG_SND_HDA_POWER_SAVE
+-static int conexant_suspend(struct hda_codec *codec, pm_message_t state)
+-{
+-	snd_hda_shutup_pins(codec);
+-	return 0;
+-}
+-#endif
+-
+ static const struct hda_codec_ops conexant_patch_ops = {
+ 	.build_controls = conexant_build_controls,
+ 	.build_pcms = conexant_build_pcms,
+ 	.init = conexant_init,
+ 	.free = conexant_free,
+ 	.set_power_state = conexant_set_power,
+-#ifdef CONFIG_SND_HDA_POWER_SAVE
+-	.suspend = conexant_suspend,
+-#endif
+-	.reboot_notify = snd_hda_shutup_pins,
+ };
+ 
+ #ifdef CONFIG_SND_HDA_INPUT_BEEP
+@@ -4401,10 +4389,6 @@ static const struct hda_codec_ops cx_auto_patch_ops = {
+ 	.init = cx_auto_init,
+ 	.free = conexant_free,
+ 	.unsol_event = cx_auto_unsol_event,
+-#ifdef CONFIG_SND_HDA_POWER_SAVE
+-	.suspend = conexant_suspend,
+-#endif
+-	.reboot_notify = snd_hda_shutup_pins,
+ };
+ 
+ /*
 -- 
-1.7.0.1
+1.7.9.5
 
