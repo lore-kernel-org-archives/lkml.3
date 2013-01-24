@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab3AXKCr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:02:47 -0500
-Received: from mail.mev.co.uk ([62.49.15.74]:43323 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752532Ab3AXKCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:02:43 -0500
-Message-ID: <510106BB.2080709@mev.co.uk>
-Date: Thu, 24 Jan 2013 10:02:35 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
+	id S1753251Ab3AXKDI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:03:08 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54227 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752969Ab3AXKDC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 05:03:02 -0500
+Date: Thu, 24 Jan 2013 18:02:55 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Cc: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "rob@landley.net" <rob@landley.net>, "Girdwood, Liam" <lrg@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [alsa-devel] [PATCH V2 2/2] ASoC: Davinci: machine: Add device
+ tree binding
+Message-ID: <20130124100252.GE4955@opensource.wolfsonmicro.com>
+References: <1357293277-25543-1-git-send-email-gururaja.hebbar@ti.com>
+ <1357293277-25543-3-git-send-email-gururaja.hebbar@ti.com>
+ <20130104122612.GM4627@opensource.wolfsonmicro.com>
+ <1BAFE6F6C881BF42822005164F1491C33EB50DCF@DBDE01.ent.ti.com>
+ <20130123154804.GB4565@opensource.wolfsonmicro.com>
+ <1BAFE6F6C881BF42822005164F1491C33EB52FD9@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-To: Peter Huewe <peterhuewe@gmx.de>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging/comedi: Move comedi_pci_auto_unconfig to drivers.c
-References: <1358894403-26181-1-git-send-email-peterhuewe@gmx.de> <1358895810-27115-1-git-send-email-peterhuewe@gmx.de>
-In-Reply-To: <1358895810-27115-1-git-send-email-peterhuewe@gmx.de>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0H629O+sVkh21xTi"
+Content-Disposition: inline
+In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EB52FD9@DBDE01.ent.ti.com>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-01-22 23:03, Peter Huewe wrote:
-> Since comedi_pci_auto_unconfig cannot be inlined anymore after
->   staging/comedi: Use comedi_pci_auto_unconfig directly for
->   pci_driver.remove
-> is applied, it makes sense to move it drivers.c
->
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
->   drivers/staging/comedi/comedidev.h |    5 +----
->   drivers/staging/comedi/drivers.c   |    6 ++++++
->   2 files changed, 7 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
-> index 6211d44..e2b7d60 100644
-> --- a/drivers/staging/comedi/comedidev.h
-> +++ b/drivers/staging/comedi/comedidev.h
-> @@ -484,10 +484,7 @@ static inline int comedi_pci_auto_config(struct pci_dev *pcidev,
->   	return comedi_auto_config(&pcidev->dev, driver, 0);
->   }
->
-> -static inline void comedi_pci_auto_unconfig(struct pci_dev *pcidev)
-> -{
-> -	comedi_auto_unconfig(&pcidev->dev);
-> -}
-> +void comedi_pci_auto_unconfig(struct pci_dev *pcidev);
->
->   static inline int comedi_usb_auto_config(struct usb_interface *intf,
->   					 struct comedi_driver *driver)
-> diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
-> index 1c7d4da..87eeee5 100644
-> --- a/drivers/staging/comedi/drivers.c
-> +++ b/drivers/staging/comedi/drivers.c
-> @@ -558,6 +558,12 @@ void comedi_pci_driver_unregister(struct comedi_driver *comedi_driver,
->   }
->   EXPORT_SYMBOL_GPL(comedi_pci_driver_unregister);
->
-> +void comedi_pci_auto_unconfig(struct pci_dev *pcidev)
-> +{
-> +	comedi_auto_unconfig(&pcidev->dev);
-> +}
-> +EXPORT_SYMBOL_GPL(comedi_pci_auto_unconfig);
-> +
->   #if IS_ENABLED(CONFIG_PCMCIA)
->   int comedi_pcmcia_driver_register(struct comedi_driver *comedi_driver,
->   		struct pcmcia_driver *pcmcia_driver)
->
 
-Embarassingly (for me) I submitted a patch to do the exact opposite 
-previously, but I've no problem doing it this way if it saves some code.
+--0H629O+sVkh21xTi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+On Thu, Jan 24, 2013 at 09:33:34AM +0000, Hebbar, Gururaja wrote:
+
+> So, by just using the SND_SOC_DAPM_POST_PMU & SND_SOC_DAPM_PRE_PMD I can =
+mask=20
+> & handle one particular voltage.=20
+
+What makes you say that?  That is just not true.
+
+--0H629O+sVkh21xTi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRAQaiAAoJELSic+t+oim989gP/3s05LPnDp1GYNt6NHZKILPC
+BWHP9plRUyXYc6ErgL67ohO3tPMQKRLo8Flp5F93BPXDLRVRurQXk6Nw+Ctk7IOF
+5i0UMFxDYOpZ9WllQf57FPsqcL1L4LUpZWsX9SCVg/VEqurk8uxtG/e3Pty/jmIl
+O+dQH/PygFQx/TDiQqGBpv7SLv1vW2QCyLLy1KXUb4EWEUV93xLHwmbcA8TM3/cJ
+FE0hBvGELoIFvQIJSeN83wE29qMw/Ccr9+hDSH0ZFHbzSlNcIFHFcGu4Rn5nn5Ch
+T96ZMXKPwqfefN7Kbpn2AYKXGl4HdhwnWJ3D7JWEUe/fGlwDk2r8oaxPYb7dNTPJ
+3uZ2ww+HDNBsKv/LpMoSJIH+fgtG4LNdhRaO0mYfDsYkq3osUWuo07E8lhUbM6ig
+wj5JoydLuH10auhobokeCTeJQydLokvFHF3NXH71B3FrOT8g5c/SjEDeybi+JO/B
+5viN+UL7eSaFajyAbwthCTn3aBP2KzDLd8waI6gptEEiiKzu7hunuKuK49z3h/7q
+FKUXl48Zb4lBKDMlVtLo6xK9V9fCkhvoROXxKCYigX2IQCMUxRDBNnClgXDQxx1M
+zOJTstQgwHyK7FjDzwAD7ZsA+4p4hcUfpyMPCga2WBkRznef4jLHRg6iBis6NCQ8
+mhfFO0iGMzhUgptP6ISv
+=UMWh
+-----END PGP SIGNATURE-----
+
+--0H629O+sVkh21xTi--
