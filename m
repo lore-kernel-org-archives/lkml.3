@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab3AXPLx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 10:11:53 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:51002 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755023Ab3AXPLp (ORCPT
+	id S1755327Ab3AXPMI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 10:12:08 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:58092 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709Ab3AXPMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 10:11:45 -0500
+	Thu, 24 Jan 2013 10:12:00 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v7 12/18] perf report: add support for mem access profiling
-Date: Thu, 24 Jan 2013 16:10:36 +0100
-Message-Id: <1359040242-8269-13-git-send-email-eranian@google.com>
+        jolsa@redhat.com, namhyung.kim@lge.com,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH v7 17/18] perf tools: Ignore ABS symbols when loading data maps
+Date: Thu, 24 Jan 2013 16:10:41 +0100
+Message-Id: <1359040242-8269-18-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359040242-8269-1-git-send-email-eranian@google.com>
 References: <1359040242-8269-1-git-send-email-eranian@google.com>
@@ -21,230 +22,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the --mem-mode option to perf report.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-This mode requires a perf.data file created with memory
-access samples.
+When loading symbols in a data mapping, ABS symbols (which has a value
+of SHN_ABS in its st_shndx) failed at elf_getscn().  And it marks the
+loading as a failure so already loaded symbols cannot be fixed up.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+I'm not sure what should be done. Just ignore them for now. :)
+
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c |  140 +++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 135 insertions(+), 5 deletions(-)
+ tools/perf/util/symbol-elf.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 3cfe259..f433011 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -46,6 +46,7 @@ struct perf_report {
- 	bool			show_full_info;
- 	bool			show_threads;
- 	bool			inverted_callchain;
-+	bool			mem_mode;
- 	struct perf_read_values	show_threads_values;
- 	const char		*pretty_printing_style;
- 	symbol_filter_t		annotate_init;
-@@ -54,6 +55,100 @@ struct perf_report {
- 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- };
- 
-+static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
-+					   struct addr_location *al,
-+					   struct perf_sample *sample,
-+					   struct perf_evsel *evsel,
-+					   struct machine *machine,
-+					   union perf_event *event)
-+{
-+	struct perf_report *rep = container_of(tool, struct perf_report, tool);
-+	struct symbol *parent = NULL;
-+	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-+	int err = 0;
-+	struct hist_entry *he;
-+	struct mem_info *mi, *mx;
-+	uint64_t cost;
-+
-+	if ((sort__has_parent || symbol_conf.use_callchain)
-+	    && sample->callchain) {
-+		err = machine__resolve_callchain(machine, evsel, al->thread,
-+						 sample, &parent);
-+		if (err)
-+			return err;
-+	}
-+
-+	mi = machine__resolve_mem(machine, al->thread, sample, cpumode);
-+	if (!mi)
-+		return -ENOMEM;
-+
-+	if (rep->hide_unresolved && !al->sym)
-+		return 0;
-+
-+	cost = sample->weight;
-+	if (!cost)
-+		cost = 1;
-+
-+	/*
-+	 * must pass period=weight in order to get the correct
-+	 * sorting from hists__collapse_resort() which is solely
-+	 * based on periods. We want sorting be done on nr_events * weight
-+	 * and this is indirectly achieved by passing period=weight here
-+	 * and the he_stat__add_period() function.
-+	 */
-+	he = __hists__add_mem_entry(&evsel->hists, al, parent, mi, cost, cost);
-+	if (!he)
-+		return -ENOMEM;
-+
-+	/*
-+	 * In the newt browser, we are doing integrated annotation,
-+	 * so we don't allocate the extra space needed because the stdio
-+	 * code will not use it.
-+	 */
-+	if (sort__has_sym && he->ms.sym && use_browser > 0) {
-+		struct annotation *notes = symbol__annotation(he->ms.sym);
-+
-+		assert(evsel != NULL);
-+
-+		if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
-+			goto out;
-+
-+		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-+		if (err)
-+			goto out;
-+	}
-+
-+	if (sort__has_sym && he->mem_info->daddr.sym && use_browser > 0) {
-+		struct annotation *notes;
-+
-+		mx = he->mem_info;
-+
-+		notes = symbol__annotation(mx->daddr.sym);
-+		if (!notes->src
-+		    && symbol__alloc_hist(mx->daddr.sym) < 0)
-+			goto out;
-+
-+		err = symbol__inc_addr_samples(mx->daddr.sym,
-+					       mx->daddr.map,
-+					       evsel->idx,
-+					       mx->daddr.al_addr);
-+		if (err)
-+			goto out;
-+	}
-+
-+	evsel->hists.stats.total_period += cost;
-+	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
-+	err = 0;
-+
-+	if (symbol_conf.use_callchain) {
-+		err = callchain_append(he->callchain,
-+				       &callchain_cursor,
-+				       sample->period);
-+	}
-+out:
-+	return err;
-+}
-+
- static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 					struct addr_location *al,
- 					struct perf_sample *sample,
-@@ -210,6 +305,12 @@ static int process_sample_event(struct perf_tool *tool,
- 			pr_debug("problem adding lbr entry, skipping event\n");
- 			return -1;
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index db0cc92..00cf128 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -719,6 +719,9 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 			used_opd = true;
  		}
-+	} else if (rep->mem_mode == 1) {
-+		if (perf_report__add_mem_hist_entry(tool, &al, sample,
-+						    evsel, machine, event)) {
-+			pr_debug("problem adding mem entry, skipping event\n");
-+			return -1;
-+		}
- 	} else {
- 		if (al.map != NULL)
- 			al.map->dso->hit = 1;
-@@ -293,7 +394,8 @@ static void sig_handler(int sig __maybe_unused)
- 	session_done = 1;
- }
  
--static size_t hists__fprintf_nr_sample_events(struct hists *self,
-+static size_t hists__fprintf_nr_sample_events(struct perf_report *rep,
-+					      struct hists *self,
- 					      const char *evname, FILE *fp)
- {
- 	size_t ret;
-@@ -306,7 +408,11 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
- 	if (evname != NULL)
- 		ret += fprintf(fp, " of event '%s'", evname);
- 
--	ret += fprintf(fp, "\n# Event count (approx.): %" PRIu64, nr_events);
-+	if (rep->mem_mode) {
-+		ret += fprintf(fp, "\n# Total weight : %" PRIu64, nr_events);
-+		ret += fprintf(fp, "\n# Sort order   : %s", sort_order);
-+	} else
-+		ret += fprintf(fp, "\n# Event count (approx.): %" PRIu64, nr_events);
- 	return ret + fprintf(fp, "\n#\n");
- }
- 
-@@ -320,7 +426,7 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
- 		struct hists *hists = &pos->hists;
- 		const char *evname = perf_evsel__name(pos);
- 
--		hists__fprintf_nr_sample_events(hists, evname, stdout);
-+		hists__fprintf_nr_sample_events(rep, hists, evname, stdout);
- 		hists__fprintf(hists, true, 0, 0, stdout);
- 		fprintf(stdout, "\n\n");
- 	}
-@@ -596,8 +702,11 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN(0, "stdio", &report.use_stdio,
- 		    "Use the stdio interface"),
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
--		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
--		   " dso_from, symbol_to, symbol_from, mispredict, weight, local_weight"),
-+		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to, "
-+		   "dso_from, symbol_to, symbol_from, mispredict, weight, "
-+		   "local_weight, dso_from, symbol_to, symbol_from, "
-+		   "mispredict, mem, symbol_daddr, dso_daddr, tlb, snoop"
-+		   ", locked"),
- 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
- 		    "Show sample percentage for different cpu modes"),
- 	OPT_STRING('p', "parent", &parent_pattern, "regex",
-@@ -643,6 +752,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "use branch records for histogram filling", parse_branch_mode),
- 	OPT_STRING(0, "objdump", &objdump_path, "path",
- 		   "objdump binary to use for disassembly and annotations"),
-+	OPT_BOOLEAN(0, "mem-mode", &report.mem_mode, "mem access profile"),
- 	OPT_END()
- 	};
- 
-@@ -688,6 +798,18 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 				     "dso_to,symbol_to";
- 
- 	}
-+	if (report.mem_mode) {
-+		if (sort__branch_mode == 1) {
-+			fprintf(stderr, "branch and mem mode incompatible\n");
-+			goto error;
-+		}
-+		/*
-+		 * if no sort_order is provided, then specify
-+		 * branch-mode specific order
-+		 */
-+		if (sort_order == default_sort_order)
-+			sort_order = "local_weight,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked";
-+	}
- 
- 	if (strcmp(input_name, "-") != 0)
- 		setup_browser(true);
-@@ -759,6 +881,14 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		sort_entry__setup_elide(&sort_sym_from, symbol_conf.sym_from_list, "sym_from", stdout);
- 		sort_entry__setup_elide(&sort_sym_to, symbol_conf.sym_to_list, "sym_to", stdout);
- 	} else {
-+		if (report.mem_mode) {
-+			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "symbol_daddr", stdout);
-+			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso_daddr", stdout);
-+			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "mem", stdout);
-+			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "local_weight", stdout);
-+			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "tlb", stdout);
-+			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "snoop", stdout);
-+		}
- 		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
- 		sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
- 	}
++		if (sym.st_shndx == SHN_ABS)
++			continue;
++
+ 		sec = elf_getscn(runtime_ss->elf, sym.st_shndx);
+ 		if (!sec)
+ 			goto out_elf_end;
 -- 
 1.7.9.5
 
