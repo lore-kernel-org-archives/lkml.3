@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab3AXUfA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:35:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34840 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756726Ab3AXUes (ORCPT
+	id S1756591Ab3AXUfO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:35:14 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54047
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755839Ab3AXUIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 15:34:48 -0500
-Date: Thu, 24 Jan 2013 12:34:21 -0800
-From: tip-bot for Jan Beulich <JBeulich@suse.com>
-Message-ID: <tip-13f0e4d2b9e2209f13d5a4122478eb79e6136870@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, jbeulich@suse.com, JBeulich@suse.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mjg@redhat.com,
-        linux-kernel@vger.kernel.org, JBeulich@suse.com, jbeulich@suse.com,
-        tglx@linutronix.de
-In-Reply-To: <50AFB29F02000078000AAE8E@nat28.tlf.novell.com>
-References: <50AFB29F02000078000AAE8E@nat28.tlf.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/debug] x86/EFI: Properly init-annotate BGRT code
-Git-Commit-ID: 13f0e4d2b9e2209f13d5a4122478eb79e6136870
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 24 Jan 2013 12:34:27 -0800 (PST)
+	Thu, 24 Jan 2013 15:08:39 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Thomas Jarosch <thomas.jarosch@intra2net.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 36/74] perf tools: Fix possible (unlikely) buffer overflow
+Date: Thu, 24 Jan 2013 17:07:45 -0300
+Message-Id: <1359058103-31645-37-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
+In-Reply-To: <1359058103-31645-1-git-send-email-acme@infradead.org>
+References: <1359058103-31645-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  13f0e4d2b9e2209f13d5a4122478eb79e6136870
-Gitweb:     http://git.kernel.org/tip/13f0e4d2b9e2209f13d5a4122478eb79e6136870
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Fri, 23 Nov 2012 16:30:07 +0000
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 24 Jan 2013 17:12:18 +0100
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
 
-x86/EFI: Properly init-annotate BGRT code
+cppcheck reported:
+[tools/perf/util/sysfs.c:50]: (error) Width 4096 given in format string
+(no. 1) is larger than destination buffer 'sysfs_mountpoint[4096]',
+use %4095s to prevent overflowing it
 
-These items are only ever referenced from initialization code.
+-> All other places in the kernel that use STR(PATH_MAX)
+   have a buffer size of PATH_MAX + 1.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: <mjg@redhat.com>
-Link: http://lkml.kernel.org/r/50AFB29F02000078000AAE8E@nat28.tlf.novell.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Link: http://lkml.kernel.org/r/50D9D30B.8090002@intra2net.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/platform/efi/efi-bgrt.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ tools/perf/util/sysfs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/platform/efi/efi-bgrt.c b/arch/x86/platform/efi/efi-bgrt.c
-index d9c1b95..7145ec6 100644
---- a/arch/x86/platform/efi/efi-bgrt.c
-+++ b/arch/x86/platform/efi/efi-bgrt.c
-@@ -11,20 +11,21 @@
-  * published by the Free Software Foundation.
-  */
- #include <linux/kernel.h>
-+#include <linux/init.h>
- #include <linux/acpi.h>
- #include <linux/efi.h>
- #include <linux/efi-bgrt.h>
+diff --git a/tools/perf/util/sysfs.c b/tools/perf/util/sysfs.c
+index 48c6902..f71e9ea 100644
+--- a/tools/perf/util/sysfs.c
++++ b/tools/perf/util/sysfs.c
+@@ -8,7 +8,7 @@ static const char * const sysfs_known_mountpoints[] = {
+ };
  
- struct acpi_table_bgrt *bgrt_tab;
--void *bgrt_image;
--size_t bgrt_image_size;
-+void *__initdata bgrt_image;
-+size_t __initdata bgrt_image_size;
+ static int sysfs_found;
+-char sysfs_mountpoint[PATH_MAX];
++char sysfs_mountpoint[PATH_MAX + 1];
  
- struct bmp_header {
- 	u16 id;
- 	u32 size;
- } __packed;
- 
--void efi_bgrt_init(void)
-+void __init efi_bgrt_init(void)
+ static int sysfs_valid_mountpoint(const char *sysfs)
  {
- 	acpi_status status;
- 	void __iomem *image;
+-- 
+1.8.1.1.361.gec3ae6e
+
