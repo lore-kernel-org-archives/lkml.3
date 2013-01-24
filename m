@@ -1,142 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab3AXRrb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 12:47:31 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:40335 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab3AXRr2 (ORCPT
+	id S1754246Ab3AXRwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 12:52:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48316 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740Ab3AXRwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 12:47:28 -0500
-Message-ID: <510173AD.8080402@gmail.com>
-Date: Thu, 24 Jan 2013 11:47:25 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 24 Jan 2013 12:52:37 -0500
+Date: Thu, 24 Jan 2013 15:52:27 -0200
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Ben Skeggs <bskeggs@redhat.com>
+Subject: Re: [PATCH 59/74] drm/nv17-50: restore fence buffer on resume
+Message-ID: <20130124175226.GC3038@herton-Z68MA-D2H-B3>
+References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
+ <1358998046-613-60-git-send-email-herton.krzesinski@canonical.com>
+ <20130124173652.GA3123@joi.lan>
 MIME-Version: 1.0
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-CC: mturquette@linaro.org, swarren@nvidia.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, rob.herring@calxeda.com,
-        maxime.ripard@free-electrons.com, linux@prisktech.co.nz,
-        josh.cartwright@ni.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/7] clk: add common of_clk_init() function
-References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
-In-Reply-To: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130124173652.GA3123@joi.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2013 01:00 AM, Prashant Gaikwad wrote:
-> Modify of_clk_init function so that it will determine which
-> driver to initialize based on device tree instead of each driver
-> registering to it.
+On Thu, Jan 24, 2013 at 06:36:52PM +0100, Marcin Slusarz wrote:
+> On Thu, Jan 24, 2013 at 01:27:11AM -0200, Herton Ronaldo Krzesinski wrote:
+> > 3.5.7.4 -stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Marcin Slusarz <marcin.slusarz@gmail.com>
+> > 
+> > commit f20ebd034eab43fd38c58b11c5bb5fb125e5f7d7 upstream.
+> > 
+> > Since commit 5e120f6e4b3f35b741c5445dfc755f50128c3c44 "drm/nouveau/fence:
+> > convert to exec engine, and improve channel sync" nouveau fence sync
+> > implementation for nv17-50 and nvc0+ started to rely on state of fence buffer
+> > left by previous sync operation. But as pinned bo's (where fence state is
+> > stored) are not saved+restored across suspend/resume, we need to do it
+> > manually.
+> > 
+> > nvc0+ was fixed by commit d6ba6d215a538a58f0f0026f0961b0b9125e8042
+> > "drm/nvc0/fence: restore pre-suspend fence buffer context on resume".
+> > 
+> > Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=50121
+> > 
+> > Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+> > Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+> > [ herton: backport for 3.5, looks like we only need to call
+> >   nouveau_bo_wr32 on nv10_fence_init ]
+> > Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+> > ---
+> >  drivers/gpu/drm/nouveau/nv10_fence.c |    3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/drivers/gpu/drm/nouveau/nv10_fence.c b/drivers/gpu/drm/nouveau/nv10_fence.c
+> > index 8a1b750..18932a6 100644
+> > --- a/drivers/gpu/drm/nouveau/nv10_fence.c
+> > +++ b/drivers/gpu/drm/nouveau/nv10_fence.c
+> > @@ -155,6 +155,9 @@ nv10_fence_fini(struct drm_device *dev, int engine, bool suspend)
+> >  static int
+> >  nv10_fence_init(struct drm_device *dev, int engine)
+> >  {
+> > +	struct nv10_fence_priv *priv = nv_engine(dev, engine);
+> > +
+> > +	nouveau_bo_wr32(priv->bo, 0, priv->sequence);
+> >  	return 0;
+> >  }
+> >  
+> > -- 
 > 
-> Based on a similar patch for drivers/irqchip by Thomas Petazzoni and
-> drivers/clocksource by Stephen Warren.
+> As I already mentioned in linked bug report, this backport will crash on module
+> load for nv10-nv17 cards. priv->bo is created only for chipsets >= nv17.
 > 
-> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
-> ---
+> You need to add "if (priv->bo)" before nouveau_bo_wr32.
 
-For this and highbank:
+Indeed, thanks. I didn't noticed it on nv10_fence_create. This is the
+fixed patch:
 
-Tested-by: Rob Herring <rob.herring@calxeda.com>
+>From 93b7083831b7c1e5f6e6c8b9f79268b5a52a316d Mon Sep 17 00:00:00 2001
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+Date: Tue, 25 Dec 2012 18:13:22 +0100
+Subject: [PATCH] drm/nv17-50: restore fence buffer on resume
 
->  drivers/clk/clk-fixed-rate.c      |    1 +
->  drivers/clk/clk.c                 |    9 +++++++++
->  include/asm-generic/vmlinux.lds.h |   10 ++++++++++
->  include/linux/clk-provider.h      |    6 ++++++
->  4 files changed, 26 insertions(+), 0 deletions(-)
+commit f20ebd034eab43fd38c58b11c5bb5fb125e5f7d7 upstream.
+
+Since commit 5e120f6e4b3f35b741c5445dfc755f50128c3c44 "drm/nouveau/fence:
+convert to exec engine, and improve channel sync" nouveau fence sync
+implementation for nv17-50 and nvc0+ started to rely on state of fence buffer
+left by previous sync operation. But as pinned bo's (where fence state is
+stored) are not saved+restored across suspend/resume, we need to do it
+manually.
+
+nvc0+ was fixed by commit d6ba6d215a538a58f0f0026f0961b0b9125e8042
+"drm/nvc0/fence: restore pre-suspend fence buffer context on resume".
+
+Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=50121
+
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+[ herton: backport for 3.5, looks like we only need to call
+  nouveau_bo_wr32 on nv10_fence_init. Also check priv->bo as it's
+  conditionally allocated at nv10_fence_create, reported by Marcin
+  Slusarz ]
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/gpu/drm/nouveau/nv10_fence.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/gpu/drm/nouveau/nv10_fence.c b/drivers/gpu/drm/nouveau/nv10_fence.c
+index 8a1b750..c20370c 100644
+--- a/drivers/gpu/drm/nouveau/nv10_fence.c
++++ b/drivers/gpu/drm/nouveau/nv10_fence.c
+@@ -155,6 +155,10 @@ nv10_fence_fini(struct drm_device *dev, int engine, bool suspend)
+ static int
+ nv10_fence_init(struct drm_device *dev, int engine)
+ {
++	struct nv10_fence_priv *priv = nv_engine(dev, engine);
++
++	if (priv->bo)
++		nouveau_bo_wr32(priv->bo, 0, priv->sequence);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
+
 > 
-> diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
-> index af78ed6..f2104df 100644
-> --- a/drivers/clk/clk-fixed-rate.c
-> +++ b/drivers/clk/clk-fixed-rate.c
-> @@ -101,4 +101,5 @@ void __init of_fixed_clk_setup(struct device_node *node)
->  		of_clk_add_provider(node, of_clk_src_simple_get, clk);
->  }
->  EXPORT_SYMBOL_GPL(of_fixed_clk_setup);
-> +CLK_OF_DECLARE(fixed_clk, "fixed-clock", of_fixed_clk_setup);
->  #endif
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 037b48a..fb38dd8 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -18,6 +18,7 @@
->  #include <linux/slab.h>
->  #include <linux/of.h>
->  #include <linux/device.h>
-> +#include <linux/init.h>
->  
->  static DEFINE_SPINLOCK(enable_lock);
->  static DEFINE_MUTEX(prepare_lock);
-> @@ -1805,6 +1806,11 @@ struct of_clk_provider {
->  	void *data;
->  };
->  
-> +extern struct of_device_id __clk_of_table[];
-> +
-> +static const struct of_device_id __clk_of_table_sentinel
-> +	__used __section(__clk_of_table_end);
-> +
->  static LIST_HEAD(of_clk_providers);
->  static DEFINE_MUTEX(of_clk_lock);
->  
-> @@ -1933,6 +1939,9 @@ void __init of_clk_init(const struct of_device_id *matches)
->  {
->  	struct device_node *np;
->  
-> +	if (!matches)
-> +		matches = __clk_of_table;
-> +
->  	for_each_matching_node(np, matches) {
->  		const struct of_device_id *match = of_match_node(matches, np);
->  		of_clk_init_cb_t clk_init_cb = match->data;
-> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> index 1e744c5..8282f7c 100644
-> --- a/include/asm-generic/vmlinux.lds.h
-> +++ b/include/asm-generic/vmlinux.lds.h
-> @@ -158,6 +158,15 @@
->  #define CLKSRC_OF_TABLES()
->  #endif
->  
-> +#ifdef CONFIG_COMMON_CLK
-> +#define CLK_OF_TABLES() . = ALIGN(8);				\
-> +			VMLINUX_SYMBOL(__clk_of_table) = .;	\
-> +			*(__clk_of_table)			\
-> +			*(__clk_of_table_end)
-> +#else
-> +#define CLK_OF_TABLES()
-> +#endif
-> +
->  #define KERNEL_DTB()							\
->  	STRUCT_ALIGN();							\
->  	VMLINUX_SYMBOL(__dtb_start) = .;				\
-> @@ -502,6 +511,7 @@
->  	CPU_DISCARD(init.rodata)					\
->  	MEM_DISCARD(init.rodata)					\
->  	CLKSRC_OF_TABLES()						\
-> +	CLK_OF_TABLES()							\
->  	KERNEL_DTB()
->  
->  #define INIT_TEXT							\
-> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-> index 4989b8a..7f197d7 100644
-> --- a/include/linux/clk-provider.h
-> +++ b/include/linux/clk-provider.h
-> @@ -379,7 +379,13 @@ struct clk_onecell_data {
->  };
->  struct clk *of_clk_src_onecell_get(struct of_phandle_args *clkspec, void *data);
->  const char *of_clk_get_parent_name(struct device_node *np, int index);
-> +
->  void of_clk_init(const struct of_device_id *matches);
->  
-> +#define CLK_OF_DECLARE(name, compat, fn)			\
-> +	static const struct of_device_id __clk_of_table_##name	\
-> +		__used __section(__clk_of_table)		\
-> +		= { .compatible = compat, .data = fn };
-> +
->  #endif /* CONFIG_COMMON_CLK */
->  #endif /* CLK_PROVIDER_H */
+> Marcin
 > 
 
+-- 
+[]'s
+Herton
