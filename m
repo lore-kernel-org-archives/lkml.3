@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab3AXUNc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 15:13:32 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50190 "EHLO
+	id S1756174Ab3AXUNr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 15:13:47 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50187 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755954Ab3AXUIw (ORCPT
+	with ESMTP id S1755727Ab3AXUIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jan 2013 15:08:52 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 62/74] perf pmu: Fix usage of __ in struct names
-Date: Thu, 24 Jan 2013 17:08:11 -0300
-Message-Id: <1359058103-31645-63-git-send-email-acme@infradead.org>
+Subject: [PATCH 67/74] perf tools: Remove some needless die() calls from the main routine
+Date: Thu, 24 Jan 2013 17:08:16 -0300
+Message-Id: <1359058103-31645-68-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1359058103-31645-1-git-send-email-acme@infradead.org>
 References: <1359058103-31645-1-git-send-email-acme@infradead.org>
@@ -29,13 +29,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-In tools/perf we use a convention where __ separates the struct name
-from the function name for functions that operate on a struct instance.
+Some would just call exit() anyway right after calling die() and the
+main routine doesn't have to call it, just return the exit value.
 
-Fix this usage by removing it from the struct names and fix also the
-associated functions.
-
-Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
@@ -44,119 +40,83 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-1tepcpohpvfg589pizx7tlkq@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-nzq0sdur6oq6lgkt2ipf4o8s@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/pmu.c | 20 ++++++++++----------
- tools/perf/util/pmu.h |  6 +++---
- 2 files changed, 13 insertions(+), 13 deletions(-)
+ tools/perf/perf.c | 32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index c107e24b..244edbb 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -85,7 +85,7 @@ static int pmu_format(char *name, struct list_head *format)
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 0f661fb..095b882 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -328,14 +328,23 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
+ 	if (S_ISFIFO(st.st_mode) || S_ISSOCK(st.st_mode))
+ 		return 0;
  
- static int perf_pmu__new_alias(struct list_head *list, char *name, FILE *file)
- {
--	struct perf_pmu__alias *alias;
-+	struct perf_pmu_alias *alias;
- 	char buf[256];
- 	int ret;
- 
-@@ -172,7 +172,7 @@ static int pmu_aliases(char *name, struct list_head *head)
- 	return 0;
++	status = 1;
+ 	/* Check for ENOSPC and EIO errors.. */
+-	if (fflush(stdout))
+-		die("write failure on standard output: %s", strerror(errno));
+-	if (ferror(stdout))
+-		die("unknown write failure on standard output");
+-	if (fclose(stdout))
+-		die("close failed on standard output: %s", strerror(errno));
+-	return 0;
++	if (fflush(stdout)) {
++		fprintf(stderr, "write failure on standard output: %s", strerror(errno));
++		goto out;
++	}
++	if (ferror(stdout)) {
++		fprintf(stderr, "unknown write failure on standard output");
++		goto out;
++	}
++	if (fclose(stdout)) {
++		fprintf(stderr, "close failed on standard output: %s", strerror(errno));
++		goto out;
++	}
++	status = 0;
++out:
++	return status;
  }
  
--static int pmu_alias_terms(struct perf_pmu__alias *alias,
-+static int pmu_alias_terms(struct perf_pmu_alias *alias,
- 			   struct list_head *terms)
- {
- 	struct parse_events_term *term, *clone;
-@@ -360,10 +360,10 @@ struct perf_pmu *perf_pmu__find(char *name)
- 	return pmu_lookup(name);
+ static void handle_internal_command(int argc, const char **argv)
+@@ -467,7 +476,8 @@ int main(int argc, const char **argv)
+ 		cmd += 5;
+ 		argv[0] = cmd;
+ 		handle_internal_command(argc, argv);
+-		die("cannot handle %s internally", cmd);
++		fprintf(stderr, "cannot handle %s internally", cmd);
++		goto out;
+ 	}
+ 
+ 	/* Look for flags.. */
+@@ -485,7 +495,7 @@ int main(int argc, const char **argv)
+ 		printf("\n usage: %s\n\n", perf_usage_string);
+ 		list_common_cmds_help();
+ 		printf("\n %s\n\n", perf_more_info_string);
+-		exit(1);
++		goto out;
+ 	}
+ 	cmd = argv[0];
+ 
+@@ -517,7 +527,7 @@ int main(int argc, const char **argv)
+ 			fprintf(stderr, "Expansion of alias '%s' failed; "
+ 				"'%s' is not a perf-command\n",
+ 				cmd, argv[0]);
+-			exit(1);
++			goto out;
+ 		}
+ 		if (!done_help) {
+ 			cmd = argv[0] = help_unknown_cmd(cmd);
+@@ -528,6 +538,6 @@ int main(int argc, const char **argv)
+ 
+ 	fprintf(stderr, "Failed to run command '%s': %s\n",
+ 		cmd, strerror(errno));
+-
++out:
+ 	return 1;
  }
- 
--static struct perf_pmu__format*
-+static struct perf_pmu_format *
- pmu_find_format(struct list_head *formats, char *name)
- {
--	struct perf_pmu__format *format;
-+	struct perf_pmu_format *format;
- 
- 	list_for_each_entry(format, formats, list)
- 		if (!strcmp(format->name, name))
-@@ -405,7 +405,7 @@ static int pmu_config_term(struct list_head *formats,
- 			   struct perf_event_attr *attr,
- 			   struct parse_events_term *term)
- {
--	struct perf_pmu__format *format;
-+	struct perf_pmu_format *format;
- 	__u64 *vp;
- 
- 	/*
-@@ -471,10 +471,10 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 	return perf_pmu__config_terms(&pmu->format, attr, head_terms);
- }
- 
--static struct perf_pmu__alias *pmu_find_alias(struct perf_pmu *pmu,
--					      struct parse_events_term *term)
-+static struct perf_pmu_alias *pmu_find_alias(struct perf_pmu *pmu,
-+					     struct parse_events_term *term)
- {
--	struct perf_pmu__alias *alias;
-+	struct perf_pmu_alias *alias;
- 	char *name;
- 
- 	if (parse_events__is_hardcoded_term(term))
-@@ -508,7 +508,7 @@ static struct perf_pmu__alias *pmu_find_alias(struct perf_pmu *pmu,
- int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms)
- {
- 	struct parse_events_term *term, *h;
--	struct perf_pmu__alias *alias;
-+	struct perf_pmu_alias *alias;
- 	int ret;
- 
- 	list_for_each_entry_safe(term, h, head_terms, list) {
-@@ -527,7 +527,7 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms)
- int perf_pmu__new_format(struct list_head *list, char *name,
- 			 int config, unsigned long *bits)
- {
--	struct perf_pmu__format *format;
-+	struct perf_pmu_format *format;
- 
- 	format = zalloc(sizeof(*format));
- 	if (!format)
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index a313ed7..e881dd1 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -12,14 +12,14 @@ enum {
- 
- #define PERF_PMU_FORMAT_BITS 64
- 
--struct perf_pmu__format {
-+struct perf_pmu_format {
- 	char *name;
- 	int value;
- 	DECLARE_BITMAP(bits, PERF_PMU_FORMAT_BITS);
- 	struct list_head list;
- };
- 
--struct perf_pmu__alias {
-+struct perf_pmu_alias {
- 	char *name;
- 	struct list_head terms;
- 	struct list_head list;
-@@ -42,7 +42,7 @@ int perf_pmu__config_terms(struct list_head *formats,
- 			   struct list_head *head_terms);
- int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms);
- struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
--				struct list_head *head_terms);
-+				  struct list_head *head_terms);
- int perf_pmu_wrap(void);
- void perf_pmu_error(struct list_head *list, char *name, char const *msg);
- 
 -- 
 1.8.1.1.361.gec3ae6e
 
