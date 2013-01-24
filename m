@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab3AXKzC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:55:02 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:42502 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753371Ab3AXKyi (ORCPT
+	id S1754179Ab3AXKzP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:55:15 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:47261 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab3AXKyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jan 2013 05:54:38 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: [PATCH v3 20/71] ARC: Signal handling
-Date: Thu, 24 Jan 2013 16:20:22 +0530
-Message-ID: <1359024639-21915-9-git-send-email-vgupta@synopsys.com>
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v3 18/71] ARC: Process-creation/scheduling/idle-loop
+Date: Thu, 24 Jan 2013 16:20:20 +0530
+Message-ID: <1359024639-21915-7-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359024639-21915-1-git-send-email-vgupta@synopsys.com>
 References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com>
@@ -24,98 +25,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Includes following fixes courtesy review by Al-Viro
-
-* Tracer poke to Callee-regs were lost
-
-  Before going off into do_signal( ) we save the user-mode callee regs
-  (as they are not saved by default as part of pt_regs). This is to make
-  sure that that a Tracer (if tracing related signal) is able to do likes
-  of PEEKUSR(callee-reg).
-
-  However in return path we were simply discarding the user-mode callee
-  regs, which would break a POKEUSR(callee-reg) from a tracer.
-
-* Issue related to multiple syscall restarts are addressed in next patch
-
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/arc/Kconfig                  |    1 +
- arch/arc/include/asm/entry.h      |   35 ++++
- arch/arc/include/asm/sigcontext.h |   23 +++
- arch/arc/include/asm/signal.h     |   27 +++
- arch/arc/kernel/entry.S           |   11 +-
- arch/arc/kernel/signal.c          |  359 +++++++++++++++++++++++++++++++++++++
- 6 files changed, 453 insertions(+), 3 deletions(-)
- create mode 100644 arch/arc/include/asm/sigcontext.h
- create mode 100644 arch/arc/include/asm/signal.h
- create mode 100644 arch/arc/kernel/signal.c
+ arch/arc/Kconfig                 |    2 +
+ arch/arc/include/asm/arcregs.h   |   20 ++++
+ arch/arc/include/asm/processor.h |    9 +-
+ arch/arc/include/asm/ptrace.h    |    8 ++
+ arch/arc/include/asm/switch_to.h |   41 ++++++++
+ arch/arc/kernel/ctx_sw.c         |   91 ++++++++++++++++++
+ arch/arc/kernel/ctx_sw_asm.S     |   58 +++++++++++
+ arch/arc/kernel/entry.S          |   15 +++-
+ arch/arc/kernel/fpu.c            |   55 +++++++++++
+ arch/arc/kernel/process.c        |  193 ++++++++++++++++++++++++++++++++++++++
+ 10 files changed, 484 insertions(+), 8 deletions(-)
+ create mode 100644 arch/arc/include/asm/switch_to.h
+ create mode 100644 arch/arc/kernel/ctx_sw.c
+ create mode 100644 arch/arc/kernel/ctx_sw_asm.S
+ create mode 100644 arch/arc/kernel/fpu.c
 
 diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index a4e9806..756beff 100644
+index 8789de1..a4e9806 100644
 --- a/arch/arc/Kconfig
 +++ b/arch/arc/Kconfig
-@@ -20,6 +20,7 @@ config ARC
- 	select GENERIC_KERNEL_EXECVE
- 	select GENERIC_KERNEL_THREAD
+@@ -17,6 +17,8 @@ config ARC
+ 	select GENERIC_FIND_FIRST_BIT
+ 	# for now, we don't need GENERIC_IRQ_PROBE, CONFIG_GENERIC_IRQ_CHIP
+ 	select GENERIC_IRQ_SHOW
++	select GENERIC_KERNEL_EXECVE
++	select GENERIC_KERNEL_THREAD
  	select GENERIC_PENDING_IRQ if SMP
-+	select GENERIC_SIGALTSTACK
  	select GENERIC_SMP_IDLE_THREAD
  	select HAVE_GENERIC_HARDIRQS
- 	select MODULES_USE_ELF_RELA
-diff --git a/arch/arc/include/asm/entry.h b/arch/arc/include/asm/entry.h
-index 63705b1..6b42bf5 100644
---- a/arch/arc/include/asm/entry.h
-+++ b/arch/arc/include/asm/entry.h
-@@ -166,6 +166,41 @@
- .endm
+diff --git a/arch/arc/include/asm/arcregs.h b/arch/arc/include/asm/arcregs.h
+index 3fccb04..d764118 100644
+--- a/arch/arc/include/asm/arcregs.h
++++ b/arch/arc/include/asm/arcregs.h
+@@ -47,6 +47,17 @@
+ #define AUX_ITRIGGER		0x40d
+ #define AUX_IPULSE		0x415
  
- /*--------------------------------------------------------------
-+ * RESTORE_CALLEE_SAVED_USER:
-+ * This is called after do_signal where tracer might have changed callee regs
-+ * thus we need to restore the reg file.
-+ * Special case handling is required for r25 in case it is used by kernel
-+ *  for caching task ptr. Ptrace would have modified on-kernel-stack value of
-+ *  r25, which needs to be shoved back into task->thread.user_r25 where from
-+ *  Low level exception/ISR return code will retrieve to populate with rest of
-+ *  callee reg-file.
-+ *-------------------------------------------------------------*/
-+.macro RESTORE_CALLEE_SAVED_USER
++/*
++ * Floating Pt Registers
++ * Status regs are read-only (build-time) so need not be saved/restored
++ */
++#define ARC_AUX_FP_STAT         0x300
++#define ARC_AUX_DPFP_1L         0x301
++#define ARC_AUX_DPFP_1H         0x302
++#define ARC_AUX_DPFP_2L         0x303
++#define ARC_AUX_DPFP_2H         0x304
++#define ARC_AUX_DPFP_STAT       0x305
 +
-+	add     sp, sp, 4   /* skip "callee_regs->stack_place_holder" */
-+
-+#ifdef CONFIG_ARC_CURR_IN_REG
-+	ld.ab   r12, [sp, 4]
-+	st      r12, [r25, TASK_THREAD + THREAD_USER_R25]
-+#else
-+	ld.ab   r25, [sp, 4]
+ #ifndef __ASSEMBLY__
+ 
+ /*
+@@ -110,6 +121,15 @@
+ 
+ #endif
+ 
++#ifdef CONFIG_ARC_FPU_SAVE_RESTORE
++/* These DPFP regs need to be saved/restored across ctx-sw */
++struct arc_fpu {
++	struct {
++		unsigned int l, h;
++	} aux_dpfp[2];
++};
 +#endif
 +
-+	ld.ab   r24, [sp, 4]
-+	ld.ab   r23, [sp, 4]
-+	ld.ab   r22, [sp, 4]
-+	ld.ab   r21, [sp, 4]
-+	ld.ab   r20, [sp, 4]
-+	ld.ab   r19, [sp, 4]
-+	ld.ab   r18, [sp, 4]
-+	ld.ab   r17, [sp, 4]
-+	ld.ab   r16, [sp, 4]
-+	ld.ab   r15, [sp, 4]
-+	ld.ab   r14, [sp, 4]
-+	ld.ab   r13, [sp, 4]
-+.endm
+ #endif /* __ASEMBLY__ */
+ 
+ #endif /* __KERNEL__ */
+diff --git a/arch/arc/include/asm/processor.h b/arch/arc/include/asm/processor.h
+index bf88cfb..860252e 100644
+--- a/arch/arc/include/asm/processor.h
++++ b/arch/arc/include/asm/processor.h
+@@ -29,6 +29,9 @@ struct thread_struct {
+ 	unsigned long callee_reg;	/* pointer to callee regs */
+ 	unsigned long fault_address;	/* dbls as brkpt holder as well */
+ 	unsigned long cause_code;	/* Exception Cause Code (ECR) */
++#ifdef CONFIG_ARC_FPU_SAVE_RESTORE
++	struct arc_fpu fpu;
++#endif
+ };
+ 
+ #define INIT_THREAD  {                          \
+@@ -54,12 +57,6 @@ unsigned long thread_saved_pc(struct task_struct *t);
+ 
+ #define cpu_relax()	do { } while (0)
+ 
+-/*
+- * Create a new kernel thread
+- */
+-
+-extern int kernel_thread(int (*fn) (void *), void *arg, unsigned long flags);
+-
+ #define copy_segments(tsk, mm)      do { } while (0)
+ #define release_segments(mm)        do { } while (0)
+ 
+diff --git a/arch/arc/include/asm/ptrace.h b/arch/arc/include/asm/ptrace.h
+index 9abbb7c..72754a2 100644
+--- a/arch/arc/include/asm/ptrace.h
++++ b/arch/arc/include/asm/ptrace.h
+@@ -130,6 +130,14 @@ struct user_regs_struct {
+ #define in_syscall(regs) (((regs->orig_r8) >= 0 && \
+ 			   (regs->orig_r8 <= NR_syscalls)) ? 1 : 0)
+ 
++#define current_pt_regs()					\
++({								\
++	/* open-coded current_thread_info() */			\
++	register unsigned long sp asm ("sp");			\
++	unsigned long pg_start = (sp & ~(THREAD_SIZE - 1));	\
++	(struct pt_regs *)(pg_start + THREAD_SIZE - 4) - 1;	\
++})
 +
-+/*--------------------------------------------------------------
-  * Super FAST Restore callee saved regs by simply re-adjusting SP
-  *-------------------------------------------------------------*/
- .macro DISCARD_CALLEE_SAVED_USER
-diff --git a/arch/arc/include/asm/sigcontext.h b/arch/arc/include/asm/sigcontext.h
+ #endif /* !__ASSEMBLY__ */
+ 
+ #endif /* __KERNEL__ */
+diff --git a/arch/arc/include/asm/switch_to.h b/arch/arc/include/asm/switch_to.h
 new file mode 100644
-index 0000000..f21b541
+index 0000000..1b171ab
 --- /dev/null
-+++ b/arch/arc/include/asm/sigcontext.h
-@@ -0,0 +1,23 @@
++++ b/arch/arc/include/asm/switch_to.h
+@@ -0,0 +1,41 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
@@ -124,27 +156,45 @@ index 0000000..f21b541
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef _ASM_ARC_SIGCONTEXT_H
-+#define _ASM_ARC_SIGCONTEXT_H
++#ifndef _ASM_ARC_SWITCH_TO_H
++#define _ASM_ARC_SWITCH_TO_H
 +
-+#include <asm/ptrace.h>
++#ifndef __ASSEMBLY__
 +
-+/*
-+ * Signal context structure - contains all info to do with the state
-+ * before the signal handler was invoked.  Note: only add new entries
-+ * to the end of the structure.
-+ */
-+struct sigcontext {
-+	struct pt_regs regs;
-+};
++#include <linux/sched.h>
 +
-+#endif /* _ASM_ARC_SIGCONTEXT_H */
-diff --git a/arch/arc/include/asm/signal.h b/arch/arc/include/asm/signal.h
++#ifdef CONFIG_ARC_FPU_SAVE_RESTORE
++
++extern void fpu_save_restore(struct task_struct *p, struct task_struct *n);
++#define ARC_FPU_PREV(p, n)	fpu_save_restore(p, n)
++#define ARC_FPU_NEXT(t)
++
++#else
++
++#define ARC_FPU_PREV(p, n)
++#define ARC_FPU_NEXT(n)
++
++#endif /* !CONFIG_ARC_FPU_SAVE_RESTORE */
++
++struct task_struct *__switch_to(struct task_struct *p, struct task_struct *n);
++
++#define switch_to(prev, next, last)	\
++do {					\
++	ARC_FPU_PREV(prev, next);	\
++	last = __switch_to(prev, next);\
++	ARC_FPU_NEXT(next);		\
++	mb();				\
++} while (0)
++
++#endif
++
++#endif
+diff --git a/arch/arc/kernel/ctx_sw.c b/arch/arc/kernel/ctx_sw.c
 new file mode 100644
-index 0000000..fad62f7
+index 0000000..647e37a
 --- /dev/null
-+++ b/arch/arc/include/asm/signal.h
-@@ -0,0 +1,27 @@
++++ b/arch/arc/kernel/ctx_sw.c
+@@ -0,0 +1,91 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
@@ -152,420 +202,442 @@ index 0000000..fad62f7
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
-+ * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
++ * Vineetg: Aug 2009
++ *  -"C" version of lowest level context switch asm macro called by schedular
++ *   gcc doesn't generate the dward CFI info for hand written asm, hence can't
++ *   backtrace out of it (e.g. tasks sleeping in kernel).
++ *   So we cheat a bit by writing almost similar code in inline-asm.
++ *  -This is a hacky way of doing things, but there is no other simple way.
++ *   I don't want/intend to extend unwinding code to understand raw asm
 + */
 +
-+#ifndef _ASM_ARC_SIGNAL_H
-+#define _ASM_ARC_SIGNAL_H
++#include <asm/asm-offsets.h>
++#include <linux/sched.h>
 +
++struct task_struct *__sched
++__switch_to(struct task_struct *prev_task, struct task_struct *next_task)
++{
++	unsigned int tmp;
++	unsigned int prev = (unsigned int)prev_task;
++	unsigned int next = (unsigned int)next_task;
++	int num_words_to_skip = 1;
++
++	__asm__ __volatile__(
++		/* FP/BLINK save generated by gcc (standard function prologue */
++		"st.a    r13, [sp, -4]   \n\t"
++		"st.a    r14, [sp, -4]   \n\t"
++		"st.a    r15, [sp, -4]   \n\t"
++		"st.a    r16, [sp, -4]   \n\t"
++		"st.a    r17, [sp, -4]   \n\t"
++		"st.a    r18, [sp, -4]   \n\t"
++		"st.a    r19, [sp, -4]   \n\t"
++		"st.a    r20, [sp, -4]   \n\t"
++		"st.a    r21, [sp, -4]   \n\t"
++		"st.a    r22, [sp, -4]   \n\t"
++		"st.a    r23, [sp, -4]   \n\t"
++		"st.a    r24, [sp, -4]   \n\t"
++		"st.a    r25, [sp, -4]   \n\t"
++		"sub     sp, sp, %4      \n\t"	/* create gutter at top */
++
++		/* set ksp of outgoing task in tsk->thread.ksp */
++		"st.as   sp, [%3, %1]    \n\t"
++
++		"sync   \n\t"
++
++		/*
++		 * setup _current_task with incoming tsk.
++		 * optionally, set r25 to that as well
++		 * For SMP extra work to get to &_current_task[cpu]
++		 * (open coded SET_CURR_TASK_ON_CPU)
++		 */
++		"st  %2, [@_current_task]	\n\t"
++
++		/* get ksp of incoming task from tsk->thread.ksp */
++		"ld.as  sp, [%2, %1]   \n\t"
++
++		/* start loading it's CALLEE reg file */
++
++		"add    sp, sp, %4     \n\t"	/* skip gutter at top */
++
++		"ld.ab   r25, [sp, 4]   \n\t"
++		"ld.ab   r24, [sp, 4]   \n\t"
++		"ld.ab   r23, [sp, 4]   \n\t"
++		"ld.ab   r22, [sp, 4]   \n\t"
++		"ld.ab   r21, [sp, 4]   \n\t"
++		"ld.ab   r20, [sp, 4]   \n\t"
++		"ld.ab   r19, [sp, 4]   \n\t"
++		"ld.ab   r18, [sp, 4]   \n\t"
++		"ld.ab   r17, [sp, 4]   \n\t"
++		"ld.ab   r16, [sp, 4]   \n\t"
++		"ld.ab   r15, [sp, 4]   \n\t"
++		"ld.ab   r14, [sp, 4]   \n\t"
++		"ld.ab   r13, [sp, 4]   \n\t"
++
++		/* last (ret value) = prev : although for ARC it mov r0, r0 */
++		"mov     %0, %3        \n\t"
++
++		/* FP/BLINK restore generated by gcc (standard func epilogue */
++
++		: "=r"(tmp)
++		: "n"((TASK_THREAD + THREAD_KSP) / 4), "r"(next), "r"(prev),
++		  "n"(num_words_to_skip * 4)
++		: "blink"
++	);
++
++	return (struct task_struct *)tmp;
++}
+diff --git a/arch/arc/kernel/ctx_sw_asm.S b/arch/arc/kernel/ctx_sw_asm.S
+new file mode 100644
+index 0000000..d897234
+--- /dev/null
++++ b/arch/arc/kernel/ctx_sw_asm.S
+@@ -0,0 +1,58 @@
 +/*
-+ * This is much needed for ARC sigreturn optimization.
-+ * This allows uClibc to piggback the addr of a sigreturn stub in sigaction,
-+ * which allows sigreturn based re-entry into kernel after handling signal.
-+ * W/o this kernel needs to "synthesize" the sigreturn trampoline on user
-+ * mode stack which in turn forces the following:
-+ * -TLB Flush (after making the stack page executable)
-+ * -Cache line Flush (to make I/D Cache lines coherent)
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Vineetg: Aug 2009
++ *  -Moved core context switch macro out of entry.S into this file.
++ *  -This is the more "natural" hand written assembler
 + */
-+#define SA_RESTORER	0x04000000
 +
-+#include <asm-generic/signal.h>
++#include <asm/entry.h>       /* For the SAVE_* macros */
++#include <asm/asm-offsets.h>
++#include <asm/linkage.h>
 +
-+#endif /* _ASM_ARC_SIGNAL_H */
++;################### Low Level Context Switch ##########################
++
++	.section .sched.text,"ax",@progbits
++	.align 4
++	.global __switch_to
++	.type   __switch_to, @function
++__switch_to:
++
++	/* Save regs on kernel mode stack of task */
++	st.a    blink, [sp, -4]
++	st.a    fp, [sp, -4]
++	SAVE_CALLEE_SAVED_KERNEL
++
++	/* Save the now KSP in task->thread.ksp */
++	st.as  sp, [r0, (TASK_THREAD + THREAD_KSP)/4]
++
++	/*
++	* Return last task in r0 (return reg)
++	* On ARC, Return reg = First Arg reg = r0.
++	* Since we already have last task in r0,
++	* don't need to do anything special to return it
++	*/
++
++	/* hardware memory barrier */
++	sync
++
++	/*
++	 * switch to new task, contained in r1
++	 * Temp reg r3 is required to get the ptr to store val
++	 */
++	SET_CURR_TASK_ON_CPU  r1, r3
++
++	/* reload SP with kernel mode stack pointer in task->thread.ksp */
++	ld.as  sp, [r1, (TASK_THREAD + THREAD_KSP)/4]
++
++	/* restore the registers */
++	RESTORE_CALLEE_SAVED_KERNEL
++	ld.ab   fp, [sp, 4]
++	ld.ab   blink, [sp, 4]
++	j       [blink]
++
++ARC_EXIT __switch_to
 diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
-index ed08ac1..d625b77 100644
+index 0b0a190..ed08ac1 100644
 --- a/arch/arc/kernel/entry.S
 +++ b/arch/arc/kernel/entry.S
-@@ -470,7 +470,11 @@ resume_user_mode_begin:
+@@ -566,8 +566,19 @@ ARC_ENTRY ret_from_fork
+ 	; when the forked child comes here from the __switch_to function
+ 	; r0 has the last task pointer.
+ 	; put last task in scheduler queue
+-	bl  @schedule_tail
+-	b @ret_from_exception
++	bl   @schedule_tail
++
++	; If kernel thread, jump to it's entry-point
++	ld   r9, [sp, PT_status32]
++	brne r9, 0, 1f
++
++	jl.d [r14]
++	mov  r0, r13		; arg to payload
++
++1:
++	; special case of kernel_thread entry point returning back due to
++	; kernel_execve() - pretend return from syscall to ret to userland
++	b    ret_from_exception
+ ARC_EXIT ret_from_fork
  
- 	bbit0  r9, TIF_SIGPENDING, .Lchk_notify_resume
- 
--	; save CALLEE Regs.
-+	; Normal Trap/IRQ entry only saves Scratch (caller-saved) regs
-+	; in pt_reg since the "C" ABI (kernel code) will automatically
-+	; save/restore callee-saved regs.
-+	;
-+	; However, here we need to explicitly save callee regs because
- 	; (i)  If this signal causes coredump - full regfile needed
- 	; (ii) If signal is SIGTRAP/SIGSTOP, task is being traced thus
- 	;      tracer might call PEEKUSR(CALLEE reg)
-@@ -484,8 +488,9 @@ resume_user_mode_begin:
- 
- 	bl  @do_signal
- 
--	; unwind SP for cheap discard of Callee saved Regs
--	DISCARD_CALLEE_SAVED_USER
-+	; Ideally we want to discard the Callee reg above, however if this was
-+	; a tracing signal, tracer could have done a POKEUSR(CALLEE reg)
-+	RESTORE_CALLEE_SAVED_USER
- 
- 	b      resume_user_mode_begin	; loop back to start of U mode ret
- 
-diff --git a/arch/arc/kernel/signal.c b/arch/arc/kernel/signal.c
+ ;################### Special Sys Call Wrappers ##########################
+diff --git a/arch/arc/kernel/fpu.c b/arch/arc/kernel/fpu.c
 new file mode 100644
-index 0000000..887a383
+index 0000000..f352e51
 --- /dev/null
-+++ b/arch/arc/kernel/signal.c
-@@ -0,0 +1,359 @@
++++ b/arch/arc/kernel/fpu.c
+@@ -0,0 +1,55 @@
 +/*
-+ * Signal Handling for ARC
++ * fpu.c - save/restore of Floating Point Unit Registers on task switch
 + *
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ *
-+ * vineetg: Jan 2010 (Restarting of timer related syscalls)
-+ *
-+ * vineetg: Nov 2009 (Everything needed for TIF_RESTORE_SIGMASK)
-+ *  -do_signal() supports TIF_RESTORE_SIGMASK
-+ *  -do_signal() no loner needs oldset, required by OLD sys_sigsuspend
-+ *  -sys_rt_sigsuspend() now comes from generic code, so discard arch implemen
-+ *  -sys_sigsuspend() no longer needs to fudge ptregs, hence that arg removed
-+ *  -sys_sigsuspend() no longer loops for do_signal(), sets TIF_xxx and leaves
-+ *   the job to do_signal()
-+ *
-+ * vineetg: July 2009
-+ *  -Modified Code to support the uClibc provided userland sigreturn stub
-+ *   to avoid kernel synthesing it on user stack at runtime, costing TLB
-+ *   probes and Cache line flushes.
-+ *
-+ * vineetg: July 2009
-+ *  -In stash_usr_regs( ) and restore_usr_regs( ), save/restore of user regs
-+ *   in done in block copy rather than one word at a time.
-+ *   This saves around 2K of code and improves LMBench lat_sig <catch>
-+ *
-+ * rajeshwarr: Feb 2009
-+ *  - Support for Realtime Signals
-+ *
-+ * vineetg: Aug 11th 2008: Bug #94183
-+ *  -ViXS were still seeing crashes when using insmod to load drivers.
-+ *   It turned out that the code to change Execute permssions for TLB entries
-+ *   of user was not guarded for interrupts (mod_tlb_permission)
-+ *   This was cauing TLB entries to be overwritten on unrelated indexes
-+ *
-+ * Vineetg: July 15th 2008: Bug #94183
-+ *  -Exception happens in Delay slot of a JMP, and before user space resumes,
-+ *   Signal is delivered (Ctrl + C) = >SIGINT.
-+ *   setup_frame( ) sets up PC,SP,BLINK to enable user space signal handler
-+ *   to run, but doesn't clear the Delay slot bit from status32. As a result,
-+ *   on resuming user mode, signal handler branches off to BTA of orig JMP
-+ *  -FIX: clear the DE bit from status32 in setup_frame( )
-+ *
-+ * Rahul Trivedi, Kanika Nema: Codito Technologies 2004
 + */
 +
-+#include <linux/signal.h>
-+#include <linux/ptrace.h>
-+#include <linux/personality.h>
-+#include <linux/uaccess.h>
-+#include <linux/syscalls.h>
-+#include <linux/tracehook.h>
-+#include <asm/ucontext.h>
++#include <linux/sched.h>
++#include <asm/switch_to.h>
 +
-+#define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
++/*
++ * To save/restore FPU regs, simplest scheme would use LR/SR insns.
++ * However since SR serializes the pipeline, an alternate "hack" can be used
++ * which uses the FPU Exchange insn (DEXCL) to r/w FPU regs.
++ *
++ * Store to 64bit dpfp1 reg from a pair of core regs:
++ *   dexcl1 0, r1, r0  ; where r1:r0 is the 64 bit val
++ *
++ * Read from dpfp1 into pair of core regs (w/o clobbering dpfp1)
++ *   mov_s    r3, 0
++ *   daddh11  r1, r3, r3   ; get "hi" into r1 (dpfp1 unchanged)
++ *   dexcl1   r0, r1, r3   ; get "low" into r0 (dpfp1 low clobbered)
++ *   dexcl1    0, r1, r0   ; restore dpfp1 to orig value
++ *
++ * However we can tweak the read, so that read-out of outgoing task's FPU regs
++ * and write of incoming task's regs happen in one shot. So all the work is
++ * done before context switch
++ */
 +
-+struct rt_sigframe {
-+	struct siginfo info;
-+	struct ucontext uc;
-+#define MAGIC_SIGALTSTK		0x07302004
-+	unsigned int sigret_magic;
-+};
-+
-+static int
-+stash_usr_regs(struct rt_sigframe __user *sf, struct pt_regs *regs,
-+	       sigset_t *set)
++void fpu_save_restore(struct task_struct *prev, struct task_struct *next)
 +{
-+	int err;
-+	err = __copy_to_user(&(sf->uc.uc_mcontext.regs), regs, sizeof(*regs));
-+	err |= __copy_to_user(&sf->uc.uc_sigmask, set, sizeof(sigset_t));
++	unsigned int *saveto = &prev->thread.fpu.aux_dpfp[0].l;
++	unsigned int *readfrom = &next->thread.fpu.aux_dpfp[0].l;
 +
-+	return err;
++	const unsigned int zero = 0;
++
++	__asm__ __volatile__(
++		"daddh11  %0, %2, %2\n"
++		"dexcl1   %1, %3, %4\n"
++		: "=&r" (*(saveto + 1)), /* early clobber must here */
++		  "=&r" (*(saveto))
++		: "r" (zero), "r" (*(readfrom + 1)), "r" (*(readfrom))
++	);
++
++	__asm__ __volatile__(
++		"daddh22  %0, %2, %2\n"
++		"dexcl2   %1, %3, %4\n"
++		: "=&r"(*(saveto + 3)),	/* early clobber must here */
++		  "=&r"(*(saveto + 2))
++		: "r" (zero), "r" (*(readfrom + 3)), "r" (*(readfrom + 2))
++	);
++}
+diff --git a/arch/arc/kernel/process.c b/arch/arc/kernel/process.c
+index 4d14e56..279e080 100644
+--- a/arch/arc/kernel/process.c
++++ b/arch/arc/kernel/process.c
+@@ -40,3 +40,196 @@ SYSCALL_DEFINE0(arc_gettls)
+ {
+ 	return task_thread_info(current)->thr_ptr;
+ }
++
++static inline void arch_idle(void)
++{
++	/* sleep, but enable all interrupts before committing */
++	__asm__("sleep 0x3");
 +}
 +
-+static int restore_usr_regs(struct pt_regs *regs, struct rt_sigframe __user *sf)
++void cpu_idle(void)
 +{
-+	sigset_t set;
-+	int err;
++	/* Since we SLEEP in idle loop, TIF_POLLING_NRFLAG can't be set */
 +
-+	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
-+	if (err == 0) {
-+		sigdelsetmask(&set, ~_BLOCKABLE);
-+		set_current_blocked(&set);
++	/* endless idle loop with no priority at all */
++	while (1) {
++		tick_nohz_idle_enter();
++		rcu_idle_enter();
++
++doze:
++		local_irq_disable();
++		if (!need_resched()) {
++			arch_idle();
++			goto doze;
++		} else {
++			local_irq_enable();
++		}
++
++		rcu_idle_exit();
++		tick_nohz_idle_exit();
++
++		schedule_preempt_disabled();
 +	}
-+
-+	err |= __copy_from_user(regs, &(sf->uc.uc_mcontext.regs),
-+				sizeof(*regs));
-+
-+	return err;
 +}
 +
-+static inline int is_do_ss_needed(unsigned int magic)
-+{
-+	if (MAGIC_SIGALTSTK == magic)
-+		return 1;
-+	else
-+		return 0;
-+}
++asmlinkage void ret_from_fork(void);
 +
-+SYSCALL_DEFINE0(rt_sigreturn)
++/* Layout of Child kernel mode stack as setup at the end of this function is
++ *
++ * |     ...        |
++ * |     ...        |
++ * |    unused      |
++ * |                |
++ * ------------------  <==== top of Stack (thread.ksp)
++ * |   UNUSED 1 word|
++ * ------------------
++ * |     r25        |
++ * ~                ~
++ * |    --to--      |   (CALLEE Regs of user mode)
++ * |     r13        |
++ * ------------------
++ * |     fp         |
++ * |    blink       |   @ret_from_fork
++ * ------------------
++ * |                |
++ * ~                ~
++ * ~                ~
++ * |                |
++ * ------------------
++ * |     r12        |
++ * ~                ~
++ * |    --to--      |   (scratch Regs of user mode)
++ * |     r0         |
++ * ------------------
++ * |   UNUSED 1 word|
++ * ------------------  <===== END of PAGE
++ */
++int copy_thread(unsigned long clone_flags,
++		unsigned long usp, unsigned long arg,
++		struct task_struct *p)
 +{
-+	struct rt_sigframe __user *sf;
-+	unsigned int magic;
-+	int err;
++	struct pt_regs *c_regs;        /* child's pt_regs */
++	unsigned long *childksp;       /* to unwind out of __switch_to() */
++	struct callee_regs *c_callee;  /* child's callee regs */
++	struct callee_regs *parent_callee;  /* paren't callee */
 +	struct pt_regs *regs = current_pt_regs();
 +
-+	/* Always make any pending restarted system calls return -EINTR */
-+	current_thread_info()->restart_block.fn = do_no_restart_syscall;
++	/* Mark the specific anchors to begin with (see pic above) */
++	c_regs = task_pt_regs(p);
++	childksp = (unsigned long *)c_regs - 2;  /* 2 words for FP/BLINK */
++	c_callee = ((struct callee_regs *)childksp) - 1;
 +
-+	/* Since we stacked the signal on a word boundary,
-+	 * then 'sp' should be word aligned here.  If it's
-+	 * not, then the user is trying to mess with us.
++	/*
++	 * __switch_to() uses thread.ksp to start unwinding stack
++	 * For kernel threads we don't need to create callee regs, the
++	 * stack layout nevertheless needs to remain the same.
++	 * Also, since __switch_to anyways unwinds callee regs, we use
++	 * this to populate kernel thread entry-pt/args into callee regs,
++	 * so that ret_from_kernel_thread() becomes simpler.
 +	 */
-+	if (regs->sp & 3)
-+		goto badframe;
++	p->thread.ksp = (unsigned long)c_callee;	/* THREAD_KSP */
 +
-+	sf = (struct rt_sigframe __force __user *)(regs->sp);
++	/* __switch_to expects FP(0), BLINK(return addr) at top */
++	childksp[0] = 0;			/* fp */
++	childksp[1] = (unsigned long)ret_from_fork; /* blink */
 +
-+	if (!access_ok(VERIFY_READ, sf, sizeof(*sf)))
-+		goto badframe;
++	if (unlikely(p->flags & PF_KTHREAD)) {
++		memset(c_regs, 0, sizeof(struct pt_regs));
 +
-+	err = restore_usr_regs(regs, sf);
-+	err |= __get_user(magic, &sf->sigret_magic);
-+	if (err)
-+		goto badframe;
++		c_callee->r13 = arg; /* argument to kernel thread */
++		c_callee->r14 = usp;  /* function */
 +
-+	if (unlikely(is_do_ss_needed(magic)))
-+		if (restore_altstack(&sf->uc.uc_stack))
-+			goto badframe;
++		return 0;
++	}
 +
-+	return regs->r0;
++	/*--------- User Task Only --------------*/
 +
-+badframe:
-+	force_sig(SIGSEGV, current);
++	/* __switch_to expects FP(0), BLINK(return addr) at top of stack */
++	childksp[0] = 0;				/* for POP fp */
++	childksp[1] = (unsigned long)ret_from_fork;	/* for POP blink */
++
++	/* Copy parents pt regs on child's kernel mode stack */
++	*c_regs = *regs;
++
++	if (usp)
++		c_regs->sp = usp;
++
++	c_regs->r0 = 0;		/* fork returns 0 in child */
++
++	parent_callee = ((struct callee_regs *)regs) - 1;
++	*c_callee = *parent_callee;
++
++	if (unlikely(clone_flags & CLONE_SETTLS)) {
++		/*
++		 * set task's userland tls data ptr from 4th arg
++		 * clone C-lib call is difft from clone sys-call
++		 */
++		task_thread_info(p)->thr_ptr = regs->r3;
++	} else {
++		/* Normal fork case: set parent's TLS ptr in child */
++		task_thread_info(p)->thr_ptr =
++		task_thread_info(current)->thr_ptr;
++	}
++
 +	return 0;
 +}
 +
 +/*
-+ * Determine which stack to use..
++ * Some archs flush debug and FPU info here
 + */
-+static inline void __user *get_sigframe(struct k_sigaction *ka,
-+					struct pt_regs *regs,
-+					unsigned long framesize)
++void flush_thread(void)
 +{
-+	unsigned long sp = regs->sp;
-+	void __user *frame;
-+
-+	/* This is the X/Open sanctioned signal stack switching */
-+	if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
-+		sp = current->sas_ss_sp + current->sas_ss_size;
-+
-+	/* No matter what happens, 'sp' must be word
-+	 * aligned otherwise nasty things could happen
-+	 */
-+
-+	/* ATPCS B01 mandates 8-byte alignment */
-+	frame = (void __user *)((sp - framesize) & ~7);
-+
-+	/* Check that we can actually write to the signal frame */
-+	if (!access_ok(VERIFY_WRITE, frame, framesize))
-+		frame = NULL;
-+
-+	return frame;
 +}
 +
 +/*
-+ * translate the signal
++ * Free any architecture-specific thread data structures, etc.
 + */
-+static inline int map_sig(int sig)
++void exit_thread(void)
 +{
-+	struct thread_info *thread = current_thread_info();
-+	if (thread->exec_domain && thread->exec_domain->signal_invmap
-+	    && sig < 32)
-+		sig = thread->exec_domain->signal_invmap[sig];
-+	return sig;
 +}
 +
-+static int
-+setup_rt_frame(int signo, struct k_sigaction *ka, siginfo_t *info,
-+	       sigset_t *set, struct pt_regs *regs)
++int dump_fpu(struct pt_regs *regs, elf_fpregset_t *fpu)
 +{
-+	struct rt_sigframe __user *sf;
-+	unsigned int magic = 0;
-+	int err = 0;
-+
-+	sf = get_sigframe(ka, regs, sizeof(struct rt_sigframe));
-+	if (!sf)
-+		return 1;
-+
-+	/*
-+	 * SA_SIGINFO requires 3 args to signal handler:
-+	 *  #1: sig-no (common to any handler)
-+	 *  #2: struct siginfo
-+	 *  #3: struct ucontext (completely populated)
-+	 */
-+	if (unlikely(ka->sa.sa_flags & SA_SIGINFO)) {
-+		err |= copy_siginfo_to_user(&sf->info, info);
-+		err |= __put_user(0, &sf->uc.uc_flags);
-+		err |= __put_user(NULL, &sf->uc.uc_link);
-+		err |= __save_altstack(&sf->uc.uc_stack, regs->sp);
-+
-+		/* setup args 2 and 3 fo ruse rmode handler */
-+		regs->r1 = (unsigned long)&sf->info;
-+		regs->r2 = (unsigned long)&sf->uc;
-+
-+		/*
-+		 * small optim to avoid unconditonally calling do_sigaltstack
-+		 * in sigreturn path, now that we only have rt_sigreturn
-+		 */
-+		magic = MAGIC_SIGALTSTK;
-+	}
-+
-+	/*
-+	 * w/o SA_SIGINFO, struct ucontext is partially populated (only
-+	 * uc_mcontext/uc_sigmask) for kernel's normal user state preservation
-+	 * during signal handler execution. This works for SA_SIGINFO as well
-+	 * although the semantics are now overloaded (the same reg state can be
-+	 * inspected by userland: but are they allowed to fiddle with it ?
-+	 */
-+	err |= stash_usr_regs(sf, regs, set);
-+	err |= __put_user(magic, &sf->sigret_magic);
-+	if (err)
-+		return err;
-+
-+	/* #1 arg to the user Signal handler */
-+	regs->r0 = map_sig(signo);
-+
-+	/* setup PC of user space signal handler */
-+	regs->ret = (unsigned long)ka->sa.sa_handler;
-+
-+	/*
-+	 * handler returns using sigreturn stub provided already by userpsace
-+	 */
-+	BUG_ON(!(ka->sa.sa_flags & SA_RESTORER));
-+	regs->blink = (unsigned long)ka->sa.sa_restorer;
-+
-+	/* User Stack for signal handler will be above the frame just carved */
-+	regs->sp = (unsigned long)sf;
-+
-+	/*
-+	 * Bug 94183, Clear the DE bit, so that when signal handler
-+	 * starts to run, it doesn't use BTA
-+	 */
-+	regs->status32 &= ~STATUS_DE_MASK;
-+	regs->status32 |= STATUS_L_MASK;
-+
-+	return err;
-+}
-+
-+static void arc_restart_syscall(struct k_sigaction *ka, struct pt_regs *regs)
-+{
-+	switch (regs->r0) {
-+	case -ERESTART_RESTARTBLOCK:
-+	case -ERESTARTNOHAND:
-+		/*
-+		 * ERESTARTNOHAND means that the syscall should
-+		 * only be restarted if there was no handler for
-+		 * the signal, and since we only get here if there
-+		 * is a handler, we don't restart
-+		 */
-+		regs->r0 = -EINTR;   /* ERESTART_xxx is internal */
-+		break;
-+
-+	case -ERESTARTSYS:
-+		/*
-+		 * ERESTARTSYS means to restart the syscall if
-+		 * there is no handler or the handler was
-+		 * registered with SA_RESTART
-+		 */
-+		if (!(ka->sa.sa_flags & SA_RESTART)) {
-+			regs->r0 = -EINTR;
-+			break;
-+		}
-+		/* fallthrough */
-+
-+	case -ERESTARTNOINTR:
-+		/*
-+		 * ERESTARTNOINTR means that the syscall should
-+		 * be called again after the signal handler returns.
-+		 * Setup reg state just as it was before doing the trap
-+		 * r0 has been clobbered with sys call ret code thus it
-+		 * needs to be reloaded with orig first arg to syscall
-+		 * in orig_r0. Rest of relevant reg-file:
-+		 * r8 (syscall num) and (r1 - r7) will be reset to
-+		 * their orig user space value when we ret from kernel
-+		 */
-+		regs->r0 = regs->orig_r0;
-+		regs->ret -= 4;
-+		break;
-+	}
++	return 0;
 +}
 +
 +/*
-+ * OK, we're invoking a handler
++ * API: expected by schedular Code: If thread is sleeping where is that.
++ * What is this good for? it will be always the scheduler or ret_from_fork.
++ * So we hard code that anyways.
 + */
-+static void
-+handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
-+	      struct pt_regs *regs)
++unsigned long thread_saved_pc(struct task_struct *t)
 +{
-+	sigset_t *oldset = sigmask_to_save();
-+	int ret;
++	struct pt_regs *regs = task_pt_regs(t);
++	unsigned long blink = 0;
 +
-+	/* Set up the stack frame */
-+	ret = setup_rt_frame(sig, ka, info, oldset, regs);
-+
-+	if (ret)
-+		force_sigsegv(sig, current);
-+	else
-+		signal_delivered(sig, info, ka, regs, 0);
-+}
-+
-+void do_signal(struct pt_regs *regs)
-+{
-+	struct k_sigaction ka;
-+	siginfo_t info;
-+	int signr;
-+	int restart_scall;
-+
-+	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
-+
-+	/* Are we from a system call? */
-+	restart_scall = in_syscall(regs);
-+
-+	if (signr > 0) {
-+		if (restart_scall)
-+			arc_restart_syscall(&ka, regs);
-+
-+		handle_signal(signr, &ka, &info, regs);
-+		return;
-+	}
-+
-+	if (restart_scall) {
-+		/* No handler for syscall: restart it */
-+		if (regs->r0 == -ERESTARTNOHAND ||
-+		    regs->r0 == -ERESTARTSYS || regs->r0 == -ERESTARTNOINTR) {
-+			regs->r0 = regs->orig_r0;
-+			regs->ret -= 4;
-+		} else if (regs->r0 == -ERESTART_RESTARTBLOCK) {
-+			regs->r8 = __NR_restart_syscall;
-+			regs->ret -= 4;
-+		}
-+	}
-+
-+	/* If there's no signal to deliver, restore the saved sigmask back */
-+	restore_saved_sigmask();
-+}
-+
-+void do_notify_resume(struct pt_regs *regs)
-+{
 +	/*
-+	 * ASM glue gaurantees that this is only called when returning to
-+	 * user mode
++	 * If the thread being queried for in not itself calling this, then it
++	 * implies it is not executing, which in turn implies it is sleeping,
++	 * which in turn implies it got switched OUT by the schedular.
++	 * In that case, it's kernel mode blink can reliably retrieved as per
++	 * the picture above (right above pt_regs).
 +	 */
-+	if (test_and_clear_thread_flag(TIF_NOTIFY_RESUME))
-+		tracehook_notify_resume(regs);
++	if (t != current && t->state != TASK_RUNNING)
++		blink = *((unsigned int *)regs - 1);
++
++	return blink;
 +}
++
++int elf_check_arch(const struct elf32_hdr *x)
++{
++	unsigned int eflags;
++
++	if (x->e_machine != EM_ARCOMPACT)
++		return 0;
++
++	eflags = x->e_flags;
++	if ((eflags & EF_ARC_OSABI_MSK) < EF_ARC_OSABI_V2) {
++		pr_err("ABI mismatch - you need newer toolchain\n");
++		force_sigsegv(SIGSEGV, current);
++		return 0;
++	}
++
++	return 1;
++}
++EXPORT_SYMBOL(elf_check_arch);
 -- 
 1.7.4.1
 
