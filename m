@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab3AXKAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 05:00:55 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56865 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753233Ab3AXKAl (ORCPT
+	id S1753293Ab3AXKBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 05:01:43 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:36817 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab3AXKBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 05:00:41 -0500
-Date: Thu, 24 Jan 2013 18:00:34 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: AnilKumar Ch <anilkumar@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] regulator: tps65217: Fix using wrong dev argument
- for calling of_regulator_match
-Message-ID: <20130124100002.GD4955@opensource.wolfsonmicro.com>
-References: <1358994450.20257.1.camel@phoenix>
- <20130124045246.GA4955@opensource.wolfsonmicro.com>
- <CAFRkauDdbYH2jm_TXypjhe0rWyEOpS-JqZ1G4-WZmFKFJngbkw@mail.gmail.com>
+	Thu, 24 Jan 2013 05:01:40 -0500
+Date: Thu, 24 Jan 2013 11:01:34 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v2 2/6] sched: split out css_online/css_offline from tg
+ creation/destruction
+Message-ID: <20130124100134.GC26351@gmail.com>
+References: <5100D4FE.9080205@huawei.com>
+ <5100D518.8000103@huawei.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lc9FT7cWel8HagAv"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFRkauDdbYH2jm_TXypjhe0rWyEOpS-JqZ1G4-WZmFKFJngbkw@mail.gmail.com>
-X-Cookie: Tomorrow, you can be anywhere.
+In-Reply-To: <5100D518.8000103@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---lc9FT7cWel8HagAv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+* Li Zefan <lizefan@huawei.com> wrote:
 
-On Thu, Jan 24, 2013 at 04:22:59PM +0800, Axel Lin wrote:
+> This is a preparaton for later patches.
+> 
+> - What do we gain from cpu_cgroup_css_online():
+> 
+> After ss->css_alloc() and before ss->css_online(), there's a small
+> window that tg->css.cgroup is NULL. With this change, tg won't be seen
+> before ss->css_online(), where it's added to the global list, so we're
+> guaranteed we'll never see NULL tg->css.cgroup.
+> 
+> - What do we gain from cpu_cgroup_css_offline():
+> 
+> tg is freed via RCU, so is cgroup. Without this change, This is how
+> synchronization works:
+> 
+> cgroup_rmdir()
+>   no ss->css_offline()
+> diput()
+>   syncornize_rcu()
+>   ss->css_free()       <-- unregister tg, and free it via call_rcu()
+>   kfree_rcu(cgroup)    <-- wait possible refs to cgroup, and free cgroup
+> 
+> We can't just kfree(cgroup), because tg might access tg->css.cgroup.
+> 
+> With this change:
+> 
+> cgroup_rmdir()
+>   ss->css_offline()    <-- unregister tg
+> diput()
+>   synchronize_rcu()    <-- wait possible refs to tg and cgroup
+>   ss->css_free()       <-- free tg
+>   kfree_rcu(cgroup)    <-- free cgroup
+> 
+> As you see, kfree_rcu() is redundant now.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-> This patch does not change "node" argument ( the second parameter of
-> of_regulator_match()), so it should not break the OF bindings.
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
-Ugh, right - the argument is just confusingly named when the context is
-missing.  No problem.
+Thanks,
 
---lc9FT7cWel8HagAv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRAQYuAAoJELSic+t+oim9dFcP/ixixIbOw/c1jpXDc2u5zWG8
-OMZV50y2P8aWR788uB4ZY69Xp0a6gpy3zAnjEguO+FMvWxyoXVV/V5UAbuxHrGUO
-7k1Y+4n01MoRC5EIr3jy1MXtQ6mNWZOgIyy4v0aqXYLMDgEQQT/tpT+18qV5LzXZ
-ZhQ5HdfKyfwaVApbAccFnS+m1KjxQqJBRWQot4QjEzj1h+QwA+mqh0sPl5IiXJ++
-29MambetJ4x4SllPKzC/4EX8ulM7vceKC7SUa01yHhM2dqDGnRdig8ut33wyIMVW
-imbszuqWBBdQXLr7Rs0ailN28/pR1ocnHqyR9naySYcV/US1RYXFXSEmBbwXT427
-qV//e5WV4e1S/BR8m/xnxC9kIut69V4FIZZhtFYpQ/HwDpi48hVC3a4LTAz/pd+i
-v5UAMOT9/aib6cugGkyy3XatoPzv47T/PnI2w/5pb/PZ5gaWQ78maysUdbv7VIj1
-kC6+ajlwbL15VahjrW6NUvRmN+lEvoLOvqyXhggtqWvDRbZOKJq9CduYsSCJ3fsY
-OMcah0E5MUnkZbzGcmk6uEh637yfqhDeGibWQmo3nPG3baZ2w8Fzin2IWFwkLOgS
-ZMKVakhtkteYTH7r6ZT+KJi8MFHt/7E0Qyufr5niAowe2UrZ/p54yl5W2cfYM09G
-kGLxGLVbuZ+ewnOGOwYR
-=iFxc
------END PGP SIGNATURE-----
-
---lc9FT7cWel8HagAv--
+	Ingo
