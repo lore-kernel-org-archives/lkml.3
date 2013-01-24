@@ -1,173 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab3AXTQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 14:16:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33417 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755075Ab3AXTQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 14:16:00 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <f6cbfec9c014433fa54af61d8f436ebb@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1358990259-22551-1-git-send-email-kys@microsoft.com> <5101035D02000078000B8FFD@nat28.tlf.novell.com> <27092660926e4d3f80394697cc0dc858@SN2PR03MB061.namprd03.prod.outlook.com> <51016C3202000078000B943E@nat28.tlf.novell.com> <f6cbfec9c014433fa54af61d8f436ebb@SN2PR03MB061.namprd03.prod.outlook.com>
+	id S1755196Ab3AXTSR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 14:18:17 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:49710
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754597Ab3AXTSP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 14:18:15 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz154dIzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1155h)
+X-WSS-ID: 0MH59MA-01-BD1-02
+X-M-MSG: 
+From: <suravee.suthikulpanit@amd.com>
+To: <iommu@lists.linux-foundation.org>, <joro@8bytes.org>
+CC: <bp@alien8.de>, <linux-kernel@vger.kernel.org>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Subject: [PATCH V4] IOMMU, AMD Family15h Model10-1Fh erratum 746 Workaround
+Date: Thu, 24 Jan 2013 13:17:53 -0600
+Message-ID: <1359055073-29732-1-git-send-email-suravee.suthikulpanit@amd.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: RE: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 24 Jan 2013 13:10:15 -0600
-To: KY Srinivasan <kys@microsoft.com>, Jan Beulich <JBeulich@suse.com>
-CC: "olaf@aepfle.de" <olaf@aepfle.de>, "bp@alien8.de" <bp@alien8.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <52cb66cd-8a8f-461c-adc4-0026afb8c1fd@email.android.com>
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I also have to point out the obvious problem with Xen masquerading as HyperV without implementing the same feature set...
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
 
-KY Srinivasan <kys@microsoft.com> wrote:
+The IOMMU may stop processing page translations due to a perceived lack
+of credits for writing upstream peripheral page service request (PPR)
+or event logs. If the L2B miscellaneous clock gating feature is enabled
+the IOMMU does not properly register credits after the log request has
+completed, leading to a potential system hang.
 
->
->
->> -----Original Message-----
->> From: Jan Beulich [mailto:JBeulich@suse.com]
->> Sent: Thursday, January 24, 2013 11:16 AM
->> To: KY Srinivasan
->> Cc: olaf@aepfle.de; bp@alien8.de; apw@canonical.com; x86@kernel.org;
->> tglx@linutronix.de; devel@linuxdriverproject.org;
->gregkh@linuxfoundation.org;
->> jasowang@redhat.com; linux-kernel@vger.kernel.org; hpa@zytor.com
->> Subject: RE: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts
->as
->> special hypervisor interrupts
->> 
->> >>> On 24.01.13 at 17:07, KY Srinivasan <kys@microsoft.com> wrote:
->> 
->> >
->> >> -----Original Message-----
->> >> From: Jan Beulich [mailto:JBeulich@suse.com]
->> >> Sent: Thursday, January 24, 2013 3:48 AM
->> >> To: KY Srinivasan
->> >> Cc: olaf@aepfle.de; bp@alien8.de; apw@canonical.com;
->x86@kernel.org;
->> >> tglx@linutronix.de; devel@linuxdriverproject.org;
->> > gregkh@linuxfoundation.org;
->> >> jasowang@redhat.com; linux-kernel@vger.kernel.org; hpa@zytor.com
->> >> Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus
->interrupts as
->> >> special hypervisor interrupts
->> >>
->> >> >>> On 24.01.13 at 02:17, "K. Y. Srinivasan" <kys@microsoft.com>
->wrote:
->> >> > @@ -69,6 +74,11 @@ static void __init
->ms_hyperv_init_platform(void)
->> >> >  	       ms_hyperv.features, ms_hyperv.hints);
->> >> >
->> >> >  	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
->> >> > +
->> >> > +	/*
->> >> > +	 * Setup the IDT for hypervisor callback.
->> >> > +	 */
->> >> > +	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR,
->> >> hyperv_callback_vector);
->> >>
->> >> Isn't doing this unconditionally here as problematic as the call
->to
->> >> clocksource_register_hz() turned out to be when Xen's Hyper-V
->> >> shim reacts to the CPUID inquiry above?
->> >
->> > I was not sure what to make this conditional on at run-time. To the
->extent
->> > that Xen emulation of Hyper-V is complete, this will be a problem.
->Does Xen
->> > return all the "feature bits" of Hyper-V. I could discriminate on a
->feature
->> > that
->> > Xen does not plan to emulate.
->> 
->> I've no idea what plans there might be, but that's the code
->> there is currently:
->> 
->> int cpuid_viridian_leaves(unsigned int leaf, unsigned int *eax,
->>                           unsigned int *ebx, unsigned int *ecx,
->>                           unsigned int *edx)
->> {
->>     struct domain *d = current->domain;
->> 
->>     if ( !is_viridian_domain(d) )
->>         return 0;
->> 
->>     leaf -= 0x40000000;
->>     if ( leaf > 6 )
->>         return 0;
->> 
->>     *eax = *ebx = *ecx = *edx = 0;
->>     switch ( leaf )
->>     {
->>     case 0:
->>         *eax = 0x40000006; /* Maximum leaf */
->>         *ebx = 0x7263694d; /* Magic numbers  */
->>         *ecx = 0x666F736F;
->>         *edx = 0x76482074;
->>         break;
->>     case 1:
->>         *eax = 0x31237648; /* Version number */
->>         break;
->>     case 2:
->>         /* Hypervisor information, but only if the guest has set its
->>            own version number. */
->>         if ( d->arch.hvm_domain.viridian.guest_os_id.raw == 0 )
->>             break;
->>         *eax = 1; /* Build number */
->>         *ebx = (xen_major_version() << 16) | xen_minor_version();
->>         *ecx = 0; /* SP */
->>         *edx = 0; /* Service branch and number */
->>         break;
->>     case 3:
->>         /* Which hypervisor MSRs are available to the guest */
->>         *eax = (CPUID3A_MSR_APIC_ACCESS |
->>                 CPUID3A_MSR_HYPERCALL   |
->>                 CPUID3A_MSR_VP_INDEX);
->>         break;
->>     case 4:
->>         /* Recommended hypercall usage. */
->>         if ( (d->arch.hvm_domain.viridian.guest_os_id.raw == 0) ||
->>              (d->arch.hvm_domain.viridian.guest_os_id.fields.os < 4)
->)
->>             break;
->>         *eax = (CPUID4A_MSR_BASED_APIC |
->>                 CPUID4A_RELAX_TIMER_INT);
->>         *ebx = 2047; /* long spin count */
->>         break;
->>     }
->> 
->>     return 1;
->> }
->> 
->> Question is - considering you stated that this is supported
->> starting in Win8, doesn't Hyper-V itself announce that
->> capability in some explicit way?
->
->Thanks Jan. Unfortunately I don't think tis interrupt delivery model is
->specified via a "feature" bit (I will check with the Windows guys).
->Perhaps, we
->can have a Hyper-V specific compilation switch to address the Xen
->emulation issue.
->
->Regards,
->
->K. Y  
->> 
->> Jan
->> 
->> 
+BIOSes are supposed to disable L2B micellaneous clock gating by setting
+L2_L2B_CK_GATE_CONTROL[CKGateL2BMiscDisable](D0F2xF4_x90[2]) = 1b. This
+patch corrects that for those which do not enable this workaround.
 
+Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+---
+Changelog:
+v4:
+      * Fix style and spacing
+
+v3:
+      * Add proper commit message
+      * Change logic to avoid unnecessary indentaion
+
+v2:
+      * Fix logic that check the processor model.
+      * Clear write enable bit after apply workaround
+      * Change function name
+
+ drivers/iommu/amd_iommu_init.c |   34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 81837b0..ed3539b 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -975,6 +975,38 @@ static void __init free_iommu_all(void)
+ }
+ 
+ /*
++ * Family15h Model 10h-1fh erratum 746 (IOMMU Logging May Stall Translations)
++ * Workaround:
++ *     BIOS should disable L2B micellaneous clock gating by setting
++ *     L2_L2B_CK_GATE_CONTROL[CKGateL2BMiscDisable](D0F2xF4_x90[2]) = 1b
++ */
++static void __init amd_iommu_erratum_746_workaround(struct amd_iommu *iommu)
++{
++	u32 value;
++
++	if ((boot_cpu_data.x86 != 0x15) ||
++	    (boot_cpu_data.x86_model < 0x10) ||
++	    (boot_cpu_data.x86_model > 0x1f))
++		return;
++
++	pci_write_config_dword(iommu->dev, 0xf0, 0x90);
++	pci_read_config_dword(iommu->dev, 0xf4, &value);
++
++	if (value & BIT(2))
++		return;
++
++	/* Select NB indirect register 0x90 and enable writing */
++	pci_write_config_dword(iommu->dev, 0xf0, 0x90 | (1 << 8));
++
++	pci_write_config_dword(iommu->dev, 0xf4, value | 0x4);
++	pr_info("AMD-Vi: Applying erratum 746 workaround for IOMMU at %s\n",
++		dev_name(&iommu->dev->dev));
++
++	/* Clear the enable writing bit */
++	pci_write_config_dword(iommu->dev, 0xf0, 0x90);
++}
++
++/*
+  * This function clues the initialization function for one IOMMU
+  * together and also allocates the command buffer and programs the
+  * hardware. It does NOT enable the IOMMU. This is done afterwards.
+@@ -1172,6 +1204,8 @@ static int iommu_init_pci(struct amd_iommu *iommu)
+ 			iommu->stored_l2[i] = iommu_read_l2(iommu, i);
+ 	}
+ 
++	amd_iommu_erratum_746_workaround(iommu);
++
+ 	return pci_enable_device(iommu->dev);
+ }
+ 
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+1.7.10.4
+
+
