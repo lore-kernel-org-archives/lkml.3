@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab3AXDaX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jan 2013 22:30:23 -0500
-Received: from mga03.intel.com ([143.182.124.21]:14248 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754359Ab3AXDaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jan 2013 22:30:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,525,1355126400"; 
-   d="scan'208";a="247742534"
-From: Alex Shi <alex.shi@intel.com>
-To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de
-Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, alex.shi@intel.com
-Subject: [PATCH 1/4] sched: update cpu load after task_tick.
-Date: Thu, 24 Jan 2013 11:30:40 +0800
-Message-Id: <1358998243-23176-2-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1358998243-23176-1-git-send-email-alex.shi@intel.com>
-References: <1358998243-23176-1-git-send-email-alex.shi@intel.com>
+	id S1753055Ab3AXDaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jan 2013 22:30:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44298 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754015Ab3AXDaF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jan 2013 22:30:05 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Axel Lin <axel.lin@ingics.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 39/74] regulator: max8998: Ensure enough delay time for max8998_set_voltage_buck_time_sel
+Date: Thu, 24 Jan 2013 01:26:51 -0200
+Message-Id: <1358998046-613-40-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1358998046-613-1-git-send-email-herton.krzesinski@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To get the latest runnable info, we need do this cpuload update after
-task_tick.
+3.5.7.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
+------------------
+
+From: Axel Lin <axel.lin@ingics.com>
+
+commit 81d0a6ae7befb24c06f4aa4856af7f8d1f612171 upstream.
+
+Use DIV_ROUND_UP to prevent truncation by integer division issue.
+This ensures we return enough delay time.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/sched/core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/regulator/max8998.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index dbab4b3..4f4714e 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2695,8 +2695,8 @@ void scheduler_tick(void)
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index 5e56df0..b3b2984 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -447,7 +447,7 @@ static int max8998_set_voltage_buck_time_sel(struct regulator_dev *rdev,
  
- 	raw_spin_lock(&rq->lock);
- 	update_rq_clock(rq);
--	update_cpu_load_active(rq);
- 	curr->sched_class->task_tick(rq, curr, 0);
-+	update_cpu_load_active(rq);
- 	raw_spin_unlock(&rq->lock);
+ 	difference = (new_selector - old_selector) * desc->step / 1000;
+ 	if (difference > 0)
+-		return difference / ((val & 0x0f) + 1);
++		return DIV_ROUND_UP(difference, (val & 0x0f) + 1);
  
- 	perf_event_task_tick();
+ 	return 0;
+ }
 -- 
-1.7.0.1
+1.7.9.5
 
