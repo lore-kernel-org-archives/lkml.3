@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab3AXVOH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 16:14:07 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39869 "EHLO mail.kernel.org"
+	id S1756878Ab3AXVOO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 16:14:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39909 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756284Ab3AXVNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 16:13:34 -0500
+	id S1756795Ab3AXVNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 16:13:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 02/46] Ensure that kernel_init_freeable() is not inlined into non __init code
-Date: Thu, 24 Jan 2013 13:12:40 -0800
-Message-Id: <20130124211136.709577169@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@fwll.ch>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 03/46] drm/i915: Invalidate the relocation presumed_offsets along the slow path
+Date: Thu, 24 Jan 2013 13:12:41 -0800
+Message-Id: <20130124211137.129423458@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130124211135.862755794@linuxfoundation.org>
 References: <20130124211135.862755794@linuxfoundation.org>
@@ -25,53 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit f80b0c904da93b9ad7db2fd9823dd701932df779 upstream.
+commit 262b6d363fcff16359c93bd58c297f961f6e6273 upstream.
 
-Commit d6b2123802d "make sure that we always have a return path from
-kernel_execve()" reshuffled kernel_init()/init_post() to ensure that
-kernel_execve() has a caller to return to.
+In the slow path, we are forced to copy the relocations prior to
+acquiring the struct mutex in order to handle pagefaults. We forgo
+copying the new offsets back into the relocation entries in order to
+prevent a recursive locking bug should we trigger a pagefault whilst
+holding the mutex for the reservations of the execbuffer. Therefore, we
+need to reset the presumed_offsets just in case the objects are rebound
+back into their old locations after relocating for this exexbuffer - if
+that were to happen we would assume the relocations were valid and leave
+the actual pointers to the kernels dangling, instant hang.
 
-It removed __init annotation for kernel_init() and introduced/calls a
-new routine kernel_init_freeable(). Latter however is inlined by any
-reasonable compiler (ARC gcc 4.4 in this case), causing slight code
-bloat.
+Fixes regression from commit bcf50e2775bbc3101932d8e4ab8c7902aa4163b4
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Sun Nov 21 22:07:12 2010 +0000
 
-This patch forces kernel_init_freeable() as noinline reducing the .text
+    drm/i915: Handle pagefaults in execbuffer user relocations
 
-bloat-o-meter vmlinux vmlinux_new
-add/remove: 1/0 grow/shrink: 0/1 up/down: 374/-334 (40)
-function                        old     new   delta
-kernel_init_freeable              -     374    +374 (.init.text)
-kernel_init                     628     294    -334 (.text)
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=55984
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel.vetter@fwll.ch>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 
 ---
- init/main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
---- a/init/main.c
-+++ b/init/main.c
-@@ -800,7 +800,7 @@ static int run_init_process(const char *
- 	return kernel_execve(init_filename, argv_init, envp_init);
- }
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -548,6 +548,8 @@ i915_gem_execbuffer_relocate_slow(struct
+ 	total = 0;
+ 	for (i = 0; i < count; i++) {
+ 		struct drm_i915_gem_relocation_entry __user *user_relocs;
++		u64 invalid_offset = (u64)-1;
++		int j;
  
--static void __init kernel_init_freeable(void);
-+static noinline void __init kernel_init_freeable(void);
+ 		user_relocs = (void __user *)(uintptr_t)exec[i].relocs_ptr;
  
- static int __ref kernel_init(void *unused)
- {
-@@ -844,7 +844,7 @@ static int __ref kernel_init(void *unuse
- 	      "See Linux Documentation/init.txt for guidance.");
- }
+@@ -558,6 +560,25 @@ i915_gem_execbuffer_relocate_slow(struct
+ 			goto err;
+ 		}
  
--static void __init kernel_init_freeable(void)
-+static noinline void __init kernel_init_freeable(void)
- {
- 	/*
- 	 * Wait until kthreadd is all set-up.
++		/* As we do not update the known relocation offsets after
++		 * relocating (due to the complexities in lock handling),
++		 * we need to mark them as invalid now so that we force the
++		 * relocation processing next time. Just in case the target
++		 * object is evicted and then rebound into its old
++		 * presumed_offset before the next execbuffer - if that
++		 * happened we would make the mistake of assuming that the
++		 * relocations were valid.
++		 */
++		for (j = 0; j < exec[i].relocation_count; j++) {
++			if (copy_to_user(&user_relocs[j].presumed_offset,
++					 &invalid_offset,
++					 sizeof(invalid_offset))) {
++				ret = -EFAULT;
++				mutex_lock(&dev->struct_mutex);
++				goto err;
++			}
++		}
++
+ 		reloc_offset[i] = total;
+ 		total += exec[i].relocation_count;
+ 	}
 
 
