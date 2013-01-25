@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373Ab3AYTU4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 14:20:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61323 "EHLO mx1.redhat.com"
+	id S932318Ab3AYTUw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 14:20:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53585 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757180Ab3AYTUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 14:20:47 -0500
-Date: Fri, 25 Jan 2013 14:17:51 -0500
+	id S1757481Ab3AYTUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 14:20:40 -0500
+Date: Fri, 25 Jan 2013 14:19:17 -0500
 From: Rik van Riel <riel@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: aquini@redhat.com, walken@google.com, eric.dumazet@gmail.com,
         lwoodman@redhat.com, knoel@redhat.com, chegu_vinod@hp.com,
         raghavendra.kt@linux.vnet.ibm.com, mingo@redhat.com
-Subject: [PATCH -v4 3/5] x86,smp: auto tune spinlock backoff delay factor
-Message-ID: <20130125141751.1cf3ca0b@annuminas.surriel.com>
+Subject: [PATCH -v4 5/5] x86,smp: limit spinlock delay on virtual machines
+Message-ID: <20130125141917.6d5960a8@annuminas.surriel.com>
 In-Reply-To: <20130125140553.060b8ced@annuminas.surriel.com>
 References: <20130125140553.060b8ced@annuminas.surriel.com>
 Organization: Red Hat, Inc.
@@ -24,119 +24,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many spinlocks are embedded in data structures; having many CPUs
-pounce on the cache line the lock is in will slow down the lock
-holder, and can cause system performance to fall off a cliff.
+Modern Intel and AMD CPUs will trap to the host when the guest
+is spinning on a spinlock, allowing the host to schedule in
+something else.
 
-The paper "Non-scalable locks are dangerous" is a good reference:
+This effectively means the host is taking care of spinlock
+backoff for virtual machines. It also means that doing the
+spinlock backoff in the guest anyway can lead to totally
+unpredictable results, extremely large backoffs, and
+performance regressions.
 
-	http://pdos.csail.mit.edu/papers/linux:lock.pdf
-
-In the Linux kernel, spinlocks are optimized for the case of
-there not being contention. After all, if there is contention,
-the data structure can be improved to reduce or eliminate
-lock contention.
-
-Likewise, the spinlock API should remain simple, and the
-common case of the lock not being contended should remain
-as fast as ever.
-
-However, since spinlock contention should be fairly uncommon,
-we can add functionality into the spinlock slow path that keeps
-system performance from falling off a cliff when there is lock
-contention.
-
-Proportional delay in ticket locks is delaying the time between
-checking the ticket based on a delay factor, and the number of
-CPUs ahead of us in the queue for this lock. Checking the lock
-less often allows the lock holder to continue running, resulting
-in better throughput and preventing performance from dropping
-off a cliff.
-
-Proportional spinlock delay with a high delay factor works well
-when there is lots contention on a lock. Likewise, a smaller
-delay factor works well when a lock is lightly contended.
-
-Making the code auto-tune the delay factor results in a system
-that performs well with both light and heavy lock contention.
+To prevent those problems, we limit the spinlock backoff
+delay, when running in a virtual machine, to a small value.
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
-Acked-by: Rafael Aquini <aquini@redhat.com>
-Reviewed-by: Michel Lespinasse <walken@google.com>
 ---
- arch/x86/kernel/smp.c |   43 +++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 39 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/processor.h |    2 ++
+ arch/x86/kernel/setup.c          |    2 ++
+ arch/x86/kernel/smp.c            |   30 ++++++++++++++++++++++++------
+ 3 files changed, 28 insertions(+), 6 deletions(-)
 
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 888184b..a365f97 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -997,6 +997,8 @@ extern bool cpu_has_amd_erratum(const int *);
+ extern unsigned long arch_align_stack(unsigned long sp);
+ extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
+ 
++extern void init_spinlock_delay(void);
++
+ void default_idle(void);
+ bool set_pm_idle_to_default(void);
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 23ddd55..b834eae 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1048,6 +1048,8 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	arch_init_ideal_nops();
+ 
++	init_spinlock_delay();
++
+ 	register_refined_jiffies(CLOCK_TICK_RATE);
+ 
+ #ifdef CONFIG_EFI
 diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index aa743e9..05f828b 100644
+index 1877890..b1a65f0 100644
 --- a/arch/x86/kernel/smp.c
 +++ b/arch/x86/kernel/smp.c
-@@ -113,13 +113,34 @@ static atomic_t stopping_cpu = ATOMIC_INIT(-1);
+@@ -31,6 +31,7 @@
+ #include <asm/proto.h>
+ #include <asm/apic.h>
+ #include <asm/nmi.h>
++#include <asm/hypervisor.h>
+ /*
+  *	Some notes on x86 processor bugs affecting SMP operation:
+  *
+@@ -114,6 +115,27 @@ static atomic_t stopping_cpu = ATOMIC_INIT(-1);
  static bool smp_no_nmi_ipi = false;
  
  /*
-- * Wait on a congested ticket spinlock.
-+ * Wait on a congested ticket spinlock. Many spinlocks are embedded in
-+ * data structures; having many CPUs pounce on the cache line with the
-+ * spinlock simultaneously can slow down the lock holder, and the system
-+ * as a whole.
-+ *
-+ * To prevent total performance collapse in case of bad spinlock contention,
-+ * perform proportional backoff. The per-cpu value of delay is automatically
-+ * tuned to limit the number of times spinning CPUs poll the lock before
-+ * obtaining it. This limits the amount of cross-CPU traffic required to obtain
-+ * a spinlock, and keeps system performance from dropping off a cliff.
-+ *
-+ * There is a tradeoff. If we poll too often, the whole system is slowed
-+ * down. If we sleep too long, the lock will go unused for a period of
-+ * time. The solution is to go for a fast spin if we are at the head of
-+ * the queue, to slowly increase the delay if we sleep for too short a
-+ * time, and to decrease the delay if we slept for too long.
-  */
++ * Modern Intel and AMD CPUs tell the hypervisor when a guest is
++ * spinning excessively on a spinlock. The hypervisor will then
++ * schedule something else, effectively taking care of the backoff
++ * for us. Doing our own backoff on top of the hypervisor's pause
++ * loop exit handling can lead to excessively long delays, and
++ * performance degradations. Limit the spinlock delay in virtual
++ * machines to a smaller value.
++ */
 +#define DELAY_SHIFT 8
 +#define DELAY_FIXED_1 (1<<DELAY_SHIFT)
 +#define MIN_SPINLOCK_DELAY (1 * DELAY_FIXED_1)
-+#define MAX_SPINLOCK_DELAY (16000 * DELAY_FIXED_1)
-+DEFINE_PER_CPU(unsigned, spinlock_delay) = { MIN_SPINLOCK_DELAY };
- void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
- {
- 	__ticket_t head = inc.head, ticket = inc.tail;
- 	__ticket_t waiters_ahead;
--	unsigned loops;
-+	unsigned delay = __this_cpu_read(spinlock_delay);
-+	unsigned loops = 1;
- 
- 	for (;;) {
- 		waiters_ahead = ticket - head - 1;
-@@ -133,14 +154,28 @@ void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
- 			} while (ACCESS_ONCE(lock->tickets.head) != ticket);
- 			break;
++#define MAX_SPINLOCK_DELAY_NATIVE (16000 * DELAY_FIXED_1)
++#define MAX_SPINLOCK_DELAY_GUEST (16 * DELAY_FIXED_1)
++static int __read_mostly max_spinlock_delay = MAX_SPINLOCK_DELAY_NATIVE;
++void __init init_spinlock_delay(void)
++{
++	if (x86_hyper)
++		max_spinlock_delay = MAX_SPINLOCK_DELAY_GUEST;
++}
++
++/*
+  * Wait on a congested ticket spinlock. Many spinlocks are embedded in
+  * data structures; having many CPUs pounce on the cache line with the
+  * spinlock simultaneously can slow down the lock holder, and the system
+@@ -131,10 +153,6 @@ static bool smp_no_nmi_ipi = false;
+  * the queue, to slowly increase the delay if we sleep for too short a
+  * time, and to decrease the delay if we slept for too long.
+  */
+-#define DELAY_SHIFT 8
+-#define DELAY_FIXED_1 (1<<DELAY_SHIFT)
+-#define MIN_SPINLOCK_DELAY (1 * DELAY_FIXED_1)
+-#define MAX_SPINLOCK_DELAY (16000 * DELAY_FIXED_1)
+ #define DELAY_HASH_SHIFT 6
+ struct delay_entry {
+ 	u32 hash;
+@@ -171,7 +189,7 @@ void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
  		}
--		loops = 50 * waiters_ahead;
-+
-+		/* Aggressively increase delay, to minimize lock accesses. */
-+		if (delay < MAX_SPINLOCK_DELAY)
-+			delay += DELAY_FIXED_1 / 7;
-+
-+		loops = (delay * waiters_ahead) >> DELAY_SHIFT;
- 		while (loops--)
- 			cpu_relax();
  
- 		head = ACCESS_ONCE(lock->tickets.head);
--		if (head == ticket)
-+		if (head == ticket) {
-+			/*
-+			 * We overslept, and do not know by how.
-+			 * Exponentially decay the value of delay,
-+			 * to get it back to a good value quickly.
-+			 */
-+			if (delay >= 2 * DELAY_FIXED_1)
-+				delay -= max(delay/32, DELAY_FIXED_1);
- 			break;
-+		}
- 	}
-+	__this_cpu_write(spinlock_delay, delay);
- }
+ 		/* Aggressively increase delay, to minimize lock accesses. */
+-		if (delay < MAX_SPINLOCK_DELAY)
++		if (delay < max_spinlock_delay)
+ 			delay += DELAY_FIXED_1 / 7;
  
- /*
-
+ 		loops = (delay * waiters_ahead) >> DELAY_SHIFT;
