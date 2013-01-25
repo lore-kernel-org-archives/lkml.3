@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab3AYSuX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:50:23 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:59139 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756174Ab3AYSuQ (ORCPT
+	id S1757351Ab3AYSyW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:54:22 -0500
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:55998 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755991Ab3AYSyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:50:16 -0500
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fbdev@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Bernie Thompson <bernie@plugable.com>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        Alexander Holler <holler@ahsoftware.de>, <stable@vger.kernel.org>
-Subject: [PATCH 3/3] fb: smscufx: fix hang at disconnect
-Date: Fri, 25 Jan 2013 19:49:28 +0100
-Message-Id: <1359139768-32294-3-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1359139768-32294-1-git-send-email-holler@ahsoftware.de>
-References: <50F2A310.5010006@ahsoftware.de>
- <1359139768-32294-1-git-send-email-holler@ahsoftware.de>
+	Fri, 25 Jan 2013 13:54:19 -0500
+Date: Fri, 25 Jan 2013 13:54:08 -0500
+From: Jake Champlin <jake.champlin.27@gmail.com>
+To: abbotti@mev.co.uk
+Cc: fmhess@users.sourceforge.net, gregkh@linuxfoundation.org,
+        hsweeten@visionengravers.com, wfp5p@virginia.edu,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        jake.champlin.27@gmail.com
+Subject: [PATCH] Staging: Comedi: amplc_dio200: Fixed Bracing Issue
+Message-ID: <20130125185404.GA7672@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a device was disconnected the driver may hang at waiting for urbs it never
-will get. Fix this by using a timeout while waiting for the used semaphore.
+Fixed Bracing Issue flagged by checkpatch.pl
 
-There is still a memory leak if a timeout happens, but at least the driver
-now continues his disconnect routine.
-
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+Signed-off-by: Jake Champlin <jake.champlin.27@gmail.com>
 ---
- drivers/video/smscufx.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/staging/comedi/drivers/amplc_dio200.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/video/smscufx.c b/drivers/video/smscufx.c
-index 97bd662..f26fa4f 100644
---- a/drivers/video/smscufx.c
-+++ b/drivers/video/smscufx.c
-@@ -1838,8 +1838,9 @@ static void ufx_free_urb_list(struct ufx_data *dev)
- 
- 	/* keep waiting and freeing, until we've got 'em all */
- 	while (count--) {
--		/* Getting interrupted means a leak, but ok at shutdown*/
--		ret = down_interruptible(&dev->urbs.limit_sem);
-+		/* Timeout likely occurs at disconnect (resulting in a leak) */
-+		ret = down_timeout_killable(&dev->urbs.limit_sem,
-+						FREE_URB_TIMEOUT);
- 		if (ret)
- 			break;
- 
+diff --git a/drivers/staging/comedi/drivers/amplc_dio200.c b/drivers/staging/comedi/drivers/amplc_dio200.c
+index 5f309ba..b09269d 100644
+--- a/drivers/staging/comedi/drivers/amplc_dio200.c
++++ b/drivers/staging/comedi/drivers/amplc_dio200.c
+@@ -1977,8 +1977,7 @@ static int dio200_auto_attach(struct comedi_device *dev,
+ 		devpriv->io.u.iobase = (unsigned long)base;
+ 		devpriv->io.regtype = io_regtype;
+ 	}
+-	switch (thisboard->model)
+-	{
++	switch (thisboard->model) {
+ 	case pcie215_model:
+ 	case pcie236_model:
+ 	case pcie296_model:
 -- 
-1.7.11.7
+1.8.1.1
+
+
+-- 
+Jake Champlin
+jake.champlin.27@gmail.com
 
