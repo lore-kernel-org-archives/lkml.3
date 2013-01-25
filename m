@@ -1,106 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab3AYOSm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 09:18:42 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:65030 "EHLO
+	id S964782Ab3AYOTJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 09:19:09 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:56157 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757400Ab3AYOO7 (ORCPT
+	with ESMTP id S1757389Ab3AYOO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 09:14:59 -0500
+	Fri, 25 Jan 2013 09:14:58 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@list.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
         Linus Walleij <linus.walleij@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 12/19] pinctrl: exynos: don't mark probing functions as __init
-Date: Fri, 25 Jan 2013 14:14:29 +0000
-Message-Id: <1359123276-15833-13-git-send-email-arnd@arndb.de>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, netdev@vger.kernel.org
+Subject: [PATCH 00/19] ARM: common warning fixes
+Date: Fri, 25 Jan 2013 14:14:17 +0000
+Message-Id: <1359123276-15833-1-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1359123276-15833-1-git-send-email-arnd@arndb.de>
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:tif8eVFcrOesVUvyoRaEwlKAjwr5gz9rieqO2i3e9tT
- 5cOzERWzTD8Abt1wPjaI3go65F93Yq68bFN9mPey0pKGSjDlyl
- mzk8Z8ZxV8UH1aip7Ds7l98+s4TWw8NKk9WYspDMYyNPGatEir
- qihsqkO2L/N2v301zzwB2Y/9ABC443O4beTGhasIGMTXfWkvYf
- g1BSovQtdFSELPhdYHHYjSLQrGJjQqNAzhSvycx2Nz08/Escmn
- fxU4qrjcy/doKkPdUjhQn3ULPUBBbAQuZEA5wCGQGOKRWcwTyG
- S2k/aJT5PLgeZZwZ2O0Enbz7HPVsWK0XcRKtzAU3a6jk9Elqwv
- hPsWMWVMmIaDfoIvHk6iaInEWRpm4Iq62VzIS4ncx
+X-Provags-ID: V02:K0:3AzGBf/Tfk3BMfzSuOI2uTlPClEWH6igzni2pFLC46g
+ LHlDFfKsVAxm8BSaZMTQFYSSYCx7sn87brZxWdhpI3j+5U4l2i
+ q/VqJR7w+RhAF2/KQmRB6Y5gyIIQD0xGOdkNzpxPeSH89l1QMZ
+ sUFyOoJs90rmBfBYSjxk4K/gxcLqBpfkBzEnG105qha8LVTBkH
+ 2FMLgwP9JP97sPsoROQ11Ne2jgvnhOEawGyb3gpglmDhpm36F+
+ 0NwB6qqZQGDqbUTODfC8nvAeI5hpwaNmUpw+EnUGRpBmGot7Sl
+ ytmQWdog2t1iVCGLRyaz6S6C6wVX3vwaYnO0ei64H60Kv3jvNd
+ +fkf/LETSSTadRVJAs44uJJgwL3SA/a3uz8QCxa77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Functions called from a driver probe() method must not be
-marked __init, because they may get called after the
-init phase is done, when the device shows up late, or
-because of deferred probing.
+Hi everyone,
 
-Without this patch, building exynos_defconfig results in
-multiple warnings like:
+This series fixes all the known build warnings on
+ARM with any of the defconfig files. Most of these
+patches are regressions and warn about code that
+changed in linux-3.8, so it would be nice to
+fix those before the release.
 
-WARNING: drivers/pinctrl/built-in.o(.text+0x51bc): Section mismatch in reference from the function exynos5440_pinctrl_probe() to the function .init.text:exynos5440_gpiolib_register()
-The function exynos5440_pinctrl_probe() references
-the function __init exynos5440_gpiolib_register().
-This is often because exynos5440_pinctrl_probe lacks a __init
-annotation or the annotation of exynos5440_gpiolib_register is wrong.
+The patch for the ARM_UNWIND warning is added
+here for completeness: The warning is old and
+particularly annoying, but the patch is not ready
+for inclusion.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Tomasz Figa <t.figa@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
----
+I have more patches like these for less important
+issues, in four classes:
+
+1. warnings and errors that are only present in linux-next
+2. warnings about allyesconfig/allnoconfig/allmodconfig
+   builds.
+3. warnings and errors for various randconfig combinations
+4. 'maybe-uninitialized' gcc warnings that only appear
+   with gcc-3.7 or 3.8. There are quite a lot of them.
+
+I will get to those once this series is sorted out.
+Since there are no interdepencies between the patches,
+my preference is to have them applied by the individual
+subsystem maintainers. Anything that has not at
+least made it into linux-next by the next merge window
+and has not received a 'NAK' or been obsoleted by
+another patch, I plan to submit as part of an arm-soc
+branch for 3.9.
+
+	Arnd
+
+Arnd Bergmann (18):
+  ARM: shmobile: fix defconfig warning on CONFIG_USB
+  ARM: disable virt_to_bus/virt_to_bus almost everywhere
+  ARM: msm: proc_comm_boot_wait should not be __init
+  oss/dmabuf: use dma_map_single
+  sched: warnings in kernel/sched/fair.c
+  sched/debug: fix format string for 32 bit platforms
+  scripts/sortextable: silence script output
+  lockdep: avoid warning about unused variables
+  mfd/twl4030: don't warn about uninitialized return code
+  watchdog: at91sam9: at91_wdt_dt_ids cannot be __init
+  regmap: avoid undefined return from regmap_read_debugfs
+  pinctrl: exynos: don't mark probing functions as __init
+  pinctrl: nomadik: nmk_prcm_gpiocr_get_mode may be unused
+  spi/atmel: remove incorrect __exit_p()
+  sunrpc: don't warn for unused variable 'buf'
+  mac80211: avoid a build warning
+  input/joystick: use get_cycles on ARM
+  ARM: at91: suspend both memory controllers on at91sam9263
+
+sahara (1):
+  [INCOMPLETE] ARM: make return_address available for ARM_UNWIND
+
+ arch/arm/Kconfig                     |  4 ++++
+ arch/arm/configs/marzen_defconfig    |  1 -
+ arch/arm/configs/shark_defconfig     |  1 -
+ arch/arm/include/asm/dma.h           |  2 +-
+ arch/arm/include/asm/ftrace.h        |  6 ++----
+ arch/arm/include/asm/memory.h        |  2 ++
+ arch/arm/kernel/Makefile             | 12 +++++-------
+ arch/arm/kernel/return_address.c     | 10 +++-------
+ arch/arm/kernel/stacktrace.c         |  3 +++
+ arch/arm/mach-at91/cpuidle.c         |  2 +-
+ arch/arm/mach-at91/pm.c              |  2 +-
+ arch/arm/mach-at91/pm.h              |  8 --------
+ arch/arm/mach-msm/proc_comm.h        |  2 +-
+ drivers/base/regmap/regmap-debugfs.c |  2 +-
+ drivers/input/joystick/analog.c      |  8 ++------
+ drivers/mfd/twl4030-power.c          |  2 +-
  drivers/pinctrl/pinctrl-exynos5440.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/pinctrl/pinctrl-nomadik.c    |  2 +-
+ drivers/spi/spi-atmel.c              |  2 +-
+ drivers/watchdog/at91sam9_wdt.c      |  2 +-
+ include/linux/lockdep.h              |  2 +-
+ kernel/sched/debug.c                 |  4 ++--
+ kernel/sched/fair.c                  |  2 +-
+ kernel/trace/trace_irqsoff.c         | 26 ++++++++++++--------------
+ net/mac80211/tx.c                    |  8 ++++----
+ net/sunrpc/svc.c                     |  2 +-
+ scripts/sortextable.h                |  2 +-
+ sound/oss/dmabuf.c                   |  3 ++-
+ 28 files changed, 59 insertions(+), 73 deletions(-)
 
-diff --git a/drivers/pinctrl/pinctrl-exynos5440.c b/drivers/pinctrl/pinctrl-exynos5440.c
-index de05b64..1427299 100644
---- a/drivers/pinctrl/pinctrl-exynos5440.c
-+++ b/drivers/pinctrl/pinctrl-exynos5440.c
-@@ -599,7 +599,7 @@ static int exynos5440_gpio_direction_output(struct gpio_chip *gc, unsigned offse
- }
- 
- /* parse the pin numbers listed in the 'samsung,exynos5440-pins' property */
--static int __init exynos5440_pinctrl_parse_dt_pins(struct platform_device *pdev,
-+static int exynos5440_pinctrl_parse_dt_pins(struct platform_device *pdev,
- 			struct device_node *cfg_np, unsigned int **pin_list,
- 			unsigned int *npins)
- {
-@@ -630,7 +630,7 @@ static int __init exynos5440_pinctrl_parse_dt_pins(struct platform_device *pdev,
-  * Parse the information about all the available pin groups and pin functions
-  * from device node of the pin-controller.
-  */
--static int __init exynos5440_pinctrl_parse_dt(struct platform_device *pdev,
-+static int exynos5440_pinctrl_parse_dt(struct platform_device *pdev,
- 				struct exynos5440_pinctrl_priv_data *priv)
- {
- 	struct device *dev = &pdev->dev;
-@@ -723,7 +723,7 @@ static int __init exynos5440_pinctrl_parse_dt(struct platform_device *pdev,
- }
- 
- /* register the pinctrl interface with the pinctrl subsystem */
--static int __init exynos5440_pinctrl_register(struct platform_device *pdev,
-+static int exynos5440_pinctrl_register(struct platform_device *pdev,
- 				struct exynos5440_pinctrl_priv_data *priv)
- {
- 	struct device *dev = &pdev->dev;
-@@ -798,7 +798,7 @@ static int __init exynos5440_pinctrl_register(struct platform_device *pdev,
- }
- 
- /* register the gpiolib interface with the gpiolib subsystem */
--static int __init exynos5440_gpiolib_register(struct platform_device *pdev,
-+static int exynos5440_gpiolib_register(struct platform_device *pdev,
- 				struct exynos5440_pinctrl_priv_data *priv)
- {
- 	struct gpio_chip *gc;
-@@ -831,7 +831,7 @@ static int __init exynos5440_gpiolib_register(struct platform_device *pdev,
- }
- 
- /* unregister the gpiolib interface with the gpiolib subsystem */
--static int __init exynos5440_gpiolib_unregister(struct platform_device *pdev,
-+static int exynos5440_gpiolib_unregister(struct platform_device *pdev,
- 				struct exynos5440_pinctrl_priv_data *priv)
- {
- 	int ret = gpiochip_remove(priv->gc);
 -- 
 1.8.0
 
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: netdev@vger.kernel.org
