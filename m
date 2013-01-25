@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757641Ab3AYRT3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 12:19:29 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:53150 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757138Ab3AYRTY (ORCPT
+	id S1757660Ab3AYRTf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 12:19:35 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:18871 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757645Ab3AYRTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 12:19:24 -0500
-Date: Fri, 25 Jan 2013 09:19:20 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: Re: Crash with 9fdb04c "async: replace list of active domains with
- global list of pending items"
-Message-ID: <20130125171920.GF3081@htj.dyndns.org>
-References: <510216ED.1090602@wwwdotorg.org>
+	Fri, 25 Jan 2013 12:19:31 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGji0LFus=
+X-RZG-CLASS-ID: mo00
+Date: Fri, 25 Jan 2013 18:19:23 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Jan Beulich (JBeulich@suse.com)" <JBeulich@suse.com>
+Subject: Re: [PATCH] x86: Hyper-V: register clocksource only if its advertised
+Message-ID: <20130125171923.GA19306@aepfle.de>
+References: <1359121036-16309-1-git-send-email-olaf@aepfle.de>
+ <761b736ff1854810bfe272961248e6d2@BLUPR03MB050.namprd03.prod.outlook.com>
+ <20130125165443.GA15833@aepfle.de>
+ <500ca90f5d3e4d4f80c7fb62c34d36f0@BLUPR03MB050.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <510216ED.1090602@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <500ca90f5d3e4d4f80c7fb62c34d36f0@BLUPR03MB050.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21.rev5632 (2013-01-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jan 25, KY Srinivasan wrote:
 
-On Thu, Jan 24, 2013 at 09:23:57PM -0800, Stephen Warren wrote:
-> In next-20130124, I see a crash during boot on my ARM system unless I
-> revert 9fdb04c "async: replace list of active domains with global list
-> of pending items". This was reported t me by Venu (CC'd). The kernel log
-> is below.
-> 
-> Looking at that patch, I note that __async_schedule() does:
-> 
-> > 	list_add_tail(&entry->domain_list, &domain->pending);
-> > 	if (domain->registered)
-> > 		list_add_tail(&entry->global_list, &async_global_pending);
-> 
-> ... whereas async_run_entry_fn() unconditionally undoes both those
-> list_add_tail() calls, even if the second never executed and hence the
-> list entry was never initialized:
-> 
-> > 	list_del_init(&entry->domain_list);
-> > 	list_del_init(&entry->global_list);
+> My fear is that there is no guarantee that Xen would not emulate this
+> feature in the spirit of making Hyper-V emulation "more" complete.
+> Since all this problem is because Xen thinks it is running a viridian
+> domain (when in fact it is running Linux), I felt we should explore
+> why the viridian tag got set for a Linux VM. If we can fix that we
+> would have a solution that does not depend upon assuming that Xen
+> would not emulate a particular Hyper-V feature.
 
-Was reported by James Hogan a bit earlier and fix has been applied.
+In my opinion this logic is backwards. A host provides a set of
+functionality/features to a given guest, no matter what runs inside the
+guest. And the guest can query the feature list and configure itself
+accordingly. In this specific case the guest finds feature A (the cpuid
+result) and expects that feature B (a clock source) is present as well,
+even if feature B has its very own availability flag.
 
-  http://thread.gmane.org/gmane.linux.kernel/1425387/focus=1429460
+Maybe I miss your point.
 
-Thanks!
-
--- 
-tejun
+Olaf
