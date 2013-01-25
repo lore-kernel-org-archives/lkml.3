@@ -1,135 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964782Ab3AYOTJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 09:19:09 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:56157 "EHLO
+	id S932657Ab3AYOTG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 09:19:06 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:52959 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757389Ab3AYOO6 (ORCPT
+	with ESMTP id S1757393Ab3AYOO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Jan 2013 09:14:58 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@list.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, netdev@vger.kernel.org
-Subject: [PATCH 00/19] ARM: common warning fixes
-Date: Fri, 25 Jan 2013 14:14:17 +0000
-Message-Id: <1359123276-15833-1-git-send-email-arnd@arndb.de>
+        Fabio Porcedda <fabio.porcedda@gmail.com>
+Subject: [PATCH 10/19] watchdog: at91sam9: at91_wdt_dt_ids cannot be __init
+Date: Fri, 25 Jan 2013 14:14:27 +0000
+Message-Id: <1359123276-15833-11-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.0
-X-Provags-ID: V02:K0:3AzGBf/Tfk3BMfzSuOI2uTlPClEWH6igzni2pFLC46g
- LHlDFfKsVAxm8BSaZMTQFYSSYCx7sn87brZxWdhpI3j+5U4l2i
- q/VqJR7w+RhAF2/KQmRB6Y5gyIIQD0xGOdkNzpxPeSH89l1QMZ
- sUFyOoJs90rmBfBYSjxk4K/gxcLqBpfkBzEnG105qha8LVTBkH
- 2FMLgwP9JP97sPsoROQ11Ne2jgvnhOEawGyb3gpglmDhpm36F+
- 0NwB6qqZQGDqbUTODfC8nvAeI5hpwaNmUpw+EnUGRpBmGot7Sl
- ytmQWdog2t1iVCGLRyaz6S6C6wVX3vwaYnO0ei64H60Kv3jvNd
- +fkf/LETSSTadRVJAs44uJJgwL3SA/a3uz8QCxa77
+In-Reply-To: <1359123276-15833-1-git-send-email-arnd@arndb.de>
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:hOxcJCuAY7URM698NTwRRUJUmSMPG2APdMvOzDDA99P
+ bySCgNwQ14gmJ3wdC7Kc8PpqvFZl045tekIpX8zRiih/Mog0o3
+ wArcMjeCUvk2ERUgjjFZP2scaTnZiEe89JfjBjoLWdh/BwWk8k
+ qY+yUwTCqygQBmuo/JKwhb5wbukM3XcEDSDbqca4kSeJLaef3z
+ e00d2HXZpbpMQd/3BjRc1TRpn2XOXfk9AGX+TuK4raiMGK2Jxl
+ h19PJeldyZb4qHmuvjEgeaYVWUKqRFcIASKW3Z+bIKSGEAk1Lx
+ Fl2UTTgMTpRSMoK3sJQEYy5c1ciYKK+K5j6HS5zOmYSPxSpYTN
+ phey8IW8zXQCU0jUQ1aZXxOZACp2mjlM37gf5hYKw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+The device IDs are referenced by the driver and potentially
+used beyond the init time, as kbuild correctly warns
+about. Remove the __initconst annotation.
 
-This series fixes all the known build warnings on
-ARM with any of the defconfig files. Most of these
-patches are regressions and warn about code that
-changed in linux-3.8, so it would be nice to
-fix those before the release.
+Without this patch, building at91_dt_defconfig results in:
 
-The patch for the ARM_UNWIND warning is added
-here for completeness: The warning is old and
-particularly annoying, but the patch is not ready
-for inclusion.
+WARNING: drivers/watchdog/built-in.o(.data+0x28): Section mismatch in reference from the variable at91wdt_driver to the (unknown reference) .init.rodata:(unknown)
+The variable at91wdt_driver references
+the (unknown reference) __initconst (unknown)
 
-I have more patches like these for less important
-issues, in four classes:
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-watchdog@vger.kernel.org
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Fabio Porcedda <fabio.porcedda@gmail.com>
+---
+ drivers/watchdog/at91sam9_wdt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-1. warnings and errors that are only present in linux-next
-2. warnings about allyesconfig/allnoconfig/allmodconfig
-   builds.
-3. warnings and errors for various randconfig combinations
-4. 'maybe-uninitialized' gcc warnings that only appear
-   with gcc-3.7 or 3.8. There are quite a lot of them.
-
-I will get to those once this series is sorted out.
-Since there are no interdepencies between the patches,
-my preference is to have them applied by the individual
-subsystem maintainers. Anything that has not at
-least made it into linux-next by the next merge window
-and has not received a 'NAK' or been obsoleted by
-another patch, I plan to submit as part of an arm-soc
-branch for 3.9.
-
-	Arnd
-
-Arnd Bergmann (18):
-  ARM: shmobile: fix defconfig warning on CONFIG_USB
-  ARM: disable virt_to_bus/virt_to_bus almost everywhere
-  ARM: msm: proc_comm_boot_wait should not be __init
-  oss/dmabuf: use dma_map_single
-  sched: warnings in kernel/sched/fair.c
-  sched/debug: fix format string for 32 bit platforms
-  scripts/sortextable: silence script output
-  lockdep: avoid warning about unused variables
-  mfd/twl4030: don't warn about uninitialized return code
-  watchdog: at91sam9: at91_wdt_dt_ids cannot be __init
-  regmap: avoid undefined return from regmap_read_debugfs
-  pinctrl: exynos: don't mark probing functions as __init
-  pinctrl: nomadik: nmk_prcm_gpiocr_get_mode may be unused
-  spi/atmel: remove incorrect __exit_p()
-  sunrpc: don't warn for unused variable 'buf'
-  mac80211: avoid a build warning
-  input/joystick: use get_cycles on ARM
-  ARM: at91: suspend both memory controllers on at91sam9263
-
-sahara (1):
-  [INCOMPLETE] ARM: make return_address available for ARM_UNWIND
-
- arch/arm/Kconfig                     |  4 ++++
- arch/arm/configs/marzen_defconfig    |  1 -
- arch/arm/configs/shark_defconfig     |  1 -
- arch/arm/include/asm/dma.h           |  2 +-
- arch/arm/include/asm/ftrace.h        |  6 ++----
- arch/arm/include/asm/memory.h        |  2 ++
- arch/arm/kernel/Makefile             | 12 +++++-------
- arch/arm/kernel/return_address.c     | 10 +++-------
- arch/arm/kernel/stacktrace.c         |  3 +++
- arch/arm/mach-at91/cpuidle.c         |  2 +-
- arch/arm/mach-at91/pm.c              |  2 +-
- arch/arm/mach-at91/pm.h              |  8 --------
- arch/arm/mach-msm/proc_comm.h        |  2 +-
- drivers/base/regmap/regmap-debugfs.c |  2 +-
- drivers/input/joystick/analog.c      |  8 ++------
- drivers/mfd/twl4030-power.c          |  2 +-
- drivers/pinctrl/pinctrl-exynos5440.c | 10 +++++-----
- drivers/pinctrl/pinctrl-nomadik.c    |  2 +-
- drivers/spi/spi-atmel.c              |  2 +-
- drivers/watchdog/at91sam9_wdt.c      |  2 +-
- include/linux/lockdep.h              |  2 +-
- kernel/sched/debug.c                 |  4 ++--
- kernel/sched/fair.c                  |  2 +-
- kernel/trace/trace_irqsoff.c         | 26 ++++++++++++--------------
- net/mac80211/tx.c                    |  8 ++++----
- net/sunrpc/svc.c                     |  2 +-
- scripts/sortextable.h                |  2 +-
- sound/oss/dmabuf.c                   |  3 ++-
- 28 files changed, 59 insertions(+), 73 deletions(-)
-
+diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
+index dc42e44..6dad954 100644
+--- a/drivers/watchdog/at91sam9_wdt.c
++++ b/drivers/watchdog/at91sam9_wdt.c
+@@ -304,7 +304,7 @@ static int __exit at91wdt_remove(struct platform_device *pdev)
+ }
+ 
+ #if defined(CONFIG_OF)
+-static const struct of_device_id at91_wdt_dt_ids[] __initconst = {
++static const struct of_device_id at91_wdt_dt_ids[] = {
+ 	{ .compatible = "atmel,at91sam9260-wdt" },
+ 	{ /* sentinel */ }
+ };
 -- 
 1.8.0
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: netdev@vger.kernel.org
