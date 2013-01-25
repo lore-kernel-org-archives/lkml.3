@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab3AYKVI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:21:08 -0500
-Received: from re04.intra2net.com ([82.165.46.26]:55554 "EHLO
-	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756213Ab3AYKVE (ORCPT
+	id S1756432Ab3AYKVZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:21:25 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:55710 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756348Ab3AYKVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:21:04 -0500
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
-To: acme@ghostprotocols.net
-Cc: linux-kernel@vger.kernel.org
-Subject: [perf PATCH 1/3] Fix memory leak on error
-Date: Fri, 25 Jan 2013 11:20:47 +0100
-Message-ID: <2717013.8dV0naNhAV@storm>
-User-Agent: KMail/4.9.5 (Linux/3.6.11-5.fc17.x86_64; KDE/4.9.5; x86_64; ; )
+	Fri, 25 Jan 2013 05:21:14 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <50F573CA.90402@parallels.com>
+References: <20121116170123.3196.93431.stgit@maximpc.sw.ru>
+	<50C89A78.4010309@parallels.com>
+	<50F573CA.90402@parallels.com>
+Date: Fri, 25 Jan 2013 11:21:13 +0100
+Message-ID: <CAJfpegsp5_Mges1NAZbPSn-q+0O_EgJyroQsf-Vjy20O8DmfLA@mail.gmail.com>
+Subject: Re: [PATCH v2 00/14] fuse: An attempt to implement a write-back cache policy
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "Maxim V. Patlasov" <mpatlasov@parallels.com>
+Cc: Kirill Korotaev <dev@parallels.com>,
+        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cppcheck reported:
-[util/event.c:480]: (error) Memory leak: event
+On Tue, Jan 15, 2013 at 4:20 PM, Maxim V. Patlasov
+<mpatlasov@parallels.com> wrote:
+> Heard nothing from you for two months. Any feedback would still be
+> appreciated.
 
-Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
----
- tools/perf/util/event.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Sorry about the long silence.
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 3cf2c3e..5cd13d7 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -476,8 +476,10 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
- 		}
- 	}
- 
--	if (kallsyms__parse(filename, &args, find_symbol_cb) <= 0)
-+	if (kallsyms__parse(filename, &args, find_symbol_cb) <= 0) {
-+		free(event);
- 		return -ENOENT;
-+	}
- 
- 	map = machine->vmlinux_maps[MAP__FUNCTION];
- 	size = snprintf(event->mmap.filename, sizeof(event->mmap.filename),
--- 
-1.7.11.7
+I haven't done a detailed review yet.  It would be good if you could
+resent the patchset against for-next branch of the fuse tree.
 
+I see that you have some other patchsets pending.   Are they independent?
+
+Thanks,
+Miklos
