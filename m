@@ -1,138 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112Ab3AYQYS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 11:24:18 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40285 "EHLO arroyo.ext.ti.com"
+	id S1757389Ab3AYQbm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 11:31:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41874 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755504Ab3AYQYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 11:24:17 -0500
-Date: Fri, 25 Jan 2013 18:23:46 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "b-cousson@ti.com" <b-cousson@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v4 1/4] drivers: usb: phy: add a new driver for usb part
- of control module
-Message-ID: <20130125162346.GM28379@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1359109440-2195-1-git-send-email-kishon@ti.com>
- <1359109440-2195-2-git-send-email-kishon@ti.com>
- <20130125110141.GK3075@e106331-lin.cambridge.arm.com>
- <20130125111120.GP15886@arwen.pp.htv.fi>
- <20130125122943.GB16795@e106331-lin.cambridge.arm.com>
- <20130125145928.GC28379@arwen.pp.htv.fi>
- <20130125161401.GD16795@e106331-lin.cambridge.arm.com>
+	id S1756981Ab3AYQbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 11:31:39 -0500
+Date: Fri, 25 Jan 2013 17:31:30 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20130125163130.GF4721@dhcp22.suse.cz>
+References: <20121217163203.GD25432@dhcp22.suse.cz>
+ <20121217192301.829A7020@pobox.sk>
+ <20121217195510.GA16375@dhcp22.suse.cz>
+ <20121218152223.6912832C@pobox.sk>
+ <20121218152004.GA25208@dhcp22.suse.cz>
+ <20121224142526.020165D3@pobox.sk>
+ <20121228162209.GA1455@dhcp22.suse.cz>
+ <20121230020947.AA002F34@pobox.sk>
+ <20121230110815.GA12940@dhcp22.suse.cz>
+ <20130125160723.FAE73567@pobox.sk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SEFvVLxbW/dEDtN8"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130125161401.GD16795@e106331-lin.cambridge.arm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130125160723.FAE73567@pobox.sk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---SEFvVLxbW/dEDtN8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri 25-01-13 16:07:23, azurIt wrote:
+> Any news? Thnx!
 
-Hi,
+Sorry, but I didn't get to this one yet.
 
-On Fri, Jan 25, 2013 at 04:14:02PM +0000, Mark Rutland wrote:
-> On Fri, Jan 25, 2013 at 02:59:28PM +0000, Felipe Balbi wrote:
-> > Hi,
-> >=20
-> > On Fri, Jan 25, 2013 at 12:29:43PM +0000, Mark Rutland wrote:
-> > > > > > +   depending upon omap4 or omap5.
-> > > > > > + - reg-names: The names of the register addresses correspondin=
-g to the registers
-> > > > > > +   filled in "reg".
-> > > > > > + - ti,type: This is used to differentiate whether the control =
-module has
-> > > > > > +   usb mailbox or usb3 phy power. omap4 has usb mailbox in con=
-trol module to
-> > > > > > +   notify events to the musb core and omap5 has usb3 phy power=
- register to
-> > > > > > +   power on usb3 phy. Should be "1" if it has mailbox and "2" =
-if it has usb3
-> > > > > > +   phy power.
-> > > > >=20
-> > > > > Why not make this a string property, perhaps values "mailbox" or =
-"register"?
-> > > >=20
-> > > > NAK.
-> > >=20
-> > > Can I ask what your objection to using a string property is?
-> > >=20
-> > > As far as I can see, "ti,type" is only used by this driver, so there'=
-s no
-> > > common convention to stick to. Using a string makes the binding easie=
-r for
-> > > humans to read, and thus harder to mess up in a dts, and it decouples=
- the
-> > > binding from kernel-side constants.
-> >=20
-> > IIRC there is some work going on to add #define-like support for DT,
-> > which would allow us to match against integers while still having
-> > meaningful symbolic representations.
->=20
-> I was under the impression that the motivation for using the preprocessor=
- on
-> the DT was to allow symbolic names for device/soc-specific values like
-> addresses, rather than what amounts to ABI values for the binding.
->=20
-> I don't see the point in building a binding that depends on future
-> functionality to be legible, especially as we can make it more readable,
-> robust, and just as extensible today, with a simple change to the proposed
-> binding.
->=20
-> Even ignoring the above, the driver isn't doing appropriate sanity checki=
-ng.
-> If you use a string property, this sanity check is implicit in the parsin=
-g --
-> you've either matched a value you can handle or you haven't.
+> 
+> azur
+> 
+> 
+> 
+> ______________________________________________________________
+> > Od: "Michal Hocko" <mhocko@suse.cz>
+> > Komu: azurIt <azurit@pobox.sk>
+> > Dátum: 30.12.2012 12:08
+> > Predmet: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from add_to_page_cache_locked
+> >
+> > CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, "cgroups mailinglist" <cgroups@vger.kernel.org>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "Johannes Weiner" <hannes@cmpxchg.org>
+> >On Sun 30-12-12 02:09:47, azurIt wrote:
+> >> >which suggests that the patch is incomplete and that I am blind :/
+> >> >mem_cgroup_cache_charge calls __mem_cgroup_try_charge for the page cache
+> >> >and that one doesn't check GFP_MEMCG_NO_OOM. So you need the following
+> >> >follow-up patch on top of the one you already have (which should catch
+> >> >all the remaining cases).
+> >> >Sorry about that...
+> >> 
+> >> 
+> >> This was, again, killing my MySQL server (search for "(mysqld)"):
+> >> http://www.watchdog.sk/lkml/oom_mysqld5
+> >
+> >grep "Kill process" oom_mysqld5 
+> >Dec 30 01:53:34 server01 kernel: [  367.061801] Memory cgroup out of memory: Kill process 5512 (apache2) score 716 or sacrifice child
+> >Dec 30 01:53:35 server01 kernel: [  367.338024] Memory cgroup out of memory: Kill process 5517 (apache2) score 718 or sacrifice child
+> >Dec 30 01:53:35 server01 kernel: [  367.747888] Memory cgroup out of memory: Kill process 5513 (apache2) score 721 or sacrifice child
+> >Dec 30 01:53:36 server01 kernel: [  368.159860] Memory cgroup out of memory: Kill process 5516 (apache2) score 726 or sacrifice child
+> >Dec 30 01:53:36 server01 kernel: [  368.665606] Memory cgroup out of memory: Kill process 5520 (apache2) score 733 or sacrifice child
+> >Dec 30 01:53:36 server01 kernel: [  368.765652] Out of memory: Kill process 1778 (mysqld) score 39 or sacrifice child
+> >Dec 30 01:53:36 server01 kernel: [  369.101753] Memory cgroup out of memory: Kill process 5519 (apache2) score 754 or sacrifice child
+> >Dec 30 01:53:37 server01 kernel: [  369.464262] Memory cgroup out of memory: Kill process 5583 (apache2) score 762 or sacrifice child
+> >Dec 30 01:53:37 server01 kernel: [  369.465017] Out of memory: Kill process 5506 (apache2) score 18 or sacrifice child
+> >Dec 30 01:53:37 server01 kernel: [  369.574932] Memory cgroup out of memory: Kill process 5523 (apache2) score 759 or sacrifice child
+> >
+> >So your mysqld has been killed by the global OOM not memcg. But why when
+> >you seem to be perfectly fine regarding memory? I guess the following
+> >backtrace is relevant:
+> >Dec 30 01:53:36 server01 kernel: [  368.569720] DMA: 0*4kB 1*8kB 0*16kB 1*32kB 2*64kB 1*128kB 1*256kB 0*512kB 1*1024kB 1*2048kB 3*4096kB = 15912kB
+> >Dec 30 01:53:36 server01 kernel: [  368.570447] DMA32: 9*4kB 10*8kB 8*16kB 6*32kB 5*64kB 6*128kB 4*256kB 2*512kB 3*1024kB 3*2048kB 613*4096kB = 2523636kB
+> >Dec 30 01:53:36 server01 kernel: [  368.571175] Normal: 5*4kB 2060*8kB 4122*16kB 2550*32kB 2667*64kB 722*128kB 197*256kB 68*512kB 15*1024kB 4*2048kB 1855*4096kB = 8134036kB
+> >Dec 30 01:53:36 server01 kernel: [  368.571906] 308964 total pagecache pages
+> >Dec 30 01:53:36 server01 kernel: [  368.572023] 0 pages in swap cache
+> >Dec 30 01:53:36 server01 kernel: [  368.572140] Swap cache stats: add 0, delete 0, find 0/0
+> >Dec 30 01:53:36 server01 kernel: [  368.572260] Free swap  = 0kB
+> >Dec 30 01:53:36 server01 kernel: [  368.572375] Total swap = 0kB
+> >Dec 30 01:53:36 server01 kernel: [  368.597836] apache2 invoked oom-killer: gfp_mask=0x0, order=0, oom_adj=0, oom_score_adj=0
+> >Dec 30 01:53:36 server01 kernel: [  368.598034] apache2 cpuset=uid mems_allowed=0
+> >Dec 30 01:53:36 server01 kernel: [  368.598152] Pid: 5385, comm: apache2 Not tainted 3.2.35-grsec #1
+> >Dec 30 01:53:36 server01 kernel: [  368.598273] Call Trace:
+> >Dec 30 01:53:36 server01 kernel: [  368.598396]  [<ffffffff810cc89e>] dump_header+0x7e/0x1e0
+> >Dec 30 01:53:36 server01 kernel: [  368.598516]  [<ffffffff810cc79f>] ? find_lock_task_mm+0x2f/0x70
+> >Dec 30 01:53:36 server01 kernel: [  368.598638]  [<ffffffff810ccd65>] oom_kill_process+0x85/0x2a0
+> >Dec 30 01:53:36 server01 kernel: [  368.598759]  [<ffffffff810cd415>] out_of_memory+0xe5/0x200
+> >Dec 30 01:53:36 server01 kernel: [  368.598880]  [<ffffffff810cd5ed>] pagefault_out_of_memory+0xbd/0x110
+> >Dec 30 01:53:36 server01 kernel: [  368.599006]  [<ffffffff81026e96>] mm_fault_error+0xb6/0x1a0
+> >Dec 30 01:53:36 server01 kernel: [  368.599127]  [<ffffffff8102736e>] do_page_fault+0x3ee/0x460
+> >Dec 30 01:53:36 server01 kernel: [  368.599250]  [<ffffffff81131ccf>] ? mntput+0x1f/0x30
+> >Dec 30 01:53:36 server01 kernel: [  368.599371]  [<ffffffff811134e6>] ? fput+0x156/0x200
+> >Dec 30 01:53:36 server01 kernel: [  368.599496]  [<ffffffff815b567f>] page_fault+0x1f/0x30
+> >
+> >This would suggest that an unexpected ENOMEM leaked during page fault
+> >path. I do not see which one could that be because you said THP
+> >(CONFIG_TRANSPARENT_HUGEPAGE) are disabled (and the other patch I have
+> >mentioned in the thread should fix that issue - btw. the patch is
+> >already scheduled for stable tree).
+> > __do_fault, do_anonymous_page and do_wp_page call
+> >mem_cgroup_newpage_charge with GFP_KERNEL which means that
+> >we do memcg OOM and never return ENOMEM. do_swap_page calls
+> >mem_cgroup_try_charge_swapin with GFP_KERNEL as well.
+> >
+> >I might have missed something but I will not get to look closer before
+> >2nd January.
+> >-- 
+> >Michal Hocko
+> >SUSE Labs
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Even IRQs use numbers (not talking about the IRQ number, but the IRQ
-flags), why would we depend on string comparisson ? It doesn't make
-sense.
-
---=20
-balbi
-
---SEFvVLxbW/dEDtN8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRArGSAAoJEIaOsuA1yqREMuIP/0aHXTwjHfpWxaLlSozoNOAq
-o4lXxjEXo0h4G6izLWq2rlQYf8gFlMOfgbqnb2lAVfjDhYAL7uWpMk9NfwShs2ao
-RHfsmOpE0rtGejg7xxVTI/I+HK+sqKCyjcZnmLyHI6x0HdQ+QQO+P3x/kgSFGkFM
-uj6kD9TZ/QTUy8HiDhCVHpKM8IsG4Lx+0/uceusgwDZf6MyDYPM5UXq+twH9mZeu
-pfGr4COG/8y7Wq4iDym96XfXdHHLvvJOCZvf9V30sPffF+92YQTXf6yfeSoFWXGH
-89FOtEsiLIK5/ZW56YQCXgj/8PPabeYyeL15pgt/GUW0uQ2arfX4PASygt4j4dy/
-4vAC1CYmPpslfa0zlMDMiPoDtNJLIvWpXPkVjm9bSnx+Y5HR1F2A34nM3B+SYv+K
-q5EO/5pfB6uL54ORfpv/G4fFWWUHmcmBAJugCtoJ+lxPZl6wllL5TNTFop1viA8B
-e0Y1yvfVOeYgnUY41WMJpb9vclJWmWGj8XC93wJ7X2Piunz4009sNyPkdL7kTg1H
-b5dE5RJGrqwMKXBPWdqq7dlHDRcGngEr/lf62Hb/vKu59Y2bX0sOfvoOkbcU2c/5
-iHvtklCzLd54uwtbW1ex0Yp2CDgtfcMpN5RlBF++iWGQ0g6HkkR37QaSTG4rOV8U
-+sGJea8sk18Nx2EBobN9
-=8qZx
------END PGP SIGNATURE-----
-
---SEFvVLxbW/dEDtN8--
+-- 
+Michal Hocko
+SUSE Labs
