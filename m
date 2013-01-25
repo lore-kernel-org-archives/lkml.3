@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab3AYQ74 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 11:59:56 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:49008 "EHLO
+	id S1757565Ab3AYQ7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 11:59:47 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:48998 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757550Ab3AYQ7q (ORCPT
+	with ESMTP id S1757547Ab3AYQ7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 11:59:46 -0500
+	Fri, 25 Jan 2013 11:59:45 -0500
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Linus Walleij <linus.walleij@linaro.org>,
         Grant Likely <grant.likely@secretlab.ca>
@@ -18,9 +18,9 @@ Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH 2/2] gpio: pca953x: use managed resources
-Date: Fri, 25 Jan 2013 17:59:28 +0100
-Message-Id: <1359133168-14879-3-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH 1/2] gpio: pca953x: use simple irqdomain
+Date: Fri, 25 Jan 2013 17:59:27 +0100
+Message-Id: <1359133168-14879-2-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359133168-14879-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1359133168-14879-1-git-send-email-gregory.clement@free-electrons.com>
@@ -28,118 +28,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+This switches the legacy irqdomain to the simple one, which will
+auto-allocate descriptors, and also make sure that we use
+irq_create_mapping() in the to_irq function. Also use the map function
+of irq_domain_ops to setup the irq configuration on demand and no more
+statically during the initialization of the driver.
 
-Using the devm_* managed resources the pca driver can be simplified
-and cut down on boilerplate code.
+Based on a initial patch from Linus Walleij <linus.walleij@linaro.org>
 
-[gcl: fixed a inccorect reference to a removed label, "goto fail_out"
-became "return ret"]
-
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
- drivers/gpio/gpio-pca953x.c |   32 ++++++++------------------------
- 1 file changed, 8 insertions(+), 24 deletions(-)
+ drivers/gpio/gpio-pca953x.c |   65 +++++++++++++++++++------------------------
+ 1 file changed, 28 insertions(+), 37 deletions(-)
 
 diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
-index 1dc9906..2405946 100644
+index 3a68aed..1dc9906 100644
 --- a/drivers/gpio/gpio-pca953x.c
 +++ b/drivers/gpio/gpio-pca953x.c
-@@ -560,7 +560,7 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- 		}
- 		ret = pca953x_read_regs(chip, offset, chip->irq_stat);
- 		if (ret)
--			goto out_failed;
-+			return ret;
- 
- 		/*
- 		 * There is no way to know which GPIO line generated the
-@@ -579,7 +579,8 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- 		if (!chip->domain)
- 			return -ENODEV;
- 
--		ret = request_threaded_irq(client->irq,
-+		ret = devm_request_threaded_irq(&client->dev,
-+					client->irq,
- 					   NULL,
- 					   pca953x_irq_handler,
- 					   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-@@ -596,12 +597,6 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- 	return 0;
- }
- 
--static void pca953x_irq_teardown(struct pca953x_chip *chip)
--{
--	if (chip->irq_base != -1) {
--		free_irq(chip->client->irq, chip);
--	}
--}
- #else /* CONFIG_GPIO_PCA953X_IRQ */
- static int pca953x_irq_setup(struct pca953x_chip *chip,
- 			     const struct i2c_device_id *id,
-@@ -614,10 +609,6 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- 
- 	return 0;
- }
--
--static void pca953x_irq_teardown(struct pca953x_chip *chip)
--{
--}
+@@ -89,7 +89,6 @@ struct pca953x_chip {
+ 	u8 irq_stat[MAX_BANK];
+ 	u8 irq_trig_raise[MAX_BANK];
+ 	u8 irq_trig_fall[MAX_BANK];
+-	int	 irq_base;
+ 	struct irq_domain *domain;
  #endif
  
- /*
-@@ -736,7 +727,8 @@ static int pca953x_probe(struct i2c_client *client,
- 	int ret;
- 	u32 invert = 0;
+@@ -372,7 +371,7 @@ static int pca953x_gpio_to_irq(struct gpio_chip *gc, unsigned off)
+ 	struct pca953x_chip *chip;
  
--	chip = kzalloc(sizeof(struct pca953x_chip), GFP_KERNEL);
-+	chip = devm_kzalloc(&client->dev,
-+			sizeof(struct pca953x_chip), GFP_KERNEL);
- 	if (chip == NULL)
- 		return -ENOMEM;
+ 	chip = container_of(gc, struct pca953x_chip, gpio_chip);
+-	return chip->irq_base + off;
++	return irq_create_mapping(chip->domain, off);
+ }
  
-@@ -771,15 +763,15 @@ static int pca953x_probe(struct i2c_client *client,
- 	else
- 		ret = device_pca957x_init(chip, invert);
- 	if (ret)
--		goto out_failed;
-+		return ret;
+ static void pca953x_irq_mask(struct irq_data *d)
+@@ -520,6 +519,27 @@ static irqreturn_t pca953x_irq_handler(int irq, void *devid)
+ 	return IRQ_HANDLED;
+ }
  
- 	ret = pca953x_irq_setup(chip, id, irq_base);
- 	if (ret)
--		goto out_failed;
-+		return ret;
++static int pca953x_gpio_irq_map(struct irq_domain *d, unsigned int irq,
++		       irq_hw_number_t hwirq)
++{
++	irq_clear_status_flags(irq, IRQ_NOREQUEST);
++	irq_set_chip_data(irq, d->host_data);
++	irq_set_chip(irq, &pca953x_irq_chip);
++	irq_set_nested_thread(irq, true);
++#ifdef CONFIG_ARM
++	set_irq_flags(irq, IRQF_VALID);
++#else
++	irq_set_noprobe(irq);
++#endif
++
++	return 0;
++}
++
++static const struct irq_domain_ops pca953x_irq_simple_ops = {
++	.map = pca953x_gpio_irq_map,
++	.xlate = irq_domain_xlate_twocell,
++};
++
+ static int pca953x_irq_setup(struct pca953x_chip *chip,
+ 			     const struct i2c_device_id *id,
+ 			     int irq_base)
+@@ -529,7 +549,6 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
  
- 	ret = gpiochip_add(&chip->gpio_chip);
- 	if (ret)
--		goto out_failed_irq;
-+		return ret;
+ 	if (irq_base != -1
+ 			&& (id->driver_data & PCA_INT)) {
+-		int lvl;
  
- 	if (pdata && pdata->setup) {
- 		ret = pdata->setup(client, chip->gpio_chip.base,
-@@ -790,12 +782,6 @@ static int pca953x_probe(struct i2c_client *client,
+ 		switch (chip->chip_type) {
+ 		case PCA953X_TYPE:
+@@ -552,34 +571,13 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
+ 			chip->irq_stat[i] &= chip->reg_direction[i];
+ 		mutex_init(&chip->irq_lock);
  
- 	i2c_set_clientdata(client, chip);
+-		chip->irq_base = irq_alloc_descs(-1, irq_base, chip->gpio_chip.ngpio, -1);
+-		if (chip->irq_base < 0)
+-			goto out_failed;
+-
+-		chip->domain = irq_domain_add_legacy(client->dev.of_node,
++		chip->domain = irq_domain_add_simple(client->dev.of_node,
+ 						chip->gpio_chip.ngpio,
+-						chip->irq_base,
+-						0,
+-						&irq_domain_simple_ops,
++						irq_base,
++						&pca953x_irq_simple_ops,
+ 						NULL);
+-		if (!chip->domain) {
+-			ret = -ENODEV;
+-			goto out_irqdesc_free;
+-		}
+-
+-		for (lvl = 0; lvl < chip->gpio_chip.ngpio; lvl++) {
+-			int irq = lvl + chip->irq_base;
+-
+-			irq_clear_status_flags(irq, IRQ_NOREQUEST);
+-			irq_set_chip_data(irq, chip);
+-			irq_set_chip(irq, &pca953x_irq_chip);
+-			irq_set_nested_thread(irq, true);
+-#ifdef CONFIG_ARM
+-			set_irq_flags(irq, IRQF_VALID);
+-#else
+-			irq_set_noprobe(irq);
+-#endif
+-		}
++		if (!chip->domain)
++			return -ENODEV;
+ 
+ 		ret = request_threaded_irq(client->irq,
+ 					   NULL,
+@@ -589,25 +587,18 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
+ 		if (ret) {
+ 			dev_err(&client->dev, "failed to request irq %d\n",
+ 				client->irq);
+-			goto out_irqdesc_free;
++			return ret;
+ 		}
+ 
+ 		chip->gpio_chip.to_irq = pca953x_gpio_to_irq;
+ 	}
+ 
  	return 0;
 -
--out_failed_irq:
--	pca953x_irq_teardown(chip);
+-out_irqdesc_free:
+-	irq_free_descs(chip->irq_base, chip->gpio_chip.ngpio);
 -out_failed:
--	kfree(chip);
+-	chip->irq_base = -1;
 -	return ret;
  }
  
- static int pca953x_remove(struct i2c_client *client)
-@@ -821,8 +807,6 @@ static int pca953x_remove(struct i2c_client *client)
- 		return ret;
+ static void pca953x_irq_teardown(struct pca953x_chip *chip)
+ {
+ 	if (chip->irq_base != -1) {
+-		irq_free_descs(chip->irq_base, chip->gpio_chip.ngpio);
+ 		free_irq(chip->client->irq, chip);
  	}
- 
--	pca953x_irq_teardown(chip);
--	kfree(chip);
- 	return 0;
  }
- 
 -- 
 1.7.9.5
 
