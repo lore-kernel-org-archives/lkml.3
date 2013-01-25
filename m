@@ -1,137 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757845Ab3AYRrT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 12:47:19 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:41948 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757820Ab3AYRrQ (ORCPT
+	id S1757547Ab3AYRum (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 12:50:42 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:55762 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755627Ab3AYRui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 12:47:16 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] staging: zsmalloc: add gfp flags to zs_create_pool
-Date: Fri, 25 Jan 2013 11:46:15 -0600
-Message-Id: <1359135978-15119-2-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359135978-15119-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1359135978-15119-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012517-7282-0000-0000-0000138108EF
+	Fri, 25 Jan 2013 12:50:38 -0500
+X-Greylist: delayed 318 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Jan 2013 12:50:38 EST
+MIME-Version: 1.0
+In-Reply-To: <5102583E.4030109@cn.fujitsu.com>
+References: <1356594177-29453-1-git-send-email-linfeng@cn.fujitsu.com>
+ <CAErSpo7EmvDaK11P6r-PKxPBqHQBPaGvZj=zvNZ8w=KFbdFgYA@mail.gmail.com> <5102583E.4030109@cn.fujitsu.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 25 Jan 2013 10:44:59 -0700
+Message-ID: <CAErSpo58qUuwd+8bGMWQHQ6KrfQMvHGb+REVkpJqQdrfAQe3Qw@mail.gmail.com>
+Subject: Re: [PATCH] pci-sysfs: replace mutex_lock with mutex_trylock to avoid
+ potential deadlock situation
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Lin Feng <linfeng@cn.fujitsu.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tangchen@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zs_create_pool() currently takes a gfp flags argument
-that is used when growing the memory pool.  However
-it is not used in allocating the metadata for the pool
-itself.  That is currently hardcoded to GFP_KERNEL.
+[+cc Yinghai]
 
-zswap calls zs_create_pool() at swapon time which is done
-in atomic context, resulting in a "might sleep" warning.
+On Fri, Jan 25, 2013 at 3:02 AM, Gu Zheng <guz.fnst@cn.fujitsu.com> wrote:
+> Hi Bjorn,
+>         Thanks for your review and comments! Please refer to inlined comments below.
+>
+> On 01/25/2013 07:12 AM, Bjorn Helgaas wrote:
+>
+>> On Thu, Dec 27, 2012 at 12:42 AM, Lin Feng <linfeng@cn.fujitsu.com> wrote:
+>>> There is a potential deadlock situation when we manipulate the pci-sysfs user
+>>> interfaces from different bus hierarchy simultaneously, described as following:
+>>>
+>>> path1: sysfs remove device:             | path2: sysfs rescan device:
+>>> sysfs_schedule_callback_work()          | sysfs_write_file()
+>>>   remove_callback()                     |   flush_write_buffer()
+>>> *1* mutex_lock(&pci_remove_rescan_mutex)|*2*  sysfs_get_active(attr_sd)
+>>>       ...                               |     dev_attr_store()
+>>>         device_remove_file()            |       dev_rescan_store()
+>>>           ...                           |*4*      mutex_lock(&pci_remove_rescan_mutex)
+>>> *3*       sysfs_deactivate(sd)          |     ...
+>>>             wait_for_completion()       |*5*  sysfs_put_active(attr_sd)
+>>> *6* mutex_unlock(&pci_remove_rescan_mutex)
+> ...snip...
+>>> Reported-by: Taku Izumi <izumi.taku@jp.fujitsu.com>
+>>> Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+>>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>>> ---
+>>>  drivers/pci/pci-sysfs.c |   42 ++++++++++++++++++++++++++----------------
+>>>  1 files changed, 26 insertions(+), 16 deletions(-)
+>>>
+>>> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+>>> index 05b78b1..d2efbb0 100644
+>>> --- a/drivers/pci/pci-sysfs.c
+>>> +++ b/drivers/pci/pci-sysfs.c
+>>> @@ -295,10 +295,13 @@ static ssize_t bus_rescan_store(struct bus_type *bus,
+> const char *buf,
+>>>                 return -EINVAL;
+>>>
+>>>         if (val) {
+>>> -               mutex_lock(&pci_remove_rescan_mutex);
+>>> -               while ((b = pci_find_next_bus(b)) != NULL)
+>>> -                       pci_rescan_bus(b);
+>>> -               mutex_unlock(&pci_remove_rescan_mutex);
+>>> +               if (mutex_trylock(&pci_remove_rescan_mutex)) {
+>>> +                       while ((b = pci_find_next_bus(b)) != NULL)
+>>> +                               pci_rescan_bus(b);
+>>> +                       mutex_unlock(&pci_remove_rescan_mutex);
+>>> +               } else {
+>>> +                       return 0;
+>> What are the semantics of returning 0 from a sysfs store function?
+>> Does the user's write just get dropped?  I would think we'd return
+>> "count" for that case.
+>
+> Oh, yes, return "count" seems suitable here, although we did not reach the
+> user's target goal(rescan the bus), but the user's write has been flushed yet.
+> But the user still can not judge whether pci_rescan_bus() was successfully done
+> only by the return value. Shall we return a suitable error here to tell the user
+> that his write was written, but pci_rescan_bus() was not done ?
+>
+>> Is there some sort of automatic retry in libc
+>> or something if we return zero?
+>
+> No, there is not any extra operations in libc if we return zero indeed.
+>
+>> Are you relying on the user code to
+>> notice that nothing was written and do its own retry?
+>>
+>
+> Yes, but it seems impractical.
+>
+>> The last seems most likely, but that seems like it complicates the
+>> user's life unnecessarily.
+>>
+>>> +               }
+>>>         }
+>>>         return count;
+>>>  }
+>>> @@ -319,9 +322,12 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
+>>>                 return -EINVAL;
+>>>
+>>>         if (val) {
+>>> -               mutex_lock(&pci_remove_rescan_mutex);
+>>> -               pci_rescan_bus(pdev->bus);
+>>> -               mutex_unlock(&pci_remove_rescan_mutex);
+>>> +               if (mutex_trylock(&pci_remove_rescan_mutex)) {
+>>> +                       pci_rescan_bus(pdev->bus);
+>>> +                       mutex_unlock(&pci_remove_rescan_mutex);
+>>> +               } else {
+>>> +                       return 0;
+>>> +               }
+>>>         }
+>>>         return count;
+>>>  }
+>>> @@ -330,9 +336,10 @@ static void remove_callback(struct device *dev)
+>>>  {
+>>>         struct pci_dev *pdev = to_pci_dev(dev);
+>>>
+>>> -       mutex_lock(&pci_remove_rescan_mutex);
+>>> -       pci_stop_and_remove_bus_device(pdev);
+>>> -       mutex_unlock(&pci_remove_rescan_mutex);
+>>> +       if (mutex_trylock(&pci_remove_rescan_mutex)) {
+>>> +               pci_stop_and_remove_bus_device(pdev);
+>>> +               mutex_unlock(&pci_remove_rescan_mutex);
+>>> +       }
+>> In the other cases, I think the user will at least get some
+>> indication, e.g., a write() that returns zero, when we abort.  But
+>> here, we silently skip the pci_stop_and_remove_bus_device().  That
+>> sounds wrong to me.  What actually happens here, and why is it OK to
+>> skip it?
+>
+> Yeah, the hasty skip seems not suitable. We should give out some information
+> here, if we can not do pci_stop_and_remove_bus_device().
+>
+>> Can we avoid the deadlock by queuing these in a workqueue instead of
+>> using the mutex_trylock() approach?
+>>
+>
+> No, I think use a workqueue to queue the rescan routine into workqueue as the
+> remove is not suitable.
+> After we queue the scan-bus work into workqueue, the rescan routine can
+> return directly(case1) or wait until work is completed(case2).
+> case1:
+> If we return directly after we queue the scan-bus work into workqueue.
+> Maybe this work will be scheduled some time later. If there is a
+> user's routine want to use a new-added device before the scan-bus work is
+> successfully done will fail. It can avoid the deadlock, but the rescan routine
+> is executed asynchronously.
+> case2:
+> If we wait until work is completed after we queue the scan-bus work into
+> workqueue. The s_active of the sys_dirent is still hold by us, so this approach
+> could not avoid the deadlock.
 
-This patch changes the meaning of the flags argument in
-zs_create_pool() to mean the flags for the metadata allocation,
-and adds a flags argument to zs_malloc that will be used for
-memory pool growth if required.
+I don't think the asynchronous nature of case 1 is a fatal problem.
+I'm not sure we can guarantee that a specific device is added and
+ready for use when the sysfs write completes, so I'm dubious about
+user space making assumptions about a device being ready.  It should
+probably use a different mechanism, like udev, to learn about a new
+device.
 
-Acked-by: Nitin Gupta <ngupta@vflare.org>
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
- drivers/staging/zram/zram_drv.c          |    4 ++--
- drivers/staging/zsmalloc/zsmalloc-main.c |    9 +++------
- drivers/staging/zsmalloc/zsmalloc.h      |    2 +-
- 3 files changed, 6 insertions(+), 9 deletions(-)
+I'm sorry that you tripped over this deadlock, because now I'm worried
+about related locking issues outside sysfs :)  The mutex you're
+fiddling with is only in sysfs, but the routines *protected* by that
+mutex are used in other places, too.  So what happens when a hotplug
+driver does a rescan at the same time a user does a rescan or remove
+via sysfs?  I don't even know what the rules are for protecting
+scan/remove, but I don't have confidence that the issue you're fixing
+is the only one.
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 6762b99..836dccf 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -325,7 +325,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		clen = PAGE_SIZE;
- 	}
- 
--	handle = zs_malloc(zram->mem_pool, clen);
-+	handle = zs_malloc(zram->mem_pool, clen, GFP_NOIO | __GFP_HIGHMEM);
- 	if (!handle) {
- 		pr_info("Error allocating memory for compressed "
- 			"page: %u, size=%zu\n", index, clen);
-@@ -565,7 +565,7 @@ int zram_init_device(struct zram *zram)
- 	/* zram devices sort of resembles non-rotational disks */
- 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
- 
--	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
-+	zram->mem_pool = zs_create_pool("zram", GFP_KERNEL);
- 	if (!zram->mem_pool) {
- 		pr_err("Error creating memory pool\n");
- 		ret = -ENOMEM;
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index eb00772..f29f170 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -205,8 +205,6 @@ struct link_free {
- 
- struct zs_pool {
- 	struct size_class size_class[ZS_SIZE_CLASSES];
--
--	gfp_t flags;	/* allocation flags used when growing pool */
- 	const char *name;
- };
- 
-@@ -818,7 +816,7 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
- 		return NULL;
- 
- 	ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
--	pool = kzalloc(ovhd_size, GFP_KERNEL);
-+	pool = kzalloc(ovhd_size, flags);
- 	if (!pool)
- 		return NULL;
- 
-@@ -838,7 +836,6 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
- 
- 	}
- 
--	pool->flags = flags;
- 	pool->name = name;
- 
- 	return pool;
-@@ -874,7 +871,7 @@ EXPORT_SYMBOL_GPL(zs_destroy_pool);
-  * otherwise 0.
-  * Allocation requests with size > ZS_MAX_ALLOC_SIZE will fail.
-  */
--unsigned long zs_malloc(struct zs_pool *pool, size_t size)
-+unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t flags)
- {
- 	unsigned long obj;
- 	struct link_free *link;
-@@ -896,7 +893,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
- 
- 	if (!first_page) {
- 		spin_unlock(&class->lock);
--		first_page = alloc_zspage(class, pool->flags);
-+		first_page = alloc_zspage(class, flags);
- 		if (unlikely(!first_page))
- 			return 0;
- 
-diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
-index de2e8bf..907ff03 100644
---- a/drivers/staging/zsmalloc/zsmalloc.h
-+++ b/drivers/staging/zsmalloc/zsmalloc.h
-@@ -31,7 +31,7 @@ struct zs_pool;
- struct zs_pool *zs_create_pool(const char *name, gfp_t flags);
- void zs_destroy_pool(struct zs_pool *pool);
- 
--unsigned long zs_malloc(struct zs_pool *pool, size_t size);
-+unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t flags);
- void zs_free(struct zs_pool *pool, unsigned long obj);
- 
- void *zs_map_object(struct zs_pool *pool, unsigned long handle,
--- 
-1.7.9.5
+Bjorn
 
+>>>  }
+>>>
+>>>  static ssize_t
+>>> @@ -366,12 +373,15 @@ dev_bus_rescan_store(struct device *dev, struct
+> device_attribute *attr,
+>>>                 return -EINVAL;
+>>>
+>>>         if (val) {
+>>> -               mutex_lock(&pci_remove_rescan_mutex);
+>>> -               if (!pci_is_root_bus(bus) && list_empty(&bus->devices))
+>>> -                       pci_rescan_bus_bridge_resize(bus->self);
+>>> -               else
+>>> -                       pci_rescan_bus(bus);
+>>> -               mutex_unlock(&pci_remove_rescan_mutex);
+>>> +               if (mutex_trylock(&pci_remove_rescan_mutex)) {
+>>> +                       if (!pci_is_root_bus(bus) && list_empty(&bus->devices))
+>>> +                               pci_rescan_bus_bridge_resize(bus->self);
+>>> +                       else
+>>> +                               pci_rescan_bus(bus);
+>>> +                       mutex_unlock(&pci_remove_rescan_mutex);
+>>> +               } else {
+>>> +                       return 0;
+>>> +               }
+>>>         }
+>>>         return count;
+>>>  }
+>>> --
+>>> 1.7.1
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
