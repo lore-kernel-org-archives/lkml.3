@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab3AYJaZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 04:30:25 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:61463 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752860Ab3AYJaU (ORCPT
+	id S1754596Ab3AYJcr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 04:32:47 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:58803 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752973Ab3AYJcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 04:30:20 -0500
+	Fri, 25 Jan 2013 04:32:45 -0500
+Date: Fri, 25 Jan 2013 10:32:41 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        X86 ML <x86@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 1/2] x86, Kconfig: Move PARAVIRT_DEBUG into the paravirt
+ menu
+Message-ID: <20130125093241.GA19717@gmail.com>
+References: <20130124173555.GJ13463@pd.tnic>
+ <1359049194-17505-1-git-send-email-bp@alien8.de>
+ <20130125082126.GD25314@gmail.com>
+ <20130125085146.GA23404@pd.tnic>
+ <20130125092032.GC31478@gmail.com>
+ <20130125092915.GB23404@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <CAHp75Vd_1iozR20gHO46fqVQMBrJ43rXbWrLKCesJcqxE5QAhA@mail.gmail.com>
-References: <CAOh2x=kqEzw9cvg=WLpjEbF50aTKCUUVd9GzNg8PqtBx_BpYLg@mail.gmail.com>
-	<1359032849-25551-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAOh2x=nnrEo69W7sBES85KgF0+WUy8Ouoq+SG1XiB54e7QLiow@mail.gmail.com>
-	<1359104204.12502.101.camel@smile>
-	<CAHp75Vex-t=q4aQtBsJHiu-r8u98UDPvcbgQi3Z+42dkQWL+YA@mail.gmail.com>
-	<CAKohponpZa5Lzf-0p_porTuidL+LhZX3xrHzkwnC6ffTMchRQg@mail.gmail.com>
-	<CAHp75Vd_1iozR20gHO46fqVQMBrJ43rXbWrLKCesJcqxE5QAhA@mail.gmail.com>
-Date: Fri, 25 Jan 2013 15:00:19 +0530
-X-Google-Sender-Auth: iLdP8dMXgKupNsHNkBGUkNPfuWk
-Message-ID: <CAOh2x==-amzWv_8s736LQ4AXi35kQY3q3VFLmSaTFBG7A_d0BA@mail.gmail.com>
-Subject: Re: [PATCH v3.5] dw_dmac: return proper residue value
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130125092915.GB23404@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 2:49 PM, Andy Shevchenko
-<andy.shevchenko@gmail.com> wrote:
-> On Fri, Jan 25, 2013 at 11:07 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> Who is going to right on ctlhi/lo?
 
-Ahh, my English :( (/s/right/write)
+* Borislav Petkov <bp@alien8.de> wrote:
 
-> dwc_do_single_block()
->
->> we write to ctlhi/lo only when we program new
->> transfer. and that is not going to happen while we are in middle of a transfer.
->
-> We have got a tasklet running inside tx_status call. Isn't possible?
-> tasklet runs scan_descriptors, that continues transfer in soft LLP mode.
+> On Fri, Jan 25, 2013 at 10:20:32AM +0100, Ingo Molnar wrote:
 
-But we have just executed scan_descriptor() before this function and it doesn't
-look possible that transfer wasn't over then and inbetween these calls we got an
-interrupt, scheduled an tasklet and called dwc_do_single_block() :)
+> > Maybe it's related, but I had to resolve two conflicts when 
+> > merging your two patches to tip:x86/cpu and then to 
+> > tip:master - first in arch/x86/Kconfig, then in 
+> > arch/x86/include/asm/hypervisor.h.
+> >
+> > The second conflict looked harmless, due to:
+> >
+> >   4cca6ea04d31 x86/apic: Allow x2apic without IR on VMware platform
+> 
+> Ok, I've triggered it here with one of my 64-bit randconfigs 
+> and have a fix already. Tell me against which branch you want 
+> the patches done and I'll prep them so - currently I'm doing 
+> them ontop of rc4+ and tip/master from yesterday.
+
+That's ok. I'll apply them to tip:x86/cpu and then resolve the 
+conflicts against tip:master.
+
+Thanks,
+
+	Ingo
