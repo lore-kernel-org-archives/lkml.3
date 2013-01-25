@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab3AYP2i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 10:28:38 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:59851 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754451Ab3AYP2f convert rfc822-to-8bit (ORCPT
+	id S1756899Ab3AYP2p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 10:28:45 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:59072 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756802Ab3AYP2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 10:28:35 -0500
-Message-ID: <1359127704.3287.12.camel@thor.lan>
-Subject: Re: [PATCH v3] lpc_ich: fix gpio base and control offsets
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Aaron Sierra <asierra@xes-inc.com>, Paul Bolle <pebolle@tiscali.nl>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        =?ISO-8859-1?Q?Ag=F3cs_P=E1l?= <agocs.pal.86@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 25 Jan 2013 10:28:24 -0500
-In-Reply-To: <1359121486.3287.11.camel@thor.lan>
-References: <b9fec05c-d383-4282-b2af-c95855ff6abb@zimbra>
-	 <3ffa5032-0565-48f0-a4ae-473452f4c902@zimbra>
-	 <CACRpkdZHndQsDZpn7BCFNXAO3k5vREYxDJkcYQ3_3sTbKAQLLA@mail.gmail.com>
-	 <1359121486.3287.11.camel@thor.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Fri, 25 Jan 2013 10:28:42 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: [PATCH 1/5] samples/seccomp: be less stupid about cross compiling
+Date: Fri, 25 Jan 2013 15:28:27 +0000
+Message-Id: <1359127711-19070-2-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1359127711-19070-1-git-send-email-arnd@arndb.de>
+References: <1359127711-19070-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:Csibt/crt+ozgTv6XrJBpLjVhxOA9hmSqVRzZQ3FJxm
+ IT/8J+GqyyGeaJEmb0h2oxs28GbK6gBYFfV/twztR7aogdLue8
+ 1oT5yYQLG7PWHaTld/X92fAOT8cTpmLwrLOwaZS5bQqNzaYfvX
+ Na2Fie68nX89SaSaed3atjZNsrIi0xNsGiv0dPxrNDXUdnmzX2
+ N3oixZNnGNozh/0fnjcygwI2s31j3BEmnGHnnVxpqfOMemPZfa
+ 2HvWnW9nwv2tMx/AncgGK+DPxeMHlYHbIviYu7iR3DGNznZGyZ
+ 46ENb5wc/GXnWuQi0iocTX2JbmGHTbppBpNx4S2v2YUENOQIiQ
+ e6LsoBj2gwimneFPYXrQpxuHYySk04pDm8SuT9mQv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-25 at 08:44 -0500, Peter Hurley wrote:
-> On Fri, 2013-01-25 at 10:47 +0100, Linus Walleij wrote:
-> > On Thu, Jan 24, 2013 at 9:52 PM, Aaron Sierra <asierra@xes-inc.com> wrote:
-> > 
-> > > In ICH5 and earlier the GPIOBASE and GPIOCTRL registers are found at
-> > > offsets 0x58 and 0x5C, respectively. This patch allows GPIO access to
-> > > properly be enabled (and disabled) for these chipsets.
-> > >
-> > > Signed-off-by: Agócs Pál <agocs.pal.86@gmail.com>
-> > > Signed-off-by: Aaron Sierra <asierra@xes-inc.com>
-> > 
-> > OK... Paul, can you test this on your setup?
-> > 
-> > > @@ -858,14 +874,35 @@ wdt_done:
-> > >  static int lpc_ich_probe(struct pci_dev *dev,
-> > >                                 const struct pci_device_id *id)
-> > >  {
-> > > +       struct lpc_ich_priv *priv;
-> > >         int ret;
-> > >         bool cell_added = false;
-> > >
-> > > -       ret = lpc_ich_init_wdt(dev, id);
-> > > +       priv = kmalloc(GFP_KERNEL, sizeof(struct lpc_ich_priv));
-> > > +       if (!priv)
-> > > +               return -ENOMEM;
-> > > +
-> > > +       priv->chipset = id->driver_data;
-> > 
-> > So where is this id->driver_data which is just assigned to
-> > priv->chipset coming from again? ACPI something?
-> 
-> That's how pci device probing works.
-> 
-> The driver defines a struct pci_device_id[] table with
-> DEFINE_PCI_DEVICE_TABLE(), initializing the .driver_data fields with an
-> index into a static array of device types (in this case, struct
-> lpc_ich_info lpc_chipset_info[]), and the pci subsystem passes the
-> actual matching pci_device_id* to the driver's probe() function.
-> 
-> There's more information in Documentation/pci.txt
+The seccomp filters are currently built for the build
+host, not for the machine that they are going to run
+on, but they are also built for with the -m32 flag
+if the kernel is built for a 32 bit machine, both
+of which seems rather odd.
 
-Correction. Documentation/PCI/pci.txt
+It broke allyesconfig on my machine, which is x86-64, but
+building for 32 bit ARM, with this error message:
 
+In file included from /usr/include/stdio.h:28:0,
+                 from samples/seccomp/bpf-fancy.c:15:
+/usr/include/features.h:324:26: fatal error: bits/predefs.h: No such file or directory
 
+because there are no 32 bit libc headers installed on
+this machine. We should really be building all the
+samples for the target machine rather than the build
+host, but since the infrastructure for that appears
+to be missing right now, let's be a little bit smarter
+and not pass the '-m32' flag to the HOSTCC when cross-
+compiling.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Kees Cook <keescook@chromium.org>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: James Morris <james.l.morris@oracle.com>
+---
+ samples/seccomp/Makefile | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/samples/seccomp/Makefile b/samples/seccomp/Makefile
+index bbbd276..7203e66 100644
+--- a/samples/seccomp/Makefile
++++ b/samples/seccomp/Makefile
+@@ -19,6 +19,7 @@ bpf-direct-objs := bpf-direct.o
+ 
+ # Try to match the kernel target.
+ ifndef CONFIG_64BIT
++ifndef CROSS_COMPILE
+ 
+ # s390 has -m31 flag to build 31 bit binaries
+ ifndef CONFIG_S390
+@@ -35,6 +36,7 @@ HOSTLOADLIBES_bpf-direct += $(MFLAG)
+ HOSTLOADLIBES_bpf-fancy += $(MFLAG)
+ HOSTLOADLIBES_dropper += $(MFLAG)
+ endif
++endif
+ 
+ # Tell kbuild to always build the programs
+ always := $(hostprogs-y)
+-- 
+1.8.0
 
