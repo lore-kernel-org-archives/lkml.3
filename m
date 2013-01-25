@@ -1,166 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757245Ab3AYLoM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:44:12 -0500
-Received: from mga02.intel.com ([134.134.136.20]:46126 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753657Ab3AYLoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:44:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,537,1355126400"; 
-   d="scan'208";a="252332623"
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linus <linus.walleij@linaro.org>
-Cc: <grant.likely@secretlab.ca>, <linux-acpi@vger.kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, <tianyu.lan@intel.com>,
-        <linux-kernel@vger.kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [RFC PATCH] gpiolib-acpi: Add ACPI5 event model support to gpio.
-Date: Fri, 25 Jan 2013 13:48:25 +0200
-Message-Id: <1359114505-4473-1-git-send-email-mathias.nyman@linux.intel.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S932174Ab3AYLpH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 06:45:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41949 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657Ab3AYLpE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 06:45:04 -0500
+Date: Fri, 25 Jan 2013 03:44:42 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-fc5871ed0dcf8c76dd1b3b36ff0f70112d2f0e74@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
+        stefanbeller@googlemail.com, namhyung@kernel.org, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        stefanbeller@googlemail.com, jolsa@redhat.com, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1356599507-14226-10-git-send-email-namhyung@kernel.org>
+References: <1356599507-14226-10-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf sort:
+  Separate out branch stack specific sort keys
+Git-Commit-ID: fc5871ed0dcf8c76dd1b3b36ff0f70112d2f0e74
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:44:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ability to handle ACPI events signalled by GPIO interrupts.
+Commit-ID:  fc5871ed0dcf8c76dd1b3b36ff0f70112d2f0e74
+Gitweb:     http://git.kernel.org/tip/fc5871ed0dcf8c76dd1b3b36ff0f70112d2f0e74
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Thu, 27 Dec 2012 18:11:46 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 24 Jan 2013 16:40:26 -0300
 
-ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
-handled by ACPI event methods which need to be called from the GPIO
-controller's interrupt handler. acpi_gpio_request_interrupt() finds out which
-gpio pins have acpi event methods and assigns interrupt handlers that calls
-the acpi event methods for those pins.
+perf sort: Separate out branch stack specific sort keys
 
-Partially based on work by Rui Zhang <rui.zhang@intel.com>
+Current perf report gets segmentation fault when a branch stack specific
+sort key is provided by --sort option to a perf.data file which contains
+no branch infomation.  It's because those sort keys reference branch
+info of a hist entry unconditionally.  Maybe we can change it checks
+whether such branch info is valid or not.  But if the branch stacks are
+not recorded, it'd be nop.  Thus it'd be better to make those keys are
+unselectable.
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+This patch separates those keys to a different dimension array, so that
+if user passes such a key to a file which has no branch stack will get
+following message rather than a segfault.
+
+  Error: Invalid --sort key: `symbol_from'
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Reported-by: Stefan Beller <stefanbeller@googlemail.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1356599507-14226-10-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/gpio/gpiolib-acpi.c |   80 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/acpi_gpio.h   |    4 ++
- 2 files changed, 84 insertions(+), 0 deletions(-)
+ tools/perf/util/sort.c | 64 ++++++++++++++++++++++++++++++++++++++++----------
+ tools/perf/util/sort.h |  8 +++++--
+ 2 files changed, 58 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-index cbad6e9..b6ab041 100644
---- a/drivers/gpio/gpiolib-acpi.c
-+++ b/drivers/gpio/gpiolib-acpi.c
-@@ -15,6 +15,7 @@
- #include <linux/export.h>
- #include <linux/acpi_gpio.h>
- #include <linux/acpi.h>
-+#include <linux/interrupt.h>
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 39b1ab0..7ad6239 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -480,30 +480,40 @@ struct sort_dimension {
  
- static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
+ #define DIM(d, n, func) [d] = { .name = n, .entry = &(func) }
+ 
+-static struct sort_dimension sort_dimensions[] = {
++static struct sort_dimension common_sort_dimensions[] = {
+ 	DIM(SORT_PID, "pid", sort_thread),
+ 	DIM(SORT_COMM, "comm", sort_comm),
+ 	DIM(SORT_DSO, "dso", sort_dso),
+-	DIM(SORT_DSO_FROM, "dso_from", sort_dso_from),
+-	DIM(SORT_DSO_TO, "dso_to", sort_dso_to),
+ 	DIM(SORT_SYM, "symbol", sort_sym),
+-	DIM(SORT_SYM_TO, "symbol_from", sort_sym_from),
+-	DIM(SORT_SYM_FROM, "symbol_to", sort_sym_to),
+ 	DIM(SORT_PARENT, "parent", sort_parent),
+ 	DIM(SORT_CPU, "cpu", sort_cpu),
+-	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
+ 	DIM(SORT_SRCLINE, "srcline", sort_srcline),
+ };
+ 
++#undef DIM
++
++#define DIM(d, n, func) [d - __SORT_BRANCH_STACK] = { .name = n, .entry = &(func) }
++
++static struct sort_dimension bstack_sort_dimensions[] = {
++	DIM(SORT_DSO_FROM, "dso_from", sort_dso_from),
++	DIM(SORT_DSO_TO, "dso_to", sort_dso_to),
++	DIM(SORT_SYM_FROM, "symbol_from", sort_sym_from),
++	DIM(SORT_SYM_TO, "symbol_to", sort_sym_to),
++	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
++};
++
++#undef DIM
++
+ int sort_dimension__add(const char *tok)
  {
-@@ -52,3 +53,82 @@ int acpi_get_gpio(char *path, int pin)
- 	return chip->base + pin;
- }
- EXPORT_SYMBOL_GPL(acpi_get_gpio);
+ 	unsigned int i;
+ 
+-	for (i = 0; i < ARRAY_SIZE(sort_dimensions); i++) {
+-		struct sort_dimension *sd = &sort_dimensions[i];
++	for (i = 0; i < ARRAY_SIZE(common_sort_dimensions); i++) {
++		struct sort_dimension *sd = &common_sort_dimensions[i];
+ 
+ 		if (strncasecmp(tok, sd->name, strlen(tok)))
+ 			continue;
 +
+ 		if (sd->entry == &sort_parent) {
+ 			int ret = regcomp(&parent_regex, parent_pattern, REG_EXTENDED);
+ 			if (ret) {
+@@ -514,9 +524,7 @@ int sort_dimension__add(const char *tok)
+ 				return -EINVAL;
+ 			}
+ 			sort__has_parent = 1;
+-		} else if (sd->entry == &sort_sym ||
+-			   sd->entry == &sort_sym_from ||
+-			   sd->entry == &sort_sym_to) {
++		} else if (sd->entry == &sort_sym) {
+ 			sort__has_sym = 1;
+ 		}
+ 
+@@ -534,6 +542,34 @@ int sort_dimension__add(const char *tok)
+ 
+ 		return 0;
+ 	}
 +
-+static irqreturn_t acpi_gpio_irq_handler(int irq, void *data)
-+{
-+	acpi_handle handle = data;
++	for (i = 0; i < ARRAY_SIZE(bstack_sort_dimensions); i++) {
++		struct sort_dimension *sd = &bstack_sort_dimensions[i];
 +
-+	acpi_evaluate_object(handle, NULL, NULL, NULL);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * acpi_gpio_request_interrupt() - Register isr for gpio controller ACPI events
-+ * @chip:      gpio chip representation of the gpio controller
-+ *
-+ * ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
-+ * handled by ACPI event methods which need to be called from the GPIO
-+ * controller's interrupt handler. acpi_gpio_request_interrupt finds out which
-+ * gpio pins have acpi event methods and assigns interrupt handlers that calls
-+ * the acpi event methods for those pins.
-+ */
-+
-+void acpi_gpio_request_interrupt(struct gpio_chip *chip)
-+{
-+	struct acpi_buffer buf = {ACPI_ALLOCATE_BUFFER, NULL};
-+	struct acpi_resource *res;
-+	acpi_handle handle, ev_handle;
-+	acpi_status status;
-+	unsigned int pin, irq;
-+	char ev_name[5];
-+
-+	if (!chip->dev || !chip->to_irq)
-+		return;
-+
-+	handle = ACPI_HANDLE(chip->dev);
-+	if (!handle)
-+		return;
-+
-+	status = acpi_get_event_resources(handle, &buf);
-+	if (ACPI_FAILURE(status))
-+		return;
-+
-+	/* If a gpio interrupt has an acpi event handler method, then
-+	 * set up an interrupt handler that calls the acpi event handler
-+	 */
-+
-+	for (res = buf.pointer;
-+	     res && (res->type != ACPI_RESOURCE_TYPE_END_TAG);
-+	     res = ACPI_NEXT_RESOURCE(res)) {
-+
-+		if (res->type != ACPI_RESOURCE_TYPE_GPIO ||
-+		    res->data.gpio.connection_type !=
-+		    ACPI_RESOURCE_GPIO_TYPE_INT)
++		if (strncasecmp(tok, sd->name, strlen(tok)))
 +			continue;
 +
-+		pin = res->data.gpio.pin_table[0];
-+		if (pin > chip->ngpio)
-+			continue;
++		if (sort__branch_mode != 1)
++			return -EINVAL;
 +
-+		sprintf(ev_name, "_%c%02X",
-+		res->data.gpio.triggering ? 'E' : 'L', pin);
++		if (sd->entry == &sort_sym_from || sd->entry == &sort_sym_to)
++			sort__has_sym = 1;
 +
-+		status = acpi_get_handle(handle, ev_name, &ev_handle);
-+		if (ACPI_FAILURE(status))
-+			continue;
++		if (sd->taken)
++			return 0;
 +
-+		irq = chip->to_irq(chip, pin);
-+		if (irq < 0)
-+			continue;
++		if (sd->entry->se_collapse)
++			sort__need_collapse = 1;
 +
-+		/* Assume BIOS sets the triggering, so no flags */
-+		devm_request_threaded_irq(chip->dev, irq, NULL,
-+					  acpi_gpio_irq_handler,
-+					  0,
-+					  "GPIO-signaled-ACPI-event",
-+					  ev_handle);
++		if (list_empty(&hist_entry__sort_list))
++			sort__first_dimension = i + __SORT_BRANCH_STACK;
++
++		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
++		sd->taken = 1;
++
++		return 0;
 +	}
-+}
-+EXPORT_SYMBOL(acpi_gpio_request_interrupt);
-diff --git a/include/linux/acpi_gpio.h b/include/linux/acpi_gpio.h
-index 91615a3..43c541d 100644
---- a/include/linux/acpi_gpio.h
-+++ b/include/linux/acpi_gpio.h
-@@ -2,10 +2,12 @@
- #define _LINUX_ACPI_GPIO_H_
- 
- #include <linux/errno.h>
-+#include <linux/gpio.h>
- 
- #ifdef CONFIG_GPIO_ACPI
- 
- int acpi_get_gpio(char *path, int pin);
-+void acpi_gpio_request_interrupt(struct gpio_chip *chip);
- 
- #else /* CONFIG_GPIO_ACPI */
- 
-@@ -14,6 +16,8 @@ static inline int acpi_get_gpio(char *path, int pin)
- 	return -ENODEV;
++
+ 	return -ESRCH;
  }
  
-+static inline void acpi_gpio_request_interrupt(struct gpio_chip *chip) { }
-+
- #endif /* CONFIG_GPIO_ACPI */
+@@ -543,7 +579,11 @@ void setup_sorting(const char * const usagestr[], const struct option *opts)
  
- #endif /* _LINUX_ACPI_GPIO_H_ */
--- 
-1.7.4.1
-
+ 	for (tok = strtok_r(str, ", ", &tmp);
+ 			tok; tok = strtok_r(NULL, ", ", &tmp)) {
+-		if (sort_dimension__add(tok) < 0) {
++		int ret = sort_dimension__add(tok);
++		if (ret == -EINVAL) {
++			error("Invalid --sort key: `%s'", tok);
++			usage_with_options(usagestr, opts);
++		} else if (ret == -ESRCH) {
+ 			error("Unknown --sort key: `%s'", tok);
+ 			usage_with_options(usagestr, opts);
+ 		}
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index a1c0d56..e994ad3e 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -122,18 +122,22 @@ static inline void hist_entry__add_pair(struct hist_entry *he,
+ }
+ 
+ enum sort_type {
++	/* common sort keys */
+ 	SORT_PID,
+ 	SORT_COMM,
+ 	SORT_DSO,
+ 	SORT_SYM,
+ 	SORT_PARENT,
+ 	SORT_CPU,
+-	SORT_DSO_FROM,
++	SORT_SRCLINE,
++
++	/* branch stack specific sort keys */
++	__SORT_BRANCH_STACK,
++	SORT_DSO_FROM = __SORT_BRANCH_STACK,
+ 	SORT_DSO_TO,
+ 	SORT_SYM_FROM,
+ 	SORT_SYM_TO,
+ 	SORT_MISPREDICT,
+-	SORT_SRCLINE,
+ };
+ 
+ /*
