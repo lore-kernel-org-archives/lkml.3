@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab3AYIJf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 03:09:35 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:54310 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab3AYIJd (ORCPT
+	id S1753394Ab3AYIKE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 03:10:04 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:45035 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab3AYIKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 03:09:33 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r0P89LaP007779, This message is released by code: ctaloc0852
-From: <wei_wang@realsil.com.cn>
-To: <gregkh@linuxfoundation.org>, <devel@linuxdriverproject.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <adam.lee@canonical.com>, Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH] MFD:rtsx:Avoid kernel panic if rtsx_pci_sdmmc not probed
-Date: Fri, 25 Jan 2013 16:09:19 +0800
-Message-ID: <1359101359-20144-1-git-send-email-wei_wang@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 25 Jan 2013 03:10:03 -0500
+Message-ID: <51023D61.9000901@huawei.com>
+Date: Fri, 25 Jan 2013 16:08:01 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Tejun Heo <tj@kernel.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH v2] cpuset: fix cpuset_print_task_mems_allowed() vs rename()
+ race
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei WANG <wei_wang@realsil.com.cn>
+rename() will change dentry->d_name. The result of this race can
+be worse than seeing partially rewritten name, but we might access
+a stale pointer because rename() will re-allocate memory to hold
+a longer name.
 
-If rtsx_pci_sdmmc is not probed, function pointer pcr->slots[].card_event
-will point to NULL, and thus rtsx_pci_card_detect will reference a NULL pointer.
-Check card_event pointer before referencing it can avoid kernel panic.
+It's safe in the protection of dentry->d_lock.
 
-Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+v2: check NULL dentry before acquiring dentry lock.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- drivers/mfd/rtsx_pcr.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/cpuset.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 910200e..9fc5700 100644
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -786,10 +786,10 @@ static void rtsx_pci_card_detect(struct work_struct *work)
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 16be7c9..4f9dfe4 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2606,8 +2606,16 @@ void cpuset_print_task_mems_allowed(struct task_struct *tsk)
  
- 	spin_unlock_irqrestore(&pcr->lock, flags);
- 
--	if (card_detect & SD_EXIST)
-+	if ((card_detect & SD_EXIST) && pcr->slots[RTSX_SD_CARD].card_event)
- 		pcr->slots[RTSX_SD_CARD].card_event(
- 				pcr->slots[RTSX_SD_CARD].p_dev);
--	if (card_detect & MS_EXIST)
-+	if ((card_detect & MS_EXIST) && pcr->slots[RTSX_MS_CARD].card_event)
- 		pcr->slots[RTSX_MS_CARD].card_event(
- 				pcr->slots[RTSX_MS_CARD].p_dev);
- }
+ 	dentry = task_cs(tsk)->css.cgroup->dentry;
+ 	spin_lock(&cpuset_buffer_lock);
+-	snprintf(cpuset_name, CPUSET_NAME_LEN,
+-		 dentry ? (const char *)dentry->d_name.name : "/");
++
++	if (!dentry) {
++		strcpy(cpuset_name, "/");
++	} else {
++		spin_lock(&dentry->d_lock);
++		strlcpy(cpuset_name, (const char *)dentry->d_name.name,
++			CPUSET_NAME_LEN);
++		spin_unlock(&dentry->d_lock);
++	}
++
+ 	nodelist_scnprintf(cpuset_nodelist, CPUSET_NODELIST_LEN,
+ 			   tsk->mems_allowed);
+ 	printk(KERN_INFO "%s cpuset=%s mems_allowed=%s\n",
 -- 
-1.7.9.5
-
+1.8.0.2
