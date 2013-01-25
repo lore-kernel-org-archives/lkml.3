@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470Ab3AYN67 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:58:59 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:25880 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753359Ab3AYN65 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:58:57 -0500
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGji0LFus=
-X-RZG-CLASS-ID: mo00
-Date: Fri, 25 Jan 2013 14:58:35 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: KY Srinivasan <kys@microsoft.com>, "bp@alien8.de" <bp@alien8.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
- special hypervisor interrupts
-Message-ID: <20130125135834.GA18361@aepfle.de>
-References: <1358990259-22551-1-git-send-email-kys@microsoft.com>
- <5101035D02000078000B8FFD@nat28.tlf.novell.com>
- <27092660926e4d3f80394697cc0dc858@SN2PR03MB061.namprd03.prod.outlook.com>
- <51016C3202000078000B943E@nat28.tlf.novell.com>
- <f6cbfec9c014433fa54af61d8f436ebb@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130124185943.GA19194@aepfle.de>
- <510243B802000078000B9735@nat28.tlf.novell.com>
+	id S1757200Ab3AYOBY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 09:01:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:39588 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754935Ab3AYOBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 09:01:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,538,1355126400"; 
+   d="scan'208";a="252384428"
+Message-ID: <51029142.9050901@linux.intel.com>
+Date: Fri, 25 Jan 2013 16:05:54 +0200
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <510243B802000078000B9735@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21.rev5632 (2013-01-17)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        grant.likely@secretlab.ca, linux-acpi@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>, tianyu.lan@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] gpiolib-acpi: Add ACPI5 event model support to gpio.
+References: <1359114505-4473-1-git-send-email-mathias.nyman@linux.intel.com> <CACRpkdZvoacYP0rwnrcyHfKWrN67HvN5jCVom4Lx6Qd9RC0fjg@mail.gmail.com>
+In-Reply-To: <CACRpkdZvoacYP0rwnrcyHfKWrN67HvN5jCVom4Lx6Qd9RC0fjg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, Jan Beulich wrote:
+On 01/25/2013 02:54 PM, Linus Walleij wrote:
+> On Fri, Jan 25, 2013 at 12:48 PM, Mathias Nyman
+> <mathias.nyman@linux.intel.com>  wrote:
+>
+>> Add ability to handle ACPI events signalled by GPIO interrupts.
+>>
+>> ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
+>> handled by ACPI event methods which need to be called from the GPIO
+>> controller's interrupt handler. acpi_gpio_request_interrupt() finds out which
+>> gpio pins have acpi event methods and assigns interrupt handlers that calls
+>> the acpi event methods for those pins.
+>>
+>> Partially based on work by Rui Zhang<rui.zhang@intel.com>
+>>
+>> Signed-off-by: Mathias Nyman<mathias.nyman@linux.intel.com>
+> (...)
+>> +/**
+>> + * acpi_gpio_request_interrupt() - Register isr for gpio controller ACPI events
+>> + * @chip:      gpio chip representation of the gpio controller
+>
+>
+> Hm chip, controller, controller, chip chip, controller controller...
+> Are we using two different names for the same thing?
 
-> >>> On 24.01.13 at 19:59, Olaf Hering <olaf@aepfle.de> wrote:
-> > On Thu, Jan 24, KY Srinivasan wrote:
-> > 
-> > 
-> >> > Question is - considering you stated that this is supported
-> >> > starting in Win8, doesn't Hyper-V itself announce that
-> >> > capability in some explicit way?
-> >> 
-> >> Thanks Jan. Unfortunately I don't think tis interrupt delivery model
-> >> is specified via a "feature" bit (I will check with the Windows guys).
-> >> Perhaps, we can have a Hyper-V specific compilation switch to address
-> >> the Xen emulation issue.
-> > 
-> > Would that really help if both pvops XEN_PVHVM and HYPERV are enabled in
-> > the config? I assume at this point the access to the DMI data is not yet
-> > possible.
-> 
-> As just said in another reply - with XEN_PVHVM, there's no problem,
-> since Xen gets checked for first. There's only a problem when
-> !XEN_PVHVM, because in that case Hyper-V will be probed for.
-> And the problem can only get bigger when on top of that the
-> out-of-tree PV drivers are intended to be used.
+They get mixed up a bit here yes.
+I'll change them all to chip.
 
-Yes, xen_cpuid_base() recognizes Xen as hypervisor even with
-'viridian=1' in the .cfg file.
- I think if there is no feature bit for this, the DMI can be used
-because its appearently available before the host is checked:
+>
+>> + *
+>> + * ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
+>> + * handled by ACPI event methods which need to be called from the GPIO
+>> + * controller's interrupt handler. acpi_gpio_request_interrupt finds out which
+>> + * gpio pins have acpi event methods and assigns interrupt handlers that calls
+>> + * the acpi event methods for those pins.
+>> + */
+>> +
+>> +void acpi_gpio_request_interrupt(struct gpio_chip *chip)
+>
+> So I was like "um, what acpi requests an interrupt for a GPIO (maybe a pin)...
+>
+> ... read read ...
+>
+> Aha the function should probably be named:
+> acpi_gpiochip_request_interrupts()
+>
 
-...
-[    0.000000] NX (Execute Disable) protection: active
-[    0.000000] DMI 2.4 present.
-[    0.000000] DMI: Xen HVM domU, BIOS 4.1.3_06-0.7.1 12/05/2012
-[    0.000000] Hypervisor detected: Microsoft HyperV
-[    0.000000] HyperV: features 0x70, hints 0x0
-[    0.000000] e820 update range: 0000000000000000 - 0000000000010000 (usable) ==> (reserved)
-...
+True, will rename it.
 
-Olaf
+> Because it just grabs all IRQs coming from that chip right?
+
+Not all, only the ones that have an ACPI handler method defined. 
+Basically ACPI5 supports using some of the gpio interrupts for the same 
+purpose as SCI interrupts.
+
+>
+> Second: why is there no mirror function *releasing* all the IRQs again?
+> One-way interface?
+
+My thinking was that using devm_request_threaded_irq(chip->dev, ...) 
+will automatically free the interrupts on driver detach, making the 
+release function unnecessary.
+
+-Mathias
+
