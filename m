@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372Ab3AYGQK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 01:16:10 -0500
-Received: from ozlabs.org ([203.10.76.45]:50365 "EHLO ozlabs.org"
+	id S1751311Ab3AYGTy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 01:19:54 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:55735 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750961Ab3AYGQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 01:16:08 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Tejun Heo <tj@kernel.org>, Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
-        tytso@mit.edu, Oleg Nesterov <oleg@redhat.com>,
-        srivatsa.bhat@linux.vnet.ibm.com, Christoph Lameter <cl@linux.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
-In-Reply-To: <20130125005136.GE2373@mtj.dyndns.org>
-References: <1356573611-18590-1-git-send-email-koverstreet@google.com> <1356573611-18590-26-git-send-email-koverstreet@google.com> <20130125005136.GE2373@mtj.dyndns.org>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Fri, 25 Jan 2013 16:45:10 +1030
-Message-ID: <87libhpz4h.fsf@rustcorp.com.au>
+	id S1750961Ab3AYGTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 01:19:52 -0500
+From: Mrugesh Katepallewar <mrugesh.mk@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <nsekhar@ti.com>, <hs@denx.de>
+Subject: [PATCH] ARM: davinci: da850: add RTC driver DT entries
+Date: Fri, 25 Jan 2013 11:43:49 +0530
+Message-ID: <1359094430-14724-1-git-send-email-mrugesh.mk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
->> It also implements two stage shutdown, as we need it to tear down the
->> percpu counts. Before dropping the initial refcount, you must call
->> percpu_ref_kill(); this puts the refcount in "shutting down mode" and
->> switches back to a single atomic refcount with the appropriate barriers
->> (synchronize_rcu()).
->
-> Maybe if we have tryget() which only succeeds if the counter is alive,
-> we can replace moulde refcnt with this?  Rusty?
+Add RTC DT entries in da850 dts file.
 
-Yes, it's similar (hence my previous interest), though module count is a
-bit weird.
+Signed-off-by: Mrugesh Katepallewar <mrugesh.mk@ti.com>
+---
+Applies on top of v3.8-rc4 of linus tree.
 
-Like Tejun, I'd prefer to see it always alloc up-front, because it
-avoids the _noalloc variant (which is backwards: please hand gfp_t, so
-you don't hide the alloc) and heuristics.
+Tested on da850-evm device.
 
-Cheers,
-Rusty.
+Test Procedure:
+date [YYYY.]MM.DD-hh:mm[:ss]
+hwclock -w
+reset board and check system time.
+
+:100644 100644 37dc5a3... b16efd4... M	arch/arm/boot/dts/da850-evm.dts
+:100644 100644 640ab75... a8eb1b1... M	arch/arm/boot/dts/da850.dtsi
+ arch/arm/boot/dts/da850-evm.dts |    3 +++
+ arch/arm/boot/dts/da850.dtsi    |    8 ++++++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+index 37dc5a3..b16efd4 100644
+--- a/arch/arm/boot/dts/da850-evm.dts
++++ b/arch/arm/boot/dts/da850-evm.dts
+@@ -24,5 +24,8 @@
+ 		serial2: serial@1d0d000 {
+ 			status = "okay";
+ 		};
++		rtc@1c23000 {
++			status = "okay";
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+index 640ab75..a8eb1b1 100644
+--- a/arch/arm/boot/dts/da850.dtsi
++++ b/arch/arm/boot/dts/da850.dtsi
+@@ -56,5 +56,13 @@
+ 			interrupt-parent = <&intc>;
+ 			status = "disabled";
+ 		};
++		rtc@1c23000 {
++			compatible = "ti,da830-rtc";
++			reg = <0x23000 0x1000>;
++			interrupts = <19
++				      19>;
++			interrupt-parent = <&intc>;
++			status = "disabled";
++		};
+ 	};
+ };
+-- 
+1.7.9.5
+
