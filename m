@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab3AYNZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:25:36 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:41386 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932479Ab3AYNYS (ORCPT
+	id S932558Ab3AYNZs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 08:25:48 -0500
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:57775 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932371Ab3AYNZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:24:18 -0500
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 22/25] HID: multitouch: optimize LG panels
-Date: Fri, 25 Jan 2013 14:23:07 +0100
-Message-Id: <1359120190-18281-23-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1359120190-18281-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1359120190-18281-1-git-send-email-benjamin.tissoires@gmail.com>
+	Fri, 25 Jan 2013 08:25:45 -0500
+Message-ID: <1359120339.883.4.camel@x61.thuisdomein>
+Subject: Re: [PATCH v3] lpc_ich: fix gpio base and control offsets
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Aaron Sierra <asierra@xes-inc.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        =?ISO-8859-1?Q?Ag=F3cs_P=E1l?= <agocs.pal.86@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 25 Jan 2013 14:25:39 +0100
+In-Reply-To: <CACRpkdbUU=TOeaHNwAw-=iTxtkQDNuS4KeVBFX4yirZa+fQ2uw@mail.gmail.com>
+References: <b9fec05c-d383-4282-b2af-c95855ff6abb@zimbra>
+	 <3ffa5032-0565-48f0-a4ae-473452f4c902@zimbra>
+	 <CACRpkdZHndQsDZpn7BCFNXAO3k5vREYxDJkcYQ3_3sTbKAQLLA@mail.gmail.com>
+	 <1359108275.6647.4.camel@x61.thuisdomein>
+	 <CACRpkdb0V=yasmJv1ygL7cq6G3uGf6+QAZ7GR5a3bb1-XJgiiA@mail.gmail.com>
+	 <1359115232.6647.14.camel@x61.thuisdomein>
+	 <CACRpkdbUU=TOeaHNwAw-=iTxtkQDNuS4KeVBFX4yirZa+fQ2uw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Jan 2013 13:25:39.0367 (UTC) FILETIME=[77980B70:01CDFAFF]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Relying on ALWAYS_VALID enhance a little the processing time of
-the events.
-Also, the slot can be extracted by using the contact ID.
+On Fri, 2013-01-25 at 13:43 +0100, Linus Walleij wrote:
+> On Fri, Jan 25, 2013 at 1:00 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > Would testing on 3.7.5 be helpful?
+> 
+> Sure it's as good an indicator of the quality of the patch as any.
+> 
+> If it works on that kernel, it makes probablility lower that it breaks
+> your machine later on atleast.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
----
- drivers/hid/hid-multitouch.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+0) insmod-ing an updated lpc_ich.ko generated quite a bit of noise in
+dmesg:
+    <6>[19913.247530] iTCO_wdt: Found a ICH8M-E TCO device (Version=2, TCOBASE=0x1060)
+    <6>[19913.249310] iTCO_wdt: initialized. heartbeat=30 sec (nowayout=0)
+    <4>[19913.249332] ACPI Warning: 0x0000000000001028-0x000000000000102f SystemIO conflicts with Region \_SB_.PCI0.LPC_.PMIO 1 (20120913/utaddress-251)
+    <6>[19913.249338] ACPI: If an ACPI driver is available for this device, you should use it instead of the native driver
+    <4>[19913.249342] ACPI Warning: 0x00000000000011b0-0x00000000000011bf SystemIO conflicts with Region \_SB_.PCI0.LPC_.LPIO 1 (20120913/utaddress-251)
+    <6>[19913.249347] ACPI: If an ACPI driver is available for this device, you should use it instead of the native driver
+    <4>[19913.249349] ACPI Warning: 0x0000000000001180-0x00000000000011af SystemIO conflicts with Region \_SB_.PCI0.LPC_.LPIO 1 (20120913/utaddress-251)
+    <6>[19913.249353] ACPI: If an ACPI driver is available for this device, you should use it instead of the native driver
+    <4>[19913.249355] lpc_ich: Resource conflict(s) found affecting gpio_ich
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index fe1aa3b..34153f9 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -1113,7 +1113,7 @@ static const struct hid_device_id mt_devices[] = {
- 			USB_DEVICE_ID_IRTOUCH_INFRARED_USB) },
- 
- 	/* LG Display panels */
--	{ .driver_data = MT_CLS_DEFAULT,
-+	{ .driver_data = MT_CLS_CONTACT_ID,
- 		MT_USB_DEVICE(USB_VENDOR_ID_LG,
- 			USB_DEVICE_ID_LG_MULTITOUCH) },
- 
--- 
-1.8.1
+I have no idea whatsoever what that could mean.
+
+1) Should I try booting with the updated module too?
+
+
+Paul Bolle
 
