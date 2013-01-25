@@ -1,56 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757039Ab3AYNuQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:50:16 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23030 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754596Ab3AYNuM (ORCPT
+	id S1757288Ab3AYNvO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 08:51:14 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:61123 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756608Ab3AYNvL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:50:12 -0500
-X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=fGM4yXGx12wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=RaCtCyzfOO0A:10 a=fEr_rIeP3ubOS7shDNcA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1359121811.21576.217.camel@gandalf.local.home>
-Subject: Re: [BUG] panda board locks up on boot
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>
-Date: Fri, 25 Jan 2013 08:50:11 -0500
-In-Reply-To: <20130125085234.GY23505@n2100.arm.linux.org.uk>
-References: <1359082886.21576.199.camel@gandalf.local.home>
-	 <20130125085234.GY23505@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Jan 2013 08:51:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACPM=kU74+Yfjn-ju0PurqDj8QszR5ZP03UE0hH4cxKGc6Ub1A@mail.gmail.com>
+References: <CACPM=kU74+Yfjn-ju0PurqDj8QszR5ZP03UE0hH4cxKGc6Ub1A@mail.gmail.com>
+Date: Fri, 25 Jan 2013 14:51:09 +0100
+X-Google-Sender-Auth: AkLk_dwK1EFd2GZOBhBmG2OvlNE
+Message-ID: <CACPM=kVFefS-dW3uToNby7yYK1wwyQJJOY51oSuz=AzKLqhFyg@mail.gmail.com>
+Subject: Re: Commit 607ca46e97a1b6594b29647d98a32d545c24bdff breaks building tools/hv/hv_kvp_daemon.c
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-25 at 08:52 +0000, Russell King - ARM Linux wrote:
-> On Thu, Jan 24, 2013 at 10:01:26PM -0500, Steven Rostedt wrote:
-> > I've recently started testing my work on arm boards and have found that
-> > they both don't boot under the latest kernel anymore. I already posted
-> > about my snowball board, but my panda board also locks up.
-> 
-> You need to enable DMA engine and the OMAP DMA engine driver.  I believe
-> someone was going to work on adding PIO-mode support to the driver but
-> I suspect as TI's OMAP division is being reorganized, all that is now
-> uncertain.
+2012/12/12 Bjarke Istrup Pedersen <gurligebis@gentoo.org>:
+> Hey,
+>
+> It seems like this commit breaks building hv_kvp_daemon.
+>
+> Here is the bisect log:
+>
+> # good: [a0d271cbfed1dd50278c6b06bead3d00ba0a88f9] Linux 3.6
+> git bisect good a0d271cbfed1dd50278c6b06bead3d00ba0a88f9
+> # bad: [29594404d7fe73cd80eaa4ee8c43dcc53970c60e] Linux 3.7
+> git bisect bad 29594404d7fe73cd80eaa4ee8c43dcc53970c60e
+> # good: [d66e6737d454553e1e62109d8298ede5351178a4] Merge
+> git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6
+> git bisect good d66e6737d454553e1e62109d8298ede5351178a4
+> # good: [e1b28147f684af67bfac989756c27c19859d3d4e] Merge branch
+> 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux
+> git bisect good e1b28147f684af67bfac989756c27c19859d3d4e
+> # bad: [37820108f395032e850e400139d956561a043c26] Merge tag
+> 'fixes-for-linus' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
+> git bisect bad 37820108f395032e850e400139d956561a043c26
+> # good: [4f1cd91497774488ed16119ec3f54b3daf1561de] Merge branch
+> 'v4l_for_linus' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media
+> git bisect good 4f1cd91497774488ed16119ec3f54b3daf1561de
+> # good: [9db908806b85c1430150fbafe269a7b21b07d15d] Merge tag 'md-3.7'
+> of git://neil.brown.name/md
+> git bisect good 9db908806b85c1430150fbafe269a7b21b07d15d
+> # bad: [43c422eda99b894f18d1cca17bcd2401efaf7bd0] apparmor: fix
+> apparmor OOPS in audit_log_untrustedstring+0x1c/0x40
+> git bisect bad 43c422eda99b894f18d1cca17bcd2401efaf7bd0
+> # bad: [2384d6aa079de7c16c7877220d3cd4c6f4f50767] bnx2x: fix handling
+> mf storage modes
+> git bisect bad 2384d6aa079de7c16c7877220d3cd4c6f4f50767
+> # good: [dbadc17683e6c673a69b236c0f041b931cc55c42] X.509: Fix
+> indefinite length element skip error handling
+> git bisect good dbadc17683e6c673a69b236c0f041b931cc55c42
+> # good: [35bafbee4b4732a2820bbd0ef141c8192ff29731] Merge tag
+> 'disintegrate-mips-20121009' of
+> git://git.infradead.org/users/dhowells/linux-headers into
+> mips-for-linux-next
+> git bisect good 35bafbee4b4732a2820bbd0ef141c8192ff29731
+> # bad: [0b381a286e5d748b1fd80095d3dd52326819742f] Merge tag
+> 'disintegrate-main-20121013' of
+> git://git.infradead.org/users/dhowells/linux-headers
+> git bisect bad 0b381a286e5d748b1fd80095d3dd52326819742f
+> # good: [7c5a47346989e43ba34a9c94a55cc0aef7ed6b3b] Merge tag
+> 'openrisc-uapi' of git://openrisc.net/jonas/linux
+> git bisect good 7c5a47346989e43ba34a9c94a55cc0aef7ed6b3b
+> # bad: [607ca46e97a1b6594b29647d98a32d545c24bdff] UAPI: (Scripted)
+> Disintegrate include/linux
+> git bisect bad 607ca46e97a1b6594b29647d98a32d545c24bdff
+> # good: [08cce05c5a91f5017f4edc9866cf026908c73f9f] UAPI: Unexport
+> linux/blk_types.h
+> git bisect good 08cce05c5a91f5017f4edc9866cf026908c73f9f
+>
+> Here is the build output from 3.7.0:
+>
+> hv # gcc hv_kvp_daemon.c -I/usr/src/linux/include -o hv_kvp_daemon
+> In file included from hv_kvp_daemon.c:29:0:
+> /usr/src/linux/include/linux/types.h:14:26: error: conflicting types
+> for ‘fd_set’
+> /usr/include/sys/select.h:75:5: note: previous declaration of ‘fd_set’ was here
+> /usr/src/linux/include/linux/types.h:15:25: error: conflicting types for ‘dev_t’
+> /usr/include/sys/types.h:60:17: note: previous declaration of ‘dev_t’ was here
+> /usr/src/linux/include/linux/types.h:17:26: error: conflicting types
+> for ‘mode_t’
+> /usr/include/sys/types.h:70:18: note: previous declaration of ‘mode_t’ was here
+> /usr/src/linux/include/linux/types.h:25:26: error: conflicting types
+> for ‘timer_t’
+> /usr/include/time.h:103:19: note: previous declaration of ‘timer_t’ was here
+> /usr/src/linux/include/linux/types.h:134:23: error: conflicting types
+> for ‘blkcnt_t’
+> /usr/include/sys/types.h:235:20: note: previous declaration of
+> ‘blkcnt_t’ was here
+> In file included from /usr/lib/gcc/i586-pc-linux-gnu/4.6.3/include/stdint.h:3:0,
+>                  from /usr/include/netinet/in.h:23,
+>                  from /usr/include/arpa/inet.h:22,
+>                  from hv_kvp_daemon.c:36:
+> /usr/include/stdint.h:128:23: error: conflicting types for ‘uintptr_t’
+> /usr/src/linux/include/linux/types.h:36:24: note: previous declaration
+> of ‘uintptr_t’ was here
+> In file included from /usr/src/linux/include/linux/connector.h:25:0,
+>                  from hv_kvp_daemon.c:37:
+> /usr/src/linux/include/linux/atomic.h:4:24: fatal error: asm/atomic.h:
+> No such file or directory
+> compilation terminated.
+>
+> Is there an easy fix for this, my server is complaining about I need
+> to upgrade hv_kvp_daemon for my 3.7.0 kernel.
+>
+> Best regards,
+> Bjarke
 
-Well, I be darn...
+Sorry for resending this, but it does still not work.
 
+Is there anything that can be done to fix this?
 
-Yep, selecting DMA_OMAP which selects DMA_ENGINE makes everything
-better. Who'da thunk?
-
-Now only if there was a config option missing for my snowball?
-
-Thanks!
-
--- Steve
-
-
+Best regards,
+Bjarke
