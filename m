@@ -1,252 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab3AYIhy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 03:37:54 -0500
-Received: from [216.32.180.13] ([216.32.180.13]:13299 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751274Ab3AYIhv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 03:37:51 -0500
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1hbe9i1155h)
-Subject: [PATCH v1/1] mfd: i2c issue fix for da9052/53
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Axel Lin <axel.lin@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        <linux-kernel@vger.kernel.org>, David Dajun Chen <dchen@diasemi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Jan 2013 14:03:49 +0530
-Message-ID: <1359102829.6620.10.camel@dhruva>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+	id S1754631Ab3AYIiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 03:38:09 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:7698 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307Ab3AYIhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 03:37:12 -0500
+X-IronPort-AV: E=Sophos;i="4.84,537,1355068800"; 
+   d="scan'208";a="6645781"
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>, Eric Dumazet <erdnetdev@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH V7 2/3] virtio-net: split out clean affinity function
+Date: Fri, 25 Jan 2013 16:36:20 +0800
+Message-Id: <1359102981-3401-2-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1359102981-3401-1-git-send-email-gaowanlong@cn.fujitsu.com>
+References: <1359102981-3401-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 16:35:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 16:35:58,
+	Serialize complete at 2013/01/25 16:35:58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An issue has been reported where the PMIC either locks up or fails to
-respond following a system Reset. This could result in a second write
-in which the bus writes the current content of the write buffer to address
-of the last I2C access.
+Split out the clean affinity function to virtnet_clean_affinity().
 
-The failure case is where this unwanted write transfers incorrect data to
-a critical register.
-
-This patch fixes this issue to by following any read or write with a dummy read
-to a safe register address. A safe register address is one where the contents
-will not affect the operation of the system.
-
-Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>
+Cc: Eric Dumazet <erdnetdev@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: virtualization@lists.linux-foundation.org
+Cc: netdev@vger.kernel.org
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/mfd/da9052-i2c.c          |   61 ++++++++++++++++++++++++++++++++++
- include/linux/mfd/da9052/da9052.h |   66 ++++++++++++++++++++++++++++++++++--
- include/linux/mfd/da9052/reg.h    |    3 ++
- 3 files changed, 126 insertions(+), 4 deletions(-)
+V6->V7:
+	always set vq_index (Jason)
+V5->V6: NEW
 
-diff --git a/drivers/mfd/da9052-i2c.c b/drivers/mfd/da9052-i2c.c
-index ac74a4d..885e567 100644
---- a/drivers/mfd/da9052-i2c.c
-+++ b/drivers/mfd/da9052-i2c.c
-@@ -27,6 +27,66 @@
- #include <linux/of_device.h>
- #endif
+ drivers/net/virtio_net.c | 71 +++++++++++++++++++++++++++---------------------
+ 1 file changed, 40 insertions(+), 31 deletions(-)
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 0f3afa8..2f6fe9b 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1016,46 +1016,55 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
+ 	return 0;
+ }
  
-+/* I2C safe register check */
-+static inline bool i2c_safe_reg(unsigned char reg)
-+{
-+	switch (reg) {
-+	case DA9052_STATUS_A_REG:
-+	case DA9052_STATUS_B_REG:
-+	case DA9052_STATUS_C_REG:
-+	case DA9052_STATUS_D_REG:
-+	case DA9052_ADC_RES_L_REG:
-+	case DA9052_ADC_RES_H_REG:
-+	case DA9052_VDD_RES_REG:
-+	case DA9052_ICHG_AV_REG:
-+	case DA9052_TBAT_RES_REG:
-+	case DA9052_ADCIN4_RES_REG:
-+	case DA9052_ADCIN5_RES_REG:
-+	case DA9052_ADCIN6_RES_REG:
-+	case DA9052_TJUNC_RES_REG:
-+	case DA9052_TSI_X_MSB_REG:
-+	case DA9052_TSI_Y_MSB_REG:
-+	case DA9052_TSI_LSB_REG:
-+	case DA9052_TSI_Z_MSB_REG:
-+		return true;
-+	default:
-+		return false;
+-static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
++static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
+ {
+ 	int i;
+ 	int cpu;
+ 
+-	/* In multiqueue mode, when the number of cpu is equal to the number of
+-	 * queue pairs, we let the queue pairs to be private to one cpu by
+-	 * setting the affinity hint to eliminate the contention.
+-	 */
+-	if ((vi->curr_queue_pairs == 1 ||
+-	     vi->max_queue_pairs != num_online_cpus()) && set) {
+-		if (vi->affinity_hint_set)
+-			set = false;
+-		else
+-			return;
+-	}
+-
+-	if (set) {
+-		i = 0;
+-		for_each_online_cpu(cpu) {
+-			virtqueue_set_affinity(vi->rq[i].vq, cpu);
+-			virtqueue_set_affinity(vi->sq[i].vq, cpu);
+-			*per_cpu_ptr(vi->vq_index, cpu) = i;
+-			i++;
+-		}
+-
+-		vi->affinity_hint_set = true;
+-	} else {
+-		for(i = 0; i < vi->max_queue_pairs; i++) {
++	if (vi->affinity_hint_set) {
++		for (i = 0; i < vi->max_queue_pairs; i++) {
+ 			virtqueue_set_affinity(vi->rq[i].vq, -1);
+ 			virtqueue_set_affinity(vi->sq[i].vq, -1);
+ 		}
+ 
+-		i = 0;
+-		for_each_online_cpu(cpu)
++		vi->affinity_hint_set = false;
++	}
++
++	i = 0;
++	for_each_online_cpu(cpu) {
++		if (cpu == hcpu) {
++			*per_cpu_ptr(vi->vq_index, cpu) = -1;
++		} else {
+ 			*per_cpu_ptr(vi->vq_index, cpu) =
+ 				++i % vi->curr_queue_pairs;
++		}
 +	}
 +}
-+
-+/*
-+ * There is an issue with DA9052 and DA9053_AA/BA/BB PMIC where the PMIC
-+ * gets lockup up or fails to respond following a system reset.
-+ * This fix is to follow any read or write with a dummy read to a safe
-+ * register.
-+ */
-+int da9052_i2c_fix(struct da9052 *da9052, unsigned char reg)
+ 
+-		vi->affinity_hint_set = false;
++static void virtnet_set_affinity(struct virtnet_info *vi)
 +{
-+	int val;
++	int i;
++	int cpu;
 +
-+	switch (da9052->chip_id) {
-+	case DA9052:
-+	case DA9053_AA:
-+	case DA9053_BA:
-+	case DA9053_BB:
-+		/* A dummy read to a safe register address. */
-+	if (!i2c_safe_reg(reg))
-+			return regmap_read(da9052->regmap,
-+					   DA9052_PARK_REGISTER,
-+					   &val);
-+		break;
-+	default:
-+		/*
-+		 * For other chips parking of I2C register
-+		 * to a safe place is not required.
-+		 */
-+		break;
++	/* In multiqueue mode, when the number of cpu is equal to the number of
++	 * queue pairs, we let the queue pairs to be private to one cpu by
++	 * setting the affinity hint to eliminate the contention.
++	 */
++	if (vi->curr_queue_pairs == 1 ||
++	    vi->max_queue_pairs != num_online_cpus()) {
++		virtnet_clean_affinity(vi, -1);
++		return;
+ 	}
++
++	i = 0;
++	for_each_online_cpu(cpu) {
++		virtqueue_set_affinity(vi->rq[i].vq, cpu);
++		virtqueue_set_affinity(vi->sq[i].vq, cpu);
++		*per_cpu_ptr(vi->vq_index, cpu) = i;
++		i++;
 +	}
 +
-+	return 0;
-+}
-+EXPORT_SYMBOL(da9052_i2c_fix);
-+
- static int da9052_i2c_enable_multiwrite(struct da9052 *da9052)
- {
- 	int reg_val, ret;
-@@ -83,6 +143,7 @@ static int da9052_i2c_probe(struct i2c_client *client,
- 
- 	da9052->dev = &client->dev;
- 	da9052->chip_irq = client->irq;
-+	da9052->fix_io = da9052_i2c_fix;
- 
- 	i2c_set_clientdata(client, da9052);
- 
-diff --git a/include/linux/mfd/da9052/da9052.h b/include/linux/mfd/da9052/da9052.h
-index 86dd93d..786d02e 100644
---- a/include/linux/mfd/da9052/da9052.h
-+++ b/include/linux/mfd/da9052/da9052.h
-@@ -99,6 +99,9 @@ struct da9052 {
- 	u8 chip_id;
- 
- 	int chip_irq;
-+
-+	/* SOC I/O transfer related fixes for DA9052/53 */
-+	int (*fix_io) (struct da9052 *da9052, unsigned char reg);
- };
- 
- /* ADC API */
-@@ -113,32 +116,87 @@ static inline int da9052_reg_read(struct da9052 *da9052, unsigned char reg)
- 	ret = regmap_read(da9052->regmap, reg, &val);
- 	if (ret < 0)
- 		return ret;
-+
-+	if (da9052->fix_io) {
-+		ret = da9052->fix_io(da9052, reg);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
- 	return val;
++	vi->affinity_hint_set = true;
  }
  
- static inline int da9052_reg_write(struct da9052 *da9052, unsigned char reg,
- 				    unsigned char val)
+ static void virtnet_get_ringparam(struct net_device *dev,
+@@ -1105,7 +1114,7 @@ static int virtnet_set_channels(struct net_device *dev,
+ 		netif_set_real_num_tx_queues(dev, queue_pairs);
+ 		netif_set_real_num_rx_queues(dev, queue_pairs);
+ 
+-		virtnet_set_affinity(vi, true);
++		virtnet_set_affinity(vi);
+ 	}
+ 	put_online_cpus();
+ 
+@@ -1274,7 +1283,7 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
  {
--	return regmap_write(da9052->regmap, reg, val);
-+	int ret;
-+
-+	ret = regmap_write(da9052->regmap, reg, val);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (da9052->fix_io) {
-+		ret = da9052->fix_io(da9052, reg);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	return ret;
- }
+ 	struct virtio_device *vdev = vi->vdev;
  
- static inline int da9052_group_read(struct da9052 *da9052, unsigned char reg,
- 				     unsigned reg_cnt, unsigned char *val)
- {
--	return regmap_bulk_read(da9052->regmap, reg, val, reg_cnt);
-+	int ret;
-+
-+	ret = regmap_bulk_read(da9052->regmap, reg, val, reg_cnt);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (da9052->fix_io) {
-+		ret = da9052->fix_io(da9052, reg);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	return ret;
- }
+-	virtnet_set_affinity(vi, false);
++	virtnet_clean_affinity(vi, -1);
  
- static inline int da9052_group_write(struct da9052 *da9052, unsigned char reg,
- 				      unsigned reg_cnt, unsigned char *val)
- {
--	return regmap_raw_write(da9052->regmap, reg, val, reg_cnt);
-+	int ret;
-+
-+	ret = regmap_raw_write(da9052->regmap, reg, val, reg_cnt);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (da9052->fix_io) {
-+		ret = da9052->fix_io(da9052, reg);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	return ret;
- }
+ 	vdev->config->del_vqs(vdev);
  
- static inline int da9052_reg_update(struct da9052 *da9052, unsigned char reg,
- 				     unsigned char bit_mask,
- 				     unsigned char reg_val)
- {
--	return regmap_update_bits(da9052->regmap, reg, bit_mask, reg_val);
-+	int ret;
-+
-+	ret = regmap_update_bits(da9052->regmap, reg, bit_mask, reg_val);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (da9052->fix_io) {
-+		ret = da9052->fix_io(da9052, reg);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	return ret;
- }
+@@ -1398,7 +1407,7 @@ static int init_vqs(struct virtnet_info *vi)
+ 		goto err_free;
  
- int da9052_device_init(struct da9052 *da9052, u8 chip_id);
-diff --git a/include/linux/mfd/da9052/reg.h b/include/linux/mfd/da9052/reg.h
-index b97f730..c4dd3a8 100644
---- a/include/linux/mfd/da9052/reg.h
-+++ b/include/linux/mfd/da9052/reg.h
-@@ -34,6 +34,9 @@
- #define DA9052_STATUS_C_REG		3
- #define DA9052_STATUS_D_REG		4
+ 	get_online_cpus();
+-	virtnet_set_affinity(vi, true);
++	virtnet_set_affinity(vi);
+ 	put_online_cpus();
  
-+/* PARK REGISTER */
-+#define DA9052_PARK_REGISTER		DA9052_STATUS_D_REG
-+
- /* EVENT REGISTERS */
- #define DA9052_EVENT_A_REG		5
- #define DA9052_EVENT_B_REG		6
+ 	return 0;
 -- 
-1.7.0.4
-
+1.8.1
 
