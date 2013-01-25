@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab3AYSNe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:13:34 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:46646 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185Ab3AYSNb (ORCPT
+	id S1756418Ab3AYSQe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:16:34 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:64501 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754778Ab3AYSQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:13:31 -0500
-Date: Fri, 25 Jan 2013 10:13:26 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 06/13] sg_io: whitelist a few more commands for
- multimedia devices
-Message-ID: <20130125181326.GK3081@htj.dyndns.org>
-References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
- <1359039649-17734-7-git-send-email-pbonzini@redhat.com>
- <20130124225555.GC2373@mtj.dyndns.org>
- <51024FB1.3000206@redhat.com>
- <20130125170434.GC3081@htj.dyndns.org>
- <5102BDD4.2020501@redhat.com>
- <20130125172805.GG3081@htj.dyndns.org>
- <5102C780.3090402@redhat.com>
+	Fri, 25 Jan 2013 13:16:31 -0500
+X-IronPort-AV: E=Sophos;i="4.84,540,1355126400"; 
+   d="scan'208";a="22439066"
+From: David Brown <davidb@codeaurora.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@list.infradead.org, linux-kernel@vger.kernel.org,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <c_dwalke@quicinc.com>, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 03/19] ARM: msm: proc_comm_boot_wait should not be __init
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
+	<1359123276-15833-4-git-send-email-arnd@arndb.de>
+Date: Fri, 25 Jan 2013 10:16:31 -0800
+In-Reply-To: <1359123276-15833-4-git-send-email-arnd@arndb.de> (Arnd
+	Bergmann's message of "Fri, 25 Jan 2013 14:14:20 +0000")
+Message-ID: <8yak3r15ds0.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5102C780.3090402@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Paolo.
+Arnd Bergmann <arnd@arndb.de> writes:
 
-On Fri, Jan 25, 2013 at 06:57:20PM +0100, Paolo Bonzini wrote:
-> And because someone _will_ use it from my point of view, I can only give
-> justification to leave stuff _out_.  In general I did so if the command
-> can disrupt someone else, as would be the case for persistent
-> reservations.  It was not really always respected for the existing
-> table, for example I'd have left out LOG SELECT, but the series is
-> already controversial enough, so one thing at a time.
+> msm_smd_probe is a driver probe function and may get
+> called after the __init time, so it must not call
+> any __init function, as the link-time warning reports.
+> Take away the __init annotation on proc_comm_boot_wait
+> to fix this.
+>
+> Without this patch, building msm_defconfig results in:
+>
+> WARNING: vmlinux.o(.text+0xb048): Section mismatch in reference from the function msm_smd_probe() to the function .init.text:proc_comm_boot_wait()
+> The function msm_smd_probe() references
+> the function __init proc_comm_boot_wait().
+> This is often because msm_smd_probe lacks a __init
+> annotation or the annotation of proc_comm_boot_wait is wrong.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: David Brown <davidb@codeaurora.org>
+> Cc: Bryan Huntsman <bryanh@codeaurora.org>
+> Cc: Daniel Walker <c_dwalke@quicinc.com>
+> Cc: linux-arm-msm@vger.kernel.org
+> ---
+>  arch/arm/mach-msm/proc_comm.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-I'm not sure how well I can explain this but something being in the
-spec and something in wide use are two different things, and people,
-including the ones in hw vendors, tend not to pay too much attention /
-resources to stuff which aren't used widely and commands which aren't
-in wide use are much more likely to have errors in their
-implementation or be abused - e.g. overridden for vendor specific
-command as part of weird init sequence to select device mode or
-whatnot.
+Arnd, you're welcome to pull this into your tree:
+Acked-by: David Brown <davidb@codeaurora.org>
 
-Another aspect is that sometimes opcodes are recycled and people of
-course don't try to recycle opcodes which are in wide use.  They
-choose the ones which failed to gain much traction and became
-obsolete.  The recycled command might not be suitable for exposing to
-userland.
+I don't forsee any conflicts with upcoming patches.
 
-So, there are actual costs coming from exposing them, which is fine if
-the benefit can offset them enough, but what would be the benefit of
-exposing commands which aren't being used?  The only thing I can think
-of is that of avoiding the annoyance of expanding the list later?
-But, as you said, exposing commands by default mean that we're more
-likely to need blacklists in the future, so that doesn't seem like
-that much of winning to me.  Discovering use cases is actually much
-easier than finding broken devices for some obscure commands.
-
-> > and can you please stop labeling reviews as "useless"?
-> 
-> Reviews are not useless, but championing the inclusion of two obsolete
-> commands in a list is not a good use of bandwidth.  Because the choice
-> is arbitrary, the discussion can degenerate too easily into repeatedly
-> saying the same thing over and over.  All I'm trying to do is avoid it.
-
-Seems like I was too twitchy.  My apologies.
-
-Thanks.
+David
 
 -- 
-tejun
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
