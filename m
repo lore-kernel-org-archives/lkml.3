@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab3AYHoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 02:44:07 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:52606 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab3AYHoD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 02:44:03 -0500
-Date: Fri, 25 Jan 2013 09:43:39 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <rob.herring@calxeda.com>, <rob@landley.net>, <balbi@ti.com>,
-        <sameo@linux.intel.com>, <gg@slimlogic.co.uk>, <s-guiriec@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <grant.likely@secretlab.ca>, <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v1 1/8] usb: otg: palmas-usb: make palmas-usb as a
- comparator driver
-Message-ID: <20130125074339.GD15886@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1359083551-8524-1-git-send-email-kishon@ti.com>
- <1359083551-8524-2-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9l24NVCWtSuIVIod"
+	id S1752733Ab3AYHps (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 02:45:48 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:33231 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab3AYHpq convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Fri, 25 Jan 2013 02:45:46 -0500
+Message-Id: <5102463602000078000B9761@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Fri, 25 Jan 2013 07:45:42 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Josh Triplett" <josh@joshtriplett.org>
+Cc: <mingo@kernel.org>, <tglx@linutronix.de>, <mjg@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [tip:x86/debug] x86/EFI: Properly init-annotate BGRT code
+References: <50AFB29F02000078000AAE8E@nat28.tlf.novell.com>
+ <tip-13f0e4d2b9e2209f13d5a4122478eb79e6136870@git.kernel.org>
+ <20130124222820.GA11888@jtriplet-mobl1>
+In-Reply-To: <20130124222820.GA11888@jtriplet-mobl1>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1359083551-8524-2-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---9l24NVCWtSuIVIod
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>>> On 24.01.13 at 23:28, Josh Triplett <josh@joshtriplett.org> wrote:
+> On Thu, Jan 24, 2013 at 12:34:21PM -0800, tip-bot for Jan Beulich wrote:
+>> Commit-ID:  13f0e4d2b9e2209f13d5a4122478eb79e6136870
+>> Gitweb:     
+> http://git.kernel.org/tip/13f0e4d2b9e2209f13d5a4122478eb79e6136870 
+>> Author:     Jan Beulich <JBeulich@suse.com>
+>> AuthorDate: Fri, 23 Nov 2012 16:30:07 +0000
+>> Committer:  Ingo Molnar <mingo@kernel.org>
+>> CommitDate: Thu, 24 Jan 2013 17:12:18 +0100
+>> 
+>> x86/EFI: Properly init-annotate BGRT code
+>> 
+>> These items are only ever referenced from initialization code.
+> 
+> Not true, and this patch will break the BGRT code.  bgrt_init, which
+> does indeed have an __init annotation, stores bgrt_image and
+> bgrt_image_size into the .private and .size fields of a sysfs
+> bin_attribute, which does *not* have an __initdata annotation, and which
+> will get read whenever the user reads the corresponding sysfs attribute.
 
-Hi,
+Copying init-only data into a sysfs structure is no problem at all
+- that structure obviously is non-__initdata and hence can be
+read at any time. It was a different thing if .private and/or .size
+stored _pointers_ to one of the two variables in question.
 
-On Fri, Jan 25, 2013 at 08:42:24AM +0530, Kishon Vijay Abraham I wrote:
-> palmas-usb is made as a comparator driver to omap usb2 phy, so that
-> omap usb can make use of palmas for srp and also to set vbus.
->=20
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Jan
 
-doesn't apply. palmas-usb isn't in mainline
-
---=20
-balbi
-
---9l24NVCWtSuIVIod
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRAjerAAoJEIaOsuA1yqRExq8P/3U+uIqSa8HbY9KxYnlJMCjp
-M5H+fZJCKhfqIkgFZdVNugU0nMMMxj2Wnw8zZWdPHe4ueK4zta5ghqceacfWAF2B
-UFS7dB6H//lX4puE1svPvpXs0vujtGhY1fgZGQoMQ7h9PZQ573QXZpvE+gJbO9iP
-iiy5IuCe3R2Q2KMiRYgt5wGcRTDWLei58XIg6mAQ4phboMLNWZQiV1azBsGImq7b
-Q7ukw8DwybMt0/WZrRe67zxz0XpZxrk23VUXJdUH343DTkOh9x6trWiXY8Up+tpE
-pC1KazTgcohK5dzF6W8+eKW5oPLKizeSVFte/bnz8S0wB6HEcpaAiH4X8tuwv2Kh
-1ecmlNpZNSyAGFzkF0fo+Nnb13ZF5MPsd8AUiYMWdA61ovnXMHUxirBz7T8baIBN
-ZsVhLWd+j+XaYWWfICO1Ju0wFBYilLStfP4d89MlzodV3TMfOs9YvhIs2Crr3a17
-uMjbWzQ5yE/7mjBG/pwJMqVJEE43BWA5/Nxqs/n9U5Y1h8BmgTJizbGggJ5mFNJz
-M54TqOXfUaNPZQPu05mBVwUkp/eQsSwBSEiNoDZznWDDkcBj86zXjDDx0CfJ1/Kv
-aHLZWJaRGqXJmeVU5C0v/p3eNQ2lQrWC1+tqMqD7zU6SLW0HeAbbcL6P/GUOYmzj
-nt9lwBw07woeT2wdwUvd
-=Leb5
------END PGP SIGNATURE-----
-
---9l24NVCWtSuIVIod--
