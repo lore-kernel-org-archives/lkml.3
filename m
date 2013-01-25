@@ -1,173 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab3AYX16 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 18:27:58 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:37602 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441Ab3AYX1z (ORCPT
+	id S1754472Ab3AYXco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 18:32:44 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43515 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720Ab3AYXcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 18:27:55 -0500
-Date: Fri, 25 Jan 2013 15:27:40 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [PATCH 0/7] cputime: Full dynticks task/cputime accounting v5
-Message-ID: <20130125232740.GA2296@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1358429075-3430-1-git-send-email-fweisbec@gmail.com>
- <20130125174247.GQ6395@linux.vnet.ibm.com>
+	Fri, 25 Jan 2013 18:32:41 -0500
+Message-ID: <51031614.8000609@redhat.com>
+Date: Sat, 26 Jan 2013 00:32:36 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130125174247.GQ6395@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012523-2398-0000-0000-0000106BB7ED
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 06/13] sg_io: whitelist a few more commands for multimedia
+ devices
+References: <20130124225555.GC2373@mtj.dyndns.org> <51024FB1.3000206@redhat.com> <20130125170434.GC3081@htj.dyndns.org> <5102BDD4.2020501@redhat.com> <20130125172805.GG3081@htj.dyndns.org> <5102C780.3090402@redhat.com> <20130125181326.GK3081@htj.dyndns.org> <5102D353.8010305@redhat.com> <20130125190154.GM3081@htj.dyndns.org> <5103080A.4090803@redhat.com> <20130125224159.GQ3081@htj.dyndns.org>
+In-Reply-To: <20130125224159.GQ3081@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right...  Replied to the wrong email.  :-/
-
-I queued "context_tracking: Add comments on interface and internals".
-
-							Thanx, Paul
-
-On Fri, Jan 25, 2013 at 09:42:47AM -0800, Paul E. McKenney wrote:
-> On Thu, Jan 17, 2013 at 02:24:28PM +0100, Frederic Weisbecker wrote:
-> > Hi,
-> > 
-> > This patchset was formerly called "Generic virtual based cputime accounting"  
-> > but I changed the name to better reflect what it's all about.
-> > 
-> > This is	the part of the	full dynticks patchset that handles the	task and CPU
-> > time accounting	without	the tick.
-> > 
-> > It's available at:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> > 	vtime/generic-v5
-> > 
-> > There have been a lot of changes since latest full dynticks patchset:
-> > 
-> > - Use sched_clock() instead of jiffies for better precision. And because
-> > jiffies	granularity was requiring too much dirty hacks to make it working.
-> > (Thanks	Steven for the suggestion).
-> > 
-> > - To fully support sched_clock(), use a	per nanosec granularity	in cputime_t
-> > 
-> > - Fix a	deadlock with tsacct
-> > 
-> > - Better description of the Kconfig
-> > 
-> > - Don't	scale generic vtime accounting against CFS precise task	time accounting.
-> > Now that we use	sched_clock() we should have precise enough statistics.
-> > 
-> > - Consolidate some code in the reader side
-> > 
-> > - Make the reader irqsafe (fix potential deadlock against writers)
-> > 
-> > 
-> > Most of the work is done. There are just a few small things I need to care about
-> > to complete the full cputime support:
-> > 
-> > * Also handle dynticks guest time accounting (p->gtime and p->utime). This
-> > require to bring a new accessor: task_gtime() and to add guest_enter() and
-> > guest_exit() on the context tracking subsystem. Then make the same treatment
-> > than with utime and stime. No big deal.
-> > 
-> > * New tasks start their cputime accounting from schedule() on sched-in time
-> > (see arch_vtime_task_switch()). But I fear that idle tasks don't fall into this
-> > category. That's a small detail but I hope I can find some generic way to handle it.
-> > The boot init idle task is however handled.
-> > 
-> > * Per nsec granularity requires that cputime_t directly maps to cputime64_t. This
-> > is fine on 64 bits archs and mostly fine in 32 bits archs as well because readers
-> > use seqlock to synchronize against writers. But reading struct kernel_cputstat
-> > is not protected. Not sure yet how to solve that.
-> > 
-> > So I'll likely focus on these items on the next version. Let's hope we can make
-> > it ready for the next merge window.
+Il 25/01/2013 23:41, Tejun Heo ha scritto:
+> Hello, Paolo.
 > 
-> Queued for 3.9, thank you!
+> On Fri, Jan 25, 2013 at 11:32:42PM +0100, Paolo Bonzini wrote:
+>> All you can do is use common sense, which says that if a command has
+>> been in a standard, someone has likely used it.  Of course someone
+>> _might_ have misused it too, but how likely is that?
 > 
-> 							Thanx, Paul
-> 
-> > Thanks.
-> > 
-> > ---
-> > Frederic Weisbecker (7):
-> >       context_tracking: Export context state for generic vtime
-> >       cputime: Librarize per nsecs resolution cputime definitions
-> >       cputime: Move default nsecs_to_cputime() to jiffies based cputime file
-> >       cputime: Generic on-demand virtual cputime accounting
-> >       cputime: Allow dynamic switch between tick/virtual based cputime accounting
-> >       cputime: Use accessors to read task cputime stats
-> >       cputime: Safely read cputime of full dynticks CPUs
-> > 
-> > 
-> >  arch/alpha/kernel/osf_sys.c                  |    6 +-
-> >  arch/ia64/include/asm/cputime.h              |   92 +----------
-> >  arch/ia64/include/asm/thread_info.h          |    4 +-
-> >  arch/ia64/include/asm/xen/minstate.h         |    2 +-
-> >  arch/ia64/kernel/asm-offsets.c               |    2 +-
-> >  arch/ia64/kernel/entry.S                     |   16 +-
-> >  arch/ia64/kernel/fsys.S                      |    4 +-
-> >  arch/ia64/kernel/head.S                      |    4 +-
-> >  arch/ia64/kernel/ivt.S                       |    8 +-
-> >  arch/ia64/kernel/minstate.h                  |    2 +-
-> >  arch/ia64/kernel/time.c                      |    4 +-
-> >  arch/powerpc/configs/chroma_defconfig        |    2 +-
-> >  arch/powerpc/configs/corenet64_smp_defconfig |    2 +-
-> >  arch/powerpc/configs/pasemi_defconfig        |    2 +-
-> >  arch/powerpc/include/asm/cputime.h           |    6 +-
-> >  arch/powerpc/include/asm/lppaca.h            |    2 +-
-> >  arch/powerpc/include/asm/ppc_asm.h           |    4 +-
-> >  arch/powerpc/kernel/entry_64.S               |    4 +-
-> >  arch/powerpc/kernel/time.c                   |    4 +-
-> >  arch/powerpc/platforms/pseries/dtl.c         |    6 +-
-> >  arch/powerpc/platforms/pseries/setup.c       |    6 +-
-> >  arch/s390/kernel/vtime.c                     |    6 +-
-> >  arch/x86/kernel/apm_32.c                     |   11 +-
-> >  drivers/isdn/mISDN/stack.c                   |    7 +-
-> >  fs/binfmt_elf.c                              |    8 +-
-> >  fs/binfmt_elf_fdpic.c                        |    7 +-
-> >  include/asm-generic/cputime.h                |   66 +-------
-> >  include/asm-generic/cputime_jiffies.h        |   72 +++++++++
-> >  include/asm-generic/cputime_nsecs.h          |  104 ++++++++++++
-> >  include/linux/context_tracking.h             |   28 ++++
-> >  include/linux/hardirq.h                      |    4 +-
-> >  include/linux/init_task.h                    |   11 ++
-> >  include/linux/kernel_stat.h                  |    2 +-
-> >  include/linux/sched.h                        |   34 ++++
-> >  include/linux/tsacct_kern.h                  |    3 +
-> >  include/linux/vtime.h                        |   51 ++++--
-> >  init/Kconfig                                 |   23 +++-
-> >  kernel/acct.c                                |    6 +-
-> >  kernel/context_tracking.c                    |   22 +--
-> >  kernel/cpu.c                                 |    4 +-
-> >  kernel/delayacct.c                           |    7 +-
-> >  kernel/exit.c                                |    6 +-
-> >  kernel/fork.c                                |   14 ++
-> >  kernel/posix-cpu-timers.c                    |   28 +++-
-> >  kernel/sched/cputime.c                       |  219 +++++++++++++++++++++++---
-> >  kernel/signal.c                              |   12 +-
-> >  kernel/softirq.c                             |    6 +-
-> >  kernel/time/tick-sched.c                     |    5 +-
-> >  kernel/tsacct.c                              |   44 ++++--
-> >  49 files changed, 696 insertions(+), 296 deletions(-)
-> >  create mode 100644 include/asm-generic/cputime_jiffies.h
-> >  create mode 100644 include/asm-generic/cputime_nsecs.h
-> > 
-> > -- 
-> > 1.7.5.4
-> > 
+> So, that's where we differ, I guess.  When it comes to hardware
+> devices, especially the ones as widely and cheaply deployed as SCSI or
+> ATA, my common sense screams to stick to what's known to work and
+> don't venture outside unnecessarily.
 
+I understand, but you should also consider the likelihood of the various
+choices.  We do have a list of quirks, and they all seem to be about
+regular stuff like off-by-one errors with weird outcomes, not about "the
+firmware writer gave random meanings to known commands".
+
+You're also missing another point I made.  Userspace is explicitly
+asking for trouble in using SG_IO, and must deal with the consequences.
+ If the trouble is big, we should work around it anyway.  If the trouble
+is small, we need not worry about it.
+
+Check how many "quirks" are in a typical burning program.  Does that
+mean that we should remove burning commands from the whitelist?  Of
+course not.
+
+>> To try and give an answer, I grepped the "unusual" drivers in
+>> drivers/usb/storage.  All of them seem to use non-standard packets (i.e.
+>> basically are not SCSI) for their strange stuff, except two:
+>> initializers.c has one function that sends SCSI command 0xEC,
+>> realtek_cr.c uses 0xF0, both vendor specific.  So USB firmware writers,
+>> despite being known for tweaking SCSI standards in many ways, seem to be
+>> sensible in this respect.
+> 
+> You're grepping for known irregularities which need to be used to make
+> the device work.
+
+Of course I did, you were talking about "weird init code to select some
+mode" and I went looking for how they look like in the real world.
+
+> Just read through, say, sd driver code and see how
+> hard it tries to stick to what's known to work rather than venturing
+> out to the space allowed by the spec.
+
+That's a different story, once userspace uses SG_IO it takes the burden
+of doing this.
+
+> The default approach in this area definitely is and should be
+> conservative in general.
+
+Userspace of course must be written with care, too.
+
+>> If it is not used, nobody will use it and setting the bit is effectively
+>> useless (but harmless too).
+> 
+> No, we don't know it's gonna be harmless.  How do we *know* that
+> outside of the naive expectation that devices are gonna safely and
+> sanely ignore things that they don't understand?
+
+First of all, we have a misunderstanding.  I wrote "it is not used", and
+I included _everything_ in that, even malware.  In that case, it's a
+tautology that it's useless and harmless.
+
+Now, nobody asked about sane error handling.  I have a USB pen drive
+that returns a Unit Attention code for any command it does not
+recognize.  Does the existence of that USB pen drive mean that we should
+remove MODE SENSE from the whitelist?  Of course not.  We just pass the
+errors to userspace, and userspace deals with them.
+
+In fact, even for safety we can only go so far.  Other firmwares crash
+if you read/write a block that is out of range.  Should we remove
+READ/WRITE from the whitelist?  Of course not.  We handle that as a
+quirk in the USB driver.
+
+I think the latter case can be generalized.  Let's assume that there is
+a bad guy that goes around and wants to brick your disk.  It would not
+be a very smart thing to do, just like Ebola is not a very smart virus,
+but the world is full of strange people and he is just one of them.
+
+If a particular firmware can brick a device from userspace with a
+particular sequence of innocuous-looking (and non-vendor-specific)
+commands, I believe that the kernel should have a workaround to protect
+against that, independent of the privileges needed to send the commands
+to begin with.  This means that it is irrelevant to use these cases to
+exclude commands from a whitelist.  Independent of the fact that neither
+the weird guy nor the weird firmwares have been shown to exist.
+
+>>> You would get -EPERM/ACCES whatnot from base OS and you would know the
+>>> command in use, no?
+>>
+>> Yes, but I would like to avoid many iterations.  I don't have access
+>> myself to all that software except Windows.
+> 
+> I don't think it's gonna be that many iterations and would much prefer
+> doing several iterations and having the backing data for each command
+> added.
+
+If I make a whitelist with all the commands that Linux sends, I'll have
+many new commands in the whitelist and no old commands.  The new
+commands didn't exist when old drives were sold, so they are "dangerous"
+in your opinion.  At that point I might as well keep the whitelist
+empty, no?
+
+(Which BTW is what James proposed and I wrote the patch for, but you
+rejected: make the whitelist entirely configurable in userspace, and add
+a Kconfig option that makes the default whitelist very very small).
+
+Paolo
