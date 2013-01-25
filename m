@@ -1,141 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab3AYKFk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:05:40 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:55121 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755006Ab3AYKFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:05:37 -0500
-Date: Fri, 25 Jan 2013 11:05:25 +0100
-From: Leandro Lucarella <leandro.lucarella@sociomantic.com>
-To: Nivedita SInghvi <niveditasinghvi@gmail.com>
-Cc: Rick Jones <rick.jones2@hp.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Doubts about listen backlog and tcp_max_syn_backlog
-Message-ID: <20130125100525.GE4608@sociomantic.com>
-References: <1358874800.3464.4002.camel@edumazet-glaptop>
- <50FED7CE.1030008@hp.com>
- <20130122184245.GJ4608@sociomantic.com>
- <50FF0C25.9000300@hp.com>
- <20130123104736.GK4608@sociomantic.com>
- <510039C8.7040401@hp.com>
- <20130124122223.GQ4608@sociomantic.com>
- <51018110.1070403@hp.com>
- <20130124192125.GD4608@sociomantic.com>
- <5102225E.2040506@gmail.com>
+	id S1945905Ab3AYKGk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:06:40 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53013 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754947Ab3AYKGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 05:06:37 -0500
+From: Luciano Coelho <coelho@ti.com>
+To: <linux-wireless@vger.kernel.org>
+CC: <coelho@ti.com>, <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tony@atomide.com>
+Subject: [PATCH v2 5/5] wlcore: move wl12xx_platform_data up and make it truly optional
+Date: Fri, 25 Jan 2013 12:05:34 +0200
+Message-ID: <1359108334-18459-1-git-send-email-coelho@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1358952038-5982-6-git-send-email-coelho@ti.com>
+References: <1358952038-5982-6-git-send-email-coelho@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5102225E.2040506@gmail.com>
-X-Paranoid: Just because you're paranoid, don't mean they're not after you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:m8mZyGu9vC+vm0rbrPfZKDhHBqSiU+tRAupGbxr0KbG
- K1D8zBkYa1zlrGloW8aRZYwnRuWPF++k8v/9MeJJhxypAVd0Xi
- TQAVJo5g+NMXfY8ADljJBoCFeAJxGJQBFxD+DChT2Y7RnME11L
- BvEKo05nTf6MewWVM4+NeMj3TRqOhW6dWhaSQ44rBh1NklSQg6
- V1ywWzXkZQ+QjM/SyivIBf3uNhxI489QT4n9Shutv4/bfFDYVe
- 4DRay3Td0BSrdOIjAx+OZrP2vgB2hlo4cgGoF2uumJHC/z6Gj0
- 4Rqer/mkDrn9m28ZFcIZA2IblGBWz6q/cceb0vTKUP5A/nhEc4
- lEc917RBgqToKlJiKvFzjayN7tKOT5AeMTJlotELKGG4Mb4K3g
- XEkZD0N9+cMUQ==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 10:12:46PM -0800, Nivedita SInghvi wrote:
-> >>> I was just kind of quoting the name given by netstat: "SYNs to LISTEN
-> >>> sockets dropped" (for kernel 3.0, I noticed newer kernels don't have
-> >>> this stat anymore, or the name was changed). I still don't know if we
-> >>> are talking about the same thing.
-> >>
-> [snip]
-> >> I will sometimes be tripped-up by netstat's not showing a statistic
-> >> with a zero value...
-> 
-> Leandro, you should be able to do an nstat -z, it will print all
-> counters even if zero. You should see something like so:
-> 
-> ipv4]> nstat -z
-> #kernel
-> IpInReceives                    2135               0.0
-> IpInHdrErrors                   0                  0.0
-> IpInAddrErrors                  202                0.0
-> ...
-> 
-> You might want to take a look at those (your pkts may not even be
-> making it to tcp) and these in particular:
-> 
-> TcpExtSyncookiesSent            0                  0.0
-> TcpExtSyncookiesRecv            0                  0.0
-> TcpExtSyncookiesFailed          0                  0.0
-> TcpExtListenOverflows           0                  0.0
-> TcpExtListenDrops               0                  0.0
-> TcpExtTCPBacklogDrop            0                  0.0
-> TcpExtTCPMinTTLDrop             0                  0.0
-> TcpExtTCPDeferAcceptDrop        0                  0.0
-> 
-> If you don't have nstat on that version for some reason, download the
-> latest iproute pkg. Looking at the counter names is a lot more helpful
-> and precise than the netstat converstion to human consumption. 
+The platform data is used not only by wlcore-based drivers, but also
+by wl1251.  Move it up in the directory hierarchy to reflect this.
 
-Thanks, but what about this?
+Additionally, make it truly optional.  At the moment, disabling
+platform data while wl1251_sdio or wlcore_sdio are enabled doesn't
+work, but it will be necessary when device tree support is
+implemented.
 
-pc2 $ nstat -z | grep -i drop
-TcpExtLockDroppedIcmps          0                  0.0
-TcpExtListenDrops               0                  0.0
-TcpExtTCPPrequeueDropped        0                  0.0
-TcpExtTCPBacklogDrop            0                  0.0
-TcpExtTCPMinTTLDrop             0                  0.0
-TcpExtTCPDeferAcceptDrop        0                  0.0
-pc2 $ netstat -s | grep -i drop
-    470 outgoing packets dropped
-    5659740 SYNs to LISTEN sockets dropped
+Signed-off-by: Luciano Coelho <coelho@ti.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+---
 
-Is this normal?
+In v2:
+   * Fix ti/Makefile
+   * Modify board_omap3evm.c which was still using the old Kconfig define
 
-> > Yes, I already did captures and we are definitely loosing packets
-> > (including SYNs), but it looks like the amount of SYNs I'm loosing is
-> > lower than the amount of long connect() times I observe. This is not
-> > confirmed yet, I'm still investigating.
-> 
-> Where did you narrow down the drop to? There are quite a few places in
-> the networking stack we silently drop packets (such as the one pointed
-> out earlier in this thread), although they should almost all be
-> extremely low probability/NEVER type events. Do you want a patch to
-> gap the most likely scenario? (I'll post that to netdev separately). 
+Tony, is it okay if I add this change in the omap3evm board in this
+patch and queue it via wireless so that the whole thing is in sync?
 
-Even when that would be awesome, unfortunately there is no way I could
-get permission to run a patched kernel (or even restart the servers for
-that matter).
 
-And I don't know how could I narrow down the drops in any way. What I
-know is capturing traffic with tcpdump, I see some packets leaving one
-server but never arriving to the new one.
+ arch/arm/mach-omap2/board-omap3evm.c                     |   10 +++++-----
+ drivers/net/wireless/ti/Kconfig                          |    9 +++++++++
+ drivers/net/wireless/ti/Makefile                         |    4 +++-
+ .../wl12xx_platform_data.c => wilink_platform_data.c}    |    0
+ drivers/net/wireless/ti/wlcore/Kconfig                   |    5 -----
+ drivers/net/wireless/ti/wlcore/Makefile                  |    3 ---
+ include/linux/wl12xx.h                                   |   14 +++++++++++---
+ 7 files changed, 28 insertions(+), 17 deletions(-)
+ rename drivers/net/wireless/ti/{wlcore/wl12xx_platform_data.c => wilink_platform_data.c} (100%)
 
-Also, the hardware is not great either, I'm not sure is not responsible
-for the loss. There are some errors reported by ethtool, but I don't
-know exactly what they mean:
-
-# ethtool -S eth0
-NIC statistics:
-     tx_packets: 336978308273
-     rx_packets: 384108075585
-     tx_errors: 0
-     rx_errors: 194
-     rx_missed: 1119
-     align_errors: 31731
-     tx_single_collisions: 0
-     tx_multi_collisions: 0
-     unicast: 384108023754
-     broadcast: 51825
-     multicast: 6
-     tx_aborted: 0
-     tx_underrun: 0
-
-Thanks!
-
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index 3985f35..a4ca63b 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -309,7 +309,7 @@ static struct omap2_hsmmc_info mmc[] = {
+ 		.gpio_wp	= 63,
+ 		.deferred	= true,
+ 	},
+-#ifdef CONFIG_WL12XX_PLATFORM_DATA
++#ifdef CONFIG_WILINK_PLATFORM_DATA
+ 	{
+ 		.name		= "wl1271",
+ 		.mmc		= 2,
+@@ -450,7 +450,7 @@ static struct regulator_init_data omap3evm_vio = {
+ 	.consumer_supplies	= omap3evm_vio_supply,
+ };
+ 
+-#ifdef CONFIG_WL12XX_PLATFORM_DATA
++#ifdef CONFIG_WILINK_PLATFORM_DATA
+ 
+ #define OMAP3EVM_WLAN_PMENA_GPIO	(150)
+ #define OMAP3EVM_WLAN_IRQ_GPIO		(149)
+@@ -563,7 +563,7 @@ static struct omap_board_mux omap35x_board_mux[] __initdata = {
+ 				OMAP_PIN_OFF_NONE),
+ 	OMAP3_MUX(GPMC_WAIT2, OMAP_MUX_MODE4 | OMAP_PIN_INPUT_PULLUP |
+ 				OMAP_PIN_OFF_NONE),
+-#ifdef CONFIG_WL12XX_PLATFORM_DATA
++#ifdef CONFIG_WILINK_PLATFORM_DATA
+ 	/* WLAN IRQ - GPIO 149 */
+ 	OMAP3_MUX(UART1_RTS, OMAP_MUX_MODE4 | OMAP_PIN_INPUT),
+ 
+@@ -601,7 +601,7 @@ static struct omap_board_mux omap36x_board_mux[] __initdata = {
+ 	OMAP3_MUX(SYS_BOOT4, OMAP_MUX_MODE3 | OMAP_PIN_OFF_NONE),
+ 	OMAP3_MUX(SYS_BOOT5, OMAP_MUX_MODE3 | OMAP_PIN_OFF_NONE),
+ 	OMAP3_MUX(SYS_BOOT6, OMAP_MUX_MODE3 | OMAP_PIN_OFF_NONE),
+-#ifdef CONFIG_WL12XX_PLATFORM_DATA
++#ifdef CONFIG_WILINK_PLATFORM_DATA
+ 	/* WLAN IRQ - GPIO 149 */
+ 	OMAP3_MUX(UART1_RTS, OMAP_MUX_MODE4 | OMAP_PIN_INPUT),
+ 
+@@ -637,7 +637,7 @@ static struct gpio omap3_evm_ehci_gpios[] __initdata = {
+ 
+ static void __init omap3_evm_wl12xx_init(void)
+ {
+-#ifdef CONFIG_WL12XX_PLATFORM_DATA
++#ifdef CONFIG_WILINK_PLATFORM_DATA
+ 	int ret;
+ 
+ 	/* WL12xx WLAN Init */
+diff --git a/drivers/net/wireless/ti/Kconfig b/drivers/net/wireless/ti/Kconfig
+index be80011..cbe1e7f 100644
+--- a/drivers/net/wireless/ti/Kconfig
++++ b/drivers/net/wireless/ti/Kconfig
+@@ -12,4 +12,13 @@ source "drivers/net/wireless/ti/wl18xx/Kconfig"
+ 
+ # keep last for automatic dependencies
+ source "drivers/net/wireless/ti/wlcore/Kconfig"
++
++config WILINK_PLATFORM_DATA
++	bool "TI WiLink platform data"
++	depends on WLCORE_SDIO || WL1251_SDIO
++	default y
++	---help---
++	Small platform data bit needed to pass data to the sdio modules.
++
++
+ endif # WL_TI
+diff --git a/drivers/net/wireless/ti/Makefile b/drivers/net/wireless/ti/Makefile
+index 4d68239..af14231 100644
+--- a/drivers/net/wireless/ti/Makefile
++++ b/drivers/net/wireless/ti/Makefile
+@@ -1,5 +1,7 @@
+ obj-$(CONFIG_WLCORE)			+= wlcore/
+ obj-$(CONFIG_WL12XX)			+= wl12xx/
+-obj-$(CONFIG_WL12XX_PLATFORM_DATA)	+= wlcore/
+ obj-$(CONFIG_WL1251)			+= wl1251/
+ obj-$(CONFIG_WL18XX)			+= wl18xx/
++
++# small builtin driver bit
++obj-$(CONFIG_WILINK_PLATFORM_DATA)	+= wilink_platform_data.o
+diff --git a/drivers/net/wireless/ti/wlcore/wl12xx_platform_data.c b/drivers/net/wireless/ti/wilink_platform_data.c
+similarity index 100%
+rename from drivers/net/wireless/ti/wlcore/wl12xx_platform_data.c
+rename to drivers/net/wireless/ti/wilink_platform_data.c
+diff --git a/drivers/net/wireless/ti/wlcore/Kconfig b/drivers/net/wireless/ti/wlcore/Kconfig
+index d7b907e..2b83282 100644
+--- a/drivers/net/wireless/ti/wlcore/Kconfig
++++ b/drivers/net/wireless/ti/wlcore/Kconfig
+@@ -33,8 +33,3 @@ config WLCORE_SDIO
+ 
+ 	  If you choose to build a module, it'll be called wlcore_sdio.
+ 	  Say N if unsure.
+-
+-config WL12XX_PLATFORM_DATA
+-	bool
+-	depends on WLCORE_SDIO != n || WL1251_SDIO != n
+-	default y
+diff --git a/drivers/net/wireless/ti/wlcore/Makefile b/drivers/net/wireless/ti/wlcore/Makefile
+index d9fba9e..b21398f 100644
+--- a/drivers/net/wireless/ti/wlcore/Makefile
++++ b/drivers/net/wireless/ti/wlcore/Makefile
+@@ -9,7 +9,4 @@ obj-$(CONFIG_WLCORE)			+= wlcore.o
+ obj-$(CONFIG_WLCORE_SPI)		+= wlcore_spi.o
+ obj-$(CONFIG_WLCORE_SDIO)		+= wlcore_sdio.o
+ 
+-# small builtin driver bit
+-obj-$(CONFIG_WL12XX_PLATFORM_DATA)	+= wl12xx_platform_data.o
+-
+ ccflags-y += -D__CHECK_ENDIAN__
+diff --git a/include/linux/wl12xx.h b/include/linux/wl12xx.h
+index 360c9bc..a54fe82 100644
+--- a/include/linux/wl12xx.h
++++ b/include/linux/wl12xx.h
+@@ -24,6 +24,8 @@
+ #ifndef _LINUX_WL12XX_H
+ #define _LINUX_WL12XX_H
+ 
++#include <linux/err.h>
++
+ /* Reference clock values */
+ enum {
+ 	WL12XX_REFCLOCK_19	= 0, /* 19.2 MHz */
+@@ -60,10 +62,12 @@ struct wl12xx_platform_data {
+ /* Platform does not support level trigger interrupts */
+ #define WL12XX_PLATFORM_QUIRK_EDGE_IRQ	BIT(0)
+ 
+-#ifdef CONFIG_WL12XX_PLATFORM_DATA
++#ifdef CONFIG_WILINK_PLATFORM_DATA
+ 
+ int wl12xx_set_platform_data(const struct wl12xx_platform_data *data);
+ 
++struct wl12xx_platform_data *wl12xx_get_platform_data(void);
++
+ #else
+ 
+ static inline
+@@ -72,8 +76,12 @@ int wl12xx_set_platform_data(const struct wl12xx_platform_data *data)
+ 	return -ENOSYS;
+ }
+ 
+-#endif
++static inline
++struct wl12xx_platform_data *wl12xx_get_platform_data(void)
++{
++	return ERR_PTR(-ENODATA);
++}
+ 
+-struct wl12xx_platform_data *wl12xx_get_platform_data(void);
++#endif
+ 
+ #endif
 -- 
-Leandro Lucarella
-sociomantic labs GmbH
-http://www.sociomantic.com
+1.7.10.4
+
