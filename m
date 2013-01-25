@@ -1,131 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab3AYWsa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 17:48:30 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:53910 "EHLO
+	id S1754410Ab3AYWtE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 17:49:04 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:54330 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab3AYWs0 (ORCPT
+	with ESMTP id S1753138Ab3AYWpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 17:48:26 -0500
+	Fri, 25 Jan 2013 17:45:54 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: [PATCH 18/19] ARM: at91: suspend both memory controllers on at91sam9263
-Date: Fri, 25 Jan 2013 22:44:17 +0000
-Message-Id: <1359153858-31992-19-git-send-email-arnd@arndb.de>
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 15/19] sunrpc: don't warn for unused variable 'buf'
+Date: Fri, 25 Jan 2013 22:44:14 +0000
+Message-Id: <1359153858-31992-16-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1359153858-31992-1-git-send-email-arnd@arndb.de>
 References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
  <1359153858-31992-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:98kGnuZbiLxU9XO5z0R2kdqbQT5IDiNr33pgWJOU45O
- 0Dyg5ZMWfktPQ7ODDaZGKogfHlHRcqN1YZMCJ1ooeyBrNFztDa
- 0f7odulWxP2189CxXzQUmN2/nprhJEztLwdm84dBLYS5QDHndc
- qEAvPjR4lLy31BivDqr8V3xVGIA5F7o3ZG4X0u8fq/9Zg/kcLb
- ZUu+VzQicKbXa3HPfv7vp1inW9PbNcgLmCHoFfJYojmbnFs7nU
- dj0ictd+ZgYty09Elt0LRVX4CGrP3HdOOwCMi9SEQIQ8I9eSzD
- qMvmCYqTt7X+9a62Ibww4HIJIFGSvtzYLakIheNb09pAvWjI8U
- w6zmxmU6FQc3iseUotaD6aYBX80evuvyMvt7EkKT0
+X-Provags-ID: V02:K0:cVoNLzvDoAlG2K0TJYUottMh1ho2HoyMxijEwli/Mb1
+ oYMkjrchAgO2Z86x+yCYsKJfZerHJOCZqnIPNE2OmWApQfKfb0
+ 5+BCcv/QdbOMvXK+wc4y60HrpN8maobdHkpg5MR6uKxJJushf3
+ /q82SIhv5GeKk4CnIV/XF2WMQiEbfiemF8Kiye0yNqGmbDwvFa
+ AZ8chIU9DTMmrwXvkVR4jbZq5dORRgfFpvX3o8+d3qy8wesuS0
+ LR0ORxedDZRwhigGXlPQqQQsF7K+4srDN1TdB5lkE5M1dHHIEl
+ SjRxtMmyTLyylipcRG1vhXgCseLdGYfH0FzGXc/EvsriFZ3iuN
+ +GkfVn1JbbPVoBky46K2kdoPhf+zwi0JrhosNFHVH
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the past three years, we have had a #warning in
-mach-at91 about the sdram_selfrefresh_enable or
-at91sam9_standby functions possibly not working on
-at91sam9263. In the meantime a function was added
-to do the right thing on at91sam9g45, which looks like
-it should also work on '9263.
+When RPC_DEBUG is unset, the dprintk() macro does nothing,
+causing the 'buf' variable in svc_printk to become unused.
+Marking it as __maybe_unused avoids a harmless gcc warning.
 
-This patch blindly removes the warning and changes the
-at91sam9263 to use the same code at at91sam9g45, which
-may or may not be the right solution. If it is not,
-maybe someone could provide a better fix.
+Without this patch, building at91_dt_defconfig results in:
+
+net/sunrpc/svc.c: In function 'svc_printk':
+net/sunrpc/svc.c:1051:7: warning: unused variable 'buf' [-Wunused-variable]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Albin Tonnerre <albin.tonnerre@free-electrons.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: "J. Bruce Fields" <bfields@redhat.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org
+Cc: netdev@vger.kernel.org
 ---
- arch/arm/mach-at91/cpuidle.c |  2 ++
- arch/arm/mach-at91/pm.c      |  2 ++
- arch/arm/mach-at91/pm.h      | 30 ++++++++++++++++++++++++------
- 3 files changed, 28 insertions(+), 6 deletions(-)
+ net/sunrpc/svc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-at91/cpuidle.c b/arch/arm/mach-at91/cpuidle.c
-index 0c63815..4c67946 100644
---- a/arch/arm/mach-at91/cpuidle.c
-+++ b/arch/arm/mach-at91/cpuidle.c
-@@ -38,6 +38,8 @@ static int at91_enter_idle(struct cpuidle_device *dev,
- 		at91rm9200_standby();
- 	else if (cpu_is_at91sam9g45())
- 		at91sam9g45_standby();
-+	else if (cpu_is_at91sam9263())
-+		at91sam9263_standby();
- 	else
- 		at91sam9_standby();
- 
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index adb6db8..b8017c1 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -267,6 +267,8 @@ static int at91_pm_enter(suspend_state_t state)
- 				at91rm9200_standby();
- 			else if (cpu_is_at91sam9g45())
- 				at91sam9g45_standby();
-+			else if (cpu_is_at91sam9263())
-+				at91sam9263_standby();
- 			else
- 				at91sam9_standby();
- 			break;
-diff --git a/arch/arm/mach-at91/pm.h b/arch/arm/mach-at91/pm.h
-index 38f467c..2f5908f 100644
---- a/arch/arm/mach-at91/pm.h
-+++ b/arch/arm/mach-at91/pm.h
-@@ -70,13 +70,31 @@ static inline void at91sam9g45_standby(void)
- 	at91_ramc_write(1, AT91_DDRSDRC_LPR, saved_lpr1);
- }
- 
--#ifdef CONFIG_SOC_AT91SAM9263
--/*
-- * FIXME either or both the SDRAM controllers (EB0, EB1) might be in use;
-- * handle those cases both here and in the Suspend-To-RAM support.
-+/* We manage both DDRAM/SDRAM controllers, we need more than one value to
-+ * remember.
-  */
--#warning Assuming EB1 SDRAM controller is *NOT* used
--#endif
-+static inline void at91sam9263_standby(void)
-+{
-+	u32 lpr0, lpr1;
-+	u32 saved_lpr0, saved_lpr1;
-+
-+	saved_lpr1 = at91_ramc_read(1, AT91_SDRAMC_LPR);
-+	lpr1 = saved_lpr1 & ~AT91_SDRAMC_LPCB;
-+	lpr1 |= AT91_SDRAMC_LPCB_SELF_REFRESH;
-+
-+	saved_lpr0 = at91_ramc_read(0, AT91_SDRAMC_LPR);
-+	lpr0 = saved_lpr0 & ~AT91_SDRAMC_LPCB;
-+	lpr0 |= AT91_SDRAMC_LPCB_SELF_REFRESH;
-+
-+	/* self-refresh mode now */
-+	at91_ramc_write(0, AT91_SDRAMC_LPR, lpr0);
-+	at91_ramc_write(1, AT91_SDRAMC_LPR, lpr1);
-+
-+	cpu_do_idle();
-+
-+	at91_ramc_write(0, AT91_SDRAMC_LPR, saved_lpr0);
-+	at91_ramc_write(1, AT91_SDRAMC_LPR, saved_lpr1);
-+}
- 
- static inline void at91sam9_standby(void)
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index dbf12ac..b1f5223 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -1047,7 +1047,7 @@ void svc_printk(struct svc_rqst *rqstp, const char *fmt, ...)
  {
+ 	struct va_format vaf;
+ 	va_list args;
+-	char 	buf[RPC_MAX_ADDRBUFLEN];
++	char buf[RPC_MAX_ADDRBUFLEN] __maybe_unused;
+ 
+ 	va_start(args, fmt);
+ 
 -- 
 1.8.0
 
