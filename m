@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945892Ab3AYKEJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:04:09 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:54512 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754902Ab3AYKEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:04:06 -0500
-Date: Fri, 25 Jan 2013 11:06:55 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
-        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 1/2] x86, Kconfig: Move PARAVIRT_DEBUG into the paravirt
- menu
-Message-ID: <20130125100655.GC23404@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-	X86 ML <x86@kernel.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
-	olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-	Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
-	Borislav Petkov <bp@suse.de>
-References: <20130124173555.GJ13463@pd.tnic>
- <1359049194-17505-1-git-send-email-bp@alien8.de>
- <20130125082126.GD25314@gmail.com>
- <20130125085146.GA23404@pd.tnic>
- <20130125092032.GC31478@gmail.com>
- <20130125092915.GB23404@pd.tnic>
- <20130125093241.GA19717@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130125093241.GA19717@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1945908Ab3AYKEj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:04:39 -0500
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:56979 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755351Ab3AYKEh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 05:04:37 -0500
+Message-ID: <1359108275.6647.4.camel@x61.thuisdomein>
+Subject: Re: [PATCH v3] lpc_ich: fix gpio base and control offsets
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Aaron Sierra <asierra@xes-inc.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        =?ISO-8859-1?Q?Ag=F3cs_P=E1l?= <agocs.pal.86@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 25 Jan 2013 11:04:35 +0100
+In-Reply-To: <CACRpkdZHndQsDZpn7BCFNXAO3k5vREYxDJkcYQ3_3sTbKAQLLA@mail.gmail.com>
+References: <b9fec05c-d383-4282-b2af-c95855ff6abb@zimbra>
+	 <3ffa5032-0565-48f0-a4ae-473452f4c902@zimbra>
+	 <CACRpkdZHndQsDZpn7BCFNXAO3k5vREYxDJkcYQ3_3sTbKAQLLA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 25 Jan 2013 10:04:35.0796 (UTC) FILETIME=[61253140:01CDFAE3]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 10:32:41AM +0100, Ingo Molnar wrote:
-> That's ok. I'll apply them to tip:x86/cpu and then resolve the
-> conflicts against tip:master.
+On Fri, 2013-01-25 at 10:47 +0100, Linus Walleij wrote:
+> On Thu, Jan 24, 2013 at 9:52 PM, Aaron Sierra <asierra@xes-inc.com> wrote:
+> > In ICH5 and earlier the GPIOBASE and GPIOCTRL registers are found at
+> > offsets 0x58 and 0x5C, respectively. This patch allows GPIO access to
+> > properly be enabled (and disabled) for these chipsets.
+> >
+> > Signed-off-by: Agócs Pál <agocs.pal.86@gmail.com>
+> > Signed-off-by: Aaron Sierra <asierra@xes-inc.com>
+> 
+> OK... Paul, can you test this on your setup?
 
-Ok, I redid them against tip:x86/cpu and am running build tests. Will
-send out later after a sufficient number of randconfigs passes.
+This seems to be the first time I'm added to this thread. I'm a bit lost
+here: why should I test this patch? This doesn't seem to be related to
+two older lpc_ich threads I was involved in (in November 2012). Not that
+I mind testing stuff, that's not the problem...
 
-Thanks.
 
--- 
-Regards/Gruss,
-    Boris.
+Paul Bolle
 
-Sent from a fat crate under my desk. Formatting is fine.
---
