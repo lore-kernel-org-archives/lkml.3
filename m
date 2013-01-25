@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab3AYAPI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 19:15:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752277Ab3AYAPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 19:15:02 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20130124190610.GI6538@redacted.bos.redhat.com>
-References: <20130124190610.GI6538@redacted.bos.redhat.com> <20130122184357.GD6538@redacted.bos.redhat.com> <8615.1358940375@warthog.procyon.org.uk> <50FFFF48.6020608@atsec.com>
-To: Kyle McMartin <kyle@redhat.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
-        jstancek@redhat.com, Stephan Mueller <stephan.mueller@atsec.com>
-Subject: Re: [PATCH] MODSIGN: flag modules that use cryptoapi and only panic if those are unsigned
-Date: Fri, 25 Jan 2013 00:14:54 +0000
-Message-ID: <9620.1359072894@warthog.procyon.org.uk>
+	id S1755991Ab3AYAQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 19:16:54 -0500
+Received: from talus.maths.usyd.edu.au ([129.78.68.1]:42173 "EHLO
+	talus.maths.usyd.edu.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab3AYAQq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 19:16:46 -0500
+X-smtpdoor-from: psz@maths.usyd.edu.au
+X-smtpdoor-want-Message-ID: <201301250015.r0P0FR3t003475@como.maths.usyd.edu.au>
+Date: Fri, 25 Jan 2013 11:15:27 +1100
+From: paul.szabo@sydney.edu.au
+Message-Id: <201301250015.r0P0FR3t003475@como.maths.usyd.edu.au>
+To: fengguang.wu@intel.com, jack@suse.cz
+Subject: Re: [PATCH] Negative (setpoint-dirty) in bdi_position_ratio()
+Cc: 695182@bugs.debian.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20130124151603.GD21818@quack.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kyle McMartin <kyle@redhat.com> wrote:
+Dear Jan,
 
-> After thinking about it a while, this seems like the best way to solve
-> the problem, although it does still kind of offend my delicate
-> sensibilities...
-> 
-> Doing this check in the crypto layer seems kind of like a layering
-> violation to me (and, to be honest, I think it'd be a gross-hack getting
-> from the callee back to the caller module.)
-> 
-> Instead, doing it in kernel/module.c and looking at the undefined symbol
-> list again looks to me like an ordering problem since we're doing the
-> signature check before we've even done the elf header check. We'd have
-> to move the panic to a part of the module code that may not necessarily
-> make sense.
-> 
-> Whereas checking the undefined symbol list at modpost time is fairly
-> logical, and adding a new MODULE_INFO entry in the CONFIG_CRYPTO_FIPS
-> case is a well understood thing to do, and should catch all the crypto
-> registrations regardless of where they exist in-tree...
-> 
-> Seems to build and work with both values of CONFIG_CRYPTO_FIPS.
-> 
-> Thoughts?
+> I think he found the culprit of the problem being min_free_kbytes was not
+> properly reflected in the dirty throttling. ... Paul please correct me
+> if I'm wrong.
 
-You can't rely on someone trying to sneak a dodgy crypto module in to set the
-flag when they build it.  The detection thus needs to be done in the kernel
-during the module load.
+Sorry but have to correct you.
 
-Can you search the module image for "crypto_register_" I wonder?  If that's
-there, it's a crypto module.
+I noticed and patched/corrected two problems, one with (setpoint-dirty)
+in bdi_position_ratio(), another with min_free_kbytes not subtracted
+from dirtyable memory. Fixing those problems, singly or in combination,
+did not help in avoiding OOM: running
+  n=0; while [ $n -lt 99 ]; do dd bs=1M count=1024 if=/dev/zero of=x$n; ((n=$n+1)); done
+still produces an OOM after a few files written (on a PAE machine with
+over 32GB RAM).
 
-David
+Also, a quite similar OOM may be produced on any PAE machine with
+  n=0; while [ $n -lt 33000 ]; do sleep 600 & ((n=n+1)); done
+This was tested on machines with as low as just 3GB RAM ... and
+curiously the same machine with "plain" (not PAE but HIGHMEM4G)
+kernel handles the same "sleep test" without any problems.
+
+(Thus I now think that the remaining bug is not with writeback.)
+
+Cheers, Paul
+
+Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
+School of Mathematics and Statistics   University of Sydney    Australia
