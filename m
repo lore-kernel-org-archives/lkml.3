@@ -1,75 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757406Ab3AYTSS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 14:18:18 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:47665 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757180Ab3AYTSP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 14:18:15 -0500
-X-Originating-IP: 217.70.178.135
-X-Originating-IP: 50.43.39.152
-Date: Fri, 25 Jan 2013 11:18:09 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Jan Beulich <JBeulich@suse.com>, tglx@linutronix.de, mjg@redhat.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [tip:x86/debug] x86/EFI: Properly init-annotate BGRT code
-Message-ID: <20130125191808.GA17527@leaf>
-References: <50AFB29F02000078000AAE8E@nat28.tlf.novell.com>
- <tip-13f0e4d2b9e2209f13d5a4122478eb79e6136870@git.kernel.org>
- <20130124222820.GA11888@jtriplet-mobl1>
- <5102463602000078000B9761@nat28.tlf.novell.com>
- <20130125160309.GA15960@leaf>
- <20130125183657.GB31022@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130125183657.GB31022@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757447Ab3AYTUh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 14:20:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22169 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757180Ab3AYTUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 14:20:34 -0500
+Date: Fri, 25 Jan 2013 14:18:42 -0500
+From: Rik van Riel <riel@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: aquini@redhat.com, walken@google.com, eric.dumazet@gmail.com,
+        lwoodman@redhat.com, knoel@redhat.com, chegu_vinod@hp.com,
+        raghavendra.kt@linux.vnet.ibm.com, mingo@redhat.com
+Subject: [PATCH -v4 4/5] x86,smp: keep spinlock delay values per hashed
+ spinlock address
+Message-ID: <20130125141842.58010c25@annuminas.surriel.com>
+In-Reply-To: <20130125140553.060b8ced@annuminas.surriel.com>
+References: <20130125140553.060b8ced@annuminas.surriel.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 07:36:57PM +0100, Ingo Molnar wrote:
-> 
-> * Josh Triplett <josh@joshtriplett.org> wrote:
-> 
-> > On Fri, Jan 25, 2013 at 07:45:42AM +0000, Jan Beulich wrote:
-> > > >>> On 24.01.13 at 23:28, Josh Triplett <josh@joshtriplett.org> wrote:
-> > > > On Thu, Jan 24, 2013 at 12:34:21PM -0800, tip-bot for Jan Beulich wrote:
-> > > >> Commit-ID:  13f0e4d2b9e2209f13d5a4122478eb79e6136870
-> > > >> Gitweb:     
-> > > > http://git.kernel.org/tip/13f0e4d2b9e2209f13d5a4122478eb79e6136870 
-> > > >> Author:     Jan Beulich <JBeulich@suse.com>
-> > > >> AuthorDate: Fri, 23 Nov 2012 16:30:07 +0000
-> > > >> Committer:  Ingo Molnar <mingo@kernel.org>
-> > > >> CommitDate: Thu, 24 Jan 2013 17:12:18 +0100
-> > > >> 
-> > > >> x86/EFI: Properly init-annotate BGRT code
-> > > >> 
-> > > >> These items are only ever referenced from initialization code.
-> > > > 
-> > > > Not true, and this patch will break the BGRT code.  bgrt_init, which
-> > > > does indeed have an __init annotation, stores bgrt_image and
-> > > > bgrt_image_size into the .private and .size fields of a sysfs
-> > > > bin_attribute, which does *not* have an __initdata annotation, and which
-> > > > will get read whenever the user reads the corresponding sysfs attribute.
-> > > 
-> > > Copying init-only data into a sysfs structure is no problem at all
-> > > - that structure obviously is non-__initdata and hence can be
-> > > read at any time. It was a different thing if .private and/or .size
-> > > stored _pointers_ to one of the two variables in question.
-> > 
-> > Ah, I see; the data itself gets kmalloc'd, and you just want 
-> > to discard the original pointer and size.  Fair enough.  Sorry 
-> > for the false alarm.
-> 
-> Ok - thanks for the clarification - I'll keep the commit as-is, 
-> agreed?
-> 
-> Thanks,
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-Yeah.  In fact:
+Eric Dumazet found a regression with the first version of the spinlock
+backoff code, in a workload where multiple spinlocks were contended,
+each having a different wait time.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+This patch has multiple delay values per cpu, indexed on a hash
+of the lock address, to avoid that problem.
+
+Eric Dumazet wrote:
+
+I did some tests with your patches with following configuration :
+
+tc qdisc add dev eth0 root htb r2q 1000 default 3
+(to force a contention on qdisc lock, even with a multi queue net
+device)
+
+and 24 concurrent "netperf -t UDP_STREAM -H other_machine -- -m 128"
+
+Machine : 2 Intel(R) Xeon(R) CPU X5660  @ 2.80GHz
+(24 threads), and a fast NIC (10Gbps)
+
+Resulting in a 13 % regression (676 Mbits -> 595 Mbits)
+
+In this workload we have at least two contended spinlocks, with
+different delays. (spinlocks are not held for the same duration)
+
+It clearly defeats your assumption of a single per cpu delay being OK :
+Some cpus are spinning too long while the lock was released.
+
+We might try to use a hash on lock address, and an array of 16 different
+delays so that different spinlocks have a chance of not sharing the same
+delay.
+
+With following patch, I get 982 Mbits/s with same bench, so an increase
+of 45 % instead of a 13 % regression.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Acked-by: Rafael Aquini <aquini@redhat.com>
+Reviewed-by: Michel Lespinasse <walken@google.com>
+
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index 05f828b..3d30f6e 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -23,6 +23,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/cpu.h>
+ #include <linux/gfp.h>
++#include <linux/hash.h>
+ 
+ #include <asm/mtrr.h>
+ #include <asm/tlbflush.h>
+@@ -134,12 +135,26 @@ static bool smp_no_nmi_ipi = false;
+ #define DELAY_FIXED_1 (1<<DELAY_SHIFT)
+ #define MIN_SPINLOCK_DELAY (1 * DELAY_FIXED_1)
+ #define MAX_SPINLOCK_DELAY (16000 * DELAY_FIXED_1)
+-DEFINE_PER_CPU(unsigned, spinlock_delay) = { MIN_SPINLOCK_DELAY };
++#define DELAY_HASH_SHIFT 6
++struct delay_entry {
++	u32 hash;
++	u32 delay;
++};
++static DEFINE_PER_CPU(struct delay_entry [1 << DELAY_HASH_SHIFT], spinlock_delay) = {
++	[0 ... (1 << DELAY_HASH_SHIFT) - 1] = {
++		.hash = 0,
++		.delay = MIN_SPINLOCK_DELAY,
++	},
++};
++
+ void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
+ {
+ 	__ticket_t head = inc.head, ticket = inc.tail;
+ 	__ticket_t waiters_ahead;
+-	unsigned delay = __this_cpu_read(spinlock_delay);
++	u32 hash = hash32_ptr(lock);
++	u32 slot = hash_32(hash, DELAY_HASH_SHIFT);
++	struct delay_entry *ent = &__get_cpu_var(spinlock_delay[slot]);
++	u32 delay = (ent->hash == hash) ? ent->delay : MIN_SPINLOCK_DELAY;
+ 	unsigned loops = 1;
+ 
+ 	for (;;) {
+@@ -171,11 +186,12 @@ void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
+ 			 * to get it back to a good value quickly.
+ 			 */
+ 			if (delay >= 2 * DELAY_FIXED_1)
+-				delay -= max(delay/32, DELAY_FIXED_1);
++				delay -= max_t(u32, delay/32, DELAY_FIXED_1);
+ 			break;
+ 		}
+ 	}
+-	__this_cpu_write(spinlock_delay, delay);
++	ent->hash = hash;
++	ent->delay = delay;
+ }
+ 
+ /*
