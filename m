@@ -1,62 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757298Ab3AYNSN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:18:13 -0500
-Received: from mga05.intel.com ([192.55.52.89]:30246 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757275Ab3AYNSK (ORCPT
+	id S932295Ab3AYNTw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 08:19:52 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:38604 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756545Ab3AYNTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:18:10 -0500
-Message-ID: <1359119883.2496.156.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [RFC] efivars write(2) races
-From: Matt Fleming <matt.fleming@intel.com>
-To: Lingzhu Xiang <lxiang@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>
-Date: Fri, 25 Jan 2013 13:18:03 +0000
-In-Reply-To: <51020120.5000500@redhat.com>
-References: <20130125002552.GC4503@ZenIV.linux.org.uk>
-	 <51020120.5000500@redhat.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Fri, 25 Jan 2013 08:19:50 -0500
+Message-ID: <51028668.1020800@ti.com>
+Date: Fri, 25 Jan 2013 15:19:36 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <tony@atomide.com>, <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2 1/6] usb: otg: Add an API to bind the USB controller
+ and PHY
+References: <1359081206-5602-1-git-send-email-kishon@ti.com> <1359081206-5602-2-git-send-email-kishon@ti.com>
+In-Reply-To: <1359081206-5602-2-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-25 at 11:50 +0800, Lingzhu Xiang wrote:
-> On 01/25/2013 08:25 AM, Al Viro wrote:
-> > 	1) process A does write() on efivars file, reaches ->get_variable(),
-> > gets newdatasize set, drops efivars->lock and loses CPU before an attempt to
-> > grab ->i_mutex.  process B comes and does the same thing, replacing the
-> > variable contents.  Then it grabs ->i_mutex, updates size, drops ->i_mutex
-> > and buggers off.  At which point A gets CPU back and proceeds to set size
-> > to whatever would be valid for its write.  Only the value is bogus now...
+On 01/25/2013 04:33 AM, Kishon Vijay Abraham I wrote:
+> In order to support platforms which has multiple PHY's (of same type) and
+> which has multiple USB controllers, a new design is adopted wherin the binding
+> information (between the PHY and the USB controller) should be passed to the
+> PHY library from platform specific file (board file).
+> So added a new API to pass the binding information.
 > 
-> There are a few other things that makes size bogus now.
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  drivers/usb/otg/otg.c   |   37 +++++++++++++++++++++++++++++++++++++
+>  include/linux/usb/phy.h |   22 ++++++++++++++++++++++
+>  2 files changed, 59 insertions(+)
 > 
-> 1. truncate() never touches nvram but pretends to be changing size.
+> diff --git a/drivers/usb/otg/otg.c b/drivers/usb/otg/otg.c
+> index a30c041..8e756d9 100644
+> --- a/drivers/usb/otg/otg.c
+> +++ b/drivers/usb/otg/otg.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/usb/otg.h>
+>  
+>  static LIST_HEAD(phy_list);
+> +static LIST_HEAD(phy_bind_list);
+>  static DEFINE_SPINLOCK(phy_lock);
+>  
+>  static struct usb_phy *__usb_find_phy(struct list_head *list,
+> @@ -201,6 +202,42 @@ void usb_remove_phy(struct usb_phy *x)
+>  }
+>  EXPORT_SYMBOL(usb_remove_phy);
+>  
+> +/**
+> + * usb_bind_phy - bind the phy and the controller that uses the phy
+> + * @dev_name: the device name of the device that will bind to the phy
+> + * @index: index to specify the port number
+> + * @phy_dev_name: the device name of the phy
+> + *
+> + * Fills the phy_bind structure with the dev_name and phy_dev_name. This will
+> + * be used when the phy driver registers the phy and when the controller
+> + * requests this phy.
+> + *
+> + * To be used by platform specific initialization code.
+> + */
+> +int __init usb_bind_phy(const char *dev_name, u8 index,
+> +				const char *phy_dev_name)
+> +{
+> +	struct usb_phy_bind *phy_bind;
+> +	unsigned long flags;
+> +
+> +	phy_bind = kzalloc(sizeof(*phy_bind), GFP_KERNEL);
+> +	if (!phy_bind) {
+> +		pr_err("phy_bind(): No memory for phy_bind");
 
-Good catch. Looks like we need to provide an implementation for this.
+nitpick. Function name is usb_bind_phy() and you don't need to mention it twice ;).
 
-> 2. Empty files come back with non-zero size after remount. They are imported
->    from sysfs when mounting.
+Is it even needed to print here as the user would most likely print it anyways. At least
+the user can decide if it needs to be printed or not.
 
-Eeek. The return value of get_variable() isn't checked in
-efivarfs_fill_super().
+> +		return -ENOMEM;
+> +	}
+> +
+> +	phy_bind->dev_name = dev_name;
+> +	phy_bind->phy_dev_name = phy_dev_name;
+> +	phy_bind->index = index;
+> +
+> +	spin_lock_irqsave(&phy_lock, flags);
+> +	list_add_tail(&phy_bind->list, &phy_bind_list);
+> +	spin_unlock_irqrestore(&phy_lock, flags);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(usb_bind_phy);
+> +
+>  const char *otg_state_string(enum usb_otg_state state)
+>  {
+>  	switch (state) {
+> diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+> index a29ae1e..e7eb429 100644
+> --- a/include/linux/usb/phy.h
+> +++ b/include/linux/usb/phy.h
+> @@ -106,6 +106,21 @@ struct usb_phy {
+>  			enum usb_device_speed speed);
+>  };
 
-> 3. Arguably reading empty files could just return empty instead of returning
->    EIO/EFI_NOT_FOUND from firmware. 
-
-Yeah, I think Jeremy has a patch to fix this.
-
-> 4. EFI_VARIABLE_APPEND_WRITE with EFI_OUT_OF_RESOURCES truncates size but you
->    can still read its content.
-
-I'm not sure what you mean by this. Could you please explain?
-
-Thanks for the feedback.
+cheers,
+-roger
 
