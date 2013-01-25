@@ -1,79 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab3AYSqJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:46:09 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:37847 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729Ab3AYSqH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:46:07 -0500
-Date: Fri, 25 Jan 2013 19:46:02 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Anton Arapov <anton@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Josh Stone <jistone@redhat.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Suzuki Poulose <suzuki@in.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [GIT PULL] uprobes: pre-filtering
-Message-ID: <20130125184602.GD31022@gmail.com>
-References: <20130113185916.GA25831@redhat.com>
- <20130124121720.GA3104@gmail.com>
- <20130124154018.GA8580@redhat.com>
- <20130124154159.GB32071@gmail.com>
- <20130124170612.GA14823@redhat.com>
- <20130125064629.GD23723@linux.vnet.ibm.com>
- <20130125075437.GB21036@gmail.com>
- <20130125161728.GA11630@redhat.com>
+	id S1757238Ab3AYSsE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:48:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52753 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755991Ab3AYSsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 13:48:02 -0500
+Message-ID: <5102D353.8010305@redhat.com>
+Date: Fri, 25 Jan 2013 19:47:47 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130125161728.GA11630@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 06/13] sg_io: whitelist a few more commands for multimedia
+ devices
+References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com> <1359039649-17734-7-git-send-email-pbonzini@redhat.com> <20130124225555.GC2373@mtj.dyndns.org> <51024FB1.3000206@redhat.com> <20130125170434.GC3081@htj.dyndns.org> <5102BDD4.2020501@redhat.com> <20130125172805.GG3081@htj.dyndns.org> <5102C780.3090402@redhat.com> <20130125181326.GK3081@htj.dyndns.org>
+In-Reply-To: <20130125181326.GK3081@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 25/01/2013 19:13, Tejun Heo ha scritto:
+> I'm not sure how well I can explain this but something being in the
+> spec and something in wide use are two different things, and people,
+> including the ones in hw vendors, tend not to pay too much attention /
+> resources to stuff which aren't used widely and commands which aren't
+> in wide use are much more likely to have errors in their
+> implementation or be abused - e.g. overridden for vendor specific
+> command as part of weird init sequence to select device mode or
+> whatnot.
 
-* Oleg Nesterov <oleg@redhat.com> wrote:
+That doesn't happen.  There's plenty of vendor-specific opcodes and mode
+pages, not to mention out-of-band channels, e.g. work directly at the
+USB level like the mode select stuff.
 
-> On 01/25, Ingo Molnar wrote:
-> >
-> > * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
-> >
-> > > The other alternative is to extend the current abi and pass
-> > > the prefilter option. Should we extend the abi for userspace
-> > > tracing is obviously debatable.
-> >
-> > That's the obvious path to go - why add something to the kernel
-> > if user-space cannot make use of it?
+IIRC IOMEGA ZIP drives had some egregious abuse in READ and WRITE of the
+boot sector, presenting fake partition tables or something like that.
+But it wasn't using strange commands for that.
+
+> Another aspect is that sometimes opcodes are recycled and people of
+> course don't try to recycle opcodes which are in wide use.  They
+> choose the ones which failed to gain much traction and became
+> obsolete.  The recycled command might not be suitable for exposing to
+> userland.
+
+No, that doesn't happen either.  There's plenty of reserved opcodes, and
+this time you can count on the standards people which are more
+reasonable than vendors.
+
+> So, there are actual costs coming from exposing them, which is fine if
+> the benefit can offset them enough, but what would be the benefit of
+> exposing commands which aren't being used?
+
+If it is not used, nobody will use it and nothing will break.
+
+If it is used in a case we don't know, you'll have to add it later.
+
+If it is little used and broken somewhere, you'll have to add it later
+to the whitelist and implement the quirk.  Both of them.  Adding it now
+saves a step.
+
+The only case in which you save later work, is if someone bitches that X
+doesn't work but nobody tells us.  Patch economy by obscurity. :)
+
+> The only thing I can think
+> of is that of avoiding the annoyance of expanding the list later?
+> But, as you said, exposing commands by default mean that we're more
+> likely to need blacklists in the future
+
+I disagree.  It does not change anything.
+
+If it is something really serious (i.e. it crashes the firmware), we'd
+need a quirk anyway.  If it is something only slightly less stupid,
+userspace can deal with broken hardware itself.  It is somewhat expected
+with SG_IO anyway.  For virt, the guest would treat it the same as on
+bare metal; for anything else, the program would already have to deal
+with it if run as root.
+
+> , so that doesn't seem like
+> that much of winning to me.  Discovering use cases is actually much
+> easier than finding broken devices for some obscure commands.
+
+Not if many of your uses are proprietary (Windows, AIX on PPC, z/OS on
+s390, Oracle, SAP, you name it).
+
+>>> and can you please stop labeling reviews as "useless"?
+>>
+>> Reviews are not useless, but championing the inclusion of two obsolete
+>> commands in a list is not a good use of bandwidth.  Because the choice
+>> is arbitrary, the discussion can degenerate too easily into repeatedly
+>> saying the same thing over and over.  All I'm trying to do is avoid it.
 > 
-> This is what I am going to (try to) do, but I am not sure if this makes
-> sense...
-> 
-> For the start, can't we teach 'uprobe_events' file to accept, say,
-> 
-> 	'p file:0x1234 pid=1 other-opts'
-> 
-> for the start? This looks simple enough, and I after looked 
-> into tools/perf it seems that perf can be changed too.
-> 
-> What do you think?
+> Seems like I was too twitchy.  My apologies.
 
-Sounds sensible and functional to me.
+No problem.
 
-> Then we can extend 'pid=' option to accept the list of pids, 
-> perhaps.
-> 
-> In the long term we probably need uprobes/pid_filter or 
-> something like this, it should allow to add/del pid 
-> dynamically. I really do not know.
-
-For now removing+adding a new one should be enough to 'change' a 
-uprobe, right?
-
-Thanks,
-
-	Ingo
+Paolo
