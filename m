@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab3AYJnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 04:43:55 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:34446 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753414Ab3AYJm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 04:42:59 -0500
-X-IronPort-AV: E=Sophos;i="4.84,537,1355068800"; 
-   d="scan'208";a="6646216"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: akpm@linux-foundation.org, jiang.liu@huawei.com, wujianguo@huawei.com,
-        hpa@zytor.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        linfeng@cn.fujitsu.com, yinghai@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
-        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
-        glommer@parallels.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 0/3] Support SRAT for movablemem_map boot option.
-Date: Fri, 25 Jan 2013 17:42:06 +0800
-Message-Id: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/25 17:41:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/25 17:41:58,
-	Serialize complete at 2013/01/25 17:41:58
+	id S1756050Ab3AYJoI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 04:44:08 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:62236 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab3AYJoC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 04:44:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAOh2x==-amzWv_8s736LQ4AXi35kQY3q3VFLmSaTFBG7A_d0BA@mail.gmail.com>
+References: <CAOh2x=kqEzw9cvg=WLpjEbF50aTKCUUVd9GzNg8PqtBx_BpYLg@mail.gmail.com>
+	<1359032849-25551-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x=nnrEo69W7sBES85KgF0+WUy8Ouoq+SG1XiB54e7QLiow@mail.gmail.com>
+	<1359104204.12502.101.camel@smile>
+	<CAHp75Vex-t=q4aQtBsJHiu-r8u98UDPvcbgQi3Z+42dkQWL+YA@mail.gmail.com>
+	<CAKohponpZa5Lzf-0p_porTuidL+LhZX3xrHzkwnC6ffTMchRQg@mail.gmail.com>
+	<CAHp75Vd_1iozR20gHO46fqVQMBrJ43rXbWrLKCesJcqxE5QAhA@mail.gmail.com>
+	<CAOh2x==-amzWv_8s736LQ4AXi35kQY3q3VFLmSaTFBG7A_d0BA@mail.gmail.com>
+Date: Fri, 25 Jan 2013 11:37:42 +0200
+Message-ID: <CAHp75Vf5ukEv=dp+RtaYHxfJ+vVDKTjmexh0teaJOOR9prR1ig@mail.gmail.com>
+Subject: Re: [PATCH v3.5] dw_dmac: return proper residue value
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here, we do two things:
-1) patch1 ~ patch2: Prevent memblock from allocating memory in memory
-                    to be set as ZONE_MOVABLE.
-2) patch3:          Provide movablemem_map=acpi option for users who
-                    don't want to specify physical address in kernel
-                    commandline. It will use SRAT info, and set all
-                    the hotpluggable memory as ZONE_MOVABLE.
+On Fri, Jan 25, 2013 at 11:30 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On Fri, Jan 25, 2013 at 2:49 PM, Andy Shevchenko
+> <andy.shevchenko@gmail.com> wrote:
+>> On Fri, Jan 25, 2013 at 11:07 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>>> Who is going to right on ctlhi/lo?
+>
+> Ahh, my English :( (/s/right/write)
+>
+>> dwc_do_single_block()
+>>
+>>> we write to ctlhi/lo only when we program new
+>>> transfer. and that is not going to happen while we are in middle of a transfer.
+>>
+>> We have got a tasklet running inside tx_status call. Isn't possible?
+>> tasklet runs scan_descriptors, that continues transfer in soft LLP mode.
+>
+> But we have just executed scan_descriptor() before this function and it doesn't
+> look possible that transfer wasn't over then and inbetween these calls we got an
+> interrupt, scheduled an tasklet and called dwc_do_single_block() :)
 
-After applying these 3 patches, movablemem_map boot option will work like this:
+Yeah, the keyword is "look". 1 per million cases it could be true. I
+think this discussion is going to the dead end.
+Anyone else would like to argue for one or the other opinion?
 
-        /*
-         * For movablemem_map=acpi:
-         *
-         * SRAT:                |_____| |_____| |_________| |_________| ......
-         * node id:                0       1         1           2
-         * hotpluggable:           n       y         y           n
-         * movablemem_map:              |_____| |_________|
-         *
-         *
-         * For movablemem_map=nn[KMG]@ss[KMG]:
-         *
-         * SRAT:                |_____| |_____| |_________| |_________| ......
-         * node id:                0       1         1           2
-         * user specified:                |__|                 |___|
-         * movablemem_map:                |___| |_________|    |______| ......
-         *
-         * Using movablemem_map, we can prevent memblock from allocating memory
-         * on ZONE_MOVABLE at boot time.
-         *
-         * NOTE: In the second case, SRAT info will be ingored.
-         */
+I might obey your way with the commentary that with quite lower
+possibility we could have an issue there.
 
-NOTE: Using this boot option could cause NUMA performance down. For users who
-      don't want to lose NUMA performance, just do not use it now.
-      We will improve it all along.
-
-For more info of movablemem_map, please refer to:
-      https://lkml.org/lkml/2013/1/14/87
-
-
-Tang Chen (3):
-  acpi, memory-hotplug: Parse SRAT before memblock is ready.
-  acpi, memory-hotplug: Extend movablemem_map ranges to the end of
-    node.
-  acpi, memory-hotplug: Support getting hotplug info from SRAT.
-
- Documentation/kernel-parameters.txt |   23 ++++++++--
- arch/x86/kernel/setup.c             |   13 ++++--
- arch/x86/mm/numa.c                  |    2 +-
- arch/x86/mm/srat.c                  |   81 +++++++++++++++++++++++++++++++++-
- drivers/acpi/numa.c                 |   23 ++++++----
- include/linux/acpi.h                |    1 +
- include/linux/mm.h                  |    6 +++
- mm/page_alloc.c                     |   56 +++++++++++++++++++++++-
- 8 files changed, 179 insertions(+), 26 deletions(-)
-
+-- 
+With Best Regards,
+Andy Shevchenko
