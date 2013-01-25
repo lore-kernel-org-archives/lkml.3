@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab3AYV0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 16:26:51 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55510 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154Ab3AYV0s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 16:26:48 -0500
-Date: Fri, 25 Jan 2013 21:26:13 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Chanho Min <chanho.min@lge.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>
-Subject: Re: [PATCH v2] ARM: PL011: Add support for Rx DMA buffer polling
-Message-ID: <20130125212613.GZ23505@n2100.arm.linux.org.uk>
-References: <50f107aa.894e420a.596a.ffffe3f6SMTPIN_ADDED_BROKEN@mx.google.com> <CACRpkdaJd48WOzP_iURATb=c+V6==2-AB2Y9oFyh=E3oe1eT0Q@mail.gmail.com> <20130114002608.GV23505@n2100.arm.linux.org.uk> <CACRpkdbVPeva08nL_FP7qw0MeKLz6h40kPHAz_W95ZBGraOnpg@mail.gmail.com> <CAOAMb1BgcvBb6KHaZbwbh0rq8r1WfAtdCeZJexfaYoOwGfU7Sg@mail.gmail.com> <CAOAMb1BS6gvezeSrUTNJ--gGxCRL17AO8PHJ_eLrxzjOex7w1g@mail.gmail.com> <CAOAMb1C=b2fXqKJKx1ZR7UD7n=c7qQoLnMgMmy2FXEubyP=dtw@mail.gmail.com> <CACRpkdYt8CoF0_yrMkNE20fhKnRuG-=yxr2XsQKPgMWD=ehUNA@mail.gmail.com> <CAOAMb1ACPx6iXWDYz7LnrbRLkLmK9HU7Lro7H5gqpSKr24ooVA@mail.gmail.com> <20130125202507.GB5470@kroah.com>
+	id S1753067Ab3AYV1j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 16:27:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12131 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751878Ab3AYV1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 16:27:37 -0500
+Message-ID: <5102F88F.5010303@redhat.com>
+Date: Fri, 25 Jan 2013 16:26:39 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130125202507.GB5470@kroah.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv2 1/9] staging: zsmalloc: add gfp flags to zs_create_pool
+References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com> <1357590280-31535-2-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1357590280-31535-2-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 12:25:07PM -0800, Greg Kroah-Hartman wrote:
-> On Wed, Jan 23, 2013 at 02:07:57PM +0900, Chanho Min wrote:
-> > On Tue, Jan 22, 2013 at 10:18 PM, Linus Walleij
-> > <linus.walleij@linaro.org> wrote:
-> > >> - If poll timer is activated, We use consistent DMA mappings to avoid from
-> > >>   the frequent cache operation of the timer function. sg->coherency is used
-> > >>   to check if buffer is coherent.
-> > >
-> > > Hm. We can begin like this but maybe we should later patch it to
-> > > make this the default unless it has performance impacts on our
-> > > systems.
-> > Good, I really hope to make this the default.
-> > We expect it has no impact to system even if no polling use.
-> > 
-> > > Maybe this is a good opportunity to add some kerneldoc above
-> > > this struct so as to help platform implementers. It will invariably
-> > > be reused by Device Tree binding authors later on...
-> > Agree, but, frankly I need help about what I didn't modify.
-> > So We will leave this work for the next submit.
-> 
-> So, should this patch be applied?  Can I get an ack from someone who
-> knows this driver/platform please?
+On 01/07/2013 03:24 PM, Seth Jennings wrote:
+> zs_create_pool() currently takes a gfp flags argument
+> that is used when growing the memory pool.  However
+> it is not used in allocating the metadata for the pool
+> itself.  That is currently hardcoded to GFP_KERNEL.
+>
+> zswap calls zs_create_pool() at swapon time which is done
+> in atomic context, resulting in a "might sleep" warning.
+>
+> This patch changes the meaning of the flags argument in
+> zs_create_pool() to mean the flags for the metadata allocation,
+> and adds a flags argument to zs_malloc that will be used for
+> memory pool growth if required.
+>
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-Well, I thought I had explained that I'd prefer to see the poll rate
-adjusted with the baud rate, but maybe I wasn't explicit enough.
-Instead, what we seem to have ended up with are two new entries in
-platform data (which we're trying to get away from with DT):
+Acked-by: Rik van Riel <riel@redhat.com>
 
-+       unsigned int dma_rx_poll_rate;                                        
-+       unsigned int dma_rx_poll_timeout;                                     
-
-If this were to be done, then receive DMA could be used on the Versatile
-PB platforms without having it suck CPU usage unnecessarily at slower
-baud rates.
+-- 
+All rights reversed
