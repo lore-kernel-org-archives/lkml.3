@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab3AYDcq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 22:32:46 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:46565 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab3AYDcn (ORCPT
+	id S1755351Ab3AYDkh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 22:40:37 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:60673 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab3AYDke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 22:32:43 -0500
-Date: Thu, 24 Jan 2013 22:32:32 -0500 (EST)
-From: CAI Qian <caiqian@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Paul Hargrove <phhargrove@lbl.gov>, Pekka Enberg <penberg@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Message-ID: <371722937.9173846.1359084752319.JavaMail.root@redhat.com>
-In-Reply-To: <20130114192336.GA13038@kroah.com>
-Subject: Re: [PATCH] slub: assign refcount for kmalloc_caches
+	Thu, 24 Jan 2013 22:40:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.13.37]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
+In-Reply-To: <20130124143007.39c8545f.akpm@linux-foundation.org>
+References: <CALjC5hYxtPymauFddf4Qci3S-KsZHHck0LKQPZY5ocHcLw-XrQ@mail.gmail.com>
+	<CALjC5hZwVwRdY6muizzK-+jrq0RH43H6f2kgXstZuco7oM7FyQ@mail.gmail.com>
+	<CALjC5hbMq+bc-X8Ad+=gEZLuWy3ZXm4Z0Y2w44k5UZjL4g7vqg@mail.gmail.com>
+	<20130124143007.39c8545f.akpm@linux-foundation.org>
+Date: Thu, 24 Jan 2013 19:40:34 -0800
+Message-ID: <CALjC5hZaVwJBuR17dcM7hG1EMEoAYoUt0S-x6avCxRBuF54RGg@mail.gmail.com>
+Subject: Re: crash in ocfs2_fast_symlink_readpage in kernel 3.5.0
+From: Bret Towe <magnade@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 24, 2013 at 2:30 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Sat, 19 Jan 2013 20:15:33 -0800
+> Bret Towe <magnade@gmail.com> wrote:
+>
+>> >
+>> > it looks like you have a patch for this problem in a queue somewhere
+>> > (email found on ocfs2-dev:
+>> > https://oss.oracle.com/pipermail/ocfs2-devel/2012-August/008677.html )
+>> > but its not in 3.6, any reason for the delay?
+>> > I've been running that patch on 3.5 for a while now likely since
+>> > around the time i found that email
+>> > and its been working well
+>>
+>> doesn't look to be in 3.7 or 3.8-git
+>> and from what i see on ocfs2-dev there are at least 16 other patches
+>> that are also being ignored?
+>> I'm sure if I'm bothering at this point to maintain my own patchset to
+>> keep ocfs2 from crashing
+>> that there is other folks doing the same
+>
+> Please resend all OCFS2 patches, cc'ing myself, Mark, Joel and
+> ocfs2-devel@oss.oracle.com.
+>
+> I shall then review them, merge them into -mm (and hence linux-next) so
+> they can get a bit of visibility and testing while the maintainers are
+> checking them over.
+>
+> Thanks.
 
-
------ Original Message -----
-> From: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-> To: "Joonsoo Kim" <iamjoonsoo.kim@lge.com>
-> Cc: "Paul Hargrove" <phhargrove@lbl.gov>, "Pekka Enberg" <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-> linux-mm@kvack.org, "Christoph Lameter" <cl@linux.com>
-> Sent: Tuesday, January 15, 2013 3:23:36 AM
-> Subject: Re: [PATCH] slub: assign refcount for kmalloc_caches
-> 
-> On Fri, Jan 11, 2013 at 04:52:54PM +0900, Joonsoo Kim wrote:
-> > On Thu, Jan 10, 2013 at 08:47:39PM -0800, Paul Hargrove wrote:
-> > > I just had a look at patch-3.7.2-rc1, and this change doesn't
-> > > appear to
-> > > have made it in yet.
-> > > Am I missing something?
-> > > 
-> > > -Paul
-> > 
-> > I try to check it.
-> > Ccing to Greg.
-> > 
-> > Hello, Pekka and Greg.
-> > 
-> > v3.8-rcX has already fixed by another stuff, but it is not simple
-> > change.
-> > So I made a new patch and sent it.
-> > 
-> > How this kind of patch (only for stable v3.7) go into stable tree?
-> > through Pekka's slab tree? or send it to Greg, directly?
-> > 
-> > I don't know how to submit this kind of patch to stable tree
-> > exactly.
-> > Could anyone help me?
-> 
-> Please redo it, and send it to stable@vger.kernel.org, and say
-> exactly
-> why it isn't in Linus's tree, and that it should only be applied to
-> 3.7-stable.
-I also met this during the testing, so I'll re-send it then.
-> 
-> thanks,
-> 
-> greg k-h
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+I've just been browsing the ocfs2-dev archives do you want me to pull them
+and resend or should i just link to the archive?
+keep in mind I'm just a end user not really a dev persay
+if you do want me to send the patches however I assume there is a document
+i should read first?
