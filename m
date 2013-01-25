@@ -1,150 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab3AYP5m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 10:57:42 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:49943 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757169Ab3AYP5j (ORCPT
+	id S1757354Ab3AYP53 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 10:57:29 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:36893 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755926Ab3AYP5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 10:57:39 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 18/19] ARM: at91: suspend both memory controllers on at91sam9263
-Date: Fri, 25 Jan 2013 15:57:29 +0000
-Message-ID: <32362906.GDijhnXAWC@wuerfel>
-User-Agent: KMail/4.10 rc3 (Linux/3.8.0-1-generic; KDE/4.9.98; x86_64; ; )
-In-Reply-To: <20130125154219.GM7360@game.jcrosoft.org>
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359123276-15833-19-git-send-email-arnd@arndb.de> <20130125154219.GM7360@game.jcrosoft.org>
+	Fri, 25 Jan 2013 10:57:24 -0500
+Message-ID: <5102AACA.3040406@linux.vnet.ibm.com>
+Date: Fri, 25 Jan 2013 21:24:50 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:FOJfsh30e+oHGo2k/XCQnrmqJKuEJ1DOoc+91XwJHGn
- b1vjp5RvLc3WxjEUHz49iUd1JvxO2kKFnkVcBBDES4CPUGprFv
- /vcIPEXrO6pUNOTxn7Vy9kyq6pt9AMet/ak3oaQaQAgwQakKZ7
- S3op9zHxqqLe8juwvlat3ilKyMM6pnB5q86V1Nmyd636DcbqWz
- u8ldz/PdR7WdmlGTktWDbwYfOn9QOlQDiFcxMowOPZHp7nJabs
- 5ne6g4fgD+yGEryq0znx4ISkpwdrB67PNXr1tPA61Lta0ENs7K
- ocO1oLg9MDf1o5/t6GmZHtRIiXlvfdaU/8xWp2KTrWm+/GfzPv
- mP1KR4v++CawdcGdEgL8=
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi.kivity@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V3 RESEND RFC 1/2] sched: Bail out of yield_to when source
+ and target runqueue has one task
+References: <20130122073854.24731.9426.sendpatchset@codeblue.in.ibm.com> <20130122073913.24731.65118.sendpatchset@codeblue.in.ibm.com> <20130124103213.GD27602@gmail.com> <20130125104025.GA14978@linux.vnet.ibm.com> <20130125104737.GA23332@gmail.com>
+In-Reply-To: <20130125104737.GA23332@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012515-2674-0000-0000-0000079ABA05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 25 January 2013 16:42:19 Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 14:14 Fri 25 Jan     , Arnd Bergmann wrote:
-> > For the past three years, we have had a #warning in
-> > mach-at91 about the sdram_selfrefresh_enable or
-> > at91sam9_standby functions possibly not working on
-> > at91sam9263. In the meantime a function was added
-> > to do the right thing on at91sam9g45, which looks like
-> > it should also work on '9263.
-> > 
-> > This patch blindly removes the warning and changes the
-> > at91sam9263 to use the same code at at91sam9g45, which
-> > may or may not be the right solution. If it is not,
-> > maybe someone could provide a better fix.
-> it's not
-> 
-> the 9g45 use DDR Controler where the 9263 use a SDRAM controler
-> 
+On 01/25/2013 04:17 PM, Ingo Molnar wrote:
+>
+> * Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+>
+>> * Ingo Molnar <mingo@kernel.org> [2013-01-24 11:32:13]:
+>>
+>>>
+>>> * Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+>>>
+>>>> From: Peter Zijlstra <peterz@infradead.org>
+>>>>
+>>>> In case of undercomitted scenarios, especially in large guests
+>>>> yield_to overhead is significantly high. when run queue length of
+>>>> source and target is one, take an opportunity to bail out and return
+>>>> -ESRCH. This return condition can be further exploited to quickly come
+>>>> out of PLE handler.
+>>>>
+>>>> (History: Raghavendra initially worked on break out of kvm ple handler upon
+>>>>   seeing source runqueue length = 1, but it had to export rq length).
+>>>>   Peter came up with the elegant idea of return -ESRCH in scheduler core.
+>>>>
+>>>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>>>> Raghavendra, Checking the rq length of target vcpu condition added.(thanks Avi)
+>>>> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>>>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>>>> Acked-by: Andrew Jones <drjones@redhat.com>
+>>>> Tested-by: Chegu Vinod <chegu_vinod@hp.com>
+>>>> ---
+>>>>
+>>>>   kernel/sched/core.c |   25 +++++++++++++++++++------
+>>>>   1 file changed, 19 insertions(+), 6 deletions(-)
+>>>>
+>>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>>>> index 2d8927f..fc219a5 100644
+>>>> --- a/kernel/sched/core.c
+>>>> +++ b/kernel/sched/core.c
+>>>> @@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
+>>>>    * It's the caller's job to ensure that the target task struct
+>>>>    * can't go away on us before we can do any checks.
+>>>>    *
+>>>> - * Returns true if we indeed boosted the target task.
+>>>> + * Returns:
+>>>> + *	true (>0) if we indeed boosted the target task.
+>>>> + *	false (0) if we failed to boost the target.
+>>>> + *	-ESRCH if there's no task to yield to.
+>>>>    */
+>>>>   bool __sched yield_to(struct task_struct *p, bool preempt)
+>>>>   {
+>>>> @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+>>>>
+>>>>   again:
+>>>>   	p_rq = task_rq(p);
+>>>> +	/*
+>>>> +	 * If we're the only runnable task on the rq and target rq also
+>>>> +	 * has only one task, there's absolutely no point in yielding.
+>>>> +	 */
+>>>> +	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
+>>>> +		yielded = -ESRCH;
+>>>> +		goto out_irq;
+>>>> +	}
+>>>
+>>> Looks good to me in principle.
+>>>
+>>> Would be nice to get more consistent benchmark numbers. Once
+>>> those are unambiguously showing that this is a win:
+>>>
+>>>    Acked-by: Ingo Molnar <mingo@kernel.org>
+>>>
+>>
+>> I ran the test with kernbench and sysbench again on 32 core mx3850
+>> machine with 32 vcpu guests. Results shows definite improvements.
+>>
+>> ebizzy and dbench show similar improvement for 1x overcommit
+>> (note that stdev for 1x in dbench is lesser improvemet is now seen at
+>> only 20%)
+>>
+>> [ all the experiments are taken out of 8 run averages ].
+>>
+>> The patches benefit large guest undercommit scenarios, so I believe
+>> with large guest performance improvemnt is even significant. [ Chegu
+>> Vinod results show performance near to no ple cases ]. Unfortunately I
+>> do not have a machine to test larger guest (>32).
+>>
+>> Ingo, Please let me know if this is okay to you.
+>>
+>> base kernel = 3.8.0-rc4
+>>
+>> +-----------+-----------+-----------+------------+-----------+
+>>                  kernbench  (time in sec lower is better)
+>> +-----------+-----------+-----------+------------+-----------+
+>>      base        stdev        patched    stdev      %improve
+>> +-----------+-----------+-----------+------------+-----------+
+>> 1x   46.6028     1.8672	    42.4494     1.1390	   8.91234
+>> 2x   99.9074     9.1859	    90.4050     2.6131	   9.51121
+>> +-----------+-----------+-----------+------------+-----------+
+>> +-----------+-----------+-----------+------------+-----------+
+>>                 sysbench (time in sec lower is better)
+>> +-----------+-----------+-----------+------------+-----------+
+>>      base        stdev        patched    stdev      %improve
+>> +-----------+-----------+-----------+------------+-----------+
+>> 1x   18.7402     0.3764	    17.7431     0.3589	   5.32065
+>> 2x   13.2238     0.1935	    13.0096     0.3152	   1.61981
+>> +-----------+-----------+-----------+------------+-----------+
+>>
+>> +-----------+-----------+-----------+------------+-----------+
+>>                  ebizzy  (records/sec higher is better)
+>> +-----------+-----------+-----------+------------+-----------+
+>>      base        stdev        patched    stdev      %improve
+>> +-----------+-----------+-----------+------------+-----------+
+>> 1x  2421.9000    19.1801	  5883.1000   112.7243	 142.91259
+>> +-----------+-----------+-----------+------------+-----------+
+>>
+>> +-----------+-----------+-----------+------------+-----------+
+>>                  dbench (throughput MB/sec  higher is better)
+>> +-----------+-----------+-----------+------------+-----------+
+>>      base        stdev        patched    stdev      %improve
+>> +-----------+-----------+-----------+------------+-----------+
+>> 1x  11675.9900   857.4154	 14103.5000   215.8425	  20.79061
+>> +-----------+-----------+-----------+------------+-----------+
+>
+> The numbers look pretty convincing, thanks. The workloads were
+> CPU bound most of the time, right?
 
-Ah, right. What about this one then?
-
-	Arnd
-	
-8<-----
-Subject: [PATCH] ARM: at91: suspend both memory controllers on at91sam9263
-
-For the past three years, we have had a #warning in
-mach-at91 about the sdram_selfrefresh_enable or
-at91sam9_standby functions possibly not working on
-at91sam9263. In the meantime a function was added
-to do the right thing on at91sam9g45, which looks like
-it should also work on '9263.
-
-This patch blindly removes the warning and changes the
-at91sam9263 to use the same code at at91sam9g45, which
-may or may not be the right solution. If it is not,
-maybe someone could provide a better fix.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Albin Tonnerre <albin.tonnerre@free-electrons.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-
-diff --git a/arch/arm/mach-at91/cpuidle.c b/arch/arm/mach-at91/cpuidle.c
-index 0c63815..4c67946 100644
---- a/arch/arm/mach-at91/cpuidle.c
-+++ b/arch/arm/mach-at91/cpuidle.c
-@@ -38,6 +38,8 @@ static int at91_enter_idle(struct cpuidle_device *dev,
- 		at91rm9200_standby();
- 	else if (cpu_is_at91sam9g45())
- 		at91sam9g45_standby();
-+	else if (cpu_is_at91sam9263())
-+		at91sam9263_standby();
- 	else
- 		at91sam9_standby();
- 
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index adb6db8..b8017c1 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -267,6 +267,8 @@ static int at91_pm_enter(suspend_state_t state)
- 				at91rm9200_standby();
- 			else if (cpu_is_at91sam9g45())
- 				at91sam9g45_standby();
-+			else if (cpu_is_at91sam9263())
-+				at91sam9263_standby();
- 			else
- 				at91sam9_standby();
- 			break;
-diff --git a/arch/arm/mach-at91/pm.h b/arch/arm/mach-at91/pm.h
-index 38f467c..2f5908f 100644
---- a/arch/arm/mach-at91/pm.h
-+++ b/arch/arm/mach-at91/pm.h
-@@ -70,13 +70,31 @@ static inline void at91sam9g45_standby(void)
- 	at91_ramc_write(1, AT91_DDRSDRC_LPR, saved_lpr1);
- }
- 
--#ifdef CONFIG_SOC_AT91SAM9263
--/*
-- * FIXME either or both the SDRAM controllers (EB0, EB1) might be in use;
-- * handle those cases both here and in the Suspend-To-RAM support.
-+/* We manage both DDRAM/SDRAM controllers, we need more than one value to
-+ * remember.
-  */
--#warning Assuming EB1 SDRAM controller is *NOT* used
--#endif
-+static inline void at91sam9263_standby(void)
-+{
-+	u32 lpr0, lpr1;
-+	u32 saved_lpr0, saved_lpr1;
-+
-+	saved_lpr1 = at91_ramc_read(1, AT91_SDRAMC_LPR);
-+	lpr1 = saved_lpr1 & ~AT91_SDRAMC_LPCB;
-+	lpr1 |= AT91_SDRAMC_LPCB_SELF_REFRESH;
-+
-+	saved_lpr0 = at91_ramc_read(0, AT91_SDRAMC_LPR);
-+	lpr0 = saved_lpr0 & ~AT91_SDRAMC_LPCB;
-+	lpr0 |= AT91_SDRAMC_LPCB_SELF_REFRESH;
-+
-+	/* self-refresh mode now */
-+	at91_ramc_write(0, AT91_SDRAMC_LPR, lpr0);
-+	at91_ramc_write(1, AT91_SDRAMC_LPR, lpr1);
-+
-+	cpu_do_idle();
-+
-+	at91_ramc_write(0, AT91_SDRAMC_LPR, saved_lpr0);
-+	at91_ramc_write(1, AT91_SDRAMC_LPR, saved_lpr1);
-+}
- 
- static inline void at91sam9_standby(void)
- {
+Yes. CPU bound most of the time. I also used tmpfs to reduce io
+overhead (for dbbench).
 
