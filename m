@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab3AYKyp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:54:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41057 "EHLO
+	id S1756680Ab3AYKz7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:55:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41084 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605Ab3AYKym (ORCPT
+	with ESMTP id S1751275Ab3AYKz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:54:42 -0500
-Date: Fri, 25 Jan 2013 02:54:18 -0800
+	Fri, 25 Jan 2013 05:55:56 -0500
+Date: Fri, 25 Jan 2013 02:55:27 -0800
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-9avmwxv5ipxyafwqxbk52ylg@git.kernel.org>
+Message-ID: <tip-vr8hzph83d5t2mdlkf565h84@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
@@ -19,9 +19,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests:
-  Adjust some message log levels to help diagnosing problems in attr tests
-Git-Commit-ID: ce90e3856ba55af4d3d9c9c1168cc624607f6c7c
+Subject: [tip:perf/core] perf evsel:
+  Do missing feature fallbacks in just one place
+Git-Commit-ID: 594ac61ad3be9c80c738a9fe3bb95c05d8d1bae1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,43 +30,22 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 02:54:23 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 02:55:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ce90e3856ba55af4d3d9c9c1168cc624607f6c7c
-Gitweb:     http://git.kernel.org/tip/ce90e3856ba55af4d3d9c9c1168cc624607f6c7c
+Commit-ID:  594ac61ad3be9c80c738a9fe3bb95c05d8d1bae1
+Gitweb:     http://git.kernel.org/tip/594ac61ad3be9c80c738a9fe3bb95c05d8d1bae1
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 18 Dec 2012 14:14:24 -0300
+AuthorDate: Thu, 13 Dec 2012 13:13:07 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Thu, 24 Jan 2013 16:40:08 -0300
 
-perf tests: Adjust some message log levels to help diagnosing problems in attr tests
+perf evsel: Do missing feature fallbacks in just one place
 
-Now we'll see the command being run and if it fails, the fields that had
-unexpected values and the expected values, example testing a problem in the
-next patch:
-
-  # perf test -v 13
-  13: struct perf_event_attr setup                           :
-  --- start ---
-  SNIP
-    running 'PERF_TEST_ATTR=/tmp/tmpDNIE6M /home/acme/bin/perf record -o /tmp/tmpDNIE6M/perf.data --group -e cycles,instructions kill >/dev/null 2>&1' ret 0
-    running 'PERF_TEST_ATTR=/tmp/tmpV5lKro /home/acme/bin/perf stat -o /tmp/tmpV5lKro/perf.data -dd kill >/dev/null 2>&1' ret 1
-  expected config=3, got 65540
-  expected exclude_guest=1, got 0
-  FAILED '/home/acme/libexec/perf-core/tests/attr/test-stat-detailed-2' - match failure
-  ---- end ----
-  struct perf_event_attr setup: FAILED!
-  #
-
-While in the past we would see at the '-v' level many more messages for the
-fields that matched, something we may want to see only in the '-vv' log level.
-
-Keeping the 'running' messages so that we can see the tools tests that
-succeeded so that we can compare it to the one that failed, helping pinpointing
-the command line switch combo that leads to the problem.
+Instead of doing it in stat, top, record or any other tool that opens
+event descriptors.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -76,108 +55,263 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-9avmwxv5ipxyafwqxbk52ylg@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-vr8hzph83d5t2mdlkf565h84@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/attr.py | 27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
+ tools/perf/builtin-record.c | 36 ------------------------------------
+ tools/perf/builtin-stat.c   | 30 +++---------------------------
+ tools/perf/builtin-top.c    | 20 --------------------
+ tools/perf/perf.h           |  2 --
+ tools/perf/util/evsel.c     | 31 ++++++++++++++++++++++++++++---
+ tools/perf/util/top.h       |  2 --
+ 6 files changed, 31 insertions(+), 90 deletions(-)
 
-diff --git a/tools/perf/tests/attr.py b/tools/perf/tests/attr.py
-index e702b82..2f629ca 100644
---- a/tools/perf/tests/attr.py
-+++ b/tools/perf/tests/attr.py
-@@ -68,7 +68,7 @@ class Event(dict):
-             self[key] = val
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 028de72..a4b9726 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -234,25 +234,6 @@ static int perf_record__open(struct perf_record *rec)
  
-     def __init__(self, name, data, base):
--        log.info("    Event %s" % name);
-+        log.debug("    Event %s" % name);
-         self.name  = name;
-         self.group = ''
-         self.add(base)
-@@ -97,6 +97,14 @@ class Event(dict):
-                 return False
-         return True
+ 	list_for_each_entry(pos, &evlist->entries, node) {
+ 		struct perf_event_attr *attr = &pos->attr;
+-		/*
+-		 * Check if parse_single_tracepoint_event has already asked for
+-		 * PERF_SAMPLE_TIME.
+-		 *
+-		 * XXX this is kludgy but short term fix for problems introduced by
+-		 * eac23d1c that broke 'perf script' by having different sample_types
+-		 * when using multiple tracepoint events when we use a perf binary
+-		 * that tries to use sample_id_all on an older kernel.
+-		 *
+-		 * We need to move counter creation to perf_session, support
+-		 * different sample_types, etc.
+-		 */
+-		bool time_needed = attr->sample_type & PERF_SAMPLE_TIME;
+-
+-fallback_missing_features:
+-		if (opts->exclude_guest_missing)
+-			attr->exclude_guest = attr->exclude_host = 0;
+-retry_sample_id:
+-		attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
+ try_again:
+ 		if (perf_evsel__open(pos, evlist->cpus, evlist->threads) < 0) {
+ 			int err = errno;
+@@ -266,23 +247,6 @@ try_again:
+ 				       " an out-of-range profile CPU?\n");
+ 				rc = -err;
+ 				goto out;
+-			} else if (err == EINVAL) {
+-				if (!opts->exclude_guest_missing &&
+-				    (attr->exclude_guest || attr->exclude_host)) {
+-					pr_debug("Old kernel, cannot exclude "
+-						 "guest or host samples.\n");
+-					opts->exclude_guest_missing = true;
+-					goto fallback_missing_features;
+-				} else if (!opts->sample_id_all_missing) {
+-					/*
+-					 * Old kernel, no attr->sample_id_type_all field
+-					 */
+-					opts->sample_id_all_missing = true;
+-					if (!opts->sample_time && !opts->raw_samples && !time_needed)
+-						perf_evsel__reset_sample_bit(pos, TIME);
+-
+-					goto retry_sample_id;
+-				}
+ 			}
  
-+    def diff(self, other):
-+        for t in Event.terms:
-+            if not self.has_key(t) or not other.has_key(t):
-+                continue
-+            if not self.compare_data(self[t], other[t]):
-+		log.warning("expected %s=%s, got %s" % (t, self[t], other[t]))
-+                
+ 			/*
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index c12655a..ef067c1 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -132,8 +132,6 @@ static struct stats walltime_nsecs_stats;
+ static int create_perf_stat_counter(struct perf_evsel *evsel)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
+-	bool exclude_guest_missing = false;
+-	int ret;
+ 
+ 	if (scale)
+ 		attr->read_format = PERF_FORMAT_TOTAL_TIME_ENABLED |
+@@ -141,16 +139,8 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
+ 
+ 	attr->inherit = !no_inherit;
+ 
+-retry:
+-	if (exclude_guest_missing)
+-		evsel->attr.exclude_guest = evsel->attr.exclude_host = 0;
+-
+-	if (perf_target__has_cpu(&target)) {
+-		ret = perf_evsel__open_per_cpu(evsel, perf_evsel__cpus(evsel));
+-		if (ret)
+-			goto check_ret;
+-		return 0;
+-	}
++	if (perf_target__has_cpu(&target))
++		return perf_evsel__open_per_cpu(evsel, perf_evsel__cpus(evsel));
+ 
+ 	if (!perf_target__has_task(&target) &&
+ 	    perf_evsel__is_group_leader(evsel)) {
+@@ -158,21 +148,7 @@ retry:
+ 		attr->enable_on_exec = 1;
+ 	}
+ 
+-	ret = perf_evsel__open_per_thread(evsel, evsel_list->threads);
+-	if (!ret)
+-		return 0;
+-	/* fall through */
+-check_ret:
+-	if (ret && errno == EINVAL) {
+-		if (!exclude_guest_missing &&
+-		    (evsel->attr.exclude_guest || evsel->attr.exclude_host)) {
+-			pr_debug("Old kernel, cannot exclude "
+-				 "guest or host samples.\n");
+-			exclude_guest_missing = true;
+-			goto retry;
+-		}
+-	}
+-	return ret;
++	return perf_evsel__open_per_thread(evsel, evsel_list->threads);
+ }
+ 
+ /*
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index b7d2ea6..74fca61 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -900,12 +900,6 @@ static void perf_top__start_counters(struct perf_top *top)
+ 
+ 	list_for_each_entry(counter, &evlist->entries, node) {
+ 		struct perf_event_attr *attr = &counter->attr;
+-
+-fallback_missing_features:
+-		if (top->exclude_guest_missing)
+-			attr->exclude_guest = attr->exclude_host = 0;
+-retry_sample_id:
+-		attr->sample_id_all = top->sample_id_all_missing ? 0 : 1;
+ try_again:
+ 		if (perf_evsel__open(counter, top->evlist->cpus,
+ 				     top->evlist->threads) < 0) {
+@@ -914,20 +908,6 @@ try_again:
+ 			if (err == EPERM || err == EACCES) {
+ 				ui__error_paranoid();
+ 				goto out_err;
+-			} else if (err == EINVAL) {
+-				if (!top->exclude_guest_missing &&
+-				    (attr->exclude_guest || attr->exclude_host)) {
+-					pr_debug("Old kernel, cannot exclude "
+-						 "guest or host samples.\n");
+-					top->exclude_guest_missing = true;
+-					goto fallback_missing_features;
+-				} else if (!top->sample_id_all_missing) {
+-					/*
+-					 * Old kernel, no attr->sample_id_type_all field
+-					 */
+-					top->sample_id_all_missing = true;
+-					goto retry_sample_id;
+-				}
+ 			}
+ 			/*
+ 			 * If it's cycles then fall back to hrtimer
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 2c340e7..7622f15 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -237,8 +237,6 @@ struct perf_record_opts {
+ 	bool	     raw_samples;
+ 	bool	     sample_address;
+ 	bool	     sample_time;
+-	bool	     sample_id_all_missing;
+-	bool	     exclude_guest_missing;
+ 	bool	     period;
+ 	unsigned int freq;
+ 	unsigned int mmap_pages;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 7a2a3dc..ee6ee3f 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -22,6 +22,11 @@
+ #include <linux/perf_event.h>
+ #include "perf_regs.h"
+ 
++static struct {
++	bool sample_id_all;
++	bool exclude_guest;
++} perf_missing_features;
 +
- # Test file description needs to have following sections:
- # [config]
- #   - just single instance in file
-@@ -113,7 +121,7 @@ class Test(object):
-         parser = ConfigParser.SafeConfigParser()
-         parser.read(path)
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
  
--        log.warning("running '%s'" % path)
-+        log.debug("running '%s'" % path)
+ static int __perf_evsel__sample_size(u64 sample_type)
+@@ -463,7 +468,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 	int track = !evsel->idx; /* only the first counter needs these */
  
-         self.path     = path
-         self.test_dir = options.test_dir
-@@ -128,7 +136,7 @@ class Test(object):
+-	attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
++	attr->sample_id_all = perf_missing_features.sample_id_all ? 0 : 1;
+ 	attr->inherit	    = !opts->no_inherit;
  
-         self.expect   = {}
-         self.result   = {}
--        log.info("  loading expected events");
-+        log.debug("  loading expected events");
-         self.load_events(path, self.expect)
+ 	perf_evsel__set_sample_bit(evsel, IP);
+@@ -513,7 +518,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 	if (opts->period)
+ 		perf_evsel__set_sample_bit(evsel, PERIOD);
  
-     def is_event(self, name):
-@@ -164,7 +172,7 @@ class Test(object):
-               self.perf, self.command, tempdir, self.args)
-         ret = os.WEXITSTATUS(os.system(cmd))
+-	if (!opts->sample_id_all_missing &&
++	if (!perf_missing_features.sample_id_all &&
+ 	    (opts->sample_time || !opts->no_inherit ||
+ 	     perf_target__has_cpu(&opts->target)))
+ 		perf_evsel__set_sample_bit(evsel, TIME);
+@@ -761,6 +766,13 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 		pid = evsel->cgrp->fd;
+ 	}
  
--        log.info("  running '%s' ret %d " % (cmd, ret))
-+        log.warning("  running '%s' ret %d " % (cmd, ret))
++fallback_missing_features:
++	if (perf_missing_features.exclude_guest)
++		evsel->attr.exclude_guest = evsel->attr.exclude_host = 0;
++retry_sample_id:
++	if (perf_missing_features.sample_id_all)
++		evsel->attr.sample_id_all = 0;
++
+ 	for (cpu = 0; cpu < cpus->nr; cpu++) {
  
-         if ret != int(self.ret):
-             raise Unsup(self)
-@@ -172,7 +180,7 @@ class Test(object):
-     def compare(self, expect, result):
-         match = {}
+ 		for (thread = 0; thread < threads->nr; thread++) {
+@@ -777,13 +789,26 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 								     group_fd, flags);
+ 			if (FD(evsel, cpu, thread) < 0) {
+ 				err = -errno;
+-				goto out_close;
++				goto try_fallback;
+ 			}
+ 		}
+ 	}
  
--        log.info("  compare");
-+        log.debug("  compare");
+ 	return 0;
  
-         # For each expected event find all matching
-         # events in result. Fail if there's not any.
-@@ -187,10 +195,11 @@ class Test(object):
-                 else:
-                     log.debug("    ->FAIL");
- 
--            log.info("    match: [%s] matches %s" % (exp_name, str(exp_list)))
-+            log.debug("    match: [%s] matches %s" % (exp_name, str(exp_list)))
- 
-             # we did not any matching event - fail
-             if (not exp_list):
-+		exp_event.diff(res_event)
-                 raise Fail(self, 'match failure');
- 
-             match[exp_name] = exp_list
-@@ -208,10 +217,10 @@ class Test(object):
-                 if res_group not in match[group]:
-                     raise Fail(self, 'group failure')
- 
--                log.info("    group: [%s] matches group leader %s" %
-+                log.debug("    group: [%s] matches group leader %s" %
-                          (exp_name, str(match[group])))
- 
--        log.info("  matched")
-+        log.debug("  matched")
- 
-     def resolve_groups(self, events):
-         for name, event in events.items():
-@@ -233,7 +242,7 @@ class Test(object):
-             self.run_cmd(tempdir);
- 
-             # load events expectation for the test
--            log.info("  loading result events");
-+            log.debug("  loading result events");
-             for f in glob.glob(tempdir + '/event*'):
-                 self.load_events(f, self.result);
- 
++try_fallback:
++	if (err != -EINVAL || cpu > 0 || thread > 0)
++		goto out_close;
++
++	if (!perf_missing_features.exclude_guest &&
++	    (evsel->attr.exclude_guest || evsel->attr.exclude_host)) {
++		perf_missing_features.exclude_guest = true;
++		goto fallback_missing_features;
++	} else if (!perf_missing_features.sample_id_all) {
++		perf_missing_features.sample_id_all = true;
++		goto retry_sample_id;
++	}
++
+ out_close:
+ 	do {
+ 		while (--thread >= 0) {
+diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
+index 927c229..7ebf357 100644
+--- a/tools/perf/util/top.h
++++ b/tools/perf/util/top.h
+@@ -29,8 +29,6 @@ struct perf_top {
+ 	bool		   sort_has_symbols;
+ 	bool		   kptr_restrict_warned;
+ 	bool		   vmlinux_warned;
+-	bool		   sample_id_all_missing;
+-	bool		   exclude_guest_missing;
+ 	bool		   dump_symtab;
+ 	struct hist_entry  *sym_filter_entry;
+ 	struct perf_evsel  *sym_evsel;
