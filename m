@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab3AYTr3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 14:47:29 -0500
-Received: from smtp181.dfw.emailsrvr.com ([67.192.241.181]:44516 "EHLO
+	id S1752532Ab3AYTr1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 14:47:27 -0500
+Received: from smtp181.dfw.emailsrvr.com ([67.192.241.181]:54314 "EHLO
 	smtp181.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab3AYTqm (ORCPT
+	with ESMTP id S1751773Ab3AYTqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Jan 2013 14:46:42 -0500
 From: Mark Langsdorf <mark.langsdorf@calxeda.com>
 To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
         linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 2/4 v11] clk, highbank: Prevent glitches in non-bypass reset mode
-Date: Fri, 25 Jan 2013 13:46:43 -0600
-Message-Id: <1359143205-20279-3-git-send-email-mark.langsdorf@calxeda.com>
+        Rob Herring <rob.herring@calxeda.com>,
+        Omar Ramirez Luna <omar.luna@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 3/4 v11] arm highbank: add support for pl320 IPC
+Date: Fri, 25 Jan 2013 13:46:44 -0600
+Message-Id: <1359143205-20279-4-git-send-email-mark.langsdorf@calxeda.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359143205-20279-1-git-send-email-mark.langsdorf@calxeda.com>
 References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
@@ -23,46 +25,322 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The highbank clock will glitch with the current code if the
-clock rate is reset without relocking the PLL. Program the PLL
-correctly to prevent glitches.
+From: Rob Herring <rob.herring@calxeda.com>
+
+The pl320 IPC allows for interprocessor communication between the highbank A9
+and the EnergyCore Management Engine. The pl320 implements a straightforward
+mailbox protocol.
 
 Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Acked-by: Mike Turquette <mturquette@linaro.org>
+Cc: Omar Ramirez Luna <omar.luna@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
 ---
-Changes from v6, v7, v8, v9, v10
+Changes from v10
+	Removed deependency on Omar Ramirez Luna's mailbox code. Now the
+	patch creates the directory itself.
+Changes from v9
+        Used to be the 4th patch in the series.
+Changes from v6, v7, v8
         None.
 Changes from v5
-        Added Mike Turquette's ack.
+        Renamed ipc_transmit() to pl320_ipc_transmit().
+        Properly exported pl320_ipc_{un}register_notifier().
 Changes from v4
-        None.
-Changes from v3
-        Changelog text and patch name now correspond to the actual patch.
-        was clk, highbank: remove non-bypass reset mode.
-Changes from v2
+        Moved pl320-ipc.c from arch/arm/mach-highbank to drivers/mailbox.
+        Moved header information to include/linux/mailbox.h.
+        Added Kconfig options to reflect the new code location.
+        Change drivers/mailbox/Makefile to build the omap mailboxes only 
+        when they are configured.
+        Removed ipc_call_fast and renamed ipc_call_slow ipc_transmit.
+Changes from v3, v2
         None.
 Changes from v1
-        Removed erroneous reformating.
+        Removed erroneous changes for cpufreq Kconfig.
 
- drivers/clk/clk-highbank.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/mach-highbank/Kconfig |   2 +
+ drivers/mailbox/Kconfig        |  18 ++++
+ drivers/mailbox/Makefile       |   1 +
+ drivers/mailbox/pl320-ipc.c    | 199 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/mailbox.h        |  18 ++++
+ 5 files changed, 238 insertions(+)
+ create mode 100644 drivers/mailbox/Kconfig
+ create mode 100644 drivers/mailbox/Makefile
+ create mode 100644 drivers/mailbox/pl320-ipc.c
+ create mode 100644 include/linux/mailbox.h
 
-diff --git a/drivers/clk/clk-highbank.c b/drivers/clk/clk-highbank.c
-index 52fecad..3a0b723 100644
---- a/drivers/clk/clk-highbank.c
-+++ b/drivers/clk/clk-highbank.c
-@@ -182,8 +182,10 @@ static int clk_pll_set_rate(struct clk_hw *hwclk, unsigned long rate,
- 		reg |= HB_PLL_EXT_ENA;
- 		reg &= ~HB_PLL_EXT_BYPASS;
- 	} else {
-+		writel(reg | HB_PLL_EXT_BYPASS, hbclk->reg);
- 		reg &= ~HB_PLL_DIVQ_MASK;
- 		reg |= divq << HB_PLL_DIVQ_SHIFT;
-+		writel(reg | HB_PLL_EXT_BYPASS, hbclk->reg);
- 	}
- 	writel(reg, hbclk->reg);
- 
+diff --git a/arch/arm/mach-highbank/Kconfig b/arch/arm/mach-highbank/Kconfig
+index 551c97e..2388085 100644
+--- a/arch/arm/mach-highbank/Kconfig
++++ b/arch/arm/mach-highbank/Kconfig
+@@ -11,5 +11,7 @@ config ARCH_HIGHBANK
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_ARM_SCU
+ 	select HAVE_SMP
++	select MAILBOX
++	select PL320_MBOX
+ 	select SPARSE_IRQ
+ 	select USE_OF
+diff --git a/drivers/mailbox/Kconfig b/drivers/mailbox/Kconfig
+new file mode 100644
+index 0000000..9489554
+--- /dev/null
++++ b/drivers/mailbox/Kconfig
+@@ -0,0 +1,18 @@
++menuconfig MAILBOX
++	bool "Mailbox Hardware Support"
++	help
++	  Mailbox is a framework to control hardware communication between
++	  on-chip processors through queued messages and interrupt driven
++	  signals. Say Y if your platform supports hardware mailboxes.
++
++if MAILBOX
++config PL320_MBOX
++	bool "ARM PL320 Mailbox"
++	help
++	  An implementation of the ARM PL320 Interprocessor Communication
++	  Mailbox (IPCM), tailored for the Calxeda Highbank. It is used to
++	  send short messages between Highbank's A9 cores and the EnergyCore
++	  Management Engine, primarily for cpufreq. Say Y here if you want
++	  to use the PL320 IPCM support.
++
++endif
+diff --git a/drivers/mailbox/Makefile b/drivers/mailbox/Makefile
+new file mode 100644
+index 0000000..543ad6a
+--- /dev/null
++++ b/drivers/mailbox/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_PL320_MBOX)	+= pl320-ipc.o
+diff --git a/drivers/mailbox/pl320-ipc.c b/drivers/mailbox/pl320-ipc.c
+new file mode 100644
+index 0000000..68c0d50
+--- /dev/null
++++ b/drivers/mailbox/pl320-ipc.c
+@@ -0,0 +1,199 @@
++/*
++ * Copyright 2012 Calxeda, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#include <linux/types.h>
++#include <linux/err.h>
++#include <linux/delay.h>
++#include <linux/export.h>
++#include <linux/io.h>
++#include <linux/interrupt.h>
++#include <linux/completion.h>
++#include <linux/mutex.h>
++#include <linux/notifier.h>
++#include <linux/spinlock.h>
++#include <linux/device.h>
++#include <linux/amba/bus.h>
++
++#include <linux/mailbox.h>
++
++#define IPCMxSOURCE(m)		((m) * 0x40)
++#define IPCMxDSET(m)		(((m) * 0x40) + 0x004)
++#define IPCMxDCLEAR(m)		(((m) * 0x40) + 0x008)
++#define IPCMxDSTATUS(m)		(((m) * 0x40) + 0x00C)
++#define IPCMxMODE(m)		(((m) * 0x40) + 0x010)
++#define IPCMxMSET(m)		(((m) * 0x40) + 0x014)
++#define IPCMxMCLEAR(m)		(((m) * 0x40) + 0x018)
++#define IPCMxMSTATUS(m)		(((m) * 0x40) + 0x01C)
++#define IPCMxSEND(m)		(((m) * 0x40) + 0x020)
++#define IPCMxDR(m, dr)		(((m) * 0x40) + ((dr) * 4) + 0x024)
++
++#define IPCMMIS(irq)		(((irq) * 8) + 0x800)
++#define IPCMRIS(irq)		(((irq) * 8) + 0x804)
++
++#define MBOX_MASK(n)		(1 << (n))
++#define IPC_TX_MBOX		1
++#define IPC_RX_MBOX		2
++
++#define CHAN_MASK(n)		(1 << (n))
++#define A9_SOURCE		1
++#define M3_SOURCE		0
++
++static void __iomem *ipc_base;
++static int ipc_irq;
++static DEFINE_MUTEX(ipc_m1_lock);
++static DECLARE_COMPLETION(ipc_completion);
++static ATOMIC_NOTIFIER_HEAD(ipc_notifier);
++
++static inline void set_destination(int source, int mbox)
++{
++	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDSET(mbox));
++	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMSET(mbox));
++}
++
++static inline void clear_destination(int source, int mbox)
++{
++	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDCLEAR(mbox));
++	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMCLEAR(mbox));
++}
++
++static void __ipc_send(int mbox, u32 *data)
++{
++	int i;
++	for (i = 0; i < 7; i++)
++		__raw_writel(data[i], ipc_base + IPCMxDR(mbox, i));
++	__raw_writel(0x1, ipc_base + IPCMxSEND(mbox));
++}
++
++static u32 __ipc_rcv(int mbox, u32 *data)
++{
++	int i;
++	for (i = 0; i < 7; i++)
++		data[i] = __raw_readl(ipc_base + IPCMxDR(mbox, i));
++	return data[1];
++}
++
++/* blocking implmentation from the A9 side, not usuable in interrupts! */
++int pl320_ipc_transmit(u32 *data)
++{
++	int ret;
++
++	mutex_lock(&ipc_m1_lock);
++
++	init_completion(&ipc_completion);
++	__ipc_send(IPC_TX_MBOX, data);
++	ret = wait_for_completion_timeout(&ipc_completion,
++					  msecs_to_jiffies(1000));
++	if (ret == 0) {
++		ret = -ETIMEDOUT;
++		goto out;
++	}
++
++	ret = __ipc_rcv(IPC_TX_MBOX, data);
++out:
++	mutex_unlock(&ipc_m1_lock);
++	return ret;
++}
++EXPORT_SYMBOL(pl320_ipc_transmit);
++
++irqreturn_t ipc_handler(int irq, void *dev)
++{
++	u32 irq_stat;
++	u32 data[7];
++
++	irq_stat = __raw_readl(ipc_base + IPCMMIS(1));
++	if (irq_stat & MBOX_MASK(IPC_TX_MBOX)) {
++		__raw_writel(0, ipc_base + IPCMxSEND(IPC_TX_MBOX));
++		complete(&ipc_completion);
++	}
++	if (irq_stat & MBOX_MASK(IPC_RX_MBOX)) {
++		__ipc_rcv(IPC_RX_MBOX, data);
++		atomic_notifier_call_chain(&ipc_notifier, data[0], data + 1);
++		__raw_writel(2, ipc_base + IPCMxSEND(IPC_RX_MBOX));
++	}
++
++	return IRQ_HANDLED;
++}
++
++int pl320_ipc_register_notifier(struct notifier_block *nb)
++{
++	return atomic_notifier_chain_register(&ipc_notifier, nb);
++}
++EXPORT_SYMBOL(pl320_ipc_register_notifier);
++
++int pl320_ipc_unregister_notifier(struct notifier_block *nb)
++{
++	return atomic_notifier_chain_unregister(&ipc_notifier, nb);
++}
++EXPORT_SYMBOL(pl320_ipc_unregister_notifier);
++
++static int __init pl320_probe(struct amba_device *adev,
++				const struct amba_id *id)
++{
++	int ret;
++
++	ipc_base = ioremap(adev->res.start, resource_size(&adev->res));
++	if (ipc_base == NULL)
++		return -ENOMEM;
++
++	__raw_writel(0, ipc_base + IPCMxSEND(IPC_TX_MBOX));
++
++	ipc_irq = adev->irq[0];
++	ret = request_irq(ipc_irq, ipc_handler, 0, dev_name(&adev->dev), NULL);
++	if (ret < 0)
++		goto err;
++
++	/* Init slow mailbox */
++	__raw_writel(CHAN_MASK(A9_SOURCE),
++			ipc_base + IPCMxSOURCE(IPC_TX_MBOX));
++	__raw_writel(CHAN_MASK(M3_SOURCE),
++			ipc_base + IPCMxDSET(IPC_TX_MBOX));
++	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
++		     ipc_base + IPCMxMSET(IPC_TX_MBOX));
++
++	/* Init receive mailbox */
++	__raw_writel(CHAN_MASK(M3_SOURCE),
++			ipc_base + IPCMxSOURCE(IPC_RX_MBOX));
++	__raw_writel(CHAN_MASK(A9_SOURCE),
++			ipc_base + IPCMxDSET(IPC_RX_MBOX));
++	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
++		     ipc_base + IPCMxMSET(IPC_RX_MBOX));
++
++	return 0;
++err:
++	iounmap(ipc_base);
++	return ret;
++}
++
++static struct amba_id pl320_ids[] = {
++	{
++		.id	= 0x00041320,
++		.mask	= 0x000fffff,
++	},
++	{ 0, 0 },
++};
++
++static struct amba_driver pl320_driver = {
++	.drv = {
++		.name	= "pl320",
++	},
++	.id_table	= pl320_ids,
++	.probe		= pl320_probe,
++};
++
++static int __init ipc_init(void)
++{
++	return amba_driver_register(&pl320_driver);
++}
++module_init(ipc_init);
+diff --git a/include/linux/mailbox.h b/include/linux/mailbox.h
+new file mode 100644
+index 0000000..911cb28
+--- /dev/null
++++ b/include/linux/mailbox.h
+@@ -0,0 +1,18 @@
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++int pl320_ipc_transmit(u32 *data);
++int pl320_ipc_register_notifier(struct notifier_block *nb);
++int pl320_ipc_unregister_notifier(struct notifier_block *nb);
++
 -- 
 1.7.11.7
 
