@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757212Ab3AYLts (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:49:48 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42016 "EHLO
+	id S932200Ab3AYLu5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 06:50:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42036 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab3AYLtp (ORCPT
+	with ESMTP id S932126Ab3AYLuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:49:45 -0500
-Date: Fri, 25 Jan 2013 03:49:24 -0800
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-2c803e5248d038988ec7c52e8fd7c83130dd3c13@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1358185681-90926-1-git-send-email-dsahern@gmail.com>
-References: <1358185681-90926-1-git-send-email-dsahern@gmail.com>
+	Fri, 25 Jan 2013 06:50:54 -0500
+Date: Fri, 25 Jan 2013 03:50:35 -0800
+From: tip-bot for Frederik Deweerdt <frederik.deweerdt@xprog.eu>
+Message-ID: <tip-865c66c4183aab1d12522ca3ad3a3339d2437e5c@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, frederik.deweerdt@xprog.eu,
+        hpa@zytor.com, mingo@kernel.org, tglx@linutronix.de,
+        namhyung@kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, frederik.deweerdt@xprog.eu,
+        linux-kernel@vger.kernel.org, acme@redhat.com, tglx@linutronix.de,
+        namhyung@kernel.org
+In-Reply-To: <20130114194716.GA4973@ks398093.ip-192-95-24.net>
+References: <20130114194716.GA4973@ks398093.ip-192-95-24.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Move get_term_dimensions from top to util.c
-Git-Commit-ID: 2c803e5248d038988ec7c52e8fd7c83130dd3c13
+Subject: [tip:perf/core] perf annotate browser:
+  Fix segfault when drawing out-of-bounds jumps
+Git-Commit-ID: 865c66c4183aab1d12522ca3ad3a3339d2437e5c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,120 +30,90 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:49:30 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:50:41 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2c803e5248d038988ec7c52e8fd7c83130dd3c13
-Gitweb:     http://git.kernel.org/tip/2c803e5248d038988ec7c52e8fd7c83130dd3c13
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Mon, 14 Jan 2013 10:48:01 -0700
+Commit-ID:  865c66c4183aab1d12522ca3ad3a3339d2437e5c
+Gitweb:     http://git.kernel.org/tip/865c66c4183aab1d12522ca3ad3a3339d2437e5c
+Author:     Frederik Deweerdt <frederik.deweerdt@xprog.eu>
+AuthorDate: Mon, 14 Jan 2013 14:47:17 -0500
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 24 Jan 2013 16:40:34 -0300
+CommitDate: Thu, 24 Jan 2013 16:40:36 -0300
 
-perf tools: Move get_term_dimensions from top to util.c
+perf annotate browser: Fix segfault when drawing out-of-bounds jumps
 
-It is used by util/help.c so it should be a lib function and included in
-libperf.a. Code move only.
+Factorize jump sanity checks from mark_jump_targets() and
+draw_current_jump() in an is_valid_jump() function.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1358185681-90926-1-git-send-email-dsahern@gmail.com
+This fixes a segfault when moving the cursor over an invalid jump.
+
+Signed-off-by: Frederik Deweerdt <frederik.deweerdt@xprog.eu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/20130114194716.GA4973@ks398093.ip-192-95-24.net
+[ committer note: Make it a disasm_line method ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c | 22 ----------------------
- tools/perf/perf.h        |  4 ----
- tools/perf/util/util.c   | 22 ++++++++++++++++++++++
- tools/perf/util/util.h   |  3 +++
- 4 files changed, 25 insertions(+), 26 deletions(-)
+ tools/perf/ui/browsers/annotate.c | 25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index bc78812..e05ba81 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -68,28 +68,6 @@
- #include <linux/unistd.h>
- #include <linux/types.h>
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index 5dab3ca..2fc7f04 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -182,6 +182,16 @@ static void annotate_browser__write(struct ui_browser *browser, void *entry, int
+ 		ab->selection = dl;
+ }
  
--void get_term_dimensions(struct winsize *ws)
--{
--	char *s = getenv("LINES");
--
--	if (s != NULL) {
--		ws->ws_row = atoi(s);
--		s = getenv("COLUMNS");
--		if (s != NULL) {
--			ws->ws_col = atoi(s);
--			if (ws->ws_row && ws->ws_col)
--				return;
--		}
--	}
--#ifdef TIOCGWINSZ
--	if (ioctl(1, TIOCGWINSZ, ws) == 0 &&
--	    ws->ws_row && ws->ws_col)
--		return;
--#endif
--	ws->ws_row = 25;
--	ws->ws_col = 80;
--}
--
- static void perf_top__update_print_entries(struct perf_top *top)
- {
- 	if (top->print_entries > 9)
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 7622f15..8f3bf38 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -1,10 +1,6 @@
- #ifndef _PERF_PERF_H
- #define _PERF_PERF_H
- 
--struct winsize;
--
--void get_term_dimensions(struct winsize *ws);
--
- #include <asm/unistd.h>
- 
- #if defined(__i386__)
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 252b889..805d1f5 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -220,3 +220,25 @@ void dump_stack(void)
- #else
- void dump_stack(void) {}
- #endif
-+
-+void get_term_dimensions(struct winsize *ws)
++static bool disasm_line__is_valid_jump(struct disasm_line *dl, struct symbol *sym)
 +{
-+	char *s = getenv("LINES");
++	if (!dl || !dl->ins || !ins__is_jump(dl->ins)
++	    || !disasm_line__has_offset(dl)
++	    || dl->ops.target.offset >= symbol__size(sym))
++		return false;
 +
-+	if (s != NULL) {
-+		ws->ws_row = atoi(s);
-+		s = getenv("COLUMNS");
-+		if (s != NULL) {
-+			ws->ws_col = atoi(s);
-+			if (ws->ws_row && ws->ws_col)
-+				return;
-+		}
-+	}
-+#ifdef TIOCGWINSZ
-+	if (ioctl(1, TIOCGWINSZ, ws) == 0 &&
-+	    ws->ws_row && ws->ws_col)
-+		return;
-+#endif
-+	ws->ws_row = 25;
-+	ws->ws_col = 80;
++	return true;
 +}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index c233091..ec5de5e 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -271,4 +271,7 @@ void dump_stack(void);
- 
- extern unsigned int page_size;
- 
-+struct winsize;
-+void get_term_dimensions(struct winsize *ws);
 +
- #endif
+ static void annotate_browser__draw_current_jump(struct ui_browser *browser)
+ {
+ 	struct annotate_browser *ab = container_of(browser, struct annotate_browser, b);
+@@ -195,8 +205,7 @@ static void annotate_browser__draw_current_jump(struct ui_browser *browser)
+ 	if (strstr(sym->name, "@plt"))
+ 		return;
+ 
+-	if (!cursor || !cursor->ins || !ins__is_jump(cursor->ins) ||
+-	    !disasm_line__has_offset(cursor))
++	if (!disasm_line__is_valid_jump(cursor, sym))
+ 		return;
+ 
+ 	target = ab->offsets[cursor->ops.target.offset];
+@@ -788,17 +797,9 @@ static void annotate_browser__mark_jump_targets(struct annotate_browser *browser
+ 		struct disasm_line *dl = browser->offsets[offset], *dlt;
+ 		struct browser_disasm_line *bdlt;
+ 
+-		if (!dl || !dl->ins || !ins__is_jump(dl->ins) ||
+-		    !disasm_line__has_offset(dl))
++		if (!disasm_line__is_valid_jump(dl, sym))
+ 			continue;
+ 
+-		if (dl->ops.target.offset >= size) {
+-			ui__error("jump to after symbol!\n"
+-				  "size: %zx, jump target: %" PRIx64,
+-				  size, dl->ops.target.offset);
+-			continue;
+-		}
+-
+ 		dlt = browser->offsets[dl->ops.target.offset];
+ 		/*
+  		 * FIXME: Oops, no jump target? Buggy disassembler? Or do we
+@@ -921,7 +922,7 @@ out_free_offsets:
+ 
+ #define ANNOTATE_CFG(n) \
+ 	{ .name = #n, .value = &annotate_browser__opts.n, }
+-	
++
+ /*
+  * Keep the entries sorted, they are bsearch'ed
+  */
