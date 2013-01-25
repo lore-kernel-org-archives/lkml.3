@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab3AYXUQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 18:20:16 -0500
-Received: from mout.gmx.net ([212.227.15.19]:64810 "EHLO mout.gmx.net"
+	id S1754432Ab3AYXZz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 18:25:55 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47818
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753164Ab3AYXUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 18:20:13 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19DcItGRklDDEW6x+3mic1ciYl4bEm+xolhUDvu9x
-	NmT763ocJjwixq
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Volokh Konstantin <volokh84@gmail.com>,
-        Peter Huewe <peterhuewe@gmx.de>, David Howells <dhowells@redhat.com>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging/media/go7007: Use kmemdup rather than duplicating its implementation
-Date: Sat, 26 Jan 2013 00:23:30 +0100
-Message-Id: <1359156210-4482-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-X-Y-GMX-Trusted: 0
+	id S1753720Ab3AYXZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 18:25:54 -0500
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, jasowang@redhat.com,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/1] Drivers: hv: balloon: Make adjustments to the pressure report
+Date: Fri, 25 Jan 2013 15:52:45 -0800
+Message-Id: <1359157965-8000-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found with coccicheck.
-The semantic patch that makes this change is available
-in scripts/coccinelle/api/memdup.cocci.
+The host expects that the pressure report includes the pressure due to the
+pages that have been ballooned. Make necessary adjustments to reflect that.
+Also, include the free memory information in the pressure report.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- drivers/staging/media/go7007/go7007-driver.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/hv/hv_balloon.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/media/go7007/go7007-driver.c b/drivers/staging/media/go7007/go7007-driver.c
-index ece2dd1..0e299f0 100644
---- a/drivers/staging/media/go7007/go7007-driver.c
-+++ b/drivers/staging/media/go7007/go7007-driver.c
-@@ -108,14 +108,13 @@ static int go7007_load_encoder(struct go7007 *go)
- 		return -1;
- 	}
- 	fw_len = fw_entry->size - 16;
--	bounce = kmalloc(fw_len, GFP_KERNEL);
-+	bounce = kmemdup(fw_entry->data + 16, fw_len, GFP_KERNEL);
- 	if (bounce == NULL) {
- 		v4l2_err(go, "unable to allocate %d bytes for "
- 				"firmware transfer\n", fw_len);
- 		release_firmware(fw_entry);
- 		return -1;
- 	}
--	memcpy(bounce, fw_entry->data + 16, fw_len);
- 	release_firmware(fw_entry);
- 	if (go7007_interface_reset(go) < 0 ||
- 			go7007_send_firmware(go, bounce, fw_len) < 0 ||
+diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
+index ce6f984..32a96f1 100644
+--- a/drivers/hv/hv_balloon.c
++++ b/drivers/hv/hv_balloon.c
+@@ -529,15 +529,21 @@ static void process_info(struct hv_dynmem_device *dm, struct dm_info_msg *msg)
+ static void post_status(struct hv_dynmem_device *dm)
+ {
+ 	struct dm_status status;
++	struct sysinfo val;
+ 
+-
++	si_meminfo(&val);
+ 	memset(&status, 0, sizeof(struct dm_status));
+ 	status.hdr.type = DM_STATUS_REPORT;
+ 	status.hdr.size = sizeof(struct dm_status);
+ 	status.hdr.trans_id = atomic_inc_return(&trans_id);
+ 
+-
+-	status.num_committed = vm_memory_committed();
++	/*
++	 * The host expects the guest to report free memory.
++	 * Further, the host expects the pressure information to
++	 * include the ballooned out pages.
++	 */
++	status.num_avail = val.freeram;
++	status.num_committed = vm_memory_committed() + dm->num_pages_ballooned;
+ 
+ 	vmbus_sendpacket(dm->dev->channel, &status,
+ 				sizeof(struct dm_status),
 -- 
-1.7.8.6
+1.7.4.1
 
