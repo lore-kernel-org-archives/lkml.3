@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875Ab3AYBpB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 20:45:01 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45316 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754486Ab3AYBoy (ORCPT
+	id S1754914Ab3AYBqG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 20:46:06 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:63080 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753354Ab3AYBqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 20:44:54 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-a4-5101e394ed2f
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH] perf evsel:  Fix memory leaks on evsel->counts
-Date: Fri, 25 Jan 2013 10:44:44 +0900
-Message-Id: <1359078284-32080-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 24 Jan 2013 20:46:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAPM=9tz6_=k1Ze5h2935-W59BCVy9KXA_z6t8inW6_-Cxw244Q@mail.gmail.com>
+References: <alpine.DEB.2.00.1301250041001.25545@skynet.skynet.ie>
+	<CA+55aFxzDv0emWgyde7iEWpgZarAGaExrKbEHFr-UcbhoeH_Cw@mail.gmail.com>
+	<CAPM=9tz6_=k1Ze5h2935-W59BCVy9KXA_z6t8inW6_-Cxw244Q@mail.gmail.com>
+Date: Fri, 25 Jan 2013 11:45:59 +1000
+Message-ID: <CAPM=9txUNG_CeK+YBhcA_47BVv4Z2GAmEC_J59cY+D9nRgv54A@mail.gmail.com>
+Subject: Re: [git pull] fbcon locking fixes.
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        m.b.lankhorst@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Fri, Jan 25, 2013 at 11:06 AM, Dave Airlie <airlied@gmail.com> wrote:
+> On Fri, Jan 25, 2013 at 10:53 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Thu, Jan 24, 2013 at 4:42 PM, Dave Airlie <airlied@linux.ie> wrote:
+>>>
+>>> These patches have been sailing around long enough, waiting for a maintainer
+>>> to reappear, so I've decided enough is enough, lockdep is kinda useful to have.
+>>
+>> Last this was tried, these patches failed miserably.
+>>
+>> They caused instant lockdep splat and then a total lockup with efifb.
+>> It may be that Takashi's patch helps fix that problem, but it's in no
+>> way clear that it does, so the patch series isn't at all obviously
+>> stable.
+>>
+>> Yes, lockdep is indeed "kinda useful", and there clearly are locking
+>> problems in fbdev. But I'm not seeing myself pulling these for 3.8.
+>> They've been too problematic to pull in at this late stage.
+>>
+>
+> Okay I'll fix the efifb problem and then maybe queue them for -next.
 
-The ->counts field was never freed in the current code.  Add
-perf_evsel__free_counts() function to free it properly.
+Okay I've just sent out another fbcon patch to fix the locking harder.
 
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
-This patch is based on Stephane's interval printing patchset v6.
+There was a path going into set_con2fb_path if an fb driver was
+already registered, I just pushed the locking out further on anyone
+going in there.
 
- tools/perf/builtin-stat.c                | 1 +
- tools/perf/tests/open-syscall-all-cpus.c | 1 +
- tools/perf/util/evsel.c                  | 5 +++++
- tools/perf/util/evsel.h                  | 1 +
- 4 files changed, 8 insertions(+)
+it boots on my EFI macbook here.
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 493043abd164..0368a1036ad6 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -1372,6 +1372,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- out_free_fd:
- 	list_for_each_entry(pos, &evsel_list->entries, node) {
- 		perf_evsel__free_stat_priv(pos);
-+		perf_evsel__free_counts(pos);
- 		perf_evsel__free_prev_raw_counts(pos);
- 	}
- 	perf_evlist__delete_maps(evsel_list);
-diff --git a/tools/perf/tests/open-syscall-all-cpus.c b/tools/perf/tests/open-syscall-all-cpus.c
-index 9b920a0cce79..b0657a9ccda6 100644
---- a/tools/perf/tests/open-syscall-all-cpus.c
-+++ b/tools/perf/tests/open-syscall-all-cpus.c
-@@ -98,6 +98,7 @@ int test__open_syscall_event_on_all_cpus(void)
- 		}
- 	}
- 
-+	perf_evsel__free_counts(evsel);
- out_close_fd:
- 	perf_evsel__close_fd(evsel, 1, threads->nr);
- out_evsel_delete:
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index dbdcca43cac6..baa26ddbcc7b 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -640,6 +640,11 @@ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
- 		}
- }
- 
-+void perf_evsel__free_counts(struct perf_evsel *evsel)
-+{
-+	free(evsel->counts);
-+}
-+
- void perf_evsel__exit(struct perf_evsel *evsel)
- {
- 	assert(list_empty(&evsel->node));
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 3a4cd60044ea..cbf42322a27e 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -117,6 +117,7 @@ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads);
- int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus);
- void perf_evsel__free_fd(struct perf_evsel *evsel);
- void perf_evsel__free_id(struct perf_evsel *evsel);
-+void perf_evsel__free_counts(struct perf_evsel *evsel);
- void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
- 
- void __perf_evsel__set_sample_bit(struct perf_evsel *evsel,
--- 
-1.7.11.7
-
+Dave.
