@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab3AYHcs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 02:32:48 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:37247 "EHLO
+	id S1751560Ab3AYHfJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 02:35:09 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:37320 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab3AYHcn convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750776Ab3AYHfH convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
-	Fri, 25 Jan 2013 02:32:43 -0500
-Message-Id: <5102432702000078000B9700@nat28.tlf.novell.com>
+	Fri, 25 Jan 2013 02:35:07 -0500
+Message-Id: <510243B802000078000B9735@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Fri, 25 Jan 2013 07:32:39 +0000
+Date: Fri, 25 Jan 2013 07:35:04 +0000
 From: "Jan Beulich" <JBeulich@suse.com>
 To: "Olaf Hering" <olaf@aepfle.de>, "KY Srinivasan" <kys@microsoft.com>
 Cc: "bp@alien8.de" <bp@alien8.de>, "apw@canonical.com" <apw@canonical.com>,
@@ -20,7 +20,7 @@ Cc: "bp@alien8.de" <bp@alien8.de>, "apw@canonical.com" <apw@canonical.com>,
         "jasowang@redhat.com" <jasowang@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "hpa@zytor.com" <hpa@zytor.com>
-Subject: RE: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
+Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
  special hypervisor interrupts
 References: <1358990259-22551-1-git-send-email-kys@microsoft.com>
  <5101035D02000078000B8FFD@nat28.tlf.novell.com>
@@ -28,8 +28,7 @@ References: <1358990259-22551-1-git-send-email-kys@microsoft.com>
  <51016C3202000078000B943E@nat28.tlf.novell.com>
  <f6cbfec9c014433fa54af61d8f436ebb@SN2PR03MB061.namprd03.prod.outlook.com>
  <20130124185943.GA19194@aepfle.de>
- <462e0bc4257744428139d5dbc91192be@SN2PR03MB061.namprd03.prod.outlook.com>
-In-Reply-To: <462e0bc4257744428139d5dbc91192be@SN2PR03MB061.namprd03.prod.outlook.com>
+In-Reply-To: <20130124185943.GA19194@aepfle.de>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -38,11 +37,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 24.01.13 at 20:03, KY Srinivasan <kys@microsoft.com> wrote:
-> I was under the impression that only Dom0 Xen would emulate Hyper-V.
+>>> On 24.01.13 at 19:59, Olaf Hering <olaf@aepfle.de> wrote:
+> On Thu, Jan 24, KY Srinivasan wrote:
+> 
+> 
+>> > Question is - considering you stated that this is supported
+>> > starting in Win8, doesn't Hyper-V itself announce that
+>> > capability in some explicit way?
+>> 
+>> Thanks Jan. Unfortunately I don't think tis interrupt delivery model
+>> is specified via a "feature" bit (I will check with the Windows guys).
+>> Perhaps, we can have a Hyper-V specific compilation switch to address
+>> the Xen emulation issue.
+> 
+> Would that really help if both pvops XEN_PVHVM and HYPERV are enabled in
+> the config? I assume at this point the access to the DMI data is not yet
+> possible.
 
-How that? It's the hypervisor that does the emulation, and obviously
-not for Dom0, but for (HVM) DomU-s.
+As just said in another reply - with XEN_PVHVM, there's no problem,
+since Xen gets checked for first. There's only a problem when
+!XEN_PVHVM, because in that case Hyper-V will be probed for.
+And the problem can only get bigger when on top of that the
+out-of-tree PV drivers are intended to be used.
 
 Jan
 
