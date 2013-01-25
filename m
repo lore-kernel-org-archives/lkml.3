@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757001Ab3AYNRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:17:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60212 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756161Ab3AYNRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:17:46 -0500
-Date: Fri, 25 Jan 2013 14:17:40 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, akpm@linux-foundation.org,
-        rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        wujianguo@huawei.com, wency@cn.fujitsu.com, hpa@zytor.com,
-        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
-        yinghai@kernel.org, glommer@parallels.com, jiang.liu@huawei.com,
-        julian.calaby@gmail.com, sfr@canb.auug.org.au, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH Bug fix 0/5] Bug fix for physical memory hot-remove.
-Message-ID: <20130125131740.GA1615@dhcp22.suse.cz>
-References: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
- <1358944171.3351.1.camel@kernel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358944171.3351.1.camel@kernel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757298Ab3AYNSN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 08:18:13 -0500
+Received: from mga05.intel.com ([192.55.52.89]:30246 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757275Ab3AYNSK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 08:18:10 -0500
+Message-ID: <1359119883.2496.156.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [RFC] efivars write(2) races
+From: Matt Fleming <matt.fleming@intel.com>
+To: Lingzhu Xiang <lxiang@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>
+Date: Fri, 25 Jan 2013 13:18:03 +0000
+In-Reply-To: <51020120.5000500@redhat.com>
+References: <20130125002552.GC4503@ZenIV.linux.org.uk>
+	 <51020120.5000500@redhat.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 23-01-13 06:29:31, Simon Jeons wrote:
-> On Tue, 2013-01-22 at 19:42 +0800, Tang Chen wrote:
-> > Here are some bug fix patches for physical memory hot-remove. All these
-> > patches are based on the latest -mm tree.
-> > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
-> > 
-> > And patch1 and patch3 are very important.
-> > patch1: free compound pages when freeing memmap, otherwise the kernel
-> >         will panic the next time memory is hot-added.
-> > patch3: the old way of freeing pagetable pages was wrong. We should never
-> >         split larger pages into small ones.
-> > 
-> > 
+On Fri, 2013-01-25 at 11:50 +0800, Lingzhu Xiang wrote:
+> On 01/25/2013 08:25 AM, Al Viro wrote:
+> > 	1) process A does write() on efivars file, reaches ->get_variable(),
+> > gets newdatasize set, drops efivars->lock and loses CPU before an attempt to
+> > grab ->i_mutex.  process B comes and does the same thing, replacing the
+> > variable contents.  Then it grabs ->i_mutex, updates size, drops ->i_mutex
+> > and buggers off.  At which point A gets CPU back and proceeds to set size
+> > to whatever would be valid for its write.  Only the value is bogus now...
 > 
-> Hi Tang,
+> There are a few other things that makes size bogus now.
 > 
-> I remember your big physical memory hot-remove patchset has already
-> merged by Andrew, but where I can find it? Could you give me git tree 
-> address?
+> 1. truncate() never touches nvram but pretends to be changing size.
 
-Andrew tree is also mirrored into a git tree.
-http://git.kernel.org/?p=linux/kernel/git/mhocko/mm.git;a=summary
+Good catch. Looks like we need to provide an implementation for this.
 
-It contains only Memory management patches on top of the last major
-release (since-.X.Y branch).
--- 
-Michal Hocko
-SUSE Labs
+> 2. Empty files come back with non-zero size after remount. They are imported
+>    from sysfs when mounting.
+
+Eeek. The return value of get_variable() isn't checked in
+efivarfs_fill_super().
+
+> 3. Arguably reading empty files could just return empty instead of returning
+>    EIO/EFI_NOT_FOUND from firmware. 
+
+Yeah, I think Jeremy has a patch to fix this.
+
+> 4. EFI_VARIABLE_APPEND_WRITE with EFI_OUT_OF_RESOURCES truncates size but you
+>    can still read its content.
+
+I'm not sure what you mean by this. Could you please explain?
+
+Thanks for the feedback.
+
