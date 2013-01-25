@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3AYWCX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 17:02:23 -0500
-Received: from mga02.intel.com ([134.134.136.20]:49015 "EHLO mga02.intel.com"
+	id S1753543Ab3AYWCZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 17:02:25 -0500
+Received: from mga11.intel.com ([192.55.52.93]:51907 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753359Ab3AYWAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753362Ab3AYWAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Jan 2013 17:00:54 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,541,1355126400"; 
-   d="scan'208";a="276757475"
+   d="scan'208";a="282338717"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 10/12] perf, x86: Support LBR filtering by INTX/NOTX/ABORT v2
-Date: Fri, 25 Jan 2013 14:00:43 -0800
-Message-Id: <1359151245-13179-11-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 04/12] perf, x86: Support the TSX intx/intx_cp qualifiers v2
+Date: Fri, 25 Jan 2013 14:00:37 -0800
+Message-Id: <1359151245-13179-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
 References: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
@@ -26,120 +26,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add LBR filtering for branch in transaction, branch not in transaction
-or transaction abort. This is exposed as new sample types.
+Implement the TSX transaction and checkpointed transaction qualifiers for
+Haswell. This allows e.g. to profile the number of cycles in transactions.
 
-v2: Rename ABORT to ABORTTX
+The checkpointed qualifier requires forcing the event to
+counter 2, implement this with a custom constraint for Haswell.
+
+Also add sysfs format attributes for intx/intx_cp
+
+[Updated from earlier version that used generic attributes, now does
+raw + sysfs formats]
+v2: Moved bad hunk. Forbid some bad combinations.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   31 +++++++++++++++++++++++++--
- include/uapi/linux/perf_event.h            |    5 +++-
- 2 files changed, 32 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   61 ++++++++++++++++++++++++++++++++
+ 1 files changed, 61 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index ad5af13..5455a00 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -85,9 +85,13 @@ enum {
- 	X86_BR_JMP      = 1 << 9, /* jump */
- 	X86_BR_IRQ      = 1 << 10,/* hw interrupt or trap or fault */
- 	X86_BR_IND_CALL = 1 << 11,/* indirect calls */
-+	X86_BR_ABORT    = 1 << 12,/* transaction abort */
-+	X86_BR_INTX     = 1 << 13,/* in transaction */
-+	X86_BR_NOTX     = 1 << 14,/* not in transaction */
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 634f639..44e18c02 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -13,6 +13,7 @@
+ #include <linux/slab.h>
+ #include <linux/export.h>
+ 
++#include <asm/cpufeature.h>
+ #include <asm/hardirq.h>
+ #include <asm/apic.h>
+ 
+@@ -1597,6 +1598,44 @@ static void core_pmu_enable_all(int added)
+ 	}
+ }
+ 
++static int hsw_hw_config(struct perf_event *event)
++{
++	int ret = intel_pmu_hw_config(event);
++
++	if (ret)
++		return ret;
++	if (!boot_cpu_has(X86_FEATURE_RTM) && !boot_cpu_has(X86_FEATURE_HLE))
++		return 0;
++	event->hw.config |= event->attr.config & (HSW_INTX|HSW_INTX_CHECKPOINTED);
++
++	/* 
++	 * INTX/INTX-CP do not play well with PEBS or ANY thread mode.
++	 */
++	if ((event->hw.config & (HSW_INTX|HSW_INTX_CHECKPOINTED)) &&
++	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
++	      event->attr.precise_ip > 0))
++		return -EIO;
++	return 0;
++}
++
++static struct event_constraint counter2_constraint = 
++			EVENT_CONSTRAINT(0, 0x4, 0);
++
++static struct event_constraint *
++hsw_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
++{
++	struct event_constraint *c = intel_get_event_constraints(cpuc, event);
++
++	/* Handle special quirk on intx_checkpointed only in counter 2 */
++	if (event->hw.config & HSW_INTX_CHECKPOINTED) {
++		if (c->idxmsk64 & (1U << 2))
++			return &counter2_constraint;
++		return &emptyconstraint;
++	}
++
++	return c;
++}
++
+ PMU_FORMAT_ATTR(event,	"config:0-7"	);
+ PMU_FORMAT_ATTR(umask,	"config:8-15"	);
+ PMU_FORMAT_ATTR(edge,	"config:18"	);
+@@ -1604,6 +1643,8 @@ PMU_FORMAT_ATTR(pc,	"config:19"	);
+ PMU_FORMAT_ATTR(any,	"config:21"	); /* v3 + */
+ PMU_FORMAT_ATTR(inv,	"config:23"	);
+ PMU_FORMAT_ATTR(cmask,	"config:24-31"	);
++PMU_FORMAT_ATTR(intx,	"config:32"	);
++PMU_FORMAT_ATTR(intx_cp,"config:33"	);
+ 
+ static struct attribute *intel_arch_formats_attr[] = {
+ 	&format_attr_event.attr,
+@@ -1761,6 +1802,23 @@ static struct attribute *intel_arch3_formats_attr[] = {
+ 	NULL,
  };
  
- #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
-+#define X86_BR_ANYTX (X86_BR_NOTX | X86_BR_INTX)
- 
- #define X86_BR_ANY       \
- 	(X86_BR_CALL    |\
-@@ -99,6 +103,7 @@ enum {
- 	 X86_BR_JCC     |\
- 	 X86_BR_JMP	 |\
- 	 X86_BR_IRQ	 |\
-+	 X86_BR_ABORT	 |\
- 	 X86_BR_IND_CALL)
- 
- #define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
-@@ -347,6 +352,16 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- 
- 	if (br_type & PERF_SAMPLE_BRANCH_IND_CALL)
- 		mask |= X86_BR_IND_CALL;
++/* Arch3 + TSX support */
++static struct attribute *intel_hsw_formats_attr[] __read_mostly = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_pc.attr,
++	&format_attr_any.attr,
++	&format_attr_inv.attr,
++	&format_attr_cmask.attr,
++	&format_attr_intx.attr,
++	&format_attr_intx_cp.attr,
 +
-+	if (br_type & PERF_SAMPLE_BRANCH_ABORTTX)
-+		mask |= X86_BR_ABORT;
++	&format_attr_offcore_rsp.attr, /* XXX do NHM/WSM + SNB breakout */
++	NULL,
++};
 +
-+	if (br_type & PERF_SAMPLE_BRANCH_INTX)
-+		mask |= X86_BR_INTX;
 +
-+	if (br_type & PERF_SAMPLE_BRANCH_NOTX)
-+		mask |= X86_BR_NOTX;
-+
- 	/*
- 	 * stash actual user request into reg, it may
- 	 * be used by fixup code for some CPU
-@@ -393,7 +408,8 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
- 	/*
- 	 * no LBR on this PMU
- 	 */
--	if (!x86_pmu.lbr_nr || x86_pmu.intel_cap.lbr_format > LBR_FORMAT_MAX_KNOWN)
-+	if (!x86_pmu.lbr_nr ||
-+	    x86_pmu.intel_cap.lbr_format > LBR_FORMAT_MAX_KNOWN)
- 		return -EOPNOTSUPP;
+ static __initconst const struct x86_pmu intel_pmu = {
+ 	.name			= "Intel",
+ 	.handle_irq		= intel_pmu_handle_irq,
+@@ -2135,6 +2193,9 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
+ 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
  
- 	/*
-@@ -421,7 +437,7 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
-  * decoded (e.g., text page not present), then X86_BR_NONE is
-  * returned.
-  */
--static int branch_type(unsigned long from, unsigned long to)
-+static int branch_type(unsigned long from, unsigned long to, int abort)
- {
- 	struct insn insn;
- 	void *addr;
-@@ -441,6 +457,9 @@ static int branch_type(unsigned long from, unsigned long to)
- 	if (from == 0 || to == 0)
- 		return X86_BR_NONE;
++		x86_pmu.hw_config = hsw_hw_config;
++		x86_pmu.get_event_constraints = hsw_get_event_constraints;
++		x86_pmu.format_attrs = intel_hsw_formats_attr;
+ 		pr_cont("Haswell events, ");
+ 		break;
  
-+	if (abort)
-+		return X86_BR_ABORT | to_plm;
-+
- 	if (from_plm == X86_BR_USER) {
- 		/*
- 		 * can happen if measuring at the user level only
-@@ -577,7 +596,13 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
- 		from = cpuc->lbr_entries[i].from;
- 		to = cpuc->lbr_entries[i].to;
- 
--		type = branch_type(from, to);
-+		type = branch_type(from, to, cpuc->lbr_entries[i].abort);
-+		if (type != X86_BR_NONE && (br_sel & X86_BR_ANYTX)) {
-+			if (cpuc->lbr_entries[i].intx)
-+				type |= X86_BR_INTX;
-+			else
-+				type |= X86_BR_NOTX;
-+		}
- 
- 		/* if type does not correspond, then discard */
- 		if (type == X86_BR_NONE || (br_sel & type) != type) {
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 9fa9c62..41b25f0 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -155,8 +155,11 @@ enum perf_branch_sample_type {
- 	PERF_SAMPLE_BRANCH_ANY_CALL	= 1U << 4, /* any call branch */
- 	PERF_SAMPLE_BRANCH_ANY_RETURN	= 1U << 5, /* any return branch */
- 	PERF_SAMPLE_BRANCH_IND_CALL	= 1U << 6, /* indirect calls */
-+	PERF_SAMPLE_BRANCH_ABORTTX	= 1U << 7, /* transaction aborts */
-+	PERF_SAMPLE_BRANCH_INTX		= 1U << 8, /* in transaction (flag) */
-+	PERF_SAMPLE_BRANCH_NOTX		= 1U << 9, /* not in transaction (flag) */
- 
--	PERF_SAMPLE_BRANCH_MAX		= 1U << 7, /* non-ABI */
-+	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
- };
- 
- #define PERF_SAMPLE_BRANCH_PLM_ALL \
 -- 
 1.7.7.6
 
