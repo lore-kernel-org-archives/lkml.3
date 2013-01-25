@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757827Ab3AYRe2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 12:34:28 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:49224 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757737Ab3AYRdH (ORCPT
+	id S1757571Ab3AYRld (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 12:41:33 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:35817 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756379Ab3AYRl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 12:33:07 -0500
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: [PATCH v2 4/5] arm: mvebu: update DT to support local timers
-Date: Fri, 25 Jan 2013 18:32:44 +0100
-Message-Id: <1359135165-32108-5-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359135165-32108-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1359135165-32108-1-git-send-email-gregory.clement@free-electrons.com>
+	Fri, 25 Jan 2013 12:41:29 -0500
+From: acking@vmware.com
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Cc: gregkh@linuxfoundation.org, davem@davemloft.net, pv-drivers@vmware.com,
+        acking@vmware.com
+Subject: [PATCH 0/1] VM Sockets for Linux upstreaming
+Date: Fri, 25 Jan 2013 09:37:49 -0800
+Message-Id: <1359135470-30677-1-git-send-email-acking@vmware.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the time-armada-370-xp support local timers, updated the
-device tree to take it into account.
+From: Andy King <acking@vmware.com>
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
----
- arch/arm/boot/dts/armada-370-xp.dtsi |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+** Introduce VM Sockets ***
 
-diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
-index 4c0abe8..aa6a187 100644
---- a/arch/arm/boot/dts/armada-370-xp.dtsi
-+++ b/arch/arm/boot/dts/armada-370-xp.dtsi
-@@ -68,8 +68,9 @@
- 
- 		timer@d0020300 {
- 			       compatible = "marvell,armada-370-xp-timer";
--			       reg = <0xd0020300 0x30>;
--			       interrupts = <37>, <38>, <39>, <40>;
-+			       reg = <0xd0020300 0x30>,
-+			       <0xd0021040 0x30>;
-+			       interrupts = <37>, <38>, <39>, <40>, <5>, <6>;
- 			       clocks = <&coreclk 2>;
- 		};
- 
+In an effort to improve the out-of-the-box experience with Linux kernels for
+VMware users, VMware is working on readying the VM Sockets (VSOCK, formerly
+VMCI Sockets) (vmw_vsock) kernel module for inclusion in the Linux kernel. The
+purpose of this post is to acquire feedback on the vmw_vsock kernel module.
+
+Unlike previous submissions, where the new socket family was entirely reliant
+on VMware's VMCI PCI device (and thus VMware's hypervisor), VM Sockets is now
+_mostly_ separated out into two parts:
+
+o Core socket code, which is transport-neutral and invokes transport
+  callbacks to communicate with the hypervisor.
+o A VMCI transport, which communicates over VMCI with the VMware hypervisor.
+
+This should provide a path to introducing additional transports, for example
+virtio, with the ultimate goal being to make this new socket family
+hypervisor-neutral.
+
+Andy King (1):
+  VSOCK: Introduce VM Sockets
+
+ include/linux/socket.h                       |    4 +-
+ include/uapi/linux/vm_sockets.h              |  169 +++
+ net/Kconfig                                  |    1 +
+ net/Makefile                                 |    1 +
+ net/vmw_vsock/Kconfig                        |   14 +
+ net/vmw_vsock/Makefile                       |    4 +
+ net/vmw_vsock/af_vsock.c                     | 1983 ++++++++++++++++++++++++++
+ net/vmw_vsock/af_vsock.h                     |  256 ++++
+ net/vmw_vsock/vmci_transport.c               | 1863 ++++++++++++++++++++++++
+ net/vmw_vsock/vmci_transport.h               |   90 ++
+ net/vmw_vsock/vmci_transport_notify.c        |  677 +++++++++
+ net/vmw_vsock/vmci_transport_notify.h        |  126 ++
+ net/vmw_vsock/vmci_transport_notify_qstate.c |  411 ++++++
+ net/vmw_vsock/vsock_addr.c                   |  118 ++
+ net/vmw_vsock/vsock_addr.h                   |   36 +
+ net/vmw_vsock/vsock_version.h                |   22 +
+ 16 files changed, 5774 insertions(+), 1 deletions(-)
+ create mode 100644 include/uapi/linux/vm_sockets.h
+ create mode 100644 net/vmw_vsock/Kconfig
+ create mode 100644 net/vmw_vsock/Makefile
+ create mode 100644 net/vmw_vsock/af_vsock.c
+ create mode 100644 net/vmw_vsock/af_vsock.h
+ create mode 100644 net/vmw_vsock/vmci_transport.c
+ create mode 100644 net/vmw_vsock/vmci_transport.h
+ create mode 100644 net/vmw_vsock/vmci_transport_notify.c
+ create mode 100644 net/vmw_vsock/vmci_transport_notify.h
+ create mode 100644 net/vmw_vsock/vmci_transport_notify_qstate.c
+ create mode 100644 net/vmw_vsock/vsock_addr.c
+ create mode 100644 net/vmw_vsock/vsock_addr.h
+ create mode 100644 net/vmw_vsock/vsock_version.h
+
 -- 
-1.7.9.5
+1.7.4.1
 
