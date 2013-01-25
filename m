@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab3AYHps (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 02:45:48 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:33231 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab3AYHpq convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Fri, 25 Jan 2013 02:45:46 -0500
-Message-Id: <5102463602000078000B9761@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Fri, 25 Jan 2013 07:45:42 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Josh Triplett" <josh@joshtriplett.org>
-Cc: <mingo@kernel.org>, <tglx@linutronix.de>, <mjg@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [tip:x86/debug] x86/EFI: Properly init-annotate BGRT code
-References: <50AFB29F02000078000AAE8E@nat28.tlf.novell.com>
- <tip-13f0e4d2b9e2209f13d5a4122478eb79e6136870@git.kernel.org>
- <20130124222820.GA11888@jtriplet-mobl1>
-In-Reply-To: <20130124222820.GA11888@jtriplet-mobl1>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1752115Ab3AYHr4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 02:47:56 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:41598 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab3AYHry (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 02:47:54 -0500
+X-Greylist: delayed 71786 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Jan 2013 02:47:53 EST
+Date: Fri, 25 Jan 2013 08:47:49 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v2 2/6] sched: split out css_online/css_offline from tg
+ creation/destruction
+Message-ID: <20130125074749.GA20868@gmail.com>
+References: <5100D4FE.9080205@huawei.com>
+ <5100D518.8000103@huawei.com>
+ <20130124100134.GC26351@gmail.com>
+ <20130124194205.GS2373@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130124194205.GS2373@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 24.01.13 at 23:28, Josh Triplett <josh@joshtriplett.org> wrote:
-> On Thu, Jan 24, 2013 at 12:34:21PM -0800, tip-bot for Jan Beulich wrote:
->> Commit-ID:  13f0e4d2b9e2209f13d5a4122478eb79e6136870
->> Gitweb:     
-> http://git.kernel.org/tip/13f0e4d2b9e2209f13d5a4122478eb79e6136870 
->> Author:     Jan Beulich <JBeulich@suse.com>
->> AuthorDate: Fri, 23 Nov 2012 16:30:07 +0000
->> Committer:  Ingo Molnar <mingo@kernel.org>
->> CommitDate: Thu, 24 Jan 2013 17:12:18 +0100
->> 
->> x86/EFI: Properly init-annotate BGRT code
->> 
->> These items are only ever referenced from initialization code.
+
+* Tejun Heo <tj@kernel.org> wrote:
+
+> On Thu, Jan 24, 2013 at 11:01:34AM +0100, Ingo Molnar wrote:
+> > Acked-by: Ingo Molnar <mingo@kernel.org>
 > 
-> Not true, and this patch will break the BGRT code.  bgrt_init, which
-> does indeed have an __init annotation, stores bgrt_image and
-> bgrt_image_size into the .private and .size fields of a sysfs
-> bin_attribute, which does *not* have an __initdata annotation, and which
-> will get read whenever the user reads the corresponding sysfs attribute.
+> Ingo, if you don't objecdt, I'll take these through cgroup/for-3.9
+> branch with other cgroup changes.  Pleaes holler if you object.
 
-Copying init-only data into a sysfs structure is no problem at all
-- that structure obviously is non-__initdata and hence can be
-read at any time. It was a different thing if .private and/or .size
-stored _pointers_ to one of the two variables in question.
+That's fine with me, it should not interact with anything 
+pending in (or planned for) the scheduler tree for this cycle.
 
-Jan
+Thanks,
 
+	Ingo
