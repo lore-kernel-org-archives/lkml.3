@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403Ab3AYN3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:29:38 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:57082 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757296Ab3AYNXg (ORCPT
+	id S932384Ab3AYN3z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 08:29:55 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:50185 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932328Ab3AYN3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:23:36 -0500
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 03/25] HID: multitouch: fix Win8 protocol for Sharp like devices
-Date: Fri, 25 Jan 2013 14:22:48 +0100
-Message-Id: <1359120190-18281-4-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1359120190-18281-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1359120190-18281-1-git-send-email-benjamin.tissoires@gmail.com>
+	Fri, 25 Jan 2013 08:29:52 -0500
+Message-ID: <1359120581.12504.2.camel@phoenix>
+Subject: [PATCH] regulator: tps80031: Use IS_ERR to check return value of
+ regulator_register()
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Fri, 25 Jan 2013 21:29:41 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Sharp LC-20FE1-W screen (04dd:9681) behaves like the Nexio 42".
-It may report out of ranges values that are filtered out by relying
-on the Contact Count HID field.
-Adding the quirk MT_QUIRK_CONTACT_CNT_ACCURATE makes hid-multitouch
-strongest against this kind of device, without breaking the current
-devices.
+regulator_register() does not return NULL, it returns ERR_PTR on error.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/hid/hid-multitouch.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/regulator/tps80031-regulator.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index c4acdd0..8d0a9f9 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -317,6 +317,7 @@ static void mt_feature_mapping(struct hid_device *hdev,
- 			*quirks |= MT_QUIRK_ALWAYS_VALID;
- 			*quirks |= MT_QUIRK_IGNORE_DUPLICATES;
- 			*quirks |= MT_QUIRK_HOVERING;
-+			*quirks |= MT_QUIRK_CONTACT_CNT_ACCURATE;
- 			*quirks &= ~MT_QUIRK_NOT_SEEN_MEANS_UP;
- 			*quirks &= ~MT_QUIRK_VALID_IS_INRANGE;
- 			*quirks &= ~MT_QUIRK_VALID_IS_CONFIDENCE;
+diff --git a/drivers/regulator/tps80031-regulator.c b/drivers/regulator/tps80031-regulator.c
+index b15d711..9019d0e 100644
+--- a/drivers/regulator/tps80031-regulator.c
++++ b/drivers/regulator/tps80031-regulator.c
+@@ -728,7 +728,7 @@ static int tps80031_regulator_probe(struct platform_device *pdev)
+ 			}
+ 		}
+ 		rdev = regulator_register(&ri->rinfo->desc, &config);
+-		if (IS_ERR_OR_NULL(rdev)) {
++		if (IS_ERR(rdev)) {
+ 			dev_err(&pdev->dev,
+ 				"register regulator failed %s\n",
+ 					ri->rinfo->desc.name);
 -- 
-1.8.1
+1.7.9.5
+
+
 
