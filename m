@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab3AYWCh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 17:02:37 -0500
-Received: from mga11.intel.com ([192.55.52.93]:39121 "EHLO mga11.intel.com"
+	id S1753602Ab3AYWC1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 17:02:27 -0500
+Received: from mga02.intel.com ([134.134.136.20]:16022 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753261Ab3AYWAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 17:00:53 -0500
+	id S1753307Ab3AYWAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 17:00:54 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,541,1355126400"; 
-   d="scan'208";a="278541389"
+   d="scan'208";a="276757476"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 07/12] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v3
-Date: Fri, 25 Jan 2013 14:00:40 -0800
-Message-Id: <1359151245-13179-8-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 12/12] perf, tools: Add abort_tx,no_tx,in_tx branch filter options to perf record -j v3
+Date: Fri, 25 Jan 2013 14:00:45 -0800
+Message-Id: <1359151245-13179-13-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
 References: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
@@ -26,83 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-With checkpointed counters there can be a situation where the counter
-is overflowing, aborts the transaction, is set back to a non overflowing
-checkpoint, causes interupt. The interrupt doesn't see the overflow
-because it has been checkpointed.  This is then a spurious PMI, typically with a
-ugly NMI message.  It can also lead to excessive aborts.
+Make perf record -j aware of the new in_tx,no_tx,abort_tx branch qualifiers.
 
-Avoid this problem by:
-- Using the full counter width for counting counters (previous patch)
-- Forbid sampling for checkpointed counters. It's not too useful anyways,
-checkpointing is mainly for counting.
-- On a PMI always set back checkpointed counters to zero.
-
-v2: Add unlikely. Add comment
-v3: Allow large sampling periods with CP for KVM
+v2: ABORT -> ABORTTX
+v3: Add more _
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   34 ++++++++++++++++++++++++++++++++
- 1 files changed, 34 insertions(+), 0 deletions(-)
+ tools/perf/Documentation/perf-record.txt |    3 +++
+ tools/perf/builtin-record.c              |    3 +++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index bc21bce..9b4dda5 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1079,6 +1079,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
- int intel_pmu_save_and_restart(struct perf_event *event)
- {
- 	x86_perf_event_update(event);
-+	/*
-+	 * For a checkpointed counter always reset back to 0.  This
-+	 * avoids a situation where the counter overflows, aborts the
-+	 * transaction and is then set back to shortly before the
-+	 * overflow, and overflows and aborts again.
-+	 */
-+	if (unlikely(event->hw.config & HSW_INTX_CHECKPOINTED)) {
-+		/* No race with NMIs because the counter should not be armed */
-+		wrmsrl(event->hw.event_base, 0);
-+		local64_set(&event->hw.prev_count, 0);
-+	}
- 	return x86_perf_event_set_period(event);
- }
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 938e890..f7d74b2 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -172,6 +172,9 @@ following filters are defined:
+         - u:  only when the branch target is at the user level
+         - k: only when the branch target is in the kernel
+         - hv: only when the target is at the hypervisor level
++	- in_tx: only when the target is in a hardware transaction
++	- no_tx: only when the target is not in a hardware transaction
++	- abort_tx: only when the target is a hardware transaction abort
  
-@@ -1162,6 +1173,15 @@ again:
- 		x86_pmu.drain_pebs(regs);
- 	}
- 
-+	/*
-+ 	 * To avoid spurious interrupts with perf stat always reset checkpointed
-+ 	 * counters.
-+ 	 *
-+	 * XXX move somewhere else.
-+	 */
-+	if (cpuc->events[2] && (cpuc->events[2]->hw.config & HSW_INTX_CHECKPOINTED))
-+		status |= (1ULL << 2);
-+
- 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
- 		struct perf_event *event = cpuc->events[bit];
- 
-@@ -1615,6 +1635,20 @@ static int hsw_hw_config(struct perf_event *event)
- 	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
- 	      event->attr.precise_ip > 0))
- 		return -EIO;
-+	if (event->hw.config & HSW_INTX_CHECKPOINTED) {
-+		/*
-+		 * Sampling of checkpointed events can cause situations where
-+		 * the CPU constantly aborts because of a overflow, which is
-+		 * then checkpointed back and ignored. Forbid checkpointing
-+		 * for sampling.
-+		 *
-+		 * But still allow a long sampling period, so that perf stat
-+		 * from KVM works.
-+		 */
-+		if (event->attr.sample_period > 0 &&
-+		    event->attr.sample_period < 0x7fffffff)
-+			return -EIO;
-+	}
- 	return 0;
- }
+ +
+ The option requires at least one branch type among any, any_call, any_ret, ind_call.
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 2ac690c..4bcfccd 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -671,6 +671,9 @@ static const struct branch_mode branch_modes[] = {
+ 	BRANCH_OPT("any_call", PERF_SAMPLE_BRANCH_ANY_CALL),
+ 	BRANCH_OPT("any_ret", PERF_SAMPLE_BRANCH_ANY_RETURN),
+ 	BRANCH_OPT("ind_call", PERF_SAMPLE_BRANCH_IND_CALL),
++	BRANCH_OPT("abort_tx", PERF_SAMPLE_BRANCH_ABORTTX),
++	BRANCH_OPT("in_tx", PERF_SAMPLE_BRANCH_INTX),
++	BRANCH_OPT("no_tx", PERF_SAMPLE_BRANCH_NOTX),
+ 	BRANCH_END
+ };
  
 -- 
 1.7.7.6
