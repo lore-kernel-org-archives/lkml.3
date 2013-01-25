@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab3AYOBY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 09:01:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:39588 "EHLO mga09.intel.com"
+	id S1756953Ab3AYODY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 09:03:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55918 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754935Ab3AYOBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 09:01:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,538,1355126400"; 
-   d="scan'208";a="252384428"
-Message-ID: <51029142.9050901@linux.intel.com>
-Date: Fri, 25 Jan 2013 16:05:54 +0200
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754935Ab3AYODV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 09:03:21 -0500
+Date: Fri, 25 Jan 2013 09:03:18 -0500
+From: Aristeu Rozanski <aris@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH v2] userns: improve uid/gid map collision detection
+Message-ID: <20130125140317.GS17632@redhat.com>
+References: <20130123160221.GG17632@redhat.com>
+ <20130124044438.GA13354@mail.hallyn.com>
+ <20130124152859.GP17632@redhat.com>
+ <20130124164612.af6de6f3.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        grant.likely@secretlab.ca, linux-acpi@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, tianyu.lan@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] gpiolib-acpi: Add ACPI5 event model support to gpio.
-References: <1359114505-4473-1-git-send-email-mathias.nyman@linux.intel.com> <CACRpkdZvoacYP0rwnrcyHfKWrN67HvN5jCVom4Lx6Qd9RC0fjg@mail.gmail.com>
-In-Reply-To: <CACRpkdZvoacYP0rwnrcyHfKWrN67HvN5jCVom4Lx6Qd9RC0fjg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130124164612.af6de6f3.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2013 02:54 PM, Linus Walleij wrote:
-> On Fri, Jan 25, 2013 at 12:48 PM, Mathias Nyman
-> <mathias.nyman@linux.intel.com>  wrote:
->
->> Add ability to handle ACPI events signalled by GPIO interrupts.
->>
->> ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
->> handled by ACPI event methods which need to be called from the GPIO
->> controller's interrupt handler. acpi_gpio_request_interrupt() finds out which
->> gpio pins have acpi event methods and assigns interrupt handlers that calls
->> the acpi event methods for those pins.
->>
->> Partially based on work by Rui Zhang<rui.zhang@intel.com>
->>
->> Signed-off-by: Mathias Nyman<mathias.nyman@linux.intel.com>
-> (...)
->> +/**
->> + * acpi_gpio_request_interrupt() - Register isr for gpio controller ACPI events
->> + * @chip:      gpio chip representation of the gpio controller
->
->
-> Hm chip, controller, controller, chip chip, controller controller...
-> Are we using two different names for the same thing?
+On Thu, Jan 24, 2013 at 04:46:12PM -0800, Andrew Morton wrote:
+> eek, a macro!  Macros are always bad.
+> 
+> This one is bad because
+> 
+> a) it's a macro
+> 
+> b) it evaluates its args multiple times and hence will cause nasty
+>    bugs if called with expressions-with-side-effects.
+> 
+> c) it evaluates its args multiple times and if called with
+>    non-trivial expressions the compiler might not be able to CSE those
+>    expressions, leading to code bloat.
+> 
+> Add lo, this patch:
+> 
+> --- a/kernel/user_namespace.c~userns-improve-uid-gid-map-collision-detection-fix
+> +++ a/kernel/user_namespace.c
+> @@ -521,7 +521,11 @@ struct seq_operations proc_projid_seq_op
+>  
+>  static DEFINE_MUTEX(id_map_mutex);
+>  
+> -#define in_range(b,first,len) ((b)>=(first)&&(b)<(first)+(len))
+> +static bool in_range(u32 b, u32 first, u32 len)
+> +{
+> +	return b >= first && b < first + len;
+> +}
+> +
+>  static inline int extent_collision(struct uid_gid_map *new_map,
+>  				   struct uid_gid_extent *extent)
+>  {
+> 
+> reduces the user_namespace.o text from 4822 bytes to 4727 with
+> gcc-4.4.4.  This is a remarkably large difference.
 
-They get mixed up a bit here yes.
-I'll change them all to chip.
+thanks Andrew
 
->
->> + *
->> + * ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
->> + * handled by ACPI event methods which need to be called from the GPIO
->> + * controller's interrupt handler. acpi_gpio_request_interrupt finds out which
->> + * gpio pins have acpi event methods and assigns interrupt handlers that calls
->> + * the acpi event methods for those pins.
->> + */
->> +
->> +void acpi_gpio_request_interrupt(struct gpio_chip *chip)
->
-> So I was like "um, what acpi requests an interrupt for a GPIO (maybe a pin)...
->
-> ... read read ...
->
-> Aha the function should probably be named:
-> acpi_gpiochip_request_interrupts()
->
+(I see Eric already answered about the config option)
 
-True, will rename it.
-
-> Because it just grabs all IRQs coming from that chip right?
-
-Not all, only the ones that have an ACPI handler method defined. 
-Basically ACPI5 supports using some of the gpio interrupts for the same 
-purpose as SCI interrupts.
-
->
-> Second: why is there no mirror function *releasing* all the IRQs again?
-> One-way interface?
-
-My thinking was that using devm_request_threaded_irq(chip->dev, ...) 
-will automatically free the interrupts on driver detach, making the 
-release function unnecessary.
-
--Mathias
+-- 
+Aristeu
 
