@@ -1,123 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab3AYPyc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 10:54:32 -0500
-Received: from mo2.mail-out.ovh.net ([178.32.228.2]:60820 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755926Ab3AYPya (ORCPT
+	id S1756981Ab3AYPzn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 10:55:43 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56319 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756197Ab3AYPzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 10:54:30 -0500
-Date: Fri, 25 Jan 2013 16:42:19 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@list.infradead.org, linux-kernel@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH 18/19] ARM: at91: suspend both memory controllers on
- at91sam9263
-Message-ID: <20130125154219.GM7360@game.jcrosoft.org>
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
- <1359123276-15833-19-git-send-email-arnd@arndb.de>
+	Fri, 25 Jan 2013 10:55:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359123276-15833-19-git-send-email-arnd@arndb.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 12121719872285158148
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrkedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrkedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <1359078224-3327-1-git-send-email-airlied@gmail.com>
+References: <1359078224-3327-1-git-send-email-airlied@gmail.com>
+Date: Fri, 25 Jan 2013 16:55:37 +0100
+X-Google-Sender-Auth: DpprhvwIJNVcKvDlUwJP0aHpo9g
+Message-ID: <CAKMK7uEe7J=yKWO4ARSy_jMbAkGFX7LSs3Z5aEuMuNE=hx2Gzg@mail.gmail.com>
+Subject: Re: [PATCH] fbcon: fix locking harder
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.sf.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:14 Fri 25 Jan     , Arnd Bergmann wrote:
-> For the past three years, we have had a #warning in
-> mach-at91 about the sdram_selfrefresh_enable or
-> at91sam9_standby functions possibly not working on
-> at91sam9263. In the meantime a function was added
-> to do the right thing on at91sam9g45, which looks like
-> it should also work on '9263.
-> 
-> This patch blindly removes the warning and changes the
-> at91sam9263 to use the same code at at91sam9g45, which
-> may or may not be the right solution. If it is not,
-> maybe someone could provide a better fix.
-it's not
-
-the 9g45 use DDR Controler where the 9263 use a SDRAM controler
-
-Best Regards,
-J.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-> Cc: Andrew Victor <linux@maxim.org.za>
-> Cc: Albin Tonnerre <albin.tonnerre@free-electrons.com>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+On Fri, Jan 25, 2013 at 2:43 AM, Dave Airlie <airlied@gmail.com> wrote:
+> Okay so Alan's patch handled the case where there was no registered fbcon,
+> however the other path entered in set_con2fb_map pit.
+>
+> In there we called fbcon_takeover, but we also took the console lock in a couple
+> of places. So push the console lock out to the callers of set_con2fb_map,
+>
+> this means fbmem and switcheroo needed to take the lock around the fb notifier
+> entry points that lead to this.
+>
+> This should fix the efifb regression seen by Maarten.
+>
+> Signed-off-by: Dave Airlie <airlied@redhat.com>
 > ---
->  arch/arm/mach-at91/cpuidle.c | 2 +-
->  arch/arm/mach-at91/pm.c      | 2 +-
->  arch/arm/mach-at91/pm.h      | 8 --------
->  3 files changed, 2 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/cpuidle.c b/arch/arm/mach-at91/cpuidle.c
-> index 0c63815..208d486 100644
-> --- a/arch/arm/mach-at91/cpuidle.c
-> +++ b/arch/arm/mach-at91/cpuidle.c
-> @@ -36,7 +36,7 @@ static int at91_enter_idle(struct cpuidle_device *dev,
+>  drivers/gpu/vga/vga_switcheroo.c |  3 +++
+>  drivers/video/console/fbcon.c    | 11 ++++++++---
+>  drivers/video/fbmem.c            |  2 ++
+>  3 files changed, 13 insertions(+), 3 deletions(-)
+>
+[cut]
+
+>         ret = vgasr_priv.handler->switchto(new_client->id);
+> diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+> index 2aef9ca..2e2d959 100644
+> --- a/drivers/video/console/fbcon.c
+> +++ b/drivers/video/console/fbcon.c
+> @@ -842,6 +842,8 @@ static void con2fb_init_display(struct vc_data *vc, struct fb_info *info,
+>   *
+>   *     Maps a virtual console @unit to a frame buffer device
+>   *     @newidx.
+> + *
+> + *     This should be called with the console lock held.
+>   */
+>  static int set_con2fb_map(int unit, int newidx, int user)
 >  {
->  	if (cpu_is_at91rm9200())
->  		at91rm9200_standby();
-> -	else if (cpu_is_at91sam9g45())
-> +	else if (cpu_is_at91sam9g45() || cpu_is_at91sam9263())
->  		at91sam9g45_standby();
->  	else
->  		at91sam9_standby();
-> diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-> index adb6db8..f6bd4fa 100644
-> --- a/arch/arm/mach-at91/pm.c
-> +++ b/arch/arm/mach-at91/pm.c
-> @@ -265,7 +265,7 @@ static int at91_pm_enter(suspend_state_t state)
->  			 */
->  			if (cpu_is_at91rm9200())
->  				at91rm9200_standby();
-> -			else if (cpu_is_at91sam9g45())
-> +			else if (cpu_is_at91sam9g45() || cpu_is_at91sam9263())
->  				at91sam9g45_standby();
->  			else
->  				at91sam9_standby();
-> diff --git a/arch/arm/mach-at91/pm.h b/arch/arm/mach-at91/pm.h
-> index 38f467c..5252216 100644
-> --- a/arch/arm/mach-at91/pm.h
-> +++ b/arch/arm/mach-at91/pm.h
-> @@ -70,14 +70,6 @@ static inline void at91sam9g45_standby(void)
->  	at91_ramc_write(1, AT91_DDRSDRC_LPR, saved_lpr1);
->  }
->  
-> -#ifdef CONFIG_SOC_AT91SAM9263
-> -/*
-> - * FIXME either or both the SDRAM controllers (EB0, EB1) might be in use;
-> - * handle those cases both here and in the Suspend-To-RAM support.
-> - */
-> -#warning Assuming EB1 SDRAM controller is *NOT* used
-> -#endif
-> -
->  static inline void at91sam9_standby(void)
->  {
->  	u32 saved_lpr, lpr;
-> -- 
-> 1.8.0
-> 
+
+What about throwing a WARN_CONSOLE_UNLOCKED(); in here to make sure
+this new rule is obeyed?
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
