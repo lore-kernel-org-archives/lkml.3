@@ -1,170 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab3AYIiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 03:38:09 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:7698 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751307Ab3AYIhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 03:37:12 -0500
-X-IronPort-AV: E=Sophos;i="4.84,537,1355068800"; 
-   d="scan'208";a="6645781"
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>, Eric Dumazet <erdnetdev@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH V7 2/3] virtio-net: split out clean affinity function
-Date: Fri, 25 Jan 2013 16:36:20 +0800
-Message-Id: <1359102981-3401-2-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1359102981-3401-1-git-send-email-gaowanlong@cn.fujitsu.com>
-References: <1359102981-3401-1-git-send-email-gaowanlong@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/25 16:35:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/25 16:35:58,
-	Serialize complete at 2013/01/25 16:35:58
+	id S1753088Ab3AYIjo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 03:39:44 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:46388 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218Ab3AYIjl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 03:39:41 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Brian Lilly <brian@crystalfontz.com>, linux-arm-kernel@lists.infradead.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] spi: spi-gpio: Add checks for the dt properties
+Date: Fri, 25 Jan 2013 09:39:34 +0100
+Message-Id: <1359103175-26304-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1359103175-26304-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1359103175-26304-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split out the clean affinity function to virtnet_clean_affinity().
+The bindings assumed that the gpios properties were always there, which
+made the NO_TX and NO_RX mode not usable from device tree. Add extra
+checks to make sure that the driver can work if either MOSI or MISO is
+not used.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>
-Cc: Eric Dumazet <erdnetdev@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: virtualization@lists.linux-foundation.org
-Cc: netdev@vger.kernel.org
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
-V6->V7:
-	always set vq_index (Jason)
-V5->V6: NEW
+ drivers/spi/spi-gpio.c |   23 ++++++++++++++++++++---
+ 1 file changed, 20 insertions(+), 3 deletions(-)
 
- drivers/net/virtio_net.c | 71 +++++++++++++++++++++++++++---------------------
- 1 file changed, 40 insertions(+), 31 deletions(-)
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 0f3afa8..2f6fe9b 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1016,46 +1016,55 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
- 	return 0;
- }
+diff --git a/drivers/spi/spi-gpio.c b/drivers/spi/spi-gpio.c
+index c7cf0b7..9ddef55 100644
+--- a/drivers/spi/spi-gpio.c
++++ b/drivers/spi/spi-gpio.c
+@@ -365,9 +365,26 @@ static int spi_gpio_probe_dt(struct platform_device *pdev)
+ 	if (!pdata)
+ 		return -ENOMEM;
  
--static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
-+static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
- {
- 	int i;
- 	int cpu;
- 
--	/* In multiqueue mode, when the number of cpu is equal to the number of
--	 * queue pairs, we let the queue pairs to be private to one cpu by
--	 * setting the affinity hint to eliminate the contention.
--	 */
--	if ((vi->curr_queue_pairs == 1 ||
--	     vi->max_queue_pairs != num_online_cpus()) && set) {
--		if (vi->affinity_hint_set)
--			set = false;
--		else
--			return;
--	}
--
--	if (set) {
--		i = 0;
--		for_each_online_cpu(cpu) {
--			virtqueue_set_affinity(vi->rq[i].vq, cpu);
--			virtqueue_set_affinity(vi->sq[i].vq, cpu);
--			*per_cpu_ptr(vi->vq_index, cpu) = i;
--			i++;
--		}
--
--		vi->affinity_hint_set = true;
--	} else {
--		for(i = 0; i < vi->max_queue_pairs; i++) {
-+	if (vi->affinity_hint_set) {
-+		for (i = 0; i < vi->max_queue_pairs; i++) {
- 			virtqueue_set_affinity(vi->rq[i].vq, -1);
- 			virtqueue_set_affinity(vi->sq[i].vq, -1);
- 		}
- 
--		i = 0;
--		for_each_online_cpu(cpu)
-+		vi->affinity_hint_set = false;
+-	pdata->sck = of_get_named_gpio(np, "gpio-sck", 0);
+-	pdata->miso = of_get_named_gpio(np, "gpio-miso", 0);
+-	pdata->mosi = of_get_named_gpio(np, "gpio-mosi", 0);
++	ret = of_get_named_gpio(np, "gpio-sck", 0);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "gpio-sck property not found\n");
++		goto error_free;
 +	}
++	pdata->sck = ret;
 +
-+	i = 0;
-+	for_each_online_cpu(cpu) {
-+		if (cpu == hcpu) {
-+			*per_cpu_ptr(vi->vq_index, cpu) = -1;
-+		} else {
- 			*per_cpu_ptr(vi->vq_index, cpu) =
- 				++i % vi->curr_queue_pairs;
-+		}
-+	}
-+}
- 
--		vi->affinity_hint_set = false;
-+static void virtnet_set_affinity(struct virtnet_info *vi)
-+{
-+	int i;
-+	int cpu;
++	ret = of_get_named_gpio(np, "gpio-miso", 0);
++	if (ret < 0) {
++		dev_info(&pdev->dev, "gpio-miso property not found, switching to no-rx mode\n");
++		pdata->miso = SPI_GPIO_NO_MISO;
++	} else
++		pdata->miso = ret;
 +
-+	/* In multiqueue mode, when the number of cpu is equal to the number of
-+	 * queue pairs, we let the queue pairs to be private to one cpu by
-+	 * setting the affinity hint to eliminate the contention.
-+	 */
-+	if (vi->curr_queue_pairs == 1 ||
-+	    vi->max_queue_pairs != num_online_cpus()) {
-+		virtnet_clean_affinity(vi, -1);
-+		return;
- 	}
-+
-+	i = 0;
-+	for_each_online_cpu(cpu) {
-+		virtqueue_set_affinity(vi->rq[i].vq, cpu);
-+		virtqueue_set_affinity(vi->sq[i].vq, cpu);
-+		*per_cpu_ptr(vi->vq_index, cpu) = i;
-+		i++;
-+	}
-+
-+	vi->affinity_hint_set = true;
- }
++	ret = of_get_named_gpio(np, "gpio-mosi", 0);
++	if (ret < 0) {
++		dev_info(&pdev->dev, "gpio-mosi property not found, switching to no-tx mode\n");
++		pdata->mosi = SPI_GPIO_NO_MOSI;
++	} else
++		pdata->mosi = ret;
  
- static void virtnet_get_ringparam(struct net_device *dev,
-@@ -1105,7 +1114,7 @@ static int virtnet_set_channels(struct net_device *dev,
- 		netif_set_real_num_tx_queues(dev, queue_pairs);
- 		netif_set_real_num_rx_queues(dev, queue_pairs);
- 
--		virtnet_set_affinity(vi, true);
-+		virtnet_set_affinity(vi);
- 	}
- 	put_online_cpus();
- 
-@@ -1274,7 +1283,7 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
- {
- 	struct virtio_device *vdev = vi->vdev;
- 
--	virtnet_set_affinity(vi, false);
-+	virtnet_clean_affinity(vi, -1);
- 
- 	vdev->config->del_vqs(vdev);
- 
-@@ -1398,7 +1407,7 @@ static int init_vqs(struct virtnet_info *vi)
- 		goto err_free;
- 
- 	get_online_cpus();
--	virtnet_set_affinity(vi, true);
-+	virtnet_set_affinity(vi);
- 	put_online_cpus();
- 
- 	return 0;
+ 	ret = of_property_read_u32(np, "num-chipselects", &tmp);
+ 	if (ret < 0) {
 -- 
-1.8.1
+1.7.10.4
 
