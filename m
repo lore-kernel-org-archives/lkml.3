@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab3AYKUn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:20:43 -0500
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:51771 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754825Ab3AYKUm (ORCPT
+	id S1756319Ab3AYKVI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:21:08 -0500
+Received: from re04.intra2net.com ([82.165.46.26]:55554 "EHLO
+	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756213Ab3AYKVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:20:42 -0500
+	Fri, 25 Jan 2013 05:21:04 -0500
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+To: acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [perf PATCH 1/3] Fix memory leak on error
+Date: Fri, 25 Jan 2013 11:20:47 +0100
+Message-ID: <2717013.8dV0naNhAV@storm>
+User-Agent: KMail/4.9.5 (Linux/3.6.11-5.fc17.x86_64; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-Date: Fri, 25 Jan 2013 18:20:40 +0800
-Message-ID: <CACV3sb+G1YnO6168JhY3dEadmJi58pA5-2cSZT8E0WVHJNFt9Q@mail.gmail.com>
-Subject: [PATCH] tracing: fix twice trace iterator init
-From: Jovi Zhang <bookjovi@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From ac499cd340bf2ba47b3d1dd129a3bb7527c195ae Mon Sep 17 00:00:00 2001
-From: Jovi Zhang <bookjovi@gmail.com>
-Date: Fri, 25 Jan 2013 18:03:07 +0800
-Subject: [PATCH] tracing: fix twice trace iterator init
+cppcheck reported:
+[util/event.c:480]: (error) Memory leak: event
 
-trace iterator is already inited in trace_init_global_iter,
-so there don't need to assign again.
-
-Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
 ---
- kernel/trace/trace.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ tools/perf/util/event.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index e512567..8d99728 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -5005,6 +5005,7 @@ __ftrace_dump(bool disable_tracing, enum
-ftrace_dump_mode oops_dump_mode)
- 	if (disable_tracing)
- 		ftrace_kill();
-
-+	/* Simulate the iterator */
- 	trace_init_global_iter(&iter);
-
- 	for_each_tracing_cpu(cpu) {
-@@ -5016,10 +5017,6 @@ __ftrace_dump(bool disable_tracing, enum
-ftrace_dump_mode oops_dump_mode)
- 	/* don't look at user memory in panic mode */
- 	trace_flags &= ~TRACE_ITER_SYM_USEROBJ;
-
--	/* Simulate the iterator */
--	iter.tr = &global_trace;
--	iter.trace = current_trace;
--
- 	switch (oops_dump_mode) {
- 	case DUMP_ALL:
- 		iter.cpu_file = TRACE_PIPE_ALL_CPU;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 3cf2c3e..5cd13d7 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -476,8 +476,10 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
+ 		}
+ 	}
+ 
+-	if (kallsyms__parse(filename, &args, find_symbol_cb) <= 0)
++	if (kallsyms__parse(filename, &args, find_symbol_cb) <= 0) {
++		free(event);
+ 		return -ENOENT;
++	}
+ 
+ 	map = machine->vmlinux_maps[MAP__FUNCTION];
+ 	size = snprintf(event->mmap.filename, sizeof(event->mmap.filename),
 -- 
-1.7.9.7
+1.7.11.7
+
