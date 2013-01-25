@@ -1,162 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513Ab3AYKoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:44:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40873 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755085Ab3AYKoD (ORCPT
+	id S1756791Ab3AYKro (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:47:44 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39345 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756534Ab3AYKrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:44:03 -0500
-Date: Fri, 25 Jan 2013 02:43:45 -0800
-From: tip-bot for Jan Beulich <JBeulich@suse.com>
-Message-ID: <tip-05fbf4d6fc6a3c0c3e63b77979c9311596716d10@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, torvalds@linux-foundation.org,
-        jbeulich@suse.com, JBeulich@suse.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, torvalds@linux-foundation.org,
-        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de
-In-Reply-To: <5093E4F302000078000A6162@nat28.tlf.novell.com>
-References: <5093E4F302000078000A6162@nat28.tlf.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86/xor: Make virtualization friendly
-Git-Commit-ID: 05fbf4d6fc6a3c0c3e63b77979c9311596716d10
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 25 Jan 2013 05:47:42 -0500
+Date: Fri, 25 Jan 2013 11:47:37 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi.kivity@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V3 RESEND RFC 1/2] sched: Bail out of yield_to when
+ source and target runqueue has one task
+Message-ID: <20130125104737.GA23332@gmail.com>
+References: <20130122073854.24731.9426.sendpatchset@codeblue.in.ibm.com>
+ <20130122073913.24731.65118.sendpatchset@codeblue.in.ibm.com>
+ <20130124103213.GD27602@gmail.com>
+ <20130125104025.GA14978@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 02:43:51 -0800 (PST)
+In-Reply-To: <20130125104025.GA14978@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  05fbf4d6fc6a3c0c3e63b77979c9311596716d10
-Gitweb:     http://git.kernel.org/tip/05fbf4d6fc6a3c0c3e63b77979c9311596716d10
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Fri, 2 Nov 2012 14:21:23 +0000
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 25 Jan 2013 09:23:51 +0100
 
-x86/xor: Make virtualization friendly
+* Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
 
-In virtualized environments, the CR0.TS management needed here
-can be a lot slower than anticipated by the original authors of
-this code, which particularly means that in such cases forcing
-the use of SSE- (or MMX-) based implementations is not desirable
-- actual measurements should always be done in that case.
+> * Ingo Molnar <mingo@kernel.org> [2013-01-24 11:32:13]:
+> 
+> > 
+> > * Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+> > 
+> > > From: Peter Zijlstra <peterz@infradead.org>
+> > > 
+> > > In case of undercomitted scenarios, especially in large guests
+> > > yield_to overhead is significantly high. when run queue length of
+> > > source and target is one, take an opportunity to bail out and return
+> > > -ESRCH. This return condition can be further exploited to quickly come
+> > > out of PLE handler.
+> > > 
+> > > (History: Raghavendra initially worked on break out of kvm ple handler upon
+> > >  seeing source runqueue length = 1, but it had to export rq length).
+> > >  Peter came up with the elegant idea of return -ESRCH in scheduler core.
+> > > 
+> > > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> > > Raghavendra, Checking the rq length of target vcpu condition added.(thanks Avi)
+> > > Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> > > Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> > > Acked-by: Andrew Jones <drjones@redhat.com>
+> > > Tested-by: Chegu Vinod <chegu_vinod@hp.com>
+> > > ---
+> > > 
+> > >  kernel/sched/core.c |   25 +++++++++++++++++++------
+> > >  1 file changed, 19 insertions(+), 6 deletions(-)
+> > > 
+> > > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > > index 2d8927f..fc219a5 100644
+> > > --- a/kernel/sched/core.c
+> > > +++ b/kernel/sched/core.c
+> > > @@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
+> > >   * It's the caller's job to ensure that the target task struct
+> > >   * can't go away on us before we can do any checks.
+> > >   *
+> > > - * Returns true if we indeed boosted the target task.
+> > > + * Returns:
+> > > + *	true (>0) if we indeed boosted the target task.
+> > > + *	false (0) if we failed to boost the target.
+> > > + *	-ESRCH if there's no task to yield to.
+> > >   */
+> > >  bool __sched yield_to(struct task_struct *p, bool preempt)
+> > >  {
+> > > @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+> > >  
+> > >  again:
+> > >  	p_rq = task_rq(p);
+> > > +	/*
+> > > +	 * If we're the only runnable task on the rq and target rq also
+> > > +	 * has only one task, there's absolutely no point in yielding.
+> > > +	 */
+> > > +	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
+> > > +		yielded = -ESRCH;
+> > > +		goto out_irq;
+> > > +	}
+> > 
+> > Looks good to me in principle.
+> > 
+> > Would be nice to get more consistent benchmark numbers. Once 
+> > those are unambiguously showing that this is a win:
+> > 
+> >   Acked-by: Ingo Molnar <mingo@kernel.org>
+> >
+> 
+> I ran the test with kernbench and sysbench again on 32 core mx3850
+> machine with 32 vcpu guests. Results shows definite improvements.
+> 
+> ebizzy and dbench show similar improvement for 1x overcommit
+> (note that stdev for 1x in dbench is lesser improvemet is now seen at
+> only 20%)
+> 
+> [ all the experiments are taken out of 8 run averages ].
+> 
+> The patches benefit large guest undercommit scenarios, so I believe
+> with large guest performance improvemnt is even significant. [ Chegu
+> Vinod results show performance near to no ple cases ]. Unfortunately I
+> do not have a machine to test larger guest (>32).
+> 
+> Ingo, Please let me know if this is okay to you.
+> 
+> base kernel = 3.8.0-rc4
+> 
+> +-----------+-----------+-----------+------------+-----------+
+>                 kernbench  (time in sec lower is better)
+> +-----------+-----------+-----------+------------+-----------+
+>     base        stdev        patched    stdev      %improve
+> +-----------+-----------+-----------+------------+-----------+
+> 1x   46.6028     1.8672	    42.4494     1.1390	   8.91234
+> 2x   99.9074     9.1859	    90.4050     2.6131	   9.51121
+> +-----------+-----------+-----------+------------+-----------+
+> +-----------+-----------+-----------+------------+-----------+
+>                sysbench (time in sec lower is better) 
+> +-----------+-----------+-----------+------------+-----------+
+>     base        stdev        patched    stdev      %improve
+> +-----------+-----------+-----------+------------+-----------+
+> 1x   18.7402     0.3764	    17.7431     0.3589	   5.32065
+> 2x   13.2238     0.1935	    13.0096     0.3152	   1.61981
+> +-----------+-----------+-----------+------------+-----------+
+> 
+> +-----------+-----------+-----------+------------+-----------+
+>                 ebizzy  (records/sec higher is better)
+> +-----------+-----------+-----------+------------+-----------+
+>     base        stdev        patched    stdev      %improve
+> +-----------+-----------+-----------+------------+-----------+
+> 1x  2421.9000    19.1801	  5883.1000   112.7243	 142.91259
+> +-----------+-----------+-----------+------------+-----------+
+> 
+> +-----------+-----------+-----------+------------+-----------+
+>                 dbench (throughput MB/sec  higher is better)
+> +-----------+-----------+-----------+------------+-----------+
+>     base        stdev        patched    stdev      %improve
+> +-----------+-----------+-----------+------------+-----------+
+> 1x  11675.9900   857.4154	 14103.5000   215.8425	  20.79061
+> +-----------+-----------+-----------+------------+-----------+
 
-For consistency, pull into the shared (32- and 64-bit) header
-not only the inclusion of the generic code, but also that of the
-AVX variants.
+The numbers look pretty convincing, thanks. The workloads were 
+CPU bound most of the time, right?
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/5093E4F302000078000A6162@nat28.tlf.novell.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/include/asm/xor.h    |  8 +++++++-
- arch/x86/include/asm/xor_32.h | 22 ++++++++++------------
- arch/x86/include/asm/xor_64.h | 10 ++++++----
- 3 files changed, 23 insertions(+), 17 deletions(-)
+Thanks,
 
-diff --git a/arch/x86/include/asm/xor.h b/arch/x86/include/asm/xor.h
-index d882975..55cd464 100644
---- a/arch/x86/include/asm/xor.h
-+++ b/arch/x86/include/asm/xor.h
-@@ -487,6 +487,12 @@ static struct xor_block_template xor_block_sse_pf64 = {
- 
- #undef XOR_CONSTANT_CONSTRAINT
- 
-+/* Also try the AVX routines */
-+#include <asm/xor_avx.h>
-+
-+/* Also try the generic routines. */
-+#include <asm-generic/xor.h>
-+
- #ifdef CONFIG_X86_32
- # include <asm/xor_32.h>
- #else
-@@ -494,6 +500,6 @@ static struct xor_block_template xor_block_sse_pf64 = {
- #endif
- 
- #define XOR_SELECT_TEMPLATE(FASTEST) \
--	AVX_SELECT(FASTEST)
-+	(cpu_has_hypervisor ? (FASTEST) : AVX_SELECT(FASTEST))
- 
- #endif /* _ASM_X86_XOR_H */
-diff --git a/arch/x86/include/asm/xor_32.h b/arch/x86/include/asm/xor_32.h
-index ce05722..fe7a277 100644
---- a/arch/x86/include/asm/xor_32.h
-+++ b/arch/x86/include/asm/xor_32.h
-@@ -537,12 +537,6 @@ static struct xor_block_template xor_block_pIII_sse = {
- 	.do_5 = xor_sse_5,
- };
- 
--/* Also try the AVX routines */
--#include <asm/xor_avx.h>
--
--/* Also try the generic routines.  */
--#include <asm-generic/xor.h>
--
- /* We force the use of the SSE xor block because it can write around L2.
-    We may also be able to load into the L1 only depending on how the cpu
-    deals with a load to a line that is being prefetched.  */
-@@ -553,15 +547,19 @@ do {							\
- 	if (cpu_has_xmm) {				\
- 		xor_speed(&xor_block_pIII_sse);		\
- 		xor_speed(&xor_block_sse_pf64);		\
--	} else if (cpu_has_mmx) {			\
-+		if (!cpu_has_hypervisor)		\
-+			break;				\
-+	}						\
-+	if (cpu_has_mmx) {				\
- 		xor_speed(&xor_block_pII_mmx);		\
- 		xor_speed(&xor_block_p5_mmx);		\
--	} else {					\
--		xor_speed(&xor_block_8regs);		\
--		xor_speed(&xor_block_8regs_p);		\
--		xor_speed(&xor_block_32regs);		\
--		xor_speed(&xor_block_32regs_p);		\
-+		if (!cpu_has_hypervisor)		\
-+			break;				\
- 	}						\
-+	xor_speed(&xor_block_8regs);			\
-+	xor_speed(&xor_block_8regs_p);			\
-+	xor_speed(&xor_block_32regs);			\
-+	xor_speed(&xor_block_32regs_p);			\
- } while (0)
- 
- #endif /* _ASM_X86_XOR_32_H */
-diff --git a/arch/x86/include/asm/xor_64.h b/arch/x86/include/asm/xor_64.h
-index 546f1e3..30f9c43 100644
---- a/arch/x86/include/asm/xor_64.h
-+++ b/arch/x86/include/asm/xor_64.h
-@@ -9,10 +9,6 @@ static struct xor_block_template xor_block_sse = {
- 	.do_5 = xor_sse_5,
- };
- 
--
--/* Also try the AVX routines */
--#include <asm/xor_avx.h>
--
- /* We force the use of the SSE xor block because it can write around L2.
-    We may also be able to load into the L1 only depending on how the cpu
-    deals with a load to a line that is being prefetched.  */
-@@ -22,6 +18,12 @@ do {						\
- 	AVX_XOR_SPEED;				\
- 	xor_speed(&xor_block_sse_pf64);		\
- 	xor_speed(&xor_block_sse);		\
-+	if (cpu_has_hypervisor) {		\
-+		xor_speed(&xor_block_8regs);	\
-+		xor_speed(&xor_block_8regs_p);	\
-+		xor_speed(&xor_block_32regs);	\
-+		xor_speed(&xor_block_32regs_p);	\
-+	}					\
- } while (0)
- 
- #endif /* _ASM_X86_XOR_64_H */
+	Ingo
