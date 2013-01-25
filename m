@@ -1,228 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519Ab3AYSWp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:22:45 -0500
-Received: from mail.windriver.com ([147.11.1.11]:44497 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755405Ab3AYSWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:22:42 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH] OF: Fixup resursive locking code paths
-Date: Fri, 25 Jan 2013 13:21:47 -0500
-Message-Id: <1359138107-14159-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.1
+	id S932498Ab3AYSXE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:23:04 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:5685 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932359Ab3AYSXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 13:23:01 -0500
+Subject: [PATCH 06/14] fuse: Trust kernel i_size only - v2
+To: miklos@szeredi.hu
+From: "Maxim V. Patlasov" <MPatlasov@parallels.com>
+Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        devel@openvz.org
+Date: Fri, 25 Jan 2013 22:22:37 +0400
+Message-ID: <20130125182210.10037.59973.stgit@maximpc.sw.ru>
+In-Reply-To: <20130125181700.10037.29163.stgit@maximpc.sw.ru>
+References: <20130125181700.10037.29163.stgit@maximpc.sw.ru>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+Make fuse think that when writeback is on the inode's i_size is always
+up-to-date and not update it with the value received from the userspace.
+This is done because the page cache code may update i_size without letting
+the FS know.
 
-There is no real reason to use a rwlock for devtree_lock. It even
-could be a mutex, but unfortunately it's locked from cpu hotplug
-paths which can't schedule :(
+This assumption implies fixing the previously introduced short-read helper --
+when a short read occurs the 'hole' is filled with zeroes.
 
-So it needs to become a raw lock on rt as well.  The devtree_lock would
-be the only user of a raw_rw_lock, so we are better off cleaning up the
-recursive locking paths which allows us to convert devtree_lock to a
-read_lock.
+fuse_file_fallocate() is also fixed because now we should keep i_size up to
+date, so it must be updated if FUSE_FALLOCATE request succeeded.
 
-Here we do the standard thing of introducing __foo() as the "raw"
-version of foo(), so that we can take better control of the locking.
-The "raw" versions are not exported and are for internal use within
-the file itself.
+Changed in v2:
+ - improved comment in fuse_short_read()
+ - fixed fuse_file_fallocate() for KEEP_SIZE mode
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Original patch by: Pavel Emelyanov <xemul@openvz.org>
+Signed-off-by: Maxim V. Patlasov <MPatlasov@parallels.com>
 ---
+ fs/fuse/dir.c   |    9 ++++++---
+ fs/fuse/file.c  |   43 +++++++++++++++++++++++++++++++++++++++++--
+ fs/fuse/inode.c |    6 ++++--
+ 3 files changed, 51 insertions(+), 7 deletions(-)
 
-[This has been living in the RT tree for several releases, and I've
- put it on top of 3.8-rc4 mainline and tested it independently there
- on a ppc sbc8548 board as well.  So it would be nice to get this in 3.9]
-
- drivers/of/base.c | 91 ++++++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 70 insertions(+), 21 deletions(-)
-
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 2390ddb..21195a1 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -164,16 +164,14 @@ void of_node_put(struct device_node *node)
- EXPORT_SYMBOL(of_node_put);
- #endif /* CONFIG_OF_DYNAMIC */
+diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+index ed8f8c5..ff8b603 100644
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -827,7 +827,7 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
+ 	stat->mtime.tv_nsec = attr->mtimensec;
+ 	stat->ctime.tv_sec = attr->ctime;
+ 	stat->ctime.tv_nsec = attr->ctimensec;
+-	stat->size = attr->size;
++	stat->size = i_size_read(inode);
+ 	stat->blocks = attr->blocks;
  
--struct property *of_find_property(const struct device_node *np,
--				  const char *name,
--				  int *lenp)
-+static struct property *__of_find_property(const struct device_node *np,
-+					   const char *name, int *lenp)
- {
- 	struct property *pp;
+ 	if (attr->blksize != 0)
+@@ -1541,6 +1541,7 @@ static int fuse_do_setattr(struct dentry *entry, struct iattr *attr,
+ 	struct fuse_setattr_in inarg;
+ 	struct fuse_attr_out outarg;
+ 	bool is_truncate = false;
++	bool is_wb = fc->writeback_cache;
+ 	loff_t oldsize;
+ 	int err;
  
- 	if (!np)
- 		return NULL;
+@@ -1613,7 +1614,8 @@ static int fuse_do_setattr(struct dentry *entry, struct iattr *attr,
+ 	fuse_change_attributes_common(inode, &outarg.attr,
+ 				      attr_timeout(&outarg));
+ 	oldsize = inode->i_size;
+-	i_size_write(inode, outarg.attr.size);
++	if (!is_wb || is_truncate || !S_ISREG(inode->i_mode))
++		i_size_write(inode, outarg.attr.size);
  
--	read_lock(&devtree_lock);
- 	for (pp = np->properties; pp; pp = pp->next) {
- 		if (of_prop_cmp(pp->name, name) == 0) {
- 			if (lenp)
-@@ -181,6 +179,18 @@ struct property *of_find_property(const struct device_node *np,
- 			break;
- 		}
+ 	if (is_truncate) {
+ 		/* NOTE: this may release/reacquire fc->lock */
+@@ -1625,7 +1627,8 @@ static int fuse_do_setattr(struct dentry *entry, struct iattr *attr,
+ 	 * Only call invalidate_inode_pages2() after removing
+ 	 * FUSE_NOWRITE, otherwise fuse_launder_page() would deadlock.
+ 	 */
+-	if (S_ISREG(inode->i_mode) && oldsize != outarg.attr.size) {
++	if ((is_truncate || !is_wb) &&
++			S_ISREG(inode->i_mode) && oldsize != outarg.attr.size) {
+ 		truncate_pagecache(inode, oldsize, outarg.attr.size);
+ 		invalidate_inode_pages2(inode->i_mapping);
  	}
-+
-+	return pp;
-+}
-+
-+struct property *of_find_property(const struct device_node *np,
-+				  const char *name,
-+				  int *lenp)
-+{
-+	struct property *pp;
-+
-+	read_lock(&devtree_lock);
-+	pp = __of_find_property(np, name, lenp);
- 	read_unlock(&devtree_lock);
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index b28be33..6b64e11 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -15,6 +15,7 @@
+ #include <linux/module.h>
+ #include <linux/compat.h>
+ #include <linux/swap.h>
++#include <linux/falloc.h>
  
- 	return pp;
-@@ -214,8 +224,20 @@ EXPORT_SYMBOL(of_find_all_nodes);
-  * Find a property with a given name for a given node
-  * and return the value.
-  */
-+static const void *__of_get_property(const struct device_node *np,
-+				     const char *name, int *lenp)
-+{
-+	struct property *pp = __of_find_property(np, name, lenp);
-+
-+	return pp ? pp->value : NULL;
-+}
-+
-+/*
-+ * Find a property with a given name for a given node
-+ * and return the value.
-+ */
- const void *of_get_property(const struct device_node *np, const char *name,
--			 int *lenp)
-+			    int *lenp)
+ static const struct file_operations fuse_direct_io_file_operations;
+ 
+@@ -543,9 +544,31 @@ static void fuse_short_read(struct fuse_req *req, struct inode *inode,
+ 			    u64 attr_ver)
  {
- 	struct property *pp = of_find_property(np, name, lenp);
+ 	size_t num_read = req->out.args[0].size;
++	struct fuse_conn *fc = get_fuse_conn(inode);
++
++	if (fc->writeback_cache) {
++		/*
++		 * A hole in a file. Some data after the hole are in page cache,
++		 * but have not reached the client fs yet. So, the hole is not
++		 * present there.
++		 */
++		int i;
++		int start_idx = num_read >> PAGE_CACHE_SHIFT;
++		size_t off = num_read & (PAGE_CACHE_SIZE - 1);
  
-@@ -226,13 +248,13 @@ EXPORT_SYMBOL(of_get_property);
- /** Checks if the given "compat" string matches one of the strings in
-  * the device's "compatible" property
-  */
--int of_device_is_compatible(const struct device_node *device,
--		const char *compat)
-+static int __of_device_is_compatible(const struct device_node *device,
-+				     const char *compat)
- {
- 	const char* cp;
- 	int cplen, l;
- 
--	cp = of_get_property(device, "compatible", &cplen);
-+	cp = __of_get_property(device, "compatible", &cplen);
- 	if (cp == NULL)
- 		return 0;
- 	while (cplen > 0) {
-@@ -245,6 +267,20 @@ int of_device_is_compatible(const struct device_node *device,
- 
- 	return 0;
+-	loff_t pos = page_offset(req->pages[0]) + num_read;
+-	fuse_read_update_size(inode, pos, attr_ver);
++		for (i = start_idx; i < req->num_pages; i++) {
++			struct page *page = req->pages[i];
++			void *mapaddr = kmap_atomic(page);
++
++			memset(mapaddr + off, 0, PAGE_CACHE_SIZE - off);
++
++			kunmap_atomic(mapaddr);
++			off = 0;
++		}
++	} else {
++		loff_t pos = page_offset(req->pages[0]) + num_read;
++		fuse_read_update_size(inode, pos, attr_ver);
++	}
  }
-+
-+/** Checks if the given "compat" string matches one of the strings in
-+ * the device's "compatible" property
-+ */
-+int of_device_is_compatible(const struct device_node *device,
-+		const char *compat)
-+{
-+	int res;
-+
-+	read_lock(&devtree_lock);
-+	res = __of_device_is_compatible(device, compat);
-+	read_unlock(&devtree_lock);
-+	return res;
-+}
- EXPORT_SYMBOL(of_device_is_compatible);
  
- /**
-@@ -518,7 +554,8 @@ struct device_node *of_find_compatible_node(struct device_node *from,
- 		if (type
- 		    && !(np->type && (of_node_cmp(np->type, type) == 0)))
- 			continue;
--		if (of_device_is_compatible(np, compatible) && of_node_get(np))
-+		if (__of_device_is_compatible(np, compatible) &&
-+		    of_node_get(np))
- 			break;
+ static int fuse_readpage(struct file *file, struct page *page)
+@@ -2285,6 +2308,8 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+ 		.mode = mode
+ 	};
+ 	int err;
++	bool change_i_size = fc->writeback_cache &&
++		!(mode & FALLOC_FL_KEEP_SIZE);
+ 
+ 	if (fc->no_fallocate)
+ 		return -EOPNOTSUPP;
+@@ -2293,6 +2318,11 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+ 	if (IS_ERR(req))
+ 		return PTR_ERR(req);
+ 
++	if (change_i_size) {
++		struct inode *inode = file->f_mapping->host;
++		mutex_lock(&inode->i_mutex);
++	}
++
+ 	req->in.h.opcode = FUSE_FALLOCATE;
+ 	req->in.h.nodeid = ff->nodeid;
+ 	req->in.numargs = 1;
+@@ -2306,6 +2336,15 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
  	}
- 	of_node_put(from);
-@@ -562,15 +599,9 @@ out:
- }
- EXPORT_SYMBOL(of_find_node_with_property);
+ 	fuse_put_request(fc, req);
  
--/**
-- * of_match_node - Tell if an device_node has a matching of_match structure
-- *	@matches:	array of of device match structures to search in
-- *	@node:		the of device structure to match against
-- *
-- *	Low level utility function used by device matching.
-- */
--const struct of_device_id *of_match_node(const struct of_device_id *matches,
--					 const struct device_node *node)
-+static
-+const struct of_device_id *__of_match_node(const struct of_device_id *matches,
-+					   const struct device_node *node)
++	if (change_i_size) {
++		struct inode *inode = file->f_mapping->host;
++
++		if (!err)
++			fuse_write_update_size(inode, offset + length);
++
++		mutex_unlock(&inode->i_mutex);
++	}
++
+ 	return err;
+ }
+ 
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index 9d95a5a..7e07dbd 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -196,6 +196,7 @@ void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
  {
- 	if (!matches)
- 		return NULL;
-@@ -584,14 +615,32 @@ const struct of_device_id *of_match_node(const struct of_device_id *matches,
- 			match &= node->type
- 				&& !strcmp(matches->type, node->type);
- 		if (matches->compatible[0])
--			match &= of_device_is_compatible(node,
--						matches->compatible);
-+			match &= __of_device_is_compatible(node,
-+							   matches->compatible);
- 		if (match)
- 			return matches;
- 		matches++;
- 	}
- 	return NULL;
- }
-+
-+/**
-+ * of_match_node - Tell if an device_node has a matching of_match structure
-+ *	@matches:	array of of device match structures to search in
-+ *	@node:		the of device structure to match against
-+ *
-+ *	Low level utility function used by device matching.
-+ */
-+const struct of_device_id *of_match_node(const struct of_device_id *matches,
-+					 const struct device_node *node)
-+{
-+	const struct of_device_id *match;
-+
-+	read_lock(&devtree_lock);
-+	match = __of_match_node(matches, node);
-+	read_unlock(&devtree_lock);
-+	return match;
-+}
- EXPORT_SYMBOL(of_match_node);
+ 	struct fuse_conn *fc = get_fuse_conn(inode);
+ 	struct fuse_inode *fi = get_fuse_inode(inode);
++	bool is_wb = fc->writeback_cache;
+ 	loff_t oldsize;
+ 	struct timespec old_mtime;
  
- /**
-@@ -619,7 +668,7 @@ struct device_node *of_find_matching_node_and_match(struct device_node *from,
- 	read_lock(&devtree_lock);
- 	np = from ? from->allnext : of_allnodes;
- 	for (; np; np = np->allnext) {
--		if (of_match_node(matches, np) && of_node_get(np)) {
-+		if (__of_match_node(matches, np) && of_node_get(np)) {
- 			if (match)
- 				*match = matches;
- 			break;
--- 
-1.8.1
+@@ -209,10 +210,11 @@ void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
+ 	fuse_change_attributes_common(inode, attr, attr_valid);
+ 
+ 	oldsize = inode->i_size;
+-	i_size_write(inode, attr->size);
++	if (!is_wb || !S_ISREG(inode->i_mode))
++		i_size_write(inode, attr->size);
+ 	spin_unlock(&fc->lock);
+ 
+-	if (S_ISREG(inode->i_mode)) {
++	if (!is_wb && S_ISREG(inode->i_mode)) {
+ 		bool inval = false;
+ 
+ 		if (oldsize != attr->size) {
 
