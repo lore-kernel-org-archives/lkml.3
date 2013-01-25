@@ -1,104 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab3AYK5b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:57:31 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:56824 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756816Ab3AYK4j (ORCPT
+	id S1756994Ab3AYK53 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:57:29 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:60930 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756851Ab3AYK4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:56:39 -0500
+	Fri, 25 Jan 2013 05:56:40 -0500
 From: Guo Chao <yan@linux.vnet.ibm.com>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] loopdev: move common code into loop_figure_size()
-Date: Fri, 25 Jan 2013 18:56:20 +0800
-Message-Id: <1359111382-12654-6-git-send-email-yan@linux.vnet.ibm.com>
+Subject: [PATCH 6/7] loopdev: remove an user triggable oops
+Date: Fri, 25 Jan 2013 18:56:21 +0800
+Message-Id: <1359111382-12654-7-git-send-email-yan@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359111382-12654-1-git-send-email-yan@linux.vnet.ibm.com>
 References: <1359111382-12654-1-git-send-email-yan@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012510-2674-0000-0000-00000799E0C4
+x-cbid: 13012510-8878-0000-0000-000005A8386D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update block device size in accord with gendisk size and let userspace
-know the change in loop_figure_size(). This is a clean up to remove
-common code of loop_figure_size()'s two callers.
+When loopdev is built as module and we pass an invalid parameter,
+loop_init() will return directly without deregister misc device,
+which will cause an oops when insert loop module next time because
+we left some garbage in the misc device list.
+
+Test case:
+sudo modprobe loop max_part=1024
+(failed due to invalid parameter)
+sudo modprobe loop
+(oops)
+
+Clean up nicely to avoid such oops.
 
 Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
 ---
- drivers/block/loop.c |   31 +++++++------------------------
- 1 file changed, 7 insertions(+), 24 deletions(-)
+ drivers/block/loop.c |   22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index ed85036..6579f69 100644
+index 6579f69..9190a82 100644
 --- a/drivers/block/loop.c
 +++ b/drivers/block/loop.c
-@@ -190,6 +190,7 @@ figure_loop_size(struct loop_device *lo, loff_t offset, loff_t sizelimit)
- {
- 	loff_t size = get_size(offset, sizelimit, lo->lo_backing_file);
- 	sector_t x = (sector_t)size;
-+	struct block_device *bdev = lo->lo_device;
+@@ -1844,11 +1844,15 @@ static int __init loop_init(void)
+ 		max_part = (1UL << part_shift) - 1;
+ 	}
  
- 	if (unlikely((loff_t)x != size))
- 		return -EFBIG;
-@@ -198,6 +199,9 @@ figure_loop_size(struct loop_device *lo, loff_t offset, loff_t sizelimit)
- 	if (lo->lo_sizelimit != sizelimit)
- 		lo->lo_sizelimit = sizelimit;
- 	set_capacity(lo->lo_disk, x);
-+	bd_set_size(bdev, (loff_t)get_capacity(bdev->bd_disk) << 9);
-+	/* let user-space know about the new size */
-+	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
+-	if ((1UL << part_shift) > DISK_MAX_PARTS)
+-		return -EINVAL;
++	if ((1UL << part_shift) > DISK_MAX_PARTS) {
++		err = -EINVAL;
++		goto misc_out;
++	}
+ 
+-	if (max_loop > 1UL << (MINORBITS - part_shift))
+-		return -EINVAL;
++	if (max_loop > 1UL << (MINORBITS - part_shift)) {
++		err = -EINVAL;
++		goto misc_out;
++	}
+ 
+ 	/*
+ 	 * If max_loop is specified, create that many devices upfront.
+@@ -1866,8 +1870,10 @@ static int __init loop_init(void)
+ 		range = 1UL << MINORBITS;
+ 	}
+ 
+-	if (register_blkdev(LOOP_MAJOR, "loop"))
+-		return -EIO;
++	if (register_blkdev(LOOP_MAJOR, "loop")) {
++		err = -EIO;
++		goto misc_out;
++	}
+ 
+ 	blk_register_region(MKDEV(LOOP_MAJOR, 0), range,
+ 				  THIS_MODULE, loop_probe, NULL, NULL);
+@@ -1880,6 +1886,10 @@ static int __init loop_init(void)
+ 
+ 	printk(KERN_INFO "loop: module loaded\n");
  	return 0;
++
++misc_out:
++	misc_deregister(&loop_misc);
++	return err;
  }
  
-@@ -1091,15 +1095,10 @@ loop_set_status(struct loop_device *lo, const struct loop_info64 *info)
- 		return err;
- 
- 	if (lo->lo_offset != info->lo_offset ||
--	    lo->lo_sizelimit != info->lo_sizelimit) {
--		struct block_device *bdev = lo->lo_device;
--
-+	    lo->lo_sizelimit != info->lo_sizelimit)
- 		if (figure_loop_size(lo, info->lo_offset, info->lo_sizelimit))
- 			return -EFBIG;
- 
--		bd_set_size(bdev, (loff_t)get_capacity(bdev->bd_disk) << 9);
--		kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
--	}
- 	loop_config_discard(lo);
- 
- 	memcpy(lo->lo_file_name, info->lo_file_name, LO_NAME_SIZE);
-@@ -1276,26 +1275,10 @@ loop_get_status64(struct loop_device *lo, struct loop_info64 __user *arg) {
- 
- static int loop_set_capacity(struct loop_device *lo, struct block_device *bdev)
- {
--	int err;
--	sector_t sec;
--	loff_t sz;
--
--	err = -ENXIO;
- 	if (unlikely(lo->lo_state != Lo_bound))
--		goto out;
--	err = figure_loop_size(lo, lo->lo_offset, lo->lo_sizelimit);
--	if (unlikely(err))
--		goto out;
--	sec = get_capacity(lo->lo_disk);
--	/* the width of sector_t may be narrow for bit-shift */
--	sz = sec;
--	sz <<= 9;
--	bd_set_size(bdev, sz);
--	/* let user-space know about the new size */
--	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
-+		return -ENXIO;
- 
-- out:
--	return err;
-+	return figure_loop_size(lo, lo->lo_offset, lo->lo_sizelimit);
- }
- 
- static int lo_ioctl(struct block_device *bdev, fmode_t mode,
+ static int loop_exit_cb(int id, void *ptr, void *data)
 -- 
 1.7.9.5
 
