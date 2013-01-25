@@ -1,228 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab3AYHFB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 02:05:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49046 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751063Ab3AYHE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 02:04:59 -0500
-Message-ID: <51022E7E.3040905@redhat.com>
-Date: Fri, 25 Jan 2013 15:04:30 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1751519Ab3AYHKE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 02:10:04 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:51796 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab3AYHKA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 02:10:00 -0500
+Message-ID: <51022FBC.2020705@huawei.com>
+Date: Fri, 25 Jan 2013 15:09:48 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: gaowanlong@cn.fujitsu.com
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH V6 2/3] virtio-net: split out clean affinity function
-References: <1358767524-17934-1-git-send-email-gaowanlong@cn.fujitsu.com> <1358767524-17934-2-git-send-email-gaowanlong@cn.fujitsu.com> <5101FBE0.7040505@redhat.com> <51020800.4080900@cn.fujitsu.com> <5102145D.7030607@redhat.com> <51021ABB.8050508@cn.fujitsu.com> <5102224C.3050909@redhat.com> <51022956.3050406@cn.fujitsu.com>
-In-Reply-To: <51022956.3050406@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH] cpuset: fix cpuset_print_task_mems_allowed() vs rename()
+ race
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2013 02:42 PM, Wanlong Gao wrote:
-> On 01/25/2013 02:12 PM, Jason Wang wrote:
->> On 01/25/2013 01:40 PM, Wanlong Gao wrote:
->>> On 01/25/2013 01:13 PM, Jason Wang wrote:
->>>> On 01/25/2013 12:20 PM, Wanlong Gao wrote:
->>>>> On 01/25/2013 11:28 AM, Jason Wang wrote:
->>>>>> On 01/21/2013 07:25 PM, Wanlong Gao wrote:
->>>>>>> Split out the clean affinity function to virtnet_clean_affinity().
->>>>>>>
->>>>>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
->>>>>>> Cc: "Michael S. Tsirkin" <mst@redhat.com>
->>>>>>> Cc: Jason Wang <jasowang@redhat.com>
->>>>>>> Cc: Eric Dumazet <erdnetdev@gmail.com>
->>>>>>> Cc: virtualization@lists.linux-foundation.org
->>>>>>> Cc: netdev@vger.kernel.org
->>>>>>> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
->>>>>>> ---
->>>>>>> V5->V6: NEW
->>>>>>>
->>>>>>>  drivers/net/virtio_net.c | 67 +++++++++++++++++++++++++++---------------------
->>>>>>>  1 file changed, 38 insertions(+), 29 deletions(-)
->>>>>>>
->>>>>>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->>>>>>> index 70cd957..1a35a8c 100644
->>>>>>> --- a/drivers/net/virtio_net.c
->>>>>>> +++ b/drivers/net/virtio_net.c
->>>>>>> @@ -1016,48 +1016,57 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
->>>>>>>  	return 0;
->>>>>>>  }
->>>>>>>  
->>>>>>> -static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
->>>>>>> +static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
->>>>>>>  {
->>>>>>>  	int i;
->>>>>>>  	int cpu;
->>>>>>>  
->>>>>>> -	/* In multiqueue mode, when the number of cpu is equal to the number of
->>>>>>> -	 * queue pairs, we let the queue pairs to be private to one cpu by
->>>>>>> -	 * setting the affinity hint to eliminate the contention.
->>>>>>> -	 */
->>>>>>> -	if ((vi->curr_queue_pairs == 1 ||
->>>>>>> -	     vi->max_queue_pairs != num_online_cpus()) && set) {
->>>>>>> -		if (vi->affinity_hint_set)
->>>>>>> -			set = false;
->>>>>>> -		else
->>>>>>> -			return;
->>>>>>> -	}
->>>>>>> -
->>>>>>> -	if (set) {
->>>>>>> -		i = 0;
->>>>>>> -		for_each_online_cpu(cpu) {
->>>>>>> -			virtqueue_/set_affinity(vi->rq[i].vq, cpu);
->>>>>>> -			virtqueue_set_affinity(vi->sq[i].vq, cpu);
->>>>>>> -			*per_cpu_ptr(vi->vq_index, cpu) = i;
->>>>>>> -			i++;
->>>>>>> -		}
->>>>>>> -
->>>>>>> -		vi->affinity_hint_set = true;
->>>>>>> -	} else {
->>>>>>> -		for(i = 0; i < vi->max_queue_pairs; i++) {
->>>>>>> +	if (vi->affinity_hint_set) {
->>>>>>> +		for (i = 0; i < vi->max_queue_pairs; i++) {
->>>>>>>  			virtqueue_set_affinity(vi->rq[i].vq, -1);
->>>>>>>  			virtqueue_set_affinity(vi->sq[i].vq, -1);
->>>>>>>  		}
->>>>>>>  
->>>>>>>  		i = 0;
->>>>>>> -		for_each_online_cpu(cpu)
->>>>>>> +		for_each_online_cpu(cpu) {
->>>>>>> +			if (cpu == hcpu)
->>>>>>> +				continue;
->>>>>>>  			*per_cpu_ptr(vi->vq_index, cpu) =
->>>>>>>  				++i % vi->curr_queue_pairs;
->>>>>>> +		}
->>>>>>>  
->>>>>> Some questions here:
->>>>>>
->>>>>> - Did we need reset the affinity of the queue here like the this?
->>>>>>
->>>>>> virtqueue_set_affinity(vi->sq[*per_cpu_ptr(vi->vq_index, hcpu)], -1);
->>>>>> virtqueue_set_affinity(vi->rq[*per_cpu_ptr(vi->vq_index, hcpu)], -1);
->>>>> I think no, we are going to unset the affinity of all the set queues,
->>>>> include hcpu.
->>>>>
->>>>>> - Looks like we need also reset the percpu index when
->>>>>> vi->affinity_hint_set is false.
->>>>> Yes, follow this and the comment on [1/3].
->>>>>
->>>>>> - Does this really need this reset? Consider we're going to reset the
->>>>>> percpu in CPU_DEAD?
->>>>> I think resetting when CPU_DOWN_PREPARE can avoid selecting the wrong queue
->>>>> on the dying CPU.
->>>> Didn't understand this. What does 'wrong queue' here mean? Looks like
->>>> you didn't change the preferable queue of the dying CPU and just change
->>>> all others.
->>> How about setting the vq index to -1 on hcpu when doing DOWN_PREPARE?
->>> So that let it select txq to 0 when the CPU is dying.
->> Looks safe, so look like what you're going to solve here is the the race
->> between cpu hotplug and virtnet_set_channels(). A possible better
->> solution is to serialize them by protecting virtnet_set_queues() by
->> get_online_cpus() also. After this, we can make sure the number of
->> channels were not changed during cpu hotplug, and looks like there's no
->> need to reset the preferable queues in DOWN_PREPARE.
->>
->> What's your opinion?
-> IMHO, serialize every time will take lock and may slow down this path,
-> but the hot unplug path will be more cold than it. So I prefer reset the
-> preferable queues in DOWN_PREPARE but not serialize them. Agree?
+rename() will change dentry->d_name. The result of this race can
+be worse than seeing partially rewritten name, but we might access
+a stale pointer because rename() will re-allocate memory to hold
+a longer name.
 
-I think it's ok since we're in control path. And the point is when
-you're trying to reset the affinity / preferable queues during cpu
-hotplug callback, there will be another request in
-virtnet_set_channels() which changing the number of queues. So the the
-result of cpus == queues may out of date. Anyway you need some
-synchronization.
+It's safe in the protection of dentry->d_lock.
 
->
-> Thanks,
-> Wanlong Gao
->
->> Thanks
->>> Thanks,
->>> Wanlong Gao
->>>
->>>>> Thanks,
->>>>> Wanlong Gao
->>>>>
->>>>>> Thanks
->>>>>>>  		vi->affinity_hint_set = false;
->>>>>>>  	}
->>>>>>>  }
->>>>>>>  
->>>>>>> +static void virtnet_set_affinity(struct virtnet_info *vi)
->>>>>>> +{
->>>>>>> +	int i;
->>>>>>> +	int cpu;
->>>>>>> +
->>>>>>> +	/* In multiqueue mode, when the number of cpu is equal to the number of
->>>>>>> +	 * queue pairs, we let the queue pairs to be private to one cpu by
->>>>>>> +	 * setting the affinity hint to eliminate the contention.
->>>>>>> +	 */
->>>>>>> +	if (vi->curr_queue_pairs == 1 ||
->>>>>>> +	    vi->max_queue_pairs != num_online_cpus()) {
->>>>>>> +		if (vi->affinity_hint_set)
->>>>>>> +			virtnet_clean_affinity(vi, -1);
->>>>>>> +		else
->>>>>>> +			return;
->>>>>>> +	}
->>>>>>> +
->>>>>>> +	i = 0;
->>>>>>> +	for_each_online_cpu(cpu) {
->>>>>>> +		virtqueue_set_affinity(vi->rq[i].vq, cpu);
->>>>>>> +		virtqueue_set_affinity(vi->sq[i].vq, cpu);
->>>>>>> +		*per_cpu_ptr(vi->vq_index, cpu) = i;
->>>>>>> +		i++;
->>>>>>> +	}
->>>>>>> +
->>>>>>> +	vi->affinity_hint_set = true;
->>>>>>> +}
->>>>>>> +
->>>>>>>  static void virtnet_get_ringparam(struct net_device *dev,
->>>>>>>  				struct ethtool_ringparam *ring)
->>>>>>>  {
->>>>>>> @@ -1105,7 +1114,7 @@ static int virtnet_set_channels(struct net_device *dev,
->>>>>>>  		netif_set_real_num_rx_queues(dev, queue_pairs);
->>>>>>>  
->>>>>>>  		get_online_cpus();
->>>>>>> -		virtnet_set_affinity(vi, true);
->>>>>>> +		virtnet_set_affinity(vi);
->>>>>>>  		put_online_cpus();
->>>>>>>  	}
->>>>>>>  
->>>>>>> @@ -1274,7 +1283,7 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
->>>>>>>  {
->>>>>>>  	struct virtio_device *vdev = vi->vdev;
->>>>>>>  
->>>>>>> -	virtnet_set_affinity(vi, false);
->>>>>>> +	virtnet_clean_affinity(vi, -1);
->>>>>>>  
->>>>>>>  	vdev->config->del_vqs(vdev);
->>>>>>>  
->>>>>>> @@ -1398,7 +1407,7 @@ static int init_vqs(struct virtnet_info *vi)
->>>>>>>  		goto err_free;
->>>>>>>  
->>>>>>>  	get_online_cpus();
->>>>>>> -	virtnet_set_affinity(vi, true);
->>>>>>> +	virtnet_set_affinity(vi);
->>>>>>>  	put_online_cpus();
->>>>>>>  
->>>>>>>  	return 0;
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cpuset.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 16be7c9..b2476c2 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2606,8 +2606,12 @@ void cpuset_print_task_mems_allowed(struct task_struct *tsk)
+ 
+ 	dentry = task_cs(tsk)->css.cgroup->dentry;
+ 	spin_lock(&cpuset_buffer_lock);
++
++	spin_lock(&dentry->d_lock);
+ 	snprintf(cpuset_name, CPUSET_NAME_LEN,
+ 		 dentry ? (const char *)dentry->d_name.name : "/");
++	spin_unlock(&dentry->d_lock);
++
+ 	nodelist_scnprintf(cpuset_nodelist, CPUSET_NODELIST_LEN,
+ 			   tsk->mems_allowed);
+ 	printk(KERN_INFO "%s cpuset=%s mems_allowed=%s\n",
+-- 
+1.8.0.2
