@@ -1,113 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab3AYSlr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:41:47 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:27179 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756379Ab3AYSlo convert rfc822-to-8bit (ORCPT
+	id S1756802Ab3AYSmi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:42:38 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:35594 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754729Ab3AYSmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:41:44 -0500
-Date: Fri, 25 Jan 2013 13:41:35 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 2/3] xen/ring: Add a new macro to detect
- whether there is an overflow in requests and response.
-Message-ID: <20130125184135.GB1384@phenom.dumpdata.com>
-References: <1359135152-30688-1-git-send-email-konrad.wilk@oracle.com>
- <1359135152-30688-3-git-send-email-konrad.wilk@oracle.com>
- <5102C4B9.8050801@citrix.com>
+	Fri, 25 Jan 2013 13:42:36 -0500
+Date: Fri, 25 Jan 2013 10:42:32 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, X86 ML <x86@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
+        Borislav Petkov <bp@suse.de>, Dmitry Torokhov <dtor@vmware.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH -v2 2/2] x86: Make Linux guest support optional
+Message-ID: <20130125184231.GB5563@core.coreip.homeip.net>
+References: <20130125100655.GC23404@pd.tnic>
+ <1359136777-4512-2-git-send-email-bp@alien8.de>
+ <20130125181251.GA5563@core.coreip.homeip.net>
+ <20130125183213.GB1380@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5102C4B9.8050801@citrix.com>
+In-Reply-To: <20130125183213.GB1380@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 06:45:29PM +0100, Roger Pau Monné wrote:
-> On 25/01/13 18:32, Konrad Rzeszutek Wilk wrote:
-> > We want to be able to exit if the difference between the request
-> > produced (what the frontend tells us) and the requests consumed
-> > (what we have so far processed) is greater than the ring size.
+On Fri, Jan 25, 2013 at 07:32:13PM +0100, Borislav Petkov wrote:
+> On Fri, Jan 25, 2013 at 10:12:51AM -0800, Dmitry Torokhov wrote:
+> > Hi Borislav,
 > > 
-> > If so, we should terminate the loop as the request produced
-> > is not trusted and it means it is bogus.
+> > On Fri, Jan 25, 2013 at 06:59:37PM +0100, Borislav Petkov wrote:
+> > > From: Borislav Petkov <bp@suse.de>
+> > > 
+> > > Put all config options needed to run Linux as a guest behind a
+> > > CONFIG_HYPERVISOR_GUEST menu so that they don't get built-in by
+> > > default but selected by the user. Also, move x86_hyper into an
+> > > unconditionally-built compilation unit because it is exported with the
+> > > non-GPL flavour and we can't know whatever uses it on the outside.
 > > 
-> > Cc: stable@vger.kernel.org
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  include/xen/interface/io/ring.h | 6 ++++++
-> >  1 file changed, 6 insertions(+)
-> > 
-> > diff --git a/include/xen/interface/io/ring.h b/include/xen/interface/io/ring.h
-> > index 75271b9..1114dde 100644
-> > --- a/include/xen/interface/io/ring.h
-> > +++ b/include/xen/interface/io/ring.h
-> > @@ -188,6 +188,12 @@ struct __name##_back_ring {						\
-> >  #define RING_REQUEST_CONS_OVERFLOW(_r, _cons)				\
-> >      (((_cons) - (_r)->rsp_prod_pvt) >= RING_SIZE(_r))
-> >  
-> > +/* Loop termination condition: Is the difference between request produced
-> > + * and request consumed greater than the ring size. If so, terminate the
-> > + * loop. */
-> > +#define RING_REQUEST_PROD_OVERFLOW(_r, _cons, _prod)                     \
-> > +    (((_prod) - (_prod)) > RING_SIZE(_r))
+> > I am confused by this statement... How can EXPORT_SYMBOL() vs
+> > EXPORT_SYMBOL_GPL() help you determining if it is used out of tree or
+> > not?
 > 
-> Shouldn't the second _prod be _cons?
+> Maybe this wasn't formulated clear enough - I wanted to say that with
+> the !GPL flavor, any code (proprietary included) can link to those
+> symbols and we cannot know who uses it and if we hide that symbol,
+> someone would probably come crying.
 > 
-> > +
-> >  #define RING_PUSH_REQUESTS(_r) do {					\
-> >      wmb(); /* back sees requests /before/ updated producer index */	\
-> >      (_r)->sring->req_prod = (_r)->req_prod_pvt;				\
-> > 
+> Because if we could, I would've done trivial accessor functions which
+> would return NULL when CONFIG_HYPERVISOR_GUEST is not set so that those
+> cases build and boot fine, and we wouldn't have the need to have this
+> symbol always present (like is the case now and I had to move it to
+> setup.c).
 > 
+> If it were _GPL, we would've fixed all its users to switch to the
+> accessors.
+> 
+> Makes more sense?
 
-Here is an update of it:
+No, not really as EXPORT_SYMBOL_GPL() in no way implies that the code
+using it lives in the mainline. Also, EXPORT_SYMBOL() does not imply
+that it forms an ABI and can't be changed ever.
 
->From a84ea207716486515f083a6d708414dd3ad3aaf6 Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Fri, 25 Jan 2013 12:29:51 -0500
-Subject: [PATCH] ring/macro: Add a new macro to detect whether there is an
- overflow in requests and response.
+Thanks.
 
-We want to be able to exit if the difference between the request
-produced (what the frontend tells us) and the requests consumed
-(what we have so far processed) is greater than the ring size.
-
-If so, we should terminate the loop as the request produced
-is not trusted and it means it is bogus.
-
-[v1:  Make the macro do the ring thing, swap arguments around to
-match the comment]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- xen/include/public/io/ring.h | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/xen/include/public/io/ring.h b/xen/include/public/io/ring.h
-index 38b7051..440ef9a 100644
---- a/xen/include/public/io/ring.h
-+++ b/xen/include/public/io/ring.h
-@@ -234,6 +234,12 @@ typedef struct __name##_back_ring __name##_back_ring_t
- #define RING_REQUEST_CONS_OVERFLOW(_r, _cons)                           \
-     (((_cons) - (_r)->rsp_prod_pvt) >= RING_SIZE(_r))
- 
-+/* Loop termination condition: Is the difference between request produced
-+ * and request consumed greater than the ring size. If so, terminate the
-+ * loop. */
-+#define RING_REQUEST_PROD_OVERFLOW(_r, _prod, _cons)                    \
-+    (((_prod) - (_cons)) > RING_SIZE(_r))
-+
- #define RING_PUSH_REQUESTS(_r) do {                                     \
-     xen_wmb(); /* back sees requests /before/ updated producer index */ \
-     (_r)->sring->req_prod = (_r)->req_prod_pvt;                         \
 -- 
-1.8.0.2
-
+Dmitry
