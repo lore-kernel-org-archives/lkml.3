@@ -1,121 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835Ab3AYAJi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 19:09:38 -0500
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:63669 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab3AYAJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 19:09:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <1357590280-31535-3-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	<1357590280-31535-3-git-send-email-sjenning@linux.vnet.ibm.com>
-Date: Thu, 24 Jan 2013 16:09:31 -0800
-Message-ID: <CAPkvG_eVwn4uOxrT8YUV31Ggcyx-A=z1L6RY2mH0W3MWU_ABxA@mail.gmail.com>
-Subject: Re: [PATCHv2 2/9] staging: zsmalloc: remove unsed pool name
-From: Nitin Gupta <ngupta@vflare.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755872Ab3AYALR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 19:11:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25604 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752277Ab3AYALF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 19:11:05 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1359062429-27295-3-git-send-email-mmarek@suse.cz>
+References: <1359062429-27295-3-git-send-email-mmarek@suse.cz> <1359062429-27295-1-git-send-email-mmarek@suse.cz>
+To: Michal Marek <mmarek@suse.cz>
+Cc: dhowells@redhat.com, rusty@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/4] MODSIGN: Add -s <signature> option to sign-file
+Date: Fri, 25 Jan 2013 00:10:18 +0000
+Message-ID: <9497.1359072618@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 7, 2013 at 12:24 PM, Seth Jennings
-<sjenning@linux.vnet.ibm.com> wrote:
-> zs_create_pool() currently takes a name argument which is
-> never used in any useful way.
->
-> This patch removes it.
->
-> Signed-off-by: Seth Jennnings <sjenning@linux.vnet.ibm.com>
-> ---
->  drivers/staging/zcache/zcache-main.c     |    2 +-
->  drivers/staging/zram/zram_drv.c          |    2 +-
->  drivers/staging/zsmalloc/zsmalloc-main.c |    7 +------
->  drivers/staging/zsmalloc/zsmalloc.h      |    2 +-
->  4 files changed, 4 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-> index 674c754..6fa9f9a 100644
-> --- a/drivers/staging/zcache/zcache-main.c
-> +++ b/drivers/staging/zcache/zcache-main.c
-> @@ -982,7 +982,7 @@ int zcache_new_client(uint16_t cli_id)
->                 goto out;
->         cli->allocated = 1;
->  #ifdef CONFIG_FRONTSWAP
-> -       cli->zspool = zs_create_pool("zcache", GFP_KERNEL);
-> +       cli->zspool = zs_create_pool(GFP_KERNEL);
->         if (cli->zspool == NULL)
->                 goto out;
->         idr_init(&cli->tmem_pools);
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 13e9b4b..13d9f6d 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -576,7 +576,7 @@ int zram_init_device(struct zram *zram)
->         /* zram devices sort of resembles non-rotational disks */
->         queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
->
-> -       zram->mem_pool = zs_create_pool("zram", GFP_KERNEL);
-> +       zram->mem_pool = zs_create_pool(GFP_KERNEL);
->         if (!zram->mem_pool) {
->                 pr_err("Error creating memory pool\n");
->                 ret = -ENOMEM;
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index 6ff380e..5e212c0 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -796,14 +796,11 @@ fail:
->         return notifier_to_errno(ret);
->  }
->
-> -struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
-> +struct zs_pool *zs_create_pool(gfp_t flags)
->  {
->         int i, ovhd_size;
->         struct zs_pool *pool;
->
-> -       if (!name)
-> -               return NULL;
-> -
->         ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
->         pool = kzalloc(ovhd_size, flags);
->         if (!pool)
-> @@ -825,8 +822,6 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
->
->         }
->
-> -       pool->name = name;
-> -
->         return pool;
->  }
->  EXPORT_SYMBOL_GPL(zs_create_pool);
-> diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
-> index 907ff03..25a4b4d 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc.h
-> +++ b/drivers/staging/zsmalloc/zsmalloc.h
-> @@ -28,7 +28,7 @@ enum zs_mapmode {
->
->  struct zs_pool;
->
-> -struct zs_pool *zs_create_pool(const char *name, gfp_t flags);
-> +struct zs_pool *zs_create_pool(gfp_t flags);
->  void zs_destroy_pool(struct zs_pool *pool);
->
->  unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t flags);
-> --
-> 1.7.9.5
->
+Michal Marek <mmarek@suse.cz> wrote:
 
-Acked-by: Nitin Gupta <ngupta@vflare.org>
+> This option allows to append an externally computed singature to the
+> module. This is needed in setups, where the private key is not directly
+> available, but a service exists that returns signatures for given files.
+> 
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> ---
+> v2: Use two-argument version of getopts to avoid global variables
+>     Use parentheses in EXPR if (...) constructs
+
+Feel free to add:
+
+Acked-by: David Howells <dhowells@redhat.com>
+
+to your patches.
