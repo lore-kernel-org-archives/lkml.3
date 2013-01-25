@@ -1,89 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab3AYB4X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 20:56:23 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:38782 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab3AYB4P (ORCPT
+	id S1755246Ab3AYCBB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 21:01:01 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:33477 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753454Ab3AYCAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 20:56:15 -0500
-X-AuditID: cbfee61a-b7f7d6d000000f4e-37-5101e63dd983
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: rdunlap@infradead.org
-Cc: sfr@canb.auug.org.au, gregkh@linuxfoundation.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH] extcon: max77693: Fix bug of build error related to INPUT
- subsystem
-Date: Fri, 25 Jan 2013 10:56:10 +0900
-Message-id: <1359078970-11088-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t8zbV3bZ4yBBl8+m1tc3jWHzeLgwjZG
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDKWt29iL/jFU/Fq0iKWBsZd3F2MnBwSAiYSTZunM0HY
-	YhIX7q1n62Lk4hASWMYocab1FQtM0e8XZ5ggEtMZJT5e2sgMkhAS+M8o8X+BOYjNJqAlsf/F
-	DTYQW0RAUmLO9CXMIA3MAucZJVZ8OQY2SVggTOLdjtVANgcHi4CqxNPvPCBhXgFXiVM3bzND
-	LJOT+LDnETtIr4TAETaJWffOgyVYBAQkvk0+BNYrISArsekAVL2kxMEVN1gmMAouYGRYxSia
-	WpBcUJyUnmuoV5yYW1yal66XnJ+7iRESXFI7GFc2WBxiFOBgVOLhtUhjDBRiTSwrrsw9xCjB
-	wawkwusSARTiTUmsrEotyo8vKs1JLT7EmAy0fCKzlGhyPjDw80riDY0NjA0NLQ3NTC1NDUgT
-	VhLnZTz1JEBIID2xJDU7NbUgtQhmCxMHp1QDo0GJf7JHjZXs0rUXfrhNnm5pwj6L8crn6C1W
-	95nCX978ajzXe9pezsD/3h8kZ372+DRlti9rXo1uTPh3x763wrxS88N2Hyry41n1YIPTb+7/
-	aZZ7ebxn7rwmajfp9iLLqP312w/csQ6Ue3Wxfl3vvduvTzRLLrslnpZ0WOnS9zLmdl0RJSH7
-	9UosxRmJhlrMRcWJAKVkv69yAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e+xoK7tM8ZAg3c7jSwu75rDZnFwYRuj
-	A5PH501yAYxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4B
-	um6ZOUCjlRTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZy9s3sRf84ql4
-	NWkRSwPjLu4uRk4OCQETid8vzjBB2GISF+6tZ+ti5OIQEpjOKPHx0kZmkISQwH9Gif8LzEFs
-	NgEtif0vbrCB2CICkhJzpi9hBmlgFjjPKLHiyzEWkISwQJjEux2rgWwODhYBVYmn33lAwrwC
-	rhKnbt5mhlgmJ/FhzyP2CYzcCxgZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEh+4zqR2M
-	KxssDjEKcDAq8fBapDEGCrEmlhVX5h5ilOBgVhLhdYkACvGmJFZWpRblxxeV5qQWH2JMBlo+
-	kVlKNDkfGFd5JfGGxiZmRpZGZsYm5sbGpAkrifMynnoSICSQnliSmp2aWpBaBLOFiYNTqoFx
-	N0tpZYslR9rNmLseTQ8YzO9Z2a7wXbN/5v9roSvFSp4VCuk5cme23eo1UJj/WOdwZdm1oiTX
-	WQqLlbzDbDvmP11Ss8jgYc1x0/MKX5N3Gfb++7AvjNFVoV5oySbZiQVbwxJWLpu7u/fKDQFf
-	1gVZDD/975gdtZrB07aE7bKr2vPN2Sq9X0WUWIozEg21mIuKEwGrsbsPoQIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 24 Jan 2013 21:00:55 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Aristeu Rozanski <aris@redhat.com>, linux-kernel@vger.kernel.org,
+        "Serge E. Hallyn" <serge@hallyn.com>
+References: <20130123160221.GG17632@redhat.com>
+	<20130124044438.GA13354@mail.hallyn.com>
+	<20130124152859.GP17632@redhat.com>
+	<20130124164612.af6de6f3.akpm@linux-foundation.org>
+Date: Thu, 24 Jan 2013 18:00:47 -0800
+In-Reply-To: <20130124164612.af6de6f3.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Thu, 24 Jan 2013 16:46:12 -0800")
+Message-ID: <87d2wuuils.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX188QvT4F7YyqRQ+fv8UJX9EEjN4fMuZ/P8=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1773]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+	*  0.2 XMSubMetaSSx_00 1+ SortaSexy Words + 1 Sexy Word
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ***;Andrew Morton <akpm@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v2] userns: improve uid/gid map collision detection
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix build error of following log:
 
-drivers/built-in.o: In function `max77693_muic_remove':
-extcon-max77693.c:(.text+0x664853): undefined reference to `input_unregister_device'
-drivers/built-in.o: In function `max77693_muic_probe':
-extcon-max77693.c:(.text+0x664971): undefined reference to `input_allocate_device'
-extcon-max77693.c:(.text+0x6649c1): undefined reference to `input_set_capability'
-extcon-max77693.c:(.text+0x6649d6): undefined reference to `input_set_capability'
-extcon-max77693.c:(.text+0x6649eb): undefined reference to `input_set_capability'
-extcon-max77693.c:(.text+0x664a00): undefined reference to `input_set_capability'
-extcon-max77693.c:(.text+0x664a15): undefined reference to `input_set_capability'
-extcon-max77693.c:(.text+0x664a20): undefined reference to `input_register_device'
-drivers/built-in.o: In function `max77693_muic_adc_handler':
-extcon-max77693.c:(.text+0x665318): undefined reference to `input_event'
-extcon-max77693.c:(.text+0x66532a): undefined reference to `input_event'
-make[1]: *** [vmlinux] Error 1
+I will look at this patch in a bit.  I already have a similar patch
+in my queue, although I don't know if I have pushed that out yet.
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
----
- drivers/extcon/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
-index 07122a9..10df3fa 100644
---- a/drivers/extcon/Kconfig
-+++ b/drivers/extcon/Kconfig
-@@ -29,7 +29,7 @@ config EXTCON_ADC_JACK
- 
- config EXTCON_MAX77693
- 	tristate "MAX77693 EXTCON Support"
--	depends on MFD_MAX77693
-+	depends on MFD_MAX77693 && INPUT
- 	select IRQ_DOMAIN
- 	select REGMAP_I2C
- 	help
--- 
-1.8.0
+Andrew Morton <akpm@linux-foundation.org> writes:
+
+> btw, what the heck is up with CONFIG_UIDGID_CONVERTED?  That thing
+> prevents userns from being compiled in an allmodconfig build, which is
+> rather undesirable.  Isn't there a better, more user-friendly way of
+> doing this?
+
+CONFIG_UIDGID_CONVERTED is what keeps the allmodconfig building with user
+namespaces enabled.
+
+The practical issue is that the uid_t, gid_t converstion to kuid_t and
+kgid_t is not quite done.  And it takes a lot of pain staking review in
+some cases to get it done.
+
+In places where the conversion is not complete the code fails to compile
+preventing the introduction of security holes.
+
+If you look in init/Kconfig at the definition of CONFIG_UIDGID_CONVERTED
+you see the list of filesystems that still need changes.
+
+I have the basic version of those changes queued up, and I believe those
+changes are correct.  However I need to break them into smaller patches
+to make the changes obviously correct.  One of the things I have
+discovered along the way of making these conversions is that I need to
+push kuid_t and kgid_t as deep and as thoroughly into the code as I can
+or I will fail to place conversions where they need to be.
+
+The amount of work required on those final pieces appears to be
+proportional to the size of the filesystem rather than proportional to
+the size of the changes to those filesystems.  Because there is so much
+code that must be reviewed and understood.
+
+I am hoping I can get the conversions done and CONFIG_UIDGID_CONVERTED
+can be killed for 3.9 but we will see.
+
+Eric
+
 
