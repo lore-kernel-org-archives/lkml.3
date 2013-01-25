@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756454Ab3AYSb7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:31:59 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:57977 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756049Ab3AYSb5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:31:57 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        web10g-user@web10g.org
-Subject: Web10g TCP statistics patch - mainlining into kernel?
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1359138716_1992P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 25 Jan 2013 13:31:56 -0500
-Message-ID: <18855.1359138716@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020202.5102CF9D.0052,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1757001Ab3AYScU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:32:20 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39106 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756817Ab3AYScS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 13:32:18 -0500
+Date: Fri, 25 Jan 2013 19:35:07 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        X86 ML <x86@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
+        Borislav Petkov <bp@suse.de>, "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH -v2 2/2] x86: Make Linux guest support optional
+Message-ID: <20130125183507.GA4973@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Dmitry Torokhov <dtor@vmware.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	Ingo Molnar <mingo@kernel.org>, X86 ML <x86@kernel.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
+	olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+	Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
+	Borislav Petkov <bp@suse.de>,
+	"K. Y. Srinivasan" <kys@microsoft.com>,
+	Haiyang Zhang <haiyangz@microsoft.com>
+References: <20130125100655.GC23404@pd.tnic>
+ <1359136777-4512-2-git-send-email-bp@alien8.de>
+ <20130125180730.GA29810@dtor-ws.eng.vmware.com>
+ <20130125182335.GA1380@pd.tnic>
+ <20130125182925.GB29810@dtor-ws.eng.vmware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130125182925.GB29810@dtor-ws.eng.vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1359138716_1992P
-Content-Type: text/plain; charset=us-ascii
+On Fri, Jan 25, 2013 at 10:29:25AM -0800, Dmitry Torokhov wrote:
+> Can't we make the balloon driver depend on CONFIG_HYPERVISOR_GUEST?
 
-I had a user who's working on tuning high-performance network file systems what
-the chances of upstreaming the Web10G patch to provide the RFC4898 TCP Extended
-Statistics MIB via netlink.
+We certainly can do that, AFAICT.
 
-Yes, it's a tad on the intrusive side, and there's performance costs attached -
-but so are a lot of *other* things that people use all the time for kernel
-debugging, and it's a zero-hit thing for people who don't choose to configure
-it into their kernel.  The added detailed status available from this will be
-useful for people who are doing tuning and development (consider how useful
-this would have been for the people who wrote the codel line discipline as part
-of the bufferbloat project).
+> We do not _need_ more and have no plans to introduce new ones AFAIK,
+> but I think that comparing an address of a structure instead of string
+> comparison is much more elegant and it is safer from typos.
 
-I'm willing to do the not-so-heavy lifting of getting the existing patch
-cleaned up to upstream standards and sheparded through the process, if there's
-any interest at all....
+Ok, if you prefer. We can definitely make all .o's which depend on
+x86_hyper also depend on CONFIG_HYPERVISOR_GUEST - this solves the whole
+deal trivially.
 
+I'll respin the patches.
 
---==_Exmh_1359138716_1992P
-Content-Type: application/pgp-signature
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+-- 
+Regards/Gruss,
+    Boris.
 
-iQIVAwUBUQLPnAdmEQWDXROgAQLfRQ//XN6C0Bt03dDBuQsk0f9MnYMM4A6eziKc
-9qAgg2JDhgRAig2rjKp0StDdVa1tc8OfuKqlgUrMIdK92v8RqysOOaZezM2EcLaf
-DJT+eDeEiDBRdIxJVyGwR65pOpdsTaDyQlo6fGXHya5DEwKIxw8CUsCSxguhYmeW
-U2OORG2Pw2nbDIyk46nEbL9XT56x8PJYyNDdoN9wZoUMC9oTIg9x4Ux+KHq5l+PF
-Ss6CR6UXPaBP9wn5V12mrihgXKxx59axl54dOaWKtWxf03YiJ2r9U9aoTt3daMrp
-Ij1BOZaBOS8iaMmXJhVV+DMtMclytWGUP6mI3FiCKjS7uL3V7r0dLsGhFPsy4P3V
-w+11O1hJGhf3KdiZf4PcAGnLvAAwaBqPnjWNnPbdoxfHh51EJswiedKq5lygcWUz
-zJFvoWKBTV+vTZv1BFQVoYA1UNMhQyHnMDzrPtGfmO1XvEJvm1v7l51QAg3O1p3B
-CUG4tnAPR5uaFpg12xozjkCPwDDCEnqok78fHpaRnbOMFeEUlmuUN+m2G4/2la+X
-0XYLQq1vUkRxT1Jr4SKFD1yJGsSSI2dfTWtdiiMQ4BJhScBFR8ScEQ4Lomull4qQ
-1xoa54mN1P94vssPntMdxY1lC77fvN/rs4k/EHxNmGumTeJAgL2hYioQh7dASXdh
-8TEUzmlsQ+4=
-=cNxN
------END PGP SIGNATURE-----
-
---==_Exmh_1359138716_1992P--
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
