@@ -1,118 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756965Ab3AYLHz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:07:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41300 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657Ab3AYLHu (ORCPT
+	id S1756839Ab3AYLIq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 06:08:46 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:47568 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755243Ab3AYLIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:07:50 -0500
-Date: Fri, 25 Jan 2013 03:07:17 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-x65vsxgzg4dvo3zqohtrrb9o@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf record: Don'
- t pass host machine to guest synthesizer
-Git-Commit-ID: 7e383de42565ecb2cf641fff11946f9bc45e8235
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 25 Jan 2013 06:08:40 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1357847443-3878-4-git-send-email-jacob.shin@amd.com>
+References: <1357847443-3878-1-git-send-email-jacob.shin@amd.com>
+	<1357847443-3878-4-git-send-email-jacob.shin@amd.com>
+Date: Fri, 25 Jan 2013 12:08:37 +0100
+Message-ID: <CABPqkBR5baJ5rQoCiJwG7dZ6p_5BpDbtVqUAcB4A1PjtW+rr6w@mail.gmail.com>
+Subject: Re: [PATCH RESEND V5 3/6] perf, amd: Use proper naming scheme for AMD
+ bit field definitions
+From: Stephane Eranian <eranian@google.com>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:07:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7e383de42565ecb2cf641fff11946f9bc45e8235
-Gitweb:     http://git.kernel.org/tip/7e383de42565ecb2cf641fff11946f9bc45e8235
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 18 Dec 2012 15:49:27 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 24 Jan 2013 16:40:11 -0300
+On Thu, Jan 10, 2013 at 8:50 PM, Jacob Shin <jacob.shin@amd.com> wrote:
+> Update these AMD bit field names to be consistent with naming
+> convention followed by the rest of the file.
+>
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 
-perf record: Don't pass host machine to guest synthesizer
+Acked-by: Stephane Eranian <eranian@google.com>
 
-We were calling perf_session__process_machines(), that would first pass
-the struct machine associated with the host to the provided callback,
-perf_event__synthesize_guest_os() that would test if it was the host and
-if so wouldn't do anything.
-
-Ditch this contraption, just call directly machines__process with the
-list of guests.
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-x65vsxgzg4dvo3zqohtrrb9o@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-record.c | 11 ++++-------
- tools/perf/util/session.h   |  9 ---------
- 2 files changed, 4 insertions(+), 16 deletions(-)
-
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index de60dd4..69e2895 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -328,10 +328,6 @@ static void perf_event__synthesize_guest_os(struct machine *machine, void *data)
- {
- 	int err;
- 	struct perf_tool *tool = data;
--
--	if (machine__is_host(machine))
--		return;
--
- 	/*
- 	 *As for guest kernel when processing subcommand record&report,
- 	 *we arrange module mmap prior to guest kernel mmap and trigger
-@@ -574,9 +570,10 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 		       "Symbol resolution may be skewed if relocation was used (e.g. kexec).\n"
- 		       "Check /proc/modules permission or run as root.\n");
- 
--	if (perf_guest)
--		perf_session__process_machines(session, tool,
--					       perf_event__synthesize_guest_os);
-+	if (perf_guest) {
-+		machines__process(&session->machines,
-+				  perf_event__synthesize_guest_os, tool);
-+	}
- 
- 	if (!opts->target.system_wide)
- 		err = perf_event__synthesize_thread_map(tool, evsel_list->threads,
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 8c23025..426ca0c 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -101,15 +101,6 @@ struct machine *perf_session__findnew_machine(struct perf_session *self, pid_t p
- 	return machines__findnew(&self->machines, pid);
- }
- 
--static inline
--void perf_session__process_machines(struct perf_session *self,
--				    struct perf_tool *tool,
--				    machine__process_t process)
--{
--	process(&self->host_machine, tool);
--	return machines__process(&self->machines, process, tool);
--}
--
- struct thread *perf_session__findnew(struct perf_session *self, pid_t pid);
- size_t perf_session__fprintf(struct perf_session *self, FILE *fp);
- 
+> ---
+>  arch/x86/include/asm/perf_event.h    |    4 ++--
+>  arch/x86/kernel/cpu/perf_event_amd.c |    8 ++++----
+>  2 files changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+> index 4fabcdf..2234eaaec 100644
+> --- a/arch/x86/include/asm/perf_event.h
+> +++ b/arch/x86/include/asm/perf_event.h
+> @@ -29,8 +29,8 @@
+>  #define ARCH_PERFMON_EVENTSEL_INV                      (1ULL << 23)
+>  #define ARCH_PERFMON_EVENTSEL_CMASK                    0xFF000000ULL
+>
+> -#define AMD_PERFMON_EVENTSEL_GUESTONLY                 (1ULL << 40)
+> -#define AMD_PERFMON_EVENTSEL_HOSTONLY                  (1ULL << 41)
+> +#define AMD64_EVENTSEL_GUESTONLY                       (1ULL << 40)
+> +#define AMD64_EVENTSEL_HOSTONLY                                (1ULL << 41)
+>
+>  #define AMD64_EVENTSEL_EVENT   \
+>         (ARCH_PERFMON_EVENTSEL_EVENT | (0x0FULL << 32))
+> diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+> index 9541fe5..0c2cc51 100644
+> --- a/arch/x86/kernel/cpu/perf_event_amd.c
+> +++ b/arch/x86/kernel/cpu/perf_event_amd.c
+> @@ -156,9 +156,9 @@ static int amd_pmu_hw_config(struct perf_event *event)
+>                 event->hw.config &= ~(ARCH_PERFMON_EVENTSEL_USR |
+>                                       ARCH_PERFMON_EVENTSEL_OS);
+>         else if (event->attr.exclude_host)
+> -               event->hw.config |= AMD_PERFMON_EVENTSEL_GUESTONLY;
+> +               event->hw.config |= AMD64_EVENTSEL_GUESTONLY;
+>         else if (event->attr.exclude_guest)
+> -               event->hw.config |= AMD_PERFMON_EVENTSEL_HOSTONLY;
+> +               event->hw.config |= AMD64_EVENTSEL_HOSTONLY;
+>
+>         if (event->attr.type != PERF_TYPE_RAW)
+>                 return 0;
+> @@ -336,7 +336,7 @@ static void amd_pmu_cpu_starting(int cpu)
+>         struct amd_nb *nb;
+>         int i, nb_id;
+>
+> -       cpuc->perf_ctr_virt_mask = AMD_PERFMON_EVENTSEL_HOSTONLY;
+> +       cpuc->perf_ctr_virt_mask = AMD64_EVENTSEL_HOSTONLY;
+>
+>         if (boot_cpu_data.x86_max_cores < 2)
+>                 return;
+> @@ -669,7 +669,7 @@ void amd_pmu_disable_virt(void)
+>          * SVM is disabled the Guest-only bits still gets set and the counter
+>          * will not count anything.
+>          */
+> -       cpuc->perf_ctr_virt_mask = AMD_PERFMON_EVENTSEL_HOSTONLY;
+> +       cpuc->perf_ctr_virt_mask = AMD64_EVENTSEL_HOSTONLY;
+>
+>         /* Reload all events */
+>         x86_pmu_disable_all();
+> --
+> 1.7.9.5
+>
+>
