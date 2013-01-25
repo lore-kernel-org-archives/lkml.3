@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126Ab3AYMrJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 07:47:09 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:17398 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756099Ab3AYMrH (ORCPT
+	id S1757241Ab3AYMuZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 07:50:25 -0500
+Received: from relay.parallels.com ([195.214.232.42]:47247 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756678Ab3AYMuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 07:47:07 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/jBWO14fQhoEUD9QWaRjSgu4ODFeCnCeM=
-Date: Fri, 25 Jan 2013 07:46:59 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Roland Stigge <stigge@antcom.de>, Andrew Lunn <andrew@lunn.ch>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v3 3/3] arm: mvebu: enable gpio expander over i2c on
- Mirabox platform
-Message-ID: <20130125124659.GH1758@titan.lakedaemon.net>
-References: <1358889025-8530-1-git-send-email-gregory.clement@free-electrons.com>
- <1358889025-8530-4-git-send-email-gregory.clement@free-electrons.com>
- <CACRpkdbBOQ_KE001kfORapo9=WiJYn04MmRhxnn-5v8ki-EeyA@mail.gmail.com>
+	Fri, 25 Jan 2013 07:50:22 -0500
+Message-ID: <51027F82.8040708@parallels.com>
+Date: Fri, 25 Jan 2013 16:50:10 +0400
+From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbBOQ_KE001kfORapo9=WiJYn04MmRhxnn-5v8ki-EeyA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: Kirill Korotaev <dev@parallels.com>,
+        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>
+Subject: Re: [PATCH v2 00/14] fuse: An attempt to implement a write-back cache
+ policy
+References: <20121116170123.3196.93431.stgit@maximpc.sw.ru> <50C89A78.4010309@parallels.com> <50F573CA.90402@parallels.com> <CAJfpegsp5_Mges1NAZbPSn-q+0O_EgJyroQsf-Vjy20O8DmfLA@mail.gmail.com>
+In-Reply-To: <CAJfpegsp5_Mges1NAZbPSn-q+0O_EgJyroQsf-Vjy20O8DmfLA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi Miklos,
 
-On Fri, Jan 25, 2013 at 09:17:57AM +0100, Linus Walleij wrote:
-> On Tue, Jan 22, 2013 at 10:10 PM, Gregory CLEMENT
-> <gregory.clement@free-electrons.com> wrote:
-> 
-> > The Globalscale Mirabox platform can be connected to the JTAG/GPIO box
-> > through the Multi-IO port. The GPIO box use the NXP PCA9505 I/O port
-> > expansion IC to provide 40-bit parallel input/output GPIOs. This patch
-> > enable the use of this expander on the Mirabox.
-> >
-> > Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> So as requested I leave this patch for now, tell me if you want it
-> applied through pinctrl.
+01/25/2013 02:21 PM, Miklos Szeredi пишет:
+> On Tue, Jan 15, 2013 at 4:20 PM, Maxim V. Patlasov
+> <mpatlasov@parallels.com> wrote:
+>> Heard nothing from you for two months. Any feedback would still be
+>> appreciated.
+> Sorry about the long silence.
+>
+> I haven't done a detailed review yet.  It would be good if you could
+> resent the patchset against for-next branch of the fuse tree.
 
-Which branch did you put the first two on?  I'm not seeing them.
+OK.
 
-thx,
+> I see that you have some other patchsets pending.   Are they independent?
 
-Jason.
+They are logically independent, but some of them may require cosmetic 
+changes to be applied on the top of others.
+
+Thanks,
+Maxim
