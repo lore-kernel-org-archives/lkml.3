@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab3AYDkh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 22:40:37 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:60673 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab3AYDke (ORCPT
+	id S1755149Ab3AYDrI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 22:47:08 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:50625 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754519Ab3AYDrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 22:40:34 -0500
+	Thu, 24 Jan 2013 22:47:06 -0500
+Message-ID: <5101FFF5.6030503@oracle.com>
+Date: Thu, 24 Jan 2013 22:45:57 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130124143007.39c8545f.akpm@linux-foundation.org>
-References: <CALjC5hYxtPymauFddf4Qci3S-KsZHHck0LKQPZY5ocHcLw-XrQ@mail.gmail.com>
-	<CALjC5hZwVwRdY6muizzK-+jrq0RH43H6f2kgXstZuco7oM7FyQ@mail.gmail.com>
-	<CALjC5hbMq+bc-X8Ad+=gEZLuWy3ZXm4Z0Y2w44k5UZjL4g7vqg@mail.gmail.com>
-	<20130124143007.39c8545f.akpm@linux-foundation.org>
-Date: Thu, 24 Jan 2013 19:40:34 -0800
-Message-ID: <CALjC5hZaVwJBuR17dcM7hG1EMEoAYoUt0S-x6avCxRBuF54RGg@mail.gmail.com>
-Subject: Re: crash in ocfs2_fast_symlink_readpage in kernel 3.5.0
-From: Bret Towe <magnade@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Joel Becker <jlbec@evilplan.org>,
-        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
+To: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@fusionio.com>
+CC: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: boot warnings due to swap: make each swap partition have one address_space
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 2:30 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sat, 19 Jan 2013 20:15:33 -0800
-> Bret Towe <magnade@gmail.com> wrote:
->
->> >
->> > it looks like you have a patch for this problem in a queue somewhere
->> > (email found on ocfs2-dev:
->> > https://oss.oracle.com/pipermail/ocfs2-devel/2012-August/008677.html )
->> > but its not in 3.6, any reason for the delay?
->> > I've been running that patch on 3.5 for a while now likely since
->> > around the time i found that email
->> > and its been working well
->>
->> doesn't look to be in 3.7 or 3.8-git
->> and from what i see on ocfs2-dev there are at least 16 other patches
->> that are also being ignored?
->> I'm sure if I'm bothering at this point to maintain my own patchset to
->> keep ocfs2 from crashing
->> that there is other folks doing the same
->
-> Please resend all OCFS2 patches, cc'ing myself, Mark, Joel and
-> ocfs2-devel@oss.oracle.com.
->
-> I shall then review them, merge them into -mm (and hence linux-next) so
-> they can get a bit of visibility and testing while the maintainers are
-> checking them over.
->
-> Thanks.
+Hi folks,
 
-I've just been browsing the ocfs2-dev archives do you want me to pull them
-and resend or should i just link to the archive?
-keep in mind I'm just a end user not really a dev persay
-if you do want me to send the patches however I assume there is a document
-i should read first?
+Commit "swap: make each swap partition have one address_space" is triggering
+a series of warnings on boot:
+
+[    3.446071] ------------[ cut here ]------------
+[    3.446664] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8e/0xb0()
+[    3.447715] ODEBUG: init active (active state 0) object type: percpu_counter hint:           (null)
+[    3.450360] Modules linked in:
+[    3.451593] Pid: 1, comm: swapper/0 Tainted: G        W    3.8.0-rc4-next-20130124-sasha-00004-g838a1b4 #266
+[    3.454508] Call Trace:
+[    3.455248]  [<ffffffff8110d1bc>] warn_slowpath_common+0x8c/0xc0
+[    3.455248]  [<ffffffff8110d291>] warn_slowpath_fmt+0x41/0x50
+[    3.455248]  [<ffffffff81a2bb5e>] debug_print_object+0x8e/0xb0
+[    3.455248]  [<ffffffff81a2c26b>] __debug_object_init+0x20b/0x290
+[    3.455248]  [<ffffffff81a2c305>] debug_object_init+0x15/0x20
+[    3.455248]  [<ffffffff81a3fbed>] __percpu_counter_init+0x6d/0xe0
+[    3.455248]  [<ffffffff81231bdc>] bdi_init+0x1ac/0x270
+[    3.455248]  [<ffffffff8618f20b>] swap_setup+0x3b/0x87
+[    3.455248]  [<ffffffff8618f257>] ? swap_setup+0x87/0x87
+[    3.455248]  [<ffffffff8618f268>] kswapd_init+0x11/0x7c
+[    3.455248]  [<ffffffff810020ca>] do_one_initcall+0x8a/0x180
+[    3.455248]  [<ffffffff86168cfd>] do_basic_setup+0x96/0xb4
+[    3.455248]  [<ffffffff861685ae>] ? loglevel+0x31/0x31
+[    3.455248]  [<ffffffff861885cd>] ? sched_init_smp+0x150/0x157
+[    3.455248]  [<ffffffff86168ded>] kernel_init_freeable+0xd2/0x14c
+[    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
+[    3.455248]  [<ffffffff83cade19>] kernel_init+0x9/0xf0
+[    3.455248]  [<ffffffff83d5727c>] ret_from_fork+0x7c/0xb0
+[    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
+[    3.455248] ---[ end trace 0b176d5c0f21bffb ]---
+
+I haven't looked deeper into it yet, and will do so tomorrow, unless this
+spew is obvious to anyone.
+
+
+Thanks,
+Sasha
