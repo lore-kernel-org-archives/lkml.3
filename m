@@ -1,35 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab3AYJzz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 04:55:55 -0500
-Received: from mail-vb0-f41.google.com ([209.85.212.41]:65146 "EHLO
-	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab3AYJzx (ORCPT
+	id S1755481Ab3AYJ51 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 04:57:27 -0500
+Received: from re04.intra2net.com ([82.165.46.26]:48453 "EHLO
+	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753508Ab3AYJ5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 04:55:53 -0500
+	Fri, 25 Jan 2013 04:57:24 -0500
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: [perf PATCH resend] Fix possible double free on error
+Date: Fri, 25 Jan 2013 10:57:08 +0100
+Message-ID: <36736865.AIlztKhDqN@storm>
+Organization: Intra2net AG
+User-Agent: KMail/4.9.5 (Linux/3.6.11-5.fc17.x86_64; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <1359107283-5274-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1359107283-5274-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Fri, 25 Jan 2013 15:25:52 +0530
-X-Google-Sender-Auth: joFKO-H3bdJ5fiA7WDBQjkEwhqs
-Message-ID: <CAOh2x=nwB-KRG=OaB1ZM5DQvJYU9rnm2da3DCUn1DR0AfF+EvA@mail.gmail.com>
-Subject: Re: [PATCH v4 0/4] dw_dmac: return actual residue value
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 3:17 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> The patch series is targeted for getting proper residue value.
->
-> Since v3:
-> - split dwc_get_residue() from dwc_tx_status and improve locking there
-> - patch 1/4 "dw_dmac: remove unnecessary tx_list field in dw_dma_chan" was
->   amended a bit to simplify patch 4/4
+Can only be triggered via CROSS_COMPILE env var.
+Detected by cppcheck.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+---
+ tools/perf/arch/common.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tools/perf/arch/common.c b/tools/perf/arch/common.c
+index 3e975cb..aacef07 100644
+--- a/tools/perf/arch/common.c
++++ b/tools/perf/arch/common.c
+@@ -155,6 +155,7 @@ static int perf_session_env__lookup_binutils_path(struct perf_session_env *env,
+ 		if (lookup_path(buf))
+ 			goto out;
+ 		free(buf);
++		buf = NULL;
+ 	}
+ 
+ 	if (!strcmp(arch, "arm"))
+-- 
+1.7.11.7
+
