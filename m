@@ -1,119 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801Ab3AYWpF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 17:45:05 -0500
-Received: from mail-da0-f43.google.com ([209.85.210.43]:51990 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437Ab3AYWo7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 17:44:59 -0500
-Content-Type: text/plain; charset="utf-8"
+	id S1753549Ab3AYWpm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 17:45:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2159 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751463Ab3AYWpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 17:45:39 -0500
+Message-ID: <51030ADA.8030403@redhat.com>
+Date: Fri, 25 Jan 2013 17:44:42 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: "Mohammed, Afzal" <afzal@ti.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93EA9383E@DBDE01.ent.ti.com>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        paul@pwsan.com, rnayak@ti.com, b-cousson@ti.com
-References: <cover.1358937685.git.afzal@ti.com>
- <fa8dab522507e087d5a94bac13dda71544911707.1358937685.git.afzal@ti.com>
- <20130123202204.9205.66575@quantum>
- <C8443D0743D26F4388EA172BF4E2A7A93EA92ADF@DBDE01.ent.ti.com>
- <20130124170044.10623.45314@quantum>
- <C8443D0743D26F4388EA172BF4E2A7A93EA9383E@DBDE01.ent.ti.com>
-Message-ID: <20130125224453.10623.74434@quantum>
-User-Agent: alot/0.3.3+
-Subject: Re: RE: RE: [PATCH v4 12/12] video: da8xx-fb: CCF clock divider handling
-Date: Fri, 25 Jan 2013 14:44:53 -0800
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv2 8/9] zswap: add to mm/
+References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com> <1357590280-31535-9-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1357590280-31535-9-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Mohammed, Afzal (2013-01-25 04:05:44)
-> Hi Mike,
-> 
-> On Thu, Jan 24, 2013 at 22:30:44, Mike Turquette wrote:
-> > Quoting Mohammed, Afzal (2013-01-24 03:36:02)
-> 
-> > > So there are 3 - LIDD is actually not for present use case, CORE could
-> > > be clubbed with the divider to have a composite clock. And CORE is
-> > > in functional clock path and logically it's perfectly alright to have
-> > > the composite clock.
-> 
-> > Some of the clock names are a bit generic, so a question that I'm going
-> > to repeat throughout my response: "is this clock only inside of your
-> > video IP ?"
-> 
-> Yes these three clocks are inside LCDC IP.
-> 
-> > Regarding the CORE clock, is this only inside of your IP or are you
-> > referring to the SoC CORE clock which is driven by a DPLL and clocks
-> > DDR and many other peripherals (often MMC, UART, etc)?
-> 
-> Sorry for the confusion, here CORE refers to clock inside LCDC IP. This
-> CORE should not be confused with CORE PLL. Actually I used CORE so that
-> it corresponds to the nomenclature in LCDC section of TRM.
-> 
-> > Note that this is from my past experience with OMAP, and I'm making an
-> > assumption that the clock scheme between OMAP and Da Vinci/AM335x parts
-> > isn't very different.
-> 
-> Additional detail: DaVinci doesn't have these 3 clocks controls available,
-> so these three are required only on AM335x (which has IP version 2 )
-> 
-> > Is there a public TRM I can look at?  It would help me understand this
-> > without having to ask you so many annoying questions ;)
-> 
-> No problem, http://www.ti.com/product/am3359
-> 
-> 
-> > > And now we are left with DMA, this is actually in the interface clock
-> > > path which driver in unaware. An option would be to have DMA clock
-> > > as child of CORE plus divider composite clock, even though logically
-> > > DMA can't be considered in the same path.
-> 
-> > Why is the driver unaware of the interface clk?  For instance OMAP3 had
-> > separate fclk and iclk for IPs and drivers would call clk_enable on
-> > both.  Or am I misunderstanding something?
-> 
-> HWMOD handles enabling those upon pm_runtime calls, HWMOD makes an alias
-> for main clock with "fck", but not for "ick", so currently "ick" is
-> unavailable for the driver, continued below ..
-> 
-> > In general I don't think the clock subtree should be modeled in a way
-> > that is convenient for software, but instead model the actual hardware.
-> > Trust me, if you don't model the actual hardware then you will be very
-> > confused when you come back and revisit this code in 6 months and can't
-> > remember why things are so weird looking.
-> 
-> Ok, then it seems an omap clock entry for con-id "ick" should be created
-> as follows (dpll_core_m4_ck supplies interface clock),
-> 
-> CLK("4830e000.lcdc",    "ick",          &dpll_core_m4_ck,       CK_AM33XX)
-> 
-> And then in the driver, DMA gate clock should be made a child of this clock
-> (obtained with con-id "ick").
-> 
-> Let me know your opinion on this.
-> 
+On 01/07/2013 03:24 PM, Seth Jennings wrote:
+> zswap is a thin compression backend for frontswap. It receives
+> pages from frontswap and attempts to store them in a compressed
+> memory pool, resulting in an effective partial memory reclaim and
+> dramatically reduced swap device I/O.
+>
+> Additional, in most cases, pages can be retrieved from this
+> compressed store much more quickly than reading from tradition
+> swap devices resulting in faster performance for many workloads.
+>
+> This patch adds the zswap driver to mm/
+>
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-I think Paul W. or someone on the TI side should weigh in on your clkdev
-entries.  My main point is that the actual tree should be modeled and
-clocks shouldn't be globbed together unnecessarily.  As mentioned in the
-other mail thread you might be better off making a divider for your LCDC
-IP block and modeling each node individually.
+I like the approach of flushing pages into actual disk based
+swap when compressed swap is full.  I would like it if that
+was advertised more prominently in the changelog :)
 
-Regards,
-Mike
+The code looks mostly good, complaints are at the nitpick level.
 
-> Regards
-> Afzal
+One worry is that the pool can grow to whatever maximum was
+decided, and there is no way to shrink it when memory is
+required for something else.
+
+Would it be an idea to add a shrinker for the zcache pool,
+that can also shrink the zcache pool when required?
+
+Of course, that does lead to the question of how to balance
+the pressure from that shrinker, with the new memory entering
+zcache from the swap side. I have no clear answers here, just
+something to think about...
+
+
+> +static void zswap_flush_entries(unsigned type, int nr)
+> +{
+> +	struct zswap_tree *tree = zswap_trees[type];
+> +	struct zswap_entry *entry;
+> +	int i, ret;
+> +
+> +/*
+> + * This limits is arbitrary for now until a better
+> + * policy can be implemented. This is so we don't
+> + * eat all of RAM decompressing pages for writeback.
+> + */
+> +#define ZSWAP_MAX_OUTSTANDING_FLUSHES 64
+> +	if (atomic_read(&zswap_outstanding_flushes) >
+> +		ZSWAP_MAX_OUTSTANDING_FLUSHES)
+> +		return;
+
+Having this #define right in the middle of the function is
+rather ugly.  Might be worth moving it to the top.
+
+> +static int __init zswap_debugfs_init(void)
+> +{
+> +	if (!debugfs_initialized())
+> +		return -ENODEV;
+> +
+> +	zswap_debugfs_root = debugfs_create_dir("zswap", NULL);
+> +	if (!zswap_debugfs_root)
+> +		return -ENOMEM;
+> +
+> +	debugfs_create_u64("saved_by_flush", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_saved_by_flush);
+> +	debugfs_create_u64("pool_limit_hit", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_pool_limit_hit);
+> +	debugfs_create_u64("reject_flush_attempted", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_flush_attempted);
+> +	debugfs_create_u64("reject_tmppage_fail", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_reject_tmppage_fail);
+> +	debugfs_create_u64("reject_flush_fail", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_reject_flush_fail);
+> +	debugfs_create_u64("reject_zsmalloc_fail", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_reject_zsmalloc_fail);
+> +	debugfs_create_u64("reject_kmemcache_fail", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_reject_kmemcache_fail);
+> +	debugfs_create_u64("reject_compress_poor", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_reject_compress_poor);
+> +	debugfs_create_u64("flushed_pages", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_flushed_pages);
+> +	debugfs_create_u64("duplicate_entry", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_duplicate_entry);
+> +	debugfs_create_atomic_t("pool_pages", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_pool_pages);
+> +	debugfs_create_atomic_t("stored_pages", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_stored_pages);
+> +	debugfs_create_atomic_t("outstanding_flushes", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_outstanding_flushes);
+> +
+
+Some of these statistics would be very useful to system
+administrators, who will not be mounting debugfs on
+production systems.
+
+Would it make sense to export some of these statistics
+through sysfs?
+
+-- 
+All rights reversed
