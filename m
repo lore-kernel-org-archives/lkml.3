@@ -1,266 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932365Ab3AYNxf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:53:35 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:58121 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112Ab3AYNxc (ORCPT
+	id S1756470Ab3AYN67 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 08:58:59 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:25880 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359Ab3AYN65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:53:32 -0500
-Date: Fri, 25 Jan 2013 05:53:24 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: rp@svcs.cs.pdx.edu, linux-kernel@vger.kernel.org,
-        lttng-dev@lists.lttng.org, stern@rowland.harvard.edu,
-        khlebnikov@openvz.org, shemminger@vyatta.com,
-        christian.babeux@efficios.com
-Subject: Re: [lttng-dev] [PATCH] Add ACCESS_ONCE() to avoid compiler
-	splitting assignments
-Message-ID: <20130125135324.GP6395@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130115181936.GA30319@linux.vnet.ibm.com>
- <20130115235642.GA31367@Krystal>
- <20130116125054.GA9734@Krystal>
- <20130119191752.GA3159@linux.vnet.ibm.com>
- <20130120205131.GB19512@Krystal>
+	Fri, 25 Jan 2013 08:58:57 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGji0LFus=
+X-RZG-CLASS-ID: mo00
+Date: Fri, 25 Jan 2013 14:58:35 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: KY Srinivasan <kys@microsoft.com>, "bp@alien8.de" <bp@alien8.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
+ special hypervisor interrupts
+Message-ID: <20130125135834.GA18361@aepfle.de>
+References: <1358990259-22551-1-git-send-email-kys@microsoft.com>
+ <5101035D02000078000B8FFD@nat28.tlf.novell.com>
+ <27092660926e4d3f80394697cc0dc858@SN2PR03MB061.namprd03.prod.outlook.com>
+ <51016C3202000078000B943E@nat28.tlf.novell.com>
+ <f6cbfec9c014433fa54af61d8f436ebb@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130124185943.GA19194@aepfle.de>
+ <510243B802000078000B9735@nat28.tlf.novell.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130120205131.GB19512@Krystal>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012513-4834-0000-0000-000002F635D2
+In-Reply-To: <510243B802000078000B9735@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21.rev5632 (2013-01-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 03:51:31PM -0500, Mathieu Desnoyers wrote:
-> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > On Wed, Jan 16, 2013 at 07:50:54AM -0500, Mathieu Desnoyers wrote:
-> > > * Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> > > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > > > > As noted by Konstantin Khlebnikov, gcc can split assignment of
-> > > > > constants to long variables (https://lkml.org/lkml/2013/1/15/141),
-> > > > > though assignment of NULL (0) is OK.  Assuming that a gcc bug is
-> > > > > fixed (http://gcc.gnu.org/bugzilla/attachment.cgi?id=29169&action=diff
-> > > > > has a patch), making the store be volatile keeps gcc from splitting.
-> > > > > 
-> > > > > This commit therefore applies ACCESS_ONCE() to CMM_STORE_SHARED(),
-> > > > > which is the underlying primitive used by rcu_assign_pointer().
-> > > > 
-> > > > Hi Paul,
-> > > > 
-> > > > I recognise that this is an issue in the Linux kernel, since a simple
-> > > > store is used and expected to be performed atomically when aligned.
-> > > > However, I think this does not affect liburcu, see below:
-> > > 
-> > > Side question: what gcc versions may issue non-atomic volatile stores ?
-> > > I think we should at least document those. Bug
-> > > http://gcc.gnu.org/bugzilla/show_bug.cgi?id=55981 seems to target gcc
-> > > 4.7.2, but I wonder when this issue first appeared on x86 and x86-64
-> > > (and if it affects other architectures as well).
+On Fri, Jan 25, Jan Beulich wrote:
+
+> >>> On 24.01.13 at 19:59, Olaf Hering <olaf@aepfle.de> wrote:
+> > On Thu, Jan 24, KY Srinivasan wrote:
 > > 
-> > I have no idea which versions are affected.  The bug is in the x86
-> > backend, so is specific to x86, but there might well be similar bugs
-> > in other architectures.
-> 
-> Results for my quick tests so far:
-> 
-> gcc version 4.4.7 (Debian 4.4.7-2)
-> gcc version 4.6.3 (Debian 4.6.3-11)
-> gcc version 4.7.2 (Debian 4.7.2-5)
-> 
-> for x86-64 are affected (all gcc installed currently on my Debian
-> laptop). I made a simpler test case than the one shown on the bugzilla,
-> which triggers the issue with -O0 and -O1 (-O2 and -Os optimisations
-> seems not to show this issue with the simpler test case).  So far, it
-> seems to only affect stores from immediate value operands (and only some
-> patterns).
-
-Good to know!  And more widespread than I would have guessed...
-
-For whatever it is worth, there is an alleged patch here:
-
-	http://gcc.gnu.org/ml/gcc-patches/2013-01/msg01119.html
-
-> Debian clang version 3.0-6 (tags/RELEASE_30/final) (based on LLVM 3.0)
-> is not affected for x86-64.
-
-Heh!  Good to know as well.  ;-)
-
-							Thanx, Paul
-
-> My test case looks like this:
-> 
-> * non-atomic-pointer.c:
-> 
-> volatile void *var;
-> 
-> void fct(void)
-> {
->         asm volatile ("/* test_begin */" : : : "memory");
->         var = (void *) 0x100000002;
->         var = (void *) 0x300000004;
->         asm volatile ("/* test_end */" : : : "memory");
-> }
-> 
-> 
-> * build.sh:
-> 
-> #!/bin/bash
-> 
-> FLAGS="-S ${*}"
-> 
-> function do_build
-> {
->         $1 ${FLAGS} -o non-atomic-pointer-$1.S.output non-atomic-pointer.c
-> }
-> 
-> do_build gcc-4.4
-> do_build gcc-4.6
-> do_build gcc-4.7
-> do_build gcc-4.7
-> do_build g++-4.6
-> do_build g++-4.7
-> do_build clang
-> 
-> 
-> * check.py (might need adaptation for each architecture and O2, Os):
-> 
-> #!/usr/bin/env python
-> 
-> import sys, string, os, re
-> 
-> # count the number of lines with "mov*" instructions between test_begin
-> # and test_end. Should be 2. Report error if not.
-> 
-> f = open (sys.argv[1], "r")
-> 
-> lines = f.readlines()
-> 
-> within_range = 0
-> mov_count = 0
-> error = 0
-> 
-> re_mov = re.compile('	mov.*')
-> re_begin = re.compile('.*test_begin.*')
-> re_end = re.compile('.*test_end.*')
-> 
-> output = ""
-> 
-> for line in lines:
-> 	if re_begin.match(line):
-> 		within_range = 1
-> 	elif re_end.match(line):
-> 		within_range = 0
-> 	elif (within_range and re_mov.match(line)):
-> 		output += line
-> 		mov_count += 1
-> 
-> if mov_count > 2:
-> 	error = 1
-> 
-> f.close()
-> 
-> if error > 0:
-> 	print "[Error] expect 2 mov, found " + str(mov_count)
-> 	print output
-> 	1
-> else:
-> 	0
-> 
 > > 
-> > > Thanks,
-> > > 
-> > > Mathieu
-> > > 
-> > > > 
-> > > > > 
-> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > > 
-> > > > > diff --git a/urcu/system.h b/urcu/system.h
-> > > > > index 2a45f22..7a1887e 100644
-> > > > > --- a/urcu/system.h
-> > > > > +++ b/urcu/system.h
-> > > > > @@ -49,7 +49,7 @@
-> > > > >   */
-> > > > >  #define CMM_STORE_SHARED(x, v)		\
-> > > > >  	({				\
-> > > > > -		__typeof__(x) _v = _CMM_STORE_SHARED(x, v);	\
-> > > > > +		__typeof__(x) CMM_ACCESS_ONCE(_v) = _CMM_STORE_SHARED(x, v);	\
-> > > > 
-> > > > Here, the macro "_CMM_STORE_SHARED(x, v)" is doing the actual store.
-> > > > It stores v into "x". So adding a CMM_ACCESS_ONCE(_v), as you propose
-> > > > here, is really only making sure the return value (usually unused),
-> > > > located on the stack, is accessed with a volatile access, which does not
-> > > > make much sense.
-> > > > 
-> > > > What really matters is the _CMM_STORE_SHARED() macro:
-> > > > 
-> > > > #define _CMM_STORE_SHARED(x, v) ({ CMM_ACCESS_ONCE(x) = (v); })
-> > > > 
-> > > > which already uses a volatile access for the store. So this seems to be
-> > > > a case where our preemptive use of volatile for stores in addition to
-> > > > loads made us bug-free for a gcc behavior unexpected at the time we
-> > > > implemented this macro. Just a touch of paranoia seems to be a good
-> > > > thing sometimes. ;-)
-> > > > 
-> > > > Thoughts ?
+> >> > Question is - considering you stated that this is supported
+> >> > starting in Win8, doesn't Hyper-V itself announce that
+> >> > capability in some explicit way?
+> >> 
+> >> Thanks Jan. Unfortunately I don't think tis interrupt delivery model
+> >> is specified via a "feature" bit (I will check with the Windows guys).
+> >> Perhaps, we can have a Hyper-V specific compilation switch to address
+> >> the Xen emulation issue.
 > > 
-> > Here is my thought:  You should ignore my "fix".  Please accept my
-> > apologies for my confusion!
+> > Would that really help if both pvops XEN_PVHVM and HYPERV are enabled in
+> > the config? I assume at this point the access to the DMI data is not yet
+> > possible.
 > 
-> No worries! Thanks for bringing this issue to my attention.
-> 
-> I'm thinking we might want to create a test throwing code with random
-> immediate values into my python checker script, for various
-> architectures for a couple of weeks, and see what breaks.
-> 
-> Also, it might be good to test whether some register inputs can generate
-> code that write into an unsigned long non-atomically. This would be even
-> more worrying.
-> 
-> Thanks,
-> 
-> Mathieu
-> 
-> > 
-> > 							Thanx, Paul
-> > 
-> > > > Thanks,
-> > > > 
-> > > > Mathieu
-> > > > 
-> > > > >  		cmm_smp_wmc();		\
-> > > > >  		_v;			\
-> > > > >  	})
-> > > > > 
-> > > > > 
-> > > > > _______________________________________________
-> > > > > lttng-dev mailing list
-> > > > > lttng-dev@lists.lttng.org
-> > > > > http://lists.lttng.org/cgi-bin/mailman/listinfo/lttng-dev
-> > > > 
-> > > > -- 
-> > > > Mathieu Desnoyers
-> > > > EfficiOS Inc.
-> > > > http://www.efficios.com
-> > > > 
-> > > > _______________________________________________
-> > > > lttng-dev mailing list
-> > > > lttng-dev@lists.lttng.org
-> > > > http://lists.lttng.org/cgi-bin/mailman/listinfo/lttng-dev
-> > > 
-> > > -- 
-> > > Mathieu Desnoyers
-> > > EfficiOS Inc.
-> > > http://www.efficios.com
-> > > 
-> > 
-> 
-> -- 
-> Mathieu Desnoyers
-> EfficiOS Inc.
-> http://www.efficios.com
-> 
+> As just said in another reply - with XEN_PVHVM, there's no problem,
+> since Xen gets checked for first. There's only a problem when
+> !XEN_PVHVM, because in that case Hyper-V will be probed for.
+> And the problem can only get bigger when on top of that the
+> out-of-tree PV drivers are intended to be used.
 
+Yes, xen_cpuid_base() recognizes Xen as hypervisor even with
+'viridian=1' in the .cfg file.
+ I think if there is no feature bit for this, the DMI can be used
+because its appearently available before the host is checked:
+
+...
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] DMI 2.4 present.
+[    0.000000] DMI: Xen HVM domU, BIOS 4.1.3_06-0.7.1 12/05/2012
+[    0.000000] Hypervisor detected: Microsoft HyperV
+[    0.000000] HyperV: features 0x70, hints 0x0
+[    0.000000] e820 update range: 0000000000000000 - 0000000000010000 (usable) ==> (reserved)
+...
+
+Olaf
