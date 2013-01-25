@@ -1,145 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755631Ab3AYJOb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 04:14:31 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:38460 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754910Ab3AYJOY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 04:14:24 -0500
-Message-ID: <51024CD4.10807@huawei.com>
-Date: Fri, 25 Jan 2013 17:13:56 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1754333Ab3AYJQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 04:16:28 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:13965 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751844Ab3AYJQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 04:16:25 -0500
+X-IronPort-AV: E=Sophos;i="4.84,537,1355068800"; 
+   d="scan'208";a="6646040"
+Message-ID: <51024D5E.6000409@cn.fujitsu.com>
+Date: Fri, 25 Jan 2013 17:16:14 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Jon Mason <jdmason@kudzu.us>
-CC: Rob Landley <rob@landley.net>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Joe Lawrence <Joe.Lawrence@stratus.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>
-Subject: Re: [PATCH v2] PCI: Document PCIE BUS MPS parameters
-References: <1358996288-31200-1-git-send-email-wangyijing@huawei.com> <CAErSpo6suRwkRoShnNUKxxHt4D4gFnMVqesoZO3t-aC8tvOwnA@mail.gmail.com>
-In-Reply-To: <CAErSpo6suRwkRoShnNUKxxHt4D4gFnMVqesoZO3t-aC8tvOwnA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+To: Jason Wang <jasowang@redhat.com>
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH V7 1/3] virtio-net: fix the set affinity bug when CPU
+ IDs are not consecutive
+References: <1359102981-3401-1-git-send-email-gaowanlong@cn.fujitsu.com> <510249C6.2000105@redhat.com> <51024AC7.9030109@cn.fujitsu.com> <51024C3A.6080200@redhat.com>
+In-Reply-To: <51024C3A.6080200@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 17:15:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 17:15:23,
+	Serialize complete at 2013/01/25 17:15:23
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
-   Thanks for your review and comments! Please refer to inlined comment bellow.
 
-On 2013/1/25 12:57, Bjorn Helgaas wrote:
-> [+cc Jon, can you make sure this documentation is accurate?]
+>>>>  
+>>>> -	for (i = 0; i < vi->max_queue_pairs; i++) {
+>>>> -		int cpu = set ? i : -1;
+>>>> -		virtqueue_set_affinity(vi->rq[i].vq, cpu);
+>>>> -		virtqueue_set_affinity(vi->sq[i].vq, cpu);
+>>>> -	}
+>>>> +	if (set) {
+>>>> +		i = 0;
+>>>> +		for_each_online_cpu(cpu) {
+>>>> +			virtqueue_set_affinity(vi->rq[i].vq, cpu);
+>>>> +			virtqueue_set_affinity(vi->sq[i].vq, cpu);
+>>>> +			*per_cpu_ptr(vi->vq_index, cpu) = i;
+>>>> +			i++;
+>>>> +		}
+>>>>  
+>>>> -	if (set)
+>>>>  		vi->affinity_hint_set = true;
+>>>> -	else
+>>>> +	} else {
+>>>> +		for(i = 0; i < vi->max_queue_pairs; i++) {
+>>>> +			virtqueue_set_affinity(vi->rq[i].vq, -1);
+>>>> +			virtqueue_set_affinity(vi->sq[i].vq, -1);
+>>>> +		}
+>>>> +
+>>>> +		i = 0;
+>>>> +		for_each_online_cpu(cpu)
+>>>> +			*per_cpu_ptr(vi->vq_index, cpu) =
+>>>> +				++i % vi->curr_queue_pairs;
+>>>> +
+>>>>  		vi->affinity_hint_set = false;
+>>>> +	}
+>>>>  }
+>>> Sorry, looks like the issue of v6 still exists, we need set per-cpu
+>>> index unconditionally here (and also in 2/3), the cpus != queues check
+>>> may bypass this setting.
+>> This fixed in 2/3, when cpus != queues, it will go into virtnet_clean_affinity(in 2/3),
+>> then vq index is set in virtnet_clean_affinity. Am I missing something?
 > 
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index 363e348..0bb279f 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -2227,6 +2227,22 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>                                 This sorting is done to get a device
->>                                 order compatible with older (<= 2.4) kernels.
->>                 nobfsort        Don't sort PCI devices into breadth-first order.
->> +               pcie_bus_tune_off       Disable PCIe MPS (Max Payload Size)
->> +                               turning and using the BIOS-configured MPS defaults.
-> 
-> s/turning/tuning/
-> s/using/use/
-
-Will update it.
-
-> 
->> +               pcie_bus_safe   Use the smallest common denominator MPS
->> +                               of the entire tree below a root complex for every
->> +                               device on that fabric. Can avoid inconsistent MPS
->> +                               problem caused by hotplug.
-> 
-> I'm not sure about this.  "smallest common denominator" is colloquial
-> and not exact.  I think you probably mean "the smallest supported MPS
-> of any device below a root complex."
-
-Yes, will update it.
-
-> 
-> I'm also not sure how this will avoid MPS problems caused by hotplug.
-> I think you have to assume that a hot-added device may support only a
-> 128B MPS, which means the only way to guarantee that you can use that
-> device is to set MPS=128 for any device that will send packets to the
-> hot-added device.  Or we could reconfigure things at the time of the
-> hot-add, but I don't think we do that today (except for the hot-added
-> device itself).
-
-Actually, I'm working a new patch to fix this problem. I will send out the patch as soon.
-Because system default use pcie_bus_tune_off, after do pci hotplug,
-we never configure newly added pcie device mps. The default mps (128B) of
-added pcie device maybe smaller than upstream port mps (maybe 256B default),
-so this device can not work normally.
-We can separate it in two:
-1、Hotplug slot directly connected to root port:
-  In this case, we can reconfigure root port and newly added pcie device mps.
-  We can configure their mps to largest allowable vaule or conservatively just modify
-  added device mps, make it equal to mps value in root port (consider peer to peer DMA).
-
-2、Hotplug slot not connected to root port:
-  In this case, we can try to configure newly added device mps equal to upsteam port.
-  If newly added device mpss smaller than mps in upstream port. We need to print warning
-  info, let user know what to do next step.
-
-> 
->> +               pcie_bus_perf   Configure pcie device MPS to the largest
-> 
-> Capitalize "PCIe" consistently.  Better yet, drop it completely since
-> it's obvious that we're only talking about PCIe here.
-
-Ok, drop it.
-
-> 
->> +                               allowable MPS based on its parent bus. Also set
->> +                               MRRS (Max Read Request Size) to the largest supported
->> +                               value (no larger than the MPS that the device or bus
->> +                               can support) for Max performance.
-> 
-> s/Max/best/
-
-Will update it.
-
-> 
->> +               pcie_bus_peer2peer      Make the system-wide MPS the smallest
->> +                               possible value (128B). This configuration could prevent
->> +                               peer to peer DMA transmission from working by having
->> +                               the MPS on one root port different than the MPS on
->> +                               another.
-> 
-> I think the idea is that pcie_bus_peer2peer would *allow* peer-to-peer
-> DMA to work, which is the opposite of what you wrote.  Maybe something
-> like this would be better:
-> 
->   Set every device's MPS to 128B, which every device is guaranteed to support.
->   This configuration allows peer-to-peer DMA between any pair of devices,
->   possibly at the cost of reduced performance.
-This description is good.
-
-Very sorry, that's my fault. I will update it.
-
-> 
->>                 cbiosize=nn[KMG]        The fixed amount of bus space which is
->>                                 reserved for the CardBus bridge's IO window.
->>                                 The default value is 256 bytes.
->> --
->> 1.7.1
->>
->>
-> 
-> .
+> Ah, so 2/3 looks fine. I suggest to fix this in 1/3 since it's not good
+> to introduce a bug in patch 1 and fix it in patch 2, and this can also
+> confuse the bisect.
 > 
 
+Make sense, will move the fix from 2/3 to 1/3.
 
--- 
-Thanks!
-Yijing
+Thanks,
+Wanlong Gao
 
