@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab3AYXM5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 18:12:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45993 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164Ab3AYXMx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 18:12:53 -0500
-Date: Fri, 25 Jan 2013 15:12:51 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Kent Overstreet <koverstreet@google.com>, Valdis.Kletnieks@vt.edu,
-        bcrl@kvack.org, zab@zabbo.net, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 3/3] aio-use-cancellation-list-lazily-fix
-Message-Id: <20130125151251.0c90bf4b.akpm@linux-foundation.org>
-In-Reply-To: <CAJd=RBAhW7GXUYhem=j2OJtLA9Ru98rLvbU9bJ9iQJm2=CCwog@mail.gmail.com>
-References: <20130124211850.GH26407@google.com>
-	<1359063833-17174-1-git-send-email-koverstreet@google.com>
-	<1359063833-17174-3-git-send-email-koverstreet@google.com>
-	<CAJd=RBAhW7GXUYhem=j2OJtLA9Ru98rLvbU9bJ9iQJm2=CCwog@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753920Ab3AYXQD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 18:16:03 -0500
+Received: from mout.gmx.net ([212.227.15.18]:52244 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753164Ab3AYXQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 18:16:01 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX199MDtTGod9kJkNIO/1XaqUTNbuNS5XV2DjP5YTU8
+	RRQerTlsJvGoga
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Devendra Naga <devendra.aaru@gmail.com>, Priit Laes <plaes@plaes.org>,
+        Peter Huewe <peterhuewe@gmx.de>, Jesper Juhl <jj@chaosbits.net>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging/csr: Use kmemdup rather than duplicating its implementation
+Date: Sat, 26 Jan 2013 00:19:19 +0100
+Message-Id: <1359155959-3938-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jan 2013 21:30:32 +0800
-Hillf Danton <dhillf@gmail.com> wrote:
+Found with coccicheck.
+The semantic patch that makes this change is available
+in scripts/coccinelle/api/memdup.cocci.
 
-> On Fri, Jan 25, 2013 at 5:43 AM, Kent Overstreet <koverstreet@google.com> wrote:
-> > The cancellation changes were fubar - we can't cancel a kiocb if it
-> > doesn't actually have a cancellation callback.
-> >
-> > The use of xchg() in aio_complete() was right - there we're marking the
-> > kiocb as completed - but we need to use cmpxchg() in kiocb_cancel() - a
-> > lock isn't sufficient since we're synchronizing with aio_complete()
-> > which isn't taking any locks.
-> >
-> >  static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
-> >                         struct io_event *res)
-> >  {
-> > -       kiocb_cancel_fn *cancel;
-> > +       kiocb_cancel_fn *old, *cancel;
-> >         int ret = -EINVAL;
-> >
-> > -       cancel = xchg(&kiocb->ki_cancel, KIOCB_CANCELLED);
-> > -       if (!cancel || cancel == KIOCB_CANCELLED)
-> > -               return ret;
-> > +       /*
-> > +        * Don't want to set kiocb->ki_cancel = KIOCB_CANCELLED unless it
-> > +        * actually has a cancel function, hence the cmpxchg()
-> > +        */
-> > +
-> > +       cancel = ACCESS_ONCE(kiocb->ki_cancel);
-> > +       do {
-> > +               if (!cancel || cancel == KIOCB_CANCELLED)
-> > +                       return ret;
-> > +
-> > +               BUG();
-> 
-> Hmm, what is trapped?
-> 
-> > +               old = cancel;
-> > +               cancel = cmpxchg(&kiocb->ki_cancel, old, KIOCB_CANCELLED);
-> > +       } while (cancel != old);
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/csr/drv.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-erk, I missed that.  What earthly sense is there in putting a BUG() in
-that place.
-
-I think I'll delete it and pretend I never saw it :(
-
+diff --git a/drivers/staging/csr/drv.c b/drivers/staging/csr/drv.c
+index 4780c32..3bd52fd 100644
+--- a/drivers/staging/csr/drv.c
++++ b/drivers/staging/csr/drv.c
+@@ -819,15 +819,15 @@ unifi_write(struct file *filp, const char *p, size_t len, loff_t *poff)
+         unifi_trace(priv, UDBG2, "unifi_write: signal 0x%.4X len:%d\n",
+                     sig_id, signal_size);
+ 
+-        /* Allocate a buffer for the signal */
+-        signal_buf = kmalloc(signal_size, GFP_KERNEL);
++	/* Allocate a buffer for the signal */
++	signal_buf = kmemdup(bulkdata.d[0].os_data_ptr, signal_size,
++				GFP_KERNEL);
+         if (!signal_buf) {
+             unifi_net_data_free(priv, &bulkdata.d[0]);
+             return -ENOMEM;
+         }
+ 
+         /* Get the signal from the os_data_ptr */
+-        memcpy(signal_buf, bulkdata.d[0].os_data_ptr, signal_size);
+         signal_buf[5] = (pcli->sender_id >> 8) & 0xff;
+ 
+         if (signal_size < len) {
+-- 
+1.7.8.6
 
