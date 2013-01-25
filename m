@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab3AYK2i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:28:38 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53786 "EHLO arroyo.ext.ti.com"
+	id S1755325Ab3AYKen (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:34:43 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54052 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754805Ab3AYK1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:27:15 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <rob.herring@calxeda.com>, <rob@landley.net>, <tony@atomide.com>,
-        <balbi@ti.com>, <b-cousson@ti.com>, <rnayak@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
-CC: <grant.likely@secretlab.ca>, <linux@arm.linux.org.uk>, <kishon@ti.com>
-Subject: [PATCH v3 0/3] ARM: dts: omap: add dt data for MUSB
-Date: Fri, 25 Jan 2013 15:56:52 +0530
-Message-ID: <1359109615-2410-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754825Ab3AYKej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 05:34:39 -0500
+Message-ID: <51025FAE.3060503@ti.com>
+Date: Fri, 25 Jan 2013 16:04:22 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mrugesh Katepallewar <mrugesh.mk@ti.com>
+CC: <devicetree-discuss@lists.ozlabs.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <hs@denx.de>
+Subject: Re: [PATCH] ARM: davinci: da850: add RTC driver DT entries
+References: <1359094430-14724-1-git-send-email-mrugesh.mk@ti.com>
+In-Reply-To: <1359094430-14724-1-git-send-email-mrugesh.mk@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds dt data to get MUSB working in omap4 and omap3.
-Long time back a patch series with the same title was sent but only
-a part of it got merged. The rest of it wasn't merged because of
-adding omap control usb data to glue and usb phy.
+On 1/25/2013 11:43 AM, Mrugesh Katepallewar wrote:
+> Add RTC DT entries in da850 dts file.
+> 
+> Signed-off-by: Mrugesh Katepallewar <mrugesh.mk@ti.com>
+> ---
+> Applies on top of v3.8-rc4 of linus tree.
+> 
+> Tested on da850-evm device.
+> 
+> Test Procedure:
+> date [YYYY.]MM.DD-hh:mm[:ss]
+> hwclock -w
+> reset board and check system time.
+> 
+> :100644 100644 37dc5a3... b16efd4... M	arch/arm/boot/dts/da850-evm.dts
+> :100644 100644 640ab75... a8eb1b1... M	arch/arm/boot/dts/da850.dtsi
+>  arch/arm/boot/dts/da850-evm.dts |    3 +++
+>  arch/arm/boot/dts/da850.dtsi    |    8 ++++++++
+>  2 files changed, 11 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+> index 37dc5a3..b16efd4 100644
+> --- a/arch/arm/boot/dts/da850-evm.dts
+> +++ b/arch/arm/boot/dts/da850-evm.dts
+> @@ -24,5 +24,8 @@
+>  		serial2: serial@1d0d000 {
+>  			status = "okay";
+>  		};
+> +		rtc@1c23000 {
+> +			status = "okay";
+> +		};
+>  	};
+>  };
+> diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+> index 640ab75..a8eb1b1 100644
+> --- a/arch/arm/boot/dts/da850.dtsi
+> +++ b/arch/arm/boot/dts/da850.dtsi
+> @@ -56,5 +56,13 @@
+>  			interrupt-parent = <&intc>;
+>  			status = "disabled";
+>  		};
+> +		rtc@1c23000 {
+> +			compatible = "ti,da830-rtc";
+> +			reg = <0x23000 0x1000>;
+> +			interrupts = <19
+> +				      19>;
 
-Now there exists a separate driver for control usb and hence added a
-separate dt node for control usb.
+Why two interrupts of the same number? If there is only one interrupt
+line then only one should be specified, no?
 
-Changes from v2:
-* Changed property names from "ti,has_mailbox" to "ti,has-mailbox",
-  "ctrl_module" to "ctrl-module", "usb_phy" to "usb-phy"
-
-Changes from v1:
-* "ti,has_mailbox" property is removed and "ti,type" property is added
-  and filled with value "1" to specify it has a mailbox
-
-This series was developed on
-git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git xceiv
-+ "usb: musb: add driver for control module" patch series
-
-Did basic enumeration testing in omap4 panda, omap4 sdp and omap3 beagle.
-
-Kishon Vijay Abraham I (3):
-  ARM: dts: omap: Add omap control usb data
-  ARM: dts: omap: Add omap-usb2 dt data
-  ARM: dts: omap: Add usb_otg and glue data
-
- Documentation/devicetree/bindings/usb/omap-usb.txt |    2 ++
- arch/arm/boot/dts/omap3-beagle-xm.dts              |    6 +++++
- arch/arm/boot/dts/omap3-evm.dts                    |    6 +++++
- arch/arm/boot/dts/omap3-overo.dtsi                 |    6 +++++
- arch/arm/boot/dts/omap3.dtsi                       |   12 +++++++++
- arch/arm/boot/dts/omap4-panda.dts                  |    6 +++++
- arch/arm/boot/dts/omap4-sdp.dts                    |    6 +++++
- arch/arm/boot/dts/omap4.dtsi                       |   26 ++++++++++++++++++++
- arch/arm/boot/dts/twl4030.dtsi                     |    2 +-
- 9 files changed, 71 insertions(+), 1 deletion(-)
-
--- 
-1.7.9.5
-
+Thanks,
+Sekhar
