@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab3AYUKg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 15:10:36 -0500
-Received: from mailer2.psc.edu ([128.182.70.106]:40595 "EHLO mailer2.psc.edu"
+	id S1752489Ab3AYULB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 15:11:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27903 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056Ab3AYUKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 15:10:34 -0500
-Message-ID: <5102DE61.80804@psc.edu>
-Date: Fri, 25 Jan 2013 14:34:57 -0500
-From: rapier <rapier@psc.edu>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1752255Ab3AYUK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 15:10:58 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: "Philip J. Kelleher" <pjk1939@us.ibm.com>
+Cc: axboe@kernel.dk, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        brking@linux.vnet.ibm.com
+Subject: Re: [PATCH] block: IBM RamSan 70/80 device driver.
+References: <20130125194050.GA28313@oc6784271780.ibm.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 25 Jan 2013 15:10:47 -0500
+In-Reply-To: <20130125194050.GA28313@oc6784271780.ibm.com> (Philip
+	J. Kelleher's message of "Fri, 25 Jan 2013 13:40:50 -0600")
+Message-ID: <x494ni5uipk.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: web10g-user@web10g.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Web10g-user] Web10g TCP statistics patch - mainlining into kernel?
-References: <18855.1359138716@turing-police.cc.vt.edu>
-In-Reply-To: <18855.1359138716@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+"Philip J. Kelleher" <pjk1939@us.ibm.com> writes:
+
+> From: Joshua H Morris <josh.h.morris@us.ibm.com>
+> 	Philip J Kelleher <pjk1939@us.ibm.com>
+>
+> This patch includes the device driver for the IBM RamSan family
+> of PCI SSD flash storage cards. This driver will inlcude support for the
+> RamSan 70 and 80. The driver presents a block device for device I/O.
+
 Hi,
 
-My name is Chris Rapier and I'm on the Web10G dev team. We are 
-interested in moving this into consideration for the mainline Linux 
-kernel, in fact it's the primary goal of this project. We haven't 
-brought this to the linux kernel community as of yet as we've not 
-completed the quantification of performance/memory impact versus a 
-vanilla baseline as of yet. Including the KIS we also have to test the 
-impact the DKLM imposes (taking into account measurement granularity, 
-number of concurrent connections, maximum throughput for a single 
-stream, etc). Then we need to compare that against Web100 and write a 
-paper. We're looking at around a 2 month time frame for that.
+Your driver does not handle REQ_FLUSH.  Does that mean that the
+supported cards do not have a volatile write-back cache?
 
-That being said, we welcome any and all insight and help on this that we 
-can get from the community. Our desire to get the tests and paper worked 
-out before bringing it to the kernel community was to simply make sure 
-we would be able to answer any questions that might come up. 
-Additionally, if you have any metrics of the impact of the KIS, DKLM, or 
-any combination thereof we'd love to see them. The more data the better 
-(for some definitions of better).
+> +	blk_size = rsxx_get_logical_block_size(card);
+> +
+> +	blk_queue_make_request(card->queue, rsxx_make_request);
+> +	blk_queue_bounce_limit(card->queue, BLK_BOUNCE_ANY);
+> +	blk_queue_dma_alignment(card->queue, blk_size - 1);
+> +	blk_queue_max_hw_sectors(card->queue, blkdev_max_hw_sectors);
+> +	blk_queue_logical_block_size(card->queue, blk_size);
+> +	blk_queue_physical_block_size(card->queue, RSXX_HW_BLK_SIZE);
+> +	blk_queue_max_discard_sectors(card->queue, RSXX_HW_BLK_SIZE >> 9);
 
-I and the rest of the development team are more than happy to answer any 
-questions, address concerns, explain our thinking, discuss possible 
-applications for this data, etc with anyone interested.
+Did you mean to set max_discard_sectors inside the below for loop?
+Either way, do you really only support a single hardware sector discard?
 
-The web100-user list is probably the best way (for us at least) to do 
-this. You do need to subscribe to post at 
-https://lists.psc.edu/mailman/listinfo/web10g-user but I'll do my best 
-to add any relevant posts that get caught up in the filter.
+> +	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, card->queue);
+> +	if (rsxx_discard_supported(card)) {
+> +		queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, card->queue);
+> +		card->queue->limits.discard_granularity = RSXX_HW_BLK_SIZE;
+> +		card->queue->limits.discard_alignment   = RSXX_HW_BLK_SIZE;
+> +		card->queue->limits.discard_zeroes_data = 1;
+> +	}
 
-Thanks for your interest and I look forward to talking to anyone 
-interested in our work.
-
-Chris Rapier
-Pittsburgh Supercomputing Center
-
-
-
-On 1/25/13 1:31 PM, Valdis Kletnieks wrote:
-> I had a user who's working on tuning high-performance network file systems what
-> the chances of upstreaming the Web10G patch to provide the RFC4898 TCP Extended
-> Statistics MIB via netlink.
->
-> Yes, it's a tad on the intrusive side, and there's performance costs attached -
-> but so are a lot of *other* things that people use all the time for kernel
-> debugging, and it's a zero-hit thing for people who don't choose to configure
-> it into their kernel.  The added detailed status available from this will be
-> useful for people who are doing tuning and development (consider how useful
-> this would have been for the people who wrote the codel line discipline as part
-> of the bufferbloat project).
->
-> I'm willing to do the not-so-heavy lifting of getting the existing patch
-> cleaned up to upstream standards and sheparded through the process, if there's
-> any interest at all....
->
->
->
-> _______________________________________________
-> Web10g-user mailing list
-> Web10g-user@web10g.org
-> https://lists.psc.edu/mailman/listinfo/web10g-user
->
-> To UNSUBSCRIBE visit https://lists.psc.edu/mailman/unsubscribe/web10g-user
->
+Cheers,
+Jeff
