@@ -1,166 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab3AYP53 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 10:57:29 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:36893 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755926Ab3AYP5Y (ORCPT
+	id S1757241Ab3AYP7c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 10:59:32 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:12023
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756678Ab3AYP7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 10:57:24 -0500
-Message-ID: <5102AACA.3040406@linux.vnet.ibm.com>
-Date: Fri, 25 Jan 2013 21:24:50 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Fri, 25 Jan 2013 10:59:30 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(z551biz98dI9371I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1155h)
+X-WSS-ID: 0MH6V2Y-02-02Y-02
+X-M-MSG: 
+Date: Fri, 25 Jan 2013 09:59:23 -0600
+From: Jacob Shin <jacob.shin@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND V5 4/6] perf, x86: Move MSR address offset
+ calculation to architecture specific files
+Message-ID: <20130125155923.GC25064@jshin-Toonie>
+References: <1357847443-3878-1-git-send-email-jacob.shin@amd.com>
+ <1357847443-3878-5-git-send-email-jacob.shin@amd.com>
+ <CABPqkBR7KwJhPg2XJfO5d14Q4KiK7v0eqO_uyr_b6W3_nf-o-w@mail.gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi.kivity@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH V3 RESEND RFC 1/2] sched: Bail out of yield_to when source
- and target runqueue has one task
-References: <20130122073854.24731.9426.sendpatchset@codeblue.in.ibm.com> <20130122073913.24731.65118.sendpatchset@codeblue.in.ibm.com> <20130124103213.GD27602@gmail.com> <20130125104025.GA14978@linux.vnet.ibm.com> <20130125104737.GA23332@gmail.com>
-In-Reply-To: <20130125104737.GA23332@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012515-2674-0000-0000-0000079ABA05
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CABPqkBR7KwJhPg2XJfO5d14Q4KiK7v0eqO_uyr_b6W3_nf-o-w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2013 04:17 PM, Ingo Molnar wrote:
->
-> * Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
->
->> * Ingo Molnar <mingo@kernel.org> [2013-01-24 11:32:13]:
->>
->>>
->>> * Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
->>>
->>>> From: Peter Zijlstra <peterz@infradead.org>
->>>>
->>>> In case of undercomitted scenarios, especially in large guests
->>>> yield_to overhead is significantly high. when run queue length of
->>>> source and target is one, take an opportunity to bail out and return
->>>> -ESRCH. This return condition can be further exploited to quickly come
->>>> out of PLE handler.
->>>>
->>>> (History: Raghavendra initially worked on break out of kvm ple handler upon
->>>>   seeing source runqueue length = 1, but it had to export rq length).
->>>>   Peter came up with the elegant idea of return -ESRCH in scheduler core.
->>>>
->>>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
->>>> Raghavendra, Checking the rq length of target vcpu condition added.(thanks Avi)
->>>> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
->>>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->>>> Acked-by: Andrew Jones <drjones@redhat.com>
->>>> Tested-by: Chegu Vinod <chegu_vinod@hp.com>
->>>> ---
->>>>
->>>>   kernel/sched/core.c |   25 +++++++++++++++++++------
->>>>   1 file changed, 19 insertions(+), 6 deletions(-)
->>>>
->>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->>>> index 2d8927f..fc219a5 100644
->>>> --- a/kernel/sched/core.c
->>>> +++ b/kernel/sched/core.c
->>>> @@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
->>>>    * It's the caller's job to ensure that the target task struct
->>>>    * can't go away on us before we can do any checks.
->>>>    *
->>>> - * Returns true if we indeed boosted the target task.
->>>> + * Returns:
->>>> + *	true (>0) if we indeed boosted the target task.
->>>> + *	false (0) if we failed to boost the target.
->>>> + *	-ESRCH if there's no task to yield to.
->>>>    */
->>>>   bool __sched yield_to(struct task_struct *p, bool preempt)
->>>>   {
->>>> @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
->>>>
->>>>   again:
->>>>   	p_rq = task_rq(p);
->>>> +	/*
->>>> +	 * If we're the only runnable task on the rq and target rq also
->>>> +	 * has only one task, there's absolutely no point in yielding.
->>>> +	 */
->>>> +	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
->>>> +		yielded = -ESRCH;
->>>> +		goto out_irq;
->>>> +	}
->>>
->>> Looks good to me in principle.
->>>
->>> Would be nice to get more consistent benchmark numbers. Once
->>> those are unambiguously showing that this is a win:
->>>
->>>    Acked-by: Ingo Molnar <mingo@kernel.org>
->>>
->>
->> I ran the test with kernbench and sysbench again on 32 core mx3850
->> machine with 32 vcpu guests. Results shows definite improvements.
->>
->> ebizzy and dbench show similar improvement for 1x overcommit
->> (note that stdev for 1x in dbench is lesser improvemet is now seen at
->> only 20%)
->>
->> [ all the experiments are taken out of 8 run averages ].
->>
->> The patches benefit large guest undercommit scenarios, so I believe
->> with large guest performance improvemnt is even significant. [ Chegu
->> Vinod results show performance near to no ple cases ]. Unfortunately I
->> do not have a machine to test larger guest (>32).
->>
->> Ingo, Please let me know if this is okay to you.
->>
->> base kernel = 3.8.0-rc4
->>
->> +-----------+-----------+-----------+------------+-----------+
->>                  kernbench  (time in sec lower is better)
->> +-----------+-----------+-----------+------------+-----------+
->>      base        stdev        patched    stdev      %improve
->> +-----------+-----------+-----------+------------+-----------+
->> 1x   46.6028     1.8672	    42.4494     1.1390	   8.91234
->> 2x   99.9074     9.1859	    90.4050     2.6131	   9.51121
->> +-----------+-----------+-----------+------------+-----------+
->> +-----------+-----------+-----------+------------+-----------+
->>                 sysbench (time in sec lower is better)
->> +-----------+-----------+-----------+------------+-----------+
->>      base        stdev        patched    stdev      %improve
->> +-----------+-----------+-----------+------------+-----------+
->> 1x   18.7402     0.3764	    17.7431     0.3589	   5.32065
->> 2x   13.2238     0.1935	    13.0096     0.3152	   1.61981
->> +-----------+-----------+-----------+------------+-----------+
->>
->> +-----------+-----------+-----------+------------+-----------+
->>                  ebizzy  (records/sec higher is better)
->> +-----------+-----------+-----------+------------+-----------+
->>      base        stdev        patched    stdev      %improve
->> +-----------+-----------+-----------+------------+-----------+
->> 1x  2421.9000    19.1801	  5883.1000   112.7243	 142.91259
->> +-----------+-----------+-----------+------------+-----------+
->>
->> +-----------+-----------+-----------+------------+-----------+
->>                  dbench (throughput MB/sec  higher is better)
->> +-----------+-----------+-----------+------------+-----------+
->>      base        stdev        patched    stdev      %improve
->> +-----------+-----------+-----------+------------+-----------+
->> 1x  11675.9900   857.4154	 14103.5000   215.8425	  20.79061
->> +-----------+-----------+-----------+------------+-----------+
->
-> The numbers look pretty convincing, thanks. The workloads were
-> CPU bound most of the time, right?
+On Fri, Jan 25, 2013 at 12:15:37PM +0100, Stephane Eranian wrote:
+> On Thu, Jan 10, 2013 at 8:50 PM, Jacob Shin <jacob.shin@amd.com> wrote:
+> > Move counter index to MSR address offset calculation to architecture
+> > specific files. This prepares the way for perf_event_amd to enable
+> > counter addresses that are not contiguous -- for example AMD Family
+> > 15h processors have 6 core performance counters starting at 0xc0010200
+> > and 4 northbridge performance counters starting at 0xc0010240.
+> >
+> > Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> > ---
+> >  arch/x86/kernel/cpu/perf_event.h     |   21 ++++-------------
+> >  arch/x86/kernel/cpu/perf_event_amd.c |   42 ++++++++++++++++++++++++++++++++++
+> >  2 files changed, 47 insertions(+), 16 deletions(-)
+> >
+> > diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> > index 115c1ea..4440218 100644
+> > --- a/arch/x86/kernel/cpu/perf_event.h
+> > +++ b/arch/x86/kernel/cpu/perf_event.h
+> > @@ -325,6 +325,7 @@ struct x86_pmu {
+> >         int             (*schedule_events)(struct cpu_hw_events *cpuc, int n, int *assign);
+> >         unsigned        eventsel;
+> >         unsigned        perfctr;
+> > +       int             (*addr_offset)(int index, int eventsel);
+> >         u64             (*event_map)(int);
+> >         int             max_events;
+> >         int             num_counters;
+> > @@ -446,28 +447,16 @@ extern u64 __read_mostly hw_cache_extra_regs
+> >
+> >  u64 x86_perf_event_update(struct perf_event *event);
+> >
+> > -static inline int x86_pmu_addr_offset(int index)
+> > -{
+> > -       int offset;
+> > -
+> > -       /* offset = X86_FEATURE_PERFCTR_CORE ? index << 1 : index */
+> > -       alternative_io(ASM_NOP2,
+> > -                      "shll $1, %%eax",
+> > -                      X86_FEATURE_PERFCTR_CORE,
+> > -                      "=a" (offset),
+> > -                      "a"  (index));
+> > -
+> > -       return offset;
+> > -}
+> > -
+> >  static inline unsigned int x86_pmu_config_addr(int index)
+> >  {
+> > -       return x86_pmu.eventsel + x86_pmu_addr_offset(index);
+> > +       return x86_pmu.eventsel +
+> > +               (x86_pmu.addr_offset ? x86_pmu.addr_offset(index, 1) : index);
+> >  }
+> >
+> >  static inline unsigned int x86_pmu_event_addr(int index)
+> >  {
+> > -       return x86_pmu.perfctr + x86_pmu_addr_offset(index);
+> > +       return x86_pmu.perfctr +
+> > +               (x86_pmu.addr_offset ? x86_pmu.addr_offset(index, 0) : index);
+> >  }
+> Would be better to use a constant name instead of 1 and 0 to name a event_sel
+> vs. a counter. It would help the reader understand what this is about
+> as that may
+> be useful for other processors as well.
 
-Yes. CPU bound most of the time. I also used tmpfs to reduce io
-overhead (for dbbench).
+Yes will do .. or should I use bool instead? Which would be preferred?
+
+> 
+> >  int x86_setup_perfctr(struct perf_event *event);
+> > diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+> > index 0c2cc51..ef1df38 100644
+> > --- a/arch/x86/kernel/cpu/perf_event_amd.c
+> > +++ b/arch/x86/kernel/cpu/perf_event_amd.c
+> > @@ -132,6 +132,47 @@ static u64 amd_pmu_event_map(int hw_event)
+> >         return amd_perfmon_event_map[hw_event];
+> >  }
+> >
+> > +/*
+> > + * Previously calculated offsets
+> > + */
+> > +static unsigned int event_offsets[X86_PMC_IDX_MAX] __read_mostly;
+> > +static unsigned int count_offsets[X86_PMC_IDX_MAX] __read_mostly;
+> > +
+> > +/*
+> > + * Legacy CPUs:
+> > + *   4 counters starting at 0xc0010000 each offset by 1
+> > + *
+> > + * CPUs with core performance counter extensions:
+> > + *   6 counters starting at 0xc0010200 each offset by 2
+> > + */
+> > +static inline int amd_pmu_addr_offset(int index, int eventsel)
+> > +{
+> > +       int offset;
+> > +
+> > +       if (!index)
+> > +               return index;
+> > +
+> > +       if (eventsel)
+> > +               offset = event_offsets[index];
+> > +       else
+> > +               offset = count_offsets[index];
+> > +
+> > +       if (offset)
+> > +               return offset;
+> > +
+> > +       if (!cpu_has_perfctr_core)
+> > +               offset = index;
+> > +       else
+> > +               offset = index << 1;
+> > +
+> > +       if (eventsel)
+> > +               event_offsets[index] = offset;
+> > +       else
+> > +               count_offsets[index] = offset;
+> > +
+> > +       return offset;
+> > +}
+> > +
+> >  static int amd_pmu_hw_config(struct perf_event *event)
+> >  {
+> >         int ret;
+> > @@ -578,6 +619,7 @@ static __initconst const struct x86_pmu amd_pmu = {
+> >         .schedule_events        = x86_schedule_events,
+> >         .eventsel               = MSR_K7_EVNTSEL0,
+> >         .perfctr                = MSR_K7_PERFCTR0,
+> > +       .addr_offset            = amd_pmu_addr_offset,
+> >         .event_map              = amd_pmu_event_map,
+> >         .max_events             = ARRAY_SIZE(amd_perfmon_event_map),
+> >         .num_counters           = AMD64_NUM_COUNTERS,
+> > --
+> > 1.7.9.5
+> >
+> >
+> 
 
