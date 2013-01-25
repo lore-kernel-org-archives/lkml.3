@@ -1,154 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab3AYLHp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:07:45 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:42168 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756156Ab3AYLHl (ORCPT
+	id S1756965Ab3AYLHz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 06:07:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41300 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657Ab3AYLHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:07:41 -0500
+	Fri, 25 Jan 2013 06:07:50 -0500
+Date: Fri, 25 Jan 2013 03:07:17 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-x65vsxgzg4dvo3zqohtrrb9o@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf record: Don'
+ t pass host machine to guest synthesizer
+Git-Commit-ID: 7e383de42565ecb2cf641fff11946f9bc45e8235
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1357847443-3878-3-git-send-email-jacob.shin@amd.com>
-References: <1357847443-3878-1-git-send-email-jacob.shin@amd.com>
-	<1357847443-3878-3-git-send-email-jacob.shin@amd.com>
-Date: Fri, 25 Jan 2013 12:07:40 +0100
-Message-ID: <CABPqkBTYeUw7Mput=ubAYiWsXSPKag1WPFN5dR=LBw3yzbk04g@mail.gmail.com>
-Subject: Re: [PATCH RESEND V5 2/6] perf, amd: Generalize northbridge
- constraints code for family 15h
-From: Stephane Eranian <eranian@google.com>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Robert Richter <rric@kernel.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:07:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 8:50 PM, Jacob Shin <jacob.shin@amd.com> wrote:
-> From: Robert Richter <rric@kernel.org>
->
-> Generalize northbridge constraints code for family 10h so that later
-> we can reuse the same code path with other AMD processor families that
-> have the same northbridge event constraints.
->
-> Signed-off-by: Robert Richter <rric@kernel.org>
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_amd.c |   43 ++++++++++++++++++++--------------
->  1 file changed, 25 insertions(+), 18 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-> index e7963c7..9541fe5 100644
-> --- a/arch/x86/kernel/cpu/perf_event_amd.c
-> +++ b/arch/x86/kernel/cpu/perf_event_amd.c
-> @@ -188,20 +188,13 @@ static inline int amd_has_nb(struct cpu_hw_events *cpuc)
->         return nb && nb->nb_id != -1;
->  }
->
-> -static void amd_put_event_constraints(struct cpu_hw_events *cpuc,
-> -                                     struct perf_event *event)
-> +static void __amd_put_nb_event_constraints(struct cpu_hw_events *cpuc,
-> +                                          struct perf_event *event)
->  {
-> -       struct hw_perf_event *hwc = &event->hw;
->         struct amd_nb *nb = cpuc->amd_nb;
->         int i;
->
->         /*
-> -        * only care about NB events
-> -        */
-> -       if (!(amd_has_nb(cpuc) && amd_is_nb_event(hwc)))
-> -               return;
-> -
-> -       /*
->          * need to scan whole list because event may not have
->          * been assigned during scheduling
->          *
-> @@ -247,12 +240,13 @@ static void amd_put_event_constraints(struct cpu_hw_events *cpuc,
->    *
->    * Given that resources are allocated (cmpxchg), they must be
->    * eventually freed for others to use. This is accomplished by
-> -  * calling amd_put_event_constraints().
-> +  * calling __amd_put_nb_event_constraints()
->    *
->    * Non NB events are not impacted by this restriction.
->    */
->  static struct event_constraint *
-> -amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
-> +__amd_get_nb_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event,
-> +                              struct event_constraint *c)
->  {
->         struct hw_perf_event *hwc = &event->hw;
->         struct amd_nb *nb = cpuc->amd_nb;
-> @@ -260,12 +254,6 @@ amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
->         int idx, new = -1;
->
->         /*
-> -        * if not NB event or no NB, then no constraints
-> -        */
-> -       if (!(amd_has_nb(cpuc) && amd_is_nb_event(hwc)))
-> -               return &unconstrained;
-> -
-> -       /*
->          * detect if already present, if so reuse
->          *
->          * cannot merge with actual allocation
-> @@ -275,7 +263,7 @@ amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
->          * because of successive calls to x86_schedule_events() from
->          * hw_perf_group_sched_in() without hw_perf_enable()
->          */
-> -       for (idx = 0; idx < x86_pmu.num_counters; idx++) {
-> +       for_each_set_bit(idx, c->idxmsk, X86_PMC_IDX_MAX) {
+Commit-ID:  7e383de42565ecb2cf641fff11946f9bc45e8235
+Gitweb:     http://git.kernel.org/tip/7e383de42565ecb2cf641fff11946f9bc45e8235
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 18 Dec 2012 15:49:27 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 24 Jan 2013 16:40:11 -0300
 
-So here you're using   X86_PMC_IDX_MAX but in
-__amd_put_nb_event_constraints() you're using
-x86_pmu.num_counters.
+perf record: Don't pass host machine to guest synthesizer
 
-There is implicit assumption in the AMD code the counters index
-namespace is contiguous. That
-means the uncore counters show up right after the core counters. On
-Fam15h, that would be NB
-counters start at index 6, on Fam10h at index 4. In that case, the
-constraint mask cannot have bits set
-beyond num_counters, so why not use that limit in
-amd_get_event_constraints()? It would significantly
-cut down on the number of iterations in the loop from 64 down to 10 on Fam15h.
+We were calling perf_session__process_machines(), that would first pass
+the struct machine associated with the host to the provided callback,
+perf_event__synthesize_guest_os() that would test if it was the host and
+if so wouldn't do anything.
 
+Ditch this contraption, just call directly machines__process with the
+list of guests.
 
->                 if (new == -1 || hwc->idx == idx)
->                         /* assign free slot, prefer hwc->idx */
->                         old = cmpxchg(nb->owners + idx, NULL, event);
-> @@ -391,6 +379,25 @@ static void amd_pmu_cpu_dead(int cpu)
->         }
->  }
->
-> +static struct event_constraint *
-> +amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
-> +{
-> +       /*
-> +        * if not NB event or no NB, then no constraints
-> +        */
-> +       if (!(amd_has_nb(cpuc) && amd_is_nb_event(&event->hw)))
-> +               return &unconstrained;
-> +
-> +       return __amd_get_nb_event_constraints(cpuc, event, &unconstrained);
-> +}
-> +
-> +static void amd_put_event_constraints(struct cpu_hw_events *cpuc,
-> +                                     struct perf_event *event)
-> +{
-> +       if (amd_has_nb(cpuc) && amd_is_nb_event(&event->hw))
-> +               __amd_put_nb_event_constraints(cpuc, event);
-> +}
-> +
->  PMU_FORMAT_ATTR(event, "config:0-7,32-35");
->  PMU_FORMAT_ATTR(umask, "config:8-15"   );
->  PMU_FORMAT_ATTR(edge,  "config:18"     );
-> --
-> 1.7.9.5
->
->
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-x65vsxgzg4dvo3zqohtrrb9o@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c | 11 ++++-------
+ tools/perf/util/session.h   |  9 ---------
+ 2 files changed, 4 insertions(+), 16 deletions(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index de60dd4..69e2895 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -328,10 +328,6 @@ static void perf_event__synthesize_guest_os(struct machine *machine, void *data)
+ {
+ 	int err;
+ 	struct perf_tool *tool = data;
+-
+-	if (machine__is_host(machine))
+-		return;
+-
+ 	/*
+ 	 *As for guest kernel when processing subcommand record&report,
+ 	 *we arrange module mmap prior to guest kernel mmap and trigger
+@@ -574,9 +570,10 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 		       "Symbol resolution may be skewed if relocation was used (e.g. kexec).\n"
+ 		       "Check /proc/modules permission or run as root.\n");
+ 
+-	if (perf_guest)
+-		perf_session__process_machines(session, tool,
+-					       perf_event__synthesize_guest_os);
++	if (perf_guest) {
++		machines__process(&session->machines,
++				  perf_event__synthesize_guest_os, tool);
++	}
+ 
+ 	if (!opts->target.system_wide)
+ 		err = perf_event__synthesize_thread_map(tool, evsel_list->threads,
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 8c23025..426ca0c 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -101,15 +101,6 @@ struct machine *perf_session__findnew_machine(struct perf_session *self, pid_t p
+ 	return machines__findnew(&self->machines, pid);
+ }
+ 
+-static inline
+-void perf_session__process_machines(struct perf_session *self,
+-				    struct perf_tool *tool,
+-				    machine__process_t process)
+-{
+-	process(&self->host_machine, tool);
+-	return machines__process(&self->machines, process, tool);
+-}
+-
+ struct thread *perf_session__findnew(struct perf_session *self, pid_t pid);
+ size_t perf_session__fprintf(struct perf_session *self, FILE *fp);
+ 
