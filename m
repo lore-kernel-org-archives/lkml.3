@@ -1,217 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547Ab3AYRum (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 12:50:42 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:55762 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755627Ab3AYRui (ORCPT
+	id S932324Ab3AYRvL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 12:51:11 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:40678 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932108Ab3AYRvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 12:50:38 -0500
-X-Greylist: delayed 318 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Jan 2013 12:50:38 EST
-MIME-Version: 1.0
-In-Reply-To: <5102583E.4030109@cn.fujitsu.com>
-References: <1356594177-29453-1-git-send-email-linfeng@cn.fujitsu.com>
- <CAErSpo7EmvDaK11P6r-PKxPBqHQBPaGvZj=zvNZ8w=KFbdFgYA@mail.gmail.com> <5102583E.4030109@cn.fujitsu.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 25 Jan 2013 10:44:59 -0700
-Message-ID: <CAErSpo58qUuwd+8bGMWQHQ6KrfQMvHGb+REVkpJqQdrfAQe3Qw@mail.gmail.com>
-Subject: Re: [PATCH] pci-sysfs: replace mutex_lock with mutex_trylock to avoid
- potential deadlock situation
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Lin Feng <linfeng@cn.fujitsu.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tangchen@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 25 Jan 2013 12:51:08 -0500
+X-AuditID: cbfee61b-b7fb06d000000f28-41-5102c60a5dff
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, "'Ben Dooks'" <ben-linux@fluff.org>,
+        stable@vger.kernel.org
+References: <1359127711-19070-1-git-send-email-arnd@arndb.de>
+ <1359127711-19070-4-git-send-email-arnd@arndb.de>
+In-reply-to: <1359127711-19070-4-git-send-email-arnd@arndb.de>
+Subject: RE: [PATCH 3/5] ARM: samsung: fix assembly syntax for new gas
+Date: Fri, 25 Jan 2013 09:50:45 -0800
+Message-id: <00fb01cdfb24$81fbce10$85f36a30$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQGCiDLicFoVVu9HOBnjgZIfYqyBugMLl1//mNjbbPA=
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zQ12uY0yBBscWyVhc3jWHzWLBxkeM
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGX87HzDWPBapmLRnAamBsZPEl2MnBwSAiYS89ftZoWw
+	xSQu3FvP1sXIxSEksIxRYv+yuywwRY+vgBSBJBYxSiw7dxHK+cso8fznf3aQKjYBDYnD75+B
+	2SICnhJnTi4A6ubgYBaIlZgwJQokLCRQKHG64xHYUE4BO4nzO+8ygdjCAm4SO+5/BbNZBFQl
+	nixexgTSyitgKdE1VR8kzCsgKPFj8j2wVmYBLYn1O48zQdjyEpvXvGWGuFNBYsfZ14wQF1hJ
+	tO1vZIOoEZeY9OAhO8jJEgLr2CUO7zjKDLFLQOLb5ENgZ0oIyEpsOgA1R1Li4IobLBMYJWYh
+	WT0LyepZSFbPQrJiASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYyQGJPewbiqweIQowAH
+	oxIP74e5TIFCrIllxZW5hxglOJiVRHhlTIBCvCmJlVWpRfnxRaU5qcWHGJOBjp3ILCWanA+M
+	/7ySeENjYxMzE1MTc0tTc1PShJXEeRlPPQkQEkhPLEnNTk0tSC2C2cLEwSnVwDh1U/FBC7nG
+	A7VFfPuCS5ZoJk3JTggVW7+5RTiGWeWOrhLzjSmFEVq7V54ImWMzceHN3Udr/OL+Rf5P2BR8
+	fWqlpOXRVdZW579u9az51VjP0BhUWnpiWsTduaItbCvkWtV7jCU2uPobxPhNCJqn5pTV81WP
+	9ds0Xm+FW8bSBZ7dm/aV1zx2VGIpzkg01GIuKk4EAOfAFBL1AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAV2uY0yBBr/Oillc3jWHzWLBxkeM
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFm/Ox8w1jwWqZi
+	0ZwGpgbGTxJdjJwcEgImEo+v7GaFsMUkLtxbz9bFyMUhJLCIUWLZuYusEM5fRonnP/+zg1Sx
+	CWhIHH7/DMwWEfCUOHNyAUsXIwcHs0CsxIQpUSBhIYFCidMdj1hAbE4BO4nzO+8ygdjCAm4S
+	O+5/BbNZBFQlnixexgTSyitgKdE1VR8kzCsgKPFj8j2wVmYBLYn1O48zQdjyEpvXvGWGuFNB
+	YsfZ14wQF1hJtO1vZIOoEZeY9OAh+wRGoVlIRs1CMmoWklGzkLQsYGRZxSiaWpBcUJyUnmuk
+	V5yYW1yal66XnJ+7iREcwc+kdzCuarA4xCjAwajEw/thLlOgEGtiWXFl7iFGCQ5mJRFeGROg
+	EG9KYmVValF+fFFpTmrxIcZkoEcnMkuJJucDk0teSbyhsYmZkaWRmYWRibk5acJK4ryMp54E
+	CAmkJ5akZqemFqQWwWxh4uCUamDMD+S43t0ryHlQh+3jWyexmJIrU9p2LG15abZAQtPAkOGJ
+	3EOfyIfJUvvjxH5/ernrqMCfY5bFChMY1RSFS3/Nnb5v89v5bYF3TA/dvfeqOtp0QtDKpCLB
+	G5v8bwgwJ7H5MIpcF9sW9KJzVXvFte/q+3+URoks/aX/wFQ96PrPPIWdFhZR1/SUWIozEg21
+	mIuKEwGiPNzCJAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Yinghai]
+Arnd Bergmann wrote:
+> 
+> Recent assembler versions complain about extraneous
+> whitespace inside [] brackets. This fixes all of
+> these instances for the samsung platforms. We should
+> backport this to all kernels that might need to
+> be built with new binutils.
+> 
+> arch/arm/kernel/entry-armv.S: Assembler messages:
+> arch/arm/kernel/entry-armv.S:214: Error: ARM register expected -- `ldr
+> r2,[ r6,#(0x10)]'
+> arch/arm/kernel/entry-armv.S:214: Error: ARM register expected -- `ldr
+> r0,[ r6,#(0x14)]'
+> arch/arm/kernel/entry-armv.S:430: Error: ARM register expected -- `ldr
+> r2,[ r6,#(0x10)]'
+> arch/arm/kernel/entry-armv.S:430: Error: ARM register expected -- `ldr
+> r0,[ r6,#(0x14)]'
+> arch/arm/mach-s3c24xx/sleep-s3c2410.S: Assembler messages:
+> arch/arm/mach-s3c24xx/sleep-s3c2410.S:48: Error: ARM register expected --
+> `ldr r7,[ r4 ]'
+> arch/arm/mach-s3c24xx/sleep-s3c2410.S:49: Error: ARM register expected --
+> `ldr r8,[ r5 ]'
+> arch/arm/mach-s3c24xx/sleep-s3c2410.S:50: Error: ARM register expected --
+> `ldr r9,[ r6 ]'
+> arch/arm/mach-s3c24xx/sleep-s3c2410.S:64: Error: ARM register expected --
+> `streq r7,[ r4 ]'
+> arch/arm/mach-s3c24xx/sleep-s3c2410.S:65: Error: ARM register expected --
+> `streq r8,[ r5 ]'
+> arch/arm/mach-s3c24xx/sleep-s3c2410.S:66: Error: ARM register expected --
+> `streq r9,[ r6 ]'
+> arch/arm/kernel/debug.S: Assembler messages:
+> arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr
+> r2,[ r2,#((0x0B0)+(((0x56000000)-
+> (0x50000000))+(0xF6000000+(0x01000000))))-((0)+(((0x56000000)-
+> (0x50000000))+(0xF6000000+(0x01000000))))]'
+> arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr
+> r2,[ r3,#(0x18)]'
+> arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr
+> r2,[ r2,#((0x0B0)+(((0x56000000)-
+> (0x50000000))+(0xF6000000+(0x01000000))))-((0)+(((0x56000000)-
+> (0x50000000))+(0xF6000000+(0x01000000))))]'
+> arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr
+> r2,[ r3,#(0x18)]'
+> arch/arm/mach-s3c24xx/pm-h1940.S: Assembler messages:
+> arch/arm/mach-s3c24xx/pm-h1940.S:33: Error: ARM register expected -- `ldr
+> pc,[ r0,#((0x0B8)+(((0x56000000)-
+> (0x50000000))+(0xF6000000+(0x01000000))))-(((0x56000000)-
+> (0x50000000))+(0xF6000000+(0x01000000)))]'
+> arch/arm/mach-s3c24xx/sleep-s3c2412.S: Assembler messages:
+> arch/arm/mach-s3c24xx/sleep-s3c2412.S:60: Error: ARM register expected --
+> `ldrne r9,[ r1 ]'
+> arch/arm/mach-s3c24xx/sleep-s3c2412.S:61: Error: ARM register expected --
+> `strne r9,[ r1 ]'
+> arch/arm/mach-s3c24xx/sleep-s3c2412.S:62: Error: ARM register expected --
+> `ldrne r9,[ r2 ]'
+> arch/arm/mach-s3c24xx/sleep-s3c2412.S:63: Error: ARM register expected --
+> `strne r9,[ r2 ]'
+> arch/arm/mach-s3c24xx/sleep-s3c2412.S:64: Error: ARM register expected --
+> `ldrne r9,[ r3 ]'
+> arch/arm/mach-s3c24xx/sleep-s3c2412.S:65: Error: ARM register expected --
+> `strne r9,[ r3 ]'
+> arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr
+> r2,[ r3,#(0x08)]'
+> arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr
+> r2,[ r3,#(0x18)]'
+> arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr
+> r2,[ r3,#(0x10)]'
+> arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr
+> r2,[ r3,#(0x08)]'
+> arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr
+> r2,[ r3,#(0x18)]'
+> arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr
+> r2,[ r3,#(0x10)]'
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
 
-On Fri, Jan 25, 2013 at 3:02 AM, Gu Zheng <guz.fnst@cn.fujitsu.com> wrote:
-> Hi Bjorn,
->         Thanks for your review and comments! Please refer to inlined comments below.
->
-> On 01/25/2013 07:12 AM, Bjorn Helgaas wrote:
->
->> On Thu, Dec 27, 2012 at 12:42 AM, Lin Feng <linfeng@cn.fujitsu.com> wrote:
->>> There is a potential deadlock situation when we manipulate the pci-sysfs user
->>> interfaces from different bus hierarchy simultaneously, described as following:
->>>
->>> path1: sysfs remove device:             | path2: sysfs rescan device:
->>> sysfs_schedule_callback_work()          | sysfs_write_file()
->>>   remove_callback()                     |   flush_write_buffer()
->>> *1* mutex_lock(&pci_remove_rescan_mutex)|*2*  sysfs_get_active(attr_sd)
->>>       ...                               |     dev_attr_store()
->>>         device_remove_file()            |       dev_rescan_store()
->>>           ...                           |*4*      mutex_lock(&pci_remove_rescan_mutex)
->>> *3*       sysfs_deactivate(sd)          |     ...
->>>             wait_for_completion()       |*5*  sysfs_put_active(attr_sd)
->>> *6* mutex_unlock(&pci_remove_rescan_mutex)
-> ...snip...
->>> Reported-by: Taku Izumi <izumi.taku@jp.fujitsu.com>
->>> Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
->>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
->>> ---
->>>  drivers/pci/pci-sysfs.c |   42 ++++++++++++++++++++++++++----------------
->>>  1 files changed, 26 insertions(+), 16 deletions(-)
->>>
->>> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
->>> index 05b78b1..d2efbb0 100644
->>> --- a/drivers/pci/pci-sysfs.c
->>> +++ b/drivers/pci/pci-sysfs.c
->>> @@ -295,10 +295,13 @@ static ssize_t bus_rescan_store(struct bus_type *bus,
-> const char *buf,
->>>                 return -EINVAL;
->>>
->>>         if (val) {
->>> -               mutex_lock(&pci_remove_rescan_mutex);
->>> -               while ((b = pci_find_next_bus(b)) != NULL)
->>> -                       pci_rescan_bus(b);
->>> -               mutex_unlock(&pci_remove_rescan_mutex);
->>> +               if (mutex_trylock(&pci_remove_rescan_mutex)) {
->>> +                       while ((b = pci_find_next_bus(b)) != NULL)
->>> +                               pci_rescan_bus(b);
->>> +                       mutex_unlock(&pci_remove_rescan_mutex);
->>> +               } else {
->>> +                       return 0;
->> What are the semantics of returning 0 from a sysfs store function?
->> Does the user's write just get dropped?  I would think we'd return
->> "count" for that case.
->
-> Oh, yes, return "count" seems suitable here, although we did not reach the
-> user's target goal(rescan the bus), but the user's write has been flushed yet.
-> But the user still can not judge whether pci_rescan_bus() was successfully done
-> only by the return value. Shall we return a suitable error here to tell the user
-> that his write was written, but pci_rescan_bus() was not done ?
->
->> Is there some sort of automatic retry in libc
->> or something if we return zero?
->
-> No, there is not any extra operations in libc if we return zero indeed.
->
->> Are you relying on the user code to
->> notice that nothing was written and do its own retry?
->>
->
-> Yes, but it seems impractical.
->
->> The last seems most likely, but that seems like it complicates the
->> user's life unnecessarily.
->>
->>> +               }
->>>         }
->>>         return count;
->>>  }
->>> @@ -319,9 +322,12 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
->>>                 return -EINVAL;
->>>
->>>         if (val) {
->>> -               mutex_lock(&pci_remove_rescan_mutex);
->>> -               pci_rescan_bus(pdev->bus);
->>> -               mutex_unlock(&pci_remove_rescan_mutex);
->>> +               if (mutex_trylock(&pci_remove_rescan_mutex)) {
->>> +                       pci_rescan_bus(pdev->bus);
->>> +                       mutex_unlock(&pci_remove_rescan_mutex);
->>> +               } else {
->>> +                       return 0;
->>> +               }
->>>         }
->>>         return count;
->>>  }
->>> @@ -330,9 +336,10 @@ static void remove_callback(struct device *dev)
->>>  {
->>>         struct pci_dev *pdev = to_pci_dev(dev);
->>>
->>> -       mutex_lock(&pci_remove_rescan_mutex);
->>> -       pci_stop_and_remove_bus_device(pdev);
->>> -       mutex_unlock(&pci_remove_rescan_mutex);
->>> +       if (mutex_trylock(&pci_remove_rescan_mutex)) {
->>> +               pci_stop_and_remove_bus_device(pdev);
->>> +               mutex_unlock(&pci_remove_rescan_mutex);
->>> +       }
->> In the other cases, I think the user will at least get some
->> indication, e.g., a write() that returns zero, when we abort.  But
->> here, we silently skip the pci_stop_and_remove_bus_device().  That
->> sounds wrong to me.  What actually happens here, and why is it OK to
->> skip it?
->
-> Yeah, the hasty skip seems not suitable. We should give out some information
-> here, if we can not do pci_stop_and_remove_bus_device().
->
->> Can we avoid the deadlock by queuing these in a workqueue instead of
->> using the mutex_trylock() approach?
->>
->
-> No, I think use a workqueue to queue the rescan routine into workqueue as the
-> remove is not suitable.
-> After we queue the scan-bus work into workqueue, the rescan routine can
-> return directly(case1) or wait until work is completed(case2).
-> case1:
-> If we return directly after we queue the scan-bus work into workqueue.
-> Maybe this work will be scheduled some time later. If there is a
-> user's routine want to use a new-added device before the scan-bus work is
-> successfully done will fail. It can avoid the deadlock, but the rescan routine
-> is executed asynchronously.
-> case2:
-> If we wait until work is completed after we queue the scan-bus work into
-> workqueue. The s_active of the sys_dirent is still hold by us, so this approach
-> could not avoid the deadlock.
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-I don't think the asynchronous nature of case 1 is a fatal problem.
-I'm not sure we can guarantee that a specific device is added and
-ready for use when the sysfs write completes, so I'm dubious about
-user space making assumptions about a device being ready.  It should
-probably use a different mechanism, like udev, to learn about a new
-device.
+[...]
 
-I'm sorry that you tripped over this deadlock, because now I'm worried
-about related locking issues outside sysfs :)  The mutex you're
-fiddling with is only in sysfs, but the routines *protected* by that
-mutex are used in other places, too.  So what happens when a hotplug
-driver does a rescan at the same time a user does a rescan or remove
-via sysfs?  I don't even know what the rules are for protecting
-scan/remove, but I don't have confidence that the issue you're fixing
-is the only one.
+Thanks.
 
-Bjorn
+- Kukjin
 
->>>  }
->>>
->>>  static ssize_t
->>> @@ -366,12 +373,15 @@ dev_bus_rescan_store(struct device *dev, struct
-> device_attribute *attr,
->>>                 return -EINVAL;
->>>
->>>         if (val) {
->>> -               mutex_lock(&pci_remove_rescan_mutex);
->>> -               if (!pci_is_root_bus(bus) && list_empty(&bus->devices))
->>> -                       pci_rescan_bus_bridge_resize(bus->self);
->>> -               else
->>> -                       pci_rescan_bus(bus);
->>> -               mutex_unlock(&pci_remove_rescan_mutex);
->>> +               if (mutex_trylock(&pci_remove_rescan_mutex)) {
->>> +                       if (!pci_is_root_bus(bus) && list_empty(&bus->devices))
->>> +                               pci_rescan_bus_bridge_resize(bus->self);
->>> +                       else
->>> +                               pci_rescan_bus(bus);
->>> +                       mutex_unlock(&pci_remove_rescan_mutex);
->>> +               } else {
->>> +                       return 0;
->>> +               }
->>>         }
->>>         return count;
->>>  }
->>> --
->>> 1.7.1
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
