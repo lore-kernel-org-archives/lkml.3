@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab3AYCOf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 21:14:35 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:57153 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755509Ab3AYCO3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 21:14:29 -0500
-Message-ID: <5101EA7B.4080405@linux.vnet.ibm.com>
-Date: Fri, 25 Jan 2013 10:14:19 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1755711Ab3AYCOw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 21:14:52 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:45368 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755587Ab3AYCOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 21:14:43 -0500
+Date: Thu, 24 Jan 2013 21:14:37 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Valdis.Kletnieks@vt.edu
+Cc: Chen Gang <gang.chen@asianux.com>, Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Consult] Plan: personal contributes plan for 2013
+Message-ID: <20130125021437.GA28908@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Valdis.Kletnieks@vt.edu,
+	Chen Gang <gang.chen@asianux.com>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <50FFCA59.5070903@asianux.com>
+ <30811.1359070263@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
-        mingo@kernel.org, a.p.zijlstra@chello.nl
-Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
-References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com> <50FE5433.1070801@linux.vnet.ibm.com> <1358865692.5782.420.camel@marge.simpson.net> <50FF4EA0.1070000@linux.vnet.ibm.com> <1358915494.5752.46.camel@marge.simpson.net> <50FF7086.4020509@linux.vnet.ibm.com> <1358922520.5752.91.camel@marge.simpson.net> <50FF8CD8.4060105@linux.vnet.ibm.com>	 <1358929257.5752.109.camel@marge.simp! son.net>	 <50FF9F92.60202@linux.vnet.ibm.com> <1358930968.5752.123.camel@marge.simpson.net> <50FFA695.6010407@linux.vnet.ibm.com> <1358932694.5752.126.camel@marge.simpson.net> <1358933555.5752.132.camel@marge.simpson.net> <5100CE1F.7080704@linux.vnet.ibm.com> <1359010272.5833.39.camel@marge.simpson.net> <5100DF95.3020909@linux.vnet.ibm.com> <1359013623.5833.52.camel@marge.simpson.net> <5100ED7A.303@linux.vnet.ibm.com> <1359018455.5833.64.camel@marge.simpson.net> <5100FE61.1030004@linux.vnet.ibm.com> <1359023666.5833.105.camel@marge.simpson.net>
-In-Reply-To: <1359023666.5833.105.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012502-9264-0000-0000-0000030F091B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <30811.1359070263@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 06:34 PM, Mike Galbraith wrote:
-> On Thu, 2013-01-24 at 17:26 +0800, Michael Wang wrote: 
->> On 01/24/2013 05:07 PM, Mike Galbraith wrote:
->>> On Thu, 2013-01-24 at 16:14 +0800, Michael Wang wrote:
->>>
->>>> Now it's time to work on v3 I think, let's see what we could get this time.
->>>
->>> Maybe v3 can try to not waste so much ram on affine map?
->>
->> Yeah, that has been a question in my mind at very beginning, but how...
+On Thu, Jan 24, 2013 at 06:31:03PM -0500, Valdis.Kletnieks@vt.edu wrote:
+> >
+> > 10 patches per month: (at least)
 > 
-> Allocate at domain build time the max we can acquire via hotplug?
->>> Even better would be if it could just go away, along with relic of the
->>> bad old days wake_affine(), and we make the balance path so damn light
->>> but clever that select_idle_sibling() can go away too... and a pony ;-)
->>
->> Hmm...may be, I need some consideration here, a totally balance path,
->> interesting...
-> 
-> Unification is the right target, hitting it might not be so easy though.
-> 
->> But I think we still need the clean code which sbm bring to us, do we?
-> 
-> Sure, if it makes things perform better.
+> Even Dave Miller only averages 12-15 patches a month, and he does it
+> for a living, and they're all in the one part of the kernel he
+> maintains.  It's going to be a really hard time for a newcomer to
+> get up to speed enough to produce a useful and usable patch every 3
+> days on the average, especially across multiple areas of the kernel.
 
-Ok, let me think about these, big changes may not show in v3, but I will
-keep those in mind.
+Just to be curious, I checked the number of commits I've done in the
+past 12 months, and it's 99, for an average of a bit over 8 patches a
+month.  (via "git log --author=tytso --since="1 year ago" --oneline |
+wc -l")
 
-Regards,
-Michael Wang
+More importantly, it's important to shoot for quality, not quantity.
+10 patches a month which fixes whitespaces in code that you're not
+touching anyway just generates work for maintainers without materially
+improving the quality of the kernel.
 
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+	      				- Ted
