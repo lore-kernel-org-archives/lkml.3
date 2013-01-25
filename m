@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301Ab3AYWJR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 17:09:17 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38021 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752969Ab3AYWJQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 17:09:16 -0500
-Message-ID: <1359118913.3146.3.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: Bug#695182: [PATCH] Subtract min_free_kbytes from dirtyable
- memory
-From: Ben Hutchings <ben@decadent.org.uk>
-To: paul.szabo@sydney.edu.au, 695182@bugs.debian.org
-Cc: minchan@kernel.org, psz@maths.usyd.edu.au, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Fri, 25 Jan 2013 13:01:53 +0000
-In-Reply-To: <201301250953.r0P9rOSe012192@como.maths.usyd.edu.au>
-References: <201301250953.r0P9rOSe012192@como.maths.usyd.edu.au>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-iFYjDGU4L+x/XuQ3FgUD"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 78.32.9.209
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1753445Ab3AYWJi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 17:09:38 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:56027 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752969Ab3AYWJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 17:09:34 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 1/4 v11] arm: use device tree to get smp_twd clock
+Date: Fri, 25 Jan 2013 23:15:39 +0100
+Message-ID: <2022065.fFzVbP4vta@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130125214000.GA23505@n2100.arm.linux.org.uk>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <3041510.xugDHtFsGr@vostro.rjw.lan> <20130125214000.GA23505@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday, January 25, 2013 09:40:00 PM Russell King - ARM Linux wrote:
+> On Fri, Jan 25, 2013 at 10:03:05PM +0100, Rafael J. Wysocki wrote:
+> > On Friday, January 25, 2013 01:46:42 PM Mark Langsdorf wrote:
+> > > From: Rob Herring <rob.herring@calxeda.com>
+> > > 
+> > > Move clk setup to twd_local_timer_common_register and rely on
+> > > twd_timer_rate being 0 to force calibration if there is no clock.
+> > > Remove common_setup_called as it is no longer needed.
+> > > 
+> > > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> > > Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+> > 
+> > Russell, is this fine with you?
+> 
+> Looks fine to me, though I had to check twd_calibrate_rate() to make
+> sure it wouldn't run if the twd_timer_rate was non-zero.
+> 
+> If you want an acked-by:
+> 
+> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 
---=-iFYjDGU4L+x/XuQ3FgUD
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I will, thanks a lot!
 
-On Fri, 2013-01-25 at 20:53 +1100, paul.szabo@sydney.edu.au wrote:
-> Dear Minchan,
->=20
-> > So what's the effect for user?
-> > ...
-> > It seems you saw old kernel.
-> > ...
-> > Current kernel includes ...
-> > So I think we don't need this patch.
->=20
-> As I understand now, my patch is "right" and needed for older kernels;
-> for newer kernels, the issue has been fixed in equivalent ways; it was
-> an oversight that the change was not backported; and any justification
-> you need, you can get from those "later better" patches.
-[...]
+Rafael
 
-If you can identify where it was fixed then your patch for older
-versions should go to stable with a reference to the upstream fix (see
-Documentation/stable_kernel_rules.txt).
 
-Ben.
-
---=20
-Ben Hutchings
-Q.  Which is the greater problem in the world today, ignorance or apathy?
-A.  I don't know and I couldn't care less.
-
---=-iFYjDGU4L+x/XuQ3FgUD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUQKCQee/yOyVhhEJAQrv8w/+K0UfY/Du3BVyBlioflti6Woj1AI53pU3
-6nCmPedozQADW/LYynQ5SlHyMJ+M7JZeOk9UKHD7TgvjIDTNKj54SweKIbpVFQI8
-G9RxanI55W8yMblqnb9k5ud2t6Fxw/klJbNFNROkby+64+bZCc2tvIDRE8yuIrMR
-8/dSqy+VEkCDYlrQLR1I3+dSAAkN4k0AWGaRng1FCcz2d4s2ki6H39mP0ahBfRMY
-xNgnC6erhUwKm1jK1CTpldd+2p2rufCspq24pUAJgPfc2GmlB28g+j7fcA0CuVxM
-dCnmfn2fGTGu3S5cntbKa64qjGqGgX5yY4xxQOpHAyYUhaUJPxpZCwRC6FPSp3q9
-VJE45OoMbfsWT32cOGptVhckRNfws0pdZOvL5fjI1t62+p49k1Tu2mcerW5+Xfa2
-R+mdbCTSCDBx+qZz8E6tS2PCx4dahfdTNc/dGIetG8wTc1YP+XnI3/KIXY/JHJhf
-2WlNH0+PyHRSJ51n9+xhSFA10QpQWetZZ6IBsNC9nlSo7itLzdqix+8q72ZGPZyV
-IPFhaAWRBScXxCAn0+ECnb2dIN11y+pcUjArFq2DDPzvW3CjMH2EQxMAcYfbKO84
-kCR1QbaZ2en4hcqV5hHgmLxFISP5d7BFzQvAjq2MII5c/Qxo9PdQqTH/Ce/WkmbB
-S0q0xmrs2SQ=
-=jd1m
------END PGP SIGNATURE-----
-
---=-iFYjDGU4L+x/XuQ3FgUD--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
