@@ -1,121 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab3AYWpu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 17:45:50 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:56591 "EHLO
+	id S1753947Ab3AYWp4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 17:45:56 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:52779 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab3AYWpq (ORCPT
+	with ESMTP id S1753164Ab3AYWpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 17:45:46 -0500
+	Fri, 25 Jan 2013 17:45:52 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCHv2 00/19] ARM: common warning fixes
-Date: Fri, 25 Jan 2013 22:43:59 +0000
-Message-Id: <1359153858-31992-1-git-send-email-arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH 16/19] ARM: sa1100: don't warn about mach/ide.h
+Date: Fri, 25 Jan 2013 22:44:15 +0000
+Message-Id: <1359153858-31992-17-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1359123276-15833-1-git-send-email-arnd@arndb.de>
+In-Reply-To: <1359153858-31992-1-git-send-email-arnd@arndb.de>
 References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:0LZ98+28725gMtUnjHJ04LkIxN60LONsEs+wm8/t+1/
- 02WDwYpWTm56uTVrjStN38u6E6v/5leyAtc4gWux3raLnLk4qS
- 6Sn6KLXVIgAnkRLLTD9AYmu0loTmqf6/55M7jN67QTCQubmtLN
- rAm8QG6QIPv41Y+VRFjJXyq6eXeUROqHdOGnn6oml+CF0Y1+f9
- bu4m7mWCQ3RH1H8w6SQeTi9AaIu2V5bWjg4Euu464zEYV/x4+s
- eRE988r9YwJN0XVvBV5lr8sMiwEdS+fGLW/zphIj4EAX5kvvbV
- bJUtEIy+OjPcU+YlQinlqz1ODWEwAfpELSYFw1vjcpVoIH4c07
- fXETXET911PVCAcRMmI8oGkZ58fDCPoErGbotdLKL
+ <1359153858-31992-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:ihSp1VcNwVuK3fhyKn64BY9/oy5DplMsjczVgAaXNS+
+ rmmbzzCyjrejxELmifAqgxljfdOUCOO+KTlSzBcewxeqOVMXnj
+ x5SHibUrXJsXWaeqvimbY06uDxW8trvI+1FtGk+1TrHvhKY9ig
+ ZzOrGUM4j+D3ozsHJHwPiSFjWm9eGSWOEVLI0HdFc3v5zpJbaM
+ vNfRf9XfMSTVypJ0+2T0ZHDH8DM/8p9A/MlXho8VTrbWzwlWNU
+ hdVBTIHA51GZ6+Xjra0cY5vcOhzqZKS9ItUzD5+OssNBGnj/ii
+ +C6MqxlCL8SbYZXk8j3EBoOMkGwGrU1UgPXxbbz2fdMiFkV50J
+ FtAJwpbTCUTNdLaMhGOE/ZhhOPxY96gx/o3ZR41G4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+This warning has existed since before the start of (git) history.
+Apparently nobody has bothered to fix it in a long time, and
+this is unlikely to change. Note that the file that the warning
+refers to has moved to a different location and was subsequently
+deleted in 2008.
 
-[fixing an embarrasing typo in the linux-arm-kernel
- mailing list address, sorry about the re-send]
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+---
+ arch/arm/mach-sa1100/lart.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-This series fixes all the known build warnings on
-ARM with any of the defconfig files. Most of these
-patches are regressions and warn about code that
-changed in linux-3.8, so it would be nice to
-fix those before the release.
-
-The patch for the ARM_UNWIND warning is added
-here for completeness: The warning is old and
-particularly annoying, but the patch is not ready
-for inclusion.
-
-I have more patches like these for less important
-issues, in four classes:
-
-1. warnings and errors that are only present in linux-next
-2. warnings about allyesconfig/allnoconfig/allmodconfig
-   builds.
-3. warnings and errors for various randconfig combinations
-4. 'maybe-uninitialized' gcc warnings that only appear
-   with gcc-3.7 or 3.8. There are quite a lot of them.
-
-I will get to those once this series is sorted out.
-Since there are no interdepencies between the patches,
-my preference is to have them applied by the individual
-subsystem maintainers. Anything that has not at
-least made it into linux-next by the next merge window
-and has not received a 'NAK' or been obsoleted by
-another patch, I plan to submit as part of an arm-soc
-branch for 3.9.
-
-Arnd Bergmann (18):
-  ARM: shmobile: fix defconfig warning on CONFIG_USB
-  ARM: disable virt_to_bus/virt_to_bus almost everywhere
-  ARM: msm: proc_comm_boot_wait should not be __init
-  oss/dmabuf: use dma_map_single
-  sched: warnings in kernel/sched/fair.c
-  sched/debug: fix format string for 32 bit platforms
-  scripts/sortextable: silence script output
-  lockdep: avoid warning about unused variables
-  mfd/twl4030: don't warn about uninitialized return code
-  watchdog: at91sam9: at91_wdt_dt_ids cannot be __init
-  regmap: avoid undefined return from regmap_read_debugfs
-  pinctrl: exynos: don't mark probing functions as __init
-  pinctrl: nomadik: nmk_prcm_gpiocr_get_mode may be unused
-  spi/atmel: remove incorrect __exit_p()
-  sunrpc: don't warn for unused variable 'buf'
-  ARM: sa1100: don't warn about mach/ide.h
-  input/joystick: use get_cycles on ARM
-  ARM: at91: suspend both memory controllers on at91sam9263
-
-sahara (1):
-  [INCOMPLETE] ARM: make return_address available for ARM_UNWIND
-
- arch/arm/Kconfig                     |  4 ++++
- arch/arm/configs/marzen_defconfig    |  1 -
- arch/arm/configs/shark_defconfig     |  1 -
- arch/arm/include/asm/dma.h           |  2 +-
- arch/arm/include/asm/ftrace.h        |  6 ++----
- arch/arm/include/asm/memory.h        |  2 ++
- arch/arm/kernel/Makefile             | 12 +++++-------
- arch/arm/kernel/return_address.c     | 10 +++-------
- arch/arm/kernel/stacktrace.c         |  3 +++
- arch/arm/mach-at91/cpuidle.c         |  2 ++
- arch/arm/mach-at91/pm.c              |  2 ++
- arch/arm/mach-at91/pm.h              | 30 ++++++++++++++++++++++++------
- arch/arm/mach-msm/proc_comm.h        |  2 +-
- arch/arm/mach-sa1100/lart.c          |  3 ---
- drivers/base/regmap/regmap-debugfs.c |  2 +-
- drivers/input/joystick/analog.c      |  8 ++------
- drivers/mfd/twl4030-power.c          |  2 +-
- drivers/pinctrl/pinctrl-exynos5440.c | 10 +++++-----
- drivers/pinctrl/pinctrl-nomadik.c    |  2 +-
- drivers/spi/spi-atmel.c              |  2 +-
- drivers/watchdog/at91sam9_wdt.c      |  2 +-
- include/linux/lockdep.h              |  2 +-
- kernel/sched/debug.c                 |  4 ++--
- kernel/sched/fair.c                  |  2 +-
- kernel/trace/trace_irqsoff.c         | 26 ++++++++++++--------------
- net/sunrpc/svc.c                     |  2 +-
- scripts/sortextable.h                |  2 +-
- sound/oss/dmabuf.c                   |  3 ++-
- 28 files changed, 81 insertions(+), 68 deletions(-)
-
+diff --git a/arch/arm/mach-sa1100/lart.c b/arch/arm/mach-sa1100/lart.c
+index f69f78f..bca7e60 100644
+--- a/arch/arm/mach-sa1100/lart.c
++++ b/arch/arm/mach-sa1100/lart.c
+@@ -24,9 +24,6 @@
+ 
+ #include "generic.h"
+ 
+-
+-#warning "include/asm/arch-sa1100/ide.h needs fixing for lart"
+-
+ static struct mcp_plat_data lart_mcp_data = {
+ 	.mccr0		= MCCR0_ADM,
+ 	.sclk_rate	= 11981000,
 -- 
 1.8.0
 
