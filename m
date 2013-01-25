@@ -1,260 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757319Ab3AYNei (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:34:38 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:32845 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751275Ab3AYNeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:34:36 -0500
-Message-ID: <510289DE.5040403@ti.com>
-Date: Fri, 25 Jan 2013 15:34:22 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <tony@atomide.com>, <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2 2/6] usb: otg: utils: add facilities in phy lib to
- support multiple PHYs of same type
-References: <1359081206-5602-1-git-send-email-kishon@ti.com> <1359081206-5602-3-git-send-email-kishon@ti.com>
-In-Reply-To: <1359081206-5602-3-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1757294Ab3AYNht (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 08:37:49 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:29067 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab3AYNhr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 08:37:47 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGji0LFus=
+X-RZG-CLASS-ID: mo00
+From: Olaf Hering <olaf@aepfle.de>
+To: linux-kernel@vger.kernel.org
+Cc: Olaf Hering <olaf@aepfle.de>, stable@kernel.org,
+        KY Srinivasan <kys@microsoft.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH] x86: Hyper-V: register clocksource only if its advertised
+Date: Fri, 25 Jan 2013 14:37:16 +0100
+Message-Id: <1359121036-16309-1-git-send-email-olaf@aepfle.de>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2013 04:33 AM, Kishon Vijay Abraham I wrote:
-> In order to add support for multipe PHY's of the same type, new API's
-> for adding PHY and getting PHY has been added. Now the binding
-> information for the PHY and controller should be done in platform file
-> using usb_bind_phy API. And for getting a PHY, the device pointer of the
-> USB controller and an index should be passed. Based on the binding
-> information that is added in the platform file, usb_get_phy_dev will return the
-> appropriate PHY.
-> Already existing API's to add and get phy by type is not removed. These
-> API's are deprecated and will be removed once all the platforms start to
-> use the new API.
-> 
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->  drivers/usb/otg/otg.c   |  118 ++++++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/usb/phy.h |   13 ++++++
->  2 files changed, 130 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/otg/otg.c b/drivers/usb/otg/otg.c
-> index 8e756d9..4bb4333 100644
-> --- a/drivers/usb/otg/otg.c
-> +++ b/drivers/usb/otg/otg.c
-> @@ -36,6 +36,24 @@ static struct usb_phy *__usb_find_phy(struct list_head *list,
->  	return ERR_PTR(-ENODEV);
->  }
->  
-> +static struct usb_phy *__usb_find_phy_dev(struct device *dev,
-> +	struct list_head *list, u8 index)
-> +{
-> +	struct usb_phy_bind *phy_bind = NULL;
-> +
-> +	list_for_each_entry(phy_bind, list, list) {
-> +		if (!(strcmp(phy_bind->dev_name, dev_name(dev))) &&
-> +				phy_bind->index == index) {
-> +			if (phy_bind->phy)
-> +				return phy_bind->phy;
-> +			else
-> +				return ERR_PTR(-EPROBE_DEFER);
-> +		}
-> +	}
-> +
-> +	return ERR_PTR(-ENODEV);
-> +}
-> +
->  static void devm_usb_phy_release(struct device *dev, void *res)
->  {
->  	struct usb_phy *phy = *(struct usb_phy **)res;
-> @@ -112,6 +130,69 @@ err0:
->  EXPORT_SYMBOL(usb_get_phy);
->  
->  /**
-> + * usb_get_phy_dev - find the USB PHY
-> + * @dev - device that requests this phy
-> + * @index - the index of the phy
-> + *
-> + * Returns the phy driver, after getting a refcount to it; or
+Enable hyperv_clocksource only if its advertised as a feature.
+XenServer 6 returns the signature which is checked in
+ms_hyperv_platform(), but it does not offer all features. Currently the
+clocksource is enabled unconditionally in ms_hyperv_init_platform(), and
+the result is a hanging guest.
 
-PHY driver or PHY device?
+Hyper-V spec Bit 1 indicates the availability of Partition Reference
+Counter.  Register the clocksource only if this bit is set.
 
-> + * -ENODEV if there is no such phy.  The caller is responsible for
-> + * calling usb_put_phy() to release that count.
-> + *
-> + * For use by USB host and peripheral drivers.
-> + */
-> +struct usb_phy *usb_get_phy_dev(struct device *dev, u8 index)
-> +{
-> +	struct usb_phy	*phy = NULL;
-> +	unsigned long	flags;
-> +
-> +	spin_lock_irqsave(&phy_lock, flags);
-> +
-> +	phy = __usb_find_phy_dev(dev, &phy_bind_list, index);
-> +	if (IS_ERR(phy)) {
-> +		pr_err("unable to find transceiver\n");
+The guest in question prints this in dmesg:
+ [    0.000000] Hypervisor detected: Microsoft HyperV
+ [    0.000000] HyperV: features 0x70, hints 0x0
 
-I would suggest not to print and leave it to the user. This print
-"unable to find transceiver" gives no valuable information/context.
+This bug can be reproduced easily be setting 'viridian=1' in a HVM domU
+.cfg file. A workaround without this patch is to boot the HVM guest with
+'clocksource=jiffies'.
 
-Also -EPROBE_DEFER is a valid case where this message must not be printed.
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+Cc: stable@kernel.org
+Cc: KY Srinivasan <kys@microsoft.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>
+---
+ arch/x86/kernel/cpu/mshyperv.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> +		goto err0;
-> +	}
-> +
-> +	get_device(phy->dev);
-> +
-> +err0:
-> +	spin_unlock_irqrestore(&phy_lock, flags);
-> +
-> +	return phy;
-> +}
-> +EXPORT_SYMBOL(usb_get_phy_dev);
-> +
-> +/**
-> + * devm_usb_get_phy_dev - find the USB PHY using device ptr and index
-> + * @dev - device that requests this phy
-> + * @index - the index of the phy
-> + *
-> + * Gets the phy using usb_get_phy_dev(), and associates a device with it using
-> + * devres. On driver detach, release function is invoked on the devres data,
-> + * then, devres data is freed.
-> + *
-> + * For use by USB host and peripheral drivers.
-> + */
-> +struct usb_phy *devm_usb_get_phy_dev(struct device *dev, u8 index)
-> +{
-> +	struct usb_phy **ptr, *phy;
-> +
-> +	ptr = devres_alloc(devm_usb_phy_release, sizeof(*ptr), GFP_KERNEL);
-> +	if (!ptr)
-> +		return NULL;
-> +
-> +	phy = usb_get_phy_dev(dev, index);
-> +	if (!IS_ERR(phy)) {
-> +		*ptr = phy;
-> +		devres_add(dev, ptr);
-> +	} else
-> +		devres_free(ptr);
-> +
-> +	return phy;
-> +}
-> +EXPORT_SYMBOL(devm_usb_get_phy_dev);
-> +
-> +/**
->   * devm_usb_put_phy - release the USB PHY
->   * @dev - device that wants to release this phy
->   * @phy - the phy returned by devm_usb_get_phy()
-> @@ -186,6 +267,36 @@ out:
->  EXPORT_SYMBOL(usb_add_phy);
->  
->  /**
-> + * usb_add_phy_dev - declare the USB PHY
-> + * @x: the USB phy to be used; or NULL
-
-@phy is better than @x?
-
-> + *
-> + * This call is exclusively for use by phy drivers, which
-> + * coordinate the activities of drivers for host and peripheral
-> + * controllers, and in some cases for VBUS current regulation.
-> + */
-> +int usb_add_phy_dev(struct usb_phy *x)
-> +{
-> +	struct usb_phy_bind *phy_bind;
-> +	unsigned long flags;
-> +
-> +	if (!x->dev) {
-> +		dev_err(x->dev, "no device provided for PHY\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	spin_lock_irqsave(&phy_lock, flags);
-> +	list_for_each_entry(phy_bind, &phy_bind_list, list)
-> +		if (!(strcmp(phy_bind->phy_dev_name, dev_name(x->dev))))
-> +			phy_bind->phy = x;
-> +
-> +	list_add_tail(&x->head, &phy_list);
-> +
-> +	spin_unlock_irqrestore(&phy_lock, flags);
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(usb_add_phy_dev);
-> +
-> +/**
->   * usb_remove_phy - remove the OTG PHY
->   * @x: the USB OTG PHY to be removed;
-
-@phy
-
-Also the PHY may not always be an OTG PHY, so remove OTG from description.
-
->   *
-> @@ -194,10 +305,15 @@ EXPORT_SYMBOL(usb_add_phy);
->  void usb_remove_phy(struct usb_phy *x)
->  {
->  	unsigned long	flags;
-> +	struct usb_phy_bind *phy_bind;
->  
->  	spin_lock_irqsave(&phy_lock, flags);
-> -	if (x)
-> +	if (x) {
-> +		list_for_each_entry(phy_bind, &phy_bind_list, list)
-> +			if (phy_bind->phy == x)
-> +				phy_bind->phy = NULL;
->  		list_del(&x->head);
-> +	}
->  	spin_unlock_irqrestore(&phy_lock, flags);
->  }
->  EXPORT_SYMBOL(usb_remove_phy);
-> diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-> index e7eb429..d1675e8 100644
-> --- a/include/linux/usb/phy.h
-> +++ b/include/linux/usb/phy.h
-> @@ -124,6 +124,7 @@ struct usb_phy_bind {
->  
->  /* for board-specific init logic */
->  extern int usb_add_phy(struct usb_phy *, enum usb_phy_type type);
-> +extern int usb_add_phy_dev(struct usb_phy *);
->  extern void usb_remove_phy(struct usb_phy *);
->  
->  /* helpers for direct access thru low-level io interface */
-> @@ -164,6 +165,8 @@ usb_phy_shutdown(struct usb_phy *x)
->  extern struct usb_phy *usb_get_phy(enum usb_phy_type type);
->  extern struct usb_phy *devm_usb_get_phy(struct device *dev,
->  	enum usb_phy_type type);
-> +extern struct usb_phy *usb_get_phy_dev(struct device *dev, u8 index);
-> +extern struct usb_phy *devm_usb_get_phy_dev(struct device *dev, u8 index);
->  extern void usb_put_phy(struct usb_phy *);
->  extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
->  extern int usb_bind_phy(const char *dev_name, u8 index,
-> @@ -180,6 +183,16 @@ static inline struct usb_phy *devm_usb_get_phy(struct device *dev,
->  	return NULL;
->  }
->  
-> +static inline struct usb_phy *usb_get_phy_dev(struct device *dev, u8 index)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline struct usb_phy *devm_usb_get_phy_dev(struct device *dev, u8 index)
-> +{
-> +	return NULL;
-> +}
-> +
->  static inline void usb_put_phy(struct usb_phy *x)
->  {
->  }
-> 
-
-cheers,
--roger
+diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
+index 0a630dd..646d192 100644
+--- a/arch/x86/kernel/cpu/mshyperv.c
++++ b/arch/x86/kernel/cpu/mshyperv.c
+@@ -68,7 +68,8 @@ static void __init ms_hyperv_init_platform(void)
+ 	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
+ 	       ms_hyperv.features, ms_hyperv.hints);
+ 
+-	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
++	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
++		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+ }
+ 
+ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
+-- 
+1.8.1.1
 
