@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757436Ab3AYQCA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 11:02:00 -0500
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:63470 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756137Ab3AYQB6 (ORCPT
+	id S1757477Ab3AYQCL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 11:02:11 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:39017 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756137Ab3AYQCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 11:01:58 -0500
-Date: Fri, 25 Jan 2013 13:01:51 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [perf PATCH 3/3] Fix double fclose() on do_write(fd, xxx) failure
-Message-ID: <20130125160151.GA31242@ghostprotocols.net>
-References: <2684910.12iLzy42t4@storm>
+	Fri, 25 Jan 2013 11:02:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2684910.12iLzy42t4@storm>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1359123276-15833-7-git-send-email-arnd@arndb.de>
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359123276-15833-7-git-send-email-arnd@arndb.de>
+From: Paul Turner <pjt@google.com>
+Date: Fri, 25 Jan 2013 08:01:33 -0800
+Message-ID: <CAPM31RJxuWDQ7Y0FPCjYKbNFmUG6dad1ZPQ+hS53dcGWUkWGBw@mail.gmail.com>
+Subject: Re: [PATCH 06/19] sched/debug: fix format string for 32 bit platforms
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@list.infradead.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jan 25, 2013 at 11:22:17AM +0100, Thomas Jarosch escreveu:
-> cppcheck reported:
-> [util/header.c:983]: (error) Used file that is not opened.
-> 
-> Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+On Fri, Jan 25, 2013 at 6:14 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> The type returned from atomic64_t can be either unsigned
+> long or unsigned long long, depending on the architecture.
+> Using a cast to unsigned long long lets us use the same
+> format string for all architectures.
+>
+> Without this patch, building with scheduler debugging
+> enabled results in:
+>
+> kernel/sched/debug.c: In function 'print_cfs_rq':
+> kernel/sched/debug.c:225:2: warning: format '%ld' expects argument of type 'long int', but argument 4 has type 'long long int' [-Wformat]
+> kernel/sched/debug.c:225:2: warning: format '%ld' expects argument of type 'long int', but argument 3 has type 'long long int' [-Wformat]
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Paul Turner <pjt@google.com>
 > ---
->  tools/perf/util/header.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index 7b24cf3..30745c2 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -955,6 +955,7 @@ static int write_topo_node(int fd, int node)
->  	}
->  
->  	fclose(fp);
-> +	fp = NULL;
+>  kernel/sched/debug.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+> index 2cd3c1b..7ae4c4c 100644
+> --- a/kernel/sched/debug.c
+> +++ b/kernel/sched/debug.c
+> @@ -222,8 +222,8 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+>                         cfs_rq->runnable_load_avg);
+>         SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
+>                         cfs_rq->blocked_load_avg);
+> -       SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_avg",
+> -                       atomic64_read(&cfs_rq->tg->load_avg));
+> +       SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_avg",
+> +                       (unsigned long long)atomic64_read(&cfs_rq->tg->load_avg));
+>         SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
+>                         cfs_rq->tg_load_contrib);
+>         SEQ_printf(m, "  .%-30s: %d\n", "tg_runnable_contrib",
+> --
+> 1.8.0
+>
 
-Ok, but what is the behaviour of fclose(NULL)? Is it defined?
+Looks good.
 
-- Arnaldo
+Reviewed-by: Paul Turner <pjt@google.com>
