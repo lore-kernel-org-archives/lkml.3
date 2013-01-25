@@ -1,125 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab3AZR2k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 12:28:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27719 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753368Ab3AZR20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 12:28:26 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 5/9] perf tools: Read maximal precise value for 'precise' term
-Date: Sat, 26 Jan 2013 18:27:51 +0100
-Message-Id: <1359221275-24254-6-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1359221275-24254-1-git-send-email-jolsa@redhat.com>
-References: <1359221275-24254-1-git-send-email-jolsa@redhat.com>
+	id S1754026Ab3AZRaN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 12:30:13 -0500
+Received: from newmail.finger.co.kr ([14.63.222.224]:57082 "EHLO
+	mail.finger.co.kr" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753310Ab3AZRaJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 12:30:09 -0500
+Message-Id: <201301251515.r0PFBWYp000526@mail.finger.co.kr>
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: UPGRADE YOUR XMISSION ACCOUNT
+To: Recipients <info@xmission.com>
+From: info@xmission.com
+Date: Fri, 25 Jan 2013 22:14:42 +0700
+Reply-To: accountaccessupgrade@admin.in.th
+X-Antivirus: avast! (VPS 130125-0, 01/25/2013), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if the term is specified without any value like
--e 'cpu/...,precise,../', the number '1' is assigned as
-its default value.
+Dear Xmission Email Account Owner,
 
-Adding special treatment for 'precise' term to use the
-maximum allowed precise value in such case using the
-perf_precise__get function.
+Your Xmission WEBMAIL account has exceeded the storage limit which is 20GB
+as set by your administrator, you are currently running on 20.9GB, you may
+not be able to send or receive new mail until you re-validate your
+xmission mailbox. KINDLY inform we are upgrading all our customer's account
+databased, to upgrade your Xmission account,
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: David Ahern <dsahern@gmail.com>
----
- tools/perf/util/parse-events.c | 29 ++++++++++++++++++++++++++---
- tools/perf/util/parse-events.h |  2 ++
- tools/perf/util/parse-events.y |  2 +-
- 3 files changed, 29 insertions(+), 4 deletions(-)
+below detail have to be fill without having any single error 
+1.username
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 217ce56..a92c403 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -570,9 +570,14 @@ do {								\
- 		break;
- 	case PARSE_EVENTS__TERM_TYPE_PRECISE:
- 		CHECK_TYPE_VAL(NUM);
--		if ((unsigned)term->val.num > 2)
--			return -EINVAL;
--		attr->precise_ip = term->val.num;
-+		/* No value specified, try to get it from sysfs. */
-+		if (term->val.num == (u64) -1)
-+			attr->precise_ip = perf_precise__get();
-+		else {
-+			if ((unsigned)term->val.num > 2)
-+				return -EINVAL;
-+			attr->precise_ip = term->val.num;
-+		}
- 		break;
- 	default:
- 		return -EINVAL;
-@@ -1210,6 +1215,24 @@ int parse_events_term__num(struct parse_events_term **term,
- 			config, NULL, num);
- }
- 
-+int parse_events_term__num_default(struct parse_events_term **term,
-+				   int type_term, char *config)
-+{
-+	/*
-+	 * If no value is specified for term, we use 1 as default.
-+	 * The PRECISE term is an exception, because we force special
-+	 * functionality when there's no value specified for it,
-+	 * so we need to recognize it.
-+	 */
-+	u64 num = 1;
-+
-+	if (type_term == PARSE_EVENTS__TERM_TYPE_PRECISE)
-+		num = (u64) -1;
-+
-+	return new_term(term, PARSE_EVENTS__TERM_TYPE_NUM, type_term,
-+			config, NULL, num);
-+}
-+
- int parse_events_term__str(struct parse_events_term **term,
- 			   int type_term, char *config, char *str)
- {
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 9d526cf..a5c6d65 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -74,6 +74,8 @@ struct parse_events_terms {
- int parse_events__is_hardcoded_term(struct parse_events_term *term);
- int parse_events_term__num(struct parse_events_term **_term,
- 			   int type_term, char *config, u64 num);
-+int parse_events_term__num_default(struct parse_events_term **term,
-+				   int type_term, char *config);
- int parse_events_term__str(struct parse_events_term **_term,
- 			   int type_term, char *config, char *str);
- int parse_events_term__sym_hw(struct parse_events_term **term,
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 9d43c86..376e9b4 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -399,7 +399,7 @@ PE_TERM
- {
- 	struct parse_events_term *term;
- 
--	ABORT_ON(parse_events_term__num(&term, (int)$1, NULL, 1));
-+	ABORT_ON(parse_events_term__num_default(&term, (int)$1, NULL));
- 	$$ = term;
- }
- 
--- 
-1.7.11.7
+2.password
 
+3.confirm p/w
+
+4.date of birthday
+
+To re-validate your mailbox please reply to below
+:accountaccessupgrade@admin.in.th 
+Regards 
+Admin Office
