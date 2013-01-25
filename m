@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab3AYIqi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 03:46:38 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:36113 "EHLO comal.ext.ti.com"
+	id S1753619Ab3AYIs7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 03:48:59 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39971 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751837Ab3AYIqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 03:46:36 -0500
-Message-ID: <5102465E.4030305@ti.com>
-Date: Fri, 25 Jan 2013 14:16:22 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1751305Ab3AYIs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 03:48:57 -0500
+Date: Fri, 25 Jan 2013 09:51:47 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 1/2] x86, Kconfig: Move PARAVIRT_DEBUG into the paravirt
+ menu
+Message-ID: <20130125085146.GA23404@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	X86 ML <x86@kernel.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
+	olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+	Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
+	Borislav Petkov <bp@suse.de>
+References: <20130124173555.GJ13463@pd.tnic>
+ <1359049194-17505-1-git-send-email-bp@alien8.de>
+ <20130125082126.GD25314@gmail.com>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <tony@atomide.com>, <b-cousson@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <gregkh@linuxfoundation.org>, <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 1/4] drivers: usb: phy: add a new driver for usb part
- of control module
-References: <1359080391-5120-1-git-send-email-kishon@ti.com> <1359080391-5120-2-git-send-email-kishon@ti.com> <510218FE.8080606@wwwdotorg.org> <20130125074818.GF15886@arwen.pp.htv.fi> <51024581.6020301@ti.com> <20130125084501.GI15886@arwen.pp.htv.fi>
-In-Reply-To: <20130125084501.GI15886@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130125082126.GD25314@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 25 January 2013 02:15 PM, Felipe Balbi wrote:
-> hi,
->
-> On Fri, Jan 25, 2013 at 02:12:41PM +0530, kishon wrote:
->> On Friday 25 January 2013 01:18 PM, Felipe Balbi wrote:
->>> On Thu, Jan 24, 2013 at 09:32:46PM -0800, Stephen Warren wrote:
->>>> On 01/24/2013 06:19 PM, Kishon Vijay Abraham I wrote:
->>>>> Added a new driver for the usb part of control module. This has an API
->>>>> to power on the USB2 phy and an API to write to the mailbox depending on
->>>>> whether MUSB has to act in host mode or in device mode.
->>>>>
->>>>> Writing to control module registers for doing the above task which was
->>>>> previously done in omap glue and in omap-usb2 phy will be removed.
->>>>
->>>>> diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/usb/usb-phy.txt
->>>>
->>>> This file seems to be specific to the TI USB PHYs, not all USB PHYs;
->>>> shouldn't it be renamed ti-usb-phy.txt, or even better renamed to match
->>>> the compatible value it documents, giving ti,omap-usb2.txt?
->>>
->>> could be, but that can be done as a separate patch. It's not part of
->>> $SUBJECT.
->>>
->>>>>   add the address of control module dev conf register until a driver for
->>>>>   control module is added
->>>>>
->>>>> +Optional properties:
->>>>> + - ctrl_module : phandle of the control module used by PHY driver to power on
->>>>> +   the PHY.
->>>>
->>>> DT property names generally use - not _ as the word separator.
->>>
->>> fair enough, Kishon, can you fix this up ?
->>
->> Sure. Will post a patch..
->
-> Great, notice that I've already applied some of your patches to my tree.
->
-Cool. Thanks :-)
+On Fri, Jan 25, 2013 at 09:21:26AM +0100, Ingo Molnar wrote:
+> 
+> So, these two patches, on top of -tip, produce:
+> 
+> vmw_balloon.c:(.init.text+0x8506): undefined reference to `x86_hyper'
+> vmw_balloon.c:(.init.text+0x850a): undefined reference to `x86_hyper_vmware'
 
-Regards
-Kishon
+Hmm, I somehow can't trigger it here. And the thing is, vmw_balloon.c is
+built only when CONFIG_VMWARE_BALLOON is set and that is not the case in
+this config.
+
+[ … ]
+
+> CONFIG_HMC6352=y
+> # CONFIG_DS1682 is not set
+> # CONFIG_VMWARE_BALLOON is not set
+
+But still, I can see how this can still trigger because code is assuming
+the presence of x86_hyper which those patches don't guarantee anymore. I
+still haven't sorted out through my test builds here, will do so now and
+check.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
