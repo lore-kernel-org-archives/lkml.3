@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757660Ab3AYRTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 12:19:35 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:18871 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757645Ab3AYRTb (ORCPT
+	id S1757554Ab3AYRWh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 12:22:37 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:43767 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755243Ab3AYRWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 12:19:31 -0500
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGji0LFus=
-X-RZG-CLASS-ID: mo00
-Date: Fri, 25 Jan 2013 18:19:23 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Jan Beulich (JBeulich@suse.com)" <JBeulich@suse.com>
-Subject: Re: [PATCH] x86: Hyper-V: register clocksource only if its advertised
-Message-ID: <20130125171923.GA19306@aepfle.de>
-References: <1359121036-16309-1-git-send-email-olaf@aepfle.de>
- <761b736ff1854810bfe272961248e6d2@BLUPR03MB050.namprd03.prod.outlook.com>
- <20130125165443.GA15833@aepfle.de>
- <500ca90f5d3e4d4f80c7fb62c34d36f0@BLUPR03MB050.namprd03.prod.outlook.com>
+	Fri, 25 Jan 2013 12:22:33 -0500
+Date: Fri, 25 Jan 2013 17:22:24 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        sahara <keun-o.park@windriver.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 19/19] [INCOMPLETE] ARM: make return_address available
+ for ARM_UNWIND
+Message-ID: <20130125172224.GA1961@linaro.org>
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
+ <1359123276-15833-20-git-send-email-arnd@arndb.de>
+ <20130125162608.GD2069@linaro.org>
+ <1359132254.21576.230.camel@gandalf.local.home>
+ <20130125165934.GE2069@linaro.org>
+ <1359133703.21576.233.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <500ca90f5d3e4d4f80c7fb62c34d36f0@BLUPR03MB050.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21.rev5632 (2013-01-17)
+In-Reply-To: <1359133703.21576.233.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, KY Srinivasan wrote:
+On Fri, Jan 25, 2013 at 12:08:23PM -0500, Steven Rostedt wrote:
+> On Fri, 2013-01-25 at 16:59 +0000, Dave Martin wrote:
+> 
+> > Cool.  Are you aware of return_address being used elsewhere?  Currently
+> > I'm not aware of anything else which uses it, and grep is not finding
+> > any calls outside ftrace.h that I can see.
+> 
+> softirq.c has a trace_preempt_off() use of CALLER_ADDR1.
+> 
+> kernel/sched/core.c has CALLER_ADDR1, 2 an 3.
 
-> My fear is that there is no guarantee that Xen would not emulate this
-> feature in the spirit of making Hyper-V emulation "more" complete.
-> Since all this problem is because Xen thinks it is running a viridian
-> domain (when in fact it is running Linux), I felt we should explore
-> why the viridian tag got set for a Linux VM. If we can fix that we
-> would have a solution that does not depend upon assuming that Xen
-> would not emulate a particular Hyper-V feature.
+These cases look safe to me ... sched/core.c:get_parent_ip() looks like
+it uses notrace purely to avoid the spurious extra frame which it would
+otherwise insert, and the code in softirq.c doesn't appear to be in a
+notrace context.
 
-In my opinion this logic is backwards. A host provides a set of
-functionality/features to a given guest, no matter what runs inside the
-guest. And the guest can query the feature list and configure itself
-accordingly. In this specific case the guest finds feature A (the cpuid
-result) and expects that feature B (a clock source) is present as well,
-even if feature B has its very own availability flag.
+Am I being too optimistic, or does that match your understanding?
 
-Maybe I miss your point.
-
-Olaf
+Cheers
+---Dave
