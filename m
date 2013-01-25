@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab3AYNH0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:07:26 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20169 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932292Ab3AYNHV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:07:21 -0500
-X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=fGM4yXGx12wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=RaCtCyzfOO0A:10 a=DMzc6ZLNQwBmPUYpvbkA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1359119239.21576.213.camel@gandalf.local.home>
-Subject: Re: [BUG] panda board locks up on boot
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mats Liljegren <mats.liljegren@enea.com>
-Cc: Igor Grinberg <grinberg@compulab.co.il>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Venkatraman S <svenkatr@ti.com>
-Date: Fri, 25 Jan 2013 08:07:19 -0500
-In-Reply-To: <0247700D01F14443B9209F90AD938CC52409708C@sestoex09.enea.se>
-References: <1359082886.21576.199.camel@gandalf.local.home>
-	 <51022FD2.8090101@compulab.co.il>
-	 <0247700D01F14443B9209F90AD938CC52409708C@sestoex09.enea.se>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932325Ab3AYNHj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 08:07:39 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60054 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932270Ab3AYNHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 08:07:35 -0500
+Message-ID: <51028388.3050903@ti.com>
+Date: Fri, 25 Jan 2013 14:07:20 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: <florian.vaussard@epfl.ch>
+CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        <linux-leds@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] leds: leds-pwm: Defer led_pwm_set() if PWM can sleep
+References: <1359108114-16998-1-git-send-email-florian.vaussard@epfl.ch> <1359108114-16998-4-git-send-email-florian.vaussard@epfl.ch> <51028041.2060504@ti.com> <510282C9.5020509@epfl.ch>
+In-Reply-To: <510282C9.5020509@epfl.ch>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-25 at 08:43 +0000, Mats Liljegren wrote:
-> Hi Steven,
+On 01/25/2013 02:04 PM, Florian Vaussard wrote:
+
+>>> @@ -153,6 +182,8 @@ static int led_pwm_probe(struct platform_device *pdev)
+>>>               led_dat->cdev.max_brightness = cur_led->max_brightness;
+>>>               led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
+>>>
+>>> +            INIT_WORK(&led_dat->work, led_pwm_work);
+>>
+>> If we query the can_sleep before we can skip the INIT_WORK() when it is not
+>> set.
+>>
 > 
-> Do you have CONFIG_CPU_FREQ enabled? As I posted earlier in
-> linux-kernel forum ("Failed booting PandaBoard ES with Linux 3.8 RC4"
-> two days ago) my PandaBoard ES hangs while booting with this option
-> enabled. It works fine without it. I have not bisected it down to a
-> single commit though.
+> I will do like this.
+
+On the other hand you should also check at remove time that you are not going
+to cancel a work on a non initialized one.
+
 > 
+>>> +
+>>>               ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
+>>>               if (ret < 0)
+>>>                   goto err;
+>>> @@ -180,8 +211,10 @@ static int led_pwm_remove(struct platform_device *pdev)
+>>>       struct led_pwm_priv *priv = platform_get_drvdata(pdev);
+>>>       int i;
+>>>
+>>> -    for (i = 0; i < priv->num_leds; i++)
+>>> +    for (i = 0; i < priv->num_leds; i++) {
+>>>           led_classdev_unregister(&priv->leds[i].cdev);
+>>> +        cancel_work_sync(&priv->leds[i].work);
+>>> +    }
+>>>
+>>>       return 0;
+>>>   }
+>>>
+>>
+>>
+> 
+> Thank you,
+> 
+> Florian
 
-#
-# CPU Frequency scaling
-#
-# CONFIG_CPU_FREQ is not set
-CONFIG_CPU_IDLE=y
-# CONFIG_CPU_IDLE_MULTIPLE_DRIVERS is not set
-CONFIG_CPU_IDLE_GOV_LADDER=y
-CONFIG_CPU_IDLE_GOV_MENU=y
-CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED=y
 
-
-I guess that's not the issue I have.
-
-Thanks,
-
--- Steve
-
-
+-- 
+Péter
