@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab3AYKNz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:13:55 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44370 "EHLO mail.skyhub.de"
+	id S1756049Ab3AYKOq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:14:46 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:8942 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754415Ab3AYKNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:13:51 -0500
-Date: Fri, 25 Jan 2013 11:16:40 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, fweisbec@gmail.com, rusty@rustcorp.com.au,
-        ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
-        masami.hiramatsu.pt@hitachi.com, jbaron@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        MartinSchwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-s390 <linux-s390@vger.kernel.org>
-Subject: Re: [PATCH 2/5] jump label: constify lookup functions
-Message-ID: <20130125101640.GA32419@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	Steven Rostedt <rostedt@goodmis.org>, tglx@linutronix.de,
-	mingo@redhat.com, hpa@zytor.com, fweisbec@gmail.com,
-	rusty@rustcorp.com.au, ananth@in.ibm.com,
-	anil.s.keshavamurthy@intel.com, masami.hiramatsu.pt@hitachi.com,
-	jbaron@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-	MartinSchwidefsky <schwidefsky@de.ibm.com>,
-	Heiko Carstens <heiko.carstens@de.ibm.com>,
-	linux-s390 <linux-s390@vger.kernel.org>
-References: <1357772960-4436-1-git-send-email-sasha.levin@oracle.com>
- <1357772960-4436-2-git-send-email-sasha.levin@oracle.com>
- <1358544300.7383.37.camel@gandalf.local.home>
- <510206CE.9050804@oracle.com>
+	id S1754415Ab3AYKOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 05:14:45 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>, Dan Williams <djbw@fb.com>,
+        <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH 1/1] async: initialise list heads to fix crash
+Date: Fri, 25 Jan 2013 10:13:59 +0000
+Message-ID: <1359108839-19232-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <20130125010112.GF2373@mtj.dyndns.org>
+References: <20130125010112.GF2373@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <510206CE.9050804@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01181__2013_01_25_10_14_37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 11:15:10PM -0500, Sasha Levin wrote:
-> Sorry about this. I didn't have the ability to build all arches over here :(
+The commit "async: replace list of active domains with global list of
+pending items" added a struct list_head global_list in struct
+async_entry, which isn't initialised. This means that if
+!domain->registered at __async_schedule(), then list_del_init() will be
+called on the list head in async_run_entry_fn with both pointers NULL,
+causing a crash. This is fixed by initialising both the global_list and
+domain_list list_heads after kzalloc'ing the entry.
 
-Seen this already: https://www.kernel.org/pub/tools/crosstool/
+This was noticed due to dapm_power_widgets() which uses
+ASYNC_DOMAIN_EXCLUSIVE, which initialises the domain->registered to 0.
 
-?
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+---
+ kernel/async.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
+diff --git a/kernel/async.c b/kernel/async.c
+index 6958000..8ddee2c 100644
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -172,6 +172,8 @@ static async_cookie_t __async_schedule(async_func_ptr *ptr, void *data, struct a
+ 		ptr(data, newcookie);
+ 		return newcookie;
+ 	}
++	INIT_LIST_HEAD(&entry->domain_list);
++	INIT_LIST_HEAD(&entry->global_list);
+ 	INIT_WORK(&entry->work, async_run_entry_fn);
+ 	entry->func = ptr;
+ 	entry->data = data;
 -- 
-Regards/Gruss,
-    Boris.
+1.7.7.6
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+
