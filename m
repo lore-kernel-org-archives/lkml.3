@@ -1,109 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210Ab3AYLPL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:15:11 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:18936 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756395Ab3AYLPB (ORCPT
+	id S1757101Ab3AYLPE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 06:15:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41431 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588Ab3AYLPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:15:01 -0500
-X-AuditID: cbfee61b-b7fb06d000000f28-d5-510269333118
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, balbi@ti.com
-Subject: [PATCH 1/2] usb: dwc3: exynos/omap: Change platform device IDs for
- no_op_xceive to AUTO
-Date: Fri, 25 Jan 2013 16:52:01 +0530
-Message-id: <1359112922-2247-2-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.6.5
-In-reply-to: <1359112922-2247-1-git-send-email-gautam.vivek@samsung.com>
-References: <1359112922-2247-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsWyRsSkWtc4kynQYEaPmcXlXXPYLGYv6Wex
-	WLSsldmB2ePzJrkAxigum5TUnMyy1CJ9uwSujFtT1rEWbOWv6L54jqWB8SNPFyMnh4SAicS8
-	3g2MELaYxIV769m6GLk4hASWMko0Nn1jgSk6tWw+I0RiEaPE7tsroKomM0m0/ZnIDFLFJqAr
-	0fR2F9goEQFZicNXfgPFOTiYBTIkZlxgBQkLCyRJnLwIsoGTg0VAVeJU4ycmEJtXwF3ix6ul
-	bBDLFCTe3H4G1sop4CGx9H8gSFgIqOT2gU2sECWP2STOHZWFGCMg8W3yIRaQcgmgrZsOMEOU
-	SEocXHGDZQKj8AJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYgSF5+t8z6R2MqxosDjEK
-	cDAq8fA+SGYMFGJNLCuuzD3EKMHBrCTCK2PCFCjEm5JYWZValB9fVJqTWnyIMRlo+URmKdHk
-	fGC85JXEGxqbmJsam1oaGZmZmpImrCTOy3jqSYCQQHpiSWp2ampBahHMFiYOTqkGRkWNwGuz
-	RSSmXF1/9PvZz1yLAndx/Hqs7nDu42VfZrdJLIEBs3gm2+qwBPBc1Xq/+W3Mq6K1Wx6JP3/F
-	rqzR1jjDUdNG2NVx97yY9iu6W5xUPhau+e15SXHNb4V5d6tnbMxcqaI3d4bSCh6OmFLlNpau
-	G/4ztK+Im/mYGNyWbH/90HyRkfimp0osxRmJhlrMRcWJAHD1LOWNAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t9jAV3jTKZAg3sTNCwu75rDZjF7ST+L
-	xaJlrcwOzB6fN8kFMEY1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam
-	2iq5+AToumXmAM1XUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGbcmrKO
-	tWArf0X3xXMsDYwfeboYOTkkBEwkTi2bzwhhi0lcuLeerYuRi0NIYBGjxO7bK6CcyUwSbX8m
-	MoNUsQnoSjS93QXWISIgK3H4ym+gOAcHs0CGxIwLrCBhYYEkiZMXQQZxcrAIqEqcavzEBGLz
-	CrhL/Hi1lA1imYLEm9vPwFo5BTwklv4PBAkLAZXcPrCJdQIj7wJGhlWMoqkFyQXFSem5RnrF
-	ibnFpXnpesn5uZsYwSH/THoH46oGi0OMAhyMSjy8D5IZA4VYE8uKK3MPMUpwMCuJ8MqYMAUK
-	8aYkVlalFuXHF5XmpBYfYkwGOmois5Rocj4wHvNK4g2NTcxNjU0tTSxMzCxJE1YS52U89SRA
-	SCA9sSQ1OzW1ILUIZgsTB6dUA2Paav+wZR4nuVds2Lio68zXaF79ys1RnOIyDa9XPz/X5drd
-	s+7CCs+tzy9NYD3Vpfftp8/E9lbNXLbN5xb5HFFrYihaGKA4L3KDdHyyrcB7zuQ31o7B3C7B
-	+iUlm/+GzOjoiwrLu910QGNL6I/PBjHzstc4WNwTvXFMeYPziYIJ+3kZO/Q5/yixFGckGmox
-	FxUnAgCLdBKzvQIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 25 Jan 2013 06:15:00 -0500
+Date: Fri, 25 Jan 2013 03:14:20 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-qo2jevp1bdcnh8khzdazs17s@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, xiaoguangrong@linux.vnet.ibm.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, xiaoguangrong@linux.vnet.ibm.com,
+        dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf kvm:
+  Initialize file_name var to fix segfault
+Git-Commit-ID: 20914ce5b9e1ef4a35f1f09a2c9c8fb8eb1c4d86
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:14:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Multiple dwc3 probe calls try to allocate no_op_xceive platform
-device. Having static IDs for these will throw sysfs error -EEXIST.
-Changing these static platform device IDs to AUTO to enable
-multiple dwc3 controller support on a SoC.
+Commit-ID:  20914ce5b9e1ef4a35f1f09a2c9c8fb8eb1c4d86
+Gitweb:     http://git.kernel.org/tip/20914ce5b9e1ef4a35f1f09a2c9c8fb8eb1c4d86
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Wed, 19 Dec 2012 10:59:29 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 24 Jan 2013 16:40:13 -0300
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+perf kvm: Initialize file_name var to fix segfault
+
+The 3786063 commit:
+
+    perf kvm: Rename perf_kvm to perf_kvm_stat
+
+Moved the file_name from inside a local struct var that initialized some
+of its members, thus zero initializing the not explicitely initialized
+variables, one of which was 'file_name', to a standalone local variable,
+but forgot to initialize it explicitely to NULL, so it then got some
+undefined value, causing a segfault in strdup when it wasn't, by luck,
+zero.
+
+Fix it by explicitely initializing it to NULL.
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/n/tip-qo2jevp1bdcnh8khzdazs17s@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/usb/dwc3/dwc3-exynos.c |    4 ++--
- drivers/usb/dwc3/dwc3-omap.c   |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ tools/perf/builtin-kvm.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
-index 1e95551..b50da53 100644
---- a/drivers/usb/dwc3/dwc3-exynos.c
-+++ b/drivers/usb/dwc3/dwc3-exynos.c
-@@ -42,7 +42,7 @@ static int dwc3_exynos_register_phys(struct dwc3_exynos *exynos)
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index ca3f80e..37a769d 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -973,8 +973,7 @@ __cmd_buildid_list(const char *file_name, int argc, const char **argv)
  
- 	memset(&pdata, 0x00, sizeof(pdata));
- 
--	pdev = platform_device_alloc("nop_usb_xceiv", 0);
-+	pdev = platform_device_alloc("nop_usb_xceiv", PLATFORM_DEVID_AUTO);
- 	if (!pdev)
- 		return -ENOMEM;
- 
-@@ -53,7 +53,7 @@ static int dwc3_exynos_register_phys(struct dwc3_exynos *exynos)
- 	if (ret)
- 		goto err1;
- 
--	pdev = platform_device_alloc("nop_usb_xceiv", 1);
-+	pdev = platform_device_alloc("nop_usb_xceiv", PLATFORM_DEVID_AUTO);
- 	if (!pdev) {
- 		ret = -ENOMEM;
- 		goto err1;
-diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index 831b75f..22f337f 100644
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -203,7 +203,7 @@ static int dwc3_omap_register_phys(struct dwc3_omap *omap)
- 
- 	memset(&pdata, 0x00, sizeof(pdata));
- 
--	pdev = platform_device_alloc("nop_usb_xceiv", 0);
-+	pdev = platform_device_alloc("nop_usb_xceiv", PLATFORM_DEVID_AUTO);
- 	if (!pdev)
- 		return -ENOMEM;
- 
-@@ -214,7 +214,7 @@ static int dwc3_omap_register_phys(struct dwc3_omap *omap)
- 	if (ret)
- 		goto err1;
- 
--	pdev = platform_device_alloc("nop_usb_xceiv", 1);
-+	pdev = platform_device_alloc("nop_usb_xceiv", PLATFORM_DEVID_AUTO);
- 	if (!pdev) {
- 		ret = -ENOMEM;
- 		goto err1;
--- 
-1.7.6.5
-
+ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+-	const char *file_name;
+-
++	const char *file_name = NULL;
+ 	const struct option kvm_options[] = {
+ 		OPT_STRING('i', "input", &file_name, "file",
+ 			   "Input file name"),
