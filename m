@@ -1,128 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932179Ab3AYL7R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:59:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42163 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab3AYL7Q (ORCPT
+	id S1756107Ab3AYMAl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 07:00:41 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:65261 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751783Ab3AYMAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:59:16 -0500
-Date: Fri, 25 Jan 2013 03:58:50 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-08aa9cce6bf3ecdfa386cf0a0be842855eac3e7d@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de,
-        feng.tang@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de,
-        feng.tang@intel.com
-In-Reply-To: <1358845787-1350-14-git-send-email-namhyung@kernel.org>
-References: <1358845787-1350-14-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Move ltrim() to util/string.c
-Git-Commit-ID: 08aa9cce6bf3ecdfa386cf0a0be842855eac3e7d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:58:56 -0800 (PST)
+	Fri, 25 Jan 2013 07:00:39 -0500
+Message-ID: <1359115232.6647.14.camel@x61.thuisdomein>
+Subject: Re: [PATCH v3] lpc_ich: fix gpio base and control offsets
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Aaron Sierra <asierra@xes-inc.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        =?ISO-8859-1?Q?Ag=F3cs_P=E1l?= <agocs.pal.86@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 25 Jan 2013 13:00:32 +0100
+In-Reply-To: <CACRpkdb0V=yasmJv1ygL7cq6G3uGf6+QAZ7GR5a3bb1-XJgiiA@mail.gmail.com>
+References: <b9fec05c-d383-4282-b2af-c95855ff6abb@zimbra>
+	 <3ffa5032-0565-48f0-a4ae-473452f4c902@zimbra>
+	 <CACRpkdZHndQsDZpn7BCFNXAO3k5vREYxDJkcYQ3_3sTbKAQLLA@mail.gmail.com>
+	 <1359108275.6647.4.camel@x61.thuisdomein>
+	 <CACRpkdb0V=yasmJv1ygL7cq6G3uGf6+QAZ7GR5a3bb1-XJgiiA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Jan 2013 12:00:32.0788 (UTC) FILETIME=[93D5ED40:01CDFAF3]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  08aa9cce6bf3ecdfa386cf0a0be842855eac3e7d
-Gitweb:     http://git.kernel.org/tip/08aa9cce6bf3ecdfa386cf0a0be842855eac3e7d
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Tue, 22 Jan 2013 18:09:41 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 24 Jan 2013 16:40:49 -0300
+On Fri, 2013-01-25 at 12:06 +0100, Linus Walleij wrote:
+> Basically I do git log and when I see this I think:
+> 
+> commit 0c418844dce21fa7000b51190f393c7d6a7ee12d
+> Author: Paul Bolle <pebolle@tiscali.nl>
+> Date:   Mon Nov 19 21:04:11 2012 +0100
+> 
+>     mfd: lpc_ich: One uninitialized cell is no error
+> 
+> "Hm, there is another guy who's actually using this hardware."
 
-perf tools: Move ltrim() to util/string.c
+I see, thanks. (Note to self: I should work on my psychic abilities. If
+all those quacks can use them it can't be too hard.)
 
-As we have ltrim() implementation in builtin-script.c move it to the
-more generic location of util/string.c so that it can be used from other
-places.
+> "If this patch breaks it he will probably be upset."
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Feng Tang <feng.tang@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1358845787-1350-14-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-script.c | 12 ------------
- tools/perf/util/string.c    | 18 ++++++++++++++++++
- tools/perf/util/util.h      |  1 +
- 3 files changed, 19 insertions(+), 12 deletions(-)
+I backported this patch to 3.7.5 (which I'm still running now). That
+basically meant applying e294bc91760e11d2f1ebbac1d0a979069edf7adb ("mfd:
+lpc_ich: Fix resource request for [mem 0x00000000]") first and then
+manually adding some harmless context changes (ie, __devinit and
+__devexit stuff).
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 3314ef2..fee4c9a 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -909,18 +909,6 @@ static const char *ends_with(const char *str, const char *suffix)
- 	return NULL;
- }
- 
--static char *ltrim(char *str)
--{
--	int len = strlen(str);
--
--	while (len && isspace(*str)) {
--		len--;
--		str++;
--	}
--
--	return str;
--}
--
- static int read_script_info(struct script_desc *desc, const char *filename)
- {
- 	char line[BUFSIZ], *p;
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index 346707d..29c7b2c 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -332,6 +332,24 @@ char *strxfrchar(char *s, char from, char to)
- }
- 
- /**
-+ * ltrim - Removes leading whitespace from @s.
-+ * @s: The string to be stripped.
-+ *
-+ * Return pointer to the first non-whitespace character in @s.
-+ */
-+char *ltrim(char *s)
-+{
-+	int len = strlen(s);
-+
-+	while (len && isspace(*s)) {
-+		len--;
-+		s++;
-+	}
-+
-+	return s;
-+}
-+
-+/**
-  * rtrim - Removes trailing whitespace from @s.
-  * @s: The string to be stripped.
-  *
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index ec5de5e..09b4c26 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -265,6 +265,7 @@ bool is_power_of_2(unsigned long n)
- size_t hex_width(u64 v);
- int hex2u64(const char *ptr, u64 *val);
- 
-+char *ltrim(char *s);
- char *rtrim(char *s);
- 
- void dump_stack(void);
+Would testing on 3.7.5 be helpful?
+
+
+Paul Bolle
+
