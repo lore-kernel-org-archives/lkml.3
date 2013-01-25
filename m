@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab3AYDUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 22:20:19 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:57474 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754634Ab3AYDUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 22:20:14 -0500
-Date: Fri, 25 Jan 2013 03:20:07 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Kyle McMartin <kyle@redhat.com>, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, jstancek@redhat.com,
-        Stephan Mueller <stephan.mueller@atsec.com>
-Subject: Re: [PATCH] MODSIGN: flag modules that use cryptoapi and only
- panic if those are unsigned
-Message-ID: <20130125032007.GA15926@srcf.ucam.org>
-References: <20130124190610.GI6538@redacted.bos.redhat.com>
- <20130122184357.GD6538@redacted.bos.redhat.com>
- <8615.1358940375@warthog.procyon.org.uk>
- <50FFFF48.6020608@atsec.com>
- <9620.1359072894@warthog.procyon.org.uk>
+	id S1756718Ab3AYDUj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 22:20:39 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:48588 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754825Ab3AYDSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 22:18:51 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <balbi@ti.com>, <b-cousson@ti.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <s-guiriec@ti.com>, <gg@slimlogic.co.uk>,
+        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/6] ARM: dts: omap5: Add omap-usb3 and omap-usb2 dt data
+Date: Fri, 25 Jan 2013 08:48:32 +0530
+Message-ID: <1359083915-8690-4-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359083915-8690-1-git-send-email-kishon@ti.com>
+References: <1359083915-8690-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9620.1359072894@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 12:14:54AM +0000, David Howells wrote:
+Add omap-usb3 and omap-usb2 data node in omap5 device tree file.
+The information for the node added here is available @
+Documentation/devicetree/bindings/usb/usb-phy.txt
 
-> You can't rely on someone trying to sneak a dodgy crypto module in to set the
-> flag when they build it.  The detection thus needs to be done in the kernel
-> during the module load.
-> 
-> Can you search the module image for "crypto_register_" I wonder?  If that's
-> there, it's a crypto module.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/boot/dts/omap5.dtsi |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-If you're trying to protect against malice rather than accident, what's 
-going to stop the module from just finding and modifying data structures 
-itself? If you want to panic if you've just loaded something that might 
-compromise your crypto implementations, you've got to panic on all 
-unsigned module loads.
-
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index d149330..5f59bf2 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -519,6 +519,20 @@
+ 			#size-cells = <1>;
+ 			ranges;
+ 			ti,hwmods = "ocp2scp1";
++			usb2_phy: usb2phy@4a084000 {
++				compatible = "ti,omap-usb2";
++				reg = <0x4a084000 0x7c>;
++				ctrl_module = <&omap_control_usb>;
++			};
++
++			usb3_phy: usb3phy@4a084400 {
++				compatible = "ti,omap-usb3";
++				reg = <0x4a084400 0x80>,
++				      <0x4a084800 0x64>,
++				      <0x4a084c00 0x40>;
++				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
++				ctrl_module = <&omap_control_usb>;
++			};
+ 		};
+ 	};
+ };
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.9.5
+
