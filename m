@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601Ab3AYS21 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:28:27 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:35453 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932532Ab3AYS2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:28:23 -0500
-Subject: [PATCH 14/14] mm: Account for WRITEBACK_TEMP in balance_dirty_pages
-To: miklos@szeredi.hu
-From: "Maxim V. Patlasov" <MPatlasov@parallels.com>
-Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        devel@openvz.org
-Date: Fri, 25 Jan 2013 22:28:03 +0400
-Message-ID: <20130125182752.10037.46454.stgit@maximpc.sw.ru>
-In-Reply-To: <20130125181700.10037.29163.stgit@maximpc.sw.ru>
-References: <20130125181700.10037.29163.stgit@maximpc.sw.ru>
-User-Agent: StGit/0.15
+	id S932534Ab3AYS3S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:29:18 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:18887 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932279Ab3AYS3P convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 13:29:15 -0500
+Date: Fri, 25 Jan 2013 13:29:02 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 2/3] xen/ring: Add a new macro to detect
+ whether there is an overflow in requests and response.
+Message-ID: <20130125182902.GB32372@phenom.dumpdata.com>
+References: <1359135152-30688-1-git-send-email-konrad.wilk@oracle.com>
+ <1359135152-30688-3-git-send-email-konrad.wilk@oracle.com>
+ <5102C4B9.8050801@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <5102C4B9.8050801@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make balance_dirty_pages start the throttling when the WRITEBACK_TEMP
-counter is high enough. This prevents us from having too many dirty
-pages on fuse, thus giving the userspace part of it a chance to write
-stuff properly.
+On Fri, Jan 25, 2013 at 06:45:29PM +0100, Roger Pau Monné wrote:
+> On 25/01/13 18:32, Konrad Rzeszutek Wilk wrote:
+> > We want to be able to exit if the difference between the request
+> > produced (what the frontend tells us) and the requests consumed
+> > (what we have so far processed) is greater than the ring size.
+> > 
+> > If so, we should terminate the loop as the request produced
+> > is not trusted and it means it is bogus.
+> > 
+> > Cc: stable@vger.kernel.org
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  include/xen/interface/io/ring.h | 6 ++++++
+> >  1 file changed, 6 insertions(+)
+> > 
+> > diff --git a/include/xen/interface/io/ring.h b/include/xen/interface/io/ring.h
+> > index 75271b9..1114dde 100644
+> > --- a/include/xen/interface/io/ring.h
+> > +++ b/include/xen/interface/io/ring.h
+> > @@ -188,6 +188,12 @@ struct __name##_back_ring {						\
+> >  #define RING_REQUEST_CONS_OVERFLOW(_r, _cons)				\
+> >      (((_cons) - (_r)->rsp_prod_pvt) >= RING_SIZE(_r))
+> >  
+> > +/* Loop termination condition: Is the difference between request produced
+> > + * and request consumed greater than the ring size. If so, terminate the
+> > + * loop. */
+> > +#define RING_REQUEST_PROD_OVERFLOW(_r, _cons, _prod)                     \
+> > +    (((_prod) - (_prod)) > RING_SIZE(_r))
+> 
+> Shouldn't the second _prod be _cons?
 
-Note, that the existing balance logic is per-bdi, i.e. if the fuse
-user task gets stuck in the function this means, that it either
-writes to the mountpoint it serves (but it can deadlock even without
-the writeback) or it is writing to some _other_ dirty bdi and in the
-latter case someone else will free the memory for it.
+Yes :-) Was just testing everybody :-)
 
-Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
-Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
----
- mm/page-writeback.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 0713bfb..c47bcd4 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1235,7 +1235,8 @@ static void balance_dirty_pages(struct address_space *mapping,
- 		 */
- 		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
- 					global_page_state(NR_UNSTABLE_NFS);
--		nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK);
-+		nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK) +
-+			global_page_state(NR_WRITEBACK_TEMP);
- 
- 		global_dirty_limits(&background_thresh, &dirty_thresh);
- 
-
+> 
+> > +
+> >  #define RING_PUSH_REQUESTS(_r) do {					\
+> >      wmb(); /* back sees requests /before/ updated producer index */	\
+> >      (_r)->sring->req_prod = (_r)->req_prod_pvt;				\
+> > 
+> 
