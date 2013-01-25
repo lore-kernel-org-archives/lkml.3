@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431Ab3AYG2S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 01:28:18 -0500
-Received: from nbd.name ([46.4.11.11]:53539 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017Ab3AYG2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 01:28:14 -0500
-Message-ID: <51022564.1090109@phrozen.org>
-Date: Fri, 25 Jan 2013 07:25:40 +0100
-From: John Crispin <john@phrozen.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
+	id S1751534Ab3AYG3t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 01:29:49 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:28834 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751017Ab3AYG3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 01:29:46 -0500
+X-IronPort-AV: E=Sophos;i="4.84,536,1355068800"; 
+   d="scan'208";a="6645016"
+Message-ID: <5102264E.9020604@cn.fujitsu.com>
+Date: Fri, 25 Jan 2013 14:29:34 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: =?GB2312?B?s8K7qrLF?= <chenhc@lemote.com>
-CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
-        Zhangjin Wu <wuzhangjin@gmail.com>, Hongliang Tao <taohl@lemote.com>,
-        Hua Yan <yanh@lemote.com>
-Subject: Re: [PATCH V8 00/13] MIPS: Add Loongson-3 based machines support
-References: <2658.219.143.8.242.1359072905.squirrel@mail.lemote.com>
-In-Reply-To: <2658.219.143.8.242.1359072905.squirrel@mail.lemote.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, jasowang@redhat.com,
+        linux-scsi@vger.kernel.org, Stable <stable@vger.kernel.org>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Initialize the sglist
+References: <1359075861-1014-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1359075861-1014-1-git-send-email-kys@microsoft.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 14:28:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 14:28:44,
+	Serialize complete at 2013/01/25 14:28:44
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/01/13 01:15, ³Â»ª²Å wrote:
-> ok, I'll prepare v9 of this seris in these days.
->>
-
-
-Please dont send v9
-
-read my mail and compile / runtime test the tree please
-
-only patch 3 needs to be reworked and an update for the "MIPS: Loongson
-3: Add HT-linked PCI support." needs to e made
-
-	John
-
->>>
->>> Huacai Chen(13):
->>>    MIPS: Loongson: Add basic Loongson-3 definition.
->>>    MIPS: Loongson: Add basic Loongson-3 CPU support.
->>>    MIPS: Loongson: Introduce and use cpu_has_coherent_cache feature.
->>>    MIPS: Loongson 3: Add Lemote-3A machtypes definition.
->>>    MIPS: Loongson: Add UEFI-like firmware interface support.
->>>    MIPS: Loongson 3: Add HT-linked PCI support.
->>>    MIPS: Loongson 3: Add IRQ init and dispatch support.
->>>    MIPS: Loongson 3: Add serial port support.
->>>    MIPS: Loongson: Add swiotlb to support big memory (>4GB).
->>>    MIPS: Loongson: Add Loongson-3 Kconfig options.
->>>    MIPS: Loongson 3: Add Loongson-3 SMP support.
->>>    MIPS: Loongson 3: Add CPU hotplug support.
->>>    MIPS: Loongson: Add a Loongson-3 default config file.
->>>
->>> Signed-off-by: Huacai Chen<chenhc@lemote.com>
->>> Signed-off-by: Hongliang Tao<taohl@lemote.com>
->>> Signed-off-by: Hua Yan<yanh@lemote.com>
->>> ---
->>
->> Hi,
->>
->> I have added all patches apart from 3/13 to my queue.
->>
->> I believe "MIPS: Loongson: Introduce and use cpu_has_coherent_cache
->> feature." should e rewritten in a saner way.
->>
->> Please compile and runtime test the tree before I send it to Ralf
->> -->
->> http://git.linux-mips.org/?p=john/linux-john.git;a=shortlog;h=refs/heads/mips-next-3.9
->>
->> I cleaned up a few minor whitespace errors while merging.
->>
->> http://patchwork.linux-mips.org/patch/4547/ has a few comments. Please
->> prepare a patch asap to address those so i can fold it into the series.
->>
->> 	John
->>
+On 01/25/2013 09:04 AM, K. Y. Srinivasan wrote:
+> Properly initialize scatterlist before using it.
 > 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Cc: Stable <stable@vger.kernel.org>
+
+Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+
+> ---
+>  drivers/scsi/storvsc_drv.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+> index 270b3cf..5ada1d0 100644
+> --- a/drivers/scsi/storvsc_drv.c
+> +++ b/drivers/scsi/storvsc_drv.c
+> @@ -467,6 +467,7 @@ static struct scatterlist *create_bounce_buffer(struct scatterlist *sgl,
+>  	if (!bounce_sgl)
+>  		return NULL;
+>  
+> +	sg_init_table(bounce_sgl, num_pages);
+>  	for (i = 0; i < num_pages; i++) {
+>  		page_buf = alloc_page(GFP_ATOMIC);
+>  		if (!page_buf)
 > 
 
