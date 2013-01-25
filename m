@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab3AYDrI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 22:47:08 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50625 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754519Ab3AYDrG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 22:47:06 -0500
-Message-ID: <5101FFF5.6030503@oracle.com>
-Date: Thu, 24 Jan 2013 22:45:57 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
+	id S1755284Ab3AYDvH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 22:51:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34195 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754372Ab3AYDvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 22:51:04 -0500
+Message-ID: <51020120.5000500@redhat.com>
+Date: Fri, 25 Jan 2013 11:50:56 +0800
+From: Lingzhu Xiang <lxiang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@fusionio.com>
-CC: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: boot warnings due to swap: make each swap partition have one address_space
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Matt Fleming <matt.fleming@intel.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] efivars write(2) races
+References: <20130125002552.GC4503@ZenIV.linux.org.uk>
+In-Reply-To: <20130125002552.GC4503@ZenIV.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks,
+On 01/25/2013 08:25 AM, Al Viro wrote:
+> 	1) process A does write() on efivars file, reaches ->get_variable(),
+> gets newdatasize set, drops efivars->lock and loses CPU before an attempt to
+> grab ->i_mutex.  process B comes and does the same thing, replacing the
+> variable contents.  Then it grabs ->i_mutex, updates size, drops ->i_mutex
+> and buggers off.  At which point A gets CPU back and proceeds to set size
+> to whatever would be valid for its write.  Only the value is bogus now...
 
-Commit "swap: make each swap partition have one address_space" is triggering
-a series of warnings on boot:
+There are a few other things that makes size bogus now.
 
-[    3.446071] ------------[ cut here ]------------
-[    3.446664] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8e/0xb0()
-[    3.447715] ODEBUG: init active (active state 0) object type: percpu_counter hint:           (null)
-[    3.450360] Modules linked in:
-[    3.451593] Pid: 1, comm: swapper/0 Tainted: G        W    3.8.0-rc4-next-20130124-sasha-00004-g838a1b4 #266
-[    3.454508] Call Trace:
-[    3.455248]  [<ffffffff8110d1bc>] warn_slowpath_common+0x8c/0xc0
-[    3.455248]  [<ffffffff8110d291>] warn_slowpath_fmt+0x41/0x50
-[    3.455248]  [<ffffffff81a2bb5e>] debug_print_object+0x8e/0xb0
-[    3.455248]  [<ffffffff81a2c26b>] __debug_object_init+0x20b/0x290
-[    3.455248]  [<ffffffff81a2c305>] debug_object_init+0x15/0x20
-[    3.455248]  [<ffffffff81a3fbed>] __percpu_counter_init+0x6d/0xe0
-[    3.455248]  [<ffffffff81231bdc>] bdi_init+0x1ac/0x270
-[    3.455248]  [<ffffffff8618f20b>] swap_setup+0x3b/0x87
-[    3.455248]  [<ffffffff8618f257>] ? swap_setup+0x87/0x87
-[    3.455248]  [<ffffffff8618f268>] kswapd_init+0x11/0x7c
-[    3.455248]  [<ffffffff810020ca>] do_one_initcall+0x8a/0x180
-[    3.455248]  [<ffffffff86168cfd>] do_basic_setup+0x96/0xb4
-[    3.455248]  [<ffffffff861685ae>] ? loglevel+0x31/0x31
-[    3.455248]  [<ffffffff861885cd>] ? sched_init_smp+0x150/0x157
-[    3.455248]  [<ffffffff86168ded>] kernel_init_freeable+0xd2/0x14c
-[    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
-[    3.455248]  [<ffffffff83cade19>] kernel_init+0x9/0xf0
-[    3.455248]  [<ffffffff83d5727c>] ret_from_fork+0x7c/0xb0
-[    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
-[    3.455248] ---[ end trace 0b176d5c0f21bffb ]---
+1. truncate() never touches nvram but pretends to be changing size.
 
-I haven't looked deeper into it yet, and will do so tomorrow, unless this
-spew is obvious to anyone.
+2. Empty files come back with non-zero size after remount. They are imported
+   from sysfs when mounting.
 
+3. Arguably reading empty files could just return empty instead of returning
+   EIO/EFI_NOT_FOUND from firmware. 
 
-Thanks,
-Sasha
+4. EFI_VARIABLE_APPEND_WRITE with EFI_OUT_OF_RESOURCES truncates size but you
+   can still read its content.
