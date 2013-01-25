@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab3AYISC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 03:18:02 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:37057 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab3AYIR6 (ORCPT
+	id S1753680Ab3AYISO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 03:18:14 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:41412 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416Ab3AYISM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 03:17:58 -0500
+	Fri, 25 Jan 2013 03:18:12 -0500
+Date: Fri, 25 Jan 2013 08:18:11 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Afzal Mohammed <afzal@ti.com>
+cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v2 1/4] ARM: OMAP2+: dpll: round rate to closest value
+In-Reply-To: <871e6890897534b6c3669e252f23bef5ff1247b6.1358937533.git.afzal@ti.com>
+Message-ID: <alpine.DEB.2.00.1301250816010.471@utopia.booyaka.com>
+References: <cover.1358937533.git.afzal@ti.com> <871e6890897534b6c3669e252f23bef5ff1247b6.1358937533.git.afzal@ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1358889025-8530-4-git-send-email-gregory.clement@free-electrons.com>
-References: <1358889025-8530-1-git-send-email-gregory.clement@free-electrons.com>
-	<1358889025-8530-4-git-send-email-gregory.clement@free-electrons.com>
-Date: Fri, 25 Jan 2013 09:17:57 +0100
-Message-ID: <CACRpkdbBOQ_KE001kfORapo9=WiJYn04MmRhxnn-5v8ki-EeyA@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] arm: mvebu: enable gpio expander over i2c on
- Mirabox platform
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
-        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 10:10 PM, Gregory CLEMENT
-<gregory.clement@free-electrons.com> wrote:
+Hi
 
-> The Globalscale Mirabox platform can be connected to the JTAG/GPIO box
-> through the Multi-IO port. The GPIO box use the NXP PCA9505 I/O port
-> expansion IC to provide 40-bit parallel input/output GPIOs. This patch
-> enable the use of this expander on the Mirabox.
->
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+On Wed, 23 Jan 2013, Afzal Mohammed wrote:
 
-So as requested I leave this patch for now, tell me if you want it
-applied through pinctrl.
+> Currently round rate function would return proper rate iff requested
+> rate exactly matches the PLL lockable rate. This causes set_rate to
+> fail if exact rate could not be set. Instead round rate may return
+> closest rate possible (less than the requested). And if any user is
+> badly in need of exact rate, then return value of round rate could
+> be used to decide whether to invoke set rate or not.
+> 
+> Modify round rate so that it return closest possible rate.
 
-Yours,
-Linus Walleij
+This doesn't look like the right approach to me.  For some PLLs, an exact 
+rate is desired.
+
+We removed the rate tolerance code in commit 
+241d3a8dca239610d3d991bf58d4fe38c2d86fd5, but that was probably premature.  
+We've encountered several situations now where we could really use it, 
+like MPU CPUFreq.  I'd suggest reverting 
+241d3a8dca239610d3d991bf58d4fe38c2d86fd5 or using a similar approach.
+
+
+- Paul
