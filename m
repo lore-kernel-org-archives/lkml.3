@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab3AYC3U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 21:29:20 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:48250 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755284Ab3AYC3M (ORCPT
+	id S1756515Ab3AYCaL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 21:30:11 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:24511 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755284Ab3AYCaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 21:29:12 -0500
-Message-ID: <5101ED8C.9030205@huawei.com>
-Date: Fri, 25 Jan 2013 10:27:24 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Thu, 24 Jan 2013 21:30:07 -0500
+X-Spam-Score: -100.9
+Message-ID: <5101EE2B.3080004@asianux.com>
+Date: Fri, 25 Jan 2013 10:30:03 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v2 6/6] cgroup: remove bogus comments in cgroup_diput()
-References: <5100D4FE.9080205@huawei.com> <5100D562.6050407@huawei.com> <20130124214917.GU2373@mtj.dyndns.org>
-In-Reply-To: <20130124214917.GU2373@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+To: "Theodore Ts'o" <tytso@mit.edu>, Valdis.Kletnieks@vt.edu,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Consult] Plan: personal contributes plan for 2013
+References: <50FFCA59.5070903@asianux.com> <30811.1359070263@turing-police.cc.vt.edu> <20130125021437.GA28908@thunk.org>
+In-Reply-To: <20130125021437.GA28908@thunk.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Jan 24, 2013 at 02:32:02PM +0800, Li Zefan wrote:
->> Since commit 48ddbe194623ae089cc0576e60363f2d2e85662a
->> ("cgroup: make css->refcnt clearing on cgroup removal optional"),
->> each css holds a ref on cgroup's dentry, so cgroup_diput() won't be
->> called until all css' refs go down to 0, which invalids the comments.
->>
->> Signed-off-by: Li Zefan <lizefan@huawei.com>
->> ---
->>  kernel/cgroup.c | 6 ------
->>  1 file changed, 6 deletions(-)
->>
->> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
->> index f18b0d9..368cff1 100644
->> --- a/kernel/cgroup.c
->> +++ b/kernel/cgroup.c
->> @@ -899,12 +899,6 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
->>  		struct cgroup *cgrp = dentry->d_fsdata;
->>  
->>  		BUG_ON(!(cgroup_is_removed(cgrp)));
->> -		/* It's possible for external users to be holding css
->> -		 * reference counts on a cgroup; css_put() needs to
->> -		 * be able to access the cgroup after decrementing
->> -		 * the reference count in order to know if it needs to
->> -		 * queue the cgroup to be handled by the release
->> -		 * agent */
-> 
-> The latter half is still true tho.  I applied the patch anyway as the
-> comment isn't all that useful without covering everything intended to
-> be covered with RCU.  Can you please write up another patch
-> documenting what's covered by RCU (stuff that we intend to keep
-> guaranteeing to be safe to access only w/ RCU)?
+于 2013年01月25日 10:14, Theodore Ts'o 写道:
+> Just to be curious, I checked the number of commits I've done in the
+> past 12 months, and it's 99, for an average of a bit over 8 patches a
+> month.  (via "git log --author=tytso --since="1 year ago" --oneline |
+> wc -l")
 > 
 
-Sure. I'll try.
+  thank you very much for your information which I can according to.
+  it is quite valuable for me to make my plan.
 
+
+> More importantly, it's important to shoot for quality, not quantity.
+> 10 patches a month which fixes whitespaces in code that you're not
+> touching anyway just generates work for maintainers without materially
+> improving the quality of the kernel.
+> 
+
+  really necessary to give enough limitations (this is just my plan does):
+
+    patch contents: which sub-system, API (document), architecture, ...
+
+    patch type: functional features or none-functional features
+                for non-functional features:
+                  bug fix: memory overflow, resource management ...
+                  API:  comments, documents, MAINTAINERS, ...
+                  others: beautify code, ...
+
+    marked as: Reported-by or Signed-of-by, ...
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
