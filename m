@@ -1,85 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403Ab3AYM3w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 07:29:52 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:54485 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755929Ab3AYM3u convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 07:29:50 -0500
-Date: Fri, 25 Jan 2013 12:29:43 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "b-cousson@ti.com" <b-cousson@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v4 1/4] drivers: usb: phy: add a new driver for usb
- part of control module
-Message-ID: <20130125122943.GB16795@e106331-lin.cambridge.arm.com>
-References: <1359109440-2195-1-git-send-email-kishon@ti.com>
- <1359109440-2195-2-git-send-email-kishon@ti.com>
- <20130125110141.GK3075@e106331-lin.cambridge.arm.com>
- <20130125111120.GP15886@arwen.pp.htv.fi>
+	id S1756604Ab3AYMcX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 07:32:23 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45280 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755243Ab3AYMcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 07:32:21 -0500
+Message-ID: <51027B43.1080504@ti.com>
+Date: Fri, 25 Jan 2013 13:32:03 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130125111120.GP15886@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 25 Jan 2013 12:29:44.0411 (UTC) FILETIME=[A7E262B0:01CDFAF7]
-X-MC-Unique: 113012512294701701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Florian Vaussard <florian.vaussard@epfl.ch>
+CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        <linux-leds@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] pwm: Add pwm_cansleep() as exported API to users
+References: <1359108114-16998-1-git-send-email-florian.vaussard@epfl.ch> <1359108114-16998-2-git-send-email-florian.vaussard@epfl.ch>
+In-Reply-To: <1359108114-16998-2-git-send-email-florian.vaussard@epfl.ch>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-
-> > > +OMAP CONTROL USB
-> > > +
-> > > +Required properties:
-> > > + - compatible: Should be "ti,omap-control-usb"
-> > > + - reg : Address and length of the register set for the device. It contains
-> > > +   the address of "control_dev_conf" and "otghs_control" or "phy_power_usb"
-> > 
-> > Could you not use '-' over '_' here?
+On 01/25/2013 11:01 AM, Florian Vaussard wrote:
+> Calls to some external PWM chips can sleep. To help users,
+> add pwm_cansleep() API.
 > 
-> that's part of omap hwmod.
-
-Aha, that makes sense (unlike my original comment, now I reread it). Sorry for
-the noise.
-
-> > > +   depending upon omap4 or omap5.
-> > > + - reg-names: The names of the register addresses corresponding to the registers
-> > > +   filled in "reg".
-> > > + - ti,type: This is used to differentiate whether the control module has
-> > > +   usb mailbox or usb3 phy power. omap4 has usb mailbox in control module to
-> > > +   notify events to the musb core and omap5 has usb3 phy power register to
-> > > +   power on usb3 phy. Should be "1" if it has mailbox and "2" if it has usb3
-> > > +   phy power.
-> > 
-> > Why not make this a string property, perhaps values "mailbox" or "register"?
+> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+> ---
+>  drivers/pwm/core.c  |   12 ++++++++++++
+>  include/linux/pwm.h |   10 ++++++++++
+>  2 files changed, 22 insertions(+), 0 deletions(-)
 > 
-> NAK.
+> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+> index 4a13da4..f49bfa6 100644
+> --- a/drivers/pwm/core.c
+> +++ b/drivers/pwm/core.c
+> @@ -763,6 +763,18 @@ void devm_pwm_put(struct device *dev, struct pwm_device *pwm)
+>  }
+>  EXPORT_SYMBOL_GPL(devm_pwm_put);
+>  
+> +/**
+> +  * pwm_can_sleep() - report whether pwm access will sleep
+> +  * @pwm: PWM device
+> +  *
+> +  * It returns nonzero if accessing the PWM can sleep.
+> +  */
+> +int pwm_can_sleep(struct pwm_device *pwm)
+> +{
+> +	return pwm->chip->can_sleep;
+> +}
+> +EXPORT_SYMBOL_GPL(pwm_can_sleep);
 
-Can I ask what your objection to using a string property is?
+Can we name this as pwm_cansleep() to be more alligned with the
+gpio_cansleep() API?
 
-As far as I can see, "ti,type" is only used by this driver, so there's no
-common convention to stick to. Using a string makes the binding easier for
-humans to read, and thus harder to mess up in a dts, and it decouples the
-binding from kernel-side constants.
+> +
+>  #ifdef CONFIG_DEBUG_FS
+>  static void pwm_dbg_show(struct pwm_chip *chip, struct seq_file *s)
+>  {
+> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+> index 70655a2..2aee75d 100644
+> --- a/include/linux/pwm.h
+> +++ b/include/linux/pwm.h
+> @@ -146,6 +146,8 @@ struct pwm_ops {
+>   * @base: number of first PWM controlled by this chip
+>   * @npwm: number of PWMs controlled by this chip
+>   * @pwms: array of PWM devices allocated by the framework
+> + * @can_sleep: flag must be set iff config()/enable()/disable() methods sleep,
+> + *      as they must while accessing PWM chips over I2C or SPI
+>   */
+>  struct pwm_chip {
+>  	struct device		*dev;
+> @@ -159,6 +161,7 @@ struct pwm_chip {
+>  	struct pwm_device *	(*of_xlate)(struct pwm_chip *pc,
+>  					    const struct of_phandle_args *args);
+>  	unsigned int		of_pwm_n_cells;
+> +	unsigned int		can_sleep:1;
+>  };
+>  
+>  #if IS_ENABLED(CONFIG_PWM)
+> @@ -182,6 +185,8 @@ struct pwm_device *devm_pwm_get(struct device *dev, const char *con_id);
+>  struct pwm_device *devm_of_pwm_get(struct device *dev, struct device_node *np,
+>  				   const char *con_id);
+>  void devm_pwm_put(struct device *dev, struct pwm_device *pwm);
+> +
+> +int pwm_can_sleep(struct pwm_device *pwm);
+>  #else
+>  static inline int pwm_set_chip_data(struct pwm_device *pwm, void *data)
+>  {
+> @@ -242,6 +247,11 @@ static inline struct pwm_device *devm_of_pwm_get(struct device *dev,
+>  static inline void devm_pwm_put(struct device *dev, struct pwm_device *pwm)
+>  {
+>  }
+> +
+> +static inline int pwm_can_sleep(struct pwm_device *pwm)
+> +{
+> +	return -EINVAL;
 
-Thanks,
-Mark.
+I think we should return 0 here instead an error.
 
+> +}
+>  #endif
+>  
+>  struct pwm_lookup {
+> 
+
+
+-- 
+Péter
