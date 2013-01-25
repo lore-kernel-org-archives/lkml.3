@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932320Ab3AYOPI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 09:15:08 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:57653 "EHLO
+	id S1757460Ab3AYOPF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 09:15:05 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:55091 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757441Ab3AYOPC (ORCPT
+	with ESMTP id S1757366Ab3AYOO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 09:15:02 -0500
+	Fri, 25 Jan 2013 09:14:56 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@list.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Jean-Nicolas Graux <jean-nicolas.graux@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Subject: [PATCH 13/19] pinctrl: nomadik: nmk_prcm_gpiocr_get_mode may be unused
-Date: Fri, 25 Jan 2013 14:14:30 +0000
-Message-Id: <1359123276-15833-14-git-send-email-arnd@arndb.de>
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: [PATCH 09/19] mfd/twl4030: don't warn about uninitialized return code
+Date: Fri, 25 Jan 2013 14:14:26 +0000
+Message-Id: <1359123276-15833-10-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1359123276-15833-1-git-send-email-arnd@arndb.de>
 References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:ESJk5c5wDulP3avvEH7Ho6wjaDeWVHQEIS4klh6Zv6v
- D/ZZ1xtw+rvOvaE19h4l+A10q601aLC+JgjYDKyLg+Q3zdUXCN
- d0+zOHsEZ6nwdqrhPHptS7V5d1JyLGIaOLOE1CgA+fXreU4kT4
- 3BohLJtIL+yhD6ScS1eEgXo5agamdzEKVoMsj3X9RLPrCsXv5l
- OCbR5HvRA4KjQ9OGk9wZ18wRiV370xa4hOacHrYqy8XnYRon5N
- TXA7aUbr80NEHX3XBeY5bDVZB6HFKBURXjH9mV+uODgBEko2t7
- d54kE2tKxDeflAEW/oONLdPD3UHxwxt6BRUVecKd0aEDWiiyZi
- M1c7EENOEyWw79FiuJPK3hvBZGIza70nbuj4D/KIP
+X-Provags-ID: V02:K0:ioH+4KJzdViZlGhVN6SLO/cvlpyMPvH2kx7+pz8Dr+W
+ gazgGOgHCzjWY6UyGI61QXVR20fHrSl8S8Ic3jjjkDWvM2ctsO
+ l2s15jqXYI/Z9FwV8phiTTlmRsRpoRzHZapqfIKQ/zmBt+Tne7
+ ufQ3lzbqcc3SzV3al5GVXEmILU6A1/ftTo3k9yVkOkF9G6YbBr
+ YFssqj+S3CbdKs6mY+j/dLBngeh9EwIISlF1sqeEyQ7terqcOv
+ KEwlLuinKhvx460Sy9FNnz2f1Am5cp+ytDrv66S+pmcad8xoTh
+ 4VlKCWOkYGmPqUriP7cycMiJXqOWK1tocyK31nS5db9+a450nK
+ LnsH3L3GUgSguYxr9hek7/fSzRmMFzg9WV8icoY8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nmk_prcm_gpiocr_get_mode is only needed for debugfs output at
-the moment, which can be compile-time disabled. Marking
-the function __maybe_unused still gives us compile-time
-coverage, but avoids a gcc warning.
+If the twl4030_write_script function gets called with
+a zero length argument, its return value does not
+get set. We know that all scripts have a nonzero
+length, but returning an error in case they ever
+do is probably appropriate.
 
-Without this patch, building nhk8815_defconfig results in:
+Without this patch, building omap2plus_defconfig results in:
 
-drivers/pinctrl/pinctrl-nomadik.c:676:12: warning: 'nmk_prcm_gpiocr_get_mode' defined but not used [-Wunused-function]
+drivers/mfd/twl4030-power.c: In function 'load_twl4030_script':
+drivers/mfd/twl4030-power.c:414:5: error: 'err' may be used uninitialized in this function
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jean-Nicolas Graux <jean-nicolas.graux@stericsson.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>
 ---
- drivers/pinctrl/pinctrl-nomadik.c | 2 +-
+ drivers/mfd/twl4030-power.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index 1bb16ff..5767b18 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -676,7 +676,7 @@ int nmk_gpio_set_mode(int gpio, int gpio_mode)
- }
- EXPORT_SYMBOL(nmk_gpio_set_mode);
- 
--static int nmk_prcm_gpiocr_get_mode(struct pinctrl_dev *pctldev, int gpio)
-+static int __maybe_unused nmk_prcm_gpiocr_get_mode(struct pinctrl_dev *pctldev, int gpio)
+diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
+index 4dae241..dd362c1 100644
+--- a/drivers/mfd/twl4030-power.c
++++ b/drivers/mfd/twl4030-power.c
+@@ -159,7 +159,7 @@ out:
+ static int twl4030_write_script(u8 address, struct twl4030_ins *script,
+ 				       int len)
  {
- 	int i;
- 	u16 reg;
+-	int err;
++	int err = -EINVAL;
+ 
+ 	for (; len; len--, address++, script++) {
+ 		if (len == 1) {
 -- 
 1.8.0
 
