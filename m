@@ -1,97 +1,543 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011Ab3AYHsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 02:48:47 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46918 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180Ab3AYHsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 02:48:45 -0500
-Date: Fri, 25 Jan 2013 09:48:18 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Kishon Vijay Abraham I <kishon@ti.com>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <tony@atomide.com>, <balbi@ti.com>,
-        <b-cousson@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <gregkh@linuxfoundation.org>,
-        <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 1/4] drivers: usb: phy: add a new driver for usb part
- of control module
-Message-ID: <20130125074818.GF15886@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1359080391-5120-1-git-send-email-kishon@ti.com>
- <1359080391-5120-2-git-send-email-kishon@ti.com>
- <510218FE.8080606@wwwdotorg.org>
+	id S1753359Ab3AYHtP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 02:49:15 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:53700 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab3AYHtN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 02:49:13 -0500
+Date: Fri, 25 Jan 2013 08:48:51 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Jingoo Han <jg1.han@samsung.com>
+cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-sh@vger.kernel.org, "'Magnus Damm'" <magnus.damm@gmail.com>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] backlight: add an AS3711 PMIC backlight driver
+In-Reply-To: <00c901cdfabb$a9989570$fcc9c050$%han@samsung.com>
+Message-ID: <Pine.LNX.4.64.1301250836280.17518@axis700.grange>
+References: <Pine.LNX.4.64.1301081846020.1794@axis700.grange>
+ <00c901cdfabb$a9989570$fcc9c050$%han@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AGZzQgpsuUlWC1xT"
-Content-Disposition: inline
-In-Reply-To: <510218FE.8080606@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:0DRMqRUEk33sauN85/+nuqY6+2/EZVVNA2878R6TIxh
+ DqBrbQfihNmczS136yt4SEGUup4McRSqHMSEWrbTVZ0yyBvokn
+ a0hYY48DBfS1bkrwx2kbk88AcFltV25V9XlDCIZd8W8ncG2uY/
+ 8lx8owYEYEi6PAOv95mwpiv1Bl475HQOrXai+V31xlCACWDDlH
+ lTsWaZIxSgBT5UyqExRdP6rsNrW1CIa3s0P1fcE1Sl55Jweri4
+ HTIKUhn1w7xFwg5cLle7y08TmwMp0q1B2Ew/f548p6SkrSrz16
+ 7D9y06QPfVNyTWjWIzD16nx9yrZGZWWSXrDbp7nlrebgPZVKZO
+ 6jDKPqNDGMi+N8kIgv7hoeFtrpeS/R/wJjP91xz90VfJ6qRue2
+ Acd1oJqYlHrUQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---AGZzQgpsuUlWC1xT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Jingoo Han
 
-On Thu, Jan 24, 2013 at 09:32:46PM -0800, Stephen Warren wrote:
-> On 01/24/2013 06:19 PM, Kishon Vijay Abraham I wrote:
-> > Added a new driver for the usb part of control module. This has an API
-> > to power on the USB2 phy and an API to write to the mailbox depending on
-> > whether MUSB has to act in host mode or in device mode.
-> >=20
-> > Writing to control module registers for doing the above task which was
-> > previously done in omap glue and in omap-usb2 phy will be removed.
->=20
-> > diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Docume=
-ntation/devicetree/bindings/usb/usb-phy.txt
->=20
-> This file seems to be specific to the TI USB PHYs, not all USB PHYs;
-> shouldn't it be renamed ti-usb-phy.txt, or even better renamed to match
-> the compatible value it documents, giving ti,omap-usb2.txt?
+On Fri, 25 Jan 2013, Jingoo Han wrote:
 
-could be, but that can be done as a separate patch. It's not part of
-$SUBJECT.
+> On Wednesday, January 09, 2013 2:55 AM, Guennadi Liakhovetski wrote
+> > 
+> > This is an initial commit of a backlight driver, using step-up DCDC power
+> > supplies on AS3711 PMIC. Only one mode has actually been tested, several
+> > further modes have been implemented "dry," but disabled to avoid accidental
+> > hardware damage. Anyone wishing to use any of those modes will have to
+> > modify the driver.
+> > 
+> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> 
+> CC'ed Andrew Morton.
+> 
+> Hi Guennadi Liakhovetski,
+> 
+> I have reviewed this patch with AS3711 datasheet.
+> I cannot find any problems. It looks good.
 
-> >  add the address of control module dev conf register until a driver for
-> >  control module is added
-> > =20
-> > +Optional properties:
-> > + - ctrl_module : phandle of the control module used by PHY driver to p=
-ower on
-> > +   the PHY.
->=20
-> DT property names generally use - not _ as the word separator.
+Thanks for the review.
 
-fair enough, Kishon, can you fix this up ?
+> However, some hardcoded numbers need to be changed
+> to the bit definitions.
 
---=20
-balbi
+Which specific hardcoded values do you mean? A while ago in a discussion 
+on one of kernel mailing lists a conclusion has been made, that macros do 
+not always improve code readability. E.g. in a statement like this
 
---AGZzQgpsuUlWC1xT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
++	case AS3711_SU2_CURR_AUTO:
++		if (pdata->su2_auto_curr1)
++			ctl = 2;
++		if (pdata->su2_auto_curr2)
++			ctl |= 8;
++		if (pdata->su2_auto_curr3)
++			ctl |= 0x20;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+making it 
 
-iQIcBAEBAgAGBQJRAjjCAAoJEIaOsuA1yqREqsYQAIDbG9pMox9MzMhLTQ3nYziI
-UI4lVKJSkHvwAaSrZdUdlt88HQeHD1iDUY9H6S5VFX5L7FnkhtNYvHfcVNpIWlf4
-bvB3kCmueLELHn1jhnss8gZzYo+c2jhRNF7rccdVFQ2w5A+O30eVmknphAc5KURX
-P80JDFpmY4yfVbHOgkZ6sd2Dqy0GhqRj9nOftN5Rp0FLrnkpa5BqGcgq8WcvmgZ7
-Fj5nGHaoTD/MrkbfwtjeGiKAU0zkjBgXIQbKeZT3sqPYrB2/6OKx8MyzWIEtoDK/
-imV6BH/gUoIldGjPG5TsaDzcxoEy13waz71pIENTpgIUzahe6MRZelXsDQW4ZBSh
-5i2uFYnIbzkJz0yhZ5oURwhP26wfaS5MsXtADAtl2d5P2n9mEFrqXn3mOprSBPup
-Bm8xkse21bCLccG6vL84hQNirqTRvl9LICw2R/P3+ly4tNCgrSTMnxDU0BdqZJYB
-LKemOPGp/D0iNR6k8cQY15w26Uvb+R5oy7HUPshtAf4W/zePWat3iGN/MapqOue9
-vps1bWKdr1qg4K9TpmcLUAOAnnGsg3TtBZSz1gw7GAKanK8FcEohHeRJMLArvThV
-c/T9C5sfBw8F21FoXs9DagR+Msv9JBkRpzIHRlDPcY0eqAo3cfrMBFrGqot4M5Et
-OEGn/zmfPgNfBA5pqgke
-=GAPu
------END PGP SIGNATURE-----
++	case AS3711_SU2_CURR_AUTO:
++		if (pdata->su2_auto_curr1)
++			ctl = SU2_AUTO_CURR1;
 
---AGZzQgpsuUlWC1xT--
+would hardly make it more readable. IMHO it is already pretty clear, that 
+bit 1 enables the current-1 sink. As long as these fields are only used at 
+one location in the driver (and they are), using a macro and defining it 
+elsewhere only makes it harder to see actual values. Speaking of this, a 
+comment like
+
+		/*
+		 * Select, which current sinks shall be used for automatic 
+		 * feedback selection
+		 */
+
+would help much more than any macro names. But as it stands, I think the 
+current version is also possible to understand :-) If desired, however, 
+comments can be added in an incremental patch.
+
+Thanks
+Guennadi
+
+> Acked-by: Jingoo Han <jg1.han@samsung.com>
+> 
+> 
+> Best regards,
+> Jingoo Han
+> 
+> > ---
+> > 
+> > Tested on sh73a0-based kzm9g board. As the commit message says, only one
+> > mode has been tested and is enabled. That mode copies the sample code from
+> > the manufacturer. Deviations from that code proved to be fatal for the
+> > hardware...
+> > 
+> >  drivers/video/backlight/Kconfig     |    7 +
+> >  drivers/video/backlight/Makefile    |    1 +
+> >  drivers/video/backlight/as3711_bl.c |  379 +++++++++++++++++++++++++++++++++++
+> >  3 files changed, 387 insertions(+), 0 deletions(-)
+> >  create mode 100644 drivers/video/backlight/as3711_bl.c
+> > 
+> > diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+> > index 765a945..6ef0ede 100644
+> > --- a/drivers/video/backlight/Kconfig
+> > +++ b/drivers/video/backlight/Kconfig
+> > @@ -390,6 +390,13 @@ config BACKLIGHT_TPS65217
+> >  	  If you have a Texas Instruments TPS65217 say Y to enable the
+> >  	  backlight driver.
+> > 
+> > +config BACKLIGHT_AS3711
+> > +	tristate "AS3711 Backlight"
+> > +	depends on BACKLIGHT_CLASS_DEVICE && MFD_AS3711
+> > +	help
+> > +	  If you have an Austrian Microsystems AS3711 say Y to enable the
+> > +	  backlight driver.
+> > +
+> >  endif # BACKLIGHT_CLASS_DEVICE
+> > 
+> >  endif # BACKLIGHT_LCD_SUPPORT
+> > diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+> > index e7ce729..d3e188f 100644
+> > --- a/drivers/video/backlight/Makefile
+> > +++ b/drivers/video/backlight/Makefile
+> > @@ -45,3 +45,4 @@ obj-$(CONFIG_BACKLIGHT_PCF50633)	+= pcf50633-backlight.o
+> >  obj-$(CONFIG_BACKLIGHT_AAT2870) += aat2870_bl.o
+> >  obj-$(CONFIG_BACKLIGHT_OT200) += ot200_bl.o
+> >  obj-$(CONFIG_BACKLIGHT_TPS65217) += tps65217_bl.o
+> > +obj-$(CONFIG_BACKLIGHT_AS3711) += as3711_bl.o
+> > diff --git a/drivers/video/backlight/as3711_bl.c b/drivers/video/backlight/as3711_bl.c
+> > new file mode 100644
+> > index 0000000..c6bc65d
+> > --- /dev/null
+> > +++ b/drivers/video/backlight/as3711_bl.c
+> > @@ -0,0 +1,379 @@
+> > +/*
+> > + * AS3711 PMIC backlight driver, using DCDC Step Up Converters
+> > + *
+> > + * Copyright (C) 2012 Renesas Electronics Corporation
+> > + * Author: Guennadi Liakhovetski, <g.liakhovetski@gmx.de>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the version 2 of the GNU General Public License as
+> > + * published by the Free Software Foundation
+> > + */
+> > +
+> > +#include <linux/backlight.h>
+> > +#include <linux/delay.h>
+> > +#include <linux/device.h>
+> > +#include <linux/err.h>
+> > +#include <linux/fb.h>
+> > +#include <linux/kernel.h>
+> > +#include <linux/mfd/as3711.h>
+> > +#include <linux/module.h>
+> > +#include <linux/regmap.h>
+> > +#include <linux/slab.h>
+> > +
+> > +enum as3711_bl_type {
+> > +	AS3711_BL_SU1,
+> > +	AS3711_BL_SU2,
+> > +};
+> > +
+> > +struct as3711_bl_data {
+> > +	bool powered;
+> > +	const char *fb_name;
+> > +	struct device *fb_dev;
+> > +	enum as3711_bl_type type;
+> > +	int brightness;
+> > +	struct backlight_device *bl;
+> > +};
+> > +
+> > +struct as3711_bl_supply {
+> > +	struct as3711_bl_data su1;
+> > +	struct as3711_bl_data su2;
+> > +	const struct as3711_bl_pdata *pdata;
+> > +	struct as3711 *as3711;
+> > +};
+> > +
+> > +static struct as3711_bl_supply *to_supply(struct as3711_bl_data *su)
+> > +{
+> > +	switch (su->type) {
+> > +	case AS3711_BL_SU1:
+> > +		return container_of(su, struct as3711_bl_supply, su1);
+> > +	case AS3711_BL_SU2:
+> > +		return container_of(su, struct as3711_bl_supply, su2);
+> > +	}
+> > +	return NULL;
+> > +}
+> > +
+> > +static int as3711_set_brightness_auto_i(struct as3711_bl_data *data,
+> > +					unsigned int brightness)
+> > +{
+> > +	struct as3711_bl_supply *supply = to_supply(data);
+> > +	struct as3711 *as3711 = supply->as3711;
+> > +	const struct as3711_bl_pdata *pdata = supply->pdata;
+> > +	int ret = 0;
+> > +
+> > +	/* Only all equal current values are supported */
+> > +	if (pdata->su2_auto_curr1)
+> > +		ret = regmap_write(as3711->regmap, AS3711_CURR1_VALUE,
+> > +				   brightness);
+> > +	if (!ret && pdata->su2_auto_curr2)
+> > +		ret = regmap_write(as3711->regmap, AS3711_CURR2_VALUE,
+> > +				   brightness);
+> > +	if (!ret && pdata->su2_auto_curr3)
+> > +		ret = regmap_write(as3711->regmap, AS3711_CURR3_VALUE,
+> > +				   brightness);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static int as3711_set_brightness_v(struct as3711 *as3711,
+> > +				   unsigned int brightness,
+> > +				   unsigned int reg)
+> > +{
+> > +	if (brightness > 31)
+> > +		return -EINVAL;
+> > +
+> > +	return regmap_update_bits(as3711->regmap, reg, 0xf0,
+> > +				  brightness << 4);
+> > +}
+> > +
+> > +static int as3711_bl_su2_reset(struct as3711_bl_supply *supply)
+> > +{
+> > +	struct as3711 *as3711 = supply->as3711;
+> > +	int ret = regmap_update_bits(as3711->regmap, AS3711_STEPUP_CONTROL_5,
+> > +				     3, supply->pdata->su2_fbprot);
+> > +	if (!ret)
+> > +		ret = regmap_update_bits(as3711->regmap,
+> > +					 AS3711_STEPUP_CONTROL_2, 1, 0);
+> > +	if (!ret)
+> > +		ret = regmap_update_bits(as3711->regmap,
+> > +					 AS3711_STEPUP_CONTROL_2, 1, 1);
+> > +	return ret;
+> > +}
+> > +
+> > +/*
+> > + * Someone with less fragile or less expensive hardware could try to simplify
+> > + * the brightness adjustment procedure.
+> > + */
+> > +static int as3711_bl_update_status(struct backlight_device *bl)
+> > +{
+> > +	struct as3711_bl_data *data = bl_get_data(bl);
+> > +	struct as3711_bl_supply *supply = to_supply(data);
+> > +	struct as3711 *as3711 = supply->as3711;
+> > +	int brightness = bl->props.brightness;
+> > +	int ret = 0;
+> > +
+> > +	dev_dbg(&bl->dev, "%s(): brightness %u, pwr %x, blank %x, state %x\n",
+> > +		__func__, bl->props.brightness, bl->props.power,
+> > +		bl->props.fb_blank, bl->props.state);
+> > +
+> > +	if (bl->props.power != FB_BLANK_UNBLANK ||
+> > +	    bl->props.fb_blank != FB_BLANK_UNBLANK ||
+> > +	    bl->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK))
+> > +		brightness = 0;
+> > +
+> > +	if (data->type == AS3711_BL_SU1) {
+> > +		ret = as3711_set_brightness_v(as3711, brightness,
+> > +					      AS3711_STEPUP_CONTROL_1);
+> > +	} else {
+> > +		const struct as3711_bl_pdata *pdata = supply->pdata;
+> > +
+> > +		switch (pdata->su2_feedback) {
+> > +		case AS3711_SU2_VOLTAGE:
+> > +			ret = as3711_set_brightness_v(as3711, brightness,
+> > +						      AS3711_STEPUP_CONTROL_2);
+> > +			break;
+> > +		case AS3711_SU2_CURR_AUTO:
+> > +			ret = as3711_set_brightness_auto_i(data, brightness / 4);
+> > +			if (ret < 0)
+> > +				return ret;
+> > +			if (brightness) {
+> > +				ret = as3711_bl_su2_reset(supply);
+> > +				if (ret < 0)
+> > +					return ret;
+> > +				udelay(500);
+> > +				ret = as3711_set_brightness_auto_i(data, brightness);
+> > +			} else {
+> > +				ret = regmap_update_bits(as3711->regmap,
+> > +						AS3711_STEPUP_CONTROL_2, 1, 0);
+> > +			}
+> > +			break;
+> > +		/* Manual one current feedback pin below */
+> > +		case AS3711_SU2_CURR1:
+> > +			ret = regmap_write(as3711->regmap, AS3711_CURR1_VALUE,
+> > +					   brightness);
+> > +			break;
+> > +		case AS3711_SU2_CURR2:
+> > +			ret = regmap_write(as3711->regmap, AS3711_CURR2_VALUE,
+> > +					   brightness);
+> > +			break;
+> > +		case AS3711_SU2_CURR3:
+> > +			ret = regmap_write(as3711->regmap, AS3711_CURR3_VALUE,
+> > +					   brightness);
+> > +			break;
+> > +		default:
+> > +			ret = -EINVAL;
+> > +		}
+> > +	}
+> > +	if (!ret)
+> > +		data->brightness = brightness;
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static int as3711_bl_get_brightness(struct backlight_device *bl)
+> > +{
+> > +	struct as3711_bl_data *data = bl_get_data(bl);
+> > +
+> > +	return data->brightness;
+> > +}
+> > +
+> > +static const struct backlight_ops as3711_bl_ops = {
+> > +	.update_status	= as3711_bl_update_status,
+> > +	.get_brightness	= as3711_bl_get_brightness,
+> > +};
+> > +
+> > +static int as3711_bl_init_su2(struct as3711_bl_supply *supply)
+> > +{
+> > +	struct as3711 *as3711 = supply->as3711;
+> > +	const struct as3711_bl_pdata *pdata = supply->pdata;
+> > +	u8 ctl = 0;
+> > +	int ret;
+> > +
+> > +	dev_dbg(as3711->dev, "%s(): use %u\n", __func__, pdata->su2_feedback);
+> > +
+> > +	/* Turn SU2 off */
+> > +	ret = regmap_write(as3711->regmap, AS3711_STEPUP_CONTROL_2, 0);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	switch (pdata->su2_feedback) {
+> > +	case AS3711_SU2_VOLTAGE:
+> > +		ret = regmap_update_bits(as3711->regmap, AS3711_STEPUP_CONTROL_4, 3, 0);
+> > +		break;
+> > +	case AS3711_SU2_CURR1:
+> > +		ctl = 1;
+> > +		ret = regmap_update_bits(as3711->regmap, AS3711_STEPUP_CONTROL_4, 3, 1);
+> > +		break;
+> > +	case AS3711_SU2_CURR2:
+> > +		ctl = 4;
+> > +		ret = regmap_update_bits(as3711->regmap, AS3711_STEPUP_CONTROL_4, 3, 2);
+> > +		break;
+> > +	case AS3711_SU2_CURR3:
+> > +		ctl = 0x10;
+> > +		ret = regmap_update_bits(as3711->regmap, AS3711_STEPUP_CONTROL_4, 3, 3);
+> > +		break;
+> > +	case AS3711_SU2_CURR_AUTO:
+> > +		if (pdata->su2_auto_curr1)
+> > +			ctl = 2;
+> > +		if (pdata->su2_auto_curr2)
+> > +			ctl |= 8;
+> > +		if (pdata->su2_auto_curr3)
+> > +			ctl |= 0x20;
+> > +		ret = 0;
+> > +		break;
+> > +	default:
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	if (!ret)
+> > +		ret = regmap_write(as3711->regmap, AS3711_CURR_CONTROL, ctl);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static int as3711_bl_register(struct platform_device *pdev,
+> > +			      unsigned int max_brightness, struct as3711_bl_data *su)
+> > +{
+> > +	struct backlight_properties props = {.type = BACKLIGHT_RAW,};
+> > +	struct backlight_device *bl;
+> > +
+> > +	/* max tuning I = 31uA for voltage- and 38250uA for current-feedback */
+> > +	props.max_brightness = max_brightness;
+> > +
+> > +	bl = backlight_device_register(su->type == AS3711_BL_SU1 ?
+> > +				       "as3711-su1" : "as3711-su2",
+> > +				       &pdev->dev, su,
+> > +				       &as3711_bl_ops, &props);
+> > +	if (IS_ERR(bl)) {
+> > +		dev_err(&pdev->dev, "failed to register backlight\n");
+> > +		return PTR_ERR(bl);
+> > +	}
+> > +
+> > +	bl->props.brightness = props.max_brightness;
+> > +
+> > +	backlight_update_status(bl);
+> > +
+> > +	su->bl = bl;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int as3711_backlight_probe(struct platform_device *pdev)
+> > +{
+> > +	struct as3711_bl_pdata *pdata = dev_get_platdata(&pdev->dev);
+> > +	struct as3711 *as3711 = dev_get_drvdata(pdev->dev.parent);
+> > +	struct as3711_bl_supply *supply;
+> > +	struct as3711_bl_data *su;
+> > +	unsigned int max_brightness;
+> > +	int ret;
+> > +
+> > +	if (!pdata || (!pdata->su1_fb && !pdata->su2_fb)) {
+> > +		dev_err(&pdev->dev, "No platform data, exiting...\n");
+> > +		return -ENODEV;
+> > +	}
+> > +
+> > +	/*
+> > +	 * Due to possible hardware damage I chose to block all modes,
+> > +	 * unsupported on my hardware. Anyone, wishing to use any of those modes
+> > +	 * will have to first review the code, then activate and test it.
+> > +	 */
+> > +	if (pdata->su1_fb ||
+> > +	    pdata->su2_fbprot != AS3711_SU2_GPIO4 ||
+> > +	    pdata->su2_feedback != AS3711_SU2_CURR_AUTO) {
+> > +		dev_warn(&pdev->dev,
+> > +			 "Attention! An untested mode has been chosen!\n"
+> > +			 "Please, review the code, enable, test, and report success:-)\n");
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	supply = devm_kzalloc(&pdev->dev, sizeof(*supply), GFP_KERNEL);
+> > +	if (!supply)
+> > +		return -ENOMEM;
+> > +
+> > +	supply->as3711 = as3711;
+> > +	supply->pdata = pdata;
+> > +
+> > +	if (pdata->su1_fb) {
+> > +		su = &supply->su1;
+> > +		su->fb_name = pdata->su1_fb;
+> > +		su->type = AS3711_BL_SU1;
+> > +
+> > +		max_brightness = min(pdata->su1_max_uA, 31);
+> > +		ret = as3711_bl_register(pdev, max_brightness, su);
+> > +		if (ret < 0)
+> > +			return ret;
+> > +	}
+> > +
+> > +	if (pdata->su2_fb) {
+> > +		su = &supply->su2;
+> > +		su->fb_name = pdata->su2_fb;
+> > +		su->type = AS3711_BL_SU2;
+> > +
+> > +		switch (pdata->su2_fbprot) {
+> > +		case AS3711_SU2_GPIO2:
+> > +		case AS3711_SU2_GPIO3:
+> > +		case AS3711_SU2_GPIO4:
+> > +		case AS3711_SU2_LX_SD4:
+> > +			break;
+> > +		default:
+> > +			ret = -EINVAL;
+> > +			goto esu2;
+> > +		}
+> > +
+> > +		switch (pdata->su2_feedback) {
+> > +		case AS3711_SU2_VOLTAGE:
+> > +			max_brightness = min(pdata->su2_max_uA, 31);
+> > +			break;
+> > +		case AS3711_SU2_CURR1:
+> > +		case AS3711_SU2_CURR2:
+> > +		case AS3711_SU2_CURR3:
+> > +		case AS3711_SU2_CURR_AUTO:
+> > +			max_brightness = min(pdata->su2_max_uA / 150, 255);
+> > +			break;
+> > +		default:
+> > +			ret = -EINVAL;
+> > +			goto esu2;
+> > +		}
+> > +
+> > +		ret = as3711_bl_init_su2(supply);
+> > +		if (ret < 0)
+> > +			return ret;
+> > +
+> > +		ret = as3711_bl_register(pdev, max_brightness, su);
+> > +		if (ret < 0)
+> > +			goto esu2;
+> > +	}
+> > +
+> > +	platform_set_drvdata(pdev, supply);
+> > +
+> > +	return 0;
+> > +
+> > +esu2:
+> > +	backlight_device_unregister(supply->su1.bl);
+> > +	return ret;
+> > +}
+> > +
+> > +static int as3711_backlight_remove(struct platform_device *pdev)
+> > +{
+> > +	struct as3711_bl_supply *supply = platform_get_drvdata(pdev);
+> > +
+> > +	backlight_device_unregister(supply->su1.bl);
+> > +	backlight_device_unregister(supply->su2.bl);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static struct platform_driver as3711_backlight_driver = {
+> > +	.driver		= {
+> > +		.name	= "as3711-backlight",
+> > +		.owner	= THIS_MODULE,
+> > +	},
+> > +	.probe		= as3711_backlight_probe,
+> > +	.remove		= as3711_backlight_remove,
+> > +};
+> > +
+> > +module_platform_driver(as3711_backlight_driver);
+> > +
+> > +MODULE_DESCRIPTION("Backlight Driver for AS3711 PMICs");
+> > +MODULE_AUTHOR("Guennadi Liakhovetski <g.liakhovetski@gmx.de");
+> > +MODULE_LICENSE("GPL");
+> > +MODULE_ALIAS("platform:as3711-backlight");
+> > --
+> > 1.7.2.5
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
