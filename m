@@ -1,125 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab3AYLFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:05:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41256 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605Ab3AYLFm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:05:42 -0500
-Date: Fri, 25 Jan 2013 03:04:55 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-000ae33fdb5ff7bc7ae985b43e6278024a4985c2@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@kernel.org,
-        jolsa@redhat.com
-In-Reply-To: <1355729101-31317-1-git-send-email-namhyung@kernel.org>
-References: <1355729101-31317-1-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests:
-  Check python path on attr and binding test
-Git-Commit-ID: 000ae33fdb5ff7bc7ae985b43e6278024a4985c2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756917Ab3AYLGT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 06:06:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751605Ab3AYLGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 06:06:17 -0500
+Date: Fri, 25 Jan 2013 12:05:50 +0100
+From: Andrew Jones <drjones@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Avi Kivity <avi.kivity@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [PATCH V3 RESEND RFC 1/2] sched: Bail out of yield_to when
+ source and target runqueue has one task
+Message-ID: <20130125110549.GA4220@hawk.usersys.redhat.com>
+References: <20130122073854.24731.9426.sendpatchset@codeblue.in.ibm.com>
+ <20130122073913.24731.65118.sendpatchset@codeblue.in.ibm.com>
+ <20130124103213.GD27602@gmail.com>
+ <20130125104025.GA14978@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:05:01 -0800 (PST)
+In-Reply-To: <20130125104025.GA14978@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  000ae33fdb5ff7bc7ae985b43e6278024a4985c2
-Gitweb:     http://git.kernel.org/tip/000ae33fdb5ff7bc7ae985b43e6278024a4985c2
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Mon, 17 Dec 2012 16:25:01 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 24 Jan 2013 16:40:10 -0300
+On Fri, Jan 25, 2013 at 04:10:25PM +0530, Raghavendra K T wrote:
+> * Ingo Molnar <mingo@kernel.org> [2013-01-24 11:32:13]:
+> 
+> > 
+> > * Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+> > 
+> > > From: Peter Zijlstra <peterz@infradead.org>
+> > > 
+> > > In case of undercomitted scenarios, especially in large guests
+> > > yield_to overhead is significantly high. when run queue length of
+> > > source and target is one, take an opportunity to bail out and return
+> > > -ESRCH. This return condition can be further exploited to quickly come
+> > > out of PLE handler.
+> > > 
+> > > (History: Raghavendra initially worked on break out of kvm ple handler upon
+> > >  seeing source runqueue length = 1, but it had to export rq length).
+> > >  Peter came up with the elegant idea of return -ESRCH in scheduler core.
+> > > 
+> > > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> > > Raghavendra, Checking the rq length of target vcpu condition added.(thanks Avi)
+> > > Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> > > Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> > > Acked-by: Andrew Jones <drjones@redhat.com>
+> > > Tested-by: Chegu Vinod <chegu_vinod@hp.com>
+> > > ---
+> > > 
+> > >  kernel/sched/core.c |   25 +++++++++++++++++++------
+> > >  1 file changed, 19 insertions(+), 6 deletions(-)
+> > > 
+> > > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > > index 2d8927f..fc219a5 100644
+> > > --- a/kernel/sched/core.c
+> > > +++ b/kernel/sched/core.c
+> > > @@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
+> > >   * It's the caller's job to ensure that the target task struct
+> > >   * can't go away on us before we can do any checks.
+> > >   *
+> > > - * Returns true if we indeed boosted the target task.
+> > > + * Returns:
+> > > + *	true (>0) if we indeed boosted the target task.
+> > > + *	false (0) if we failed to boost the target.
+> > > + *	-ESRCH if there's no task to yield to.
+> > >   */
+> > >  bool __sched yield_to(struct task_struct *p, bool preempt)
+> > >  {
+> > > @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+> > >  
+> > >  again:
+> > >  	p_rq = task_rq(p);
+> > > +	/*
+> > > +	 * If we're the only runnable task on the rq and target rq also
+> > > +	 * has only one task, there's absolutely no point in yielding.
+> > > +	 */
+> > > +	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
+> > > +		yielded = -ESRCH;
+> > > +		goto out_irq;
+> > > +	}
+> > 
+> > Looks good to me in principle.
+> > 
+> > Would be nice to get more consistent benchmark numbers. Once 
+> > those are unambiguously showing that this is a win:
+> > 
+> >   Acked-by: Ingo Molnar <mingo@kernel.org>
+> >
+> 
+> I ran the test with kernbench and sysbench again on 32 core mx3850
+> machine with 32 vcpu guests. Results shows definite improvements.
+> 
+> ebizzy and dbench show similar improvement for 1x overcommit
+> (note that stdev for 1x in dbench is lesser improvemet is now seen at
+> only 20%)
+> 
+> [ all the experiments are taken out of 8 run averages ].
+> 
+> The patches benefit large guest undercommit scenarios, so I believe
+> with large guest performance improvemnt is even significant. [ Chegu
+> Vinod results show performance near to no ple cases ].
 
-perf tests: Check python path on attr and binding test
+The last results you posted for dbench for the patched 1x case were
+showing much better throughput than the no-ple 1x case, which is what
+was strange. Is that still happening? You don't have the no-ple 1x
+data here this time. The percent errors look a lot better.
 
-Current perf test code tries to execute python version 2 in order to
-test attributes on perf_event_open syscall.  However it's not default
-python version anymore a system can have python v3 only or v2 with a
-different name (e.g. python2).  So if there's no such python interpreter
-with the name 'python', the test would fail like this (yes, it's
-happened on my new archlinux laptop :).
-
-13: struct perf_event_attr setup                 :sh: python: command not found
- FAILED!
-
-As we can pass name of the python interpreter on make, use it for
-the attr test also.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1355729101-31317-1-git-send-email-namhyung@kernel.org
-[ committer note: Added the same mechanism to the python binding test ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile           | 7 +++++--
- tools/perf/tests/attr.c       | 2 +-
- tools/perf/tests/python-use.c | 4 ++--
- 3 files changed, 8 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index d0d7957..3158f45 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -953,11 +953,14 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
- 
- $(OUTPUT)tests/attr.o: tests/attr.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
--		'-DBINDIR="$(bindir_SQ)"' \
-+		'-DBINDIR="$(bindir_SQ)"' -DPYTHON='"$(PYTHON_WORD)"' \
- 		$<
- 
- $(OUTPUT)tests/python-use.o: tests/python-use.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPYTHONPATH='"$(OUTPUT)/python"' $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
-+		-DPYTHONPATH='"$(OUTPUT)/python"' \
-+		-DPYTHON='"$(PYTHON_WORD)"' \
-+		$<
- 
- $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
-diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
-index 05b5acb..f61dd3f 100644
---- a/tools/perf/tests/attr.c
-+++ b/tools/perf/tests/attr.c
-@@ -144,7 +144,7 @@ static int run_dir(const char *d, const char *perf)
- {
- 	char cmd[3*PATH_MAX];
- 
--	snprintf(cmd, 3*PATH_MAX, "python %s/attr.py -d %s/attr/ -p %s %s",
-+	snprintf(cmd, 3*PATH_MAX, PYTHON " %s/attr.py -d %s/attr/ -p %s %s",
- 		 d, d, perf, verbose ? "-v" : "");
- 
- 	return system(cmd);
-diff --git a/tools/perf/tests/python-use.c b/tools/perf/tests/python-use.c
-index 15301f4..7760277 100644
---- a/tools/perf/tests/python-use.c
-+++ b/tools/perf/tests/python-use.c
-@@ -13,8 +13,8 @@ int test__python_use(void)
- 	char *cmd;
- 	int ret;
- 
--	if (asprintf(&cmd, "echo \"import sys ; sys.path.append('%s'); import perf\" | python %s",
--		     PYTHONPATH, verbose ? "" : "2> /dev/null") < 0)
-+	if (asprintf(&cmd, "echo \"import sys ; sys.path.append('%s'); import perf\" | %s %s",
-+		     PYTHONPATH, PYTHON, verbose ? "" : "2> /dev/null") < 0)
- 		return -1;
- 
- 	ret = system(cmd) ? -1 : 0;
+Unfortunately I
+> do not have a machine to test larger guest (>32).
+> 
+> Ingo, Please let me know if this is okay to you.
+> 
+> base kernel = 3.8.0-rc4
+> 
+> +-----------+-----------+-----------+------------+-----------+
+>                 kernbench  (time in sec lower is better)
+> +-----------+-----------+-----------+------------+-----------+
+>     base        stdev        patched    stdev      %improve
+> +-----------+-----------+-----------+------------+-----------+
+> 1x   46.6028     1.8672	    42.4494     1.1390	   8.91234
+> 2x   99.9074     9.1859	    90.4050     2.6131	   9.51121
+> +-----------+-----------+-----------+------------+-----------+
+> +-----------+-----------+-----------+------------+-----------+
+>                sysbench (time in sec lower is better) 
+> +-----------+-----------+-----------+------------+-----------+
+>     base        stdev        patched    stdev      %improve
+> +-----------+-----------+-----------+------------+-----------+
+> 1x   18.7402     0.3764	    17.7431     0.3589	   5.32065
+> 2x   13.2238     0.1935	    13.0096     0.3152	   1.61981
+> +-----------+-----------+-----------+------------+-----------+
+> 
+> +-----------+-----------+-----------+------------+-----------+
+>                 ebizzy  (records/sec higher is better)
+> +-----------+-----------+-----------+------------+-----------+
+>     base        stdev        patched    stdev      %improve
+> +-----------+-----------+-----------+------------+-----------+
+> 1x  2421.9000    19.1801	  5883.1000   112.7243	 142.91259
+> +-----------+-----------+-----------+------------+-----------+
+> 
+> +-----------+-----------+-----------+------------+-----------+
+>                 dbench (throughput MB/sec  higher is better)
+> +-----------+-----------+-----------+------------+-----------+
+>     base        stdev        patched    stdev      %improve
+> +-----------+-----------+-----------+------------+-----------+
+> 1x  11675.9900   857.4154	 14103.5000   215.8425	  20.79061
+> +-----------+-----------+-----------+------------+-----------+
+> 
