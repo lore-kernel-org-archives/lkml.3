@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab3AYJhY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 04:37:24 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:19819 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab3AYJhU (ORCPT
+	id S1755085Ab3AYJj1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 04:39:27 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:41947 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222Ab3AYJj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 04:37:20 -0500
-From: Yijing Wang <wangyijing@huawei.com>
-To: Rob Landley <rob@landley.net>, Bjorn Helgaas <bhelgaas@google.com>,
-        Jon Mason <jdmason@kudzu.us>
-CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, Andrew Murray <andrew.murray@arm.com>,
-        Joe Lawrence <Joe.Lawrence@stratus.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v3] PCI: Document PCIE BUS MPS parameters
-Date: Fri, 25 Jan 2013 17:36:55 +0800
-Message-ID: <1359106615-17544-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Fri, 25 Jan 2013 04:39:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+In-Reply-To: <CAHp75Vf5ukEv=dp+RtaYHxfJ+vVDKTjmexh0teaJOOR9prR1ig@mail.gmail.com>
+References: <CAOh2x=kqEzw9cvg=WLpjEbF50aTKCUUVd9GzNg8PqtBx_BpYLg@mail.gmail.com>
+	<1359032849-25551-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x=nnrEo69W7sBES85KgF0+WUy8Ouoq+SG1XiB54e7QLiow@mail.gmail.com>
+	<1359104204.12502.101.camel@smile>
+	<CAHp75Vex-t=q4aQtBsJHiu-r8u98UDPvcbgQi3Z+42dkQWL+YA@mail.gmail.com>
+	<CAKohponpZa5Lzf-0p_porTuidL+LhZX3xrHzkwnC6ffTMchRQg@mail.gmail.com>
+	<CAHp75Vd_1iozR20gHO46fqVQMBrJ43rXbWrLKCesJcqxE5QAhA@mail.gmail.com>
+	<CAOh2x==-amzWv_8s736LQ4AXi35kQY3q3VFLmSaTFBG7A_d0BA@mail.gmail.com>
+	<CAHp75Vf5ukEv=dp+RtaYHxfJ+vVDKTjmexh0teaJOOR9prR1ig@mail.gmail.com>
+Date: Fri, 25 Jan 2013 15:09:25 +0530
+Message-ID: <CAKohpo=WUS6cjce70v_UvAfhTcW1RKHFYU3EPMjY8Z-+1kic5A@mail.gmail.com>
+Subject: Re: [PATCH v3.5] dw_dmac: return proper residue value
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v0->v1: Update MPS parameters as non-arch and add MRRS
-		description into pcie_bus_perf parameter suggested
-		by Andrew Murray.
-v1->v2: Update some semantic problems and add MPS and MRRS
-		explanation suggested by Joe Lawrence and Randy Dunlap.
-v2->v3: Update some semantic problems and the description
-		of pcie_bus_safe and pcie_bus_peer2peer suggested
-		by Bjorn Helgaas.
+On 25 January 2013 15:07, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+> Yeah, the keyword is "look". 1 per million cases it could be true. I
+> think this discussion is going to the dead end.
+> Anyone else would like to argue for one or the other opinion?
+>
+> I might obey your way with the commentary that with quite lower
+> possibility we could have an issue there.
 
-Document PCIE BUS MPS parameters pcie_bus_tune_off, pcie_bus_safe,
-pcie_bus_peer2peer, pcie_bus_perf into Documentation/kernel-parameters.txt.
-These parameters were introduced by Jon Mason <mason@myri.com> at
-commit 5f39e6705 and commit b03e7495a8.
+:)
+Okay, lets keep your version.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- Documentation/kernel-parameters.txt |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 363e348..2997df2 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2227,6 +2227,19 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 				This sorting is done to get a device
- 				order compatible with older (<= 2.4) kernels.
- 		nobfsort	Don't sort PCI devices into breadth-first order.
-+		pcie_bus_tune_off	Disable PCIe MPS (Max Payload Size)
-+				tuning and use the BIOS-configured MPS defaults.
-+		pcie_bus_safe	Use the smallest supported MPS of any device
-+				below a root complex.
-+		pcie_bus_perf	Configure device MPS to the largest
-+				allowable MPS based on its parent bus. Also set
-+				MRRS (Max Read Request Size) to the largest supported
-+				value (no larger than the MPS that the device or bus
-+				can support) for best performance.
-+		pcie_bus_peer2peer	Set every device's MPS to 128B, which
-+				every device is guaranteed to support. This
-+				configuration allows peer-to-peer DMA between any pair
-+				of devices possibly at the cost of reduced performance.
- 		cbiosize=nn[KMG]	The fixed amount of bus space which is
- 				reserved for the CardBus bridge's IO window.
- 				The default value is 256 bytes.
--- 
-1.7.1
-
-
+@Vinod: you are free to pick these patches now ;)
