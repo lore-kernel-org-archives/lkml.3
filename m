@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757462Ab3AYS7D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:59:03 -0500
-Received: from mga09.intel.com ([134.134.136.24]:25572 "EHLO mga09.intel.com"
+	id S932245Ab3AYTAx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 14:00:53 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:37269 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755991Ab3AYS7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:59:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,540,1355126400"; 
-   d="scan'208";a="276701275"
-From: Seth Heasley <seth.heasley@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Seth Heasley <seth.heasley@intel.com>,
-        James Ralston <james.d.ralston@intel.com>
-Subject: [PATCH 1/3] ata_piix: IDE-mode SATA patch for Intel Avoton DeviceIDs
-Date: Fri, 25 Jan 2013 11:57:05 -0800
-Message-Id: <1359143825-3255-1-git-send-email-seth.heasley@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S932094Ab3AYTAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 14:00:51 -0500
+Date: Fri, 25 Jan 2013 20:03:40 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        X86 ML <x86@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
+        Dmitry Torokhov <dtor@vmware.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH -v2 2/2] x86: Make Linux guest support optional
+Message-ID: <20130125190340.GC4973@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+	X86 ML <x86@kernel.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
+	olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+	Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
+	Dmitry Torokhov <dtor@vmware.com>,
+	"K. Y. Srinivasan" <kys@microsoft.com>,
+	Haiyang Zhang <haiyangz@microsoft.com>
+References: <20130125100655.GC23404@pd.tnic>
+ <1359136777-4512-2-git-send-email-bp@alien8.de>
+ <20130125181251.GA5563@core.coreip.homeip.net>
+ <20130125183213.GB1380@pd.tnic>
+ <20130125184231.GB5563@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130125184231.GB5563@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the IDE-mode SATA DeviceIDs for the Intel Avoton SOC.
+On Fri, Jan 25, 2013 at 10:42:32AM -0800, Dmitry Torokhov wrote:
+> No, not really as EXPORT_SYMBOL_GPL() in no way implies that the code
+> using it lives in the mainline.
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
----
- drivers/ata/ata_piix.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+I didn't say that - I said "any code (proprietary included) can link to
+those symbols" meaning that I cannot possibly convert proprietary code
+to which I don't have access to, vs GPL code which is out there.
 
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index 174eca6..651fa85 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -317,6 +317,14 @@ static const struct pci_device_id piix_pci_tbl[] = {
- 	{ 0x8086, 0x9c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (DH89xxCC) */
- 	{ 0x8086, 0x2326, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Avoton) */
-+	{ 0x8086, 0x1f20, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Avoton) */
-+	{ 0x8086, 0x1f21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Avoton) */
-+	{ 0x8086, 0x1f30, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Avoton) */
-+	{ 0x8086, 0x1f31, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	{ }	/* terminate list */
- };
- 
+> Also, EXPORT_SYMBOL() does not imply that it forms an ABI and can't be
+> changed ever.
+
+And yet, I don't want to be on the receiving end of the complaints when
+those do change. But that's beside the point.
+
+So I think we're on the same page: I'll make everything using x86_hyper*
+depend on CONFIG_HYPERVISOR_GUEST and all are happy.
+
+Thanks.
+
 -- 
-1.7.11.7
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
