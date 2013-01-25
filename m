@@ -1,103 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757238Ab3AYSsE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:48:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52753 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755991Ab3AYSsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:48:02 -0500
-Message-ID: <5102D353.8010305@redhat.com>
-Date: Fri, 25 Jan 2013 19:47:47 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1757279Ab3AYStS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:49:18 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:52117 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755991Ab3AYStR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 13:49:17 -0500
+Date: Fri, 25 Jan 2013 19:49:11 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi.kivity@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V3 RESEND RFC 1/2] sched: Bail out of yield_to when
+ source and target runqueue has one task
+Message-ID: <20130125184911.GE31022@gmail.com>
+References: <20130122073854.24731.9426.sendpatchset@codeblue.in.ibm.com>
+ <20130122073913.24731.65118.sendpatchset@codeblue.in.ibm.com>
+ <20130124103213.GD27602@gmail.com>
+ <20130125104025.GA14978@linux.vnet.ibm.com>
+ <20130125104737.GA23332@gmail.com>
+ <5102AACA.3040406@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 06/13] sg_io: whitelist a few more commands for multimedia
- devices
-References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com> <1359039649-17734-7-git-send-email-pbonzini@redhat.com> <20130124225555.GC2373@mtj.dyndns.org> <51024FB1.3000206@redhat.com> <20130125170434.GC3081@htj.dyndns.org> <5102BDD4.2020501@redhat.com> <20130125172805.GG3081@htj.dyndns.org> <5102C780.3090402@redhat.com> <20130125181326.GK3081@htj.dyndns.org>
-In-Reply-To: <20130125181326.GK3081@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5102AACA.3040406@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/01/2013 19:13, Tejun Heo ha scritto:
-> I'm not sure how well I can explain this but something being in the
-> spec and something in wide use are two different things, and people,
-> including the ones in hw vendors, tend not to pay too much attention /
-> resources to stuff which aren't used widely and commands which aren't
-> in wide use are much more likely to have errors in their
-> implementation or be abused - e.g. overridden for vendor specific
-> command as part of weird init sequence to select device mode or
-> whatnot.
 
-That doesn't happen.  There's plenty of vendor-specific opcodes and mode
-pages, not to mention out-of-band channels, e.g. work directly at the
-USB level like the mode select stuff.
+* Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
 
-IIRC IOMEGA ZIP drives had some egregious abuse in READ and WRITE of the
-boot sector, presenting fake partition tables or something like that.
-But it wasn't using strange commands for that.
-
-> Another aspect is that sometimes opcodes are recycled and people of
-> course don't try to recycle opcodes which are in wide use.  They
-> choose the ones which failed to gain much traction and became
-> obsolete.  The recycled command might not be suitable for exposing to
-> userland.
-
-No, that doesn't happen either.  There's plenty of reserved opcodes, and
-this time you can count on the standards people which are more
-reasonable than vendors.
-
-> So, there are actual costs coming from exposing them, which is fine if
-> the benefit can offset them enough, but what would be the benefit of
-> exposing commands which aren't being used?
-
-If it is not used, nobody will use it and nothing will break.
-
-If it is used in a case we don't know, you'll have to add it later.
-
-If it is little used and broken somewhere, you'll have to add it later
-to the whitelist and implement the quirk.  Both of them.  Adding it now
-saves a step.
-
-The only case in which you save later work, is if someone bitches that X
-doesn't work but nobody tells us.  Patch economy by obscurity. :)
-
-> The only thing I can think
-> of is that of avoiding the annoyance of expanding the list later?
-> But, as you said, exposing commands by default mean that we're more
-> likely to need blacklists in the future
-
-I disagree.  It does not change anything.
-
-If it is something really serious (i.e. it crashes the firmware), we'd
-need a quirk anyway.  If it is something only slightly less stupid,
-userspace can deal with broken hardware itself.  It is somewhat expected
-with SG_IO anyway.  For virt, the guest would treat it the same as on
-bare metal; for anything else, the program would already have to deal
-with it if run as root.
-
-> , so that doesn't seem like
-> that much of winning to me.  Discovering use cases is actually much
-> easier than finding broken devices for some obscure commands.
-
-Not if many of your uses are proprietary (Windows, AIX on PPC, z/OS on
-s390, Oracle, SAP, you name it).
-
->>> and can you please stop labeling reviews as "useless"?
->>
->> Reviews are not useless, but championing the inclusion of two obsolete
->> commands in a list is not a good use of bandwidth.  Because the choice
->> is arbitrary, the discussion can degenerate too easily into repeatedly
->> saying the same thing over and over.  All I'm trying to do is avoid it.
+> On 01/25/2013 04:17 PM, Ingo Molnar wrote:
+> >
+> >* Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+> >
+> >>* Ingo Molnar <mingo@kernel.org> [2013-01-24 11:32:13]:
+> >>
+> >>>
+> >>>* Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+> >>>
+> >>>>From: Peter Zijlstra <peterz@infradead.org>
+> >>>>
+> >>>>In case of undercomitted scenarios, especially in large guests
+> >>>>yield_to overhead is significantly high. when run queue length of
+> >>>>source and target is one, take an opportunity to bail out and return
+> >>>>-ESRCH. This return condition can be further exploited to quickly come
+> >>>>out of PLE handler.
+> >>>>
+> >>>>(History: Raghavendra initially worked on break out of kvm ple handler upon
+> >>>>  seeing source runqueue length = 1, but it had to export rq length).
+> >>>>  Peter came up with the elegant idea of return -ESRCH in scheduler core.
+> >>>>
+> >>>>Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> >>>>Raghavendra, Checking the rq length of target vcpu condition added.(thanks Avi)
+> >>>>Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> >>>>Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> >>>>Acked-by: Andrew Jones <drjones@redhat.com>
+> >>>>Tested-by: Chegu Vinod <chegu_vinod@hp.com>
+> >>>>---
+> >>>>
+> >>>>  kernel/sched/core.c |   25 +++++++++++++++++++------
+> >>>>  1 file changed, 19 insertions(+), 6 deletions(-)
+> >>>>
+> >>>>diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> >>>>index 2d8927f..fc219a5 100644
+> >>>>--- a/kernel/sched/core.c
+> >>>>+++ b/kernel/sched/core.c
+> >>>>@@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
+> >>>>   * It's the caller's job to ensure that the target task struct
+> >>>>   * can't go away on us before we can do any checks.
+> >>>>   *
+> >>>>- * Returns true if we indeed boosted the target task.
+> >>>>+ * Returns:
+> >>>>+ *	true (>0) if we indeed boosted the target task.
+> >>>>+ *	false (0) if we failed to boost the target.
+> >>>>+ *	-ESRCH if there's no task to yield to.
+> >>>>   */
+> >>>>  bool __sched yield_to(struct task_struct *p, bool preempt)
+> >>>>  {
+> >>>>@@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+> >>>>
+> >>>>  again:
+> >>>>  	p_rq = task_rq(p);
+> >>>>+	/*
+> >>>>+	 * If we're the only runnable task on the rq and target rq also
+> >>>>+	 * has only one task, there's absolutely no point in yielding.
+> >>>>+	 */
+> >>>>+	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
+> >>>>+		yielded = -ESRCH;
+> >>>>+		goto out_irq;
+> >>>>+	}
+> >>>
+> >>>Looks good to me in principle.
+> >>>
+> >>>Would be nice to get more consistent benchmark numbers. Once
+> >>>those are unambiguously showing that this is a win:
+> >>>
+> >>>   Acked-by: Ingo Molnar <mingo@kernel.org>
+> >>>
+> >>
+> >>I ran the test with kernbench and sysbench again on 32 core mx3850
+> >>machine with 32 vcpu guests. Results shows definite improvements.
+> >>
+> >>ebizzy and dbench show similar improvement for 1x overcommit
+> >>(note that stdev for 1x in dbench is lesser improvemet is now seen at
+> >>only 20%)
+> >>
+> >>[ all the experiments are taken out of 8 run averages ].
+> >>
+> >>The patches benefit large guest undercommit scenarios, so I believe
+> >>with large guest performance improvemnt is even significant. [ Chegu
+> >>Vinod results show performance near to no ple cases ]. Unfortunately I
+> >>do not have a machine to test larger guest (>32).
+> >>
+> >>Ingo, Please let me know if this is okay to you.
+> >>
+> >>base kernel = 3.8.0-rc4
+> >>
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>                 kernbench  (time in sec lower is better)
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>     base        stdev        patched    stdev      %improve
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>1x   46.6028     1.8672	    42.4494     1.1390	   8.91234
+> >>2x   99.9074     9.1859	    90.4050     2.6131	   9.51121
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>                sysbench (time in sec lower is better)
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>     base        stdev        patched    stdev      %improve
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>1x   18.7402     0.3764	    17.7431     0.3589	   5.32065
+> >>2x   13.2238     0.1935	    13.0096     0.3152	   1.61981
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>                 ebizzy  (records/sec higher is better)
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>     base        stdev        patched    stdev      %improve
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>1x  2421.9000    19.1801	  5883.1000   112.7243	 142.91259
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>                 dbench (throughput MB/sec  higher is better)
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>     base        stdev        patched    stdev      %improve
+> >>+-----------+-----------+-----------+------------+-----------+
+> >>1x  11675.9900   857.4154	 14103.5000   215.8425	  20.79061
+> >>+-----------+-----------+-----------+------------+-----------+
+> >
+> >The numbers look pretty convincing, thanks. The workloads were
+> >CPU bound most of the time, right?
 > 
-> Seems like I was too twitchy.  My apologies.
+> Yes. CPU bound most of the time. I also used tmpfs to reduce 
+> io overhead (for dbbench).
 
-No problem.
+Ok, cool.
 
-Paolo
+Which tree will this be upstreamed through - the KVM tree? I'd 
+suggest the KVM tree because KVM will be the one exposed to the 
+effects of this change.
+
+Thanks,
+
+	Ingo
