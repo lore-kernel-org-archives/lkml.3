@@ -1,129 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389Ab3AYQbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 11:31:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41874 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756981Ab3AYQbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 11:31:39 -0500
-Date: Fri, 25 Jan 2013 17:31:30 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
- add_to_page_cache_locked
-Message-ID: <20130125163130.GF4721@dhcp22.suse.cz>
-References: <20121217163203.GD25432@dhcp22.suse.cz>
- <20121217192301.829A7020@pobox.sk>
- <20121217195510.GA16375@dhcp22.suse.cz>
- <20121218152223.6912832C@pobox.sk>
- <20121218152004.GA25208@dhcp22.suse.cz>
- <20121224142526.020165D3@pobox.sk>
- <20121228162209.GA1455@dhcp22.suse.cz>
- <20121230020947.AA002F34@pobox.sk>
- <20121230110815.GA12940@dhcp22.suse.cz>
- <20130125160723.FAE73567@pobox.sk>
+	id S1757433Ab3AYQeP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 11:34:15 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:60014 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756955Ab3AYQeL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 11:34:11 -0500
+Date: Fri, 25 Jan 2013 16:26:08 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@list.infradead.org, linux-kernel@vger.kernel.org,
+        sahara <keun-o.park@windriver.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 19/19] [INCOMPLETE] ARM: make return_address available
+ for ARM_UNWIND
+Message-ID: <20130125162608.GD2069@linaro.org>
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
+ <1359123276-15833-20-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130125160723.FAE73567@pobox.sk>
+In-Reply-To: <1359123276-15833-20-git-send-email-arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 25-01-13 16:07:23, azurIt wrote:
-> Any news? Thnx!
+On Fri, Jan 25, 2013 at 02:14:36PM +0000, Arnd Bergmann wrote:
+> From: sahara <keun-o.park@windriver.com>
+> 
+> This is a reminder that we still need to fix the return_address
+> function to work correctly with the unwinder. Keun-O Park has
+> made this attempt in the past, which is still under discussion[1],
+> and Dave Martin has also mentioned that he would provide a
+> solution for this problem.
+> 
+> Right now, this patch makes the warning go away and provides
+> an implementation of return_address for the arm unwinder, but
+> causes other problems, so we should *not* apply it. I will
+> keep sending this patch until we have a better solution.
+> 
+> [1] http://lkml.org/lkml/2013/1/11/493
+> 
+> Original changelog:
+> 
+> This fixes a warning saying:
+> 
+>     warning: #warning "TODO: return_address should use unwind tables"
+> 
+> And, this enables return_address using unwind information. If ARM_UNWIND is
+> selected, unwind_frame in unwind.c will be called in walk_stackframe.
 
-Sorry, but I didn't get to this one yet.
+I did have a brief look at this a few months back, but ran out of ideas
+for a quick fix.  The unwinder implementation is too complex to just
+rip out all the calls to traced common code without a significant rewrite.
+
+One possibility would be to make unwind_frame check a flag (either a percpu
+flag, or more likely a thread flag if unwind_frame can be called in
+preemptible context -- I can't see why not) to prevent it self-recursing.
+If self-recursion occurs through the ftrace code, unwind_frame would
+just return an error instead of going into a self-recursion loop.
+
+This would still mean that traced functions could get called from inside
+return_address() once before recursion is quenched.  If this would break
+ftrace, I'm not sure how to fix it.
+
+However, if the purpose if making return_address() notrace is just to
+prevent infinite recursion, where finite recursion is safe, then it
+feels fixable as described above.
+
+Steven, do you know whether such an approach might be safe?
+
+Cheers
+---Dave
 
 > 
-> azur
+> Signed-off-by: sahara <keun-o.park@windriver.com>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Dave Martin <dave.martin@linaro.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> ---
+>  arch/arm/include/asm/ftrace.h    |  6 ++----
+>  arch/arm/kernel/Makefile         | 12 +++++-------
+>  arch/arm/kernel/return_address.c | 10 +++-------
+>  arch/arm/kernel/stacktrace.c     |  3 +++
+>  kernel/trace/trace_irqsoff.c     | 26 ++++++++++++--------------
+>  5 files changed, 25 insertions(+), 32 deletions(-)
 > 
+> diff --git a/arch/arm/include/asm/ftrace.h b/arch/arm/include/asm/ftrace.h
+> index f89515a..3552ad9 100644
+> --- a/arch/arm/include/asm/ftrace.h
+> +++ b/arch/arm/include/asm/ftrace.h
+> @@ -32,13 +32,11 @@ extern void ftrace_call_old(void);
+>  
+>  #ifndef __ASSEMBLY__
+>  
+> -#if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND)
+> +#if defined(CONFIG_FRAME_POINTER) || defined(CONFIG_ARM_UNWIND)
+>  /*
+>   * return_address uses walk_stackframe to do it's work.  If both
+>   * CONFIG_FRAME_POINTER=y and CONFIG_ARM_UNWIND=y walk_stackframe uses unwind
+> - * information.  For this to work in the function tracer many functions would
+> - * have to be marked with __notrace.  So for now just depend on
+> - * !CONFIG_ARM_UNWIND.
+> + * information.
+>   */
+>  
+>  void *return_address(unsigned int);
+> diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+> index 5bbec7b..09a0d64 100644
+> --- a/arch/arm/kernel/Makefile
+> +++ b/arch/arm/kernel/Makefile
+> @@ -5,13 +5,11 @@
+>  CPPFLAGS_vmlinux.lds := -DTEXT_OFFSET=$(TEXT_OFFSET)
+>  AFLAGS_head.o        := -DTEXT_OFFSET=$(TEXT_OFFSET)
+>  
+> -ifdef CONFIG_FUNCTION_TRACER
+> -CFLAGS_REMOVE_ftrace.o = -pg
+> -CFLAGS_REMOVE_insn.o = -pg
+> -CFLAGS_REMOVE_patch.o = -pg
+> -endif
+> -
+> -CFLAGS_REMOVE_return_address.o = -pg
+> +CFLAGS_REMOVE_ftrace.o		= -pg
+> +CFLAGS_REMOVE_insn.o		= -pg
+> +CFLAGS_REMOVE_patch.o		= -pg
+> +CFLAGS_REMOVE_unwind.o		= -pg
+> +CFLAGS_REMOVE_return_address.o	= -pg
+>  
+>  # Object file lists.
+>  
+> diff --git a/arch/arm/kernel/return_address.c b/arch/arm/kernel/return_address.c
+> index 8085417..ccb5e37 100644
+> --- a/arch/arm/kernel/return_address.c
+> +++ b/arch/arm/kernel/return_address.c
+> @@ -11,7 +11,7 @@
+>  #include <linux/export.h>
+>  #include <linux/ftrace.h>
+>  
+> -#if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND)
+> +#if defined(CONFIG_FRAME_POINTER) || defined(CONFIG_ARM_UNWIND)
+>  #include <linux/sched.h>
+>  
+>  #include <asm/stacktrace.h>
+> @@ -56,17 +56,13 @@ void *return_address(unsigned int level)
+>  		return NULL;
+>  }
+>  
+> -#else /* if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND) */
+> -
+> -#if defined(CONFIG_ARM_UNWIND)
+> -#warning "TODO: return_address should use unwind tables"
+> -#endif
+> +#else /* CONFIG_FRAME_POINTER || CONFIG_ARM_UNWIND */
+>  
+>  void *return_address(unsigned int level)
+>  {
+>  	return NULL;
+>  }
+>  
+> -#endif /* if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND) / else */
+> +#endif /* CONFIG_FRAME_POINTER || CONFIG_ARM_UNWIND */
+>  
+>  EXPORT_SYMBOL_GPL(return_address);
+> diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
+> index 00f79e5..aab144b 100644
+> --- a/arch/arm/kernel/stacktrace.c
+> +++ b/arch/arm/kernel/stacktrace.c
+> @@ -6,6 +6,9 @@
+>  
+>  #if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND)
+>  /*
+> + * If both CONFIG_FRAME_POINTER=y and CONFIG_ARM_UNWIND=y walk_stackframe uses
+> + * unwind information. So for now just depend on !CONFIG_ARM_UNWIND.
+> + *
+>   * Unwind the current stack frame and store the new register values in the
+>   * structure passed as argument. Unwinding is equivalent to a function return,
+>   * hence the new PC value rather than LR should be used for backtrace.
+> diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+> index 713a2ca..6f207ed 100644
+> --- a/kernel/trace/trace_irqsoff.c
+> +++ b/kernel/trace/trace_irqsoff.c
+> @@ -483,20 +483,6 @@ inline void print_irqtrace_events(struct task_struct *curr)
+>  /*
+>   * We are only interested in hardirq on/off events:
+>   */
+> -void trace_hardirqs_on(void)
+> -{
+> -	if (!preempt_trace() && irq_trace())
+> -		stop_critical_timing(CALLER_ADDR0, CALLER_ADDR1);
+> -}
+> -EXPORT_SYMBOL(trace_hardirqs_on);
+> -
+> -void trace_hardirqs_off(void)
+> -{
+> -	if (!preempt_trace() && irq_trace())
+> -		start_critical_timing(CALLER_ADDR0, CALLER_ADDR1);
+> -}
+> -EXPORT_SYMBOL(trace_hardirqs_off);
+> -
+>  void trace_hardirqs_on_caller(unsigned long caller_addr)
+>  {
+>  	if (!preempt_trace() && irq_trace())
+> @@ -504,6 +490,12 @@ void trace_hardirqs_on_caller(unsigned long caller_addr)
+>  }
+>  EXPORT_SYMBOL(trace_hardirqs_on_caller);
+>  
+> +void trace_hardirqs_on(void)
+> +{
+> +	trace_hardirqs_on_caller(CALLER_ADDR0);
+> +}
+> +EXPORT_SYMBOL(trace_hardirqs_on);
+> +
+>  void trace_hardirqs_off_caller(unsigned long caller_addr)
+>  {
+>  	if (!preempt_trace() && irq_trace())
+> @@ -511,6 +503,12 @@ void trace_hardirqs_off_caller(unsigned long caller_addr)
+>  }
+>  EXPORT_SYMBOL(trace_hardirqs_off_caller);
+>  
+> +void trace_hardirqs_off(void)
+> +{
+> +	trace_hardirqs_off_caller(CALLER_ADDR0);
+> +}
+> +EXPORT_SYMBOL(trace_hardirqs_off);
+> +
+>  #endif /* CONFIG_PROVE_LOCKING */
+>  #endif /*  CONFIG_IRQSOFF_TRACER */
+>  
+> -- 
+> 1.8.0
 > 
-> 
-> ______________________________________________________________
-> > Od: "Michal Hocko" <mhocko@suse.cz>
-> > Komu: azurIt <azurit@pobox.sk>
-> > Dátum: 30.12.2012 12:08
-> > Predmet: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from add_to_page_cache_locked
-> >
-> > CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, "cgroups mailinglist" <cgroups@vger.kernel.org>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "Johannes Weiner" <hannes@cmpxchg.org>
-> >On Sun 30-12-12 02:09:47, azurIt wrote:
-> >> >which suggests that the patch is incomplete and that I am blind :/
-> >> >mem_cgroup_cache_charge calls __mem_cgroup_try_charge for the page cache
-> >> >and that one doesn't check GFP_MEMCG_NO_OOM. So you need the following
-> >> >follow-up patch on top of the one you already have (which should catch
-> >> >all the remaining cases).
-> >> >Sorry about that...
-> >> 
-> >> 
-> >> This was, again, killing my MySQL server (search for "(mysqld)"):
-> >> http://www.watchdog.sk/lkml/oom_mysqld5
-> >
-> >grep "Kill process" oom_mysqld5 
-> >Dec 30 01:53:34 server01 kernel: [  367.061801] Memory cgroup out of memory: Kill process 5512 (apache2) score 716 or sacrifice child
-> >Dec 30 01:53:35 server01 kernel: [  367.338024] Memory cgroup out of memory: Kill process 5517 (apache2) score 718 or sacrifice child
-> >Dec 30 01:53:35 server01 kernel: [  367.747888] Memory cgroup out of memory: Kill process 5513 (apache2) score 721 or sacrifice child
-> >Dec 30 01:53:36 server01 kernel: [  368.159860] Memory cgroup out of memory: Kill process 5516 (apache2) score 726 or sacrifice child
-> >Dec 30 01:53:36 server01 kernel: [  368.665606] Memory cgroup out of memory: Kill process 5520 (apache2) score 733 or sacrifice child
-> >Dec 30 01:53:36 server01 kernel: [  368.765652] Out of memory: Kill process 1778 (mysqld) score 39 or sacrifice child
-> >Dec 30 01:53:36 server01 kernel: [  369.101753] Memory cgroup out of memory: Kill process 5519 (apache2) score 754 or sacrifice child
-> >Dec 30 01:53:37 server01 kernel: [  369.464262] Memory cgroup out of memory: Kill process 5583 (apache2) score 762 or sacrifice child
-> >Dec 30 01:53:37 server01 kernel: [  369.465017] Out of memory: Kill process 5506 (apache2) score 18 or sacrifice child
-> >Dec 30 01:53:37 server01 kernel: [  369.574932] Memory cgroup out of memory: Kill process 5523 (apache2) score 759 or sacrifice child
-> >
-> >So your mysqld has been killed by the global OOM not memcg. But why when
-> >you seem to be perfectly fine regarding memory? I guess the following
-> >backtrace is relevant:
-> >Dec 30 01:53:36 server01 kernel: [  368.569720] DMA: 0*4kB 1*8kB 0*16kB 1*32kB 2*64kB 1*128kB 1*256kB 0*512kB 1*1024kB 1*2048kB 3*4096kB = 15912kB
-> >Dec 30 01:53:36 server01 kernel: [  368.570447] DMA32: 9*4kB 10*8kB 8*16kB 6*32kB 5*64kB 6*128kB 4*256kB 2*512kB 3*1024kB 3*2048kB 613*4096kB = 2523636kB
-> >Dec 30 01:53:36 server01 kernel: [  368.571175] Normal: 5*4kB 2060*8kB 4122*16kB 2550*32kB 2667*64kB 722*128kB 197*256kB 68*512kB 15*1024kB 4*2048kB 1855*4096kB = 8134036kB
-> >Dec 30 01:53:36 server01 kernel: [  368.571906] 308964 total pagecache pages
-> >Dec 30 01:53:36 server01 kernel: [  368.572023] 0 pages in swap cache
-> >Dec 30 01:53:36 server01 kernel: [  368.572140] Swap cache stats: add 0, delete 0, find 0/0
-> >Dec 30 01:53:36 server01 kernel: [  368.572260] Free swap  = 0kB
-> >Dec 30 01:53:36 server01 kernel: [  368.572375] Total swap = 0kB
-> >Dec 30 01:53:36 server01 kernel: [  368.597836] apache2 invoked oom-killer: gfp_mask=0x0, order=0, oom_adj=0, oom_score_adj=0
-> >Dec 30 01:53:36 server01 kernel: [  368.598034] apache2 cpuset=uid mems_allowed=0
-> >Dec 30 01:53:36 server01 kernel: [  368.598152] Pid: 5385, comm: apache2 Not tainted 3.2.35-grsec #1
-> >Dec 30 01:53:36 server01 kernel: [  368.598273] Call Trace:
-> >Dec 30 01:53:36 server01 kernel: [  368.598396]  [<ffffffff810cc89e>] dump_header+0x7e/0x1e0
-> >Dec 30 01:53:36 server01 kernel: [  368.598516]  [<ffffffff810cc79f>] ? find_lock_task_mm+0x2f/0x70
-> >Dec 30 01:53:36 server01 kernel: [  368.598638]  [<ffffffff810ccd65>] oom_kill_process+0x85/0x2a0
-> >Dec 30 01:53:36 server01 kernel: [  368.598759]  [<ffffffff810cd415>] out_of_memory+0xe5/0x200
-> >Dec 30 01:53:36 server01 kernel: [  368.598880]  [<ffffffff810cd5ed>] pagefault_out_of_memory+0xbd/0x110
-> >Dec 30 01:53:36 server01 kernel: [  368.599006]  [<ffffffff81026e96>] mm_fault_error+0xb6/0x1a0
-> >Dec 30 01:53:36 server01 kernel: [  368.599127]  [<ffffffff8102736e>] do_page_fault+0x3ee/0x460
-> >Dec 30 01:53:36 server01 kernel: [  368.599250]  [<ffffffff81131ccf>] ? mntput+0x1f/0x30
-> >Dec 30 01:53:36 server01 kernel: [  368.599371]  [<ffffffff811134e6>] ? fput+0x156/0x200
-> >Dec 30 01:53:36 server01 kernel: [  368.599496]  [<ffffffff815b567f>] page_fault+0x1f/0x30
-> >
-> >This would suggest that an unexpected ENOMEM leaked during page fault
-> >path. I do not see which one could that be because you said THP
-> >(CONFIG_TRANSPARENT_HUGEPAGE) are disabled (and the other patch I have
-> >mentioned in the thread should fix that issue - btw. the patch is
-> >already scheduled for stable tree).
-> > __do_fault, do_anonymous_page and do_wp_page call
-> >mem_cgroup_newpage_charge with GFP_KERNEL which means that
-> >we do memcg OOM and never return ENOMEM. do_swap_page calls
-> >mem_cgroup_try_charge_swapin with GFP_KERNEL as well.
-> >
-> >I might have missed something but I will not get to look closer before
-> >2nd January.
-> >-- 
-> >Michal Hocko
-> >SUSE Labs
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Michal Hocko
-SUSE Labs
