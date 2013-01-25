@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932646Ab3AYOTw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 09:19:52 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:58858 "EHLO
+	id S1757375Ab3AYOO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 09:14:56 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:57253 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757385Ab3AYOO5 (ORCPT
+	with ESMTP id S1755459Ab3AYOOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 09:14:57 -0500
+	Fri, 25 Jan 2013 09:14:54 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@list.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org
-Subject: [PATCH 04/19] oss/dmabuf: use dma_map_single
-Date: Fri, 25 Jan 2013 14:14:21 +0000
-Message-Id: <1359123276-15833-5-git-send-email-arnd@arndb.de>
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <c_dwalke@quicinc.com>, linux-arm-msm@vger.kernel.org
+Subject: [PATCH 03/19] ARM: msm: proc_comm_boot_wait should not be __init
+Date: Fri, 25 Jan 2013 14:14:20 +0000
+Message-Id: <1359123276-15833-4-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1359123276-15833-1-git-send-email-arnd@arndb.de>
 References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:DrX2BzMptP4Oy0sbRvhcfQVPjQZpCanI9pf6OgBZnG8
- 1sba2cm0UM1gJ+NV2e28Z2IqDh5HQ0ajhsJ9ZGKNlsYKvrPqKv
- fFRkJlVH1HXjlD0sYP0SzfSaqInWFrS3YpTveNIYPjn5JBAzpL
- a7pOrourqUxLBfP5UuPX4+22HTLBqIF3WLcuWgriKlOGfsi7ja
- 0iHJ918jJ5wcoqioJFyMybOybhv5vAdcJT6VUcUbeOs9Uvzphl
- GEP8RAe1e24qCi9O0DZZ9ugq0T3f02sIKoimOJ7u0E+4kvMDTS
- MQbajySI7nNMCdTm3EZkvCOt3bpQZ8AW9SDrU7gnjQ6NGrzZOU
- BEIOtd4P0hFFxOdyu+saKg7xIEBmYFOvaMVT1mMlx
+X-Provags-ID: V02:K0:0eiu5qxArP3YOQSzEEdzfyqsT9xPutK+/G7EUdCf6wK
+ 6Xyc6LWSOZbYmc2ZDY8kyUqblw8r30EAGnD0N2hwhk8+2XoDfW
+ hN5Zp90qT3QyKZMoh1qZs5h8LawsFewbax+PUq4P+NSpD8rddw
+ HrjlkEzYOjtXDbFIZU9pt6pPdIBWGlY6izEY0bXA0H88wf2vRJ
+ cDHjo3MEE+8S6GY9g5nZ70sjTzSjFQ8PIo/5ZYbwTbF5t/ETcA
+ RHKoKnIaA9drWF5p1GEkC56lcLmGP8qImg1IxOs1+oa8D4MD0l
+ +yj9ap6V/LFIt75uu4d5eYigSoSYxGiBQdMuxlQKpKT8LyQ6Yi
+ 3n8EOvCGJaILDaNr6VIFhxYdV3/qsNMJ5O7/BZZ0/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The virt_to_bus/bus_to_virt functions have been deprecated
-for as long as I can remember, and they are used in very
-few remaining instances, usually in obscure ISA device
-drivers. The OSS sound drivers are the only ones that are
-still used on the ARM architecture, and only on some of
-the earliest StrongARM machines.
+msm_smd_probe is a driver probe function and may get
+called after the __init time, so it must not call
+any __init function, as the link-time warning reports.
+Take away the __init annotation on proc_comm_boot_wait
+to fix this.
 
-The problem for converting the OSS subsystem to use
-dma_map_single instead is that the caller of virt_to_bus
-does not have a device pointer, since the subsystem has
-never been ported to use the common device infrastructure.
+Without this patch, building msm_defconfig results in:
+
+WARNING: vmlinux.o(.text+0xb048): Section mismatch in reference from the function msm_smd_probe() to the function .init.text:proc_comm_boot_wait()
+The function msm_smd_probe() references
+the function __init proc_comm_boot_wait().
+This is often because msm_smd_probe lacks a __init
+annotation or the annotation of proc_comm_boot_wait is wrong.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org
+Cc: David Brown <davidb@codeaurora.org>
+Cc: Bryan Huntsman <bryanh@codeaurora.org>
+Cc: Daniel Walker <c_dwalke@quicinc.com>
+Cc: linux-arm-msm@vger.kernel.org
 ---
- sound/oss/dmabuf.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-msm/proc_comm.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/oss/dmabuf.c b/sound/oss/dmabuf.c
-index bcc3e8e..a59c888 100644
---- a/sound/oss/dmabuf.c
-+++ b/sound/oss/dmabuf.c
-@@ -114,7 +114,7 @@ static int sound_alloc_dmap(struct dma_buffparms *dmap)
- 		}
- 	}
- 	dmap->raw_buf = start_addr;
--	dmap->raw_buf_phys = virt_to_bus(start_addr);
-+	dmap->raw_buf_phys = dma_map_single(NULL, start_addr, dmap->buffsize, DMA_BIDIRECTIONAL);
+diff --git a/arch/arm/mach-msm/proc_comm.h b/arch/arm/mach-msm/proc_comm.h
+index 12da4ca..e8d043a 100644
+--- a/arch/arm/mach-msm/proc_comm.h
++++ b/arch/arm/mach-msm/proc_comm.h
+@@ -253,6 +253,6 @@ enum {
+ 		(((drvstr) & 0xF) << 17))
  
- 	for (page = virt_to_page(start_addr); page <= virt_to_page(end_addr); page++)
- 		SetPageReserved(page);
-@@ -139,6 +139,7 @@ static void sound_free_dmap(struct dma_buffparms *dmap)
- 	for (page = virt_to_page(start_addr); page <= virt_to_page(end_addr); page++)
- 		ClearPageReserved(page);
+ int msm_proc_comm(unsigned cmd, unsigned *data1, unsigned *data2);
+-void __init proc_comm_boot_wait(void);
++void proc_comm_boot_wait(void);
  
-+	dma_unmap_single(NULL, dmap->raw_buf_phys, dmap->buffsize, DMA_BIDIRECTIONAL);
- 	free_pages((unsigned long) dmap->raw_buf, sz);
- 	dmap->raw_buf = NULL;
- }
+ #endif
 -- 
 1.8.0
 
