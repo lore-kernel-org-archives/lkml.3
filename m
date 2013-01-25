@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab3AYWCj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 17:02:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:16022 "EHLO mga02.intel.com"
+	id S1753783Ab3AYWCh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 17:02:37 -0500
+Received: from mga11.intel.com ([192.55.52.93]:39121 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753239Ab3AYWAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753261Ab3AYWAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Jan 2013 17:00:53 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,541,1355126400"; 
-   d="scan'208";a="276757472"
+   d="scan'208";a="278541389"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 01/12] perf, x86: Add PEBSv2 record support
-Date: Fri, 25 Jan 2013 14:00:34 -0800
-Message-Id: <1359151245-13179-2-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 07/12] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v3
+Date: Fri, 25 Jan 2013 14:00:40 -0800
+Message-Id: <1359151245-13179-8-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
 References: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
@@ -26,191 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add support for the v2 PEBS format. It has a superset of the v1 PEBS
-fields, but has a longer record so we need to adjust the code paths.
+With checkpointed counters there can be a situation where the counter
+is overflowing, aborts the transaction, is set back to a non overflowing
+checkpoint, causes interupt. The interrupt doesn't see the overflow
+because it has been checkpointed.  This is then a spurious PMI, typically with a
+ugly NMI message.  It can also lead to excessive aborts.
 
-The main advantage is the new "EventingRip" support which directly
-gives the instruction, not off-by-one instruction. So with precise == 2
-we use that directly and don't try to use LBRs and walking basic blocks.
-This lowers the overhead significantly.
+Avoid this problem by:
+- Using the full counter width for counting counters (previous patch)
+- Forbid sampling for checkpointed counters. It's not too useful anyways,
+checkpointing is mainly for counting.
+- On a PMI always set back checkpointed counters to zero.
 
-Some other features are added in later patches.
-
+v2: Add unlikely. Add comment
+v3: Allow large sampling periods with CP for KVM
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c          |    2 +-
- arch/x86/kernel/cpu/perf_event_intel_ds.c |  101 ++++++++++++++++++++++-------
- 2 files changed, 79 insertions(+), 24 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   34 ++++++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 6774c17..c95290a 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -397,7 +397,7 @@ int x86_pmu_hw_config(struct perf_event *event)
- 		 * check that PEBS LBR correction does not conflict with
- 		 * whatever the user is asking with attr->branch_sample_type
- 		 */
--		if (event->attr.precise_ip > 1) {
-+		if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
- 			u64 *br_type = &event->attr.branch_sample_type;
- 
- 			if (has_branch_stack(event)) {
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 826054a..9d0dae0 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -41,6 +41,12 @@ struct pebs_record_nhm {
- 	u64 status, dla, dse, lat;
- };
- 
-+struct pebs_record_v2 {
-+	struct pebs_record_nhm nhm;
-+	u64 eventingrip;
-+	u64 tsx_tuning;
-+};
-+
- void init_debug_store_on_cpu(int cpu)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index bc21bce..9b4dda5 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1079,6 +1079,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ int intel_pmu_save_and_restart(struct perf_event *event)
  {
- 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
-@@ -559,8 +565,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- {
- 	/*
- 	 * We cast to pebs_record_core since that is a subset of
--	 * both formats and we don't use the other fields in this
--	 * routine.
-+	 * both formats.
- 	 */
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct pebs_record_core *pebs = __pebs;
-@@ -588,7 +593,10 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	regs.bp = pebs->bp;
- 	regs.sp = pebs->sp;
- 
--	if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
-+	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
-+		regs.ip = ((struct pebs_record_v2 *)pebs)->eventingrip;
-+		regs.flags |= PERF_EFLAGS_EXACT;
-+	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
- 		regs.flags |= PERF_EFLAGS_EXACT;
- 	else
- 		regs.flags &= ~PERF_EFLAGS_EXACT;
-@@ -641,35 +649,21 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
- 	__intel_pmu_pebs_event(event, iregs, at);
+ 	x86_perf_event_update(event);
++	/*
++	 * For a checkpointed counter always reset back to 0.  This
++	 * avoids a situation where the counter overflows, aborts the
++	 * transaction and is then set back to shortly before the
++	 * overflow, and overflows and aborts again.
++	 */
++	if (unlikely(event->hw.config & HSW_INTX_CHECKPOINTED)) {
++		/* No race with NMIs because the counter should not be armed */
++		wrmsrl(event->hw.event_base, 0);
++		local64_set(&event->hw.prev_count, 0);
++	}
+ 	return x86_perf_event_set_period(event);
  }
  
--static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
-+static void intel_pmu_drain_pebs_common(struct pt_regs *iregs, void *at,
-+					void *top)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct debug_store *ds = cpuc->ds;
--	struct pebs_record_nhm *at, *top;
- 	struct perf_event *event = NULL;
- 	u64 status = 0;
--	int bit, n;
--
--	if (!x86_pmu.pebs_active)
--		return;
--
--	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
--	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
-+	int bit;
- 
- 	ds->pebs_index = ds->pebs_buffer_base;
- 
--	n = top - at;
--	if (n <= 0)
--		return;
-+	for ( ; at < top; at += x86_pmu.pebs_record_size) {
-+		struct pebs_record_nhm *p = at;
- 
--	/*
--	 * Should not happen, we program the threshold at 1 and do not
--	 * set a reset value.
--	 */
--	WARN_ONCE(n > x86_pmu.max_pebs_events, "Unexpected number of pebs records %d\n", n);
--
--	for ( ; at < top; at++) {
--		for_each_set_bit(bit, (unsigned long *)&at->status, x86_pmu.max_pebs_events) {
-+		for_each_set_bit(bit, (unsigned long *)&p->status, x86_pmu.max_pebs_events) {
- 			event = cpuc->events[bit];
- 			if (!test_bit(bit, cpuc->active_mask))
- 				continue;
-@@ -692,6 +686,61 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+@@ -1162,6 +1173,15 @@ again:
+ 		x86_pmu.drain_pebs(regs);
  	}
+ 
++	/*
++ 	 * To avoid spurious interrupts with perf stat always reset checkpointed
++ 	 * counters.
++ 	 *
++	 * XXX move somewhere else.
++	 */
++	if (cpuc->events[2] && (cpuc->events[2]->hw.config & HSW_INTX_CHECKPOINTED))
++		status |= (1ULL << 2);
++
+ 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+ 		struct perf_event *event = cpuc->events[bit];
+ 
+@@ -1615,6 +1635,20 @@ static int hsw_hw_config(struct perf_event *event)
+ 	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
+ 	      event->attr.precise_ip > 0))
+ 		return -EIO;
++	if (event->hw.config & HSW_INTX_CHECKPOINTED) {
++		/*
++		 * Sampling of checkpointed events can cause situations where
++		 * the CPU constantly aborts because of a overflow, which is
++		 * then checkpointed back and ignored. Forbid checkpointing
++		 * for sampling.
++		 *
++		 * But still allow a long sampling period, so that perf stat
++		 * from KVM works.
++		 */
++		if (event->attr.sample_period > 0 &&
++		    event->attr.sample_period < 0x7fffffff)
++			return -EIO;
++	}
+ 	return 0;
  }
  
-+static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct debug_store *ds = cpuc->ds;
-+	struct pebs_record_nhm *at, *top;
-+	int n;
-+
-+	if (!x86_pmu.pebs_active)
-+		return;
-+
-+	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
-+	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
-+
-+	ds->pebs_index = ds->pebs_buffer_base;
-+
-+	n = top - at;
-+	if (n <= 0)
-+		return;
-+
-+	/*
-+	 * Should not happen, we program the threshold at 1 and do not
-+	 * set a reset value.
-+	 */
-+	WARN_ONCE(n > x86_pmu.max_pebs_events,
-+		  "Unexpected number of pebs records %d\n", n);
-+
-+	return intel_pmu_drain_pebs_common(iregs, at, top);
-+}
-+
-+static void intel_pmu_drain_pebs_v2(struct pt_regs *iregs)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct debug_store *ds = cpuc->ds;
-+	struct pebs_record_v2 *at, *top;
-+	int n;
-+
-+	if (!x86_pmu.pebs_active)
-+		return;
-+
-+	at  = (struct pebs_record_v2 *)(unsigned long)ds->pebs_buffer_base;
-+	top = (struct pebs_record_v2 *)(unsigned long)ds->pebs_index;
-+
-+	n = top - at;
-+	if (n <= 0)
-+		return;
-+	/*
-+	 * Should not happen, we program the threshold at 1 and do not
-+	 * set a reset value.
-+	 */
-+	WARN_ONCE(n > x86_pmu.max_pebs_events,
-+		  "Unexpected number of pebs records %d\n", n);
-+
-+	return intel_pmu_drain_pebs_common(iregs, at, top);
-+}
-+
- /*
-  * BTS, PEBS probe and setup
-  */
-@@ -723,6 +772,12 @@ void intel_ds_init(void)
- 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
- 			break;
- 
-+		case 2:
-+			printk(KERN_CONT "PEBS fmt2%c, ", pebs_type);
-+			x86_pmu.pebs_record_size = sizeof(struct pebs_record_v2);
-+			x86_pmu.drain_pebs = intel_pmu_drain_pebs_v2;
-+			break;
-+
- 		default:
- 			printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
- 			x86_pmu.pebs = 0;
 -- 
 1.7.7.6
 
