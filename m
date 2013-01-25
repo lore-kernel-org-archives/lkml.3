@@ -1,139 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab3AYKAs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:00:48 -0500
-Received: from 8bytes.org ([85.214.48.195]:49370 "EHLO mail.8bytes.org"
+	id S1755991Ab3AYKCT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:02:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13362 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754170Ab3AYKAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:00:45 -0500
-Date: Fri, 25 Jan 2013 11:00:41 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [git pull] ioapic-cleanups-for-v3.9
-Message-ID: <20130125100040.GA13908@8bytes.org>
+	id S1755065Ab3AYKCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 05:02:14 -0500
+Message-ID: <51025802.5020900@redhat.com>
+Date: Fri, 25 Jan 2013 11:01:38 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Jan 25 11:00:43 2013
-X-DSPAM-Confidence: 0.9990
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 510257cb22971538623520
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 02/13] sg_io: reorganize list of allowed commands
+References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com> <1359039649-17734-3-git-send-email-pbonzini@redhat.com> <20130124224203.GA2373@mtj.dyndns.org> <20130124224921.GB2373@mtj.dyndns.org> <20130124225845.GD2373@mtj.dyndns.org>
+In-Reply-To: <20130124225845.GD2373@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 24/01/2013 23:58, Tejun Heo ha scritto:
+> 
+>> +#define sgio_bitmap_set(cmd, mask, rw) \
+>> +	if ((mask) != 0) __set_bit((cmd), filter->rw##_ok)
+>> +
+>> +#define D (1u << TYPE_DISK)           /* Direct Access Block Device (SBC-3) */
+>> +#define T (1u << TYPE_TAPE)           /* Sequential Access Device (SSC-3) */
+>> +#define L (1u << TYPE_PRINTER)        /* Printer Device (SSC) */
+>> +#define P (1u << TYPE_PROCESSOR)      /* Processor Device (SPC-2) */
+>> +#define W (1u << TYPE_WORM)           /* Write Once Block Device (SBC) */
+>> +#define R (1u << TYPE_ROM)            /* C/DVD Device (MMC-6) */
+>> +#define S (1u << TYPE_SCANNER)        /* Scanner device (obsolete) */
+>> +#define O (1u << TYPE_MOD)            /* Optical Memory Block Device (SBC) */
+>> +#define M (1u << TYPE_MEDIUM_CHANGER) /* Media Changer Device (SMC-3) */
+>> +#define C (1u << TYPE_COMM)           /* Communication devices (obsolete) */
+>> +#define A (1u << TYPE_RAID)           /* Storage Array Device (SCC-2) */
+>> +#define E (1u << TYPE_ENCLOSURE)      /* SCSI Enclosure Services device (SES-2) */
+>> +#define B (1u << TYPE_RBC)            /* Simplified Direct-Access (Reduced Block) device (RBC) */
+>> +#define K (1u << 0x0f)                /* Optical Card Reader/Writer device (OCRW) */
+>> +#define V (1u << 0x10)                /* Automation/Device Interface device (ADC-2) */
+> 
+> Can we please add TYPE_* constants for these two too?
 
---3MwIy2ne0vdjdPXF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok.
 
-Hi Ingo,
+>> +#define F (1u << TYPE_OSD)            /* Object-based Storage Device (OSD-2) */
+>> +
+>> +	/* control, universal except possibly RBC, read */
+>> +
+>> +	sgio_bitmap_set(0x00, -1                             , read);  // TEST UNIT READY
+> 
+> Hmmm... why are we not using symbolic constants for commands?
 
-The following changes since commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619:
+First, because the table is based on
+http://www.t10.org/lists/op-num.txt. Entries in that file look like this:
 
-  Linux 3.8-rc4 (2013-01-17 19:25:45 -0800)
+OP  DTLPWROMAEBKVF  Description
+--  --------------  ----------------------------------------------------
+00  MMMMMMMMMMMMMM  TEST UNIT READY
+01   M              REWIND
+01  Z V ZZZZ        REZERO UNIT
 
-are available in the git repository at:
+which explains a bit the formatting.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/ioapic-=
-cleanups-for-v3.9
+Second, because many symbolic constants do not exist in
+include/scsi/scsi.h or include/linux/uapi/cdrom.h, and I don't think it
+would make sense to add them for a one-off use, especially for obsolete
+commands or device types.
 
-for you to fetch changes up to 91b7344672ed72355624415e036f117782c5809c:
+> If it's because of horizontal real estate, we can abbreviate
+> sgio_bitmap_set(), no?
 
-  x86, irq: Move irq_remapped out of x86 core code (2013-01-24 18:29:33 +01=
-00)
+No, it's not that.  In fact using the symbolic constants would save a
+few characters (for the 0xNN and the comment start).  I really prefer to
+keep the opcode visible so that you can easily match the code to op-num.txt.
 
-----------------------------------------------------------------
-Cleanup X86 IOAPIC code from interrupt remapping details
+> Also, wouldn't it be better to have ALL
+> instead of -1?  Also, the custom formatting is nice but can we at
+> least not use //?
 
-These patches move all interrupt remapping specific checks out of the
-x86 core code and replaces the respective call-sites with function
-pointers. As a result the interrupt remapping code is better abstraced
-=66rom x86 core interrupt handling code.
+ALL instead of -1 is a good idea, or I can just spell it out if it's
+okay for you.
 
-The code was rebased to v3.8-rc4 and tested on systems with AMD-Vi and
-Intel VT-d (both capable of interrupt remapping). The systems were
-tested with IOMMU enabled and with IOMMU disabled. No issues were found.
+// is nicer in my opinion (for this case where we're throwing away all
+the rules anyway) because it avoids the misaligned */ but I can change
+it of course.
 
-----------------------------------------------------------------
-Joerg Roedel (19):
-      x86, apic: Move irq_remapping_enabled checks into IRQ-remapping code
-      x86, apic: Mask IO-APIC and PIC unconditionally on LAPIC resume
-      x86, io_apic: Introduce x86_io_apic_ops.disable()
-      x86, io_apic: Introduce x86_io_apic_ops.print_entries for debugging
-      x86, hpet: Introduce x86_msi_ops.setup_hpet_msi
-      x86, msi: Use IRQ remapping specific setup_msi_irqs routine
-      x86, io_apic: Introduce set_affinity function pointer
-      x86, io_apic: Convert setup_ioapic_entry to function pointer
-      x86, io_apic: Move irq_remapping_enabled checks out of check_timer()
-      x86, io_apic: Remove irq_remapping_enabled check in setup_timer_IRQ0_=
-pin
-      x86, irq: Move irq_remapping_enabled declaration to iommu code
-      x86, irq: Add data structure to keep AMD specific irq remapping infor=
-mation
-      x86, io-apic: Move CONFIG_IRQ_REMAP code out of x86 core
-      x86, io-apic: Remove !irq_remapped() check from __target_IO_APIC_irq()
-      x86, irq: Move irq_remapped() check into free_remapped_irq
-      x86, irq: Introduce setup_remapped_irq()
-      x86, msi: Introduce x86_msi.compose_msi_msg call-back
-      x86, io_apic: Introduce eoi_ioapic_pin call-back
-      x86, irq: Move irq_remapped out of x86 core code
+>>> One other thing is I would much prefer if the table was made static
+>>> const first.  As we only allow compile-time defined tables, there's no
+>>> point in dynamically initializing these and the above can be static
+>>> initializers.
+>>
+>> On the similar line of thoughts, wouldn't it be better to have the
+>> table organized by the device type first?  It would be much easier to
+>> comprehend which commands are allowed for each device type that way
+>> and FWIW it would be more cacheline friendly.  e.g. something like,
 
- arch/x86/include/asm/hpet.h          |    5 +-
- arch/x86/include/asm/hw_irq.h        |   13 +-
- arch/x86/include/asm/io_apic.h       |   28 +++
- arch/x86/include/asm/irq_remapping.h |   40 ++--
- arch/x86/include/asm/pci.h           |    2 +
- arch/x86/include/asm/x86_init.h      |   27 ++-
- arch/x86/kernel/apic/apic.c          |   28 ++-
- arch/x86/kernel/apic/io_apic.c       |  370 +++++++++++++-----------------=
-----
- arch/x86/kernel/hpet.c               |    2 +-
- arch/x86/kernel/x86_init.c           |   24 ++-
- drivers/iommu/amd_iommu.c            |    8 +-
- drivers/iommu/dmar.c                 |    2 +
- drivers/iommu/intel-iommu.c          |    2 +
- drivers/iommu/intel_irq_remapping.c  |   12 ++
- drivers/iommu/irq_remapping.c        |  176 +++++++++++++++-
- drivers/iommu/irq_remapping.h        |    1 +
- 16 files changed, 439 insertions(+), 301 deletions(-)
+It is actually more cacheline friendly like this.  The vast majority of
+commands will be READ and WRITE, which are 0x?8 and 0x?A.  So in
+practice one cacheline will be shared by all device types, maybe two if
+you use READ/WRITE(12) for some devices and READ/WRITE(16) for others.
 
-Please pull.
+>> #define M(opcode)	(1 << opcode)
+>>
+>> #define COMMON	\
+>> 	M(READ_6) | M(WRITE_6) | ....
+>>
+>> static const whatever_type blk_cmd_filter_disk = {
+>> 	COMMON				|
+>> 	M(CMD_SPECIFIC_TO_THIS_TYPE0)	|
+>> 	M(CMD_SPECIFIC_TO_THIS_TYPE2)	|
+>> 	...
+>> };
+> 
+> Oops, there are way more bits than in the longest integer, so you
+> can't statically initialize them in pretty way (maybe it's possible
+> but I can't think of anything pretty).  We can still initialize the
+> table once during boot and throw away the init code, I guess.
 
-Thanks,
+Yeah, that's what happens because GCC will inline
+blk_set_cmd_filter_defaults into its sole caller which is __init.
+There's no difference from before this patch, but I can add an explicit
+__init to blk_set_cmd_filter_defaults too.
 
-	Joerg
+> Also, I
+> still think device -> command organization would be better than
+> commmand -> device.
 
+This patch ties to keep the list as similar as possible to the old one,
+to ease review.  There is usually a 1:1 matching between "old" and "new"
+lines, and this limits the freedom I have in organizing the list.
 
---3MwIy2ne0vdjdPXF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+In the next patches I gradually move towards a more structured
+organization, usually something like standard->command (one standard may
+correspond to more than one device type, but all of them are described
+in the same document).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRAlfIAAoJECvwRC2XARrjcwkP/1vS+5dP1kEb1tDCy3ACCDDO
-YpbyDLhPfI/zFqUUt/p7vlcOkjQokmOXc3SXKajHqO0lcBO9Y0oH4D0V1WgEWgQw
-fDrzt6w2S2vFUz3Q/izFoyGiG2G8I4rLUG/Oigf1jYvwGn0Uc6y6tPuMKlwiV+/b
-TsnWNFdBcrLlblhOTkdNAhfTpJZ0LmTNGuzx67x7zuFCnpszFgm7J2zwZ01RfAUs
-ZLmmH2p1im+u0KiNeVRtSjBKGaFYqkKKoGhJBaKegkam6krFmLPFpH7yLXfMMZgE
-j7b/VvpLJtR0/dOjUJE4XDT421m5hma1wQHiOvgHiiNo9i+tJAt13s21Rjzs5Dhm
-Tc+NnrqupPo4o2boo2JNiM0Rj4go/uM+zeXO5zQ5XUMqhopQ0FCj3KKQ7GfSA51C
-xwOtYOEzOQ5UPiaeRCRLVJxpnbDAShmbIiIUw3pHvyneAf67ITEPGwTJ/KnmsCLB
-YnJcUE9fAScJZv//N2uhCksq52XLMjH1TZ46cizL48hKjJEGD/sJoXh36MoaR2OQ
-DtT/aFXRRhnyW2lthcnMqwvemALvtkVDnFSeLtn5z8NXnDiq9oT8mE/fXhYo1gjV
-Rpo2UTiEhcU2Z7mXSTXGgYBKdvyhaHTN4+YQlV93AxyB8nzEWm/VmHZ37K+Lxj0q
-ViwvHeYG3lCNOfPpN4Mz
-=SeC9
------END PGP SIGNATURE-----
-
---3MwIy2ne0vdjdPXF--
-
-
+Paolo
