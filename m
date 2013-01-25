@@ -1,137 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472Ab3AYXco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 18:32:44 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43515 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753720Ab3AYXcl (ORCPT
+	id S1754547Ab3AYXd3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 18:33:29 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:31719 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720Ab3AYXd0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 18:32:41 -0500
-Message-ID: <51031614.8000609@redhat.com>
-Date: Sat, 26 Jan 2013 00:32:36 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 25 Jan 2013 18:33:26 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 06/13] sg_io: whitelist a few more commands for multimedia
- devices
-References: <20130124225555.GC2373@mtj.dyndns.org> <51024FB1.3000206@redhat.com> <20130125170434.GC3081@htj.dyndns.org> <5102BDD4.2020501@redhat.com> <20130125172805.GG3081@htj.dyndns.org> <5102C780.3090402@redhat.com> <20130125181326.GK3081@htj.dyndns.org> <5102D353.8010305@redhat.com> <20130125190154.GM3081@htj.dyndns.org> <5103080A.4090803@redhat.com> <20130125224159.GQ3081@htj.dyndns.org>
-In-Reply-To: <20130125224159.GQ3081@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-ID: <1e053fad-6536-4f8f-9944-1703916c62dd@default>
+Date: Fri, 25 Jan 2013 15:33:14 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: RE: [PATCH 0/4] staging: zsmalloc: various cleanups/improvments
+References: <<1359135978-15119-1-git-send-email-sjenning@linux.vnet.ibm.com>>
+In-Reply-To: <<1359135978-15119-1-git-send-email-sjenning@linux.vnet.ibm.com>>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/01/2013 23:41, Tejun Heo ha scritto:
-> Hello, Paolo.
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: [PATCH 0/4] staging: zsmalloc: various cleanups/improvments
 > 
-> On Fri, Jan 25, 2013 at 11:32:42PM +0100, Paolo Bonzini wrote:
->> All you can do is use common sense, which says that if a command has
->> been in a standard, someone has likely used it.  Of course someone
->> _might_ have misused it too, but how likely is that?
+> These patches are the first 4 patches of the zswap patchset I
+> sent out previously.  Some recent commits to zsmalloc and
+> zcache in staging-next forced a rebase. While I was at it, Nitin
+> (zsmalloc maintainer) requested I break these 4 patches out from
+> the zswap patchset, since they stand on their own.
 > 
-> So, that's where we differ, I guess.  When it comes to hardware
-> devices, especially the ones as widely and cheaply deployed as SCSI or
-> ATA, my common sense screams to stick to what's known to work and
-> don't venture outside unnecessarily.
-
-I understand, but you should also consider the likelihood of the various
-choices.  We do have a list of quirks, and they all seem to be about
-regular stuff like off-by-one errors with weird outcomes, not about "the
-firmware writer gave random meanings to known commands".
-
-You're also missing another point I made.  Userspace is explicitly
-asking for trouble in using SG_IO, and must deal with the consequences.
- If the trouble is big, we should work around it anyway.  If the trouble
-is small, we need not worry about it.
-
-Check how many "quirks" are in a typical burning program.  Does that
-mean that we should remove burning commands from the whitelist?  Of
-course not.
-
->> To try and give an answer, I grepped the "unusual" drivers in
->> drivers/usb/storage.  All of them seem to use non-standard packets (i.e.
->> basically are not SCSI) for their strange stuff, except two:
->> initializers.c has one function that sends SCSI command 0xEC,
->> realtek_cr.c uses 0xF0, both vendor specific.  So USB firmware writers,
->> despite being known for tweaking SCSI standards in many ways, seem to be
->> sensible in this respect.
+> All are already Acked-by Nitin.
 > 
-> You're grepping for known irregularities which need to be used to make
-> the device work.
-
-Of course I did, you were talking about "weird init code to select some
-mode" and I went looking for how they look like in the real world.
-
-> Just read through, say, sd driver code and see how
-> hard it tries to stick to what's known to work rather than venturing
-> out to the space allowed by the spec.
-
-That's a different story, once userspace uses SG_IO it takes the burden
-of doing this.
-
-> The default approach in this area definitely is and should be
-> conservative in general.
-
-Userspace of course must be written with care, too.
-
->> If it is not used, nobody will use it and setting the bit is effectively
->> useless (but harmless too).
+> Based on staging-next as of today.
 > 
-> No, we don't know it's gonna be harmless.  How do we *know* that
-> outside of the naive expectation that devices are gonna safely and
-> sanely ignore things that they don't understand?
-
-First of all, we have a misunderstanding.  I wrote "it is not used", and
-I included _everything_ in that, even malware.  In that case, it's a
-tautology that it's useless and harmless.
-
-Now, nobody asked about sane error handling.  I have a USB pen drive
-that returns a Unit Attention code for any command it does not
-recognize.  Does the existence of that USB pen drive mean that we should
-remove MODE SENSE from the whitelist?  Of course not.  We just pass the
-errors to userspace, and userspace deals with them.
-
-In fact, even for safety we can only go so far.  Other firmwares crash
-if you read/write a block that is out of range.  Should we remove
-READ/WRITE from the whitelist?  Of course not.  We handle that as a
-quirk in the USB driver.
-
-I think the latter case can be generalized.  Let's assume that there is
-a bad guy that goes around and wants to brick your disk.  It would not
-be a very smart thing to do, just like Ebola is not a very smart virus,
-but the world is full of strange people and he is just one of them.
-
-If a particular firmware can brick a device from userspace with a
-particular sequence of innocuous-looking (and non-vendor-specific)
-commands, I believe that the kernel should have a workaround to protect
-against that, independent of the privileges needed to send the commands
-to begin with.  This means that it is irrelevant to use these cases to
-exclude commands from a whitelist.  Independent of the fact that neither
-the weird guy nor the weird firmwares have been shown to exist.
-
->>> You would get -EPERM/ACCES whatnot from base OS and you would know the
->>> command in use, no?
->>
->> Yes, but I would like to avoid many iterations.  I don't have access
->> myself to all that software except Windows.
+> Seth Jennings (4):
+>   staging: zsmalloc: add gfp flags to zs_create_pool
+>   staging: zsmalloc: remove unused pool name
+>   staging: zsmalloc: add page alloc/free callbacks
+>   staging: zsmalloc: make CLASS_DELTA relative to PAGE_SIZE
 > 
-> I don't think it's gonna be that many iterations and would much prefer
-> doing several iterations and having the backing data for each command
-> added.
+>  drivers/staging/zram/zram_drv.c          |    4 +-
+>  drivers/staging/zsmalloc/zsmalloc-main.c |   60 ++++++++++++++++++------------
+>  drivers/staging/zsmalloc/zsmalloc.h      |   10 ++++-
+>  3 files changed, 47 insertions(+), 27 deletions(-)
 
-If I make a whitelist with all the commands that Linux sends, I'll have
-many new commands in the whitelist and no old commands.  The new
-commands didn't exist when old drives were sold, so they are "dangerous"
-in your opinion.  At that point I might as well keep the whitelist
-empty, no?
+FWIW, please add my ack to all the patches.  I'm happy
+to see zsmalloc move forward.   I'm a bit skeptical
+that it will ever be capable of doing everything we
+would like it to do, but am eager to see if it can.
 
-(Which BTW is what James proposed and I wrote the patch for, but you
-rejected: make the whitelist entirely configurable in userspace, and add
-a Kconfig option that makes the default whitelist very very small).
-
-Paolo
+Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
