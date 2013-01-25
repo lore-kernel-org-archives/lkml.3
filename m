@@ -1,123 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757415Ab3AYOO7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 09:14:59 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:57152 "EHLO
+	id S932653Ab3AYOSm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 09:18:42 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:65030 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757043Ab3AYOOz (ORCPT
+	with ESMTP id S1757400Ab3AYOO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 09:14:55 -0500
+	Fri, 25 Jan 2013 09:14:59 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@list.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 02/19] ARM: disable virt_to_bus/virt_to_bus almost everywhere
-Date: Fri, 25 Jan 2013 14:14:19 +0000
-Message-Id: <1359123276-15833-3-git-send-email-arnd@arndb.de>
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH 12/19] pinctrl: exynos: don't mark probing functions as __init
+Date: Fri, 25 Jan 2013 14:14:29 +0000
+Message-Id: <1359123276-15833-13-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1359123276-15833-1-git-send-email-arnd@arndb.de>
 References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:CqFa4i/34gPbYUhV0VKwWinWmoQCf+7XFeLRlyIPJgW
- c0ko7+b1E/CRfTxLdK43LxxkYfz8PYwABFtrhVXs61YkGuBBDE
- 0LVkL4oXChmt+7W6m6/MBewvtVOG7W7pkxES5vWNY4+1fkOa3U
- dZNv7ON3WCQYxJ+eYUXapedxRhLUMEo93BQuIQdFkgae5YT/+c
- Hwfx37SCFBZFikzrJ1xKONkGbK2Ai3r5ist151CRGxyTIUtjvp
- P1Fds7p4NC3idqkb67hcPPndZXG9mqrHv2Q/r2fJ1G5+mOhMbz
- oo4GWvg1uZ3u4E75PGDNerH7D8mRLJdV6mFVPF31n4JMqzgoG2
- HbO2uk63ztnofJSqBfrFQWJoxhigVBqEyA/062oOI
+X-Provags-ID: V02:K0:tif8eVFcrOesVUvyoRaEwlKAjwr5gz9rieqO2i3e9tT
+ 5cOzERWzTD8Abt1wPjaI3go65F93Yq68bFN9mPey0pKGSjDlyl
+ mzk8Z8ZxV8UH1aip7Ds7l98+s4TWw8NKk9WYspDMYyNPGatEir
+ qihsqkO2L/N2v301zzwB2Y/9ABC443O4beTGhasIGMTXfWkvYf
+ g1BSovQtdFSELPhdYHHYjSLQrGJjQqNAzhSvycx2Nz08/Escmn
+ fxU4qrjcy/doKkPdUjhQn3ULPUBBbAQuZEA5wCGQGOKRWcwTyG
+ S2k/aJT5PLgeZZwZ2O0Enbz7HPVsWK0XcRKtzAU3a6jk9Elqwv
+ hPsWMWVMmIaDfoIvHk6iaInEWRpm4Iq62VzIS4ncx
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are getting a number of warnings about the use of the deprecated
-bus_to_virt function in drivers using the ARM ISA DMA API:
+Functions called from a driver probe() method must not be
+marked __init, because they may get called after the
+init phase is done, when the device shows up late, or
+because of deferred probing.
 
-drivers/parport/parport_pc.c: In function 'parport_pc_fifo_write_block_dma':
-drivers/parport/parport_pc.c:622:3: warning: 'bus_to_virt' is deprecated
-(declared at arch/arm/include/asm/memory.h:253) [-Wdeprecated-declarations]
+Without this patch, building exynos_defconfig results in
+multiple warnings like:
 
-This is only because that function gets used by the inline
-set_dma_addr() helper. We know that any driver for the ISA DMA API
-is correctly using the DMA addresses, so we can change this
-to use the __bus_to_virt() function instead, which does not warn.
-
-After this, there are no remaining drivers that are used on
-any defconfigs on ARM using virt_to_bus or bus_to_virt, with
-the exception of the OSS sound driver. That driver is only used
-on RiscPC, NetWinder and Shark, so we can set ARCH_NO_VIRT_TO_BUS
-on all other platforms and hide the deprecated functions, which
-is far more effective than marking them as deprecated, in order
-to avoid any new users of that code.
+WARNING: drivers/pinctrl/built-in.o(.text+0x51bc): Section mismatch in reference from the function exynos5440_pinctrl_probe() to the function .init.text:exynos5440_gpiolib_register()
+The function exynos5440_pinctrl_probe() references
+the function __init exynos5440_gpiolib_register().
+This is often because exynos5440_pinctrl_probe lacks a __init
+annotation or the annotation of exynos5440_gpiolib_register is wrong.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
 ---
- arch/arm/Kconfig                 | 4 ++++
- arch/arm/configs/shark_defconfig | 1 -
- arch/arm/include/asm/dma.h       | 2 +-
- arch/arm/include/asm/memory.h    | 2 ++
- 4 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/pinctrl/pinctrl-exynos5440.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 67874b8..91d4aea 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1450,6 +1450,10 @@ config ISA_DMA
- 	bool
- 	select ISA_DMA_API
- 
-+config ARCH_NO_VIRT_TO_BUS
-+	def_bool y
-+	depends on !ARCH_RPC && !ARCH_NETWINDER && !ARCH_SHARK
-+
- # Select ISA DMA interface
- config ISA_DMA_API
- 	bool
-diff --git a/arch/arm/configs/shark_defconfig b/arch/arm/configs/shark_defconfig
-index caa07db..e319b2c 100644
---- a/arch/arm/configs/shark_defconfig
-+++ b/arch/arm/configs/shark_defconfig
-@@ -73,7 +73,6 @@ CONFIG_PARTITION_ADVANCED=y
- CONFIG_NLS_CODEPAGE_437=m
- CONFIG_NLS_CODEPAGE_850=m
- CONFIG_NLS_ISO8859_1=m
--# CONFIG_ENABLE_WARN_DEPRECATED is not set
- # CONFIG_ENABLE_MUST_CHECK is not set
- CONFIG_DEBUG_KERNEL=y
- # CONFIG_SCHED_DEBUG is not set
-diff --git a/arch/arm/include/asm/dma.h b/arch/arm/include/asm/dma.h
-index 5694a0d..58b8c6a 100644
---- a/arch/arm/include/asm/dma.h
-+++ b/arch/arm/include/asm/dma.h
-@@ -105,7 +105,7 @@ extern void set_dma_sg(unsigned int chan, struct scatterlist *sg, int nr_sg);
-  */
- extern void __set_dma_addr(unsigned int chan, void *addr);
- #define set_dma_addr(chan, addr)				\
--	__set_dma_addr(chan, bus_to_virt(addr))
-+	__set_dma_addr(chan, (void *)__bus_to_virt(addr))
- 
- /* Set the DMA byte count for this channel
-  *
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index 73cf03a..b11105c 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -245,6 +245,7 @@ static inline void *phys_to_virt(phys_addr_t x)
- #define __bus_to_pfn(x)	__phys_to_pfn(x)
- #endif
- 
-+#ifdef CONFIG_VIRT_TO_BUS
- static inline __deprecated unsigned long virt_to_bus(void *x)
- {
- 	return __virt_to_bus((unsigned long)x);
-@@ -254,6 +255,7 @@ static inline __deprecated void *bus_to_virt(unsigned long x)
- {
- 	return (void *)__bus_to_virt(x);
+diff --git a/drivers/pinctrl/pinctrl-exynos5440.c b/drivers/pinctrl/pinctrl-exynos5440.c
+index de05b64..1427299 100644
+--- a/drivers/pinctrl/pinctrl-exynos5440.c
++++ b/drivers/pinctrl/pinctrl-exynos5440.c
+@@ -599,7 +599,7 @@ static int exynos5440_gpio_direction_output(struct gpio_chip *gc, unsigned offse
  }
-+#endif
  
- /*
-  * Conversion between a struct page and a physical address.
+ /* parse the pin numbers listed in the 'samsung,exynos5440-pins' property */
+-static int __init exynos5440_pinctrl_parse_dt_pins(struct platform_device *pdev,
++static int exynos5440_pinctrl_parse_dt_pins(struct platform_device *pdev,
+ 			struct device_node *cfg_np, unsigned int **pin_list,
+ 			unsigned int *npins)
+ {
+@@ -630,7 +630,7 @@ static int __init exynos5440_pinctrl_parse_dt_pins(struct platform_device *pdev,
+  * Parse the information about all the available pin groups and pin functions
+  * from device node of the pin-controller.
+  */
+-static int __init exynos5440_pinctrl_parse_dt(struct platform_device *pdev,
++static int exynos5440_pinctrl_parse_dt(struct platform_device *pdev,
+ 				struct exynos5440_pinctrl_priv_data *priv)
+ {
+ 	struct device *dev = &pdev->dev;
+@@ -723,7 +723,7 @@ static int __init exynos5440_pinctrl_parse_dt(struct platform_device *pdev,
+ }
+ 
+ /* register the pinctrl interface with the pinctrl subsystem */
+-static int __init exynos5440_pinctrl_register(struct platform_device *pdev,
++static int exynos5440_pinctrl_register(struct platform_device *pdev,
+ 				struct exynos5440_pinctrl_priv_data *priv)
+ {
+ 	struct device *dev = &pdev->dev;
+@@ -798,7 +798,7 @@ static int __init exynos5440_pinctrl_register(struct platform_device *pdev,
+ }
+ 
+ /* register the gpiolib interface with the gpiolib subsystem */
+-static int __init exynos5440_gpiolib_register(struct platform_device *pdev,
++static int exynos5440_gpiolib_register(struct platform_device *pdev,
+ 				struct exynos5440_pinctrl_priv_data *priv)
+ {
+ 	struct gpio_chip *gc;
+@@ -831,7 +831,7 @@ static int __init exynos5440_gpiolib_register(struct platform_device *pdev,
+ }
+ 
+ /* unregister the gpiolib interface with the gpiolib subsystem */
+-static int __init exynos5440_gpiolib_unregister(struct platform_device *pdev,
++static int exynos5440_gpiolib_unregister(struct platform_device *pdev,
+ 				struct exynos5440_pinctrl_priv_data *priv)
+ {
+ 	int ret = gpiochip_remove(priv->gc);
 -- 
 1.8.0
 
