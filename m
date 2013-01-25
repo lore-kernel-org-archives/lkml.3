@@ -1,76 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab3AYSmi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:42:38 -0500
-Received: from mail-da0-f44.google.com ([209.85.210.44]:35594 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729Ab3AYSmg (ORCPT
+	id S1757068Ab3AYSne (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:43:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:50701 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754778Ab3AYSnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:42:36 -0500
-Date: Fri, 25 Jan 2013 10:42:32 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, X86 ML <x86@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
-        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
-        Borislav Petkov <bp@suse.de>, Dmitry Torokhov <dtor@vmware.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH -v2 2/2] x86: Make Linux guest support optional
-Message-ID: <20130125184231.GB5563@core.coreip.homeip.net>
-References: <20130125100655.GC23404@pd.tnic>
- <1359136777-4512-2-git-send-email-bp@alien8.de>
- <20130125181251.GA5563@core.coreip.homeip.net>
- <20130125183213.GB1380@pd.tnic>
+	Fri, 25 Jan 2013 13:43:31 -0500
+Date: Fri, 25 Jan 2013 13:43:23 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH 3/3] xen/blkback: Check for insane amounts of request on
+ the ring.
+Message-ID: <20130125184323.GC1384@phenom.dumpdata.com>
+References: <1359135152-30688-1-git-send-email-konrad.wilk@oracle.com>
+ <1359135152-30688-4-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130125183213.GB1380@pd.tnic>
+In-Reply-To: <1359135152-30688-4-git-send-email-konrad.wilk@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 07:32:13PM +0100, Borislav Petkov wrote:
-> On Fri, Jan 25, 2013 at 10:12:51AM -0800, Dmitry Torokhov wrote:
-> > Hi Borislav,
-> > 
-> > On Fri, Jan 25, 2013 at 06:59:37PM +0100, Borislav Petkov wrote:
-> > > From: Borislav Petkov <bp@suse.de>
-> > > 
-> > > Put all config options needed to run Linux as a guest behind a
-> > > CONFIG_HYPERVISOR_GUEST menu so that they don't get built-in by
-> > > default but selected by the user. Also, move x86_hyper into an
-> > > unconditionally-built compilation unit because it is exported with the
-> > > non-GPL flavour and we can't know whatever uses it on the outside.
-> > 
-> > I am confused by this statement... How can EXPORT_SYMBOL() vs
-> > EXPORT_SYMBOL_GPL() help you determining if it is used out of tree or
-> > not?
-> 
-> Maybe this wasn't formulated clear enough - I wanted to say that with
-> the !GPL flavor, any code (proprietary included) can link to those
-> symbols and we cannot know who uses it and if we hide that symbol,
-> someone would probably come crying.
-> 
-> Because if we could, I would've done trivial accessor functions which
-> would return NULL when CONFIG_HYPERVISOR_GUEST is not set so that those
-> cases build and boot fine, and we wouldn't have the need to have this
-> symbol always present (like is the case now and I had to move it to
-> setup.c).
-> 
-> If it were _GPL, we would've fixed all its users to switch to the
-> accessors.
-> 
-> Makes more sense?
+On Fri, Jan 25, 2013 at 12:32:32PM -0500, Konrad Rzeszutek Wilk wrote:
+> Check that the ring does not have an insane amount of requests
+> (more than there could fit on the ring).
+.. snip..
+> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+> index 2de3da9..4e9b028 100644
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -395,7 +395,7 @@ int xen_blkif_schedule(void *arg)
+>  {
+>  	struct xen_blkif *blkif = arg;
+>  	struct xen_vbd *vbd = &blkif->vbd;
+> -
+> +	int rc = 0;
+>  	xen_blkif_get(blkif);
+>  
+>  	while (!kthread_should_stop()) {
+> @@ -415,8 +415,12 @@ int xen_blkif_schedule(void *arg)
+>  		blkif->waiting_reqs = 0;
+>  		smp_mb(); /* clear flag *before* checking for work */
+>  
+> -		if (do_block_io_op(blkif))
+> +		rc = do_block_io_op(blkif);
+> +		if (rc > 0)
+>  			blkif->waiting_reqs = 1;
+> +		if (rc == -EACCES)
+> +			wait_event_interruptible(blkif->shutdown_wq,
+> +						 kthread_should_stop());
+>  
+>  		if (log_stats && time_after(jiffies, blkif->st_print))
+>  			print_stats(blkif);
+> @@ -780,6 +784,9 @@ __do_block_io_op(struct xen_blkif *blkif)
+>  		if (RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rc))
+>  			break;
+>  
+> +		if (RING_REQUEST_PROD_OVERFLOW(&blk_rings->common, rc, rp))
+> +			return -EACCES;
+> +
 
-No, not really as EXPORT_SYMBOL_GPL() in no way implies that the code
-using it lives in the mainline. Also, EXPORT_SYMBOL() does not imply
-that it forms an ABI and can't be changed ever.
 
-Thanks.
+With the new patch for RING_REQUEST_PROD_OVERFLOW I realized that the check
+can actually be right before the loop, so:
 
+>From c35dd7a41960038c5defbf8b40541a0d7f206d54 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Wed, 23 Jan 2013 16:54:32 -0500
+Subject: [PATCH 2/2] xen/blkback: Check for insane amounts of request on the
+ ring.
+
+Check that the ring does not have an insane amount of requests
+(more than there could fit on the ring).
+
+If we detect this case we will stop processing the requests
+and wait until the XenBus disconnects the ring.
+
+Looking at the code, one would expect that the existing check
+RING_REQUEST_CONS_OVERFLOW which checks for how many responses we
+have created in the past (rsp_prod_pvt) vs requests consumed (req_cons)
+and that difference between is greater or equal to the size of the
+ring. If that condition is satisfied that means we should not be
+processing more requests as we still have a backlog of responses
+to finish. Note that both of those values (rsp_prod_pvt and req_cons)
+are not exposed on the shared ring.
+
+To understand this problem a mini crash course in ring protocol
+response/request updates.
+
+There are four entries: req_prod and rsp_prod; req_event and rsp_event.
+We are only concerned about the first two - which set the tone of
+this bug. The req_prod is a value incremented by frontend for each
+request put on the ring. Conversely the rsp_prod is a value incremented
+by the backend for each response put on the ring. Both values can
+wrap and are modulo the size of the ring (in block case that is 32).
+Look in RING_GET_REQUEST and RING_GET_RESPONSE for the more details.
+
+The culprit here is that if the difference between the
+req_prod and req_cons is greater than the ring size we have a problem.
+Fortunately for us, the '__do_block_io_op' loop:
+
+	rc = blk_rings->common.req_cons;
+	rp = blk_rings->common.sring->req_prod;
+
+	while (rc != rp) {
+
+		..
+		blk_rings->common.req_cons = ++rc; /* before make_response() */
+
+	}
+
+will loop up to the point when rc == rp. The macros inside of the
+loop (RING_GET_REQUEST) is smart and is indexing based on the modulo
+of the ring size. If the frontend has provided a bogus req_prod value
+we will loop here until the 'rc == rp' - so we could be processing
+already processed requests (or responses) often.
+
+The reason the RING_REQUEST_CONS_OVERFLOW is not helping here is
+b/c it only tracks how many responses we have internally produced
+and whether we would should process more.
+
+For example, if we were to enter this function with these values:
+
+       	blk_rings->common.sring->req_prod =  X+31415 (X is the value from
+		the last time __do_block_io_op was called).
+        blk_rings->common.req_cons = X
+        blk_rings->common.rsp_prod_pvt = X
+
+The RING_REQUEST_CONS_OVERFLOW is doing:
+
+	req_cons - sring->rsp_prod_pvt >= 32
+
+Which is,
+	X - X >= 32 or 0 >= 32
+
+And that is false, so we continue on looping (this bug).
+
+The new macro (RING_REQUEST_PROD_OVERFLOW) will help us determine this
+condition, and checks the difference between request consumed and
+request produced and whether that difference is greater than the ring size.
+
+	req_cons - sring->req.prod > 32
+
+	X - X+31415 > 32
+
+And that is true, so we break out of the loop.
+
+Cc: stable@vger.kernel.org
+[v1: Move the check outside the loop]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/block/xen-blkback/blkback.c | 11 +++++++++--
+ drivers/block/xen-blkback/common.h  |  2 ++
+ drivers/block/xen-blkback/xenbus.c  |  2 ++
+ 3 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index 1966a7c..cc9c48f 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -395,7 +395,7 @@ int xen_blkif_schedule(void *arg)
+ {
+ 	struct xen_blkif *blkif = arg;
+ 	struct xen_vbd *vbd = &blkif->vbd;
+-
++	int rc = 0;
+ 	xen_blkif_get(blkif);
+ 
+ 	while (!kthread_should_stop()) {
+@@ -415,8 +415,12 @@ int xen_blkif_schedule(void *arg)
+ 		blkif->waiting_reqs = 0;
+ 		smp_mb(); /* clear flag *before* checking for work */
+ 
+-		if (do_block_io_op(blkif))
++		rc = do_block_io_op(blkif);
++		if (rc > 0)
+ 			blkif->waiting_reqs = 1;
++		if (rc == -EACCES)
++			wait_event_interruptible(blkif->shutdown_wq,
++						 kthread_should_stop());
+ 
+ 		if (log_stats && time_after(jiffies, blkif->st_print))
+ 			print_stats(blkif);
+@@ -764,6 +768,9 @@ __do_block_io_op(struct xen_blkif *blkif)
+ 	rp = blk_rings->common.sring->req_prod;
+ 	rmb(); /* Ensure we see queued requests up to 'rp'. */
+ 
++	if (RING_REQUEST_PROD_OVERFLOW(&blk_rings->common, rp, rc))
++		return -EACCES;
++
+ 	while (rc != rp) {
+ 
+ 		if (RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rc))
+diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+index ae7951f..8fd211b 100644
+--- a/drivers/block/xen-blkback/common.h
++++ b/drivers/block/xen-blkback/common.h
+@@ -218,6 +218,8 @@ struct xen_blkif {
+ 	int			st_wr_sect;
+ 
+ 	wait_queue_head_t	waiting_to_free;
++	/* Thread shutdown wait queue. */
++	wait_queue_head_t	shutdown_wq;
+ };
+ 
+ 
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index 60558a5..333ebe9 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -119,6 +119,7 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
+ 	blkif->st_print = jiffies;
+ 	init_waitqueue_head(&blkif->waiting_to_free);
+ 	blkif->persistent_gnts.rb_node = NULL;
++	init_waitqueue_head(&blkif->shutdown_wq);
+ 
+ 	return blkif;
+ }
+@@ -178,6 +179,7 @@ static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
+ static void xen_blkif_disconnect(struct xen_blkif *blkif)
+ {
+ 	if (blkif->xenblkd) {
++		wake_up(&blkif->shutdown_wq);
+ 		kthread_stop(blkif->xenblkd);
+ 		blkif->xenblkd = NULL;
+ 	}
 -- 
-Dmitry
+1.8.0.2
+
