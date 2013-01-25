@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab3AYLT1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:19:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41526 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753088Ab3AYLTZ (ORCPT
+	id S932096Ab3AYLTk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 06:19:40 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:38794 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755220Ab3AYLTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:19:25 -0500
-Date: Fri, 25 Jan 2013 03:19:02 -0800
-From: tip-bot for Sasha Levin <sasha.levin@oracle.com>
-Message-ID: <tip-49e4ba54592435cbd150aea8f5ae6b776fc687f9@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, sasha.levin@oracle.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
-        mingo@redhat.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-        acme@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
-In-Reply-To: <1356030701-16284-8-git-send-email-sasha.levin@oracle.com>
-References: <1356030701-16284-8-git-send-email-sasha.levin@oracle.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kmem:
-  use ARRAY_SIZE instead of reinventing it
-Git-Commit-ID: 49e4ba54592435cbd150aea8f5ae6b776fc687f9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:19:07 -0800 (PST)
+	Fri, 25 Jan 2013 06:19:38 -0500
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: LAK <linux-arm-kernel@lists.infradead.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        devicetree-discuss@lists.ozlabs.org, Heiko Schocher <hs@denx.de>
+Subject: [PATCH] ARM: davinci: da850: add interrupt-parent property in soc node
+Date: Fri, 25 Jan 2013 16:48:44 +0530
+Message-Id: <1359112724-1217-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  49e4ba54592435cbd150aea8f5ae6b776fc687f9
-Gitweb:     http://git.kernel.org/tip/49e4ba54592435cbd150aea8f5ae6b776fc687f9
-Author:     Sasha Levin <sasha.levin@oracle.com>
-AuthorDate: Thu, 20 Dec 2012 14:11:16 -0500
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 24 Jan 2013 16:40:15 -0300
+From: Lad, Prabhakar <prabhakar.lad@ti.com>
 
-perf kmem: use ARRAY_SIZE instead of reinventing it
+This patch adds 'interrupt-parent' property in soc node, so that
+the child inherits this property, this avoids adding 'interrupt-parent'
+to each node.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1356030701-16284-8-git-send-email-sasha.levin@oracle.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: davinci-linux-open-source@linux.davincidsp.com
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: Sekhar Nori <nsekhar@ti.com>
+Cc: Heiko Schocher <hs@denx.de>
 ---
- tools/perf/builtin-kmem.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/arm/boot/dts/da850.dtsi |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index 9fddca7..c746108 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -609,8 +609,7 @@ static struct sort_dimension *avail_sorts[] = {
- 	&pingpong_sort_dimension,
- };
+diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+index 2551098..7c84822 100644
+--- a/arch/arm/boot/dts/da850.dtsi
++++ b/arch/arm/boot/dts/da850.dtsi
+@@ -28,6 +28,7 @@
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+ 		ranges = <0x0 0x01c00000 0x400000>;
++		interrupt-parent = <&intc>;
  
--#define NUM_AVAIL_SORTS	\
--	(int)(sizeof(avail_sorts) / sizeof(struct sort_dimension *))
-+#define NUM_AVAIL_SORTS	((int)ARRAY_SIZE(avail_sorts))
- 
- static int sort_dimension__add(const char *tok, struct list_head *list)
- {
+ 		pmx_core: pinmux@1c14120 {
+ 			compatible = "pinctrl-single";
+@@ -62,7 +63,6 @@
+ 			clock-frequency = <150000000>;
+ 			reg-shift = <2>;
+ 			interrupts = <25>;
+-			interrupt-parent = <&intc>;
+ 			status = "disabled";
+ 		};
+ 		serial1: serial@1d0c000 {
+@@ -71,7 +71,6 @@
+ 			clock-frequency = <150000000>;
+ 			reg-shift = <2>;
+ 			interrupts = <53>;
+-			interrupt-parent = <&intc>;
+ 			status = "disabled";
+ 		};
+ 		serial2: serial@1d0d000 {
+@@ -80,7 +79,6 @@
+ 			clock-frequency = <150000000>;
+ 			reg-shift = <2>;
+ 			interrupts = <61>;
+-			interrupt-parent = <&intc>;
+ 			status = "disabled";
+ 		};
+ 	};
+-- 
+1.7.4.1
+
