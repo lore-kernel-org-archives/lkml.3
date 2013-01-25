@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab3AYEOC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 23:14:02 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:44613 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657Ab3AYEN7 (ORCPT
+	id S1755623Ab3AYEQk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 23:16:40 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48534 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab3AYEQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 23:13:59 -0500
+	Thu, 24 Jan 2013 23:16:37 -0500
+Message-ID: <510206CE.9050804@oracle.com>
+Date: Thu, 24 Jan 2013 23:15:10 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1359032849-25551-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <CAOh2x=kqEzw9cvg=WLpjEbF50aTKCUUVd9GzNg8PqtBx_BpYLg@mail.gmail.com>
-	<1359032849-25551-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Fri, 25 Jan 2013 09:43:58 +0530
-X-Google-Sender-Auth: Tmh3B7Uk9LnwgEWCu1Irsc5u8YI
-Message-ID: <CAOh2x=nnrEo69W7sBES85KgF0+WUy8Ouoq+SG1XiB54e7QLiow@mail.gmail.com>
-Subject: Re: [PATCH v3.5] dw_dmac: return proper residue value
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, fweisbec@gmail.com,
+        rusty@rustcorp.com.au, ananth@in.ibm.com,
+        anil.s.keshavamurthy@intel.com, masami.hiramatsu.pt@hitachi.com,
+        jbaron@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        MartinSchwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-s390 <linux-s390@vger.kernel.org>
+Subject: Re: [PATCH 2/5] jump label: constify lookup functions
+References: <1357772960-4436-1-git-send-email-sasha.levin@oracle.com>  <1357772960-4436-2-git-send-email-sasha.levin@oracle.com> <1358544300.7383.37.camel@gandalf.local.home>
+In-Reply-To: <1358544300.7383.37.camel@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 6:37 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> Currently the driver returns full length of the active descriptor which is
-> wrong. We have to go throught the active descriptor and substract the length of
-> each sent children in the chain from the total length along with the actual
-> data in the DMA channel registers.
->
-> The cyclic case is not handled by this patch due to len field in the descriptor
-> structure is left untouched by the original code.
->
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+On 01/18/2013 04:25 PM, Steven Rostedt wrote:
+> On Wed, 2013-01-09 at 18:09 -0500, Sasha Levin wrote:
+>> Modify the parameters of all the lookup and the bookkeeping functions which
+>> should be const to const.
+>>
+>> For example, jump_label_text_reserved() doesn't modify the memory it works on,
+>> it just checks whether there are any jump labels there.
+> 
+> This is dependent on the module patch, which Rusty is taking. I need to
+> see that he has it before this can go in. At least see it in linux-next.
+> 
+> Also, you should have Cc'd the linux-arch mailing list. I'll send it
+> there.
+> 
+>>
+>> Note I couldn't test the non-x86 architectures, but the changes are rather
+>> trivial.
+> 
+> I ran it on 25 archs, and s390 hit:
+> 
+> /work/autotest/nobackup/cross-linux.git/arch/s390/kernel/jump_label.c: In function 'arch_jump_label_transform':
+> /work/autotest/nobackup/cross-linux.git/arch/s390/kernel/jump_label.c:58:13: warning: assignment discards 'const' qualifier from pointer target type [enabled by default]
+> 
+> -- Steve
+> 
+> Here's the patch:
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> diff --git a/arch/s390/kernel/jump_label.c
+> b/arch/s390/kernel/jump_label.c
+> index 85fa643..ef047ef 100644
+> --- a/arch/s390/kernel/jump_label.c
+> +++ b/arch/s390/kernel/jump_label.c
+> @@ -18,7 +18,7 @@ struct insn {
+>  } __packed;
+>  
+>  struct insn_args {
+> -	struct jump_entry *entry;
+> +	const struct jump_entry *entry;
+>  	enum jump_label_type type;
+>  };
+>  
 
-Firstly the issue i raised earlier about not updating residue from
-tasklet or interrupt
-handler was wrong. As i had an older version of code in my mind. This got solved
-with following patch:
+Sorry about this. I didn't have the ability to build all arches over here :(
 
-commit 77bcc497c60ec62dbb84abc809a6e218d53409e9
-Author: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Date:   Fri Jan 18 14:14:15 2013 +0200
-
-    dw_dmac: move soft LLP code from tasklet to dwc_scan_descriptors
+Would you like me to resend this patch with your fix?
 
 
-> ---
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> +static inline u32 dwc_get_residue(struct dw_dma_chan *dwc)
-> +{
-> +       unsigned long flags;
-> +       u32 residue;
-> +
-> +       spin_lock_irqsave(&dwc->lock, flags);
-> +
-> +       residue = dwc->residue;
+Thanks,
+Sasha
 
-you need to release the lock just here.
-
-> +       if (test_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags) && residue)
-> +               residue -= dwc_get_sent(dwc);
-
-why do you need lock while reading the control registers? It looks you didn't
-get what i wanted to say earlier. We are using locks to protect some part for
-shared data or critical sections. these are playing with dwc transfer
-lists, etc..
-
-Probably we don't need a lock to read the control register as nobody can
-guarantee that another access is not happening currently. As hardware is
-changing this register continuously for the transfer.
-
-Let me know if i am missing something.
-
-> +       spin_unlock_irqrestore(&dwc->lock, flags);
-> +       return residue;
-> +}
