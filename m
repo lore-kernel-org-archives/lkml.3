@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab3AYOgB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 09:36:01 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:47521 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab3AYOf7 (ORCPT
+	id S1754620Ab3AYOi5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 09:38:57 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:39715 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751896Ab3AYOiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 09:35:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <1359123276-15833-10-git-send-email-arnd@arndb.de>
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
-	<1359123276-15833-10-git-send-email-arnd@arndb.de>
-Date: Fri, 25 Jan 2013 14:35:59 +0000
-Message-ID: <CAP245DXybs0dgg8B=5+28WJXd15s+CsHvXYpc0891wuLUWrpgQ@mail.gmail.com>
-Subject: Re: [PATCH 09/19] mfd/twl4030: don't warn about uninitialized return code
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@list.infradead.org, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, Kevin Hilman <khilman@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 25 Jan 2013 09:38:54 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtkGAG6Zu0/O+Ip3/2dsb2JhbABEgXuyFoEIghUBAQUnExsBIxALGAklDwUlJBOIDroJj2JiA4hCjFiOGYFYgwc
+X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
+   d="scan'208";a="213654485"
+Date: Fri, 25 Jan 2013 09:38:51 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [tracepoint] cargo-culting considered harmful...
+Message-ID: <20130125143850.GA20597@Krystal>
+References: <20130123225523.GY4939@ZenIV.linux.org.uk>
+ <20130123230235.GC5434@home.goodmis.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20130123230235.GC5434@home.goodmis.org>
+X-Editor: vi
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 2:14 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> If the twl4030_write_script function gets called with
-> a zero length argument, its return value does not
-> get set. We know that all scripts have a nonzero
-> length, but returning an error in case they ever
-> do is probably appropriate.
->
-> Without this patch, building omap2plus_defconfig results in:
->
-> drivers/mfd/twl4030-power.c: In function 'load_twl4030_script':
-> drivers/mfd/twl4030-power.c:414:5: error: 'err' may be used uninitialized in this function
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Wed, Jan 23, 2013 at 10:55:24PM +0000, Al Viro wrote:
+> > In samples/tracepoints/tracepoint-probe-sample.c:
+> > /*
+> >  * Here the caller only guarantees locking for struct file and struct inode.
+> >  * Locking must therefore be done in the probe to use the dentry.
+> >  */
+> > static void probe_subsys_event(void *ignore,   
+> >                                struct inode *inode, struct file *file)
+> > {
+> >         path_get(&file->f_path);
+> >         dget(file->f_path.dentry);
+> >         printk(KERN_INFO "Event is encountered with filename %s\n",
+> >                 file->f_path.dentry->d_name.name);
+> >         dput(file->f_path.dentry);
+> >         path_put(&file->f_path);
+> > }
+> > 
+> > note that
+> > 	* file->f_path is already pinned down by open(), path_get() does not
+> > provide anything extra.
+> > 	* file->f_path.dentry is already pinned by open() *and* path_get()
+> > just above that dget().
+> > 	* ->d_name.name *IS* *NOT* *PROTECTED* by pinning dentry down,
+> > whether it's done once or thrice.
+> > 
+> > I do realize that it's just an example, but perhaps we should rename that
+> > file to match the contents?  The only question is whether it should be
+> > git mv samples/tracepoints/{tracepoint-probe-sample,cargo-cult}.c
+> > or git mv samples cargo-cult...
+> 
+> I wonder if we should just remove the samples/tracepoints/ all together.
+> The tracepoint code is now only used internally by the trace_event code,
+> and there should not be any users of tracepoints directly.
 
-Reviewed-by: Amit Kucheria <amit.kucheria@linaro.org>
+Yep, I'd be OK with removing this example, since now all users are
+expected to user TRACE_EVENT(), which is built on top of tracepoints.
 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: Amit Kucheria <amit.kucheria@linaro.org>
-> ---
->  drivers/mfd/twl4030-power.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
-> index 4dae241..dd362c1 100644
-> --- a/drivers/mfd/twl4030-power.c
-> +++ b/drivers/mfd/twl4030-power.c
-> @@ -159,7 +159,7 @@ out:
->  static int twl4030_write_script(u8 address, struct twl4030_ins *script,
->                                        int len)
->  {
-> -       int err;
-> +       int err = -EINVAL;
->
->         for (; len; len--, address++, script++) {
->                 if (len == 1) {
-> --
-> 1.8.0
->
+Thanks,
+
+Mathieu
+
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
