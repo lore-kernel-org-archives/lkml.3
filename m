@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab3AYOP0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 09:15:26 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:56757 "EHLO
+	id S1757483Ab3AYOQG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 09:16:06 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:60110 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932348Ab3AYOPV (ORCPT
+	with ESMTP id S1757288Ab3AYOQC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 09:15:21 -0500
+	Fri, 25 Jan 2013 09:16:02 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@list.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 16/19] mac80211: avoid a build warning
-Date: Fri, 25 Jan 2013 14:14:33 +0000
-Message-Id: <1359123276-15833-17-git-send-email-arnd@arndb.de>
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Ben Dooks <ben-linux@fluff.org>
+Subject: [PATCH 17/19] input/joystick: use get_cycles on ARM
+Date: Fri, 25 Jan 2013 14:14:34 +0000
+Message-Id: <1359123276-15833-18-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1359123276-15833-1-git-send-email-arnd@arndb.de>
 References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:efblcJqqJZeEcNfH6HaDuxp/TXlplONnE0GryA4/XoO
- EeH9C2GAWfIY2Y5kCWq/MjIbor0pDureXLaamYOEH9Io2Z7CPK
- s8z0mNw+vZSsqUxluqc7+QnskAwkKeX0JMPdFj1OiO0Si2EXCk
- MThnZxCWEH2gSupqPWGytn1Sk/oiI8weNwjn4R4xooaxFW1lrU
- xIFi8zg8DltYCKEpESGAM/9sfTTnIMdTnWO/+0X8cP/IDsrUPW
- zbSj4FmzdiE9YznJ+q+tXObe+gKVSlFGE4rwyBGYkOLIvnYagp
- io+SSuDvhYkWVsePRz7ZuFOau9hEPkJSRqseCULWEAUVH7PS9Q
- I1QaJn9zoni9xfQ307dy3LO4yqA1UtS0v4qkXH7n9
+X-Provags-ID: V02:K0:h5znFgLVtf7GKIa2kaw3rPR1KQsaR2pcV45jwYMU2Ho
+ 3D+SiP8RX1t9sAGyXdRyME9i9LC0IOnoYr6/FuMxZu3KJbW4eJ
+ TajdtKIpSkqJkEUoz8m5Eb5B2bPUTbDWUArzC7RTxu7YGHe9Os
+ hLJQlxSWBZfxzpxuT78FeGqG/DVB8XOnidWQtVleGk9QtSDVnV
+ /8ckf7sZd59BRtJ8rYUGjmwxPNZtEihpdhWVbsCj2wIXnBUUe2
+ /TWspuaM7BHYyr54viBJ564i8epJq34w8/JFhFdxuvQT7W828L
+ XU5vX78EuqUDRBdHT8N50nCgqaCzjNQRMtmXvaqYdDzIkFh9Ds
+ Vc/c2xR/+MyCu0j6DETlEKwbLD1JBM1kxWN3odxb3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gcc cannot prove that the value of sdata->vif.type does not
-change between the switch() statement and the second
-comparison to NL80211_IFTYPE_AP, causing a harmless
-warning.
-Slightly reordering the code makes the warning go away
-with no functional change.
+ARM normally has an accurate clock source, so
+we can theoretically use analog joysticks more
+accurately and at the same time avoid the
+build warning
 
-Without this patch, building ARM at91sam9g45_defconfig with
-gcc-4.6 results in:
+ #warning Precise timer not defined for this architecture.
 
-net/mac80211/tx.c: In function 'ieee80211_subif_start_xmit':
-net/mac80211/tx.c:1797:22: warning: 'chanctx_conf' may be used uninitialized in this function [-Wuninitialized]
+from the joystick driver.
+
+Now, why anybody would use that driver no ARM I have no
+idea, but Ben Dooks enabled it in the s3c2410_defconfig
+along with a bunch of other drivers, even though that
+platform has neither ISA nor PCI support. It still
+seems to be the right thing to fix this quirk.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-wireless@vger.kernel.org
-Cc: netdev@vger.kernel.org
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Vojtech Pavlik <vojtech@suse.cz>
+Cc: Ben Dooks <ben-linux@fluff.org>
 ---
- net/mac80211/tx.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/input/joystick/analog.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index e9eadc4..df589bf 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -1784,16 +1784,16 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
- 			break;
- 		/* fall through */
- 	case NL80211_IFTYPE_AP:
-+		if (sdata->vif.type == NL80211_IFTYPE_AP)
-+			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
-+		if (!chanctx_conf)
-+			goto fail_rcu;
- 		fc |= cpu_to_le16(IEEE80211_FCTL_FROMDS);
- 		/* DA BSSID SA */
- 		memcpy(hdr.addr1, skb->data, ETH_ALEN);
- 		memcpy(hdr.addr2, sdata->vif.addr, ETH_ALEN);
- 		memcpy(hdr.addr3, skb->data + ETH_ALEN, ETH_ALEN);
- 		hdrlen = 24;
--		if (sdata->vif.type == NL80211_IFTYPE_AP)
--			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
--		if (!chanctx_conf)
--			goto fail_rcu;
- 		band = chanctx_conf->def.chan->band;
- 		break;
- 	case NL80211_IFTYPE_WDS:
+diff --git a/drivers/input/joystick/analog.c b/drivers/input/joystick/analog.c
+index 358cd7e..9c3e3c1 100644
+--- a/drivers/input/joystick/analog.c
++++ b/drivers/input/joystick/analog.c
+@@ -158,14 +158,10 @@ static unsigned int get_time_pit(void)
+ #define GET_TIME(x)	rdtscl(x)
+ #define DELTA(x,y)	((y)-(x))
+ #define TIME_NAME	"TSC"
+-#elif defined(__alpha__)
++#elif defined(__alpha__) || defined(CONFIG_MN10300) || defined(CONFIG_ARM)
+ #define GET_TIME(x)	do { x = get_cycles(); } while (0)
+ #define DELTA(x,y)	((y)-(x))
+-#define TIME_NAME	"PCC"
+-#elif defined(CONFIG_MN10300)
+-#define GET_TIME(x)	do { x = get_cycles(); } while (0)
+-#define DELTA(x, y)	((x) - (y))
+-#define TIME_NAME	"TSC"
++#define TIME_NAME	"get_cycles"
+ #else
+ #define FAKE_TIME
+ static unsigned long analog_faketime = 0;
 -- 
 1.8.0
 
