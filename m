@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932626Ab3AYS3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:29:32 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:39039 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932279Ab3AYS3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:29:25 -0500
-Date: Fri, 25 Jan 2013 19:32:13 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        X86 ML <x86@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
-        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
-        Borislav Petkov <bp@suse.de>, Dmitry Torokhov <dtor@vmware.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH -v2 2/2] x86: Make Linux guest support optional
-Message-ID: <20130125183213.GB1380@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-	X86 ML <x86@kernel.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
-	olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-	Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
-	Borislav Petkov <bp@suse.de>, Dmitry Torokhov <dtor@vmware.com>,
-	"K. Y. Srinivasan" <kys@microsoft.com>,
-	Haiyang Zhang <haiyangz@microsoft.com>
-References: <20130125100655.GC23404@pd.tnic>
- <1359136777-4512-2-git-send-email-bp@alien8.de>
- <20130125181251.GA5563@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130125181251.GA5563@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S964786Ab3AYS3p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:29:45 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:33873 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932279Ab3AYS3l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 13:29:41 -0500
+Message-ID: <1359137977.14145.417.camel@misato.fc.hp.com>
+Subject: Re: [PATCH Bug fix 0/5] Bug fix for physical memory hot-remove.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        glommer@parallels.com, jiang.liu@huawei.com, julian.calaby@gmail.com,
+        sfr@canb.auug.org.au, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org
+Date: Fri, 25 Jan 2013 11:19:37 -0700
+In-Reply-To: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 10:12:51AM -0800, Dmitry Torokhov wrote:
-> Hi Borislav,
+On Tue, 2013-01-22 at 19:42 +0800, Tang Chen wrote:
+> Here are some bug fix patches for physical memory hot-remove. All these
+> patches are based on the latest -mm tree.
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
 > 
-> On Fri, Jan 25, 2013 at 06:59:37PM +0100, Borislav Petkov wrote:
-> > From: Borislav Petkov <bp@suse.de>
-> > 
-> > Put all config options needed to run Linux as a guest behind a
-> > CONFIG_HYPERVISOR_GUEST menu so that they don't get built-in by
-> > default but selected by the user. Also, move x86_hyper into an
-> > unconditionally-built compilation unit because it is exported with the
-> > non-GPL flavour and we can't know whatever uses it on the outside.
+> And patch1 and patch3 are very important.
+> patch1: free compound pages when freeing memmap, otherwise the kernel
+>         will panic the next time memory is hot-added.
+> patch3: the old way of freeing pagetable pages was wrong. We should never
+>         split larger pages into small ones.
 > 
-> I am confused by this statement... How can EXPORT_SYMBOL() vs
-> EXPORT_SYMBOL_GPL() help you determining if it is used out of tree or
-> not?
+> 
+> Lai Jiangshan (1):
+>   Bug-fix: mempolicy: fix is_valid_nodemask()
+> 
+> Tang Chen (3):
+>   Bug fix: Do not split pages when freeing pagetable pages.
+>   Bug fix: Fix section mismatch problem of
+>     release_firmware_map_entry().
+>   Bug fix: Fix the doc format in drivers/firmware/memmap.c
+> 
+> Wen Congyang (1):
+>   Bug fix: consider compound pages when free memmap
+> 
+>  arch/x86/mm/init_64.c     |  148 ++++++++++++++-------------------------------
+>  drivers/firmware/memmap.c |   16 +++---
+>  mm/mempolicy.c            |   36 +++++++----
+>  mm/sparse.c               |    2 +-
+>  4 files changed, 77 insertions(+), 125 deletions(-)
 
-Maybe this wasn't formulated clear enough - I wanted to say that with
-the !GPL flavor, any code (proprietary included) can link to those
-symbols and we cannot know who uses it and if we hide that symbol,
-someone would probably come crying.
+This patchset fixed a blocker panic I was hitting in my memory hot-plug
+testing.  Memory hotplug works fine with this patchset (for testing my
+hotplug framework patchset :).  For the series:
 
-Because if we could, I would've done trivial accessor functions which
-would return NULL when CONFIG_HYPERVISOR_GUEST is not set so that those
-cases build and boot fine, and we wouldn't have the need to have this
-symbol always present (like is the case now and I had to move it to
-setup.c).
+Tested-by: Toshi Kani <toshi.kani@hp.com>
 
-If it were _GPL, we would've fixed all its users to switch to the
-accessors.
+Thanks,
+-Toshi
 
-Makes more sense?
 
--- 
-Regards/Gruss,
-    Boris.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
