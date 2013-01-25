@@ -1,126 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416Ab3AYFgQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 00:36:16 -0500
-Received: from mx2.fusionio.com ([66.114.96.31]:57308 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991Ab3AYFgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 00:36:13 -0500
-X-ASG-Debug-ID: 1359092172-0421b52b81119f40001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Fri, 25 Jan 2013 00:36:05 -0500
-From: Chris Mason <chris.mason@fusionio.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs fixes (v2)
-Message-ID: <20130125053605.GA23255@shiny>
-X-ASG-Orig-Subj: [GIT PULL] Btrfs fixes (v2)
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	id S1751607Ab3AYFkZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 00:40:25 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:18672 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751227Ab3AYFkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 00:40:22 -0500
+X-IronPort-AV: E=Sophos;i="4.84,535,1355068800"; 
+   d="scan'208";a="6644424"
+Message-ID: <51021ABB.8050508@cn.fujitsu.com>
+Date: Fri, 25 Jan 2013 13:40:11 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1359092172
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.120835
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+To: Jason Wang <jasowang@redhat.com>
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH V6 2/3] virtio-net: split out clean affinity function
+References: <1358767524-17934-1-git-send-email-gaowanlong@cn.fujitsu.com> <1358767524-17934-2-git-send-email-gaowanlong@cn.fujitsu.com> <5101FBE0.7040505@redhat.com> <51020800.4080900@cn.fujitsu.com> <5102145D.7030607@redhat.com>
+In-Reply-To: <5102145D.7030607@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 13:39:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 13:39:20,
+	Serialize complete at 2013/01/25 13:39:20
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 01/25/2013 01:13 PM, Jason Wang wrote:
+> On 01/25/2013 12:20 PM, Wanlong Gao wrote:
+>> On 01/25/2013 11:28 AM, Jason Wang wrote:
+>>> On 01/21/2013 07:25 PM, Wanlong Gao wrote:
+>>>> Split out the clean affinity function to virtnet_clean_affinity().
+>>>>
+>>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>>>> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+>>>> Cc: Jason Wang <jasowang@redhat.com>
+>>>> Cc: Eric Dumazet <erdnetdev@gmail.com>
+>>>> Cc: virtualization@lists.linux-foundation.org
+>>>> Cc: netdev@vger.kernel.org
+>>>> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+>>>> ---
+>>>> V5->V6: NEW
+>>>>
+>>>>  drivers/net/virtio_net.c | 67 +++++++++++++++++++++++++++---------------------
+>>>>  1 file changed, 38 insertions(+), 29 deletions(-)
+>>>>
+>>>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>>>> index 70cd957..1a35a8c 100644
+>>>> --- a/drivers/net/virtio_net.c
+>>>> +++ b/drivers/net/virtio_net.c
+>>>> @@ -1016,48 +1016,57 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
+>>>>  	return 0;
+>>>>  }
+>>>>  
+>>>> -static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+>>>> +static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
+>>>>  {
+>>>>  	int i;
+>>>>  	int cpu;
+>>>>  
+>>>> -	/* In multiqueue mode, when the number of cpu is equal to the number of
+>>>> -	 * queue pairs, we let the queue pairs to be private to one cpu by
+>>>> -	 * setting the affinity hint to eliminate the contention.
+>>>> -	 */
+>>>> -	if ((vi->curr_queue_pairs == 1 ||
+>>>> -	     vi->max_queue_pairs != num_online_cpus()) && set) {
+>>>> -		if (vi->affinity_hint_set)
+>>>> -			set = false;
+>>>> -		else
+>>>> -			return;
+>>>> -	}
+>>>> -
+>>>> -	if (set) {
+>>>> -		i = 0;
+>>>> -		for_each_online_cpu(cpu) {
+>>>> -			virtqueue_/set_affinity(vi->rq[i].vq, cpu);
+>>>> -			virtqueue_set_affinity(vi->sq[i].vq, cpu);
+>>>> -			*per_cpu_ptr(vi->vq_index, cpu) = i;
+>>>> -			i++;
+>>>> -		}
+>>>> -
+>>>> -		vi->affinity_hint_set = true;
+>>>> -	} else {
+>>>> -		for(i = 0; i < vi->max_queue_pairs; i++) {
+>>>> +	if (vi->affinity_hint_set) {
+>>>> +		for (i = 0; i < vi->max_queue_pairs; i++) {
+>>>>  			virtqueue_set_affinity(vi->rq[i].vq, -1);
+>>>>  			virtqueue_set_affinity(vi->sq[i].vq, -1);
+>>>>  		}
+>>>>  
+>>>>  		i = 0;
+>>>> -		for_each_online_cpu(cpu)
+>>>> +		for_each_online_cpu(cpu) {
+>>>> +			if (cpu == hcpu)
+>>>> +				continue;
+>>>>  			*per_cpu_ptr(vi->vq_index, cpu) =
+>>>>  				++i % vi->curr_queue_pairs;
+>>>> +		}
+>>>>  
+>>> Some questions here:
+>>>
+>>> - Did we need reset the affinity of the queue here like the this?
+>>>
+>>> virtqueue_set_affinity(vi->sq[*per_cpu_ptr(vi->vq_index, hcpu)], -1);
+>>> virtqueue_set_affinity(vi->rq[*per_cpu_ptr(vi->vq_index, hcpu)], -1);
+>> I think no, we are going to unset the affinity of all the set queues,
+>> include hcpu.
+>>
+>>> - Looks like we need also reset the percpu index when
+>>> vi->affinity_hint_set is false.
+>> Yes, follow this and the comment on [1/3].
+>>
+>>> - Does this really need this reset? Consider we're going to reset the
+>>> percpu in CPU_DEAD?
+>> I think resetting when CPU_DOWN_PREPARE can avoid selecting the wrong queue
+>> on the dying CPU.
+> 
+> Didn't understand this. What does 'wrong queue' here mean? Looks like
+> you didn't change the preferable queue of the dying CPU and just change
+> all others.
 
-My for-linus branch has our batch of btrfs fixes:
+How about setting the vq index to -1 on hcpu when doing DOWN_PREPARE?
+So that let it select txq to 0 when the CPU is dying.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+Thanks,
+Wanlong Gao
 
-It turns out that we had two crc bugs when running fsx-linux in a
-loop.  Many thanks to Josef, Miao Xie, and Dave Sterba for nailing it
-all down.  Miao also has a new OOM fix in this v2 pull as well.
+>>
+>> Thanks,
+>> Wanlong Gao
+>>
+>>> Thanks
+>>>>  		vi->affinity_hint_set = false;
+>>>>  	}
+>>>>  }
+>>>>  
+>>>> +static void virtnet_set_affinity(struct virtnet_info *vi)
+>>>> +{
+>>>> +	int i;
+>>>> +	int cpu;
+>>>> +
+>>>> +	/* In multiqueue mode, when the number of cpu is equal to the number of
+>>>> +	 * queue pairs, we let the queue pairs to be private to one cpu by
+>>>> +	 * setting the affinity hint to eliminate the contention.
+>>>> +	 */
+>>>> +	if (vi->curr_queue_pairs == 1 ||
+>>>> +	    vi->max_queue_pairs != num_online_cpus()) {
+>>>> +		if (vi->affinity_hint_set)
+>>>> +			virtnet_clean_affinity(vi, -1);
+>>>> +		else
+>>>> +			return;
+>>>> +	}
+>>>> +
+>>>> +	i = 0;
+>>>> +	for_each_online_cpu(cpu) {
+>>>> +		virtqueue_set_affinity(vi->rq[i].vq, cpu);
+>>>> +		virtqueue_set_affinity(vi->sq[i].vq, cpu);
+>>>> +		*per_cpu_ptr(vi->vq_index, cpu) = i;
+>>>> +		i++;
+>>>> +	}
+>>>> +
+>>>> +	vi->affinity_hint_set = true;
+>>>> +}
+>>>> +
+>>>>  static void virtnet_get_ringparam(struct net_device *dev,
+>>>>  				struct ethtool_ringparam *ring)
+>>>>  {
+>>>> @@ -1105,7 +1114,7 @@ static int virtnet_set_channels(struct net_device *dev,
+>>>>  		netif_set_real_num_rx_queues(dev, queue_pairs);
+>>>>  
+>>>>  		get_online_cpus();
+>>>> -		virtnet_set_affinity(vi, true);
+>>>> +		virtnet_set_affinity(vi);
+>>>>  		put_online_cpus();
+>>>>  	}
+>>>>  
+>>>> @@ -1274,7 +1283,7 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
+>>>>  {
+>>>>  	struct virtio_device *vdev = vi->vdev;
+>>>>  
+>>>> -	virtnet_set_affinity(vi, false);
+>>>> +	virtnet_clean_affinity(vi, -1);
+>>>>  
+>>>>  	vdev->config->del_vqs(vdev);
+>>>>  
+>>>> @@ -1398,7 +1407,7 @@ static int init_vqs(struct virtnet_info *vi)
+>>>>  		goto err_free;
+>>>>  
+>>>>  	get_online_cpus();
+>>>> -	virtnet_set_affinity(vi, true);
+>>>> +	virtnet_set_affinity(vi);
+>>>>  	put_online_cpus();
+>>>>  
+>>>>  	return 0;
+>>>
+> 
+> 
 
-Ilya fixed a regression Liu Bo found in the balance ioctls for pausing
-and resuming a running balance across drives.
-
-Josef's orphan truncate patch fixes an obscure corruption we'd see
-during xfstests.
-
-Arne's patches address problems with subvolume quotas.  If the user
-destroys quota groups incorrectly the FS will refuse to mount.
-
-The rest are smaller fixes and plugs for memory leaks.
-
-Miao Xie (8) commits (+76/-24):
-    Btrfs: fix missing write access release in btrfs_ioctl_resize() (+1/-0)
-    Btrfs: do not delete a subvolume which is in a R/O subvolume (+5/-5)
-    Btrfs: Add ACCESS_ONCE() to transaction->abort accesses (+3/-2)
-    Btrfs: fix wrong max device number for single profile (+1/-1)
-    Btrfs: fix repeated delalloc work allocation (+41/-14)
-    Btrfs: fix missed transaction->aborted check (+16/-0)
-    Btrfs: fix resize a readonly device (+4/-2)
-    Btrfs: disable qgroup id 0 (+5/-0)
-
-Ilya Dryomov (6) commits (+94/-32):
-    Btrfs: reorder locks and sanity checks in btrfs_ioctl_defrag (+9/-8)
-    Btrfs: fix "mutually exclusive op is running" error code (+4/-4)
-    Btrfs: fix a regression in balance usage filter (+8/-1)
-    Btrfs: bring back balance pause/resume logic (+71/-17)
-    Btrfs: fix unlock order in btrfs_ioctl_rm_dev (+1/-1)
-    Btrfs: fix unlock order in btrfs_ioctl_resize (+1/-1)
-
-Liu Bo (5) commits (+23/-7):
-    Btrfs: fix a bug when llseek for delalloc bytes behind prealloc extents (+14/-6)
-    Btrfs: use right range to find checksum for compressed extents (+5/-0)
-    Btrfs: let allocation start from the right raid type (+1/-1)
-    Btrfs: reset path lock state to zero (+2/-0)
-    Btrfs: fix off-by-one in lseek (+1/-0)
-
-Josef Bacik (5) commits (+69/-29):
-    Btrfs: do not allow logged extents to be merged or removed (+16/-3)
-    Btrfs: add orphan before truncating pagecache (+38/-15)
-    Btrfs: set flushing if we're limited flushing (+1/-1)
-    Btrfs: put csums on the right ordered extent (+2/-2)
-    Btrfs: fix panic when recovering tree log (+12/-8)
-
-Arne Jansen (2) commits (+19/-1):
-    Btrfs: prevent qgroup destroy when there are still relations (+12/-1)
-    Btrfs: ignore orphan qgroup relations (+7/-0)
-
-Zach Brown (1) commits (+1/-0):
-    btrfs: fix btrfs_cont_expand() freeing IS_ERR em
-
-Lukas Czerner (1) commits (+1/-1):
-    btrfs: get the device in write mode when deleting it
-
-Eric Sandeen (1) commits (+14/-3):
-    btrfs: update timestamps on truncate()
-
-Tsutomu Itoh (1) commits (+3/-1):
-    Btrfs: fix memory leak in name_cache_insert()
-
-Total: (30) commits (+300/-98)
-
- fs/btrfs/extent-tree.c      |   6 +-
- fs/btrfs/extent_map.c       |  13 ++++-
- fs/btrfs/extent_map.h       |   1 +
- fs/btrfs/file-item.c        |   4 +-
- fs/btrfs/file.c             |  10 +++-
- fs/btrfs/free-space-cache.c |  20 ++++---
- fs/btrfs/inode.c            | 137 +++++++++++++++++++++++++++++++++-----------
- fs/btrfs/ioctl.c            | 129 ++++++++++++++++++++++++++++++-----------
- fs/btrfs/qgroup.c           |  20 ++++++-
- fs/btrfs/send.c             |   4 +-
- fs/btrfs/super.c            |   2 +-
- fs/btrfs/transaction.c      |  19 +++++-
- fs/btrfs/tree-log.c         |  10 +++-
- fs/btrfs/volumes.c          |  23 ++++++--
- 14 files changed, 300 insertions(+), 98 deletions(-)
