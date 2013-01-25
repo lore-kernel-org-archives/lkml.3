@@ -1,623 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab3AYKwa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:52:30 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41011 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab3AYKw0 (ORCPT
+	id S1756222Ab3AYKxC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:53:02 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:59434 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393Ab3AYKxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:52:26 -0500
-Date: Fri, 25 Jan 2013 02:51:58 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-f8ebb0cdf30fec2c2a5a364cdda8e6758a44026c@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, tglx@linutronix.de,
-        namhyung@kernel.org, jolsa@redhat.com
-In-Reply-To: <1355128197-18193-5-git-send-email-namhyung@kernel.org>
-References: <1355128197-18193-5-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf test: Add a test case for hists__{match,
- link}
-Git-Commit-ID: f8ebb0cdf30fec2c2a5a364cdda8e6758a44026c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 25 Jan 2013 05:53:00 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1357847443-3878-2-git-send-email-jacob.shin@amd.com>
+References: <1357847443-3878-1-git-send-email-jacob.shin@amd.com>
+	<1357847443-3878-2-git-send-email-jacob.shin@amd.com>
+Date: Fri, 25 Jan 2013 11:52:59 +0100
+Message-ID: <CABPqkBSkeXEJkyFuBGYTUas=fqT+WSf5wknsfoymsE8JtaQcGw@mail.gmail.com>
+Subject: Re: [PATCH RESEND V5 1/6] perf, amd: Rework northbridge event
+ constraints handler
+From: Stephane Eranian <eranian@google.com>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Robert Richter <rric@kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 02:52:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f8ebb0cdf30fec2c2a5a364cdda8e6758a44026c
-Gitweb:     http://git.kernel.org/tip/f8ebb0cdf30fec2c2a5a364cdda8e6758a44026c
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Mon, 10 Dec 2012 17:29:57 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 24 Jan 2013 16:40:07 -0300
+On Thu, Jan 10, 2013 at 8:50 PM, Jacob Shin <jacob.shin@amd.com> wrote:
+> From: Robert Richter <rric@kernel.org>
+>
+> Code simplification. No functional changes.
+>
+> Signed-off-by: Robert Richter <rric@kernel.org>
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 
-perf test: Add a test case for hists__{match,link}
+Acked-by: Stephane Eranian <eranian@google.com>
 
-As they are used from diff and event group report, add a test case to
-verify their behaviors.
-
-In this test I made a fake machine and two evsel.  Each evsel got 10
-samples (so hist entries) - 5 are common and the rests are not.  So
-after hists__match() both of them will have 5 entries with pair set.
-
-And the second evsel has a collapsed entry so that the total number is 9
-- I made it in order to simulate more realistic case.  Thus after
-hists__link the first entry will have 14 entries - 5 are common (w/
-pair), 5 are unmatch (w/o pair) and 4 are dummy (w/ pair).  And the
-second entry will have 9 entries all have its pair.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1355128197-18193-5-git-send-email-namhyung@kernel.org
-[ committer note: fixed up clashes with cset that moved methods to machine.h ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile             |   1 +
- tools/perf/tests/builtin-test.c |   4 +
- tools/perf/tests/hists_link.c   | 502 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |   1 +
- 4 files changed, 508 insertions(+)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 2cbaad8..c9f72b1 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -487,6 +487,7 @@ LIB_OBJS += $(OUTPUT)tests/rdpmc.o
- LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
- LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
- LIB_OBJS += $(OUTPUT)tests/pmu.o
-+LIB_OBJS += $(OUTPUT)tests/hists_link.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 186f675..479d104 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -69,6 +69,10 @@ static struct test {
- 		.func = test__attr,
- 	},
- 	{
-+		.desc = "Test matching and linking mutliple hists",
-+		.func = test__hists_link,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-new file mode 100644
-index 0000000..0f1aae3
---- /dev/null
-+++ b/tools/perf/tests/hists_link.c
-@@ -0,0 +1,502 @@
-+#include "perf.h"
-+#include "tests.h"
-+#include "debug.h"
-+#include "symbol.h"
-+#include "sort.h"
-+#include "evsel.h"
-+#include "evlist.h"
-+#include "machine.h"
-+#include "thread.h"
-+#include "parse-events.h"
-+
-+static struct {
-+	u32 pid;
-+	const char *comm;
-+} fake_threads[] = {
-+	{ 100, "perf" },
-+	{ 200, "perf" },
-+	{ 300, "bash" },
-+};
-+
-+static struct {
-+	u32 pid;
-+	u64 start;
-+	const char *filename;
-+} fake_mmap_info[] = {
-+	{ 100, 0x40000, "perf" },
-+	{ 100, 0x50000, "libc" },
-+	{ 100, 0xf0000, "[kernel]" },
-+	{ 200, 0x40000, "perf" },
-+	{ 200, 0x50000, "libc" },
-+	{ 200, 0xf0000, "[kernel]" },
-+	{ 300, 0x40000, "bash" },
-+	{ 300, 0x50000, "libc" },
-+	{ 300, 0xf0000, "[kernel]" },
-+};
-+
-+struct fake_sym {
-+	u64 start;
-+	u64 length;
-+	const char *name;
-+};
-+
-+static struct fake_sym perf_syms[] = {
-+	{ 700, 100, "main" },
-+	{ 800, 100, "run_command" },
-+	{ 900, 100, "cmd_record" },
-+};
-+
-+static struct fake_sym bash_syms[] = {
-+	{ 700, 100, "main" },
-+	{ 800, 100, "xmalloc" },
-+	{ 900, 100, "xfree" },
-+};
-+
-+static struct fake_sym libc_syms[] = {
-+	{ 700, 100, "malloc" },
-+	{ 800, 100, "free" },
-+	{ 900, 100, "realloc" },
-+};
-+
-+static struct fake_sym kernel_syms[] = {
-+	{ 700, 100, "schedule" },
-+	{ 800, 100, "page_fault" },
-+	{ 900, 100, "sys_perf_event_open" },
-+};
-+
-+static struct {
-+	const char *dso_name;
-+	struct fake_sym *syms;
-+	size_t nr_syms;
-+} fake_symbols[] = {
-+	{ "perf", perf_syms, ARRAY_SIZE(perf_syms) },
-+	{ "bash", bash_syms, ARRAY_SIZE(bash_syms) },
-+	{ "libc", libc_syms, ARRAY_SIZE(libc_syms) },
-+	{ "[kernel]", kernel_syms, ARRAY_SIZE(kernel_syms) },
-+};
-+
-+static struct machine *setup_fake_machine(void)
-+{
-+	struct rb_root machine_root = RB_ROOT;
-+	struct machine *machine;
-+	size_t i;
-+
-+	machine = machines__findnew(&machine_root, HOST_KERNEL_ID);
-+	if (machine == NULL) {
-+		pr_debug("Not enough memory for machine setup\n");
-+		return NULL;
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(fake_threads); i++) {
-+		struct thread *thread;
-+
-+		thread = machine__findnew_thread(machine, fake_threads[i].pid);
-+		if (thread == NULL)
-+			goto out;
-+
-+		thread__set_comm(thread, fake_threads[i].comm);
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(fake_mmap_info); i++) {
-+		union perf_event fake_mmap_event = {
-+			.mmap = {
-+				.header = { .misc = PERF_RECORD_MISC_USER, },
-+				.pid = fake_mmap_info[i].pid,
-+				.start = fake_mmap_info[i].start,
-+				.len = 0x1000ULL,
-+				.pgoff = 0ULL,
-+			},
-+		};
-+
-+		strcpy(fake_mmap_event.mmap.filename,
-+		       fake_mmap_info[i].filename);
-+
-+		machine__process_mmap_event(machine, &fake_mmap_event);
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(fake_symbols); i++) {
-+		size_t k;
-+		struct dso *dso;
-+
-+		dso = __dsos__findnew(&machine->user_dsos,
-+				      fake_symbols[i].dso_name);
-+		if (dso == NULL)
-+			goto out;
-+
-+		/* emulate dso__load() */
-+		dso__set_loaded(dso, MAP__FUNCTION);
-+
-+		for (k = 0; k < fake_symbols[i].nr_syms; k++) {
-+			struct symbol *sym;
-+			struct fake_sym *fsym = &fake_symbols[i].syms[k];
-+
-+			sym = symbol__new(fsym->start, fsym->length,
-+					  STB_GLOBAL, fsym->name);
-+			if (sym == NULL)
-+				goto out;
-+
-+			symbols__insert(&dso->symbols[MAP__FUNCTION], sym);
-+		}
-+	}
-+
-+	return machine;
-+
-+out:
-+	pr_debug("Not enough memory for machine setup\n");
-+	machine__delete_threads(machine);
-+	machine__delete(machine);
-+	return NULL;
-+}
-+
-+struct sample {
-+	u32 pid;
-+	u64 ip;
-+	struct thread *thread;
-+	struct map *map;
-+	struct symbol *sym;
-+};
-+
-+static struct sample fake_common_samples[] = {
-+	/* perf [kernel] schedule() */
-+	{ .pid = 100, .ip = 0xf0000 + 700, },
-+	/* perf [perf]   main() */
-+	{ .pid = 200, .ip = 0x40000 + 700, },
-+	/* perf [perf]   cmd_record() */
-+	{ .pid = 200, .ip = 0x40000 + 900, },
-+	/* bash [bash]   xmalloc() */
-+	{ .pid = 300, .ip = 0x40000 + 800, },
-+	/* bash [libc]   malloc() */
-+	{ .pid = 300, .ip = 0x50000 + 700, },
-+};
-+
-+static struct sample fake_samples[][5] = {
-+	{
-+		/* perf [perf]   run_command() */
-+		{ .pid = 100, .ip = 0x40000 + 800, },
-+		/* perf [libc]   malloc() */
-+		{ .pid = 100, .ip = 0x50000 + 700, },
-+		/* perf [kernel] page_fault() */
-+		{ .pid = 100, .ip = 0xf0000 + 800, },
-+		/* perf [kernel] sys_perf_event_open() */
-+		{ .pid = 200, .ip = 0xf0000 + 900, },
-+		/* bash [libc]   free() */
-+		{ .pid = 300, .ip = 0x50000 + 800, },
-+	},
-+	{
-+		/* perf [libc]   free() */
-+		{ .pid = 200, .ip = 0x50000 + 800, },
-+		/* bash [libc]   malloc() */
-+		{ .pid = 300, .ip = 0x50000 + 700, }, /* will be merged */
-+		/* bash [bash]   xfee() */
-+		{ .pid = 300, .ip = 0x40000 + 900, },
-+		/* bash [libc]   realloc() */
-+		{ .pid = 300, .ip = 0x50000 + 900, },
-+		/* bash [kernel] page_fault() */
-+		{ .pid = 300, .ip = 0xf0000 + 800, },
-+	},
-+};
-+
-+static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
-+{
-+	struct perf_evsel *evsel;
-+	struct addr_location al;
-+	struct hist_entry *he;
-+	struct perf_sample sample = { .cpu = 0, };
-+	size_t i = 0, k;
-+
-+	/*
-+	 * each evsel will have 10 samples - 5 common and 5 distinct.
-+	 * However the second evsel also has a collapsed entry for
-+	 * "bash [libc] malloc" so total 9 entries will be in the tree.
-+	 */
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		for (k = 0; k < ARRAY_SIZE(fake_common_samples); k++) {
-+			const union perf_event event = {
-+				.ip = {
-+					.header = {
-+						.misc = PERF_RECORD_MISC_USER,
-+					},
-+					.pid = fake_common_samples[k].pid,
-+					.ip  = fake_common_samples[k].ip,
-+				},
-+			};
-+
-+			if (perf_event__preprocess_sample(&event, machine, &al,
-+							  &sample, 0) < 0)
-+				goto out;
-+
-+			he = __hists__add_entry(&evsel->hists, &al, NULL, 1);
-+			if (he == NULL)
-+				goto out;
-+
-+			fake_common_samples[k].thread = al.thread;
-+			fake_common_samples[k].map = al.map;
-+			fake_common_samples[k].sym = al.sym;
-+		}
-+
-+		for (k = 0; k < ARRAY_SIZE(fake_samples[i]); k++) {
-+			const union perf_event event = {
-+				.ip = {
-+					.header = {
-+						.misc = PERF_RECORD_MISC_USER,
-+					},
-+					.pid = fake_samples[i][k].pid,
-+					.ip  = fake_samples[i][k].ip,
-+				},
-+			};
-+
-+			if (perf_event__preprocess_sample(&event, machine, &al,
-+							  &sample, 0) < 0)
-+				goto out;
-+
-+			he = __hists__add_entry(&evsel->hists, &al, NULL, 1);
-+			if (he == NULL)
-+				goto out;
-+
-+			fake_samples[i][k].thread = al.thread;
-+			fake_samples[i][k].map = al.map;
-+			fake_samples[i][k].sym = al.sym;
-+		}
-+		i++;
-+	}
-+
-+	return 0;
-+
-+out:
-+	pr_debug("Not enough memory for adding a hist entry\n");
-+	return -1;
-+}
-+
-+static int find_sample(struct sample *samples, size_t nr_samples,
-+		       struct thread *t, struct map *m, struct symbol *s)
-+{
-+	while (nr_samples--) {
-+		if (samples->thread == t && samples->map == m &&
-+		    samples->sym == s)
-+			return 1;
-+		samples++;
-+	}
-+	return 0;
-+}
-+
-+static int __validate_match(struct hists *hists)
-+{
-+	size_t count = 0;
-+	struct rb_root *root;
-+	struct rb_node *node;
-+
-+	/*
-+	 * Only entries from fake_common_samples should have a pair.
-+	 */
-+	if (sort__need_collapse)
-+		root = &hists->entries_collapsed;
-+	else
-+		root = hists->entries_in;
-+
-+	node = rb_first(root);
-+	while (node) {
-+		struct hist_entry *he;
-+
-+		he = rb_entry(node, struct hist_entry, rb_node_in);
-+
-+		if (hist_entry__has_pairs(he)) {
-+			if (find_sample(fake_common_samples,
-+					ARRAY_SIZE(fake_common_samples),
-+					he->thread, he->ms.map, he->ms.sym)) {
-+				count++;
-+			} else {
-+				pr_debug("Can't find the matched entry\n");
-+				return -1;
-+			}
-+		}
-+
-+		node = rb_next(node);
-+	}
-+
-+	if (count != ARRAY_SIZE(fake_common_samples)) {
-+		pr_debug("Invalid count for matched entries: %zd of %zd\n",
-+			 count, ARRAY_SIZE(fake_common_samples));
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static int validate_match(struct hists *leader, struct hists *other)
-+{
-+	return __validate_match(leader) || __validate_match(other);
-+}
-+
-+static int __validate_link(struct hists *hists, int idx)
-+{
-+	size_t count = 0;
-+	size_t count_pair = 0;
-+	size_t count_dummy = 0;
-+	struct rb_root *root;
-+	struct rb_node *node;
-+
-+	/*
-+	 * Leader hists (idx = 0) will have dummy entries from other,
-+	 * and some entries will have no pair.  However every entry
-+	 * in other hists should have (dummy) pair.
-+	 */
-+	if (sort__need_collapse)
-+		root = &hists->entries_collapsed;
-+	else
-+		root = hists->entries_in;
-+
-+	node = rb_first(root);
-+	while (node) {
-+		struct hist_entry *he;
-+
-+		he = rb_entry(node, struct hist_entry, rb_node_in);
-+
-+		if (hist_entry__has_pairs(he)) {
-+			if (!find_sample(fake_common_samples,
-+					 ARRAY_SIZE(fake_common_samples),
-+					 he->thread, he->ms.map, he->ms.sym) &&
-+			    !find_sample(fake_samples[idx],
-+					 ARRAY_SIZE(fake_samples[idx]),
-+					 he->thread, he->ms.map, he->ms.sym)) {
-+				count_dummy++;
-+			}
-+			count_pair++;
-+		} else if (idx) {
-+			pr_debug("A entry from the other hists should have pair\n");
-+			return -1;
-+		}
-+
-+		count++;
-+		node = rb_next(node);
-+	}
-+
-+	/*
-+	 * Note that we have a entry collapsed in the other (idx = 1) hists.
-+	 */
-+	if (idx == 0) {
-+		if (count_dummy != ARRAY_SIZE(fake_samples[1]) - 1) {
-+			pr_debug("Invalid count of dummy entries: %zd of %zd\n",
-+				 count_dummy, ARRAY_SIZE(fake_samples[1]) - 1);
-+			return -1;
-+		}
-+		if (count != count_pair + ARRAY_SIZE(fake_samples[0])) {
-+			pr_debug("Invalid count of total leader entries: %zd of %zd\n",
-+				 count, count_pair + ARRAY_SIZE(fake_samples[0]));
-+			return -1;
-+		}
-+	} else {
-+		if (count != count_pair) {
-+			pr_debug("Invalid count of total other entries: %zd of %zd\n",
-+				 count, count_pair);
-+			return -1;
-+		}
-+		if (count_dummy > 0) {
-+			pr_debug("Other hists should not have dummy entries: %zd\n",
-+				 count_dummy);
-+			return -1;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int validate_link(struct hists *leader, struct hists *other)
-+{
-+	return __validate_link(leader, 0) || __validate_link(other, 1);
-+}
-+
-+static void print_hists(struct hists *hists)
-+{
-+	int i = 0;
-+	struct rb_root *root;
-+	struct rb_node *node;
-+
-+	if (sort__need_collapse)
-+		root = &hists->entries_collapsed;
-+	else
-+		root = hists->entries_in;
-+
-+	pr_info("----- %s --------\n", __func__);
-+	node = rb_first(root);
-+	while (node) {
-+		struct hist_entry *he;
-+
-+		he = rb_entry(node, struct hist_entry, rb_node_in);
-+
-+		pr_info("%2d: entry: %-8s [%-8s] %20s: period = %"PRIu64"\n",
-+			i, he->thread->comm, he->ms.map->dso->short_name,
-+			he->ms.sym->name, he->stat.period);
-+
-+		i++;
-+		node = rb_next(node);
-+	}
-+}
-+
-+int test__hists_link(void)
-+{
-+	int err = -1;
-+	struct machine *machine = NULL;
-+	struct perf_evsel *evsel, *first;
-+        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
-+
-+	if (evlist == NULL)
-+                return -ENOMEM;
-+
-+	err = parse_events(evlist, "cpu-clock", 0);
-+	if (err)
-+		goto out;
-+	err = parse_events(evlist, "task-clock", 0);
-+	if (err)
-+		goto out;
-+
-+	/* default sort order (comm,dso,sym) will be used */
-+	setup_sorting(NULL, NULL);
-+
-+	/* setup threads/dso/map/symbols also */
-+	machine = setup_fake_machine();
-+	if (!machine)
-+		goto out;
-+
-+	if (verbose > 1)
-+		machine__fprintf(machine, stderr);
-+
-+	/* process sample events */
-+	err = add_hist_entries(evlist, machine);
-+	if (err < 0)
-+		goto out;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		hists__collapse_resort(&evsel->hists);
-+
-+		if (verbose > 2)
-+			print_hists(&evsel->hists);
-+	}
-+
-+	first = perf_evlist__first(evlist);
-+	evsel = perf_evlist__last(evlist);
-+
-+	/* match common entries */
-+	hists__match(&first->hists, &evsel->hists);
-+	err = validate_match(&first->hists, &evsel->hists);
-+	if (err)
-+		goto out;
-+
-+	/* link common and/or dummy entries */
-+	hists__link(&first->hists, &evsel->hists);
-+	err = validate_link(&first->hists, &evsel->hists);
-+	if (err)
-+		goto out;
-+
-+	err = 0;
-+
-+out:
-+	/* tear down everything */
-+	perf_evlist__delete(evlist);
-+
-+	if (machine) {
-+		machine__delete_threads(machine);
-+		machine__delete(machine);
-+	}
-+
-+	return err;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 0fd94657..0bf1069 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -15,5 +15,6 @@ int test__pmu(void);
- int test__attr(void);
- int test__dso_data(void);
- int test__parse_events(void);
-+int test__hists_link(void);
- 
- #endif /* TESTS_H */
+> ---
+>  arch/x86/kernel/cpu/perf_event_amd.c |   68 +++++++++++++---------------------
+>  1 file changed, 26 insertions(+), 42 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+> index c93bc4e..e7963c7 100644
+> --- a/arch/x86/kernel/cpu/perf_event_amd.c
+> +++ b/arch/x86/kernel/cpu/perf_event_amd.c
+> @@ -256,9 +256,8 @@ amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+>  {
+>         struct hw_perf_event *hwc = &event->hw;
+>         struct amd_nb *nb = cpuc->amd_nb;
+> -       struct perf_event *old = NULL;
+> -       int max = x86_pmu.num_counters;
+> -       int i, j, k = -1;
+> +       struct perf_event *old;
+> +       int idx, new = -1;
+>
+>         /*
+>          * if not NB event or no NB, then no constraints
+> @@ -276,48 +275,33 @@ amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+>          * because of successive calls to x86_schedule_events() from
+>          * hw_perf_group_sched_in() without hw_perf_enable()
+>          */
+> -       for (i = 0; i < max; i++) {
+> -               /*
+> -                * keep track of first free slot
+> -                */
+> -               if (k == -1 && !nb->owners[i])
+> -                       k = i;
+> +       for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+> +               if (new == -1 || hwc->idx == idx)
+> +                       /* assign free slot, prefer hwc->idx */
+> +                       old = cmpxchg(nb->owners + idx, NULL, event);
+> +               else if (nb->owners[idx] == event)
+> +                       /* event already present */
+> +                       old = event;
+> +               else
+> +                       continue;
+> +
+> +               if (old && old != event)
+> +                       continue;
+> +
+> +               /* reassign to this slot */
+> +               if (new != -1)
+> +                       cmpxchg(nb->owners + new, event, NULL);
+> +               new = idx;
+>
+>                 /* already present, reuse */
+> -               if (nb->owners[i] == event)
+> -                       goto done;
+> -       }
+> -       /*
+> -        * not present, so grab a new slot
+> -        * starting either at:
+> -        */
+> -       if (hwc->idx != -1) {
+> -               /* previous assignment */
+> -               i = hwc->idx;
+> -       } else if (k != -1) {
+> -               /* start from free slot found */
+> -               i = k;
+> -       } else {
+> -               /*
+> -                * event not found, no slot found in
+> -                * first pass, try again from the
+> -                * beginning
+> -                */
+> -               i = 0;
+> -       }
+> -       j = i;
+> -       do {
+> -               old = cmpxchg(nb->owners+i, NULL, event);
+> -               if (!old)
+> +               if (old == event)
+>                         break;
+> -               if (++i == max)
+> -                       i = 0;
+> -       } while (i != j);
+> -done:
+> -       if (!old)
+> -               return &nb->event_constraints[i];
+> -
+> -       return &emptyconstraint;
+> +       }
+> +
+> +       if (new == -1)
+> +               return &emptyconstraint;
+> +
+> +       return &nb->event_constraints[new];
+>  }
+>
+>  static struct amd_nb *amd_alloc_nb(int cpu)
+> --
+> 1.7.9.5
+>
+>
