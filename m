@@ -1,84 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab3AYEQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 23:16:40 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:48534 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584Ab3AYEQh (ORCPT
+	id S1755643Ab3AYEWP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 23:22:15 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:61945 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab3AYEWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 23:16:37 -0500
-Message-ID: <510206CE.9050804@oracle.com>
-Date: Thu, 24 Jan 2013 23:15:10 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
+	Thu, 24 Jan 2013 23:22:13 -0500
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, fweisbec@gmail.com,
-        rusty@rustcorp.com.au, ananth@in.ibm.com,
-        anil.s.keshavamurthy@intel.com, masami.hiramatsu.pt@hitachi.com,
-        jbaron@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        MartinSchwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-s390 <linux-s390@vger.kernel.org>
-Subject: Re: [PATCH 2/5] jump label: constify lookup functions
-References: <1357772960-4436-1-git-send-email-sasha.levin@oracle.com>  <1357772960-4436-2-git-send-email-sasha.levin@oracle.com> <1358544300.7383.37.camel@gandalf.local.home>
-In-Reply-To: <1358544300.7383.37.camel@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20130125041411.GB12562@kroah.com>
+References: <1356702623-9430-1-git-send-email-js1304@gmail.com>
+ <CAErSpo5_dgH1Au3QChVrhqBY_Fm54+Aw_ZiwGf2JSsgQaR1dug@mail.gmail.com>
+ <20130125011303.GA3401@lge.com> <20130125025901.GA26984@google.com> <20130125041411.GB12562@kroah.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 24 Jan 2013 21:21:52 -0700
+Message-ID: <CAErSpo43SoeFn1N5shnxsXmL-ZOmkDQM6yFwyaeBMTRhcy4=dA@mail.gmail.com>
+Subject: Re: [PATCH] x86, reboot: skip reboot_fixups in early boot phase
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2013 04:25 PM, Steven Rostedt wrote:
-> On Wed, 2013-01-09 at 18:09 -0500, Sasha Levin wrote:
->> Modify the parameters of all the lookup and the bookkeeping functions which
->> should be const to const.
+On Thu, Jan 24, 2013 at 9:14 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Thu, Jan 24, 2013 at 07:59:01PM -0700, Bjorn Helgaas wrote:
+>> [+cc Greg for driver core]
 >>
->> For example, jump_label_text_reserved() doesn't modify the memory it works on,
->> it just checks whether there are any jump labels there.
-> 
-> This is dependent on the module patch, which Rusty is taking. I need to
-> see that he has it before this can go in. At least see it in linux-next.
-> 
-> Also, you should have Cc'd the linux-arch mailing list. I'll send it
-> there.
-> 
+>> On Fri, Jan 25, 2013 at 10:13:03AM +0900, Joonsoo Kim wrote:
+>> > Hello, Bjorn.
+>> >
+>> > On Thu, Jan 24, 2013 at 10:45:13AM -0700, Bjorn Helgaas wrote:
+>> > > On Fri, Dec 28, 2012 at 6:50 AM, Joonsoo Kim <js1304@gmail.com> wrote:
+>> > > > During early boot phase, PCI bus subsystem is not yet initialized.
+>> > > > If panic is occured in early boot phase and panic_timeout is set,
+>> > > > code flow go into emergency_restart() and hit mach_reboot_fixups(), then
+>> > > > encounter another panic. When second panic, we can't hold a panic_lock, so
+>> > > > code flow go into panic_smp_self_stop() which prevent system to restart.
+>> > > >
+>> > > > For avoid second panic, skip reboot_fixups in early boot phase.
+>> > > > It makes panic_timeout works in early boot phase.
+>> > > >
+>> > > > Cc: Thomas Gleixner <tglx@linutronix.de>
+>> > > > Cc: Ingo Molnar <mingo@redhat.com>
+>> > > > Cc: "H. Peter Anvin" <hpa@zytor.com>
+>> > > > Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+>> > > >
+>> > > > diff --git a/arch/x86/kernel/reboot_fixups_32.c b/arch/x86/kernel/reboot_fixups_32.c
+>> > > > index c8e41e9..b9b8ec9 100644
+>> > > > --- a/arch/x86/kernel/reboot_fixups_32.c
+>> > > > +++ b/arch/x86/kernel/reboot_fixups_32.c
+>> > > > @@ -89,6 +89,10 @@ void mach_reboot_fixups(void)
+>> > > >         if (in_interrupt())
+>> > > >                 return;
+>> > > >
+>> > > > +       /* During early boot phase, PCI is not yet initialized */
+>> > > > +       if (system_state == SYSTEM_BOOTING)
+>> > > > +               return;
+>> > > > +
+>> > > >         for (i=0; i < ARRAY_SIZE(fixups_table); i++) {
+>> > > >                 cur = &(fixups_table[i]);
+>> > > >                 dev = pci_get_device(cur->vendor, cur->device, NULL);
+>> > >
+>> > > I guess you're saying that if we call pci_get_device() too early, it
+>> > > panics?  Did you figure out why that happens?
+>> > >
+>> > > If we call pci_get_device() before PCI has been initialized, it would
+>> > > be good if it just returned NULL, indicating that we didn't find any
+>> > > matching device.  I looked briefly, and I thought that's what would
+>> > > happen, but apparently I'm missing something.
+>> >
+>> > In bus_find_device(), klist_iter_init_node() is called with
+>> > @bus->p->klist_device. Before initialization, bus->p is NULL,
+>> > so panic is occured.
 >>
->> Note I couldn't test the non-x86 architectures, but the changes are rather
->> trivial.
-> 
-> I ran it on 25 archs, and s390 hit:
-> 
-> /work/autotest/nobackup/cross-linux.git/arch/s390/kernel/jump_label.c: In function 'arch_jump_label_transform':
-> /work/autotest/nobackup/cross-linux.git/arch/s390/kernel/jump_label.c:58:13: warning: assignment discards 'const' qualifier from pointer target type [enabled by default]
-> 
-> -- Steve
-> 
-> Here's the patch:
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> diff --git a/arch/s390/kernel/jump_label.c
-> b/arch/s390/kernel/jump_label.c
-> index 85fa643..ef047ef 100644
-> --- a/arch/s390/kernel/jump_label.c
-> +++ b/arch/s390/kernel/jump_label.c
-> @@ -18,7 +18,7 @@ struct insn {
->  } __packed;
->  
->  struct insn_args {
-> -	struct jump_entry *entry;
-> +	const struct jump_entry *entry;
->  	enum jump_label_type type;
->  };
->  
+>> I see.  pci_bus_type.p is initialized by __bus_register() in this path:
+>>
+>>   pci_driver_init        # postcore_initcall
+>>     bus_register(&pci_bus_type)
+>>       __bus_register
+>>         priv = kzalloc(sizeof(struct subsys_private))
+>>       bus->p = priv
+>>       klist_init(&priv->klist_devices, klist_devices_get, klist_devices_put)
+>>
+>> I was hoping we could statically initialize the klist, but that doesn't
+>> seem likely.
+>>
+>> But I wonder if we could do something like the following.  If we could,
+>> then callers wouldn't have to worry about whether or not the bus has been
+>> initialized.
+>
+> <snip>
+>
+> I have no objection to that patch, but really, someone wants to call
+> pci_find_device() before PCI is initialized?  Can't that be fixed
+> instead, as that is the root problem, not the driver core.
+>
+> But, to paper over your subsystem's bugs, I guess I can take it :)
 
-Sorry about this. I didn't have the ability to build all arches over here :(
+The caller is in the native_machine_emergency_restart() path.
+Joonsoo's original patch does what I think you're suggesting:
 
-Would you like me to resend this patch with your fix?
+>> > > > +       /* During early boot phase, PCI is not yet initialized */
+>> > > > +       if (system_state == SYSTEM_BOOTING)
+>> > > > +               return;
+>> > > > +
+>> > > >         for (i=0; i < ARRAY_SIZE(fixups_table); i++) {
+>> > > >                 cur = &(fixups_table[i]);
+>> > > >                 dev = pci_get_device(cur->vendor, cur->device, NULL);
 
+I think it's sort of ugly to check system_state before using
+pci_get_device(), and there's not really an obvious connection between
+system_state and PCI initialization.
 
-Thanks,
-Sasha
-
+But if you prefer that, Joonsoo's original patch is fine with me.
