@@ -1,46 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab3AYKWk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:22:40 -0500
-Received: from re04.intra2net.com ([82.165.46.26]:55563 "EHLO
-	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755764Ab3AYKWf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:22:35 -0500
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
-To: acme@ghostprotocols.net
-Cc: linux-kernel@vger.kernel.org
-Subject: [perf PATCH 3/3] Fix double fclose() on do_write(fd, xxx) failure
-Date: Fri, 25 Jan 2013 11:22:17 +0100
-Message-ID: <2684910.12iLzy42t4@storm>
-User-Agent: KMail/4.9.5 (Linux/3.6.11-5.fc17.x86_64; KDE/4.9.5; x86_64; ; )
+	id S1756403Ab3AYKYn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:24:43 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53692 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753352Ab3AYKYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 05:24:37 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <rob.herring@calxeda.com>, <rob@landley.net>, <tony@atomide.com>,
+        <balbi@ti.com>, <b-cousson@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>
+CC: <grant.likely@secretlab.ca>, <linux@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>, <kishon@ti.com>
+Subject: [PATCH v4 2/4] ARM: OMAP: devices: create device for usb part of control module
+Date: Fri, 25 Jan 2013 15:53:58 +0530
+Message-ID: <1359109440-2195-3-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359109440-2195-1-git-send-email-kishon@ti.com>
+References: <1359109440-2195-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cppcheck reported:
-[util/header.c:983]: (error) Used file that is not opened.
+A seperate driver has been added to handle the usb part of control
+module. A device for the above driver is created here, using the register
+address information to be used by the driver for powering on the PHY and
+for writing to the mailbox.
 
-Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- tools/perf/util/header.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-omap2/devices.c |   45 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 7b24cf3..30745c2 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -955,6 +955,7 @@ static int write_topo_node(int fd, int node)
- 	}
+diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
+index 5e304d0..6a450a3 100644
+--- a/arch/arm/mach-omap2/devices.c
++++ b/arch/arm/mach-omap2/devices.c
+@@ -20,6 +20,7 @@
+ #include <linux/pinctrl/machine.h>
+ #include <linux/platform_data/omap4-keypad.h>
+ #include <linux/platform_data/omap_ocp2scp.h>
++#include <linux/usb/omap_control_usb.h>
  
- 	fclose(fp);
-+	fp = NULL;
+ #include <asm/mach-types.h>
+ #include <asm/mach/map.h>
+@@ -254,6 +255,49 @@ static inline void omap_init_camera(void)
+ #endif
+ }
  
- 	ret = do_write(fd, &mem_total, sizeof(u64));
- 	if (ret)
++#if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)
++static struct omap_control_usb_platform_data omap4_control_usb_pdata = {
++	.type = 1,
++};
++
++struct resource omap4_control_usb_res[] = {
++	{
++		.name	= "control_dev_conf",
++		.start	= 0x4a002300,
++		.end	= 0x4a002303,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.name	= "otghs_control",
++		.start	= 0x4a00233c,
++		.end	= 0x4a00233f,
++		.flags	= IORESOURCE_MEM,
++	},
++};
++
++static struct platform_device omap4_control_usb = {
++	.name		= "omap-control-usb",
++	.id		= -1,
++	.dev = {
++		.platform_data = &omap4_control_usb_pdata,
++	},
++	.num_resources = 2,
++	.resource = omap4_control_usb_res,
++};
++
++static inline void __init omap_init_control_usb(void)
++{
++	if (!cpu_is_omap44xx())
++		return;
++
++	if (platform_device_register(&omap4_control_usb))
++		pr_err("Error registering omap_control_usb device\n");
++}
++
++#else
++static inline void omap_init_control_usb(void) { }
++#endif /* CONFIG_OMAP_CONTROL_USB */
++
+ int __init omap4_keyboard_init(struct omap4_keypad_platform_data
+ 			*sdp4430_keypad_data, struct omap_board_data *bdata)
+ {
+@@ -721,6 +765,7 @@ static int __init omap2_init_devices(void)
+ 	omap_init_mbox();
+ 	/* If dtb is there, the devices will be created dynamically */
+ 	if (!of_have_populated_dt()) {
++		omap_init_control_usb();
+ 		omap_init_dmic();
+ 		omap_init_mcpdm();
+ 		omap_init_mcspi();
 -- 
-1.7.11.7
+1.7.9.5
 
