@@ -1,97 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab3AYEXj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 23:23:39 -0500
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:57614 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754634Ab3AYEXh (ORCPT
+	id S1755804Ab3AYEZk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 23:25:40 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:60096 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab3AYEZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 23:23:37 -0500
+	Thu, 24 Jan 2013 23:25:37 -0500
+Date: Fri, 25 Jan 2013 12:25:12 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@fusionio.com>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: boot warnings due to swap: make each swap partition have one
+ address_space
+Message-ID: <20130125042512.GA32017@kernel.org>
+References: <5101FFF5.6030503@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <50DD5E8A.5050205@cn.fujitsu.com>
-References: <1356679902-4266-1-git-send-email-linfeng@cn.fujitsu.com>
- <CAE9FiQU1YM32pb+iGJHj1m3W-nGUbHh5f8Qkx5bRsfptgGParw@mail.gmail.com> <50DD5E8A.5050205@cn.fujitsu.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 24 Jan 2013 21:23:16 -0700
-Message-ID: <CAErSpo5VofkxRDvDc3q5xF5nq4Wy+5RAYwkQ6BdSftRXPPF3kw@mail.gmail.com>
-Subject: Re: [PATCH] pci: remove redundant function calls in pci_reassigndev_resource_alignment()
-To: Lin Feng <linfeng@cn.fujitsu.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tangchen@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5101FFF5.6030503@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 1:55 AM, Lin Feng <linfeng@cn.fujitsu.com> wrote:
->
->
-> On 12/28/2012 03:45 PM, Yinghai Lu wrote:
->> On Thu, Dec 27, 2012 at 11:31 PM, Lin Feng <linfeng@cn.fujitsu.com> wrote:
->>> pci_reassigndev_resource_alignment() potentially calls
->>> pci_specified_resource_alignment() twice, which is redundant.
->>>
->>> pci_is_reassigndev() is only called in pci_reassigndev_resource_alignment(),
->>> and from sematic/functionality aspects pci_specified_resource_alignment() is
->>> sufficient to substitute, so also make some cleanup.
->>>
->>> Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
->>> Cc: Yinghai Lu <yinghai@kernel.org>
->>> ---
->>>  drivers/pci/pci.c |   16 ++--------------
->>>  1 files changed, 2 insertions(+), 14 deletions(-)
->>>
->>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->>> index 5cb5820..789f401 100644
->>> --- a/drivers/pci/pci.c
->>> +++ b/drivers/pci/pci.c
->>> @@ -3766,18 +3766,6 @@ resource_size_t pci_specified_resource_alignment(struct pci_dev *dev)
->>>         return align;
->>>  }
->>>
->>> -/**
->>> - * pci_is_reassigndev - check if specified PCI is target device to reassign
->>> - * @dev: the PCI device to check
->>> - *
->>> - * RETURNS: non-zero for PCI device is a target device to reassign,
->>> - *          or zero is not.
->>> - */
->>> -int pci_is_reassigndev(struct pci_dev *dev)
->>> -{
->>> -       return (pci_specified_resource_alignment(dev) != 0);
->>> -}
->>> -
->>>  /*
->>>   * This function disables memory decoding and releases memory resources
->>>   * of the device specified by kernel's boot parameter 'pci=resource_alignment='.
->>> @@ -3792,7 +3780,8 @@ void pci_reassigndev_resource_alignment(struct pci_dev *dev)
->>>         resource_size_t align, size;
->>>         u16 command;
->>>
->>> -       if (!pci_is_reassigndev(dev))
->>> +       align = pci_specified_resource_alignment(dev);
->>> +       if (!align)
->>>                 return;
->>>
->>>         if (dev->hdr_type == PCI_HEADER_TYPE_NORMAL &&
->>> @@ -3808,7 +3797,6 @@ void pci_reassigndev_resource_alignment(struct pci_dev *dev)
->>>         command &= ~PCI_COMMAND_MEMORY;
->>>         pci_write_config_word(dev, PCI_COMMAND, command);
->>>
->>> -       align = pci_specified_resource_alignment(dev);
->>>         for (i = 0; i < PCI_BRIDGE_RESOURCES; i++) {
->>>                 r = &dev->resource[i];
->>>                 if (!(r->flags & IORESOURCE_MEM))
->>> --
->>> 1.7.1
->>>
->>
->> looks the same as the one that i posted 6 months ago.
->>
->> http://copilotco.com/mail-archives/linux-kernel.2012/msg18498.html
-> Sorry, I didn't notice your patchset before :)
-> Yes, they are the same. But why does nobody care this?
+On Thu, Jan 24, 2013 at 10:45:57PM -0500, Sasha Levin wrote:
+> Hi folks,
+> 
+> Commit "swap: make each swap partition have one address_space" is triggering
+> a series of warnings on boot:
+> 
+> [    3.446071] ------------[ cut here ]------------
+> [    3.446664] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8e/0xb0()
+> [    3.447715] ODEBUG: init active (active state 0) object type: percpu_counter hint:           (null)
+> [    3.450360] Modules linked in:
+> [    3.451593] Pid: 1, comm: swapper/0 Tainted: G        W    3.8.0-rc4-next-20130124-sasha-00004-g838a1b4 #266
+> [    3.454508] Call Trace:
+> [    3.455248]  [<ffffffff8110d1bc>] warn_slowpath_common+0x8c/0xc0
+> [    3.455248]  [<ffffffff8110d291>] warn_slowpath_fmt+0x41/0x50
+> [    3.455248]  [<ffffffff81a2bb5e>] debug_print_object+0x8e/0xb0
+> [    3.455248]  [<ffffffff81a2c26b>] __debug_object_init+0x20b/0x290
+> [    3.455248]  [<ffffffff81a2c305>] debug_object_init+0x15/0x20
+> [    3.455248]  [<ffffffff81a3fbed>] __percpu_counter_init+0x6d/0xe0
+> [    3.455248]  [<ffffffff81231bdc>] bdi_init+0x1ac/0x270
+> [    3.455248]  [<ffffffff8618f20b>] swap_setup+0x3b/0x87
+> [    3.455248]  [<ffffffff8618f257>] ? swap_setup+0x87/0x87
+> [    3.455248]  [<ffffffff8618f268>] kswapd_init+0x11/0x7c
+> [    3.455248]  [<ffffffff810020ca>] do_one_initcall+0x8a/0x180
+> [    3.455248]  [<ffffffff86168cfd>] do_basic_setup+0x96/0xb4
+> [    3.455248]  [<ffffffff861685ae>] ? loglevel+0x31/0x31
+> [    3.455248]  [<ffffffff861885cd>] ? sched_init_smp+0x150/0x157
+> [    3.455248]  [<ffffffff86168ded>] kernel_init_freeable+0xd2/0x14c
+> [    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
+> [    3.455248]  [<ffffffff83cade19>] kernel_init+0x9/0xf0
+> [    3.455248]  [<ffffffff83d5727c>] ret_from_fork+0x7c/0xb0
+> [    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
+> [    3.455248] ---[ end trace 0b176d5c0f21bffb ]---
+> 
+> I haven't looked deeper into it yet, and will do so tomorrow, unless this
+> spew is obvious to anyone.
 
-I applied Yinghai's patch to my pci/misc branch, headed for v3.9.
+Does this one help?
 
-Bjorn
+Subject: give-each-swapper-space-separate-backing_dev_info
+
+The backing_dev_info can't be shared by all swapper address space.
+
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+---
+ mm/swap.c       |    1 +
+ mm/swap_state.c |   11 +++++++----
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+Index: linux/mm/swap.c
+===================================================================
+--- linux.orig/mm/swap.c	2013-01-22 10:11:58.310933234 +0800
++++ linux/mm/swap.c	2013-01-25 12:14:49.524863610 +0800
+@@ -859,6 +859,7 @@ void __init swap_setup(void)
+ 	int i;
+ 
+ 	for (i = 0; i < MAX_SWAPFILES; i++) {
++		swapper_spaces[i].backing_dev_info += i;
+ 		bdi_init(swapper_spaces[i].backing_dev_info);
+ 		spin_lock_init(&swapper_spaces[i].tree_lock);
+ 		INIT_LIST_HEAD(&swapper_spaces[i].i_mmap_nonlinear);
+Index: linux/mm/swap_state.c
+===================================================================
+--- linux.orig/mm/swap_state.c	2013-01-24 18:08:05.149390977 +0800
++++ linux/mm/swap_state.c	2013-01-25 12:14:12.849323671 +0800
+@@ -31,16 +31,19 @@ static const struct address_space_operat
+ 	.migratepage	= migrate_page,
+ };
+ 
+-static struct backing_dev_info swap_backing_dev_info = {
+-	.name		= "swap",
+-	.capabilities	= BDI_CAP_NO_ACCT_AND_WRITEBACK | BDI_CAP_SWAP_BACKED,
++static struct backing_dev_info swap_backing_dev_info[MAX_SWAPFILES] = {
++	[0 ... MAX_SWAPFILES - 1] = {
++		.name		= "swap",
++		.capabilities	= BDI_CAP_NO_ACCT_AND_WRITEBACK |
++			BDI_CAP_SWAP_BACKED,
++	}
+ };
+ 
+ struct address_space swapper_spaces[MAX_SWAPFILES] = {
+ 	[0 ... MAX_SWAPFILES - 1] = {
+ 		.page_tree	= RADIX_TREE_INIT(GFP_ATOMIC|__GFP_NOWARN),
+ 		.a_ops		= &swap_aops,
+-		.backing_dev_info = &swap_backing_dev_info,
++		.backing_dev_info = &swap_backing_dev_info[0],
+ 	}
+ };
+ 
