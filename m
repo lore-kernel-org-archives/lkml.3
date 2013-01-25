@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab3AYVuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 16:50:52 -0500
-Received: from victor.provo.novell.com ([137.65.250.26]:43038 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab3AYVuu (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Fri, 25 Jan 2013 16:50:50 -0500
-X-Greylist: delayed 1214 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Jan 2013 16:50:50 EST
-User-Agent: K-9 Mail for Android
-In-Reply-To: <9497.1359072618@warthog.procyon.org.uk>
-References: <1359062429-27295-3-git-send-email-mmarek@suse.cz> <1359062429-27295-1-git-send-email-mmarek@suse.cz> <9497.1359072618@warthog.procyon.org.uk>
+	id S1753286Ab3AYVvm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 16:51:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23730 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750887Ab3AYVvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 16:51:40 -0500
+Message-ID: <5102FE30.2060806@redhat.com>
+Date: Fri, 25 Jan 2013 16:50:40 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v2 3/4] MODSIGN: Add -s <signature> option to sign-file
-From: Michal Marek <mmarek@suse.cz>
-Date: Fri, 25 Jan 2013 22:30:13 +0100
-To: David Howells <dhowells@redhat.com>
-CC: rusty@ozlabs.org, linux-kernel@vger.kernel.org
-Message-ID: <61d756c7-caf1-4856-a384-703946f3d503@email.android.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv2 2/9] staging: zsmalloc: remove unsed pool name
+References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com> <1357590280-31535-3-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1357590280-31535-3-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
-
->Michal Marek <mmarek@suse.cz> wrote:
+On 01/07/2013 03:24 PM, Seth Jennings wrote:
+> zs_create_pool() currently takes a name argument which is
+> never used in any useful way.
 >
->> This option allows to append an externally computed singature to the
->> module. This is needed in setups, where the private key is not
->directly
->> available, but a service exists that returns signatures for given
->files.
->> 
->> Signed-off-by: Michal Marek <mmarek@suse.cz>
->> ---
->> v2: Use two-argument version of getopts to avoid global variables
->>     Use parentheses in EXPR if (...) constructs
+> This patch removes it.
 >
->Feel free to add:
->
->Acked-by: David Howells <dhowells@redhat.com>
->
->to your patches.
+> Signed-off-by: Seth Jennnings <sjenning@linux.vnet.ibm.com>
 
-Thanks for your review.
+Acked-by: Rik van Riel <riel@redhat.com>
 
-Michal
-
+-- 
+All rights reversed
