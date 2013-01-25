@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab3AYIUg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 03:20:36 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:41535 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752882Ab3AYIUd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 03:20:33 -0500
-Date: Fri, 25 Jan 2013 00:20:30 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/2] Input: twl6040-vibra cleanups (devm_* conversion,
- system wq)
-Message-ID: <20130125082030.GA21273@core.coreip.homeip.net>
-References: <1358177678-16509-1-git-send-email-peter.ujfalusi@ti.com>
- <51011E9D.7050409@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753805Ab3AYIVa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 03:21:30 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:44807 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306Ab3AYIV3 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Fri, 25 Jan 2013 03:21:29 -0500
+Message-Id: <51024E9602000078000B97A2@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Fri, 25 Jan 2013 08:21:26 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: <mingo@elte.hu>, "Ingo Molnar" <mingo@kernel.org>, <tglx@linutronix.de>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3, v2] x86: xor-block handling adjustments
+References: <5093E40902000078000A6147@nat28.tlf.novell.com>
+ <20130124171554.GC11772@gmail.com> <51017028.3020001@zytor.com>
+In-Reply-To: <51017028.3020001@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <51011E9D.7050409@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-On Thu, Jan 24, 2013 at 12:44:29PM +0100, Peter Ujfalusi wrote:
-> Hi Dmitry,
+>>> On 24.01.13 at 18:32, "H. Peter Anvin" <hpa@zytor.com> wrote:
+> On 01/24/2013 11:15 AM, Ingo Molnar wrote:
+>> 
+>> * Jan Beulich <JBeulich@suse.com> wrote:
+>> 
+>>> v2 of this series is merely updated on top of the changes between
+>>> 3.6 and 3.7-rc (which includes the dropping of what previously was
+>>> the second patch in a four patch series).
+>>>
+>>> 1: unify SSE-base xor-block routines
+>>> 2: add alternative SSE implementation only prefetching once per 64-byte line
+>>> 3: make virtualization friendly
+>>>
+>>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+>> 
+>> Looks useful. Wondering what the status is: hpa, was your 
+>> concern resolved, do you think we can apply these?
+>> 
 > 
-> On 01/14/2013 04:34 PM, Peter Ujfalusi wrote:
-> > Hi Dmitry,
-> > 
-> > Changes since v2:
-> > - twl4030-vibra patches are left out (they have been applied)
-> > - Do not use devm_input_allocate_device() in twl6040-vibra
-> 
-> Do you want me to resend this two patch for 3.9?
+> I don't see anything wrong, except that I can't *find* patch 3/3 either
+> in my inbox nor on LKML...
 
-No, I queued them for 3.9.
+I can certainly resend the whole set, but our email system even
+got a delivery confirmation from yours on patch 3 (other than
+e.g. from Ingo's, and all of this identical to 0...2).
 
-Thanks.
+Or see https://patchwork.kernel.org/patch/1688991/, according
+to which you even responded to it (which is the concern Ingo was
+referring to).
 
--- 
-Dmitry
+Jan
+
