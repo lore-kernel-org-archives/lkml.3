@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab3AYSQe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:16:34 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:64501 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778Ab3AYSQb (ORCPT
+	id S932322Ab3AYSSI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:18:08 -0500
+Received: from mail.negativezero.co.uk ([94.102.149.130]:36878 "EHLO
+	smtp.negativezero.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755405Ab3AYSSG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:16:31 -0500
-X-IronPort-AV: E=Sophos;i="4.84,540,1355126400"; 
-   d="scan'208";a="22439066"
-From: David Brown <davidb@codeaurora.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@list.infradead.org, linux-kernel@vger.kernel.org,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <c_dwalke@quicinc.com>, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 03/19] ARM: msm: proc_comm_boot_wait should not be __init
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
-	<1359123276-15833-4-git-send-email-arnd@arndb.de>
-Date: Fri, 25 Jan 2013 10:16:31 -0800
-In-Reply-To: <1359123276-15833-4-git-send-email-arnd@arndb.de> (Arnd
-	Bergmann's message of "Fri, 25 Jan 2013 14:14:20 +0000")
-Message-ID: <8yak3r15ds0.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 25 Jan 2013 13:18:06 -0500
+X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Jan 2013 13:18:06 EST
+Authentication-Results: smtp.negativezero.co.uk; domainkeys=pass header.from=chris@yourdreamnet.co.uk
+Authentication-Results: smtp.negativezero.co.uk (amavisd-new); domainkeys=pass
+	header.from=chris@yourdreamnet.co.uk
+Authentication-Results: smtp.negativezero.co.uk (amavisd-new); dkim=pass
+	header.i=@yourdreamnet.co.uk
+DomainKey-Signature: a=rsa-sha1; s=default; d=yourdreamnet.co.uk; c=simple; q=dns;
+	b=quVhBMsfAC9EqzSoGFv8YuH4uADynHktDvf+VYJQYXqXl/HFHThExckZ9YehMCCUo
+	7bFzSWisEmzqHMisC/ksPr8zYrb1HCpYX8yqusqo7487Os1qxiOrjBv3mXxHuztX5yl
+	vtIi+W28cFfqohwZpHMBy2iu37DMK11k6rNzHd4=
+From: Chris Staite <chris@yourdreamnet.co.uk>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCH] drm: fix to radeon driver for HD 6450
+Date: Fri, 25 Jan 2013 18:10:09 +0000
+Message-Id: <A2530357-B6DA-418D-8193-2955CEC17F1E@yourdreamnet.co.uk>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+To: David Airlie <airlied@linux.ie>
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> writes:
+From: Christopher Staite <chris@yourdreamnet.co.uk>
 
-> msm_smd_probe is a driver probe function and may get
-> called after the __init time, so it must not call
-> any __init function, as the link-time warning reports.
-> Take away the __init annotation on proc_comm_boot_wait
-> to fix this.
->
-> Without this patch, building msm_defconfig results in:
->
-> WARNING: vmlinux.o(.text+0xb048): Section mismatch in reference from the function msm_smd_probe() to the function .init.text:proc_comm_boot_wait()
-> The function msm_smd_probe() references
-> the function __init proc_comm_boot_wait().
-> This is often because msm_smd_probe lacks a __init
-> annotation or the annotation of proc_comm_boot_wait is wrong.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: David Brown <davidb@codeaurora.org>
-> Cc: Bryan Huntsman <bryanh@codeaurora.org>
-> Cc: Daniel Walker <c_dwalke@quicinc.com>
-> Cc: linux-arm-msm@vger.kernel.org
-> ---
->  arch/arm/mach-msm/proc_comm.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+Fix commit 62444b7462a2b98bc78d68736c03a7c4e66ba7e2 for HD 6450.  The stop and resume causes the screen to glitch and the X server to reboot constantly.  Re-instating the UPDATE_LOCK fixes the issue in tests on the v3.6.11 stable, and the code has not been altered to fix this since.
 
-Arnd, you're welcome to pull this into your tree:
-Acked-by: David Brown <davidb@codeaurora.org>
+Signed-off-by: Christopher Staite <chris@yourdreamnet.co.uk>
 
-I don't forsee any conflicts with upcoming patches.
 
-David
 
--- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+--- drivers/gpu/drm/radeon/evergreen.c.org	2013-01-25 17:45:06.000000000 +0000
++++ drivers/gpu/drm/radeon/evergreen.c	2013-01-25 17:48:14.000000000 +0000
+@@ -1320,7 +1320,9 @@ void evergreen_mc_stop(struct radeon_dev
+ 				if (!(tmp & EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE)) {
+ 					radeon_wait_for_vblank(rdev, i);
+ 					tmp |= EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
++					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
+ 					WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
++					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
+ 				}
+ 			}
+ 			/* wait for the next frame */
+@@ -1382,7 +1384,9 @@ void evergreen_mc_resume(struct radeon_d
+ 			} else {
+ 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
+ 				tmp &= ~EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
++				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
+ 				WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
++				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
+ 			}
+ 			/* wait for the next frame */
+ 			frame_count = radeon_get_vblank_counter(rdev, i);
