@@ -1,156 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab3AYLPo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:15:44 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:36513 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757152Ab3AYLPj (ORCPT
+	id S932163Ab3AYLQR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 06:16:17 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:61166 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756888Ab3AYLPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:15:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <1357847443-3878-5-git-send-email-jacob.shin@amd.com>
-References: <1357847443-3878-1-git-send-email-jacob.shin@amd.com>
-	<1357847443-3878-5-git-send-email-jacob.shin@amd.com>
-Date: Fri, 25 Jan 2013 12:15:37 +0100
-Message-ID: <CABPqkBR7KwJhPg2XJfO5d14Q4KiK7v0eqO_uyr_b6W3_nf-o-w@mail.gmail.com>
-Subject: Re: [PATCH RESEND V5 4/6] perf, x86: Move MSR address offset
- calculation to architecture specific files
-From: Stephane Eranian <eranian@google.com>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 25 Jan 2013 06:15:02 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-00-510269347a33
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, balbi@ti.com
+Subject: [PATCH 2/2] usb: dwc3: host: Change platform device ID for xhci-hcd to
+ AUTO
+Date: Fri, 25 Jan 2013 16:52:02 +0530
+Message-id: <1359112922-2247-3-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.6.5
+In-reply-to: <1359112922-2247-1-git-send-email-gautam.vivek@samsung.com>
+References: <1359112922-2247-1-git-send-email-gautam.vivek@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsWyRsSkVtc0kynQ4NA+JovLu+awWcxe0s9i
+	sWhZK7MDs8fnTXIBjFFcNimpOZllqUX6dglcGXOWzGUvmMZWcXPTHqYGxj7WLkZODgkBE4lJ
+	n1dC2WISF+6tZ+ti5OIQEljKKDFl4hpGmKIN59exQiQWMUps2rgXypnMJHF5yjY2kCo2AV2J
+	pre7wDpEBGQlDl/5zdzFyMHBLJAhMeMC2AZhgTCJifN3sIGEWQRUJa4/tgAJ8wq4S/y++5EN
+	YpeCxJvbz8A6OQU8JJb+DwQJCwGV3D6wCWyrhMBjNomPy46A1bMICEh8m3yIBaReAmjrpgPM
+	EGMkJQ6uuMEygVF4ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzAkDz975nUDsaVDRaH
+	GAU4GJV4eC3SGAOFWBPLiitzDzFKcDArifDKmDAFCvGmJFZWpRblxxeV5qQWH2JMBlo+kVlK
+	NDkfGC95JfGGxibmpsamlkZGZqampAkrifMynnoSICSQnliSmp2aWpBaBLOFiYNTqoGxSYx1
+	XYRMvYNx7lHBaCelkJvNgTx1neFb5i4qOJqptH7ZroP7twhyKCgWNJ7Tmbsms+SERMVzDh/T
+	k8Ztyh7Hyh37L83ru/Bivbmm6vfvNy+K5dlPW3NOZkKSX8gR7t/z2TWOxB+7Ziyx9Yi8311n
+	tg0et74Ftyec9kzbdTnvZ2J/jN+j+mIlluKMREMt5qLiRAD8S+QFjQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsVy+t9jAV2TTKZAgyd7jSwu75rDZjF7ST+L
+	xaJlrcwOzB6fN8kFMEY1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam
+	2iq5+AToumXmAM1XUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGbMWTKX
+	vWAaW8XNTXuYGhj7WLsYOTkkBEwkNpxfB2WLSVy4t56ti5GLQ0hgEaPEpo17WSGcyUwSl6ds
+	YwOpYhPQlWh6u4sRxBYRkJU4fOU3cxcjBwezQIbEjAtgg4QFwiQmzt/BBhJmEVCVuP7YAiTM
+	K+Au8fvuRzaIXQoSb24/A+vkFPCQWPo/ECQsBFRy+8Am1gmMvAsYGVYxiqYWJBcUJ6XnGuoV
+	J+YWl+al6yXn525iBAf8M6kdjCsbLA4xCnAwKvHwWqQxBgqxJpYVV+YeYpTgYFYS4ZUxYQoU
+	4k1JrKxKLcqPLyrNSS0+xJgMdNNEZinR5HxgNOaVxBsam5ibGptamliYmFmSJqwkzst46kmA
+	kEB6YklqdmpqQWoRzBYmDk6pBsY986S/rPnLfzxzqTunVBiDutaH/F1bbNnv6zn7SB5/V6j4
+	1qntnU1q44TewKvv/uxc6t6f1ZCc4FLDffXRWd+sfe0cHhFnkrL5TgitnFPuWmQcsPG3wdX1
+	aTx9BtEqp7fsvnzhqmFRWUTl5AM9V7/HHJizgPu96C1JsQ0PJnBY1DAmiB57t1yJpTgj0VCL
+	uag4EQArtidAvAIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 8:50 PM, Jacob Shin <jacob.shin@amd.com> wrote:
-> Move counter index to MSR address offset calculation to architecture
-> specific files. This prepares the way for perf_event_amd to enable
-> counter addresses that are not contiguous -- for example AMD Family
-> 15h processors have 6 core performance counters starting at 0xc0010200
-> and 4 northbridge performance counters starting at 0xc0010240.
->
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-> ---
->  arch/x86/kernel/cpu/perf_event.h     |   21 ++++-------------
->  arch/x86/kernel/cpu/perf_event_amd.c |   42 ++++++++++++++++++++++++++++++++++
->  2 files changed, 47 insertions(+), 16 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-> index 115c1ea..4440218 100644
-> --- a/arch/x86/kernel/cpu/perf_event.h
-> +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -325,6 +325,7 @@ struct x86_pmu {
->         int             (*schedule_events)(struct cpu_hw_events *cpuc, int n, int *assign);
->         unsigned        eventsel;
->         unsigned        perfctr;
-> +       int             (*addr_offset)(int index, int eventsel);
->         u64             (*event_map)(int);
->         int             max_events;
->         int             num_counters;
-> @@ -446,28 +447,16 @@ extern u64 __read_mostly hw_cache_extra_regs
->
->  u64 x86_perf_event_update(struct perf_event *event);
->
-> -static inline int x86_pmu_addr_offset(int index)
-> -{
-> -       int offset;
-> -
-> -       /* offset = X86_FEATURE_PERFCTR_CORE ? index << 1 : index */
-> -       alternative_io(ASM_NOP2,
-> -                      "shll $1, %%eax",
-> -                      X86_FEATURE_PERFCTR_CORE,
-> -                      "=a" (offset),
-> -                      "a"  (index));
-> -
-> -       return offset;
-> -}
-> -
->  static inline unsigned int x86_pmu_config_addr(int index)
->  {
-> -       return x86_pmu.eventsel + x86_pmu_addr_offset(index);
-> +       return x86_pmu.eventsel +
-> +               (x86_pmu.addr_offset ? x86_pmu.addr_offset(index, 1) : index);
->  }
->
->  static inline unsigned int x86_pmu_event_addr(int index)
->  {
-> -       return x86_pmu.perfctr + x86_pmu_addr_offset(index);
-> +       return x86_pmu.perfctr +
-> +               (x86_pmu.addr_offset ? x86_pmu.addr_offset(index, 0) : index);
->  }
-Would be better to use a constant name instead of 1 and 0 to name a event_sel
-vs. a counter. It would help the reader understand what this is about
-as that may
-be useful for other processors as well.
+Multiple dwc3 controllers will try to allocate multiple xhci-hcd
+interfaces.
+Changing platform device IDs from NONE to AUTO to support
+such cases.
 
->  int x86_setup_perfctr(struct perf_event *event);
-> diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-> index 0c2cc51..ef1df38 100644
-> --- a/arch/x86/kernel/cpu/perf_event_amd.c
-> +++ b/arch/x86/kernel/cpu/perf_event_amd.c
-> @@ -132,6 +132,47 @@ static u64 amd_pmu_event_map(int hw_event)
->         return amd_perfmon_event_map[hw_event];
->  }
->
-> +/*
-> + * Previously calculated offsets
-> + */
-> +static unsigned int event_offsets[X86_PMC_IDX_MAX] __read_mostly;
-> +static unsigned int count_offsets[X86_PMC_IDX_MAX] __read_mostly;
-> +
-> +/*
-> + * Legacy CPUs:
-> + *   4 counters starting at 0xc0010000 each offset by 1
-> + *
-> + * CPUs with core performance counter extensions:
-> + *   6 counters starting at 0xc0010200 each offset by 2
-> + */
-> +static inline int amd_pmu_addr_offset(int index, int eventsel)
-> +{
-> +       int offset;
-> +
-> +       if (!index)
-> +               return index;
-> +
-> +       if (eventsel)
-> +               offset = event_offsets[index];
-> +       else
-> +               offset = count_offsets[index];
-> +
-> +       if (offset)
-> +               return offset;
-> +
-> +       if (!cpu_has_perfctr_core)
-> +               offset = index;
-> +       else
-> +               offset = index << 1;
-> +
-> +       if (eventsel)
-> +               event_offsets[index] = offset;
-> +       else
-> +               count_offsets[index] = offset;
-> +
-> +       return offset;
-> +}
-> +
->  static int amd_pmu_hw_config(struct perf_event *event)
->  {
->         int ret;
-> @@ -578,6 +619,7 @@ static __initconst const struct x86_pmu amd_pmu = {
->         .schedule_events        = x86_schedule_events,
->         .eventsel               = MSR_K7_EVNTSEL0,
->         .perfctr                = MSR_K7_PERFCTR0,
-> +       .addr_offset            = amd_pmu_addr_offset,
->         .event_map              = amd_pmu_event_map,
->         .max_events             = ARRAY_SIZE(amd_perfmon_event_map),
->         .num_counters           = AMD64_NUM_COUNTERS,
-> --
-> 1.7.9.5
->
->
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+---
+ drivers/usb/dwc3/host.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/dwc3/host.c b/drivers/usb/dwc3/host.c
+index 56a6234..0fa1846 100644
+--- a/drivers/usb/dwc3/host.c
++++ b/drivers/usb/dwc3/host.c
+@@ -44,7 +44,7 @@ int dwc3_host_init(struct dwc3 *dwc)
+ 	struct platform_device	*xhci;
+ 	int			ret;
+ 
+-	xhci = platform_device_alloc("xhci-hcd", -1);
++	xhci = platform_device_alloc("xhci-hcd", PLATFORM_DEVID_AUTO);
+ 	if (!xhci) {
+ 		dev_err(dwc->dev, "couldn't allocate xHCI device\n");
+ 		ret = -ENOMEM;
+-- 
+1.7.6.5
+
