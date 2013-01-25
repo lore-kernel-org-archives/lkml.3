@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab3AYXhl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 18:37:41 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:48619 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab3AYXhj (ORCPT
+	id S1754636Ab3AYXl4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 18:41:56 -0500
+Received: from gate.crashing.org ([63.228.1.57]:58599 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753837Ab3AYXlz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 18:37:39 -0500
-Message-ID: <51031738.4060102@oracle.com>
-Date: Fri, 25 Jan 2013 18:37:28 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Shaohua Li <shli@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@fusionio.com>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: boot warnings due to swap: make each swap partition have one
- address_space
-References: <5101FFF5.6030503@oracle.com> <20130125042512.GA32017@kernel.org>
-In-Reply-To: <20130125042512.GA32017@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 25 Jan 2013 18:41:55 -0500
+From: Becky Bruce <beckyb@kernel.crashing.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: Linux Plumbers Conference 2013 Call for Participation
+Date: Fri, 25 Jan 2013 17:41:52 -0600
+Message-Id: <2739B375-C234-4D55-A99B-FC4512FD669B@kernel.crashing.org>
+To: "List Mailing linux-kernel@vger.kernel.org" 
+	<linux-kernel@vger.kernel.org>
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 11:25 PM, Shaohua Li wrote:
-> On Thu, Jan 24, 2013 at 10:45:57PM -0500, Sasha Levin wrote:
->> Hi folks,
->>
->> Commit "swap: make each swap partition have one address_space" is triggering
->> a series of warnings on boot:
->>
->> [    3.446071] ------------[ cut here ]------------
->> [    3.446664] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8e/0xb0()
->> [    3.447715] ODEBUG: init active (active state 0) object type: percpu_counter hint:           (null)
->> [    3.450360] Modules linked in:
->> [    3.451593] Pid: 1, comm: swapper/0 Tainted: G        W    3.8.0-rc4-next-20130124-sasha-00004-g838a1b4 #266
->> [    3.454508] Call Trace:
->> [    3.455248]  [<ffffffff8110d1bc>] warn_slowpath_common+0x8c/0xc0
->> [    3.455248]  [<ffffffff8110d291>] warn_slowpath_fmt+0x41/0x50
->> [    3.455248]  [<ffffffff81a2bb5e>] debug_print_object+0x8e/0xb0
->> [    3.455248]  [<ffffffff81a2c26b>] __debug_object_init+0x20b/0x290
->> [    3.455248]  [<ffffffff81a2c305>] debug_object_init+0x15/0x20
->> [    3.455248]  [<ffffffff81a3fbed>] __percpu_counter_init+0x6d/0xe0
->> [    3.455248]  [<ffffffff81231bdc>] bdi_init+0x1ac/0x270
->> [    3.455248]  [<ffffffff8618f20b>] swap_setup+0x3b/0x87
->> [    3.455248]  [<ffffffff8618f257>] ? swap_setup+0x87/0x87
->> [    3.455248]  [<ffffffff8618f268>] kswapd_init+0x11/0x7c
->> [    3.455248]  [<ffffffff810020ca>] do_one_initcall+0x8a/0x180
->> [    3.455248]  [<ffffffff86168cfd>] do_basic_setup+0x96/0xb4
->> [    3.455248]  [<ffffffff861685ae>] ? loglevel+0x31/0x31
->> [    3.455248]  [<ffffffff861885cd>] ? sched_init_smp+0x150/0x157
->> [    3.455248]  [<ffffffff86168ded>] kernel_init_freeable+0xd2/0x14c
->> [    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
->> [    3.455248]  [<ffffffff83cade19>] kernel_init+0x9/0xf0
->> [    3.455248]  [<ffffffff83d5727c>] ret_from_fork+0x7c/0xb0
->> [    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
->> [    3.455248] ---[ end trace 0b176d5c0f21bffb ]---
->>
->> I haven't looked deeper into it yet, and will do so tomorrow, unless this
->> spew is obvious to anyone.
-> 
-> Does this one help?
+We are pleased to announce the Call for Participation for this year's Linux Plumbers
+Conference, which will be held September 18-20, 2013, in New Orleans, Louisiana.
 
-[snip]
+There are two ways for individuals to participate in the conference: by submitting a refereed
+track presentation, or proposing/running a microconference. Refereed track presentations are
+traditional presentation-format sessions.  A microconference is a collection of collaborative
+sessions focused on a particular area of the kernel plumbing.  Note that this year, refereed
+track presentations will be shared with LinuxCon North America on a single overlapping day
+that will be available to attendees at both conferences.
 
-Yup, it did. Thanks!
+For details on submitting a proposal, and about the different ways to participate, please go
+to our Participate page at http://www.linuxplumbersconf.org/2013/participate/.
 
+For future LPC updates, you can refer to our blog at http://www.linuxplumbersconf.org (rss
+feed available), or follow us using social media:
+ - Google+: http://gplus.to/linuxplumbers
+ - Twitter: https://twitter.com/linuxplumbers
+ - Facebook: https://www.facebook.com/linuxplumbers
 
-Thanks,
-Sasha
+If you have questions, please contact the planning committee at
+contact@lists.linuxplumbersconf.org (please do not respond to this email).
 
+We hope to see you at LPC 2013!
+
+-The LPC 2013 Planning Committee
