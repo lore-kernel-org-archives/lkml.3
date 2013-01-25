@@ -1,112 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab3AYE6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 23:58:20 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:47947 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754324Ab3AYE6R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 23:58:17 -0500
+	id S1751026Ab3AYFAP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 00:00:15 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:12827 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781Ab3AYFAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 00:00:13 -0500
+X-IronPort-AV: E=Sophos;i="4.84,535,1355068800"; 
+   d="scan'208";a="6643944"
+Message-ID: <51020800.4080900@cn.fujitsu.com>
+Date: Fri, 25 Jan 2013 12:20:16 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1358996288-31200-1-git-send-email-wangyijing@huawei.com>
-References: <1358996288-31200-1-git-send-email-wangyijing@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 24 Jan 2013 21:57:55 -0700
-Message-ID: <CAErSpo6suRwkRoShnNUKxxHt4D4gFnMVqesoZO3t-aC8tvOwnA@mail.gmail.com>
-Subject: Re: [PATCH v2] PCI: Document PCIE BUS MPS parameters
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Andrew Murray <andrew.murray@arm.com>,
-        Joe Lawrence <Joe.Lawrence@stratus.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Hanjun Guo <guohanjun@huawei.com>, jiang.liu@huawei.com,
-        Jon Mason <jdmason@kudzu.us>
+To: Jason Wang <jasowang@redhat.com>
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH V6 2/3] virtio-net: split out clean affinity function
+References: <1358767524-17934-1-git-send-email-gaowanlong@cn.fujitsu.com> <1358767524-17934-2-git-send-email-gaowanlong@cn.fujitsu.com> <5101FBE0.7040505@redhat.com>
+In-Reply-To: <5101FBE0.7040505@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 12:19:25,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 12:19:28,
+	Serialize complete at 2013/01/25 12:19:28
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Jon, can you make sure this documentation is accurate?]
+On 01/25/2013 11:28 AM, Jason Wang wrote:
+> On 01/21/2013 07:25 PM, Wanlong Gao wrote:
+>> Split out the clean affinity function to virtnet_clean_affinity().
+>>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+>> Cc: Jason Wang <jasowang@redhat.com>
+>> Cc: Eric Dumazet <erdnetdev@gmail.com>
+>> Cc: virtualization@lists.linux-foundation.org
+>> Cc: netdev@vger.kernel.org
+>> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+>> ---
+>> V5->V6: NEW
+>>
+>>  drivers/net/virtio_net.c | 67 +++++++++++++++++++++++++++---------------------
+>>  1 file changed, 38 insertions(+), 29 deletions(-)
+>>
+>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>> index 70cd957..1a35a8c 100644
+>> --- a/drivers/net/virtio_net.c
+>> +++ b/drivers/net/virtio_net.c
+>> @@ -1016,48 +1016,57 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
+>>  	return 0;
+>>  }
+>>  
+>> -static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+>> +static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
+>>  {
+>>  	int i;
+>>  	int cpu;
+>>  
+>> -	/* In multiqueue mode, when the number of cpu is equal to the number of
+>> -	 * queue pairs, we let the queue pairs to be private to one cpu by
+>> -	 * setting the affinity hint to eliminate the contention.
+>> -	 */
+>> -	if ((vi->curr_queue_pairs == 1 ||
+>> -	     vi->max_queue_pairs != num_online_cpus()) && set) {
+>> -		if (vi->affinity_hint_set)
+>> -			set = false;
+>> -		else
+>> -			return;
+>> -	}
+>> -
+>> -	if (set) {
+>> -		i = 0;
+>> -		for_each_online_cpu(cpu) {
+>> -			virtqueue_/set_affinity(vi->rq[i].vq, cpu);
+>> -			virtqueue_set_affinity(vi->sq[i].vq, cpu);
+>> -			*per_cpu_ptr(vi->vq_index, cpu) = i;
+>> -			i++;
+>> -		}
+>> -
+>> -		vi->affinity_hint_set = true;
+>> -	} else {
+>> -		for(i = 0; i < vi->max_queue_pairs; i++) {
+>> +	if (vi->affinity_hint_set) {
+>> +		for (i = 0; i < vi->max_queue_pairs; i++) {
+>>  			virtqueue_set_affinity(vi->rq[i].vq, -1);
+>>  			virtqueue_set_affinity(vi->sq[i].vq, -1);
+>>  		}
+>>  
+>>  		i = 0;
+>> -		for_each_online_cpu(cpu)
+>> +		for_each_online_cpu(cpu) {
+>> +			if (cpu == hcpu)
+>> +				continue;
+>>  			*per_cpu_ptr(vi->vq_index, cpu) =
+>>  				++i % vi->curr_queue_pairs;
+>> +		}
+>>  
+> 
+> Some questions here:
+> 
+> - Did we need reset the affinity of the queue here like the this?
+> 
+> virtqueue_set_affinity(vi->sq[*per_cpu_ptr(vi->vq_index, hcpu)], -1);
+> virtqueue_set_affinity(vi->rq[*per_cpu_ptr(vi->vq_index, hcpu)], -1);
 
-On Wed, Jan 23, 2013 at 7:58 PM, Yijing Wang <wangyijing@huawei.com> wrote:
-> v0->v1: Update MPS parameters as non-arch and add MRRS
->                 description into pcie_bus_perf parameter suggested
->                 by Andrew Murray.
-> v1->v2: Update some semantic problems and add MPS and MRRS
->                 explanation suggested by Joe Lawrence and Randy Dunlap.
->
-> Document PCIE BUS MPS parameters pcie_bus_tune_off, pcie_bus_safe,
-> pcie_bus_peer2peer, pcie_bus_perf into Documentation/kernel-parameters.txt.
-> These parameters were introduced by Jon Mason <mason@myri.com> at
-> commit 5f39e6705 and commit b03e7495a8.
->
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
->  Documentation/kernel-parameters.txt |   16 ++++++++++++++++
->  1 files changed, 16 insertions(+), 0 deletions(-)
->
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 363e348..0bb279f 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -2227,6 +2227,22 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->                                 This sorting is done to get a device
->                                 order compatible with older (<= 2.4) kernels.
->                 nobfsort        Don't sort PCI devices into breadth-first order.
-> +               pcie_bus_tune_off       Disable PCIe MPS (Max Payload Size)
-> +                               turning and using the BIOS-configured MPS defaults.
+I think no, we are going to unset the affinity of all the set queues,
+include hcpu.
 
-s/turning/tuning/
-s/using/use/
+> 
+> - Looks like we need also reset the percpu index when
+> vi->affinity_hint_set is false.
 
-> +               pcie_bus_safe   Use the smallest common denominator MPS
-> +                               of the entire tree below a root complex for every
-> +                               device on that fabric. Can avoid inconsistent MPS
-> +                               problem caused by hotplug.
+Yes, follow this and the comment on [1/3].
 
-I'm not sure about this.  "smallest common denominator" is colloquial
-and not exact.  I think you probably mean "the smallest supported MPS
-of any device below a root complex."
+> - Does this really need this reset? Consider we're going to reset the
+> percpu in CPU_DEAD?
 
-I'm also not sure how this will avoid MPS problems caused by hotplug.
-I think you have to assume that a hot-added device may support only a
-128B MPS, which means the only way to guarantee that you can use that
-device is to set MPS=128 for any device that will send packets to the
-hot-added device.  Or we could reconfigure things at the time of the
-hot-add, but I don't think we do that today (except for the hot-added
-device itself).
+I think resetting when CPU_DOWN_PREPARE can avoid selecting the wrong queue
+on the dying CPU.
 
-> +               pcie_bus_perf   Configure pcie device MPS to the largest
+Thanks,
+Wanlong Gao
 
-Capitalize "PCIe" consistently.  Better yet, drop it completely since
-it's obvious that we're only talking about PCIe here.
+> 
+> Thanks
+>>  		vi->affinity_hint_set = false;
+>>  	}
+>>  }
+>>  
+>> +static void virtnet_set_affinity(struct virtnet_info *vi)
+>> +{
+>> +	int i;
+>> +	int cpu;
+>> +
+>> +	/* In multiqueue mode, when the number of cpu is equal to the number of
+>> +	 * queue pairs, we let the queue pairs to be private to one cpu by
+>> +	 * setting the affinity hint to eliminate the contention.
+>> +	 */
+>> +	if (vi->curr_queue_pairs == 1 ||
+>> +	    vi->max_queue_pairs != num_online_cpus()) {
+>> +		if (vi->affinity_hint_set)
+>> +			virtnet_clean_affinity(vi, -1);
+>> +		else
+>> +			return;
+>> +	}
+>> +
+>> +	i = 0;
+>> +	for_each_online_cpu(cpu) {
+>> +		virtqueue_set_affinity(vi->rq[i].vq, cpu);
+>> +		virtqueue_set_affinity(vi->sq[i].vq, cpu);
+>> +		*per_cpu_ptr(vi->vq_index, cpu) = i;
+>> +		i++;
+>> +	}
+>> +
+>> +	vi->affinity_hint_set = true;
+>> +}
+>> +
+>>  static void virtnet_get_ringparam(struct net_device *dev,
+>>  				struct ethtool_ringparam *ring)
+>>  {
+>> @@ -1105,7 +1114,7 @@ static int virtnet_set_channels(struct net_device *dev,
+>>  		netif_set_real_num_rx_queues(dev, queue_pairs);
+>>  
+>>  		get_online_cpus();
+>> -		virtnet_set_affinity(vi, true);
+>> +		virtnet_set_affinity(vi);
+>>  		put_online_cpus();
+>>  	}
+>>  
+>> @@ -1274,7 +1283,7 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
+>>  {
+>>  	struct virtio_device *vdev = vi->vdev;
+>>  
+>> -	virtnet_set_affinity(vi, false);
+>> +	virtnet_clean_affinity(vi, -1);
+>>  
+>>  	vdev->config->del_vqs(vdev);
+>>  
+>> @@ -1398,7 +1407,7 @@ static int init_vqs(struct virtnet_info *vi)
+>>  		goto err_free;
+>>  
+>>  	get_online_cpus();
+>> -	virtnet_set_affinity(vi, true);
+>> +	virtnet_set_affinity(vi);
+>>  	put_online_cpus();
+>>  
+>>  	return 0;
+> 
+> 
 
-> +                               allowable MPS based on its parent bus. Also set
-> +                               MRRS (Max Read Request Size) to the largest supported
-> +                               value (no larger than the MPS that the device or bus
-> +                               can support) for Max performance.
-
-s/Max/best/
-
-> +               pcie_bus_peer2peer      Make the system-wide MPS the smallest
-> +                               possible value (128B). This configuration could prevent
-> +                               peer to peer DMA transmission from working by having
-> +                               the MPS on one root port different than the MPS on
-> +                               another.
-
-I think the idea is that pcie_bus_peer2peer would *allow* peer-to-peer
-DMA to work, which is the opposite of what you wrote.  Maybe something
-like this would be better:
-
-  Set every device's MPS to 128B, which every device is guaranteed to support.
-  This configuration allows peer-to-peer DMA between any pair of devices,
-  possibly at the cost of reduced performance.
-
->                 cbiosize=nn[KMG]        The fixed amount of bus space which is
->                                 reserved for the CardBus bridge's IO window.
->                                 The default value is 256 bytes.
-> --
-> 1.7.1
->
->
