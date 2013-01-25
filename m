@@ -1,177 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab3AYJsZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 04:48:25 -0500
-Received: from mga11.intel.com ([192.55.52.93]:12840 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753189Ab3AYJsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 04:48:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,537,1355126400"; 
-   d="scan'208";a="282074668"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v4 4/4] dw_dmac: return proper residue value
-Date: Fri, 25 Jan 2013 11:48:03 +0200
-Message-Id: <1359107283-5274-5-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1359107283-5274-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1359107283-5274-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1755894Ab3AYJvv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 04:51:51 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:3144 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753619Ab3AYJvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 04:51:45 -0500
+X-IronPort-AV: E=Sophos;i="4.84,537,1355068800"; 
+   d="scan'208";a="6646253"
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>, Eric Dumazet <erdnetdev@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH V8 2/3] virtio-net: split out clean affinity function
+Date: Fri, 25 Jan 2013 17:51:30 +0800
+Message-Id: <1359107491-6749-2-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1359107491-6749-1-git-send-email-gaowanlong@cn.fujitsu.com>
+References: <1359107491-6749-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 17:50:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 17:50:43,
+	Serialize complete at 2013/01/25 17:50:43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the driver returns full length of the active descriptor which is
-wrong. We have to go throught the active descriptor and substract the length of
-each sent children in the chain from the total length along with the actual
-data in the DMA channel registers.
+Split out the clean affinity function to virtnet_clean_affinity().
 
-The cyclic case is not handled by this patch due to len field in the descriptor
-structure is left untouched by the original code.
-
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>
+Cc: Eric Dumazet <erdnetdev@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: virtualization@lists.linux-foundation.org
+Cc: netdev@vger.kernel.org
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/dma/dw_dmac.c      |   47 ++++++++++++++++++++++++++++++++++++++++++--
- drivers/dma/dw_dmac_regs.h |    1 +
- 2 files changed, 46 insertions(+), 2 deletions(-)
+V6->V7:
+	always set vq_index (Jason)
+V5->V6: NEW
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 3b788c8..b5c3f3a 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -284,6 +284,7 @@ static void dwc_dostart(struct dw_dma_chan *dwc, struct dw_desc *first)
- 
- 		dwc_initialize(dwc);
- 
-+		dwc->residue = first->total_len;
- 		dwc->tx_node_active = &first->tx_list;
- 
- 		/* Submit first block */
-@@ -387,6 +388,15 @@ static void dwc_complete_all(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 		dwc_descriptor_complete(dwc, desc, true);
- }
- 
-+/* Returns how many bytes were already received from source */
-+static inline u32 dwc_get_sent(struct dw_dma_chan *dwc)
-+{
-+	u32 ctlhi = channel_readl(dwc, CTL_HI);
-+	u32 ctllo = channel_readl(dwc, CTL_LO);
-+
-+	return (ctlhi & DWC_CTLH_BLOCK_TS_MASK) * (1 << (ctllo >> 4 & 7));
-+}
-+
- static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- {
- 	dma_addr_t llp;
-@@ -414,6 +424,12 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 
- 			head = &desc->tx_list;
- 			if (active != head) {
-+				/* Update desc to reflect last sent one */
-+				if (active != head->next)
-+					desc = to_dw_desc(active->prev);
-+
-+				dwc->residue -= desc->len;
-+
- 				child = to_dw_desc(active);
- 
- 				/* Submit next block */
-@@ -426,6 +442,9 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 			/* We are done here */
- 			clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
- 		}
-+
-+		dwc->residue = 0;
-+
- 		spin_unlock_irqrestore(&dwc->lock, flags);
- 
- 		dwc_complete_all(dw, dwc);
-@@ -433,6 +452,7 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 	}
- 
- 	if (list_empty(&dwc->active_list)) {
-+		dwc->residue = 0;
- 		spin_unlock_irqrestore(&dwc->lock, flags);
- 		return;
- 	}
-@@ -447,6 +467,9 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 			(unsigned long long)llp);
- 
- 	list_for_each_entry_safe(desc, _desc, &dwc->active_list, desc_node) {
-+		/* initial residue value */
-+		dwc->residue = desc->total_len;
-+
- 		/* check first descriptors addr */
- 		if (desc->txd.phys == llp) {
- 			spin_unlock_irqrestore(&dwc->lock, flags);
-@@ -456,16 +479,21 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 		/* check first descriptors llp */
- 		if (desc->lli.llp == llp) {
- 			/* This one is currently in progress */
-+			dwc->residue -= dwc_get_sent(dwc);
- 			spin_unlock_irqrestore(&dwc->lock, flags);
- 			return;
- 		}
- 
--		list_for_each_entry(child, &desc->tx_list, desc_node)
-+		dwc->residue -= desc->len;
-+		list_for_each_entry(child, &desc->tx_list, desc_node) {
- 			if (child->lli.llp == llp) {
- 				/* Currently in progress */
-+				dwc->residue -= dwc_get_sent(dwc);
- 				spin_unlock_irqrestore(&dwc->lock, flags);
- 				return;
- 			}
-+			dwc->residue -= child->len;
-+		}
- 
- 		/*
- 		 * No descriptors so far seem to be in progress, i.e.
-@@ -1056,6 +1084,21 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ drivers/net/virtio_net.c | 76 +++++++++++++++++++++++++-----------------------
+ 1 file changed, 40 insertions(+), 36 deletions(-)
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index fda214a..2f6fe9b 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1016,51 +1016,55 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
  	return 0;
  }
  
-+static inline u32 dwc_get_residue(struct dw_dma_chan *dwc)
-+{
-+	unsigned long flags;
-+	u32 residue;
+-static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
++static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
+ {
+ 	int i;
+ 	int cpu;
+ 
+-	/* In multiqueue mode, when the number of cpu is equal to the number of
+-	 * queue pairs, we let the queue pairs to be private to one cpu by
+-	 * setting the affinity hint to eliminate the contention.
+-	 */
+-	if ((vi->curr_queue_pairs == 1 ||
+-	     vi->max_queue_pairs != num_online_cpus()) && set) {
+-		if (vi->affinity_hint_set) {
+-			set = false;
+-		} else {
+-			i = 0;
+-			for_each_online_cpu(cpu)
+-				*per_cpu_ptr(vi->vq_index, cpu) =
+-					++i % vi->curr_queue_pairs;
+-			return;
+-		}
+-	}
+-
+-	if (set) {
+-		i = 0;
+-		for_each_online_cpu(cpu) {
+-			virtqueue_set_affinity(vi->rq[i].vq, cpu);
+-			virtqueue_set_affinity(vi->sq[i].vq, cpu);
+-			*per_cpu_ptr(vi->vq_index, cpu) = i;
+-			i++;
+-		}
+-
+-		vi->affinity_hint_set = true;
+-	} else {
+-		for(i = 0; i < vi->max_queue_pairs; i++) {
++	if (vi->affinity_hint_set) {
++		for (i = 0; i < vi->max_queue_pairs; i++) {
+ 			virtqueue_set_affinity(vi->rq[i].vq, -1);
+ 			virtqueue_set_affinity(vi->sq[i].vq, -1);
+ 		}
+ 
+-		i = 0;
+-		for_each_online_cpu(cpu)
++		vi->affinity_hint_set = false;
++	}
 +
-+	spin_lock_irqsave(&dwc->lock, flags);
-+
-+	residue = dwc->residue;
-+	if (test_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags) && residue)
-+		residue -= dwc_get_sent(dwc);
-+
-+	spin_unlock_irqrestore(&dwc->lock, flags);
-+	return residue;
++	i = 0;
++	for_each_online_cpu(cpu) {
++		if (cpu == hcpu) {
++			*per_cpu_ptr(vi->vq_index, cpu) = -1;
++		} else {
+ 			*per_cpu_ptr(vi->vq_index, cpu) =
+ 				++i % vi->curr_queue_pairs;
++		}
++	}
 +}
+ 
+-		vi->affinity_hint_set = false;
++static void virtnet_set_affinity(struct virtnet_info *vi)
++{
++	int i;
++	int cpu;
 +
- static enum dma_status
- dwc_tx_status(struct dma_chan *chan,
- 	      dma_cookie_t cookie,
-@@ -1072,7 +1115,7 @@ dwc_tx_status(struct dma_chan *chan,
++	/* In multiqueue mode, when the number of cpu is equal to the number of
++	 * queue pairs, we let the queue pairs to be private to one cpu by
++	 * setting the affinity hint to eliminate the contention.
++	 */
++	if (vi->curr_queue_pairs == 1 ||
++	    vi->max_queue_pairs != num_online_cpus()) {
++		virtnet_clean_affinity(vi, -1);
++		return;
  	}
++
++	i = 0;
++	for_each_online_cpu(cpu) {
++		virtqueue_set_affinity(vi->rq[i].vq, cpu);
++		virtqueue_set_affinity(vi->sq[i].vq, cpu);
++		*per_cpu_ptr(vi->vq_index, cpu) = i;
++		i++;
++	}
++
++	vi->affinity_hint_set = true;
+ }
  
- 	if (ret != DMA_SUCCESS)
--		dma_set_residue(txstate, dwc_first_active(dwc)->len);
-+		dma_set_residue(txstate, dwc_get_residue(dwc));
+ static void virtnet_get_ringparam(struct net_device *dev,
+@@ -1110,7 +1114,7 @@ static int virtnet_set_channels(struct net_device *dev,
+ 		netif_set_real_num_tx_queues(dev, queue_pairs);
+ 		netif_set_real_num_rx_queues(dev, queue_pairs);
  
- 	if (dwc->paused)
- 		return DMA_PAUSED;
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index 833b4cf..88dd8eb 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -203,6 +203,7 @@ struct dw_dma_chan {
- 	struct list_head	active_list;
- 	struct list_head	queue;
- 	struct list_head	free_list;
-+	u32			residue;
- 	struct dw_cyclic_desc	*cdesc;
+-		virtnet_set_affinity(vi, true);
++		virtnet_set_affinity(vi);
+ 	}
+ 	put_online_cpus();
  
- 	unsigned int		descs_allocated;
+@@ -1279,7 +1283,7 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
+ {
+ 	struct virtio_device *vdev = vi->vdev;
+ 
+-	virtnet_set_affinity(vi, false);
++	virtnet_clean_affinity(vi, -1);
+ 
+ 	vdev->config->del_vqs(vdev);
+ 
+@@ -1403,7 +1407,7 @@ static int init_vqs(struct virtnet_info *vi)
+ 		goto err_free;
+ 
+ 	get_online_cpus();
+-	virtnet_set_affinity(vi, true);
++	virtnet_set_affinity(vi);
+ 	put_online_cpus();
+ 
+ 	return 0;
 -- 
-1.7.10.4
+1.8.1
 
