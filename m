@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103Ab3AYL2K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:28:10 -0500
-Received: from mail.atsec.com ([195.30.99.214]:47255 "EHLO mail.atsec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751605Ab3AYL2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:28:08 -0500
-Message-ID: <51026C45.7020508@atsec.com>
-Date: Fri, 25 Jan 2013 12:28:05 +0100
-From: Stephan Mueller <stephan.mueller@atsec.com>
-Organization: atsec information security GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1756983Ab3AYL2g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 06:28:36 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41657 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657Ab3AYL2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 06:28:32 -0500
+Date: Fri, 25 Jan 2013 03:28:13 -0800
+From: tip-bot for Jon Stanley <jonstanley@gmail.com>
+Message-ID: <tip-2d2481ddf634695aa17ad91bd765572329941674@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, rostedt@goodmis.org, jonstanley@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, jonstanley@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de
+In-Reply-To: <1347127251-4695-1-git-send-email-jonstanley@gmail.com>
+References: <1347127251-4695-1-git-send-email-jonstanley@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tools lib traceevent: Add copyright header
+Git-Commit-ID: 2d2481ddf634695aa17ad91bd765572329941674
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Kyle McMartin <kmcmarti@redhat.com>
-CC: David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, jstancek@redhat.com
-Subject: Re: [PATCH] MODSIGN: only panic in fips mode if sig_enforce is set
-References: <20130122184357.GD6538@redacted.bos.redhat.com> <8615.1358940375@warthog.procyon.org.uk> <50FFFF48.6020608@atsec.com> <20130124145907.GG6538@redacted.bos.redhat.com>
-In-Reply-To: <20130124145907.GG6538@redacted.bos.redhat.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:28:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.01.2013 15:59:07, +0100, Kyle McMartin <kmcmarti@redhat.com> wrote:
+Commit-ID:  2d2481ddf634695aa17ad91bd765572329941674
+Gitweb:     http://git.kernel.org/tip/2d2481ddf634695aa17ad91bd765572329941674
+Author:     Jon Stanley <jonstanley@gmail.com>
+AuthorDate: Sat, 8 Sep 2012 14:00:51 -0400
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 24 Jan 2013 16:40:17 -0300
 
-Hi Kyle,
-> On Wed, Jan 23, 2013 at 04:18:32PM +0100, Stephan Mueller wrote:
->> 3. in the cipher initialization code of the crypto API (i.e. the one
->> behind crypto_register_alg()), you check the signature check flag --
->> panic the kernel when the flag shows that the signature check failed
->>
->> This way you limit the panic on signature checks in FIPS mode to the
->> crypto modules.
->>
-> 
-> I was hoping we could just do what we do for driver/staging and set a
-> flag in modpost for crypto modules, but it looks like since we have
-> crypto modules outside of crypto/ for things like aesni, that won't
-> work. Maybe that is a better choice, but it seems like an awful kludge.
+tools lib traceevent: Add copyright header
 
-There is a completely different possibility though:
+Adding a missing copyright header to parse-utils.c. Assuminng that the
+license is LGPL like the rest of the trace-cmd library code.
 
-The reason for the panic is the requirement that if one of the integrity
-tests for the crypto components fail in FIPS mode, the crypto module
-(i.e. the entire kernel crypto API) must be unavailable.
+Signed-off-by: Jon Stanley <jonstanley@gmail.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1347127251-4695-1-git-send-email-jonstanley@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/lib/traceevent/parse-utils.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-Thus, another possibility is to add a global flag that indicates whether
-such a test failed.
-
-That flag is evaluated by *every* kernel crypto API interface function
-and this function rejects to do anything when that flag is set.
-
-This way, we can get rid of the panic.
-
-But then, we still have the problem of loading unsigned kernel modules
-in FIPS mode that are not related to crypto: those would still trigger
-setting that global flag if the module loader is unable to identify a
-crypto module.
-
-Hence, you idea with a flag may be the way to go: add such a crypto flag
-similar to the MODULE_LICENSE("GPL") for modules. Now, the module loader
-should only panic or set such a global flag for modules that are marked
-with something like MODULE_TYPE("CRYPTO").
-
-Now, all modules in crypto/ and arch/*/crypto/* (or whereever) would
-have such a flag added.
-> 
-> --Kyle
-> 
-Ciao
-Stephan
+diff --git a/tools/lib/traceevent/parse-utils.c b/tools/lib/traceevent/parse-utils.c
+index f023a13..bba701c 100644
+--- a/tools/lib/traceevent/parse-utils.c
++++ b/tools/lib/traceevent/parse-utils.c
+@@ -1,3 +1,22 @@
++/*
++ * Copyright (C) 2010 Red Hat Inc, Steven Rostedt <srostedt@redhat.com>
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation;
++ * version 2.1 of the License (not later!)
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with this program; if not,  see <http://www.gnu.org/licenses>
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
