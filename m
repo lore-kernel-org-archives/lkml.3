@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab3AYXqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 18:46:47 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:42461 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab3AYXqq (ORCPT
+	id S1754710Ab3AYXrU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 18:47:20 -0500
+Received: from mail-da0-f50.google.com ([209.85.210.50]:60007 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728Ab3AYXrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 18:46:46 -0500
-Date: Sat, 26 Jan 2013 10:46:34 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        KVM <kvm@vger.kernel.org>, Avi Kivity <avi.kivity@gmail.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: linux-next: Tree for Jan 25 (kvm)
-Message-Id: <20130126104634.997ac68f6971397b9f4d09d3@canb.auug.org.au>
-In-Reply-To: <5102B8A6.3090200@infradead.org>
-References: <20130125162606.edff84fcf6f62ed2b7c4d719@canb.auug.org.au>
-	<5102B8A6.3090200@infradead.org>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__26_Jan_2013_10_46_34_+1100_oqjkoucQE=vUrPhq"
+	Fri, 25 Jan 2013 18:47:19 -0500
+Date: Fri, 25 Jan 2013 15:47:14 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 06/13] sg_io: whitelist a few more commands for
+ multimedia devices
+Message-ID: <20130125234714.GR3081@htj.dyndns.org>
+References: <20130125170434.GC3081@htj.dyndns.org>
+ <5102BDD4.2020501@redhat.com>
+ <20130125172805.GG3081@htj.dyndns.org>
+ <5102C780.3090402@redhat.com>
+ <20130125181326.GK3081@htj.dyndns.org>
+ <5102D353.8010305@redhat.com>
+ <20130125190154.GM3081@htj.dyndns.org>
+ <5103080A.4090803@redhat.com>
+ <20130125224159.GQ3081@htj.dyndns.org>
+ <51031614.8000609@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51031614.8000609@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__26_Jan_2013_10_46_34_+1100_oqjkoucQE=vUrPhq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello, Paolo.
 
-On Fri, 25 Jan 2013 08:53:58 -0800 Randy Dunlap <rdunlap@infradead.org> wro=
-te:
->
-> Seeing lots of this error on i386:
->=20
-> arch/x86/kvm/emulate.c:1016: Error: unsupported for `push'
+On Sat, Jan 26, 2013 at 12:32:36AM +0100, Paolo Bonzini wrote:
+> If I make a whitelist with all the commands that Linux sends, I'll have
+> many new commands in the whitelist and no old commands.  The new
+> commands didn't exist when old drives were sold, so they are "dangerous"
+> in your opinion.  At that point I might as well keep the whitelist
+> empty, no?
 
-Caused by commit 9ae9febae950 ("KVM: x86 emulator: covert SETCC to
-fastop") from the kvm tree.  cc's added.
+Let's not go to extremes.  It's not about theoretic correctness.  It's
+about how to appraoch a possibly messy practical problem.  To me, it
+seems natural to be conservative on this and add what's being acitvely
+used, which as a bonus will also give us at least some chance of
+evaluating what we have and why later on if it ever needs to be
+changed.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I'm just not comfortable with adding a bunch of commands by simply
+scanning the specs.  Let's at least have some backing data and
+justification for exposing new ones.  I really don't think that's too
+much to ask.  Start with minimal set.  Grow it as needed.  We can
+always grow but the other direction is much harder.
 
---Signature=_Sat__26_Jan_2013_10_46_34_+1100_oqjkoucQE=vUrPhq
-Content-Type: application/pgp-signature
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRAxlaAAoJEECxmPOUX5FEs48P/js9+YPengJUeAsrWrt6gAYJ
-hmDuwHKGqbOqsUnj+nVj6yz/i7n7MyzDUpWsB4JO4N6X0o+ZPB6L7oE/2ROmOyiu
-9n8Tsb/he6rWVupIZCL3H39jI+wEv295WioB/nQkvJo9wobTYtcyt/t46Cqquo7A
-sfPb6lBgQLpsd2REK/i0ZEpOnd0TE2Hm6n5yU7CX0qssOnwAf4huuQkX2Jkl0eng
-+V6d9gR+EAPHlidjqGw3n5pTs8QkREmq7htTiRJ0z5jeBvs03GMC/78QZ+1w02Yg
-Aq5DIET7VBBz6rYmIISimP834Rukj+ybiAR4U6hJS7pTcc59Sni2oUhAY/zAq24M
-4VnWLHSNu2dwZWKYjsJ17mbvSUS7JpeQBlcA7Babd2CUNqQXd+I46fPth2JqnVD0
-1kO3VSLpw+ifnU5xnpzlzEHP4MsQIU+nfeT8ck9l7S8nX3TjfLDkgXKbQ+L+7Q7P
-RuAJa6YlmB53VqIgC50HTQwGPI/iOHgkBCoZMDISvktBKCSRKlBKX0/9vz1gcmU0
-67pnQOwBgJZQPNdBtx4ejaea5m26V6G133rLXZXzU4GffFVjoDnNyC+aKdFlJqjt
-GCK6cGItBPq8gqcc3lj+GrPFgW79CoLdHfdgRritbX75ChYGC/m/S6gIdV/8dCRd
-qyo7T5Jl4eLFUxZRmXXb
-=lEXd
------END PGP SIGNATURE-----
-
---Signature=_Sat__26_Jan_2013_10_46_34_+1100_oqjkoucQE=vUrPhq--
+-- 
+tejun
