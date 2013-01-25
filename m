@@ -1,49 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab3AYHaZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 02:30:25 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:36781 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab3AYHaX convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
-	Fri, 25 Jan 2013 02:30:23 -0500
-Message-Id: <5102429A02000078000B96FA@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Fri, 25 Jan 2013 07:30:18 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Olaf Hering" <olaf@aepfle.de>, "KY Srinivasan" <kys@microsoft.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: "bp@alien8.de" <bp@alien8.de>, "apw@canonical.com" <apw@canonical.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as
- special hypervisor interrupts
-References: <1358990259-22551-1-git-send-email-kys@microsoft.com>
- <5101035D02000078000B8FFD@nat28.tlf.novell.com>
- <27092660926e4d3f80394697cc0dc858@SN2PR03MB061.namprd03.prod.outlook.com>
- <51016C3202000078000B943E@nat28.tlf.novell.com>
- <f6cbfec9c014433fa54af61d8f436ebb@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130124185943.GA19194@aepfle.de>
- <4d9be218-acf5-45a6-aeda-cee592fd74c8@email.android.com>
-In-Reply-To: <4d9be218-acf5-45a6-aeda-cee592fd74c8@email.android.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752175Ab3AYHbp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 02:31:45 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:41751 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab3AYHbn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 02:31:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130125071933.GA17846@gmail.com>
+References: <1356434680-10045-1-git-send-email-festevam@gmail.com>
+ <CAOMZO5AzJUvrc5LcNyqPbEz0g4U5KZAXrNK8oJUiht=fdyuc5g@mail.gmail.com>
+ <20130124141930.GA14881@gmail.com> <CAOMZO5CC76Md9T=2z3RWi4GrKsUuFcc8VYV1QfmZWF41vnOhVw@mail.gmail.com>
+ <20130125071933.GA17846@gmail.com>
+From: Paul Turner <pjt@google.com>
+Date: Thu, 24 Jan 2013 23:31:11 -0800
+Message-ID: <CAPM31RKPZeNhUx5OCzE2+Rr=5qSL72=tgRpacZwFos9p-cajAg@mail.gmail.com>
+Subject: Re: [PATCH v2] sched: Fix print format for u64
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Fabio Estevam <festevam@gmail.com>, mingo@redhat.com, peterz@infradead.org,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 24.01.13 at 20:04, "H. Peter Anvin" <hpa@zytor.com> wrote:
-> Can't you discover Xen emulation by looking for Xen first?  Or does Xen go 
-> "stealth"?
+On Thu, Jan 24, 2013 at 11:19 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Fabio Estevam <festevam@gmail.com> wrote:
+>
+>> On Thu, Jan 24, 2013 at 12:19 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>>
+>> > I suppose - is this patch warning-free both on 64-bit and 32-bit
+>> > systems?
+>>
+>> Yes, just confirmed that this patch is warning-free on both 64-bit and
+>> 32-bit machines.
+>
+> Apparently it's not all good, see the warning attached below.
 
-That's already being done - the ordering currently is Xen, VMWare,
-Hyper-V, KVM. I.e. there's only a problem when !CONFIG_XEN_PVHVM.
+Yeah this patch is broken; this is not properly fixable as is without
+#ifdefs (or fixing the insanity that is atomic64_read).
 
-Jan
+Specifically:
 
+On some architectures (e.g. x86_64) atomic64_read is typed long
+On some others (e.g. x86-32) it's typed long long
+On yet others (e.g. arm) it's typed u64
+
+I think the easiest way to fix it would be instead to promote the read
+into a local u64 and print that.
+
+>
+> Thanks,
+>
+>         Ingo
+>
+> ----- Forwarded message from kbuild test robot <fengguang.wu@intel.com> -----
+>
+> Date: Fri, 25 Jan 2013 14:02:05 +0800
+> From: kbuild test robot <fengguang.wu@intel.com>
+> To: Fabio Estevam <fabio.estevam@freescale.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Subject: [next:akpm 188/817] kernel/sched/debug.c:225:2: warning: format '%llu' expects argument
+>         of type 'long long unsigned int', but argument 4 has type 'long int'
+>
+> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
+> head:   5d2ee7d8b03bfe3b90325d736d8e544d0394efa7
+> commit: 2d58000fd2020255af63ee92c8d0ef615f6c4ade [188/817] sched: Fix print format for u64
+> config: make ARCH=x86_64 allmodconfig
+>
+> All warnings:
+>
+>    kernel/sched/debug.c: In function 'print_cfs_rq':
+>>> kernel/sched/debug.c:225:2: warning: format '%llu' expects argument of type 'long long unsigned int', but argument 4 has type 'long int' [-Wformat]
+>>> kernel/sched/debug.c:225:2: warning: format '%llu' expects argument of type 'long long unsigned int', but argument 3 has type 'long int' [-Wformat]
+>
+> vim +225 kernel/sched/debug.c
+>
+>    209          spread = max_vruntime - MIN_vruntime;
+>    210          SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "spread",
+>    211                          SPLIT_NS(spread));
+>    212          spread0 = min_vruntime - rq0_min_vruntime;
+>    213          SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "spread0",
+>    214                          SPLIT_NS(spread0));
+>    215          SEQ_printf(m, "  .%-30s: %d\n", "nr_spread_over",
+>    216                          cfs_rq->nr_spread_over);
+>    217          SEQ_printf(m, "  .%-30s: %d\n", "nr_running", cfs_rq->nr_running);
+>    218          SEQ_printf(m, "  .%-30s: %ld\n", "load", cfs_rq->load.weight);
+>    219  #ifdef CONFIG_FAIR_GROUP_SCHED
+>    220  #ifdef CONFIG_SMP
+>    221          SEQ_printf(m, "  .%-30s: %lld\n", "runnable_load_avg",
+>    222                          cfs_rq->runnable_load_avg);
+>    223          SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
+>    224                          cfs_rq->blocked_load_avg);
+>  > 225          SEQ_printf(m, "  .%-30s: %llu\n", "tg_load_avg",
+>    226                          atomic64_read(&cfs_rq->tg->load_avg));
+>    227          SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
+>    228                          cfs_rq->tg_load_contrib);
+>    229          SEQ_printf(m, "  .%-30s: %d\n", "tg_runnable_contrib",
+>    230                          cfs_rq->tg_runnable_contrib);
+>    231          SEQ_printf(m, "  .%-30s: %d\n", "tg->runnable_avg",
+>    232                          atomic_read(&cfs_rq->tg->runnable_avg));
+>    233  #endif
+>
+> ---
+> 0-DAY kernel build testing backend              Open Source Technology Center
+> http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
+>
+> ----- End forwarded message -----
+>
