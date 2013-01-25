@@ -1,90 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101Ab3AYLPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:15:04 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41431 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588Ab3AYLPA (ORCPT
+	id S1757221Ab3AYLPo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 06:15:44 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:36513 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757152Ab3AYLPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:15:00 -0500
-Date: Fri, 25 Jan 2013 03:14:20 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-qo2jevp1bdcnh8khzdazs17s@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, xiaoguangrong@linux.vnet.ibm.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, xiaoguangrong@linux.vnet.ibm.com,
-        dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm:
-  Initialize file_name var to fix segfault
-Git-Commit-ID: 20914ce5b9e1ef4a35f1f09a2c9c8fb8eb1c4d86
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 25 Jan 2013 06:15:39 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1357847443-3878-5-git-send-email-jacob.shin@amd.com>
+References: <1357847443-3878-1-git-send-email-jacob.shin@amd.com>
+	<1357847443-3878-5-git-send-email-jacob.shin@amd.com>
+Date: Fri, 25 Jan 2013 12:15:37 +0100
+Message-ID: <CABPqkBR7KwJhPg2XJfO5d14Q4KiK7v0eqO_uyr_b6W3_nf-o-w@mail.gmail.com>
+Subject: Re: [PATCH RESEND V5 4/6] perf, x86: Move MSR address offset
+ calculation to architecture specific files
+From: Stephane Eranian <eranian@google.com>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:14:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  20914ce5b9e1ef4a35f1f09a2c9c8fb8eb1c4d86
-Gitweb:     http://git.kernel.org/tip/20914ce5b9e1ef4a35f1f09a2c9c8fb8eb1c4d86
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 19 Dec 2012 10:59:29 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 24 Jan 2013 16:40:13 -0300
+On Thu, Jan 10, 2013 at 8:50 PM, Jacob Shin <jacob.shin@amd.com> wrote:
+> Move counter index to MSR address offset calculation to architecture
+> specific files. This prepares the way for perf_event_amd to enable
+> counter addresses that are not contiguous -- for example AMD Family
+> 15h processors have 6 core performance counters starting at 0xc0010200
+> and 4 northbridge performance counters starting at 0xc0010240.
+>
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event.h     |   21 ++++-------------
+>  arch/x86/kernel/cpu/perf_event_amd.c |   42 ++++++++++++++++++++++++++++++++++
+>  2 files changed, 47 insertions(+), 16 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index 115c1ea..4440218 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -325,6 +325,7 @@ struct x86_pmu {
+>         int             (*schedule_events)(struct cpu_hw_events *cpuc, int n, int *assign);
+>         unsigned        eventsel;
+>         unsigned        perfctr;
+> +       int             (*addr_offset)(int index, int eventsel);
+>         u64             (*event_map)(int);
+>         int             max_events;
+>         int             num_counters;
+> @@ -446,28 +447,16 @@ extern u64 __read_mostly hw_cache_extra_regs
+>
+>  u64 x86_perf_event_update(struct perf_event *event);
+>
+> -static inline int x86_pmu_addr_offset(int index)
+> -{
+> -       int offset;
+> -
+> -       /* offset = X86_FEATURE_PERFCTR_CORE ? index << 1 : index */
+> -       alternative_io(ASM_NOP2,
+> -                      "shll $1, %%eax",
+> -                      X86_FEATURE_PERFCTR_CORE,
+> -                      "=a" (offset),
+> -                      "a"  (index));
+> -
+> -       return offset;
+> -}
+> -
+>  static inline unsigned int x86_pmu_config_addr(int index)
+>  {
+> -       return x86_pmu.eventsel + x86_pmu_addr_offset(index);
+> +       return x86_pmu.eventsel +
+> +               (x86_pmu.addr_offset ? x86_pmu.addr_offset(index, 1) : index);
+>  }
+>
+>  static inline unsigned int x86_pmu_event_addr(int index)
+>  {
+> -       return x86_pmu.perfctr + x86_pmu_addr_offset(index);
+> +       return x86_pmu.perfctr +
+> +               (x86_pmu.addr_offset ? x86_pmu.addr_offset(index, 0) : index);
+>  }
+Would be better to use a constant name instead of 1 and 0 to name a event_sel
+vs. a counter. It would help the reader understand what this is about
+as that may
+be useful for other processors as well.
 
-perf kvm: Initialize file_name var to fix segfault
-
-The 3786063 commit:
-
-    perf kvm: Rename perf_kvm to perf_kvm_stat
-
-Moved the file_name from inside a local struct var that initialized some
-of its members, thus zero initializing the not explicitely initialized
-variables, one of which was 'file_name', to a standalone local variable,
-but forgot to initialize it explicitely to NULL, so it then got some
-undefined value, causing a segfault in strdup when it wasn't, by luck,
-zero.
-
-Fix it by explicitely initializing it to NULL.
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/n/tip-qo2jevp1bdcnh8khzdazs17s@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-kvm.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index ca3f80e..37a769d 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -973,8 +973,7 @@ __cmd_buildid_list(const char *file_name, int argc, const char **argv)
- 
- int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
- {
--	const char *file_name;
--
-+	const char *file_name = NULL;
- 	const struct option kvm_options[] = {
- 		OPT_STRING('i', "input", &file_name, "file",
- 			   "Input file name"),
+>  int x86_setup_perfctr(struct perf_event *event);
+> diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+> index 0c2cc51..ef1df38 100644
+> --- a/arch/x86/kernel/cpu/perf_event_amd.c
+> +++ b/arch/x86/kernel/cpu/perf_event_amd.c
+> @@ -132,6 +132,47 @@ static u64 amd_pmu_event_map(int hw_event)
+>         return amd_perfmon_event_map[hw_event];
+>  }
+>
+> +/*
+> + * Previously calculated offsets
+> + */
+> +static unsigned int event_offsets[X86_PMC_IDX_MAX] __read_mostly;
+> +static unsigned int count_offsets[X86_PMC_IDX_MAX] __read_mostly;
+> +
+> +/*
+> + * Legacy CPUs:
+> + *   4 counters starting at 0xc0010000 each offset by 1
+> + *
+> + * CPUs with core performance counter extensions:
+> + *   6 counters starting at 0xc0010200 each offset by 2
+> + */
+> +static inline int amd_pmu_addr_offset(int index, int eventsel)
+> +{
+> +       int offset;
+> +
+> +       if (!index)
+> +               return index;
+> +
+> +       if (eventsel)
+> +               offset = event_offsets[index];
+> +       else
+> +               offset = count_offsets[index];
+> +
+> +       if (offset)
+> +               return offset;
+> +
+> +       if (!cpu_has_perfctr_core)
+> +               offset = index;
+> +       else
+> +               offset = index << 1;
+> +
+> +       if (eventsel)
+> +               event_offsets[index] = offset;
+> +       else
+> +               count_offsets[index] = offset;
+> +
+> +       return offset;
+> +}
+> +
+>  static int amd_pmu_hw_config(struct perf_event *event)
+>  {
+>         int ret;
+> @@ -578,6 +619,7 @@ static __initconst const struct x86_pmu amd_pmu = {
+>         .schedule_events        = x86_schedule_events,
+>         .eventsel               = MSR_K7_EVNTSEL0,
+>         .perfctr                = MSR_K7_PERFCTR0,
+> +       .addr_offset            = amd_pmu_addr_offset,
+>         .event_map              = amd_pmu_event_map,
+>         .max_events             = ARRAY_SIZE(amd_perfmon_event_map),
+>         .num_counters           = AMD64_NUM_COUNTERS,
+> --
+> 1.7.9.5
+>
+>
