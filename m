@@ -1,56 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab3AYRJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 12:09:09 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:28755 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757609Ab3AYRJG (ORCPT
+	id S1757610Ab3AYRNN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 12:13:13 -0500
+Received: from mail-da0-f54.google.com ([209.85.210.54]:54622 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756838Ab3AYRNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 12:09:06 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19idXhMdLF/b0IIBA2qTA1c
-Date: Fri, 25 Jan 2013 09:09:03 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Luciano Coelho <coelho@ti.com>
-Cc: linux-wireless@vger.kernel.org, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/5] wlcore: move wl12xx_platform_data up and make
- it truly optional
-Message-ID: <20130125170903.GZ22517@atomide.com>
-References: <1358952038-5982-6-git-send-email-coelho@ti.com>
- <1359108334-18459-1-git-send-email-coelho@ti.com>
+	Fri, 25 Jan 2013 12:13:11 -0500
+Date: Fri, 25 Jan 2013 09:13:05 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 02/13] sg_io: reorganize list of allowed commands
+Message-ID: <20130125171305.GD3081@htj.dyndns.org>
+References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
+ <1359039649-17734-3-git-send-email-pbonzini@redhat.com>
+ <20130124224203.GA2373@mtj.dyndns.org>
+ <20130124224921.GB2373@mtj.dyndns.org>
+ <20130124225845.GD2373@mtj.dyndns.org>
+ <51025802.5020900@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1359108334-18459-1-git-send-email-coelho@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <51025802.5020900@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Luciano Coelho <coelho@ti.com> [130125 02:09]:
-> The platform data is used not only by wlcore-based drivers, but also
-> by wl1251.  Move it up in the directory hierarchy to reflect this.
-> 
-> Additionally, make it truly optional.  At the moment, disabling
-> platform data while wl1251_sdio or wlcore_sdio are enabled doesn't
-> work, but it will be necessary when device tree support is
-> implemented.
-> 
-> Signed-off-by: Luciano Coelho <coelho@ti.com>
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
-> ---
-> 
-> In v2:
->    * Fix ti/Makefile
->    * Modify board_omap3evm.c which was still using the old Kconfig define
-> 
-> Tony, is it okay if I add this change in the omap3evm board in this
-> patch and queue it via wireless so that the whole thing is in sync?
+Hello, Paolo.
 
-OK, this should not cause additional merge conflicts:
+On Fri, Jan 25, 2013 at 11:01:38AM +0100, Paolo Bonzini wrote:
+> First, because the table is based on
+> http://www.t10.org/lists/op-num.txt. Entries in that file look like this:
+> 
+> OP  DTLPWROMAEBKVF  Description
+> --  --------------  ----------------------------------------------------
+> 00  MMMMMMMMMMMMMM  TEST UNIT READY
+> 01   M              REWIND
+> 01  Z V ZZZZ        REZERO UNIT
+> 
+> which explains a bit the formatting.
 
-Acked-by: Tony Lindgren <tony@atomide.com> 
+Ah, okay, if it's something already established, please go ahead.
+
+> Second, because many symbolic constants do not exist in
+> include/scsi/scsi.h or include/linux/uapi/cdrom.h, and I don't think it
+> would make sense to add them for a one-off use, especially for obsolete
+> commands or device types.
+
+It's kinda nice to be able to search for the constants for usages in
+kernel.  It's not complete but does help from time to time.
+
+> > If it's because of horizontal real estate, we can abbreviate
+> > sgio_bitmap_set(), no?
+> 
+> No, it's not that.  In fact using the symbolic constants would save a
+> few characters (for the 0xNN and the comment start).  I really prefer to
+> keep the opcode visible so that you can easily match the code to op-num.txt.
+
+How many constants need to be added?  I guess this ties to the other
+thread on why it's desirable to add all listed commands.  If you're
+just gonna add several, there's no point in not using the constants,
+right?  Most are already there.  If you want opcodes visible, you can
+make them the comments, right?
+
+> > Also, wouldn't it be better to have ALL
+> > instead of -1?  Also, the custom formatting is nice but can we at
+> > least not use //?
+> 
+> ALL instead of -1 is a good idea, or I can just spell it out if it's
+> okay for you.
+
+Yeah, both sound fine to me.
+
+> // is nicer in my opinion (for this case where we're throwing away all
+> the rules anyway) because it avoids the misaligned */ but I can change
+> it of course.
+
+Let's please not do //.
+
+> >> On the similar line of thoughts, wouldn't it be better to have the
+> >> table organized by the device type first?  It would be much easier to
+> >> comprehend which commands are allowed for each device type that way
+> >> and FWIW it would be more cacheline friendly.  e.g. something like,
+> 
+> It is actually more cacheline friendly like this.  The vast majority of
+> commands will be READ and WRITE, which are 0x?8 and 0x?A.  So in
+> practice one cacheline will be shared by all device types, maybe two if
+> you use READ/WRITE(12) for some devices and READ/WRITE(16) for others.
+
+The cacheline thing was me being confused about how the tables are
+used.  The tables are per-device after initialized so it should be
+fine.
+
+> >> #define M(opcode)	(1 << opcode)
+> >>
+> >> #define COMMON	\
+> >> 	M(READ_6) | M(WRITE_6) | ....
+> >>
+> >> static const whatever_type blk_cmd_filter_disk = {
+> >> 	COMMON				|
+> >> 	M(CMD_SPECIFIC_TO_THIS_TYPE0)	|
+> >> 	M(CMD_SPECIFIC_TO_THIS_TYPE2)	|
+> >> 	...
+> >> };
+> > 
+> > Oops, there are way more bits than in the longest integer, so you
+> > can't statically initialize them in pretty way (maybe it's possible
+> > but I can't think of anything pretty).  We can still initialize the
+> > table once during boot and throw away the init code, I guess.
+> 
+> Yeah, that's what happens because GCC will inline
+> blk_set_cmd_filter_defaults into its sole caller which is __init.
+> There's no difference from before this patch, but I can add an explicit
+> __init to blk_set_cmd_filter_defaults too.
+
+Maybe I'm misreading the code but we're still initializing table per
+queue, right?  Can't we just have per-type tables which are populated
+during boot (or on-demand)?
+
+Thanks.
+
+-- 
+tejun
