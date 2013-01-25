@@ -1,170 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab3AYS0E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:26:04 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49681 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932179Ab3AYS0A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:26:00 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] extcon: arizona: Use regulated mode for microphone supply when detecting
-Date: Fri, 25 Jan 2013 17:16:12 +0800
-Message-Id: <1359105372-27252-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S964780Ab3AYS0O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:26:14 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:39960 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932179Ab3AYS0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 13:26:09 -0500
+Subject: [PATCH 10/14] fuse: fuse_writepage_locked() should wait on writeback
+To: miklos@szeredi.hu
+From: "Maxim V. Patlasov" <MPatlasov@parallels.com>
+Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        devel@openvz.org
+Date: Fri, 25 Jan 2013 22:25:44 +0400
+Message-ID: <20130125182527.10037.32471.stgit@maximpc.sw.ru>
+In-Reply-To: <20130125181700.10037.29163.stgit@maximpc.sw.ru>
+References: <20130125181700.10037.29163.stgit@maximpc.sw.ru>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When starting microphone detection some headsets should be exposed to
-the fully regulated microphone bias in order to ensure that they behave
-in an optimal fashion.
+fuse_writepage_locked() should never submit new i/o for given page->index
+if there is another one 'in progress' already. In most cases it's safe to
+wait on page writeback. But if it was called due to memory shortage
+(WB_SYNC_NONE), we should redirty page rather than blocking caller.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
 ---
- drivers/extcon/Kconfig          |    2 +-
- drivers/extcon/extcon-arizona.c |   62 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 63 insertions(+), 1 deletion(-)
+ fs/fuse/file.c |   18 +++++++++++++++---
+ 1 files changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
-index 07122a9..9377050 100644
---- a/drivers/extcon/Kconfig
-+++ b/drivers/extcon/Kconfig
-@@ -47,7 +47,7 @@ config EXTCON_MAX8997
- 
- config EXTCON_ARIZONA
- 	tristate "Wolfson Arizona EXTCON support"
--	depends on MFD_ARIZONA && INPUT
-+	depends on MFD_ARIZONA && INPUT && SND_SOC
- 	help
- 	  Say Y here to enable support for external accessory detection
- 	  with Wolfson Arizona devices. These are audio CODECs with
-diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index d7e1047..3aacacc 100644
---- a/drivers/extcon/extcon-arizona.c
-+++ b/drivers/extcon/extcon-arizona.c
-@@ -27,6 +27,8 @@
- #include <linux/regulator/consumer.h>
- #include <linux/extcon.h>
- 
-+#include <sound/soc.h>
-+
- #include <linux/mfd/arizona/core.h>
- #include <linux/mfd/arizona/pdata.h>
- #include <linux/mfd/arizona/registers.h>
-@@ -113,6 +115,40 @@ static void arizona_extcon_set_mode(struct arizona_extcon_info *info, int mode)
- 	dev_dbg(arizona->dev, "Set jack polarity to %d\n", mode);
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 3b4dc98..52c7d81 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1472,7 +1472,8 @@ static struct fuse_file *fuse_write_file(struct fuse_conn *fc,
+ 	return ff;
  }
  
-+static void arizona_extcon_pulse_micbias(struct arizona_extcon_info *info)
-+{
-+	struct arizona *arizona = info->arizona;
-+	const char *widget;
-+	int ret;
-+
-+	if (arizona->dapm) {
-+		switch (info->micd_modes[0].bias) {
-+		case 1:
-+			widget = "MICBIAS1";
-+			break;
-+		case 2:
-+			widget = "MICBIAS2";
-+			break;
-+		case 3:
-+			widget = "MICBIAS3";
-+			break;
-+		default:
-+			widget = "MICVDD";
-+			break;
-+		}
-+
-+		ret = snd_soc_dapm_force_enable_pin(arizona->dapm, widget);
-+		if (ret != 0)
-+			dev_warn(arizona->dev, "Failed to enable %s: %d\n",
-+				 widget, ret);
-+
-+		ret = snd_soc_dapm_disable_pin(arizona->dapm, widget);
-+		if (ret != 0)
-+			dev_warn(arizona->dev, "Failed to disable %s: %d\n",
-+				 widget, ret);
-+	}
-+}
-+
- static void arizona_start_mic(struct arizona_extcon_info *info)
+-static int fuse_writepage_locked(struct page *page)
++static int fuse_writepage_locked(struct page *page,
++				 struct writeback_control *wbc)
  {
- 	struct arizona *arizona = info->arizona;
-@@ -122,6 +158,15 @@ static void arizona_start_mic(struct arizona_extcon_info *info)
- 	/* Microphone detection can't use idle mode */
- 	pm_runtime_get(info->dev);
+ 	struct address_space *mapping = page->mapping;
+ 	struct inode *inode = mapping->host;
+@@ -1481,6 +1482,14 @@ static int fuse_writepage_locked(struct page *page)
+ 	struct fuse_req *req;
+ 	struct page *tmp_page;
  
-+	if (info->detecting) {
-+		ret = regulator_allow_bypass(info->micvdd, false);
-+		if (ret != 0) {
-+			dev_err(arizona->dev,
-+				"Failed to regulate MICVDD: %d\n",
-+				ret);
++	if (fuse_page_is_writeback(inode, page->index)) {
++		if (wbc->sync_mode != WB_SYNC_ALL) {
++			redirty_page_for_writepage(wbc, page);
++			return 0;
 +		}
++		fuse_wait_on_page_writeback(inode, page->index);
 +	}
 +
- 	ret = regulator_enable(info->micvdd);
- 	if (ret != 0) {
- 		dev_err(arizona->dev, "Failed to enable MICVDD: %d\n",
-@@ -151,6 +196,7 @@ static void arizona_stop_mic(struct arizona_extcon_info *info)
+ 	set_page_writeback(page);
+ 
+ 	req = fuse_request_alloc_nofs(1);
+@@ -1527,7 +1536,7 @@ static int fuse_writepage(struct page *page, struct writeback_control *wbc)
  {
- 	struct arizona *arizona = info->arizona;
- 	bool change;
-+	int ret;
+ 	int err;
  
- 	regmap_update_bits_check(arizona->regmap, ARIZONA_MIC_DETECT_1,
- 				 ARIZONA_MICD_ENA, 0,
-@@ -162,6 +208,12 @@ static void arizona_stop_mic(struct arizona_extcon_info *info)
- 		regmap_write(arizona->regmap, 0x80, 0x0);
+-	err = fuse_writepage_locked(page);
++	err = fuse_writepage_locked(page, wbc);
+ 	unlock_page(page);
+ 
+ 	return err;
+@@ -1812,7 +1821,10 @@ static int fuse_launder_page(struct page *page)
+ 	int err = 0;
+ 	if (clear_page_dirty_for_io(page)) {
+ 		struct inode *inode = page->mapping->host;
+-		err = fuse_writepage_locked(page);
++		struct writeback_control wbc = {
++			.sync_mode = WB_SYNC_ALL,
++		};
++		err = fuse_writepage_locked(page, &wbc);
+ 		if (!err)
+ 			fuse_wait_on_page_writeback(inode, page->index);
  	}
- 
-+	ret = regulator_allow_bypass(info->micvdd, true);
-+	if (ret != 0) {
-+		dev_err(arizona->dev, "Failed to bypass MICVDD: %d\n",
-+			ret);
-+	}
-+
- 	if (change) {
- 		regulator_disable(info->micvdd);
- 		pm_runtime_mark_last_busy(info->dev);
-@@ -564,6 +616,8 @@ static void arizona_start_hpdet_acc_id(struct arizona_extcon_info *info)
- 
- 	info->hpdet_active = true;
- 
-+	arizona_extcon_pulse_micbias(info);
-+
- 	ret = regmap_update_bits(arizona->regmap, 0x225, 0x4000, 0x4000);
- 	if (ret != 0)
- 		dev_warn(arizona->dev, "Failed to do magic: %d\n", ret);
-@@ -649,6 +703,13 @@ static irqreturn_t arizona_micdet(int irq, void *data)
- 			dev_err(arizona->dev, "Headset report failed: %d\n",
- 				ret);
- 
-+		/* Don't need to regulate for button detection */
-+		ret = regulator_allow_bypass(info->micvdd, false);
-+		if (ret != 0) {
-+			dev_err(arizona->dev, "Failed to bypass MICVDD: %d\n",
-+				ret);
-+		}
-+
- 		info->mic = true;
- 		info->detecting = false;
- 		goto handled;
-@@ -716,6 +777,7 @@ static irqreturn_t arizona_micdet(int irq, void *data)
- 			input_report_key(info->input,
- 					 arizona_lvl_to_key[i].report, 0);
- 		input_sync(info->input);
-+		arizona_extcon_pulse_micbias(info);
- 	}
- 
- handled:
--- 
-1.7.10.4
 
