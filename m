@@ -1,192 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328Ab3AYMTL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 07:19:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42513 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756604Ab3AYMTH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 07:19:07 -0500
-Date: Fri, 25 Jan 2013 04:18:51 -0800
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-1a4e0aca7416fd2b859e08a587a36a4bc00d4f46@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <1359040242-8269-4-git-send-email-eranian@google.com>
-References: <1359040242-8269-4-git-send-email-eranian@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/x86] perf/x86: Add flags to event constraints
-Git-Commit-ID: 1a4e0aca7416fd2b859e08a587a36a4bc00d4f46
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1757309Ab3AYMTF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 07:19:05 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:55372 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756604Ab3AYMTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 07:19:01 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linus <linus.walleij@linaro.org>, grant.likely@secretlab.ca,
+        linux-acpi@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        tianyu.lan@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] gpiolib-acpi: Add ACPI5 event model support to gpio.
+Date: Fri, 25 Jan 2013 13:25:03 +0100
+Message-ID: <27194841.b5MO8Pt3Ve@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1359114505-4473-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1359114505-4473-1-git-send-email-mathias.nyman@linux.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 04:18:57 -0800 (PST)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1a4e0aca7416fd2b859e08a587a36a4bc00d4f46
-Gitweb:     http://git.kernel.org/tip/1a4e0aca7416fd2b859e08a587a36a4bc00d4f46
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Thu, 24 Jan 2013 16:10:27 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 25 Jan 2013 10:19:01 +0100
+On Friday, January 25, 2013 01:48:25 PM Mathias Nyman wrote:
+> Add ability to handle ACPI events signalled by GPIO interrupts.
+> 
+> ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
+> handled by ACPI event methods which need to be called from the GPIO
+> controller's interrupt handler. acpi_gpio_request_interrupt() finds out which
+> gpio pins have acpi event methods and assigns interrupt handlers that calls
+> the acpi event methods for those pins.
+> 
+> Partially based on work by Rui Zhang <rui.zhang@intel.com>
+> 
+> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-perf/x86: Add flags to event constraints
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-This patch adds a flags field to each event constraint.
-It can be used to store event specific features which can
-then later be used by scheduling code or low-level x86 code.
-
-The flags are propagated into event->hw.flags during the
-get_event_constraint() call. They are cleared during the
-put_event_constraint() call.
-
-This mechanism is going to be used by the PEBS-LL patches.
-It avoids defining yet another table to hold event specific
-information.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: peterz@infradead.org
-Cc: ak@linux.intel.com
-Cc: acme@redhat.com
-Cc: jolsa@redhat.com
-Cc: namhyung.kim@lge.com
-Link: http://lkml.kernel.org/r/1359040242-8269-4-git-send-email-eranian@google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event.c              | 2 +-
- arch/x86/kernel/cpu/perf_event.h              | 8 +++++---
- arch/x86/kernel/cpu/perf_event_intel.c        | 6 +++++-
- arch/x86/kernel/cpu/perf_event_intel_ds.c     | 4 +++-
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
- include/linux/perf_event.h                    | 1 +
- 6 files changed, 16 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index fd80a0c..49f760b 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1489,7 +1489,7 @@ static int __init init_hw_perf_events(void)
- 
- 	unconstrained = (struct event_constraint)
- 		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
--				   0, x86_pmu.num_counters, 0);
-+				   0, x86_pmu.num_counters, 0, 0);
- 
- 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
- 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index dda2101..74b59ec 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -59,6 +59,7 @@ struct event_constraint {
- 	u64	cmask;
- 	int	weight;
- 	int	overlap;
-+	int	flags;
- };
- 
- struct amd_nb {
-@@ -170,16 +171,17 @@ struct cpu_hw_events {
- 	void				*kfree_on_online;
- };
- 
--#define __EVENT_CONSTRAINT(c, n, m, w, o) {\
-+#define __EVENT_CONSTRAINT(c, n, m, w, o, f) {\
- 	{ .idxmsk64 = (n) },		\
- 	.code = (c),			\
- 	.cmask = (m),			\
- 	.weight = (w),			\
- 	.overlap = (o),			\
-+	.flags = f,			\
- }
- 
- #define EVENT_CONSTRAINT(c, n, m)	\
--	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0)
-+	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0, 0)
- 
- /*
-  * The overlap flag marks event constraints with overlapping counter
-@@ -203,7 +205,7 @@ struct cpu_hw_events {
-  * and its counter masks must be kept at a minimum.
-  */
- #define EVENT_CONSTRAINT_OVERLAP(c, n, m)	\
--	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 1)
-+	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 1, 0)
- 
- /*
-  * Constraint on the Event code.
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 93b9e11..67a8dd6 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1367,8 +1367,11 @@ x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- 
- 	if (x86_pmu.event_constraints) {
- 		for_each_event_constraint(c, x86_pmu.event_constraints) {
--			if ((event->hw.config & c->cmask) == c->code)
-+			if ((event->hw.config & c->cmask) == c->code) {
-+				/* hw.flags zeroed at initialization */
-+				event->hw.flags |= c->flags;
- 				return c;
-+			}
- 		}
- 	}
- 
-@@ -1413,6 +1416,7 @@ intel_put_shared_regs_event_constraints(struct cpu_hw_events *cpuc,
- static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
- 					struct perf_event *event)
- {
-+	event->hw.flags = 0;
- 	intel_put_shared_regs_event_constraints(cpuc, event);
- }
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 826054a..f30d85b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -430,8 +430,10 @@ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
- 
- 	if (x86_pmu.pebs_constraints) {
- 		for_each_event_constraint(c, x86_pmu.pebs_constraints) {
--			if ((event->hw.config & c->cmask) == c->code)
-+			if ((event->hw.config & c->cmask) == c->code) {
-+				event->hw.flags |= c->flags;
- 				return c;
-+			}
- 		}
- 	}
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index b43200d..75da9e1 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2438,7 +2438,7 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
- 
- 	type->unconstrainted = (struct event_constraint)
- 		__EVENT_CONSTRAINT(0, (1ULL << type->num_counters) - 1,
--				0, type->num_counters, 0);
-+				0, type->num_counters, 0, 0);
- 
- 	for (i = 0; i < type->num_boxes; i++) {
- 		pmus[i].func_id = -1;
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 6bfb2faa..484cfbc 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -128,6 +128,7 @@ struct hw_perf_event {
- 			int		event_base_rdpmc;
- 			int		idx;
- 			int		last_cpu;
-+			int		flags;
- 
- 			struct hw_perf_event_extra extra_reg;
- 			struct hw_perf_event_extra branch_reg;
+> ---
+>  drivers/gpio/gpiolib-acpi.c |   80 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/acpi_gpio.h   |    4 ++
+>  2 files changed, 84 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+> index cbad6e9..b6ab041 100644
+> --- a/drivers/gpio/gpiolib-acpi.c
+> +++ b/drivers/gpio/gpiolib-acpi.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/export.h>
+>  #include <linux/acpi_gpio.h>
+>  #include <linux/acpi.h>
+> +#include <linux/interrupt.h>
+>  
+>  static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
+>  {
+> @@ -52,3 +53,82 @@ int acpi_get_gpio(char *path, int pin)
+>  	return chip->base + pin;
+>  }
+>  EXPORT_SYMBOL_GPL(acpi_get_gpio);
+> +
+> +
+> +static irqreturn_t acpi_gpio_irq_handler(int irq, void *data)
+> +{
+> +	acpi_handle handle = data;
+> +
+> +	acpi_evaluate_object(handle, NULL, NULL, NULL);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +/**
+> + * acpi_gpio_request_interrupt() - Register isr for gpio controller ACPI events
+> + * @chip:      gpio chip representation of the gpio controller
+> + *
+> + * ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
+> + * handled by ACPI event methods which need to be called from the GPIO
+> + * controller's interrupt handler. acpi_gpio_request_interrupt finds out which
+> + * gpio pins have acpi event methods and assigns interrupt handlers that calls
+> + * the acpi event methods for those pins.
+> + */
+> +
+> +void acpi_gpio_request_interrupt(struct gpio_chip *chip)
+> +{
+> +	struct acpi_buffer buf = {ACPI_ALLOCATE_BUFFER, NULL};
+> +	struct acpi_resource *res;
+> +	acpi_handle handle, ev_handle;
+> +	acpi_status status;
+> +	unsigned int pin, irq;
+> +	char ev_name[5];
+> +
+> +	if (!chip->dev || !chip->to_irq)
+> +		return;
+> +
+> +	handle = ACPI_HANDLE(chip->dev);
+> +	if (!handle)
+> +		return;
+> +
+> +	status = acpi_get_event_resources(handle, &buf);
+> +	if (ACPI_FAILURE(status))
+> +		return;
+> +
+> +	/* If a gpio interrupt has an acpi event handler method, then
+> +	 * set up an interrupt handler that calls the acpi event handler
+> +	 */
+> +
+> +	for (res = buf.pointer;
+> +	     res && (res->type != ACPI_RESOURCE_TYPE_END_TAG);
+> +	     res = ACPI_NEXT_RESOURCE(res)) {
+> +
+> +		if (res->type != ACPI_RESOURCE_TYPE_GPIO ||
+> +		    res->data.gpio.connection_type !=
+> +		    ACPI_RESOURCE_GPIO_TYPE_INT)
+> +			continue;
+> +
+> +		pin = res->data.gpio.pin_table[0];
+> +		if (pin > chip->ngpio)
+> +			continue;
+> +
+> +		sprintf(ev_name, "_%c%02X",
+> +		res->data.gpio.triggering ? 'E' : 'L', pin);
+> +
+> +		status = acpi_get_handle(handle, ev_name, &ev_handle);
+> +		if (ACPI_FAILURE(status))
+> +			continue;
+> +
+> +		irq = chip->to_irq(chip, pin);
+> +		if (irq < 0)
+> +			continue;
+> +
+> +		/* Assume BIOS sets the triggering, so no flags */
+> +		devm_request_threaded_irq(chip->dev, irq, NULL,
+> +					  acpi_gpio_irq_handler,
+> +					  0,
+> +					  "GPIO-signaled-ACPI-event",
+> +					  ev_handle);
+> +	}
+> +}
+> +EXPORT_SYMBOL(acpi_gpio_request_interrupt);
+> diff --git a/include/linux/acpi_gpio.h b/include/linux/acpi_gpio.h
+> index 91615a3..43c541d 100644
+> --- a/include/linux/acpi_gpio.h
+> +++ b/include/linux/acpi_gpio.h
+> @@ -2,10 +2,12 @@
+>  #define _LINUX_ACPI_GPIO_H_
+>  
+>  #include <linux/errno.h>
+> +#include <linux/gpio.h>
+>  
+>  #ifdef CONFIG_GPIO_ACPI
+>  
+>  int acpi_get_gpio(char *path, int pin);
+> +void acpi_gpio_request_interrupt(struct gpio_chip *chip);
+>  
+>  #else /* CONFIG_GPIO_ACPI */
+>  
+> @@ -14,6 +16,8 @@ static inline int acpi_get_gpio(char *path, int pin)
+>  	return -ENODEV;
+>  }
+>  
+> +static inline void acpi_gpio_request_interrupt(struct gpio_chip *chip) { }
+> +
+>  #endif /* CONFIG_GPIO_ACPI */
+>  
+>  #endif /* _LINUX_ACPI_GPIO_H_ */
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
