@@ -1,82 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab3AYBQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 20:16:29 -0500
-Received: from mail.lemote.com ([222.92.8.141]:55802 "EHLO lemote.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab3AYBQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 20:16:23 -0500
-X-Greylist: delayed 638 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Jan 2013 20:16:23 EST
-Message-ID: <2658.219.143.8.242.1359072905.squirrel@mail.lemote.com>
-Date: Fri, 25 Jan 2013 08:15:05 +0800 (CST)
-Subject: Re: [PATCH V8 00/13] MIPS: Add Loongson-3 based machines support
-From: =?gb2312?Q?=B3=C2=BB=AA=B2=C5?= <chenhc@lemote.com>
-To: "John Crispin" <john@phrozen.org>
-Cc: "Ralf Baechle" <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, "Fuxin Zhang" <zhangfx@lemote.com>,
-        "Zhangjin Wu" <wuzhangjin@gmail.com>,
-        "Hongliang Tao" <taohl@lemote.com>, "Hua Yan" <yanh@lemote.com>
-User-Agent: SquirrelMail/1.4.11
-MIME-Version: 1.0
-Content-Type: text/plain;charset=gb2312
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+	id S1754687Ab3AYBRe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 20:17:34 -0500
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:52619 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab3AYBRZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 20:17:25 -0500
+Date: Fri, 25 Jan 2013 10:17:04 +0900
+From: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xiaoguangrong@linux.vnet.ibm.com
+Subject: Re: [PATCH 0/2] kvm: IOMMU read-only mapping support
+Message-Id: <20130125101704.b76b049d.yoshikawa_takuya_b1@lab.ntt.co.jp>
+In-Reply-To: <20130124220027.11061.76400.stgit@bling.home>
+References: <20130124220027.11061.76400.stgit@bling.home>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ok, I'll prepare v9 of this seris in these days.
->
->>
->> Huacai Chen(13):
->>   MIPS: Loongson: Add basic Loongson-3 definition.
->>   MIPS: Loongson: Add basic Loongson-3 CPU support.
->>   MIPS: Loongson: Introduce and use cpu_has_coherent_cache feature.
->>   MIPS: Loongson 3: Add Lemote-3A machtypes definition.
->>   MIPS: Loongson: Add UEFI-like firmware interface support.
->>   MIPS: Loongson 3: Add HT-linked PCI support.
->>   MIPS: Loongson 3: Add IRQ init and dispatch support.
->>   MIPS: Loongson 3: Add serial port support.
->>   MIPS: Loongson: Add swiotlb to support big memory (>4GB).
->>   MIPS: Loongson: Add Loongson-3 Kconfig options.
->>   MIPS: Loongson 3: Add Loongson-3 SMP support.
->>   MIPS: Loongson 3: Add CPU hotplug support.
->>   MIPS: Loongson: Add a Loongson-3 default config file.
->>
->> Signed-off-by: Huacai Chen<chenhc@lemote.com>
->> Signed-off-by: Hongliang Tao<taohl@lemote.com>
->> Signed-off-by: Hua Yan<yanh@lemote.com>
->> ---
->
-> Hi,
->
-> I have added all patches apart from 3/13 to my queue.
->
-> I believe "MIPS: Loongson: Introduce and use cpu_has_coherent_cache
-> feature." should e rewritten in a saner way.
->
-> Please compile and runtime test the tree before I send it to Ralf
-> -->
-> http://git.linux-mips.org/?p=john/linux-john.git;a=shortlog;h=refs/heads/mips-next-3.9
->
-> I cleaned up a few minor whitespace errors while merging.
->
-> http://patchwork.linux-mips.org/patch/4547/ has a few comments. Please
-> prepare a patch asap to address those so i can fold it into the series.
->
-> 	John
->
+On Thu, 24 Jan 2013 15:03:57 -0700
+Alex Williamson <alex.williamson@redhat.com> wrote:
 
+> A couple patches to make KVM IOMMU support honor read-only mappings.
+> This causes an un-map, re-map when the read-only flag changes and
+> makes use of it when setting IOMMU attributes.  Thanks,
 
--- 
-江苏中科梦兰电子科技有限公司
+Looks good to me.
 
-软件部 陈华才
+I think I can naturally update my patch after this gets merged.
 
-E-mail: chenhc@lemote.com
-
-Web: http://www.lemote.com/
-
-Add: 江苏省常熟市虞山镇梦兰工业园
-
+Thanks,
+	Takuya
