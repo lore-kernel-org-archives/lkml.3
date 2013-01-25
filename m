@@ -1,95 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab3AYSZz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:25:55 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49680 "EHLO
+	id S932441Ab3AYS0E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:26:04 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49681 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932179Ab3AYSZw (ORCPT
+	by vger.kernel.org with ESMTP id S932179Ab3AYS0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:25:52 -0500
+	Fri, 25 Jan 2013 13:26:00 -0500
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
 Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: wm5102: Make DSP scratch registers readable
-Date: Fri, 25 Jan 2013 17:09:23 +0800
-Message-Id: <1359104964-27041-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] extcon: arizona: Use regulated mode for microphone supply when detecting
+Date: Fri, 25 Jan 2013 17:16:12 +0800
+Message-Id: <1359105372-27252-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When starting microphone detection some headsets should be exposed to
+the fully regulated microphone bias in order to ensure that they behave
+in an optimal fashion.
+
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/wm5102-tables.c           |    8 ++++++++
- include/linux/mfd/arizona/registers.h |   16 ++++++++++++++++
- 2 files changed, 24 insertions(+)
+ drivers/extcon/Kconfig          |    2 +-
+ drivers/extcon/extcon-arizona.c |   62 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 63 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index ea3e40a..1ee3a81 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -1815,6 +1815,10 @@ static bool wm5102_readable_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_DSP1_STATUS_1:
- 	case ARIZONA_DSP1_STATUS_2:
- 	case ARIZONA_DSP1_STATUS_3:
-+	case ARIZONA_DSP1_SCRATCH_0:
-+	case ARIZONA_DSP1_SCRATCH_1:
-+	case ARIZONA_DSP1_SCRATCH_2:
-+	case ARIZONA_DSP1_SCRATCH_3:
- 		return true;
- 	default:
- 		if ((reg >= 0x100000 && reg < 0x106000) ||
-@@ -1869,6 +1873,10 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_DSP1_STATUS_1:
- 	case ARIZONA_DSP1_STATUS_2:
- 	case ARIZONA_DSP1_STATUS_3:
-+	case ARIZONA_DSP1_SCRATCH_0:
-+	case ARIZONA_DSP1_SCRATCH_1:
-+	case ARIZONA_DSP1_SCRATCH_2:
-+	case ARIZONA_DSP1_SCRATCH_3:
- 	case ARIZONA_HEADPHONE_DETECT_2:
- 	case ARIZONA_HP_DACVAL:
- 	case ARIZONA_MIC_DETECT_3:
-diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
-index 88cc9b0..df555fd 100644
---- a/include/linux/mfd/arizona/registers.h
-+++ b/include/linux/mfd/arizona/registers.h
-@@ -990,18 +990,34 @@
- #define ARIZONA_DSP1_STATUS_1                    0x1104
- #define ARIZONA_DSP1_STATUS_2                    0x1105
- #define ARIZONA_DSP1_STATUS_3                    0x1106
-+#define ARIZONA_DSP1_SCRATCH_0                   0x1140
-+#define ARIZONA_DSP1_SCRATCH_1                   0x1141
-+#define ARIZONA_DSP1_SCRATCH_2                   0x1142
-+#define ARIZONA_DSP1_SCRATCH_3                   0x1143
- #define ARIZONA_DSP2_CONTROL_1                   0x1200
- #define ARIZONA_DSP2_CLOCKING_1                  0x1201
- #define ARIZONA_DSP2_STATUS_1                    0x1204
- #define ARIZONA_DSP2_STATUS_2                    0x1205
-+#define ARIZONA_DSP2_SCRATCH_0                   0x1240
-+#define ARIZONA_DSP2_SCRATCH_1                   0x1241
-+#define ARIZONA_DSP2_SCRATCH_2                   0x1242
-+#define ARIZONA_DSP2_SCRATCH_3                   0x1243
- #define ARIZONA_DSP3_CONTROL_1                   0x1300
- #define ARIZONA_DSP3_CLOCKING_1                  0x1301
- #define ARIZONA_DSP3_STATUS_1                    0x1304
- #define ARIZONA_DSP3_STATUS_2                    0x1305
-+#define ARIZONA_DSP3_SCRATCH_0                   0x1340
-+#define ARIZONA_DSP3_SCRATCH_1                   0x1341
-+#define ARIZONA_DSP3_SCRATCH_2                   0x1342
-+#define ARIZONA_DSP3_SCRATCH_3                   0x1343
- #define ARIZONA_DSP4_CONTROL_1                   0x1400
- #define ARIZONA_DSP4_CLOCKING_1                  0x1401
- #define ARIZONA_DSP4_STATUS_1                    0x1404
- #define ARIZONA_DSP4_STATUS_2                    0x1405
-+#define ARIZONA_DSP4_SCRATCH_0                   0x1440
-+#define ARIZONA_DSP4_SCRATCH_1                   0x1441
-+#define ARIZONA_DSP4_SCRATCH_2                   0x1442
-+#define ARIZONA_DSP4_SCRATCH_3                   0x1443
+diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+index 07122a9..9377050 100644
+--- a/drivers/extcon/Kconfig
++++ b/drivers/extcon/Kconfig
+@@ -47,7 +47,7 @@ config EXTCON_MAX8997
  
- /*
-  * Field Definitions.
+ config EXTCON_ARIZONA
+ 	tristate "Wolfson Arizona EXTCON support"
+-	depends on MFD_ARIZONA && INPUT
++	depends on MFD_ARIZONA && INPUT && SND_SOC
+ 	help
+ 	  Say Y here to enable support for external accessory detection
+ 	  with Wolfson Arizona devices. These are audio CODECs with
+diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+index d7e1047..3aacacc 100644
+--- a/drivers/extcon/extcon-arizona.c
++++ b/drivers/extcon/extcon-arizona.c
+@@ -27,6 +27,8 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/extcon.h>
+ 
++#include <sound/soc.h>
++
+ #include <linux/mfd/arizona/core.h>
+ #include <linux/mfd/arizona/pdata.h>
+ #include <linux/mfd/arizona/registers.h>
+@@ -113,6 +115,40 @@ static void arizona_extcon_set_mode(struct arizona_extcon_info *info, int mode)
+ 	dev_dbg(arizona->dev, "Set jack polarity to %d\n", mode);
+ }
+ 
++static void arizona_extcon_pulse_micbias(struct arizona_extcon_info *info)
++{
++	struct arizona *arizona = info->arizona;
++	const char *widget;
++	int ret;
++
++	if (arizona->dapm) {
++		switch (info->micd_modes[0].bias) {
++		case 1:
++			widget = "MICBIAS1";
++			break;
++		case 2:
++			widget = "MICBIAS2";
++			break;
++		case 3:
++			widget = "MICBIAS3";
++			break;
++		default:
++			widget = "MICVDD";
++			break;
++		}
++
++		ret = snd_soc_dapm_force_enable_pin(arizona->dapm, widget);
++		if (ret != 0)
++			dev_warn(arizona->dev, "Failed to enable %s: %d\n",
++				 widget, ret);
++
++		ret = snd_soc_dapm_disable_pin(arizona->dapm, widget);
++		if (ret != 0)
++			dev_warn(arizona->dev, "Failed to disable %s: %d\n",
++				 widget, ret);
++	}
++}
++
+ static void arizona_start_mic(struct arizona_extcon_info *info)
+ {
+ 	struct arizona *arizona = info->arizona;
+@@ -122,6 +158,15 @@ static void arizona_start_mic(struct arizona_extcon_info *info)
+ 	/* Microphone detection can't use idle mode */
+ 	pm_runtime_get(info->dev);
+ 
++	if (info->detecting) {
++		ret = regulator_allow_bypass(info->micvdd, false);
++		if (ret != 0) {
++			dev_err(arizona->dev,
++				"Failed to regulate MICVDD: %d\n",
++				ret);
++		}
++	}
++
+ 	ret = regulator_enable(info->micvdd);
+ 	if (ret != 0) {
+ 		dev_err(arizona->dev, "Failed to enable MICVDD: %d\n",
+@@ -151,6 +196,7 @@ static void arizona_stop_mic(struct arizona_extcon_info *info)
+ {
+ 	struct arizona *arizona = info->arizona;
+ 	bool change;
++	int ret;
+ 
+ 	regmap_update_bits_check(arizona->regmap, ARIZONA_MIC_DETECT_1,
+ 				 ARIZONA_MICD_ENA, 0,
+@@ -162,6 +208,12 @@ static void arizona_stop_mic(struct arizona_extcon_info *info)
+ 		regmap_write(arizona->regmap, 0x80, 0x0);
+ 	}
+ 
++	ret = regulator_allow_bypass(info->micvdd, true);
++	if (ret != 0) {
++		dev_err(arizona->dev, "Failed to bypass MICVDD: %d\n",
++			ret);
++	}
++
+ 	if (change) {
+ 		regulator_disable(info->micvdd);
+ 		pm_runtime_mark_last_busy(info->dev);
+@@ -564,6 +616,8 @@ static void arizona_start_hpdet_acc_id(struct arizona_extcon_info *info)
+ 
+ 	info->hpdet_active = true;
+ 
++	arizona_extcon_pulse_micbias(info);
++
+ 	ret = regmap_update_bits(arizona->regmap, 0x225, 0x4000, 0x4000);
+ 	if (ret != 0)
+ 		dev_warn(arizona->dev, "Failed to do magic: %d\n", ret);
+@@ -649,6 +703,13 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+ 			dev_err(arizona->dev, "Headset report failed: %d\n",
+ 				ret);
+ 
++		/* Don't need to regulate for button detection */
++		ret = regulator_allow_bypass(info->micvdd, false);
++		if (ret != 0) {
++			dev_err(arizona->dev, "Failed to bypass MICVDD: %d\n",
++				ret);
++		}
++
+ 		info->mic = true;
+ 		info->detecting = false;
+ 		goto handled;
+@@ -716,6 +777,7 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+ 			input_report_key(info->input,
+ 					 arizona_lvl_to_key[i].report, 0);
+ 		input_sync(info->input);
++		arizona_extcon_pulse_micbias(info);
+ 	}
+ 
+ handled:
 -- 
 1.7.10.4
 
