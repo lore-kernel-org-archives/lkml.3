@@ -1,92 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab3AYPXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 10:23:08 -0500
-Received: from xes-mad.com ([216.165.139.218]:53945 "EHLO xes-mad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753619Ab3AYPXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 10:23:06 -0500
-Date: Fri, 25 Jan 2013 09:22:54 -0600 (CST)
-From: Aaron Sierra <asierra@xes-inc.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        =?iso-8859-1?Q?Ag=F3cs_P=E1l?= <agocs.pal.86@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v3] lpc_ich: fix gpio base and control offsets
-Message-ID: <b1a97ba8-e8d4-4421-8d7c-633ecdfa318a@zimbra>
-In-Reply-To: <1359121338.883.8.camel@x61.thuisdomein>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756401Ab3AYP1W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 10:27:22 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25183 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755481Ab3AYP1T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 10:27:19 -0500
+X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=d9aeljUNHtYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=hZ6iKA16joIA:10 a=20KFwNOVAAAA:8 a=drOt6m5kAAAA:8 a=zEuoMAFUTG65KY6yyiYA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1359127637.21576.219.camel@gandalf.local.home>
+Subject: Re: [tracepoint] cargo-culting considered harmful...
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 25 Jan 2013 10:27:17 -0500
+In-Reply-To: <20130125143850.GA20597@Krystal>
+References: <20130123225523.GY4939@ZenIV.linux.org.uk>
+	 <20130123230235.GC5434@home.goodmis.org> <20130125143850.GA20597@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.52.0.65]
-X-Mailer: Zimbra 7.1.3_GA_3346 (ZimbraWebClient - GC20 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, 2013-01-25 at 14:25 +0100, Paul Bolle wrote:
-> > 0) insmod-ing an updated lpc_ich.ko generated quite a bit of noise
-> > in
-> > dmesg:
-> >     <6>[19913.247530] iTCO_wdt: Found a ICH8M-E TCO device
-> >     (Version=2, TCOBASE=0x1060)
-> >     <6>[19913.249310] iTCO_wdt: initialized. heartbeat=30 sec
-> >     (nowayout=0)
-> >     <4>[19913.249332] ACPI Warning:
-> >     0x0000000000001028-0x000000000000102f SystemIO conflicts with
-> >     Region \_SB_.PCI0.LPC_.PMIO 1 (20120913/utaddress-251)
-> >     <6>[19913.249338] ACPI: If an ACPI driver is available for this
-> >     device, you should use it instead of the native driver
-> >     <4>[19913.249342] ACPI Warning:
-> >     0x00000000000011b0-0x00000000000011bf SystemIO conflicts with
-> >     Region \_SB_.PCI0.LPC_.LPIO 1 (20120913/utaddress-251)
-> >     <6>[19913.249347] ACPI: If an ACPI driver is available for this
-> >     device, you should use it instead of the native driver
-> >     <4>[19913.249349] ACPI Warning:
-> >     0x0000000000001180-0x00000000000011af SystemIO conflicts with
-> >     Region \_SB_.PCI0.LPC_.LPIO 1 (20120913/utaddress-251)
-> >     <6>[19913.249353] ACPI: If an ACPI driver is available for this
-> >     device, you should use it instead of the native driver
-> >     <4>[19913.249355] lpc_ich: Resource conflict(s) found affecting
-> >     gpio_ich
-> > 
-> > I have no idea whatsoever what that could mean.
-> 
-> But please note that these messages are nothing new. I found
-> identical
-> messages in all my logs (from v3.7.y kernels; I do not seem to have
-> logs
-> of older releases anymore).
-> 
-> 
-> Paul Bolle
+On Fri, 2013-01-25 at 09:38 -0500, Mathieu Desnoyers wrote:
 
-Paul,
-My understanding of these warnings is that your BIOS defines regions
-in its ACPI tables that coincide with regions we want to pass to
-gpio-ich. Because the regions are defined in the ACPI tables Linux
-assumes that they are actively being used by the BIOS and that they
-shouldn't be used, unless you tell the kernel to globally ignore
-ACPI resource conflicts.
+> Yep, I'd be OK with removing this example, since now all users are
+> expected to user TRACE_EVENT(), which is built on top of tracepoints.
 
-Similar warnings used to also appear for the TCO watchdog regions until
-that was determined to be a regression and the ACPI resource conflict
-checks were removed by this patch:
+Can I  get your Acked-by for the following patch?
 
-commit 092369efbd6ef6b4a215741ce9f65446bf45beff
-Author: Feng Tang <feng.tang@intel.com>
-Date:   Thu Aug 16 15:50:10 2012 +0800
+-- Steve
 
-    mfd: lpc_ich: Fix a 3.5 kernel regression for iTCO_wdt driver
+commit 867a31fab0a064e54147371425f9fdef933e3d1d
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Fri Jan 25 09:46:36 2013 -0500
 
-    [trimmed]
+    tracing: Remove tracepoint sample code
+    
+    The tracepoint sample code was used to teach developers how to
+    create their own tracepoints. But now the trace_events have been
+    added as a higher level that is used directly by developers today.
+    
+    Only the trace_event code should use the tracepoint interface
+    directly and no new tracepoints should be added.
+    
+    Besides, the example had a race condition with the use of the
+     ->d_name.name dentry field, as pointed out by Al Viro.
+    
+    Best just to remove the code so it wont be used by other developers.
+    
+    Cc: Al Viro <viro@ZenIV.linux.org.uk>
+    Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-    Actually the same check could be removed for the gpio-ich in lpc_ich.c,
-    but I'm not sure if it will cause problems.
+diff --git a/samples/Kconfig b/samples/Kconfig
+index 7b6792a..6181c2c 100644
+--- a/samples/Kconfig
++++ b/samples/Kconfig
+@@ -5,12 +5,6 @@ menuconfig SAMPLES
+ 
+ if SAMPLES
+ 
+-config SAMPLE_TRACEPOINTS
+-	tristate "Build tracepoints examples -- loadable modules only"
+-	depends on TRACEPOINTS && m
+-	help
+-	  This build tracepoints example modules.
+-
+ config SAMPLE_TRACE_EVENTS
+ 	tristate "Build trace_events examples -- loadable modules only"
+ 	depends on EVENT_TRACING && m
+diff --git a/samples/Makefile b/samples/Makefile
+index 5ef08bb..1a60c62 100644
+--- a/samples/Makefile
++++ b/samples/Makefile
+@@ -1,4 +1,4 @@
+ # Makefile for Linux samples code
+ 
+-obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ tracepoints/ trace_events/ \
++obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ \
+ 			   hw_breakpoint/ kfifo/ kdb/ hidraw/ rpmsg/ seccomp/
+diff --git a/samples/tracepoints/Makefile b/samples/tracepoints/Makefile
+deleted file mode 100644
+index 36479ad..0000000
+--- a/samples/tracepoints/Makefile
++++ /dev/null
+@@ -1,6 +0,0 @@
+-# builds the tracepoint example kernel modules;
+-# then to use one (as root):  insmod <module_name.ko>
+-
+-obj-$(CONFIG_SAMPLE_TRACEPOINTS) += tracepoint-sample.o
+-obj-$(CONFIG_SAMPLE_TRACEPOINTS) += tracepoint-probe-sample.o
+-obj-$(CONFIG_SAMPLE_TRACEPOINTS) += tracepoint-probe-sample2.o
+diff --git a/samples/tracepoints/tp-samples-trace.h b/samples/tracepoints/tp-samples-trace.h
+deleted file mode 100644
+index 4d46be9..0000000
+--- a/samples/tracepoints/tp-samples-trace.h
++++ /dev/null
+@@ -1,11 +0,0 @@
+-#ifndef _TP_SAMPLES_TRACE_H
+-#define _TP_SAMPLES_TRACE_H
+-
+-#include <linux/proc_fs.h>	/* for struct inode and struct file */
+-#include <linux/tracepoint.h>
+-
+-DECLARE_TRACE(subsys_event,
+-	TP_PROTO(struct inode *inode, struct file *file),
+-	TP_ARGS(inode, file));
+-DECLARE_TRACE_NOARGS(subsys_eventb);
+-#endif
+diff --git a/samples/tracepoints/tracepoint-probe-sample.c b/samples/tracepoints/tracepoint-probe-sample.c
+deleted file mode 100644
+index 744c0b9..0000000
+--- a/samples/tracepoints/tracepoint-probe-sample.c
++++ /dev/null
+@@ -1,57 +0,0 @@
+-/*
+- * tracepoint-probe-sample.c
+- *
+- * sample tracepoint probes.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/file.h>
+-#include <linux/dcache.h>
+-#include "tp-samples-trace.h"
+-
+-/*
+- * Here the caller only guarantees locking for struct file and struct inode.
+- * Locking must therefore be done in the probe to use the dentry.
+- */
+-static void probe_subsys_event(void *ignore,
+-			       struct inode *inode, struct file *file)
+-{
+-	path_get(&file->f_path);
+-	dget(file->f_path.dentry);
+-	printk(KERN_INFO "Event is encountered with filename %s\n",
+-		file->f_path.dentry->d_name.name);
+-	dput(file->f_path.dentry);
+-	path_put(&file->f_path);
+-}
+-
+-static void probe_subsys_eventb(void *ignore)
+-{
+-	printk(KERN_INFO "Event B is encountered\n");
+-}
+-
+-static int __init tp_sample_trace_init(void)
+-{
+-	int ret;
+-
+-	ret = register_trace_subsys_event(probe_subsys_event, NULL);
+-	WARN_ON(ret);
+-	ret = register_trace_subsys_eventb(probe_subsys_eventb, NULL);
+-	WARN_ON(ret);
+-
+-	return 0;
+-}
+-
+-module_init(tp_sample_trace_init);
+-
+-static void __exit tp_sample_trace_exit(void)
+-{
+-	unregister_trace_subsys_eventb(probe_subsys_eventb, NULL);
+-	unregister_trace_subsys_event(probe_subsys_event, NULL);
+-	tracepoint_synchronize_unregister();
+-}
+-
+-module_exit(tp_sample_trace_exit);
+-
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Mathieu Desnoyers");
+-MODULE_DESCRIPTION("Tracepoint Probes Samples");
+diff --git a/samples/tracepoints/tracepoint-probe-sample2.c b/samples/tracepoints/tracepoint-probe-sample2.c
+deleted file mode 100644
+index 9fcf990..0000000
+--- a/samples/tracepoints/tracepoint-probe-sample2.c
++++ /dev/null
+@@ -1,44 +0,0 @@
+-/*
+- * tracepoint-probe-sample2.c
+- *
+- * 2nd sample tracepoint probes.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/fs.h>
+-#include "tp-samples-trace.h"
+-
+-/*
+- * Here the caller only guarantees locking for struct file and struct inode.
+- * Locking must therefore be done in the probe to use the dentry.
+- */
+-static void probe_subsys_event(void *ignore,
+-			       struct inode *inode, struct file *file)
+-{
+-	printk(KERN_INFO "Event is encountered with inode number %lu\n",
+-		inode->i_ino);
+-}
+-
+-static int __init tp_sample_trace_init(void)
+-{
+-	int ret;
+-
+-	ret = register_trace_subsys_event(probe_subsys_event, NULL);
+-	WARN_ON(ret);
+-
+-	return 0;
+-}
+-
+-module_init(tp_sample_trace_init);
+-
+-static void __exit tp_sample_trace_exit(void)
+-{
+-	unregister_trace_subsys_event(probe_subsys_event, NULL);
+-	tracepoint_synchronize_unregister();
+-}
+-
+-module_exit(tp_sample_trace_exit);
+-
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Mathieu Desnoyers");
+-MODULE_DESCRIPTION("Tracepoint Probes Samples");
+diff --git a/samples/tracepoints/tracepoint-sample.c b/samples/tracepoints/tracepoint-sample.c
+deleted file mode 100644
+index f4d89e0..0000000
+--- a/samples/tracepoints/tracepoint-sample.c
++++ /dev/null
+@@ -1,57 +0,0 @@
+-/* tracepoint-sample.c
+- *
+- * Executes a tracepoint when /proc/tracepoint-sample is opened.
+- *
+- * (C) Copyright 2007 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+- *
+- * This file is released under the GPLv2.
+- * See the file COPYING for more details.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/sched.h>
+-#include <linux/proc_fs.h>
+-#include "tp-samples-trace.h"
+-
+-DEFINE_TRACE(subsys_event);
+-DEFINE_TRACE(subsys_eventb);
+-
+-struct proc_dir_entry *pentry_sample;
+-
+-static int my_open(struct inode *inode, struct file *file)
+-{
+-	int i;
+-
+-	trace_subsys_event(inode, file);
+-	for (i = 0; i < 10; i++)
+-		trace_subsys_eventb();
+-	return -EPERM;
+-}
+-
+-static const struct file_operations mark_ops = {
+-	.open = my_open,
+-	.llseek = noop_llseek,
+-};
+-
+-static int __init sample_init(void)
+-{
+-	printk(KERN_ALERT "sample init\n");
+-	pentry_sample = proc_create("tracepoint-sample", 0444, NULL,
+-		&mark_ops);
+-	if (!pentry_sample)
+-		return -EPERM;
+-	return 0;
+-}
+-
+-static void __exit sample_exit(void)
+-{
+-	printk(KERN_ALERT "sample exit\n");
+-	remove_proc_entry("tracepoint-sample", NULL);
+-}
+-
+-module_init(sample_init)
+-module_exit(sample_exit)
+-
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Mathieu Desnoyers");
+-MODULE_DESCRIPTION("Tracepoint sample");
 
-Like Feng, I also am not sure if removing the checks for GPIO would cause
-problems, so the noise remains.
 
--Aaron S.
+
