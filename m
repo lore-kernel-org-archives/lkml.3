@@ -1,85 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab3AYMS4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 07:18:56 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:39342 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756379Ab3AYMSw (ORCPT
+	id S1757328Ab3AYMTL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 07:19:11 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42513 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756604Ab3AYMTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 07:18:52 -0500
-Message-ID: <5102781A.8070502@mvista.com>
-Date: Fri, 25 Jan 2013 16:18:34 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Fri, 25 Jan 2013 07:19:07 -0500
+Date: Fri, 25 Jan 2013 04:18:51 -0800
+From: tip-bot for Stephane Eranian <eranian@google.com>
+Message-ID: <tip-1a4e0aca7416fd2b859e08a587a36a4bc00d4f46@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <1359040242-8269-4-git-send-email-eranian@google.com>
+References: <1359040242-8269-4-git-send-email-eranian@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/x86] perf/x86: Add flags to event constraints
+Git-Commit-ID: 1a4e0aca7416fd2b859e08a587a36a4bc00d4f46
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, zihan@huawei.com,
-        Lin.Lei@huawei.com, greg@kroah.com, neil.yi@huawei.com,
-        wangyuhua@huawei.com, huqiao36@huawei.com, balbi@ti.com,
-        mdharm-usb@one-eyed-alien.net, sebastian@breakpoint.cc
-Subject: Re: [PATCH 1/2]linux-usb:Define a new macro for USB storage match
- rules
-References: <fe6cef496609.6609fe6cef49@huawei.com>
-In-Reply-To: <fe6cef496609.6609fe6cef49@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 04:18:57 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Commit-ID:  1a4e0aca7416fd2b859e08a587a36a4bc00d4f46
+Gitweb:     http://git.kernel.org/tip/1a4e0aca7416fd2b859e08a587a36a4bc00d4f46
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Thu, 24 Jan 2013 16:10:27 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 25 Jan 2013 10:19:01 +0100
 
-On 25-01-2013 6:44, fangxiaozhi 00110321 wrote:
+perf/x86: Add flags to event constraints
 
-> From: fangxiaozhi <huananhu@huawei.com>
+This patch adds a flags field to each event constraint.
+It can be used to store event specific features which can
+then later be used by scheduling code or low-level x86 code.
 
-> 1. Define a new macro for USB storage match rules:
->      matching with Vendor ID and interface descriptors.
+The flags are propagated into event->hw.flags during the
+get_event_constraint() call. They are cleared during the
+put_event_constraint() call.
 
-> Signed-off-by: fangxiaozhi <huananhu@huawei.com>
-> --------------------------------------------------------------------
->
->   diff -uprN linux-3.8-rc4_orig/drivers/usb/storage/usb.c linux-3.8-rc4/drivers/usb/storage/usb.c
-> --- linux-3.8-rc4_orig/drivers/usb/storage/usb.c 2013-01-22 14:12:42.595238727 +0800
-> +++ linux-3.8-rc4/drivers/usb/storage/usb.c 2013-01-22 14:16:01.398250305 +0800
-> @@ -120,6 +120,17 @@ MODULE_PARM_DESC(quirks, "supplemental l
->    .useTransport = use_transport, \
->   }
->
-> +#define UNUSUAL_VENDOR_INTF(idVendor, cl, sc, pr, \
-> +         vendor_name, product_name, use_protocol, use_transport, \
-> +         init_function, Flags) \
-> +{ \
-> + .vendorName = vendor_name, \
-> + .productName = product_name, \
-> + .useProtocol = use_protocol, \
-> + .useTransport = use_transport, \
-> + .initFunction = init_function, \
-> +}
+This mechanism is going to be used by the PEBS-LL patches.
+It avoids defining yet another table to hold event specific
+information.
 
-   Shouldn't the field initilaizers be indented with tab, not space?
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: ak@linux.intel.com
+Cc: acme@redhat.com
+Cc: jolsa@redhat.com
+Cc: namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1359040242-8269-4-git-send-email-eranian@google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event.c              | 2 +-
+ arch/x86/kernel/cpu/perf_event.h              | 8 +++++---
+ arch/x86/kernel/cpu/perf_event_intel.c        | 6 +++++-
+ arch/x86/kernel/cpu/perf_event_intel_ds.c     | 4 +++-
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
+ include/linux/perf_event.h                    | 1 +
+ 6 files changed, 16 insertions(+), 7 deletions(-)
 
-> diff -uprN linux-3.8-rc4_orig/drivers/usb/storage/usual-tables.c linux-3.8-rc4/drivers/usb/storage/usual-tables.c
-> --- linux-3.8-rc4_orig/drivers/usb/storage/usual-tables.c 2013-01-22 14:12:42.594238726 +0800
-> +++ linux-3.8-rc4/drivers/usb/storage/usual-tables.c 2013-01-22 14:16:01.426250199 +0800
-> @@ -41,6 +41,19 @@
->   #define USUAL_DEV(useProto, useTrans) \
->   { USB_INTERFACE_INFO(USB_CLASS_MASS_STORAGE, useProto, useTrans) }
->
-> +/* Define the device is matched with Vendor ID and interface descriptors */
-> +#define UNUSUAL_VENDOR_INTF(id_vendor, cl, sc, pr, \
-> +                 vendorName, productName, useProtocol, useTransport, \
-> +                 initFunction, flags) \
-> +{ \
-> + .match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
-> +                         | USB_DEVICE_ID_MATCH_VENDOR, \
-> + .idVendor    = (id_vendor), \
-> + .bInterfaceClass = (cl), \
-> + .bInterfaceSubClass = (sc), \
-> + .bInterfaceProtocol = (pr), \
-> + .driver_info = (flags) }
-
-    Same question. And trailing '}' should be on a separate line.
-
-WBR, Sergei
-
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index fd80a0c..49f760b 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1489,7 +1489,7 @@ static int __init init_hw_perf_events(void)
+ 
+ 	unconstrained = (struct event_constraint)
+ 		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
+-				   0, x86_pmu.num_counters, 0);
++				   0, x86_pmu.num_counters, 0, 0);
+ 
+ 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+ 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index dda2101..74b59ec 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -59,6 +59,7 @@ struct event_constraint {
+ 	u64	cmask;
+ 	int	weight;
+ 	int	overlap;
++	int	flags;
+ };
+ 
+ struct amd_nb {
+@@ -170,16 +171,17 @@ struct cpu_hw_events {
+ 	void				*kfree_on_online;
+ };
+ 
+-#define __EVENT_CONSTRAINT(c, n, m, w, o) {\
++#define __EVENT_CONSTRAINT(c, n, m, w, o, f) {\
+ 	{ .idxmsk64 = (n) },		\
+ 	.code = (c),			\
+ 	.cmask = (m),			\
+ 	.weight = (w),			\
+ 	.overlap = (o),			\
++	.flags = f,			\
+ }
+ 
+ #define EVENT_CONSTRAINT(c, n, m)	\
+-	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0)
++	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0, 0)
+ 
+ /*
+  * The overlap flag marks event constraints with overlapping counter
+@@ -203,7 +205,7 @@ struct cpu_hw_events {
+  * and its counter masks must be kept at a minimum.
+  */
+ #define EVENT_CONSTRAINT_OVERLAP(c, n, m)	\
+-	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 1)
++	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 1, 0)
+ 
+ /*
+  * Constraint on the Event code.
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 93b9e11..67a8dd6 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1367,8 +1367,11 @@ x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+ 
+ 	if (x86_pmu.event_constraints) {
+ 		for_each_event_constraint(c, x86_pmu.event_constraints) {
+-			if ((event->hw.config & c->cmask) == c->code)
++			if ((event->hw.config & c->cmask) == c->code) {
++				/* hw.flags zeroed at initialization */
++				event->hw.flags |= c->flags;
+ 				return c;
++			}
+ 		}
+ 	}
+ 
+@@ -1413,6 +1416,7 @@ intel_put_shared_regs_event_constraints(struct cpu_hw_events *cpuc,
+ static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
+ 					struct perf_event *event)
+ {
++	event->hw.flags = 0;
+ 	intel_put_shared_regs_event_constraints(cpuc, event);
+ }
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 826054a..f30d85b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -430,8 +430,10 @@ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
+ 
+ 	if (x86_pmu.pebs_constraints) {
+ 		for_each_event_constraint(c, x86_pmu.pebs_constraints) {
+-			if ((event->hw.config & c->cmask) == c->code)
++			if ((event->hw.config & c->cmask) == c->code) {
++				event->hw.flags |= c->flags;
+ 				return c;
++			}
+ 		}
+ 	}
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index b43200d..75da9e1 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2438,7 +2438,7 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
+ 
+ 	type->unconstrainted = (struct event_constraint)
+ 		__EVENT_CONSTRAINT(0, (1ULL << type->num_counters) - 1,
+-				0, type->num_counters, 0);
++				0, type->num_counters, 0, 0);
+ 
+ 	for (i = 0; i < type->num_boxes; i++) {
+ 		pmus[i].func_id = -1;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 6bfb2faa..484cfbc 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -128,6 +128,7 @@ struct hw_perf_event {
+ 			int		event_base_rdpmc;
+ 			int		idx;
+ 			int		last_cpu;
++			int		flags;
+ 
+ 			struct hw_perf_event_extra extra_reg;
+ 			struct hw_perf_event_extra branch_reg;
