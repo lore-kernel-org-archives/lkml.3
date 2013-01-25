@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964786Ab3AYS3p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:29:45 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:33873 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932279Ab3AYS3l (ORCPT
+	id S1756454Ab3AYSb7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:31:59 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:57977 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756049Ab3AYSb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:29:41 -0500
-Message-ID: <1359137977.14145.417.camel@misato.fc.hp.com>
-Subject: Re: [PATCH Bug fix 0/5] Bug fix for physical memory hot-remove.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
-        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
-        glommer@parallels.com, jiang.liu@huawei.com, julian.calaby@gmail.com,
-        sfr@canb.auug.org.au, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org
-Date: Fri, 25 Jan 2013 11:19:37 -0700
-In-Reply-To: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Fri, 25 Jan 2013 13:31:57 -0500
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        web10g-user@web10g.org
+Subject: Web10g TCP statistics patch - mainlining into kernel?
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
 Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1359138716_1992P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Fri, 25 Jan 2013 13:31:56 -0500
+Message-ID: <18855.1359138716@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020202.5102CF9D.0052,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-22 at 19:42 +0800, Tang Chen wrote:
-> Here are some bug fix patches for physical memory hot-remove. All these
-> patches are based on the latest -mm tree.
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
-> 
-> And patch1 and patch3 are very important.
-> patch1: free compound pages when freeing memmap, otherwise the kernel
->         will panic the next time memory is hot-added.
-> patch3: the old way of freeing pagetable pages was wrong. We should never
->         split larger pages into small ones.
-> 
-> 
-> Lai Jiangshan (1):
->   Bug-fix: mempolicy: fix is_valid_nodemask()
-> 
-> Tang Chen (3):
->   Bug fix: Do not split pages when freeing pagetable pages.
->   Bug fix: Fix section mismatch problem of
->     release_firmware_map_entry().
->   Bug fix: Fix the doc format in drivers/firmware/memmap.c
-> 
-> Wen Congyang (1):
->   Bug fix: consider compound pages when free memmap
-> 
->  arch/x86/mm/init_64.c     |  148 ++++++++++++++-------------------------------
->  drivers/firmware/memmap.c |   16 +++---
->  mm/mempolicy.c            |   36 +++++++----
->  mm/sparse.c               |    2 +-
->  4 files changed, 77 insertions(+), 125 deletions(-)
+--==_Exmh_1359138716_1992P
+Content-Type: text/plain; charset=us-ascii
 
-This patchset fixed a blocker panic I was hitting in my memory hot-plug
-testing.  Memory hotplug works fine with this patchset (for testing my
-hotplug framework patchset :).  For the series:
+I had a user who's working on tuning high-performance network file systems what
+the chances of upstreaming the Web10G patch to provide the RFC4898 TCP Extended
+Statistics MIB via netlink.
 
-Tested-by: Toshi Kani <toshi.kani@hp.com>
+Yes, it's a tad on the intrusive side, and there's performance costs attached -
+but so are a lot of *other* things that people use all the time for kernel
+debugging, and it's a zero-hit thing for people who don't choose to configure
+it into their kernel.  The added detailed status available from this will be
+useful for people who are doing tuning and development (consider how useful
+this would have been for the people who wrote the codel line discipline as part
+of the bufferbloat project).
 
-Thanks,
--Toshi
+I'm willing to do the not-so-heavy lifting of getting the existing patch
+cleaned up to upstream standards and sheparded through the process, if there's
+any interest at all....
 
 
+--==_Exmh_1359138716_1992P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUQLPnAdmEQWDXROgAQLfRQ//XN6C0Bt03dDBuQsk0f9MnYMM4A6eziKc
+9qAgg2JDhgRAig2rjKp0StDdVa1tc8OfuKqlgUrMIdK92v8RqysOOaZezM2EcLaf
+DJT+eDeEiDBRdIxJVyGwR65pOpdsTaDyQlo6fGXHya5DEwKIxw8CUsCSxguhYmeW
+U2OORG2Pw2nbDIyk46nEbL9XT56x8PJYyNDdoN9wZoUMC9oTIg9x4Ux+KHq5l+PF
+Ss6CR6UXPaBP9wn5V12mrihgXKxx59axl54dOaWKtWxf03YiJ2r9U9aoTt3daMrp
+Ij1BOZaBOS8iaMmXJhVV+DMtMclytWGUP6mI3FiCKjS7uL3V7r0dLsGhFPsy4P3V
+w+11O1hJGhf3KdiZf4PcAGnLvAAwaBqPnjWNnPbdoxfHh51EJswiedKq5lygcWUz
+zJFvoWKBTV+vTZv1BFQVoYA1UNMhQyHnMDzrPtGfmO1XvEJvm1v7l51QAg3O1p3B
+CUG4tnAPR5uaFpg12xozjkCPwDDCEnqok78fHpaRnbOMFeEUlmuUN+m2G4/2la+X
+0XYLQq1vUkRxT1Jr4SKFD1yJGsSSI2dfTWtdiiMQ4BJhScBFR8ScEQ4Lomull4qQ
+1xoa54mN1P94vssPntMdxY1lC77fvN/rs4k/EHxNmGumTeJAgL2hYioQh7dASXdh
+8TEUzmlsQ+4=
+=cNxN
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1359138716_1992P--
 
