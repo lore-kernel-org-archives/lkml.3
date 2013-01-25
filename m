@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757474Ab3AYQOM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 11:14:12 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:54682 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757174Ab3AYQOJ convert rfc822-to-8bit (ORCPT
+	id S1757513Ab3AYQOU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 11:14:20 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:63539 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757483Ab3AYQOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 11:14:09 -0500
-Date: Fri, 25 Jan 2013 16:14:02 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "b-cousson@ti.com" <b-cousson@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v4 1/4] drivers: usb: phy: add a new driver for usb
- part of control module
-Message-ID: <20130125161401.GD16795@e106331-lin.cambridge.arm.com>
-References: <1359109440-2195-1-git-send-email-kishon@ti.com>
- <1359109440-2195-2-git-send-email-kishon@ti.com>
- <20130125110141.GK3075@e106331-lin.cambridge.arm.com>
- <20130125111120.GP15886@arwen.pp.htv.fi>
- <20130125122943.GB16795@e106331-lin.cambridge.arm.com>
- <20130125145928.GC28379@arwen.pp.htv.fi>
+	Fri, 25 Jan 2013 11:14:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130125145928.GC28379@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 25 Jan 2013 16:14:02.0927 (UTC) FILETIME=[FDC8F3F0:01CDFB16]
-X-MC-Unique: 113012516140700801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+In-Reply-To: <20130125080656.GB25314@gmail.com>
+References: <1356434680-10045-1-git-send-email-festevam@gmail.com>
+ <CAOMZO5AzJUvrc5LcNyqPbEz0g4U5KZAXrNK8oJUiht=fdyuc5g@mail.gmail.com>
+ <20130124141930.GA14881@gmail.com> <CAOMZO5CC76Md9T=2z3RWi4GrKsUuFcc8VYV1QfmZWF41vnOhVw@mail.gmail.com>
+ <20130125071933.GA17846@gmail.com> <CAPM31RKPZeNhUx5OCzE2+Rr=5qSL72=tgRpacZwFos9p-cajAg@mail.gmail.com>
+ <20130125080656.GB25314@gmail.com>
+From: Paul Turner <pjt@google.com>
+Date: Fri, 25 Jan 2013 08:06:56 -0800
+Message-ID: <CAPM31RK7txVP9vbDCWFLLshh_98Y-8-T-Vt0C6vZ10Sni4n28g@mail.gmail.com>
+Subject: Re: [PATCH v2] sched: Fix print format for u64
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Fabio Estevam <festevam@gmail.com>, mingo@redhat.com, peterz@infradead.org,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 02:59:28PM +0000, Felipe Balbi wrote:
-> Hi,
-> 
-> On Fri, Jan 25, 2013 at 12:29:43PM +0000, Mark Rutland wrote:
-> > > > > +   depending upon omap4 or omap5.
-> > > > > + - reg-names: The names of the register addresses corresponding to the registers
-> > > > > +   filled in "reg".
-> > > > > + - ti,type: This is used to differentiate whether the control module has
-> > > > > +   usb mailbox or usb3 phy power. omap4 has usb mailbox in control module to
-> > > > > +   notify events to the musb core and omap5 has usb3 phy power register to
-> > > > > +   power on usb3 phy. Should be "1" if it has mailbox and "2" if it has usb3
-> > > > > +   phy power.
-> > > > 
-> > > > Why not make this a string property, perhaps values "mailbox" or "register"?
-> > > 
-> > > NAK.
-> > 
-> > Can I ask what your objection to using a string property is?
-> > 
-> > As far as I can see, "ti,type" is only used by this driver, so there's no
-> > common convention to stick to. Using a string makes the binding easier for
-> > humans to read, and thus harder to mess up in a dts, and it decouples the
-> > binding from kernel-side constants.
-> 
-> IIRC there is some work going on to add #define-like support for DT,
-> which would allow us to match against integers while still having
-> meaningful symbolic representations.
+On Fri, Jan 25, 2013 at 12:06 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Paul Turner <pjt@google.com> wrote:
+>
+>> On Thu, Jan 24, 2013 at 11:19 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>> >
+>> > * Fabio Estevam <festevam@gmail.com> wrote:
+>> >
+>> >> On Thu, Jan 24, 2013 at 12:19 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>> >>
+>> >> > I suppose - is this patch warning-free both on 64-bit and 32-bit
+>> >> > systems?
+>> >>
+>> >> Yes, just confirmed that this patch is warning-free on both 64-bit and
+>> >> 32-bit machines.
+>> >
+>> > Apparently it's not all good, see the warning attached below.
+>>
+>> Yeah this patch is broken; this is not properly fixable as is without
+>> #ifdefs (or fixing the insanity that is atomic64_read).
+>>
+>> Specifically:
+>>
+>> On some architectures (e.g. x86_64) atomic64_read is typed long
+>> On some others (e.g. x86-32) it's typed long long
+>> On yet others (e.g. arm) it's typed u64
+>
+> Hm, cannot we type atomic64_read() to u64 on x86-64 as well, and
+> fix other architectures? How widespread is this problem, have
+> you checked that perhaps?
 
-I was under the impression that the motivation for using the preprocessor on
-the DT was to allow symbolic names for device/soc-specific values like
-addresses, rather than what amounts to ABI values for the binding.
+I have not looked at how much fall-out this would cause.  Ideally
+someone with a cross-compiing tool-chain or from the specific arches
+could take ownership of cleaning up their atomic64 implementations to
+avoid introducing more build pain.
 
-I don't see the point in building a binding that depends on future
-functionality to be legible, especially as we can make it more readable,
-robust, and just as extensible today, with a simple change to the proposed
-binding.
+Theoretically, given the list above x86-64 is actually the outlier in
+assuming that it's just a long type; perhaps we can gain sufficient
+mileage by changing only the x86-64 implementation; which is much
+easier for us to validate :-).
 
-Even ignoring the above, the driver isn't doing appropriate sanity checking.
-If you use a string property, this sanity check is implicit in the parsing --
-you've either matched a value you can handle or you haven't.
+>
+> I'm all for clean, consistent types instead of #ifdef or
+> temporary variable uglies.
 
-Thanks,
-Mark.
+Yes I agree this would be the best solution.
 
+>
+> Thanks,
+>
+>         Ingo
