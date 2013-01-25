@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757065Ab3AYLcK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:32:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41720 "EHLO
+	id S1757101Ab3AYLd2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 06:33:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41745 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755351Ab3AYLcI (ORCPT
+	with ESMTP id S1756472Ab3AYLdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:32:08 -0500
-Date: Fri, 25 Jan 2013 03:31:46 -0800
+	Fri, 25 Jan 2013 06:33:24 -0500
+Date: Fri, 25 Jan 2013 03:32:56 -0800
 From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-eec185ab603fab3b7b5021e840cf4b282c4c7e6b@git.kernel.org>
+Message-ID: <tip-9b494ea2f5638184bc203a30062b32b9a9a05d9e@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        dsahern@gmail.com, tglx@linutronix.de
+        mitake@dcl.info.waseda.ac.jp, namhyung.kim@lge.com, h.mitake@gmail.com,
+        namhyung@kernel.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1356679009-32122-1-git-send-email-namhyung@kernel.org>
-References: <1356679009-32122-1-git-send-email-namhyung@kernel.org>
+        namhyung.kim@lge.com, mitake@dcl.info.waseda.ac.jp,
+        namhyung@kernel.org, h.mitake@gmail.com, tglx@linutronix.de
+In-Reply-To: <1357637966-8216-1-git-send-email-namhyung@kernel.org>
+References: <1357637966-8216-1-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols:
-  Include elf.h header regardless LIBELF_SUPPORT
-Git-Commit-ID: eec185ab603fab3b7b5021e840cf4b282c4c7e6b
+Subject: [tip:perf/core] perf bench:
+  Flush stdout before starting bench suite
+Git-Commit-ID: 9b494ea2f5638184bc203a30062b32b9a9a05d9e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,76 +32,72 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:31:51 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:33:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eec185ab603fab3b7b5021e840cf4b282c4c7e6b
-Gitweb:     http://git.kernel.org/tip/eec185ab603fab3b7b5021e840cf4b282c4c7e6b
+Commit-ID:  9b494ea2f5638184bc203a30062b32b9a9a05d9e
+Gitweb:     http://git.kernel.org/tip/9b494ea2f5638184bc203a30062b32b9a9a05d9e
 Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Fri, 28 Dec 2012 16:16:49 +0900
+AuthorDate: Tue, 8 Jan 2013 18:39:26 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 24 Jan 2013 16:40:18 -0300
+CommitDate: Thu, 24 Jan 2013 16:40:19 -0300
 
-perf symbols: Include elf.h header regardless LIBELF_SUPPORT
+perf bench: Flush stdout before starting bench suite
 
-The elf.h header file is used for NO_LIBELF build too so it should be
-included anyway.  Also remove duplicated include of the header file in
-symbol-*.c.  This patch fixes following build error on NO_LIBELF build:
+perf bench prints header message for bench suite before starting the
+benchmark.  However if the stdout is redirected to a file and bench
+suite forks child processes this (and possibly other debugging
+messages too) will be repeated multiple times.
 
-    CC tests/hists_link.o
-tests/hists_link.c: In function ‘setup_fake_machine’:
-tests/hists_link.c:132:8: error: ‘STB_GLOBAL’ undeclared (first use in this function)
-tests/hists_link.c:132:8: note: each undeclared identifier is reported only once for each function it appears in
+  $ perf bench sched messaging
+  # Running sched/messaging benchmark...
+  # 20 sender and receiver processes per group
+  # 10 groups == 400 processes run
+
+       Total time: 0.100 [sec]
+
+  $ perf bench sched messaging > result.txt
+  $ wc -l result.txt
+  391
+
+In this file, there were so many "Running sched/messaging benchmark..."
+lines.  This was because stdout is converted to fully-buffered due to
+the redirection and inherited child processes.  Other lines are printed
+after reaping all those tasks.
+
+So fix it by flushing stdout before starting bench suites.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
+Acked-by: Hitoshi Mitake <h.mitake@gmail.com>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1356679009-32122-1-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1357637966-8216-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol-elf.c     | 3 ---
- tools/perf/util/symbol-minimal.c | 1 -
- tools/perf/util/symbol.h         | 2 +-
- 3 files changed, 1 insertion(+), 5 deletions(-)
+ tools/perf/builtin-bench.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index f63557b..54efcb5 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -1,6 +1,3 @@
--#include <libelf.h>
--#include <gelf.h>
--#include <elf.h>
- #include <fcntl.h>
- #include <stdio.h>
- #include <errno.h>
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index 259f8f2..a7390cd 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -1,6 +1,5 @@
- #include "symbol.h"
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index cae9a5f..afd1255 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -159,6 +159,7 @@ static void all_suite(struct bench_subsys *subsys)	  /* FROM HERE */
+ 		printf("# Running %s/%s benchmark...\n",
+ 		       subsys->name,
+ 		       suites[i].name);
++		fflush(stdout);
  
--#include <elf.h>
- #include <stdio.h>
- #include <fcntl.h>
- #include <string.h>
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index ec7b240..d97377a 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -16,8 +16,8 @@
- #ifdef LIBELF_SUPPORT
- #include <libelf.h>
- #include <gelf.h>
--#include <elf.h>
- #endif
-+#include <elf.h>
- 
- #include "dso.h"
- 
+ 		argv[1] = suites[i].name;
+ 		suites[i].fn(1, argv, NULL);
+@@ -225,6 +226,7 @@ int cmd_bench(int argc, const char **argv, const char *prefix __maybe_unused)
+ 				printf("# Running %s/%s benchmark...\n",
+ 				       subsystems[i].name,
+ 				       subsystems[i].suites[j].name);
++			fflush(stdout);
+ 			status = subsystems[i].suites[j].fn(argc - 1,
+ 							    argv + 1, prefix);
+ 			goto end;
