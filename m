@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab3AYKOq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:14:46 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:8942 "EHLO multi.imgtec.com"
+	id S1756277Ab3AYKO6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:14:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10794 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754415Ab3AYKOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:14:45 -0500
-From: James Hogan <james.hogan@imgtec.com>
-To: Tejun Heo <tj@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>, Dan Williams <djbw@fb.com>,
-        <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 1/1] async: initialise list heads to fix crash
-Date: Fri, 25 Jan 2013 10:13:59 +0000
-Message-ID: <1359108839-19232-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <20130125010112.GF2373@mtj.dyndns.org>
-References: <20130125010112.GF2373@mtj.dyndns.org>
+	id S1755924Ab3AYKO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 05:14:56 -0500
+Date: Fri, 25 Jan 2013 15:44:48 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, riel@redhat.com,
+        aquini@redhat.com, mst@redhat.com, agl@us.ibm.com
+Subject: Re: [RFC 2/2] virtio_balloon: add auto-ballooning support
+Message-ID: <20130125101448.GG30483@amit.redhat.com>
+References: <1355861850-2702-1-git-send-email-lcapitulino@redhat.com>
+ <1355861850-2702-3-git-send-email-lcapitulino@redhat.com>
+ <20130111204317.GB11436@amit.redhat.com>
+ <20130114100501.603ce8a4@doriath.home>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_01_25_10_14_37
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130114100501.603ce8a4@doriath.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit "async: replace list of active domains with global list of
-pending items" added a struct list_head global_list in struct
-async_entry, which isn't initialised. This means that if
-!domain->registered at __async_schedule(), then list_del_init() will be
-called on the list head in async_run_entry_fn with both pointers NULL,
-causing a crash. This is fixed by initialising both the global_list and
-domain_list list_heads after kzalloc'ing the entry.
+On (Mon) 14 Jan 2013 [10:05:01], Luiz Capitulino wrote:
+> On Sat, 12 Jan 2013 02:13:17 +0530
+> Amit Shah <amit.shah@redhat.com> wrote:
+> 
+> > On (Tue) 18 Dec 2012 [18:17:30], Luiz Capitulino wrote:
+> > > The auto-ballooning feature automatically performs balloon inflate or
+> > > deflate based on host and guest memory pressure. This can help to
+> > > avoid swapping or worse in both, host and guest.
+> > > 
+> > > Auto-ballooning has a host and a guest part. The host performs
+> > > automatic inflate by requesting the guest to inflate its balloon
+> > > when the host is facing memory pressure. The guest performs
+> > > automatic deflate when it's facing memory pressure itself. It's
+> > > expected that auto-inflate and auto-deflate will balance each
+> > > other over time.
+> > > 
+> > > This commit implements the guest side of auto-ballooning.
+> > > 
+> > > To perform automatic deflate, the virtio_balloon driver registers
+> > > a shrinker callback, which will try to deflate the guest's balloon
+> > > on guest memory pressure just like if it were a cache. The shrinker
+> > > callback is only registered if the host supports the
+> > > VIRTIO_BALLOON_F_AUTO_BALLOON feature bit.
+> > 
+> > I'm wondering if guest should auto-deflate even when the AUTO_BALLOON
+> > feature isn't supported by the host: if a guest is under pressure,
+> > there's no way for it to tell the host and wait for the host to
+> > deflate the balloon, so it may be beneficial to just go ahead and
+> > deflate the balloon for all hosts.
+> 
+> I see two problems with this. First, this will automagically override
+> balloon changes done by the user; and second, if we don't have the
+> auto-inflate part and if the host starts facing memory pressure, VMs
+> may start getting OOM.
 
-This was noticed due to dapm_power_widgets() which uses
-ASYNC_DOMAIN_EXCLUSIVE, which initialises the domain->registered to 0.
+Practically, though, at least for hosts and VMs managed by libvirt,
+guests will be confined by cgroups so they don't exceed some
+pre-defined quota.  Guests should always be assumed to be malicious
+and / or greedy, so I'm certain all host mgmt software will have some
+checks in place.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
----
- kernel/async.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/async.c b/kernel/async.c
-index 6958000..8ddee2c 100644
---- a/kernel/async.c
-+++ b/kernel/async.c
-@@ -172,6 +172,8 @@ static async_cookie_t __async_schedule(async_func_ptr *ptr, void *data, struct a
- 		ptr(data, newcookie);
- 		return newcookie;
- 	}
-+	INIT_LIST_HEAD(&entry->domain_list);
-+	INIT_LIST_HEAD(&entry->global_list);
- 	INIT_WORK(&entry->work, async_run_entry_fn);
- 	entry->func = ptr;
- 	entry->data = data;
--- 
-1.7.7.6
-
-
+		Amit
