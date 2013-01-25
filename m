@@ -1,193 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab3AYMxo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 07:53:44 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37623 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755627Ab3AYMxm (ORCPT
+	id S932210Ab3AYMyK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 07:54:10 -0500
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:57051 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755627Ab3AYMyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 07:53:42 -0500
-Message-ID: <51028041.2060504@ti.com>
-Date: Fri, 25 Jan 2013 13:53:21 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
+	Fri, 25 Jan 2013 07:54:06 -0500
 MIME-Version: 1.0
-To: Florian Vaussard <florian.vaussard@epfl.ch>
-CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        <linux-leds@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] leds: leds-pwm: Defer led_pwm_set() if PWM can sleep
-References: <1359108114-16998-1-git-send-email-florian.vaussard@epfl.ch> <1359108114-16998-4-git-send-email-florian.vaussard@epfl.ch>
-In-Reply-To: <1359108114-16998-4-git-send-email-florian.vaussard@epfl.ch>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1359114505-4473-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1359114505-4473-1-git-send-email-mathias.nyman@linux.intel.com>
+Date: Fri, 25 Jan 2013 13:54:05 +0100
+Message-ID: <CACRpkdZvoacYP0rwnrcyHfKWrN67HvN5jCVom4Lx6Qd9RC0fjg@mail.gmail.com>
+Subject: Re: [RFC PATCH] gpiolib-acpi: Add ACPI5 event model support to gpio.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        grant.likely@secretlab.ca, linux-acpi@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>, tianyu.lan@intel.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2013 11:01 AM, Florian Vaussard wrote:
-> Call to led_pwm_set() can happen inside atomic context, like triggers.
-> If the PWM call can sleep, defer using a worker.
-> 
-> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
-> ---
->  drivers/leds/leds-pwm.c |   45 +++++++++++++++++++++++++++++++++++++++------
->  1 files changed, 39 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
-> index a1ea5f6..1ffb6ba 100644
-> --- a/drivers/leds/leds-pwm.c
-> +++ b/drivers/leds/leds-pwm.c
-> @@ -23,12 +23,15 @@
->  #include <linux/pwm.h>
->  #include <linux/leds_pwm.h>
->  #include <linux/slab.h>
-> +#include <linux/workqueue.h>
->  
->  struct led_pwm_data {
->  	struct led_classdev	cdev;
->  	struct pwm_device	*pwm;
-> +	struct work_struct	work;
->  	unsigned int		active_low;
->  	unsigned int		period;
-> +	int			duty;
+On Fri, Jan 25, 2013 at 12:48 PM, Mathias Nyman
+<mathias.nyman@linux.intel.com> wrote:
 
-Would it be better if we also store the can_sleep in led_pwm_data struct and
-initialize it when we probe the LEDs? It is not going to change runtime and we
-will save one API call every time the LED has been changed.
+> Add ability to handle ACPI events signalled by GPIO interrupts.
+>
+> ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
+> handled by ACPI event methods which need to be called from the GPIO
+> controller's interrupt handler. acpi_gpio_request_interrupt() finds out which
+> gpio pins have acpi event methods and assigns interrupt handlers that calls
+> the acpi event methods for those pins.
+>
+> Partially based on work by Rui Zhang <rui.zhang@intel.com>
+>
+> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+(...)
+> +/**
+> + * acpi_gpio_request_interrupt() - Register isr for gpio controller ACPI events
+> + * @chip:      gpio chip representation of the gpio controller
 
->  };
->  
->  struct led_pwm_priv {
-> @@ -36,6 +39,20 @@ struct led_pwm_priv {
->  	struct led_pwm_data leds[0];
->  };
->  
-> +static void led_pwm_work(struct work_struct *work)
-> +{
-> +	struct led_pwm_data *led_dat =
-> +		container_of(work, struct led_pwm_data, work);
-> +	int new_duty = led_dat->duty;
+
+Hm chip, controller, controller, chip chip, controller controller...
+Are we using two different names for the same thing?
+
+> + *
+> + * ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
+> + * handled by ACPI event methods which need to be called from the GPIO
+> + * controller's interrupt handler. acpi_gpio_request_interrupt finds out which
+> + * gpio pins have acpi event methods and assigns interrupt handlers that calls
+> + * the acpi event methods for those pins.
+> + */
 > +
-> +	pwm_config(led_dat->pwm, new_duty, led_dat->period);
-> +
-> +	if (new_duty == 0)
-> +		pwm_disable(led_dat->pwm);
-> +	else
-> +		pwm_enable(led_dat->pwm);
-> +}
+> +void acpi_gpio_request_interrupt(struct gpio_chip *chip)
 
-I think we can remove the duplicated code by doing something like this:
+So I was like "um, what acpi requests an interrupt for a GPIO (maybe a pin)...
 
-static void __led_pwm_set(struct led_pwm_data *led_dat)
-{
-	int new_duty = led_dat->duty;
+... read read ...
 
-	pwm_config(led_dat->pwm, new_duty, led_dat->period);
+Aha the function should probably be named:
+acpi_gpiochip_request_interrupts()
 
-	if (new_duty == 0)
-		pwm_disable(led_dat->pwm);
-	else
-		pwm_enable(led_dat->pwm);
-}
+Because it just grabs all IRQs coming from that chip right?
 
-static void led_pwm_work(struct work_struct *work)
-{
-	struct led_pwm_data *led_dat =
-		container_of(work, struct led_pwm_data, work);
+Second: why is there no mirror function *releasing* all the IRQs again?
+One-way interface?
 
-	__led_pwm_set(led_dat);
-}
-
-static void led_pwm_set(struct led_classdev *led_cdev,
-	enum led_brightness brightness)
-{
-	struct led_pwm_data *led_dat =
-		container_of(led_cdev, struct led_pwm_data, cdev);
- 	unsigned int max = led_dat->cdev.max_brightness;
-
-	led_dat->duty = brightness * led_dat->period / max;
-
-	if (led_dat->can_sleep)
-		schedule_work(&led_dat->work);
-	else
-		__led_pwm_set(led_dat);
-}
-
-What do you think?
-
-> +
->  static void led_pwm_set(struct led_classdev *led_cdev,
->  	enum led_brightness brightness)
->  {
-> @@ -43,13 +60,23 @@ static void led_pwm_set(struct led_classdev *led_cdev,
->  		container_of(led_cdev, struct led_pwm_data, cdev);
->  	unsigned int max = led_dat->cdev.max_brightness;
->  	unsigned int period =  led_dat->period;
-> +	int duty;
->  
-> -	if (brightness == 0) {
-> -		pwm_config(led_dat->pwm, 0, period);
-> -		pwm_disable(led_dat->pwm);
-> +	if (brightness == 0)
-> +		duty = 0;
-> +	else
-> +		duty = brightness * period / max;
-> +
-> +	if (pwm_can_sleep(led_dat->pwm)) {
-> +		led_dat->duty = duty;
-> +		schedule_work(&led_dat->work);
->  	} else {
-> -		pwm_config(led_dat->pwm, brightness * period / max, period);
-> -		pwm_enable(led_dat->pwm);
-> +		pwm_config(led_dat->pwm, duty, period);
-> +
-> +		if (duty == 0)
-> +			pwm_disable(led_dat->pwm);
-> +		else
-> +			pwm_enable(led_dat->pwm);
->  	}
->  }
-
-
-
->  
-> @@ -100,6 +127,8 @@ static struct led_pwm_priv *led_pwm_create_of(struct platform_device *pdev)
->  		led_dat->cdev.brightness = LED_OFF;
->  		led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
->  
-> +		INIT_WORK(&led_dat->work, led_pwm_work);
-> +
->  		ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
->  		if (ret < 0) {
->  			dev_err(&pdev->dev, "failed to register for %s\n",
-> @@ -153,6 +182,8 @@ static int led_pwm_probe(struct platform_device *pdev)
->  			led_dat->cdev.max_brightness = cur_led->max_brightness;
->  			led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
->  
-> +			INIT_WORK(&led_dat->work, led_pwm_work);
-
-If we query the can_sleep before we can skip the INIT_WORK() when it is not set.
-
-> +
->  			ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
->  			if (ret < 0)
->  				goto err;
-> @@ -180,8 +211,10 @@ static int led_pwm_remove(struct platform_device *pdev)
->  	struct led_pwm_priv *priv = platform_get_drvdata(pdev);
->  	int i;
->  
-> -	for (i = 0; i < priv->num_leds; i++)
-> +	for (i = 0; i < priv->num_leds; i++) {
->  		led_classdev_unregister(&priv->leds[i].cdev);
-> +		cancel_work_sync(&priv->leds[i].work);
-> +	}
->  
->  	return 0;
->  }
-> 
-
-
--- 
-Péter
+Yours,
+Linus Walleij
