@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab3AYOSH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 09:18:07 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:53781 "EHLO
+	id S932629Ab3AYOSF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 09:18:05 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:60530 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757136Ab3AYOPA (ORCPT
+	with ESMTP id S1757423Ab3AYOPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Jan 2013 09:15:00 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@list.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Peter Boonstoppel <pboonstoppel@nvidia.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 05/19] sched: warnings in kernel/sched/fair.c
-Date: Fri, 25 Jan 2013 14:14:22 +0000
-Message-Id: <1359123276-15833-6-git-send-email-arnd@arndb.de>
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 15/19] sunrpc: don't warn for unused variable 'buf'
+Date: Fri, 25 Jan 2013 14:14:32 +0000
+Message-Id: <1359123276-15833-16-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1359123276-15833-1-git-send-email-arnd@arndb.de>
 References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:WI+Uc0GI6SeJwwmPgieYlJJV5v1+bZtcPNYKN6LBOvj
- j0f6lr/at+YKpqyzzklVN+w5KHT8nb1bAMoJEV72mrlOhT9yF7
- 5esf9iOFu4l9Er6MalLfLjgaxOjjwuFDzO1R4DOyaJ7M46jfqf
- 1Sp27ckPmk+o9rKnqc0alhdC0eIg9WPQYpM+orABri7LhVcFiN
- q2TiuvUyv+EvKOzOyMxs7DeGG/8PTO3YcwQ/Stg/EsuAU+H2eD
- PsfxLv+/iQark7G+jJdkr6GfEpwnJaQx4jCualj9RYfiLxb+ed
- +N+FVz/4J0wiwdoqbpI+BZ/ZVFZRiMgo35u+8rlqClnlZNXxZL
- Er1wXUL1mLV5zCwSZnv8fkfShC5riz9Na8Eq1Ue15
+X-Provags-ID: V02:K0:EeG5WnyjrUW298Dbuqr4wE1v54Vz0cty8l97b4DWbIE
+ jjoyu53+jYKA2HvrSyInBIo0QUwzm2x5XvOGloaNoFEAaC94u1
+ kbkqm9YaIZWG2ksa5alDNcJTTnXZZsH8R6uBiYjm05ZqXsdXt3
+ t4FDYNk5AS+6Frq3NiXRydMA/C6JXHMZ1oxhhIrIQ26OuKNl5N
+ THfEqWmHKoct+jaCpUoAA6AQM84hpzVfMMA0yKNusKV+hi/D+G
+ 1KyJ2/74vcaOuDHByR4Wtn3PTDwJtZO3OqWrPMVXcCT0Pvfbkh
+ KTU3MXrYwW2tCikNDr9QYjNdxIlZUsJ0V0uzcxUo0r3hzgLV8G
+ OuwFYmIZnpl6J9qbr0JNp0uJFVkxoRUU8Ui3re5Bb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-a4c96ae319 "sched: Unthrottle rt runqueues in __disable_runtime()"
-turned the unthrottle_offline_cfs_rqs function into a static symbol,
-which now triggers a warning about it being potentially unused:
+When RPC_DEBUG is unset, the dprintk() macro does nothing,
+causing the 'buf' variable in svc_printk to become unused.
+Marking it as __maybe_unused avoids a harmless gcc warning.
 
-kernel/sched/fair.c:2055:13: warning: 'unthrottle_offline_cfs_rqs' defined but not used [-Wunused-function]
+Without this patch, building at91_dt_defconfig results in:
 
-Marking it __maybe_unused shuts up the gcc warning and lets the
-compiler safely drop the function body when it's not being used.
-
-To reproduce, build the ARM bcm2835_defconfig.
+net/sunrpc/svc.c: In function 'svc_printk':
+net/sunrpc/svc.c:1051:7: warning: unused variable 'buf' [-Wunused-variable]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Peter Boonstoppel <pboonstoppel@nvidia.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: "J. Bruce Fields" <bfields@redhat.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org
+Cc: netdev@vger.kernel.org
 ---
- kernel/sched/fair.c | 2 +-
+ net/sunrpc/svc.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 5eea870..81fa536 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2663,7 +2663,7 @@ static void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
- 	hrtimer_cancel(&cfs_b->slack_timer);
- }
- 
--static void unthrottle_offline_cfs_rqs(struct rq *rq)
-+static void __maybe_unused unthrottle_offline_cfs_rqs(struct rq *rq)
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index dbf12ac..b1f5223 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -1047,7 +1047,7 @@ void svc_printk(struct svc_rqst *rqstp, const char *fmt, ...)
  {
- 	struct cfs_rq *cfs_rq;
+ 	struct va_format vaf;
+ 	va_list args;
+-	char 	buf[RPC_MAX_ADDRBUFLEN];
++	char buf[RPC_MAX_ADDRBUFLEN] __maybe_unused;
+ 
+ 	va_start(args, fmt);
  
 -- 
 1.8.0
