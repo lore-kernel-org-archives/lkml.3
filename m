@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1160995Ab3AYDNF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 22:13:05 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35884 "EHLO arroyo.ext.ti.com"
+	id S1756796Ab3AYDM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 22:12:59 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35887 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754847Ab3AYDMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754745Ab3AYDMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jan 2013 22:12:52 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <rob.herring@calxeda.com>, <rob@landley.net>, <balbi@ti.com>,
@@ -13,9 +13,9 @@ To: <rob.herring@calxeda.com>, <rob@landley.net>, <balbi@ti.com>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
 CC: <grant.likely@secretlab.ca>, <gregkh@linuxfoundation.org>, <kishon@ti.com>
-Subject: [PATCH v1 1/8] usb: otg: palmas-usb: make palmas-usb as a comparator driver
-Date: Fri, 25 Jan 2013 08:42:24 +0530
-Message-ID: <1359083551-8524-2-git-send-email-kishon@ti.com>
+Subject: [PATCH v1 3/8] usb: otg: palmas-usb: remove compiler warning
+Date: Fri, 25 Jan 2013 08:42:26 +0530
+Message-ID: <1359083551-8524-4-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359083551-8524-1-git-send-email-kishon@ti.com>
 References: <1359083551-8524-1-git-send-email-kishon@ti.com>
@@ -25,96 +25,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-palmas-usb is made as a comparator driver to omap usb2 phy, so that
-omap usb can make use of palmas for srp and also to set vbus.
+commit 696c5c04 (USB: Palmas OTG Transceiver Driver) introduced empty
+palmas_vbus_irq/palmas_id_irq with only *palmas_usb* declaration.
+Removed these unnecessary functions.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/usb/otg/palmas-usb.c |   20 ++++++++++++++++++--
- include/linux/mfd/palmas.h   |    3 +++
- 2 files changed, 21 insertions(+), 2 deletions(-)
+ drivers/usb/otg/palmas-usb.c |   38 --------------------------------------
+ 1 file changed, 38 deletions(-)
 
 diff --git a/drivers/usb/otg/palmas-usb.c b/drivers/usb/otg/palmas-usb.c
-index 8389ad6..76240ef 100644
+index f063350..be9d81c 100644
 --- a/drivers/usb/otg/palmas-usb.c
 +++ b/drivers/usb/otg/palmas-usb.c
-@@ -31,6 +31,8 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/usb/otg.h>
-+#include <linux/usb/phy_companion.h>
-+#include <linux/usb/omap_usb.h>
- #include <linux/regulator/consumer.h>
- #include <linux/err.h>
- #include <linux/notifier.h>
-@@ -208,16 +210,20 @@ static void palmas_set_vbus_work(struct work_struct *data)
- 		regulator_disable(palmas_usb->vbus_reg);
+@@ -103,15 +103,6 @@ static ssize_t palmas_usb_vbus_show(struct device *dev,
+ }
+ static DEVICE_ATTR(vbus, 0444, palmas_usb_vbus_show, NULL);
+ 
+-static irqreturn_t palmas_vbus_irq(int irq, void *_palmas_usb)
+-{
+-	struct palmas_usb *palmas_usb = _palmas_usb;
+-
+-	/* TODO: Do we need to do any work here? */
+-
+-	return IRQ_HANDLED;
+-}
+-
+ static irqreturn_t palmas_vbus_wakeup_irq(int irq, void *_palmas_usb)
+ {
+ 	struct palmas_usb *palmas_usb = _palmas_usb;
+@@ -138,15 +129,6 @@ static irqreturn_t palmas_vbus_wakeup_irq(int irq, void *_palmas_usb)
+ 	return IRQ_HANDLED;
  }
  
--static int palmas_set_vbus(struct palmas_usb *palmas_usb, bool enabled)
-+static int palmas_set_vbus(struct phy_companion *comparator, bool enabled)
+-static irqreturn_t palmas_id_irq(int irq, void *_palmas_usb)
+-{
+-	struct palmas_usb *palmas_usb = _palmas_usb;
+-
+-	/* TODO: Do we need to do any work here? */
+-
+-	return IRQ_HANDLED;
+-}
+-
+ static irqreturn_t palmas_id_wakeup_irq(int irq, void *_palmas_usb)
  {
-+	struct palmas_usb *palmas_usb = comparator_to_palmas(comparator);
-+
- 	palmas_usb->vbus_enable = enabled;
- 	schedule_work(&palmas_usb->set_vbus_work);
+ 	int			status = 0;
+@@ -329,16 +311,6 @@ static int palmas_usb_probe(struct platform_device *pdev)
  
- 	return 0;
- }
+ 	INIT_WORK(&palmas_usb->set_vbus_work, palmas_set_vbus_work);
  
--static int palmas_start_srp(struct palmas_usb *palmas_usb)
-+static int palmas_start_srp(struct phy_companion *comparator)
- {
-+	struct palmas_usb *palmas_usb = comparator_to_palmas(comparator);
-+
- 	palmas_usb_write(palmas_usb->palmas, PALMAS_USB_VBUS_CTRL_SET,
- 			PALMAS_USB_VBUS_CTRL_SET_VBUS_DISCHRG |
- 			PALMAS_USB_VBUS_CTRL_SET_VBUS_IADP_SINK);
-@@ -253,6 +259,7 @@ static void palmas_dt_to_pdata(struct device_node *node,
+-	status = devm_request_threaded_irq(palmas_usb->dev, palmas_usb->irq1,
+-				NULL, palmas_id_irq,
+-				IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+-				"palmas_usb", palmas_usb);
+-	if (status < 0) {
+-		dev_err(&pdev->dev, "can't get IRQ %d, err %d\n",
+-					palmas_usb->irq1, status);
+-		goto fail_irq;
+-	}
+-
+ 	status = devm_request_threaded_irq(palmas_usb->dev, palmas_usb->irq2,
+ 			NULL, palmas_id_wakeup_irq,
+ 			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+@@ -349,16 +321,6 @@ static int palmas_usb_probe(struct platform_device *pdev)
+ 		goto fail_irq;
+ 	}
  
- static int palmas_usb_probe(struct platform_device *pdev)
- {
-+	u32 ret;
- 	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
- 	struct palmas_usb_platform_data	*pdata = pdev->dev.platform_data;
- 	struct device_node *node = pdev->dev.of_node;
-@@ -289,6 +296,15 @@ static int palmas_usb_probe(struct platform_device *pdev)
- 	palmas_usb->irq4 = regmap_irq_get_virq(palmas->irq_data,
- 						PALMAS_VBUS_IRQ);
- 
-+	palmas_usb->comparator.set_vbus	= palmas_set_vbus;
-+	palmas_usb->comparator.start_srp = palmas_start_srp;
-+
-+	ret = omap_usb2_set_comparator(&palmas_usb->comparator);
-+	if (ret == -ENODEV) {
-+		dev_info(&pdev->dev, "phy not ready, deferring probe");
-+		return -EPROBE_DEFER;
-+	}
-+
- 	palmas_usb_wakeup(palmas, pdata->wakeup);
- 
- 	/* init spinlock for workqueue */
-diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
-index 82932db..a557db6 100644
---- a/include/linux/mfd/palmas.h
-+++ b/include/linux/mfd/palmas.h
-@@ -19,6 +19,7 @@
- #include <linux/leds.h>
- #include <linux/regmap.h>
- #include <linux/regulator/driver.h>
-+#include <linux/usb/phy_companion.h>
- 
- #define PALMAS_NUM_CLIENTS		3
- 
-@@ -343,6 +344,8 @@ struct palmas_usb {
- 	struct palmas *palmas;
- 	struct device *dev;
- 
-+	struct phy_companion comparator;
-+
- 	/* for vbus reporting with irqs disabled */
- 	spinlock_t lock;
- 
+-	status = devm_request_threaded_irq(palmas_usb->dev, palmas_usb->irq3,
+-			NULL, palmas_vbus_irq,
+-			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+-			"palmas_usb", palmas_usb);
+-	if (status < 0) {
+-		dev_err(&pdev->dev, "can't get IRQ %d, err %d\n",
+-					palmas_usb->irq3, status);
+-		goto fail_irq;
+-	}
+-
+ 	status = devm_request_threaded_irq(palmas_usb->dev, palmas_usb->irq4,
+ 			NULL, palmas_vbus_wakeup_irq,
+ 			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
 -- 
 1.7.9.5
 
