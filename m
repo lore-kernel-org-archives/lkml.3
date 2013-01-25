@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab3AYRQW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 12:16:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756592Ab3AYRQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 12:16:20 -0500
-Message-ID: <5102BDD4.2020501@redhat.com>
-Date: Fri, 25 Jan 2013 18:16:04 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1757624Ab3AYRR4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 12:17:56 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:44797 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756838Ab3AYRRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 12:17:52 -0500
+Date: Fri, 25 Jan 2013 09:17:48 -0800
+From: Tejun Heo <tj@kernel.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>, Dan Williams <djbw@fb.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] async: initialise list heads to fix crash
+Message-ID: <20130125171748.GE3081@htj.dyndns.org>
+References: <20130125010112.GF2373@mtj.dyndns.org>
+ <1359108839-19232-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 06/13] sg_io: whitelist a few more commands for multimedia
- devices
-References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com> <1359039649-17734-7-git-send-email-pbonzini@redhat.com> <20130124225555.GC2373@mtj.dyndns.org> <51024FB1.3000206@redhat.com> <20130125170434.GC3081@htj.dyndns.org>
-In-Reply-To: <20130125170434.GC3081@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359108839-19232-1-git-send-email-james.hogan@imgtec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/01/2013 18:04, Tejun Heo ha scritto:
->> > 
->> > I think it's the other way round.  What's the justification for leaving
->> > them out, if they are in the standard?  Since we're touching the
->> > commands for other standards, it's better to be complete for MMC as well.
-> Maybe my experience with ATA left me bitter with the standards, but
-> opening gate to everything described in standard sounds like a pretty
-> bad idea to me.  If there are users and devices which make use of them
-> in sane way, sure.  If not, what's the point of risking it?
+On Fri, Jan 25, 2013 at 10:13:59AM +0000, James Hogan wrote:
+> The commit "async: replace list of active domains with global list of
+> pending items" added a struct list_head global_list in struct
+> async_entry, which isn't initialised. This means that if
+> !domain->registered at __async_schedule(), then list_del_init() will be
+> called on the list head in async_run_entry_fn with both pointers NULL,
+> causing a crash. This is fixed by initialising both the global_list and
+> domain_list list_heads after kzalloc'ing the entry.
+> 
+> This was noticed due to dapm_power_widgets() which uses
+> ASYNC_DOMAIN_EXCLUSIVE, which initialises the domain->registered to 0.
+> 
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
 
-Well, you can find broken devices for pretty much every command in the
-list.  Anyhow, the other two commands are obsolete so I'm okay with
-leaving them out, if only for the sake of avoiding useless email threads.
+Applied wq/for-3.9-async.
 
-Paolo
+Thanks!
 
->> > At least one of them (MECHANISM STATUS) is implemented in both QEMU and
->> > Bochs, so someone is using it.  If that someone were run virtualized,
->> > with the host /dev/sr0 passed directly to the guest rather than
->> > emulated, it would break.
-> Sure, then, enable MECHANISM_STATUS.
-
+-- 
+tejun
