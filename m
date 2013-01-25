@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab3AYNHK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:07:10 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:49122 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932174Ab3AYNHI (ORCPT
+	id S932308Ab3AYNH0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 08:07:26 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20169 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932292Ab3AYNHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:07:08 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+Tcn52zKhOp57Z2NzF5NUDeH2Z5DQoODk=
-Date: Fri, 25 Jan 2013 08:07:02 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Roland Stigge <stigge@antcom.de>, Andrew Lunn <andrew@lunn.ch>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v3 3/3] arm: mvebu: enable gpio expander over i2c on
- Mirabox platform
-Message-ID: <20130125130702.GK1758@titan.lakedaemon.net>
-References: <1358889025-8530-1-git-send-email-gregory.clement@free-electrons.com>
- <1358889025-8530-4-git-send-email-gregory.clement@free-electrons.com>
- <CACRpkdbBOQ_KE001kfORapo9=WiJYn04MmRhxnn-5v8ki-EeyA@mail.gmail.com>
- <20130125124659.GH1758@titan.lakedaemon.net>
- <CACRpkdZBcAK+9zYSJ2jQhOxNMF-BbO1-5FsRLoJRHH5X9M09VQ@mail.gmail.com>
- <CACRpkdYdC5HVEOUEL0LS_ecXSiUNymaL5tfWw7STJtcsSosNTg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdYdC5HVEOUEL0LS_ecXSiUNymaL5tfWw7STJtcsSosNTg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 25 Jan 2013 08:07:21 -0500
+X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=fGM4yXGx12wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=RaCtCyzfOO0A:10 a=DMzc6ZLNQwBmPUYpvbkA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1359119239.21576.213.camel@gandalf.local.home>
+Subject: Re: [BUG] panda board locks up on boot
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mats Liljegren <mats.liljegren@enea.com>
+Cc: Igor Grinberg <grinberg@compulab.co.il>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Venkatraman S <svenkatr@ti.com>
+Date: Fri, 25 Jan 2013 08:07:19 -0500
+In-Reply-To: <0247700D01F14443B9209F90AD938CC52409708C@sestoex09.enea.se>
+References: <1359082886.21576.199.camel@gandalf.local.home>
+	 <51022FD2.8090101@compulab.co.il>
+	 <0247700D01F14443B9209F90AD938CC52409708C@sestoex09.enea.se>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 01:57:51PM +0100, Linus Walleij wrote:
-> On Fri, Jan 25, 2013 at 1:55 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > On Fri, Jan 25, 2013 at 1:46 PM, Jason Cooper <jason@lakedaemon.net> wrote:
-> >> On Fri, Jan 25, 2013 at 09:17:57AM +0100, Linus Walleij wrote:
-> >>> On Tue, Jan 22, 2013 at 10:10 PM, Gregory CLEMENT
-> >>> <gregory.clement@free-electrons.com> wrote:
-> >>>
-> >>> > The Globalscale Mirabox platform can be connected to the JTAG/GPIO box
-> >>> > through the Multi-IO port. The GPIO box use the NXP PCA9505 I/O port
-> >>> > expansion IC to provide 40-bit parallel input/output GPIOs. This patch
-> >>> > enable the use of this expander on the Mirabox.
-> >>> >
-> >>> > Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> >>> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> >>>
-> >>> So as requested I leave this patch for now, tell me if you want it
-> >>> applied through pinctrl.
-> >>
-> >> Which branch did you put the first two on?  I'm not seeing them.
-> >
-> > Not pushed yet, take it easy.
+On Fri, 2013-01-25 at 08:43 +0000, Mats Liljegren wrote:
+> Hi Steven,
 > 
-> Or yeah, they are there:
-> http://git.kernel.org/?p=linux/kernel/git/linusw/linux-gpio.git;a=shortlog;h=refs/heads/devel
+> Do you have CONFIG_CPU_FREQ enabled? As I posted earlier in
+> linux-kernel forum ("Failed booting PandaBoard ES with Linux 3.8 RC4"
+> two days ago) my PandaBoard ES hangs while booting with this option
+> enabled. It works fine without it. I have not bisected it down to a
+> single commit though.
+> 
 
-Ahh, I had your pinctrl tree as a remote, but not gpio.  Fixed, thanks.
+#
+# CPU Frequency scaling
+#
+# CONFIG_CPU_FREQ is not set
+CONFIG_CPU_IDLE=y
+# CONFIG_CPU_IDLE_MULTIPLE_DRIVERS is not set
+CONFIG_CPU_IDLE_GOV_LADDER=y
+CONFIG_CPU_IDLE_GOV_MENU=y
+CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED=y
 
-Jason.
+
+I guess that's not the issue I have.
+
+Thanks,
+
+-- Steve
+
+
