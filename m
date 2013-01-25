@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299Ab3AYCxN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 21:53:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26214 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753406Ab3AYCxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 21:53:08 -0500
-Date: Thu, 24 Jan 2013 23:52:47 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, jolsa@redhat.com, namhyung.kim@lge.com
-Subject: Re: [PATCH v6 2/2] perf stat: add interval printing
-Message-ID: <20130125025247.GA16249@infradead.org>
-References: <1358860732-4435-1-git-send-email-eranian@google.com>
- <1358860732-4435-3-git-send-email-eranian@google.com>
+	id S1754246Ab3AYC7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 21:59:11 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:39730 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab3AYC67 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 21:58:59 -0500
+Message-ID: <5101F4E3.2020001@linux.vnet.ibm.com>
+Date: Fri, 25 Jan 2013 10:58:43 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358860732-4435-3-git-send-email-eranian@google.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: gleb@redhat.com, kvm@vger.kernel.org, yoshikawa_takuya_b1@lab.ntt.co.jp,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] kvm: Force IOMMU remapping on memory slot read-only
+ flag changes
+References: <20130124220027.11061.76400.stgit@bling.home> <20130124220403.11061.61738.stgit@bling.home>
+In-Reply-To: <20130124220403.11061.61738.stgit@bling.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012502-3568-0000-0000-0000031361C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jan 22, 2013 at 02:18:52PM +0100, Stephane Eranian escreveu:
-> This patch adds a new printing mode for perf stat.
-> It allows internval printing. That means perf stat
-> can now print event deltas at regular time interval.
-> This is useful to detect phases in programs.
+On 01/25/2013 06:04 AM, Alex Williamson wrote:
+> Memory slot flags can be altered without changing other parameters of
+> the slot.  The read-only attribute is the only one the IOMMU cares
+> about, so generate an un-map, re-map when this occurs.  This also
+> avoid unnecessarily re-mapping the slot when no IOMMU visible changes
+> are made.
+> 
 
-This patch is not applying to my perf/core branch, does it depend on
-some other outstanding patchset from you?
+Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 
-Tomorrow probably all I had in this area will be in Ingo's tree, but
-can you please take a look at my perf/core branch at:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux
-
-?
-
-Regards,
-
-- Arnaldo
