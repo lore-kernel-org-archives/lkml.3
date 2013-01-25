@@ -1,119 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab3AYEWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 23:22:15 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:61945 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab3AYEWN (ORCPT
+	id S1755764Ab3AYEXj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 23:23:39 -0500
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:57614 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754634Ab3AYEXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 23:22:13 -0500
+	Thu, 24 Jan 2013 23:23:37 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130125041411.GB12562@kroah.com>
-References: <1356702623-9430-1-git-send-email-js1304@gmail.com>
- <CAErSpo5_dgH1Au3QChVrhqBY_Fm54+Aw_ZiwGf2JSsgQaR1dug@mail.gmail.com>
- <20130125011303.GA3401@lge.com> <20130125025901.GA26984@google.com> <20130125041411.GB12562@kroah.com>
+In-Reply-To: <50DD5E8A.5050205@cn.fujitsu.com>
+References: <1356679902-4266-1-git-send-email-linfeng@cn.fujitsu.com>
+ <CAE9FiQU1YM32pb+iGJHj1m3W-nGUbHh5f8Qkx5bRsfptgGParw@mail.gmail.com> <50DD5E8A.5050205@cn.fujitsu.com>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 24 Jan 2013 21:21:52 -0700
-Message-ID: <CAErSpo43SoeFn1N5shnxsXmL-ZOmkDQM6yFwyaeBMTRhcy4=dA@mail.gmail.com>
-Subject: Re: [PATCH] x86, reboot: skip reboot_fixups in early boot phase
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Date: Thu, 24 Jan 2013 21:23:16 -0700
+Message-ID: <CAErSpo5VofkxRDvDc3q5xF5nq4Wy+5RAYwkQ6BdSftRXPPF3kw@mail.gmail.com>
+Subject: Re: [PATCH] pci: remove redundant function calls in pci_reassigndev_resource_alignment()
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tangchen@cn.fujitsu.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 9:14 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Thu, Jan 24, 2013 at 07:59:01PM -0700, Bjorn Helgaas wrote:
->> [+cc Greg for driver core]
->>
->> On Fri, Jan 25, 2013 at 10:13:03AM +0900, Joonsoo Kim wrote:
->> > Hello, Bjorn.
->> >
->> > On Thu, Jan 24, 2013 at 10:45:13AM -0700, Bjorn Helgaas wrote:
->> > > On Fri, Dec 28, 2012 at 6:50 AM, Joonsoo Kim <js1304@gmail.com> wrote:
->> > > > During early boot phase, PCI bus subsystem is not yet initialized.
->> > > > If panic is occured in early boot phase and panic_timeout is set,
->> > > > code flow go into emergency_restart() and hit mach_reboot_fixups(), then
->> > > > encounter another panic. When second panic, we can't hold a panic_lock, so
->> > > > code flow go into panic_smp_self_stop() which prevent system to restart.
->> > > >
->> > > > For avoid second panic, skip reboot_fixups in early boot phase.
->> > > > It makes panic_timeout works in early boot phase.
->> > > >
->> > > > Cc: Thomas Gleixner <tglx@linutronix.de>
->> > > > Cc: Ingo Molnar <mingo@redhat.com>
->> > > > Cc: "H. Peter Anvin" <hpa@zytor.com>
->> > > > Signed-off-by: Joonsoo Kim <js1304@gmail.com>
->> > > >
->> > > > diff --git a/arch/x86/kernel/reboot_fixups_32.c b/arch/x86/kernel/reboot_fixups_32.c
->> > > > index c8e41e9..b9b8ec9 100644
->> > > > --- a/arch/x86/kernel/reboot_fixups_32.c
->> > > > +++ b/arch/x86/kernel/reboot_fixups_32.c
->> > > > @@ -89,6 +89,10 @@ void mach_reboot_fixups(void)
->> > > >         if (in_interrupt())
->> > > >                 return;
->> > > >
->> > > > +       /* During early boot phase, PCI is not yet initialized */
->> > > > +       if (system_state == SYSTEM_BOOTING)
->> > > > +               return;
->> > > > +
->> > > >         for (i=0; i < ARRAY_SIZE(fixups_table); i++) {
->> > > >                 cur = &(fixups_table[i]);
->> > > >                 dev = pci_get_device(cur->vendor, cur->device, NULL);
->> > >
->> > > I guess you're saying that if we call pci_get_device() too early, it
->> > > panics?  Did you figure out why that happens?
->> > >
->> > > If we call pci_get_device() before PCI has been initialized, it would
->> > > be good if it just returned NULL, indicating that we didn't find any
->> > > matching device.  I looked briefly, and I thought that's what would
->> > > happen, but apparently I'm missing something.
->> >
->> > In bus_find_device(), klist_iter_init_node() is called with
->> > @bus->p->klist_device. Before initialization, bus->p is NULL,
->> > so panic is occured.
->>
->> I see.  pci_bus_type.p is initialized by __bus_register() in this path:
->>
->>   pci_driver_init        # postcore_initcall
->>     bus_register(&pci_bus_type)
->>       __bus_register
->>         priv = kzalloc(sizeof(struct subsys_private))
->>       bus->p = priv
->>       klist_init(&priv->klist_devices, klist_devices_get, klist_devices_put)
->>
->> I was hoping we could statically initialize the klist, but that doesn't
->> seem likely.
->>
->> But I wonder if we could do something like the following.  If we could,
->> then callers wouldn't have to worry about whether or not the bus has been
->> initialized.
+On Fri, Dec 28, 2012 at 1:55 AM, Lin Feng <linfeng@cn.fujitsu.com> wrote:
 >
-> <snip>
 >
-> I have no objection to that patch, but really, someone wants to call
-> pci_find_device() before PCI is initialized?  Can't that be fixed
-> instead, as that is the root problem, not the driver core.
->
-> But, to paper over your subsystem's bugs, I guess I can take it :)
+> On 12/28/2012 03:45 PM, Yinghai Lu wrote:
+>> On Thu, Dec 27, 2012 at 11:31 PM, Lin Feng <linfeng@cn.fujitsu.com> wrote:
+>>> pci_reassigndev_resource_alignment() potentially calls
+>>> pci_specified_resource_alignment() twice, which is redundant.
+>>>
+>>> pci_is_reassigndev() is only called in pci_reassigndev_resource_alignment(),
+>>> and from sematic/functionality aspects pci_specified_resource_alignment() is
+>>> sufficient to substitute, so also make some cleanup.
+>>>
+>>> Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+>>> Cc: Yinghai Lu <yinghai@kernel.org>
+>>> ---
+>>>  drivers/pci/pci.c |   16 ++--------------
+>>>  1 files changed, 2 insertions(+), 14 deletions(-)
+>>>
+>>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+>>> index 5cb5820..789f401 100644
+>>> --- a/drivers/pci/pci.c
+>>> +++ b/drivers/pci/pci.c
+>>> @@ -3766,18 +3766,6 @@ resource_size_t pci_specified_resource_alignment(struct pci_dev *dev)
+>>>         return align;
+>>>  }
+>>>
+>>> -/**
+>>> - * pci_is_reassigndev - check if specified PCI is target device to reassign
+>>> - * @dev: the PCI device to check
+>>> - *
+>>> - * RETURNS: non-zero for PCI device is a target device to reassign,
+>>> - *          or zero is not.
+>>> - */
+>>> -int pci_is_reassigndev(struct pci_dev *dev)
+>>> -{
+>>> -       return (pci_specified_resource_alignment(dev) != 0);
+>>> -}
+>>> -
+>>>  /*
+>>>   * This function disables memory decoding and releases memory resources
+>>>   * of the device specified by kernel's boot parameter 'pci=resource_alignment='.
+>>> @@ -3792,7 +3780,8 @@ void pci_reassigndev_resource_alignment(struct pci_dev *dev)
+>>>         resource_size_t align, size;
+>>>         u16 command;
+>>>
+>>> -       if (!pci_is_reassigndev(dev))
+>>> +       align = pci_specified_resource_alignment(dev);
+>>> +       if (!align)
+>>>                 return;
+>>>
+>>>         if (dev->hdr_type == PCI_HEADER_TYPE_NORMAL &&
+>>> @@ -3808,7 +3797,6 @@ void pci_reassigndev_resource_alignment(struct pci_dev *dev)
+>>>         command &= ~PCI_COMMAND_MEMORY;
+>>>         pci_write_config_word(dev, PCI_COMMAND, command);
+>>>
+>>> -       align = pci_specified_resource_alignment(dev);
+>>>         for (i = 0; i < PCI_BRIDGE_RESOURCES; i++) {
+>>>                 r = &dev->resource[i];
+>>>                 if (!(r->flags & IORESOURCE_MEM))
+>>> --
+>>> 1.7.1
+>>>
+>>
+>> looks the same as the one that i posted 6 months ago.
+>>
+>> http://copilotco.com/mail-archives/linux-kernel.2012/msg18498.html
+> Sorry, I didn't notice your patchset before :)
+> Yes, they are the same. But why does nobody care this?
 
-The caller is in the native_machine_emergency_restart() path.
-Joonsoo's original patch does what I think you're suggesting:
+I applied Yinghai's patch to my pci/misc branch, headed for v3.9.
 
->> > > > +       /* During early boot phase, PCI is not yet initialized */
->> > > > +       if (system_state == SYSTEM_BOOTING)
->> > > > +               return;
->> > > > +
->> > > >         for (i=0; i < ARRAY_SIZE(fixups_table); i++) {
->> > > >                 cur = &(fixups_table[i]);
->> > > >                 dev = pci_get_device(cur->vendor, cur->device, NULL);
-
-I think it's sort of ugly to check system_state before using
-pci_get_device(), and there's not really an obvious connection between
-system_state and PCI initialization.
-
-But if you prefer that, Joonsoo's original patch is fine with me.
+Bjorn
