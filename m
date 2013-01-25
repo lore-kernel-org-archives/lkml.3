@@ -1,148 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab3AYNwa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:52:30 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:51067 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932196Ab3AYNw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:52:27 -0500
-Message-ID: <51028E0A.5000009@ti.com>
-Date: Fri, 25 Jan 2013 14:52:10 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
+	id S932365Ab3AYNxf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 08:53:35 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:58121 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932112Ab3AYNxc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 08:53:32 -0500
+Date: Fri, 25 Jan 2013 05:53:24 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: rp@svcs.cs.pdx.edu, linux-kernel@vger.kernel.org,
+        lttng-dev@lists.lttng.org, stern@rowland.harvard.edu,
+        khlebnikov@openvz.org, shemminger@vyatta.com,
+        christian.babeux@efficios.com
+Subject: Re: [lttng-dev] [PATCH] Add ACCESS_ONCE() to avoid compiler
+	splitting assignments
+Message-ID: <20130125135324.GP6395@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130115181936.GA30319@linux.vnet.ibm.com>
+ <20130115235642.GA31367@Krystal>
+ <20130116125054.GA9734@Krystal>
+ <20130119191752.GA3159@linux.vnet.ibm.com>
+ <20130120205131.GB19512@Krystal>
 MIME-Version: 1.0
-To: Florian Vaussard <florian.vaussard@epfl.ch>
-CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        <linux-leds@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] leds: leds-pwm: Defer led_pwm_set() if PWM can
- sleep
-References: <1359121471-21457-1-git-send-email-florian.vaussard@epfl.ch> <1359121471-21457-4-git-send-email-florian.vaussard@epfl.ch>
-In-Reply-To: <1359121471-21457-4-git-send-email-florian.vaussard@epfl.ch>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130120205131.GB19512@Krystal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012513-4834-0000-0000-000002F635D2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2013 02:44 PM, Florian Vaussard wrote:
-> Call to led_pwm_set() can happen inside atomic context, like triggers.
-> If the PWM call can sleep, defer using a worker.
+On Sun, Jan 20, 2013 at 03:51:31PM -0500, Mathieu Desnoyers wrote:
+> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > On Wed, Jan 16, 2013 at 07:50:54AM -0500, Mathieu Desnoyers wrote:
+> > > * Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+> > > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > > As noted by Konstantin Khlebnikov, gcc can split assignment of
+> > > > > constants to long variables (https://lkml.org/lkml/2013/1/15/141),
+> > > > > though assignment of NULL (0) is OK.  Assuming that a gcc bug is
+> > > > > fixed (http://gcc.gnu.org/bugzilla/attachment.cgi?id=29169&action=diff
+> > > > > has a patch), making the store be volatile keeps gcc from splitting.
+> > > > > 
+> > > > > This commit therefore applies ACCESS_ONCE() to CMM_STORE_SHARED(),
+> > > > > which is the underlying primitive used by rcu_assign_pointer().
+> > > > 
+> > > > Hi Paul,
+> > > > 
+> > > > I recognise that this is an issue in the Linux kernel, since a simple
+> > > > store is used and expected to be performed atomically when aligned.
+> > > > However, I think this does not affect liburcu, see below:
+> > > 
+> > > Side question: what gcc versions may issue non-atomic volatile stores ?
+> > > I think we should at least document those. Bug
+> > > http://gcc.gnu.org/bugzilla/show_bug.cgi?id=55981 seems to target gcc
+> > > 4.7.2, but I wonder when this issue first appeared on x86 and x86-64
+> > > (and if it affects other architectures as well).
+> > 
+> > I have no idea which versions are affected.  The bug is in the x86
+> > backend, so is specific to x86, but there might well be similar bugs
+> > in other architectures.
 > 
-> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
-
-Reviewed-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-
-> ---
->  drivers/leds/leds-pwm.c |   50 +++++++++++++++++++++++++++++++++++++++-------
->  1 files changed, 42 insertions(+), 8 deletions(-)
+> Results for my quick tests so far:
 > 
-> diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
-> index a1ea5f6..70effa7 100644
-> --- a/drivers/leds/leds-pwm.c
-> +++ b/drivers/leds/leds-pwm.c
-> @@ -23,12 +23,16 @@
->  #include <linux/pwm.h>
->  #include <linux/leds_pwm.h>
->  #include <linux/slab.h>
-> +#include <linux/workqueue.h>
->  
->  struct led_pwm_data {
->  	struct led_classdev	cdev;
->  	struct pwm_device	*pwm;
-> +	struct work_struct	work;
->  	unsigned int		active_low;
->  	unsigned int		period;
-> +	int			duty;
-> +	unsigned		can_sleep:1;
->  };
->  
->  struct led_pwm_priv {
-> @@ -36,6 +40,26 @@ struct led_pwm_priv {
->  	struct led_pwm_data leds[0];
->  };
->  
-> +static void __led_pwm_set(struct led_pwm_data *led_dat)
-> +{
-> +	int new_duty = led_dat->duty;
-> +
-> +	pwm_config(led_dat->pwm, new_duty, led_dat->period);
-> +
-> +	if (new_duty == 0)
-> +		pwm_disable(led_dat->pwm);
-> +	else
-> +		pwm_enable(led_dat->pwm);
-> +}
-> +
-> +static void led_pwm_work(struct work_struct *work)
-> +{
-> +	struct led_pwm_data *led_dat =
-> +		container_of(work, struct led_pwm_data, work);
-> +
-> +	__led_pwm_set(led_dat);
-> +}
-> +
->  static void led_pwm_set(struct led_classdev *led_cdev,
->  	enum led_brightness brightness)
->  {
-> @@ -44,13 +68,12 @@ static void led_pwm_set(struct led_classdev *led_cdev,
->  	unsigned int max = led_dat->cdev.max_brightness;
->  	unsigned int period =  led_dat->period;
->  
-> -	if (brightness == 0) {
-> -		pwm_config(led_dat->pwm, 0, period);
-> -		pwm_disable(led_dat->pwm);
-> -	} else {
-> -		pwm_config(led_dat->pwm, brightness * period / max, period);
-> -		pwm_enable(led_dat->pwm);
-> -	}
-> +	led_dat->duty = brightness * period / max;
-> +
-> +	if (led_dat->can_sleep)
-> +		schedule_work(&led_dat->work);
-> +	else
-> +		__led_pwm_set(led_dat);
->  }
->  
->  static inline size_t sizeof_pwm_leds_priv(int num_leds)
-> @@ -100,6 +123,10 @@ static struct led_pwm_priv *led_pwm_create_of(struct platform_device *pdev)
->  		led_dat->cdev.brightness = LED_OFF;
->  		led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
->  
-> +		led_dat->can_sleep = pwm_cansleep(led_dat->pwm);
-> +		if (led_dat->can_sleep)
-> +			INIT_WORK(&led_dat->work, led_pwm_work);
-> +
->  		ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
->  		if (ret < 0) {
->  			dev_err(&pdev->dev, "failed to register for %s\n",
-> @@ -153,6 +180,10 @@ static int led_pwm_probe(struct platform_device *pdev)
->  			led_dat->cdev.max_brightness = cur_led->max_brightness;
->  			led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
->  
-> +			led_dat->can_sleep = pwm_cansleep(led_dat->pwm);
-> +			if (led_dat->can_sleep)
-> +				INIT_WORK(&led_dat->work, led_pwm_work);
-> +
->  			ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
->  			if (ret < 0)
->  				goto err;
-> @@ -180,8 +211,11 @@ static int led_pwm_remove(struct platform_device *pdev)
->  	struct led_pwm_priv *priv = platform_get_drvdata(pdev);
->  	int i;
->  
-> -	for (i = 0; i < priv->num_leds; i++)
-> +	for (i = 0; i < priv->num_leds; i++) {
->  		led_classdev_unregister(&priv->leds[i].cdev);
-> +		if (priv->leds[i].can_sleep)
-> +			cancel_work_sync(&priv->leds[i].work);
-> +	}
->  
->  	return 0;
->  }
+> gcc version 4.4.7 (Debian 4.4.7-2)
+> gcc version 4.6.3 (Debian 4.6.3-11)
+> gcc version 4.7.2 (Debian 4.7.2-5)
+> 
+> for x86-64 are affected (all gcc installed currently on my Debian
+> laptop). I made a simpler test case than the one shown on the bugzilla,
+> which triggers the issue with -O0 and -O1 (-O2 and -Os optimisations
+> seems not to show this issue with the simpler test case).  So far, it
+> seems to only affect stores from immediate value operands (and only some
+> patterns).
+
+Good to know!  And more widespread than I would have guessed...
+
+For whatever it is worth, there is an alleged patch here:
+
+	http://gcc.gnu.org/ml/gcc-patches/2013-01/msg01119.html
+
+> Debian clang version 3.0-6 (tags/RELEASE_30/final) (based on LLVM 3.0)
+> is not affected for x86-64.
+
+Heh!  Good to know as well.  ;-)
+
+							Thanx, Paul
+
+> My test case looks like this:
+> 
+> * non-atomic-pointer.c:
+> 
+> volatile void *var;
+> 
+> void fct(void)
+> {
+>         asm volatile ("/* test_begin */" : : : "memory");
+>         var = (void *) 0x100000002;
+>         var = (void *) 0x300000004;
+>         asm volatile ("/* test_end */" : : : "memory");
+> }
+> 
+> 
+> * build.sh:
+> 
+> #!/bin/bash
+> 
+> FLAGS="-S ${*}"
+> 
+> function do_build
+> {
+>         $1 ${FLAGS} -o non-atomic-pointer-$1.S.output non-atomic-pointer.c
+> }
+> 
+> do_build gcc-4.4
+> do_build gcc-4.6
+> do_build gcc-4.7
+> do_build gcc-4.7
+> do_build g++-4.6
+> do_build g++-4.7
+> do_build clang
+> 
+> 
+> * check.py (might need adaptation for each architecture and O2, Os):
+> 
+> #!/usr/bin/env python
+> 
+> import sys, string, os, re
+> 
+> # count the number of lines with "mov*" instructions between test_begin
+> # and test_end. Should be 2. Report error if not.
+> 
+> f = open (sys.argv[1], "r")
+> 
+> lines = f.readlines()
+> 
+> within_range = 0
+> mov_count = 0
+> error = 0
+> 
+> re_mov = re.compile('	mov.*')
+> re_begin = re.compile('.*test_begin.*')
+> re_end = re.compile('.*test_end.*')
+> 
+> output = ""
+> 
+> for line in lines:
+> 	if re_begin.match(line):
+> 		within_range = 1
+> 	elif re_end.match(line):
+> 		within_range = 0
+> 	elif (within_range and re_mov.match(line)):
+> 		output += line
+> 		mov_count += 1
+> 
+> if mov_count > 2:
+> 	error = 1
+> 
+> f.close()
+> 
+> if error > 0:
+> 	print "[Error] expect 2 mov, found " + str(mov_count)
+> 	print output
+> 	1
+> else:
+> 	0
+> 
+> > 
+> > > Thanks,
+> > > 
+> > > Mathieu
+> > > 
+> > > > 
+> > > > > 
+> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > > 
+> > > > > diff --git a/urcu/system.h b/urcu/system.h
+> > > > > index 2a45f22..7a1887e 100644
+> > > > > --- a/urcu/system.h
+> > > > > +++ b/urcu/system.h
+> > > > > @@ -49,7 +49,7 @@
+> > > > >   */
+> > > > >  #define CMM_STORE_SHARED(x, v)		\
+> > > > >  	({				\
+> > > > > -		__typeof__(x) _v = _CMM_STORE_SHARED(x, v);	\
+> > > > > +		__typeof__(x) CMM_ACCESS_ONCE(_v) = _CMM_STORE_SHARED(x, v);	\
+> > > > 
+> > > > Here, the macro "_CMM_STORE_SHARED(x, v)" is doing the actual store.
+> > > > It stores v into "x". So adding a CMM_ACCESS_ONCE(_v), as you propose
+> > > > here, is really only making sure the return value (usually unused),
+> > > > located on the stack, is accessed with a volatile access, which does not
+> > > > make much sense.
+> > > > 
+> > > > What really matters is the _CMM_STORE_SHARED() macro:
+> > > > 
+> > > > #define _CMM_STORE_SHARED(x, v) ({ CMM_ACCESS_ONCE(x) = (v); })
+> > > > 
+> > > > which already uses a volatile access for the store. So this seems to be
+> > > > a case where our preemptive use of volatile for stores in addition to
+> > > > loads made us bug-free for a gcc behavior unexpected at the time we
+> > > > implemented this macro. Just a touch of paranoia seems to be a good
+> > > > thing sometimes. ;-)
+> > > > 
+> > > > Thoughts ?
+> > 
+> > Here is my thought:  You should ignore my "fix".  Please accept my
+> > apologies for my confusion!
+> 
+> No worries! Thanks for bringing this issue to my attention.
+> 
+> I'm thinking we might want to create a test throwing code with random
+> immediate values into my python checker script, for various
+> architectures for a couple of weeks, and see what breaks.
+> 
+> Also, it might be good to test whether some register inputs can generate
+> code that write into an unsigned long non-atomically. This would be even
+> more worrying.
+> 
+> Thanks,
+> 
+> Mathieu
+> 
+> > 
+> > 							Thanx, Paul
+> > 
+> > > > Thanks,
+> > > > 
+> > > > Mathieu
+> > > > 
+> > > > >  		cmm_smp_wmc();		\
+> > > > >  		_v;			\
+> > > > >  	})
+> > > > > 
+> > > > > 
+> > > > > _______________________________________________
+> > > > > lttng-dev mailing list
+> > > > > lttng-dev@lists.lttng.org
+> > > > > http://lists.lttng.org/cgi-bin/mailman/listinfo/lttng-dev
+> > > > 
+> > > > -- 
+> > > > Mathieu Desnoyers
+> > > > EfficiOS Inc.
+> > > > http://www.efficios.com
+> > > > 
+> > > > _______________________________________________
+> > > > lttng-dev mailing list
+> > > > lttng-dev@lists.lttng.org
+> > > > http://lists.lttng.org/cgi-bin/mailman/listinfo/lttng-dev
+> > > 
+> > > -- 
+> > > Mathieu Desnoyers
+> > > EfficiOS Inc.
+> > > http://www.efficios.com
+> > > 
+> > 
+> 
+> -- 
+> Mathieu Desnoyers
+> EfficiOS Inc.
+> http://www.efficios.com
 > 
 
-
--- 
-Péter
