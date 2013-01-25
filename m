@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab3AYCJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 21:09:58 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:42525 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab3AYCJu (ORCPT
+	id S1755572Ab3AYCOf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 21:14:35 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:57153 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755509Ab3AYCO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 21:09:50 -0500
-Date: Thu, 24 Jan 2013 18:09:43 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
-        tytso@mit.edu, Oleg Nesterov <oleg@redhat.com>,
-        srivatsa.bhat@linux.vnet.ibm.com, Christoph Lameter <cl@linux.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
-Message-ID: <20130125020943.GH2373@mtj.dyndns.org>
-References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
- <1356573611-18590-26-git-send-email-koverstreet@google.com>
- <20130125005136.GE2373@mtj.dyndns.org>
- <20130125011345.GT26407@google.com>
- <20130125020340.GG2373@mtj.dyndns.org>
+	Thu, 24 Jan 2013 21:14:29 -0500
+Message-ID: <5101EA7B.4080405@linux.vnet.ibm.com>
+Date: Fri, 25 Jan 2013 10:14:19 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130125020340.GG2373@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Galbraith <bitbucket@online.de>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
+        mingo@kernel.org, a.p.zijlstra@chello.nl
+Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
+References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com> <50FE5433.1070801@linux.vnet.ibm.com> <1358865692.5782.420.camel@marge.simpson.net> <50FF4EA0.1070000@linux.vnet.ibm.com> <1358915494.5752.46.camel@marge.simpson.net> <50FF7086.4020509@linux.vnet.ibm.com> <1358922520.5752.91.camel@marge.simpson.net> <50FF8CD8.4060105@linux.vnet.ibm.com>	 <1358929257.5752.109.camel@marge.simp! son.net>	 <50FF9F92.60202@linux.vnet.ibm.com> <1358930968.5752.123.camel@marge.simpson.net> <50FFA695.6010407@linux.vnet.ibm.com> <1358932694.5752.126.camel@marge.simpson.net> <1358933555.5752.132.camel@marge.simpson.net> <5100CE1F.7080704@linux.vnet.ibm.com> <1359010272.5833.39.camel@marge.simpson.net> <5100DF95.3020909@linux.vnet.ibm.com> <1359013623.5833.52.camel@marge.simpson.net> <5100ED7A.303@linux.vnet.ibm.com> <1359018455.5833.64.camel@marge.simpson.net> <5100FE61.1030004@linux.vnet.ibm.com> <1359023666.5833.105.camel@marge.simpson.net>
+In-Reply-To: <1359023666.5833.105.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012502-9264-0000-0000-0000030F091B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, again.
+On 01/24/2013 06:34 PM, Mike Galbraith wrote:
+> On Thu, 2013-01-24 at 17:26 +0800, Michael Wang wrote: 
+>> On 01/24/2013 05:07 PM, Mike Galbraith wrote:
+>>> On Thu, 2013-01-24 at 16:14 +0800, Michael Wang wrote:
+>>>
+>>>> Now it's time to work on v3 I think, let's see what we could get this time.
+>>>
+>>> Maybe v3 can try to not waste so much ram on affine map?
+>>
+>> Yeah, that has been a question in my mind at very beginning, but how...
+> 
+> Allocate at domain build time the max we can acquire via hotplug?
+>>> Even better would be if it could just go away, along with relic of the
+>>> bad old days wake_affine(), and we make the balance path so damn light
+>>> but clever that select_idle_sibling() can go away too... and a pony ;-)
+>>
+>> Hmm...may be, I need some consideration here, a totally balance path,
+>> interesting...
+> 
+> Unification is the right target, hitting it might not be so easy though.
+> 
+>> But I think we still need the clean code which sbm bring to us, do we?
+> 
+> Sure, if it makes things perform better.
 
-On Thu, Jan 24, 2013 at 06:03:40PM -0800, Tejun Heo wrote:
-> Yeah, if we're aiming to replace refcnts in file and kobj, dynamic
-> alloc may be justified.  Hopefully, the accounting necessary to decide
-> whethre to use percpu isn't too burdensome.
+Ok, let me think about these, big changes may not show in v3, but I will
+keep those in mind.
 
-Ooh, I forgot one thing.  We might not gain much by replacing file
-refcnt w/ this.  You can't really get cheaper than fget_light().
-Also, while kobj destruction can still be considered an infrequent
-operation, file destruction is not and people will get mighty unhappy
-if you do synchronize_sched/rcu() from fput() synchronously.
+Regards,
+Michael Wang
 
-So, I'm now back to "do we need dynamic allocation".  What else do we
-have to convert?
+> 
+> -Mike
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Thanks.
-
--- 
-tejun
