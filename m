@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932579Ab3AYOPN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 09:15:13 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:51165 "EHLO
+	id S932620Ab3AYOPb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 09:15:31 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:49352 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932348Ab3AYOPI (ORCPT
+	with ESMTP id S932509Ab3AYOPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 09:15:08 -0500
+	Fri, 25 Jan 2013 09:15:12 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@list.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Subject: [PATCH 08/19] lockdep: avoid warning about unused variables
-Date: Fri, 25 Jan 2013 14:14:25 +0000
-Message-Id: <1359123276-15833-9-git-send-email-arnd@arndb.de>
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net
+Subject: [PATCH 14/19] spi/atmel: remove incorrect __exit_p()
+Date: Fri, 25 Jan 2013 14:14:31 +0000
+Message-Id: <1359123276-15833-15-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1359123276-15833-1-git-send-email-arnd@arndb.de>
 References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:/Hob6oHYoRPdnBCYy7R4yJ+YVMHa9RNZPzmAURAMFqD
- tC8o1cdK7qfewWQ3pCGEbWYKENA0eU4LJ0aLbcTwRrCjXuVp4I
- JrfhSuxVvcyqHLdOfhDuuDsznkhk+3/hmMDu/vxeqFe+QfCELu
- Uk/PO+Y19bP1pUMsbOIeGbGGC0WnORXNpxFAt336ivfqWaqJ69
- HtbXaxS04BwI7xlBRPi4UNxqpcvejseCRO4puNun+jehG6OngI
- 1lygJOIvGJ7gme+rPdF49exKhhX8YuPy8bZrxs+aCeHt8ZGe5W
- MkCSUeP6iE3LjdrWeid3vYrDdl3zLxwrDclzS6+x/cyVLHlb51
- /rbGf9q6S680m7RrwQ1QjBWDHe73NSbUiDew98DtF
+X-Provags-ID: V02:K0:+fhEfaipIjDYlCDXM0tVJm8Y8eMPXeQBW/S9EIupRD7
+ WHUW+t2viLr/CLtkMEzHSHnyb+oj3lSklJDhod2LLjjHD9vrNZ
+ nDVDnTzNUAMwlWg422UQJSZy03k/nuG9SQQucc0hoXf/tpIcY+
+ 1EhQ2Oft8DGacdwaG813R1sQRsDQpAKR09ap753NEODR4NL898
+ sSPlW37BeKaG289uHIar3L6Xdhu0QnTmqylRdLhDcc3QEZex06
+ m4L1y1/LXzZTFgssPs7je130J8wEuJ+4hans/yxrDdl+1l/NcL
+ DjUAwMvTYzWa/17BA2mlgevxDlg+mudSKuv9nS+9oX8O2oLRAH
+ nPXATeTTd1lQLC1jGva3otU+bRv2DjCGm0m87I28b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When lockdep is disabled, a call to lockdep_assert_held
-does not use its argument, which results in a compiler
-warning if nothing else in the same function uses
-that variable. An instance of this was introduced
-by c9a49628819 "nfsd: make client_lock per net".
+Since we no longer allow building without hotplug, the
+atmel_spi_remove function is always present and we should
+not use __exit_p() to refer to it.
 
-Without this patch, building ARM cerfcube_defconfig results in:
+Without this patch, building at91_dt_defconfig results in:
 
-fs/nfsd/nfs4state.c: In function 'free_client':
-fs/nfsd/nfs4state.c:1047:19: error: unused variable 'nn' [-Wunused-variable]
+drivers/spi/spi-atmel.c:1006:12: warning: 'atmel_spi_remove' defined but not used [-Wunused-function]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: spi-devel-general@lists.sourceforge.net
 ---
- include/linux/lockdep.h | 2 +-
+ drivers/spi/spi-atmel.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-index 2bca44b..f05631e 100644
---- a/include/linux/lockdep.h
-+++ b/include/linux/lockdep.h
-@@ -410,7 +410,7 @@ struct lock_class_key { };
- 
- #define lockdep_depth(tsk)	(0)
- 
--#define lockdep_assert_held(l)			do { } while (0)
-+#define lockdep_assert_held(l)			do { (void)(l); } while (0)
- 
- #define lockdep_recursing(tsk)			(0)
+diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+index ab34497..656d137 100644
+--- a/drivers/spi/spi-atmel.c
++++ b/drivers/spi/spi-atmel.c
+@@ -1088,7 +1088,7 @@ static struct platform_driver atmel_spi_driver = {
+ 	.suspend	= atmel_spi_suspend,
+ 	.resume		= atmel_spi_resume,
+ 	.probe		= atmel_spi_probe,
+-	.remove		= __exit_p(atmel_spi_remove),
++	.remove		= atmel_spi_remove,
+ };
+ module_platform_driver(atmel_spi_driver);
  
 -- 
 1.8.0
