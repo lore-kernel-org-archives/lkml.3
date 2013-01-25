@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab3AYOPK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 09:15:10 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:57632 "EHLO
+	id S932320Ab3AYOPI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 09:15:08 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:57653 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757437Ab3AYOPC (ORCPT
+	with ESMTP id S1757441Ab3AYOPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Jan 2013 09:15:02 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@list.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 11/19] regmap: avoid undefined return from regmap_read_debugfs
-Date: Fri, 25 Jan 2013 14:14:28 +0000
-Message-Id: <1359123276-15833-12-git-send-email-arnd@arndb.de>
+        Jean-Nicolas Graux <jean-nicolas.graux@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Subject: [PATCH 13/19] pinctrl: nomadik: nmk_prcm_gpiocr_get_mode may be unused
+Date: Fri, 25 Jan 2013 14:14:30 +0000
+Message-Id: <1359123276-15833-14-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1359123276-15833-1-git-send-email-arnd@arndb.de>
 References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:kZTXcQz3aWdaiZWGqfGNk6j2S9yvK9i0rDqBr9X8CHF
- E9xd1KrHcu1iU1EwVV8DrpsLb6bCaG4mAbasRDLOTYK3Kndrk3
- A1daxj1Kgg9xQxud4xyku0o9ePz6+TgadN4Wy8yUHzCyaRUqrI
- 2+9yGvii9K2APc9vEZUCzu0CBogAc+J9j4RGb9xQ5Dk3YNDEMi
- tLdgwqbvjudlqVt4GHgm3ujHHRLdLnepm7RNtZ8CWiUo7NWMH5
- 3pjKOxBsxEK/+6mtC8CWbRmKsGJ+Gc0PghirOhHv75bJsxW8SS
- ESCWN9nbWaBpMtY9+AoUUYV9uG3ksFgXRA6Q4YASAVtQrPARjX
- eZZlaRvUGc7RknFwUHTXisFwz3I0r47YfN3B10hcT
+X-Provags-ID: V02:K0:ESJk5c5wDulP3avvEH7Ho6wjaDeWVHQEIS4klh6Zv6v
+ D/ZZ1xtw+rvOvaE19h4l+A10q601aLC+JgjYDKyLg+Q3zdUXCN
+ d0+zOHsEZ6nwdqrhPHptS7V5d1JyLGIaOLOE1CgA+fXreU4kT4
+ 3BohLJtIL+yhD6ScS1eEgXo5agamdzEKVoMsj3X9RLPrCsXv5l
+ OCbR5HvRA4KjQ9OGk9wZ18wRiV370xa4hOacHrYqy8XnYRon5N
+ TXA7aUbr80NEHX3XBeY5bDVZB6HFKBURXjH9mV+uODgBEko2t7
+ d54kE2tKxDeflAEW/oONLdPD3UHxwxt6BRUVecKd0aEDWiiyZi
+ M1c7EENOEyWw79FiuJPK3hvBZGIza70nbuj4D/KIP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gcc warns about the case where regmap_read_debugfs tries
-to walk an empty map->debugfs_off_cache list, which results
-in uninitialized variable getting returned.
+nmk_prcm_gpiocr_get_mode is only needed for debugfs output at
+the moment, which can be compile-time disabled. Marking
+the function __maybe_unused still gives us compile-time
+coverage, but avoids a gcc warning.
 
-Setting this variable to 0 first avoids the warning and
-the potentially undefined value.
+Without this patch, building nhk8815_defconfig results in:
 
-Without this patch, building mxs_defconfig results in:
-
-drivers/base/regmap/regmap-debugfs.c: In function 'regmap_read_debugfs':
-drivers/base/regmap/regmap-debugfs.c:147:9: : warning: 'ret' may be used uninitialized in this function [-Wmaybe-uninitialized]
+drivers/pinctrl/pinctrl-nomadik.c:676:12: warning: 'nmk_prcm_gpiocr_get_mode' defined but not used [-Wunused-function]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jean-Nicolas Graux <jean-nicolas.graux@stericsson.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
 ---
- drivers/base/regmap/regmap-debugfs.c | 2 +-
+ drivers/pinctrl/pinctrl-nomadik.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 46a213a..31cc656 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -80,7 +80,7 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
- {
- 	struct regmap_debugfs_off_cache *c = NULL;
- 	loff_t p = 0;
--	unsigned int i, ret;
-+	unsigned int i, ret = 0;
+diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+index 1bb16ff..5767b18 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.c
++++ b/drivers/pinctrl/pinctrl-nomadik.c
+@@ -676,7 +676,7 @@ int nmk_gpio_set_mode(int gpio, int gpio_mode)
+ }
+ EXPORT_SYMBOL(nmk_gpio_set_mode);
  
- 	/*
- 	 * If we don't have a cache build one so we don't have to do a
+-static int nmk_prcm_gpiocr_get_mode(struct pinctrl_dev *pctldev, int gpio)
++static int __maybe_unused nmk_prcm_gpiocr_get_mode(struct pinctrl_dev *pctldev, int gpio)
+ {
+ 	int i;
+ 	u16 reg;
 -- 
 1.8.0
 
