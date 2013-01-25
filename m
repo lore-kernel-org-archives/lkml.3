@@ -1,181 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757691Ab3AYRcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 12:32:54 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:39929 "EHLO
+	id S1757718Ab3AYRc6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 12:32:58 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39947 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757592Ab3AYRcu (ORCPT
+	with ESMTP id S1755575Ab3AYRcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 12:32:50 -0500
+	Fri, 25 Jan 2013 12:32:52 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
 Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@vger.kernel.org
-Subject: [PATCH 3/3] xen/blkback: Check for insane amounts of request on the ring.
-Date: Fri, 25 Jan 2013 12:32:32 -0500
-Message-Id: <1359135152-30688-4-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 1/3] xen/blkback: Don't trust the handle from the frontend.
+Date: Fri, 25 Jan 2013 12:32:30 -0500
+Message-Id: <1359135152-30688-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.0.2
 In-Reply-To: <1359135152-30688-1-git-send-email-konrad.wilk@oracle.com>
 References: <1359135152-30688-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check that the ring does not have an insane amount of requests
-(more than there could fit on the ring).
+The 'handle' is the device that the request is from. For the life-time
+of the ring we copy it from a request to a response so that the frontend
+is not surprised by it. But we do not need it - when we start processing
+I/Os we have our own 'struct phys_req' which has only most essential
+information about the request. In fact the 'vbd_translate' ends up
+over-writing the preq.dev with a value from the backend.
 
-If we detect this case we will stop processing the requests
-and wait until the XenBus disconnects the ring.
-
-Looking at the code, one would expect that the existing check
-RING_REQUEST_CONS_OVERFLOW which checks for how many responses we
-have created in the past (rsp_prod_pvt) vs requests consumed (req_cons)
-and that difference between is greater or equal to the size of the
-ring. If that condition is satisfied that means we should not be
-processing more requests as we still have a backlog of responses
-to finish. Note that both of those values (rsp_prod_pvt and req_cons)
-are not exposed on the shared ring.
-
-To understand this problem a mini crash course in ring protocol
-response/request updates.
-
-There are four entries: req_prod and rsp_prod; req_event and rsp_event.
-We are only concerned about the first two - which set the tone of
-this bug. The req_prod is a value incremented by frontend for each
-request put on the ring. Conversely the rsp_prod is a value incremented
-by the backend for each response put on the ring. Both values can
-wrap and are modulo the size of the ring (in block case that is 32).
-Look in RING_GET_REQUEST and RING_GET_RESPONSE for the more details.
-
-The culprit here is that if the difference between the
-req_prod and req_cons is greater than the ring size we have a problem.
-Fortunately for us, the '__do_block_io_op' loop:
-
-	rc = blk_rings->common.req_cons;
-	rp = blk_rings->common.sring->req_prod;
-
-	while (rc != rp) {
-
-		..
-		blk_rings->common.req_cons = ++rc; /* before make_response() */
-
-	}
-
-will loop up to the point when rc == rp. The macros inside of the
-loop (RING_GET_REQUEST) is smart and is indexing based on the modulo
-of the ring size. If the frontend has provided a bogus req_prod value
-we will loop here until the 'rc == rp' - so we could be processing
-already processed requests (or responses) often.
-
-The reason the RING_REQUEST_CONS_OVERFLOW is not helping here is
-b/c it only tracks how many responses we have internally produced
-and whether we would should process more.
-
-For example, if we were to enter this function with these values:
-
-       	blk_rings->common.sring->req_prod =  X+31415 (X is the value from
-		the last time __do_block_io_op was called).
-        blk_rings->common.req_cons = X
-        blk_rings->common.rsp_prod_pvt = X
-
-The RING_REQUEST_CONS_OVERFLOW is doing:
-
-	req_cons - sring->rsp_prod_pvt >= 32
-
-Which is,
-	X - X >= 32 or 0 >= 32
-
-And that is false, so we continue on looping (this bug).
-
-The new macro (RING_REQUEST_PROD_OVERFLOW) will help us determine this
-condition, and checks the difference between request consumed and
-request produced and whether that difference is greater than the ring size.
-
-	req_cons - sring->req.prod > 32
-
-	X - X+31415 > 32
-
-And that is true, so we break out of the loop.
+This assignment of preq.dev with the 'handle' value is superfluous
+so lets not do it.
 
 Cc: stable@vger.kernel.org
+Acked-by: Jan Beulich <jbeulich@suse.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/block/xen-blkback/blkback.c | 11 +++++++++--
- drivers/block/xen-blkback/common.h  |  2 ++
- drivers/block/xen-blkback/xenbus.c  |  2 ++
- 3 files changed, 13 insertions(+), 2 deletions(-)
+ drivers/block/xen-blkback/blkback.c | 1 -
+ 1 file changed, 1 deletion(-)
 
 diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 2de3da9..4e9b028 100644
+index 742871d..2de3da9 100644
 --- a/drivers/block/xen-blkback/blkback.c
 +++ b/drivers/block/xen-blkback/blkback.c
-@@ -395,7 +395,7 @@ int xen_blkif_schedule(void *arg)
- {
- 	struct xen_blkif *blkif = arg;
- 	struct xen_vbd *vbd = &blkif->vbd;
--
-+	int rc = 0;
- 	xen_blkif_get(blkif);
- 
- 	while (!kthread_should_stop()) {
-@@ -415,8 +415,12 @@ int xen_blkif_schedule(void *arg)
- 		blkif->waiting_reqs = 0;
- 		smp_mb(); /* clear flag *before* checking for work */
- 
--		if (do_block_io_op(blkif))
-+		rc = do_block_io_op(blkif);
-+		if (rc > 0)
- 			blkif->waiting_reqs = 1;
-+		if (rc == -EACCES)
-+			wait_event_interruptible(blkif->shutdown_wq,
-+						 kthread_should_stop());
- 
- 		if (log_stats && time_after(jiffies, blkif->st_print))
- 			print_stats(blkif);
-@@ -780,6 +784,9 @@ __do_block_io_op(struct xen_blkif *blkif)
- 		if (RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rc))
- 			break;
- 
-+		if (RING_REQUEST_PROD_OVERFLOW(&blk_rings->common, rc, rp))
-+			return -EACCES;
-+
- 		if (kthread_should_stop()) {
- 			more_to_do = 1;
- 			break;
-diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
-index ae7951f..8fd211b 100644
---- a/drivers/block/xen-blkback/common.h
-+++ b/drivers/block/xen-blkback/common.h
-@@ -218,6 +218,8 @@ struct xen_blkif {
- 	int			st_wr_sect;
- 
- 	wait_queue_head_t	waiting_to_free;
-+	/* Thread shutdown wait queue. */
-+	wait_queue_head_t	shutdown_wq;
- };
- 
- 
-diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-index 60558a5..333ebe9 100644
---- a/drivers/block/xen-blkback/xenbus.c
-+++ b/drivers/block/xen-blkback/xenbus.c
-@@ -119,6 +119,7 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
- 	blkif->st_print = jiffies;
- 	init_waitqueue_head(&blkif->waiting_to_free);
- 	blkif->persistent_gnts.rb_node = NULL;
-+	init_waitqueue_head(&blkif->shutdown_wq);
- 
- 	return blkif;
- }
-@@ -178,6 +179,7 @@ static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
- static void xen_blkif_disconnect(struct xen_blkif *blkif)
- {
- 	if (blkif->xenblkd) {
-+		wake_up(&blkif->shutdown_wq);
- 		kthread_stop(blkif->xenblkd);
- 		blkif->xenblkd = NULL;
+@@ -890,7 +890,6 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+ 		goto fail_response;
  	}
+ 
+-	preq.dev           = req->u.rw.handle;
+ 	preq.sector_number = req->u.rw.sector_number;
+ 	preq.nr_sects      = 0;
+ 
 -- 
 1.8.0.2
 
