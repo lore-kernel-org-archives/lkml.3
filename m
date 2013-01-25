@@ -1,180 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279Ab3AYStS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:49:18 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:52117 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755991Ab3AYStR (ORCPT
+	id S1757381Ab3AYSt7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:49:59 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:59118 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756434Ab3AYSt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:49:17 -0500
-Date: Fri, 25 Jan 2013 19:49:11 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi.kivity@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH V3 RESEND RFC 1/2] sched: Bail out of yield_to when
- source and target runqueue has one task
-Message-ID: <20130125184911.GE31022@gmail.com>
-References: <20130122073854.24731.9426.sendpatchset@codeblue.in.ibm.com>
- <20130122073913.24731.65118.sendpatchset@codeblue.in.ibm.com>
- <20130124103213.GD27602@gmail.com>
- <20130125104025.GA14978@linux.vnet.ibm.com>
- <20130125104737.GA23332@gmail.com>
- <5102AACA.3040406@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5102AACA.3040406@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 25 Jan 2013 13:49:57 -0500
+From: Alexander Holler <holler@ahsoftware.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fbdev@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Bernie Thompson <bernie@plugable.com>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Alexander Holler <holler@ahsoftware.de>
+Subject: [PATCH 1/3] semaphore: introduce down_timeout_killable()
+Date: Fri, 25 Jan 2013 19:49:26 +0100
+Message-Id: <1359139768-32294-1-git-send-email-holler@ahsoftware.de>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <50F2A310.5010006@ahsoftware.de>
+References: <50F2A310.5010006@ahsoftware.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The name says it all, it's like down_timeout() but returns on fatal signals
+too.
 
-* Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+---
+ include/linux/semaphore.h |  2 ++
+ kernel/semaphore.c        | 37 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 39 insertions(+)
 
-> On 01/25/2013 04:17 PM, Ingo Molnar wrote:
-> >
-> >* Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
-> >
-> >>* Ingo Molnar <mingo@kernel.org> [2013-01-24 11:32:13]:
-> >>
-> >>>
-> >>>* Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
-> >>>
-> >>>>From: Peter Zijlstra <peterz@infradead.org>
-> >>>>
-> >>>>In case of undercomitted scenarios, especially in large guests
-> >>>>yield_to overhead is significantly high. when run queue length of
-> >>>>source and target is one, take an opportunity to bail out and return
-> >>>>-ESRCH. This return condition can be further exploited to quickly come
-> >>>>out of PLE handler.
-> >>>>
-> >>>>(History: Raghavendra initially worked on break out of kvm ple handler upon
-> >>>>  seeing source runqueue length = 1, but it had to export rq length).
-> >>>>  Peter came up with the elegant idea of return -ESRCH in scheduler core.
-> >>>>
-> >>>>Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> >>>>Raghavendra, Checking the rq length of target vcpu condition added.(thanks Avi)
-> >>>>Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> >>>>Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> >>>>Acked-by: Andrew Jones <drjones@redhat.com>
-> >>>>Tested-by: Chegu Vinod <chegu_vinod@hp.com>
-> >>>>---
-> >>>>
-> >>>>  kernel/sched/core.c |   25 +++++++++++++++++++------
-> >>>>  1 file changed, 19 insertions(+), 6 deletions(-)
-> >>>>
-> >>>>diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> >>>>index 2d8927f..fc219a5 100644
-> >>>>--- a/kernel/sched/core.c
-> >>>>+++ b/kernel/sched/core.c
-> >>>>@@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
-> >>>>   * It's the caller's job to ensure that the target task struct
-> >>>>   * can't go away on us before we can do any checks.
-> >>>>   *
-> >>>>- * Returns true if we indeed boosted the target task.
-> >>>>+ * Returns:
-> >>>>+ *	true (>0) if we indeed boosted the target task.
-> >>>>+ *	false (0) if we failed to boost the target.
-> >>>>+ *	-ESRCH if there's no task to yield to.
-> >>>>   */
-> >>>>  bool __sched yield_to(struct task_struct *p, bool preempt)
-> >>>>  {
-> >>>>@@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
-> >>>>
-> >>>>  again:
-> >>>>  	p_rq = task_rq(p);
-> >>>>+	/*
-> >>>>+	 * If we're the only runnable task on the rq and target rq also
-> >>>>+	 * has only one task, there's absolutely no point in yielding.
-> >>>>+	 */
-> >>>>+	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
-> >>>>+		yielded = -ESRCH;
-> >>>>+		goto out_irq;
-> >>>>+	}
-> >>>
-> >>>Looks good to me in principle.
-> >>>
-> >>>Would be nice to get more consistent benchmark numbers. Once
-> >>>those are unambiguously showing that this is a win:
-> >>>
-> >>>   Acked-by: Ingo Molnar <mingo@kernel.org>
-> >>>
-> >>
-> >>I ran the test with kernbench and sysbench again on 32 core mx3850
-> >>machine with 32 vcpu guests. Results shows definite improvements.
-> >>
-> >>ebizzy and dbench show similar improvement for 1x overcommit
-> >>(note that stdev for 1x in dbench is lesser improvemet is now seen at
-> >>only 20%)
-> >>
-> >>[ all the experiments are taken out of 8 run averages ].
-> >>
-> >>The patches benefit large guest undercommit scenarios, so I believe
-> >>with large guest performance improvemnt is even significant. [ Chegu
-> >>Vinod results show performance near to no ple cases ]. Unfortunately I
-> >>do not have a machine to test larger guest (>32).
-> >>
-> >>Ingo, Please let me know if this is okay to you.
-> >>
-> >>base kernel = 3.8.0-rc4
-> >>
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>                 kernbench  (time in sec lower is better)
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>     base        stdev        patched    stdev      %improve
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>1x   46.6028     1.8672	    42.4494     1.1390	   8.91234
-> >>2x   99.9074     9.1859	    90.4050     2.6131	   9.51121
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>                sysbench (time in sec lower is better)
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>     base        stdev        patched    stdev      %improve
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>1x   18.7402     0.3764	    17.7431     0.3589	   5.32065
-> >>2x   13.2238     0.1935	    13.0096     0.3152	   1.61981
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>                 ebizzy  (records/sec higher is better)
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>     base        stdev        patched    stdev      %improve
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>1x  2421.9000    19.1801	  5883.1000   112.7243	 142.91259
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>                 dbench (throughput MB/sec  higher is better)
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>     base        stdev        patched    stdev      %improve
-> >>+-----------+-----------+-----------+------------+-----------+
-> >>1x  11675.9900   857.4154	 14103.5000   215.8425	  20.79061
-> >>+-----------+-----------+-----------+------------+-----------+
-> >
-> >The numbers look pretty convincing, thanks. The workloads were
-> >CPU bound most of the time, right?
-> 
-> Yes. CPU bound most of the time. I also used tmpfs to reduce 
-> io overhead (for dbbench).
+diff --git a/include/linux/semaphore.h b/include/linux/semaphore.h
+index dc368b8..b508d4d 100644
+--- a/include/linux/semaphore.h
++++ b/include/linux/semaphore.h
+@@ -41,6 +41,8 @@ extern int __must_check down_interruptible(struct semaphore *sem);
+ extern int __must_check down_killable(struct semaphore *sem);
+ extern int __must_check down_trylock(struct semaphore *sem);
+ extern int __must_check down_timeout(struct semaphore *sem, long jiffies);
++extern int __must_check down_timeout_killable(struct semaphore *sem,
++						long jiffies);
+ extern void up(struct semaphore *sem);
+ 
+ #endif /* __LINUX_SEMAPHORE_H */
+diff --git a/kernel/semaphore.c b/kernel/semaphore.c
+index 4567fc0..4a5e823 100644
+--- a/kernel/semaphore.c
++++ b/kernel/semaphore.c
+@@ -37,6 +37,8 @@ static noinline void __down(struct semaphore *sem);
+ static noinline int __down_interruptible(struct semaphore *sem);
+ static noinline int __down_killable(struct semaphore *sem);
+ static noinline int __down_timeout(struct semaphore *sem, long jiffies);
++static noinline int __down_timeout_killable(struct semaphore *sem,
++						long jiffies);
+ static noinline void __up(struct semaphore *sem);
+ 
+ /**
+@@ -169,6 +171,35 @@ int down_timeout(struct semaphore *sem, long jiffies)
+ EXPORT_SYMBOL(down_timeout);
+ 
+ /**
++ * down_timeout_killable - acquire the semaphore within a specified time or
++ * until a fatal signal arrives.
++ * @sem: the semaphore to be acquired
++ * @jiffies: how long to wait before failing
++ *
++ * Attempts to acquire the semaphore.  If no more tasks are allowed to
++ * acquire the semaphore, calling this function will put the task to sleep.
++ * If the semaphore is not released within the specified number of jiffies,
++ * this function returns -ETIME. If the sleep is interrupted by a fatal signal,
++ * this function will return -EINTR. If the semaphore is successfully acquired,
++ * this function returns 0.
++ */
++int down_timeout_killable(struct semaphore *sem, long jiffies)
++{
++	unsigned long flags;
++	int result = 0;
++
++	raw_spin_lock_irqsave(&sem->lock, flags);
++	if (likely(sem->count > 0))
++		sem->count--;
++	else
++		result = __down_timeout_killable(sem, jiffies);
++	raw_spin_unlock_irqrestore(&sem->lock, flags);
++
++	return result;
++}
++EXPORT_SYMBOL(down_timeout_killable);
++
++/**
+  * up - release the semaphore
+  * @sem: the semaphore to release
+  *
+@@ -253,6 +284,12 @@ static noinline int __sched __down_timeout(struct semaphore *sem, long jiffies)
+ 	return __down_common(sem, TASK_UNINTERRUPTIBLE, jiffies);
+ }
+ 
++static noinline int __sched __down_timeout_killable(struct semaphore *sem,
++							long jiffies)
++{
++	return __down_common(sem, TASK_KILLABLE, jiffies);
++}
++
+ static noinline void __sched __up(struct semaphore *sem)
+ {
+ 	struct semaphore_waiter *waiter = list_first_entry(&sem->wait_list,
+-- 
+1.7.11.7
 
-Ok, cool.
-
-Which tree will this be upstreamed through - the KVM tree? I'd 
-suggest the KVM tree because KVM will be the one exposed to the 
-effects of this change.
-
-Thanks,
-
-	Ingo
