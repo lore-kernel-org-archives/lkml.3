@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757001Ab3AYNA5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:00:57 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:60437 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756311Ab3AYNAz (ORCPT
+	id S1757236Ab3AYNDS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 08:03:18 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:27366 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756762Ab3AYNDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:00:55 -0500
+	Fri, 25 Jan 2013 08:03:16 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19sp9obXA/UQmQYGEsiKDRgtC4Nty4qwo8=
+Date: Fri, 25 Jan 2013 08:03:08 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Roland Stigge <stigge@antcom.de>, Andrew Lunn <andrew@lunn.ch>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v3 3/3] arm: mvebu: enable gpio expander over i2c on
+ Mirabox platform
+Message-ID: <20130125130308.GJ1758@titan.lakedaemon.net>
+References: <1358889025-8530-1-git-send-email-gregory.clement@free-electrons.com>
+ <1358889025-8530-4-git-send-email-gregory.clement@free-electrons.com>
+ <CACRpkdbBOQ_KE001kfORapo9=WiJYn04MmRhxnn-5v8ki-EeyA@mail.gmail.com>
+ <20130125124659.GH1758@titan.lakedaemon.net>
+ <CACRpkdZBcAK+9zYSJ2jQhOxNMF-BbO1-5FsRLoJRHH5X9M09VQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKfTPtBbdKM3R__M+x7P9v4cLObbr=FF6QE+-mEkgx0DtcQefA@mail.gmail.com>
-References: <1354537588-25831-1-git-send-email-vincent.guittot@linaro.org>
-	<1354537588-25831-2-git-send-email-vincent.guittot@linaro.org>
-	<CAFTL4hxPPddCmhcPrdZgWVSy3Z+9_Jr9ruT9L5qhq6yFuuEDNQ@mail.gmail.com>
-	<CAKfTPtBJVwKurUjUkUfJefpzYpFi7KVfee9-4-OX2o_mmtW+Ag@mail.gmail.com>
-	<CAKfTPtBbdKM3R__M+x7P9v4cLObbr=FF6QE+-mEkgx0DtcQefA@mail.gmail.com>
-Date: Fri, 25 Jan 2013 14:00:53 +0100
-Message-ID: <CAFTL4hxHJ+XKqHWAHVKmd6bHycr15mSdn6cLxh8wT=OHGD82uQ@mail.gmail.com>
-Subject: Re: [PATCH Resend 1/3] sched: fix nr_busy_cpus with coupled cpuidle
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        ccross@android.com, mingo@kernel.org, peterz@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZBcAK+9zYSJ2jQhOxNMF-BbO1-5FsRLoJRHH5X9M09VQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/25 Vincent Guittot <vincent.guittot@linaro.org>:
-> This sequence is not the right one
->
->> I'm going to look for the saved trace to check the sequence above
->
-> I haven't been able to reproduce the bug that this patch was supposed to
-> solved. The patch 2 and 3 seem enough to fix the nr_busy_cpus field. I will
-> continue to try to reproduce it but it seems that it was a side effect of
-> the 2 others fixes of the series
+On Fri, Jan 25, 2013 at 01:55:04PM +0100, Linus Walleij wrote:
+> On Fri, Jan 25, 2013 at 1:46 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+> > On Fri, Jan 25, 2013 at 09:17:57AM +0100, Linus Walleij wrote:
+> >> On Tue, Jan 22, 2013 at 10:10 PM, Gregory CLEMENT
+> >> <gregory.clement@free-electrons.com> wrote:
+> >>
+> >> > The Globalscale Mirabox platform can be connected to the JTAG/GPIO box
+> >> > through the Multi-IO port. The GPIO box use the NXP PCA9505 I/O port
+> >> > expansion IC to provide 40-bit parallel input/output GPIOs. This patch
+> >> > enable the use of this expander on the Mirabox.
+> >> >
+> >> > Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> >> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> >>
+> >> So as requested I leave this patch for now, tell me if you want it
+> >> applied through pinctrl.
+> >
+> > Which branch did you put the first two on?  I'm not seeing them.
+> 
+> Not pushed yet, take it easy.
 
-Ok. I just checked again as well and I can't find a scenario where
-this can happen. If you find it out or trigger the bug again, don't
-hesitate to resend this patch.
+Ahh, ok.  Sorry, I wasn't trying to rush you.  I didn't check the
+timestamps.  Just saw it in my inbox this morning and decided to work on
+it before going to work.  I'll check later,
 
-Thanks.
+thx,
+
+Jason.
