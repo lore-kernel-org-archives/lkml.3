@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab3AYDCL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 22:02:11 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:39957 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab3AYDBK (ORCPT
+	id S932137Ab3AYDCj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 22:02:39 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6857 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755771Ab3AYDBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 22:01:10 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <rob.herring@calxeda.com>, <rob@landley.net>, <balbi@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-CC: <grant.likely@secretlab.ca>, <gregkh@linuxfoundation.org>, <kishon@ti.com>
-Subject: [PATCH v3 07/11] usb: dwc3-omap: remove platform data associated with dwc3-omap
-Date: Fri, 25 Jan 2013 08:30:51 +0530
-Message-ID: <1359082855-7404-8-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359082855-7404-1-git-send-email-kishon@ti.com>
-References: <1359082855-7404-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 24 Jan 2013 22:01:37 -0500
+X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zw2l0ZevoSEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=oaCqhC68t3oA:10 a=drOt6m5kAAAA:8 a=2KMo9-giAAAA:8 a=sozttTNsAAAA:8 a=jYM2z41T7odf_uYgOQoA:9 a=PUjeQqilurYA:10 a=-ydLB92TkmgA:10 a=x2szoZtqnggA:10 a=iIRS6aQmarT3udo7:21 a=HAIWI4eglJCgl9NT:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1359082886.21576.199.camel@gandalf.local.home>
+Subject: [BUG] panda board locks up on boot
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Venkatraman S <svenkatr@ti.com>, Tony Lindgren <tony@atomide.com>
+Date: Thu, 24 Jan 2013 22:01:26 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-omap5 is not going to have support for non-dt boot making the platform
-data associated with dwc3 useless. Removed it here.
+I've recently started testing my work on arm boards and have found that
+they both don't boot under the latest kernel anymore. I already posted
+about my snowball board, but my panda board also locks up.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/usb/dwc3/dwc3-omap.c            |   24 ++++++++++--------------
- include/linux/platform_data/dwc3-omap.h |    4 ----
- 2 files changed, 10 insertions(+), 18 deletions(-)
+I've bisected it down to this commit:
 
-diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index cc2ccba..4e96fbe 100644
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -311,7 +311,6 @@ static int dwc3_omap_remove_core(struct device *dev, void *c)
- 
- static int dwc3_omap_probe(struct platform_device *pdev)
- {
--	struct dwc3_omap_data	*pdata = pdev->dev.platform_data;
- 	struct device_node	*node = pdev->dev.of_node;
- 
- 	struct dwc3_omap	*omap;
-@@ -328,6 +327,11 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 	void __iomem		*base;
- 	void			*context;
- 
-+	if (!node) {
-+		dev_err(dev, "device node not found\n");
-+		return -EINVAL;
-+	}
-+
- 	omap = devm_kzalloc(dev, sizeof(*omap), GFP_KERNEL);
- 	if (!omap) {
- 		dev_err(dev, "not enough memory\n");
-@@ -389,12 +393,7 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 
- 	reg = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
- 
--	if (node)
--		of_property_read_u32(node, "utmi-mode", &utmi_mode);
--	else if (pdata)
--		utmi_mode = pdata->utmi_mode;
--	else
--		dev_dbg(dev, "missing platform data\n");
-+	of_property_read_u32(node, "utmi-mode", &utmi_mode);
- 
- 	switch (utmi_mode) {
- 	case DWC3_OMAP_UTMI_MODE_SW:
-@@ -437,13 +436,10 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 
- 	dwc3_omap_writel(omap->base, USBOTGSS_IRQENABLE_SET_1, reg);
- 
--	if (node) {
--		ret = of_platform_populate(node, NULL, NULL, dev);
--		if (ret) {
--			dev_err(&pdev->dev,
--				"failed to add create dwc3 core\n");
--			return ret;
--		}
-+	ret = of_platform_populate(node, NULL, NULL, dev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to create dwc3 core\n");
-+		return ret;
- 	}
- 
- 	return 0;
-diff --git a/include/linux/platform_data/dwc3-omap.h b/include/linux/platform_data/dwc3-omap.h
-index ada4012..1d36ca8 100644
---- a/include/linux/platform_data/dwc3-omap.h
-+++ b/include/linux/platform_data/dwc3-omap.h
-@@ -41,7 +41,3 @@ enum dwc3_omap_utmi_mode {
- 	DWC3_OMAP_UTMI_MODE_HW,
- 	DWC3_OMAP_UTMI_MODE_SW,
- };
--
--struct dwc3_omap_data {
--	enum dwc3_omap_utmi_mode	utmi_mode;
--};
--- 
-1.7.9.5
+commit 26b88520b80695a6fa5fd95b5d97c03f4daf87e0
+Author: Russell King <rmk+kernel@arm.linux.org.uk>
+Date:   Fri Apr 13 12:27:37 2012 +0100
+
+    mmc: omap_hsmmc: remove private DMA API implementation
+    
+    Remove the private DMA API implementation from omap_hsmmc, making it
+    use entirely the DMA engine API.
+    
+    Tested-by: Tony Lindgren <tony@atomide.com>
+    Tested-by: Venkatraman S <svenkatr@ti.com>
+    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+
+
+The commit before boots fine, when adding this commit, it locks up.
+
+I reverted the commit (with tweaks) against 3.8-rc4 and was able to get
+my board booting again. Not sure what to do, but I wanted to let people
+know.
+
+Thanks,
+
+-- Steve
+
 
