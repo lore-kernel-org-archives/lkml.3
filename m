@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab3AYLKZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:10:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41362 "EHLO
+	id S1756685Ab3AYLLc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 06:11:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41377 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442Ab3AYLKV (ORCPT
+	with ESMTP id S1753442Ab3AYLL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:10:21 -0500
-Date: Fri, 25 Jan 2013 03:09:39 -0800
+	Fri, 25 Jan 2013 06:11:29 -0500
+Date: Fri, 25 Jan 2013 03:10:49 -0800
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-pimk92kek8kcp4dmb1jakoro@git.kernel.org>
+Message-ID: <tip-c700rsiphpmzv8klogojpfut@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
@@ -19,9 +19,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf session:
-  There is no need for a per session hists instance
-Git-Commit-ID: 28a6b6aa54878a6a239e901698b3fc111bbcc54f
+Subject: [tip:perf/core] perf machine: Introduce struct machines
+Git-Commit-ID: 876650e6c3209861a8949111140d805b3440951f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,26 +29,24 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:09:45 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:10:56 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  28a6b6aa54878a6a239e901698b3fc111bbcc54f
-Gitweb:     http://git.kernel.org/tip/28a6b6aa54878a6a239e901698b3fc111bbcc54f
+Commit-ID:  876650e6c3209861a8949111140d805b3440951f
+Gitweb:     http://git.kernel.org/tip/876650e6c3209861a8949111140d805b3440951f
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 18 Dec 2012 16:24:46 -0300
+AuthorDate: Tue, 18 Dec 2012 19:15:48 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Thu, 24 Jan 2013 16:40:12 -0300
 
-perf session: There is no need for a per session hists instance
+perf machine: Introduce struct machines
 
-It was being used just for its stats member, so ditch session->hists and
-use just what is needed, session->stats.
-
-This completes the move support multiple events in the hists layer, the
-last user of session->hists was 'perf diff' but Jiri Olsa has fixed that
-some time ago.
+That consolidates the grouping of host + guests, isolating a bit more of
+functionality now centered on 'perf_session' that can be used
+independently in tools that don't need a 'perf_session' instance, but
+needs to have all the thread/map/symbol machinery.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -59,229 +56,547 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-pimk92kek8kcp4dmb1jakoro@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-c700rsiphpmzv8klogojpfut@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-sched.c |  6 +++---
- tools/perf/builtin-top.c   |  4 ++--
- tools/perf/util/hist.c     |  9 +++++++--
- tools/perf/util/hist.h     |  1 +
- tools/perf/util/session.c  | 41 ++++++++++++++++++++---------------------
- tools/perf/util/session.h  |  6 +-----
- 6 files changed, 34 insertions(+), 33 deletions(-)
+ tools/perf/builtin-record.c   |  4 +--
+ tools/perf/builtin-report.c   |  2 +-
+ tools/perf/builtin-top.c      |  4 +--
+ tools/perf/tests/hists_link.c | 17 +++++-------
+ tools/perf/util/header.c      | 12 ++++----
+ tools/perf/util/machine.c     | 64 ++++++++++++++++++++++++++++---------------
+ tools/perf/util/machine.h     | 32 ++++++++++++++--------
+ tools/perf/util/session.c     | 30 ++++++++------------
+ tools/perf/util/session.h     | 11 ++------
+ 9 files changed, 95 insertions(+), 81 deletions(-)
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index cc28b85..1382294 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1475,9 +1475,9 @@ static int perf_sched__read_events(struct perf_sched *sched, bool destroy,
- 			goto out_delete;
- 		}
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 69e2895..a0b2427 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -571,8 +571,8 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 		       "Check /proc/modules permission or run as root.\n");
  
--		sched->nr_events      = session->hists.stats.nr_events[0];
--		sched->nr_lost_events = session->hists.stats.total_lost;
--		sched->nr_lost_chunks = session->hists.stats.nr_events[PERF_RECORD_LOST];
-+		sched->nr_events      = session->stats.nr_events[0];
-+		sched->nr_lost_events = session->stats.total_lost;
-+		sched->nr_lost_chunks = session->stats.nr_events[PERF_RECORD_LOST];
+ 	if (perf_guest) {
+-		machines__process(&session->machines,
+-				  perf_event__synthesize_guest_os, tool);
++		machines__process_guests(&session->machines,
++					 perf_event__synthesize_guest_os, tool);
  	}
  
- 	if (destroy)
+ 	if (!opts->target.system_wide)
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 5134acf..13cdf61 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -372,7 +372,7 @@ static int __cmd_report(struct perf_report *rep)
+ 	if (ret)
+ 		goto out_delete;
+ 
+-	kernel_map = session->host_machine.vmlinux_maps[MAP__FUNCTION];
++	kernel_map = session->machines.host.vmlinux_maps[MAP__FUNCTION];
+ 	kernel_kmap = map__kmap(kernel_map);
+ 	if (kernel_map == NULL ||
+ 	    (kernel_map->dso->hit &&
 diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index f5fd260..996b10c 100644
+index 996b10c..e0ecebd 100644
 --- a/tools/perf/builtin-top.c
 +++ b/tools/perf/builtin-top.c
-@@ -728,7 +728,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
+@@ -966,10 +966,10 @@ static int __cmd_top(struct perf_top *top)
+ 	if (perf_target__has_task(&opts->target))
+ 		perf_event__synthesize_thread_map(&top->tool, top->evlist->threads,
+ 						  perf_event__process,
+-						  &top->session->host_machine);
++						  &top->session->machines.host);
+ 	else
+ 		perf_event__synthesize_threads(&top->tool, perf_event__process,
+-					       &top->session->host_machine);
++					       &top->session->machines.host);
+ 	perf_top__start_counters(top);
+ 	top->session->evlist = top->evlist;
+ 	perf_session__set_id_hdr_size(top->session);
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 0f1aae3..27860a0 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -75,13 +75,11 @@ static struct {
+ 	{ "[kernel]", kernel_syms, ARRAY_SIZE(kernel_syms) },
+ };
  
- 	if (!machine) {
- 		pr_err("%u unprocessable samples recorded.\n",
--		       top->session->hists.stats.nr_unprocessable_samples++);
-+		       top->session->stats.nr_unprocessable_samples++);
- 		return;
- 	}
+-static struct machine *setup_fake_machine(void)
++static struct machine *setup_fake_machine(struct machines *machines)
+ {
+-	struct rb_root machine_root = RB_ROOT;
+-	struct machine *machine;
++	struct machine *machine = machines__find(machines, HOST_KERNEL_ID);
+ 	size_t i;
  
-@@ -878,7 +878,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
- 			hists__inc_nr_events(&evsel->hists, event->header.type);
- 			machine__process_event(machine, event);
- 		} else
--			++session->hists.stats.nr_unknown_events;
-+			++session->stats.nr_unknown_events;
+-	machine = machines__findnew(&machine_root, HOST_KERNEL_ID);
+ 	if (machine == NULL) {
+ 		pr_debug("Not enough memory for machine setup\n");
+ 		return NULL;
+@@ -435,6 +433,7 @@ static void print_hists(struct hists *hists)
+ int test__hists_link(void)
+ {
+ 	int err = -1;
++	struct machines machines;
+ 	struct machine *machine = NULL;
+ 	struct perf_evsel *evsel, *first;
+         struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
+@@ -452,8 +451,10 @@ int test__hists_link(void)
+ 	/* default sort order (comm,dso,sym) will be used */
+ 	setup_sorting(NULL, NULL);
+ 
++	machines__init(&machines);
++
+ 	/* setup threads/dso/map/symbols also */
+-	machine = setup_fake_machine();
++	machine = setup_fake_machine(&machines);
+ 	if (!machine)
+ 		goto out;
+ 
+@@ -492,11 +493,7 @@ int test__hists_link(void)
+ out:
+ 	/* tear down everything */
+ 	perf_evlist__delete(evlist);
+-
+-	if (machine) {
+-		machine__delete_threads(machine);
+-		machine__delete(machine);
+-	}
++	machines__exit(&machines);
+ 
+ 	return err;
+ }
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index bb578d2..fccd69d 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -287,12 +287,12 @@ static int dsos__write_buildid_table(struct perf_header *header, int fd)
+ 	struct perf_session *session = container_of(header,
+ 			struct perf_session, header);
+ 	struct rb_node *nd;
+-	int err = machine__write_buildid_table(&session->host_machine, fd);
++	int err = machine__write_buildid_table(&session->machines.host, fd);
+ 
+ 	if (err)
+ 		return err;
+ 
+-	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
++	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
+ 		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+ 		err = machine__write_buildid_table(pos, fd);
+ 		if (err)
+@@ -448,9 +448,9 @@ static int perf_session__cache_build_ids(struct perf_session *session)
+ 	if (mkdir(debugdir, 0755) != 0 && errno != EEXIST)
+ 		return -1;
+ 
+-	ret = machine__cache_build_ids(&session->host_machine, debugdir);
++	ret = machine__cache_build_ids(&session->machines.host, debugdir);
+ 
+-	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
++	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
+ 		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+ 		ret |= machine__cache_build_ids(pos, debugdir);
  	}
+@@ -467,9 +467,9 @@ static bool machine__read_build_ids(struct machine *machine, bool with_hits)
+ static bool perf_session__read_build_ids(struct perf_session *session, bool with_hits)
+ {
+ 	struct rb_node *nd;
+-	bool ret = machine__read_build_ids(&session->host_machine, with_hits);
++	bool ret = machine__read_build_ids(&session->machines.host, with_hits);
+ 
+-	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
++	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
+ 		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+ 		ret |= machine__read_build_ids(pos, with_hits);
+ 	}
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 71fa903..efdb38e 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -91,10 +91,22 @@ void machine__delete(struct machine *machine)
+ 	free(machine);
  }
  
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 37179af..965ebf9 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -717,10 +717,15 @@ int hist_entry__annotate(struct hist_entry *he, size_t privsize)
- 	return symbol__annotate(he->ms.sym, he->ms.map, privsize);
- }
- 
-+void events_stats__inc(struct events_stats *stats, u32 type)
+-struct machine *machines__add(struct rb_root *machines, pid_t pid,
++void machines__init(struct machines *machines)
 +{
-+	++stats->nr_events[0];
-+	++stats->nr_events[type];
++	machine__init(&machines->host, "", HOST_KERNEL_ID);
++	machines->guests = RB_ROOT;
 +}
 +
- void hists__inc_nr_events(struct hists *hists, u32 type)
++void machines__exit(struct machines *machines)
++{
++	machine__exit(&machines->host);
++	/* XXX exit guest */
++}
++
++struct machine *machines__add(struct machines *machines, pid_t pid,
+ 			      const char *root_dir)
  {
--	++hists->stats.nr_events[0];
--	++hists->stats.nr_events[type];
-+	events_stats__inc(&hists->stats, type);
+-	struct rb_node **p = &machines->rb_node;
++	struct rb_node **p = &machines->guests.rb_node;
+ 	struct rb_node *parent = NULL;
+ 	struct machine *pos, *machine = malloc(sizeof(*machine));
+ 
+@@ -116,18 +128,21 @@ struct machine *machines__add(struct rb_root *machines, pid_t pid,
+ 	}
+ 
+ 	rb_link_node(&machine->rb_node, parent, p);
+-	rb_insert_color(&machine->rb_node, machines);
++	rb_insert_color(&machine->rb_node, &machines->guests);
+ 
+ 	return machine;
  }
  
- static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index cb6533b..3862468 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -98,6 +98,7 @@ void hists__output_recalc_col_len(struct hists *hists, int max_rows);
+-struct machine *machines__find(struct rb_root *machines, pid_t pid)
++struct machine *machines__find(struct machines *machines, pid_t pid)
+ {
+-	struct rb_node **p = &machines->rb_node;
++	struct rb_node **p = &machines->guests.rb_node;
+ 	struct rb_node *parent = NULL;
+ 	struct machine *machine;
+ 	struct machine *default_machine = NULL;
  
- void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h);
- void hists__inc_nr_events(struct hists *self, u32 type);
-+void events_stats__inc(struct events_stats *stats, u32 type);
- size_t events_stats__fprintf(struct events_stats *stats, FILE *fp);
++	if (pid == HOST_KERNEL_ID)
++		return &machines->host;
++
+ 	while (*p != NULL) {
+ 		parent = *p;
+ 		machine = rb_entry(parent, struct machine, rb_node);
+@@ -144,7 +159,7 @@ struct machine *machines__find(struct rb_root *machines, pid_t pid)
+ 	return default_machine;
+ }
  
- size_t hists__fprintf(struct hists *self, bool show_header, int max_rows,
+-struct machine *machines__findnew(struct rb_root *machines, pid_t pid)
++struct machine *machines__findnew(struct machines *machines, pid_t pid)
+ {
+ 	char path[PATH_MAX];
+ 	const char *root_dir = "";
+@@ -178,12 +193,12 @@ out:
+ 	return machine;
+ }
+ 
+-void machines__process(struct rb_root *machines,
+-		       machine__process_t process, void *data)
++void machines__process_guests(struct machines *machines,
++			      machine__process_t process, void *data)
+ {
+ 	struct rb_node *nd;
+ 
+-	for (nd = rb_first(machines); nd; nd = rb_next(nd)) {
++	for (nd = rb_first(&machines->guests); nd; nd = rb_next(nd)) {
+ 		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+ 		process(pos, data);
+ 	}
+@@ -203,12 +218,14 @@ char *machine__mmap_name(struct machine *machine, char *bf, size_t size)
+ 	return bf;
+ }
+ 
+-void machines__set_id_hdr_size(struct rb_root *machines, u16 id_hdr_size)
++void machines__set_id_hdr_size(struct machines *machines, u16 id_hdr_size)
+ {
+ 	struct rb_node *node;
+ 	struct machine *machine;
+ 
+-	for (node = rb_first(machines); node; node = rb_next(node)) {
++	machines->host.id_hdr_size = id_hdr_size;
++
++	for (node = rb_first(&machines->guests); node; node = rb_next(node)) {
+ 		machine = rb_entry(node, struct machine, rb_node);
+ 		machine->id_hdr_size = id_hdr_size;
+ 	}
+@@ -313,12 +330,13 @@ struct map *machine__new_module(struct machine *machine, u64 start,
+ 	return map;
+ }
+ 
+-size_t machines__fprintf_dsos(struct rb_root *machines, FILE *fp)
++size_t machines__fprintf_dsos(struct machines *machines, FILE *fp)
+ {
+ 	struct rb_node *nd;
+-	size_t ret = 0;
++	size_t ret = __dsos__fprintf(&machines->host.kernel_dsos, fp) +
++		     __dsos__fprintf(&machines->host.user_dsos, fp);
+ 
+-	for (nd = rb_first(machines); nd; nd = rb_next(nd)) {
++	for (nd = rb_first(&machines->guests); nd; nd = rb_next(nd)) {
+ 		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+ 		ret += __dsos__fprintf(&pos->kernel_dsos, fp);
+ 		ret += __dsos__fprintf(&pos->user_dsos, fp);
+@@ -334,13 +352,13 @@ size_t machine__fprintf_dsos_buildid(struct machine *machine, FILE *fp,
+ 	       __dsos__fprintf_buildid(&machine->user_dsos, fp, skip, parm);
+ }
+ 
+-size_t machines__fprintf_dsos_buildid(struct rb_root *machines, FILE *fp,
++size_t machines__fprintf_dsos_buildid(struct machines *machines, FILE *fp,
+ 				     bool (skip)(struct dso *dso, int parm), int parm)
+ {
+ 	struct rb_node *nd;
+-	size_t ret = 0;
++	size_t ret = machine__fprintf_dsos_buildid(&machines->host, fp, skip, parm);
+ 
+-	for (nd = rb_first(machines); nd; nd = rb_next(nd)) {
++	for (nd = rb_first(&machines->guests); nd; nd = rb_next(nd)) {
+ 		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+ 		ret += machine__fprintf_dsos_buildid(pos, fp, skip, parm);
+ 	}
+@@ -511,7 +529,7 @@ void machine__destroy_kernel_maps(struct machine *machine)
+ 	}
+ }
+ 
+-int machines__create_guest_kernel_maps(struct rb_root *machines)
++int machines__create_guest_kernel_maps(struct machines *machines)
+ {
+ 	int ret = 0;
+ 	struct dirent **namelist = NULL;
+@@ -560,20 +578,22 @@ failure:
+ 	return ret;
+ }
+ 
+-void machines__destroy_guest_kernel_maps(struct rb_root *machines)
++void machines__destroy_kernel_maps(struct machines *machines)
+ {
+-	struct rb_node *next = rb_first(machines);
++	struct rb_node *next = rb_first(&machines->guests);
++
++	machine__destroy_kernel_maps(&machines->host);
+ 
+ 	while (next) {
+ 		struct machine *pos = rb_entry(next, struct machine, rb_node);
+ 
+ 		next = rb_next(&pos->rb_node);
+-		rb_erase(&pos->rb_node, machines);
++		rb_erase(&pos->rb_node, &machines->guests);
+ 		machine__delete(pos);
+ 	}
+ }
+ 
+-int machines__create_kernel_maps(struct rb_root *machines, pid_t pid)
++int machines__create_kernel_maps(struct machines *machines, pid_t pid)
+ {
+ 	struct machine *machine = machines__findnew(machines, pid);
+ 
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index e112368..5ac5892 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -47,16 +47,24 @@ int machine__process_event(struct machine *machine, union perf_event *event);
+ 
+ typedef void (*machine__process_t)(struct machine *machine, void *data);
+ 
+-void machines__process(struct rb_root *machines,
+-		       machine__process_t process, void *data);
++struct machines {
++	struct machine host;
++	struct rb_root guests;
++};
++
++void machines__init(struct machines *machines);
++void machines__exit(struct machines *machines);
++
++void machines__process_guests(struct machines *machines,
++			      machine__process_t process, void *data);
+ 
+-struct machine *machines__add(struct rb_root *machines, pid_t pid,
++struct machine *machines__add(struct machines *machines, pid_t pid,
+ 			      const char *root_dir);
+-struct machine *machines__find_host(struct rb_root *machines);
+-struct machine *machines__find(struct rb_root *machines, pid_t pid);
+-struct machine *machines__findnew(struct rb_root *machines, pid_t pid);
++struct machine *machines__find_host(struct machines *machines);
++struct machine *machines__find(struct machines *machines, pid_t pid);
++struct machine *machines__findnew(struct machines *machines, pid_t pid);
+ 
+-void machines__set_id_hdr_size(struct rb_root *machines, u16 id_hdr_size);
++void machines__set_id_hdr_size(struct machines *machines, u16 id_hdr_size);
+ char *machine__mmap_name(struct machine *machine, char *bf, size_t size);
+ 
+ int machine__init(struct machine *machine, const char *root_dir, pid_t pid);
+@@ -132,17 +140,17 @@ int machine__load_vmlinux_path(struct machine *machine, enum map_type type,
+ 
+ size_t machine__fprintf_dsos_buildid(struct machine *machine, FILE *fp,
+ 				     bool (skip)(struct dso *dso, int parm), int parm);
+-size_t machines__fprintf_dsos(struct rb_root *machines, FILE *fp);
+-size_t machines__fprintf_dsos_buildid(struct rb_root *machines, FILE *fp,
++size_t machines__fprintf_dsos(struct machines *machines, FILE *fp);
++size_t machines__fprintf_dsos_buildid(struct machines *machines, FILE *fp,
+ 				     bool (skip)(struct dso *dso, int parm), int parm);
+ 
+ void machine__destroy_kernel_maps(struct machine *machine);
+ int __machine__create_kernel_maps(struct machine *machine, struct dso *kernel);
+ int machine__create_kernel_maps(struct machine *machine);
+ 
+-int machines__create_kernel_maps(struct rb_root *machines, pid_t pid);
+-int machines__create_guest_kernel_maps(struct rb_root *machines);
+-void machines__destroy_guest_kernel_maps(struct rb_root *machines);
++int machines__create_kernel_maps(struct machines *machines, pid_t pid);
++int machines__create_guest_kernel_maps(struct machines *machines);
++void machines__destroy_kernel_maps(struct machines *machines);
+ 
+ size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
+ 
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 6e8dd2a..b0bcc32 100644
+index b0bcc32..046b057 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -133,7 +133,6 @@ struct perf_session *perf_session__new(const char *filename, int mode,
+@@ -86,13 +86,12 @@ void perf_session__set_id_hdr_size(struct perf_session *session)
+ {
+ 	u16 id_hdr_size = perf_evlist__id_hdr_size(session->evlist);
+ 
+-	session->host_machine.id_hdr_size = id_hdr_size;
+ 	machines__set_id_hdr_size(&session->machines, id_hdr_size);
+ }
+ 
+ int perf_session__create_kernel_maps(struct perf_session *self)
+ {
+-	int ret = machine__create_kernel_maps(&self->host_machine);
++	int ret = machine__create_kernel_maps(&self->machines.host);
+ 
+ 	if (ret >= 0)
+ 		ret = machines__create_guest_kernel_maps(&self->machines);
+@@ -101,8 +100,7 @@ int perf_session__create_kernel_maps(struct perf_session *self)
+ 
+ static void perf_session__destroy_kernel_maps(struct perf_session *self)
+ {
+-	machine__destroy_kernel_maps(&self->host_machine);
+-	machines__destroy_guest_kernel_maps(&self->machines);
++	machines__destroy_kernel_maps(&self->machines);
+ }
+ 
+ struct perf_session *perf_session__new(const char *filename, int mode,
+@@ -127,12 +125,11 @@ struct perf_session *perf_session__new(const char *filename, int mode,
+ 		goto out;
+ 
+ 	memcpy(self->filename, filename, len);
+-	self->machines = RB_ROOT;
+ 	self->repipe = repipe;
+ 	INIT_LIST_HEAD(&self->ordered_samples.samples);
  	INIT_LIST_HEAD(&self->ordered_samples.sample_cache);
  	INIT_LIST_HEAD(&self->ordered_samples.to_free);
- 	machine__init(&self->host_machine, "", HOST_KERNEL_ID);
--	hists__init(&self->hists);
+-	machine__init(&self->host_machine, "", HOST_KERNEL_ID);
++	machines__init(&self->machines);
  
  	if (mode == O_RDONLY) {
  		if (perf_session__open(self, force) < 0)
-@@ -863,11 +862,11 @@ static int perf_session_deliver_event(struct perf_session *session,
- 	case PERF_RECORD_SAMPLE:
- 		dump_sample(evsel, event, sample);
- 		if (evsel == NULL) {
--			++session->hists.stats.nr_unknown_id;
-+			++session->stats.nr_unknown_id;
- 			return 0;
- 		}
- 		if (machine == NULL) {
--			++session->hists.stats.nr_unprocessable_samples;
-+			++session->stats.nr_unprocessable_samples;
- 			return 0;
- 		}
- 		return tool->sample(tool, event, sample, evsel, machine);
-@@ -881,7 +880,7 @@ static int perf_session_deliver_event(struct perf_session *session,
- 		return tool->exit(tool, event, sample, machine);
- 	case PERF_RECORD_LOST:
- 		if (tool->lost == perf_event__process_lost)
--			session->hists.stats.total_lost += event->lost.lost;
-+			session->stats.total_lost += event->lost.lost;
- 		return tool->lost(tool, event, sample, machine);
- 	case PERF_RECORD_READ:
- 		return tool->read(tool, event, sample, evsel, machine);
-@@ -890,7 +889,7 @@ static int perf_session_deliver_event(struct perf_session *session,
- 	case PERF_RECORD_UNTHROTTLE:
- 		return tool->unthrottle(tool, event, sample, machine);
- 	default:
--		++session->hists.stats.nr_unknown_events;
-+		++session->stats.nr_unknown_events;
- 		return -1;
- 	}
- }
-@@ -904,8 +903,8 @@ static int perf_session__preprocess_sample(struct perf_session *session,
+@@ -162,12 +159,12 @@ out_delete:
  
- 	if (!ip_callchain__valid(sample->callchain, event)) {
- 		pr_debug("call-chain problem with event, skipping it.\n");
--		++session->hists.stats.nr_invalid_chains;
--		session->hists.stats.total_invalid_chains += sample->period;
-+		++session->stats.nr_invalid_chains;
-+		session->stats.total_invalid_chains += sample->period;
- 		return -EINVAL;
- 	}
- 	return 0;
-@@ -963,7 +962,7 @@ static int perf_session__process_event(struct perf_session *session,
- 	if (event->header.type >= PERF_RECORD_HEADER_MAX)
- 		return -EINVAL;
- 
--	hists__inc_nr_events(&session->hists, event->header.type);
-+	events_stats__inc(&session->stats, event->header.type);
- 
- 	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
- 		return perf_session__process_user_event(session, event, tool, file_offset);
-@@ -1018,39 +1017,39 @@ static void perf_session__warn_about_errors(const struct perf_session *session,
- 					    const struct perf_tool *tool)
+ static void perf_session__delete_dead_threads(struct perf_session *session)
  {
- 	if (tool->lost == perf_event__process_lost &&
--	    session->hists.stats.nr_events[PERF_RECORD_LOST] != 0) {
-+	    session->stats.nr_events[PERF_RECORD_LOST] != 0) {
- 		ui__warning("Processed %d events and lost %d chunks!\n\n"
- 			    "Check IO/CPU overload!\n\n",
--			    session->hists.stats.nr_events[0],
--			    session->hists.stats.nr_events[PERF_RECORD_LOST]);
-+			    session->stats.nr_events[0],
-+			    session->stats.nr_events[PERF_RECORD_LOST]);
- 	}
- 
--	if (session->hists.stats.nr_unknown_events != 0) {
-+	if (session->stats.nr_unknown_events != 0) {
- 		ui__warning("Found %u unknown events!\n\n"
- 			    "Is this an older tool processing a perf.data "
- 			    "file generated by a more recent tool?\n\n"
- 			    "If that is not the case, consider "
- 			    "reporting to linux-kernel@vger.kernel.org.\n\n",
--			    session->hists.stats.nr_unknown_events);
-+			    session->stats.nr_unknown_events);
- 	}
- 
--	if (session->hists.stats.nr_unknown_id != 0) {
-+	if (session->stats.nr_unknown_id != 0) {
- 		ui__warning("%u samples with id not present in the header\n",
--			    session->hists.stats.nr_unknown_id);
-+			    session->stats.nr_unknown_id);
- 	}
- 
-- 	if (session->hists.stats.nr_invalid_chains != 0) {
-+ 	if (session->stats.nr_invalid_chains != 0) {
-  		ui__warning("Found invalid callchains!\n\n"
-  			    "%u out of %u events were discarded for this reason.\n\n"
-  			    "Consider reporting to linux-kernel@vger.kernel.org.\n\n",
-- 			    session->hists.stats.nr_invalid_chains,
-- 			    session->hists.stats.nr_events[PERF_RECORD_SAMPLE]);
-+ 			    session->stats.nr_invalid_chains,
-+ 			    session->stats.nr_events[PERF_RECORD_SAMPLE]);
-  	}
- 
--	if (session->hists.stats.nr_unprocessable_samples != 0) {
-+	if (session->stats.nr_unprocessable_samples != 0) {
- 		ui__warning("%u unprocessable samples recorded.\n"
- 			    "Do you have a KVM guest running and not using 'perf kvm'?\n",
--			    session->hists.stats.nr_unprocessable_samples);
-+			    session->stats.nr_unprocessable_samples);
- 	}
+-	machine__delete_dead_threads(&session->host_machine);
++	machine__delete_dead_threads(&session->machines.host);
  }
  
-@@ -1353,7 +1352,7 @@ size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp)
- 	struct perf_evsel *pos;
- 	size_t ret = fprintf(fp, "Aggregated stats:\n");
+ static void perf_session__delete_threads(struct perf_session *session)
+ {
+-	machine__delete_threads(&session->host_machine);
++	machine__delete_threads(&session->machines.host);
+ }
  
--	ret += events_stats__fprintf(&session->hists.stats, fp);
-+	ret += events_stats__fprintf(&session->stats, fp);
+ static void perf_session_env__delete(struct perf_session_env *env)
+@@ -192,7 +189,7 @@ void perf_session__delete(struct perf_session *self)
+ 	perf_session__delete_dead_threads(self);
+ 	perf_session__delete_threads(self);
+ 	perf_session_env__delete(&self->header.env);
+-	machine__exit(&self->host_machine);
++	machines__exit(&self->machines);
+ 	close(self->fd);
+ 	free(self);
+ 	vdso__exit();
+@@ -998,7 +995,7 @@ void perf_event_header__bswap(struct perf_event_header *self)
  
- 	list_for_each_entry(pos, &session->evlist->entries, node) {
- 		ret += fprintf(fp, "%s stats:\n", perf_evsel__name(pos));
+ struct thread *perf_session__findnew(struct perf_session *session, pid_t pid)
+ {
+-	return machine__findnew_thread(&session->host_machine, pid);
++	return machine__findnew_thread(&session->machines.host, pid);
+ }
+ 
+ static struct thread *perf_session__register_idle_thread(struct perf_session *self)
+@@ -1335,16 +1332,13 @@ int maps__set_kallsyms_ref_reloc_sym(struct map **maps,
+ 
+ size_t perf_session__fprintf_dsos(struct perf_session *self, FILE *fp)
+ {
+-	return __dsos__fprintf(&self->host_machine.kernel_dsos, fp) +
+-	       __dsos__fprintf(&self->host_machine.user_dsos, fp) +
+-	       machines__fprintf_dsos(&self->machines, fp);
++	return machines__fprintf_dsos(&self->machines, fp);
+ }
+ 
+ size_t perf_session__fprintf_dsos_buildid(struct perf_session *self, FILE *fp,
+ 					  bool (skip)(struct dso *dso, int parm), int parm)
+ {
+-	size_t ret = machine__fprintf_dsos_buildid(&self->host_machine, fp, skip, parm);
+-	return ret + machines__fprintf_dsos_buildid(&self->machines, fp, skip, parm);
++	return machines__fprintf_dsos_buildid(&self->machines, fp, skip, parm);
+ }
+ 
+ size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp)
+@@ -1368,7 +1362,7 @@ size_t perf_session__fprintf(struct perf_session *session, FILE *fp)
+ 	 * FIXME: Here we have to actually print all the machines in this
+ 	 * session, not just the host...
+ 	 */
+-	return machine__fprintf(&session->host_machine, fp);
++	return machine__fprintf(&session->machines.host, fp);
+ }
+ 
+ void perf_session__remove_thread(struct perf_session *session,
+@@ -1377,10 +1371,10 @@ void perf_session__remove_thread(struct perf_session *session,
+ 	/*
+ 	 * FIXME: This one makes no sense, we need to remove the thread from
+ 	 * the machine it belongs to, perf_session can have many machines, so
+-	 * doing it always on ->host_machine is wrong.  Fix when auditing all
++	 * doing it always on ->machines.host is wrong.  Fix when auditing all
+ 	 * the 'perf kvm' code.
+ 	 */
+-	machine__remove_thread(&session->host_machine, th);
++	machine__remove_thread(&session->machines.host, th);
+ }
+ 
+ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
 diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 426ca0c..57066cb 100644
+index 57066cb..de4e687 100644
 --- a/tools/perf/util/session.h
 +++ b/tools/perf/util/session.h
-@@ -34,11 +34,7 @@ struct perf_session {
- 	struct rb_root		machines;
+@@ -30,8 +30,7 @@ struct ordered_samples {
+ struct perf_session {
+ 	struct perf_header	header;
+ 	unsigned long		size;
+-	struct machine		host_machine;
+-	struct rb_root		machines;
++	struct machines		machines;
  	struct perf_evlist	*evlist;
  	struct pevent		*pevent;
--	/*
--	 * FIXME: Need to split this up further, we need global
--	 *	  stats + per event stats.
--	 */
--	struct hists		hists;
-+	struct events_stats	stats;
- 	int			fd;
- 	bool			fd_pipe;
- 	bool			repipe;
+ 	struct events_stats	stats;
+@@ -49,7 +48,7 @@ struct perf_tool;
+ struct perf_session *perf_session__new(const char *filename, int mode,
+ 				       bool force, bool repipe,
+ 				       struct perf_tool *tool);
+-void perf_session__delete(struct perf_session *self);
++void perf_session__delete(struct perf_session *session);
+ 
+ void perf_event_header__bswap(struct perf_event_header *self);
+ 
+@@ -78,22 +77,18 @@ void perf_session__remove_thread(struct perf_session *self, struct thread *th);
+ static inline
+ struct machine *perf_session__find_host_machine(struct perf_session *self)
+ {
+-	return &self->host_machine;
++	return &self->machines.host;
+ }
+ 
+ static inline
+ struct machine *perf_session__find_machine(struct perf_session *self, pid_t pid)
+ {
+-	if (pid == HOST_KERNEL_ID)
+-		return &self->host_machine;
+ 	return machines__find(&self->machines, pid);
+ }
+ 
+ static inline
+ struct machine *perf_session__findnew_machine(struct perf_session *self, pid_t pid)
+ {
+-	if (pid == HOST_KERNEL_ID)
+-		return &self->host_machine;
+ 	return machines__findnew(&self->machines, pid);
+ }
+ 
