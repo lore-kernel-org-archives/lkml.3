@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab3AYJs1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 04:48:27 -0500
-Received: from mga14.intel.com ([143.182.124.37]:17499 "EHLO mga14.intel.com"
+	id S1756128Ab3AYJso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 04:48:44 -0500
+Received: from mga02.intel.com ([134.134.136.20]:9221 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753359Ab3AYJsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 04:48:23 -0500
+	id S1755848Ab3AYJsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 04:48:37 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,537,1355126400"; 
-   d="scan'208";a="195026631"
+   d="scan'208";a="276499014"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
         linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v4 3/4] dw_dmac: fill individual length of descriptor
-Date: Fri, 25 Jan 2013 11:48:02 +0200
-Message-Id: <1359107283-5274-4-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v4 2/4] dw_dmac: introduce total_len field in struct dw_desc
+Date: Fri, 25 Jan 2013 11:48:01 +0200
+Message-Id: <1359107283-5274-3-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1359107283-5274-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1359107283-5274-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -23,43 +23,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will be useful to have the length of the transfer in the descriptor. The
-cyclic transfer functions remained untouched.
+By this new field we distinguish a total length of the chain and the individual
+length of each descriptor in the chain.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/dma/dw_dmac.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/dma/dw_dmac.c      |   12 ++++++------
+ drivers/dma/dw_dmac_regs.h |    1 +
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 7b5a088..3b788c8 100644
+index e4e4ff2..7b5a088 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -759,6 +759,7 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 		desc->lli.dar = dest + offset;
- 		desc->lli.ctllo = ctllo;
- 		desc->lli.ctlhi = xfer_count;
-+		desc->len = xfer_count << src_width;
+@@ -335,18 +335,18 @@ dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc,
+ 		if (!(txd->flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
+ 			if (txd->flags & DMA_COMPL_DEST_UNMAP_SINGLE)
+ 				dma_unmap_single(parent, desc->lli.dar,
+-						desc->len, DMA_FROM_DEVICE);
++					desc->total_len, DMA_FROM_DEVICE);
+ 			else
+ 				dma_unmap_page(parent, desc->lli.dar,
+-						desc->len, DMA_FROM_DEVICE);
++					desc->total_len, DMA_FROM_DEVICE);
+ 		}
+ 		if (!(txd->flags & DMA_COMPL_SKIP_SRC_UNMAP)) {
+ 			if (txd->flags & DMA_COMPL_SRC_UNMAP_SINGLE)
+ 				dma_unmap_single(parent, desc->lli.sar,
+-						desc->len, DMA_TO_DEVICE);
++					desc->total_len, DMA_TO_DEVICE);
+ 			else
+ 				dma_unmap_page(parent, desc->lli.sar,
+-						desc->len, DMA_TO_DEVICE);
++					desc->total_len, DMA_TO_DEVICE);
+ 		}
+ 	}
  
- 		if (!first) {
- 			first = desc;
-@@ -857,6 +858,7 @@ slave_sg_todev_fill_desc:
- 			}
+@@ -776,7 +776,7 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
  
- 			desc->lli.ctlhi = dlen >> mem_width;
-+			desc->len = dlen;
+ 	prev->lli.llp = 0;
+ 	first->txd.flags = flags;
+-	first->len = len;
++	first->total_len = len;
  
- 			if (!first) {
- 				first = desc;
-@@ -915,6 +917,7 @@ slave_sg_fromdev_fill_desc:
- 				len = 0;
- 			}
- 			desc->lli.ctlhi = dlen >> reg_width;
-+			desc->len = dlen;
+ 	return &first->txd;
  
- 			if (!first) {
- 				first = desc;
+@@ -939,7 +939,7 @@ slave_sg_fromdev_fill_desc:
+ 		prev->lli.ctllo |= DWC_CTLL_INT_EN;
+ 
+ 	prev->lli.llp = 0;
+-	first->len = total_len;
++	first->total_len = total_len;
+ 
+ 	return &first->txd;
+ 
+diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+index 13000d2..833b4cf 100644
+--- a/drivers/dma/dw_dmac_regs.h
++++ b/drivers/dma/dw_dmac_regs.h
+@@ -296,6 +296,7 @@ struct dw_desc {
+ 	struct list_head		tx_list;
+ 	struct dma_async_tx_descriptor	txd;
+ 	size_t				len;
++	size_t				total_len;
+ };
+ 
+ #define to_dw_desc(h)	list_entry(h, struct dw_desc, desc_node)
 -- 
 1.7.10.4
 
