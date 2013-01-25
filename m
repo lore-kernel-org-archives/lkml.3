@@ -1,99 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757330Ab3AYMTh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 07:19:37 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58386 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757295Ab3AYMTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 07:19:03 -0500
-Date: Fri, 25 Jan 2013 14:18:38 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <balbi@ti.com>, <b-cousson@ti.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <s-guiriec@ti.com>, <gg@slimlogic.co.uk>,
-        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/6] ARM: dts: omap: add dt data for dwc3
-Message-ID: <20130125121838.GC27148@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1359112312-6918-1-git-send-email-kishon@ti.com>
+	id S932276Ab3AYMUY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 07:20:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42536 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101Ab3AYMUW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 07:20:22 -0500
+Date: Fri, 25 Jan 2013 04:20:03 -0800
+From: tip-bot for Andi Kleen <ak@linux.intel.com>
+Message-ID: <tip-648865900cd6cb5b2ed738206b41fb6ede1c8b17@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, ak@linux.intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <1359040242-8269-5-git-send-email-eranian@google.com>
+References: <1359040242-8269-5-git-send-email-eranian@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/x86] perf/core: Add weighted samples
+Git-Commit-ID: 648865900cd6cb5b2ed738206b41fb6ede1c8b17
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ABTtc+pdwF7KHXCz"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1359112312-6918-1-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 04:20:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ABTtc+pdwF7KHXCz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  648865900cd6cb5b2ed738206b41fb6ede1c8b17
+Gitweb:     http://git.kernel.org/tip/648865900cd6cb5b2ed738206b41fb6ede1c8b17
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Thu, 24 Jan 2013 16:10:28 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 25 Jan 2013 10:19:02 +0100
 
-Hi,
+perf/core: Add weighted samples
 
-On Fri, Jan 25, 2013 at 04:41:46PM +0530, Kishon Vijay Abraham I wrote:
-> This patch series adds dt data to get dwc3 working in omap5.
->=20
-> Changes from v1:
-> * rename "ctrl_module" to "ctrl-module" and "usb_phy" to "usb-phy"
->=20
-> This patch series is developed on
-> git://github.com/rrnayak/linux.git omap5-3.8-rc4-base-palmas
->=20
-> This is the last series of the series of patches.
-> I've kept everything in a single branch
-> git://gitorious.org/linux-usb/linux-usb.git omap5-with-palmas
-> (changes up to 23b4dfa2ab7052569cd88acc6383c4b1a8e8a482)
->=20
-> Did enumeration testing on omap5 evm.
+For some events it's useful to weight sample with a hardware
+provided number. This expresses how expensive the action the
+sample represent was.  This allows the profiler to scale
+the samples to be more informative to the programmer.
 
-I have gone quickly through this series and it looks already to me:
+There is already the period which is used similarly, but it
+means something different, so I chose to not overload it.
+Instead a new sample type for WEIGHT is added.
 
-Reviewied-by: Felipe Balbi <balbi@ti.com>
+Can be used for multiple things. Initially it is used for TSX
+abort costs and profiling by memory latencies (so to make
+expensive load appear higher up in the histograms). The concept
+is quite generic and can be extended to many other kinds of
+events or architectures, as long as the hardware provides
+suitable auxillary values. In principle it could be also used
+for software tracepoints.
 
-> Kishon Vijay Abraham I (6):
->   ARM: dts: omap5: Add omap control usb data
->   ARM: dts: omap5: Add ocp2scp data
->   ARM: dts: omap5: Add omap-usb3 and omap-usb2 dt data
->   ARM: dts: omap5: add dwc3 omap dt data
->   ARM: dts: omap5: add dwc3 core dt data
->   ARM: dts: palmas: update dt data for palmas-usb
->=20
->  arch/arm/boot/dts/omap5.dtsi  |   48 +++++++++++++++++++++++++++++++++++=
-++++++
->  arch/arm/boot/dts/palmas.dtsi |    4 ++--
->  2 files changed, 50 insertions(+), 2 deletions(-)
->=20
-> --=20
-> 1.7.9.5
->=20
+This adds the generic glue. A new optional sample format for a
+64-bit weight value.
 
---=20
-balbi
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: acme@redhat.com
+Cc: jolsa@redhat.com
+Cc: namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1359040242-8269-5-git-send-email-eranian@google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/perf_event.h      | 2 ++
+ include/uapi/linux/perf_event.h | 6 +++++-
+ kernel/events/core.c            | 6 ++++++
+ 3 files changed, 13 insertions(+), 1 deletion(-)
 
---ABTtc+pdwF7KHXCz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRAngeAAoJEIaOsuA1yqREol0P/3akqoDidmGfhZ4q3ktajHMc
-v7I77xgpLGd1XlN0iiqp4N4SgH7Ue2w4DDVeN0YYT5LS01B82nLhCM0UQ/oD1NvE
-tsF+HPEPmb2piXudHx+ZMRI41XZoiTmuKjwx3Vk1N4pcI72tGzzfITgU+Mbx8cyt
-+cy9BNtLBTYRhMshEAIHyKgYxLS9PmGoIP7mc8QBAtf5U2gistIaw5lz/cK8ILEG
-vnFIWFcefsDCW4snUDqrbbKvkYhkBueaKqcbKS0lNx6iuNt38OMAvggDikvY57mM
-J0k5nzQEJtnO+FVt9UHXl2esHPQ3FfZpXfixI+XqpvjLFmrJk5xUI4jbTdMJCH5q
-hR5AX6dMSNs6eK2rPsnF+moF6D/Rql0hb3uZUVDREt9EMNrKFvUNPRgnhSFf95MK
-p5YUaDIj7DuaEitmjavWle/JcqZcgfoh2GN7CA9atzI5N7cxrd3xGG63WXiM/GXI
-6ko/iYhN25uHPxq4gq77RshnjpJDmX9gPwqRJyPToqnUE1Z9kTYuZB+nFDszScAc
-vgkEroKqE2SacO24gefSHs56QnCmj3hwFk0syR6kguOhmXEq/1y3Gf8Pic/uissV
-XQ1OsfS+Vsj4hpit+z+o/L9ZM5m5g7KEziioNUjOtAmJ9KbG8X85vGsKzsZCRBJc
-qsnueGNO/NkOdZ5FXrQ8
-=dCWo
------END PGP SIGNATURE-----
-
---ABTtc+pdwF7KHXCz--
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 484cfbc..bb2429d 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -584,6 +584,7 @@ struct perf_sample_data {
+ 	struct perf_branch_stack	*br_stack;
+ 	struct perf_regs_user		regs_user;
+ 	u64				stack_user_size;
++	u64				weight;
+ };
+ 
+ static inline void perf_sample_data_init(struct perf_sample_data *data,
+@@ -597,6 +598,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
+ 	data->regs_user.regs = NULL;
+ 	data->stack_user_size = 0;
++	data->weight = 0;
+ }
+ 
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 4f63c05..3e6c394 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -132,8 +132,10 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
+ 	PERF_SAMPLE_REGS_USER			= 1U << 12,
+ 	PERF_SAMPLE_STACK_USER			= 1U << 13,
++	PERF_SAMPLE_WEIGHT			= 1U << 14,
++
++	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
+ 
+-	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
+ };
+ 
+ /*
+@@ -587,6 +589,8 @@ enum perf_event_type {
+ 	 * 	{ u64			size;
+ 	 * 	  char			data[size];
+ 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
++	 *
++	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 301079d..749bdf4 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -952,6 +952,9 @@ static void perf_event__header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_PERIOD)
+ 		size += sizeof(data->period);
+ 
++	if (sample_type & PERF_SAMPLE_WEIGHT)
++		size += sizeof(data->weight);
++
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		size += event->read_size;
+ 
+@@ -4169,6 +4172,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 		perf_output_sample_ustack(handle,
+ 					  data->stack_user_size,
+ 					  data->regs_user.regs);
++
++	if (sample_type & PERF_SAMPLE_WEIGHT)
++		perf_output_put(handle, data->weight);
+ }
+ 
+ void perf_prepare_sample(struct perf_event_header *header,
