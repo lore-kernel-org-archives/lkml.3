@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab3AYUrh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 15:47:37 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:55977 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751068Ab3AYUrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 15:47:33 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: David Rientjes <rientjes@google.com>,
-        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] sysfs: Fix build when sysfs is disabled
-Date: Fri, 25 Jan 2013 21:53:39 +0100
-Message-ID: <1511313.IITM7eMxcu@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130125204234.GA13245@kroah.com>
-References: <3307415.pdOY6ovZLa@vostro.rjw.lan> <alpine.DEB.2.00.1301251211410.3815@chino.kir.corp.google.com> <20130125204234.GA13245@kroah.com>
+	id S1752988Ab3AYUsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 15:48:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:51656 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab3AYUsT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 15:48:19 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Message-ID: <54da1c87-93f9-4643-8f71-597c1ff30e33@default>
+Date: Fri, 25 Jan 2013 12:47:44 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ngupta@vflare.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, sjenning@linux.vnet.ibm.com,
+        minchan@kernel.org
+Subject: RE: [PATCH 2/2] staging: zcache: optional support for zsmalloc as
+ alternate allocator
+References: <1358977591-24485-1-git-send-email-dan.magenheimer@oracle.com>
+ <1358977591-24485-2-git-send-email-dan.magenheimer@oracle.com>
+ <20130125192617.GA26634@kroah.com>
+In-Reply-To: <20130125192617.GA26634@kroah.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 25, 2013 12:42:34 PM Greg Kroah-Hartman wrote:
-> On Fri, Jan 25, 2013 at 12:13:59PM -0800, David Rientjes wrote:
-> > "sysfs: Functions for adding/removing symlinks to/from attribute groups" 
-> > causes a build failure when CONFIG_SYSFS is disabled:
-> > 
-> > drivers/acpi/power.c: In function 'acpi_power_hide_list':
-> > drivers/acpi/power.c:463: error: implicit declaration of function 'sysfs_remove_link_from_group'
-> > drivers/acpi/power.c: In function 'acpi_power_expose_list':
-> > drivers/acpi/power.c:486: error: implicit declaration of function 'sysfs_add_link_to_group'
-> > 
-> > We need to define empty functions for this config to avoid ifdefs in the 
-> > code.
-> > 
-> > Signed-off-by: David Rientjes <rientjes@google.com>
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Subject: Re: [PATCH 2/2] staging: zcache: optional support for zsmalloc as alternate allocator
+> 
+> On Wed, Jan 23, 2013 at 01:46:31PM -0800, Dan Magenheimer wrote:
+> > "New" zcache uses zbud for all sub-page allocation which is more flexible but
+> > results in lower density.  "Old" zcache supported zsmalloc for frontswap
+> > pages.  Add zsmalloc to "new" zcache as a compile-time and run-time option
+> > for backwards compatibility in case any users wants to use zcache with
+> > highest possible density.
+> >
+> > Note that most of the zsmalloc stats in old zcache are not included here
+> > because old zcache used sysfs and new zcache has converted to debugfs.
+> > These stats may be added later.
+> >
+> > Note also that ramster is incompatible with zsmalloc as the two use
+> > the least significant bits in a pampd differently.
+> >
+> > Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 > > ---
-> >  include/linux/sysfs.h | 12 ++++++++++++
-> >  1 file changed, 12 insertions(+)
+> >  drivers/staging/zcache/Kconfig       |   11 ++
+> >  drivers/staging/zcache/zcache-main.c |  210 ++++++++++++++++++++++++++++++++--
+> >  drivers/staging/zcache/zcache.h      |    3 +
+> >  3 files changed, 215 insertions(+), 9 deletions(-)
+> >
+> > diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
+> > index c1dbd04..116f8d5 100644
+> > --- a/drivers/staging/zcache/Kconfig
+> > +++ b/drivers/staging/zcache/Kconfig
+> > @@ -10,6 +10,17 @@ config ZCACHE
+> >  	  memory to store clean page cache pages and swap in RAM,
+> >  	  providing a noticeable reduction in disk I/O.
+> >
+> > +config ZCACHE_ZSMALLOC
+> > +	bool "Allow use of zsmalloc allocator for compression of swap pages"
+> > +	depends on ZSMALLOC=y && !RAMSTER
+> > +	default n
+> > +	help
+> > +	  Zsmalloc is a much more efficient allocator for compresssed
+> > +	  pages but currently has some design deficiencies in that it
+> > +	  does not support reclaim nor compaction.  Select this if
+> > +	  you are certain your workload will fit or has mostly short
+> > +	  running processes.  Zsmalloc is incompatible with RAMster.
 > 
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> How can anyone be "certain"?
 > 
-> Rafael has to take this through his tree.
+> 
+> > --- a/drivers/staging/zcache/zcache-main.c
+> > +++ b/drivers/staging/zcache/zcache-main.c
+> > @@ -26,6 +26,12 @@
+> >  #include <linux/cleancache.h>
+> >  #include <linux/frontswap.h>
+> >  #include "tmem.h"
+> > +#ifdef CONFIG_ZCACHE_ZSMALLOC
+> > +#include "../zsmalloc/zsmalloc.h"
+> 
+> Don't #ifdef .h files in .c files.
+> 
+> > +static int zsmalloc_enabled;
+> > +#else
+> > +#define zsmalloc_enabled 0
+> > +#endif
+> 
+> That should have been your only ifdef in this .c file, all of the ones
+> you have after this should not be needed, so I can't take this patch,
+> sorry.
 
-Thanks for the patch and review.
+Yep.  Sorry, I was just trying to refresh this from when
+I posted the proof-of-concept last summer.  I should have
+spent more time cleaning it up.  Will be away for
+a few days so will try to repost in a week or two,
+hopefully not too late for this cycle.
 
-I will fold it into the original patch to reduce bisection pain.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Sorry for the noise.
+Dan
