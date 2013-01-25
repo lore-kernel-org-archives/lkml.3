@@ -1,64 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013Ab3AYHLF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 02:11:05 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:52473 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab3AYHLC (ORCPT
+	id S1752115Ab3AYHTl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 02:19:41 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:53748 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab3AYHTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 02:11:02 -0500
-Message-ID: <51022FD1.4080800@huawei.com>
-Date: Fri, 25 Jan 2013 15:10:09 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Fri, 25 Jan 2013 02:19:37 -0500
+Date: Fri, 25 Jan 2013 08:19:33 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: mingo@redhat.com, peterz@infradead.org, pjt@google.com,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH v2] sched: Fix print format for u64
+Message-ID: <20130125071933.GA17846@gmail.com>
+References: <1356434680-10045-1-git-send-email-festevam@gmail.com>
+ <CAOMZO5AzJUvrc5LcNyqPbEz0g4U5KZAXrNK8oJUiht=fdyuc5g@mail.gmail.com>
+ <20130124141930.GA14881@gmail.com>
+ <CAOMZO5CC76Md9T=2z3RWi4GrKsUuFcc8VYV1QfmZWF41vnOhVw@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH] cgroup: add lock validation in check_for_release()
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5CC76Md9T=2z3RWi4GrKsUuFcc8VYV1QfmZWF41vnOhVw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was a long-standing bug that this function was called without any
-lock. Add a check to prevent similar issue.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+* Fabio Estevam <festevam@gmail.com> wrote:
+
+> On Thu, Jan 24, 2013 at 12:19 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > I suppose - is this patch warning-free both on 64-bit and 32-bit
+> > systems?
+> 
+> Yes, just confirmed that this patch is warning-free on both 64-bit and
+> 32-bit machines.
+
+Apparently it's not all good, see the warning attached below.
+
+Thanks,
+
+	Ingo
+
+----- Forwarded message from kbuild test robot <fengguang.wu@intel.com> -----
+
+Date: Fri, 25 Jan 2013 14:02:05 +0800
+From: kbuild test robot <fengguang.wu@intel.com>
+To: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Subject: [next:akpm 188/817] kernel/sched/debug.c:225:2: warning: format '%llu' expects argument
+	of type 'long long unsigned int', but argument 4 has type 'long int'
+
+tree:   git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
+head:   5d2ee7d8b03bfe3b90325d736d8e544d0394efa7
+commit: 2d58000fd2020255af63ee92c8d0ef615f6c4ade [188/817] sched: Fix print format for u64
+config: make ARCH=x86_64 allmodconfig
+
+All warnings:
+
+   kernel/sched/debug.c: In function 'print_cfs_rq':
+>> kernel/sched/debug.c:225:2: warning: format '%llu' expects argument of type 'long long unsigned int', but argument 4 has type 'long int' [-Wformat]
+>> kernel/sched/debug.c:225:2: warning: format '%llu' expects argument of type 'long long unsigned int', but argument 3 has type 'long int' [-Wformat]
+
+vim +225 kernel/sched/debug.c
+
+   209		spread = max_vruntime - MIN_vruntime;
+   210		SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "spread",
+   211				SPLIT_NS(spread));
+   212		spread0 = min_vruntime - rq0_min_vruntime;
+   213		SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "spread0",
+   214				SPLIT_NS(spread0));
+   215		SEQ_printf(m, "  .%-30s: %d\n", "nr_spread_over",
+   216				cfs_rq->nr_spread_over);
+   217		SEQ_printf(m, "  .%-30s: %d\n", "nr_running", cfs_rq->nr_running);
+   218		SEQ_printf(m, "  .%-30s: %ld\n", "load", cfs_rq->load.weight);
+   219	#ifdef CONFIG_FAIR_GROUP_SCHED
+   220	#ifdef CONFIG_SMP
+   221		SEQ_printf(m, "  .%-30s: %lld\n", "runnable_load_avg",
+   222				cfs_rq->runnable_load_avg);
+   223		SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
+   224				cfs_rq->blocked_load_avg);
+ > 225		SEQ_printf(m, "  .%-30s: %llu\n", "tg_load_avg",
+   226				atomic64_read(&cfs_rq->tg->load_avg));
+   227		SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
+   228				cfs_rq->tg_load_contrib);
+   229		SEQ_printf(m, "  .%-30s: %d\n", "tg_runnable_contrib",
+   230				cfs_rq->tg_runnable_contrib);
+   231		SEQ_printf(m, "  .%-30s: %d\n", "tg->runnable_avg",
+   232				atomic_read(&cfs_rq->tg->runnable_avg));
+   233	#endif
+
 ---
- kernel/cgroup.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+0-DAY kernel build testing backend              Open Source Technology Center
+http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 776ff75..3d21adf 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -5028,13 +5028,20 @@ int cgroup_is_descendant(const struct cgroup *cgrp, struct task_struct *task)
- 
- static void check_for_release(struct cgroup *cgrp)
- {
--	/* All of these checks rely on RCU to keep the cgroup
--	 * structure alive */
-+	/*
-+	 * All of these checks rely on RCU or cgroup_mutex to keep the cgroup
-+	 * structure alive
-+	 */
-+	rcu_lockdep_assert(rcu_read_lock_held() || cgroup_lock_is_held(),
-+			   "check_for_release() called witout proper locking");
-+
- 	if (cgroup_is_releasable(cgrp) && !atomic_read(&cgrp->count)
- 	    && list_empty(&cgrp->children) && !cgroup_has_css_refs(cgrp)) {
--		/* Control Group is currently removeable. If it's not
-+		/*
-+		 * Control Group is currently removable. If it's not
- 		 * already queued for a userspace notification, queue
--		 * it now */
-+		 * it now
-+		 */
- 		int need_schedule_work = 0;
- 		raw_spin_lock(&release_list_lock);
- 		if (!cgroup_is_removed(cgrp) &&
--- 
-1.8.0.2
+----- End forwarded message -----
+
