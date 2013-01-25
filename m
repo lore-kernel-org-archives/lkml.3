@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534Ab3AYG3t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 01:29:49 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:28834 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017Ab3AYG3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 01:29:46 -0500
-X-IronPort-AV: E=Sophos;i="4.84,536,1355068800"; 
-   d="scan'208";a="6645016"
-Message-ID: <5102264E.9020604@cn.fujitsu.com>
-Date: Fri, 25 Jan 2013 14:29:34 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751808Ab3AYGaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 01:30:18 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43237 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751017Ab3AYGaQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 01:30:16 -0500
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "AnilKumar, Chimata" <anilkumar@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>, "hs@denx.de" <hs@denx.de>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: RE: [PATCH 5/6] ARM: regulator: add tps6507x device tree data
+Thread-Topic: [PATCH 5/6] ARM: regulator: add tps6507x device tree data
+Thread-Index: AQHN+iEtFgtHOPSvUE6bkenLPvEY85hYBHKAgAGPHNA=
+Date: Fri, 25 Jan 2013 06:29:49 +0000
+Message-ID: <A4887BF146CD57468F700B415D2F4701581621@DBDE01.ent.ti.com>
+References: <1359024920-32190-1-git-send-email-manishv.b@ti.com>
+ <1359024920-32190-6-git-send-email-manishv.b@ti.com>
+ <20130124120050.GP4955@opensource.wolfsonmicro.com>
+In-Reply-To: <20130124120050.GP4955@opensource.wolfsonmicro.com>
+Accept-Language: en-IN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com,
-        jbottomley@parallels.com, jasowang@redhat.com,
-        linux-scsi@vger.kernel.org, Stable <stable@vger.kernel.org>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Initialize the sglist
-References: <1359075861-1014-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1359075861-1014-1-git-send-email-kys@microsoft.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/25 14:28:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/25 14:28:44,
-	Serialize complete at 2013/01/25 14:28:44
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2013 09:04 AM, K. Y. Srinivasan wrote:
-> Properly initialize scatterlist before using it.
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Cc: Stable <stable@vger.kernel.org>
+Hi Mark,
 
-Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-
-> ---
->  drivers/scsi/storvsc_drv.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+On Thu, Jan 24, 2013 at 17:30:51, Mark Brown wrote:
+> On Thu, Jan 24, 2013 at 04:25:19PM +0530, Vishwanathrao Badarkhe, Manish wrote:
 > 
-> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-> index 270b3cf..5ada1d0 100644
-> --- a/drivers/scsi/storvsc_drv.c
-> +++ b/drivers/scsi/storvsc_drv.c
-> @@ -467,6 +467,7 @@ static struct scatterlist *create_bounce_buffer(struct scatterlist *sgl,
->  	if (!bounce_sgl)
->  		return NULL;
->  
-> +	sg_init_table(bounce_sgl, num_pages);
->  	for (i = 0; i < num_pages; i++) {
->  		page_buf = alloc_page(GFP_ATOMIC);
->  		if (!page_buf)
+> > ---
+> >  arch/arm/boot/dts/tps6507x.dtsi |   47 +++++++++++++++++++++++++++++++++++++++
+> 
+> Why are you putting this in arch/arm?
 > 
 
+I too doubt that whether it should be in architecture specific folder,
+My code is in reference to below patch:
+arm/dts: regulator: Add tps65910 device tree data(d5d08e2e1672da627d7c9d34a9dc1089c653e23a)
+
+Could you please suggest me if it can be moved somewhere else?
+
+Regards, 
+Manish
