@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab3AYBGc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 20:06:32 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:40776 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943Ab3AYBGY (ORCPT
+	id S1753749Ab3AYBNJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 20:13:09 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52380 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab3AYBNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 20:06:24 -0500
+	Thu, 24 Jan 2013 20:13:05 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-7a-5101dc1dfc05
+Date: Fri, 25 Jan 2013 10:13:03 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] x86, reboot: skip reboot_fixups in early boot phase
+Message-ID: <20130125011303.GA3401@lge.com>
+References: <1356702623-9430-1-git-send-email-js1304@gmail.com>
+ <CAErSpo5_dgH1Au3QChVrhqBY_Fm54+Aw_ZiwGf2JSsgQaR1dug@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxzDv0emWgyde7iEWpgZarAGaExrKbEHFr-UcbhoeH_Cw@mail.gmail.com>
-References: <alpine.DEB.2.00.1301250041001.25545@skynet.skynet.ie>
-	<CA+55aFxzDv0emWgyde7iEWpgZarAGaExrKbEHFr-UcbhoeH_Cw@mail.gmail.com>
-Date: Fri, 25 Jan 2013 11:06:24 +1000
-Message-ID: <CAPM=9tz6_=k1Ze5h2935-W59BCVy9KXA_z6t8inW6_-Cxw244Q@mail.gmail.com>
-Subject: Re: [git pull] fbcon locking fixes.
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Airlie <airlied@linux.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo5_dgH1Au3QChVrhqBY_Fm54+Aw_ZiwGf2JSsgQaR1dug@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 10:53 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Jan 24, 2013 at 4:42 PM, Dave Airlie <airlied@linux.ie> wrote:
->>
->> These patches have been sailing around long enough, waiting for a maintainer
->> to reappear, so I've decided enough is enough, lockdep is kinda useful to have.
->
-> Last this was tried, these patches failed miserably.
->
-> They caused instant lockdep splat and then a total lockup with efifb.
-> It may be that Takashi's patch helps fix that problem, but it's in no
-> way clear that it does, so the patch series isn't at all obviously
-> stable.
->
-> Yes, lockdep is indeed "kinda useful", and there clearly are locking
-> problems in fbdev. But I'm not seeing myself pulling these for 3.8.
-> They've been too problematic to pull in at this late stage.
->
+Hello, Bjorn.
 
-Okay I'll fix the efifb problem and then maybe queue them for -next.
+On Thu, Jan 24, 2013 at 10:45:13AM -0700, Bjorn Helgaas wrote:
+> On Fri, Dec 28, 2012 at 6:50 AM, Joonsoo Kim <js1304@gmail.com> wrote:
+> > During early boot phase, PCI bus subsystem is not yet initialized.
+> > If panic is occured in early boot phase and panic_timeout is set,
+> > code flow go into emergency_restart() and hit mach_reboot_fixups(), then
+> > encounter another panic. When second panic, we can't hold a panic_lock, so
+> > code flow go into panic_smp_self_stop() which prevent system to restart.
+> >
+> > For avoid second panic, skip reboot_fixups in early boot phase.
+> > It makes panic_timeout works in early boot phase.
+> >
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> >
+> > diff --git a/arch/x86/kernel/reboot_fixups_32.c b/arch/x86/kernel/reboot_fixups_32.c
+> > index c8e41e9..b9b8ec9 100644
+> > --- a/arch/x86/kernel/reboot_fixups_32.c
+> > +++ b/arch/x86/kernel/reboot_fixups_32.c
+> > @@ -89,6 +89,10 @@ void mach_reboot_fixups(void)
+> >         if (in_interrupt())
+> >                 return;
+> >
+> > +       /* During early boot phase, PCI is not yet initialized */
+> > +       if (system_state == SYSTEM_BOOTING)
+> > +               return;
+> > +
+> >         for (i=0; i < ARRAY_SIZE(fixups_table); i++) {
+> >                 cur = &(fixups_table[i]);
+> >                 dev = pci_get_device(cur->vendor, cur->device, NULL);
+> 
+> I guess you're saying that if we call pci_get_device() too early, it
+> panics?  Did you figure out why that happens?
+> 
+> If we call pci_get_device() before PCI has been initialized, it would
+> be good if it just returned NULL, indicating that we didn't find any
+> matching device.  I looked briefly, and I thought that's what would
+> happen, but apparently I'm missing something.
 
-Dave.
+In bus_find_device(), klist_iter_init_node() is called with 
+@bus->p->klist_device. Before initialization, bus->p is NULL,
+so panic is occured.
+
+> Bjorn
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
