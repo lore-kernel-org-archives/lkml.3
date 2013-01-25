@@ -1,124 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab3AYMfE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 07:35:04 -0500
-Received: from smtp4.epfl.ch ([128.178.224.219]:54335 "HELO smtp4.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754841Ab3AYMfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 07:35:00 -0500
-Message-ID: <51027BEF.8080506@epfl.ch>
-Date: Fri, 25 Jan 2013 13:34:55 +0100
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-Reply-To: florian.vaussard@epfl.ch
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1756888Ab3AYMmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 07:42:10 -0500
+Received: from mail.atsec.com ([195.30.99.214]:48269 "EHLO mail.atsec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756545Ab3AYMmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 07:42:08 -0500
+Message-ID: <51027D9D.6030507@atsec.com>
+Date: Fri, 25 Jan 2013 13:42:05 +0100
+From: Stephan Mueller <stephan.mueller@atsec.com>
+Organization: atsec information security GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-leds@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] pwm: Add pwm_cansleep() as exported API to users
-References: <1359108114-16998-1-git-send-email-florian.vaussard@epfl.ch> <1359108114-16998-2-git-send-email-florian.vaussard@epfl.ch> <51027B43.1080504@ti.com>
-In-Reply-To: <51027B43.1080504@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Kyle McMartin <kyle@redhat.com>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, jstancek@redhat.com
+Subject: Re: [PATCH] MODSIGN: flag modules that use cryptoapi and only panic
+ if those are unsigned
+References: <20130122184357.GD6538@redacted.bos.redhat.com> <8615.1358940375@warthog.procyon.org.uk> <50FFFF48.6020608@atsec.com> <20130124190610.GI6538@redacted.bos.redhat.com> <874ni6qhlq.fsf@rustcorp.com.au>
+In-Reply-To: <874ni6qhlq.fsf@rustcorp.com.au>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 25/01/2013 13:32, Peter Ujfalusi a écrit :
-> On 01/25/2013 11:01 AM, Florian Vaussard wrote:
->> Calls to some external PWM chips can sleep. To help users,
->> add pwm_cansleep() API.
->>
->> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
->> ---
->>   drivers/pwm/core.c  |   12 ++++++++++++
->>   include/linux/pwm.h |   10 ++++++++++
->>   2 files changed, 22 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
->> index 4a13da4..f49bfa6 100644
->> --- a/drivers/pwm/core.c
->> +++ b/drivers/pwm/core.c
->> @@ -763,6 +763,18 @@ void devm_pwm_put(struct device *dev, struct pwm_device *pwm)
->>   }
->>   EXPORT_SYMBOL_GPL(devm_pwm_put);
->>
->> +/**
->> +  * pwm_can_sleep() - report whether pwm access will sleep
->> +  * @pwm: PWM device
->> +  *
->> +  * It returns nonzero if accessing the PWM can sleep.
->> +  */
->> +int pwm_can_sleep(struct pwm_device *pwm)
->> +{
->> +	return pwm->chip->can_sleep;
->> +}
->> +EXPORT_SYMBOL_GPL(pwm_can_sleep);
->
-> Can we name this as pwm_cansleep() to be more alligned with the
-> gpio_cansleep() API?
->
+On 25.01.2013 00:36:01, +0100, Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-Sure
+Hi Rusty,
+> Kyle McMartin <kyle@redhat.com> writes:
+>> After thinking about it a while, this seems like the best way to solve
+>> the problem, although it does still kind of offend my delicate
+>> sensibilities...
+> 
+> You're far too polite.  This patch was horrible, partial and ugly.
 
->> +
->>   #ifdef CONFIG_DEBUG_FS
->>   static void pwm_dbg_show(struct pwm_chip *chip, struct seq_file *s)
->>   {
->> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
->> index 70655a2..2aee75d 100644
->> --- a/include/linux/pwm.h
->> +++ b/include/linux/pwm.h
->> @@ -146,6 +146,8 @@ struct pwm_ops {
->>    * @base: number of first PWM controlled by this chip
->>    * @npwm: number of PWMs controlled by this chip
->>    * @pwms: array of PWM devices allocated by the framework
->> + * @can_sleep: flag must be set iff config()/enable()/disable() methods sleep,
->> + *      as they must while accessing PWM chips over I2C or SPI
->>    */
->>   struct pwm_chip {
->>   	struct device		*dev;
->> @@ -159,6 +161,7 @@ struct pwm_chip {
->>   	struct pwm_device *	(*of_xlate)(struct pwm_chip *pc,
->>   					    const struct of_phandle_args *args);
->>   	unsigned int		of_pwm_n_cells;
->> +	unsigned int		can_sleep:1;
->>   };
->>
->>   #if IS_ENABLED(CONFIG_PWM)
->> @@ -182,6 +185,8 @@ struct pwm_device *devm_pwm_get(struct device *dev, const char *con_id);
->>   struct pwm_device *devm_of_pwm_get(struct device *dev, struct device_node *np,
->>   				   const char *con_id);
->>   void devm_pwm_put(struct device *dev, struct pwm_device *pwm);
->> +
->> +int pwm_can_sleep(struct pwm_device *pwm);
->>   #else
->>   static inline int pwm_set_chip_data(struct pwm_device *pwm, void *data)
->>   {
->> @@ -242,6 +247,11 @@ static inline struct pwm_device *devm_of_pwm_get(struct device *dev,
->>   static inline void devm_pwm_put(struct device *dev, struct pwm_device *pwm)
->>   {
->>   }
->> +
->> +static inline int pwm_can_sleep(struct pwm_device *pwm)
->> +{
->> +	return -EINVAL;
->
-> I think we should return 0 here instead an error.
->
+Well, in another email I suggested you may want to think about some
+marker that the code of the module would contain, similar to the GPL
+flag for the module (whose absence sets the tainted flag).
+> 
+> Stephan Mueller <stephan.mueller@atsec.com> wrote:
+>> FIPS requires the module (in our case the static kernel binary with its
+>> kernel crypto API plus all the crypto kernel modules) to be unavailable
+>> if the module signature fails. That is an unconditional requirement.
+> 
+> "the module signature" here being the signature of any crypto module,
+> I'm guessing from Kyle's awful patch.  Any crypto module, or just some?
+> Presumably any module used by any crypto module, too?
 
-Ok, it makes sense.
+Any module loading into the kernel crypto API must be caught and its
+signature enforced. Thus Kyle's approach to catch the kernel crypto API
+register function would be appropriate, if indeed we would catch all
+crypto KOs that we want to catch -- see my remark to Kyle.
 
->> +}
->>   #endif
->>
->>   struct pwm_lookup {
->>
->
->
+> 
+> Because you can panic when a !sig_ok module registers a crypto
+> algorithm.  Or you can panic when anyone registers a crypto algorithm
+> after any module has failed the signature check.
 
-Thank you,
+I do not see the difference from a FIPS perspective. The crypto KO is
+unavailable to any crypto user until it called the kernel crypto API
+register function.
 
-Florian
+Thus, if a KO is loaded, its signature check failed and now lingers in
+the kernel, I do not see how the main FIPS requirement is offended. Only
+when the code in the KO registers with the crypto API, that is the
+latest point when the kernel must stop that KO whose signature check
+failed -- again from a FIPS perspective.
+> 
+> But it doesn't make much sense to pick on the crypto modules, since
+> they're not well isolated from the rest of the kernel.
+
+Technically, I am totally with you. That business of integrity check of
+a subset of code that is loaded into the kernel realm is hard to grasp,
+if you want to stop an attacker.
+
+But that is not the focus of the FIPS test here. That test shall counter
+accidental modifications (how unlikely they are). And I am fully aware
+of the fact that this FIPS requirement does not make too much sense in
+software implementations. Note, FIPS 140-2 mainly focuses on hardware
+and has some requirements which are totally bogus for software -- this
+is one of them.
+
+Well, but if we want to be FIPS 140-2 compliant, either we meet that
+requirement, or, well, you are not compliant. It is that easy. :-)
+
+Ciao
+Stephan
+> 
+> Thanks,
+> Rusty.
+> 
+
