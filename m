@@ -1,39 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab3AYXhK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 18:37:10 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:61704 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754326Ab3AYXhI (ORCPT
+	id S1754647Ab3AYXhl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 18:37:41 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48619 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab3AYXhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 18:37:08 -0500
+	Fri, 25 Jan 2013 18:37:39 -0500
+Message-ID: <51031738.4060102@oracle.com>
+Date: Fri, 25 Jan 2013 18:37:28 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130125232740.GA2296@linux.vnet.ibm.com>
-References: <1358429075-3430-1-git-send-email-fweisbec@gmail.com>
-	<20130125174247.GQ6395@linux.vnet.ibm.com>
-	<20130125232740.GA2296@linux.vnet.ibm.com>
-Date: Sat, 26 Jan 2013 00:31:39 +0100
-Message-ID: <CAFTL4hyyQjN63dO-KPANf65v5Y0xj5NN8Mwj6m66BeEV72hNDQ@mail.gmail.com>
-Subject: Re: [PATCH 0/7] cputime: Full dynticks task/cputime accounting v5
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
+To: Shaohua Li <shli@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@fusionio.com>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: boot warnings due to swap: make each swap partition have one
+ address_space
+References: <5101FFF5.6030503@oracle.com> <20130125042512.GA32017@kernel.org>
+In-Reply-To: <20130125042512.GA32017@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/26 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> Right...  Replied to the wrong email.  :-/
->
-> I queued "context_tracking: Add comments on interface and internals".
+On 01/24/2013 11:25 PM, Shaohua Li wrote:
+> On Thu, Jan 24, 2013 at 10:45:57PM -0500, Sasha Levin wrote:
+>> Hi folks,
+>>
+>> Commit "swap: make each swap partition have one address_space" is triggering
+>> a series of warnings on boot:
+>>
+>> [    3.446071] ------------[ cut here ]------------
+>> [    3.446664] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8e/0xb0()
+>> [    3.447715] ODEBUG: init active (active state 0) object type: percpu_counter hint:           (null)
+>> [    3.450360] Modules linked in:
+>> [    3.451593] Pid: 1, comm: swapper/0 Tainted: G        W    3.8.0-rc4-next-20130124-sasha-00004-g838a1b4 #266
+>> [    3.454508] Call Trace:
+>> [    3.455248]  [<ffffffff8110d1bc>] warn_slowpath_common+0x8c/0xc0
+>> [    3.455248]  [<ffffffff8110d291>] warn_slowpath_fmt+0x41/0x50
+>> [    3.455248]  [<ffffffff81a2bb5e>] debug_print_object+0x8e/0xb0
+>> [    3.455248]  [<ffffffff81a2c26b>] __debug_object_init+0x20b/0x290
+>> [    3.455248]  [<ffffffff81a2c305>] debug_object_init+0x15/0x20
+>> [    3.455248]  [<ffffffff81a3fbed>] __percpu_counter_init+0x6d/0xe0
+>> [    3.455248]  [<ffffffff81231bdc>] bdi_init+0x1ac/0x270
+>> [    3.455248]  [<ffffffff8618f20b>] swap_setup+0x3b/0x87
+>> [    3.455248]  [<ffffffff8618f257>] ? swap_setup+0x87/0x87
+>> [    3.455248]  [<ffffffff8618f268>] kswapd_init+0x11/0x7c
+>> [    3.455248]  [<ffffffff810020ca>] do_one_initcall+0x8a/0x180
+>> [    3.455248]  [<ffffffff86168cfd>] do_basic_setup+0x96/0xb4
+>> [    3.455248]  [<ffffffff861685ae>] ? loglevel+0x31/0x31
+>> [    3.455248]  [<ffffffff861885cd>] ? sched_init_smp+0x150/0x157
+>> [    3.455248]  [<ffffffff86168ded>] kernel_init_freeable+0xd2/0x14c
+>> [    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
+>> [    3.455248]  [<ffffffff83cade19>] kernel_init+0x9/0xf0
+>> [    3.455248]  [<ffffffff83d5727c>] ret_from_fork+0x7c/0xb0
+>> [    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
+>> [    3.455248] ---[ end trace 0b176d5c0f21bffb ]---
+>>
+>> I haven't looked deeper into it yet, and will do so tomorrow, unless this
+>> spew is obvious to anyone.
+> 
+> Does this one help?
 
-Sounds perfect, thanks :)
+[snip]
+
+Yup, it did. Thanks!
+
+
+Thanks,
+Sasha
+
