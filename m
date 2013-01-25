@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab3AYDBS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 22:01:18 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35388 "EHLO arroyo.ext.ti.com"
+	id S1756705Ab3AYDBe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 22:01:34 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:48762 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754179Ab3AYDBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755771Ab3AYDBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jan 2013 22:01:10 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <rob.herring@calxeda.com>, <rob@landley.net>, <balbi@ti.com>,
@@ -12,59 +12,70 @@ To: <rob.herring@calxeda.com>, <rob@landley.net>, <balbi@ti.com>,
         <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <devicetree-discuss@lists.ozlabs.org>
 CC: <grant.likely@secretlab.ca>, <gregkh@linuxfoundation.org>, <kishon@ti.com>
-Subject: [PATCH v3 01/11] usb: dwc3-omap: use device_for_each_child to handle child removal
-Date: Fri, 25 Jan 2013 08:30:45 +0530
-Message-ID: <1359082855-7404-2-git-send-email-kishon@ti.com>
+Subject: [PATCH v3 00/11] usb: dwc3 core/dwc3-omap: add dt support
+Date: Fri, 25 Jan 2013 08:30:44 +0530
+Message-ID: <1359082855-7404-1-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359082855-7404-1-git-send-email-kishon@ti.com>
-References: <1359082855-7404-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Used device_for_each_child() to handle child device (dwc3 core) removal
-during devexit of dwc3 omap. This is in preparation for creating the child
-devices from subnode of dwc3 omap glue using of_platform_populate.
+Changed the subject from *usb: dwc3-omap: add dt support*
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/usb/dwc3/dwc3-omap.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+Apologies for the delay in sending this version.
 
-diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index f31867f..1d03a8a 100644
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -262,6 +262,15 @@ static irqreturn_t dwc3_omap_interrupt(int irq, void *_omap)
- 	return IRQ_HANDLED;
- }
- 
-+static int dwc3_omap_remove_core(struct device *dev, void *c)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+
-+	platform_device_unregister(pdev);
-+
-+	return 0;
-+}
-+
- static int dwc3_omap_probe(struct platform_device *pdev)
- {
- 	struct dwc3_omap_data	*pdata = pdev->dev.platform_data;
-@@ -425,9 +434,10 @@ static int dwc3_omap_remove(struct platform_device *pdev)
- {
- 	struct dwc3_omap	*omap = platform_get_drvdata(pdev);
- 
--	platform_device_unregister(omap->dwc3);
- 	platform_device_unregister(omap->usb2_phy);
- 	platform_device_unregister(omap->usb3_phy);
-+	device_for_each_child(&pdev->dev, NULL, dwc3_omap_remove_core);
-+
- 	return 0;
- }
- 
+This patch series adds dt support to dwc3 core and fixes few minor
+stuff in dwc3-omap glue to get dwc3 working.
+
+While at that it also uses *of_platform* to create the child device
+(dwc3-core) and fixes to use runtime API's to enable clock and write
+to SYSCONFIG register.
+
+Changes from v2:
+* Removed platform data usage from dwc3-omap since OMAP5 is not going
+  to have non dt support
+* Added a patch to stop using nop-usb-xceiv
+* Added a patch enable the USB2 and USB3 phy in probe
+* Misc cleanup
+
+Changes from v1:
+* made device_for_each_child() as a seperate patch
+* made all other minor fixes wrt typos and function renames
+
+This patch series is developed on
+git://github.com/rrnayak/linux.git omap5-3.8-rc4-base-palmas
+
+I've kept this patch series and all the patch series to follow in a single branch
+git://gitorious.org/linux-usb/linux-usb.git omap5-with-palmas
+(changes up to 23b4dfa2ab7052569cd88acc6383c4b1a8e8a482)
+
+Did enumeration testing on omap5 evm.
+
+Kishon Vijay Abraham I (11):
+  usb: dwc3-omap: use device_for_each_child to handle child removal
+  usb: dwc3-omap: use of_platform API to create dwc3 core pdev
+  usb: dwc3-omap: use runtime API's to enable clocks
+  usb: dwc3-omap: Remove explicit writes to SYSCONFIG register
+  usb: dwc3-omap: Add an API to write to dwc mailbox
+  usb: dwc3-omap: Minor fixes to get dt working
+  usb: dwc3-omap: remove platform data associated with dwc3-omap
+  usb: dwc3: dwc3-omap: stop using nop-usb-xceiv
+  usb: dwc3: core: add dt support for dwc3 core
+  usb: dwc3: core: enable the USB2 and USB3 phy in probe
+  usb: dwc3: core: stray statements are removed
+
+ Documentation/devicetree/bindings/usb/dwc3.txt     |   22 ++
+ Documentation/devicetree/bindings/usb/omap-usb.txt |   28 +++
+ drivers/usb/dwc3/core.c                            |   31 ++-
+ drivers/usb/dwc3/dwc3-omap.c                       |  242 ++++++++------------
+ include/linux/platform_data/dwc3-omap.h            |    4 -
+ include/linux/usb/dwc3-omap.h                      |   30 +++
+ 6 files changed, 206 insertions(+), 151 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/usb/dwc3.txt
+ create mode 100644 include/linux/usb/dwc3-omap.h
+
 -- 
 1.7.9.5
 
