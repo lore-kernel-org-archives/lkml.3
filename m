@@ -1,91 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab3AYWmH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 17:42:07 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:55188 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab3AYWmF (ORCPT
+	id S1753801Ab3AYWpF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 17:45:05 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:51990 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753437Ab3AYWo7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 17:42:05 -0500
-Date: Fri, 25 Jan 2013 14:41:59 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 06/13] sg_io: whitelist a few more commands for
- multimedia devices
-Message-ID: <20130125224159.GQ3081@htj.dyndns.org>
-References: <20130124225555.GC2373@mtj.dyndns.org>
- <51024FB1.3000206@redhat.com>
- <20130125170434.GC3081@htj.dyndns.org>
- <5102BDD4.2020501@redhat.com>
- <20130125172805.GG3081@htj.dyndns.org>
- <5102C780.3090402@redhat.com>
- <20130125181326.GK3081@htj.dyndns.org>
- <5102D353.8010305@redhat.com>
- <20130125190154.GM3081@htj.dyndns.org>
- <5103080A.4090803@redhat.com>
+	Fri, 25 Jan 2013 17:44:59 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5103080A.4090803@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: "Mohammed, Afzal" <afzal@ti.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93EA9383E@DBDE01.ent.ti.com>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        paul@pwsan.com, rnayak@ti.com, b-cousson@ti.com
+References: <cover.1358937685.git.afzal@ti.com>
+ <fa8dab522507e087d5a94bac13dda71544911707.1358937685.git.afzal@ti.com>
+ <20130123202204.9205.66575@quantum>
+ <C8443D0743D26F4388EA172BF4E2A7A93EA92ADF@DBDE01.ent.ti.com>
+ <20130124170044.10623.45314@quantum>
+ <C8443D0743D26F4388EA172BF4E2A7A93EA9383E@DBDE01.ent.ti.com>
+Message-ID: <20130125224453.10623.74434@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: RE: RE: [PATCH v4 12/12] video: da8xx-fb: CCF clock divider handling
+Date: Fri, 25 Jan 2013 14:44:53 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Paolo.
-
-On Fri, Jan 25, 2013 at 11:32:42PM +0100, Paolo Bonzini wrote:
-> All you can do is use common sense, which says that if a command has
-> been in a standard, someone has likely used it.  Of course someone
-> _might_ have misused it too, but how likely is that?
-
-So, that's where we differ, I guess.  When it comes to hardware
-devices, especially the ones as widely and cheaply deployed as SCSI or
-ATA, my common sense screams to stick to what's known to work and
-don't venture outside unnecessarily.
-
-> To try and give an answer, I grepped the "unusual" drivers in
-> drivers/usb/storage.  All of them seem to use non-standard packets (i.e.
-> basically are not SCSI) for their strange stuff, except two:
-> initializers.c has one function that sends SCSI command 0xEC,
-> realtek_cr.c uses 0xF0, both vendor specific.  So USB firmware writers,
-> despite being known for tweaking SCSI standards in many ways, seem to be
-> sensible in this respect.
-
-You're grepping for known irregularities which need to be used to make
-the device work.  Just read through, say, sd driver code and see how
-hard it tries to stick to what's known to work rather than venturing
-out to the space allowed by the spec.
-
-The default approach in this area definitely is and should be
-conservative in general.
-
-> > I have to say that's an overly optimistic view of the world.  There
-> > are even devices puking on receiving SCSI commands in a slightly
-> > different sequence than windows sends them out and devices which lock
-> > up if you send them enough TURs.
+Quoting Mohammed, Afzal (2013-01-25 04:05:44)
+> Hi Mike,
 > 
-> If it is not used, nobody will use it and setting the bit is effectively
-> useless (but harmless too).
-
-No, we don't know it's gonna be harmless.  How do we *know* that
-outside of the naive expectation that devices are gonna safely and
-sanely ignore things that they don't understand?
-
-> > You would get -EPERM/ACCES whatnot from base OS and you would know the
-> > command in use, no?
+> On Thu, Jan 24, 2013 at 22:30:44, Mike Turquette wrote:
+> > Quoting Mohammed, Afzal (2013-01-24 03:36:02)
 > 
-> Yes, but I would like to avoid many iterations.  I don't have access
-> myself to all that software except Windows.
+> > > So there are 3 - LIDD is actually not for present use case, CORE could
+> > > be clubbed with the divider to have a composite clock. And CORE is
+> > > in functional clock path and logically it's perfectly alright to have
+> > > the composite clock.
+> 
+> > Some of the clock names are a bit generic, so a question that I'm going
+> > to repeat throughout my response: "is this clock only inside of your
+> > video IP ?"
+> 
+> Yes these three clocks are inside LCDC IP.
+> 
+> > Regarding the CORE clock, is this only inside of your IP or are you
+> > referring to the SoC CORE clock which is driven by a DPLL and clocks
+> > DDR and many other peripherals (often MMC, UART, etc)?
+> 
+> Sorry for the confusion, here CORE refers to clock inside LCDC IP. This
+> CORE should not be confused with CORE PLL. Actually I used CORE so that
+> it corresponds to the nomenclature in LCDC section of TRM.
+> 
+> > Note that this is from my past experience with OMAP, and I'm making an
+> > assumption that the clock scheme between OMAP and Da Vinci/AM335x parts
+> > isn't very different.
+> 
+> Additional detail: DaVinci doesn't have these 3 clocks controls available,
+> so these three are required only on AM335x (which has IP version 2 )
+> 
+> > Is there a public TRM I can look at?  It would help me understand this
+> > without having to ask you so many annoying questions ;)
+> 
+> No problem, http://www.ti.com/product/am3359
+> 
+> 
+> > > And now we are left with DMA, this is actually in the interface clock
+> > > path which driver in unaware. An option would be to have DMA clock
+> > > as child of CORE plus divider composite clock, even though logically
+> > > DMA can't be considered in the same path.
+> 
+> > Why is the driver unaware of the interface clk?  For instance OMAP3 had
+> > separate fclk and iclk for IPs and drivers would call clk_enable on
+> > both.  Or am I misunderstanding something?
+> 
+> HWMOD handles enabling those upon pm_runtime calls, HWMOD makes an alias
+> for main clock with "fck", but not for "ick", so currently "ick" is
+> unavailable for the driver, continued below ..
+> 
+> > In general I don't think the clock subtree should be modeled in a way
+> > that is convenient for software, but instead model the actual hardware.
+> > Trust me, if you don't model the actual hardware then you will be very
+> > confused when you come back and revisit this code in 6 months and can't
+> > remember why things are so weird looking.
+> 
+> Ok, then it seems an omap clock entry for con-id "ick" should be created
+> as follows (dpll_core_m4_ck supplies interface clock),
+> 
+> CLK("4830e000.lcdc",    "ick",          &dpll_core_m4_ck,       CK_AM33XX)
+> 
+> And then in the driver, DMA gate clock should be made a child of this clock
+> (obtained with con-id "ick").
+> 
+> Let me know your opinion on this.
+> 
 
-I don't think it's gonna be that many iterations and would much prefer
-doing several iterations and having the backing data for each command
-added.
+I think Paul W. or someone on the TI side should weigh in on your clkdev
+entries.  My main point is that the actual tree should be modeled and
+clocks shouldn't be globbed together unnecessarily.  As mentioned in the
+other mail thread you might be better off making a divider for your LCDC
+IP block and modeling each node individually.
 
-Thanks.
+Regards,
+Mike
 
--- 
-tejun
+> Regards
+> Afzal
