@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932320Ab3AYNoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:44:44 -0500
-Received: from smtp0.epfl.ch ([128.178.224.218]:49731 "HELO smtp0.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756394Ab3AYNom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:44:42 -0500
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-leds@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Florian Vaussard <florian.vaussard@epfl.ch>
-Subject: [PATCH v2 0/3] leds-pwm: Defer PWM calls if PWM can sleep
-Date: Fri, 25 Jan 2013 14:44:28 +0100
-Message-Id: <1359121471-21457-1-git-send-email-florian.vaussard@epfl.ch>
-X-Mailer: git-send-email 1.7.5.4
+	id S932332Ab3AYNqE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 08:46:04 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:46904 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754596Ab3AYNqC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 08:46:02 -0500
+Message-ID: <1359121486.3287.11.camel@thor.lan>
+Subject: Re: [PATCH v3] lpc_ich: fix gpio base and control offsets
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Aaron Sierra <asierra@xes-inc.com>, Paul Bolle <pebolle@tiscali.nl>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        =?ISO-8859-1?Q?Ag=F3cs_P=E1l?= <agocs.pal.86@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 25 Jan 2013 08:44:46 -0500
+In-Reply-To: <CACRpkdZHndQsDZpn7BCFNXAO3k5vREYxDJkcYQ3_3sTbKAQLLA@mail.gmail.com>
+References: <b9fec05c-d383-4282-b2af-c95855ff6abb@zimbra>
+	 <3ffa5032-0565-48f0-a4ae-473452f4c902@zimbra>
+	 <CACRpkdZHndQsDZpn7BCFNXAO3k5vREYxDJkcYQ3_3sTbKAQLLA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 2013-01-25 at 10:47 +0100, Linus Walleij wrote:
+> On Thu, Jan 24, 2013 at 9:52 PM, Aaron Sierra <asierra@xes-inc.com> wrote:
+> 
+> > In ICH5 and earlier the GPIOBASE and GPIOCTRL registers are found at
+> > offsets 0x58 and 0x5C, respectively. This patch allows GPIO access to
+> > properly be enabled (and disabled) for these chipsets.
+> >
+> > Signed-off-by: Agócs Pál <agocs.pal.86@gmail.com>
+> > Signed-off-by: Aaron Sierra <asierra@xes-inc.com>
+> 
+> OK... Paul, can you test this on your setup?
+> 
+> > @@ -858,14 +874,35 @@ wdt_done:
+> >  static int lpc_ich_probe(struct pci_dev *dev,
+> >                                 const struct pci_device_id *id)
+> >  {
+> > +       struct lpc_ich_priv *priv;
+> >         int ret;
+> >         bool cell_added = false;
+> >
+> > -       ret = lpc_ich_init_wdt(dev, id);
+> > +       priv = kmalloc(GFP_KERNEL, sizeof(struct lpc_ich_priv));
+> > +       if (!priv)
+> > +               return -ENOMEM;
+> > +
+> > +       priv->chipset = id->driver_data;
+> 
+> So where is this id->driver_data which is just assigned to
+> priv->chipset coming from again? ACPI something?
 
-When using the leds-pwm module with external PWM chips connected through
-I2C, the kernel will panic when settings a trigger. In this case, PWM
-calls can sleep, and should be deferred.
+That's how pci device probing works.
 
-Patch 1 and 2 add the necessary API to the PWM subsystem, and update
-matching drivers. Patch 3 updates leds-pwm to use a worker if the PWM
-chip can sleep, or performs direct calls otherwise.
+The driver defines a struct pci_device_id[] table with
+DEFINE_PCI_DEVICE_TABLE(), initializing the .driver_data fields with an
+index into a static array of device types (in this case, struct
+lpc_ich_info lpc_chipset_info[]), and the pci subsystem passes the
+actual matching pci_device_id* to the driver's probe() function.
 
-This patchset is based on the for-next branch of the led subsystem [1],
-as patch 3 depends on the recent work of Peter for DT bindings in leds-pwm.
-The pwm patches should probably follow the same path.
+There's more information in Documentation/pci.txt
 
-Tested on Overo (OMAP3 + TWL4030) with device tree.
+Regards,
+Peter Hurley
 
-Best regards,
-
-Florian
-
-[1] git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
-
-
-Changes from v1:
-* pwm_can_sleep -> pwm_cansleep
-* avoid duplicated code between the worker and the direct call
-* cache the value of pwm_cansleep inside leds-pwm to avoid API calls
-
-
-Florian Vaussard (3):
-  pwm: Add pwm_cansleep() as exported API to users
-  pwm: Add can_sleep property to drivers
-  leds: leds-pwm: Defer led_pwm_set() if PWM can sleep
-
- drivers/leds/leds-pwm.c   |   50 +++++++++++++++++++++++++++++++++++++-------
- drivers/pwm/core.c        |   12 ++++++++++
- drivers/pwm/pwm-twl-led.c |    1 +
- drivers/pwm/pwm-twl.c     |    1 +
- include/linux/pwm.h       |   10 +++++++++
- 5 files changed, 66 insertions(+), 8 deletions(-)
-
--- 
-1.7.5.4
 
