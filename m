@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab3AYQwA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 11:52:00 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:40861 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab3AYQv7 (ORCPT
+	id S932197Ab3AYQw5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 11:52:57 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44336 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756137Ab3AYQwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 11:51:59 -0500
-Date: Fri, 25 Jan 2013 08:51:54 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v2] cpuset: fix cpuset_print_task_mems_allowed() vs
- rename() race
-Message-ID: <20130125165154.GB3081@htj.dyndns.org>
-References: <51023D61.9000901@huawei.com>
+	Fri, 25 Jan 2013 11:52:55 -0500
+Message-ID: <5102B8A6.3090200@infradead.org>
+Date: Fri, 25 Jan 2013 08:53:58 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51023D61.9000901@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: linux-next: Tree for Jan 25 (kvm)
+References: <20130125162606.edff84fcf6f62ed2b7c4d719@canb.auug.org.au>
+In-Reply-To: <20130125162606.edff84fcf6f62ed2b7c4d719@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 04:08:01PM +0800, Li Zefan wrote:
-> rename() will change dentry->d_name. The result of this race can
-> be worse than seeing partially rewritten name, but we might access
-> a stale pointer because rename() will re-allocate memory to hold
-> a longer name.
+On 01/24/13 21:26, Stephen Rothwell wrote:
+> Hi all,
 > 
-> It's safe in the protection of dentry->d_lock.
+> Changes since 20130124:
 > 
-> v2: check NULL dentry before acquiring dentry lock.
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-Applied to cgroup/for-3.8-fixes w/ stable cc'd.
 
-Thanks.
+Seeing lots of this error on i386:
+
+arch/x86/kvm/emulate.c:1016: Error: unsupported for `push'
+
+
 
 -- 
-tejun
+~Randy
