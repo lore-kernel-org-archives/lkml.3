@@ -1,193 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab3AYPaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 10:30:22 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:59512 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756814Ab3AYP2n (ORCPT
+	id S1757280Ab3AYPao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 10:30:44 -0500
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:51395 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757183Ab3AYPai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 10:28:43 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Matthew Gretton-Dann <matthew.gretton-dann@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 2/5] ARM: compressed/head.S: work around new binutils warning
-Date: Fri, 25 Jan 2013 15:28:28 +0000
-Message-Id: <1359127711-19070-3-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1359127711-19070-1-git-send-email-arnd@arndb.de>
-References: <1359127711-19070-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:oomqtYE+++Xf0d6d9LvXNWhxvPfAHzjJsVXNIaDcSEs
- mLmqDmduVDYvkAGV2uW+pyH5cd4FqK4CVPCK0D6detn3uNSUrm
- OUKvGzGXdyL6/Swa782q4QRF28tTwNN6fdU6WLYZREcFsamzEk
- lEm+0HGgmbbNVoxxckDR0gtAiwKChDBZk5PKviKdolUyLwZB7b
- ZkK/R2rPM9VEDj2zAy+0OVhjhiKHoezRigqRLBHamGwnKRbLxj
- tvvJ70nzaUFjjrXBMq92HjXz6GGXks5bia+Czy/Fx73RrgaOPF
- 0lu3jdohXY4XvOONuN2i+XHR/bl/1b1I0SOvM5mGXhBiXjJoD1
- 1UUUaNuMYOXuRFjSmMcq/zn80ByVyjmP0R7p1WFHk
+	Fri, 25 Jan 2013 10:30:38 -0500
+X-Greylist: delayed 1012 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Jan 2013 10:30:38 EST
+MIME-Version: 1.0
+In-Reply-To: <20130125090158.GB31478@gmail.com>
+References: <1359040242-8269-1-git-send-email-eranian@google.com>
+	<1359040242-8269-8-git-send-email-eranian@google.com>
+	<20130125090158.GB31478@gmail.com>
+Date: Fri, 25 Jan 2013 16:30:37 +0100
+Message-ID: <CABPqkBRpTPcJOohtujR6kk4tAHDFNCv24Ha6E0v1p5MRkPpy6A@mail.gmail.com>
+Subject: Re: [PATCH v7 07/18] perf: add generic memory sampling interface
+From: Stephane Eranian <eranian@google.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Michael Ellerman <michael@ellerman.id.au>,
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Maynard Johnson <mpjohn@us.ibm.com>, Anton Blanchard <anton@samba.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In August 2012, Matthew Gretton-Dann checked a change
-into binutils labelled "Error on obsolete & warn on
-deprecated registers", apparently as part of ARMv8
-support. Apparently, this was supposed to emit
-the message "Warning: This coprocessor register access
-is deprecated in ARMv8" when using certain mcr/mrc
-instructions and building for ARMv8. Unfortunately,
-the message that is actually emitted appears to be
-'(null)', which is less helpful in comparison.
+On Fri, Jan 25, 2013 at 10:01 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Stephane Eranian <eranian@google.com> wrote:
+>
+>> This patch adds PERF_SAMPLE_DSRC.
+>>
+>> PERF_SAMPLE_DSRC collects the data source, i.e., where
+>> did the data associated with the sampled instruction
+>> come from. Information is stored in a perf_mem_dsrc
+>> structure. It contains opcode, mem level, tlb, snoop,
+>> lock information, subject to availability in hardware.
+>>
+>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>> ---
+>>  include/linux/perf_event.h      |    2 ++
+>>  include/uapi/linux/perf_event.h |   68 +++++++++++++++++++++++++++++++++++++--
+>>  kernel/events/core.c            |    6 ++++
+>>  3 files changed, 74 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+>> index bb2429d..8fe4610 100644
+>> --- a/include/linux/perf_event.h
+>> +++ b/include/linux/perf_event.h
+>> @@ -579,6 +579,7 @@ struct perf_sample_data {
+>>               u32     reserved;
+>>       }                               cpu_entry;
+>>       u64                             period;
+>> +     union  perf_mem_dsrc            dsrc;
+>>       struct perf_callchain_entry     *callchain;
+>>       struct perf_raw_record          *raw;
+>>       struct perf_branch_stack        *br_stack;
+>> @@ -599,6 +600,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+>>       data->regs_user.regs = NULL;
+>>       data->stack_user_size = 0;
+>>       data->weight = 0;
+>> +     data->dsrc.val = 0;
+>>  }
+>>
+>>  extern void perf_output_sample(struct perf_output_handle *handle,
+>> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+>> index 3e6c394..3e4844c 100644
+>> --- a/include/uapi/linux/perf_event.h
+>> +++ b/include/uapi/linux/perf_event.h
+>> @@ -133,9 +133,9 @@ enum perf_event_sample_format {
+>>       PERF_SAMPLE_REGS_USER                   = 1U << 12,
+>>       PERF_SAMPLE_STACK_USER                  = 1U << 13,
+>>       PERF_SAMPLE_WEIGHT                      = 1U << 14,
+>> +     PERF_SAMPLE_DSRC                        = 1U << 15,
+>>
+>> -     PERF_SAMPLE_MAX = 1U << 15,             /* non-ABI */
+>> -
+>> +     PERF_SAMPLE_MAX = 1U << 16,             /* non-ABI */
+>>  };
+>>
+>>  /*
+>> @@ -591,6 +591,7 @@ enum perf_event_type {
+>>        *        u64                   dyn_size; } && PERF_SAMPLE_STACK_USER
+>>        *
+>>        *      { u64                   weight;   } && PERF_SAMPLE_WEIGHT
+>> +      *      { u64                   dsrc;     } && PERF_SAMPLE_DSRC
+>>        * };
+>>        */
+>>       PERF_RECORD_SAMPLE                      = 9,
+>> @@ -616,4 +617,67 @@ enum perf_callchain_context {
+>>  #define PERF_FLAG_FD_OUTPUT          (1U << 1)
+>>  #define PERF_FLAG_PID_CGROUP         (1U << 2) /* pid=cgroup id, per-cpu mode only */
+>>
+>> +union perf_mem_dsrc {
+>> +     __u64 val;
+>> +     struct {
+>> +             __u64   mem_op:5,       /* type of opcode */
+>> +                     mem_lvl:14,     /* memory hierarchy level */
+>> +                     mem_snoop:5,    /* snoop mode */
+>> +                     mem_lock:2,     /* lock instr */
+>> +                     mem_dtlb:7,     /* tlb access */
+>> +                     mem_rsvd:31;
+>> +     };
+>> +};
+>> +
+>> +/* type of opcode (load/store/prefetch,code) */
+>> +#define PERF_MEM_OP_NA               0x01 /* not available */
+>> +#define PERF_MEM_OP_LOAD     0x02 /* load instruction */
+>> +#define PERF_MEM_OP_STORE    0x04 /* store instruction */
+>> +#define PERF_MEM_OP_PFETCH   0x08 /* prefetch */
+>> +#define PERF_MEM_OP_EXEC     0x10 /* code (execution) */
+>> +#define PERF_MEM_OP_SHIFT    0
+>> +
+>> +/* memory hierarchy (memory level, hit or miss) */
+>> +#define PERF_MEM_LVL_NA              0x01  /* not available */
+>> +#define PERF_MEM_LVL_HIT     0x02  /* hit level */
+>> +#define PERF_MEM_LVL_MISS    0x04  /* miss level  */
+>> +#define PERF_MEM_LVL_L1              0x08  /* L1 */
+>> +#define PERF_MEM_LVL_LFB     0x10  /* Line Fill Buffer */
+>> +#define PERF_MEM_LVL_L2              0x20  /* L2 hit */
+>> +#define PERF_MEM_LVL_L3              0x40  /* L3 hit */
+>> +#define PERF_MEM_LVL_LOC_RAM 0x80  /* Local DRAM */
+>> +#define PERF_MEM_LVL_REM_RAM1        0x100 /* Remote DRAM (1 hop) */
+>> +#define PERF_MEM_LVL_REM_RAM2        0x200 /* Remote DRAM (2 hops) */
+>> +#define PERF_MEM_LVL_REM_CCE1        0x400 /* Remote Cache (1 hop) */
+>> +#define PERF_MEM_LVL_REM_CCE2        0x800 /* Remote Cache (2 hops) */
+>> +#define PERF_MEM_LVL_IO              0x1000 /* I/O memory */
+>> +#define PERF_MEM_LVL_UNC     0x2000 /* Uncached memory */
+>> +#define PERF_MEM_LVL_SHIFT   5
+>> +
+>> +/* snoop mode */
+>> +#define PERF_MEM_SNOOP_NA    0x01 /* not available */
+>> +#define PERF_MEM_SNOOP_NONE  0x02 /* no snoop */
+>> +#define PERF_MEM_SNOOP_HIT   0x04 /* snoop hit */
+>> +#define PERF_MEM_SNOOP_MISS  0x08 /* snoop miss */
+>> +#define PERF_MEM_SNOOP_HITM  0x10 /* snoop hit modified */
+>> +#define PERF_MEM_SNOOP_SHIFT 19
+>> +
+>> +/* locked instruction */
+>> +#define PERF_MEM_LOCK_NA     0x01 /* not available */
+>> +#define PERF_MEM_LOCK_LOCKED 0x02 /* locked transaction */
+>> +#define PERF_MEM_LOCK_SHIFT  24
+>> +
+>> +/* TLB access */
+>> +#define PERF_MEM_TLB_NA              0x01 /* not available */
+>> +#define PERF_MEM_TLB_HIT     0x02 /* hit level */
+>> +#define PERF_MEM_TLB_MISS    0x04 /* miss level */
+>> +#define PERF_MEM_TLB_L1              0x08 /* L1 */
+>> +#define PERF_MEM_TLB_L2              0x10 /* L2 */
+>> +#define PERF_MEM_TLB_WK              0x20 /* Hardware Walker*/
+>> +#define PERF_MEM_TLB_OS              0x40 /* OS fault handler */
+>> +#define PERF_MEM_TLB_SHIFT   26
+>> +
+>> +#define PERF_MEM_S(a, s) \
+>> +     (((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
+>> +
+>
+> Would be nice to get feedback from PowerPC folks to see how well
+> this matches their memory profiling hw capabilities?
+>
+I agree, I tried to remain as generic as possible here but I probably
+don't have all the possibilities covered. I remember IBM asking
+me about the categories a long time ago. Haven't heard anything since then.
 
-Even more unfortunately, this is biting us on
-every single kernel build with a new gas, because
-arch/arm/boot/compressed/head.S and some other files
-in that directory are built with -march=all since
-kernel commit 80cec14a8 "[ARM] Add -march=all to
-assembly file build in arch/arm/boot/compressed"
-back in v2.6.28.
-
-This patch reverts Russell's nice solution and
-replaces it with a more complex one that sprinkles
-.arch statements inside of the head.S file in
-functions that are executed in different architecture
-levels, which seems to solve the original problem
-just as well, and gets rid of the new one, too.
-
-Without this patch, building anything results in:
-
-arch/arm/boot/compressed/head.S: Assembler messages:
-arch/arm/boot/compressed/head.S:565: Warning: (null)
-arch/arm/boot/compressed/head.S:676: Warning: (null)
-arch/arm/boot/compressed/head.S:698: Warning: (null)
-arch/arm/boot/compressed/head.S:722: Warning: (null)
-arch/arm/boot/compressed/head.S:726: Warning: (null)
-arch/arm/boot/compressed/head.S:957: Warning: (null)
-arch/arm/boot/compressed/head.S:996: Warning: (null)
-arch/arm/boot/compressed/head.S:997: Warning: (null)
-arch/arm/boot/compressed/head.S:1027: Warning: (null)
-arch/arm/boot/compressed/head.S:1035: Warning: (null)
-arch/arm/boot/compressed/head.S:1046: Warning: (null)
-arch/arm/boot/compressed/head.S:1060: Warning: (null)
-arch/arm/boot/compressed/head.S:1092: Warning: (null)
-arch/arm/boot/compressed/head.S:1094: Warning: (null)
-arch/arm/boot/compressed/head.S:1095: Warning: (null)
-arch/arm/boot/compressed/head.S:1102: Warning: (null)
-arch/arm/boot/compressed/head.S:1134: Warning: (null)
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Matthew Gretton-Dann <matthew.gretton-dann@arm.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
----
- arch/arm/boot/compressed/Makefile |  2 +-
- arch/arm/boot/compressed/head.S   | 12 ++++++++++++
- 2 files changed, 13 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
-index 5cad8a6..dfe5687 100644
---- a/arch/arm/boot/compressed/Makefile
-+++ b/arch/arm/boot/compressed/Makefile
-@@ -121,7 +121,7 @@ KBUILD_CFLAGS = $(subst -pg, , $(ORIG_CFLAGS))
- endif
- 
- ccflags-y := -fpic -fno-builtin -I$(obj)
--asflags-y := -Wa,-march=all -DZIMAGE
-+asflags-y := -DZIMAGE
- 
- # Supply kernel BSS size to the decompressor via a linker symbol.
- KBSS_SZ = $(shell $(CROSS_COMPILE)size $(obj)/../../../../vmlinux | \
-diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
-index fe4d9c3..3b0b21a 100644
---- a/arch/arm/boot/compressed/head.S
-+++ b/arch/arm/boot/compressed/head.S
-@@ -548,6 +548,7 @@ cache_on:	mov	r3, #8			@ cache_on function
-  * to cover all 32bit address and cacheable and bufferable.
-  */
- __armv4_mpu_cache_on:
-+		.arch armv4
- 		mov	r0, #0x3f		@ 4G, the whole
- 		mcr	p15, 0, r0, c6, c7, 0	@ PR7 Area Setting
- 		mcr 	p15, 0, r0, c6, c7, 1
-@@ -655,6 +656,7 @@ ENDPROC(__setup_mmu)
- @ Enable unaligned access on v6, to allow better code generation
- @ for the decompressor C code:
- __armv6_mmu_cache_on:
-+		.arch armv6
- 		mrc	p15, 0, r0, c1, c0, 0	@ read SCTLR
- 		bic	r0, r0, #2		@ A (no unaligned access fault)
- 		orr	r0, r0, #1 << 22	@ U (v6 unaligned access model)
-@@ -663,11 +665,13 @@ __armv6_mmu_cache_on:
- 
- __arm926ejs_mmu_cache_on:
- #ifdef CONFIG_CPU_DCACHE_WRITETHROUGH
-+		.arch armv5
- 		mov	r0, #4			@ put dcache in WT mode
- 		mcr	p15, 7, r0, c15, c0, 0
- #endif
- 
- __armv4_mmu_cache_on:
-+		.arch armv4
- 		mov	r12, lr
- #ifdef CONFIG_MMU
- 		mov	r6, #CB_BITS | 0x12	@ U
-@@ -688,6 +692,7 @@ __armv4_mmu_cache_on:
- 		mov	pc, r12
- 
- __armv7_mmu_cache_on:
-+		.arch armv7-a
- 		mov	r12, lr
- #ifdef CONFIG_MMU
- 		mrc	p15, 0, r11, c0, c1, 4	@ read ID_MMFR0
-@@ -1031,6 +1036,7 @@ cache_clean_flush:
- 		mov	r3, #16
- 		b	call_cache_fn
- 
-+		.arch armv4
- __armv4_mpu_cache_flush:
- 		mov	r2, #1
- 		mov	r3, #0
-@@ -1056,6 +1062,7 @@ __fa526_cache_flush:
- 		mov	pc, lr
- 
- __armv6_mmu_cache_flush:
-+		.arch armv6
- 		mov	r1, #0
- 		mcr	p15, 0, r1, c7, c14, 0	@ clean+invalidate D
- 		mcr	p15, 0, r1, c7, c5, 0	@ invalidate I+BTB
-@@ -1063,6 +1070,7 @@ __armv6_mmu_cache_flush:
- 		mcr	p15, 0, r1, c7, c10, 4	@ drain WB
- 		mov	pc, lr
- 
-+		.arch armv7-a
- __armv7_mmu_cache_flush:
- 		mrc	p15, 0, r10, c0, c1, 5	@ read ID_MMFR1
- 		tst	r10, #0xf << 16		@ hierarchical cache (ARMv7)
-@@ -1123,6 +1131,7 @@ iflush:
- 		mcr	p15, 0, r10, c7, c5, 4	@ ISB
- 		mov	pc, lr
- 
-+		.arch armv5
- __armv5tej_mmu_cache_flush:
- 1:		mrc	p15, 0, r15, c7, c14, 3	@ test,clean,invalidate D cache
- 		bne	1b
-@@ -1130,6 +1139,7 @@ __armv5tej_mmu_cache_flush:
- 		mcr	p15, 0, r0, c7, c10, 4	@ drain WB
- 		mov	pc, lr
- 
-+		.arch armv4
- __armv4_mmu_cache_flush:
- 		mov	r2, #64*1024		@ default: 32K dcache size (*2)
- 		mov	r11, #32		@ default: 32 byte line size
-@@ -1168,6 +1178,8 @@ __armv3_mpu_cache_flush:
- 		mcr	p15, 0, r1, c7, c0, 0	@ invalidate whole cache v3
- 		mov	pc, lr
- 
-+		.arch armv4
-+
- /*
-  * Various debugging routines for printing hex characters and
-  * memory, which again must be relocatable.
--- 
-1.8.0
-
+> I suspect there's a lot of differences, but one can always hope
+> ...
+>
+> If there's some hope for unification we could at least shape it
+> in a way that they could pick up and extend.
+>
+Agreed.
