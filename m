@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab3AYTM1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 14:12:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13773 "EHLO mx1.redhat.com"
+	id S1757469Ab3AYTM6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 14:12:58 -0500
+Received: from mga02.intel.com ([134.134.136.20]:52143 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753636Ab3AYTM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 14:12:26 -0500
-Date: Fri, 25 Jan 2013 20:11:39 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: tj@kernel.org, srivatsa.bhat@linux.vnet.ibm.com, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] generic dynamic per cpu refcounting
-Message-ID: <20130125191139.GA19247@redhat.com>
-References: <20130124232024.GA584@google.com> <20130125180941.GA16896@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130125180941.GA16896@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753636Ab3AYTM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 14:12:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,540,1355126400"; 
+   d="scan'208";a="276705708"
+From: Seth Heasley <seth.heasley@intel.com>
+To: Jean Delvare <khali@linux-fr.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        linux-i2c@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, James Ralston <james.d.ralston@intel.com>,
+        Seth Heasley <seth.heasley@intel.com>
+Subject: [PATCH 3/3] i2c-i801: SMBus patch for Intel Avoton DeviceIDs
+Date: Fri, 25 Jan 2013 12:11:01 -0800
+Message-Id: <1359144661-3528-1-git-send-email-seth.heasley@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25, Oleg Nesterov wrote:
->
-> > +int percpu_ref_kill(struct percpu_ref *ref)
-> > +{
-> > ...
-> > +	if (status == PCPU_REF_PTR) {
-> > +		unsigned count = 0, cpu;
-> > +
-> > +		synchronize_rcu();
-> > +
-> > +		for_each_possible_cpu(cpu)
-> > +			count += *per_cpu_ptr((unsigned __percpu *) pcpu_count, cpu);
-> > +
-> > +		pr_debug("global %lli pcpu %i",
-> > +			 atomic64_read(&ref->count) & PCPU_COUNT_MASK,
-> > +			 (int) count);
-> > +
-> > +		atomic64_add((int) count, &ref->count);
-> > +		smp_wmb();
-> > +		/* Between setting global count and setting PCPU_REF_DEAD */
-> > +		ref->pcpu_count = PCPU_REF_DEAD;
->
-> The coment explains what the code does, but not why ;)
->
-> I guess this is for percpu_ref_put(), and this wmb() pairs with implicit
-> mb() implied by atomic64_dec_return().
+This patch adds the PCU SMBus DeviceID for the Intel Avoton SOC.
 
-Hmm. Most probably I missed something, but it seems we need another
-synchronize_rcu() _after_ we set PCPU_REF_DEAD.
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+---
+ Documentation/i2c/busses/i2c-i801 |    1 +
+ drivers/i2c/busses/Kconfig        |    1 +
+ drivers/i2c/busses/i2c-i801.c     |    3 +++
+ 3 files changed, 5 insertions(+), 0 deletions(-)
 
-To simplify, suppose that percpu_ref_put() is never called directly but
-we have
-
-	void put_and_dsetroy(...)
-	{
-		if (percpu_ref_put(...))
-			destroy(...);
-	}
-
-Suppose that ref->count == 2 after atomic64_add() above. IOW, we have
-a "master" reference for _kill() and someone else did _get.
-
-So the caller does
-
-	percpu_ref_kill();
-	put_and_dsetroy();
-
-And this can race with another holder which drops the last reference,
-its put_and_dsetroy() can see PCPU_REF_DYING and return false.
-
-Or I misunderstood the code/interface?
-
-Oleg.
+diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
+index 157416e..8d71d57 100644
+--- a/Documentation/i2c/busses/i2c-i801
++++ b/Documentation/i2c/busses/i2c-i801
+@@ -22,6 +22,7 @@ Supported adapters:
+   * Intel Panther Point (PCH)
+   * Intel Lynx Point (PCH)
+   * Intel Lynx Point-LP (PCH)
++  * Intel Avoton (SOC)
+    Datasheets: Publicly available at the Intel website
+ 
+ On Intel Patsburg and later chipsets, both the normal host SMBus controller
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 0bb7ff4..87df863 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -106,6 +106,7 @@ config I2C_I801
+ 	    Panther Point (PCH)
+ 	    Lynx Point (PCH)
+ 	    Lynx Point-LP (PCH)
++	    Avoton (SOC)
+ 
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-i801.
+diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+index 3092387..af15aeb 100644
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -53,6 +53,7 @@
+   Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
+   Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
+   Lynx Point-LP (PCH)   0x9c22     32     hard     yes     yes     yes
++  Avoton (SOC)          0x1f3c     32     hard     yes     yes     yes
+ 
+   Features supported by this driver:
+   Software PEC                     no
+@@ -166,6 +167,7 @@
+ #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
+ #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
+ #define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS	0x9c22
++#define PCI_DEVICE_ID_INTEL_AVOTON_SMBUS	0x1f3c
+ 
+ struct i801_mux_config {
+ 	char *gpio_chip;
+@@ -798,6 +800,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_AVOTON_SMBUS) },
+ 	{ 0, }
+ };
+ 
+-- 
+1.7.4.4
 
