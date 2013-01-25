@@ -1,63 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab3AYIvu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 03:51:50 -0500
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:41954 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab3AYIvs (ORCPT
+	id S1752882Ab3AYIwp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 03:52:45 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55032 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab3AYIwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 03:51:48 -0500
+	Fri, 25 Jan 2013 03:52:44 -0500
+Date: Fri, 25 Jan 2013 08:52:34 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Venkatraman S <svenkatr@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: Re: [BUG] panda board locks up on boot
+Message-ID: <20130125085234.GY23505@n2100.arm.linux.org.uk>
+References: <1359082886.21576.199.camel@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <51024422.2060503@free-electrons.com>
-References: <1358889025-8530-1-git-send-email-gregory.clement@free-electrons.com>
-	<1358889025-8530-3-git-send-email-gregory.clement@free-electrons.com>
-	<CACRpkda-N0GrKOeaz4Hji0ef9pSRNPCxW_jLGR28iX-sk0-=tg@mail.gmail.com>
-	<51024422.2060503@free-electrons.com>
-Date: Fri, 25 Jan 2013 09:51:47 +0100
-Message-ID: <CACRpkdbe1fGVLNyJ+U+ozE32p+_fc-eQ4W1F8OeYC+fryu_dQQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] gpio: pca953x: add support for pca9505
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
-        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359082886.21576.199.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 9:36 AM, Gregory CLEMENT
-<gregory.clement@free-electrons.com> wrote:
+On Thu, Jan 24, 2013 at 10:01:26PM -0500, Steven Rostedt wrote:
+> I've recently started testing my work on arm boards and have found that
+> they both don't boot under the latest kernel anymore. I already posted
+> about my snowball board, but my panda board also locks up.
 
-> Well, at the beginning I thought adding support for pca9505 was just a matter
-> of a couple of lines to add. Then I realized that I need to handle the 40 bits
-> case, and I ended up refactoring all access to the registers. So now I am on it,
-> it seems I am volunteer to continue to improve this driver.
-
-I like the sound of this ;-)
-
-To get you started I just sent out two other patches you can consider
-as RFC, they're regrettably not even compile-tested. I mainly wanted
-to indicate what needs to be done so we can throw them away, just
-wanted to give a hint.
-
-> However I won't be able to test it, the only PXA based platform I have is a
-> Zaurus SL-C3100 which embeds a PXA270 if I remember well, but I doubt it come
-> with gpio expander on i2c.
-
-Well I guess if there is nobody testing it, then nobody cares.
-The world must be full of people with PXA platforms doing nothing
-but regression testing...
-
-Actually just days ago I asked Haoijan to help me testing a set of
-patches for the PXA SPI controller, and he kindly helped out, so there
-are some people booting these platforms, sometimes :-)
-
-Yours,
-Linus Walleij
+You need to enable DMA engine and the OMAP DMA engine driver.  I believe
+someone was going to work on adding PIO-mode support to the driver but
+I suspect as TI's OMAP division is being reorganized, all that is now
+uncertain.
