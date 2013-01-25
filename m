@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab3AYWJi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 17:09:38 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:56027 "EHLO hydra.sisk.pl"
+	id S1753418Ab3AYWLd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 17:11:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47231 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752969Ab3AYWJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 17:09:34 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 1/4 v11] arm: use device tree to get smp_twd clock
-Date: Fri, 25 Jan 2013 23:15:39 +0100
-Message-ID: <2022065.fFzVbP4vta@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130125214000.GA23505@n2100.arm.linux.org.uk>
-References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <3041510.xugDHtFsGr@vostro.rjw.lan> <20130125214000.GA23505@n2100.arm.linux.org.uk>
+	id S1751977Ab3AYWLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 17:11:31 -0500
+Message-ID: <510302FD.3090009@zytor.com>
+Date: Fri, 25 Jan 2013 14:11:09 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, torvalds@linux-foundation.org,
+        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/asm] x86/xor: Make virtualization friendly
+References: <5093E4F302000078000A6162@nat28.tlf.novell.com> <tip-05fbf4d6fc6a3c0c3e63b77979c9311596716d10@git.kernel.org>
+In-Reply-To: <tip-05fbf4d6fc6a3c0c3e63b77979c9311596716d10@git.kernel.org>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 25, 2013 09:40:00 PM Russell King - ARM Linux wrote:
-> On Fri, Jan 25, 2013 at 10:03:05PM +0100, Rafael J. Wysocki wrote:
-> > On Friday, January 25, 2013 01:46:42 PM Mark Langsdorf wrote:
-> > > From: Rob Herring <rob.herring@calxeda.com>
-> > > 
-> > > Move clk setup to twd_local_timer_common_register and rely on
-> > > twd_timer_rate being 0 to force calibration if there is no clock.
-> > > Remove common_setup_called as it is no longer needed.
-> > > 
-> > > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> > > Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
-> > 
-> > Russell, is this fine with you?
+On 01/25/2013 02:43 AM, tip-bot for Jan Beulich wrote:
+> Commit-ID:  05fbf4d6fc6a3c0c3e63b77979c9311596716d10
+> Gitweb:     http://git.kernel.org/tip/05fbf4d6fc6a3c0c3e63b77979c9311596716d10
+> Author:     Jan Beulich <JBeulich@suse.com>
+> AuthorDate: Fri, 2 Nov 2012 14:21:23 +0000
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Fri, 25 Jan 2013 09:23:51 +0100
 > 
-> Looks fine to me, though I had to check twd_calibrate_rate() to make
-> sure it wouldn't run if the twd_timer_rate was non-zero.
+> x86/xor: Make virtualization friendly
 > 
-> If you want an acked-by:
+> In virtualized environments, the CR0.TS management needed here
+> can be a lot slower than anticipated by the original authors of
+> this code, which particularly means that in such cases forcing
+> the use of SSE- (or MMX-) based implementations is not desirable
+> - actual measurements should always be done in that case.
 > 
-> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> For consistency, pull into the shared (32- and 64-bit) header
+> not only the inclusion of the generic code, but also that of the
+> AVX variants.
+> 
 
-I will, thanks a lot!
+This patch is wrong and should be dropped.  I verified it with the KVM
+people that they do NOT want this change.  It is a Xen-specific problem.
 
-Rafael
+	-hpa
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
