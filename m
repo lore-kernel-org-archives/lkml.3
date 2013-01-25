@@ -1,231 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878Ab3AYGmm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 01:42:42 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:31385 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259Ab3AYGml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 01:42:41 -0500
-X-IronPort-AV: E=Sophos;i="4.84,536,1355068800"; 
-   d="scan'208";a="6645105"
-Message-ID: <51022956.3050406@cn.fujitsu.com>
-Date: Fri, 25 Jan 2013 14:42:30 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH V6 2/3] virtio-net: split out clean affinity function
-References: <1358767524-17934-1-git-send-email-gaowanlong@cn.fujitsu.com> <1358767524-17934-2-git-send-email-gaowanlong@cn.fujitsu.com> <5101FBE0.7040505@redhat.com> <51020800.4080900@cn.fujitsu.com> <5102145D.7030607@redhat.com> <51021ABB.8050508@cn.fujitsu.com> <5102224C.3050909@redhat.com>
-In-Reply-To: <5102224C.3050909@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/25 14:41:39,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/25 14:41:40,
-	Serialize complete at 2013/01/25 14:41:40
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-15
+	id S1751519Ab3AYGou (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 01:44:50 -0500
+Received: from smtp-out-02.shaw.ca ([64.59.136.138]:34471 "EHLO
+	smtp-out-02.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab3AYGor (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 01:44:47 -0500
+X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Jan 2013 01:44:46 EST
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=3f4U5fHrZLLPCzJ96ldNbjtja1zQ0ih230F6vdsLr5s= c=1 sm=1
+ a=cqZlwJiDfgUA:10 a=3762yOXauukA:10 a=BLceEmwcHowA:10
+ a=oaxjXb+On79cRBAvziGSJw==:17 a=47LbCVvxAAAA:8 a=auE1FfZpAAAA:8
+ a=wmEOgL5qGPie-FilO6oA:9 a=QhNQsjeWOoAA:10 a=Ux_uGsAPmqgA:10
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+From: Simon Wood <simon@mungewell.org>
+To: linux-input@vger.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        simon@mungewell.org, rosegardener@freeode.co.uk
+Subject: [PATCH 1/4] USB: HID: SRW-S1 Gaming Wheel Driver
+Date: Thu, 24 Jan 2013 23:34:44 -0700
+Message-Id: <1359095687-13398-1-git-send-email-simon@mungewell.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2013 02:12 PM, Jason Wang wrote:
-> On 01/25/2013 01:40 PM, Wanlong Gao wrote:
->> On 01/25/2013 01:13 PM, Jason Wang wrote:
->>> On 01/25/2013 12:20 PM, Wanlong Gao wrote:
->>>> On 01/25/2013 11:28 AM, Jason Wang wrote:
->>>>> On 01/21/2013 07:25 PM, Wanlong Gao wrote:
->>>>>> Split out the clean affinity function to virtnet_clean_affinity().
->>>>>>
->>>>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
->>>>>> Cc: "Michael S. Tsirkin" <mst@redhat.com>
->>>>>> Cc: Jason Wang <jasowang@redhat.com>
->>>>>> Cc: Eric Dumazet <erdnetdev@gmail.com>
->>>>>> Cc: virtualization@lists.linux-foundation.org
->>>>>> Cc: netdev@vger.kernel.org
->>>>>> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
->>>>>> ---
->>>>>> V5->V6: NEW
->>>>>>
->>>>>>  drivers/net/virtio_net.c | 67 +++++++++++++++++++++++++++---------------------
->>>>>>  1 file changed, 38 insertions(+), 29 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->>>>>> index 70cd957..1a35a8c 100644
->>>>>> --- a/drivers/net/virtio_net.c
->>>>>> +++ b/drivers/net/virtio_net.c
->>>>>> @@ -1016,48 +1016,57 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
->>>>>>  	return 0;
->>>>>>  }
->>>>>>  
->>>>>> -static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
->>>>>> +static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
->>>>>>  {
->>>>>>  	int i;
->>>>>>  	int cpu;
->>>>>>  
->>>>>> -	/* In multiqueue mode, when the number of cpu is equal to the number of
->>>>>> -	 * queue pairs, we let the queue pairs to be private to one cpu by
->>>>>> -	 * setting the affinity hint to eliminate the contention.
->>>>>> -	 */
->>>>>> -	if ((vi->curr_queue_pairs == 1 ||
->>>>>> -	     vi->max_queue_pairs != num_online_cpus()) && set) {
->>>>>> -		if (vi->affinity_hint_set)
->>>>>> -			set = false;
->>>>>> -		else
->>>>>> -			return;
->>>>>> -	}
->>>>>> -
->>>>>> -	if (set) {
->>>>>> -		i = 0;
->>>>>> -		for_each_online_cpu(cpu) {
->>>>>> -			virtqueue_/set_affinity(vi->rq[i].vq, cpu);
->>>>>> -			virtqueue_set_affinity(vi->sq[i].vq, cpu);
->>>>>> -			*per_cpu_ptr(vi->vq_index, cpu) = i;
->>>>>> -			i++;
->>>>>> -		}
->>>>>> -
->>>>>> -		vi->affinity_hint_set = true;
->>>>>> -	} else {
->>>>>> -		for(i = 0; i < vi->max_queue_pairs; i++) {
->>>>>> +	if (vi->affinity_hint_set) {
->>>>>> +		for (i = 0; i < vi->max_queue_pairs; i++) {
->>>>>>  			virtqueue_set_affinity(vi->rq[i].vq, -1);
->>>>>>  			virtqueue_set_affinity(vi->sq[i].vq, -1);
->>>>>>  		}
->>>>>>  
->>>>>>  		i = 0;
->>>>>> -		for_each_online_cpu(cpu)
->>>>>> +		for_each_online_cpu(cpu) {
->>>>>> +			if (cpu == hcpu)
->>>>>> +				continue;
->>>>>>  			*per_cpu_ptr(vi->vq_index, cpu) =
->>>>>>  				++i % vi->curr_queue_pairs;
->>>>>> +		}
->>>>>>  
->>>>> Some questions here:
->>>>>
->>>>> - Did we need reset the affinity of the queue here like the this?
->>>>>
->>>>> virtqueue_set_affinity(vi->sq[*per_cpu_ptr(vi->vq_index, hcpu)], -1);
->>>>> virtqueue_set_affinity(vi->rq[*per_cpu_ptr(vi->vq_index, hcpu)], -1);
->>>> I think no, we are going to unset the affinity of all the set queues,
->>>> include hcpu.
->>>>
->>>>> - Looks like we need also reset the percpu index when
->>>>> vi->affinity_hint_set is false.
->>>> Yes, follow this and the comment on [1/3].
->>>>
->>>>> - Does this really need this reset? Consider we're going to reset the
->>>>> percpu in CPU_DEAD?
->>>> I think resetting when CPU_DOWN_PREPARE can avoid selecting the wrong queue
->>>> on the dying CPU.
->>> Didn't understand this. What does 'wrong queue' here mean? Looks like
->>> you didn't change the preferable queue of the dying CPU and just change
->>> all others.
->> How about setting the vq index to -1 on hcpu when doing DOWN_PREPARE?
->> So that let it select txq to 0 when the CPU is dying.
-> 
-> Looks safe, so look like what you're going to solve here is the the race
-> between cpu hotplug and virtnet_set_channels(). A possible better
-> solution is to serialize them by protecting virtnet_set_queues() by
-> get_online_cpus() also. After this, we can make sure the number of
-> channels were not changed during cpu hotplug, and looks like there's no
-> need to reset the preferable queues in DOWN_PREPARE.
-> 
-> What's your opinion?
+From: simon <simon@simon-virtual-machine.(none)>
 
-IMHO, serialize every time will take lock and may slow down this path,
-but the hot unplug path will be more cold than it. So I prefer reset the
-preferable queues in DOWN_PREPARE but not serialize them. Agree?
+Add support the SRW-S1 by patching HID descriptor to read axis
+as Generic Desktop X, Y and Z (rather than Usage page being
+'Simulation').
 
-Thanks,
-Wanlong Gao
+Signed-off-by: Simon Wood <simon@mungewell.org>
+tested-by: John Murphy <rosegardener@freeode.co.uk>
 
-> 
-> Thanks
->>
->> Thanks,
->> Wanlong Gao
->>
->>>> Thanks,
->>>> Wanlong Gao
->>>>
->>>>> Thanks
->>>>>>  		vi->affinity_hint_set = false;
->>>>>>  	}
->>>>>>  }
->>>>>>  
->>>>>> +static void virtnet_set_affinity(struct virtnet_info *vi)
->>>>>> +{
->>>>>> +	int i;
->>>>>> +	int cpu;
->>>>>> +
->>>>>> +	/* In multiqueue mode, when the number of cpu is equal to the number of
->>>>>> +	 * queue pairs, we let the queue pairs to be private to one cpu by
->>>>>> +	 * setting the affinity hint to eliminate the contention.
->>>>>> +	 */
->>>>>> +	if (vi->curr_queue_pairs == 1 ||
->>>>>> +	    vi->max_queue_pairs != num_online_cpus()) {
->>>>>> +		if (vi->affinity_hint_set)
->>>>>> +			virtnet_clean_affinity(vi, -1);
->>>>>> +		else
->>>>>> +			return;
->>>>>> +	}
->>>>>> +
->>>>>> +	i = 0;
->>>>>> +	for_each_online_cpu(cpu) {
->>>>>> +		virtqueue_set_affinity(vi->rq[i].vq, cpu);
->>>>>> +		virtqueue_set_affinity(vi->sq[i].vq, cpu);
->>>>>> +		*per_cpu_ptr(vi->vq_index, cpu) = i;
->>>>>> +		i++;
->>>>>> +	}
->>>>>> +
->>>>>> +	vi->affinity_hint_set = true;
->>>>>> +}
->>>>>> +
->>>>>>  static void virtnet_get_ringparam(struct net_device *dev,
->>>>>>  				struct ethtool_ringparam *ring)
->>>>>>  {
->>>>>> @@ -1105,7 +1114,7 @@ static int virtnet_set_channels(struct net_device *dev,
->>>>>>  		netif_set_real_num_rx_queues(dev, queue_pairs);
->>>>>>  
->>>>>>  		get_online_cpus();
->>>>>> -		virtnet_set_affinity(vi, true);
->>>>>> +		virtnet_set_affinity(vi);
->>>>>>  		put_online_cpus();
->>>>>>  	}
->>>>>>  
->>>>>> @@ -1274,7 +1283,7 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
->>>>>>  {
->>>>>>  	struct virtio_device *vdev = vi->vdev;
->>>>>>  
->>>>>> -	virtnet_set_affinity(vi, false);
->>>>>> +	virtnet_clean_affinity(vi, -1);
->>>>>>  
->>>>>>  	vdev->config->del_vqs(vdev);
->>>>>>  
->>>>>> @@ -1398,7 +1407,7 @@ static int init_vqs(struct virtnet_info *vi)
->>>>>>  		goto err_free;
->>>>>>  
->>>>>>  	get_online_cpus();
->>>>>> -	virtnet_set_affinity(vi, true);
->>>>>> +	virtnet_set_affinity(vi);
->>>>>>  	put_online_cpus();
->>>>>>  
->>>>>>  	return 0;
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+---
+ drivers/hid/Kconfig     |    6 +++++
+ drivers/hid/Makefile    |    1 +
+ drivers/hid/hid-core.c  |    1 +
+ drivers/hid/hid-ids.h   |    3 +++
+ drivers/hid/hid-srws1.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 69 insertions(+)
+ create mode 100644 drivers/hid/hid-srws1.c
+
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index e7d6a13..3c98517 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -596,6 +596,12 @@ config HID_SPEEDLINK
+ 	---help---
+ 	Support for Speedlink Vicious and Divine Cezanne mouse.
+ 
++config HID_SRWS1
++	tristate "Steelseries SRW-S1 steering wheel support"
++	depends on USB_HID
++	---help---
++	Support for Steelseries SRW-S1 steering wheel
++
+ config HID_SUNPLUS
+ 	tristate "Sunplus wireless desktop"
+ 	depends on USB_HID
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index b622157..d3102e2 100644
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -101,6 +101,7 @@ obj-$(CONFIG_HID_SAMSUNG)	+= hid-samsung.o
+ obj-$(CONFIG_HID_SMARTJOYPLUS)	+= hid-sjoy.o
+ obj-$(CONFIG_HID_SONY)		+= hid-sony.o
+ obj-$(CONFIG_HID_SPEEDLINK)	+= hid-speedlink.o
++obj-$(CONFIG_HID_SRWS1)    	+= hid-srws1.o
+ obj-$(CONFIG_HID_SUNPLUS)	+= hid-sunplus.o
+ obj-$(CONFIG_HID_GREENASIA)	+= hid-gaff.o
+ obj-$(CONFIG_HID_THRUSTMASTER)	+= hid-tmff.o
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index eb2ee11..65cda7f 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1697,6 +1697,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_NAVIGATION_CONTROLLER) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGX_MOUSE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_STEELSERIES, USB_DEVICE_ID_STEELSERIES_SRWS1) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SUNPLUS, USB_DEVICE_ID_SUNPLUS_WDESKTOP) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb300) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb304) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 4dfa605..f5976f3 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -723,6 +723,9 @@
+ #define USB_VENDOR_ID_STANTUM_SITRONIX		0x1403
+ #define USB_DEVICE_ID_MTP_SITRONIX		0x5001
+ 
++#define USB_VENDOR_ID_STEELSERIES	0x1038
++#define USB_DEVICE_ID_STEELSERIES_SRWS1	0x1410
++
+ #define USB_VENDOR_ID_SUN		0x0430
+ #define USB_DEVICE_ID_RARITAN_KVM_DONGLE	0xcdab
+ 
+diff --git a/drivers/hid/hid-srws1.c b/drivers/hid/hid-srws1.c
+new file mode 100644
+index 0000000..7776d74
+--- /dev/null
++++ b/drivers/hid/hid-srws1.c
+@@ -0,0 +1,58 @@
++/*
++ *  HID driver for Steelseries SRW-S1
++ *
++ *  Copyright (c) 2013 Simon Wood
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
++
++#include <linux/device.h>
++#include <linux/hid.h>
++#include <linux/module.h>
++
++#include "hid-ids.h"
++
++static __u8 *srws1_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++		unsigned int *rsize)
++{
++	if (*rsize >= 115 && rdesc[11] == 0x02 && rdesc[13] == 0xc8
++			&& rdesc[29] == 0xbb && rdesc[40] == 0xc5) {
++		hid_info(hdev, "Fixing up Steelseries SRW-S1 report descriptor\n");
++		rdesc[11] = 0x01;
++		rdesc[13] = 0x30;
++		rdesc[29] = 0x31;
++		rdesc[40] = 0x32;
++	}
++	return rdesc;
++}
++
++static const struct hid_device_id srws1_devices[] = {
++	{ HID_USB_DEVICE(USB_VENDOR_ID_STEELSERIES, USB_DEVICE_ID_STEELSERIES_SRWS1) },
++	{ }
++};
++MODULE_DEVICE_TABLE(hid, srws1_devices);
++
++static struct hid_driver srws1_driver = {
++	.name = "srws1",
++	.id_table = srws1_devices,
++	.report_fixup = srws1_report_fixup
++};
++
++static int __init srws1_init(void)
++{
++	return hid_register_driver(&srws1_driver);
++}
++
++static void __exit srws1_exit(void)
++{
++	hid_unregister_driver(&srws1_driver);
++}
++
++module_init(srws1_init);
++module_exit(srws1_exit);
++MODULE_LICENSE("GPL");
+-- 
+1.7.10.4
 
