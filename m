@@ -1,334 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab3AYLb0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 06:31:26 -0500
-Received: from smtp-vbr6.xs4all.nl ([194.109.24.26]:2329 "EHLO
-	smtp-vbr6.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757135Ab3AYLbX (ORCPT
+	id S1757065Ab3AYLcK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 06:32:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41720 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755351Ab3AYLcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 06:31:23 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH 2/2] media: add support for THS7353 video amplifier
-Date: Fri, 25 Jan 2013 12:30:58 +0100
-User-Agent: KMail/1.13.7 (Linux/3.8.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>
-References: <1359110167-5703-1-git-send-email-prabhakar.lad@ti.com> <1359110167-5703-3-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1359110167-5703-3-git-send-email-prabhakar.lad@ti.com>
+	Fri, 25 Jan 2013 06:32:08 -0500
+Date: Fri, 25 Jan 2013 03:31:46 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-eec185ab603fab3b7b5021e840cf4b282c4c7e6b@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1356679009-32122-1-git-send-email-namhyung@kernel.org>
+References: <1356679009-32122-1-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf symbols:
+  Include elf.h header regardless LIBELF_SUPPORT
+Git-Commit-ID: eec185ab603fab3b7b5021e840cf4b282c4c7e6b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301251230.58270.hverkuil@xs4all.nl>
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 03:31:51 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+Commit-ID:  eec185ab603fab3b7b5021e840cf4b282c4c7e6b
+Gitweb:     http://git.kernel.org/tip/eec185ab603fab3b7b5021e840cf4b282c4c7e6b
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Fri, 28 Dec 2012 16:16:49 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 24 Jan 2013 16:40:18 -0300
 
-Some comments below:
+perf symbols: Include elf.h header regardless LIBELF_SUPPORT
 
-On Fri January 25 2013 11:36:07 Prabhakar Lad wrote:
-> From: Manjunath Hadli <manjunath.hadli@ti.com>
-> 
-> The patch adds support for THS7353 video amplifier. Enable
-> dv_preset support for THS7353 so that setting a HD mode on the
-> host device makes sure appropriate mode in the amplifier is enabled.
-> 
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> ---
->  drivers/media/i2c/Kconfig   |   10 ++
->  drivers/media/i2c/Makefile  |    1 +
->  drivers/media/i2c/ths7353.c |  223 +++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 234 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/media/i2c/ths7353.c
-> 
-> diff --git a/drivers/media/i2c/Kconfig b/drivers/media/i2c/Kconfig
-> index 24d78e2..d1ebb0b 100644
-> --- a/drivers/media/i2c/Kconfig
-> +++ b/drivers/media/i2c/Kconfig
-> @@ -570,6 +570,16 @@ config VIDEO_THS7303
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called ths7303.
->  
-> +config VIDEO_THS7353
-> +	tristate "THS7353 Video Amplifier"
-> +	depends on I2C
-> +	help
-> +	  Support for TI THS7353 video amplifier
-> +
-> +	  To compile this driver as a module, choose M here: the
-> +	  module will be called ths7353. This helps tvp7002 to amplify
-> +	  the signals.
-> +
->  config VIDEO_M52790
->  	tristate "Mitsubishi M52790 A/V switch"
->  	depends on VIDEO_V4L2 && I2C
-> diff --git a/drivers/media/i2c/Makefile b/drivers/media/i2c/Makefile
-> index b1d62df..9944d06 100644
-> --- a/drivers/media/i2c/Makefile
-> +++ b/drivers/media/i2c/Makefile
-> @@ -34,6 +34,7 @@ obj-$(CONFIG_VIDEO_BT856) += bt856.o
->  obj-$(CONFIG_VIDEO_BT866) += bt866.o
->  obj-$(CONFIG_VIDEO_KS0127) += ks0127.o
->  obj-$(CONFIG_VIDEO_THS7303) += ths7303.o
-> +obj-$(CONFIG_VIDEO_THS7353) += ths7353.o
->  obj-$(CONFIG_VIDEO_TVP5150) += tvp5150.o
->  obj-$(CONFIG_VIDEO_TVP514X) += tvp514x.o
->  obj-$(CONFIG_VIDEO_TVP7002) += tvp7002.o
-> diff --git a/drivers/media/i2c/ths7353.c b/drivers/media/i2c/ths7353.c
-> new file mode 100644
-> index 0000000..288cd1f
-> --- /dev/null
-> +++ b/drivers/media/i2c/ths7353.c
-> @@ -0,0 +1,223 @@
-> +/*
-> + * Copyright (C) 2013 Texas Instruments Inc
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation version 2.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-> + */
-> +
-> +#include <linux/i2c.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +
-> +#include <media/v4l2-chip-ident.h>
-> +#include <media/v4l2-device.h>
-> +
-> +static int debug;
-> +module_param(debug, int, 0644);
-> +MODULE_PARM_DESC(debug, "Debug level 0-1");
-> +
-> +#define THS7353_CHANNEL_1	1
-> +#define THS7353_CHANNEL_2	2
-> +#define THS7353_CHANNEL_3	3
-> +
-> +#define THS7353_DEF_LUMA_CHANNEL	2
-> +
-> +/* all supported modes */
-> +enum ths7353_filter_mode {
-> +	THS_FILTER_MODE_480I_576I,
-> +	THS_FILTER_MODE_480P_576P,
-> +	THS_FILTER_MODE_720P_1080I,
-> +	THS_FILTER_MODE_1080P
-> +};
-> +
-> +static int ths7353_luma_channel;
+The elf.h header file is used for NO_LIBELF build too so it should be
+included anyway.  Also remove duplicated include of the header file in
+symbol-*.c.  This patch fixes following build error on NO_LIBELF build:
 
-Never have statics in a driver! This doesn't work if you have more than one
-ths7353 in your device.
+    CC tests/hists_link.o
+tests/hists_link.c: In function ‘setup_fake_machine’:
+tests/hists_link.c:132:8: error: ‘STB_GLOBAL’ undeclared (first use in this function)
+tests/hists_link.c:132:8: note: each undeclared identifier is reported only once for each function it appears in
 
-> +
-> +/* following function is used to set ths7353 */
-> +static int ths7353_setvalue(struct v4l2_subdev *sd,
-> +			    enum ths7353_filter_mode mode)
-> +{
-> +	u8 val = 0, input_bias_luma = 5, input_bias_chroma = 4, temp;
-> +	struct i2c_client *client;
-> +	int err, disable;
-> +	int channel = 3;
-> +
-> +	client = v4l2_get_subdevdata(sd);
-> +
-> +	switch (mode) {
-> +	case THS_FILTER_MODE_1080P:
-> +		/* LPF - 5MHz */
-> +		val = (3 << 6);
-> +		/* LPF - bypass */
-> +		val |= (3 << 3);
-> +		break;
-> +	case THS_FILTER_MODE_720P_1080I:
-> +		/* LPF - 5MHz */
-> +		val = (2 << 6);
-> +		/* LPF - 35 MHz */
-> +		val |= (2 << 3);
-> +		break;
-> +	case THS_FILTER_MODE_480P_576P:
-> +		/* LPF - 2.5MHz */
-> +		val = (1 << 6);
-> +		/* LPF - 16 MHz */
-> +		val |= (1 << 3);
-> +		break;
-> +	case THS_FILTER_MODE_480I_576I:
-> +		/* LPF - 500 KHz, LPF - 9 MHz. Do nothing */
-> +		break;
-> +	default:
-> +		/* disable all channels */
-> +		disable = 1;
-> +	}
-> +
-> +	channel = ths7353_luma_channel;
-> +
-> +	/* Setup channel 2 - Luma - Green */
-> +	temp = val;
-> +	if (!disable)
-> +		val |= input_bias_luma;
-> +	err = i2c_smbus_write_byte_data(client, channel, val);
-> +	if (err)
-> +		goto out;
-> +
-> +	/* setup two chroma channels */
-> +	if (!disable)
-> +		temp |= input_bias_chroma;
-> +	channel++;
-> +	if (channel > THS7353_CHANNEL_3)
-> +		channel = THS7353_CHANNEL_1;
-> +	err = i2c_smbus_write_byte_data(client, channel, temp);
-> +	if (err)
-> +		goto out;
-> +
-> +	channel++;
-> +	if (channel > THS7353_CHANNEL_3)
-> +		channel = THS7353_CHANNEL_1;
-> +	err = i2c_smbus_write_byte_data(client, channel, temp);
-> +	if (err)
-> +		goto out;
-> +
-> +	return 0;
-> +
-> +out:
-> +	v4l2_err(sd, "ths7353 write failed\n");
-> +	return err;
-> +}
-> +
-> +static int ths7353_s_preset(struct v4l2_subdev *sd,
-> +			    struct v4l2_dv_preset *preset)
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1356679009-32122-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/symbol-elf.c     | 3 ---
+ tools/perf/util/symbol-minimal.c | 1 -
+ tools/perf/util/symbol.h         | 2 +-
+ 3 files changed, 1 insertion(+), 5 deletions(-)
 
-NACK: the preset API is deprecated, use the s_dv_timings API instead.
-
-> +{
-> +	switch (preset->preset) {
-> +	case V4L2_DV_576P50:
-> +	case V4L2_DV_480P59_94:
-> +		return ths7353_setvalue(sd, THS_FILTER_MODE_480P_576P);
-> +
-> +	case V4L2_DV_720P50:
-> +	case V4L2_DV_720P60:
-> +	case V4L2_DV_1080I60:
-> +	case V4L2_DV_1080I50:
-> +		return ths7353_setvalue(sd, THS_FILTER_MODE_720P_1080I);
-> +
-> +	case V4L2_DV_1080P60:
-> +		return ths7353_setvalue(sd, THS_FILTER_MODE_1080P);
-> +
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +static int ths7353_g_chip_ident(struct v4l2_subdev *sd,
-> +				struct v4l2_dbg_chip_ident *chip)
-> +{
-> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +
-> +	return v4l2_chip_ident_i2c_client(client, chip, V4L2_IDENT_THS7353, 0);
-> +}
-> +
-> +static const struct v4l2_subdev_video_ops ths7353_video_ops = {
-> +	.s_dv_preset	= ths7353_s_preset,
-> +};
-> +
-> +static const struct v4l2_subdev_core_ops ths7353_core_ops = {
-> +	.g_chip_ident	= ths7353_g_chip_ident,
-> +};
-> +
-> +static const struct v4l2_subdev_ops ths7353_ops = {
-> +	.core	= &ths7353_core_ops,
-> +	.video	= &ths7353_video_ops,
-> +};
-> +
-> +static int ths7353_probe(struct i2c_client *client,
-> +			const struct i2c_device_id *id)
-> +{
-> +	struct v4l2_subdev *sd;
-> +
-> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
-> +		return -ENODEV;
-> +
-> +	v4l_info(client, "chip found @ 0x%x (%s)\n",
-> +				client->addr << 1, client->adapter->name);
-> +
-> +	if (!client->dev.platform_data) {
-> +		v4l_warn(client, "No platform data!!\n");
-> +		ths7353_luma_channel = THS7353_DEF_LUMA_CHANNEL;
-> +	} else {
-> +		ths7353_luma_channel = (int)(client->dev.platform_data);
-> +		if (ths7353_luma_channel < THS7353_CHANNEL_1 ||
-> +		    ths7353_luma_channel > THS7353_CHANNEL_3) {
-> +			v4l_warn(client, "Invalid Luma Channel!!\n");
-> +			ths7353_luma_channel = THS7353_DEF_LUMA_CHANNEL;
-> +		}
-> +	}
-> +
-> +	sd = devm_kzalloc(&client->dev, sizeof(struct v4l2_subdev), GFP_KERNEL);
-> +	if (sd == NULL)
-> +		return -ENOMEM;
-> +
-> +	v4l2_i2c_subdev_init(sd, client, &ths7353_ops);
-> +	strlcpy(sd->name, "ths7353", sizeof(sd->name));
-> +
-> +	return ths7353_setvalue(sd, THS_FILTER_MODE_480I_576I);
-> +}
-> +
-> +static int ths7353_remove(struct i2c_client *client)
-> +{
-> +	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-> +
-> +	v4l2_device_unregister_subdev(sd);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct i2c_device_id ths7353_id[] = {
-> +	{"ths7353", 0},
-> +	{},
-> +};
-> +
-> +MODULE_DEVICE_TABLE(i2c, ths7353_id);
-> +
-> +static struct i2c_driver ths7353_driver = {
-> +	.driver		= {
-> +		.owner	= THIS_MODULE,
-> +		.name	= "ths7353",
-> +	},
-> +	.probe		= ths7353_probe,
-> +	.remove		= ths7353_remove,
-> +	.id_table	= ths7353_id,
-> +};
-> +
-> +module_i2c_driver(ths7353_driver);
-> +
-> +MODULE_DESCRIPTION("TI THS7353 video amplifier driver");
-> +MODULE_AUTHOR("Muralidharan Karicheri");
-> +MODULE_LICENSE("GPL");
-> 
-
-FYI: Cisco has made drivers for the ths7353 and ths8200 as well. While the
-ths7353 is pretty complete it needs some tidying up and the ths8200 still
-needs more work.
-
-I don't have time to do that, but I will post our ths7353 driver so you
-can take the best bits of both.
-
-Ping me when you start working on the ths8200 (or anyone else who is interested
-in that driver) and I can mail it.
-
-Regards,
-
-	Hans
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index f63557b..54efcb5 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -1,6 +1,3 @@
+-#include <libelf.h>
+-#include <gelf.h>
+-#include <elf.h>
+ #include <fcntl.h>
+ #include <stdio.h>
+ #include <errno.h>
+diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
+index 259f8f2..a7390cd 100644
+--- a/tools/perf/util/symbol-minimal.c
++++ b/tools/perf/util/symbol-minimal.c
+@@ -1,6 +1,5 @@
+ #include "symbol.h"
+ 
+-#include <elf.h>
+ #include <stdio.h>
+ #include <fcntl.h>
+ #include <string.h>
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index ec7b240..d97377a 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -16,8 +16,8 @@
+ #ifdef LIBELF_SUPPORT
+ #include <libelf.h>
+ #include <gelf.h>
+-#include <elf.h>
+ #endif
++#include <elf.h>
+ 
+ #include "dso.h"
+ 
