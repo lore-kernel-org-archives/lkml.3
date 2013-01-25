@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab3AYKTP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:19:15 -0500
-Received: from 94.43.138.210.xn.2iij.net ([210.138.43.94]:39477 "EHLO
-	mail.st-paulia.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753536Ab3AYKTN (ORCPT
+	id S1755939Ab3AYKUn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:20:43 -0500
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:51771 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754825Ab3AYKUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:19:13 -0500
-Message-ID: <51025C1F.8050600@linux-ipv6.org>
-Date: Fri, 25 Jan 2013 19:19:11 +0900
-From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Organization: USAGI Project
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 25 Jan 2013 05:20:42 -0500
 MIME-Version: 1.0
-To: dmitry.kasatkin@intel.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-CC: yoshfuji@linux-ipv6.org
-Subject: [PATCH] digsig: Fix memory leakage in digsig_verify_rsa().
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Date: Fri, 25 Jan 2013 18:20:40 +0800
+Message-ID: <CACV3sb+G1YnO6168JhY3dEadmJi58pA5-2cSZT8E0WVHJNFt9Q@mail.gmail.com>
+Subject: [PATCH] tracing: fix twice trace iterator init
+From: Jovi Zhang <bookjovi@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-digsig_verify_rsa() does not free kmalloc'ed buffer returned by
-mpi_get_buffer().
+>From ac499cd340bf2ba47b3d1dd129a3bb7527c195ae Mon Sep 17 00:00:00 2001
+From: Jovi Zhang <bookjovi@gmail.com>
+Date: Fri, 25 Jan 2013 18:03:07 +0800
+Subject: [PATCH] tracing: fix twice trace iterator init
 
-Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+trace iterator is already inited in trace_init_global_iter,
+so there don't need to assign again.
+
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
 ---
- lib/digsig.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/trace/trace.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/lib/digsig.c b/lib/digsig.c
-index 8c0e629..dc2be7e 100644
---- a/lib/digsig.c
-+++ b/lib/digsig.c
-@@ -162,6 +162,8 @@ static int digsig_verify_rsa(struct key *key,
- 	memset(out1, 0, head);
- 	memcpy(out1 + head, p, l);
- 
-+	kfree(p);
-+
- 	err = pkcs_1_v1_5_decode_emsa(out1, len, mblen, out2, &len);
- 	if (err)
- 		goto err;
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e512567..8d99728 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -5005,6 +5005,7 @@ __ftrace_dump(bool disable_tracing, enum
+ftrace_dump_mode oops_dump_mode)
+ 	if (disable_tracing)
+ 		ftrace_kill();
+
++	/* Simulate the iterator */
+ 	trace_init_global_iter(&iter);
+
+ 	for_each_tracing_cpu(cpu) {
+@@ -5016,10 +5017,6 @@ __ftrace_dump(bool disable_tracing, enum
+ftrace_dump_mode oops_dump_mode)
+ 	/* don't look at user memory in panic mode */
+ 	trace_flags &= ~TRACE_ITER_SYM_USEROBJ;
+
+-	/* Simulate the iterator */
+-	iter.tr = &global_trace;
+-	iter.trace = current_trace;
+-
+ 	switch (oops_dump_mode) {
+ 	case DUMP_ALL:
+ 		iter.cpu_file = TRACE_PIPE_ALL_CPU;
 -- 
-1.7.9.5
-
+1.7.9.7
