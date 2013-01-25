@@ -1,211 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab3AYJBP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 04:01:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12652 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751307Ab3AYJBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 04:01:12 -0500
-Message-ID: <510249C6.2000105@redhat.com>
-Date: Fri, 25 Jan 2013 17:00:54 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1754729Ab3AYJCH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 04:02:07 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:41844 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519Ab3AYJCD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 04:02:03 -0500
+Date: Fri, 25 Jan 2013 10:01:58 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Stephane Eranian <eranian@google.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Maynard Johnson <mpjohn@us.ibm.com>, Anton Blanchard <anton@samba.org>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
+        namhyung.kim@lge.com
+Subject: Re: [PATCH v7 07/18] perf: add generic memory sampling interface
+Message-ID: <20130125090158.GB31478@gmail.com>
+References: <1359040242-8269-1-git-send-email-eranian@google.com>
+ <1359040242-8269-8-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH V7 1/3] virtio-net: fix the set affinity bug when CPU
- IDs are not consecutive
-References: <1359102981-3401-1-git-send-email-gaowanlong@cn.fujitsu.com>
-In-Reply-To: <1359102981-3401-1-git-send-email-gaowanlong@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359040242-8269-8-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2013 04:36 PM, Wanlong Gao wrote:
-> As Michael mentioned, set affinity and select queue will not work very
-> well when CPU IDs are not consecutive, this can happen with hot unplug.
-> Fix this bug by traversal the online CPUs, and create a per cpu variable
-> to find the mapping from CPU to the preferable virtual-queue.
->
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> Cc: Jason Wang <jasowang@redhat.com>
-> Cc: Eric Dumazet <erdnetdev@gmail.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: virtualization@lists.linux-foundation.org
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+
+* Stephane Eranian <eranian@google.com> wrote:
+
+> This patch adds PERF_SAMPLE_DSRC.
+> 
+> PERF_SAMPLE_DSRC collects the data source, i.e., where
+> did the data associated with the sampled instruction
+> come from. Information is stored in a perf_mem_dsrc
+> structure. It contains opcode, mem level, tlb, snoop,
+> lock information, subject to availability in hardware.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
 > ---
-> V6->V7:
-> 	serialize virtnet_set_queues to avoid a race with cpu hotplug (Jason)
-> V5->V6:
-> 	remove {get|put}_online_cpus from virtnet_del_vqs (Jason)
-> V4->V5:
-> 	Add get/put_online_cpus to avoid CPUs go up and down during operations (Rusty)
->
-> V3->V4:
-> 	move vq_index into virtnet_info	(Jason)
-> 	change the mapping value when not setting affinity (Jason)
-> 	address the comments about select_queue (Rusty)
->
->  drivers/net/virtio_net.c | 58 +++++++++++++++++++++++++++++++++++++++---------
->  1 file changed, 47 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index a6fcf15..0f3afa8 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -123,6 +123,9 @@ struct virtnet_info {
+>  include/linux/perf_event.h      |    2 ++
+>  include/uapi/linux/perf_event.h |   68 +++++++++++++++++++++++++++++++++++++--
+>  kernel/events/core.c            |    6 ++++
+>  3 files changed, 74 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index bb2429d..8fe4610 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -579,6 +579,7 @@ struct perf_sample_data {
+>  		u32	reserved;
+>  	}				cpu_entry;
+>  	u64				period;
+> +	union  perf_mem_dsrc		dsrc;
+>  	struct perf_callchain_entry	*callchain;
+>  	struct perf_raw_record		*raw;
+>  	struct perf_branch_stack	*br_stack;
+> @@ -599,6 +600,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+>  	data->regs_user.regs = NULL;
+>  	data->stack_user_size = 0;
+>  	data->weight = 0;
+> +	data->dsrc.val = 0;
+>  }
 >  
->  	/* Does the affinity hint is set for virtqueues? */
->  	bool affinity_hint_set;
-> +
-> +	/* Per-cpu variable to show the mapping from CPU to virtqueue */
-> +	int __percpu *vq_index;
+>  extern void perf_output_sample(struct perf_output_handle *handle,
+> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+> index 3e6c394..3e4844c 100644
+> --- a/include/uapi/linux/perf_event.h
+> +++ b/include/uapi/linux/perf_event.h
+> @@ -133,9 +133,9 @@ enum perf_event_sample_format {
+>  	PERF_SAMPLE_REGS_USER			= 1U << 12,
+>  	PERF_SAMPLE_STACK_USER			= 1U << 13,
+>  	PERF_SAMPLE_WEIGHT			= 1U << 14,
+> +	PERF_SAMPLE_DSRC			= 1U << 15,
+>  
+> -	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
+> -
+> +	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
 >  };
 >  
->  struct skb_vnet_hdr {
-> @@ -1016,6 +1019,7 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
->  static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
->  {
->  	int i;
-> +	int cpu;
+>  /*
+> @@ -591,6 +591,7 @@ enum perf_event_type {
+>  	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
+>  	 *
+>  	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+> +	 *	{ u64			dsrc;     } && PERF_SAMPLE_DSRC
+>  	 * };
+>  	 */
+>  	PERF_RECORD_SAMPLE			= 9,
+> @@ -616,4 +617,67 @@ enum perf_callchain_context {
+>  #define PERF_FLAG_FD_OUTPUT		(1U << 1)
+>  #define PERF_FLAG_PID_CGROUP		(1U << 2) /* pid=cgroup id, per-cpu mode only */
 >  
->  	/* In multiqueue mode, when the number of cpu is equal to the number of
->  	 * queue pairs, we let the queue pairs to be private to one cpu by
-> @@ -1029,16 +1033,29 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
->  			return;
->  	}
->  
-> -	for (i = 0; i < vi->max_queue_pairs; i++) {
-> -		int cpu = set ? i : -1;
-> -		virtqueue_set_affinity(vi->rq[i].vq, cpu);
-> -		virtqueue_set_affinity(vi->sq[i].vq, cpu);
-> -	}
-> +	if (set) {
-> +		i = 0;
-> +		for_each_online_cpu(cpu) {
-> +			virtqueue_set_affinity(vi->rq[i].vq, cpu);
-> +			virtqueue_set_affinity(vi->sq[i].vq, cpu);
-> +			*per_cpu_ptr(vi->vq_index, cpu) = i;
-> +			i++;
-> +		}
->  
-> -	if (set)
->  		vi->affinity_hint_set = true;
-> -	else
-> +	} else {
-> +		for(i = 0; i < vi->max_queue_pairs; i++) {
-> +			virtqueue_set_affinity(vi->rq[i].vq, -1);
-> +			virtqueue_set_affinity(vi->sq[i].vq, -1);
-> +		}
+> +union perf_mem_dsrc {
+> +	__u64 val;
+> +	struct {
+> +		__u64   mem_op:5,	/* type of opcode */
+> +			mem_lvl:14,	/* memory hierarchy level */
+> +			mem_snoop:5,	/* snoop mode */
+> +			mem_lock:2,	/* lock instr */
+> +			mem_dtlb:7,	/* tlb access */
+> +			mem_rsvd:31;
+> +	};
+> +};
 > +
-> +		i = 0;
-> +		for_each_online_cpu(cpu)
-> +			*per_cpu_ptr(vi->vq_index, cpu) =
-> +				++i % vi->curr_queue_pairs;
+> +/* type of opcode (load/store/prefetch,code) */
+> +#define PERF_MEM_OP_NA		0x01 /* not available */
+> +#define PERF_MEM_OP_LOAD	0x02 /* load instruction */
+> +#define PERF_MEM_OP_STORE	0x04 /* store instruction */
+> +#define PERF_MEM_OP_PFETCH	0x08 /* prefetch */
+> +#define PERF_MEM_OP_EXEC	0x10 /* code (execution) */
+> +#define PERF_MEM_OP_SHIFT	0
 > +
->  		vi->affinity_hint_set = false;
-> +	}
->  }
+> +/* memory hierarchy (memory level, hit or miss) */
+> +#define PERF_MEM_LVL_NA		0x01  /* not available */
+> +#define PERF_MEM_LVL_HIT	0x02  /* hit level */
+> +#define PERF_MEM_LVL_MISS	0x04  /* miss level  */
+> +#define PERF_MEM_LVL_L1		0x08  /* L1 */
+> +#define PERF_MEM_LVL_LFB	0x10  /* Line Fill Buffer */
+> +#define PERF_MEM_LVL_L2		0x20  /* L2 hit */
+> +#define PERF_MEM_LVL_L3		0x40  /* L3 hit */
+> +#define PERF_MEM_LVL_LOC_RAM	0x80  /* Local DRAM */
+> +#define PERF_MEM_LVL_REM_RAM1	0x100 /* Remote DRAM (1 hop) */
+> +#define PERF_MEM_LVL_REM_RAM2	0x200 /* Remote DRAM (2 hops) */
+> +#define PERF_MEM_LVL_REM_CCE1	0x400 /* Remote Cache (1 hop) */
+> +#define PERF_MEM_LVL_REM_CCE2	0x800 /* Remote Cache (2 hops) */
+> +#define PERF_MEM_LVL_IO		0x1000 /* I/O memory */
+> +#define PERF_MEM_LVL_UNC	0x2000 /* Uncached memory */
+> +#define PERF_MEM_LVL_SHIFT	5
+> +
+> +/* snoop mode */
+> +#define PERF_MEM_SNOOP_NA	0x01 /* not available */
+> +#define PERF_MEM_SNOOP_NONE	0x02 /* no snoop */
+> +#define PERF_MEM_SNOOP_HIT	0x04 /* snoop hit */
+> +#define PERF_MEM_SNOOP_MISS	0x08 /* snoop miss */
+> +#define PERF_MEM_SNOOP_HITM	0x10 /* snoop hit modified */
+> +#define PERF_MEM_SNOOP_SHIFT	19
+> +
+> +/* locked instruction */
+> +#define PERF_MEM_LOCK_NA	0x01 /* not available */
+> +#define PERF_MEM_LOCK_LOCKED	0x02 /* locked transaction */
+> +#define PERF_MEM_LOCK_SHIFT	24
+> +
+> +/* TLB access */
+> +#define PERF_MEM_TLB_NA		0x01 /* not available */
+> +#define PERF_MEM_TLB_HIT	0x02 /* hit level */
+> +#define PERF_MEM_TLB_MISS	0x04 /* miss level */
+> +#define PERF_MEM_TLB_L1		0x08 /* L1 */
+> +#define PERF_MEM_TLB_L2		0x10 /* L2 */
+> +#define PERF_MEM_TLB_WK		0x20 /* Hardware Walker*/
+> +#define PERF_MEM_TLB_OS		0x40 /* OS fault handler */
+> +#define PERF_MEM_TLB_SHIFT	26
+> +
+> +#define PERF_MEM_S(a, s) \
+> +	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
+> +
 
-Sorry, looks like the issue of v6 still exists, we need set per-cpu
-index unconditionally here (and also in 2/3), the cpus != queues check
-may bypass this setting.
->  
->  static void virtnet_get_ringparam(struct net_device *dev,
-> @@ -1082,6 +1099,7 @@ static int virtnet_set_channels(struct net_device *dev,
->  	if (queue_pairs > vi->max_queue_pairs)
->  		return -EINVAL;
->  
-> +	get_online_cpus();
->  	err = virtnet_set_queues(vi, queue_pairs);
->  	if (!err) {
->  		netif_set_real_num_tx_queues(dev, queue_pairs);
-> @@ -1089,6 +1107,7 @@ static int virtnet_set_channels(struct net_device *dev,
->  
->  		virtnet_set_affinity(vi, true);
->  	}
-> +	put_online_cpus();
->  
->  	return err;
->  }
-> @@ -1127,12 +1146,19 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
->  
->  /* To avoid contending a lock hold by a vcpu who would exit to host, select the
->   * txq based on the processor id.
-> - * TODO: handle cpu hotplug.
->   */
->  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
->  {
-> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
-> -		  smp_processor_id();
-> +	int txq;
-> +	struct virtnet_info *vi = netdev_priv(dev);
-> +
-> +	if (skb_rx_queue_recorded(skb)) {
-> +		txq = skb_get_rx_queue(skb);
-> +	} else {
-> +		txq = *__this_cpu_ptr(vi->vq_index);
-> +		if (txq == -1)
-> +			txq = 0;
-> +	}
->  
->  	while (unlikely(txq >= dev->real_num_tx_queues))
->  		txq -= dev->real_num_tx_queues;
-> @@ -1371,7 +1397,10 @@ static int init_vqs(struct virtnet_info *vi)
->  	if (ret)
->  		goto err_free;
->  
-> +	get_online_cpus();
->  	virtnet_set_affinity(vi, true);
-> +	put_online_cpus();
-> +
->  	return 0;
->  
->  err_free:
-> @@ -1453,6 +1482,10 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	if (vi->stats == NULL)
->  		goto free;
->  
-> +	vi->vq_index = alloc_percpu(int);
-> +	if (vi->vq_index == NULL)
-> +		goto free_stats;
-> +
->  	mutex_init(&vi->config_lock);
->  	vi->config_enable = true;
->  	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
-> @@ -1476,7 +1509,7 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
->  	err = init_vqs(vi);
->  	if (err)
-> -		goto free_stats;
-> +		goto free_index;
->  
->  	netif_set_real_num_tx_queues(dev, 1);
->  	netif_set_real_num_rx_queues(dev, 1);
-> @@ -1520,6 +1553,8 @@ free_recv_bufs:
->  free_vqs:
->  	cancel_delayed_work_sync(&vi->refill);
->  	virtnet_del_vqs(vi);
-> +free_index:
-> +	free_percpu(vi->vq_index);
->  free_stats:
->  	free_percpu(vi->stats);
->  free:
-> @@ -1554,6 +1589,7 @@ static void virtnet_remove(struct virtio_device *vdev)
->  
->  	flush_work(&vi->config_work);
->  
-> +	free_percpu(vi->vq_index);
->  	free_percpu(vi->stats);
->  	free_netdev(vi->dev);
->  }
+Would be nice to get feedback from PowerPC folks to see how well 
+this matches their memory profiling hw capabilities?
 
+I suspect there's a lot of differences, but one can always hope 
+...
+
+If there's some hope for unification we could at least shape it 
+in a way that they could pick up and extend.
+
+Thanks,
+
+	Ingo
