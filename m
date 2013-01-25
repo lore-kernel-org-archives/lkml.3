@@ -1,76 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713Ab3AYAGt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 19:06:49 -0500
-Received: from casper.infradead.org ([85.118.1.10]:41840 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754597Ab3AYAGs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 19:06:48 -0500
-Message-ID: <5101CCD4.6020205@infradead.org>
-Date: Thu, 24 Jan 2013 16:07:48 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Liang Li <liang.li@windriver.com>
-CC: gregkh@linuxfoundation.org, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH] serial: pch_uart: fix sysrq handling for pch_uart
-References: <1359001887-1016-1-git-send-email-liang.li@windriver.com>
-In-Reply-To: <1359001887-1016-1-git-send-email-liang.li@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755806Ab3AYAH7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 19:07:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52229 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752277Ab3AYAHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 19:07:54 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <51019284.4070900@suse.cz>
+References: <51019284.4070900@suse.cz> <1358955044-27407-3-git-send-email-mmarek@suse.cz> <1358955044-27407-1-git-send-email-mmarek@suse.cz> <28722.1359040632@warthog.procyon.org.uk>
+To: Michal Marek <mmarek@suse.cz>
+Cc: dhowells@redhat.com, rusty@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] MODSIGN: Specify the hash algorithm on sign-file command line
+Date: Fri, 25 Jan 2013 00:07:07 +0000
+Message-ID: <9436.1359072427@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/13 20:31, Liang Li wrote:
-> When PCH_UART_CONSOLE and SERIAL_CORE_CONSOLE is not set neither, the
-> uart_port will have no 'sysrq' member hence their will need a '#ifdef'
-> in pch_uart.c to handle the case, otherwise we'll see compile error
-> like this:
-> 
->   CC [M]  drivers/tty/serial/pch_uart.o
-> drivers/tty/serial/pch_uart.c: In function 'pch_uart_hal_read':
-> drivers/tty/serial/pch_uart.c:572:11: error: 'struct uart_port' has no member named 'sysrq'
-> make[4]: *** [drivers/tty/serial/pch_uart.o] Error 1
-> 
-> Reported-by: Randy Dunlap <rdunlap@infradead.org>
-> CC: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Liang Li <liang.li@windriver.com>
+Michal Marek <mmarek@suse.cz> wrote:
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-Thanks.
-
-> ---
-> Hi Greg,
+> >> +our ($opt_v, $opt_a);
+> > 
+> > Should this be 'our' or 'my'?
 > 
-> This is for 'tty-next' of your tty tree. Thanks.
-> 
->  drivers/tty/serial/pch_uart.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-> index 1ddfc66..7a6c989 100644
-> --- a/drivers/tty/serial/pch_uart.c
-> +++ b/drivers/tty/serial/pch_uart.c
-> @@ -569,10 +569,12 @@ static int pch_uart_hal_read(struct eg20t_port *priv, unsigned char *buf,
->  			if (uart_handle_break(port))
->  				continue;
->  		}
-> +#ifdef SUPPORT_SYSRQ
->  		if (port->sysrq) {
->  			if (uart_handle_sysrq_char(port, rbr))
->  				continue;
->  		}
-> +#endif
->  
->  		buf[i++] = rbr;
->  	}
-> 
+> These are global variables set by getopts(), so they need to be declared
+> 'our'. But I can change it to use the two-argument version of getopts,
+> that does not use global variables.
 
+No, that's fine.  Perl seems like black magic at the best of times.
 
--- 
-~Randy
+David
