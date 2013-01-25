@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757055Ab3AYMn4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 07:43:56 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:51982 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850Ab3AYMnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 07:43:53 -0500
+	id S1756929Ab3AYMqV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 07:46:21 -0500
+Received: from mail.atsec.com ([195.30.99.214]:48435 "EHLO mail.atsec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756099Ab3AYMqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 07:46:18 -0500
+Message-ID: <51027E99.1060908@atsec.com>
+Date: Fri, 25 Jan 2013 13:46:17 +0100
+From: Stephan Mueller <stephan.mueller@atsec.com>
+Organization: atsec information security GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1359115232.6647.14.camel@x61.thuisdomein>
-References: <b9fec05c-d383-4282-b2af-c95855ff6abb@zimbra>
-	<3ffa5032-0565-48f0-a4ae-473452f4c902@zimbra>
-	<CACRpkdZHndQsDZpn7BCFNXAO3k5vREYxDJkcYQ3_3sTbKAQLLA@mail.gmail.com>
-	<1359108275.6647.4.camel@x61.thuisdomein>
-	<CACRpkdb0V=yasmJv1ygL7cq6G3uGf6+QAZ7GR5a3bb1-XJgiiA@mail.gmail.com>
-	<1359115232.6647.14.camel@x61.thuisdomein>
-Date: Fri, 25 Jan 2013 13:43:53 +0100
-Message-ID: <CACRpkdbUU=TOeaHNwAw-=iTxtkQDNuS4KeVBFX4yirZa+fQ2uw@mail.gmail.com>
-Subject: Re: [PATCH v3] lpc_ich: fix gpio base and control offsets
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Aaron Sierra <asierra@xes-inc.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        =?ISO-8859-1?B?QWfzY3MgUOFs?= <agocs.pal.86@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Kyle McMartin <kyle@redhat.com>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, jstancek@redhat.com
+Subject: Re: [PATCH] MODSIGN: flag modules that use cryptoapi and only panic
+ if those are unsigned
+References: <20130122184357.GD6538@redacted.bos.redhat.com> <8615.1358940375@warthog.procyon.org.uk> <50FFFF48.6020608@atsec.com> <20130124190610.GI6538@redacted.bos.redhat.com> <874ni6qhlq.fsf@rustcorp.com.au>
+In-Reply-To: <874ni6qhlq.fsf@rustcorp.com.au>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 1:00 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+On 25.01.2013 00:36:01, +0100, Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-> I backported this patch to 3.7.5 (which I'm still running now). That
-> basically meant applying e294bc91760e11d2f1ebbac1d0a979069edf7adb ("mfd:
-> lpc_ich: Fix resource request for [mem 0x00000000]") first and then
-> manually adding some harmless context changes (ie, __devinit and
-> __devexit stuff).
->
-> Would testing on 3.7.5 be helpful?
+Hi Rusty at al,
 
-Sure it's as good an indicator of the quality of the patch as any.
+while we are at FIPS discussions, may I propose a slight fix because the
+FIPS mode is not covering the FIPS 200 (a management system set of
+requirements), but FIPS 140-2 covering implementation requirements for
+cryptography.
 
-If it works on that kernel, it makes probablility lower that it breaks
-your machine later on atleast.
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
 
-Thanks!
-Linus Walleij
+--- Kconfig.orig        2013-01-25 13:42:54.649705380 +0100
++++ Kconfig     2013-01-25 13:43:16.737705712 +0100
+@@ -22,11 +22,11 @@
+ comment "Crypto core or helper"
+
+ config CRYPTO_FIPS
+-       bool "FIPS 200 compliance"
++       bool "FIPS 140-2 compliance"
+        depends on CRYPTO_ANSI_CPRNG && !CRYPTO_MANAGER_DISABLE_TESTS
+        help
+          This options enables the fips boot option which is
+-         required if you want to system to operate in a FIPS 200
++         required if you want to system to operate in a FIPS 140-2
+          certification.  You should say no unless you know what
+          this is.
