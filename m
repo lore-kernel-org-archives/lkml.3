@@ -1,180 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab3AYPao (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 10:30:44 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:51395 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757183Ab3AYPai (ORCPT
+	id S1756726Ab3AYPcF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 10:32:05 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36009 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754825Ab3AYPcD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 10:30:38 -0500
-X-Greylist: delayed 1012 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Jan 2013 10:30:38 EST
+	Fri, 25 Jan 2013 10:32:03 -0500
+Date: Fri, 25 Jan 2013 15:32:00 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [tracepoint] cargo-culting considered harmful...
+Message-ID: <20130125153159.GE4503@ZenIV.linux.org.uk>
+References: <20130123225523.GY4939@ZenIV.linux.org.uk>
+ <20130123155147.25fe49a2.akpm@linux-foundation.org>
+ <20130124014840.GA4503@ZenIV.linux.org.uk>
+ <20130125144953.GB20597@Krystal>
 MIME-Version: 1.0
-In-Reply-To: <20130125090158.GB31478@gmail.com>
-References: <1359040242-8269-1-git-send-email-eranian@google.com>
-	<1359040242-8269-8-git-send-email-eranian@google.com>
-	<20130125090158.GB31478@gmail.com>
-Date: Fri, 25 Jan 2013 16:30:37 +0100
-Message-ID: <CABPqkBRpTPcJOohtujR6kk4tAHDFNCv24Ha6E0v1p5MRkPpy6A@mail.gmail.com>
-Subject: Re: [PATCH v7 07/18] perf: add generic memory sampling interface
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Michael Ellerman <michael@ellerman.id.au>,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Maynard Johnson <mpjohn@us.ibm.com>, Anton Blanchard <anton@samba.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130125144953.GB20597@Krystal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 10:01 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Stephane Eranian <eranian@google.com> wrote:
->
->> This patch adds PERF_SAMPLE_DSRC.
->>
->> PERF_SAMPLE_DSRC collects the data source, i.e., where
->> did the data associated with the sampled instruction
->> come from. Information is stored in a perf_mem_dsrc
->> structure. It contains opcode, mem level, tlb, snoop,
->> lock information, subject to availability in hardware.
->>
->> Signed-off-by: Stephane Eranian <eranian@google.com>
->> ---
->>  include/linux/perf_event.h      |    2 ++
->>  include/uapi/linux/perf_event.h |   68 +++++++++++++++++++++++++++++++++++++--
->>  kernel/events/core.c            |    6 ++++
->>  3 files changed, 74 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
->> index bb2429d..8fe4610 100644
->> --- a/include/linux/perf_event.h
->> +++ b/include/linux/perf_event.h
->> @@ -579,6 +579,7 @@ struct perf_sample_data {
->>               u32     reserved;
->>       }                               cpu_entry;
->>       u64                             period;
->> +     union  perf_mem_dsrc            dsrc;
->>       struct perf_callchain_entry     *callchain;
->>       struct perf_raw_record          *raw;
->>       struct perf_branch_stack        *br_stack;
->> @@ -599,6 +600,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
->>       data->regs_user.regs = NULL;
->>       data->stack_user_size = 0;
->>       data->weight = 0;
->> +     data->dsrc.val = 0;
->>  }
->>
->>  extern void perf_output_sample(struct perf_output_handle *handle,
->> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
->> index 3e6c394..3e4844c 100644
->> --- a/include/uapi/linux/perf_event.h
->> +++ b/include/uapi/linux/perf_event.h
->> @@ -133,9 +133,9 @@ enum perf_event_sample_format {
->>       PERF_SAMPLE_REGS_USER                   = 1U << 12,
->>       PERF_SAMPLE_STACK_USER                  = 1U << 13,
->>       PERF_SAMPLE_WEIGHT                      = 1U << 14,
->> +     PERF_SAMPLE_DSRC                        = 1U << 15,
->>
->> -     PERF_SAMPLE_MAX = 1U << 15,             /* non-ABI */
->> -
->> +     PERF_SAMPLE_MAX = 1U << 16,             /* non-ABI */
->>  };
->>
->>  /*
->> @@ -591,6 +591,7 @@ enum perf_event_type {
->>        *        u64                   dyn_size; } && PERF_SAMPLE_STACK_USER
->>        *
->>        *      { u64                   weight;   } && PERF_SAMPLE_WEIGHT
->> +      *      { u64                   dsrc;     } && PERF_SAMPLE_DSRC
->>        * };
->>        */
->>       PERF_RECORD_SAMPLE                      = 9,
->> @@ -616,4 +617,67 @@ enum perf_callchain_context {
->>  #define PERF_FLAG_FD_OUTPUT          (1U << 1)
->>  #define PERF_FLAG_PID_CGROUP         (1U << 2) /* pid=cgroup id, per-cpu mode only */
->>
->> +union perf_mem_dsrc {
->> +     __u64 val;
->> +     struct {
->> +             __u64   mem_op:5,       /* type of opcode */
->> +                     mem_lvl:14,     /* memory hierarchy level */
->> +                     mem_snoop:5,    /* snoop mode */
->> +                     mem_lock:2,     /* lock instr */
->> +                     mem_dtlb:7,     /* tlb access */
->> +                     mem_rsvd:31;
->> +     };
->> +};
->> +
->> +/* type of opcode (load/store/prefetch,code) */
->> +#define PERF_MEM_OP_NA               0x01 /* not available */
->> +#define PERF_MEM_OP_LOAD     0x02 /* load instruction */
->> +#define PERF_MEM_OP_STORE    0x04 /* store instruction */
->> +#define PERF_MEM_OP_PFETCH   0x08 /* prefetch */
->> +#define PERF_MEM_OP_EXEC     0x10 /* code (execution) */
->> +#define PERF_MEM_OP_SHIFT    0
->> +
->> +/* memory hierarchy (memory level, hit or miss) */
->> +#define PERF_MEM_LVL_NA              0x01  /* not available */
->> +#define PERF_MEM_LVL_HIT     0x02  /* hit level */
->> +#define PERF_MEM_LVL_MISS    0x04  /* miss level  */
->> +#define PERF_MEM_LVL_L1              0x08  /* L1 */
->> +#define PERF_MEM_LVL_LFB     0x10  /* Line Fill Buffer */
->> +#define PERF_MEM_LVL_L2              0x20  /* L2 hit */
->> +#define PERF_MEM_LVL_L3              0x40  /* L3 hit */
->> +#define PERF_MEM_LVL_LOC_RAM 0x80  /* Local DRAM */
->> +#define PERF_MEM_LVL_REM_RAM1        0x100 /* Remote DRAM (1 hop) */
->> +#define PERF_MEM_LVL_REM_RAM2        0x200 /* Remote DRAM (2 hops) */
->> +#define PERF_MEM_LVL_REM_CCE1        0x400 /* Remote Cache (1 hop) */
->> +#define PERF_MEM_LVL_REM_CCE2        0x800 /* Remote Cache (2 hops) */
->> +#define PERF_MEM_LVL_IO              0x1000 /* I/O memory */
->> +#define PERF_MEM_LVL_UNC     0x2000 /* Uncached memory */
->> +#define PERF_MEM_LVL_SHIFT   5
->> +
->> +/* snoop mode */
->> +#define PERF_MEM_SNOOP_NA    0x01 /* not available */
->> +#define PERF_MEM_SNOOP_NONE  0x02 /* no snoop */
->> +#define PERF_MEM_SNOOP_HIT   0x04 /* snoop hit */
->> +#define PERF_MEM_SNOOP_MISS  0x08 /* snoop miss */
->> +#define PERF_MEM_SNOOP_HITM  0x10 /* snoop hit modified */
->> +#define PERF_MEM_SNOOP_SHIFT 19
->> +
->> +/* locked instruction */
->> +#define PERF_MEM_LOCK_NA     0x01 /* not available */
->> +#define PERF_MEM_LOCK_LOCKED 0x02 /* locked transaction */
->> +#define PERF_MEM_LOCK_SHIFT  24
->> +
->> +/* TLB access */
->> +#define PERF_MEM_TLB_NA              0x01 /* not available */
->> +#define PERF_MEM_TLB_HIT     0x02 /* hit level */
->> +#define PERF_MEM_TLB_MISS    0x04 /* miss level */
->> +#define PERF_MEM_TLB_L1              0x08 /* L1 */
->> +#define PERF_MEM_TLB_L2              0x10 /* L2 */
->> +#define PERF_MEM_TLB_WK              0x20 /* Hardware Walker*/
->> +#define PERF_MEM_TLB_OS              0x40 /* OS fault handler */
->> +#define PERF_MEM_TLB_SHIFT   26
->> +
->> +#define PERF_MEM_S(a, s) \
->> +     (((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
->> +
->
-> Would be nice to get feedback from PowerPC folks to see how well
-> this matches their memory profiling hw capabilities?
->
-I agree, I tried to remain as generic as possible here but I probably
-don't have all the possibilities covered. I remember IBM asking
-me about the categories a long time ago. Haven't heard anything since then.
+On Fri, Jan 25, 2013 at 09:49:53AM -0500, Mathieu Desnoyers wrote:
+> static
+> void lttng_enumerate_task_fd(struct lttng_session *session,
+>                 struct task_struct *p, char *tmp)
+> {
+>         struct fdtable *fdt;
+>         struct file *filp;
+>         unsigned int i;
+>         const unsigned char *path;
+> 
+>         task_lock(p);
+>         if (!p->files)
+>                 goto unlock_task;
+>         spin_lock(&p->files->file_lock);
+>         fdt = files_fdtable(p->files);
+>         for (i = 0; i < fdt->max_fds; i++) {
+>                 filp = fcheck_files(p->files, i);
+>                 if (!filp)
+>                         continue;
+>                 path = d_path(&filp->f_path, tmp, PAGE_SIZE);
+>                 /* Make sure we give at least some info */
+>                 trace_lttng_statedump_file_descriptor(session, p, i,
+>                         IS_ERR(path) ?
+>                                 filp->f_dentry->d_name.name :
+>                                 path);
+>         }
+>         spin_unlock(&p->files->file_lock);
+> unlock_task:
+>         task_unlock(p);
+> }
 
-> I suspect there's a lot of differences, but one can always hope
-> ...
->
-> If there's some hope for unification we could at least shape it
-> in a way that they could pick up and extend.
->
-Agreed.
+*cringe*
+
+a) yes, it needs d_lock for that ->d_name access
+b) iterate_fd() is there for purpose; use it, instead of open-coding the
+damn loop.  Something like
+
+struct ctx {
+	char *page;
+	struct lttng_session *session,
+	struct task_struct *p;
+};
+	
+static int dump_one(void *p, struct file *file, unsigned fd)
+{
+	struct ctx *ctx = p;
+	const char *s = d_path(&file->f_path, ctx->page, PAGE_SIZE);
+	struct dentry *dentry;
+	if (!IS_ERR(s)) {
+		trace_lttng_statedump_file_descriptor(ctx->session, ctx->p, fd, s);
+		return 0;
+	}
+	/* Make sure we give at least some info */
+	dentry = file->f_path.dentry;
+	spin_lock(&dentry->d_lock);
+	trace_lttng_statedump_file_descriptor(ctx->session, ctx->p, fd,
+		dentry->d_name);
+	spin_unlock(&dentry->d_lock);
+	return 0;
+}
+
+...
+	task_lock(p);
+	iterate_fd(p->files, 0, dump_one, &(struct ctx){tmp, session, p});
+	task_unlock(p);
+
+assuming it wouldn't be better to pass tmp/session/p as the single pointer
+to struct in the first place - I don't know enough about the callers of
+that sucker to tell.  And yes, iterate_fd() will DTRT if given NULL as the
+first argument.  The second argument is "which descriptor should I start
+from?", callback is called for everything present in the table starting from
+that place until it returns non-zero or the end of table is reached...
+
+PS: people really ought to be forced to read their code aloud over the phone -
+that would rapidly improve the choice of identifiers ;-)
