@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab3AYUZi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 15:25:38 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:42559 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752816Ab3AYUZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 15:25:36 -0500
-Date: Fri, 25 Jan 2013 13:25:38 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Kent Yoder <shpedoikal@gmail.com>
-Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [PATCH] TPM: Work around buggy TPMs that block
- during continue self test
-Message-ID: <20130125202538.GA16038@obsidianresearch.com>
-References: <20121121211529.GA27696@obsidianresearch.com>
- <CAM0nabE9qORsD1bMDm6EUZogPqb2m-X8rZ-xVqJecM7oJyaciw@mail.gmail.com>
+	id S1752332Ab3AYUa7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 15:30:59 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:60857 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab3AYUa5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 15:30:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM0nabE9qORsD1bMDm6EUZogPqb2m-X8rZ-xVqJecM7oJyaciw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+In-Reply-To: <CAE9FiQUP71TJgP21SRre4Mb2PrnUg+7KLzXnxHUviqCuNSL44w@mail.gmail.com>
+References: <1356594177-29453-1-git-send-email-linfeng@cn.fujitsu.com>
+ <CAErSpo7EmvDaK11P6r-PKxPBqHQBPaGvZj=zvNZ8w=KFbdFgYA@mail.gmail.com>
+ <5102583E.4030109@cn.fujitsu.com> <CAErSpo58qUuwd+8bGMWQHQ6KrfQMvHGb+REVkpJqQdrfAQe3Qw@mail.gmail.com>
+ <CAE9FiQUP71TJgP21SRre4Mb2PrnUg+7KLzXnxHUviqCuNSL44w@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 25 Jan 2013 13:30:36 -0700
+Message-ID: <CAErSpo4_iz29b9Tj8W4D9YqdGPV4P+rFZ463eZ1S4J2gL_6qyw@mail.gmail.com>
+Subject: Re: [PATCH] pci-sysfs: replace mutex_lock with mutex_trylock to avoid
+ potential deadlock situation
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>, Lin Feng <linfeng@cn.fujitsu.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tangchen@cn.fujitsu.com, laijs@cn.fujitsu.com, wency@cn.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Don Dutile <ddutile@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 05:29:23PM -0600, Kent Yoder wrote:
-> Hi Jason,
-> 
-> On Wed, Nov 21, 2012 at 3:15 PM, Jason Gunthorpe
-> <jgunthorpe@obsidianresearch.com> wrote:
-> > We've been testing an alternative TPM for our embedded products and
-> > found random kernel boot failures due to time outs after the continue
-> > self test command.
-> >
-> > This was happening randomly, and has been *very* hard to track down, but it
-> > looks like with this chip there is some kind of race with the tpm_tis_status()
-> > check of TPM_STS_COMMAND_READY. If things get there 'too fast' then
-> > it sees the chip is ready, or tpm_tis_ready() works. Otherwise it takes
-> > somewhere over 400ms before the chip will return TPM_STS_COMMAND_READY.
-> >
-> > Adding some delay after tpm_continue_selftest() makes things reliably
-> > hit the failure path, otherwise it is a crapshot.
-> 
->   I've staged this patch here, please test:
-> 
-> https://github.com/shpedoikal/linux.git tpmdd-01-22-13
+On Fri, Jan 25, 2013 at 11:57 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Jan 25, 2013 at 9:44 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> [+cc Yinghai]
+>>
+>> On Fri, Jan 25, 2013 at 3:02 AM, Gu Zheng
+>
+> Hi, Gu,
+>
+> Can you check if two patches in
+>
+> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-pci-root-bus-hotplug-part3
+>
+> could solve your problem?
+>
+> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=277df390baeab7ba6aa136356b677a096c890c0c
+>
+> PCI: Rescan bus using callback method too
+>
+>
+> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=282e2db3b58d56b5236ee755e1527574df0d298e
+>
+> PCI, sysfs: Clean up rescan/remove with scheule_callback
 
-Thanks Kent, I will try to test your branch next week, if I am able.
+You ignored and clipped my concerns about similar synchronization
+issues outside sysfs, so let me quote it again here:
 
-Can you also grab
+I'm sorry that you tripped over this deadlock, because now I'm worried
+about related locking issues outside sysfs :)  The mutex you're
+fiddling with is only in sysfs, but the routines *protected* by that
+mutex are used in other places, too.  So what happens when a hotplug
+driver does a rescan at the same time a user does a rescan or remove
+via sysfs?  I don't even know what the rules are for protecting
+scan/remove, but I don't have confidence that the issue you're fixing
+is the only one.
 
-https://github.com/jgunthorpe/linux/commit/98b2a198b43b41b0535200bf475160786398f114
+If we're going to fix the sysfs deadlock (and we should), I want to
+either see an argument for why we don't have a problem outside of
+sysfs, or I want to fix sysfs and non-sysfs at the same time.
 
-And did you have any comments on:
-
-https://github.com/jgunthorpe/linux/commit/9981e3e622bf702394982117134bed731ffd6f7e
-
-Both were posted to the list a bit ago.
-
-Regards,
--- 
-Jason Gunthorpe <jgunthorpe@obsidianresearch.com>        (780)4406067x832
-Chief Technology Officer, Obsidian Research Corp         Edmonton, Canada
+Bjorn
