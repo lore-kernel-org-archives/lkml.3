@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab3AYTAx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 14:00:53 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37269 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932094Ab3AYTAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 14:00:51 -0500
-Date: Fri, 25 Jan 2013 20:03:40 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        X86 ML <x86@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
-        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
-        Dmitry Torokhov <dtor@vmware.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH -v2 2/2] x86: Make Linux guest support optional
-Message-ID: <20130125190340.GC4973@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-	X86 ML <x86@kernel.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
-	olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-	Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
-	Dmitry Torokhov <dtor@vmware.com>,
-	"K. Y. Srinivasan" <kys@microsoft.com>,
-	Haiyang Zhang <haiyangz@microsoft.com>
-References: <20130125100655.GC23404@pd.tnic>
- <1359136777-4512-2-git-send-email-bp@alien8.de>
- <20130125181251.GA5563@core.coreip.homeip.net>
- <20130125183213.GB1380@pd.tnic>
- <20130125184231.GB5563@core.coreip.homeip.net>
+	id S1757340Ab3AYTCC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 14:02:02 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:42084 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756434Ab3AYTB7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 14:01:59 -0500
+Date: Fri, 25 Jan 2013 11:01:54 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 06/13] sg_io: whitelist a few more commands for
+ multimedia devices
+Message-ID: <20130125190154.GM3081@htj.dyndns.org>
+References: <1359039649-17734-1-git-send-email-pbonzini@redhat.com>
+ <1359039649-17734-7-git-send-email-pbonzini@redhat.com>
+ <20130124225555.GC2373@mtj.dyndns.org>
+ <51024FB1.3000206@redhat.com>
+ <20130125170434.GC3081@htj.dyndns.org>
+ <5102BDD4.2020501@redhat.com>
+ <20130125172805.GG3081@htj.dyndns.org>
+ <5102C780.3090402@redhat.com>
+ <20130125181326.GK3081@htj.dyndns.org>
+ <5102D353.8010305@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130125184231.GB5563@core.coreip.homeip.net>
+In-Reply-To: <5102D353.8010305@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 10:42:32AM -0800, Dmitry Torokhov wrote:
-> No, not really as EXPORT_SYMBOL_GPL() in no way implies that the code
-> using it lives in the mainline.
+Hey,
 
-I didn't say that - I said "any code (proprietary included) can link to
-those symbols" meaning that I cannot possibly convert proprietary code
-to which I don't have access to, vs GPL code which is out there.
+On Fri, Jan 25, 2013 at 07:47:47PM +0100, Paolo Bonzini wrote:
+> That doesn't happen.  There's plenty of vendor-specific opcodes and mode
+> pages, not to mention out-of-band channels, e.g. work directly at the
+> USB level like the mode select stuff.
+> 
+> IIRC IOMEGA ZIP drives had some egregious abuse in READ and WRITE of the
+> boot sector, presenting fake partition tables or something like that.
+> But it wasn't using strange commands for that.
 
-> Also, EXPORT_SYMBOL() does not imply that it forms an ABI and can't be
-> changed ever.
+Some did that at least in ATA.  It was mapping some command to
+firmware write.  Given how many USB devices implement SCSI these days,
+I wouldn't be too firm with "that doesn't happen".  How can such
+all-covering statement be asserted?
 
-And yet, I don't want to be on the receiving end of the complaints when
-those do change. But that's beside the point.
+> > Another aspect is that sometimes opcodes are recycled and people of
+> > course don't try to recycle opcodes which are in wide use.  They
+> > choose the ones which failed to gain much traction and became
+> > obsolete.  The recycled command might not be suitable for exposing to
+> > userland.
+> 
+> No, that doesn't happen either.  There's plenty of reserved opcodes, and
+> this time you can count on the standards people which are more
+> reasonable than vendors.
 
-So I think we're on the same page: I'll make everything using x86_hyper*
-depend on CONFIG_HYPERVISOR_GUEST and all are happy.
+ISTR recycle.  Maybe it was ATA too and SCSI people are better.  I
+don't know.
+
+> > So, there are actual costs coming from exposing them, which is fine if
+> > the benefit can offset them enough, but what would be the benefit of
+> > exposing commands which aren't being used?
+> 
+> If it is not used, nobody will use it and nothing will break.
+
+I have to say that's an overly optimistic view of the world.  There
+are even devices puking on receiving SCSI commands in a slightly
+different sequence than windows sends them out and devices which lock
+up if you send them enough TURs.
+
+> > , so that doesn't seem like
+> > that much of winning to me.  Discovering use cases is actually much
+> > easier than finding broken devices for some obscure commands.
+> 
+> Not if many of your uses are proprietary (Windows, AIX on PPC, z/OS on
+> s390, Oracle, SAP, you name it).
+
+You would get -EPERM/ACCES whatnot from base OS and you would know the
+command in use, no?
 
 Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+tejun
