@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab3AYXpb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 18:45:31 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:54213 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753547Ab3AYXp3 convert rfc822-to-8bit (ORCPT
+	id S1754654Ab3AYXqr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 18:46:47 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:42461 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753646Ab3AYXqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 18:45:29 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Subject: Re: [PATCH 15/19] sunrpc: don't warn for unused variable 'buf'
-Date: Fri, 25 Jan 2013 23:45:25 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-1-generic; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359153858-31992-16-git-send-email-arnd@arndb.de> <4FA345DA4F4AE44899BD2B03EEEC2FA91833C205@sacexcmbx05-prd.hq.netapp.com>
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA91833C205@sacexcmbx05-prd.hq.netapp.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201301252345.25829.arnd@arndb.de>
-X-Provags-ID: V02:K0:nqv/CtIiVRxf8lDLWSJ9myN6YI9+jISjZSMt+/qPHrj
- Jk3LAvgEteNqg0hgm7iwz3W9gsm87SWqigVGK6jlXYomfbEPdZ
- 3nzJIYuJVWwfMYTinfDD+SxKV8EYB2N6LRRozw71qnAo56eR4A
- EpZ0FrCnz59TTU8XnPHdDn7qAY0u0UAu0tb959/07Ubc9u1ItC
- uiidM879CMF+rHeKRcYKXGvk8DMHt4xcLtUk40dEfjV+INoOaH
- 7L9gbgX5Zee8IOZjzapviE/c70j3U0PtQ04RNy2DW/1daoRKBx
- iAf7VDEJjAZQM2XPHPsy9W2wXYOUiI+ktjX2zHTNT7wKclc/+9
- LiJJpz661HFaI526Zc2k=
+	Fri, 25 Jan 2013 18:46:46 -0500
+Date: Sat, 26 Jan 2013 10:46:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        KVM <kvm@vger.kernel.org>, Avi Kivity <avi.kivity@gmail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: linux-next: Tree for Jan 25 (kvm)
+Message-Id: <20130126104634.997ac68f6971397b9f4d09d3@canb.auug.org.au>
+In-Reply-To: <5102B8A6.3090200@infradead.org>
+References: <20130125162606.edff84fcf6f62ed2b7c4d719@canb.auug.org.au>
+	<5102B8A6.3090200@infradead.org>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__26_Jan_2013_10_46_34_+1100_oqjkoucQE=vUrPhq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 25 January 2013, Myklebust, Trond wrote:
-> > -----Original Message-----
-> > From: Arnd Bergmann [mailto:arnd@arndb.de]
-> > Marking it as __maybe_unused avoids a harmless gcc warning.
-> 
-> Alternatively, just declare it using the RPC_IFDEBUG() macro.
+--Signature=_Sat__26_Jan_2013_10_46_34_+1100_oqjkoucQE=vUrPhq
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Right, makes sense: that's more consistent with other functions
-doing the same thing. Thanks for taking a look.
+On Fri, 25 Jan 2013 08:53:58 -0800 Randy Dunlap <rdunlap@infradead.org> wro=
+te:
+>
+> Seeing lots of this error on i386:
+>=20
+> arch/x86/kvm/emulate.c:1016: Error: unsupported for `push'
 
-	Arnd
+Caused by commit 9ae9febae950 ("KVM: x86 emulator: covert SETCC to
+fastop") from the kvm tree.  cc's added.
 
-8<----
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->From 3b2baeac061bd60dbf14bb61bcc03cbd64c85ac4 Mon Sep 17 00:00:00 2001
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Mon, 26 Nov 2012 22:46:26 +0000
-Subject: [PATCH] sunrpc: don't warn for unused variable 'buf'
+--Signature=_Sat__26_Jan_2013_10_46_34_+1100_oqjkoucQE=vUrPhq
+Content-Type: application/pgp-signature
 
-When RPC_DEBUG is unset, the dprintk() macro does nothing,
-causing the 'buf' variable in svc_printk to become unused.
-Enclosing it in RPC_IFDEBUG avoids a harmless gcc warning.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Without this patch, building at91_dt_defconfig results in:
+iQIcBAEBCAAGBQJRAxlaAAoJEECxmPOUX5FEs48P/js9+YPengJUeAsrWrt6gAYJ
+hmDuwHKGqbOqsUnj+nVj6yz/i7n7MyzDUpWsB4JO4N6X0o+ZPB6L7oE/2ROmOyiu
+9n8Tsb/he6rWVupIZCL3H39jI+wEv295WioB/nQkvJo9wobTYtcyt/t46Cqquo7A
+sfPb6lBgQLpsd2REK/i0ZEpOnd0TE2Hm6n5yU7CX0qssOnwAf4huuQkX2Jkl0eng
++V6d9gR+EAPHlidjqGw3n5pTs8QkREmq7htTiRJ0z5jeBvs03GMC/78QZ+1w02Yg
+Aq5DIET7VBBz6rYmIISimP834Rukj+ybiAR4U6hJS7pTcc59Sni2oUhAY/zAq24M
+4VnWLHSNu2dwZWKYjsJ17mbvSUS7JpeQBlcA7Babd2CUNqQXd+I46fPth2JqnVD0
+1kO3VSLpw+ifnU5xnpzlzEHP4MsQIU+nfeT8ck9l7S8nX3TjfLDkgXKbQ+L+7Q7P
+RuAJa6YlmB53VqIgC50HTQwGPI/iOHgkBCoZMDISvktBKCSRKlBKX0/9vz1gcmU0
+67pnQOwBgJZQPNdBtx4ejaea5m26V6G133rLXZXzU4GffFVjoDnNyC+aKdFlJqjt
+GCK6cGItBPq8gqcc3lj+GrPFgW79CoLdHfdgRritbX75ChYGC/m/S6gIdV/8dCRd
+qyo7T5Jl4eLFUxZRmXXb
+=lEXd
+-----END PGP SIGNATURE-----
 
-net/sunrpc/svc.c: In function 'svc_printk':
-net/sunrpc/svc.c:1051:7: warning: unused variable 'buf' [-Wunused-variable]
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: "J. Bruce Fields" <bfields@redhat.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-nfs@vger.kernel.org
-Cc: netdev@vger.kernel.org
-
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index dbf12ac..9485e66 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -1047,7 +1047,7 @@ void svc_printk(struct svc_rqst *rqstp, const char *fmt, ...)
- {
- 	struct va_format vaf;
- 	va_list args;
--	char 	buf[RPC_MAX_ADDRBUFLEN];
-+	RPC_IFDEBUG(char buf[RPC_MAX_ADDRBUFLEN]);
- 
- 	va_start(args, fmt);
- 
-
-
+--Signature=_Sat__26_Jan_2013_10_46_34_+1100_oqjkoucQE=vUrPhq--
