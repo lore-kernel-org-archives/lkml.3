@@ -1,86 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab3AYKI3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 05:08:29 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:51972 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754935Ab3AYKI1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 05:08:27 -0500
-MIME-Version: 1.0
-X-Originating-IP: [87.194.181.195]
-In-Reply-To: <20130125010112.GF2373@mtj.dyndns.org>
-References: <20130119003923.GH24579@htj.dyndns.org>
-	<20130119004100.GL24579@htj.dyndns.org>
-	<20130125001345.GA1960@balrog>
-	<20130125010112.GF2373@mtj.dyndns.org>
-Date: Fri, 25 Jan 2013 10:08:24 +0000
-Message-ID: <CAAG0J9-JQswfnEaqrKPor71DO8dn=qW4Ba6tni0sdwn9OYWL9w@mail.gmail.com>
-Subject: Re: [PATCH 4/4] async: replace list of active domains with global
- list of pending items
-From: James Hogan <james@albanarts.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>, Dan Williams <djbw@fb.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756289Ab3AYKIq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 05:08:46 -0500
+Received: from smtp4.epfl.ch ([128.178.224.219]:56184 "HELO smtp4.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756137Ab3AYKIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 05:08:43 -0500
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-leds@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Florian Vaussard <florian.vaussard@epfl.ch>
+Subject: [PATCH 1/3] pwm: Add pwm_cansleep() as exported API to users
+Date: Fri, 25 Jan 2013 11:01:52 +0100
+Message-Id: <1359108114-16998-2-git-send-email-florian.vaussard@epfl.ch>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1359108114-16998-1-git-send-email-florian.vaussard@epfl.ch>
+References: <1359108114-16998-1-git-send-email-florian.vaussard@epfl.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 January 2013 01:01, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
->
-> On Fri, Jan 25, 2013 at 12:13:45AM +0000, James Hogan wrote:
->> Should it have this?
->> +     else
->> +             INIT_LIST_HEAD(&entry->global_list)
->
-> I think it would be better to have INIT_LIST_HEAD() during @entry
-> initialization.  Heh, I forgot that.  I wonder why it didn't crash on
-> my machine.  Can you please cook up a patch to init both list fields
-> right after kzalloc()?
+Calls to some external PWM chips can sleep. To help users,
+add pwm_cansleep() API.
 
-How does the following patch look? Feel free to squash it into the
-original to avoid breaking bisection :).
-
-Cheers
-James
-
-
-From: James Hogan <james.hogan@imgtec.com>
-Date: Fri, 25 Jan 2013 09:46:58 +0000
-Subject: [PATCH 1/1] async: initialise list heads to fix crash
-
-The commit "async: replace list of active domains with global list of
-pending items" added a struct list_head global_list in struct
-async_entry, which isn't initialised. This means that if
-!domain->registered at __async_schedule(), then list_del_init() will be
-called on the list head in async_run_entry_fn with both pointers NULL,
-causing a crash. This is fixed by initialising both the global_list and
-domain_list list_heads after kzalloc'ing the entry.
-
-This was noticed due to dapm_power_widgets() which uses
-ASYNC_DOMAIN_EXCLUSIVE, which initialises the domain->registered to 0.
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
 ---
- kernel/async.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/pwm/core.c  |   12 ++++++++++++
+ include/linux/pwm.h |   10 ++++++++++
+ 2 files changed, 22 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/async.c b/kernel/async.c
-index 6958000..8ddee2c 100644
---- a/kernel/async.c
-+++ b/kernel/async.c
-@@ -172,6 +172,8 @@ static async_cookie_t
-__async_schedule(async_func_ptr *ptr, void *data, struct a
- 		ptr(data, newcookie);
- 		return newcookie;
- 	}
-+	INIT_LIST_HEAD(&entry->domain_list);
-+	INIT_LIST_HEAD(&entry->global_list);
- 	INIT_WORK(&entry->work, async_run_entry_fn);
- 	entry->func = ptr;
- 	entry->data = data;
+diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+index 4a13da4..f49bfa6 100644
+--- a/drivers/pwm/core.c
++++ b/drivers/pwm/core.c
+@@ -763,6 +763,18 @@ void devm_pwm_put(struct device *dev, struct pwm_device *pwm)
+ }
+ EXPORT_SYMBOL_GPL(devm_pwm_put);
+ 
++/**
++  * pwm_can_sleep() - report whether pwm access will sleep
++  * @pwm: PWM device
++  *
++  * It returns nonzero if accessing the PWM can sleep.
++  */
++int pwm_can_sleep(struct pwm_device *pwm)
++{
++	return pwm->chip->can_sleep;
++}
++EXPORT_SYMBOL_GPL(pwm_can_sleep);
++
+ #ifdef CONFIG_DEBUG_FS
+ static void pwm_dbg_show(struct pwm_chip *chip, struct seq_file *s)
+ {
+diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+index 70655a2..2aee75d 100644
+--- a/include/linux/pwm.h
++++ b/include/linux/pwm.h
+@@ -146,6 +146,8 @@ struct pwm_ops {
+  * @base: number of first PWM controlled by this chip
+  * @npwm: number of PWMs controlled by this chip
+  * @pwms: array of PWM devices allocated by the framework
++ * @can_sleep: flag must be set iff config()/enable()/disable() methods sleep,
++ *      as they must while accessing PWM chips over I2C or SPI
+  */
+ struct pwm_chip {
+ 	struct device		*dev;
+@@ -159,6 +161,7 @@ struct pwm_chip {
+ 	struct pwm_device *	(*of_xlate)(struct pwm_chip *pc,
+ 					    const struct of_phandle_args *args);
+ 	unsigned int		of_pwm_n_cells;
++	unsigned int		can_sleep:1;
+ };
+ 
+ #if IS_ENABLED(CONFIG_PWM)
+@@ -182,6 +185,8 @@ struct pwm_device *devm_pwm_get(struct device *dev, const char *con_id);
+ struct pwm_device *devm_of_pwm_get(struct device *dev, struct device_node *np,
+ 				   const char *con_id);
+ void devm_pwm_put(struct device *dev, struct pwm_device *pwm);
++
++int pwm_can_sleep(struct pwm_device *pwm);
+ #else
+ static inline int pwm_set_chip_data(struct pwm_device *pwm, void *data)
+ {
+@@ -242,6 +247,11 @@ static inline struct pwm_device *devm_of_pwm_get(struct device *dev,
+ static inline void devm_pwm_put(struct device *dev, struct pwm_device *pwm)
+ {
+ }
++
++static inline int pwm_can_sleep(struct pwm_device *pwm)
++{
++	return -EINVAL;
++}
+ #endif
+ 
+ struct pwm_lookup {
 -- 
-1.7.7.6
+1.7.5.4
+
