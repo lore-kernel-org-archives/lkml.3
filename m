@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab3AYWqL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 17:46:11 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:63644 "EHLO
+	id S1754344Ab3AYWqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 17:46:07 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:49671 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754060Ab3AYWqC (ORCPT
+	with ESMTP id S1753164Ab3AYWp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 17:46:02 -0500
+	Fri, 25 Jan 2013 17:45:57 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Turner <pjt@google.com>
-Subject: [PATCH 06/19] sched/debug: fix format string for 32 bit platforms
-Date: Fri, 25 Jan 2013 22:44:05 +0000
-Message-Id: <1359153858-31992-7-git-send-email-arnd@arndb.de>
+        Jean-Nicolas Graux <jean-nicolas.graux@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Subject: [PATCH 13/19] pinctrl: nomadik: nmk_prcm_gpiocr_get_mode may be unused
+Date: Fri, 25 Jan 2013 22:44:12 +0000
+Message-Id: <1359153858-31992-14-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1359153858-31992-1-git-send-email-arnd@arndb.de>
 References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
  <1359153858-31992-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:M20Aim1u6y3EDaAfASaoIVp19n2/DpKJgVWHM/9LH17
- YkaF7+0txRpK+tCbYhSloHcrWMHcD7mvhOfWuXCG4GcZTkPXtI
- aVgLWd2qczYTzhql1gZhY42xEjhwEyvZD/6Dy6dmBkxs22DVoT
- H6FsHjnJ9z7suKmNnaUL8nzrepLe2gi7EpjgDiMeHPIQPBXSXl
- 0lwFbgTNtRNSS3+eS5H4lWR1cnUJjaIBpi2xty5MD5k98Jps/l
- y3GBlv6mQsbkc8/UsagVomW3Zw50okIPmoTa5nb/GO4qglPHeA
- yJ2jOVxiIFLLgO3CwALkDF29m1piTebiUZXJ6+pna48BllhzEO
- /ZGdO0PvTHtMKUkbMOZ5zlEawil9H462Zq0blXCHT
+X-Provags-ID: V02:K0:8Wjof6ZuoQPQ5p1QwmpG+rUa4ck38hzlM4xkmVv85Bp
+ bQdASSJEt0oerCgEgN+HTH8SJPDFbqAN6YDsUxmHzQF/kx5Ji+
+ BZFlcH6/92HQhYK+PX3F6cHW8cWTBKsW2aOZuktGyK6mKhR/82
+ Yb+5trDiQDS/7tfberNCjfCBpafb8dR3C7Hzil9afC0prdh96A
+ E6izWayk5gfeqhqscym0vZV+dfrT7+/DE5izKX9ev7fpAMoKEs
+ 6zqFLrPCHsDbli8X/jUVB9QVS1AHp/rdImuuxfDjh08oe+2HW9
+ PXLV0Zj0RyXTPgA1gD+p/BbHjgip/SDb6KSFOu0607OubmLHAM
+ Eq8nf3MadM9hbAYDg7zE4HsX+J1SIPHCJ0432zkL/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The type returned from atomic64_t can be either unsigned
-long or unsigned long long, depending on the architecture.
-Using a cast to unsigned long long lets us use the same
-format string for all architectures.
+nmk_prcm_gpiocr_get_mode is only needed for debugfs output at
+the moment, which can be compile-time disabled. Marking
+the function __maybe_unused still gives us compile-time
+coverage, but avoids a gcc warning.
 
-Without this patch, building with scheduler debugging
-enabled results in:
+Without this patch, building nhk8815_defconfig results in:
 
-kernel/sched/debug.c: In function 'print_cfs_rq':
-kernel/sched/debug.c:225:2: warning: format '%ld' expects argument of type 'long int', but argument 4 has type 'long long int' [-Wformat]
-kernel/sched/debug.c:225:2: warning: format '%ld' expects argument of type 'long int', but argument 3 has type 'long long int' [-Wformat]
+drivers/pinctrl/pinctrl-nomadik.c:676:12: warning: 'nmk_prcm_gpiocr_get_mode' defined but not used [-Wunused-function]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Turner <pjt@google.com>
+Cc: Jean-Nicolas Graux <jean-nicolas.graux@stericsson.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
 ---
- kernel/sched/debug.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/pinctrl/pinctrl-nomadik.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 2cd3c1b..7ae4c4c 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -222,8 +222,8 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
- 			cfs_rq->runnable_load_avg);
- 	SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
- 			cfs_rq->blocked_load_avg);
--	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_avg",
--			atomic64_read(&cfs_rq->tg->load_avg));
-+	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_avg",
-+			(unsigned long long)atomic64_read(&cfs_rq->tg->load_avg));
- 	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
- 			cfs_rq->tg_load_contrib);
- 	SEQ_printf(m, "  .%-30s: %d\n", "tg_runnable_contrib",
+diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+index 1bb16ff..5767b18 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.c
++++ b/drivers/pinctrl/pinctrl-nomadik.c
+@@ -676,7 +676,7 @@ int nmk_gpio_set_mode(int gpio, int gpio_mode)
+ }
+ EXPORT_SYMBOL(nmk_gpio_set_mode);
+ 
+-static int nmk_prcm_gpiocr_get_mode(struct pinctrl_dev *pctldev, int gpio)
++static int __maybe_unused nmk_prcm_gpiocr_get_mode(struct pinctrl_dev *pctldev, int gpio)
+ {
+ 	int i;
+ 	u16 reg;
 -- 
 1.8.0
 
