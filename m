@@ -1,265 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab3AYJnB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 04:43:01 -0500
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:49117 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189Ab3AYJm6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 04:42:58 -0500
-MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <20130124220634.GA20617@jshin-Toonie>
-References: <1357847443-3878-1-git-send-email-jacob.shin@amd.com>
-	<CABPqkBS-cE3T6ccVDGtzgQBKM_bC9vugzWzP94ycYz4dWujp2g@mail.gmail.com>
-	<20130124220634.GA20617@jshin-Toonie>
-Date: Fri, 25 Jan 2013 10:42:57 +0100
-Message-ID: <CAMsRxfLU6Y3TDz1fEZVsNAcO104AqtdNjZNHeVPyVpxpnSBdVA@mail.gmail.com>
-Subject: Re: [perfmon2] [PATCH RESEND V5 0/6] perf, amd: Enable AMD family 15h
- northbridge counters
-From: Stephane Eranian <eranian@googlemail.com>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, acme@ghostprotocols.net,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+	id S1755785Ab3AYJnJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 04:43:09 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:20606 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753189Ab3AYJnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 04:43:03 -0500
+X-IronPort-AV: E=Sophos;i="4.84,537,1355068800"; 
+   d="scan'208";a="6646220"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: akpm@linux-foundation.org, jiang.liu@huawei.com, wujianguo@huawei.com,
+        hpa@zytor.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        linfeng@cn.fujitsu.com, yinghai@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
+        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
+        glommer@parallels.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 3/3] acpi, memory-hotplug: Support getting hotplug info from SRAT.
+Date: Fri, 25 Jan 2013 17:42:09 +0800
+Message-Id: <1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 17:41:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 17:41:59,
+	Serialize complete at 2013/01/25 17:41:59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacob,
+We now provide an option for users who don't want to specify physical
+memory address in kernel commandline.
 
-I will apply this patch to libpfm4.
-But I have a question. Why aren't the other uncore
-events included here as well? I am talking about
-the events listed in BKDG sections 3.16.2 to 3.16.6?
-Are  those NOT supported by your kernel patchset?
+        /*
+         * For movablemem_map=acpi:
+         *
+         * SRAT:                |_____| |_____| |_________| |_________| ......
+         * node id:                0       1         1           2
+         * hotpluggable:           n       y         y           n
+         * movablemem_map:              |_____| |_________|
+         *
+         * Using movablemem_map, we can prevent memblock from allocating memory
+         * on ZONE_MOVABLE at boot time.
+         */
 
+So user just specify movablemem_map=acpi, and the kernel will use hotpluggable
+info in SRAT to determine which memory ranges should be set as ZONE_MOVABLE.
 
-On Thu, Jan 24, 2013 at 11:06 PM, Jacob Shin <jacob.shin@amd.com> wrote:
-> On Thu, Jan 24, 2013 at 02:31:59PM +0100, Stephane Eranian wrote:
->> On Thu, Jan 10, 2013 at 8:50 PM, Jacob Shin <jacob.shin@amd.com> wrote:
->> > The following patchset enables 4 additional performance counters in
->> > AMD family 15h processors that count northbridge events -- such as
->> > number of DRAM accesses.
->> >
->> In order for me to test this patch set more thoroughly it would help if you
->> could also provide me a patch to add the Fam15h uncore events to libpfm4.
->> In the past, Robert Richter took care of this. I hope you can fill his role for
->> this. So please, if you could send me the patch quickly, that would help
->> the review of your patch.
->
-> Hi Stephane,
->
-> Here is the corresponding libpfm4 patch. Thank you for taking the time
-> to review the patchset. I hope this helps .. If we can get AMD related
-> perf kernel side patchsets to upstream, I will be more than happy to
-> support AMD related libpfm4 efforts going forward.
->
-> Thanks!
->
-> >From 47d3267dfa24b9071c76f4a22bd059b0e4032002 Mon Sep 17 00:00:00 2001
-> From: Jacob Shin <jacob.shin@amd.com>
-> Date: Thu, 24 Jan 2013 15:37:37 -0600
-> Subject: [PATCH 1/1] Add AMD Family 15h northbridge performance events
->
-> libpfm4 side support for the following Linux kernel patchset:
->   http://lkml.org/lkml/2013/1/10/450
->
-> Reference -- BIOS and Kernel Developer Guide (BKDG) for AMD Family 15h
->  Models 00h-0Fh Processors:
->   http://support.amd.com/us/Processor_TechDocs/42301_15h_Mod_00h-0Fh_BKDG.pdf
->
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-> ---
->  lib/events/amd64_events_fam15h.h |  155 ++++++++++++++++++++++++++++++++++++++
->  1 file changed, 155 insertions(+)
->
-> diff --git a/lib/events/amd64_events_fam15h.h b/lib/events/amd64_events_fam15h.h
-> index 7f654e8..0276782 100644
-> --- a/lib/events/amd64_events_fam15h.h
-> +++ b/lib/events/amd64_events_fam15h.h
-> @@ -752,6 +752,126 @@ static const amd64_umask_t amd64_fam15h_l2_prefetcher_trigger_events[]={
->     },
->  };
->
-> +static const amd64_umask_t amd64_fam15h_dram_accesses[]={
-> +   { .uname = "DCT0_PAGE_HIT",
-> +     .udesc = "DCT0 Page hit",
-> +     .ucode = 0x1,
-> +   },
-> +   { .uname = "DCT0_PAGE_MISS",
-> +     .udesc = "DCT0 Page Miss",
-> +     .ucode = 0x2,
-> +   },
-> +   { .uname = "DCT0_PAGE_CONFLICT",
-> +     .udesc = "DCT0 Page Conflict",
-> +     .ucode = 0x4,
-> +   },
-> +   { .uname = "DCT1_PAGE_HIT",
-> +     .udesc = "DCT1 Page hit",
-> +     .ucode = 0x8,
-> +   },
-> +   { .uname = "DCT1_PAGE_MISS",
-> +     .udesc = "DCT1 Page Miss",
-> +     .ucode = 0x10,
-> +   },
-> +   { .uname = "DCT1_PAGE_CONFLICT",
-> +     .udesc = "DCT1 Page Conflict",
-> +     .ucode = 0x20,
-> +   },
-> +   { .uname  = "ALL",
-> +     .udesc  = "All sub-events selected",
-> +     .ucode  = 0x3f,
-> +     .uflags = AMD64_FL_NCOMBO | AMD64_FL_DFL,
-> +   },
-> +};
-> +
-> +static const amd64_umask_t amd64_fam15h_dram_controller_page_table_overflows[]={
-> +   { .uname = "DCT0_PAGE_TABLE_OVERFLOW",
-> +     .udesc = "DCT0 Page Table Overflow",
-> +     .ucode = 0x1,
-> +   },
-> +   { .uname = "DCT1_PAGE_TABLE_OVERFLOW",
-> +     .udesc = "DCT1 Page Table Overflow",
-> +     .ucode = 0x2,
-> +   },
-> +   { .uname  = "ALL",
-> +     .udesc  = "All sub-events selected",
-> +     .ucode  = 0x3,
-> +     .uflags = AMD64_FL_NCOMBO | AMD64_FL_DFL,
-> +   },
-> +};
-> +
-> +static const amd64_umask_t amd64_fam15h_memory_controller_dram_command_slots_missed[]={
-> +   { .uname = "DCT0_COMMAND_SLOTS_MISSED",
-> +     .udesc = "DCT0 Command Slots Missed (in MemClks)",
-> +     .ucode = 0x1,
-> +   },
-> +   { .uname = "DCT1_COMMAND_SLOTS_MISSED",
-> +     .udesc = "DCT1 Command Slots Missed (in MemClks)",
-> +     .ucode = 0x2,
-> +   },
-> +   { .uname  = "ALL",
-> +     .udesc  = "All sub-events selected",
-> +     .ucode  = 0x3,
-> +     .uflags = AMD64_FL_NCOMBO | AMD64_FL_DFL,
-> +   },
-> +};
-> +
-> +static const amd64_umask_t amd64_fam15h_memory_controller_turnarounds[]={
-> +   { .uname = "DCT0_DIMM_TURNAROUND",
-> +     .udesc = "DCT0 DIMM (chip select) turnaround",
-> +     .ucode = 0x1,
-> +   },
-> +   { .uname = "DCT0_READ_TO_WRITE_TURNAROUND",
-> +     .udesc = "DCT0 Read to write turnaround",
-> +     .ucode = 0x2,
-> +   },
-> +   { .uname = "DCT0_WRITE_TO_READ_TURNAROUND",
-> +     .udesc = "DCT0 Write to read turnaround",
-> +     .ucode = 0x4,
-> +   },
-> +   { .uname = "DCT1_DIMM_TURNAROUND",
-> +     .udesc = "DCT1 DIMM (chip select) turnaround",
-> +     .ucode = 0x8,
-> +   },
-> +   { .uname = "DCT1_READ_TO_WRITE_TURNAROUND",
-> +     .udesc = "DCT1 Read to write turnaround",
-> +     .ucode = 0x10,
-> +   },
-> +   { .uname = "DCT1_WRITE_TO_READ_TURNAROUND",
-> +     .udesc = "DCT1 Write to read turnaround",
-> +     .ucode = 0x20,
-> +   },
-> +   { .uname  = "ALL",
-> +     .udesc  = "All sub-events selected",
-> +     .ucode  = 0x3f,
-> +     .uflags = AMD64_FL_NCOMBO | AMD64_FL_DFL,
-> +   },
-> +};
-> +
-> +static const amd64_umask_t amd64_fam15h_memory_controller_bypass_counter_saturation[]={
-> +   { .uname = "MEMORY_CONTROLLER_HIGH_PRIORITY_BYPASS",
-> +     .udesc = "Memory controller high priority bypass",
-> +     .ucode = 0x1,
-> +   },
-> +   { .uname = "MEMORY_CONTROLLER_MEDIUM_PRIORITY_BYPASS",
-> +     .udesc = "Memory controller medium priority bypass",
-> +     .ucode = 0x2,
-> +   },
-> +   { .uname = "DCT0_DCQ_BYPASS",
-> +     .udesc = "DCT0 DCQ bypass",
-> +     .ucode = 0x4,
-> +   },
-> +   { .uname = "DCT1_DCQ_BYPASS",
-> +     .udesc = "DCT1 DCQ bypass",
-> +     .ucode = 0x8,
-> +   },
-> +   { .uname  = "ALL",
-> +     .udesc  = "All sub-events selected",
-> +     .ucode  = 0xf,
-> +     .uflags = AMD64_FL_NCOMBO | AMD64_FL_DFL,
-> +   },
-> +};
-> +
->  static const amd64_entry_t amd64_fam15h_pe[]={
->  { .name    = "DISPATCHED_FPU_OPS",
->    .desc    = "FPU Pipe Assignment",
-> @@ -1256,4 +1376,39 @@ static const amd64_entry_t amd64_fam15h_pe[]={
->    .modmsk  = AMD64_FAM15H_ATTRS,
->    .code    = 0x1d8,
->  },
-> +{ .name    = "DRAM_ACCESSES",
-> +  .desc    = "DRAM Accesses",
-> +  .code    = 0xe0,
-> +  .numasks = LIBPFM_ARRAY_SIZE(amd64_fam15h_dram_accesses),
-> +  .ngrp    = 1,
-> +  .umasks  = amd64_fam15h_dram_accesses,
-> +},
-> +{ .name    = "DRAM_CONTROLLER_PAGE_TABLE_OVERFLOWS",
-> +  .desc    = "DRAM Controller Page Table Overflows",
-> +  .code    = 0xe1,
-> +  .numasks = LIBPFM_ARRAY_SIZE(amd64_fam15h_dram_controller_page_table_overflows),
-> +  .ngrp    = 1,
-> +  .umasks  = amd64_fam15h_dram_controller_page_table_overflows,
-> +},
-> +{ .name    = "MEMORY_CONTROLLER_DRAM_COMMAND_SLOTS_MISSED",
-> +  .desc    = "Memory Controller DRAM Command Slots Missed",
-> +  .code    = 0xe2,
-> +  .numasks = LIBPFM_ARRAY_SIZE(amd64_fam15h_memory_controller_dram_command_slots_missed),
-> +  .ngrp    = 1,
-> +  .umasks  = amd64_fam15h_memory_controller_dram_command_slots_missed,
-> +},
-> +{ .name    = "MEMORY_CONTROLLER_TURNAROUNDS",
-> +  .desc    = "Memory Controller Turnarounds",
-> +  .code    = 0xe3,
-> +  .numasks = LIBPFM_ARRAY_SIZE(amd64_fam15h_memory_controller_turnarounds),
-> +  .ngrp    = 1,
-> +  .umasks  = amd64_fam15h_memory_controller_turnarounds,
-> +},
-> +{ .name    = "MEMORY_CONTROLLER_BYPASS_COUNTER_SATURATION",
-> +  .desc    = "Memory Controller Bypass Counter Saturation",
-> +  .code    = 0xe4,
-> +  .numasks = LIBPFM_ARRAY_SIZE(amd64_fam15h_memory_controller_bypass_counter_saturation),
-> +  .ngrp    = 1,
-> +  .umasks  = amd64_fam15h_memory_controller_bypass_counter_saturation,
-> +},
->  };
-> --
-> 1.7.9.5
->
->
->
-> ------------------------------------------------------------------------------
-> Master Visual Studio, SharePoint, SQL, ASP.NET, C# 2012, HTML5, CSS,
-> MVC, Windows 8 Apps, JavaScript and much more. Keep your skills current
-> with LearnDevNow - 3,200 step-by-step video tutorials by Microsoft
-> MVPs and experts. ON SALE this month only -- learn more at:
-> http://p.sf.net/sfu/learnnow-d2d
-> _______________________________________________
-> perfmon2-devel mailing list
-> perfmon2-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/perfmon2-devel
+NOTE: Using this way will cause NUMA performance down because the whole node
+      will be set as ZONE_MOVABLE, and kernel cannot use memory on it.
+      If users don't want to lose NUMA performance, just don't use it.
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ Documentation/kernel-parameters.txt |   23 ++++++++++++++++++-----
+ arch/x86/mm/srat.c                  |   22 +++++++++++++++++++++-
+ include/linux/mm.h                  |    1 +
+ mm/page_alloc.c                     |   22 +++++++++++++++++++++-
+ 4 files changed, 61 insertions(+), 7 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 7770611..3d9dc9d 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1637,15 +1637,28 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			that the amount of memory usable for all allocations
+ 			is not too small.
+ 
++	movablemem_map=acpi
++			[KNL,X86,IA-64,PPC] This parameter is similar to
++			memmap except it specifies the memory map of
++			ZONE_MOVABLE.
++			This option inform the kernel to use Hot Pluggable bit
++			in flags from SRAT from ACPI BIOS to determine which
++			memory devices could be hotplugged. The corresponding
++			memory ranges will be set as ZONE_MOVABLE.
++
+ 	movablemem_map=nn[KMG]@ss[KMG]
+ 			[KNL,X86,IA-64,PPC] This parameter is similar to
+ 			memmap except it specifies the memory map of
+ 			ZONE_MOVABLE.
+-			If more areas are all within one node, then from
+-			lowest ss to the end of the node will be ZONE_MOVABLE.
+-			If an area covers two or more nodes, the area from
+-			ss to the end of the 1st node will be ZONE_MOVABLE,
+-			and all the rest nodes will only have ZONE_MOVABLE.
++			If user specifies memory ranges, the info in SRAT will
++			be ingored. And it works like the following:
++			- If more ranges are all within one node, then from
++			  lowest ss to the end of the node will be ZONE_MOVABLE.
++			- If a range is within a node, then from ss to the end
++			  of the node will be ZONE_MOVABLE.
++			- If a range covers two or more nodes, then from ss to
++			  the end of the 1st node will be ZONE_MOVABLE, and all
++			  the rest nodes will only have ZONE_MOVABLE.
+ 			If memmap is specified at the same time, the
+ 			movablemem_map will be limited within the memmap
+ 			areas. If kernelcore or movablecore is also specified,
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index f841d0e..94d6e72 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -198,7 +198,23 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 	end_pfn = PFN_UP(end);
+ 
+ 	/*
+-	 * For movablecore_map=nn[KMG]@ss[KMG]:
++	 * For movablemem_map=acpi:
++	 *
++	 * SRAT:		|_____| |_____| |_________| |_________| ......
++	 * node id:                0       1         1           2
++	 * hotpluggable:	   n       y         y           n
++	 * movablemem_map:	        |_____| |_________|
++	 *
++	 * Using movablemem_map, we can prevent memblock from allocating memory
++	 * on ZONE_MOVABLE at boot time.
++	 */
++	if (hotpluggable && movablemem_map.acpi) {
++		insert_movablemem_map(start_pfn, end_pfn);
++		goto out;
++	}
++
++	/*
++	 * For movablemem_map=nn[KMG]@ss[KMG]:
+ 	 *
+ 	 * SRAT:		|_____| |_____| |_________| |_________| ......
+ 	 * node id:		   0       1         1           2
+@@ -207,6 +223,8 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 	 *
+ 	 * Using movablemem_map, we can prevent memblock from allocating memory
+ 	 * on ZONE_MOVABLE at boot time.
++	 *
++	 * NOTE: In this case, SRAT info will be ingored.
+ 	 */
+ 	overlap = movablemem_map_overlap(start_pfn, end_pfn);
+ 	if (overlap >= 0) {
+@@ -234,6 +252,8 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 			 */
+ 			insert_movablemem_map(start_pfn, end_pfn);
+ 	}
++
++out:
+ #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
+ 	return 0;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e88077a..3eda45f 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1366,6 +1366,7 @@ struct movablemem_entry {
+ };
+ 
+ struct movablemem_map {
++	bool acpi;	/* true if using SRAT info */
+ 	int nr_map;
+ 	struct movablemem_entry map[MOVABLEMEM_MAP_MAX];
+ 	nodemask_t numa_nodes_hotplug;	/* on which nodes we specify memory */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index bdbce73..843c00d 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -202,7 +202,10 @@ static unsigned long __meminitdata dma_reserve;
+ 
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ /* Movable memory ranges, will also be used by memblock subsystem. */
+-struct movablemem_map movablemem_map;
++struct movablemem_map movablemem_map = {
++	.acpi = false,
++	.nr_map = 0,
++};
+ 
+ static unsigned long __meminitdata arch_zone_lowest_possible_pfn[MAX_NR_ZONES];
+ static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
+@@ -5306,6 +5309,23 @@ static int __init cmdline_parse_movablemem_map(char *p)
+ 	if (!p)
+ 		goto err;
+ 
++	if (!strncmp(p, "acpi", max(4, strlen(p))))
++		movablemem_map.acpi = true;
++
++	/*
++	 * If user decide to use info from BIOS, all the other user specified
++	 * ranges will be ingored.
++	 */
++	if (movablemem_map.acpi) {
++		if (movablemem_map.nr_map) {
++			memset(movablemem_map.map, 0,
++				sizeof(struct movablemem_entry)
++				* movablemem_map.nr_map);
++			movablemem_map.nr_map = 0;
++		}
++		return 0;
++	}
++
+ 	oldp = p;
+ 	mem_size = memparse(p, &p);
+ 	if (p == oldp)
+-- 
+1.7.1
+
