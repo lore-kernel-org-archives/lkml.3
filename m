@@ -1,83 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab3AYEKi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 23:10:38 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:31241 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755006Ab3AYEKh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 23:10:37 -0500
-Message-ID: <51020566.6040408@oracle.com>
-Date: Thu, 24 Jan 2013 23:09:10 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
+	id S1755551Ab3AYEMl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 23:12:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:52045 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753657Ab3AYEMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 23:12:39 -0500
+Date: Thu, 24 Jan 2013 20:14:11 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] x86, reboot: skip reboot_fixups in early boot phase
+Message-ID: <20130125041411.GB12562@kroah.com>
+References: <1356702623-9430-1-git-send-email-js1304@gmail.com>
+ <CAErSpo5_dgH1Au3QChVrhqBY_Fm54+Aw_ZiwGf2JSsgQaR1dug@mail.gmail.com>
+ <20130125011303.GA3401@lge.com>
+ <20130125025901.GA26984@google.com>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
-        fweisbec@gmail.com, rusty@rustcorp.com.au, ananth@in.ibm.com,
-        anil.s.keshavamurthy@intel.com, jbaron@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 3/5] kprobes: constify check_kprobe_address_safe and friends
-References: <1357772960-4436-1-git-send-email-sasha.levin@oracle.com> <1357772960-4436-3-git-send-email-sasha.levin@oracle.com> <50FD2B30.20100@hitachi.com>
-In-Reply-To: <50FD2B30.20100@hitachi.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130125025901.GA26984@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Masami,
-
-Thank you for your review!
-
-My comments are below.
-
-On 01/21/2013 06:49 AM, Masami Hiramatsu wrote:
-> (2013/01/10 8:09), Sasha Levin wrote:
->> @@ -278,7 +278,7 @@ static int __kprobes can_optimize(unsigned long paddr)
->>  }
->>  
->>  /* Check optimized_kprobe can actually be optimized. */
->> -int __kprobes arch_check_optimized_kprobe(struct optimized_kprobe *op)
->> +int __kprobes arch_check_optimized_kprobe(const struct optimized_kprobe *op)
->>  {
->>  	int i;
->>  	struct kprobe *p;
+On Thu, Jan 24, 2013 at 07:59:01PM -0700, Bjorn Helgaas wrote:
+> [+cc Greg for driver core]
 > 
-> This can be change optimized_kprobe inside, e.g. change flags.
-> IMHO, I don't like to change this interface.
-
-[snip]
-
->> -static __kprobes int check_kprobe_address_safe(struct kprobe *p,
->> +static __kprobes int check_kprobe_address_safe(const struct kprobe *p,
->>  					       struct module **probed_mod)
->>  {
->>  	int ret = 0;
->>
+> On Fri, Jan 25, 2013 at 10:13:03AM +0900, Joonsoo Kim wrote:
+> > Hello, Bjorn.
+> > 
+> > On Thu, Jan 24, 2013 at 10:45:13AM -0700, Bjorn Helgaas wrote:
+> > > On Fri, Dec 28, 2012 at 6:50 AM, Joonsoo Kim <js1304@gmail.com> wrote:
+> > > > During early boot phase, PCI bus subsystem is not yet initialized.
+> > > > If panic is occured in early boot phase and panic_timeout is set,
+> > > > code flow go into emergency_restart() and hit mach_reboot_fixups(), then
+> > > > encounter another panic. When second panic, we can't hold a panic_lock, so
+> > > > code flow go into panic_smp_self_stop() which prevent system to restart.
+> > > >
+> > > > For avoid second panic, skip reboot_fixups in early boot phase.
+> > > > It makes panic_timeout works in early boot phase.
+> > > >
+> > > > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > > > Cc: Ingo Molnar <mingo@redhat.com>
+> > > > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > > > Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> > > >
+> > > > diff --git a/arch/x86/kernel/reboot_fixups_32.c b/arch/x86/kernel/reboot_fixups_32.c
+> > > > index c8e41e9..b9b8ec9 100644
+> > > > --- a/arch/x86/kernel/reboot_fixups_32.c
+> > > > +++ b/arch/x86/kernel/reboot_fixups_32.c
+> > > > @@ -89,6 +89,10 @@ void mach_reboot_fixups(void)
+> > > >         if (in_interrupt())
+> > > >                 return;
+> > > >
+> > > > +       /* During early boot phase, PCI is not yet initialized */
+> > > > +       if (system_state == SYSTEM_BOOTING)
+> > > > +               return;
+> > > > +
+> > > >         for (i=0; i < ARRAY_SIZE(fixups_table); i++) {
+> > > >                 cur = &(fixups_table[i]);
+> > > >                 dev = pci_get_device(cur->vendor, cur->device, NULL);
+> > > 
+> > > I guess you're saying that if we call pci_get_device() too early, it
+> > > panics?  Did you figure out why that happens?
+> > > 
+> > > If we call pci_get_device() before PCI has been initialized, it would
+> > > be good if it just returned NULL, indicating that we didn't find any
+> > > matching device.  I looked briefly, and I thought that's what would
+> > > happen, but apparently I'm missing something.
+> > 
+> > In bus_find_device(), klist_iter_init_node() is called with 
+> > @bus->p->klist_device. Before initialization, bus->p is NULL,
+> > so panic is occured.
 > 
-> No, p is NOT constant in this function. This changes p->flags.
+> I see.  pci_bus_type.p is initialized by __bus_register() in this path:
 > 
-> ---
-> #ifdef KPROBES_CAN_USE_FTRACE
->                 /* Given address is not on the instruction boundary */
->                 if ((unsigned long)p->addr != ftrace_addr)
->                         return -EILSEQ;
->                 p->flags |= KPROBE_FLAG_FTRACE;
-> #else   /* !KPROBES_CAN_USE_FTRACE */
+>   pci_driver_init        # postcore_initcall
+>     bus_register(&pci_bus_type)
+>       __bus_register
+>         priv = kzalloc(sizeof(struct subsys_private))
+> 	bus->p = priv
+> 	klist_init(&priv->klist_devices, klist_devices_get, klist_devices_put)
+> 
+> I was hoping we could statically initialize the klist, but that doesn't
+> seem likely.
+> 
+> But I wonder if we could do something like the following.  If we could,
+> then callers wouldn't have to worry about whether or not the bus has been
+> initialized.
 
-As to arch_check_optimized_kprobe() and check_kprobe_address_safe(), this
-is simply way too confusing. It doesn't make sense that a function named
-check_[...]() would modify any of it's parameters.
+<snip>
 
-For example, that entire block within KPROBES_CAN_USE_FTRACE should be split
-out and go into update_kprobe_for_ftrace() or something similar.
+I have no objection to that patch, but really, someone wants to call
+pci_find_device() before PCI is initialized?  Can't that be fixed
+instead, as that is the root problem, not the driver core.
 
-If that makes sense, I can send a patch to split out all the parts that
-modify anything in those two functions out of them.
+But, to paper over your subsystem's bugs, I guess I can take it :)
 
+Care to resend it in a format that I can apply it in?
 
-Thanks,
-Sasha
+thanks,
+
+greg k-h
