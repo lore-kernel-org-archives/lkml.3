@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332Ab3AYNqE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 08:46:04 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:46904 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754596Ab3AYNqC convert rfc822-to-8bit (ORCPT
+	id S1757039Ab3AYNuQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 08:50:16 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23030 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596Ab3AYNuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 08:46:02 -0500
-Message-ID: <1359121486.3287.11.camel@thor.lan>
-Subject: Re: [PATCH v3] lpc_ich: fix gpio base and control offsets
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Aaron Sierra <asierra@xes-inc.com>, Paul Bolle <pebolle@tiscali.nl>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        =?ISO-8859-1?Q?Ag=F3cs_P=E1l?= <agocs.pal.86@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 25 Jan 2013 08:44:46 -0500
-In-Reply-To: <CACRpkdZHndQsDZpn7BCFNXAO3k5vREYxDJkcYQ3_3sTbKAQLLA@mail.gmail.com>
-References: <b9fec05c-d383-4282-b2af-c95855ff6abb@zimbra>
-	 <3ffa5032-0565-48f0-a4ae-473452f4c902@zimbra>
-	 <CACRpkdZHndQsDZpn7BCFNXAO3k5vREYxDJkcYQ3_3sTbKAQLLA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
+	Fri, 25 Jan 2013 08:50:12 -0500
+X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=fGM4yXGx12wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=RaCtCyzfOO0A:10 a=fEr_rIeP3ubOS7shDNcA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1359121811.21576.217.camel@gandalf.local.home>
+Subject: Re: [BUG] panda board locks up on boot
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>
+Date: Fri, 25 Jan 2013 08:50:11 -0500
+In-Reply-To: <20130125085234.GY23505@n2100.arm.linux.org.uk>
+References: <1359082886.21576.199.camel@gandalf.local.home>
+	 <20130125085234.GY23505@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-25 at 10:47 +0100, Linus Walleij wrote:
-> On Thu, Jan 24, 2013 at 9:52 PM, Aaron Sierra <asierra@xes-inc.com> wrote:
+On Fri, 2013-01-25 at 08:52 +0000, Russell King - ARM Linux wrote:
+> On Thu, Jan 24, 2013 at 10:01:26PM -0500, Steven Rostedt wrote:
+> > I've recently started testing my work on arm boards and have found that
+> > they both don't boot under the latest kernel anymore. I already posted
+> > about my snowball board, but my panda board also locks up.
 > 
-> > In ICH5 and earlier the GPIOBASE and GPIOCTRL registers are found at
-> > offsets 0x58 and 0x5C, respectively. This patch allows GPIO access to
-> > properly be enabled (and disabled) for these chipsets.
-> >
-> > Signed-off-by: Agócs Pál <agocs.pal.86@gmail.com>
-> > Signed-off-by: Aaron Sierra <asierra@xes-inc.com>
-> 
-> OK... Paul, can you test this on your setup?
-> 
-> > @@ -858,14 +874,35 @@ wdt_done:
-> >  static int lpc_ich_probe(struct pci_dev *dev,
-> >                                 const struct pci_device_id *id)
-> >  {
-> > +       struct lpc_ich_priv *priv;
-> >         int ret;
-> >         bool cell_added = false;
-> >
-> > -       ret = lpc_ich_init_wdt(dev, id);
-> > +       priv = kmalloc(GFP_KERNEL, sizeof(struct lpc_ich_priv));
-> > +       if (!priv)
-> > +               return -ENOMEM;
-> > +
-> > +       priv->chipset = id->driver_data;
-> 
-> So where is this id->driver_data which is just assigned to
-> priv->chipset coming from again? ACPI something?
+> You need to enable DMA engine and the OMAP DMA engine driver.  I believe
+> someone was going to work on adding PIO-mode support to the driver but
+> I suspect as TI's OMAP division is being reorganized, all that is now
+> uncertain.
 
-That's how pci device probing works.
+Well, I be darn...
 
-The driver defines a struct pci_device_id[] table with
-DEFINE_PCI_DEVICE_TABLE(), initializing the .driver_data fields with an
-index into a static array of device types (in this case, struct
-lpc_ich_info lpc_chipset_info[]), and the pci subsystem passes the
-actual matching pci_device_id* to the driver's probe() function.
 
-There's more information in Documentation/pci.txt
+Yep, selecting DMA_OMAP which selects DMA_ENGINE makes everything
+better. Who'da thunk?
 
-Regards,
-Peter Hurley
+Now only if there was a config option missing for my snowball?
+
+Thanks!
+
+-- Steve
 
 
