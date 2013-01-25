@@ -1,69 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366Ab3AYP3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 10:29:09 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:54828 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756929Ab3AYP2w (ORCPT
+	id S1756406Ab3AYP3Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 10:29:25 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:23735 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756929Ab3AYP3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 10:28:52 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Rob Clark <rob@ti.com>, Inki Dae <inki.dae@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>
-Subject: [PATCH 5/5] drm/exynos: don't include plat/gpio-cfg.h
-Date: Fri, 25 Jan 2013 15:28:31 +0000
-Message-Id: <1359127711-19070-6-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1359127711-19070-1-git-send-email-arnd@arndb.de>
-References: <1359127711-19070-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:hbDG/s5McfUJYu/PPAqiv+41KYagYAv7EskBOGSxIJC
- sCP94DfZn+zASsWJzzQReYpiTyRPgiR2xq0CgqDPh8PgZ5yVcb
- ColoYwmYUv4Rbc8oFM8q3YptKcc/uSAy2/gpfd5FkAmz3YUNG4
- ffOsbebIxpxZPL7nA8ixKBwFRCqpUn1ymke4cMOG4oN5BuSgTs
- NuKHLCvCTC5teMsz1YO1bw0gB43eALURUpVfjX9VCbNd4EqfWl
- N7mVoWkIYDrUOcJUo9n9i1HV4fZhikMM4jCzfeAcLggOYEWZ3d
- 1dvrZpEPcO2gwwutHaiLB9wbMbdtsCHqdqCCRremD2TfONnflA
- Z23TdfCGdeG1svKfJhoYJQ72Wzsk0pJnIggH4Q4BZ
+	Fri, 25 Jan 2013 10:29:12 -0500
+Message-ID: <1359127153.14145.356.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI / scan: Make it clear that acpi_bus_trim() cannot
+ fail
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>
+Date: Fri, 25 Jan 2013 08:19:13 -0700
+In-Reply-To: <1511096.zmfmBrfdmu@vostro.rjw.lan>
+References: <1511096.zmfmBrfdmu@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch  9eb3e9e6f3 "drm/exynos: add support for ARCH_MULTIPLATFORM"
-allowed building the exynos hdmi driver on non-samsung platforms,
-which unfortunately broke compilation in combination with 22c4f42897
-"drm: exynos: hdmi: add support for exynos5 hdmi", which added
-an inclusion of the samsung-specific plat/gpio-cfg.h header file.
+On Thu, 2013-01-24 at 23:56 +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Since acpi_bus_trim() cannot fail, change its definition to a void
+> function, so that its callers don't check the return value in vain
+> and update the callers.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Fortunately, that header file is not required any more here, so
-we can simply revert the inclusion in order to build the ARM
-allyesconfig again without getting this error:
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-drivers/gpu/drm/exynos/exynos_hdmi.c:37:27: fatal error: plat/gpio-cfg.h: No such file or directory
+Thanks,
+-Toshi
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Clark <rob@ti.com>
-Cc: Inki Dae <inki.dae@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Rahul Sharma <rahul.sharma@samsung.com>
----
- drivers/gpu/drm/exynos/exynos_hdmi.c | 1 -
- 1 file changed, 1 deletion(-)
+> ---
+> 
+> On top of current linux-pm.git/linux-next.
+> 
+> Thanks,
+> Rafael
+> 
+> ---
+>  drivers/acpi/dock.c                |    8 ++------
+>  drivers/acpi/scan.c                |   12 +++---------
+>  drivers/pci/hotplug/acpiphp_glue.c |   10 +++-------
+>  include/acpi/acpi_bus.h            |    2 +-
+>  4 files changed, 9 insertions(+), 23 deletions(-)
+> 
+> Index: linux-pm/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/scan.c
+> +++ linux-pm/drivers/acpi/scan.c
+> @@ -127,13 +127,8 @@ void acpi_bus_hot_remove_device(void *co
+>  	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>  		"Hot-removing device %s...\n", dev_name(&device->dev)));
+>  
+> -	if (acpi_bus_trim(device)) {
+> -		printk(KERN_ERR PREFIX
+> -				"Removing device failed\n");
+> -		goto err_out;
+> -	}
+> -
+> -	/* device has been freed */
+> +	acpi_bus_trim(device);
+> +	/* Device node has been released. */
+>  	device = NULL;
+>  
+>  	/* power off device */
+> @@ -1656,7 +1651,7 @@ static acpi_status acpi_bus_remove(acpi_
+>  	return AE_OK;
+>  }
+>  
+> -int acpi_bus_trim(struct acpi_device *start)
+> +void acpi_bus_trim(struct acpi_device *start)
+>  {
+>  	/*
+>  	 * Execute acpi_bus_device_detach() as a post-order callback to detach
+> @@ -1672,7 +1667,6 @@ int acpi_bus_trim(struct acpi_device *st
+>  	acpi_walk_namespace(ACPI_TYPE_ANY, start->handle, ACPI_UINT32_MAX, NULL,
+>  			    acpi_bus_remove, NULL, NULL);
+>  	acpi_bus_remove(start->handle, 0, NULL, NULL);
+> -	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(acpi_bus_trim);
+>  
+> Index: linux-pm/include/acpi/acpi_bus.h
+> ===================================================================
+> --- linux-pm.orig/include/acpi/acpi_bus.h
+> +++ linux-pm/include/acpi/acpi_bus.h
+> @@ -386,7 +386,7 @@ int acpi_bus_register_driver(struct acpi
+>  void acpi_bus_unregister_driver(struct acpi_driver *driver);
+>  int acpi_bus_scan(acpi_handle handle);
+>  void acpi_bus_hot_remove_device(void *context);
+> -int acpi_bus_trim(struct acpi_device *start);
+> +void acpi_bus_trim(struct acpi_device *start);
+>  acpi_status acpi_bus_get_ejd(acpi_handle handle, acpi_handle * ejd);
+>  int acpi_match_device_ids(struct acpi_device *device,
+>  			  const struct acpi_device_id *ids);
+> Index: linux-pm/drivers/acpi/dock.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/dock.c
+> +++ linux-pm/drivers/acpi/dock.c
+> @@ -336,13 +336,9 @@ static struct acpi_device * dock_create_
+>  static void dock_remove_acpi_device(acpi_handle handle)
+>  {
+>  	struct acpi_device *device;
+> -	int ret;
+>  
+> -	if (!acpi_bus_get_device(handle, &device)) {
+> -		ret = acpi_bus_trim(device);
+> -		if (ret)
+> -			pr_debug("error removing bus, %x\n", -ret);
+> -	}
+> +	if (!acpi_bus_get_device(handle, &device))
+> +		acpi_bus_trim(device);
+>  }
+>  
+>  /**
+> Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
+> +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -742,8 +742,7 @@ static int acpiphp_bus_add(struct acpiph
+>  		/* this shouldn't be in here, so remove
+>  		 * the bus then re-add it...
+>  		 */
+> -		ret_val = acpi_bus_trim(device);
+> -		dbg("acpi_bus_trim return %x\n", ret_val);
+> +		acpi_bus_trim(device);
+>  	}
+>  
+>  	ret_val = acpi_bus_scan(func->handle);
+> @@ -772,11 +771,8 @@ static int acpiphp_bus_trim(acpi_handle
+>  		return retval;
+>  	}
+>  
+> -	retval = acpi_bus_trim(device);
+> -	if (retval)
+> -		err("cannot remove from acpi list\n");
+> -
+> -	return retval;
+> +	acpi_bus_trim(device);
+> +	return 0;
+>  }
+>  
+>  static void acpiphp_set_acpi_region(struct acpiphp_slot *slot)
+> 
 
-diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
-index 41ff79d..b5f5119 100644
---- a/drivers/gpu/drm/exynos/exynos_hdmi.c
-+++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
-@@ -34,7 +34,6 @@
- #include <linux/regulator/consumer.h>
- #include <linux/io.h>
- #include <linux/of_gpio.h>
--#include <plat/gpio-cfg.h>
- 
- #include <drm/exynos_drm.h>
- 
--- 
-1.8.0
 
