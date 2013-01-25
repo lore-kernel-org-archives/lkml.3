@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047Ab3AYVcw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 16:32:52 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:52075 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab3AYVcs (ORCPT
+	id S1753145Ab3AYVdh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 16:33:37 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:45496 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751878Ab3AYVdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 16:32:48 -0500
-Date: Fri, 25 Jan 2013 15:32:13 -0600
-From: "Philip J. Kelleher" <pjk1939@us.ibm.com>
-To: jmoyer@redhat.com
-Cc: axboe@kernel.dk, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        brking@linux.vnet.ibm.com
-Subject: Re: Re: [PATCH] block: IBM RamSan 70/80 device driver.
-Message-ID: <20130125213213.GA7460@oc6784271780.ibm.com>
+	Fri, 25 Jan 2013 16:33:35 -0500
+Date: Fri, 25 Jan 2013 13:33:34 -0800 (PST)
+From: Andy King <acking@vmware.com>
+To: Gerd Hoffmann <kraxel@redhat.com>
+Cc: pv-drivers@vmware.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Message-ID: <362258122.36962636.1359149614436.JavaMail.root@vmware.com>
+In-Reply-To: <1426158581.24554896.1357785777229.JavaMail.root@vmware.com>
+Subject: Re: [Pv-drivers] [PATCH 0/6] VSOCK for Linux upstreaming
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012521-7408-0000-0000-00000C38C0BE
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.160.14]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC24 (Mac)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> > From: Joshua H Morris <josh.h.morris@us.ibm.com>
-> > 	Philip J Kelleher <pjk1939@us.ibm.com>
-> >
-> > This patch includes the device driver for the IBM RamSan family
-> > of PCI SSD flash storage cards. This driver will inlcude support for the
-> > RamSan 70 and 80. The driver presents a block device for device I/O.
+> > > Our position is that VSOCK feature set is more complete and that
+> > > it
+> > > should be possible to use transports other than VMCI for VSOCK
+> > > traffic, should interested parties implement them,
+> > 
+> > Implementing other transports requires restructing vsock (and vmci)
+> > first as the current vsock code is not a hypervisor neutral
+> > service.
 > 
-> Hi,
-> 
-> Your driver does not handle REQ_FLUSH.  Does that mean that the
-> supported cards do not have a volatile write-back cache?
-> 
+> I'm going to bite the bullet and spend the next couple of days doing
+> just that: factoring out the VMCI bits and hiding them behind a
+> transport layer.  It'll be a bit rough, but it'll be a start.  We'll
+> submit another patch series next week with that.  I'm hoping that'll
+> get us over this hump, since it should by hypervisor agnostic at
+> that point.  It'll be up to you guys to add virtio, though :)
 
-We do not have a volatile write-back cache.
+I sent out a patch series this morning that splits out our code into a
+core part, containing the socket family/operations, and a VMCI-specific
+part.  The core makes callbacks via a new transport layer into VMCI.
+It's not perfect -- there's still some cruft in the core socket
+structure -- but it lays the foundation of a hypervisor-neutral channel,
+and hopefully we can build on this with your help.  It'd be great if
+you could take a look.
 
-> > +	blk_size = rsxx_get_logical_block_size(card);
-> > +
-> > +	blk_queue_make_request(card->queue, rsxx_make_request);
-> > +	blk_queue_bounce_limit(card->queue, BLK_BOUNCE_ANY);
-> > +	blk_queue_dma_alignment(card->queue, blk_size - 1);
-> > +	blk_queue_max_hw_sectors(card->queue, blkdev_max_hw_sectors);
-> > +	blk_queue_logical_block_size(card->queue, blk_size);
-> > +	blk_queue_physical_block_size(card->queue, RSXX_HW_BLK_SIZE);
-> > +	blk_queue_max_discard_sectors(card->queue, RSXX_HW_BLK_SIZE >> 9);
-> 
-> Did you mean to set max_discard_sectors inside the below for loop?
-> Either way, do you really only support a single hardware sector discard?
-> 
-> > +	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, card->queue);
-> > +	if (rsxx_discard_supported(card)) {
-> > +		queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, card->queue);
-> > +		card->queue->limits.discard_granularity = RSXX_HW_BLK_SIZE;
-> > +		card->queue->limits.discard_alignment   = RSXX_HW_BLK_SIZE;
-> > +		card->queue->limits.discard_zeroes_data = 1;
-> > +	}
-
-Yes, we only do discards in 4k chunks. It does look as though the
-max_discard_sectors can/should be moved inside the if statement.
-
-Thanks,
-Philip
-
+Thanks!
+- Andy
