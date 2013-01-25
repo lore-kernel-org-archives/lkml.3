@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567Ab3AYS0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 13:26:12 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49683 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932359Ab3AYS0J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 13:26:09 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: wm5102: Fix definition of WM5102_MAX_REGISTER
-Date: Fri, 25 Jan 2013 23:53:51 +0800
-Message-Id: <1359129231-4672-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S964790Ab3AYS0e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 13:26:34 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:43420 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932179Ab3AYS0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 13:26:30 -0500
+Subject: [PATCH 11/14] fuse: fuse_flush() should wait on writeback
+To: miklos@szeredi.hu
+From: "Maxim V. Patlasov" <MPatlasov@parallels.com>
+Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        devel@openvz.org
+Date: Fri, 25 Jan 2013 22:26:09 +0400
+Message-ID: <20130125182550.10037.37908.stgit@maximpc.sw.ru>
+In-Reply-To: <20130125181700.10037.29163.stgit@maximpc.sw.ru>
+References: <20130125181700.10037.29163.stgit@maximpc.sw.ru>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updated in latest datasheet.
+The aim of .flush fop is to hint file-system that flushing its state or caches
+or any other important data to reliable storage would be desirable now.
+fuse_flush() passes this hint by sending FUSE_FLUSH request to userspace.
+However, dirty pages and pages under writeback may be not visible to userspace
+yet if we won't ensure it explicitly.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
 ---
- drivers/mfd/wm5102-tables.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/fuse/file.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index f183eca..9933034 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -1886,7 +1886,7 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
- 	}
- }
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 52c7d81..3767824 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -18,6 +18,7 @@
+ #include <linux/falloc.h>
  
--#define WM5102_MAX_REGISTER 0x1a8fff
-+#define WM5102_MAX_REGISTER 0x1a9800
+ static const struct file_operations fuse_direct_io_file_operations;
++static void fuse_sync_writes(struct inode *inode);
  
- const struct regmap_config wm5102_spi_regmap = {
- 	.reg_bits = 32,
--- 
-1.7.10.4
+ static int fuse_send_open(struct fuse_conn *fc, u64 nodeid, struct file *file,
+ 			  int opcode, struct fuse_open_out *outargp)
+@@ -414,6 +415,14 @@ static int fuse_flush(struct file *file, fl_owner_t id)
+ 	if (fc->no_flush)
+ 		return 0;
+ 
++	err = filemap_write_and_wait(file->f_mapping);
++	if (err)
++		return err;
++
++	mutex_lock(&inode->i_mutex);
++	fuse_sync_writes(inode);
++	mutex_unlock(&inode->i_mutex);
++
+ 	req = fuse_get_req_nofail_nopages(fc, file);
+ 	memset(&inarg, 0, sizeof(inarg));
+ 	inarg.fh = ff->fh;
 
