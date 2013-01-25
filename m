@@ -1,329 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab3AYJwA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 04:52:00 -0500
-Received: from mail-da0-f43.google.com ([209.85.210.43]:34702 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170Ab3AYJvy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 04:51:54 -0500
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>
-Subject: [PATCH] media: tvp514x: enable TVP514X for media controller based usage
-Date: Fri, 25 Jan 2013 15:21:40 +0530
-Message-Id: <1359107500-16039-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755540Ab3AYJvs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 04:51:48 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:3951 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752973Ab3AYJvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 04:51:44 -0500
+X-IronPort-AV: E=Sophos;i="4.84,537,1355068800"; 
+   d="scan'208";a="6646252"
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>, Eric Dumazet <erdnetdev@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH V8 1/3] virtio-net: fix the set affinity bug when CPU IDs are not consecutive
+Date: Fri, 25 Jan 2013 17:51:29 +0800
+Message-Id: <1359107491-6749-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 17:50:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/25 17:50:42,
+	Serialize complete at 2013/01/25 17:50:42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manjunath Hadli <manjunath.hadli@ti.com>
+As Michael mentioned, set affinity and select queue will not work very
+well when CPU IDs are not consecutive, this can happen with hot unplug.
+Fix this bug by traversal the online CPUs, and create a per cpu variable
+to find the mapping from CPU to the preferable virtual-queue.
 
-add support for TVP514x as a media entity and support for
-pad operations. The decoder supports 1 output pad.
-The default format code was V4L2_MBUS_FMT_YUYV10_2X10
-changed it to V4L2_MBUS_FMT_UYVY8_2X8.
-
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>
+Cc: Eric Dumazet <erdnetdev@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: virtualization@lists.linux-foundation.org
+Cc: netdev@vger.kernel.org
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- This patch depends on patch http://patchwork.linuxtv.org/patch/16458/
+V7->V8:
+	set vq index unconditionally, make bisect happy,
+		make sure don't introduce bug. (Jason)
+V6->V7:
+	serialize virtnet_set_queues to avoid a race with cpu hotplug (Jason)
+V5->V6:
+	remove {get|put}_online_cpus from virtnet_del_vqs (Jason)
+V4->V5:
+	Add get/put_online_cpus to avoid CPUs go up and down during operations (Rusty)
 
- drivers/media/i2c/tvp514x.c |  161 ++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 153 insertions(+), 8 deletions(-)
+V3->V4:
+	move vq_index into virtnet_info	(Jason)
+	change the mapping value when not setting affinity (Jason)
+	address the comments about select_queue (Rusty)
 
-diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
-index d5e1021..f0a768b 100644
---- a/drivers/media/i2c/tvp514x.c
-+++ b/drivers/media/i2c/tvp514x.c
-@@ -12,6 +12,7 @@
-  *     Hardik Shah <hardik.shah@ti.com>
-  *     Manjunath Hadli <mrh@ti.com>
-  *     Karicheri Muralidharan <m-karicheri2@ti.com>
-+ *     Prabhakar Lad <prabhakar.lad@ti.com>
-  *
-  * This package is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -33,6 +34,7 @@
- #include <linux/delay.h>
- #include <linux/videodev2.h>
- #include <linux/module.h>
-+#include <linux/v4l2-mediabus.h>
+ drivers/net/virtio_net.c | 67 ++++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 54 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index a6fcf15..fda214a 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -123,6 +123,9 @@ struct virtnet_info {
  
- #include <media/v4l2-device.h>
- #include <media/v4l2-common.h>
-@@ -40,12 +42,10 @@
- #include <media/v4l2-chip-ident.h>
- #include <media/v4l2-ctrls.h>
- #include <media/tvp514x.h>
-+#include <media/media-entity.h>
- 
- #include "tvp514x_regs.h"
- 
--/* Module Name */
--#define TVP514X_MODULE_NAME		"tvp514x"
--
- /* Private macros for TVP */
- #define I2C_RETRY_COUNT                 (5)
- #define LOCK_RETRY_COUNT                (5)
-@@ -91,6 +91,9 @@ static int tvp514x_s_stream(struct v4l2_subdev *sd, int enable);
-  * @pdata: Board specific
-  * @ver: Chip version
-  * @streaming: TVP5146/47 decoder streaming - enabled or disabled.
-+ * @pix: Current pixel format
-+ * @num_fmts: Number of formats
-+ * @fmt_list: Format list
-  * @current_std: Current standard
-  * @num_stds: Number of standards
-  * @std_list: Standards list
-@@ -106,12 +109,20 @@ struct tvp514x_decoder {
- 	int ver;
- 	int streaming;
- 
-+	struct v4l2_pix_format pix;
-+	int num_fmts;
-+	const struct v4l2_fmtdesc *fmt_list;
+ 	/* Does the affinity hint is set for virtqueues? */
+ 	bool affinity_hint_set;
 +
- 	enum tvp514x_std current_std;
- 	int num_stds;
- 	const struct tvp514x_std_info *std_list;
- 	/* Input and Output Routing parameters */
- 	u32 input;
- 	u32 output;
-+
-+	/* mc related members */
-+	struct media_pad pad;
-+	struct v4l2_mbus_framefmt format;
++	/* Per-cpu variable to show the mapping from CPU to virtqueue */
++	int __percpu *vq_index;
  };
  
- /* TVP514x default register values */
-@@ -200,6 +211,21 @@ static struct tvp514x_reg tvp514x_reg_list_default[] = {
- };
+ struct skb_vnet_hdr {
+@@ -1016,6 +1019,7 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
+ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+ {
+ 	int i;
++	int cpu;
  
- /**
-+ * List of image formats supported by TVP5146/47 decoder
-+ * Currently we are using 8 bit mode only, but can be
-+ * extended to 10/20 bit mode.
-+ */
-+static const struct v4l2_fmtdesc tvp514x_fmt_list[] = {
-+	{
-+	 .index		= 0,
-+	 .type		= V4L2_BUF_TYPE_VIDEO_CAPTURE,
-+	 .flags		= 0,
-+	 .description	= "8-bit UYVY 4:2:2 Format",
-+	 .pixelformat	= V4L2_PIX_FMT_UYVY,
-+	},
-+};
+ 	/* In multiqueue mode, when the number of cpu is equal to the number of
+ 	 * queue pairs, we let the queue pairs to be private to one cpu by
+@@ -1023,22 +1027,40 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+ 	 */
+ 	if ((vi->curr_queue_pairs == 1 ||
+ 	     vi->max_queue_pairs != num_online_cpus()) && set) {
+-		if (vi->affinity_hint_set)
++		if (vi->affinity_hint_set) {
+ 			set = false;
+-		else
++		} else {
++			i = 0;
++			for_each_online_cpu(cpu)
++				*per_cpu_ptr(vi->vq_index, cpu) =
++					++i % vi->curr_queue_pairs;
+ 			return;
++		}
+ 	}
+ 
+-	for (i = 0; i < vi->max_queue_pairs; i++) {
+-		int cpu = set ? i : -1;
+-		virtqueue_set_affinity(vi->rq[i].vq, cpu);
+-		virtqueue_set_affinity(vi->sq[i].vq, cpu);
+-	}
++	if (set) {
++		i = 0;
++		for_each_online_cpu(cpu) {
++			virtqueue_set_affinity(vi->rq[i].vq, cpu);
++			virtqueue_set_affinity(vi->sq[i].vq, cpu);
++			*per_cpu_ptr(vi->vq_index, cpu) = i;
++			i++;
++		}
+ 
+-	if (set)
+ 		vi->affinity_hint_set = true;
+-	else
++	} else {
++		for(i = 0; i < vi->max_queue_pairs; i++) {
++			virtqueue_set_affinity(vi->rq[i].vq, -1);
++			virtqueue_set_affinity(vi->sq[i].vq, -1);
++		}
 +
-+/**
-  * Supported standards -
-  *
-  * Currently supports two standards only, need to add support for rest of the
-@@ -733,7 +759,7 @@ tvp514x_enum_mbus_fmt(struct v4l2_subdev *sd, unsigned index,
++		i = 0;
++		for_each_online_cpu(cpu)
++			*per_cpu_ptr(vi->vq_index, cpu) =
++				++i % vi->curr_queue_pairs;
++
+ 		vi->affinity_hint_set = false;
++	}
  }
  
- /**
-- * tvp514x_mbus_fmt_cap() - V4L2 decoder interface handler for try/s/g_mbus_fmt
-+ * tvp514x_mbus_fmt() - V4L2 decoder interface handler for try/s/g_mbus_fmt
-  * @sd: pointer to standard V4L2 sub-device structure
-  * @f: pointer to the mediabus format structure
-  *
-@@ -751,12 +777,11 @@ tvp514x_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *f)
- 	/* Calculate height and width based on current standard */
- 	current_std = decoder->current_std;
+ static void virtnet_get_ringparam(struct net_device *dev,
+@@ -1082,6 +1104,7 @@ static int virtnet_set_channels(struct net_device *dev,
+ 	if (queue_pairs > vi->max_queue_pairs)
+ 		return -EINVAL;
  
--	f->code = V4L2_MBUS_FMT_YUYV10_2X10;
-+	f->code = V4L2_MBUS_FMT_YUYV8_2X8;
- 	f->width = decoder->std_list[current_std].width;
- 	f->height = decoder->std_list[current_std].height;
- 	f->field = V4L2_FIELD_INTERLACED;
- 	f->colorspace = V4L2_COLORSPACE_SMPTE170M;
--
- 	v4l2_dbg(1, debug, sd, "MBUS_FMT: Width - %d, Height - %d\n",
- 			f->width, f->height);
- 	return 0;
-@@ -892,6 +917,88 @@ static const struct v4l2_ctrl_ops tvp514x_ctrl_ops = {
- 	.s_ctrl = tvp514x_s_ctrl,
- };
++	get_online_cpus();
+ 	err = virtnet_set_queues(vi, queue_pairs);
+ 	if (!err) {
+ 		netif_set_real_num_tx_queues(dev, queue_pairs);
+@@ -1089,6 +1112,7 @@ static int virtnet_set_channels(struct net_device *dev,
  
-+/**
-+ * tvp514x_enum_mbus_code() - V4L2 decoder interface handler for enum_mbus_code
-+ * @sd: pointer to standard V4L2 sub-device structure
-+ * @fh: file handle
-+ * @code: pointer to v4l2_subdev_mbus_code_enum structure
-+ *
-+ * Enumertaes mbus codes supported
-+ */
-+static int tvp514x_enum_mbus_code(struct v4l2_subdev *sd,
-+				  struct v4l2_subdev_fh *fh,
-+				  struct v4l2_subdev_mbus_code_enum *code)
-+{
-+	u32 pad = code->pad;
-+	u32 index = code->index;
-+
-+	memset(code, 0, sizeof(*code));
-+	code->index = index;
-+	code->pad = pad;
-+
-+	if (index != 0)
-+		return -EINVAL;
-+
-+	code->code = V4L2_MBUS_FMT_YUYV8_2X8;
-+
-+	return 0;
-+}
-+
-+/**
-+ * tvp514x_get_pad_format() - V4L2 decoder interface handler for get pad format
-+ * @sd: pointer to standard V4L2 sub-device structure
-+ * @fh: file handle
-+ * @format: pointer to v4l2_subdev_format structure
-+ *
-+ * Retrieves pad format which is active or tried based on requirement
-+ */
-+static int tvp514x_get_pad_format(struct v4l2_subdev *sd,
-+				  struct v4l2_subdev_fh *fh,
-+				  struct v4l2_subdev_format *format)
-+{
-+	struct tvp514x_decoder *decoder = to_decoder(sd);
-+	__u32 which = format->which;
-+
-+	if (which == V4L2_SUBDEV_FORMAT_ACTIVE) {
-+		format->format = decoder->format;
-+		return 0;
-+	}
-+
-+	format->format.code = V4L2_MBUS_FMT_YUYV8_2X8;
-+	format->format.width = tvp514x_std_list[decoder->current_std].width;
-+	format->format.height = tvp514x_std_list[decoder->current_std].height;
-+	format->format.colorspace = V4L2_COLORSPACE_SMPTE170M;
-+	format->format.field = V4L2_FIELD_INTERLACED;
-+
-+	return 0;
-+}
-+
-+/**
-+ * tvp514x_set_pad_format() - V4L2 decoder interface handler for set pad format
-+ * @sd: pointer to standard V4L2 sub-device structure
-+ * @fh: file handle
-+ * @format: pointer to v4l2_subdev_format structure
-+ *
-+ * Set pad format for the output pad
-+ */
-+static int tvp514x_set_pad_format(struct v4l2_subdev *sd,
-+				  struct v4l2_subdev_fh *fh,
-+				  struct v4l2_subdev_format *fmt)
-+{
-+	struct tvp514x_decoder *decoder = to_decoder(sd);
-+
-+	if (fmt->format.field != V4L2_FIELD_INTERLACED ||
-+	    fmt->format.code != V4L2_MBUS_FMT_YUYV8_2X8 ||
-+	    fmt->format.colorspace != V4L2_COLORSPACE_SMPTE170M ||
-+	    fmt->format.width != tvp514x_std_list[decoder->current_std].width ||
-+	    fmt->format.height != tvp514x_std_list[decoder->current_std].height)
-+		return -EINVAL;
-+
-+	decoder->format = fmt->format;
-+
-+	return 0;
-+}
-+
- static const struct v4l2_subdev_core_ops tvp514x_core_ops = {
- 	.g_ext_ctrls = v4l2_subdev_g_ext_ctrls,
- 	.try_ext_ctrls = v4l2_subdev_try_ext_ctrls,
-@@ -915,13 +1022,33 @@ static const struct v4l2_subdev_video_ops tvp514x_video_ops = {
- 	.s_stream = tvp514x_s_stream,
- };
- 
-+static const struct v4l2_subdev_pad_ops tvp514x_pad_ops = {
-+	.enum_mbus_code = tvp514x_enum_mbus_code,
-+	.get_fmt = tvp514x_get_pad_format,
-+	.set_fmt = tvp514x_set_pad_format,
-+};
-+
- static const struct v4l2_subdev_ops tvp514x_ops = {
- 	.core = &tvp514x_core_ops,
- 	.video = &tvp514x_video_ops,
-+	.pad = &tvp514x_pad_ops,
- };
- 
- static struct tvp514x_decoder tvp514x_dev = {
- 	.streaming = 0,
-+	.fmt_list = tvp514x_fmt_list,
-+	.num_fmts = ARRAY_SIZE(tvp514x_fmt_list),
-+	.pix = {
-+		/* Default to NTSC 8-bit YUV 422 */
-+		.width		= NTSC_NUM_ACTIVE_PIXELS,
-+		.height		= NTSC_NUM_ACTIVE_LINES,
-+		.pixelformat	= V4L2_PIX_FMT_UYVY,
-+		.field		= V4L2_FIELD_INTERLACED,
-+		.bytesperline	= NTSC_NUM_ACTIVE_PIXELS * 2,
-+		.sizeimage	= NTSC_NUM_ACTIVE_PIXELS * 2 *
-+					NTSC_NUM_ACTIVE_LINES,
-+		.colorspace	= V4L2_COLORSPACE_SMPTE170M,
-+		},
- 	.current_std = STD_NTSC_MJ,
- 	.std_list = tvp514x_std_list,
- 	.num_stds = ARRAY_SIZE(tvp514x_std_list),
-@@ -941,6 +1068,7 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
- {
- 	struct tvp514x_decoder *decoder;
- 	struct v4l2_subdev *sd;
-+	int ret;
- 
- 	/* Check if the adapter supports the needed features */
- 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
-@@ -981,7 +1109,21 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	/* Register with V4L2 layer as slave device */
- 	sd = &decoder->sd;
- 	v4l2_i2c_subdev_init(sd, client, &tvp514x_ops);
-+	strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
-+
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	decoder->pad.flags = MEDIA_PAD_FL_SOURCE;
-+	decoder->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
-+	decoder->sd.entity.flags |= MEDIA_ENT_T_V4L2_SUBDEV_DECODER;
- 
-+	ret = media_entity_init(&decoder->sd.entity, 1, &decoder->pad, 0);
-+	if (ret < 0) {
-+		v4l2_err(sd, "%s decoder driver failed to register !!\n",
-+			 sd->name);
-+		kfree(decoder);
-+		return ret;
-+	}
-+#endif
- 	v4l2_ctrl_handler_init(&decoder->hdl, 5);
- 	v4l2_ctrl_new_std(&decoder->hdl, &tvp514x_ctrl_ops,
- 		V4L2_CID_BRIGHTNESS, 0, 255, 1, 128);
-@@ -995,11 +1137,11 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 		V4L2_CID_AUTOGAIN, 0, 1, 1, 1);
- 	sd->ctrl_handler = &decoder->hdl;
- 	if (decoder->hdl.error) {
--		int err = decoder->hdl.error;
-+		ret = decoder->hdl.error;
- 
- 		v4l2_ctrl_handler_free(&decoder->hdl);
- 		kfree(decoder);
--		return err;
-+		return ret;
+ 		virtnet_set_affinity(vi, true);
  	}
- 	v4l2_ctrl_handler_setup(&decoder->hdl);
++	put_online_cpus();
  
-@@ -1022,6 +1164,9 @@ static int tvp514x_remove(struct i2c_client *client)
- 	struct tvp514x_decoder *decoder = to_decoder(sd);
+ 	return err;
+ }
+@@ -1127,12 +1151,19 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
  
- 	v4l2_device_unregister_subdev(sd);
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	media_entity_cleanup(&decoder->sd.entity);
-+#endif
- 	v4l2_ctrl_handler_free(&decoder->hdl);
- 	kfree(decoder);
+ /* To avoid contending a lock hold by a vcpu who would exit to host, select the
+  * txq based on the processor id.
+- * TODO: handle cpu hotplug.
+  */
+ static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
+ {
+-	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
+-		  smp_processor_id();
++	int txq;
++	struct virtnet_info *vi = netdev_priv(dev);
++
++	if (skb_rx_queue_recorded(skb)) {
++		txq = skb_get_rx_queue(skb);
++	} else {
++		txq = *__this_cpu_ptr(vi->vq_index);
++		if (txq == -1)
++			txq = 0;
++	}
+ 
+ 	while (unlikely(txq >= dev->real_num_tx_queues))
+ 		txq -= dev->real_num_tx_queues;
+@@ -1371,7 +1402,10 @@ static int init_vqs(struct virtnet_info *vi)
+ 	if (ret)
+ 		goto err_free;
+ 
++	get_online_cpus();
+ 	virtnet_set_affinity(vi, true);
++	put_online_cpus();
++
  	return 0;
+ 
+ err_free:
+@@ -1453,6 +1487,10 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	if (vi->stats == NULL)
+ 		goto free;
+ 
++	vi->vq_index = alloc_percpu(int);
++	if (vi->vq_index == NULL)
++		goto free_stats;
++
+ 	mutex_init(&vi->config_lock);
+ 	vi->config_enable = true;
+ 	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
+@@ -1476,7 +1514,7 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
+ 	err = init_vqs(vi);
+ 	if (err)
+-		goto free_stats;
++		goto free_index;
+ 
+ 	netif_set_real_num_tx_queues(dev, 1);
+ 	netif_set_real_num_rx_queues(dev, 1);
+@@ -1520,6 +1558,8 @@ free_recv_bufs:
+ free_vqs:
+ 	cancel_delayed_work_sync(&vi->refill);
+ 	virtnet_del_vqs(vi);
++free_index:
++	free_percpu(vi->vq_index);
+ free_stats:
+ 	free_percpu(vi->stats);
+ free:
+@@ -1554,6 +1594,7 @@ static void virtnet_remove(struct virtio_device *vdev)
+ 
+ 	flush_work(&vi->config_work);
+ 
++	free_percpu(vi->vq_index);
+ 	free_percpu(vi->stats);
+ 	free_netdev(vi->dev);
+ }
 -- 
-1.7.4.1
+1.8.1
 
