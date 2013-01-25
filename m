@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab3AYEMl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jan 2013 23:12:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:52045 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753657Ab3AYEMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jan 2013 23:12:39 -0500
-Date: Thu, 24 Jan 2013 20:14:11 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] x86, reboot: skip reboot_fixups in early boot phase
-Message-ID: <20130125041411.GB12562@kroah.com>
-References: <1356702623-9430-1-git-send-email-js1304@gmail.com>
- <CAErSpo5_dgH1Au3QChVrhqBY_Fm54+Aw_ZiwGf2JSsgQaR1dug@mail.gmail.com>
- <20130125011303.GA3401@lge.com>
- <20130125025901.GA26984@google.com>
+	id S1755575Ab3AYEOC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jan 2013 23:14:02 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:44613 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657Ab3AYEN7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jan 2013 23:13:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130125025901.GA26984@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1359032849-25551-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <CAOh2x=kqEzw9cvg=WLpjEbF50aTKCUUVd9GzNg8PqtBx_BpYLg@mail.gmail.com>
+	<1359032849-25551-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Fri, 25 Jan 2013 09:43:58 +0530
+X-Google-Sender-Auth: Tmh3B7Uk9LnwgEWCu1Irsc5u8YI
+Message-ID: <CAOh2x=nnrEo69W7sBES85KgF0+WUy8Ouoq+SG1XiB54e7QLiow@mail.gmail.com>
+Subject: Re: [PATCH v3.5] dw_dmac: return proper residue value
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 07:59:01PM -0700, Bjorn Helgaas wrote:
-> [+cc Greg for driver core]
-> 
-> On Fri, Jan 25, 2013 at 10:13:03AM +0900, Joonsoo Kim wrote:
-> > Hello, Bjorn.
-> > 
-> > On Thu, Jan 24, 2013 at 10:45:13AM -0700, Bjorn Helgaas wrote:
-> > > On Fri, Dec 28, 2012 at 6:50 AM, Joonsoo Kim <js1304@gmail.com> wrote:
-> > > > During early boot phase, PCI bus subsystem is not yet initialized.
-> > > > If panic is occured in early boot phase and panic_timeout is set,
-> > > > code flow go into emergency_restart() and hit mach_reboot_fixups(), then
-> > > > encounter another panic. When second panic, we can't hold a panic_lock, so
-> > > > code flow go into panic_smp_self_stop() which prevent system to restart.
-> > > >
-> > > > For avoid second panic, skip reboot_fixups in early boot phase.
-> > > > It makes panic_timeout works in early boot phase.
-> > > >
-> > > > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > > > Cc: Ingo Molnar <mingo@redhat.com>
-> > > > Cc: "H. Peter Anvin" <hpa@zytor.com>
-> > > > Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> > > >
-> > > > diff --git a/arch/x86/kernel/reboot_fixups_32.c b/arch/x86/kernel/reboot_fixups_32.c
-> > > > index c8e41e9..b9b8ec9 100644
-> > > > --- a/arch/x86/kernel/reboot_fixups_32.c
-> > > > +++ b/arch/x86/kernel/reboot_fixups_32.c
-> > > > @@ -89,6 +89,10 @@ void mach_reboot_fixups(void)
-> > > >         if (in_interrupt())
-> > > >                 return;
-> > > >
-> > > > +       /* During early boot phase, PCI is not yet initialized */
-> > > > +       if (system_state == SYSTEM_BOOTING)
-> > > > +               return;
-> > > > +
-> > > >         for (i=0; i < ARRAY_SIZE(fixups_table); i++) {
-> > > >                 cur = &(fixups_table[i]);
-> > > >                 dev = pci_get_device(cur->vendor, cur->device, NULL);
-> > > 
-> > > I guess you're saying that if we call pci_get_device() too early, it
-> > > panics?  Did you figure out why that happens?
-> > > 
-> > > If we call pci_get_device() before PCI has been initialized, it would
-> > > be good if it just returned NULL, indicating that we didn't find any
-> > > matching device.  I looked briefly, and I thought that's what would
-> > > happen, but apparently I'm missing something.
-> > 
-> > In bus_find_device(), klist_iter_init_node() is called with 
-> > @bus->p->klist_device. Before initialization, bus->p is NULL,
-> > so panic is occured.
-> 
-> I see.  pci_bus_type.p is initialized by __bus_register() in this path:
-> 
->   pci_driver_init        # postcore_initcall
->     bus_register(&pci_bus_type)
->       __bus_register
->         priv = kzalloc(sizeof(struct subsys_private))
-> 	bus->p = priv
-> 	klist_init(&priv->klist_devices, klist_devices_get, klist_devices_put)
-> 
-> I was hoping we could statically initialize the klist, but that doesn't
-> seem likely.
-> 
-> But I wonder if we could do something like the following.  If we could,
-> then callers wouldn't have to worry about whether or not the bus has been
-> initialized.
+On Thu, Jan 24, 2013 at 6:37 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> Currently the driver returns full length of the active descriptor which is
+> wrong. We have to go throught the active descriptor and substract the length of
+> each sent children in the chain from the total length along with the actual
+> data in the DMA channel registers.
+>
+> The cyclic case is not handled by this patch due to len field in the descriptor
+> structure is left untouched by the original code.
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-<snip>
+Firstly the issue i raised earlier about not updating residue from
+tasklet or interrupt
+handler was wrong. As i had an older version of code in my mind. This got solved
+with following patch:
 
-I have no objection to that patch, but really, someone wants to call
-pci_find_device() before PCI is initialized?  Can't that be fixed
-instead, as that is the root problem, not the driver core.
+commit 77bcc497c60ec62dbb84abc809a6e218d53409e9
+Author: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Date:   Fri Jan 18 14:14:15 2013 +0200
 
-But, to paper over your subsystem's bugs, I guess I can take it :)
+    dw_dmac: move soft LLP code from tasklet to dwc_scan_descriptors
 
-Care to resend it in a format that I can apply it in?
 
-thanks,
+> ---
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> +static inline u32 dwc_get_residue(struct dw_dma_chan *dwc)
+> +{
+> +       unsigned long flags;
+> +       u32 residue;
+> +
+> +       spin_lock_irqsave(&dwc->lock, flags);
+> +
+> +       residue = dwc->residue;
 
-greg k-h
+you need to release the lock just here.
+
+> +       if (test_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags) && residue)
+> +               residue -= dwc_get_sent(dwc);
+
+why do you need lock while reading the control registers? It looks you didn't
+get what i wanted to say earlier. We are using locks to protect some part for
+shared data or critical sections. these are playing with dwc transfer
+lists, etc..
+
+Probably we don't need a lock to read the control register as nobody can
+guarantee that another access is not happening currently. As hardware is
+changing this register continuously for the transfer.
+
+Let me know if i am missing something.
+
+> +       spin_unlock_irqrestore(&dwc->lock, flags);
+> +       return residue;
+> +}
