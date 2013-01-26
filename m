@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab3AZOhH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 09:37:07 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:51527 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739Ab3AZOhF (ORCPT
+	id S1754347Ab3AZOiU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 09:38:20 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51453 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161Ab3AZOiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 09:37:05 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Linus Walleij <linus.walleij@linaro.org>, Alejandro Mery <amery@geeks.cl>,
-        Stefan Roese <sr@denx.de>, Russell King <linux@arm.linux.org.uk>,
+	Sat, 26 Jan 2013 09:38:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <1359163444.2079.12.camel@joe-AO722>
+References: <1353057890-24234-1-git-send-email-lig.fnst@cn.fujitsu.com>
+	<CAFTL4hzLu5RN-PSuP6NRwx2sMKXh5OZ7gNqLnUQQvKTK4n9i1Q@mail.gmail.com>
+	<1359163444.2079.12.camel@joe-AO722>
+Date: Sat, 26 Jan 2013 15:38:16 +0100
+Message-ID: <CAFTL4hwhAkZUVyYoMriRsy4DZ4Br-PCihC4O1SyqBZXyXaWYKg@mail.gmail.com>
+Subject: Re: [PATCH]cputime: make bool type for steal ticks
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: liguang <lig.fnst@cn.fujitsu.com>, mingo@redhat.com, peterz@infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] ARM: sunxi: Increase the number of GPIOs available
-Date: Sat, 26 Jan 2013 15:36:51 +0100
-Message-Id: <1359211016-24097-2-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1359211016-24097-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1359211016-24097-1-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A10 has 9 banks of 32 GPIOs available, so it doesn't fit
-in the usual 256 limit set by gpio.h. Increase this number to 288.
+2013/1/26 Joe Perches <joe@perches.com>:
+> On Sat, 2013-01-26 at 01:45 +0100, Frederic Weisbecker wrote:
+>> > diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> []
+>> > @@ -282,7 +282,7 @@ static __always_inline bool steal_account_process_tick(void)
+> []
+>> > -               return st;
+>> > +               return !!st;
+>>
+>> I would expect gcc to perform the semantic "!!" cast implicitly. I
+>> just did some basic tests locally and it does.
+>> I prefer to be paranoid and not do any assumption though, unless I'm
+>> told gcc always guarantees this correct implicit cast. I'm queuing
+>> this patch and will send it to Ingo.
+>
+> It's unnecessary.
+>
+> 6.3.1.2p1:
+>
+> "When any scalar value is converted to _Bool, the result is 0
+> if the value compares equal to 0; otherwise, the result is 1."
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Ok then I'll ignore this patch. If somebody oppose, raise your hand.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index f95ba14..1e86fa9 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1632,7 +1632,7 @@ config ARCH_NR_GPIO
- 	default 355 if ARCH_U8500
- 	default 264 if MACH_H4700
- 	default 512 if SOC_OMAP5
--	default 288 if ARCH_VT8500
-+	default 288 if ARCH_VT8500 || ARCH_SUNXI
- 	default 0
- 	help
- 	  Maximum number of GPIOs in the system.
--- 
-1.7.10.4
-
+Thanks.
