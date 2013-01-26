@@ -1,426 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab3AZByy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 20:54:54 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:53504 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468Ab3AZByv (ORCPT
+	id S1755470Ab3AZBzM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 20:55:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48772 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755229Ab3AZBzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 20:54:51 -0500
-Date: Fri, 25 Jan 2013 17:54:53 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Petr Holasek <pholasek@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH 1/11] ksm: allow trees per NUMA node
-In-Reply-To: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
-Message-ID: <alpine.LNX.2.00.1301251753380.29196@eggly.anvils>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 25 Jan 2013 20:55:08 -0500
+Date: Fri, 25 Jan 2013 17:54:52 -0800
+From: tip-bot for Dave Hansen <dave@linux.vnet.ibm.com>
+Message-ID: <tip-d765653445129b7c476758040e3079480775f80a@git.kernel.org>
+Cc: riel@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, dave@linux.vnet.ibm.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        riel@redhat.com, dave@linux.vnet.ibm.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <20130122212433.4D1FCA62@kernel.stglabs.ibm.com>
+References: <20130122212433.4D1FCA62@kernel.stglabs.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86, mm: Create slow_virt_to_phys()
+Git-Commit-ID: d765653445129b7c476758040e3079480775f80a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 17:54:58 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Petr Holasek <pholasek@redhat.com>
+Commit-ID:  d765653445129b7c476758040e3079480775f80a
+Gitweb:     http://git.kernel.org/tip/d765653445129b7c476758040e3079480775f80a
+Author:     Dave Hansen <dave@linux.vnet.ibm.com>
+AuthorDate: Tue, 22 Jan 2013 13:24:33 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 25 Jan 2013 16:33:23 -0800
 
-Introduces new sysfs boolean knob /sys/kernel/mm/ksm/merge_across_nodes
-which control merging pages across different numa nodes.
-When it is set to zero only pages from the same node are merged,
-otherwise pages from all nodes can be merged together (default behavior).
+x86, mm: Create slow_virt_to_phys()
 
-Typical use-case could be a lot of KVM guests on NUMA machine
-and cpus from more distant nodes would have significant increase
-of access latency to the merged ksm page. Sysfs knob was choosen
-for higher variability when some users still prefers higher amount
-of saved physical memory regardless of access latency.
+This is necessary because __pa() does not work on some kinds of
+memory, like vmalloc() or the alloc_remap() areas on 32-bit
+NUMA systems.  We have some functions to do conversions _like_
+this in the vmalloc() code (like vmalloc_to_page()), but they
+do not work on sizes other than 4k pages.  We would potentially
+need to be able to handle all the page sizes that we use for
+the kernel linear mapping (4k, 2M, 1G).
 
-Every numa node has its own stable & unstable trees because of faster
-searching and inserting. Changing of merge_across_nodes value is possible
-only when there are not any ksm shared pages in system.
+In practice, on 32-bit NUMA systems, the percpu areas get stuck
+in the alloc_remap() area.  Any __pa() call on them will break
+and basically return garbage.
 
-I've tested this patch on numa machines with 2, 4 and 8 nodes and
-measured speed of memory access inside of KVM guests with memory pinned
-to one of nodes with this benchmark:
+This patch introduces a new function slow_virt_to_phys(), which
+walks the kernel page tables on x86 and should do precisely
+the same logical thing as __pa(), but actually work on a wider
+range of memory.  It should work on the normal linear mapping,
+vmalloc(), kmap(), etc...
 
-http://pholasek.fedorapeople.org/alloc_pg.c
-
-Population standard deviations of access times in percentage of average
-were following:
-
-merge_across_nodes=1
-2 nodes 1.4%
-4 nodes 1.6%
-8 nodes	1.7%
-
-merge_across_nodes=0
-2 nodes	1%
-4 nodes	0.32%
-8 nodes	0.018%
-
-RFC: https://lkml.org/lkml/2011/11/30/91
-v1: https://lkml.org/lkml/2012/1/23/46
-v2: https://lkml.org/lkml/2012/6/29/105
-v3: https://lkml.org/lkml/2012/9/14/550
-v4: https://lkml.org/lkml/2012/9/23/137
-v5: https://lkml.org/lkml/2012/12/10/540
-v6: https://lkml.org/lkml/2012/12/23/154
-v7: https://lkml.org/lkml/2012/12/27/225
-
-Hugh notes that this patch brings two problems, whose solution needs
-further support in mm/ksm.c, which follows in subsequent patches:
-1) switching merge_across_nodes after running KSM is liable to oops
-   on stale nodes still left over from the previous stable tree;
-2) memory hotremove may migrate KSM pages, but there is no provision
-   here for !merge_across_nodes to migrate nodes to the proper tree.
-
-Signed-off-by: Petr Holasek <pholasek@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20130122212433.4D1FCA62@kernel.stglabs.ibm.com
 Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- Documentation/vm/ksm.txt |    7 +
- mm/ksm.c                 |  151 ++++++++++++++++++++++++++++++++-----
- 2 files changed, 139 insertions(+), 19 deletions(-)
+ arch/x86/include/asm/pgtable_types.h |  1 +
+ arch/x86/mm/pageattr.c               | 31 +++++++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+)
 
---- mmotm.orig/Documentation/vm/ksm.txt	2013-01-25 14:36:31.724205455 -0800
-+++ mmotm/Documentation/vm/ksm.txt	2013-01-25 14:36:38.608205618 -0800
-@@ -58,6 +58,13 @@ sleep_millisecs  - how many milliseconds
-                    e.g. "echo 20 > /sys/kernel/mm/ksm/sleep_millisecs"
-                    Default: 20 (chosen for demonstration purposes)
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 6c297e7..9f82690 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -352,6 +352,7 @@ static inline void update_page_count(int level, unsigned long pages) { }
+  * as a pte too.
+  */
+ extern pte_t *lookup_address(unsigned long address, unsigned int *level);
++extern phys_addr_t slow_virt_to_phys(void *__address);
  
-+merge_across_nodes - specifies if pages from different numa nodes can be merged.
-+                   When set to 0, ksm merges only pages which physically
-+                   reside in the memory area of same NUMA node. It brings
-+                   lower latency to access to shared page. Value can be
-+                   changed only when there is no ksm shared pages in system.
-+                   Default: 1
-+
- run              - set 0 to stop ksmd from running but keep merged pages,
-                    set 1 to run ksmd e.g. "echo 1 > /sys/kernel/mm/ksm/run",
-                    set 2 to stop ksmd and unmerge all pages currently merged,
---- mmotm.orig/mm/ksm.c	2013-01-25 14:36:31.724205455 -0800
-+++ mmotm/mm/ksm.c	2013-01-25 14:36:38.608205618 -0800
-@@ -36,6 +36,7 @@
- #include <linux/hashtable.h>
- #include <linux/freezer.h>
- #include <linux/oom.h>
-+#include <linux/numa.h>
+ #endif	/* !__ASSEMBLY__ */
  
- #include <asm/tlbflush.h>
- #include "internal.h"
-@@ -139,6 +140,9 @@ struct rmap_item {
- 	struct mm_struct *mm;
- 	unsigned long address;		/* + low bits used for flags below */
- 	unsigned int oldchecksum;	/* when unstable */
-+#ifdef CONFIG_NUMA
-+	unsigned int nid;
-+#endif
- 	union {
- 		struct rb_node node;	/* when node of unstable tree */
- 		struct {		/* when listed from stable tree */
-@@ -153,8 +157,8 @@ struct rmap_item {
- #define STABLE_FLAG	0x200	/* is listed from the stable tree */
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index 2a5c9ab..6d13d2a 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -364,6 +364,37 @@ pte_t *lookup_address(unsigned long address, unsigned int *level)
+ EXPORT_SYMBOL_GPL(lookup_address);
  
- /* The stable and unstable tree heads */
--static struct rb_root root_stable_tree = RB_ROOT;
--static struct rb_root root_unstable_tree = RB_ROOT;
-+static struct rb_root root_unstable_tree[MAX_NUMNODES];
-+static struct rb_root root_stable_tree[MAX_NUMNODES];
- 
- #define MM_SLOTS_HASH_BITS 10
- static DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
-@@ -188,6 +192,9 @@ static unsigned int ksm_thread_pages_to_
- /* Milliseconds ksmd should sleep between batches */
- static unsigned int ksm_thread_sleep_millisecs = 20;
- 
-+/* Zeroed when merging across nodes is not allowed */
-+static unsigned int ksm_merge_across_nodes = 1;
-+
- #define KSM_RUN_STOP	0
- #define KSM_RUN_MERGE	1
- #define KSM_RUN_UNMERGE	2
-@@ -441,10 +448,25 @@ out:		page = NULL;
- 	return page;
- }
- 
-+/*
-+ * This helper is used for getting right index into array of tree roots.
-+ * When merge_across_nodes knob is set to 1, there are only two rb-trees for
-+ * stable and unstable pages from all nodes with roots in index 0. Otherwise,
-+ * every node has its own stable and unstable tree.
+ /*
++ * This is necessary because __pa() does not work on some
++ * kinds of memory, like vmalloc() or the alloc_remap()
++ * areas on 32-bit NUMA systems.  The percpu areas can
++ * end up in this kind of memory, for instance.
++ *
++ * This could be optimized, but it is only intended to be
++ * used at inititalization time, and keeping it
++ * unoptimized should increase the testing coverage for
++ * the more obscure platforms.
 + */
-+static inline int get_kpfn_nid(unsigned long kpfn)
++phys_addr_t slow_virt_to_phys(void *__virt_addr)
 +{
-+	if (ksm_merge_across_nodes)
-+		return 0;
-+	else
-+		return pfn_to_nid(kpfn);
++	unsigned long virt_addr = (unsigned long)__virt_addr;
++	phys_addr_t phys_addr;
++	unsigned long offset;
++	enum pg_level level;
++	unsigned long psize;
++	unsigned long pmask;
++	pte_t *pte;
++
++	pte = lookup_address(virt_addr, &level);
++	BUG_ON(!pte);
++	psize = page_level_size(level);
++	pmask = page_level_mask(level);
++	offset = virt_addr & ~pmask;
++	phys_addr = pte_pfn(*pte) << PAGE_SHIFT;
++	return (phys_addr | offset);
 +}
++EXPORT_SYMBOL_GPL(slow_virt_to_phys);
 +
- static void remove_node_from_stable_tree(struct stable_node *stable_node)
- {
- 	struct rmap_item *rmap_item;
- 	struct hlist_node *hlist;
-+	int nid;
- 
- 	hlist_for_each_entry(rmap_item, hlist, &stable_node->hlist, hlist) {
- 		if (rmap_item->hlist.next)
-@@ -456,7 +478,9 @@ static void remove_node_from_stable_tree
- 		cond_resched();
- 	}
- 
--	rb_erase(&stable_node->node, &root_stable_tree);
-+	nid = get_kpfn_nid(stable_node->kpfn);
-+
-+	rb_erase(&stable_node->node, &root_stable_tree[nid]);
- 	free_stable_node(stable_node);
- }
- 
-@@ -554,7 +578,12 @@ static void remove_rmap_item_from_tree(s
- 		age = (unsigned char)(ksm_scan.seqnr - rmap_item->address);
- 		BUG_ON(age > 1);
- 		if (!age)
--			rb_erase(&rmap_item->node, &root_unstable_tree);
-+#ifdef CONFIG_NUMA
-+			rb_erase(&rmap_item->node,
-+					&root_unstable_tree[rmap_item->nid]);
-+#else
-+			rb_erase(&rmap_item->node, &root_unstable_tree[0]);
-+#endif
- 
- 		ksm_pages_unshared--;
- 		rmap_item->address &= PAGE_MASK;
-@@ -990,8 +1019,9 @@ static struct page *try_to_merge_two_pag
++/*
+  * Set the new pmd in all the pgds we know about:
   */
- static struct page *stable_tree_search(struct page *page)
- {
--	struct rb_node *node = root_stable_tree.rb_node;
-+	struct rb_node *node;
- 	struct stable_node *stable_node;
-+	int nid;
- 
- 	stable_node = page_stable_node(page);
- 	if (stable_node) {			/* ksm page forked */
-@@ -999,6 +1029,9 @@ static struct page *stable_tree_search(s
- 		return page;
- 	}
- 
-+	nid = get_kpfn_nid(page_to_pfn(page));
-+	node = root_stable_tree[nid].rb_node;
-+
- 	while (node) {
- 		struct page *tree_page;
- 		int ret;
-@@ -1033,10 +1066,16 @@ static struct page *stable_tree_search(s
-  */
- static struct stable_node *stable_tree_insert(struct page *kpage)
- {
--	struct rb_node **new = &root_stable_tree.rb_node;
-+	int nid;
-+	unsigned long kpfn;
-+	struct rb_node **new;
- 	struct rb_node *parent = NULL;
- 	struct stable_node *stable_node;
- 
-+	kpfn = page_to_pfn(kpage);
-+	nid = get_kpfn_nid(kpfn);
-+	new = &root_stable_tree[nid].rb_node;
-+
- 	while (*new) {
- 		struct page *tree_page;
- 		int ret;
-@@ -1070,11 +1109,11 @@ static struct stable_node *stable_tree_i
- 		return NULL;
- 
- 	rb_link_node(&stable_node->node, parent, new);
--	rb_insert_color(&stable_node->node, &root_stable_tree);
-+	rb_insert_color(&stable_node->node, &root_stable_tree[nid]);
- 
- 	INIT_HLIST_HEAD(&stable_node->hlist);
- 
--	stable_node->kpfn = page_to_pfn(kpage);
-+	stable_node->kpfn = kpfn;
- 	set_page_stable_node(kpage, stable_node);
- 
- 	return stable_node;
-@@ -1098,10 +1137,15 @@ static
- struct rmap_item *unstable_tree_search_insert(struct rmap_item *rmap_item,
- 					      struct page *page,
- 					      struct page **tree_pagep)
--
- {
--	struct rb_node **new = &root_unstable_tree.rb_node;
-+	struct rb_node **new;
-+	struct rb_root *root;
- 	struct rb_node *parent = NULL;
-+	int nid;
-+
-+	nid = get_kpfn_nid(page_to_pfn(page));
-+	root = &root_unstable_tree[nid];
-+	new = &root->rb_node;
- 
- 	while (*new) {
- 		struct rmap_item *tree_rmap_item;
-@@ -1122,6 +1166,18 @@ struct rmap_item *unstable_tree_search_i
- 			return NULL;
- 		}
- 
-+		/*
-+		 * If tree_page has been migrated to another NUMA node, it
-+		 * will be flushed out and put into the right unstable tree
-+		 * next time: only merge with it if merge_across_nodes.
-+		 * Just notice, we don't have similar problem for PageKsm
-+		 * because their migration is disabled now. (62b61f611e)
-+		 */
-+		if (!ksm_merge_across_nodes && page_to_nid(tree_page) != nid) {
-+			put_page(tree_page);
-+			return NULL;
-+		}
-+
- 		ret = memcmp_pages(page, tree_page);
- 
- 		parent = *new;
-@@ -1139,8 +1195,11 @@ struct rmap_item *unstable_tree_search_i
- 
- 	rmap_item->address |= UNSTABLE_FLAG;
- 	rmap_item->address |= (ksm_scan.seqnr & SEQNR_MASK);
-+#ifdef CONFIG_NUMA
-+	rmap_item->nid = nid;
-+#endif
- 	rb_link_node(&rmap_item->node, parent, new);
--	rb_insert_color(&rmap_item->node, &root_unstable_tree);
-+	rb_insert_color(&rmap_item->node, root);
- 
- 	ksm_pages_unshared++;
- 	return NULL;
-@@ -1154,6 +1213,13 @@ struct rmap_item *unstable_tree_search_i
- static void stable_tree_append(struct rmap_item *rmap_item,
- 			       struct stable_node *stable_node)
- {
-+#ifdef CONFIG_NUMA
-+	/*
-+	 * Usually rmap_item->nid is already set correctly,
-+	 * but it may be wrong after switching merge_across_nodes.
-+	 */
-+	rmap_item->nid = get_kpfn_nid(stable_node->kpfn);
-+#endif
- 	rmap_item->head = stable_node;
- 	rmap_item->address |= STABLE_FLAG;
- 	hlist_add_head(&rmap_item->hlist, &stable_node->hlist);
-@@ -1283,6 +1349,7 @@ static struct rmap_item *scan_get_next_r
- 	struct mm_slot *slot;
- 	struct vm_area_struct *vma;
- 	struct rmap_item *rmap_item;
-+	int nid;
- 
- 	if (list_empty(&ksm_mm_head.mm_list))
- 		return NULL;
-@@ -1301,7 +1368,8 @@ static struct rmap_item *scan_get_next_r
- 		 */
- 		lru_add_drain_all();
- 
--		root_unstable_tree = RB_ROOT;
-+		for (nid = 0; nid < nr_node_ids; nid++)
-+			root_unstable_tree[nid] = RB_ROOT;
- 
- 		spin_lock(&ksm_mmlist_lock);
- 		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
-@@ -1770,15 +1838,19 @@ static struct stable_node *ksm_check_sta
- 						 unsigned long end_pfn)
- {
- 	struct rb_node *node;
-+	int nid;
- 
--	for (node = rb_first(&root_stable_tree); node; node = rb_next(node)) {
--		struct stable_node *stable_node;
-+	for (nid = 0; nid < nr_node_ids; nid++)
-+		for (node = rb_first(&root_stable_tree[nid]); node;
-+				node = rb_next(node)) {
-+			struct stable_node *stable_node;
-+
-+			stable_node = rb_entry(node, struct stable_node, node);
-+			if (stable_node->kpfn >= start_pfn &&
-+			    stable_node->kpfn < end_pfn)
-+				return stable_node;
-+		}
- 
--		stable_node = rb_entry(node, struct stable_node, node);
--		if (stable_node->kpfn >= start_pfn &&
--		    stable_node->kpfn < end_pfn)
--			return stable_node;
--	}
- 	return NULL;
- }
- 
-@@ -1925,6 +1997,40 @@ static ssize_t run_store(struct kobject
- }
- KSM_ATTR(run);
- 
-+#ifdef CONFIG_NUMA
-+static ssize_t merge_across_nodes_show(struct kobject *kobj,
-+				struct kobj_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%u\n", ksm_merge_across_nodes);
-+}
-+
-+static ssize_t merge_across_nodes_store(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   const char *buf, size_t count)
-+{
-+	int err;
-+	unsigned long knob;
-+
-+	err = kstrtoul(buf, 10, &knob);
-+	if (err)
-+		return err;
-+	if (knob > 1)
-+		return -EINVAL;
-+
-+	mutex_lock(&ksm_thread_mutex);
-+	if (ksm_merge_across_nodes != knob) {
-+		if (ksm_pages_shared)
-+			err = -EBUSY;
-+		else
-+			ksm_merge_across_nodes = knob;
-+	}
-+	mutex_unlock(&ksm_thread_mutex);
-+
-+	return err ? err : count;
-+}
-+KSM_ATTR(merge_across_nodes);
-+#endif
-+
- static ssize_t pages_shared_show(struct kobject *kobj,
- 				 struct kobj_attribute *attr, char *buf)
- {
-@@ -1979,6 +2085,9 @@ static struct attribute *ksm_attrs[] = {
- 	&pages_unshared_attr.attr,
- 	&pages_volatile_attr.attr,
- 	&full_scans_attr.attr,
-+#ifdef CONFIG_NUMA
-+	&merge_across_nodes_attr.attr,
-+#endif
- 	NULL,
- };
- 
-@@ -1992,11 +2101,15 @@ static int __init ksm_init(void)
- {
- 	struct task_struct *ksm_thread;
- 	int err;
-+	int nid;
- 
- 	err = ksm_slab_init();
- 	if (err)
- 		goto out;
- 
-+	for (nid = 0; nid < nr_node_ids; nid++)
-+		root_stable_tree[nid] = RB_ROOT;
-+
- 	ksm_thread = kthread_run(ksm_scan_thread, NULL, "ksmd");
- 	if (IS_ERR(ksm_thread)) {
- 		printk(KERN_ERR "ksm: creating kthread failed\n");
+ static void __set_pmd_pte(pte_t *kpte, unsigned long address, pte_t pte)
