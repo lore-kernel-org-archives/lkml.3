@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab3AZVJp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 16:09:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54723 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754128Ab3AZVJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 16:09:43 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CA+55aFyskO6NMhgkwRNv4wXB=D97VS54_oZw0k_o4nQFso6p-Q@mail.gmail.com>
-References: <1359123061-6139-1-git-send-email-ling.ma@alipay.com> <tip-d94ffd677469ef729e9d6e968191872577a6119e@git.kernel.org> <20130126125208.GC21395@pd.tnic> <8b0dfc4a-6f9c-498a-9844-4d99deb3052f@email.android.com> <CA+55aFyskO6NMhgkwRNv4wXB=D97VS54_oZw0k_o4nQFso6p-Q@mail.gmail.com>
+	id S1754552Ab3AZVLV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 16:11:21 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:35797 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754128Ab3AZVLT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 16:11:19 -0500
+Date: Sat, 26 Jan 2013 21:13:12 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH review 3/6] userns: Recommend use of memory control
+ groups.
+Message-ID: <20130126211312.GD11274@mail.hallyn.com>
+References: <87ehh8it9s.fsf@xmission.com>
+ <87txq4hedl.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [tip:x86/asm] x86/defconfig: Turn on CONFIG_CC_OPTIMIZE_FOR_SIZE= y in the 64-bit defconfig
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 26 Jan 2013 13:08:02 -0800
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Jan Beulich <jbeulich@suse.com>, ling.ml@alipay.com,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org
-Message-ID: <36b9ae37-2bf7-4ce7-a41c-9d533ac7ef94@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87txq4hedl.fsf@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fast rep movsb was introduced on Ivy Bridge, IIRC.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> 
+> In the help text describing user namespaces recommend use of memory
+> control groups.  In many cases memory control groups are the only
+> mechanism there is to limit how much memory a user who can create
+> user namespaces can use.
+> 
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
->On Sat, Jan 26, 2013 at 7:18 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On the CPUs Ling is testing on the downsides of -Os probably matter
->less, in particular since rep movsb works well.
->>
->> It is questionable as a generic default, though.
->
->So being the person who really pushed for -Os to begin with (I think
->I$ and instruction decode bandwidth is one of the most fundamental
->limits to CPU performance), I wouldn't mind it if we reintroduced it.
->
->HOWEVER.
->
->It wasn't just "rep movs". The thing that killed -Os for me was that
->it makes it impossible to try to optimize hot code, because -Os seems
->to throw out branch prediction information. So when you use "likely()"
->etc to try to teach the compiler to lay out code a certain way so that
->code that never really gets executed isn't even brought into the I$,
->-Os then screws it up completely.
->
->Of course, maybe newer versions of gcc might not suck so horribly with
->-Os, I haven't actually tried in a while.
->
->[ Just tested. Still does it ]
->
->Also, I doubt Ling was testing a SB CPU. Because "rep movb" still
->sucks pretty bad on SB. What core *is* Ling testing? Haswell?
->
->Ugh. We could make it depend on the optimization target. I'd also wish
->there was some way to just tune gcc -Os to be closer to reasonable. Or
->make -O2 not do some of the excessive crap it does (it aligns code
->*much* too much, for example - who cares if you can do it with a
->single instruction, if that instruction is so long that it uses up
->half your decode bandwidth?)
->
->The problem, of course, is that most -O2 code generation is done
->assuming hot loops that don't show much if any I$ issues. And the -Os
->thing is done *purely* for size, not taking any performance into
->account at all. There's no balanced middle ground, which is what _we_
->would want.
->
->                  Linus
+nit:
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+> ---
+>  Documentation/namespaces/resource-control.txt |   10 ++++++++++
+>  init/Kconfig                                  |    7 +++++++
+>  2 files changed, 17 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/namespaces/resource-control.txt
+> 
+> diff --git a/Documentation/namespaces/resource-control.txt b/Documentation/namespaces/resource-control.txt
+> new file mode 100644
+> index 0000000..3d8178a
+> --- /dev/null
+> +++ b/Documentation/namespaces/resource-control.txt
+> @@ -0,0 +1,10 @@
+> +There are a lot of kinds of objects in the kernel that don't have
+> +individual limits or that have limits that are ineffective when a set
+> +of processes is allowed to switch user ids.  With user namespaces
+> +enabled in a kernel for people who don't trust their users or their
+> +users programs to play nice this problems becomes more acute.
+
+users' programs
+
+> +
+> +Therefore it is recommended that memory control groups be enabled in
+> +kernels that enable user namespaces, and it is further recommended
+> +that userspace configure memory control groups to limit how much
+> +memory users they don't trust to play nice can use.
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 7d30240..c8c58bd 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -1035,6 +1035,13 @@ config USER_NS
+>  	help
+>  	  This allows containers, i.e. vservers, to use user namespaces
+>  	  to provide different user info for different servers.
+> +
+> +	  When user namespaces are enabled in the kernel it is
+> +	  recommended that the MEMCG and MEMCG_KMEM options also be
+> +	  enabled and that user-space use the memory control groups to
+> +	  limit the amount of memory a memory unprivileged users can
+> +	  use.
+> +
+>  	  If unsure, say N.
+>  
+>  config PID_NS
+> -- 
+> 1.7.5.4
