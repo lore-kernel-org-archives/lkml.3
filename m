@@ -1,80 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab3AZAZU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 19:25:20 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:60729 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754319Ab3AZAZQ (ORCPT
+	id S1754937Ab3AZAgU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 19:36:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46594 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753468Ab3AZAgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 19:25:16 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: James Hogan <james.hogan@imgtec.com>
-Subject: Re: [PATCH v3 00/44] Meta Linux Kernel Port
-Date: Sat, 26 Jan 2013 00:25:09 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-1-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com> <5102BB38.3050207@imgtec.com>
-In-Reply-To: <5102BB38.3050207@imgtec.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Fri, 25 Jan 2013 19:36:17 -0500
+Date: Fri, 25 Jan 2013 16:36:15 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
+        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
+        glommer@parallels.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 2/3] acpi, memory-hotplug: Extend movablemem_map ranges
+ to the end of node.
+Message-Id: <20130125163615.4f82bf9d.akpm@linux-foundation.org>
+In-Reply-To: <1359106929-3034-3-git-send-email-tangchen@cn.fujitsu.com>
+References: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1359106929-3034-3-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201301260025.10020.arnd@arndb.de>
-X-Provags-ID: V02:K0:hoHX3TYhO5goUwWGlnDJpbekKeZFd8leOmaLW2wKzpq
- oE182j0jOLaPafM5T9248c13duo87+PZxl362gGyhYbMh1BSOC
- oInHyQJ7Lp9Ig9pew2X/DSqAUKTqEAiRGqrPIDtygSAN9n2xhN
- mms4aXCx6fWz/2FBLzM6ajLgQwA+W16ARIORV/uu/gFoe+EWEi
- kEmRACEzX18OUO3Grp+O0csWoppMGmUBQARn9sY4qyBq8XC8KV
- NcvCBe0GZnZobgIAulkFe9rczimmxyB9amJrstalDg4eNRCc/w
- zqN0nhPzpI0B7lqQ1erWHayEgla52St0K2qGvZvcmkd/f8O4bk
- ng88rO72JqUT/RDcxlGo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 25 January 2013, James Hogan wrote:
-> Hi Arnd,
+On Fri, 25 Jan 2013 17:42:08 +0800
+Tang Chen <tangchen@cn.fujitsu.com> wrote:
+
+> When implementing movablemem_map boot option, we introduced an array
+> movablemem_map.map[] to store the memory ranges to be set as ZONE_MOVABLE.
 > 
-> On 10/01/13 15:30, James Hogan wrote:
-> > This patchset adds core architecture support to Linux for Imagination's
-> > Meta ATP (Meta 1) and HTP (Meta 2) processor cores. Most of the feedback
-> > from the RFC and v2 patchsets has now been addressed. All further
-> > feedback is most welcome.
-> > 
-> > The patches are based on next-20130110, and can also be found in the
-> > following git tree:
-> >   git://github.com/jahogan/metag-linux.git metag-core
+> Since ZONE_MOVABLE is the latst zone of a node, if user didn't specify
+> the whole node memory range, we need to extend it to the node end so that
+> we can use it to prevent memblock from allocating memory in the ranges
+> user didn't specify.
 > 
-> Review seems to have gone quiet. I'm fairly happy with this core
-> patchset in it's currently form (only trivial alterations required since
-> the v3 patches, e.g. some review comments and rebasing on linus/master),
-> and would like to get it into the v3.9 merge window. What's the best way
-> forward? I presume I need to get acks on each individual patch?
+> We now implement movablemem_map boot option like this:
+>         /*
+>          * For movablemem_map=nn[KMG]@ss[KMG]:
+>          *
+>          * SRAT:                |_____| |_____| |_________| |_________| ......
+>          * node id:                0       1         1           2
+>          * user specified:                |__|                 |___|
+>          * movablemem_map:                |___| |_________|    |______| ......
+>          *
+>          * Using movablemem_map, we can prevent memblock from allocating memory
+>          * on ZONE_MOVABLE at boot time.
+>          *
+>          * NOTE: In this case, SRAT info will be ingored.
+>          */
+> 
+
+The patch generates a bunch of rejects, partly due to linux-next
+changes but I think I fixed everything up OK.
+
+> index 4ddf497..f841d0e 100644
+> --- a/arch/x86/mm/srat.c
+> +++ b/arch/x86/mm/srat.c
+> @@ -141,11 +141,16 @@ static inline int save_add_info(void) {return 1;}
+>  static inline int save_add_info(void) {return 0;}
+>  #endif
+>  
+> +#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+> +extern struct movablemem_map movablemem_map;
+> +#endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+
+Well.
+
+a) we shouldn't put extern declarations in C files - put them in
+   headers so we can be assured that all compilation units agree on the
+   type.
+
+b) the ifdefs are unneeded - a unused extern declaration is OK (as
+   long as the type itself is always defined!)
+
+c) movablemem_map is already declared in memblock.h.
+
+So I zapped the above three lines.
+
+> @@ -178,9 +185,57 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+>  
+>  	node_set(node, numa_nodes_parsed);
+>  
+> -	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
+> +	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
+>  	       node, pxm,
+> -	       (unsigned long long) start, (unsigned long long) end - 1);
+> +	       (unsigned long long) start, (unsigned long long) end - 1,
+> +	       hotpluggable ? "Hot Pluggable": "");
+> +
+> +#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+> +	int overlap;
+> +	unsigned long start_pfn, end_pfn;
+
+no, we don't put declarations of locals in the middle of C statements
+like this:
+
+arch/x86/mm/srat.c: In function 'acpi_numa_memory_affinity_init':
+arch/x86/mm/srat.c:185: warning: ISO C90 forbids mixed declarations and code
+
+Did your compiler not emit this warning?
+
+I fixed this by moving the code into a new function
+"handle_movablemem".  Feel free to suggest a more appropriate name!
 
 
-I've just looked through the entire series once more and could not find
-any show-stoppers. I consider this ready for 3.9, and I'm also quite happy
-with Vineet's ARC port, although I think he is still integrating some
-feedback comments.
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: acpi-memory-hotplug-extend-movablemem_map-ranges-to-the-end-of-node-fix
 
-I'd suggest that you both ask Stephen to add the trees to linux-next
-now (I thought you had done that already, but I don't see them there
-at the moment).
+clean up code, fix build warning
 
-You don't need Acked-by statements on every single patch, but having
-more of those is certainly benefitial. When it comes to the merge
-window, please send a pull request to Linus, and keep me on Cc,
-so I can weigh in with an additional Ack to the series.
+Cc: "Brown, Len" <len.brown@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jiang Liu <jiang.liu@huawei.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Len Brown <lenb@kernel.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Wu Jianguo <wujianguo@huawei.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
 
-Until then, maybe you can have another look at each other's architecture
-trees (ARC and Meta). Since you are in exactly the same situation with
-upstream integration now, you are probably the best people to review
-the code, and you providing ACKs and constructive feedback to the other
-tree will helps others see that you are up to the job as an arch
-maintainer. I have also given a few comments to one of you that
-may actually apply to the other one just as well, but I can't remember
-now what I discussed with whom ;-)
+ arch/x86/mm/srat.c |   93 ++++++++++++++++++++++---------------------
+ 1 file changed, 49 insertions(+), 44 deletions(-)
 
-	Arnd
+diff -puN arch/x86/mm/srat.c~acpi-memory-hotplug-extend-movablemem_map-ranges-to-the-end-of-node-fix arch/x86/mm/srat.c
+--- a/arch/x86/mm/srat.c~acpi-memory-hotplug-extend-movablemem_map-ranges-to-the-end-of-node-fix
++++ a/arch/x86/mm/srat.c
+@@ -142,50 +142,8 @@ static inline int save_add_info(void) {r
+ #endif
+ 
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+-extern struct movablemem_map movablemem_map;
+-#endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+-
+-/* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
+-int __init
+-acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
++static void __init handle_movablemem(int node, u64 start, u64 end)
+ {
+-	u64 start, end;
+-	u32 hotpluggable;
+-	int node, pxm;
+-
+-	if (srat_disabled())
+-		goto out_err;
+-	if (ma->header.length != sizeof(struct acpi_srat_mem_affinity))
+-		goto out_err_bad_srat;
+-	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
+-		goto out_err;
+-	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
+-	if (hotpluggable && !save_add_info())
+-		goto out_err;
+-
+-	start = ma->base_address;
+-	end = start + ma->length;
+-	pxm = ma->proximity_domain;
+-	if (acpi_srat_revision <= 1)
+-		pxm &= 0xff;
+-
+-	node = setup_node(pxm);
+-	if (node < 0) {
+-		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
+-		goto out_err_bad_srat;
+-	}
+-
+-	if (numa_add_memblk(node, start, end) < 0)
+-		goto out_err_bad_srat;
+-
+-	node_set(node, numa_nodes_parsed);
+-
+-	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
+-	       node, pxm,
+-	       (unsigned long long) start, (unsigned long long) end - 1,
+-	       hotpluggable ? "Hot Pluggable": "");
+-
+-#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ 	int overlap;
+ 	unsigned long start_pfn, end_pfn;
+ 
+@@ -229,7 +187,54 @@ acpi_numa_memory_affinity_init(struct ac
+ 			 */
+ 			insert_movablemem_map(start_pfn, end_pfn);
+ 	}
+-#endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
++}
++#else		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
++static inline void handle_movablemem(int node, u64 start, u64 end)
++{
++}
++#endif		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
++
++/* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
++int __init
++acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
++{
++	u64 start, end;
++	u32 hotpluggable;
++	int node, pxm;
++
++	if (srat_disabled())
++		goto out_err;
++	if (ma->header.length != sizeof(struct acpi_srat_mem_affinity))
++		goto out_err_bad_srat;
++	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
++		goto out_err;
++	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
++	if (hotpluggable && !save_add_info())
++		goto out_err;
++
++	start = ma->base_address;
++	end = start + ma->length;
++	pxm = ma->proximity_domain;
++	if (acpi_srat_revision <= 1)
++		pxm &= 0xff;
++
++	node = setup_node(pxm);
++	if (node < 0) {
++		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
++		goto out_err_bad_srat;
++	}
++
++	if (numa_add_memblk(node, start, end) < 0)
++		goto out_err_bad_srat;
++
++	node_set(node, numa_nodes_parsed);
++
++	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
++	       node, pxm,
++	       (unsigned long long) start, (unsigned long long) end - 1,
++	       hotpluggable ? "Hot Pluggable": "");
++
++	handle_movablemem(node, start, end);
+ 
+ 	return 0;
+ out_err_bad_srat:
+diff -puN include/linux/mm.h~acpi-memory-hotplug-extend-movablemem_map-ranges-to-the-end-of-node-fix include/linux/mm.h
+diff -puN mm/page_alloc.c~acpi-memory-hotplug-extend-movablemem_map-ranges-to-the-end-of-node-fix mm/page_alloc.c
+_
+
