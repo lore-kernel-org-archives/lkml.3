@@ -1,86 +1,496 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab3AZUG1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 15:06:27 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:48719 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754474Ab3AZUGW (ORCPT
+	id S1754236Ab3AZUOV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 15:14:21 -0500
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:41383 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909Ab3AZUOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 15:06:22 -0500
+	Sat, 26 Jan 2013 15:14:18 -0500
+Date: Sat, 26 Jan 2013 15:14:35 -0500
+From: Jake Champlin <jake.champlin.27@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devendra.aaru@gmail.com, jake.champlin.27@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: csr: csr_msgconv: Fixed Multiple Coding Style Issues
+Message-ID: <20130126201431.GA18436@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130126075357.GA3205@udknight>
-References: <20130126075357.GA3205@udknight>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 26 Jan 2013 12:06:01 -0800
-X-Google-Sender-Auth: mVhNcA63MNbUTqJGa6g8nbsMUVU
-Message-ID: <CA+55aFyJ0tsvJeujyRwX=q5KPKjeejmvQOMTCJxDcaEmYprpvg@mail.gmail.com>
-Subject: Re: [PATCH]smp: Fix send func call IPI to empty cpu mask
-To: Wang YanQing <udknight@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, mina86@mina86.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Jan Beulich <JBeulich@novell.com>,
-        Milton Miller <miltonm@bga.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 11:53 PM, Wang YanQing <udknight@gmail.com> wrote:
-> I get below warning every day with 3.7,
-> one or two times per day.
->
-> [ 2235.186027] WARNING: at /mnt/sda7/kernel/linux/arch/x86/kernel/apic/ipi.c:109 default_send_IPI_mask_logical+0x2f/0xb8()
-> [ 2235.186030] Hardware name: Aspire 4741
-> [ 2235.186032] empty IPI mask
-> [ 2235.186079]  [<c1015cbc>] native_send_call_func_ipi+0x4f/0x57
-> [ 2235.186087]  [<c1053453>] smp_call_function_many+0x191/0x1a9
-> [ 2235.186097]  [<c101e074>] native_flush_tlb_others+0x21/0x24
-> [ 2235.186101]  [<c101e0da>] flush_tlb_page+0x63/0x89
-> [ 2235.186105]  [<c101d360>] ptep_set_access_flags+0x20/0x26
-> [ 2235.186111]  [<c108fadd>] do_wp_page+0x234/0x502
-> [ 2235.186121]  [<c1090825>] handle_pte_fault+0x50d/0x54c
-> [ 2235.186148]  [<c1090934>] handle_mm_fault+0xd0/0xe2
-> [ 2235.186153]  [<c12dd143>] __do_page_fault+0x411/0x42d
-> [ 2235.186166]  [<c12dd167>] do_page_fault+0x8/0xa
-> [ 2235.186170]  [<c12db31a>] error_code+0x5a/0x60
->
-> This patch fix it.
->
-> This patch also fix some system hang problem:
-> If the data->cpumask been cleared after pass
->
->         if (WARN_ONCE(!mask, "empty IPI mask"))
->                 return;
-> then the problem 83d349f3 fix will happen again.
+Resolved 150 Style Errors and 202 Coding Style Warnings.
 
-Hmm. We have very consciously tried to avoid the extra copy, although
-I'm not entirely sure why (it might possibly hurt on the MAXSMP
-configuration).
+Signed-off-by: Jake Champlin <jake.champlin.27@gmail.com>
+---
+ drivers/staging/csr/csr_msgconv.c | 391 ++++++++++++++++----------------------
+ 1 file changed, 168 insertions(+), 223 deletions(-)
 
-See for example commit 723aae25d5cd ("smp_call_function_many: handle
-concurrent clearing of mask") which fixed another version of this
-problem.
+diff --git a/drivers/staging/csr/csr_msgconv.c b/drivers/staging/csr/csr_msgconv.c
+index db5e845..4f96edb 100644
+--- a/drivers/staging/csr/csr_msgconv.c
++++ b/drivers/staging/csr/csr_msgconv.c
+@@ -1,10 +1,10 @@
+ /*****************************************************************************
+ 
+-            (c) Cambridge Silicon Radio Limited 2010
+-            All rights reserved and confidential information of CSR
++	(c) Cambridge Silicon Radio Limited 2010
++	All rights reserved and confidential information of CSR
+ 
+-            Refer to LICENSE.txt included with this source for details
+-            on the license terms.
++	Refer to LICENSE.txt included with this source for details
++	on the license terms.
+ 
+ *****************************************************************************/
+ 
+@@ -19,273 +19,218 @@ static CsrMsgConvEntry *converter;
+ 
+ CsrMsgConvPrimEntry *CsrMsgConvFind(u16 primType)
+ {
+-    CsrMsgConvPrimEntry *ptr = NULL;
+-
+-    if (converter)
+-    {
+-        ptr = converter->profile_converters;
+-        while (ptr)
+-        {
+-            if (ptr->primType == primType)
+-            {
+-                break;
+-            }
+-            else
+-            {
+-                ptr = ptr->next;
+-            }
+-        }
+-    }
+-
+-    return ptr;
++	CsrMsgConvPrimEntry *ptr = NULL;
++
++	if (converter) {
++		ptr = converter->profile_converters;
++	while (ptr) {
++		if (ptr->primType == primType)
++			break;
++		else
++			ptr = ptr->next;
++	}
++	}
++
++	return ptr;
+ }
+ 
+-static const CsrMsgConvMsgEntry *find_msg_converter(CsrMsgConvPrimEntry *ptr, u16 msgType)
++static const CsrMsgConvMsgEntry *find_msg_converter(CsrMsgConvPrimEntry *ptr,
++		u16 msgType)
+ {
+-    const CsrMsgConvMsgEntry *cv = ptr->conv;
+-    if (ptr->lookupFunc)
+-    {
+-        return (const CsrMsgConvMsgEntry *) ptr->lookupFunc((CsrMsgConvMsgEntry *) cv, msgType);
+-    }
+-
+-    while (cv)
+-    {
+-        if (cv->serFunc == NULL)
+-        {
+-            /* We've reached the end of the chain */
+-            cv = NULL;
+-            break;
+-        }
+-
+-        if (cv->msgType == msgType)
+-        {
+-            break;
+-        }
+-        else
+-        {
+-            cv++;
+-        }
+-    }
+-
+-    return cv;
++	const CsrMsgConvMsgEntry *cv = ptr->conv;
++	if (ptr->lookupFunc)
++		return (const CsrMsgConvMsgEntry *)
++			ptr->lookupFunc((CsrMsgConvMsgEntry *) cv, msgType);
++
++	while (cv) {
++		if (cv->serFunc == NULL) {
++			/* We've reached the end of the chain */
++			cv = NULL;
++			break;
++		}
++
++		if (cv->msgType == msgType)
++			break;
++		else
++			cv++;
++	}
++
++	return cv;
+ }
+ 
+ static void *deserialize_data(u16 primType,
+-    size_t length,
+-    u8 *data)
++	size_t length,
++	u8 *data)
+ {
+-    CsrMsgConvPrimEntry *ptr;
+-    u8 *ret;
+-
+-    ptr = CsrMsgConvFind(primType);
+-
+-    if (ptr)
+-    {
+-        const CsrMsgConvMsgEntry *cv;
+-        u16 msgId = 0;
+-        size_t offset = 0;
+-        CsrUint16Des(&msgId, data, &offset);
+-
+-        cv = find_msg_converter(ptr, msgId);
+-        if (cv)
+-        {
+-            ret = cv->deserFunc(data, length);
+-        }
+-        else
+-        {
+-            ret = NULL;
+-        }
+-    }
+-    else
+-    {
+-        ret = NULL;
+-    }
+-
+-    return ret;
++	CsrMsgConvPrimEntry *ptr;
++	u8 *ret;
++
++	ptr = CsrMsgConvFind(primType);
++
++	if (ptr) {
++		const CsrMsgConvMsgEntry *cv;
++		u16 msgId = 0;
++		size_t offset = 0;
++		CsrUint16Des(&msgId, data, &offset);
++
++		cv = find_msg_converter(ptr, msgId);
++		if (cv)
++			ret = cv->deserFunc(data, length);
++		else
++			ret = NULL;
++	} else
++		ret = NULL;
++
++	return ret;
+ }
+ 
+ static size_t sizeof_message(u16 primType, void *msg)
+ {
+-    CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
+-    size_t ret;
+-
+-    if (ptr)
+-    {
+-        const CsrMsgConvMsgEntry *cv;
+-        u16 msgId = *(u16 *) msg;
+-
+-        cv = find_msg_converter(ptr, msgId);
+-        if (cv)
+-        {
+-            ret = cv->sizeofFunc(msg);
+-        }
+-        else
+-        {
+-            ret = 0;
+-        }
+-    }
+-    else
+-    {
+-        ret = 0;
+-    }
+-
+-    return ret;
++	CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
++	size_t ret;
++
++	if (ptr) {
++		const CsrMsgConvMsgEntry *cv;
++		u16 msgId = *(u16 *) msg;
++
++		cv = find_msg_converter(ptr, msgId);
++		if (cv)
++			ret = cv->sizeofFunc(msg);
++		else
++			ret = 0;
++	} else
++		ret = 0;
++
++	return ret;
+ }
+ 
+ static u8 free_message(u16 primType, u8 *data)
+ {
+-    CsrMsgConvPrimEntry *ptr;
+-    u8 ret;
+-
+-    ptr = CsrMsgConvFind(primType);
+-
+-    if (ptr)
+-    {
+-        const CsrMsgConvMsgEntry *cv;
+-        u16 msgId = *(u16 *) data;
+-
+-        cv = find_msg_converter(ptr, msgId);
+-        if (cv)
+-        {
+-            cv->freeFunc(data);
+-            ret = TRUE;
+-        }
+-        else
+-        {
+-            ret = FALSE;
+-        }
+-    }
+-    else
+-    {
+-        ret = FALSE;
+-    }
+-
+-    return ret;
++	CsrMsgConvPrimEntry *ptr;
++	u8 ret;
++
++	ptr = CsrMsgConvFind(primType);
++
++	if (ptr) {
++		const CsrMsgConvMsgEntry *cv;
++		u16 msgId = *(u16 *) data;
++
++		cv = find_msg_converter(ptr, msgId);
++	if (cv) {
++		cv->freeFunc(data);
++		ret = TRUE;
++	} else
++		ret = FALSE;
++	} else
++		ret = FALSE;
++
++	return ret;
+ }
+ 
+ static u8 *serialize_message(u16 primType,
+-    void *msg,
+-    size_t *length,
+-    u8 *buffer)
++	void *msg,
++	size_t *length,
++	u8 *buffer)
+ {
+-    CsrMsgConvPrimEntry *ptr;
+-    u8 *ret;
+-
+-    ptr = CsrMsgConvFind(primType);
+-
+-    *length = 0;
+-
+-    if (ptr)
+-    {
+-        const CsrMsgConvMsgEntry *cv;
+-
+-        cv = find_msg_converter(ptr, *(u16 *) msg);
+-        if (cv)
+-        {
+-            ret = cv->serFunc(buffer, length, msg);
+-        }
+-        else
+-        {
+-            ret = NULL;
+-        }
+-    }
+-    else
+-    {
+-        ret = NULL;
+-    }
+-
+-    return ret;
++	CsrMsgConvPrimEntry *ptr;
++	u8 *ret;
++
++	ptr = CsrMsgConvFind(primType);
++
++	*length = 0;
++
++	if (ptr) {
++		const CsrMsgConvMsgEntry *cv;
++
++		cv = find_msg_converter(ptr, *(u16 *) msg);
++		if (cv)
++			ret = cv->serFunc(buffer, length, msg);
++		else
++			ret = NULL;
++	} else
++		ret = NULL;
++
++	return ret;
+ }
+ 
+ size_t CsrMsgConvSizeof(u16 primType, void *msg)
+ {
+-    return sizeof_message(primType, msg);
++	return sizeof_message(primType, msg);
+ }
+ 
+-u8 *CsrMsgConvSerialize(u8 *buffer, size_t maxBufferOffset, size_t *offset, u16 primType, void *msg)
++u8 *CsrMsgConvSerialize(u8 *buffer, size_t maxBufferOffset,
++		size_t *offset, u16 primType, void *msg)
+ {
+-    if (converter)
+-    {
+-        size_t serializedLength;
+-        u8 *bufSerialized;
+-        u8 *bufOffset = &buffer[*offset];
+-        bufSerialized = converter->serialize_message(primType, msg, &serializedLength, bufOffset);
+-        *offset += serializedLength;
+-        return bufSerialized;
+-    }
+-    else
+-    {
+-        return NULL;
+-    }
++	if (converter) {
++		size_t serializedLength;
++		u8 *bufSerialized;
++		u8 *bufOffset = &buffer[*offset];
++		bufSerialized = converter->serialize_message(primType, msg,
++			&serializedLength, bufOffset);
++		*offset += serializedLength;
++		return bufSerialized;
++	} else
++		return NULL;
+ }
+ 
+ /* Insert profile converter at head of converter list. */
+ void CsrMsgConvInsert(u16 primType, const CsrMsgConvMsgEntry *ce)
+ {
+-    CsrMsgConvPrimEntry *pc;
+-    pc = CsrMsgConvFind(primType);
+-
+-    if (pc)
+-    {
+-        /* Already registered. Do nothing */
+-    }
+-    else
+-    {
+-        pc = kmalloc(sizeof(*pc), GFP_KERNEL);
+-        pc->primType = primType;
+-        pc->conv = ce;
+-        pc->lookupFunc = NULL;
+-        pc->next = converter->profile_converters;
+-        converter->profile_converters = pc;
+-    }
++	CsrMsgConvPrimEntry *pc;
++	pc = CsrMsgConvFind(primType);
++
++	if (pc) {
++		/* Already registered. Do nothing */
++	} else {
++		pc = kmalloc(sizeof(*pc), GFP_KERNEL);
++		pc->primType = primType;
++		pc->conv = ce;
++		pc->lookupFunc = NULL;
++		pc->next = converter->profile_converters;
++		converter->profile_converters = pc;
++	}
+ }
+ EXPORT_SYMBOL_GPL(CsrMsgConvInsert);
+ 
+ CsrMsgConvMsgEntry *CsrMsgConvFindEntry(u16 primType, u16 msgType)
+ {
+-    CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
+-    if (ptr)
+-    {
+-        return (CsrMsgConvMsgEntry *) find_msg_converter(ptr, msgType);
+-    }
+-    return NULL;
++	CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
++	if (ptr)
++		return (CsrMsgConvMsgEntry *) find_msg_converter(ptr, msgType);
++	return NULL;
+ }
+ EXPORT_SYMBOL_GPL(CsrMsgConvFindEntry);
+ 
+ CsrMsgConvMsgEntry *CsrMsgConvFindEntryByMsg(u16 primType, const void *msg)
+ {
+-    CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
+-    if (ptr && msg)
+-    {
+-        u16 msgType = *((u16 *) msg);
+-        return (CsrMsgConvMsgEntry *) find_msg_converter(ptr, msgType);
+-    }
+-    return NULL;
++	CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
++	if (ptr && msg) {
++		u16 msgType = *((u16 *) msg);
++		return (CsrMsgConvMsgEntry *) find_msg_converter(ptr, msgType);
++	}
++	return NULL;
+ }
+ 
+-void CsrMsgConvCustomLookupRegister(u16 primType, CsrMsgCustomLookupFunc *lookupFunc)
++void CsrMsgConvCustomLookupRegister(u16 primType,
++	CsrMsgCustomLookupFunc *lookupFunc)
+ {
+-    CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
+-    if (ptr)
+-    {
+-        ptr->lookupFunc = lookupFunc;
+-    }
++	CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
++	if (ptr)
++		ptr->lookupFunc = lookupFunc;
+ }
+ EXPORT_SYMBOL_GPL(CsrMsgConvCustomLookupRegister);
+ 
+ CsrMsgConvEntry *CsrMsgConvInit(void)
+ {
+-    if (!converter)
+-    {
+-        converter = kmalloc(sizeof(CsrMsgConvEntry), GFP_KERNEL);
+-
+-        converter->profile_converters = NULL;
+-        converter->free_message = free_message;
+-        converter->sizeof_message = sizeof_message;
+-        converter->serialize_message = serialize_message;
+-        converter->deserialize_data = deserialize_data;
+-    }
+-
+-    return converter;
++	if (!converter) {
++		converter = kmalloc(sizeof(CsrMsgConvEntry), GFP_KERNEL);
++		converter->profile_converters = NULL;
++		converter->free_message = free_message;
++		converter->sizeof_message = sizeof_message;
++		converter->serialize_message = serialize_message;
++		converter->deserialize_data = deserialize_data;
++	}
++
++	return converter;
+ }
+ EXPORT_SYMBOL_GPL(CsrMsgConvInit);
+-- 
+1.8.1.1
 
-But I do agree that it looks like the copy is required, simply because
-- as you say - once we've done the "list_add_rcu()" to add it to the
-queue, we can have (another) IPI to the target CPU that can now see it
-and clear the mask.
 
-So by the time we get to actually send the IPI, the mask might have
-been cleared by another IPI. So I do agree that your patch seems
-correct, but I really really want to run it by other people.
-
-Guys? Original patch on lkml. The other possible fix might be to take
-the &call_function.lock earlier in
-generic_smp_call_function_interrupt(), so that we can never clear the
-bit while somebody is adding entries to the list... But I think it
-very much tries to avoid that on purpose right now, with only the last
-CPU responding to that IPI taking the lock.
-
-So copying the IPI mask seems to be the reasonable approach. Comments?
-
-                Linus
+-- 
+Jake Champlin
+jake.champlin.27@gmail.com
+<MuttClient>
