@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab3AZEWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 23:22:13 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:57171 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab3AZEWJ (ORCPT
+	id S1752919Ab3AZEh7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 23:37:59 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:33373 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab3AZEh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 23:22:09 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if fat_dget() fails
-References: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
-	<878v9f5ugn.fsf@devron.myhome.or.jp>
-	<CAKYAXd-ydXkwDq6vkECEKPUQiNgg2+GKbL+ah9sn+uqr8BT1kQ@mail.gmail.com>
-	<87k3sy17vk.fsf@devron.myhome.or.jp>
-	<CAKYAXd8=7BG8NsVyvUP5xW48Y9FJpD7M95_MiJVGcwYOfYsrLA@mail.gmail.com>
-	<87txs0x45r.fsf@devron.myhome.or.jp>
-	<CAKYAXd8OP_FXxJWHESW_bCY1hGQuZPMJYOkLkmQ4fOkDhGO8xw@mail.gmail.com>
-	<CAKYAXd9NXVsBTMpTUWxN_10z1Ozt47f6Ghvsv9rbp_Y8tVMg2A@mail.gmail.com>
-	<87623ydnvq.fsf@devron.myhome.or.jp>
-	<CAKYAXd8GgrG+cMN_wQDFLiuXoBPbR7c6N9eZqGCrK-OH3HpuZA@mail.gmail.com>
-	<CAKYAXd9OhKDh5r6O=ACyDez1B2S=DB0Eo2-cSNuM1vaURmFNoQ@mail.gmail.com>
-	<877gobn7fy.fsf@devron.myhome.or.jp>
-	<CAKYAXd8SB7tz82Y57TKcngZC8vzvy1S=SAhzurA92jyobaVtNg@mail.gmail.com>
-	<87obhnlmkt.fsf@devron.myhome.or.jp>
-	<87k3sblmj2.fsf@devron.myhome.or.jp>
-	<CAKYAXd-7kq9EoBE7e5sGXBeA8u914moz15-ubFimczGyiznUCA@mail.gmail.com>
-	<87r4lgxgee.fsf@devron.myhome.or.jp>
-	<CAKYAXd_Lg8twC3XVX8S3Ncm0ghicvXD0Q75-8amuO2Lz40v8Rw@mail.gmail.com>
-Date: Sat, 26 Jan 2013 13:22:02 +0900
-In-Reply-To: <CAKYAXd_Lg8twC3XVX8S3Ncm0ghicvXD0Q75-8amuO2Lz40v8Rw@mail.gmail.com>
-	(Namjae Jeon's message of "Tue, 22 Jan 2013 19:31:45 +0900")
-Message-ID: <8738xoshed.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Fri, 25 Jan 2013 23:37:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <5102E2F4.80604@gmail.com>
+References: <1359097268-22779-1-git-send-email-prabhakar.lad@ti.com>
+ <1359097268-22779-2-git-send-email-prabhakar.lad@ti.com> <5102E2F4.80604@gmail.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Sat, 26 Jan 2013 10:07:36 +0530
+Message-ID: <CA+V-a8vpZ_UmmsW6D2PBKqg1Nob2PJdVwRDCjdDaPinmjVz8TA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] media: add support for decoder subdevs along with
+ sensor and others
+To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+Hi Sylwester,
 
-> 2013/1/20, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
->> Namjae Jeon <linkinjeon@gmail.com> writes:
->>
->>> We rewrite patch as your suggestion using dummy inode. Would please
->>> you review below patch code ?
->>
->> Looks like good as initial. Clean and shorter.
->>
->> Next is, we have to think about race. I.e. if real inode was made, what
->> happens? Is there no race?
-> Hi OGAWA.
+On Sat, Jan 26, 2013 at 1:24 AM, Sylwester Nawrocki
+<sylvester.nawrocki@gmail.com> wrote:
+> Hi Prahakar,
 >
-> Although checking several routines to check hang case you said, I
-> didn't find anything.
-> And There is no any race on test result also. Am I missing something ?
-> Let me know your opinion.
+>
+> On 01/25/2013 08:01 AM, Prabhakar Lad wrote:
+>>
+>> From: Manjunath Hadli<manjunath.hadli@ti.com>
+>>
+>> A lot of SOCs including Texas Instruments Davinci family mainly use
+>> video decoders as input devices. Here the initial subdevice node
+>> from where the input really comes is this decoder, for which support
+>> is needed as part of the Media Controller infrastructure. This patch
+>> adds an additional flag to include the decoders along with others,
+>> such as the sensor and lens.
+>>
+>> Signed-off-by: Manjunath Hadli<manjunath.hadli@ti.com>
+>> Signed-off-by: Lad, Prabhakar<prabhakar.lad@ti.com>
+>> ---
+>>   include/uapi/linux/media.h |    1 +
+>>   1 files changed, 1 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/uapi/linux/media.h b/include/uapi/linux/media.h
+>> index 0ef8833..fa44ed9 100644
+>> --- a/include/uapi/linux/media.h
+>> +++ b/include/uapi/linux/media.h
+>> @@ -56,6 +56,7 @@ struct media_device_info {
+>>   #define MEDIA_ENT_T_V4L2_SUBDEV_SENSOR        (MEDIA_ENT_T_V4L2_SUBDEV +
+>> 1)
+>>   #define MEDIA_ENT_T_V4L2_SUBDEV_FLASH (MEDIA_ENT_T_V4L2_SUBDEV + 2)
+>>   #define MEDIA_ENT_T_V4L2_SUBDEV_LENS  (MEDIA_ENT_T_V4L2_SUBDEV + 3)
+>> +#define MEDIA_ENT_T_V4L2_SUBDEV_DECODER        (MEDIA_ENT_T_V4L2_SUBDEV +
+>> 4)
+>
+>
+> Such a new entity type needs to be documented in the media DocBook [1].
+> It probably also deserves a comment here, as DECODER isn't that obvious
+> like the other already existing entity types. I heard people referring
+> to a device that encodes analog (composite) video signal into its digital
+> representation as an ENCODER. :)
+>
+>
+Thanks for pointing it :), I'll document it and post a v2.
 
-Hm, it's read-only. So, there may not be race for now, I'm sure there is
-race on write path though.
+Regards,
+--Prabhakar Lad
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> [1] http://hverkuil.home.xs4all.nl/spec/media.html#media-ioc-enum-entities
+>
+> --
+>
+> Regards,
+> Sylwester
