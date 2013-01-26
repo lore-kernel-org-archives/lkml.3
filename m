@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751210Ab3AZFwA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 00:52:00 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55344 "EHLO
+	id S1751831Ab3AZFwR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 00:52:17 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47743 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab3AZFv7 (ORCPT
+	with ESMTP id S1751293Ab3AZFwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 00:51:59 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-af-51036efcac3b
+	Sat, 26 Jan 2013 00:52:06 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-e4-51036f04a936
 From: Kyungsik Lee <kyungsik.lee@lge.com>
 To: Russell King <linux@arm.linux.org.uk>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -23,79 +23,426 @@ Cc: Nitin Gupta <nitingupta910@gmail.com>,
         chan.jeong@lge.com, gunho.lee@lge.com, minchan.kim@lge.com,
         namhyung.kim@lge.com, raphael.andy.lee@gmail.com,
         Kyungsik Lee <kyungsik.lee@lge.com>
-Subject: =?UTF-8?q?=5BRFC=20PATCH=200/4=5D=20Add=20support=20for=20LZ4-compressed=20kernels?=
-Date: Sat, 26 Jan 2013 14:50:43 +0900
-Message-Id: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>
+Subject: [RFC PATCH 2/4] lib: add support for LZ4-compressed kernels
+Date: Sat, 26 Jan 2013 14:50:45 +0900
+Message-Id: <1359179447-31118-3-git-send-email-kyungsik.lee@lge.com>
 X-Mailer: git-send-email 1.8.0.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>
+References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset is for supporting LZ4 compressed kernel and initial ramdisk on
-the x86 and ARM architectures.
+This patch adds support for extracting LZ4-compressed kernel images,
+as well as LZ4-compressed ramdisk images in the kernel boot process.
 
-According to http://code.google.com/p/lz4/, LZ4 is a very fast lossless
-compression algorithm and also features an extremely fast decoder.
+This depends on the patch below
+decompressors: add lz4 decompressor module
 
-Kernel Decompression APIs are based on implementation by Yann Collet
-(http://code.google.com/p/lz4/source/checkout).
-De/compression Tools are also provided from the site above.
-
-The initial test result on ARM(v7) based board shows that the size of kernel
-with LZ4 compressed is 8% bigger than LZO compressed  but the decompressing
-speed is faster(especially under the enabled unaligned memory access).
-
-Test: 3.4 based kernel built with many modules
-Uncompressed kernel size: 13MB
-lzo: 6.3MB, 301ms
-lz4: 6.8MB, 251ms(167ms, with enabled unaligned memory access)
-
-It seems that it’s worth trying LZ4 compressed kernel image or ramdisk 
-for making the kernel boot more faster.
-
-Thanks,
-Kyungsik
-
-
-Kyungsik Lee (4):
-  decompressors: add lz4 decompressor module
-  lib: add support for LZ4-compressed kernels
-  arm: add support for LZ4-compressed kernels
-  x86: add support for LZ4-compressed kernels
-
- arch/arm/Kconfig                      |   1 +
- arch/arm/boot/compressed/.gitignore   |   1 +
- arch/arm/boot/compressed/Makefile     |   3 +-
- arch/arm/boot/compressed/decompress.c |   4 +
- arch/arm/boot/compressed/piggy.lz4.S  |   6 +
- arch/x86/Kconfig                      |   1 +
- arch/x86/boot/compressed/Makefile     |   5 +-
- arch/x86/boot/compressed/misc.c       |   4 +
- include/linux/decompress/unlz4.h      |  10 ++
- include/linux/lz4.h                   |  62 +++++++++++
- init/Kconfig                          |  13 ++-
- lib/Kconfig                           |   7 ++
- lib/Makefile                          |   2 +
- lib/decompress.c                      |   5 +
- lib/decompress_unlz4.c                | 199 ++++++++++++++++++++++++++++++++++
- lib/lz4/Makefile                      |   1 +
- lib/lz4/lz4_decompress.c              | 199 ++++++++++++++++++++++++++++++++++
- lib/lz4/lz4defs.h                     | 129 ++++++++++++++++++++++
- scripts/Makefile.lib                  |   5 +
- usr/Kconfig                           |   9 ++
- 20 files changed, 663 insertions(+), 3 deletions(-)
- create mode 100644 arch/arm/boot/compressed/piggy.lz4.S
+Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
+---
+ include/linux/decompress/unlz4.h |  10 ++
+ init/Kconfig                     |  13 ++-
+ lib/Kconfig                      |   7 ++
+ lib/Makefile                     |   2 +
+ lib/decompress.c                 |   5 +
+ lib/decompress_unlz4.c           | 199 +++++++++++++++++++++++++++++++++++++++
+ lib/lz4/Makefile                 |   1 +
+ lib/lz4/lz4_decompress.c         |   2 +-
+ scripts/Makefile.lib             |   5 +
+ usr/Kconfig                      |   9 ++
+ 10 files changed, 251 insertions(+), 2 deletions(-)
  create mode 100644 include/linux/decompress/unlz4.h
- create mode 100644 include/linux/lz4.h
  create mode 100644 lib/decompress_unlz4.c
  create mode 100644 lib/lz4/Makefile
- create mode 100644 lib/lz4/lz4_decompress.c
- create mode 100644 lib/lz4/lz4defs.h
 
+diff --git a/include/linux/decompress/unlz4.h b/include/linux/decompress/unlz4.h
+new file mode 100644
+index 0000000..d5b68bf
+--- /dev/null
++++ b/include/linux/decompress/unlz4.h
+@@ -0,0 +1,10 @@
++#ifndef DECOMPRESS_UNLZ4_H
++#define DECOMPRESS_UNLZ4_H
++
++int unlz4(unsigned char *inbuf, int len,
++	int(*fill)(void*, unsigned int),
++	int(*flush)(void*, unsigned int),
++	unsigned char *output,
++	int *pos,
++	void(*error)(char *x));
++#endif
+diff --git a/init/Kconfig b/init/Kconfig
+index 1aefe1a..be3753e 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -102,10 +102,13 @@ config HAVE_KERNEL_XZ
+ config HAVE_KERNEL_LZO
+ 	bool
+ 
++config HAVE_KERNEL_LZ4
++	bool
++
+ choice
+ 	prompt "Kernel compression mode"
+ 	default KERNEL_GZIP
+-	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO
++	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
+ 	help
+ 	  The linux kernel is a kind of self-extracting executable.
+ 	  Several compression algorithms are available, which differ
+@@ -172,6 +175,14 @@ config KERNEL_LZO
+ 	  size is about 10% bigger than gzip; however its speed
+ 	  (both compression and decompression) is the fastest.
+ 
++config KERNEL_LZ4
++	bool "LZ4"
++	depends on HAVE_KERNEL_LZ4
++	help
++	  Its compression ratio is worse than LZO. The size of the kernel
++	  is about 5% bigger than LZO. But the decompression speed is
++	  faster than LZO.
++
+ endchoice
+ 
+ config DEFAULT_HOSTNAME
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 75cdb77..b108047 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -189,6 +189,9 @@ config LZO_COMPRESS
+ config LZO_DECOMPRESS
+ 	tristate
+ 
++config LZ4_DECOMPRESS
++	tristate
++
+ source "lib/xz/Kconfig"
+ 
+ #
+@@ -213,6 +216,10 @@ config DECOMPRESS_LZO
+ 	select LZO_DECOMPRESS
+ 	tristate
+ 
++config DECOMPRESS_LZ4
++	select LZ4_DECOMPRESS
++	tristate
++
+ #
+ # Generic allocator support is selected if needed
+ #
+diff --git a/lib/Makefile b/lib/Makefile
+index 02ed6c0..c2073bf 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -72,6 +72,7 @@ obj-$(CONFIG_REED_SOLOMON) += reed_solomon/
+ obj-$(CONFIG_BCH) += bch.o
+ obj-$(CONFIG_LZO_COMPRESS) += lzo/
+ obj-$(CONFIG_LZO_DECOMPRESS) += lzo/
++obj-$(CONFIG_LZ4_DECOMPRESS) += lz4/
+ obj-$(CONFIG_XZ_DEC) += xz/
+ obj-$(CONFIG_RAID6_PQ) += raid6/
+ 
+@@ -80,6 +81,7 @@ lib-$(CONFIG_DECOMPRESS_BZIP2) += decompress_bunzip2.o
+ lib-$(CONFIG_DECOMPRESS_LZMA) += decompress_unlzma.o
+ lib-$(CONFIG_DECOMPRESS_XZ) += decompress_unxz.o
+ lib-$(CONFIG_DECOMPRESS_LZO) += decompress_unlzo.o
++lib-$(CONFIG_DECOMPRESS_LZ4) += decompress_unlz4.o
+ 
+ obj-$(CONFIG_TEXTSEARCH) += textsearch.o
+ obj-$(CONFIG_TEXTSEARCH_KMP) += ts_kmp.o
+diff --git a/lib/decompress.c b/lib/decompress.c
+index 31a8042..c70810e 100644
+--- a/lib/decompress.c
++++ b/lib/decompress.c
+@@ -11,6 +11,7 @@
+ #include <linux/decompress/unxz.h>
+ #include <linux/decompress/inflate.h>
+ #include <linux/decompress/unlzo.h>
++#include <linux/decompress/unlz4.h>
+ 
+ #include <linux/types.h>
+ #include <linux/string.h>
+@@ -31,6 +32,9 @@
+ #ifndef CONFIG_DECOMPRESS_LZO
+ # define unlzo NULL
+ #endif
++#ifndef CONFIG_DECOMPRESS_LZ4
++# define unlz4 NULL
++#endif
+ 
+ struct compress_format {
+ 	unsigned char magic[2];
+@@ -45,6 +49,7 @@ static const struct compress_format compressed_formats[] __initdata = {
+ 	{ {0x5d, 0x00}, "lzma", unlzma },
+ 	{ {0xfd, 0x37}, "xz", unxz },
+ 	{ {0x89, 0x4c}, "lzo", unlzo },
++	{ {0x02, 0x21}, "lz4", unlz4 },
+ 	{ {0, 0}, NULL, NULL }
+ };
+ 
+diff --git a/lib/decompress_unlz4.c b/lib/decompress_unlz4.c
+new file mode 100644
+index 0000000..6b6a8d0
+--- /dev/null
++++ b/lib/decompress_unlz4.c
+@@ -0,0 +1,199 @@
++/*
++ * LZ4 decompressor for the Linux kernel.
++ *
++ * Linux kernel adaptation:
++ * Copyright (C) 2013, LG Electronics, Kyungsik Lee <kyungsik.lee@lge.com>
++ *
++ * Based on LZ4 implementation by Yann Collet.
++ *
++ * LZ4 - Fast LZ compression algorithm
++ * Copyright (C) 2011-2012, Yann Collet.
++ * BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are
++ * met:
++ *
++ * * Redistributions of source code must retain the above copyright
++ *   notice, this list of conditions and the following disclaimer.
++ * * Redistributions in binary form must reproduce the above
++ *   copyright notice, this list of conditions and the following disclaimer
++ *   in the documentation and/or other materials provided with the
++ *   distribution.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ *
++ *  You can contact the author at :
++ *  - LZ4 homepage : http://fastcompression.blogspot.com/p/lz4.html
++ *  - LZ4 source repository : http://code.google.com/p/lz4/
++ */
++
++#ifdef STATIC
++#define PREBOOT
++#include "lz4/lz4_decompress.c"
++#else
++#include <linux/decompress/unlz4.h>
++#endif
++
++#include <linux/types.h>
++#include <linux/lz4.h>
++#include <linux/decompress/mm.h>
++
++#include <linux/compiler.h>
++#include <asm/unaligned.h>
++
++
++#define LZ4_CHUNK_SIZE (8<<20)
++#define ARCHIVE_MAGICNUMBER 0x184C2102
++
++STATIC inline int INIT unlz4(u8 *input, int in_len,
++				int (*fill) (void *, unsigned int),
++				int (*flush) (void *, unsigned int),
++				u8 *output, int *posp,
++				void (*error) (char *x))
++{
++	int ret = -1;
++	u32 chunksize = 0;
++	u8 *inp;
++	u8 *inp_start;
++	u8 *outp;
++	int size = in_len;
++	size_t dest_len;
++
++
++	if (output) {
++		outp = output;
++	} else if (!flush) {
++		error("NULL output pointer and no flush function provided");
++		goto exit_0;
++	} else {
++		outp = large_malloc(LZ4_CHUNK_SIZE);
++		if (!outp) {
++			error("Could not allocate output buffer");
++			goto exit_0;
++		}
++	}
++
++	if (input && fill) {
++		error("Both input pointer and fill function provided,");
++		goto exit_1;
++	} else if (input) {
++		inp = input;
++	} else if (!fill) {
++		error("NULL input pointer and missing fill function");
++		goto exit_1;
++	} else {
++		inp = large_malloc(LZ4_COMPRESSBOUND(LZ4_CHUNK_SIZE));
++		if (!inp) {
++			error("Could not allocate input buffer");
++			goto exit_1;
++		}
++	}
++	inp_start = inp;
++
++	if (posp)
++		*posp = 0;
++
++	if (fill)
++		fill(inp, 4);
++
++	chunksize = get_unaligned_le32(inp);
++	if (chunksize == ARCHIVE_MAGICNUMBER) {
++		inp += 4;
++		size -= 4;
++	} else {
++		error("invalid header");
++		goto exit_2;
++	}
++
++	if (posp)
++		*posp += 4;
++
++	for (;;) {
++
++		if (fill)
++			fill(inp, 4);
++
++		chunksize = get_unaligned_le32(inp);
++		if (chunksize == ARCHIVE_MAGICNUMBER) {
++			inp += 4;
++			size -= 4;
++			if (posp)
++				*posp += 4;
++			continue;
++		}
++		inp += 4;
++		size -= 4;
++
++		if (posp)
++			*posp += 4;
++
++		if (fill) {
++			if (chunksize > LZ4_COMPRESSBOUND(LZ4_CHUNK_SIZE)) {
++				error("chunk length is longer than allocated");
++				goto exit_2;
++			}
++			fill(inp, chunksize);
++		}
++		dest_len = LZ4_CHUNK_SIZE;
++		ret = lz4_decompress(inp, chunksize, outp, &dest_len);
++		if (ret < 0) {
++			error("Decoding failed");
++			goto exit_2;
++		}
++
++		if (flush && flush(outp, dest_len) != dest_len)
++			goto exit_2;
++		if (output)
++			outp += dest_len;
++		if (posp)
++			*posp += chunksize;
++
++		inp += chunksize;
++		size -= chunksize;
++
++		if (size == 0)
++			break;
++		else if (size < 0) {
++			error("data corrupted");
++			goto exit_2;
++		}
++
++		if (fill)
++			inp = inp_start;
++	}
++
++	ret = 0;
++exit_2:
++	if (!input)
++		large_free(inp_start);
++exit_1:
++	if (!output)
++		large_free(outp);
++
++exit_0:
++	return ret;
++}
++
++#ifdef PREBOOT
++STATIC int INIT decompress(unsigned char *buf, int in_len,
++			      int(*fill)(void*, unsigned int),
++			      int(*flush)(void*, unsigned int),
++			      unsigned char *output,
++			      int *posp,
++			      void(*error)(char *x)
++	)
++{
++	return unlz4(buf, in_len - 4, fill, flush, output, posp, error);
++}
++#endif
+diff --git a/lib/lz4/Makefile b/lib/lz4/Makefile
+new file mode 100644
+index 0000000..7f548c6
+--- /dev/null
++++ b/lib/lz4/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_LZ4_DECOMPRESS) += lz4_decompress.o
+diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
+index e8beb6b..c89467a 100644
+--- a/lib/lz4/lz4_decompress.c
++++ b/lib/lz4/lz4_decompress.c
+@@ -1,7 +1,7 @@
+ /*
+  * LZ4 Decompressor for Linux kernel
+  *
+- * Copyright (C) 2013 LG Electronics Co., Ltd. (http://www.lge.com/)
++ * Copyright (C) 2013, LG Electronics, Kyungsik Lee <kyungsik.lee@lge.com>
+  *
+  * Based on LZ4 implementation by Yann Collet.
+  *
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index bdf42fd..9293ca1 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -307,6 +307,11 @@ cmd_lzo = (cat $(filter-out FORCE,$^) | \
+ 	lzop -9 && $(call size_append, $(filter-out FORCE,$^))) > $@ || \
+ 	(rm -f $@ ; false)
+ 
++quiet_cmd_lz4 = LZ4     $@
++cmd_lz4 = (cat $(filter-out FORCE,$^) | \
++	lz4 -c1 stdin stdout && $(call size_append, $(filter-out FORCE,$^))) > $@ || \
++	(rm -f $@ ; false)
++
+ # U-Boot mkimage
+ # ---------------------------------------------------------------------------
+ 
+diff --git a/usr/Kconfig b/usr/Kconfig
+index 085872b..642f503 100644
+--- a/usr/Kconfig
++++ b/usr/Kconfig
+@@ -90,6 +90,15 @@ config RD_LZO
+ 	  Support loading of a LZO encoded initial ramdisk or cpio buffer
+ 	  If unsure, say N.
+ 
++config RD_LZ4
++	bool "Support initial ramdisks compressed using LZ4" if EXPERT
++	default !EXPERT
++	depends on BLK_DEV_INITRD
++	select DECOMPRESS_LZ4
++	help
++	  Support loading of a LZ4 encoded initial ramdisk or cpio buffer
++	  If unsure, say N.
++
+ choice
+ 	prompt "Built-in initramfs compression mode" if INITRAMFS_SOURCE!=""
+ 	help
 -- 
 1.8.0.3
 
