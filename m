@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab3AZBbR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 20:31:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48561 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754654Ab3AZBbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 20:31:15 -0500
-Message-ID: <51033186.3000706@zytor.com>
-Date: Fri, 25 Jan 2013 17:29:42 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, jiang.liu@huawei.com,
-        wujianguo@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        linfeng@cn.fujitsu.com, yinghai@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
-        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
-        glommer@parallels.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] acpi, memory-hotplug: Support getting hotplug info
- from SRAT.
-References: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com> <1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com> <20130125171230.34c5a273.akpm@linux-foundation.org>
-In-Reply-To: <20130125171230.34c5a273.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755293Ab3AZBbi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 20:31:38 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:44248 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755018Ab3AZBbU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 20:31:20 -0500
+From: Tejun Heo <tj@kernel.org>
+To: akpm@linux-foundation.org
+Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 01/14] idr: make idr_destroy() imply idr_remove_all()
+Date: Fri, 25 Jan 2013 17:30:59 -0800
+Message-Id: <1359163872-1949-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1359163872-1949-1-git-send-email-tj@kernel.org>
+References: <1359163872-1949-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2013 05:12 PM, Andrew Morton wrote:
-> On Fri, 25 Jan 2013 17:42:09 +0800
-> Tang Chen <tangchen@cn.fujitsu.com> wrote:
-> 
->> NOTE: Using this way will cause NUMA performance down because the whole node
->>       will be set as ZONE_MOVABLE, and kernel cannot use memory on it.
->>       If users don't want to lose NUMA performance, just don't use it.
-> 
-> I agree with this, but it means that nobody will test any of your new code.
-> 
-> To get improved testing coverage, can you think of any temporary
-> testing-only patch which will cause testers to exercise the
-> memory-hotplug changes?
-> 
+idr is silly in quite a few ways, one of which is how it's supposed to
+be destroyed - idr_destroy() doesn't release IDs and doesn't even
+whine if the idr isn't empty.  If the caller forgets idr_remove_all(),
+it simply leaks memory.
 
-There is another problem: if ALL the nodes in the system support
-hotpluggable memory, what happens?
+Even ida gets this wrong and leaks memory on destruction.  There is
+absoltely no reason not to call idr_remove_all() from idr_destroy().
+Nobody is abusing idr_destroy() for shrinking free layer buffer and
+continues to use idr after idr_destroy(), so it's safe to do
+remove_all from destroy.
 
-	-hpa
+In the whole kernel, there is only one place where idr_remove_all() is
+legitimiately used without following idr_destroy() while there are
+quite a few places where the caller forgets either idr_remove_all() or
+idr_destroy() leaking memory.
+
+This patch makes idr_destroy() call idr_destroy_all() and updates the
+function description accordingly.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ lib/idr.c | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/lib/idr.c b/lib/idr.c
+index 6482390..1e47832 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -436,15 +436,6 @@ EXPORT_SYMBOL(idr_remove);
+ /**
+  * idr_remove_all - remove all ids from the given idr tree
+  * @idp: idr handle
+- *
+- * idr_destroy() only frees up unused, cached idp_layers, but this
+- * function will remove all id mappings and leave all idp_layers
+- * unused.
+- *
+- * A typical clean-up sequence for objects stored in an idr tree will
+- * use idr_for_each() to free all objects, if necessay, then
+- * idr_remove_all() to remove all ids, and idr_destroy() to free
+- * up the cached idr_layers.
+  */
+ void idr_remove_all(struct idr *idp)
+ {
+@@ -484,9 +475,20 @@ EXPORT_SYMBOL(idr_remove_all);
+ /**
+  * idr_destroy - release all cached layers within an idr tree
+  * @idp: idr handle
++ *
++ * Free all id mappings and all idp_layers.  After this function, @idp is
++ * completely unused and can be freed / recycled.  The caller is
++ * responsible for ensuring that no one else accesses @idp during or after
++ * idr_destroy().
++ *
++ * A typical clean-up sequence for objects stored in an idr tree will use
++ * idr_for_each() to free all objects, if necessay, then idr_destroy() to
++ * free up the id mappings and cached idr_layers.
+  */
+ void idr_destroy(struct idr *idp)
+ {
++	idr_remove_all(idp);
++
+ 	while (idp->id_free_cnt) {
+ 		struct idr_layer *p = get_from_free_list(idp);
+ 		kmem_cache_free(idr_layer_cache, p);
+-- 
+1.8.1
 
