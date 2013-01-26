@@ -1,76 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab3AZUya (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 15:54:30 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:64565 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292Ab3AZUy2 (ORCPT
+	id S1754367Ab3AZU4P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 15:56:15 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:47286 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174Ab3AZU4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 15:54:28 -0500
-Message-ID: <5104427D.2050002@googlemail.com>
-Date: Sat, 26 Jan 2013 20:54:21 +0000
-From: Chris Clayton <chris2553@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130108 Thunderbird/17.0.2
+	Sat, 26 Jan 2013 15:56:12 -0500
+Date: Sat, 26 Jan 2013 20:58:05 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Vasily Kulikov <segoon@openwall.com>
+Subject: Re: [PATCH review 1/6] userns: Avoid recursion in put_user_ns
+Message-ID: <20130126205805.GA11274@mail.hallyn.com>
+References: <87ehh8it9s.fsf@xmission.com>
+ <877gn0it3t.fsf@xmission.com>
 MIME-Version: 1.0
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-CC: linux-media@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-Subject: Re: 3.8.0-rc4+ - Oops on removing WinTV-HVR-1400 expresscard TV Tuner
-References: <51016937.1020202@googlemail.com> <510189B1.606@fold.natur.cuni.cz>
-In-Reply-To: <510189B1.606@fold.natur.cuni.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <877gn0it3t.fsf@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin,
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> 
+> When freeing a deeply nested user namespace free_user_ns calls
+> put_user_ns on it's parent which may in turn call free_user_ns again.
+> When -fno-optimize-sibling-calls is passed to gcc one stack frame per
+> user namespace is left on the stack, potentially overflowing the
+> kernel stack.  CONFIG_FRAME_POINTER forces -fno-optimize-sibling-calls
+> so we can't count on gcc to optimize this code.
+> 
+> Remove struct kref and use a plain atomic_t.  Making the code more
+> flexible and easier to comprehend.  Make the loop in free_user_ns
+> explict to guarantee that the stack does not overflow with
+> CONFIG_FRAME_POINTER enabled.
+> 
+> I have tested this fix with a simple program that uses unshare to
+> create a deeply nested user namespace structure and then calls exit.
+> With 1000 nesteuser namespaces before this change running my test
+> program causes the kernel to die a horrible death.  With 10,000,000
+> nested user namespaces after this change my test program runs to
+> completion and causes no harm.
+> 
+> Pointed-out-by: Vasily Kulikov <segoon@openwall.com>
 
-On 01/24/13 19:21, Martin Mokrejs wrote:
-> Hi Chris,
->    try to include in kernel only acpiphp and omit pciehp. Don't use modules but include
-> them statically. And try, in addition, check whether "pcie_aspm=off" in grub.conf helped.
->
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-Thanks for the tip. I had the pciehp driver installed, but it was a 
-module and not loaded. I didn't have acpiphp enabled at all. Building 
-them both in statically, appears to have papered over the cracks of the 
-oops :-)
-
->    The best would if you subscribe to linux-pci, and read my recent threads
-> about similar issues I had with express cards with Dell Vostro 3550. Further, there is
-> a lot of changes to PCI hotplug done by Yingahi Liu and Rafael Wysockij, just browse the
-> archives of linux-pci and see the pacthes and the discussion.
-
-Those discussions are way above my level of knowledge. I guess all this 
-work will be merged into mainline in due course, so I'll watch for them 
-in 3.9 or later. Unless, of course, there is a tree I could clone and 
-help test the changes with my laptop and expresscard.
-
-Hotplug isn't working at all on my Fujitsu laptop, so I can only get the 
-card recognised by rebooting with the card inserted (or by writing 1 
-to/sys/bus/pci/rescan). There seem to be a few reports on this in the 
-kernel bugzilla, so I'll look through them and see what's being done.
-
-Thanks again.
-
-Chris
-
-> Martin
->
-> Chris Clayton wrote:
->> Hi,
->>
->> I've today taken delivery of a WinTV-HVR-1400 expresscard TV Tuner and got an Oops when I removed from the expresscard slot in my laptop. I will quite understand if the response to this report is "don't do that!", but in that case, how should one remove one of these cards?
->>
->> I have attached three files:
->>
->> 1. the dmesg output from when I rebooted the machine after the oops. I have turned debugging on in the dib700p and cx23885 modules via modules options in /etc/modprobe.d/hvr1400.conf;
->>
->> 2. the .config file for the kernel that oopsed.
->>
->> 3. the text of the oops message. I've typed this up from a photograph of the screen because the laptop was locked up and there was nothing in the log files. Apologies for any typos, but I have tried to be careful.
->>
->> Assuming the answer isn't don't do that, let me know if I can provide any additional diagnostics, test any patches, etc. Please, however, cc me as I'm not subscribed.
->>
->> Chris
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
+>  include/linux/user_namespace.h |   10 +++++-----
+>  kernel/user.c                  |    4 +---
+>  kernel/user_namespace.c        |   17 +++++++++--------
+>  3 files changed, 15 insertions(+), 16 deletions(-)
+> 
+> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+> index b9bd2e6..4ce0093 100644
+> --- a/include/linux/user_namespace.h
+> +++ b/include/linux/user_namespace.h
+> @@ -21,7 +21,7 @@ struct user_namespace {
+>  	struct uid_gid_map	uid_map;
+>  	struct uid_gid_map	gid_map;
+>  	struct uid_gid_map	projid_map;
+> -	struct kref		kref;
+> +	atomic_t		count;
+>  	struct user_namespace	*parent;
+>  	kuid_t			owner;
+>  	kgid_t			group;
+> @@ -35,18 +35,18 @@ extern struct user_namespace init_user_ns;
+>  static inline struct user_namespace *get_user_ns(struct user_namespace *ns)
+>  {
+>  	if (ns)
+> -		kref_get(&ns->kref);
+> +		atomic_inc(&ns->count);
+>  	return ns;
+>  }
+>  
+>  extern int create_user_ns(struct cred *new);
+>  extern int unshare_userns(unsigned long unshare_flags, struct cred **new_cred);
+> -extern void free_user_ns(struct kref *kref);
+> +extern void free_user_ns(struct user_namespace *ns);
+>  
+>  static inline void put_user_ns(struct user_namespace *ns)
+>  {
+> -	if (ns)
+> -		kref_put(&ns->kref, free_user_ns);
+> +	if (ns && atomic_dec_and_test(&ns->count))
+> +		free_user_ns(ns);
+>  }
+>  
+>  struct seq_operations;
+> diff --git a/kernel/user.c b/kernel/user.c
+> index 33acb5e..57ebfd4 100644
+> --- a/kernel/user.c
+> +++ b/kernel/user.c
+> @@ -47,9 +47,7 @@ struct user_namespace init_user_ns = {
+>  			.count = 4294967295U,
+>  		},
+>  	},
+> -	.kref = {
+> -		.refcount	= ATOMIC_INIT(3),
+> -	},
+> +	.count = ATOMIC_INIT(3),
+>  	.owner = GLOBAL_ROOT_UID,
+>  	.group = GLOBAL_ROOT_GID,
+>  	.proc_inum = PROC_USER_INIT_INO,
+> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+> index 2b042c4..24f8ec3 100644
+> --- a/kernel/user_namespace.c
+> +++ b/kernel/user_namespace.c
+> @@ -78,7 +78,7 @@ int create_user_ns(struct cred *new)
+>  		return ret;
+>  	}
+>  
+> -	kref_init(&ns->kref);
+> +	atomic_set(&ns->count, 1);
+>  	/* Leave the new->user_ns reference with the new user namespace. */
+>  	ns->parent = parent_ns;
+>  	ns->owner = owner;
+> @@ -104,15 +104,16 @@ int unshare_userns(unsigned long unshare_flags, struct cred **new_cred)
+>  	return create_user_ns(cred);
+>  }
+>  
+> -void free_user_ns(struct kref *kref)
+> +void free_user_ns(struct user_namespace *ns)
+>  {
+> -	struct user_namespace *parent, *ns =
+> -		container_of(kref, struct user_namespace, kref);
+> +	struct user_namespace *parent;
+>  
+> -	parent = ns->parent;
+> -	proc_free_inum(ns->proc_inum);
+> -	kmem_cache_free(user_ns_cachep, ns);
+> -	put_user_ns(parent);
+> +	do {
+> +		parent = ns->parent;
+> +		proc_free_inum(ns->proc_inum);
+> +		kmem_cache_free(user_ns_cachep, ns);
+> +		ns = parent;
+> +	} while (atomic_dec_and_test(&parent->count));
+>  }
+>  EXPORT_SYMBOL(free_user_ns);
+>  
+> -- 
+> 1.7.5.4
