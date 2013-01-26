@@ -1,65 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab3AZPOn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 10:14:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52764 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752773Ab3AZPOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 10:14:40 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130126120853.GE13445@gmail.com>
-References: <5093E40902000078000A6147@nat28.tlf.novell.com> <20130124171554.GC11772@gmail.com> <51017028.3020001@zytor.com> <51024E9602000078000B97A2@nat28.tlf.novell.com> <5102DD08.9080204@zytor.com> <20130126120853.GE13445@gmail.com>
+	id S1751607Ab3AZPQs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 10:16:48 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:50891 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990Ab3AZPQq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 10:16:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 0/3, v2] x86: xor-block handling adjustments
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 26 Jan 2013 07:13:57 -0800
-To: Ingo Molnar <mingo@kernel.org>
-CC: Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
-Message-ID: <c32f98cc-5996-4d8e-a5b7-1e2053840e88@email.android.com>
+In-Reply-To: <50C8AC3C.9020908@ti.com>
+References: <1355326422-12357-1-git-send-email-matthias.bgg@gmail.com>
+	<50C8AC3C.9020908@ti.com>
+Date: Sat, 26 Jan 2013 16:16:45 +0100
+Message-ID: <CABuKBeJsHCq98Pe-BwPajbQ+2OLQpwrbtVTJe=j9thPDQCCBrg@mail.gmail.com>
+Subject: Re: [PATCH] arm: dts: Add uart1 and uart2 to igep boards.
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: tony@atomide.com, grant.likely@secretlab.ca, eballetbo@gmail.com,
+        elezegarcia@gmail.com, ebutera@gmail.com,
+        javier.martinez@collabora.co.uk, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes.
+Hi Benoit,
 
-Ingo Molnar <mingo@kernel.org> wrote:
+2012/12/12 Benoit Cousson <b-cousson@ti.com>:
+> Hi Matthias,
+>
+> On 12/12/2012 04:33 PM, Matthias Brugger wrote:
+>> This patch is a follow-up patch for Javier Martinez effort adding initial
+>> device tree support to IGEP technology devices. [1]
+>>
+>> It adds uart1 and uart2 bindings to the generic dtsi for the IGEP boards.
+>>
+>> [1] http://www.spinics.net/lists/linux-omap/msg83409.html
+>>
+>> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+>> ---
+>>  arch/arm/boot/dts/omap3-igep.dtsi |   24 ++++++++++++++++++++++++
+>>  1 file changed, 24 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/omap3-igep.dtsi b/arch/arm/boot/dts/omap3-igep.dtsi
+>> index 125fe00..c02e3c0 100644
+>> --- a/arch/arm/boot/dts/omap3-igep.dtsi
+>> +++ b/arch/arm/boot/dts/omap3-igep.dtsi
+>> @@ -27,6 +27,20 @@
+>>  };
+>>
+>>  &omap3_pmx_core {
+>> +     uart1_pins: pinmux_uart1_pins {
+>> +             pinctrl-single,pins = <
+>> +                     0x152 0x100     /* uart1_rx.uart1_rx INPUT | MODE0 */
+>> +                     0x14c 0         /* uart1_tx.uart1_tx OUTPUT | MODE0 */
+>> +             >;
+>> +     };
+>> +
+>> +     uart2_pins: pinmux_uart2_pins {
+>> +             pinctrl-single,pins = <
+>> +                     0x14a 0x100     /* uart2_rx.uart2_rx INPUT | MODE0 */
+>> +                     0x148 0         /* uart2_tx.uart2_tx OUTPUT | MODE0 */
+>> +             >;
+>> +     };
+>> +
+>>       uart3_pins: pinmux_uart3_pins {
+>>               pinctrl-single,pins = <
+>>                       0x16e 0x100     /* uart3_rx.uart3_rx INPUT | MODE0 */
+>> @@ -77,6 +91,16 @@
+>>       status = "disabled";
+>>  };
+>>
+>> +&uart1 {
+>> +       pinctrl-names = "default";
+>> +       pinctrl-0 = <&uart1_pins>;
+>> +};
+>> +
+>> +&uart2 {
+>> +       pinctrl-names = "default";
+>> +       pinctrl-0 = <&uart2_pins>;
+>> +};
+>> +
+>>  &uart3 {
+>>         pinctrl-names = "default";
+>>         pinctrl-0 = <&uart3_pins>;
+>>
+>
+> That looks good to me. I'll apply it on top of javier's series for 3.9.
+
+Can you pin-point me to the repository where this patches are in right
+now? I tried to figure it out these days, but didn't found where to
+clone the repository from.
+
+Thanks,
+Matthias
 
 >
->* H. Peter Anvin <hpa@zytor.com> wrote:
+> Thanks,
+> Benoit
 >
->> On 01/25/2013 12:21 AM, Jan Beulich wrote:
->> >>
->> >> I don't see anything wrong, except that I can't *find* patch 3/3
->either
->> >> in my inbox nor on LKML...
->> > 
->> > I can certainly resend the whole set, but our email system even
->> > got a delivery confirmation from yours on patch 3 (other than
->> > e.g. from Ingo's, and all of this identical to 0...2).
->> > 
->> > Or see https://patchwork.kernel.org/patch/1688991/, according
->> > to which you even responded to it (which is the concern Ingo was
->> > referring to).
->> > 
->> 
->> Ah yes, now I have the context.
->> 
->> And with that, I have to NAK the patch.  I did talk to the KVM 
->> people and they confirmed that this is NOT something they 
->> want.  They do not program VT-x to VMEXIT on CR0 changes.
->> 
->> So this is Xen-specific, and penalizing other hypervisors is 
->> wrong.
->
->Are patches #1 and #2 still OK?
->
->Thanks,
->
->	Ingo
+
+
 
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+---
+motzblog.wordpress.com
