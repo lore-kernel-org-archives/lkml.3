@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab3AZBIC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 20:08:02 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:34856 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753629Ab3AZBIA (ORCPT
+	id S1754681Ab3AZBMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 20:12:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46866 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753629Ab3AZBMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 20:08:00 -0500
-Message-ID: <51032C6B.1070708@linaro.org>
-Date: Fri, 25 Jan 2013 17:07:55 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] timekeeping: Add CONFIG_HAS_PERSISTENT_CLOCK option
-References: <1358266189-8812-1-git-send-email-feng.tang@intel.com> <1358266189-8812-3-git-send-email-feng.tang@intel.com> <50F5B2FA.6030006@linaro.org> <20130122194433.GG30647@obsidianresearch.com> <50FEED65.6050107@linaro.org>
-In-Reply-To: <50FEED65.6050107@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 25 Jan 2013 20:12:33 -0500
+Date: Fri, 25 Jan 2013 17:12:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
+        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
+        glommer@parallels.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 3/3] acpi, memory-hotplug: Support getting hotplug info
+ from SRAT.
+Message-Id: <20130125171230.34c5a273.akpm@linux-foundation.org>
+In-Reply-To: <1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com>
+References: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2013 11:49 AM, John Stultz wrote:
-> On 01/22/2013 11:44 AM, Jason Gunthorpe wrote:
->> On Tue, Jan 15, 2013 at 11:50:18AM -0800, John Stultz wrote:
->>> On 01/15/2013 08:09 AM, Feng Tang wrote:
->>>> Make the persistent clock check a kernel config option, so that some
->>>> platform can explicitely select it, also make CONFIG_RTC_HCTOSYS 
->>>> depends
->>>> on its non-existence, which could prevent the persistent clock and RTC
->>>> code from doing similar thing twice during system's 
->>>> init/suspend/resume
->>>> phases.
->>>>
->>>> If the CONFIG_HAS_PERSISTENT_CLOCK=n, then no change happens for 
->>>> kernel
->>>> which still does the persistent clock check in timekeeping_init().
->>>>
->>>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>>> Suggested-by: John Stultz <john.stultz@linaro.org>
->>>> Signed-off-by: Feng Tang <feng.tang@intel.com>
->>> Applied. I also added a dependency for Jason's CONFIG_RTC_SYSTOHC.
->> Sort of an ugly config name, since I gather ARM should always set this
->> to 'n'...
->>
->> CONFIG_USE_ONLY_PERSISTENT_CLOCK ?
-> (Sigh. I got this seemingly microseconds after I sent the pull request :)
->
-> So yea, fair point, there could be some confusion. But 
-> ONLY_PERSISTENT_CLOCK isn't quite right either,  more like 
-> CONFIG_HAS_PERSISTENT_CLOCK_ALWAYS or something.
->
+On Fri, 25 Jan 2013 17:42:09 +0800
+Tang Chen <tangchen@cn.fujitsu.com> wrote:
 
-Decided upon CONFIG_ALWAYS_USE_PERSISTENT_CLOCK which I think is clear 
-enough.
+> NOTE: Using this way will cause NUMA performance down because the whole node
+>       will be set as ZONE_MOVABLE, and kernel cannot use memory on it.
+>       If users don't want to lose NUMA performance, just don't use it.
 
-Let me know if you object or have a better idea.
+I agree with this, but it means that nobody will test any of your new code.
 
-thanks
--john
+To get improved testing coverage, can you think of any temporary
+testing-only patch which will cause testers to exercise the
+memory-hotplug changes?
 
