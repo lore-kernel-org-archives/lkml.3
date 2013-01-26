@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3AZK34 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 05:29:56 -0500
-Received: from mout.gmx.net ([212.227.17.20]:55210 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753199Ab3AZK3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 05:29:53 -0500
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX18Zv19TynEZI2RpeoSrsTArcq/Uje6zbRIOdZnQvF
-	cBYf98s8JzK3AO
-Message-ID: <5103B01D.5070303@gmx.de>
-Date: Sat, 26 Jan 2013 11:29:49 +0100
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130111 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: How to find an unused TAP device with kernel 3.8 ?
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	id S1753446Ab3AZKvG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 05:51:06 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:45336 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753358Ab3AZKvC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 05:51:02 -0500
+From: Ryo Munakata <ryomnktml@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        ryomnktml@gmail.com
+Subject: [PATCH -next] Staging: zcache: remove unnecessary braces in zcache-main.c
+Date: Sat, 26 Jan 2013 19:50:53 +0900
+Message-Id: <1359197453-26178-1-git-send-email-ryomnktml@gmail.com>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With kernel 3.8. I just realized that all pre-defined TAP devices are
-RUNNING even if no virtual linux system is using it. Now I'm wondering
-whether this is a new feature of the upcoming kernel, a bug of the old -
-and how I can avoid that.
+This fixes a checkpatch.pl issue of
+'braces {} are not necessary for single statement blocks'
 
-Background : When I start a user mode linux instance, I currently grep
-for the next free tap device in this way :
+Signed-off-by: Ryo Munakata <ryomnktml@gmail.com>
+---
+ drivers/staging/zcache/zcache-main.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-Code:	
-for t in $(ifconfig | grep "^tap" | cut -f1 -d:)
-do
-   ethtool $t | grep -q 'Link detected: no'
-   if [[ $? -eq 0 ]]; then
-      NET="tuntap,$t"
-      break
-   fi
-done
-
-but this doesn't work now anymore.
-
-Here is the diff in dmesg
-
-$ diff 3.7.1 3.8.0-rc1+ | grep UP
-
-< br0: flags=4355<UP,BROADCAST,PROMISC,MULTICAST>  mtu 1500
-> br0: flags=4419<UP,BROADCAST,RUNNING,PROMISC,MULTICAST>  mtu 1500
-
-< tap0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
-> tap0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
-
-
-more details : http://forums.gentoo.org/viewtopic-p-7211498.html#7211498
-
-
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 6ab13e1..c1ac905 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -1017,11 +1017,10 @@ static int zcache_frontswap_unuse(void)
+ 		unuse_ret = frontswap_unuse(type, offset,
+ 				newpage2 != NULL ? newpage2 : evictpage2,
+ 				ZCACHE_GFP_MASK);
+-		if (unuse_ret != 0) {
++		if (unuse_ret != 0)
+ 			goto free_and_out;
+-		} else if (evictpage2 != NULL) {
++		else if (evictpage2 != NULL)
+ 			zcache_unacct_page();
+-		}
+ 	}
+ 	ret = 0;
+ 	goto out;
 -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+1.8.1.1
+
