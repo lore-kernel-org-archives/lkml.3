@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3AZC07 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 21:26:59 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:50467 "EHLO
+	id S1755255Ab3AZCbw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 21:31:52 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:51538 "EHLO
 	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab3AZC04 (ORCPT
+	with ESMTP id S1754681Ab3AZCbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 21:26:56 -0500
+	Fri, 25 Jan 2013 21:31:49 -0500
 From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linux Containers <containers@lists.linux-foundation.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>
-References: <87ehh8it9s.fsf@xmission.com>
-Date: Fri, 25 Jan 2013 18:26:48 -0800
-In-Reply-To: <87ehh8it9s.fsf@xmission.com> (Eric W. Biederman's message of
-	"Fri, 25 Jan 2013 18:15:43 -0800")
-Message-ID: <87d2wshe6v.fsf@xmission.com>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        "Serge E. Hallyn" <serge@hallyn.com>
+References: <20130123160221.GG17632@redhat.com>
+	<20130124044438.GA13354@mail.hallyn.com>
+	<20130124152859.GP17632@redhat.com>
+	<20130124164612.af6de6f3.akpm@linux-foundation.org>
+	<20130125140317.GS17632@redhat.com>
+Date: Fri, 25 Jan 2013 18:31:37 -0800
+In-Reply-To: <20130125140317.GS17632@redhat.com> (Aristeu Rozanski's message
+	of "Fri, 25 Jan 2013 09:03:18 -0500")
+Message-ID: <871ud8hdyu.fsf@xmission.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+JpiFpBL8A4+OTPyUqWo8fpfGfiFneYuc=
+X-XM-AID: U2FsdGVkX19PUnl5ugRnPO8JAQvX8aFvGR6BYSyI8qM=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  0.1 XMSubLong Long Subject
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0002]
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4945]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Linux Containers <containers@lists.linux-foundation.org>
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+	*  0.2 XMSubMetaSSx_00 1+ SortaSexy Words + 1 Sexy Word
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ****;Aristeu Rozanski <aris@redhat.com>
 X-Spam-Relay-Country: 
-Subject: [PATCH review 6/6] userns: Allow the userns root to mount tmpfs.
+Subject: Re: [PATCH v2] userns: improve uid/gid map collision detection
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -40,42 +48,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Aristeu Rozanski <aris@redhat.com> writes:
 
-There is no backing store to tmpfs and file creation rules are the
-same as for any other filesystem so it is semantically safe to allow
-unprivileged users to mount it.  ramfs is safe for the same reasons so
-allow either flavor of tmpfs to be mounted by a user namespace root
-user.
+> On Thu, Jan 24, 2013 at 04:46:12PM -0800, Andrew Morton wrote:
+>> eek, a macro!  Macros are always bad.
+>> 
+>> This one is bad because
+>> 
+>> a) it's a macro
+>> 
+>> b) it evaluates its args multiple times and hence will cause nasty
+>>    bugs if called with expressions-with-side-effects.
+>> 
+>> c) it evaluates its args multiple times and if called with
+>>    non-trivial expressions the compiler might not be able to CSE those
+>>    expressions, leading to code bloat.
+>> 
+>> Add lo, this patch:
+>> 
+>> --- a/kernel/user_namespace.c~userns-improve-uid-gid-map-collision-detection-fix
+>> +++ a/kernel/user_namespace.c
+>> @@ -521,7 +521,11 @@ struct seq_operations proc_projid_seq_op
+>>  
+>>  static DEFINE_MUTEX(id_map_mutex);
+>>  
+>> -#define in_range(b,first,len) ((b)>=(first)&&(b)<(first)+(len))
+>> +static bool in_range(u32 b, u32 first, u32 len)
+>> +{
+>> +	return b >= first && b < first + len;
+>> +}
+>> +
+>>  static inline int extent_collision(struct uid_gid_map *new_map,
+>>  				   struct uid_gid_extent *extent)
+>>  {
+>> 
+>> reduces the user_namespace.o text from 4822 bytes to 4727 with
+>> gcc-4.4.4.  This is a remarkably large difference.
+>
+> thanks Andrew
+>
+> (I see Eric already answered about the config option)
 
-The memory control group successfully limits how much memory tmpfs can
-consume on any system that cares about a user namespace root using
-tmpfs to exhaust memory the memory control group can be deployed.
+Aritsteu after looking at both my version and yours I am going with
+mine.  While my code is a little wordier I have half the number of
+comparisons your code does, and I took the time to kill the variable
+introducing a function to test for range collisions makes unnecessary.
+On Andrews size metric my version seems noticably smaller as well.
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
- mm/shmem.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ size $PWD-build/kernel/user_namespace.o
+   text	   data	    bss	    dec	    hex	filename
+   4376	    144	      0	   4520	   11a8	/home/eric/projects/linux/linux-userns-devel-build/kernel/user_namespace.o
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 5c90d84..197ca5e 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2766,6 +2766,7 @@ static struct file_system_type shmem_fs_type = {
- 	.name		= "tmpfs",
- 	.mount		= shmem_mount,
- 	.kill_sb	= kill_litter_super,
-+	.fs_flags	= FS_USERNS_MOUNT,
- };
- 
- int __init shmem_init(void)
-@@ -2823,6 +2824,7 @@ static struct file_system_type shmem_fs_type = {
- 	.name		= "tmpfs",
- 	.mount		= ramfs_mount,
- 	.kill_sb	= kill_litter_super,
-+	.fs_flags	= FS_USERNS_MOUNT,
- };
- 
- int __init shmem_init(void)
--- 
-1.7.5.4
+
+Short of something unexpected I plan to push all my code to linux-next
+sometime tomorrow.
+
+Eric
 
