@@ -1,37 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab3AZKH4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 05:07:56 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55719 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab3AZKHw (ORCPT
+	id S1753369Ab3AZKSM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 05:18:12 -0500
+Received: from mail-we0-f178.google.com ([74.125.82.178]:52625 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab3AZKSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 05:07:52 -0500
-Date: Sat, 26 Jan 2013 10:07:44 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 11/19] regmap: avoid undefined return from
-	regmap_read_debugfs
-Message-ID: <20130126100744.GD23505@n2100.arm.linux.org.uk>
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359123276-15833-12-git-send-email-arnd@arndb.de> <20130126044219.GA10580@opensource.wolfsonmicro.com> <201301260917.28028.arnd@arndb.de> <20130126094855.GI30594@opensource.wolfsonmicro.com> <20130126095916.GB23505@n2100.arm.linux.org.uk> <20130126100326.GK30594@opensource.wolfsonmicro.com>
+	Sat, 26 Jan 2013 05:18:09 -0500
+X-Greylist: delayed 42319 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Jan 2013 05:18:08 EST
+Message-ID: <5103AD59.2050509@redhat.com>
+Date: Sat, 26 Jan 2013 11:18:01 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130126100326.GK30594@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, pmatouse@redhat.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 06/13] sg_io: whitelist a few more commands for multimedia
+ devices
+References: <20130125170434.GC3081@htj.dyndns.org> <5102BDD4.2020501@redhat.com> <20130125172805.GG3081@htj.dyndns.org> <5102C780.3090402@redhat.com> <20130125181326.GK3081@htj.dyndns.org> <5102D353.8010305@redhat.com> <20130125190154.GM3081@htj.dyndns.org> <5103080A.4090803@redhat.com> <20130125224159.GQ3081@htj.dyndns.org> <51031614.8000609@redhat.com> <20130125234714.GR3081@htj.dyndns.org>
+In-Reply-To: <20130125234714.GR3081@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 26, 2013 at 06:03:28PM +0800, Mark Brown wrote:
-> On Sat, Jan 26, 2013 at 09:59:16AM +0000, Russell King - ARM Linux wrote:
-> 
-> > Why not code the function in a way that avoids the problem altogether?
-> 
-> That'd do the trick too; feel free to submit a patch...
+Il 26/01/2013 00:47, Tejun Heo ha scritto:
+>> > If I make a whitelist with all the commands that Linux sends, I'll have
+>> > many new commands in the whitelist and no old commands.  The new
+>> > commands didn't exist when old drives were sold, so they are "dangerous"
+>> > in your opinion.  At that point I might as well keep the whitelist
+>> > empty, no?
+> Let's not go to extremes.  It's not about theoretic correctness.
 
-Sorry, got other things which need doing, so if you want that expect it
-sometime next month if I even remember.
+Once you start looking at what is already in the list, you'll see that
+your problem is entirely theoretical, and any choice is going to be arbitrary.
+There are already plenty of enabled commands that are not implemented by
+most SCSI devices (not just cheap USB enclosures), and I don't see what
+the difference should be between say "LOG SELECT" and "ORWRITE".
+
+> It's about how to appraoch a possibly messy practical problem. To me,
+> it seems natural to be conservative on this and add what's being
+> acitvely used, which as a bonus will also give us at least some
+> chance of evaluating what we have and why later on if it ever needs
+> to be changed.
+> 
+> I'm just not comfortable with adding a bunch of commands by simply
+> scanning the specs.  Let's at least have some backing data and
+> justification for exposing new ones.  I really don't think that's too
+> much to ask.  Start with minimal set.  Grow it as needed.  We can
+> always grow but the other direction is much harder.
+
+Ok, so I looked at the list.  The vast majority of the commands are
+added because Linux itself is using them.
+
+Considering only commands that have a "D" (i.e. are supported by
+"normal" disks), these maybe can be removed from patch 9.  Probably
+no one would notice:
+
++       sgio_bitmap_set(0x07, D|      W|  O                  , write); // REASSIGN BLOCKS
++       sgio_bitmap_set(0x29, D|      W|R|O                  , read);  // READ GENERATION
++       sgio_bitmap_set(0x2C, D|        R|O                  , write); // ERASE(10)
++       sgio_bitmap_set(0x8B, D                              , write); // ORWRITE
+
+These two are no-ops so I won't cry too much for them:
+
++       sgio_bitmap_set(0x34, D|      W|  O|        K        , read);  // PRE-FETCH(10)
++       sgio_bitmap_set(0x90, D|      W|  O|      B          , read);  // PRE-FETCH(16)
+
+Everything else has to stay.
+
+For tapes and media changers, all of the commands have to stay.
+
+Paolo
