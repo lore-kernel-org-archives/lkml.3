@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab3AZWiT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 17:38:19 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:56741 "EHLO hydra.sisk.pl"
+	id S1754748Ab3AZXII (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 18:08:08 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:45521 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754692Ab3AZWhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 17:37:48 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH 0/2] ACPI / scan: Additional changes
-Date: Sat, 26 Jan 2013 23:39:04 +0100
-Message-ID: <1581701.fnbebHrKch@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754484Ab3AZXIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 18:08:06 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Cc: X86 ML <x86@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH -v3 1/2] x86, Kconfig: Move PARAVIRT_DEBUG into the paravirt menu
+Date: Sun, 27 Jan 2013 00:10:50 +0100
+Message-Id: <1359241851-7594-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.1.rc3
+In-Reply-To: <20130125190340.GC4973@pd.tnic>
+References: <20130125190340.GC4973@pd.tnic>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+From: Borislav Petkov <bp@suse.de>
 
-The following patches make two more changes to the ACPI namespace scanning
-code that I think are more-or-less useful:
+This should be under the PARAVIRT_GUEST menu.
 
-[1/2] Introduce lock to prevent acpi_bus_scan() from running in parallel with
-      acpi_bus_trim() to avoid removing device nodes while we're setting
-      them up.
-[2/2] Change the scanning of fixed device nodes to work along the lines of
-      acpi_bus_scan().
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Patch [1/2] should apply on top of the acpi-scan branch, but [2/2] needs the
-entire linux-pm.git/linux-next branch.
-
-Thanks,
-Rafael
-
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 2d621032525a..201b8aa93f8f 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -631,8 +631,6 @@ config PARAVIRT_SPINLOCKS
+ config PARAVIRT_CLOCK
+ 	bool
+ 
+-endif
+-
+ config PARAVIRT_DEBUG
+ 	bool "paravirt-ops debugging"
+ 	depends on PARAVIRT && DEBUG_KERNEL
+@@ -640,6 +638,8 @@ config PARAVIRT_DEBUG
+ 	  Enable to debug paravirt_ops internals.  Specifically, BUG if
+ 	  a paravirt_op is missing when it is called.
+ 
++endif #PARAVIRT_GUEST
++
+ config NO_BOOTMEM
+ 	def_bool y
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.1.rc3
+
