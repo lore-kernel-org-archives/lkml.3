@@ -1,143 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab3AZB4V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 20:56:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48783 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468Ab3AZB4S (ORCPT
+	id S1755329Ab3AZB45 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 20:56:57 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:50617 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754865Ab3AZB4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 20:56:18 -0500
-Date: Fri, 25 Jan 2013 17:56:02 -0800
-From: tip-bot for Dave Hansen <dave@linux.vnet.ibm.com>
-Message-ID: <tip-5dfd486c4750c9278c63fa96e6e85bdd2fb58e9d@git.kernel.org>
-Cc: riel@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, mtosatti@redhat.com, dave@linux.vnet.ibm.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        riel@redhat.com, dave@linux.vnet.ibm.com, mtosatti@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20130122212435.4905663F@kernel.stglabs.ibm.com>
-References: <20130122212435.4905663F@kernel.stglabs.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, kvm: Fix kvm's use of __pa() on percpu areas
-Git-Commit-ID: 5dfd486c4750c9278c63fa96e6e85bdd2fb58e9d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 25 Jan 2013 20:56:55 -0500
+Date: Fri, 25 Jan 2013 17:56:57 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Petr Holasek <pholasek@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Greg KH <gregkh@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH 2/11] ksm: add sysfs ABI Documentation
+In-Reply-To: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
+Message-ID: <alpine.LNX.2.00.1301251754580.29196@eggly.anvils>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 25 Jan 2013 17:56:08 -0800 (PST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5dfd486c4750c9278c63fa96e6e85bdd2fb58e9d
-Gitweb:     http://git.kernel.org/tip/5dfd486c4750c9278c63fa96e6e85bdd2fb58e9d
-Author:     Dave Hansen <dave@linux.vnet.ibm.com>
-AuthorDate: Tue, 22 Jan 2013 13:24:35 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 25 Jan 2013 16:34:55 -0800
+From: Petr Holasek <pholasek@redhat.com>
 
-x86, kvm: Fix kvm's use of __pa() on percpu areas
+This patch adds sysfs documentation for Kernel Samepage Merging (KSM)
+including new merge_across_nodes knob.
 
-In short, it is illegal to call __pa() on an address holding
-a percpu variable.  This replaces those __pa() calls with
-slow_virt_to_phys().  All of the cases in this patch are
-in boot time (or CPU hotplug time at worst) code, so the
-slow pagetable walking in slow_virt_to_phys() is not expected
-to have a performance impact.
-
-The times when this actually matters are pretty obscure
-(certain 32-bit NUMA systems), but it _does_ happen.  It is
-important to keep KVM guests working on these systems because
-the real hardware is getting harder and harder to find.
-
-This bug manifested first by me seeing a plain hang at boot
-after this message:
-
-	CPU 0 irqstacks, hard=f3018000 soft=f301a000
-
-or, sometimes, it would actually make it out to the console:
-
-[    0.000000] BUG: unable to handle kernel paging request at ffffffff
-
-I eventually traced it down to the KVM async pagefault code.
-This can be worked around by disabling that code either at
-compile-time, or on the kernel command-line.
-
-The kvm async pagefault code was injecting page faults in
-to the guest which the guest misinterpreted because its
-"reason" was not being properly sent from the host.
-
-The guest passes a physical address of an per-cpu async page
-fault structure via an MSR to the host.  Since __pa() is
-broken on percpu data, the physical address it sent was
-bascially bogus and the host went scribbling on random data.
-The guest never saw the real reason for the page fault (it
-was injected by the host), assumed that the kernel had taken
-a _real_ page fault, and panic()'d.  The behavior varied,
-though, depending on what got corrupted by the bad write.
-
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20130122212435.4905663F@kernel.stglabs.ibm.com
-Acked-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Petr Holasek <pholasek@redhat.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
 ---
- arch/x86/kernel/kvm.c      | 9 +++++----
- arch/x86/kernel/kvmclock.c | 4 ++--
- 2 files changed, 7 insertions(+), 6 deletions(-)
+ Documentation/ABI/testing/sysfs-kernel-mm-ksm |   52 ++++++++++++++++
+ 1 file changed, 52 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-kernel-mm-ksm
 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 9c2bd8b..aa7e58b 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -297,9 +297,9 @@ static void kvm_register_steal_time(void)
- 
- 	memset(st, 0, sizeof(*st));
- 
--	wrmsrl(MSR_KVM_STEAL_TIME, (__pa(st) | KVM_MSR_ENABLED));
-+	wrmsrl(MSR_KVM_STEAL_TIME, (slow_virt_to_phys(st) | KVM_MSR_ENABLED));
- 	printk(KERN_INFO "kvm-stealtime: cpu %d, msr %lx\n",
--		cpu, __pa(st));
-+		cpu, slow_virt_to_phys(st));
- }
- 
- static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) = KVM_PV_EOI_DISABLED;
-@@ -324,7 +324,7 @@ void __cpuinit kvm_guest_cpu_init(void)
- 		return;
- 
- 	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF) && kvmapf) {
--		u64 pa = __pa(&__get_cpu_var(apf_reason));
-+		u64 pa = slow_virt_to_phys(&__get_cpu_var(apf_reason));
- 
- #ifdef CONFIG_PREEMPT
- 		pa |= KVM_ASYNC_PF_SEND_ALWAYS;
-@@ -340,7 +340,8 @@ void __cpuinit kvm_guest_cpu_init(void)
- 		/* Size alignment is implied but just to make it explicit. */
- 		BUILD_BUG_ON(__alignof__(kvm_apic_eoi) < 4);
- 		__get_cpu_var(kvm_apic_eoi) = 0;
--		pa = __pa(&__get_cpu_var(kvm_apic_eoi)) | KVM_MSR_ENABLED;
-+		pa = slow_virt_to_phys(&__get_cpu_var(kvm_apic_eoi))
-+			| KVM_MSR_ENABLED;
- 		wrmsrl(MSR_KVM_PV_EOI_EN, pa);
- 	}
- 
-diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-index 220a360..9f966dc 100644
---- a/arch/x86/kernel/kvmclock.c
-+++ b/arch/x86/kernel/kvmclock.c
-@@ -162,8 +162,8 @@ int kvm_register_clock(char *txt)
- 	int low, high, ret;
- 	struct pvclock_vcpu_time_info *src = &hv_clock[cpu].pvti;
- 
--	low = (int)__pa(src) | 1;
--	high = ((u64)__pa(src) >> 32);
-+	low = (int)slow_virt_to_phys(src) | 1;
-+	high = ((u64)slow_virt_to_phys(src) >> 32);
- 	ret = native_write_msr_safe(msr_kvm_system_time, low, high);
- 	printk(KERN_INFO "kvm-clock: cpu %d, msr %x:%x, %s\n",
- 	       cpu, high, low, txt);
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ mmotm/Documentation/ABI/testing/sysfs-kernel-mm-ksm	2013-01-25 14:36:50.660205905 -0800
+@@ -0,0 +1,52 @@
++What:		/sys/kernel/mm/ksm
++Date:		September 2009
++KernelVersion:	2.6.32
++Contact:	Linux memory management mailing list <linux-mm@kvack.org>
++Description:	Interface for Kernel Samepage Merging (KSM)
++
++What:		/sys/kernel/mm/ksm/full_scans
++What:		/sys/kernel/mm/ksm/pages_shared
++What:		/sys/kernel/mm/ksm/pages_sharing
++What:		/sys/kernel/mm/ksm/pages_to_scan
++What:		/sys/kernel/mm/ksm/pages_unshared
++What:		/sys/kernel/mm/ksm/pages_volatile
++What:		/sys/kernel/mm/ksm/run
++What:		/sys/kernel/mm/ksm/sleep_millisecs
++Date:		September 2009
++Contact:	Linux memory management mailing list <linux-mm@kvack.org>
++Description:	Kernel Samepage Merging daemon sysfs interface
++
++		full_scans: how many times all mergeable areas have been
++		scanned.
++
++		pages_shared: how many shared pages are being used.
++
++		pages_sharing: how many more sites are sharing them i.e. how
++		much saved.
++
++		pages_to_scan: how many present pages to scan before ksmd goes
++		to sleep.
++
++		pages_unshared: how many pages unique but repeatedly checked
++		for merging.
++
++		pages_volatile: how many pages changing too fast to be placed
++		in a tree.
++
++		run: write 0 to disable ksm, read 0 while ksm is disabled.
++			write 1 to run ksm, read 1 while ksm is running.
++			write 2 to disable ksm and unmerge all its pages.
++
++		sleep_millisecs: how many milliseconds ksm should sleep between
++		scans.
++
++		See Documentation/vm/ksm.txt for more information.
++
++What:		/sys/kernel/mm/ksm/merge_across_nodes
++Date:		January 2013
++KernelVersion:	3.9
++Contact:	Linux memory management mailing list <linux-mm@kvack.org>
++Description:	Control merging pages across different NUMA nodes.
++
++		When it is set to 0 only pages from the same node are merged,
++		otherwise pages from all nodes can be merged together (default).
