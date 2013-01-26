@@ -1,76 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab3AZXZt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 18:25:49 -0500
-Received: from stator.leun.net ([85.214.203.199]:45817 "EHLO stator.leun.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754710Ab3AZXZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 18:25:47 -0500
-X-Greylist: delayed 680 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Jan 2013 18:25:46 EST
-Date: Sun, 27 Jan 2013 00:13:47 +0100
-From: Michael Leun <lkml20130126@newton.leun.net>
-To: Freddy Xin <freddy@asix.com.tw>
-Cc: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, louis@asix.com.tw, davem@davemloft.net,
-        Support@asix.com.tw
-Subject: Re: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0
- to gigabit ethernet adapter driver
-Message-ID: <20130127001347.584711b2@xenia>
-In-Reply-To: <1358908337-13841-1-git-send-email-freddy@asix.com.tw>
-References: <1358908337-13841-1-git-send-email-freddy@asix.com.tw>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.14; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754895Ab3AZX0J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 18:26:09 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:56777 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754710Ab3AZX0H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 18:26:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <2664818.zPRWmg7IFi@vostro.rjw.lan>
+References: <1581701.fnbebHrKch@vostro.rjw.lan>
+	<2664818.zPRWmg7IFi@vostro.rjw.lan>
+Date: Sat, 26 Jan 2013 15:26:06 -0800
+X-Google-Sender-Auth: pMaSs88uke7B3V5_SMYKyJ3O2PU
+Message-ID: <CAE9FiQVcYdUYbg+X+mOvz9fCVLeYM_ue7YfV6OVUyFnZs+DWMA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ACPI / scan: Make scanning of fixed devices follow
+ the general scheme
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Toshi Kani <toshi.kani@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jan 2013 10:32:17 +0800
-Freddy Xin <freddy@asix.com.tw> wrote:
+On Sat, Jan 26, 2013 at 2:43 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> Make acpi_bus_scan_fixed() use device_attach() directly to attach
+> drivers, if any, to the fixed devices in analogy with how
+> acpi_bus_scan() works, which allows the last argument of
+> acpi_add_single_object() to be dropped and the manipulation of the
+> flags.match_driver bit to be moved to acpi_init_device_object()
+> and acpi_device_add_finalize().
+>
+> After these changes all of the functions for the initialization
+> and registration of struct acpi_device objects work in the same
+> way for all of them.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/acpi/scan.c |   35 ++++++++++++++++++++++++-----------
+>  1 file changed, 24 insertions(+), 11 deletions(-)
+>
+> Index: linux-pm/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/scan.c
+> +++ linux-pm/drivers/acpi/scan.c
+> @@ -1437,19 +1437,21 @@ void acpi_init_device_object(struct acpi
+>         acpi_device_get_busid(device);
+>         acpi_device_set_id(device);
+>         acpi_bus_get_flags(device);
+> +       device->flags.match_driver = false;
+>         device_initialize(&device->dev);
+>         dev_set_uevent_suppress(&device->dev, true);
+>  }
+>
+>  void acpi_device_add_finalize(struct acpi_device *device)
+>  {
+> +       device->flags.match_driver = true;
+>         dev_set_uevent_suppress(&device->dev, false);
+>         kobject_uevent(&device->dev.kobj, KOBJ_ADD);
+>  }
+>
+>  static int acpi_add_single_object(struct acpi_device **child,
+>                                   acpi_handle handle, int type,
+> -                                 unsigned long long sta, bool match_driver)
+> +                                 unsigned long long sta)
+>  {
+>         int result;
+>         struct acpi_device *device;
+> @@ -1465,7 +1467,6 @@ static int acpi_add_single_object(struct
+>         acpi_bus_get_power_flags(device);
+>         acpi_bus_get_wakeup_device_flags(device);
+>
+> -       device->flags.match_driver = match_driver;
+>         result = acpi_device_add(device, acpi_device_release);
+>         if (result) {
+>                 acpi_device_release(&device->dev);
+> @@ -1558,12 +1559,10 @@ static acpi_status acpi_bus_check_add(ac
+>                 return AE_CTRL_DEPTH;
+>         }
+>
+> -       acpi_add_single_object(&device, handle, type, sta, false);
+> +       acpi_add_single_object(&device, handle, type, sta);
+>         if (!device)
+>                 return AE_CTRL_DEPTH;
+>
+> -       device->flags.match_driver = true;
+> -
+>   out:
+>         if (!*return_value)
+>                 *return_value = device;
 
-> This is a resubmission.
-> Fixed coding style errors.
-[...]
-> This patch adds a driver for ASIX's AX88179 family of USB 3.0/2.0
-> to gigabit ethernet adapters. It's based on the AX88xxx driver but
+nice cleanup.
 
-I hope, there is some error/mistake on my side, otherwise I fear I
-would have to say I find this driver to be total crap.
+Acked-by: Yinghai Lu <yinghai@kernel.org>
 
-I tried it with an Digitus DN-3023 identifying itself as idVendor=0b95,
-idProduct=1790 (some internet source claims it to be actually based on
-asix reference design).
-
-If I plug the device in the interface comes up with an mtu of 1488 -
-this would be an very bad joke for any ethernet compliant device, even
-more for an gigabit device where you clearly want to see at least a bit
-of jumbo frames.
-
-If I set the mtu to 1500 (the driver does not even complain when I set
-the mtu to e.g. 2^31-1) and start to send bigger packets in some point
-of time the device stops to work - means, after that you cannot even
-send smaller packets, after some time you might get an kernel warning
-"NETDEV WATCHDOG: eth3 (ax88179_178a): transmit queue 0 timed out" and
-you have to unplug / replug the device to get it working again.
-
-Note: With the W$ driver and exactly the same hardware you get at least
-jumbo frames up to some 4000+X bytes - not great, but better than
-nothing.
-
-I would vote to not accept that driver for mainline as long as this
-issues are not fixed. 
-
-The vendor should not be able to claim "hooray, hooray, great device,
-we even have an driver in linux main line" when it is actually such an
-useless crap.
-
-Of course I'm offering to help with any information or testing, but
-unfortunately I do not have the knowhow to fix anything myself. 
-
--- 
-MfG,
-
-Michael Leun
-
+> @@ -1681,25 +1680,39 @@ EXPORT_SYMBOL_GPL(acpi_bus_trim);
+>  static int acpi_bus_scan_fixed(void)
+>  {
+>         int result = 0;
+> -       struct acpi_device *device = NULL;
+>
+>         /*
+>          * Enumerate all fixed-feature devices.
+>          */
+> -       if ((acpi_gbl_FADT.flags & ACPI_FADT_POWER_BUTTON) == 0) {
+> +       if (!(acpi_gbl_FADT.flags & ACPI_FADT_POWER_BUTTON)) {
+> +               struct acpi_device *device = NULL;
+> +
+>                 result = acpi_add_single_object(&device, NULL,
+>                                                 ACPI_BUS_TYPE_POWER_BUTTON,
+> -                                               ACPI_STA_DEFAULT, true);
+> +                                               ACPI_STA_DEFAULT);
+> +               if (result)
+> +                       return result;
+> +
+> +               result = device_attach(&device->dev);
+> +               if (result < 0)
+> +                       return result;
+> +
+>                 device_init_wakeup(&device->dev, true);
+>         }
+>
+> -       if ((acpi_gbl_FADT.flags & ACPI_FADT_SLEEP_BUTTON) == 0) {
+> +       if (!(acpi_gbl_FADT.flags & ACPI_FADT_SLEEP_BUTTON)) {
+> +               struct acpi_device *device = NULL;
+> +
+>                 result = acpi_add_single_object(&device, NULL,
+>                                                 ACPI_BUS_TYPE_SLEEP_BUTTON,
+> -                                               ACPI_STA_DEFAULT, true);
+> +                                               ACPI_STA_DEFAULT);
+> +               if (result)
+> +                       return result;
+> +
+> +               result = device_attach(&device->dev);
+>         }
+>
+> -       return result;
+> +       return result < 0 ? result : 0;
+>  }
+>
+>  int __init acpi_scan_init(void)
+>
