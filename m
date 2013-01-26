@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab3AZVkd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 16:40:33 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:56667 "EHLO hydra.sisk.pl"
+	id S1754415Ab3AZVnI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 16:43:08 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:56674 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754320Ab3AZVkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 16:40:31 -0500
+	id S1754178Ab3AZVnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 16:43:06 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] ACPI scan handlers
-Date: Sat, 26 Jan 2013 22:46:35 +0100
-Message-ID: <2707117.gaHTJBNB2O@vostro.rjw.lan>
+To: sedat.dilek@gmail.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: linux-next: Tree for Jan 25 (BROKEN suspend)
+Date: Sat, 26 Jan 2013 22:49:11 +0100
+Message-ID: <18624541.r6CtJttOWZ@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <5104239E.9050406@gmail.com>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan> <5104239E.9050406@gmail.com>
+In-Reply-To: <CA+icZUX31SB3+NU8uXA9LH5KOHxgeHKZLcqWNhzUVhx5onk6qA@mail.gmail.com>
+References: <CA+icZUW6LBSjpqK-eQUAt7R=kXCPRjFoi=z1UijaajrVAj=fEg@mail.gmail.com> <CA+icZUX=XdAJjWwx8P_y31JGW3GC+tdWuFhv2Ym-0OELGWGbDQ@mail.gmail.com> <CA+icZUX31SB3+NU8uXA9LH5KOHxgeHKZLcqWNhzUVhx5onk6qA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -28,169 +26,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, January 27, 2013 02:42:38 AM Jiang Liu wrote:
-> On 01/24/2013 08:26 AM, Rafael J. Wysocki wrote:
-> > Hi All,
-> > 
-> > There is a considerable amount of confusion in the ACPI subsystem about what
-> > ACPI drivers are used for.  Namely, some of them are used as "normal" device
-> > drivers that bind to devices and handle them using ACPI control methods (like
-> > the fan or battery drivers), but some of them are just used for handling
-> > namespace events, such as the creation or removal of device nodes (I guess it
-> > would be fair to call that an abuse of the driver core).  These two roles are
-> > quite distinct, which is particularly visible from the confusion about the role
-> > of the .remove() callback.
-> > 
-> > For the "normal" drivers this callback is simply used to handle situations in
-> > which the driver needs to be unbound from the device, because one of them
-> > (either the device or the driver) is going away.  That operation can't really
-> > fail, it just needs to do the necessary cleanup.
-> > 
-> > However, for the namespace events handling "drivers" .remove() means that not
-> > only the device node in question, but generally also the whole subtree below it
-> > needs to be prepared for removal, which may involve deleting multiple device
-> > objects belonging to different bus types and so on and which very well may fail
-> > (for example, those devices may be used for such things like swap or they may be
-> > memory banks used by the kernel and it may not be safe to remove them at the
-> > moment etc.).  Moreover, for these things the removal of the "driver" doesn't
-> > really make sense, because it has to be there to handle the namespace events it
-> > is designed to handle or else things will go remarkably awry in some places.
-> > 
-> > To resolve all that mess I'd like to do the following, which in part is inspired
-> > by the recent Toshi Kani's hotplug framework proposal and in part is based on
-> > some discussions I had with Bjorn and others (the code references made below are
-> > based on the current contens of linux-pm.git/linux-next).
-> Hi Rafael,
-> 	Great to know that you plan to clean up these messes. We are working on
-> the same topic too.
+On Saturday, January 26, 2013 07:27:06 PM Sedat Dilek wrote:
+> On Sat, Jan 26, 2013 at 4:05 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> > On Sat, Jan 26, 2013 at 3:33 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> >> On Sat, Jan 26, 2013 at 2:24 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> >>> On Sat, Jan 26, 2013 at 2:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >>>> On Saturday, January 26, 2013 12:10:32 PM Sedat Dilek wrote:
+> >>>>> On Fri, Jan 25, 2013 at 6:26 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >>>>> > Hi all,
+> >>>>> >
+> >>>>> > Changes since 20130124:
+> >>>>> >
+> >>>>> > New trees: ipsec and ipsec-next
+> >>>>> >
+> >>>>> > The powerpc tree still had a build failure.
+> >>>>> >
+> >>>>> > The sound-asoc tree still had its build failure so I used the version from
+> >>>>> > next-20130122.
+> >>>>> >
+> >>>>> > The akpm tree lost its build failure and several patches that turned up
+> >>>>> > elsewhere.
+> >>>>> >
+> >>>>> > ----------------------------------------------------------------------------
+> >>>>> >
+> >>>>>
+> >>>>> Unfortunately, on suspend or running the pm_test/freezer leads here to
+> >>>>> a frozen machine - hard reset.
+> >>>>>
+> >>>>> I see 4-5 pages of call-traces but dunno how to log them in such a f-u-ed state.
+> >>>>> Any hints welcome!
+> >>>>>
+> >>>>> As I saw catched with my left eye on one call-trace sth. with...
+> >>>>>
+> >>>>>       kernel/watchdog.c (line #245, watchdog_overflow_callback)
+> >>>>>
+> >>>>> ... I tried to revert the last two commits from Sascha (see -3 patch,
+> >>>>> but no success.
+> >>>>>
+> >>>>> The same with reverting all cpu-freq changes since v3.8-rc4 (see -4
+> >>>>> patch) after seeing some suspicious lines on the screen.
+> >>>>>
+> >>>>> Can someone confirm that suspend is BROKEN for him/her before doing
+> >>>>> eventually a bisect?
+> >>>>
+> >>>> Can you please test the linux-next branch of the linux-pm.git tree alone?
+> >>>>
+> >>>
+> >>> That sounds like a good idea as I just reverted "cpu-hotplug,
+> >>> memory-hotplug: try offlining the node when hotremoving a cpu" [1]
+> >>> from akpm tree.
+> >>> Building... 1st with revert than trying pm-next only.
+> >>>
+> >>
+> >> Your pm-next tree is fine here.
+> >>
+> >> commit 0b9d032a2bf0a0224ef446f3d6048fdd8a5b8280
+> >> "Merge branch 'pm-cpufreq-next' into linux-next linux-next"
+> >>
+> >> Furthermore, the culprit is not between akpm-master and akpm-current
+> >> as I have seen cpu/mem hotplug and pm changes there.
+> >>
+> >> Hmm, maybe bisecting would have been faster than hunting on suspicious commits.
+> >>
+> >> - Sedat -
+> >>
+> >>> - Sedat -
+> >>>
+> >>> [1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=154cb61f36690edef68beb5fd9dc0a5027f9dbd9
+> >>>
+> >>>> Rafael
+> >>>>
+> >>>>
+> >>>> --
+> >>>> I speak only for myself.
+> >>>> Rafael J. Wysocki, Intel Open Source Technology Center.
+> >
+> > I merged on top of my Linux-v3.8-rc5 GIT branch...
+> >
+> > Sedat Dilek (8):
+> >       mei: Fix some more kernel-doc typos in hw-me.c
+> >       kbuild: deb-pkg: Try to determine distribution
+> >       kbuild: deb-pkg: Bump year in debian/copyright file
+> >       kbuild: deb-pkg: Update git repository URL in debian/copyright file
+> >       Merge tag 'next-20130124' of
+> > git://git.kernel.org/.../next/linux-next into Linux-Next-v20130124
+> >       Merge branch 'deb-pkg-fixes' into 3.8.0-rc5-next20130124-1-pmnext-generic
+> >       Merge branch 'Linux-Next-v20130124' into
+> > 3.8.0-rc5-next20130124-1-pmnext-generic
+> >       Merge branch 'pm-next' into 3.8.0-rc5-next20130124-1-pmnext-generic
+> >
+> > ...and this f-u-s the machine as well.
+> > So, the culprit seems not to get from your PM stuff.
+> >
+> > Anyway, this does not help me... but hope it's good news for you, Rafael :-)!
+> >
+> > - Sedat -
 > 
-> > 
-> > 1) Introduce a special data type for "ACPI namespace event handlers" like:
-> > 
-> > struct acpi_scan_handler {
-> > 	const struct acpi_device_id *ids;
-> > 	struct list_head list_node;
-> > 	int (*attach)(struct acpi_device *adev);
-> > 	int (*untie)(struct acpi_device *adev);
-> > 	int (*reclaim)(struct acpi_device *adev);
-> > 	void (*detach)(struct acpi_device *adev);
-> > };
-> > 
-> >   an additional ACPI device flag:
-> > 
-> > struct acpi_device_flags {
-> > ...
-> > 	u32 untied:1;
-> > ...
-> > };
-> > 
-> >   and an additioanl field in struc acpi_device:
-> > 
-> > struct acpi_device {
-> > ...
-> > 	struct acpi_scan_handler *scan_handler;
-> > ...
-> > };
-> > 
-> >   (the roles of these things are described below).
-> > 
-> > 2) Introduce a list of struct acpi_scan_handler objects within the ACPI
-> >    subsystem such that acpi_bus_device_attach() will search that list first and
-> >    if there's a matching object (one whose ids match the device node), it will
-> >    run that object's .attach() callback.
-> > 
-> >   If that returns 1, it will mean that the handler has claimed the device node
-> >   and is now responsible for it until its .detach() callback is run.  Thus no
-> >   driver can be bound to that device node and no other handler can claim it.
-> >   Then, the device node's scan_handler field will be set to point to the handler
-> >   that's claimed it and its untied flag will be cleared.
-> > 
-> >   If .attach() returns 0, it will mean that the handler has not recognized the
-> >   device node and some other scan handlers and/or drivers may be tried for it.
-> This doesn't seem perfect. The device enumeration logic still interferes with
-> device drivers. Should we totally separate device enumeration logic from device
-> drivers?
+> This tells me ZERO...
+> 
+> $ cat git-bisect-log.txt
+> git bisect start
+> # bad: [a8ae185b9edd81927bd762b89a327617e3e7a1e8] Add linux-next
+> specific files for 20130124
+> git bisect bad a8ae185b9edd81927bd762b89a327617e3e7a1e8
+> # good: [7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619] Linux 3.8-rc4
+> git bisect good 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619
+> # bad: [5a4e73d60a0f01a39c602e3c2cbb2f136268f717] Merge
+> remote-tracking branch 'spi-mb/spi-next'
+> git bisect bad 5a4e73d60a0f01a39c602e3c2cbb2f136268f717
+> # good: [9b70ab49707f2db028b29664600db3fcf2221abd] Merge
+> remote-tracking branch 'slave-dma/next'
+> git bisect good 9b70ab49707f2db028b29664600db3fcf2221abd
+> # good: [97b57dc123017c4d748fdf2abdd9a9231239c437] Merge
+> remote-tracking branch 'crypto/master'
+> git bisect good 97b57dc123017c4d748fdf2abdd9a9231239c437
+> # good: [6ab8307c4b30d2414bbbc192d3b07819b2a2ec1e] 20130122/sound-asoc
+> git bisect good 6ab8307c4b30d2414bbbc192d3b07819b2a2ec1e
+> # good: [76e51c3f858996beb6de0dfd03838ec04f9c6203] Merge
+> remote-tracking branch 'mmc/mmc-next'
+> git bisect good 76e51c3f858996beb6de0dfd03838ec04f9c6203
+> # good: [25dcea3017741797805c1279d013108b220b6aea] Merge
+> remote-tracking branch 'battery/master'
+> git bisect good 25dcea3017741797805c1279d013108b220b6aea
+> # good: [c051f41da8c60f0945d295b736aa3c0331ac85bc] Merge
+> remote-tracking branch 'regulator/for-next'
+> git bisect good c051f41da8c60f0945d295b736aa3c0331ac85bc
+> # good: [6f9801536a9bea9f405971fab8abbba929138738] Merge
+> remote-tracking branch 'iommu/next'
+> git bisect good 6f9801536a9bea9f405971fab8abbba929138738
+> # good: [58e49ef6da7f434698699a20683408b2c041081d] Merge
+> remote-tracking branch 'trivial/for-next'
+> git bisect good 58e49ef6da7f434698699a20683408b2c041081d
+> # good: [33cb219590de91b65a9d0e995dbf26642d5d32e0] Merge
+> remote-tracking branch 'edac-amd/for-next'
+> git bisect good 33cb219590de91b65a9d0e995dbf26642d5d32e0
+> # good: [7a5d8ca12aece480e0fe5eda8ce4236dddf55363] spi: bitbang:
+> simplify pointer arithmetics
+> git bisect good 7a5d8ca12aece480e0fe5eda8ce4236dddf55363
+> # good: [bf2084d51182ed0fa1fcf3febd80b308d2e62b20] Merge
+> remote-tracking branch 'dt-rh/for-next'
+> git bisect good bf2084d51182ed0fa1fcf3febd80b308d2e62b20
+> # good: [f28037d2e9ee1fe34ede6211f1cce1d38d867cb8] MAINTAINERS: Add
+> myself as a backup maintainer for SPI
+> git bisect good f28037d2e9ee1fe34ede6211f1cce1d38d867cb8
+> 
+> $ cat git-bisect-view--stat.txt
+> commit 5a4e73d60a0f01a39c602e3c2cbb2f136268f717
+> Merge: bf2084d f28037d
+> Author: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date:   Thu Jan 24 13:49:47 2013 +1100
+> 
+>     Merge remote-tracking branch 'spi-mb/spi-next'
 
-Yes, that's the ultimate plan, but we can't do that at the moment for practical
-reasons (there are many ACPI drivers already in existence and we don't want to
-introduce regressions gratuitously).
+Well, perhaps try to test the spi-mb/spi-next branch alone?
 
-Introducing scan handlers more-or-less as described would be a step in that
-direction, though.
-
-> > 
-> >   If an error code is returned, it will mean a hard error in which case the
-> >   scanning of the namespace will have to be aborted.
-> > 
-> >   This way ACPI drivers will only be bound to device nodes that haven't been
-> >   claimed by any scan handlers.
-> > 
-> > 3) Introduce an additional function following the format of acpi_bus_trim(),
-> >    say acpi_bus_untie(), that will walk the namespace starting at the given
-> >    device node and execute the .untie() callbacks from the scan handlers of
-> >    all devices as post-order callbacks.
-> > 
-> >    If the .untie() callback for the given device node returns 0, it will mean
-> >    that it is now safe to delete that node as long as its scan handler's
-> >    .detach() callback is executed before the deletion.  In that case, the device
-> >    node's untied flag will be set.
-> > 
-> >    Otherwise (i.e. if an error code is returned), it will mean that the scan
-> >    handler has vetoed the untying and the whole operation should be reversed.
-> >    Then, acpi_bus_untie() will walk the namespace again and execute the
-> >    .reclaim() callbacks from the scan handlers of the device nodes whose untied
-> >    flags are set as pre-order callbacks.
-> > 
-> >    If .reclaim() returns 0, the device node's untied flag will be cleared, and
-> >    if an error code is returned, it will remain set.
-> > 
-> >    This will allow us to prepare the subtree below the given device node for
-> >    removal in a reversible way, if needed.  Still, though, it will be possible
-> >    to carry out a forcible removal calling acpi_bus_trim() after
-> >    acpi_bus_untie() even if that has returned an error code (or even
-> >    acpi_bus_trim() without acpi_bus_untie()).
-> > 
-> > 4) Make acpi_bus_device_detach() execute the .detach() callback from the
-> >    scan handler of the device node (if the scan handler is present) and clear
-> >    its scan_handler field along with its untied flag.  However, the untied flags
-> >    will only be cleared after executing the .detach() callbacks, so that those
-> >    callbacks can see whether or not the scan handlers have been successfully
-> >    "untied" from the device nodes.
-> > 
-> > 5) Make acpi_bus_hot_remove_device() (and other pieces of code where that is
-> >    convenient) call acpi_bus_untie() before acpi_bus_trim() and bail out
-> >    cleanly if the untying fails (i.e. is vetoed by one of the scan handlers).
-> > 
-> > That should take care of the removal problem nicely and as far as I can say
-> > the majority of the ACPI drivers used only for handling namespace events can
-> > be readily converted to struct acpi_scan_handler objects.
-> > 
-> > I wonder if anyone is seeing any major problems with this at the high level.
-> This design has some conflicts with our ongoing work to provide a system device
-> hotplug framework. I will send out the draft framework for comments soon.
-
-Well, I'd prefer it if you were more specific.  That is, please tell me what
-conflicts and why exactly.
-
-It also would be good if you looked at the Toshi Kani's latest proposal and
-said what's wrong with it from your perspective.  You'll need to do that
-anyway if you want to convince anyone that your proposal is better, so why
-don't you do that now?  Moreover, sending yet another "system devices hotplug
-framework" proposal at this point won't increase the chance that any of them
-will be accepted.  Odds are to the contrary, I'm afraid.
-
-Besides, I'm starting to think that such frameworks covering "system devices"
-only are insufficient, because nowadays it is quite difficult to say what
-devices are "system devices" in the first place and there is no reason why
-those devices should require a special framework while the other devices
-don't.  Quite frankly, it seems to me that either we need some additional
-hotplug-related handling for all devices, or we don't need anything like that
-at all.
-
-I'm seeing reasons why it may be necessary, but that will need to be discussed
-at the concept level, not within the context of any specific proposal.
-
-Thanks,
 Rafael
 
 
