@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab3AZXlk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 18:41:40 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:57895 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738Ab3AZXli (ORCPT
+	id S1754790Ab3AZXxA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 18:53:00 -0500
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:48176 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab3AZXw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 18:41:38 -0500
+	Sat, 26 Jan 2013 18:52:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7-XabKQh_Lia9zS9i4Mm=eBV6rRw0ArjXAZBiWYx4uYA@mail.gmail.com>
-References: <1358803252-20639-1-git-send-email-yinghai@kernel.org>
-	<2072996.JYmST9orI6@vostro.rjw.lan>
-	<CAE9FiQUS56KnvDCF7LUyCkNLcun+3zZ+xGiexca2ej30dRvrQg@mail.gmail.com>
-	<CAErSpo7-XabKQh_Lia9zS9i4Mm=eBV6rRw0ArjXAZBiWYx4uYA@mail.gmail.com>
-Date: Sat, 26 Jan 2013 15:34:09 -0800
-X-Google-Sender-Auth: C6SOniwRmPfLCQXyZtWqoa9Sbxg
-Message-ID: <CAE9FiQUhrVPNKcdWbiqHLa5PzH7Dg-uduVc9BP-OjM-eCqSXdw@mail.gmail.com>
-Subject: Re: [PATCH v10 00/11] PCI, ACPI: pci root bus hotplug support / pci match_driver
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+In-Reply-To: <201301261717.JGJ04628.OOFVHFLOFJMtSQ@I-love.SAKURA.ne.jp>
+References: <201301202124.BFJ81722.SFOHtJFOLQFVOM@I-love.SAKURA.ne.jp>
+	<CACRpkdY1sJPkPJx8zFbYOsvHFUM4S_6_eLWjifBpNyqH7cCrDA@mail.gmail.com>
+	<201301221817.IDD95831.HVOOFMFJOLFSQt@I-love.SAKURA.ne.jp>
+	<CACRpkdYRM9MDt92juV+x9w9BUnHpCSd2KCkZ5F7zwPfhn939ZQ@mail.gmail.com>
+	<201301222123.CEJ65174.StJFMOQFVFHOLO@I-love.SAKURA.ne.jp>
+	<201301261717.JGJ04628.OOFVHFLOFJMtSQ@I-love.SAKURA.ne.jp>
+Date: Sun, 27 Jan 2013 00:52:58 +0100
+Message-ID: <CACRpkdZrtBV-TJrywL4OeiuyD61qt0+txjQ51KFcmtWSc9OYXg@mail.gmail.com>
+Subject: Re: [3.8-rc4 arm] SCSI_SYM53C8XX_2 module cannot register IRQ
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        rmk+kernel@arm.linux.org.uk, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 4:04 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, Jan 22, 2013 at 3:19 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+On Sat, Jan 26, 2013 at 9:17 AM, Tetsuo Handa
+<penguin-kernel@i-love.sakura.ne.jp> wrote:
 
-> I first pulled in
-> "git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
-> acpi-scan" again (to pci/acpi-scan2), added your acks, Rafael, and put
-> this series on a pci/yinghai-root-bus branch based on pci/acpi-scan2.
+> I did a blind git bisection (i.e. starting
 >
-> I reworked some of the changelogs a bit, but I don't think I made any
-> code changes except that in [10/11] I just inlined the
-> pci_bus_attach_device() code rather than making a new function, since
-> it's small, there's only one caller, and I didn't think we needed any
-> more pci_* and pci_bus_* functions than we already have.
+>   $ qemu-system-arm -M versatilepb -hda hda.img -kernel arch/arm/boot/zImage -append "root=/dev/sda1 init=/bin/sh" -nographic
 >
-> Let me know if I messed anything up.
+> and watching "top" for %CPU usage of qemu-system-arm , assuming that it goes to
+> 100% only if detection of block device for / partition failed and kernel called
+> panic(), goes to 0% otherwise) in two patterns.
+>
+>   $ git bisect start HEAD b1112249 v3.7 v3.6 v3.5 v3.4 v3.3 v3.2 v3.1 v3.0 -- arch/arm drivers/scsi/sym53c8xx_2/ drivers/scsi/*.[ch]
+>
+>   $ git bisect start v3.8-rc1 95e629b7 b8db6b8 810883f0 b10bca0b 14318efb 414a6750e b1112249 v3.7 v3.6 v3.5 v3.4 v3.3 v3.2 v3.1 v3.0
+>
+> Both patterns resulted in that commit 07c9249f
+> "ARM: 7554/1: VIC: use irq_domain_add_simple()" is the cause of
+>
+>   PCI: enabling device 0000:00:0c.0 (0100 -> 0103)
+>   sym0: <895a> rev 0x0 at pci 0000:00:0c.0 irq 27
+>   sym0: No NVRAM, ID 7, Fast-40, LVD, parity checking
+>   sym0: request irq 27 failure
+>   sym0: giving up ...
+>
+> message.
+>
+> Would you have a look?
 
-Great, thanks for lot.
+I'm trying to reproduce this, but how do you reconfigure the kernel to
+get PCI, SCSI and such stuff enabled?
 
-After that hit pci/next, will send out
+The stock versatile_defconfig does not even have SCSI enabled...
 
-for-pci-for-each-host-bridge
-
-and
-
-for-pci-for-each-add-res.
-
-Thanks
-
-Yinghai
+Yours,
+Linus Walleij
