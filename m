@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab3AZKDi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 05:03:38 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60194 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753058Ab3AZKDf (ORCPT
+	id S1753301Ab3AZKDy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 05:03:54 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:60923 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117Ab3AZKDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 05:03:35 -0500
-Date: Sat, 26 Jan 2013 18:03:28 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 11/19] regmap: avoid undefined return from
- regmap_read_debugfs
-Message-ID: <20130126100326.GK30594@opensource.wolfsonmicro.com>
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
- <1359123276-15833-12-git-send-email-arnd@arndb.de>
- <20130126044219.GA10580@opensource.wolfsonmicro.com>
- <201301260917.28028.arnd@arndb.de>
- <20130126094855.GI30594@opensource.wolfsonmicro.com>
- <20130126095916.GB23505@n2100.arm.linux.org.uk>
+	Sat, 26 Jan 2013 05:03:52 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] regmap: debugfs: Work around GCC flow analysis false positives
+Date: Sat, 26 Jan 2013 10:03:45 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-1-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        Vincent =?utf-8?q?Stehl=C3=A9?= <v-stehle@ti.com>
+References: <1359194478-31666-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1359194478-31666-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="E6lVPAHcXg6biC3t"
-Content-Disposition: inline
-In-Reply-To: <20130126095916.GB23505@n2100.arm.linux.org.uk>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201301261003.45874.arnd@arndb.de>
+X-Provags-ID: V02:K0:Ln8i2Mi6B0jimRhXROxnLXNtBLubTa0ULib6yn6rHzA
+ bhcieOG3nZ/56FpPy9gR5SiXyyG2dxhraq3ejdwTZ5b2wB+221
+ 7lSneR83+DvF6UGo73whS2MgEduwqtTvPbhFw9fZQ42afAMzCz
+ GszQf3jPePFoF3EyEpazNR/9Gn6ePTc1wjZXgkCwy5cQc+FqFU
+ GvXUCrbrkK46uU/Vq8R0j7yzmZtRB8Qd3GeAzUcnnGhuIk6RG+
+ 3EgrSBzjTAPXz+obAg3hQpWh6tsbtT6l3NBmwjLlW2ieTtOUUu
+ 2mkcxB1huSJVCGK2lZHtcwmxEEgWqz7p/ENQCiSGgyVpQaqAHL
+ GVSKWkbDeL/FRnoOi/hA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday 26 January 2013, Mark Brown wrote:
+> Reported-by: Vincent Stehlé <v-stehle@ti.com>
+> Reported-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
---E6lVPAHcXg6biC3t
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks for fixing this properly.
 
-On Sat, Jan 26, 2013 at 09:59:16AM +0000, Russell King - ARM Linux wrote:
-
-> Why not code the function in a way that avoids the problem altogether?
-
-That'd do the trick too; feel free to submit a patch...
-
---E6lVPAHcXg6biC3t
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRA6noAAoJELSic+t+oim9ABMQAIQ20ecHyej6TxKsx75pp0LO
-uZHIeIjZWATrW0l3WaKpBR+SsMJE+mP9tlHgiTwX61bECdt9yNzBKY4NK9CbdCsY
-RjA4aj5MKlIFpg6oFDi1LkTgJx/SAOR961A/VjIdQfaWDj79Zl0Pua4NPnW7wYHI
-zhcvAfI01PRUk1IIprPSkeDpCOauQvpF9lG2ZkCOSXfWnBuafVqJrTNy+vZ7T9HS
-V3qLuaq+d+sy9Srap06oWfXLzk+gWVUzJZ0Sl4UgVDzKEWHsTbgC1ukLfCmC6SCD
-+bycA5EWRAb8RqEXriP6EZGMHLcgSwZMq7E0fnlqgawdjUW03JVjP6mf+pm9Bs6o
-JgPtC8GigKVtXf034/ZLKzPmZ2/6gy4RoVRDQOwEGsSdMB3VWgllQPVcRADCFEL5
-xaba3bErSbXWZe/HAdkm5KvMcO5NWPw8oXSwUU78rbuMbJ8iEZVfnPKKzs6uOsGx
-7+BZc67INNhmnWsGqMuOKzHddwXZdtgtMz8T5ZiFL/MgHxpLLDPko8v7Hb/IJex9
-GzCtor6O8NX8xvPacg+4VSYglCXCZn7my3SNxrtLTG0B03WH2bX+9Ywb2ve7Gpcq
-rOdMsyJ4ekm3J+fJZKmBdg8VG5qjndCp0D3bta3U0ZKy5OElbr0B6JuH4bKTJJi6
-pS9qr65ryEU5ByEqt10M
-=0vZQ
------END PGP SIGNATURE-----
-
---E6lVPAHcXg6biC3t--
+Acked-by: Arnd Bergmann <arnd@arndb.de>
