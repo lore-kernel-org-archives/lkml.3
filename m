@@ -1,296 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab3AZJbY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 04:31:24 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:51124 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997Ab3AZJbW (ORCPT
+	id S1753150Ab3AZJtj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 04:49:39 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36514 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753084Ab3AZJtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 04:31:22 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, Alejandro Mery <amery@geeks.cl>,
-        Stefan Roese <sr@denx.de>, linux-kernel@vger.kernel.org
-Subject: [PATCHv3] ARM: sunxi: gpio: Add Allwinner SoCs GPIO drivers
-Date: Sat, 26 Jan 2013 10:31:10 +0100
-Message-Id: <1359192670-22543-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 26 Jan 2013 04:49:36 -0500
+Date: Sat, 26 Jan 2013 17:49:29 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 11/19] regmap: avoid undefined return from
+ regmap_read_debugfs
+Message-ID: <20130126094855.GI30594@opensource.wolfsonmicro.com>
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
+ <1359123276-15833-12-git-send-email-arnd@arndb.de>
+ <20130126044219.GA10580@opensource.wolfsonmicro.com>
+ <201301260917.28028.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="I/5syFLg1Ed7r+1G"
+Content-Disposition: inline
+In-Reply-To: <201301260917.28028.arnd@arndb.de>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IP responsible for the muxing on the Allwinner SoCs are also
-handling the GPIOs on the system. This patch adds the needed driver that
-relies on the pinctrl driver for most of its operations.
 
-The number of pins available for GPIOs operations are already declared
-in the pinctrl driver, we only need to probe a generic driver to handle
-the banks available for each SoC.
+--I/5syFLg1Ed7r+1G
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This driver has been tested on a A13-Olinuxino.
+On Sat, Jan 26, 2013 at 09:17:27AM +0000, Arnd Bergmann wrote:
+> On Saturday 26 January 2013, Mark Brown wrote:
+> > On Fri, Jan 25, 2013 at 02:14:28PM +0000, Arnd Bergmann wrote:
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
-Changes from v2:
-  - Removed the call to kzalloc to build the pin name
+> > > Gcc warns about the case where regmap_read_debugfs tries
 
- drivers/pinctrl/pinctrl-sunxi.c |  134 ++++++++++++++++++++++++++++++++++++++-
- drivers/pinctrl/pinctrl-sunxi.h |   25 +++++++-
- 2 files changed, 156 insertions(+), 3 deletions(-)
+> > Are you sure about that function name?
 
-diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
-index 6f02e34..4ed0e7e 100644
---- a/drivers/pinctrl/pinctrl-sunxi.c
-+++ b/drivers/pinctrl/pinctrl-sunxi.c
-@@ -11,6 +11,7 @@
-  */
- 
- #include <linux/io.h>
-+#include <linux/gpio.h>
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-@@ -609,11 +610,53 @@ static int sunxi_pmx_enable(struct pinctrl_dev *pctldev,
- 	return 0;
- }
- 
-+static int
-+sunxi_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
-+			struct pinctrl_gpio_range *range,
-+			unsigned offset,
-+			bool input)
-+{
-+	struct sunxi_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
-+	struct sunxi_desc_function *desc;
-+	char pin_name[SUNXI_PIN_NAME_MAX_LEN];
-+	char *func;
-+	u8 bank, pin;
-+	int ret;
-+
-+	bank = (offset) / PINS_PER_BANK;
-+	pin = (offset) % PINS_PER_BANK;
-+
-+	ret = sprintf(pin_name, "P%c%d", 'A' + bank, pin);
-+	if (!ret)
-+		goto error;
-+
-+	if (input)
-+		func = "gpio_in";
-+	else
-+		func = "gpio_out";
-+
-+	desc = sunxi_pinctrl_desc_find_function_by_name(pctl,
-+							pin_name,
-+							func);
-+	if (!desc) {
-+		ret = -EINVAL;
-+		goto error;
-+	}
-+
-+	sunxi_pmx_set(pctldev, offset, desc->muxval);
-+
-+	ret = 0;
-+
-+error:
-+	return ret;
-+}
-+
- static struct pinmux_ops sunxi_pmx_ops = {
- 	.get_functions_count	= sunxi_pmx_get_funcs_cnt,
- 	.get_function_name	= sunxi_pmx_get_func_name,
- 	.get_function_groups	= sunxi_pmx_get_func_groups,
- 	.enable			= sunxi_pmx_enable,
-+	.gpio_set_direction	= sunxi_pmx_gpio_set_direction,
- };
- 
- static struct pinctrl_desc sunxi_pctrl_desc = {
-@@ -622,6 +665,60 @@ static struct pinctrl_desc sunxi_pctrl_desc = {
- 	.pmxops		= &sunxi_pmx_ops,
- };
- 
-+static int sunxi_pinctrl_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	return pinctrl_request_gpio(chip->base + offset);
-+}
-+
-+static void sunxi_pinctrl_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	pinctrl_free_gpio(chip->base + offset);
-+}
-+
-+static int sunxi_pinctrl_gpio_direction_input(struct gpio_chip *chip,
-+					unsigned offset)
-+{
-+	return pinctrl_gpio_direction_input(chip->base + offset);
-+}
-+
-+static int sunxi_pinctrl_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct sunxi_pinctrl *pctl = dev_get_drvdata(chip->dev);
-+
-+	u32 reg = sunxi_data_reg(offset);
-+	u8 index = sunxi_data_offset(offset);
-+	u32 val = (readl(pctl->membase + reg) >> index) & DATA_PINS_MASK;
-+
-+	return val;
-+}
-+
-+static int sunxi_pinctrl_gpio_direction_output(struct gpio_chip *chip,
-+					unsigned offset, int value)
-+{
-+	return pinctrl_gpio_direction_output(chip->base + offset);
-+}
-+
-+static void sunxi_pinctrl_gpio_set(struct gpio_chip *chip,
-+				unsigned offset, int value)
-+{
-+	struct sunxi_pinctrl *pctl = dev_get_drvdata(chip->dev);
-+	u32 reg = sunxi_data_reg(offset);
-+	u8 index = sunxi_data_offset(offset);
-+
-+	writel((value & DATA_PINS_MASK) << index, pctl->membase + reg);
-+}
-+
-+static struct gpio_chip sunxi_pinctrl_gpio_chip __devinitconst = {
-+	.owner			= THIS_MODULE,
-+	.request		= sunxi_pinctrl_gpio_request,
-+	.free			= sunxi_pinctrl_gpio_free,
-+	.direction_input	= sunxi_pinctrl_gpio_direction_input,
-+	.direction_output	= sunxi_pinctrl_gpio_direction_output,
-+	.get			= sunxi_pinctrl_gpio_get,
-+	.set			= sunxi_pinctrl_gpio_set,
-+	.can_sleep		= 0,
-+};
-+
- static struct of_device_id sunxi_pinctrl_match[] = {
- 	{ .compatible = "allwinner,sun5i-a13-pinctrl", .data = (void *)&sun5i_a13_pinctrl_data },
- 	{}
-@@ -737,7 +834,7 @@ static int sunxi_pinctrl_probe(struct platform_device *pdev)
- 	const struct of_device_id *device;
- 	struct pinctrl_pin_desc *pins;
- 	struct sunxi_pinctrl *pctl;
--	int i, ret;
-+	int i, ret, last_pin;
- 
- 	pctl = devm_kzalloc(&pdev->dev, sizeof(*pctl), GFP_KERNEL);
- 	if (!pctl)
-@@ -781,9 +878,42 @@ static int sunxi_pinctrl_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	dev_info(&pdev->dev, "initialized sunXi pin control driver\n");
-+	pctl->chip = devm_kzalloc(&pdev->dev, sizeof(*pctl->chip), GFP_KERNEL);
-+	if (!pctl->chip) {
-+		ret = -ENOMEM;
-+		goto pinctrl_error;
-+	}
-+
-+	last_pin = pctl->desc->pins[pctl->desc->npins - 1].pin.number;
-+	pctl->chip = &sunxi_pinctrl_gpio_chip;
-+	pctl->chip->ngpio = round_up(last_pin, PINS_PER_BANK);
-+	pctl->chip->label = dev_name(&pdev->dev);
-+	pctl->chip->dev = &pdev->dev;
-+	pctl->chip->base = 0;
-+
-+	ret = gpiochip_add(pctl->chip);
-+	if (ret)
-+		goto pinctrl_error;
-+
-+	for (i = 0; i < pctl->desc->npins; i++) {
-+		const struct sunxi_desc_pin *pin = pctl->desc->pins + i;
-+
-+		ret = gpiochip_add_pin_range(pctl->chip, dev_name(&pdev->dev),
-+					     pin->pin.number,
-+					     pin->pin.number, 1);
-+		if (ret)
-+			goto gpiochip_error;
-+	}
-+
-+	dev_info(&pdev->dev, "initialized sunXi PIO driver\n");
- 
- 	return 0;
-+
-+gpiochip_error:
-+	ret = gpiochip_remove(pctl->chip);
-+pinctrl_error:
-+	pinctrl_unregister(pctl->pctl_dev);
-+	return ret;
- }
- 
- static struct platform_driver sunxi_pinctrl_driver = {
-diff --git a/drivers/pinctrl/pinctrl-sunxi.h b/drivers/pinctrl/pinctrl-sunxi.h
-index 0dc3b9d..1ee35c0 100644
---- a/drivers/pinctrl/pinctrl-sunxi.h
-+++ b/drivers/pinctrl/pinctrl-sunxi.h
-@@ -254,8 +254,11 @@
- #define SUNXI_PINCTRL_PIN_PG30	PINCTRL_PIN(PG_BASE + 30, "PG30")
- #define SUNXI_PINCTRL_PIN_PG31	PINCTRL_PIN(PG_BASE + 31, "PG31")
- 
-+#define SUNXI_PIN_NAME_MAX_LEN	5
-+
- #define BANK_MEM_SIZE		0x24
- #define MUX_REGS_OFFSET		0x0
-+#define DATA_REGS_OFFSET	0x10
- #define DLEVEL_REGS_OFFSET	0x14
- #define PULL_REGS_OFFSET	0x1c
- 
-@@ -263,6 +266,9 @@
- #define MUX_PINS_PER_REG	8
- #define MUX_PINS_BITS		4
- #define MUX_PINS_MASK		0x0f
-+#define DATA_PINS_PER_REG	32
-+#define DATA_PINS_BITS		1
-+#define DATA_PINS_MASK		0x01
- #define DLEVEL_PINS_PER_REG	16
- #define DLEVEL_PINS_BITS	2
- #define DLEVEL_PINS_MASK	0x03
-@@ -283,6 +289,8 @@ struct sunxi_desc_pin {
- struct sunxi_pinctrl_desc {
- 	const struct sunxi_desc_pin	*pins;
- 	int				npins;
-+	struct pinctrl_gpio_range	*ranges;
-+	int				nranges;
- };
- 
- struct sunxi_pinctrl_function {
-@@ -299,6 +307,7 @@ struct sunxi_pinctrl_group {
- 
- struct sunxi_pinctrl {
- 	void __iomem			*membase;
-+	struct gpio_chip		*chip;
- 	struct sunxi_pinctrl_desc	*desc;
- 	struct device			*dev;
- 	struct sunxi_pinctrl_function	*functions;
-@@ -321,7 +330,6 @@ struct sunxi_pinctrl {
- 		.muxval = _val,					\
- 	}
- 
--
- /*
-  * The sunXi PIO registers are organized as is:
-  * 0x00 - 0x0c	Muxing values.
-@@ -354,6 +362,21 @@ static inline u32 sunxi_mux_offset(u16 pin)
- 	return pin_num * MUX_PINS_BITS;
- }
- 
-+static inline u32 sunxi_data_reg(u16 pin)
-+{
-+	u8 bank = pin / PINS_PER_BANK;
-+	u32 offset = bank * BANK_MEM_SIZE;
-+	offset += DATA_REGS_OFFSET;
-+	offset += pin % PINS_PER_BANK / DATA_PINS_PER_REG * 0x04;
-+	return round_down(offset, 4);
-+}
-+
-+static inline u32 sunxi_data_offset(u16 pin)
-+{
-+	u32 pin_num = pin % DATA_PINS_PER_REG;
-+	return pin_num * DATA_PINS_BITS;
-+}
-+
- static inline u32 sunxi_dlevel_reg(u16 pin)
- {
- 	u8 bank = pin / PINS_PER_BANK;
--- 
-1.7.10.4
+> Yes, regmap_read_debugfs uses the return value from
+> regmap_debugfs_get_dump_start, for which gcc found
+> a path that returns the uninitialized value.
 
+> > > to walk an empty map->debugfs_off_cache list, which results
+> > > in uninitialized variable getting returned.
+
+This is the bit that makes me think you're talking about the wrong
+function - regmap_debugfs_read() never looks at the off_cache list.
+
+> > > Setting this variable to 0 first avoids the warning and
+> > > the potentially undefined value.
+
+> > This probably won't apply against current code as there's already a
+> > better fix there, in general just picking a value to initialise masks
+> > errors.
+
+> I agree on the general rule not to do this, and I'm trying to avoid it
+> in the cases where I can find a better fix, but here I could not
+> (mostly because I could not figure out what this code actually
+> does. Thanks for taking a look.
+
+> Which code is the current version? Is your fix headed for 3.8 inclusion?
+
+It's all in mainline already.
+
+> I still see the warning in 3.8-rc5 as well as yesterday's linux-next,
+> with gcc-4.6, 4.7 and 4.8-pre.
+
+Oh, ffs.  This is a false positive from the compiler - there is no case
+where it can actually do this as we will bail out before the walk if the
+list is empty so we'll always take at least one trip through our
+list_for_each_entry() and either return or set ret.  It should be smart
+enough to work out that the list_empty() means list_for_each_entry()
+will iterate over at least one entry or more conservative in what it
+warns about.
+
+In any case, your change will break things - this is an example of why
+just picking a random value to assign is unhelpful.  You'd need to
+return base to avoid confusing the callers but even then doing it at the
+start of the function is overkill, it excludes a bunch of paths.  I
+guess we can work around it by putting a redundant assignment of pos and
+ret before the loop :/
+
+--I/5syFLg1Ed7r+1G
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRA6abAAoJELSic+t+oim959kP/RQjJmHt0XAjuX5HR1KNHE/M
+tFOPxQM/1tCsE/HXWdqCYi6vS7F7SKLS7b44Dc37v+b0o1NMQFUrToGGV4AZvR+x
+YIrWPeCmkYebtB7uJBQtXR87u7G+5cR7EvrmBv7GToso5yMWoK0IN2eticTTDqtl
+52HZYMJmIC9H6b8p7rKTLVNrgN9AXYP5Ej4vd1+F9v3Pg5YKns7zoiDiW95ZHdaF
+CiW+/wKJ2ryCSYOTO1DDN1158Cb0HZWis9H7s8L9S+6pd9JxoHeAM6TxJkVV+FTX
+2R7yv5NPKz1jYuJkEbQYRMj8DOVPpY6OAPeB8G/QF3ig+6Xz7y9WjDohrs1dONS1
+c8oINsJNv1EqsYmehRkJ6l+oCn6tSeSm99vinV9KxTCDeo1KwJha4Zzl22WcRghU
++oBv3y1dOvF03rYPV6CorsWFo8HLuH+OPJGZ3Z+YQFItPEeQedvpBbm43MPxai4T
+cGkrGjWfzseEdXPES8QT8ehC8dhWEIWixl4EYP06ay8UvYpilUWOylgwuzmBGGd0
+FBtz2aHOyUFQ6EZ4iwniqxYvndGw7y3OzEjm6Q2+BOkkQ73qkoLzDH3Rh6a8b0HA
+KSFdaGZ1Nqu8YFfGNltYPp7qcRnfrDUlgoSlLhf0uTatihwsNk+ujtGuX15/xhDU
+vkqoGwpZVl39wFLrd4b/
+=b39x
+-----END PGP SIGNATURE-----
+
+--I/5syFLg1Ed7r+1G--
