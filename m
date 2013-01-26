@@ -1,116 +1,644 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132Ab3AZKxl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 05:53:41 -0500
-Received: from smtp209.alice.it ([82.57.200.105]:34011 "EHLO smtp209.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887Ab3AZKx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 05:53:29 -0500
-Date: Sat, 26 Jan 2013 11:53:18 +0100
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: dri-devel@lists.freedesktop.org
-Cc: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: nouveau, linux3.8-rc5:  BUG: unable to handle kernel paging request
- at fffffffffffffff8
-Message-Id: <20130126115318.24f2e6aec77d046e6fef67ce@studenti.unina.it>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753251Ab3AZK5h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 05:57:37 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45227 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab3AZK5e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 05:57:34 -0500
+Message-ID: <5103B69A.501@kernel.org>
+Date: Sat, 26 Jan 2013 10:57:30 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, dianders@chromium.org,
+        gregkh@linuxfoundation.org, naveenkrishna.ch@gmail.com,
+        lars@metafoo.de
+Subject: Re: [PATCH] iio: adc: add exynos5 adc driver under iio framwork
+References: <1358775470-21278-1-git-send-email-ch.naveen@samsung.com> <1359003514-1646-1-git-send-email-ch.naveen@samsung.com>
+In-Reply-To: <1359003514-1646-1-git-send-email-ch.naveen@samsung.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 01/24/2013 04:58 AM, Naveen Krishna Chatradhi wrote:
+> This patch adds driver for ADC IP found on EXYNOS5250 and EXYNOS5410
+> from Samsung. Also adds the Documentation for device tree bindings.
+> 
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Just a quick general comment on patch formatting. For later versions give
+a title of
+[PATCH V5]...
+to the email as then it's easy for those of us who have been sitting
+back and quitely not reading the thread to figure out which the latest
+patch is.
 
-I am experiencing a bug with nouveau with linux-3.8-rc5, my video
-adapter is the one integrated on the MSI M3N78-VM motherboard (hence
-x86_64):
+Thanks
 
-02:00.0 VGA compatible controller: NVIDIA Corporation C77 [GeForce 8200] (rev a2) (prog-if 00 [VGA controller])
-        Subsystem: ASUSTeK Computer Inc. Device 82f2
-        Flags: bus master, fast devsel, latency 0, IRQ 21
-        Memory at fd000000 (32-bit, non-prefetchable) [size=16M]
-        Memory at f0000000 (64-bit, prefetchable) [size=128M]
-        Memory at fa000000 (64-bit, prefetchable) [size=32M]
-        I/O ports at ec00 [size=128]
-        Expansion ROM at febe0000 [disabled] [size=128K]
-        Capabilities: <access denied>
-        Kernel driver in use: nouveau
+Jonathan
 
-The problem happens every time I use some 3D feature, for instance the
-trace below is from after I started "blender":
-
-
-[ 6163.299538] BUG: unable to handle kernel paging request at fffffffffffffff8
-[ 6163.299600] IP: [<ffffffffa02cff32>] nouveau_mm_head+0x30/0x127 [nouveau]
-[ 6163.299714] PGD 160e067 PUD 160f067 PMD 0 
-[ 6163.299739] Oops: 0000 [#1] SMP 
-[ 6163.299757] Modules linked in: hidp ebtable_nat ebtables cpufreq_powersave cpufreq_conservative cpufreq_stats cpufreq_userspace ipt_MASQUERADE xt_CHECKSUM bridge stp llc ppdev lp bnep rfcomm tun sit tunnel4 binfmt_misc uinput ib_iser rdma_cm ib_addr iw_cm ib_cm ib_sa ib_mad ib_core iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi ip6table_raw ip6table_mangle ip6t_REJECT xt_LOG nf_conntrack_ipv6 nf_defrag_ipv6 ip6t_rt ip6table_filter ip6_tables xt_tcpudp ipt_REJECT ipt_ULOG xt_limit xt_multiport xt_conntrack iptable_filter iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_raw ip_tables x_tables loop fuse snd_hda_codec_hdmi snd_hda_codec_via lm63 adm1021 snd_hda_intel snd_hda_codec snd_usb_audio snd_usbmidi_lib snd_hwdep lm90 snd_pcm_oss snd_mixer_oss f75375s snd_seq_midi snd_pcm snd_seq_midi_event snd_rawmidi snd_seq snd_page_alloc snd_seq_device adt7475 hwmon_vid snd_timer btusb snd nouveau bluetooth ttm drm_kms_helper drm mx
-m_wmi powernow_k8 i2c_algo_bit edac_mce_amd edac_core parport_pc shpchp kvm_amd soundcore rfkill crc16 kvm evdev pcspkr parport ehci_pci k8temp video asus_atk0110 wmi processor thermal_sys i2c_nforce2 i2c_core button ext3 mbcache jbd sg sr_mod cdrom usb_storage hid_generic usbhid hid sd_mod crc_t10dif dm_mod ahci libahci libata ohci_hcd ehci_hcd forcedeth scsi_mod usbcore usb_common floppy
-[ 6163.300023] CPU 0 
-[ 6163.300023] Pid: 3460, comm: Xorg Not tainted 3.8.0-rc5-ao2 #6 System manufacturer System Product Name/M3N78-VM
-[ 6163.300023] RIP: 0010:[<ffffffffa02cff32>]  [<ffffffffa02cff32>] nouveau_mm_head+0x30/0x127 [nouveau]
-[ 6163.300023] RSP: 0018:ffff8801167eb9c8  EFLAGS: 00010216
-[ 6163.300023] RAX: 00000000ffffffff RBX: fffffffffffffff0 RCX: 000000000000006c
-[ 6163.300023] RDX: 000000000000006c RSI: 0000000000000001 RDI: ffff8801167e6108
-[ 6163.300023] RBP: ffff8800bb334d78 R08: 0000000000000000 R09: ffff8800bb334d78
-[ 6163.300023] R10: 0000000000000360 R11: ffff8800bb334cc0 R12: 000000000000006c
-[ 6163.300023] R13: ffff8801167e6001 R14: ffff8801167e6020 R15: ffff8801167eba90
-[ 6163.300023] FS:  00007f23f04c2880(0000) GS:ffff88011fc00000(0000) knlGS:0000000000000000
-[ 6163.300023] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 6163.300023] CR2: fffffffffffffff8 CR3: 00000001194d6000 CR4: 00000000000007f0
-[ 6163.300023] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 6163.300023] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 6163.300023] Process Xorg (pid: 3460, threadinfo ffff8801167ea000, task ffff88011770a7c0)
-[ 6163.300023] Stack:
-[ 6163.300023]  00000000000080d0 ffffffff167e6020 0000000000000002 0000000000000360
-[ 6163.300023]  0000000000000002 0000000000000010 ffff8801167e6000 ffff8801167e6020
-[ 6163.300023]  ffff8801167eba90 ffffffffa02e19be ffff8801167ebb00 00000360ffffe000
-[ 6163.300023] Call Trace:
-[ 6163.300023]  [<ffffffffa02e19be>] ? nv50_fb_vram_new+0xc5/0x1f2 [nouveau]
-[ 6163.300023]  [<ffffffffa0324e3a>] ? nouveau_vram_manager_new+0x62/0xa4 [nouveau]
-[ 6163.300023]  [<ffffffffa029fc6a>] ? ttm_bo_mem_space+0x113/0x301 [ttm]
-[ 6163.300023]  [<ffffffff81383c00>] ? _raw_write_lock_irqsave+0x19/0x2a
-[ 6163.300023]  [<ffffffff8110b000>] ? create_object+0x1e9/0x299
-[ 6163.300023]  [<ffffffffa029feef>] ? ttm_bo_move_buffer+0x97/0xdd [ttm]
-[ 6163.300023]  [<ffffffffa029ffd4>] ? ttm_bo_validate+0x9f/0xdd [ttm]
-[ 6163.300023]  [<ffffffffa02a0353>] ? ttm_bo_init+0x341/0x37d [ttm]
-[ 6163.300023]  [<ffffffffa0326663>] ? nouveau_bo_new+0x239/0x25e [nouveau]
-[ 6163.300023]  [<ffffffffa032629d>] ? nouveau_ttm_tt_unpopulate+0xa3/0xa3 [nouveau]
-[ 6163.300023]  [<ffffffff811c796b>] ? idr_get_empty_slot+0x18a/0x292
-[ 6163.300023]  [<ffffffffa0327d92>] ? nouveau_gem_new+0x53/0xf7 [nouveau]
-[ 6163.300023]  [<ffffffffa0327ed5>] ? nouveau_gem_ioctl_new+0x9f/0x107 [nouveau]
-[ 6163.300023]  [<ffffffffa02700ea>] ? drm_gem_flink_ioctl+0xc1/0xde [drm]
-[ 6163.300023]  [<ffffffffa026e603>] ? drm_ioctl+0x28c/0x36a [drm]
-[ 6163.300023]  [<ffffffffa0327e36>] ? nouveau_gem_new+0xf7/0xf7 [nouveau]
-[ 6163.300023]  [<ffffffff8111949e>] ? vfs_ioctl+0x1e/0x31
-[ 6163.300023]  [<ffffffff81119cd6>] ? do_vfs_ioctl+0x3ee/0x430
-[ 6163.300023]  [<ffffffff8110cf1c>] ? vfs_read+0xac/0xf5
-[ 6163.300023]  [<ffffffff81119d65>] ? sys_ioctl+0x4d/0x7c
-[ 6163.300023]  [<ffffffff81388f29>] ? system_call_fastpath+0x16/0x1b
-[ 6163.300023] Code: 44 89 c0 41 56 f7 d0 41 55 41 88 f5 41 54 41 89 d4 55 4c 89 cd 53 48 83 ec 18 48 8b 5f 10 89 44 24 0c 48 83 eb 10 e9 da 00 00 00 <48> 8b 43 08 44 8b 53 34 44 8b 7b 38 48 39 f8 45 89 d3 47 8d 0c 
-[ 6163.300023] RIP  [<ffffffffa02cff32>] nouveau_mm_head+0x30/0x127 [nouveau]
-[ 6163.300023]  RSP <ffff8801167eb9c8>
-[ 6163.300023] CR2: fffffffffffffff8
-[ 6163.300023] ---[ end trace b0239eaa41f9b476 ]---
-[ 6165.326199] nouveau E[   PDISP][0000:02:00.0] chid 1 mthd 0x0080 data 0x00000000 0x000b5080
-
-
-I had a similar issue in 3.7-rc cycle, here is a link to the discussion
-https://lkml.org/lkml/2012/10/29/696 where David explained the cause,
-I am not sure if this is the same scenario tho.
-
-Thanks,
-   Antonio
-
--- 
-Antonio Ospite
-http://ao2.it
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
+> ---
+> Changes since v1:
+> 
+> 1. Fixed comments from Lars
+> 2. Added support for ADC on EXYNOS5410
+> 
+> Changes since v2:
+> 
+> 1. Changed the instance name for (struct iio_dev *) to indio_dev
+> 2. Changed devm_request_irq to request_irq
+> 
+> Few doubts regarding the mappings and child device handling.
+> Kindly, suggest me better methods.
+> 
+> Changes since v3:
+> 
+> 1. Added clk_prepare_disable and regulator_disable calls in _remove()
+> 2. Moved init_completion before irq_request
+> 3. Added NULL pointer check for devm_request_and_ioremap() return value.
+> 4. Use number of channels as per the ADC version 
+> 5. Change the define ADC_V1_CHANNEL to ADC_CHANNEL
+> 6. Update the Documentation to include EXYNOS5410 compatible
+> 
+> Doug, i've used
+> 	chan = iio_channel_get(dev_name(&pdev->dev), "adc3");
+> in ntc thermistor driver during probe and
+> 	iio_read_channel_raw(chan, &val);
+> for read.
+> 
+> But, then the drivers become kind of coupled. Right.
+> 
+> Lars, Is there an other way.
+> 
+> Thanks for the comments
+> 
+>  .../bindings/arm/samsung/exynos5-adc.txt           |   38 ++
+>  drivers/iio/adc/Kconfig                            |    7 +
+>  drivers/iio/adc/Makefile                           |    1 +
+>  drivers/iio/adc/exynos5_adc.c                      |  475 ++++++++++++++++++++
+>  4 files changed, 521 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/samsung/exynos5-adc.txt
+>  create mode 100644 drivers/iio/adc/exynos5_adc.c
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos5-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos5-adc.txt
+> new file mode 100644
+> index 0000000..0f281d9
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos5-adc.txt
+> @@ -0,0 +1,38 @@
+> +Samsung Exynos5 Analog to Digital Converter bindings
+> +
+> +Required properties:
+> +- compatible:		Must be "samsung,exynos5250-adc" for exynos5250 controllers.
+> +			Must be "samsung,exynos5410-adc" for exynos5410 controllers.
+> +- reg:			Contains ADC register address range (base address and
+> +			length).
+> +- interrupts: 		Contains the interrupt information for the timer. The
+> +			format is being dependent on which interrupt controller
+> +			the Samsung device uses.
+> +
+> +Note: child nodes can be added for auto probing from device tree.
+> +
+> +Example: adding device info in dtsi file
+> +
+> +adc@12D10000 {
+> +	compatible = "samsung,exynos5250-adc";
+> +	reg = <0x12D10000 0x100>;
+> +	interrupts = <0 106 0>;
+> +	#address-cells = <1>;
+> +	#size-cells = <1>;
+> +	ranges;
+> +};
+> +
+> +
+> +Example: Adding child nodes in dts file
+> +
+> +adc@12D10000 {
+> +
+> +	/* NTC thermistor is a hwmon device */
+> +	ncp15wb473@0 {
+> +		compatible = "ntc,ncp15wb473";
+> +		reg = <0x0>;
+> +		pullup-uV = <1800000>;
+> +		pullup-ohm = <47000>;
+> +		pulldown-ohm = <0>;
+> +	};
+> +};
+> diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+> index fe822a1..33ceabf 100644
+> --- a/drivers/iio/adc/Kconfig
+> +++ b/drivers/iio/adc/Kconfig
+> @@ -91,6 +91,13 @@ config AT91_ADC
+>  	help
+>  	  Say yes here to build support for Atmel AT91 ADC.
+>  
+> +config EXYNOS5_ADC
+> +	bool "Exynos5 ADC driver support"
+> +	help
+> +	  Core support for the ADC block found in the Samsung EXYNOS5 series
+> +	  of SoCs for drivers such as the touchscreen and hwmon to use to share
+> +	  this resource.
+> +
+>  config LP8788_ADC
+>  	bool "LP8788 ADC driver"
+>  	depends on MFD_LP8788
+> diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
+> index 2d5f100..5b4a4f6 100644
+> --- a/drivers/iio/adc/Makefile
+> +++ b/drivers/iio/adc/Makefile
+> @@ -10,6 +10,7 @@ obj-$(CONFIG_AD7791) += ad7791.o
+>  obj-$(CONFIG_AD7793) += ad7793.o
+>  obj-$(CONFIG_AD7887) += ad7887.o
+>  obj-$(CONFIG_AT91_ADC) += at91_adc.o
+> +obj-$(CONFIG_EXYNOS5_ADC) += exynos5_adc.o
+>  obj-$(CONFIG_LP8788_ADC) += lp8788_adc.o
+>  obj-$(CONFIG_MAX1363) += max1363.o
+>  obj-$(CONFIG_TI_ADC081C) += ti-adc081c.o
+> diff --git a/drivers/iio/adc/exynos5_adc.c b/drivers/iio/adc/exynos5_adc.c
+> new file mode 100644
+> index 0000000..4963649
+> --- /dev/null
+> +++ b/drivers/iio/adc/exynos5_adc.c
+> @@ -0,0 +1,475 @@
+> +/*
+> + *  exynos5_adc.c - Support for ADC in EXYNOS5 SoCs
+> + *
+> + *  8 ~ 10 channel, 10/12-bit ADC
+> + *
+> + *  Copyright (C) 2013 Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + *  This program is distributed in the hope that it will be useful,
+> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + *  GNU General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License
+> + *  along with this program; if not, write to the Free Software
+> + *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/delay.h>
+> +#include <linux/kernel.h>
+> +#include <linux/slab.h>
+> +#include <linux/io.h>
+> +#include <linux/clk.h>
+> +#include <linux/completion.h>
+> +#include <linux/of.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/regulator/consumer.h>
+> +#include <linux/of_platform.h>
+> +
+> +#include <linux/iio/iio.h>
+> +#include <linux/iio/machine.h>
+> +#include <linux/iio/driver.h>
+> +
+> +enum adc_version {
+> +	ADC_V1,
+> +	ADC_V2
+> +};
+> +
+> +/* EXYNOS5250 ADC_V1 registers definitions */
+> +#define ADC_V1_CON(x)		((x) + 0x00)
+> +#define ADC_V1_DLY(x)		((x) + 0x08)
+> +#define ADC_V1_DATX(x)		((x) + 0x0C)
+> +#define ADC_V1_INTCLR(x)	((x) + 0x18)
+> +#define ADC_V1_MUX(x)		((x) + 0x1c)
+> +
+> +/* EXYNOS5410 ADC_V2 registers definitions */
+> +#define ADC_V2_CON1(x)		((x) + 0x00)
+> +#define ADC_V2_CON2(x)		((x) + 0x04)
+> +#define ADC_V2_STAT(x)		((x) + 0x08)
+> +#define ADC_V2_INT_EN(x)	((x) + 0x10)
+> +#define ADC_V2_INT_ST(x)	((x) + 0x14)
+> +#define ADC_V2_VER(x)		((x) + 0x20)
+> +
+> +/* Bit definitions for ADC_V1 */
+> +#define ADC_V1_CON_RES		(1u << 16)
+> +#define ADC_V1_CON_PRSCEN	(1u << 14)
+> +#define ADC_V1_CON_PRSCLV(x)	(((x) & 0xFF) << 6)
+> +#define ADC_V1_CON_STANDBY	(1u << 2)
+> +
+> +/* Bit definitions for ADC_V2 */
+> +#define ADC_V2_CON1_SOFT_RESET	(1u << 2)
+> +
+> +#define ADC_V2_CON2_OSEL	(1u << 10)
+> +#define ADC_V2_CON2_ESEL	(1u << 9)
+> +#define ADC_V2_CON2_HIGHF	(1u << 8)
+> +#define ADC_V2_CON2_C_TIME(x)	(((x) & 7) << 4)
+> +#define ADC_V2_CON2_ACH_SEL(x)	(((x) & 0xF) << 0)
+> +#define ADC_V2_CON2_ACH_MASK	0xF
+> +
+> +/* Bit definitions common for ADC_V1 and ADC_V2 */
+> +#define ADC_V1_CON_EN_START		(1u << 0)
+> +#define ADC_V1_DATX_MASK	0xFFF
+> +
+> +struct exynos5_adc {
+> +	void __iomem		*regs;
+> +	struct clk		*clk;
+> +	unsigned int		irq;
+> +	struct regulator	*vdd;
+> +
+> +	struct completion	completion;
+> +
+> +	struct iio_map		*map;
+> +	u32			value;
+> +	unsigned int            version;
+> +};
+> +
+> +static const struct of_device_id exynos5_adc_match[] = {
+> +	{ .compatible = "samsung,exynos5250-adc", .data = (void *)ADC_V1 },
+> +	{ .compatible = "samsung,exynos5410-adc", .data = (void *)ADC_V2 },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, exynos5_adc_match);
+> +
+> +static inline unsigned int exynos5_adc_get_version(struct platform_device *pdev)
+> +{
+> +	const struct of_device_id *match;
+> +
+> +	match = of_match_node(exynos5_adc_match, pdev->dev.of_node);
+> +	return (unsigned int)match->data;
+> +}
+> +
+> +/* default maps used by iio consumer (ex: ntc-thermistor driver) */
+> +static struct iio_map exynos5_adc_iio_map[] = {
+> +	{
+> +		.consumer_dev_name = "0.ncp15wb473",
+> +		.consumer_channel = "adc3",
+> +		.adc_channel_label = "adc3",
+> +	},
+> +	{
+> +		.consumer_dev_name = "1.ncp15wb473",
+> +		.consumer_channel = "adc4",
+> +		.adc_channel_label = "adc4",
+> +	},
+> +	{
+> +		.consumer_dev_name = "2.ncp15wb473",
+> +		.consumer_channel = "adc5",
+> +		.adc_channel_label = "adc5",
+> +	},
+> +	{
+> +		.consumer_dev_name = "3.ncp15wb473",
+> +		.consumer_channel = "adc6",
+> +		.adc_channel_label = "adc6",
+> +	},
+> +	{},
+> +};
+> +
+> +static int exynos5_read_raw(struct iio_dev *indio_dev,
+> +				struct iio_chan_spec const *chan,
+> +				int *val,
+> +				int *val2,
+> +				long mask)
+> +{
+> +	struct exynos5_adc *info = iio_priv(indio_dev);
+> +	u32 con1, con2;
+> +
+> +	if (mask == IIO_CHAN_INFO_RAW) {
+> +		mutex_lock(&indio_dev->mlock);
+> +
+> +		/* Select the channel to be used and Trigger conversion */
+> +		if (info->version == ADC_V2) {
+> +			con2 = readl(ADC_V2_CON2(info->regs));
+> +			con2 &= ~ADC_V2_CON2_ACH_MASK;
+> +			con2 |= ADC_V2_CON2_ACH_SEL(chan->address);
+> +			writel(con2, ADC_V2_CON2(info->regs));
+> +
+> +			con1 = readl(ADC_V2_CON1(info->regs));
+> +			writel(con1 | ADC_V1_CON_EN_START,
+> +					ADC_V2_CON1(info->regs));
+> +		} else {
+> +			writel(chan->address, ADC_V1_MUX(info->regs));
+> +
+> +			con1 = readl(ADC_V1_CON(info->regs));
+> +			writel(con1 | ADC_V1_CON_EN_START,
+> +					ADC_V1_CON(info->regs));
+> +		}
+> +
+> +		wait_for_completion(&info->completion);
+> +		*val = info->value;
+> +
+> +		mutex_unlock(&indio_dev->mlock);
+> +
+> +		return IIO_VAL_INT;
+> +	}
+> +
+> +	return -EINVAL;
+> +}
+> +
+> +static irqreturn_t exynos5_adc_isr(int irq, void *dev_id)
+> +{
+> +	struct exynos5_adc *info = (struct exynos5_adc *)dev_id;
+> +
+> +	/* Read value */
+> +	info->value = readl(ADC_V1_DATX(info->regs)) &
+> +						ADC_V1_DATX_MASK;
+> +	/* clear irq */
+> +	if (info->version == ADC_V2)
+> +		writel(1, ADC_V2_INT_ST(info->regs));
+> +	else
+> +		writel(1, ADC_V1_INTCLR(info->regs));
+> +
+> +	complete(&info->completion);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int exynos5_adc_reg_access(struct iio_dev *indio_dev,
+> +			      unsigned reg, unsigned writeval,
+> +			      unsigned *readval)
+> +{
+> +	struct exynos5_adc *info = iio_priv(indio_dev);
+> +	u32 ret;
+> +
+> +	mutex_lock(&indio_dev->mlock);
+> +
+> +	if (readval != NULL) {
+> +		ret = readl(info->regs + reg);
+> +		*readval = ret;
+> +	} else
+> +		ret = -EINVAL;
+> +
+> +	mutex_unlock(&indio_dev->mlock);
+> +
+> +	return ret;
+> +}
+> +
+> +static const struct iio_info exynos5_adc_iio_info = {
+> +	.read_raw = &exynos5_read_raw,
+> +	.debugfs_reg_access = &exynos5_adc_reg_access,
+> +	.driver_module = THIS_MODULE,
+> +};
+> +
+> +#define ADC_CHANNEL(_index, _id) {			\
+> +	.type = IIO_VOLTAGE,				\
+> +	.indexed = 1,					\
+> +	.channel = _index,				\
+> +	.address = _index,				\
+> +	.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT,	\
+> +	.datasheet_name = _id,				\
+> +}
+> +
+> +static const struct iio_chan_spec exynos5_adc_iio_channels[] = {
+> +	ADC_CHANNEL(0, "adc0"),
+> +	ADC_CHANNEL(1, "adc1"),
+> +	ADC_CHANNEL(2, "adc2"),
+> +	ADC_CHANNEL(3, "adc3"),
+> +	ADC_CHANNEL(4, "adc4"),
+> +	ADC_CHANNEL(5, "adc5"),
+> +	ADC_CHANNEL(6, "adc6"),
+> +	ADC_CHANNEL(7, "adc7"),
+> +	ADC_CHANNEL(8, "adc8"),
+> +	ADC_CHANNEL(9, "adc9"),
+> +};
+> +
+> +static int exynos5_adc_remove_devices(struct device *dev, void *c)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +
+> +	platform_device_unregister(pdev);
+> +
+> +	return 0;
+> +}
+> +
+> +static void exynos5_adc_hw_init(struct exynos5_adc *info)
+> +{
+> +	u32 con1, con2;
+> +
+> +	if (info->version == ADC_V2) {
+> +		con1 = ADC_V2_CON1_SOFT_RESET;
+> +		writel(con1, ADC_V2_CON1(info->regs));
+> +
+> +		con2 = ADC_V2_CON2_OSEL | ADC_V2_CON2_ESEL |
+> +			ADC_V2_CON2_HIGHF | ADC_V2_CON2_C_TIME(0);
+> +		writel(con2, ADC_V2_CON2(info->regs));
+> +
+> +		/* Enable interrupts */
+> +		writel(1, ADC_V2_INT_EN(info->regs));
+> +	} else {
+> +		/* set default prescaler values and Enable prescaler */
+> +		con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
+> +
+> +		/* Enable 12-bit ADC resolution */
+> +		con1 |= ADC_V1_CON_RES;
+> +		writel(con1, ADC_V1_CON(info->regs));
+> +	}
+> +}
+> +
+> +static int exynos5_adc_probe(struct platform_device *pdev)
+> +{
+> +	struct exynos5_adc *info = NULL;
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct iio_dev *indio_dev = NULL;
+> +	struct resource	*mem;
+> +	int ret = -ENODEV;
+> +	int irq;
+> +
+> +	if (!np)
+> +		return ret;
+> +
+> +	indio_dev = iio_device_alloc(sizeof(struct exynos5_adc));
+> +	if (!indio_dev) {
+> +		dev_err(&pdev->dev, "failed allocating iio device\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	info = iio_priv(indio_dev);
+> +
+> +	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +
+> +	info->regs = devm_request_and_ioremap(&pdev->dev, mem);
+> +	if (!info->regs)
+> +		return -ENOMEM;
+> +
+> +	irq = platform_get_irq(pdev, 0);
+> +	if (irq < 0) {
+> +		dev_err(&pdev->dev, "no irq resource?\n");
+> +		ret = irq;
+> +		goto err_iio;
+> +	}
+> +
+> +	info->irq = irq;
+> +
+> +	init_completion(&info->completion);
+> +
+> +	ret = request_irq(info->irq, exynos5_adc_isr,
+> +					0, dev_name(&pdev->dev), info);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "failed requesting irq, irq = %d\n",
+> +							info->irq);
+> +		goto err_iio;
+> +	}
+> +
+> +	info->clk = devm_clk_get(&pdev->dev, "adc");
+> +	if (IS_ERR(info->clk)) {
+> +		dev_err(&pdev->dev, "failed getting clock, err = %ld\n",
+> +							PTR_ERR(info->clk));
+> +		ret = PTR_ERR(info->clk);
+> +		goto err_irq;
+> +	}
+> +
+> +	info->vdd = devm_regulator_get(&pdev->dev, "vdd");
+> +	if (IS_ERR(info->vdd)) {
+> +		dev_err(&pdev->dev, "failed getting regulator, err = %ld\n",
+> +							PTR_ERR(info->vdd));
+> +		ret = PTR_ERR(info->vdd);
+> +		goto err_irq;
+> +	}
+> +
+> +	info->version = exynos5_adc_get_version(pdev);
+> +
+> +	platform_set_drvdata(pdev, indio_dev);
+> +
+> +	indio_dev->name = dev_name(&pdev->dev);
+> +	indio_dev->dev.parent = &pdev->dev;
+> +	indio_dev->dev.of_node = pdev->dev.of_node;
+> +	indio_dev->info = &exynos5_adc_iio_info;
+> +	indio_dev->modes = INDIO_DIRECT_MODE;
+> +	indio_dev->channels = exynos5_adc_iio_channels;
+> +
+> +	if (info->version == ADC_V1)
+> +		/* ADC core in EXYNOS5250 has 8 channels */
+> +		indio_dev->num_channels =
+> +				ARRAY_SIZE(exynos5_adc_iio_channels) - 2;
+> +	else
+> +		/* ADC core in EXYNOS5410 has 10 channels */
+> +		indio_dev->num_channels =
+> +				ARRAY_SIZE(exynos5_adc_iio_channels);
+> +
+> +	info->map = exynos5_adc_iio_map;
+> +
+> +	ret = iio_map_array_register(indio_dev, info->map);
+> +	if (ret) {
+> +		dev_err(&indio_dev->dev, "failed mapping iio, err: %d\n", ret);
+> +		goto err_irq;
+> +	}
+> +
+> +	ret = iio_device_register(indio_dev);
+> +	if (ret)
+> +		goto err_map;
+> +
+> +	ret = regulator_enable(info->vdd);
+> +	if (ret)
+> +		goto err_iio_dev;
+> +
+> +	clk_prepare_enable(info->clk);
+> +
+> +	exynos5_adc_hw_init(info);
+> +
+> +	ret = of_platform_populate(np, exynos5_adc_match, NULL, &pdev->dev);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "failed adding child nodes\n");
+> +		goto err_of_populate;
+> +	}
+> +
+> +	return 0;
+> +
+> +err_of_populate:
+> +	device_for_each_child(&pdev->dev, NULL, exynos5_adc_remove_devices);
+> +	clk_disable_unprepare(info->clk);
+> +	regulator_disable(info->vdd);
+> +err_iio_dev:
+> +	iio_device_unregister(indio_dev);
+> +err_map:
+> +	iio_map_array_unregister(indio_dev, info->map);
+> +err_irq:
+> +	free_irq(info->irq, info);
+> +err_iio:
+> +	iio_device_free(indio_dev);
+> +	return ret;
+> +}
+> +
+> +static int exynos5_adc_remove(struct platform_device *pdev)
+> +{
+> +	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+> +	struct exynos5_adc *info = iio_priv(indio_dev);
+> +
+> +	clk_disable_unprepare(info->clk);
+> +	regulator_disable(info->vdd);
+> +	iio_device_unregister(indio_dev);
+> +	iio_map_array_unregister(indio_dev, info->map);
+> +	free_irq(info->irq, info);
+> +	iio_device_free(indio_dev);
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int exynos5_adc_suspend(struct device *dev)
+> +{
+> +	struct exynos5_adc *info = dev_get_data(dev);
+> +	u32 con;
+> +
+> +	if (info->version == ADC_V2) {
+> +		con = readl(ADC_V2_CON1(info->regs));
+> +		con &= ~ADC_V1_CON_EN_START;
+> +		writel(con, ADC_V2_CON1(info->regs));
+> +	} else {
+> +		con = readl(ADC_V1_CON(info->regs));
+> +		con |= ADC_V1_CON_STANDBY;
+> +		writel(con, ADC_V1_CON(info->regs));
+> +	}
+> +
+> +	clk_disable_unprepare(info->clk);
+> +	regulator_disable(info->vdd);
+> +
+> +	return 0;
+> +}
+> +
+> +static int exynos5_adc_resume(struct device *dev)
+> +{
+> +	struct exynos5_adc *info = dev_get_data(dev);
+> +	int ret;
+> +
+> +	ret = regulator_enable(info->vdd);
+> +	if (ret)
+> +		return ret;
+> +
+> +	clk_prepare_enable(info->clk);
+> +
+> +	exynos5_adc_hw_init(info);
+> +
+> +	return 0;
+> +}
+> +
+> +#else
+> +#define exynos5_adc_suspend NULL
+> +#define exynos5_adc_resume NULL
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(exynos5_adc_pm_ops,
+> +			exynos5_adc_suspend,
+> +			exynos5_adc_resume);
+> +
+> +static struct platform_driver exynos5_adc_driver = {
+> +	.probe		= exynos5_adc_probe,
+> +	.remove		= exynos5_adc_remove,
+> +	.driver		= {
+> +		.name	= "exynos5-adc",
+> +		.owner	= THIS_MODULE,
+> +		.of_match_table = of_match_ptr(exynos5_adc_match),
+> +		.pm	= &exynos5_adc_pm_ops,
+> +	},
+> +};
+> +
+> +module_platform_driver(exynos5_adc_driver);
+> +
+> +MODULE_AUTHOR("Naveen Krishna Chatradhi <ch.naveen@samsung.com>");
+> +MODULE_DESCRIPTION("Samsung EXYNOS5 ADC driver");
+> +MODULE_LICENSE("GPL");
+> 
