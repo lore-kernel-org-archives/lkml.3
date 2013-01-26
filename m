@@ -1,150 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab3AZU4P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 15:56:15 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:47286 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754174Ab3AZU4M (ORCPT
+	id S1754371Ab3AZVAJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 16:00:09 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:53134 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754188Ab3AZVAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 15:56:12 -0500
-Date: Sat, 26 Jan 2013 20:58:05 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Vasily Kulikov <segoon@openwall.com>
-Subject: Re: [PATCH review 1/6] userns: Avoid recursion in put_user_ns
-Message-ID: <20130126205805.GA11274@mail.hallyn.com>
-References: <87ehh8it9s.fsf@xmission.com>
- <877gn0it3t.fsf@xmission.com>
-MIME-Version: 1.0
+	Sat, 26 Jan 2013 16:00:07 -0500
+Date: Sat, 26 Jan 2013 22:00:00 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, akpm@linux-foundation.org, acme@redhat.com,
+        eranian@google.com, jolsa@redhat.com, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 04/12] perf, x86: Support the TSX intx/intx_cp qualifiers v2
+Message-ID: <20130126210000.GK30577@one.firstfloor.org>
+References: <1359151245-13179-1-git-send-email-andi@firstfloor.org> <1359151245-13179-5-git-send-email-andi@firstfloor.org> <20130126115402.GA13445@gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <877gn0it3t.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130126115402.GA13445@gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
+On Sat, Jan 26, 2013 at 12:54:02PM +0100, Ingo Molnar wrote:
 > 
-> When freeing a deeply nested user namespace free_user_ns calls
-> put_user_ns on it's parent which may in turn call free_user_ns again.
-> When -fno-optimize-sibling-calls is passed to gcc one stack frame per
-> user namespace is left on the stack, potentially overflowing the
-> kernel stack.  CONFIG_FRAME_POINTER forces -fno-optimize-sibling-calls
-> so we can't count on gcc to optimize this code.
+> * Andi Kleen <andi@firstfloor.org> wrote:
 > 
-> Remove struct kref and use a plain atomic_t.  Making the code more
-> flexible and easier to comprehend.  Make the loop in free_user_ns
-> explict to guarantee that the stack does not overflow with
-> CONFIG_FRAME_POINTER enabled.
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > Implement the TSX transaction and checkpointed transaction 
+> > qualifiers for Haswell. This allows e.g. to profile the number 
+> > of cycles in transactions.
 > 
-> I have tested this fix with a simple program that uses unshare to
-> create a deeply nested user namespace structure and then calls exit.
-> With 1000 nesteuser namespaces before this change running my test
-> program causes the kernel to die a horrible death.  With 10,000,000
-> nested user namespaces after this change my test program runs to
-> completion and causes no harm.
-> 
-> Pointed-out-by: Vasily Kulikov <segoon@openwall.com>
+> The changelog should explain why this is a basic feature that is 
+> a must-have to have basic perf support. (i.e. default 'perf 
+> record', 'perf report', 'perf stat' and 'perf top' works and is 
+> meaningful.)
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+The patch is not needed for primitive cycle sampling only.
 
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  include/linux/user_namespace.h |   10 +++++-----
->  kernel/user.c                  |    4 +---
->  kernel/user_namespace.c        |   17 +++++++++--------
->  3 files changed, 15 insertions(+), 16 deletions(-)
-> 
-> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-> index b9bd2e6..4ce0093 100644
-> --- a/include/linux/user_namespace.h
-> +++ b/include/linux/user_namespace.h
-> @@ -21,7 +21,7 @@ struct user_namespace {
->  	struct uid_gid_map	uid_map;
->  	struct uid_gid_map	gid_map;
->  	struct uid_gid_map	projid_map;
-> -	struct kref		kref;
-> +	atomic_t		count;
->  	struct user_namespace	*parent;
->  	kuid_t			owner;
->  	kgid_t			group;
-> @@ -35,18 +35,18 @@ extern struct user_namespace init_user_ns;
->  static inline struct user_namespace *get_user_ns(struct user_namespace *ns)
->  {
->  	if (ns)
-> -		kref_get(&ns->kref);
-> +		atomic_inc(&ns->count);
->  	return ns;
->  }
->  
->  extern int create_user_ns(struct cred *new);
->  extern int unshare_userns(unsigned long unshare_flags, struct cred **new_cred);
-> -extern void free_user_ns(struct kref *kref);
-> +extern void free_user_ns(struct user_namespace *ns);
->  
->  static inline void put_user_ns(struct user_namespace *ns)
->  {
-> -	if (ns)
-> -		kref_put(&ns->kref, free_user_ns);
-> +	if (ns && atomic_dec_and_test(&ns->count))
-> +		free_user_ns(ns);
->  }
->  
->  struct seq_operations;
-> diff --git a/kernel/user.c b/kernel/user.c
-> index 33acb5e..57ebfd4 100644
-> --- a/kernel/user.c
-> +++ b/kernel/user.c
-> @@ -47,9 +47,7 @@ struct user_namespace init_user_ns = {
->  			.count = 4294967295U,
->  		},
->  	},
-> -	.kref = {
-> -		.refcount	= ATOMIC_INIT(3),
-> -	},
-> +	.count = ATOMIC_INIT(3),
->  	.owner = GLOBAL_ROOT_UID,
->  	.group = GLOBAL_ROOT_GID,
->  	.proc_inum = PROC_USER_INIT_INO,
-> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-> index 2b042c4..24f8ec3 100644
-> --- a/kernel/user_namespace.c
-> +++ b/kernel/user_namespace.c
-> @@ -78,7 +78,7 @@ int create_user_ns(struct cred *new)
->  		return ret;
->  	}
->  
-> -	kref_init(&ns->kref);
-> +	atomic_set(&ns->count, 1);
->  	/* Leave the new->user_ns reference with the new user namespace. */
->  	ns->parent = parent_ns;
->  	ns->owner = owner;
-> @@ -104,15 +104,16 @@ int unshare_userns(unsigned long unshare_flags, struct cred **new_cred)
->  	return create_user_ns(cred);
->  }
->  
-> -void free_user_ns(struct kref *kref)
-> +void free_user_ns(struct user_namespace *ns)
->  {
-> -	struct user_namespace *parent, *ns =
-> -		container_of(kref, struct user_namespace, kref);
-> +	struct user_namespace *parent;
->  
-> -	parent = ns->parent;
-> -	proc_free_inum(ns->proc_inum);
-> -	kmem_cache_free(user_ns_cachep, ns);
-> -	put_user_ns(parent);
-> +	do {
-> +		parent = ns->parent;
-> +		proc_free_inum(ns->proc_inum);
-> +		kmem_cache_free(user_ns_cachep, ns);
-> +		ns = parent;
-> +	} while (atomic_dec_and_test(&parent->count));
->  }
->  EXPORT_SYMBOL(free_user_ns);
->  
-> -- 
-> 1.7.5.4
+These qualifiers are a fundamental feature for any TSX tuning. If you don't
+care about TSX it's not fundamental. TSX tuning relies heavily on the PMU,
+so for any TSX work it's important. The 0/0 description has more
+references on the topic.
+
+It's not easy to use however with just this patch, the "perf stat -T" patch
+in the advanced series makes it easy to use.
+
+I will assume the description is sufficient and will not repost with
+a new changelog, as "basicness" of the patch is not a useful property
+to document in the long term git history.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
