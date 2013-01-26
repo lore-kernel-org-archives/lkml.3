@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab3AZDR4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 22:17:56 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40036 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754963Ab3AZDRx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 22:17:53 -0500
-Message-ID: <1359170258.3146.10.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: Bug#695182: [PATCH] Subtract min_free_kbytes from dirtyable
- memory
-From: Ben Hutchings <ben@decadent.org.uk>
-To: paul.szabo@sydney.edu.au
-Cc: 695182@bugs.debian.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        minchan@kernel.org
-Date: Sat, 26 Jan 2013 03:17:38 +0000
-In-Reply-To: <201301260307.r0Q37i8q002348@como.maths.usyd.edu.au>
-References: <201301260307.r0Q37i8q002348@como.maths.usyd.edu.au>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-4fTeNIEa1JjQMpdKKizV"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1755389Ab3AZDhT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 22:37:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59838 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754740Ab3AZDhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 22:37:18 -0500
+Date: Fri, 25 Jan 2013 19:38:54 -0800
+From: Greg KH <greg@kroah.com>
+To: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Cc: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
+        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
+        "Yili (Neil)" <neil.yi@huawei.com>,
+        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
+        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
+        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>
+Subject: Re: [PATCH 1/2]linux-usb:Define a new macro for USB storage match
+ rules
+Message-ID: <20130126033854.GA5066@kroah.com>
+References: <fe6cef496609.6609fe6cef49@huawei.com>
+ <5102781A.8070502@mvista.com>
+ <20130125174442.GA32333@kroah.com>
+ <910F9D9E13B84F4C8FA771DC9BDE99F32702A880@szxeml546-mbx.china.huawei.com>
+ <20130126020535.GA4652@kroah.com>
+ <CAA6KcBAuHHiGq05ahjF1TDvs0CaqeruBDhff4r8L=AfsKiCB4w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA6KcBAuHHiGq05ahjF1TDvs0CaqeruBDhff4r8L=AfsKiCB4w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 25, 2013 at 07:10:29PM -0800, Matthew Dharm wrote:
+> I suggest one of two options:
+> 
+> 1) Setup an alternative mail client.  There are many to choose from
+> which will not damage your patches.  I personally like 'mutt' (which
+> you should be able to install on your linux machine).   Others may be
+> able to recommend ones that work for them; in general, I think you
+> will find that most e-mail clients that run on Linux will be suitable.
 
---=-4fTeNIEa1JjQMpdKKizV
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The file, Documentation/email_clients.txt will help out here.
 
-On Sat, 2013-01-26 at 14:07 +1100, paul.szabo@sydney.edu.au wrote:
-> Dear Ben,
->=20
-> > ... the mm maintainers are probably much better placed ...
->=20
-> Exactly. Now I wonder: are you one of them?
+> 2) If you plan on contributing to the linux kernel in the future, it
+> may be worth your time to setup a repo on github that Greg can then
+> directly pull from.  All you would need to do is send Greg a "pull
+> request" indicating the URL of the branch in your repo that he should
+> pull from.  Greg can then pull directly from your repo, bypassing this
+> issue entirely.
 
-Hah, no.
+No, sorry, I only pull trees from a _very_ few people, patches are what
+I prefer for almost all stuff.  Only subsystem maintainers who I have
+been working with for many years will I pull trees from.
 
-Ben.
+sorry,
 
---=20
-Ben Hutchings
-Any smoothly functioning technology is indistinguishable from a rigged demo=
-.
-
---=-4fTeNIEa1JjQMpdKKizV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUQNK0ue/yOyVhhEJAQr88g/8DKC3OC5KRCqsty2hhWVsg+I2/DWO31YG
-EUwuWeA1V5r+nCtlfamy+iyhAl06fW+weQcnEyJG1+TI7X8QZMyn11tvZLP/UU1g
-7z3K3NL+dWZvwx9XNypAOzKsHs0iYlZFI3SdVfyP6QPOkbTH9xdEG3wBT+UK/Qdj
-rED8hqRuk0AllEbamomcjgma+PDSBj1uFRd96gCXOsbij4DNzJA9SA9BUYQ282TP
-8e4RL+7POeTjW3IM418MX9Kl3fmf7rrXdF8u2allh+JxtYx8a46wfnPlDGf7KgJH
-AUr5zskrDvVJD6Emb1WBBlpC5/0D67RpNPmMFiKaznVizwvV16cIu33wWYQmrSpz
-wucv+z1w9KKpOaX7xvcbOTXprOY6F7poXIxcN6CTCuNeuOimxNl7vRqXV50flCzQ
-jLnvWA0E6x7vEhnZVG5pcbqHBQlijMO3696tup2AdPat93VgNngP26sqlRdQ63qC
-fHC3f9a7FJvBqOpQT3J08/a9hkyGPRkPvKMA0zrW3q5/dJsPgyhrGiP9HhXcSa/n
-69Nq27CN/NKN8yaPqSSo1yiiDHvUnG98sWlF6m3g4LnuYoNkWMNhmf36vcLdPuZS
-RUEkSpmHuM0UlFwfnphU1t0axDMo9QKQxy3CWTjXK5gEf/vUxR9mrWoaAbAd7NNc
-OvQYS+Hq9Tg=
-=Q87h
------END PGP SIGNATURE-----
-
---=-4fTeNIEa1JjQMpdKKizV--
+greg k-h
