@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607Ab3AZPQs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 10:16:48 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:50891 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab3AZPQq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 10:16:46 -0500
+	id S1752092Ab3AZPUW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 10:20:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52820 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751066Ab3AZPUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 10:20:19 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130126125208.GC21395@pd.tnic>
+References: <1359123061-6139-1-git-send-email-ling.ma@alipay.com> <tip-d94ffd677469ef729e9d6e968191872577a6119e@git.kernel.org> <20130126125208.GC21395@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <50C8AC3C.9020908@ti.com>
-References: <1355326422-12357-1-git-send-email-matthias.bgg@gmail.com>
-	<50C8AC3C.9020908@ti.com>
-Date: Sat, 26 Jan 2013 16:16:45 +0100
-Message-ID: <CABuKBeJsHCq98Pe-BwPajbQ+2OLQpwrbtVTJe=j9thPDQCCBrg@mail.gmail.com>
-Subject: Re: [PATCH] arm: dts: Add uart1 and uart2 to igep boards.
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Benoit Cousson <b-cousson@ti.com>
-Cc: tony@atomide.com, grant.likely@secretlab.ca, eballetbo@gmail.com,
-        elezegarcia@gmail.com, ebutera@gmail.com,
-        javier.martinez@collabora.co.uk, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [tip:x86/asm] x86/defconfig: Turn on CONFIG_CC_OPTIMIZE_FOR_SIZE= y in the 64-bit defconfig
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 26 Jan 2013 07:18:26 -0800
+To: Borislav Petkov <bp@alien8.de>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        arjan@linux.intel.com, jbeulich@suse.com, ling.ml@alipay.com,
+        rostedt@goodmis.org, akpm@linux-foundation.org, tglx@linutronix.de
+CC: linux-tip-commits@vger.kernel.org
+Message-ID: <8b0dfc4a-6f9c-498a-9844-4d99deb3052f@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
+On the CPUs Ling is testing on the downsides of -Os probably matter less, in particular since rep movsb works well.
 
-2012/12/12 Benoit Cousson <b-cousson@ti.com>:
-> Hi Matthias,
+It is questionable as a generic default, though.
+
+The whole -Ok discussion came from that.
+
+Borislav Petkov <bp@alien8.de> wrote:
+
+>On Sat, Jan 26, 2013 at 04:25:57AM -0800, tip-bot for Ma Ling wrote:
+>> During the same  time (269.410275674 seconds) IPC from Os is
+>> 0.37, O2 is 0.36, Os improved performance 2.7%.
+>> 
+>> Signed-off-by: Ma Ling <ling.ml@alipay.com>
+>> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+>> Cc: Arjan van de Ven <arjan@linux.intel.com>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Jan Beulich <jbeulich@suse.com>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Link:
+>http://lkml.kernel.org/r/1359123061-6139-1-git-send-email-ling.ma@alipay.com
+>> [ So, this is a bit symbolic as most people don't use the defconfig,
+>>   but the measurements are useful nevertheless so let's commit this
+>>   if there are no objections. ]
 >
-> On 12/12/2012 04:33 PM, Matthias Brugger wrote:
->> This patch is a follow-up patch for Javier Martinez effort adding initial
->> device tree support to IGEP technology devices. [1]
->>
->> It adds uart1 and uart2 bindings to the generic dtsi for the IGEP boards.
->>
->> [1] http://www.spinics.net/lists/linux-omap/msg83409.html
->>
->> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
->> ---
->>  arch/arm/boot/dts/omap3-igep.dtsi |   24 ++++++++++++++++++++++++
->>  1 file changed, 24 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/omap3-igep.dtsi b/arch/arm/boot/dts/omap3-igep.dtsi
->> index 125fe00..c02e3c0 100644
->> --- a/arch/arm/boot/dts/omap3-igep.dtsi
->> +++ b/arch/arm/boot/dts/omap3-igep.dtsi
->> @@ -27,6 +27,20 @@
->>  };
->>
->>  &omap3_pmx_core {
->> +     uart1_pins: pinmux_uart1_pins {
->> +             pinctrl-single,pins = <
->> +                     0x152 0x100     /* uart1_rx.uart1_rx INPUT | MODE0 */
->> +                     0x14c 0         /* uart1_tx.uart1_tx OUTPUT | MODE0 */
->> +             >;
->> +     };
->> +
->> +     uart2_pins: pinmux_uart2_pins {
->> +             pinctrl-single,pins = <
->> +                     0x14a 0x100     /* uart2_rx.uart2_rx INPUT | MODE0 */
->> +                     0x148 0         /* uart2_tx.uart2_tx OUTPUT | MODE0 */
->> +             >;
->> +     };
->> +
->>       uart3_pins: pinmux_uart3_pins {
->>               pinctrl-single,pins = <
->>                       0x16e 0x100     /* uart3_rx.uart3_rx INPUT | MODE0 */
->> @@ -77,6 +91,16 @@
->>       status = "disabled";
->>  };
->>
->> +&uart1 {
->> +       pinctrl-names = "default";
->> +       pinctrl-0 = <&uart1_pins>;
->> +};
->> +
->> +&uart2 {
->> +       pinctrl-names = "default";
->> +       pinctrl-0 = <&uart2_pins>;
->> +};
->> +
->>  &uart3 {
->>         pinctrl-names = "default";
->>         pinctrl-0 = <&uart3_pins>;
->>
+>What about
 >
-> That looks good to me. I'll apply it on top of javier's series for 3.9.
-
-Can you pin-point me to the repository where this patches are in right
-now? I tried to figure it out these days, but didn't found where to
-clone the repository from.
-
-Thanks,
-Matthias
-
+>commit 3a55fb0d9fe8e2f4594329edd58c5fd6f35a99dd
+>Author: Kirill Smelkov <kirr@mns.spb.ru>
+>Date:   Fri Nov 2 15:41:01 2012 +0400
 >
-> Thanks,
-> Benoit
+>    Tell the world we gave up on pushing CC_OPTIMIZE_FOR_SIZE
 >
-
-
+>?
+>
+>Reportedly, -Os generates suboptimal code in certain cases and we
+>advise
+>against it with this patch.
 
 -- 
----
-motzblog.wordpress.com
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
