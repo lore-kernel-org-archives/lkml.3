@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab3AZUEv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 15:04:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45950 "EHLO mx1.redhat.com"
+	id S1754430Ab3AZUEz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 15:04:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23961 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754355Ab3AZUEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 15:04:44 -0500
+	id S1754359Ab3AZUEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 15:04:47 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,18 +14,25 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 6/8] perf tools: Add non arch events for SandyBridge microarchitecture
-Date: Sat, 26 Jan 2013 21:04:08 +0100
-Message-Id: <1359230650-10415-7-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 8/8] perf tools: List kernel supplied event aliases in perf list v2
+Date: Sat, 26 Jan 2013 21:04:10 +0100
+Message-Id: <1359230650-10415-9-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1359230650-10415-1-git-send-email-jolsa@redhat.com>
 References: <1359230650-10415-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding non architectural event aliases for SandyBridge
-micro architecture.
+From: Andi Kleen <ak@linux.intel.com>
 
+List the kernel supplied pmu event aliases in perf list
+
+It's better when the users can actually see them.
+
+v2: Fix pattern matching
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+[ removed 'OR' alternative syntax from display & changed subject ]
+[ rebased to latest perf tool changes ]
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -37,320 +44,164 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/arch/x86/Makefile         |   4 +
- tools/perf/arch/x86/events/intel/snb | 274 +++++++++++++++++++++++++++++++++++
- tools/perf/arch/x86/util/pmu.c       |   4 +-
- 3 files changed, 281 insertions(+), 1 deletion(-)
- create mode 100644 tools/perf/arch/x86/events/intel/snb
+ tools/perf/Documentation/perf-list.txt |  4 ++-
+ tools/perf/builtin-list.c              |  3 ++
+ tools/perf/util/parse-events.c         |  5 ++-
+ tools/perf/util/pmu.c                  | 61 ++++++++++++++++++++++++++++++++++
+ tools/perf/util/pmu.h                  |  2 ++
+ 5 files changed, 73 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
-index c175f65..1db3f56 100644
---- a/tools/perf/arch/x86/Makefile
-+++ b/tools/perf/arch/x86/Makefile
-@@ -13,3 +13,7 @@ $(OUTPUT)$(OUTPUT)arch/$(ARCH)/util/pmu.o: $(OUTPUT)arch/$(ARCH)/util/pmu.c $(OU
- 	 '-DPERF_EXEC_PATH="$(perfexecdir_SQ)"' \
- 	 '-DPREFIX="$(prefix_SQ)"' \
- 	 $<
-+
-+install:
-+	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/events/x86/intel/'
-+	$(INSTALL) -m 644 arch/$(ARCH)/events/intel/* $(DESTDIR_SQ)$(perfexec_instdir_SQ)/events/x86/intel/
-diff --git a/tools/perf/arch/x86/events/intel/snb b/tools/perf/arch/x86/events/intel/snb
-new file mode 100644
-index 0000000..8b0400a
---- /dev/null
-+++ b/tools/perf/arch/x86/events/intel/snb
-@@ -0,0 +1,274 @@
-+name=AGU_BYPASS_CANCEL.COUNT,event=0xb6,umask=0x1
-+name=ARITH.FPU_DIV_ACTIVE,event=0x14,umask=0x1
-+name=ARITH.FPU_DIV,event=0x14,umask=0x10401
-+name=BACLEARS.ANY,event=0xe6,umask=0x1f
-+name=BR_INST_EXEC.NONTAKEN_COND,event=0x88,umask=0x41
-+name=BR_INST_EXEC.TAKEN_COND,event=0x88,umask=0x81
-+name=BR_INST_EXEC.NONTAKEN_DIRECT_JUMP,event=0x88,umask=0x42
-+name=BR_INST_EXEC.TAKEN_DIRECT_JUMP,event=0x88,umask=0x82
-+name=BR_INST_EXEC.NONTAKEN_INDIRECT_JUMP_NON_CALL_RET,event=0x88,umask=0x44
-+name=BR_INST_EXEC.TAKEN_INDIRECT_JUMP_NON_CALL_RET,event=0x88,umask=0x84
-+name=BR_INST_EXEC.TAKEN_RETURN_NEAR,event=0x88,umask=0x88
-+name=BR_INST_EXEC.TAKEN_DIRECT_NEAR_CALL,event=0x88,umask=0x90
-+name=BR_INST_EXEC.TAKEN_INDIRECT_NEAR_CALL,event=0x88,umask=0xa0
-+name=BR_INST_EXEC.ALL_BRANCHES,event=0x88,umask=0xff
-+name=BR_INST_EXEC.ALL_CONDITIONAL,event=0x88,umask=0xc1
-+name=BR_INST_EXEC.ANY_COND,event=0x88,umask=0xc1
-+name=BR_INST_EXEC.ANY_INDIRECT_JUMP_NON_CALL_RET,event=0x88,umask=0xc4
-+name=BR_INST_EXEC.ANY_DIRECT_NEAR_CALL,event=0x88,umask=0xd0
-+name=BR_INST_RETIRED.ALL_BRANCHES,event=0xc4,umask=0x4,precise
-+name=BR_INST_RETIRED.CONDITIONAL,event=0xc4,umask=0x1,precise
-+name=BR_INST_RETIRED.FAR_BRANCH,event=0xc4,umask=0x40,precise
-+name=BR_INST_RETIRED.NEAR_CALL,event=0xc4,umask=0x2,precise
-+name=BR_INST_RETIRED.NEAR_RETURN,event=0xc4,umask=0x8,precise
-+name=BR_INST_RETIRED.NEAR_TAKEN,event=0xc4,umask=0x20,precise
-+name=BR_INST_RETIRED.NOT_TAKEN,event=0xc4,umask=0x10,precise
-+name=BR_MISP_EXEC.NONTAKEN_COND,event=0x89,umask=0x41
-+name=BR_MISP_EXEC.TAKEN_COND,event=0x89,umask=0x81
-+name=BR_MISP_EXEC.NONTAKEN_INDIRECT_JUMP_NON_CALL_RET,event=0x89,umask=0x44
-+name=BR_MISP_EXEC.TAKEN_INDIRECT_JUMP_NON_CALL_RET,event=0x89,umask=0x84
-+name=BR_MISP_EXEC.NONTAKEN_RETURN_NEAR,event=0x89,umask=0x48
-+name=BR_MISP_EXEC.TAKEN_RETURN_NEAR,event=0x89,umask=0x88
-+name=BR_MISP_EXEC.NONTAKEN_DIRECT_NEAR_CALL,event=0x89,umask=0x50
-+name=BR_MISP_EXEC.TAKEN_DIRECT_NEAR_CALL,event=0x89,umask=0x90
-+name=BR_MISP_EXEC.NONTAKEN_INDIRECT_NEAR_CALL,event=0x89,umask=0x60
-+name=BR_MISP_EXEC.TAKEN_INDIRECT_NEAR_CALL,event=0x89,umask=0xa0
-+name=BR_MISP_EXEC.ANY_COND,event=0x89,umask=0xc1
-+name=BR_MISP_EXEC.ANY_RETURN_NEAR,event=0x89,umask=0xc8
-+name=BR_MISP_EXEC.ANY_DIRECT_NEAR_CALL,event=0x89,umask=0xd0
-+name=BR_MISP_EXEC.ANY_INDIRECT_JUMP_NON_CALL_RET,event=0x89,umask=0xc4
-+name=BR_MISP_EXEC.ALL_BRANCHES,event=0x89,umask=0xff
-+name=BR_MISP_RETIRED.ALL_BRANCHES,event=0xc5,umask=0x4,precise
-+name=BR_MISP_RETIRED.CONDITIONAL,event=0xc5,umask=0x1,precise
-+name=BR_MISP_RETIRED.NEAR_CALL,event=0xc5,umask=0x2,precise
-+name=BR_MISP_RETIRED.NOT_TAKEN,event=0xc5,umask=0x10,precise
-+name=BR_MISP_RETIRED.TAKEN,event=0xc5,umask=0x20,precise
-+name=LOCK_CYCLES.SPLIT_LOCK_UC_LOCK_DURATION,event=0x63,umask=0x1
-+name=LOCK_CYCLES.CACHE_LOCK_DURATION,event=0x63,umask=0x2
-+name=CPL_CYCLES.RING0,event=0x5c,umask=0x1
-+name=CPL_CYCLES.RING0_TRANS,event=0x5c,umask=0x10401
-+name=CPL_CYCLES.RING123,event=0x5c,umask=0x2
-+name=CPU_CLK_UNHALTED.REF_P,event=0x3c,umask=0x1
-+name=CPU_CLK_UNHALTED.THREAD_P,event=0x3c,umask=0x0
-+name=DSB2MITE_SWITCHES.COUNT,event=0xab,umask=0x1
-+name=DSB2MITE_SWITCHES.PENALTY_CYCLES,event=0xab,umask=0x2
-+name=DSB_FILL.ALL_CANCEL,event=0xac,umask=0xa
-+name=DSB_FILL.EXCEED_DSB_LINES,event=0xac,umask=0x8
-+name=DSB_FILL.OTHER_CANCEL,event=0xac,umask=0x2
-+name=DTLB_LOAD_MISSES.MISS_CAUSES_A_WALK,event=0x8,umask=0x1
-+name=DTLB_LOAD_MISSES.CAUSES_A_WALK,event=0x8,umask=0x1
-+name=DTLB_LOAD_MISSES.STLB_HIT,event=0x8,umask=0x10
-+name=DTLB_LOAD_MISSES.WALK_COMPLETED,event=0x8,umask=0x2
-+name=DTLB_LOAD_MISSES.WALK_DURATION,event=0x8,umask=0x4
-+name=DTLB_STORE_MISSES.MISS_CAUSES_A_WALK,event=0x49,umask=0x1
-+name=DTLB_STORE_MISSES.CAUSES_A_WALK,event=0x49,umask=0x1
-+name=DTLB_STORE_MISSES.STLB_HIT,event=0x49,umask=0x10
-+name=DTLB_STORE_MISSES.WALK_COMPLETED,event=0x49,umask=0x2
-+name=DTLB_STORE_MISSES.WALK_DURATION,event=0x49,umask=0x4
-+name=FP_ASSIST.ANY,event=0xca,umask=0x1e
-+name=FP_ASSIST.SIMD_INPUT,event=0xca,umask=0x10
-+name=FP_ASSIST.SIMD_OUTPUT,event=0xca,umask=0x8
-+name=FP_ASSIST.X87_INPUT,event=0xca,umask=0x4
-+name=FP_ASSIST.X87_OUTPUT,event=0xca,umask=0x2
-+name=FP_COMP_OPS_EXE.X87,event=0x10,umask=0x1
-+name=FP_COMP_OPS_EXE.SSE_FP_PACKED_DOUBLE,event=0x10,umask=0x10
-+name=FP_COMP_OPS_EXE.SSE_FP_SCALAR_SINGLE,event=0x10,umask=0x20
-+name=FP_COMP_OPS_EXE.SSE_PACKED_SINGLE,event=0x10,umask=0x40
-+name=FP_COMP_OPS_EXE.SSE_SCALAR_DOUBLE,event=0x10,umask=0x80
-+name=HW_INTERRUPTS.RECEIVED,event=0xcb,umask=0x1
-+name=HW_PRE_REQ.L1D_MISS,event=0x4e,umask=0x2
-+name=ICACHE.MISSES,event=0x80,umask=0x2
-+name=IDQ.EMPTY,event=0x79,umask=0x2
-+name=IDQ.MITE_UOPS,event=0x79,umask=0x4
-+name=IDQ.DSB_UOPS,event=0x79,umask=0x8
-+name=IDQ.MS_DSB_UOPS,event=0x79,umask=0x10
-+name=IDQ.MS_MITE_UOPS,event=0x79,umask=0x20
-+name=IDQ.MS_UOPS,event=0x79,umask=0x30
-+name=IDQ.MITE_UOPS_CYCLES,event=0x79,umask=0x10004
-+name=IDQ.DSB_UOPS_CYCLES,event=0x79,umask=0x10008
-+name=IDQ.MS_DSB_UOPS_CYCLES,event=0x79,umask=0x10010
-+name=IDQ.MS_MITE_UOPS_CYCLES,event=0x79,umask=0x10020
-+name=IDQ.MS_UOPS_CYCLES,event=0x79,umask=0x10030
-+name=IDQ.ALL_DSB_UOPS,event=0x79,umask=0x18
-+name=IDQ.ALL_DSB_CYCLES,event=0x79,umask=0x10018
-+name=IDQ.ALL_MITE_UOPS,event=0x79,umask=0x24
-+name=IDQ.ALL_MITE_CYCLES,event=0x79,umask=0x10024
-+name=IDQ.ANY_UOPS,event=0x79,umask=0x3c
-+name=IDQ.MS_DSB_UOPS_OCCUR,event=0x79,umask=0x10410
-+name=IDQ_UOPS_NOT_DELIVERED.CORE,event=0x9c,umask=0x1
-+name=ILD_STALL.LCP,event=0x87,umask=0x1
-+name=ILD_STALL.IQ_FULL,event=0x87,umask=0x4
-+name=INSTS_WRITTEN_TO_IQ.INSTS,event=0x17,umask=0x1
-+name=INST_RETIRED.ANY_P,event=0xc0,umask=0x0
-+name=INST_RETIRED.PREC_DIST,event=0xc0,umask=0x1,precise
-+name=INT_MISC.RAT_STALL_CYCLES,event=0xd,umask=0x40
-+name=INT_MISC.RECOVERY_CYCLES,event=0xd,umask=0x10003
-+name=INT_MISC.RECOVERY_STALLS_COUNT,event=0xd,umask=0x10403
-+name=ITLB.ITLB_FLUSH,event=0xae,umask=0x1
-+name=ITLB.FLUSH,event=0xae,umask=0x1
-+name=ITLB_MISSES.MISS_CAUSES_A_WALK,event=0x85,umask=0x1
-+name=ITLB_MISSES.CAUSES_A_WALK,event=0x85,umask=0x1
-+name=ITLB_MISSES.STLB_HIT,event=0x85,umask=0x10
-+name=ITLB_MISSES.WALK_COMPLETED,event=0x85,umask=0x2
-+name=ITLB_MISSES.WALK_DURATION,event=0x85,umask=0x4
-+name=L1D.ALLOCATED_IN_M,event=0x51,umask=0x2
-+name=L1D.ALL_M_REPLACEMENT,event=0x51,umask=0x8
-+name=L1D.M_EVICT,event=0x51,umask=0x4
-+name=L1D.REPLACEMENT,event=0x51,umask=0x1
-+name=L1D_BLOCKS.BANK_CONFLICT,event=0xbf,umask=0x1
-+name=L1D_BLOCKS.BANK_CONFLICT_CYCLES,event=0xbf,umask=0x5
-+name=L1D_PEND_MISS.OCCURRENCES,event=0x48,umask=0x10401
-+name=L1D_PEND_MISS.EDGE,event=0x48,umask=0x10401
-+name=L1D_PEND_MISS.PENDING,event=0x48,umask=0x1
-+name=L1D_PEND_MISS.PENDING_CYCLES,event=0x48,umask=0x10001
-+name=L2_L1D_WB_RQSTS.HIT_E,event=0x28,umask=0x4
-+name=L2_L1D_WB_RQSTS.HIT_M,event=0x28,umask=0x8
-+name=L2_LINES_IN.ANY,event=0xf1,umask=0x7
-+name=L2_LINES_IN.E,event=0xf1,umask=0x4
-+name=L2_LINES_IN.I,event=0xf1,umask=0x1
-+name=L2_LINES_IN.S,event=0xf1,umask=0x2
-+name=L2_LINES_OUT.DEMAND_CLEAN,event=0xf2,umask=0x1
-+name=L2_LINES_OUT.DEMAND_DIRTY,event=0xf2,umask=0x2
-+name=L2_LINES_OUT.PREFETCH_CLEAN,event=0xf2,umask=0x4
-+name=L2_LINES_OUT.PREFETCH_DIRTY,event=0xf2,umask=0x8
-+name=L2_LINES_OUT.DIRTY_ANY,event=0xf2,umask=0xa
-+name=L2_RQSTS.ALL_CODE_RD,event=0x24,umask=0x30
-+name=L2_RQSTS.CODE_RD_HIT,event=0x24,umask=0x10
-+name=L2_RQSTS.CODE_RD_MISS,event=0x24,umask=0x20
-+name=L2_RQSTS.ALL_DEMAND_DATA_RD,event=0x24,umask=0x3
-+name=L2_RQSTS.ALL_DEMAND_RD_HIT,event=0x24,umask=0x1
-+name=L2_RQSTS.ALL_PF,event=0x24,umask=0xc0
-+name=L2_RQSTS.PF_HIT,event=0x24,umask=0x40
-+name=L2_RQSTS.PF_MISS,event=0x24,umask=0x80
-+name=L2_RQSTS.RFO_ANY,event=0x24,umask=0xc
-+name=L2_RQSTS.RFO_HITS,event=0x24,umask=0x4
-+name=L2_RQSTS.RFO_MISS,event=0x24,umask=0x8
-+name=L2_STORE_LOCK_RQSTS.HIT_E,event=0x27,umask=0x4
-+name=L2_STORE_LOCK_RQSTS.MISS,event=0x27,umask=0x1
-+name=L2_STORE_LOCK_RQSTS.HIT_M,event=0x27,umask=0x8
-+name=L2_STORE_LOCK_RQSTS.ALL,event=0x27,umask=0xf
-+name=L2_TRANS.ALL,event=0xf0,umask=0x80
-+name=L2_TRANS.CODE_RD,event=0xf0,umask=0x4
-+name=L2_TRANS.L1D_WB,event=0xf0,umask=0x10
-+name=L2_TRANS.LOAD,event=0xf0,umask=0x1
-+name=L2_TRANS.L2_FILL,event=0xf0,umask=0x20
-+name=L2_TRANS.L2_WB,event=0xf0,umask=0x40
-+name=L2_TRANS.ALL_PREFETCH,event=0xf0,umask=0x8
-+name=L2_TRANS.RFO,event=0xf0,umask=0x2
-+name=LD_BLOCKS.DATA_UNKNOWN,event=0x3,umask=0x1
-+name=LD_BLOCKS.STORE_FORWARD,event=0x3,umask=0x2
-+name=LD_BLOCKS.NO_SR,event=0x3,umask=0x8
-+name=LD_BLOCKS.ALL_BLOCK,event=0x3,umask=0x10
-+name=LD_BLOCKS_PARTIAL.ADDRESS_ALIAS,event=0x7,umask=0x1
-+name=LD_BLOCKS_PARTIAL.ALL_STA_BLOCK,event=0x7,umask=0x8
-+name=LOAD_HIT_PRE.HW_PF,event=0x4c,umask=0x2
-+name=LOAD_HIT_PRE.SW_PF,event=0x4c,umask=0x1
-+name=L3_LAT_CACHE.MISS,event=0x2e,umask=0x1
-+name=L3_LAT_CACHE.REFERENCE,event=0x2e,umask=0x2
-+name=MACHINE_CLEARS.MASKMOV,event=0xc3,umask=0x20
-+name=MACHINE_CLEARS.MEMORY_ORDERING,event=0xc3,umask=0x2
-+name=MACHINE_CLEARS.SMC,event=0xc3,umask=0x4
-+name=MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT,event=0xd2,umask=0x2,precise
-+name=MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HITM,event=0xd2,umask=0x4,precise
-+name=MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS,event=0xd2,umask=0x1,precise
-+name=MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_NONE,event=0xd2,umask=0x8,precise
-+name=MEM_LOAD_LLC_HIT_RETIRED.XSNP_HIT,event=0xd2,umask=0x2,precise
-+name=MEM_LOAD_LLC_HIT_RETIRED.XSNP_HITM,event=0xd2,umask=0x4,precise
-+name=MEM_LOAD_LLC_HIT_RETIRED.XSNP_MISS,event=0xd2,umask=0x1,precise
-+name=MEM_LOAD_LLC_HIT_RETIRED.XSNP_NONE,event=0xd2,umask=0x8,precise
-+name=MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS,event=0xd4,umask=0x2,precise
-+name=MEM_LOAD_MISC_RETIRED.LLC_MISS,event=0xd4,umask=0x2,precise
-+name=MEM_LOAD_UOPS_RETIRED.HIT_LFB,event=0xd1,umask=0x40,precise
-+name=MEM_LOAD_UOPS_RETIRED.L1_HIT,event=0xd1,umask=0x1,precise
-+name=MEM_LOAD_UOPS_RETIRED.L2_HIT,event=0xd1,umask=0x2,precise
-+name=MEM_LOAD_UOPS_RETIRED.L3_HIT,event=0xd1,umask=0x4,precise
-+name=MEM_LOAD_RETIRED.HIT_LFB,event=0xd1,umask=0x40,precise
-+name=MEM_LOAD_RETIRED.L1_HIT,event=0xd1,umask=0x1,precise
-+name=MEM_LOAD_RETIRED.L2_HIT,event=0xd1,umask=0x2,precise
-+name=MEM_LOAD_RETIRED.L3_HIT,event=0xd1,umask=0x4,precise
-+name=MEM_TRANS_RETIRED.LATENCY_ABOVE_THRESHOLD,event=0xcd,umask=0x1,precise
-+name=MEM_TRANS_RETIRED.PRECISE_STORE,event=0xcd,umask=0x2,precise
-+name=MEM_UOPS_RETIRED.ALL_LOADS,event=0xd0,umask=0x81,precise
-+name=MEM_UOPS_RETIRED.ANY_LOADS,event=0xd0,umask=0x81,precise
-+name=MEM_UOPS_RETIRED.ALL_STORES,event=0xd0,umask=0x82,precise
-+name=MEM_UOPS_RETIRED.ANY_STORES,event=0xd0,umask=0x82,precise
-+name=MEM_UOPS_RETIRED.LOCK_LOADS,event=0xd0,umask=0x21,precise
-+name=MEM_UOPS_RETIRED.LOCK_STORES,event=0xd0,umask=0x22,precise
-+name=MEM_UOPS_RETIRED.SPLIT_LOADS,event=0xd0,umask=0x41,precise
-+name=MEM_UOPS_RETIRED.SPLIT_STORES,event=0xd0,umask=0x42,precise
-+name=MEM_UOPS_RETIRED.STLB_MISS_LOADS,event=0xd0,umask=0x11,precise
-+name=MEM_UOPS_RETIRED.STLB_MISS_STORES,event=0xd0,umask=0x12,precise
-+name=MEM_UOP_RETIRED.ALL_LOADS,event=0xd0,umask=0x81,precise
-+name=MEM_UOP_RETIRED.ANY_LOADS,event=0xd0,umask=0x81,precise
-+name=MEM_UOP_RETIRED.ALL_STORES,event=0xd0,umask=0x82,precise
-+name=MEM_UOP_RETIRED.ANY_STORES,event=0xd0,umask=0x82,precise
-+name=MEM_UOP_RETIRED.LOCK_LOADS,event=0xd0,umask=0x21,precise
-+name=MEM_UOP_RETIRED.LOCK_STORES,event=0xd0,umask=0x22,precise
-+name=MEM_UOP_RETIRED.SPLIT_LOADS,event=0xd0,umask=0x41,precise
-+name=MEM_UOP_RETIRED.SPLIT_STORES,event=0xd0,umask=0x42,precise
-+name=MEM_UOP_RETIRED.STLB_MISS_LOADS,event=0xd0,umask=0x11,precise
-+name=MEM_UOP_RETIRED.STLB_MISS_STORES,event=0xd0,umask=0x12,precise
-+name=MISALIGN_MEM_REF.LOADS,event=0x5,umask=0x1
-+name=MISALIGN_MEM_REF.STORES,event=0x5,umask=0x2
-+name=OFFCORE_REQUESTS.ALL_DATA_RD,event=0xb0,umask=0x8
-+name=OFFCORE_REQUESTS.ALL_DATA_READ,event=0xb0,umask=0x8
-+name=OFFCORE_REQUESTS.DEMAND_CODE_RD,event=0xb0,umask=0x2
-+name=OFFCORE_REQUESTS.DEMAND_DATA_RD,event=0xb0,umask=0x1
-+name=OFFCORE_REQUESTS.DEMAND_RFO,event=0xb0,umask=0x4
-+name=OFFCORE_REQUESTS_BUFFER.SQ_FULL,event=0xb2,umask=0x1
-+name=OFFCORE_REQUESTS_OUTSTANDING.ALL_DATA_RD_CYCLES,event=0x60,umask=0x10008
-+name=OFFCORE_REQUESTS_OUTSTANDING.DEMAND_CODE_RD_CYCLES,event=0x60,umask=0x10002
-+name=OFFCORE_REQUESTS_OUTSTANDING.DEMAND_DATA_RD_CYCLES,event=0x60,umask=0x10001
-+name=OFFCORE_REQUESTS_OUTSTANDING.ALL_DATA_RD,event=0x60,umask=0x8
-+name=OFFCORE_REQUESTS_OUTSTANDING.DEMAND_CODE_RD,event=0x60,umask=0x2
-+name=OFFCORE_REQUESTS_OUTSTANDING.DEMAND_DATA_RD,event=0x60,umask=0x1
-+name=OFFCORE_REQUESTS_OUTSTANDING.DEMAND_RFO,event=0x60,umask=0x4
-+name=OFFCORE_REQUESTS_OUTSTANDING.DEMAND_RFO_CYCLES,event=0x60,umask=0x10004
-+name=OTHER_ASSISTS.ITLB_MISS_RETIRED,event=0xc1,umask=0x2
-+name=OTHER_ASSISTS.AVX_TO_SSE,event=0xc1,umask=0x10
-+name=OTHER_ASSISTS.SSE_TO_AVX,event=0xc1,umask=0x20
-+name=PARTIAL_RAT_STALLS.FLAGS_MERGE_UOP,event=0x59,umask=0x20
-+name=PARTIAL_RAT_STALLS.CYCLES_FLAGS_MERGE_UOP,event=0x59,umask=0x10020
-+name=PARTIAL_RAT_STALLS.MUL_SINGLE_UOP,event=0x59,umask=0x80
-+name=PARTIAL_RAT_STALLS.SLOW_LEA_WINDOW,event=0x59,umask=0x40
-+name=RESOURCE_STALLS.ANY,event=0xa2,umask=0x1
-+name=RESOURCE_STALLS.LB,event=0xa2,umask=0x2
-+name=RESOURCE_STALLS.RS,event=0xa2,umask=0x4
-+name=RESOURCE_STALLS.SB,event=0xa2,umask=0x8
-+name=RESOURCE_STALLS.ROB,event=0xa2,umask=0x10
-+name=RESOURCE_STALLS.FCSW,event=0xa2,umask=0x20
-+name=RESOURCE_STALLS.MXCSR,event=0xa2,umask=0x40
-+name=RESOURCE_STALLS.MEM_RS,event=0xa2,umask=0xe
-+name=RESOURCE_STALLS2.ALL_FL_EMPTY,event=0x5b,umask=0xc
-+name=RESOURCE_STALLS2.ALL_PRF_CONTROL,event=0x5b,umask=0xf
-+name=RESOURCE_STALLS2.ANY_PRF_CONTROL,event=0x5b,umask=0xf
-+name=RESOURCE_STALLS2.BOB_FULL,event=0x5b,umask=0x40
-+name=RESOURCE_STALLS2.OOO_RSRC,event=0x5b,umask=0x4f
-+name=ROB_MISC_EVENTS.LBR_INSERTS,event=0xcc,umask=0x20
-+name=RS_EVENTS.EMPTY_CYCLES,event=0x5e,umask=0x1
-+name=SIMD_FP_256.PACKED_SINGLE,event=0x11,umask=0x1
-+name=SIMD_FP_256.PACKED_DOUBLE,event=0x11,umask=0x2
-+name=SQ_MISC.SPLIT_LOCK,event=0xf4,umask=0x10
-+name=TLB_FLUSH.DTLB_THREAD,event=0xbd,umask=0x1
-+name=TLB_FLUSH.STLB_ANY,event=0xbd,umask=0x20
-+name=UOPS_DISPATCHED.CORE,event=0xb1,umask=0x2
-+name=UOPS_DISPATCHED.STALL_CYCLES,event=0xb1,umask=0x18001
-+name=UOPS_DISPATCHED.THREAD,event=0xb1,umask=0x1
-+name=UOPS_DISPATCHED_PORT.PORT_0,event=0xa1,umask=0x1
-+name=UOPS_DISPATCHED_PORT.PORT_1,event=0xa1,umask=0x2
-+name=UOPS_DISPATCHED_PORT.PORT_2_LD,event=0xa1,umask=0x4
-+name=UOPS_DISPATCHED_PORT.PORT_2_STA,event=0xa1,umask=0x8
-+name=UOPS_DISPATCHED_PORT.PORT_2,event=0xa1,umask=0xc
-+name=UOPS_DISPATCHED_PORT.PORT_3_LD,event=0xa1,umask=0x10
-+name=UOPS_DISPATCHED_PORT.PORT_3_STA,event=0xa1,umask=0x20
-+name=UOPS_DISPATCHED_PORT.PORT_3,event=0xa1,umask=0x30
-+name=UOPS_DISPATCHED_PORT.PORT_4,event=0xa1,umask=0x40
-+name=UOPS_DISPATCHED_PORT.PORT_5,event=0xa1,umask=0x80
-+name=UOPS_ISSUED.ANY,event=0xe,umask=0x1
-+name=UOPS_ISSUED.CORE_STALL_CYCLES,event=0xe,umask=0x1a001
-+name=UOPS_ISSUED.STALL_CYCLES,event=0xe,umask=0x18001
-+name=UOPS_RETIRED.ALL,event=0xc2,umask=0x1,precise
-+name=UOPS_RETIRED.ANY,event=0xc2,umask=0x1,precise
-+name=UOPS_RETIRED.RETIRE_SLOTS,event=0xc2,umask=0x2,precise
-+name=UOPS_RETIRED.STALL_CYCLES,event=0xc2,umask=0x18001,precise
-+name=UOPS_RETIRED.TOTAL_CYCLES,event=0xc2,umask=0x100001,precise
-diff --git a/tools/perf/arch/x86/util/pmu.c b/tools/perf/arch/x86/util/pmu.c
-index a37da52..cac67d3 100644
---- a/tools/perf/arch/x86/util/pmu.c
-+++ b/tools/perf/arch/x86/util/pmu.c
-@@ -56,8 +56,10 @@ static int intel_aliases(struct list_head *head, unsigned model)
- 		return -1;
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index d1e39dc..826f3d6 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -8,7 +8,7 @@ perf-list - List all symbolic event types
+ SYNOPSIS
+ --------
+ [verse]
+-'perf list' [hw|sw|cache|tracepoint|event_glob]
++'perf list' [hw|sw|cache|tracepoint|pmu|event_glob]
  
- 	switch (model) {
-+	case 42: /* Sandy Bridge (Core i7 26xx, 25xx) */
-+	case 45: /* Sandy Bridge EP */
-+		ADD_ALIASES("snb");
- 	default:
--		ADD_ALIASES("");
- 		break;
+ DESCRIPTION
+ -----------
+@@ -104,6 +104,8 @@ To limit the list use:
+   'subsys_glob:event_glob' to filter by tracepoint subsystems such as sched,
+   block, etc.
+ 
++. 'pmu' to print the kernel supplied PMU events.
++
+ . If none of the above is matched, it will apply the supplied glob to all
+   events, printing the ones that match.
+ 
+diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
+index 1948ece..e79f423 100644
+--- a/tools/perf/builtin-list.c
++++ b/tools/perf/builtin-list.c
+@@ -13,6 +13,7 @@
+ 
+ #include "util/parse-events.h"
+ #include "util/cache.h"
++#include "util/pmu.h"
+ 
+ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+@@ -37,6 +38,8 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			else if (strcmp(argv[i], "cache") == 0 ||
+ 				 strcmp(argv[i], "hwcache") == 0)
+ 				print_hwcache_events(NULL, false);
++			else if (strcmp(argv[i], "pmu") == 0)
++				print_pmu_events(NULL, false);
+ 			else if (strcmp(argv[i], "--raw-dump") == 0)
+ 				print_events(NULL, true);
+ 			else {
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 0143c90..d7ebe10 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -1088,6 +1088,8 @@ int print_hwcache_events(const char *event_glob, bool name_only)
+ 		}
  	}
  
++	if (printed)
++		printf("\n");
+ 	return printed;
+ }
+ 
+@@ -1142,11 +1144,12 @@ void print_events(const char *event_glob, bool name_only)
+ 
+ 	print_hwcache_events(event_glob, name_only);
+ 
++	print_pmu_events(event_glob, name_only);
++
+ 	if (event_glob != NULL)
+ 		return;
+ 
+ 	if (!name_only) {
+-		printf("\n");
+ 		printf("  %-50s [%s]\n",
+ 		       "rNNN",
+ 		       event_type_descriptors[PERF_TYPE_RAW]);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 7c2908b..51f4342 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -631,3 +631,64 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
+ 	for (b = from; b <= to; b++)
+ 		set_bit(b, bits);
+ }
++
++static char *format_alias(char *buf, int len, struct perf_pmu *pmu,
++			  struct perf_pmu_alias *alias)
++{
++	snprintf(buf, len, "%s/%s/", pmu->name, alias->name);
++	return buf;
++}
++
++static int cmp_string(const void *a, const void *b)
++{
++	const char * const *as = a;
++	const char * const *bs = b;
++	return strcmp(*as, *bs);
++}
++
++void print_pmu_events(const char *event_glob, bool name_only)
++{
++	struct perf_pmu *pmu;
++	struct perf_pmu_alias *alias;
++	char buf[1024];
++	int printed = 0;
++	int len, j;
++	char **aliases;
++
++	pmu = NULL;
++	len = 0;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++		list_for_each_entry (alias, &pmu->aliases, list)
++			len++;
++	aliases = malloc(sizeof(char *) * len);
++	if (!aliases)
++		return;
++	pmu = NULL;
++	j = 0;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++		list_for_each_entry (alias, &pmu->aliases, list) {
++			char *name = format_alias(buf, sizeof buf, pmu, alias);
++			bool is_cpu = !strcmp(pmu->name, "cpu");
++
++			if (event_glob != NULL &&
++			    !(strglobmatch(name, event_glob) ||
++			      (!is_cpu && strglobmatch(alias->name, event_glob))))
++				continue;
++			aliases[j] = strdup(name);
++			j++;
++		}
++	len = j;
++	qsort(aliases, len, sizeof(char *), cmp_string);
++	for (j = 0; j < len; j++) {
++		if (name_only) {
++			printf("%s ", aliases[j]);
++			continue;
++		}
++		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
++		free(aliases[j]);
++		printed++;
++	}
++	if (printed)
++		printf("\n");
++	free(aliases);
++}
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index aa049ea..eaaf9c60 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -47,5 +47,7 @@ int pmu_aliases_parse_multi(char *path, struct list_head *head);
+ 
+ int arch_pmu_aliases(char *name, struct list_head *head);
+ 
++void print_pmu_events(const char *event_glob, bool name_only);
++
+ int perf_pmu__test(void);
+ #endif /* __PMU_H */
 -- 
 1.7.11.7
 
