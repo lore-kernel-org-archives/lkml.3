@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab3AZBbi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 20:31:38 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:44248 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755018Ab3AZBbU (ORCPT
+	id S1755435Ab3AZBbv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 20:31:51 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:44070 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755123Ab3AZBb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 20:31:20 -0500
+	Fri, 25 Jan 2013 20:31:29 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/14] idr: make idr_destroy() imply idr_remove_all()
-Date: Fri, 25 Jan 2013 17:30:59 -0800
-Message-Id: <1359163872-1949-2-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>, Alasdair Kergon <agk@redhat.com>,
+        dm-devel@redhat.com
+Subject: [PATCH 06/14] dm: don't use idr_remove_all()
+Date: Fri, 25 Jan 2013 17:31:04 -0800
+Message-Id: <1359163872-1949-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359163872-1949-1-git-send-email-tj@kernel.org>
 References: <1359163872-1949-1-git-send-email-tj@kernel.org>
@@ -21,71 +22,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-idr is silly in quite a few ways, one of which is how it's supposed to
-be destroyed - idr_destroy() doesn't release IDs and doesn't even
-whine if the idr isn't empty.  If the caller forgets idr_remove_all(),
-it simply leaks memory.
-
-Even ida gets this wrong and leaks memory on destruction.  There is
-absoltely no reason not to call idr_remove_all() from idr_destroy().
-Nobody is abusing idr_destroy() for shrinking free layer buffer and
-continues to use idr after idr_destroy(), so it's safe to do
-remove_all from destroy.
-
-In the whole kernel, there is only one place where idr_remove_all() is
-legitimiately used without following idr_destroy() while there are
-quite a few places where the caller forgets either idr_remove_all() or
-idr_destroy() leaking memory.
-
-This patch makes idr_destroy() call idr_destroy_all() and updates the
-function description accordingly.
+idr_destroy() can destroy idr by itself and idr_remove_all() is being
+deprecated.  Drop its usage.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Alasdair Kergon <agk@redhat.com>
+Cc: dm-devel@redhat.com
 ---
- lib/idr.c | 20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+This patch depends on an earlier idr patch and given the trivial
+nature of the patch, I think it would be best to route these together
+through -mm.  Please holler if there's any objection.
 
-diff --git a/lib/idr.c b/lib/idr.c
-index 6482390..1e47832 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -436,15 +436,6 @@ EXPORT_SYMBOL(idr_remove);
- /**
-  * idr_remove_all - remove all ids from the given idr tree
-  * @idp: idr handle
-- *
-- * idr_destroy() only frees up unused, cached idp_layers, but this
-- * function will remove all id mappings and leave all idp_layers
-- * unused.
-- *
-- * A typical clean-up sequence for objects stored in an idr tree will
-- * use idr_for_each() to free all objects, if necessay, then
-- * idr_remove_all() to remove all ids, and idr_destroy() to free
-- * up the cached idr_layers.
-  */
- void idr_remove_all(struct idr *idp)
- {
-@@ -484,9 +475,20 @@ EXPORT_SYMBOL(idr_remove_all);
- /**
-  * idr_destroy - release all cached layers within an idr tree
-  * @idp: idr handle
-+ *
-+ * Free all id mappings and all idp_layers.  After this function, @idp is
-+ * completely unused and can be freed / recycled.  The caller is
-+ * responsible for ensuring that no one else accesses @idp during or after
-+ * idr_destroy().
-+ *
-+ * A typical clean-up sequence for objects stored in an idr tree will use
-+ * idr_for_each() to free all objects, if necessay, then idr_destroy() to
-+ * free up the id mappings and cached idr_layers.
-  */
- void idr_destroy(struct idr *idp)
- {
-+	idr_remove_all(idp);
-+
- 	while (idp->id_free_cnt) {
- 		struct idr_layer *p = get_from_free_list(idp);
- 		kmem_cache_free(idr_layer_cache, p);
+Thanks.
+
+ drivers/md/dm.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index c72e4d5..ea1a6ca 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -318,7 +318,6 @@ static void __exit dm_exit(void)
+ 	/*
+ 	 * Should be empty by this point.
+ 	 */
+-	idr_remove_all(&_minor_idr);
+ 	idr_destroy(&_minor_idr);
+ }
+ 
 -- 
 1.8.1
 
