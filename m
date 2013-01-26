@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab3AZBdu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 20:33:50 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:44512 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab3AZBbh (ORCPT
+	id S1755264Ab3AZBbg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 20:31:36 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:40721 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755040Ab3AZBbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 20:31:37 -0500
+	Fri, 25 Jan 2013 20:31:22 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, "J. Bruce Fields" <bfields@fieldses.org>,
-        linux-nfs@vger.kernel.org
-Subject: [PATCH 11/14] nfs: idr_destroy() no longer needs idr_remove_all()
-Date: Fri, 25 Jan 2013 17:31:09 -0800
-Message-Id: <1359163872-1949-12-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>, Chas Williams <chas@cmf.nrl.navy.mil>,
+        netdev@vger.kernel.org
+Subject: [PATCH 02/14] atm/nicstar: don't use idr_remove_all()
+Date: Fri, 25 Jan 2013 17:31:00 -0800
+Message-Id: <1359163872-1949-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359163872-1949-1-git-send-email-tj@kernel.org>
 References: <1359163872-1949-1-git-send-email-tj@kernel.org>
@@ -23,14 +23,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 idr_destroy() can destroy idr by itself and idr_remove_all() is being
-deprecated.  Drop reference to idr_remove_all().  Note that the code
-wasn't completely correct before because idr_remove() on all entries
-doesn't necessarily release all idr_layers which could lead to memory
-leak.
+deprecated.  Drop its usage.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-nfs@vger.kernel.org
+Cc: Chas Williams <chas@cmf.nrl.navy.mil>
+Cc: netdev@vger.kernel.org
 ---
 This patch depends on an earlier idr patch and given the trivial
 nature of the patch, I think it would be best to route these together
@@ -38,21 +35,21 @@ through -mm.  Please holler if there's any objection.
 
 Thanks.
 
- fs/nfs/client.c | 1 -
+ drivers/atm/nicstar.c | 1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index 9f3c664..84d8eae 100644
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -197,7 +197,6 @@ error_0:
- EXPORT_SYMBOL_GPL(nfs_alloc_client);
- 
- #if IS_ENABLED(CONFIG_NFS_V4)
--/* idr_remove_all is not needed as all id's are removed by nfs_put_client */
- void nfs_cleanup_cb_ident_idr(struct net *net)
- {
- 	struct nfs_net *nn = net_generic(net, nfs_net_id);
+diff --git a/drivers/atm/nicstar.c b/drivers/atm/nicstar.c
+index ed1d2b7..628787e 100644
+--- a/drivers/atm/nicstar.c
++++ b/drivers/atm/nicstar.c
+@@ -251,7 +251,6 @@ static void nicstar_remove_one(struct pci_dev *pcidev)
+ 		if (card->scd2vc[j] != NULL)
+ 			free_scq(card, card->scd2vc[j]->scq, card->scd2vc[j]->tx_vcc);
+ 	}
+-	idr_remove_all(&card->idr);
+ 	idr_destroy(&card->idr);
+ 	pci_free_consistent(card->pcidev, NS_RSQSIZE + NS_RSQ_ALIGNMENT,
+ 			    card->rsq.org, card->rsq.dma);
 -- 
 1.8.1
 
