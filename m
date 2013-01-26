@@ -1,498 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab3AZWGQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 17:06:16 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:47939 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754376Ab3AZWGN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 17:06:13 -0500
-Date: Sat, 26 Jan 2013 17:06:31 -0500
-From: Jake Champlin <jake.champlin.27@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devendra.aaru@gmail.com, jake.champlin.27@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        dan.carpenter@oracle.com
-Subject: [PATCH] Staging: csr: csr_msgconv: Fixed Multiple Coding Style Issues
-Message-ID: <20130126220626.GA26467@gmail.com>
+	id S1754647Ab3AZWSI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 17:18:08 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:56714 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754401Ab3AZWSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 17:18:05 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/4] cpufreq, highbank: add support for highbank cpufreq
+Date: Sat, 26 Jan 2013 23:24:12 +0100
+Message-ID: <1523559.2KevGvelzH@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130126143950.GA7079@S2101-09.ap.freescale.net>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <1359143205-20279-5-git-send-email-mark.langsdorf@calxeda.com> <20130126143950.GA7079@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed multiple coding style issues
+On Saturday, January 26, 2013 10:39:53 PM Shawn Guo wrote:
+> Mark,
+> 
+> On Fri, Jan 25, 2013 at 01:46:45PM -0600, Mark Langsdorf wrote:
+> > +static int hb_cpufreq_driver_init(void)
+> > +{
+> > +	struct device *cpu_dev;
+> > +	struct clk *cpu_clk;
+> > +	struct device_node *np;
+> > +	int ret;
+> > +
+> > +	for_each_child_of_node(of_find_node_by_path("/cpus"), np)
+> > +		if (of_get_property(np, "operating-points", NULL))
+> > +			break;
+> > +
+> > +	if (!np) {
+> > +		pr_err("failed to find highbank cpufreq node\n");
+> > +		return -ENOENT;
+> > +	}
+> > +
+> ...
+> > +out_put_node:
+> > +	of_node_put(np);
+> > +	return ret;
+> > +}
+> > +module_init(hb_cpufreq_driver_init);
+> 
+> As we are moving to multiplatform build, this init function will run
+> on all other platforms built together with highbank.  We should
+> probably eliminate that effect.
 
-Signed-off-by: Jake Champlin <jake.champlin.27@gmail.com>
----
- drivers/staging/csr/csr_msgconv.c | 392 ++++++++++++++++----------------------
- 1 file changed, 169 insertions(+), 223 deletions(-)
+That change can be made on top of the Mark's patches I think, right?
 
-diff --git a/drivers/staging/csr/csr_msgconv.c b/drivers/staging/csr/csr_msgconv.c
-index db5e845..5635ca9 100644
---- a/drivers/staging/csr/csr_msgconv.c
-+++ b/drivers/staging/csr/csr_msgconv.c
-@@ -1,10 +1,10 @@
- /*****************************************************************************
- 
--            (c) Cambridge Silicon Radio Limited 2010
--            All rights reserved and confidential information of CSR
-+	(c) Cambridge Silicon Radio Limited 2010
-+	All rights reserved and confidential information of CSR
- 
--            Refer to LICENSE.txt included with this source for details
--            on the license terms.
-+	Refer to LICENSE.txt included with this source for details
-+	on the license terms.
- 
- *****************************************************************************/
- 
-@@ -19,273 +19,219 @@ static CsrMsgConvEntry *converter;
- 
- CsrMsgConvPrimEntry *CsrMsgConvFind(u16 primType)
- {
--    CsrMsgConvPrimEntry *ptr = NULL;
--
--    if (converter)
--    {
--        ptr = converter->profile_converters;
--        while (ptr)
--        {
--            if (ptr->primType == primType)
--            {
--                break;
--            }
--            else
--            {
--                ptr = ptr->next;
--            }
--        }
--    }
--
--    return ptr;
-+	CsrMsgConvPrimEntry *ptr = NULL;
-+
-+	if (converter) {
-+		ptr = converter->profile_converters;
-+		while (ptr) {
-+			if (ptr->primType == primType)
-+				break;
-+			else
-+				ptr = ptr->next;
-+		}
-+	}
-+
-+	return ptr;
- }
- 
--static const CsrMsgConvMsgEntry *find_msg_converter(CsrMsgConvPrimEntry *ptr, u16 msgType)
-+static const CsrMsgConvMsgEntry *find_msg_converter(CsrMsgConvPrimEntry *ptr,
-+		u16 msgType)
- {
--    const CsrMsgConvMsgEntry *cv = ptr->conv;
--    if (ptr->lookupFunc)
--    {
--        return (const CsrMsgConvMsgEntry *) ptr->lookupFunc((CsrMsgConvMsgEntry *) cv, msgType);
--    }
--
--    while (cv)
--    {
--        if (cv->serFunc == NULL)
--        {
--            /* We've reached the end of the chain */
--            cv = NULL;
--            break;
--        }
--
--        if (cv->msgType == msgType)
--        {
--            break;
--        }
--        else
--        {
--            cv++;
--        }
--    }
--
--    return cv;
-+	const CsrMsgConvMsgEntry *cv = ptr->conv;
-+	if (ptr->lookupFunc)
-+		return (const CsrMsgConvMsgEntry *)
-+			ptr->lookupFunc((CsrMsgConvMsgEntry *) cv, msgType);
-+
-+	while (cv) {
-+		if (cv->serFunc == NULL) {
-+			/* We've reached the end of the chain */
-+			cv = NULL;
-+			break;
-+		}
-+
-+		if (cv->msgType == msgType)
-+			break;
-+		else
-+			cv++;
-+	}
-+
-+	return cv;
- }
- 
- static void *deserialize_data(u16 primType,
--    size_t length,
--    u8 *data)
-+	size_t length,
-+	u8 *data)
- {
--    CsrMsgConvPrimEntry *ptr;
--    u8 *ret;
--
--    ptr = CsrMsgConvFind(primType);
--
--    if (ptr)
--    {
--        const CsrMsgConvMsgEntry *cv;
--        u16 msgId = 0;
--        size_t offset = 0;
--        CsrUint16Des(&msgId, data, &offset);
--
--        cv = find_msg_converter(ptr, msgId);
--        if (cv)
--        {
--            ret = cv->deserFunc(data, length);
--        }
--        else
--        {
--            ret = NULL;
--        }
--    }
--    else
--    {
--        ret = NULL;
--    }
--
--    return ret;
-+	CsrMsgConvPrimEntry *ptr;
-+	u8 *ret;
-+
-+	ptr = CsrMsgConvFind(primType);
-+
-+	if (ptr) {
-+		const CsrMsgConvMsgEntry *cv;
-+		u16 msgId = 0;
-+		size_t offset = 0;
-+		CsrUint16Des(&msgId, data, &offset);
-+
-+		cv = find_msg_converter(ptr, msgId);
-+		if (cv)
-+			ret = cv->deserFunc(data, length);
-+		else
-+			ret = NULL;
-+	} else {
-+		ret = NULL;
-+	}
-+	return ret;
- }
- 
- static size_t sizeof_message(u16 primType, void *msg)
- {
--    CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
--    size_t ret;
--
--    if (ptr)
--    {
--        const CsrMsgConvMsgEntry *cv;
--        u16 msgId = *(u16 *) msg;
--
--        cv = find_msg_converter(ptr, msgId);
--        if (cv)
--        {
--            ret = cv->sizeofFunc(msg);
--        }
--        else
--        {
--            ret = 0;
--        }
--    }
--    else
--    {
--        ret = 0;
--    }
--
--    return ret;
-+	CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
-+	size_t ret;
-+
-+	if (ptr) {
-+		const CsrMsgConvMsgEntry *cv;
-+		u16 msgId = *(u16 *) msg;
-+
-+		cv = find_msg_converter(ptr, msgId);
-+		if (cv)
-+			ret = cv->sizeofFunc(msg);
-+		else
-+			ret = 0;
-+	} else {
-+		ret = 0;
-+	}
-+	return ret;
- }
- 
- static u8 free_message(u16 primType, u8 *data)
- {
--    CsrMsgConvPrimEntry *ptr;
--    u8 ret;
--
--    ptr = CsrMsgConvFind(primType);
--
--    if (ptr)
--    {
--        const CsrMsgConvMsgEntry *cv;
--        u16 msgId = *(u16 *) data;
--
--        cv = find_msg_converter(ptr, msgId);
--        if (cv)
--        {
--            cv->freeFunc(data);
--            ret = TRUE;
--        }
--        else
--        {
--            ret = FALSE;
--        }
--    }
--    else
--    {
--        ret = FALSE;
--    }
--
--    return ret;
-+	CsrMsgConvPrimEntry *ptr;
-+	u8 ret;
-+
-+	ptr = CsrMsgConvFind(primType);
-+
-+	if (ptr) {
-+		const CsrMsgConvMsgEntry *cv;
-+		u16 msgId = *(u16 *) data;
-+
-+		cv = find_msg_converter(ptr, msgId);
-+		if (cv) {
-+			cv->freeFunc(data);
-+			ret = TRUE;
-+		} else {
-+			ret = FALSE;
-+		}
-+	} else {
-+		ret = FALSE;
-+	}
-+	return ret;
- }
- 
- static u8 *serialize_message(u16 primType,
--    void *msg,
--    size_t *length,
--    u8 *buffer)
-+	void *msg,
-+	size_t *length,
-+	u8 *buffer)
- {
--    CsrMsgConvPrimEntry *ptr;
--    u8 *ret;
--
--    ptr = CsrMsgConvFind(primType);
--
--    *length = 0;
--
--    if (ptr)
--    {
--        const CsrMsgConvMsgEntry *cv;
--
--        cv = find_msg_converter(ptr, *(u16 *) msg);
--        if (cv)
--        {
--            ret = cv->serFunc(buffer, length, msg);
--        }
--        else
--        {
--            ret = NULL;
--        }
--    }
--    else
--    {
--        ret = NULL;
--    }
--
--    return ret;
-+	CsrMsgConvPrimEntry *ptr;
-+	u8 *ret;
-+
-+	ptr = CsrMsgConvFind(primType);
-+
-+	*length = 0;
-+
-+	if (ptr) {
-+		const CsrMsgConvMsgEntry *cv;
-+
-+		cv = find_msg_converter(ptr, *(u16 *) msg);
-+		if (cv)
-+			ret = cv->serFunc(buffer, length, msg);
-+		else
-+			ret = NULL;
-+	} else
-+		ret = NULL;
-+
-+	return ret;
- }
- 
- size_t CsrMsgConvSizeof(u16 primType, void *msg)
- {
--    return sizeof_message(primType, msg);
-+	return sizeof_message(primType, msg);
- }
- 
--u8 *CsrMsgConvSerialize(u8 *buffer, size_t maxBufferOffset, size_t *offset, u16 primType, void *msg)
-+u8 *CsrMsgConvSerialize(u8 *buffer, size_t maxBufferOffset,
-+		size_t *offset, u16 primType, void *msg)
- {
--    if (converter)
--    {
--        size_t serializedLength;
--        u8 *bufSerialized;
--        u8 *bufOffset = &buffer[*offset];
--        bufSerialized = converter->serialize_message(primType, msg, &serializedLength, bufOffset);
--        *offset += serializedLength;
--        return bufSerialized;
--    }
--    else
--    {
--        return NULL;
--    }
-+	if (converter) {
-+		size_t serializedLength;
-+		u8 *bufSerialized;
-+		u8 *bufOffset = &buffer[*offset];
-+		bufSerialized = converter->serialize_message(primType, msg,
-+			&serializedLength, bufOffset);
-+		*offset += serializedLength;
-+		return bufSerialized;
-+	} else
-+		return NULL;
- }
- 
- /* Insert profile converter at head of converter list. */
- void CsrMsgConvInsert(u16 primType, const CsrMsgConvMsgEntry *ce)
- {
--    CsrMsgConvPrimEntry *pc;
--    pc = CsrMsgConvFind(primType);
--
--    if (pc)
--    {
--        /* Already registered. Do nothing */
--    }
--    else
--    {
--        pc = kmalloc(sizeof(*pc), GFP_KERNEL);
--        pc->primType = primType;
--        pc->conv = ce;
--        pc->lookupFunc = NULL;
--        pc->next = converter->profile_converters;
--        converter->profile_converters = pc;
--    }
-+	CsrMsgConvPrimEntry *pc;
-+	pc = CsrMsgConvFind(primType);
-+
-+	if (pc) {
-+		/* Already registered. Do nothing */
-+	} else {
-+		pc = kmalloc(sizeof(*pc), GFP_KERNEL);
-+		pc->primType = primType;
-+		pc->conv = ce;
-+		pc->lookupFunc = NULL;
-+		pc->next = converter->profile_converters;
-+		converter->profile_converters = pc;
-+	}
- }
- EXPORT_SYMBOL_GPL(CsrMsgConvInsert);
- 
- CsrMsgConvMsgEntry *CsrMsgConvFindEntry(u16 primType, u16 msgType)
- {
--    CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
--    if (ptr)
--    {
--        return (CsrMsgConvMsgEntry *) find_msg_converter(ptr, msgType);
--    }
--    return NULL;
-+	CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
-+	if (ptr)
-+		return (CsrMsgConvMsgEntry *) find_msg_converter(ptr, msgType);
-+	return NULL;
- }
- EXPORT_SYMBOL_GPL(CsrMsgConvFindEntry);
- 
- CsrMsgConvMsgEntry *CsrMsgConvFindEntryByMsg(u16 primType, const void *msg)
- {
--    CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
--    if (ptr && msg)
--    {
--        u16 msgType = *((u16 *) msg);
--        return (CsrMsgConvMsgEntry *) find_msg_converter(ptr, msgType);
--    }
--    return NULL;
-+	CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
-+	if (ptr && msg) {
-+		u16 msgType = *((u16 *) msg);
-+		return (CsrMsgConvMsgEntry *) find_msg_converter(ptr, msgType);
-+	}
-+	return NULL;
- }
- 
--void CsrMsgConvCustomLookupRegister(u16 primType, CsrMsgCustomLookupFunc *lookupFunc)
-+void CsrMsgConvCustomLookupRegister(u16 primType,
-+	CsrMsgCustomLookupFunc *lookupFunc)
- {
--    CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
--    if (ptr)
--    {
--        ptr->lookupFunc = lookupFunc;
--    }
-+	CsrMsgConvPrimEntry *ptr = CsrMsgConvFind(primType);
-+	if (ptr)
-+		ptr->lookupFunc = lookupFunc;
- }
- EXPORT_SYMBOL_GPL(CsrMsgConvCustomLookupRegister);
- 
- CsrMsgConvEntry *CsrMsgConvInit(void)
- {
--    if (!converter)
--    {
--        converter = kmalloc(sizeof(CsrMsgConvEntry), GFP_KERNEL);
--
--        converter->profile_converters = NULL;
--        converter->free_message = free_message;
--        converter->sizeof_message = sizeof_message;
--        converter->serialize_message = serialize_message;
--        converter->deserialize_data = deserialize_data;
--    }
--
--    return converter;
-+	if (!converter) {
-+		converter = kmalloc(sizeof(CsrMsgConvEntry), GFP_KERNEL);
-+		converter->profile_converters = NULL;
-+		converter->free_message = free_message;
-+		converter->sizeof_message = sizeof_message;
-+		converter->serialize_message = serialize_message;
-+		converter->deserialize_data = deserialize_data;
-+	}
-+
-+	return converter;
- }
- EXPORT_SYMBOL_GPL(CsrMsgConvInit);
--- 
-1.8.1.1
+If so, I'd prefer it that way.  The Mark's patches have been in a limbo for
+too long already and that issue doesn't seem to be serious enough to block
+them any longer.
+
+Thanks,
+Rafael
 
 
 -- 
-Jake Champlin
-jake.champlin.27@gmail.com
-<MuttClient>
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
