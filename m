@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab3AZBbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 20:31:44 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:48728 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093Ab3AZBbZ (ORCPT
+	id S1755467Ab3AZBdA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 20:33:00 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:56064 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755340Ab3AZBbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 20:31:25 -0500
+	Fri, 25 Jan 2013 20:31:43 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net
-Subject: [PATCH 04/14] firewire: don't use idr_remove_all()
-Date: Fri, 25 Jan 2013 17:31:02 -0800
-Message-Id: <1359163872-1949-5-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 14/14] idr: deprecate idr_remove_all()
+Date: Fri, 25 Jan 2013 17:31:12 -0800
+Message-Id: <1359163872-1949-15-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359163872-1949-1-git-send-email-tj@kernel.org>
 References: <1359163872-1949-1-git-send-email-tj@kernel.org>
@@ -22,34 +21,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-idr_destroy() can destroy idr by itself and idr_remove_all() is being
-deprecated.  Drop its usage.
+There was only one legitimate use of idr_remove_all() and a lot more
+of incorrect uses (or lack of it).  Now that idr_destroy() implies
+idr_remove_all() and all the in-kernel users updated not to use it,
+there's no reason to keep it around.  Mark it deprecated so that we
+can later unexport it.
+
+idr_remove_all() is made an inline function calling __idr_remove_all()
+to avoid triggering deprecated warning on EXPORT_SYMBOL().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: linux1394-devel@lists.sourceforge.net
 ---
-This patch depends on an earlier idr patch and given the trivial
-nature of the patch, I think it would be best to route these together
-through -mm.  Please holler if there's any objection.
+ include/linux/idr.h | 14 +++++++++++++-
+ lib/idr.c           | 10 +++-------
+ 2 files changed, 16 insertions(+), 8 deletions(-)
 
-Thanks.
-
- drivers/firewire/core-cdev.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/firewire/core-cdev.c b/drivers/firewire/core-cdev.c
-index f8d2287..68c3138 100644
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -1779,7 +1779,6 @@ static int fw_device_op_release(struct inode *inode, struct file *file)
- 	wait_event(client->tx_flush_wait, !has_outbound_transactions(client));
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+index de7e190..1b932e7 100644
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -110,10 +110,22 @@ int idr_for_each(struct idr *idp,
+ void *idr_get_next(struct idr *idp, int *nextid);
+ void *idr_replace(struct idr *idp, void *ptr, int id);
+ void idr_remove(struct idr *idp, int id);
+-void idr_remove_all(struct idr *idp);
+ void idr_destroy(struct idr *idp);
+ void idr_init(struct idr *idp);
  
- 	idr_for_each(&client->resource_idr, shutdown_resource, client);
--	idr_remove_all(&client->resource_idr);
- 	idr_destroy(&client->resource_idr);
++void __idr_remove_all(struct idr *idp);	/* don't use */
++
++/**
++ * idr_remove_all - remove all ids from the given idr tree
++ * @idp: idr handle
++ *
++ * If you're trying to destroy @idp, calling idr_destroy() is enough.
++ * This is going away.  Don't use.
++ */
++static inline void __deprecated idr_remove_all(struct idr *idp)
++{
++	__idr_remove_all(idp);
++}
  
- 	list_for_each_entry_safe(event, next_event, &client->event_list, link)
+ /*
+  * IDA - IDR based id allocator, use when translation from id to
+diff --git a/lib/idr.c b/lib/idr.c
+index 1e47832..1408e93 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -433,11 +433,7 @@ void idr_remove(struct idr *idp, int id)
+ }
+ EXPORT_SYMBOL(idr_remove);
+ 
+-/**
+- * idr_remove_all - remove all ids from the given idr tree
+- * @idp: idr handle
+- */
+-void idr_remove_all(struct idr *idp)
++void __idr_remove_all(struct idr *idp)
+ {
+ 	int n, id, max;
+ 	int bt_mask;
+@@ -470,7 +466,7 @@ void idr_remove_all(struct idr *idp)
+ 	}
+ 	idp->layers = 0;
+ }
+-EXPORT_SYMBOL(idr_remove_all);
++EXPORT_SYMBOL(__idr_remove_all);
+ 
+ /**
+  * idr_destroy - release all cached layers within an idr tree
+@@ -487,7 +483,7 @@ EXPORT_SYMBOL(idr_remove_all);
+  */
+ void idr_destroy(struct idr *idp)
+ {
+-	idr_remove_all(idp);
++	__idr_remove_all(idp);
+ 
+ 	while (idp->id_free_cnt) {
+ 		struct idr_layer *p = get_from_free_list(idp);
 -- 
 1.8.1
 
