@@ -1,172 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab3AZM0b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 07:26:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51880 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548Ab3AZM02 (ORCPT
+	id S1753850Ab3AZMju (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 07:39:50 -0500
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:36254 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753591Ab3AZMjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 07:26:28 -0500
-Date: Sat, 26 Jan 2013 04:25:57 -0800
-From: tip-bot for Ma Ling <ling.ml@alipay.com>
-Message-ID: <tip-d94ffd677469ef729e9d6e968191872577a6119e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        arjan@linux.intel.com, torvalds@linux-foundation.org,
-        jbeulich@suse.com, ling.ml@alipay.com, akpm@linux-foundation.org,
-        rostedt@goodmis.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, arjan@linux.intel.com,
-        jbeulich@suse.com, ling.ml@alipay.com, rostedt@goodmis.org,
-        akpm@linux-foundation.org, tglx@linutronix.de
-In-Reply-To: <1359123061-6139-1-git-send-email-ling.ma@alipay.com>
-References: <1359123061-6139-1-git-send-email-ling.ma@alipay.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86/defconfig: Turn on CONFIG_CC_OPTIMIZE_FOR_SIZE=
- y in the 64-bit defconfig
-Git-Commit-ID: d94ffd677469ef729e9d6e968191872577a6119e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sat, 26 Jan 2013 07:39:48 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Reply-To: sedat.dilek@gmail.com
+Date: Sat, 26 Jan 2013 13:39:46 +0100
+Message-ID: <CA+icZUXsi0jZZE9HBWG0D6-+oJBeX+8nHpZ9F02x=B7dG3X+yg@mail.gmail.com>
+Subject: Re: block: optionally snapshot page contents to provide stable pages
+ during write
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Jan Kara <jack@suse.cz>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 26 Jan 2013 04:26:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d94ffd677469ef729e9d6e968191872577a6119e
-Gitweb:     http://git.kernel.org/tip/d94ffd677469ef729e9d6e968191872577a6119e
-Author:     Ma Ling <ling.ml@alipay.com>
-AuthorDate: Fri, 25 Jan 2013 09:11:01 -0500
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 26 Jan 2013 13:09:15 +0100
+Hi Darrick,
 
-x86/defconfig: Turn on CONFIG_CC_OPTIMIZE_FOR_SIZE=y in the 64-bit defconfig
+can you tell me why you do not put your help text where it normally
+belongs ("help" Kconfig item)?
 
-Currently we use O2 as compiler option for better performance,
-although it will enlarge code size, in modern CPUs larger
-instructon and unified cache, sophisticated instruction prefetch
-weaken instruction cache miss, meanwhile flags such as
- -falign-functions, -falign-jumps, -falign-loops, -falign-labels
-are very helpful to improve CPU front-end throughput because CPU
-fetch instruction by 16 aligned–bytes code block per cycle.
+273 # We also use the bounce pool to provide stable page writes for jbd.  jbd
+274 # initiates buffer writeback without locking the page or setting
+PG_writeback,
+275 # and fixing that behavior (a second time; jbd2 doesn't have this
+problem) is
+276 # a major rework effort.  Instead, use the bounce buffer to snapshot pages
+277 # (until jbd goes away).  The only jbd user is ext3.
+278 config NEED_BOUNCE_POOL
+279         bool
+280         default y if (TILE && USB_OHCI_HCD) || (BLK_DEV_INTEGRITY && JBD)
+281         help
+282         line #273..277
 
-In order to save power and get higher performance, Sandy Bridge
-starts to introduce decoded-cache, instructions will be kept in
-it after decode stage. When CPU refetches the instruction,
-decoded cache could provide 32 aligned-bytes instruction block,
-instead of 16 bytes from I-cache, fewer branch miss penalty
-resulted from shorter pipeline. It requires hot code should be
-put into decoded cache as possible we can. Sandy Bridge, Ivy
-Bridge, and Haswell all implemented this feature, Os-Optimize
-for size should be better than O2 on them.
+Noticed while hunting a culprit commit in Linux-Next as my
+kernel-config got changed between next-20130123..next-20130124.
 
-Based on above reasons, we compiled linux kernel 3.6.9 with O2
-and Os respectively. The results show Os improve performance
-netperf 4.8%, 2.7% for volano as below:
+Regards,
+- Sedat -
 
-O2 + netperf
-Performance counter stats for 'netperf' (3 runs):
-
-       5416.157986 task-clock                #    0.541 CPUs utilized            ( +-  0.19% )
-           348,249 context-switches          #    0.064 M/sec                    ( +-  0.17% )
-                 0 CPU-migrations            #    0.000 M/sec                    ( +-  0.00% )
-               353 page-faults               #    0.000 M/sec                    ( +-  0.16% )
-    13,166,254,384 cycles                    #    2.431 GHz                      ( +-  0.18% )
-     8,827,499,807 stalled-cycles-frontend   #   67.05% frontend cycles idle     ( +-  0.29% )
-     5,951,234,060 stalled-cycles-backend    #   45.20% backend  cycles idle     ( +-  0.44% )
-     8,122,481,914 instructions              #    0.62  insns per cycle
-                                             #    1.09  stalled cycles per insn  ( +-  0.17% )
-     1,415,864,138 branches                  #  261.415 M/sec                    ( +-  0.17% )
-        16,975,308 branch-misses             #    1.20% of all branches          ( +-  0.61% )
-
-      10.007215371 seconds time elapsed                                          ( +-  0.03% )
-
-Os + netperf
-
-Performance counter stats for 'netperf' (3 runs):
-
-       5395.386704 task-clock                #    0.539 CPUs utilized            ( +-  0.14% )
-           345,880 context-switches          #    0.064 M/sec                    ( +-  0.25% )
-                 0 CPU-migrations            #    0.000 M/sec                    ( +-  0.00% )
-               354 page-faults               #    0.000 M/sec                    ( +-  0.00% )
-    13,142,706,297 cycles                    #    2.436 GHz                      ( +-  0.23% )
-     8,379,382,641 stalled-cycles-frontend   #   63.76% frontend cycles idle     ( +-  0.50% )
-     5,513,722,219 stalled-cycles-backend    #   41.95% backend  cycles idle     ( +-  0.71% )
-     8,554,202,795 instructions              #    0.65  insns per cycle
-                                             #    0.98  stalled cycles per insn  ( +-  0.25% )
-     1,530,020,505 branches                  #  283.579 M/sec                    ( +-  0.25% )
-        17,710,406 branch-misses             #    1.16% of all branches          ( +-  1.00% )
-
-      10.004859867 seconds time elapsed
-
-During the same time (10.004859867 seconds) IPC from Os is 0.65,
-O2 is 0.62, Os improved performance 4.8%.
-
-O2 + volano
-Performance counter stats for './loopclient.sh openjdk' (3 runs):
-
-     210627.115313 task-clock                #    0.781 CPUs utilized            ( +-  0.92% )
-        13,812,610 context-switches          #    0.066 M/sec                    ( +-  0.17% )
-         2,352,755 CPU-migrations            #    0.011 M/sec                    ( +-  0.84% )
-           208,333 page-faults               #    0.001 M/sec                    ( +-  1.58% )
-   525,627,073,405 cycles                    #    2.496 GHz                      ( +-  0.96% )
-   428,177,571,365 stalled-cycles-frontend   #   81.46% frontend cycles idle     ( +-  1.09% )
-   370,885,224,739 stalled-cycles-backend    #   70.56% backend  cycles idle     ( +-  1.18% )
-   187,662,577,544 instructions              #    0.36  insns per cycle
-                                             #    2.28  stalled cycles per insn  ( +-  0.31% )
-    35,684,976,425 branches                  #  169.423 M/sec                    ( +-  0.45% )
-     1,062,086,942 branch-misses             #    2.98% of all branches          ( +-  0.08% )
-
-     269.764578435 seconds time elapsed
-
-Os + volano
-Performance counter stats for './loopclient.sh openjdk' (3 runs):
-
-     209545.786941 task-clock                #    0.778 CPUs utilized            ( +-  0.66% )
-        13,864,142 context-switches          #    0.066 M/sec                    ( +-  0.29% )
-         2,326,826 CPU-migrations            #    0.011 M/sec                    ( +-  0.83% )
-           205,575 page-faults               #    0.001 M/sec                    ( +-  2.63% )
-   523,366,588,452 cycles                    #    2.498 GHz                      ( +-  0.75% )
-   419,200,472,430 stalled-cycles-frontend   #   80.10% frontend cycles idle     ( +-  0.86% )
-   362,044,374,737 stalled-cycles-backend    #   69.18% backend  cycles idle     ( +-  0.96% )
-   193,274,857,837 instructions              #    0.37  insns per cycle
-                                             #    2.17  stalled cycles per insn  ( +-  0.51% )
-    37,657,832,686 branches                  #  179.712 M/sec                    ( +-  0.42% )
-     1,061,005,300 branch-misses             #    2.82% of all branches          ( +-  0.86% )
-
-     269.410275674 seconds time elapsed                                          ( +-  0.06% )
-
-During the same  time (269.410275674 seconds) IPC from Os is
-0.37, O2 is 0.36, Os improved performance 2.7%.
-
-Signed-off-by: Ma Ling <ling.ml@alipay.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Beulich <jbeulich@suse.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1359123061-6139-1-git-send-email-ling.ma@alipay.com
-[ So, this is a bit symbolic as most people don't use the defconfig,
-  but the measurements are useful nevertheless so let's commit this
-  if there are no objections. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/configs/x86_64_defconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
-index 671524d..2fcde13 100644
---- a/arch/x86/configs/x86_64_defconfig
-+++ b/arch/x86/configs/x86_64_defconfig
-@@ -18,6 +18,7 @@ CONFIG_CGROUP_CPUACCT=y
- CONFIG_RESOURCE_COUNTERS=y
- CONFIG_CGROUP_SCHED=y
- CONFIG_BLK_DEV_INITRD=y
-+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
- # CONFIG_COMPAT_BRK is not set
- CONFIG_PROFILING=y
- CONFIG_KPROBES=y
+[1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=3f1c22e#patch5
