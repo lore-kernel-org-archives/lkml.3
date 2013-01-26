@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab3AZRmO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 12:42:14 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:43787 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852Ab3AZRmL convert rfc822-to-8bit (ORCPT
+	id S1753460Ab3AZSV1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 13:21:27 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:30266 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752343Ab3AZSVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 12:42:11 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: [PATCH] regulator: lp8755: Use LP8755_BUCK_MAX instead of magic number
-From: daniel jeong <gshark.jeong@gmail.com>
-In-Reply-To: <1359177587.9041.1.camel@phoenix>
-Date: Sun, 27 Jan 2013 02:42:06 +0900
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <51A2EA10-91C6-45DA-B138-AF2CDC07FD90@gmail.com>
-References: <1359177587.9041.1.camel@phoenix>
-To: Axel Lin <axel.lin@ingics.com>
-X-Mailer: Apple Mail (2.1499)
+	Sat, 26 Jan 2013 13:21:25 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFHiy0MEozS
+X-RZG-CLASS-ID: mo00
+Date: Sat, 26 Jan 2013 19:21:15 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Jan Beulich (JBeulich@suse.com)" <JBeulich@suse.com>
+Subject: Re: [PATCH] x86: Hyper-V: register clocksource only if its advertised
+Message-ID: <20130126182114.GA26786@aepfle.de>
+References: <1359121036-16309-1-git-send-email-olaf@aepfle.de>
+ <761b736ff1854810bfe272961248e6d2@BLUPR03MB050.namprd03.prod.outlook.com>
+ <20130125165443.GA15833@aepfle.de>
+ <500ca90f5d3e4d4f80c7fb62c34d36f0@BLUPR03MB050.namprd03.prod.outlook.com>
+ <20130125171923.GA19306@aepfle.de>
+ <542f1d12e3ee46f48a85a143361c113d@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130125200000.GA9712@aepfle.de>
+ <050ad0e312b54ff3af424c7128144a4d@SN2PR03MB061.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <050ad0e312b54ff3af424c7128144a4d@SN2PR03MB061.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21.rev5632 (2013-01-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jan 26, KY Srinivasan wrote:
 
-On Jan 26, 2013, at 2:19 PM, Axel Lin <axel.lin@ingics.com> wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Olaf Hering [mailto:olaf@aepfle.de]
+> > Sent: Friday, January 25, 2013 3:00 PM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; Greg KH; Jan Beulich (JBeulich@suse.com)
+> > Subject: Re: [PATCH] x86: Hyper-V: register clocksource only if its advertised
+> > 
+> > On Fri, Jan 25, KY Srinivasan wrote:
+> > 
+> > > Your current approach of using the "Partition Reference Counter"
+> > > feature bit is very fragile. Let us assume that future Windows guests
+> > > depend on this feature; Xen would certainly emulate this to have a
+> > > "good" emulation of Hyper-V and we are back to square one.
+> > 
+> > If Xen starts to emulate the "Partition Reference Counter" feature,
+> > wouldnt it also advertise this feature?
+> 
+> Olaf, did you get a chance to investigate why the viridian bit was set
+> for the Linux HVM domain.
 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
-> drivers/regulator/lp8755.c |    6 +++---
-> 1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/regulator/lp8755.c b/drivers/regulator/lp8755.c
-> index 8b1ce0f..f0f6ea0 100644
-> --- a/drivers/regulator/lp8755.c
-> +++ b/drivers/regulator/lp8755.c
-> @@ -373,7 +373,7 @@ static irqreturn_t lp8755_irq_handler(int irq, void *data)
-> 		goto err_i2c;
-> 
-> 	/* sent power fault detection event to specific regulator */
-> -	for (icnt = 0; icnt < 6; icnt++)
-> +	for (icnt = 0; icnt < LP8755_BUCK_MAX; icnt++)
-> 		if ((flag0 & (0x4 << icnt))
-> 		    && (pchip->irqmask & (0x04 << icnt))
-> 		    && (pchip->rdev[icnt] != NULL))
-> @@ -508,7 +508,7 @@ err_irq:
-> 
-> err_regulator:
-> 	/* output disable */
-> -	for (icnt = 0; icnt < 0x06; icnt++)
-> +	for (icnt = 0; icnt < LP8755_BUCK_MAX; icnt++)
-> 		lp8755_write(pchip, icnt, 0x00);
-> 
-> 	return ret;
-> @@ -522,7 +522,7 @@ static int lp8755_remove(struct i2c_client *client)
-> 	for (icnt = 0; icnt < mphase_buck[pchip->mphase].nreg; icnt++)
-> 		regulator_unregister(pchip->rdev[icnt]);
-> 
-> -	for (icnt = 0; icnt < 0x06; icnt++)
-> +	for (icnt = 0; icnt < LP8755_BUCK_MAX; icnt++)
-> 		lp8755_write(pchip, icnt, 0x00);
-> 
-> 	if (pchip->irq != 0)
-> -- 
-> 1.7.9.5
-> 
-> 
-> 
-Yes you're right!
-Thank you Axel. 
-Daniel.
+I dont know, most likely XenServer sets this per default?
+
+> I am thinking of re-sending the patch for delivering the Hyper-V vmbus
+> on a separate vector without a run-time check. Let me know.
+
+Are you also acking/nacking this patch?
+
+Olaf
