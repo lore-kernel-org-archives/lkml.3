@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab3AZFwT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 00:52:19 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55344 "EHLO
+	id S1752320Ab3AZFwX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 00:52:23 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47743 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab3AZFwH (ORCPT
+	with ESMTP id S1751359Ab3AZFwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 00:52:07 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-eb-51036f05aa9f
+	Sat, 26 Jan 2013 00:52:10 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-ed-51036f06ba64
 From: Kyungsik Lee <kyungsik.lee@lge.com>
 To: Russell King <linux@arm.linux.org.uk>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -23,9 +23,9 @@ Cc: Nitin Gupta <nitingupta910@gmail.com>,
         chan.jeong@lge.com, gunho.lee@lge.com, minchan.kim@lge.com,
         namhyung.kim@lge.com, raphael.andy.lee@gmail.com,
         Kyungsik Lee <kyungsik.lee@lge.com>
-Subject: [RFC PATCH 3/4] arm: add support for LZ4-compressed kernels
-Date: Sat, 26 Jan 2013 14:50:46 +0900
-Message-Id: <1359179447-31118-4-git-send-email-kyungsik.lee@lge.com>
+Subject: [RFC PATCH 4/4] x86: add support for LZ4-compressed kernels
+Date: Sat, 26 Jan 2013 14:50:47 +0900
+Message-Id: <1359179447-31118-5-git-send-email-kyungsik.lee@lge.com>
 X-Mailer: git-send-email 1.8.0.3
 In-Reply-To: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>
 References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>
@@ -34,7 +34,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch integrates the LZ4 decompression code to the arm pre-boot code.
+This patch integrates the LZ4 decompression code to the x86 pre-boot code.
 And it depends on two patchs below
 
 lib: add support for LZ4-compressed kernels
@@ -42,86 +42,67 @@ decompressors: add lz4 decompressor module
 
 Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
 ---
- arch/arm/Kconfig                      | 1 +
- arch/arm/boot/compressed/.gitignore   | 1 +
- arch/arm/boot/compressed/Makefile     | 3 ++-
- arch/arm/boot/compressed/decompress.c | 4 ++++
- arch/arm/boot/compressed/piggy.lz4.S  | 6 ++++++
- 5 files changed, 14 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/compressed/piggy.lz4.S
+ arch/x86/Kconfig                  | 1 +
+ arch/x86/boot/compressed/Makefile | 5 ++++-
+ arch/x86/boot/compressed/misc.c   | 4 ++++
+ 3 files changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 91f8d78..1b3621d 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -37,6 +37,7 @@ config ARM
- 	select HAVE_HW_BREAKPOINT if (PERF_EVENTS && (CPU_V6 || CPU_V6K || CPU_V7))
- 	select HAVE_IDE if PCI || ISA || PCMCIA
- 	select HAVE_KERNEL_GZIP
-+	select HAVE_KERNEL_LZ4
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 8c185d0..7142bef 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -62,6 +62,7 @@ config X86
  	select HAVE_KERNEL_LZMA
- 	select HAVE_KERNEL_LZO
  	select HAVE_KERNEL_XZ
-diff --git a/arch/arm/boot/compressed/.gitignore b/arch/arm/boot/compressed/.gitignore
-index f79a08e..47279aa 100644
---- a/arch/arm/boot/compressed/.gitignore
-+++ b/arch/arm/boot/compressed/.gitignore
-@@ -6,6 +6,7 @@ piggy.gzip
- piggy.lzo
- piggy.lzma
- piggy.xzkern
-+piggy.lz4
- vmlinux
- vmlinux.lds
+ 	select HAVE_KERNEL_LZO
++	select HAVE_KERNEL_LZ4
+ 	select HAVE_HW_BREAKPOINT
+ 	select HAVE_MIXED_BREAKPOINTS_REGS
+ 	select PERF_EVENTS
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 8a84501..c275db5 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -4,7 +4,7 @@
+ # create a compressed vmlinux image from the original vmlinux
+ #
  
-diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
-index 5cad8a6..8b5c79a 100644
---- a/arch/arm/boot/compressed/Makefile
-+++ b/arch/arm/boot/compressed/Makefile
-@@ -88,6 +88,7 @@ suffix_$(CONFIG_KERNEL_GZIP) = gzip
- suffix_$(CONFIG_KERNEL_LZO)  = lzo
- suffix_$(CONFIG_KERNEL_LZMA) = lzma
- suffix_$(CONFIG_KERNEL_XZ)   = xzkern
-+suffix_$(CONFIG_KERNEL_LZ4)  = lz4
+-targets := vmlinux.lds vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo head_$(BITS).o misc.o string.o cmdline.o early_serial_console.o piggy.o
++targets := vmlinux.lds vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo vmlinux.bin.lz4 head_$(BITS).o misc.o string.o cmdline.o early_serial_console.o piggy.o
  
- # Borrowed libfdt files for the ATAG compatibility mode
+ KBUILD_CFLAGS := -m$(BITS) -D__KERNEL__ $(LINUX_INCLUDE) -O2
+ KBUILD_CFLAGS += -fno-strict-aliasing -fPIC
+@@ -64,12 +64,15 @@ $(obj)/vmlinux.bin.xz: $(vmlinux.bin.all-y) FORCE
+ 	$(call if_changed,xzkern)
+ $(obj)/vmlinux.bin.lzo: $(vmlinux.bin.all-y) FORCE
+ 	$(call if_changed,lzo)
++$(obj)/vmlinux.bin.lz4: $(vmlinux.bin.all-y) FORCE
++	$(call if_changed,lz4)
  
-@@ -112,7 +113,7 @@ targets       := vmlinux vmlinux.lds \
- 		 font.o font.c head.o misc.o $(OBJS)
+ suffix-$(CONFIG_KERNEL_GZIP)	:= gz
+ suffix-$(CONFIG_KERNEL_BZIP2)	:= bz2
+ suffix-$(CONFIG_KERNEL_LZMA)	:= lzma
+ suffix-$(CONFIG_KERNEL_XZ)	:= xz
+ suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
++suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
  
- # Make sure files are removed during clean
--extra-y       += piggy.gzip piggy.lzo piggy.lzma piggy.xzkern \
-+extra-y       += piggy.gzip piggy.lzo piggy.lzma piggy.xzkern piggy.lz4 \
- 		 lib1funcs.S ashldi3.S $(libfdt) $(libfdt_hdrs)
- 
- ifeq ($(CONFIG_FUNCTION_TRACER),y)
-diff --git a/arch/arm/boot/compressed/decompress.c b/arch/arm/boot/compressed/decompress.c
-index 9deb56a..a95f071 100644
---- a/arch/arm/boot/compressed/decompress.c
-+++ b/arch/arm/boot/compressed/decompress.c
-@@ -53,6 +53,10 @@ extern char * strstr(const char * s1, const char *s2);
- #include "../../../../lib/decompress_unxz.c"
+ quiet_cmd_mkpiggy = MKPIGGY $@
+       cmd_mkpiggy = $(obj)/mkpiggy $< > $@ || ( rm -f $@ ; false )
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 88f7ff6..166a0a8 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -145,6 +145,10 @@ static int lines, cols;
+ #include "../../../../lib/decompress_unlzo.c"
  #endif
  
 +#ifdef CONFIG_KERNEL_LZ4
 +#include "../../../../lib/decompress_unlz4.c"
 +#endif
 +
- int do_decompress(u8 *input, int len, u8 *output, void (*error)(char *x))
+ static void scroll(void)
  {
- 	return decompress(input, len, NULL, NULL, output, NULL, error);
-diff --git a/arch/arm/boot/compressed/piggy.lz4.S b/arch/arm/boot/compressed/piggy.lz4.S
-new file mode 100644
-index 0000000..3d9a575
---- /dev/null
-+++ b/arch/arm/boot/compressed/piggy.lz4.S
-@@ -0,0 +1,6 @@
-+	.section .piggydata,#alloc
-+	.globl	input_data
-+input_data:
-+	.incbin	"arch/arm/boot/compressed/piggy.lz4"
-+	.globl	input_data_end
-+input_data_end:
+ 	int i;
 -- 
 1.8.0.3
 
