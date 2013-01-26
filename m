@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab3AZR2i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 12:28:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6435 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753059Ab3AZR2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 12:28:21 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 0/9] perf: Adding better precise_ip field handling
-Date: Sat, 26 Jan 2013 18:27:46 +0100
-Message-Id: <1359221275-24254-1-git-send-email-jolsa@redhat.com>
+	id S1753407Ab3AZRig (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 12:38:36 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:55379 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068Ab3AZRid (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 12:38:33 -0500
+From: anish kumar <anish198519851985@gmail.com>
+To: fweisbec@gmail.com, linux-kernel@vger.kernel.org
+Cc: rostedt@goodmis.org, akpm@linux-foundation.org, peterz@infradead.org,
+        mingo@kernel.org, tglx@linutronix.de, paul.gortmaker@windriver.com,
+        anish kumar <anish198519851985@gmail.com>
+Subject: [PATCH] [PATCH] IRQ CORE: irq_work_queue function return value not used.
+Date: Sat, 26 Jan 2013 23:08:18 +0530
+Message-Id: <1359221898-5651-1-git-send-email-anish198519851985@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-adding sysfs attribute to specify the maximum allowed value
-for perf_event_attr::precise_ip field.
+From: anish kumar <anish198519851985@gmail.com>
 
-Adding functionality for simple 'precise' term to get the
-maximum allowed value for perf_event_attr::precise_ip field.
+As no one is using the return value of irq_work_queue function
+it is better to just make it void.
 
-And finally adding several precise automated tests.
-
-thanks,
-jirka
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-
-
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: anish kumar <anish198519851985@gmail.com>
 ---
-Andi Kleen (1):
-      perf tools: Add a precise event qualifier
+ include/linux/irq_work.h |    2 +-
+ kernel/irq_work.c        |    5 ++---
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-Jiri Olsa (8):
-      perf x86: Add precise sysfs cpu pmu attribute
-      perf tools: Add precise object to interface sysfs precise
-      perf tests: Add precise event automated test
-      perf tools: Read maximal precise value for 'precise' term
-      perf tools: Favor 'p' modifier before 'precise' term properly
-      perf tests: Add automated precise term test
-      perf: Document the ABI for 'precise' sysfs attribute
-      perf: Document the ABI for 'rdpmc' sysfs attribute
+diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
+index 6a9e8f5..ce60c08 100644
+--- a/include/linux/irq_work.h
++++ b/include/linux/irq_work.h
+@@ -16,7 +16,7 @@ void init_irq_work(struct irq_work *work, void (*func)(struct irq_work *))
+ 	work->func = func;
+ }
+ 
+-bool irq_work_queue(struct irq_work *work);
++void irq_work_queue(struct irq_work *work);
+ void irq_work_run(void);
+ void irq_work_sync(struct irq_work *work);
+ 
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index 1588e3b..4829a31 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -79,17 +79,16 @@ static void __irq_work_queue(struct irq_work *work)
+  *
+  * Can be re-enqueued while the callback is still in progress.
+  */
+-bool irq_work_queue(struct irq_work *work)
++void irq_work_queue(struct irq_work *work)
+ {
+ 	if (!irq_work_claim(work)) {
+ 		/*
+ 		 * Already enqueued, can't do!
+ 		 */
+-		return false;
++		return;
+ 	}
+ 
+ 	__irq_work_queue(work);
+-	return true;
+ }
+ EXPORT_SYMBOL_GPL(irq_work_queue);
+ 
+-- 
+1.7.1
 
- Documentation/ABI/testing/sysfs-bus-event_source-cpu-precise | 10 ++++++++++
- Documentation/ABI/testing/sysfs-bus-event_source-cpu-rdpmc   |  8 ++++++++
- arch/x86/kernel/cpu/perf_event.c                             | 34 +++++++++++++++++++++++---------
- tools/perf/Makefile                                          |  2 ++
- tools/perf/tests/builtin-test.c                              |  4 ++++
- tools/perf/tests/parse-events.c                              | 75 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/precise.c                                   | 52 +++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h                                     |  1 +
- tools/perf/util/parse-events.c                               | 38 +++++++++++++++++++++++++++++++++++-
- tools/perf/util/parse-events.h                               |  3 +++
- tools/perf/util/parse-events.l                               |  1 +
- tools/perf/util/parse-events.y                               |  2 +-
- tools/perf/util/precise.c                                    | 45 +++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/util.h                                       |  2 ++
- 14 files changed, 266 insertions(+), 11 deletions(-)
