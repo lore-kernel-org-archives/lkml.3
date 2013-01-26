@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab3AZMY1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 07:24:27 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:38827 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753436Ab3AZMYZ (ORCPT
+	id S1753833Ab3AZM0b (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 07:26:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51880 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753548Ab3AZM02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 07:24:25 -0500
-From: ling.ma.program@gmail.com
-To: mingo@redhat.com
-Cc: tglx@linutronix.de, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        Ma Ling <ling.ml@alipay.com>
-Subject: [PATCH V2] [x86]: Compiler Option Os is better on latest x86
-Date: Sat, 26 Jan 2013 07:24:12 -0500
-Message-Id: <1359203052-5159-1-git-send-email-ling.ma@alipay.com>
-X-Mailer: git-send-email 1.7.1
+	Sat, 26 Jan 2013 07:26:28 -0500
+Date: Sat, 26 Jan 2013 04:25:57 -0800
+From: tip-bot for Ma Ling <ling.ml@alipay.com>
+Message-ID: <tip-d94ffd677469ef729e9d6e968191872577a6119e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        arjan@linux.intel.com, torvalds@linux-foundation.org,
+        jbeulich@suse.com, ling.ml@alipay.com, akpm@linux-foundation.org,
+        rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, arjan@linux.intel.com,
+        jbeulich@suse.com, ling.ml@alipay.com, rostedt@goodmis.org,
+        akpm@linux-foundation.org, tglx@linutronix.de
+In-Reply-To: <1359123061-6139-1-git-send-email-ling.ma@alipay.com>
+References: <1359123061-6139-1-git-send-email-ling.ma@alipay.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86/defconfig: Turn on CONFIG_CC_OPTIMIZE_FOR_SIZE=
+ y in the 64-bit defconfig
+Git-Commit-ID: d94ffd677469ef729e9d6e968191872577a6119e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 26 Jan 2013 04:26:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ma Ling <ling.ml@alipay.com>
+Commit-ID:  d94ffd677469ef729e9d6e968191872577a6119e
+Gitweb:     http://git.kernel.org/tip/d94ffd677469ef729e9d6e968191872577a6119e
+Author:     Ma Ling <ling.ml@alipay.com>
+AuthorDate: Fri, 25 Jan 2013 09:11:01 -0500
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sat, 26 Jan 2013 13:09:15 +0100
 
-  Currently we use O2 as compiler option for better performance,
-although it will enlarge code size, in modern CPUs larger instructon
-and unified cache, sophisticated instruction prefetch weaken instruction
-cache miss, meanwhile flags such as -falign-functions, -falign-jumps,
--falign-loops, -falign-labels are very helpful to improve CPU front-end
-throughput because CPU fetch instruction by 16 aligned–bytes code block
-per cycle.
+x86/defconfig: Turn on CONFIG_CC_OPTIMIZE_FOR_SIZE=y in the 64-bit defconfig
 
-  In order to save power and get higher performance, Sandy Bridge 
-starts to introduce decoded-cache, instructions will be kept in it
-after decode stage. When CPU refetches the instruction, decoded cache could
-provide 32 aligned-bytes instruction block, instead of 16 bytes from I-cache,
-fewer branch miss penalty resulted from shorter pipeline. It requires hot
-code should be put into decoded cache as possible we can. Sandy Bridge,
-Ivy Bridge, and Haswell all implemented this feature, Os-Optimize for size
-should be better than O2 on them.
+Currently we use O2 as compiler option for better performance,
+although it will enlarge code size, in modern CPUs larger
+instructon and unified cache, sophisticated instruction prefetch
+weaken instruction cache miss, meanwhile flags such as
+ -falign-functions, -falign-jumps, -falign-loops, -falign-labels
+are very helpful to improve CPU front-end throughput because CPU
+fetch instruction by 16 aligned–bytes code block per cycle.
 
-Based on above reasons, we compiled linux kernel 3.6.9 with O2 and Os
-respectively. The results show Os improve performance netperf 4.8%,
-2.7% for volano as below
+In order to save power and get higher performance, Sandy Bridge
+starts to introduce decoded-cache, instructions will be kept in
+it after decode stage. When CPU refetches the instruction,
+decoded cache could provide 32 aligned-bytes instruction block,
+instead of 16 bytes from I-cache, fewer branch miss penalty
+resulted from shorter pipeline. It requires hot code should be
+put into decoded cache as possible we can. Sandy Bridge, Ivy
+Bridge, and Haswell all implemented this feature, Os-Optimize
+for size should be better than O2 on them.
+
+Based on above reasons, we compiled linux kernel 3.6.9 with O2
+and Os respectively. The results show Os improve performance
+netperf 4.8%, 2.7% for volano as below:
 
 O2 + netperf
 Performance counter stats for 'netperf' (3 runs):
@@ -75,9 +101,10 @@ Performance counter stats for 'netperf' (3 runs):
      1,530,020,505 branches                  #  283.579 M/sec                    ( +-  0.25% )
         17,710,406 branch-misses             #    1.16% of all branches          ( +-  1.00% )
 
-      10.004859867 seconds time elapsed               
+      10.004859867 seconds time elapsed
 
-During the same time (10.004859867 seconds) IPC from Os is 0.65, O2 is 0.62, Os improved performance 4.8%
+During the same time (10.004859867 seconds) IPC from Os is 0.65,
+O2 is 0.62, Os improved performance 4.8%.
 
 O2 + volano
 Performance counter stats for './loopclient.sh openjdk' (3 runs):
@@ -94,8 +121,8 @@ Performance counter stats for './loopclient.sh openjdk' (3 runs):
     35,684,976,425 branches                  #  169.423 M/sec                    ( +-  0.45% )
      1,062,086,942 branch-misses             #    2.98% of all branches          ( +-  0.08% )
 
-     269.764578435 seconds time elapsed    
-         
+     269.764578435 seconds time elapsed
+
 Os + volano
 Performance counter stats for './loopclient.sh openjdk' (3 runs):
 
@@ -113,40 +140,33 @@ Performance counter stats for './loopclient.sh openjdk' (3 runs):
 
      269.410275674 seconds time elapsed                                          ( +-  0.06% )
 
-During the same  time (269.410275674 seconds) IPC from Os is 0.37, O2 is 0.36, Os improved performance 2.7%
+During the same  time (269.410275674 seconds) IPC from Os is
+0.37, O2 is 0.36, Os improved performance 2.7%.
 
 Signed-off-by: Ma Ling <ling.ml@alipay.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Beulich <jbeulich@suse.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1359123061-6139-1-git-send-email-ling.ma@alipay.com
+[ So, this is a bit symbolic as most people don't use the defconfig,
+  but the measurements are useful nevertheless so let's commit this
+  if there are no objections. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
-In this version we also append CONFIG_CC_OPTIMIZE_FOR_SIZE for i386.
+ arch/x86/configs/x86_64_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
- arch/x86/configs/i386_defconfig   |    1 +
- arch/x86/configs/x86_64_defconfig |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
-index 119db67..e59f1d1 100644
---- a/arch/x86/configs/i386_defconfig
-+++ b/arch/x86/configs/i386_defconfig
-@@ -299,6 +299,7 @@ CONFIG_DEBUG_KERNEL=y
- CONFIG_SCHEDSTATS=y
- CONFIG_TIMER_STATS=y
- CONFIG_DEBUG_STACK_USAGE=y
-+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
- CONFIG_SYSCTL_SYSCALL_CHECK=y
- CONFIG_BLK_DEV_IO_TRACE=y
- CONFIG_PROVIDE_OHCI1394_DMA_INIT=y
 diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
-index 76eb290..cee2348 100644
+index 671524d..2fcde13 100644
 --- a/arch/x86/configs/x86_64_defconfig
 +++ b/arch/x86/configs/x86_64_defconfig
-@@ -298,6 +298,7 @@ CONFIG_DEBUG_KERNEL=y
- CONFIG_SCHEDSTATS=y
- CONFIG_TIMER_STATS=y
- CONFIG_DEBUG_STACK_USAGE=y
+@@ -18,6 +18,7 @@ CONFIG_CGROUP_CPUACCT=y
+ CONFIG_RESOURCE_COUNTERS=y
+ CONFIG_CGROUP_SCHED=y
+ CONFIG_BLK_DEV_INITRD=y
 +CONFIG_CC_OPTIMIZE_FOR_SIZE=y
- CONFIG_SYSCTL_SYSCALL_CHECK=y
- CONFIG_BLK_DEV_IO_TRACE=y
- CONFIG_PROVIDE_OHCI1394_DMA_INIT=y
--- 
-1.7.1
-
+ # CONFIG_COMPAT_BRK is not set
+ CONFIG_PROFILING=y
+ CONFIG_KPROBES=y
