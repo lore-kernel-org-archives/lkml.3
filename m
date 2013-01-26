@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab3AZOiU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 09:38:20 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:51453 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161Ab3AZOiR (ORCPT
+	id S1754144Ab3AZOkR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 09:40:17 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:57209
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751746Ab3AZOkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 09:38:17 -0500
+	Sat, 26 Jan 2013 09:40:15 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zz98dIzz1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Sat, 26 Jan 2013 22:39:53 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+CC: <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 4/4] cpufreq, highbank: add support for highbank cpufreq
+Message-ID: <20130126143950.GA7079@S2101-09.ap.freescale.net>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1359143205-20279-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1359143205-20279-5-git-send-email-mark.langsdorf@calxeda.com>
 MIME-Version: 1.0
-In-Reply-To: <1359163444.2079.12.camel@joe-AO722>
-References: <1353057890-24234-1-git-send-email-lig.fnst@cn.fujitsu.com>
-	<CAFTL4hzLu5RN-PSuP6NRwx2sMKXh5OZ7gNqLnUQQvKTK4n9i1Q@mail.gmail.com>
-	<1359163444.2079.12.camel@joe-AO722>
-Date: Sat, 26 Jan 2013 15:38:16 +0100
-Message-ID: <CAFTL4hwhAkZUVyYoMriRsy4DZ4Br-PCihC4O1SyqBZXyXaWYKg@mail.gmail.com>
-Subject: Re: [PATCH]cputime: make bool type for steal ticks
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: liguang <lig.fnst@cn.fujitsu.com>, mingo@redhat.com, peterz@infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1359143205-20279-5-git-send-email-mark.langsdorf@calxeda.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/26 Joe Perches <joe@perches.com>:
-> On Sat, 2013-01-26 at 01:45 +0100, Frederic Weisbecker wrote:
->> > diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-> []
->> > @@ -282,7 +282,7 @@ static __always_inline bool steal_account_process_tick(void)
-> []
->> > -               return st;
->> > +               return !!st;
->>
->> I would expect gcc to perform the semantic "!!" cast implicitly. I
->> just did some basic tests locally and it does.
->> I prefer to be paranoid and not do any assumption though, unless I'm
->> told gcc always guarantees this correct implicit cast. I'm queuing
->> this patch and will send it to Ingo.
->
-> It's unnecessary.
->
-> 6.3.1.2p1:
->
-> "When any scalar value is converted to _Bool, the result is 0
-> if the value compares equal to 0; otherwise, the result is 1."
+Mark,
 
-Ok then I'll ignore this patch. If somebody oppose, raise your hand.
+On Fri, Jan 25, 2013 at 01:46:45PM -0600, Mark Langsdorf wrote:
+> +static int hb_cpufreq_driver_init(void)
+> +{
+> +	struct device *cpu_dev;
+> +	struct clk *cpu_clk;
+> +	struct device_node *np;
+> +	int ret;
+> +
+> +	for_each_child_of_node(of_find_node_by_path("/cpus"), np)
+> +		if (of_get_property(np, "operating-points", NULL))
+> +			break;
+> +
+> +	if (!np) {
+> +		pr_err("failed to find highbank cpufreq node\n");
+> +		return -ENOENT;
+> +	}
+> +
+...
+> +out_put_node:
+> +	of_node_put(np);
+> +	return ret;
+> +}
+> +module_init(hb_cpufreq_driver_init);
 
-Thanks.
+As we are moving to multiplatform build, this init function will run
+on all other platforms built together with highbank.  We should
+probably eliminate that effect.  cpufreq-cpu0 driver is facing the
+same problem, and I just sent a patch "cpufreq: instantiate cpufreq-cpu0
+as a platform_driver" to address that.
+
+Shawn
+
