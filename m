@@ -1,132 +1,521 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab3AZMXA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 07:23:00 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:38912 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753436Ab3AZMW4 (ORCPT
+	id S1753887Ab3AZMXK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 07:23:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51842 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819Ab3AZMXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 07:22:56 -0500
-Date: Sat, 26 Jan 2013 12:23:37 +0000
-From: "Carlos R. Mafra" <crmafra2@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Azat Khuzhin <dohardgopro@gmail.com>,
-        linux-acpi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Feng Tang <feng.tang@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        Len Brown <lenb@kernel.org>, "Moore, Robert" <robert.moore@intel.com>
-Subject: Re: ACPI errors with 3.7-rc3
-Message-ID: <20130126122337.GA20930@linux-ahr8.site>
-References: <20121031014527.GA2984@kroah.com>
- <CAAW1UO9BtAU5jpy=MqgFCwwXn3Gb8HA3m7FMktmQkYGqYrS0Rw@mail.gmail.com>
- <20121106124826.GA21806@kroah.com>
- <41011456.LYWJPCi9Xt@vostro.rjw.lan>
- <20121108044715.GA12652@kroah.com>
+	Sat, 26 Jan 2013 07:23:05 -0500
+Date: Sat, 26 Jan 2013 04:22:35 -0800
+From: tip-bot for Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Message-ID: <tip-7d0291256ca99cbb6124f63228003329e7a64b21@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, vivien.didelot@savoirfairelinux.com,
+        hpa@zytor.com, mingo@kernel.org, kernel@savoirfairelinux.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, vivien.didelot@savoirfairelinux.com,
+        linux-kernel@vger.kernel.org, kernel@savoirfairelinux.com,
+        tglx@linutronix.de
+In-Reply-To: <1357334294-12760-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+References: <1357334294-12760-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86: Add TS-5500 platform support
+Git-Commit-ID: 7d0291256ca99cbb6124f63228003329e7a64b21
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20121108044715.GA12652@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 26 Jan 2013 04:22:43 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  8 Nov 2012 at  5:47:15 +0100, Greg KH wrote:
-> On Wed, Nov 07, 2012 at 10:49:40PM +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, November 06, 2012 01:48:26 PM Greg KH wrote:
-> > > On Tue, Nov 06, 2012 at 04:42:24PM +0400, Azat Khuzhin wrote:
-> > > > I'v also have such errors on my macbook pro.
-> > > > 
-> > > > $ dmesg | tail
-> > > > [17056.008564] ACPI Error: Method parse/execution failed
-> > > > [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88026547ea10), AE_TIME
-> > > > (20120711/psparse-536)
-> > > > [17056.011194] ACPI Error: Method parse/execution failed
-> > > > [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
-> > > > (20120711/psparse-536)
-> > > > [17056.013793] ACPI Error: Method parse/execution failed
-> > > > [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
-> > > > (20120711/psparse-536)
-> > > > [17056.016383] ACPI Exception: AE_TIME, Evaluating _BST (20120711/battery-464)
-> > > > [17056.511373] ACPI: EC: input buffer is not empty, aborting transaction
-> > > > [17056.512672] ACPI Exception: AE_TIME, Returned by Handler for
-> > > > [EmbeddedControl] (20120711/evregion-501)
-> > > > [17056.515256] ACPI Error: Method parse/execution failed
-> > > > [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88026547ea10), AE_TIME
-> > > > (20120711/psparse-536)
-> > > > [17056.517886] ACPI Error: Method parse/execution failed
-> > > > [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
-> > > > (20120711/psparse-536)
-> > > > [17056.520479] ACPI Error: Method parse/execution failed
-> > > > [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
-> > > > (20120711/psparse-536)
-> > > > [17056.523070] ACPI Exception: AE_TIME, Evaluating _BST (20120711/battery-464)
-> > > 
-> > > I'm seeing this again right now.  I'm wondering if it's because I'm
-> > > running on battery power at the moment:
-> > > 
-> > > [41694.309264] ACPI Exception: AE_TIME, Returned by Handler for [EmbeddedControl] (20120913/evregion-501)
-> > > [41694.309282] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88045cc64618), AE_TIME (20120913/psparse-536)
-> > > [41694.309300] ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node ffff88045cc64988), AE_TIME (20120913/psparse-536)
-> > > [41694.309310] ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node ffff88045cc648c0), AE_TIME (20120913/psparse-536)
-> > > [41694.309324] ACPI Exception: AE_TIME, Evaluating _BST (20120913/battery-464)
-> > > [41694.809093] ACPI: EC: input buffer is not empty, aborting transaction
-> > > 
-> > > ec_storm_threshold is still set to 8 in /sys/module/acpi/parameters/ so that's
-> > > not the issue here.
-> > > 
-> > > > And also loadavg is too high ~ 10
-> > > > While there is no process that load CPU up to 100% or like that.
-> > > > I think that this because of processes that is done in kernel space.
-> > > > (basically that one who write such errors)
-> > > > 
-> > > > $ uname -a
-> > > > Linux macbook-pro-sq 3.6.5macbook-pro-custom-v0.1 #4 SMP Sun Nov 4
-> > > > 12:39:03 UTC 2012 x86_64 GNU/Linux
-> > > 
-> > > Ah, ok, that means it's not something new in 3.7-rc, so maybe it's just never
-> > > worked properly for this hardware :)
-> > > 
-> > > So it's not a regression, just an ACPI issue, any ACPI developer have an idea
-> > > about this?
-> > 
-> > Can you please send the output of acpidump from the affected machine(s)?
-> 
-> # ./acpidump
-> ACPI tables were not found. If you know location of RSD PTR table (from dmesg, etc), supply it with either --addr or -a option
-> 
-> What am I doing wrong here?
-> 
-> Is there a newer version of pmtools than the one labled pmtools-20071116
-> that I should be using?  A link to download it would be appreciated.
+Commit-ID:  7d0291256ca99cbb6124f63228003329e7a64b21
+Gitweb:     http://git.kernel.org/tip/7d0291256ca99cbb6124f63228003329e7a64b21
+Author:     Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+AuthorDate: Fri, 4 Jan 2013 16:18:14 -0500
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 25 Jan 2013 19:40:23 +0100
 
-I'd like to ask what happened to this issue, because I'm seeing similar
-messages on latest 3.8-rc4 as well, and I cannot read the battery
-info anymore once this happens and the laptop does not suspend to RAM
-anymore -- it suspends fine before these messages.
+x86: Add TS-5500 platform support
 
-The laptop is a Macbook Pro with retina display and I'm using the
-develpoment version of openSUSE 12.3 updated as of yesterday.
+The Technologic Systems TS-5500 is an x86-based (AMD Elan SC520)
+single board computer. This driver registers most of its devices
+and exposes sysfs attributes for information such as jumpers'
+state or presence of some of its options.
 
-Here is the output from dmesg:
+This driver currently registers the TS-5500 platform, its
+on-board LED, 2 pin blocks (GPIO) and its analog/digital
+converter. It can be extended to support other Technologic
+Systems products, such as the TS-5600.
 
-[49367.993080] ACPI: EC: input buffer is not empty, aborting transaction
-[49367.993091] ACPI Exception: AE_TIME, Returned by Handler for [EmbeddedControl] (20121018/evregion-501)
-[49367.993112] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff880264490920), AE_TIME (20121018/psparse-537)
-[49367.993136] ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node ffff8802644905b0), AE_TIME (20121018/psparse-537)
-[49367.993147] ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node ffff880264490678), AE_TIME (20121018/psparse-537)
-[49367.993166] ACPI Exception: AE_TIME, Evaluating _BST (20121018/battery-492)
-[49368.491802] ACPI: EC: input buffer is not empty, aborting transaction
-[49368.491812] ACPI Exception: AE_TIME, Returned by Handler for [EmbeddedControl] (20121018/evregion-501)
-[49368.491833] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff880264490920), AE_TIME (20121018/psparse-537)
-[49368.491857] ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node ffff8802644905b0), AE_TIME (20121018/psparse-537)
-[49368.491869] ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node ffff880264490678), AE_TIME (20121018/psparse-537)
-[49368.491888] ACPI Exception: AE_TIME, Evaluating _BST (20121018/battery-492)
-[49372.985311] ACPI: EC: input buffer is not empty, aborting transaction
-[49372.985322] ACPI Exception: AE_TIME, Returned by Handler for [EmbeddedControl] (20121018/evregion-501)
-[49372.985344] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff880264490920), AE_TIME (20121018/psparse-537)
-[49372.985368] ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node ffff8802644905b0), AE_TIME (20121018/psparse-537)
-[49372.985380] ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node ffff880264490678), AE_TIME (20121018/psparse-537)
-[49372.985400] ACPI Exception: AE_TIME, Evaluating _BST (20121018/battery-492)
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Savoir-faire Linux Inc. <kernel@savoirfairelinux.com>
+Link: http://lkml.kernel.org/r/1357334294-12760-1-git-send-email-vivien.didelot@savoirfairelinux.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ Documentation/ABI/testing/sysfs-platform-ts5500 |  47 ++++
+ MAINTAINERS                                     |   5 +
+ arch/x86/Kconfig                                |   9 +
+ arch/x86/platform/Makefile                      |   1 +
+ arch/x86/platform/ts5500/Makefile               |   1 +
+ arch/x86/platform/ts5500/ts5500.c               | 339 ++++++++++++++++++++++++
+ 6 files changed, 402 insertions(+)
 
-Anyone has more information about this?
+diff --git a/Documentation/ABI/testing/sysfs-platform-ts5500 b/Documentation/ABI/testing/sysfs-platform-ts5500
+new file mode 100644
+index 0000000..c88375a
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-platform-ts5500
+@@ -0,0 +1,47 @@
++What:		/sys/devices/platform/ts5500/adc
++Date:		January 2013
++KernelVersion:	3.7
++Contact:	"Savoir-faire Linux Inc." <kernel@savoirfairelinux.com>
++Description:
++		Indicates the presence of an A/D Converter. If it is present,
++		it will display "1", otherwise "0".
++
++What:		/sys/devices/platform/ts5500/ereset
++Date:		January 2013
++KernelVersion:	3.7
++Contact:	"Savoir-faire Linux Inc." <kernel@savoirfairelinux.com>
++Description:
++		Indicates the presence of an external reset. If it is present,
++		it will display "1", otherwise "0".
++
++What:		/sys/devices/platform/ts5500/id
++Date:		January 2013
++KernelVersion:	3.7
++Contact:	"Savoir-faire Linux Inc." <kernel@savoirfairelinux.com>
++Description:
++		Product ID of the TS board. TS-5500 ID is 0x60.
++
++What:		/sys/devices/platform/ts5500/jumpers
++Date:		January 2013
++KernelVersion:	3.7
++Contact:	"Savoir-faire Linux Inc." <kernel@savoirfairelinux.com>
++Description:
++		Bitfield showing the jumpers' state. If a jumper is present,
++		the corresponding bit is set. For instance, 0x0e means jumpers
++		2, 3 and 4 are set.
++
++What:		/sys/devices/platform/ts5500/rs485
++Date:		January 2013
++KernelVersion:	3.7
++Contact:	"Savoir-faire Linux Inc." <kernel@savoirfairelinux.com>
++Description:
++		Indicates the presence of the RS485 option. If it is present,
++		it will display "1", otherwise "0".
++
++What:		/sys/devices/platform/ts5500/sram
++Date:		January 2013
++KernelVersion:	3.7
++Contact:	"Savoir-faire Linux Inc." <kernel@savoirfairelinux.com>
++Description:
++		Indicates the presence of the SRAM option. If it is present,
++		it will display "1", otherwise "0".
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3105c48..2617040 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7543,6 +7543,11 @@ F:	drivers/net/team/
+ F:	include/linux/if_team.h
+ F:	include/uapi/linux/if_team.h
+ 
++TECHNOLOGIC SYSTEMS TS-5500 PLATFORM SUPPORT
++M:	Savoir-faire Linux Inc. <kernel@savoirfairelinux.com>
++S:	Maintained
++F:	arch/x86/platform/ts5500/
++
+ TECHNOTREND USB IR RECEIVER
+ M:	Sean Young <sean@mess.org>
+ L:	linux-media@vger.kernel.org
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 46fb28c..0709e34 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2199,6 +2199,15 @@ config GEOS
+ 	---help---
+ 	  This option enables system support for the Traverse Technologies GEOS.
+ 
++config TS5500
++	bool "Technologic Systems TS-5500 platform support"
++	depends on MELAN
++	select CHECK_SIGNATURE
++	select NEW_LEDS
++	select LEDS_CLASS
++	---help---
++	  This option enables system support for the Technologic Systems TS-5500.
++
+ endif # X86_32
+ 
+ config AMD_NB
+diff --git a/arch/x86/platform/Makefile b/arch/x86/platform/Makefile
+index bfe917f..01e0231 100644
+--- a/arch/x86/platform/Makefile
++++ b/arch/x86/platform/Makefile
+@@ -8,5 +8,6 @@ obj-y	+= mrst/
+ obj-y	+= olpc/
+ obj-y	+= scx200/
+ obj-y	+= sfi/
++obj-y	+= ts5500/
+ obj-y	+= visws/
+ obj-y	+= uv/
+diff --git a/arch/x86/platform/ts5500/Makefile b/arch/x86/platform/ts5500/Makefile
+new file mode 100644
+index 0000000..c54e348
+--- /dev/null
++++ b/arch/x86/platform/ts5500/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_TS5500)	+= ts5500.o
+diff --git a/arch/x86/platform/ts5500/ts5500.c b/arch/x86/platform/ts5500/ts5500.c
+new file mode 100644
+index 0000000..39febb2
+--- /dev/null
++++ b/arch/x86/platform/ts5500/ts5500.c
+@@ -0,0 +1,339 @@
++/*
++ * Technologic Systems TS-5500 Single Board Computer support
++ *
++ * Copyright (C) 2013 Savoir-faire Linux Inc.
++ *	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License as published by the Free Software
++ * Foundation; either version 2 of the License, or (at your option) any later
++ * version.
++ *
++ *
++ * This driver registers the Technologic Systems TS-5500 Single Board Computer
++ * (SBC) and its devices, and exposes information to userspace such as jumpers'
++ * state or available options. For further information about sysfs entries, see
++ * Documentation/ABI/testing/sysfs-platform-ts5500.
++ *
++ * This code actually supports the TS-5500 platform, but it may be extended to
++ * support similar Technologic Systems x86-based platforms, such as the TS-5600.
++ */
++
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/leds.h>
++#include <linux/module.h>
++#include <linux/platform_data/gpio-ts5500.h>
++#include <linux/platform_data/max197.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++
++/* Product code register */
++#define TS5500_PRODUCT_CODE_ADDR	0x74
++#define TS5500_PRODUCT_CODE		0x60	/* TS-5500 product code */
++
++/* SRAM/RS-485/ADC options, and RS-485 RTS/Automatic RS-485 flags register */
++#define TS5500_SRAM_RS485_ADC_ADDR	0x75
++#define TS5500_SRAM			BIT(0)	/* SRAM option */
++#define TS5500_RS485			BIT(1)	/* RS-485 option */
++#define TS5500_ADC			BIT(2)	/* A/D converter option */
++#define TS5500_RS485_RTS		BIT(6)	/* RTS for RS-485 */
++#define TS5500_RS485_AUTO		BIT(7)	/* Automatic RS-485 */
++
++/* External Reset/Industrial Temperature Range options register */
++#define TS5500_ERESET_ITR_ADDR		0x76
++#define TS5500_ERESET			BIT(0)	/* External Reset option */
++#define TS5500_ITR			BIT(1)	/* Indust. Temp. Range option */
++
++/* LED/Jumpers register */
++#define TS5500_LED_JP_ADDR		0x77
++#define TS5500_LED			BIT(0)	/* LED flag */
++#define TS5500_JP1			BIT(1)	/* Automatic CMOS */
++#define TS5500_JP2			BIT(2)	/* Enable Serial Console */
++#define TS5500_JP3			BIT(3)	/* Write Enable Drive A */
++#define TS5500_JP4			BIT(4)	/* Fast Console (115K baud) */
++#define TS5500_JP5			BIT(5)	/* User Jumper */
++#define TS5500_JP6			BIT(6)	/* Console on COM1 (req. JP2) */
++#define TS5500_JP7			BIT(7)	/* Undocumented (Unused) */
++
++/* A/D Converter registers */
++#define TS5500_ADC_CONV_BUSY_ADDR	0x195	/* Conversion state register */
++#define TS5500_ADC_CONV_BUSY		BIT(0)
++#define TS5500_ADC_CONV_INIT_LSB_ADDR	0x196	/* Start conv. / LSB register */
++#define TS5500_ADC_CONV_MSB_ADDR	0x197	/* MSB register */
++#define TS5500_ADC_CONV_DELAY		12	/* usec */
++
++/**
++ * struct ts5500_sbc - TS-5500 board description
++ * @id:		Board product ID.
++ * @sram:	Flag for SRAM option.
++ * @rs485:	Flag for RS-485 option.
++ * @adc:	Flag for Analog/Digital converter option.
++ * @ereset:	Flag for External Reset option.
++ * @itr:	Flag for Industrial Temperature Range option.
++ * @jumpers:	Bitfield for jumpers' state.
++ */
++struct ts5500_sbc {
++	int	id;
++	bool	sram;
++	bool	rs485;
++	bool	adc;
++	bool	ereset;
++	bool	itr;
++	u8	jumpers;
++};
++
++/* Board signatures in BIOS shadow RAM */
++static const struct {
++	const char * const string;
++	const ssize_t offset;
++} ts5500_signatures[] __initdata = {
++	{ "TS-5x00 AMD Elan", 0xb14 },
++};
++
++static int __init ts5500_check_signature(void)
++{
++	void __iomem *bios;
++	int i, ret = -ENODEV;
++
++	bios = ioremap(0xf0000, 0x10000);
++	if (!bios)
++		return -ENOMEM;
++
++	for (i = 0; i < ARRAY_SIZE(ts5500_signatures); i++) {
++		if (check_signature(bios + ts5500_signatures[i].offset,
++				    ts5500_signatures[i].string,
++				    strlen(ts5500_signatures[i].string))) {
++			ret = 0;
++			break;
++		}
++	}
++
++	iounmap(bios);
++	return ret;
++}
++
++static int __init ts5500_detect_config(struct ts5500_sbc *sbc)
++{
++	u8 tmp;
++	int ret = 0;
++
++	if (!request_region(TS5500_PRODUCT_CODE_ADDR, 4, "ts5500"))
++		return -EBUSY;
++
++	tmp = inb(TS5500_PRODUCT_CODE_ADDR);
++	if (tmp != TS5500_PRODUCT_CODE) {
++		pr_err("This platform is not a TS-5500 (found ID 0x%x)\n", tmp);
++		ret = -ENODEV;
++		goto cleanup;
++	}
++	sbc->id = tmp;
++
++	tmp = inb(TS5500_SRAM_RS485_ADC_ADDR);
++	sbc->sram = tmp & TS5500_SRAM;
++	sbc->rs485 = tmp & TS5500_RS485;
++	sbc->adc = tmp & TS5500_ADC;
++
++	tmp = inb(TS5500_ERESET_ITR_ADDR);
++	sbc->ereset = tmp & TS5500_ERESET;
++	sbc->itr = tmp & TS5500_ITR;
++
++	tmp = inb(TS5500_LED_JP_ADDR);
++	sbc->jumpers = tmp & ~TS5500_LED;
++
++cleanup:
++	release_region(TS5500_PRODUCT_CODE_ADDR, 4);
++	return ret;
++}
++
++static ssize_t ts5500_show_id(struct device *dev,
++			      struct device_attribute *attr, char *buf)
++{
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "0x%.2x\n", sbc->id);
++}
++
++static ssize_t ts5500_show_jumpers(struct device *dev,
++				   struct device_attribute *attr,
++				   char *buf)
++{
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "0x%.2x\n", sbc->jumpers >> 1);
++}
++
++#define TS5500_SHOW(field)					\
++	static ssize_t ts5500_show_##field(struct device *dev,	\
++			struct device_attribute *attr,		\
++			char *buf)				\
++	{							\
++		struct ts5500_sbc *sbc = dev_get_drvdata(dev);	\
++		return sprintf(buf, "%d\n", sbc->field);	\
++	}
++
++TS5500_SHOW(sram)
++TS5500_SHOW(rs485)
++TS5500_SHOW(adc)
++TS5500_SHOW(ereset)
++TS5500_SHOW(itr)
++
++static DEVICE_ATTR(id, S_IRUGO, ts5500_show_id, NULL);
++static DEVICE_ATTR(jumpers, S_IRUGO, ts5500_show_jumpers, NULL);
++static DEVICE_ATTR(sram, S_IRUGO, ts5500_show_sram, NULL);
++static DEVICE_ATTR(rs485, S_IRUGO, ts5500_show_rs485, NULL);
++static DEVICE_ATTR(adc, S_IRUGO, ts5500_show_adc, NULL);
++static DEVICE_ATTR(ereset, S_IRUGO, ts5500_show_ereset, NULL);
++static DEVICE_ATTR(itr, S_IRUGO, ts5500_show_itr, NULL);
++
++static struct attribute *ts5500_attributes[] = {
++	&dev_attr_id.attr,
++	&dev_attr_jumpers.attr,
++	&dev_attr_sram.attr,
++	&dev_attr_rs485.attr,
++	&dev_attr_adc.attr,
++	&dev_attr_ereset.attr,
++	&dev_attr_itr.attr,
++	NULL
++};
++
++static const struct attribute_group ts5500_attr_group = {
++	.attrs = ts5500_attributes,
++};
++
++static struct resource ts5500_dio1_resource[] = {
++	DEFINE_RES_IRQ_NAMED(7, "DIO1 interrupt"),
++};
++
++static struct platform_device ts5500_dio1_pdev = {
++	.name = "ts5500-dio1",
++	.id = -1,
++	.resource = ts5500_dio1_resource,
++	.num_resources = 1,
++};
++
++static struct resource ts5500_dio2_resource[] = {
++	DEFINE_RES_IRQ_NAMED(6, "DIO2 interrupt"),
++};
++
++static struct platform_device ts5500_dio2_pdev = {
++	.name = "ts5500-dio2",
++	.id = -1,
++	.resource = ts5500_dio2_resource,
++	.num_resources = 1,
++};
++
++static void ts5500_led_set(struct led_classdev *led_cdev,
++			   enum led_brightness brightness)
++{
++	outb(!!brightness, TS5500_LED_JP_ADDR);
++}
++
++static enum led_brightness ts5500_led_get(struct led_classdev *led_cdev)
++{
++	return (inb(TS5500_LED_JP_ADDR) & TS5500_LED) ? LED_FULL : LED_OFF;
++}
++
++static struct led_classdev ts5500_led_cdev = {
++	.name = "ts5500:green:",
++	.brightness_set = ts5500_led_set,
++	.brightness_get = ts5500_led_get,
++};
++
++static int ts5500_adc_convert(u8 ctrl)
++{
++	u8 lsb, msb;
++
++	/* Start conversion (ensure the 3 MSB are set to 0) */
++	outb(ctrl & 0x1f, TS5500_ADC_CONV_INIT_LSB_ADDR);
++
++	/*
++	 * The platform has CPLD logic driving the A/D converter.
++	 * The conversion must complete within 11 microseconds,
++	 * otherwise we have to re-initiate a conversion.
++	 */
++	udelay(TS5500_ADC_CONV_DELAY);
++	if (inb(TS5500_ADC_CONV_BUSY_ADDR) & TS5500_ADC_CONV_BUSY)
++		return -EBUSY;
++
++	/* Read the raw data */
++	lsb = inb(TS5500_ADC_CONV_INIT_LSB_ADDR);
++	msb = inb(TS5500_ADC_CONV_MSB_ADDR);
++
++	return (msb << 8) | lsb;
++}
++
++static struct max197_platform_data ts5500_adc_pdata = {
++	.convert = ts5500_adc_convert,
++};
++
++static struct platform_device ts5500_adc_pdev = {
++	.name = "max197",
++	.id = -1,
++	.dev = {
++		.platform_data = &ts5500_adc_pdata,
++	},
++};
++
++static int __init ts5500_init(void)
++{
++	struct platform_device *pdev;
++	struct ts5500_sbc *sbc;
++	int err;
++
++	/*
++	 * There is no DMI available or PCI bridge subvendor info,
++	 * only the BIOS provides a 16-bit identification call.
++	 * It is safer to find a signature in the BIOS shadow RAM.
++	 */
++	err = ts5500_check_signature();
++	if (err)
++		return err;
++
++	pdev = platform_device_register_simple("ts5500", -1, NULL, 0);
++	if (IS_ERR(pdev))
++		return PTR_ERR(pdev);
++
++	sbc = devm_kzalloc(&pdev->dev, sizeof(struct ts5500_sbc), GFP_KERNEL);
++	if (!sbc) {
++		err = -ENOMEM;
++		goto error;
++	}
++
++	err = ts5500_detect_config(sbc);
++	if (err)
++		goto error;
++
++	platform_set_drvdata(pdev, sbc);
++
++	err = sysfs_create_group(&pdev->dev.kobj, &ts5500_attr_group);
++	if (err)
++		goto error;
++
++	ts5500_dio1_pdev.dev.parent = &pdev->dev;
++	if (platform_device_register(&ts5500_dio1_pdev))
++		dev_warn(&pdev->dev, "DIO1 block registration failed\n");
++	ts5500_dio2_pdev.dev.parent = &pdev->dev;
++	if (platform_device_register(&ts5500_dio2_pdev))
++		dev_warn(&pdev->dev, "DIO2 block registration failed\n");
++
++	if (led_classdev_register(&pdev->dev, &ts5500_led_cdev))
++		dev_warn(&pdev->dev, "LED registration failed\n");
++
++	if (sbc->adc) {
++		ts5500_adc_pdev.dev.parent = &pdev->dev;
++		if (platform_device_register(&ts5500_adc_pdev))
++			dev_warn(&pdev->dev, "ADC registration failed\n");
++	}
++
++	return 0;
++error:
++	platform_device_unregister(pdev);
++	return err;
++}
++device_initcall(ts5500_init);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Savoir-faire Linux Inc. <kernel@savoirfairelinux.com>");
++MODULE_DESCRIPTION("Technologic Systems TS-5500 platform driver");
