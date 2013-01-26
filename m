@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab3AZUXr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 15:23:47 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:40692 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753092Ab3AZUXp (ORCPT
+	id S1754337Ab3AZUXz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 15:23:55 -0500
+Received: from talus.maths.usyd.edu.au ([129.78.68.1]:39179 "EHLO
+	talus.maths.usyd.edu.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754051Ab3AZUXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 15:23:45 -0500
-X-Greylist: delayed 480 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Jan 2013 15:23:44 EST
-Date: Sat, 26 Jan 2013 22:15:41 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH] mips: Move __virt_addr_valid() to a place for MIPS 64
-Message-ID: <20130126201541.GF23053@blackmetal.musicnaut.iki.fi>
-References: <1359137595.21576.246.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359137595.21576.246.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 26 Jan 2013 15:23:51 -0500
+X-smtpdoor-from: psz@maths.usyd.edu.au
+X-smtpdoor-want-Message-ID: <201301262023.r0QKNIaK029258@como.maths.usyd.edu.au>
+Date: Sun, 27 Jan 2013 07:23:18 +1100
+From: paul.szabo@sydney.edu.au
+Message-Id: <201301262023.r0QKNIaK029258@como.maths.usyd.edu.au>
+To: jrnieder@gmail.com
+Subject: Re: Bug#695182: [PATCH] Subtract min_free_kbytes from dirtyable memory
+Cc: 695182@bugs.debian.org, ben@decadent.org.uk, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, minchan@kernel.org
+In-Reply-To: <20130126074444.GA28833@elie.Belkin>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Dear Jonathan,
 
-On Fri, Jan 25, 2013 at 01:13:15PM -0500, Steven Rostedt wrote:
-> Commit d3ce88431892 "MIPS: Fix modpost error in modules attepting to use
-> virt_addr_valid()" moved __virt_addr_valid() from a macro in a header
-> file to a function in ioremap.c. But ioremap.c is only compiled for MIPS
-> 32, and not for MIPS 64.
-> 
-> When compiling for my yeeloong2, which supposedly supports hibernation,
-> which compiles kernel/power/snapshot.c which calls virt_addr_valid(), I
-> got this error:
+>> If you can identify where it was fixed then your patch for older
+>> versions should go to stable with a reference to the upstream fix (see
+>> Documentation/stable_kernel_rules.txt).
+>
+> How about this patch?
+>
+> It was applied in mainline during the 3.3 merge window, so kernels
+> newer than 3.2.y shouldn't need it.
+>
+> ...
+> commit ab8fabd46f811d5153d8a0cd2fac9a0d41fb593d upstream.
+> ...
 
-This has been reported also here:
+Yes, I beleive that is the correct patch, surely better than my simple
+subtraction of min_free_kbytes.
 
-	http://marc.info/?l=linux-mips&m=135788867604856&w=2
+Noting, that this does not "solve" all problems, the latest 3.8 kernel
+still crashes with OOM:
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1098961/comments/18
 
-and here:
+Thanks, Paul
 
-	http://marc.info/?l=linux-mips&m=135876719403187&w=2
-
-It's pretty sad that MIPS has been pretty much broken during the whole
-3.8-rc cycle. :-(
-
-A.
+Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
+School of Mathematics and Statistics   University of Sydney    Australia
