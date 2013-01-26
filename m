@@ -1,88 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab3AZQ6q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 11:58:46 -0500
-Received: from na01-bl2-obe.ptr.protection.outlook.com ([65.55.169.32]:58338
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1753322Ab3AZR2X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 12:28:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37981 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751087Ab3AZQ6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 11:58:42 -0500
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -2
-X-BigFish: PS-2(zz98dI9371I542I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzzz31h2a8h668h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Jan Beulich (JBeulich@suse.com)" <JBeulich@suse.com>
-Subject: RE: [PATCH] x86: Hyper-V: register clocksource only if its
- advertised
-Thread-Topic: [PATCH] x86: Hyper-V: register clocksource only if its
- advertised
-Thread-Index: AQHN+wFSTQzC7+pzaUi0ZNGfsVWqjphaPkYAgAAFEACAAACuUIAABjaAgAACDmCAACrSAIABXVyg
-Date: Sat, 26 Jan 2013 16:57:49 +0000
-Message-ID: <050ad0e312b54ff3af424c7128144a4d@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1359121036-16309-1-git-send-email-olaf@aepfle.de>
- <761b736ff1854810bfe272961248e6d2@BLUPR03MB050.namprd03.prod.outlook.com>
- <20130125165443.GA15833@aepfle.de>
- <500ca90f5d3e4d4f80c7fb62c34d36f0@BLUPR03MB050.namprd03.prod.outlook.com>
- <20130125171923.GA19306@aepfle.de>
- <542f1d12e3ee46f48a85a143361c113d@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130125200000.GA9712@aepfle.de>
-In-Reply-To: <20130125200000.GA9712@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [66.235.28.166]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB063.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(189002)(13464002)(51704002)(24454001)(199002)(377454001)(51856001)(56776001)(63696002)(53806001)(50466001)(47736001)(47776003)(74662001)(4396001)(47976001)(49866001)(16676001)(44976002)(47446002)(54316002)(79102001)(56816002)(33646001)(50986001)(46102001)(31966008)(59766001)(54356001)(74502001)(23676001)(77982001)(6806001)(76482001)(20776003)(57646009)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB015;H:TK5EX14MLTC104.redmond.corp.microsoft.com;RD:;MX:1;A:1;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 0738AF4208
+	id S1752523Ab3AZR2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 12:28:20 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 2/9] perf tools: Add precise object to interface sysfs precise
+Date: Sat, 26 Jan 2013 18:27:48 +0100
+Message-Id: <1359221275-24254-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1359221275-24254-1-git-send-email-jolsa@redhat.com>
+References: <1359221275-24254-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0QGwtQM026461
 
+Adding precise util object to get maximum value for
+perf_event_attr::precise_ip. The value is exported
+via sysfs file '/sys/devices/cpu/precise'.
 
+The interface is:
+  int perf_precise__get(void)
 
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Friday, January 25, 2013 3:00 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; Greg KH; Jan Beulich (JBeulich@suse.com)
-> Subject: Re: [PATCH] x86: Hyper-V: register clocksource only if its advertised
-> 
-> On Fri, Jan 25, KY Srinivasan wrote:
-> 
-> > Your current approach of using the "Partition Reference Counter"
-> > feature bit is very fragile. Let us assume that future Windows guests
-> > depend on this feature; Xen would certainly emulate this to have a
-> > "good" emulation of Hyper-V and we are back to square one.
-> 
-> If Xen starts to emulate the "Partition Reference Counter" feature,
-> wouldnt it also advertise this feature?
+Returns:
+  maximum value allowed for perf_event_attr::precise_ip
+   0 if sysfs attribute is not found (supported)
+  -1 if we failed to read the sysfs attribute
 
-Olaf, did you get a chance to investigate why the viridian bit was set for the Linux HVM domain.
-I am thinking of re-sending the patch for delivering the Hyper-V vmbus on a separate vector without
-a run-time check. Let me know.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/Makefile       |  1 +
+ tools/perf/util/precise.c | 45 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/util.h    |  2 ++
+ 3 files changed, 48 insertions(+)
+ create mode 100644 tools/perf/util/precise.c
 
-Regards,
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index a84021a..541d242 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -463,6 +463,7 @@ LIB_OBJS += $(OUTPUT)util/rblist.o
+ LIB_OBJS += $(OUTPUT)util/intlist.o
+ LIB_OBJS += $(OUTPUT)util/vdso.o
+ LIB_OBJS += $(OUTPUT)util/stat.o
++LIB_OBJS += $(OUTPUT)util/precise.o
+ 
+ LIB_OBJS += $(OUTPUT)ui/setup.o
+ LIB_OBJS += $(OUTPUT)ui/helpline.o
+diff --git a/tools/perf/util/precise.c b/tools/perf/util/precise.c
+new file mode 100644
+index 0000000..d801f3e
+--- /dev/null
++++ b/tools/perf/util/precise.c
+@@ -0,0 +1,45 @@
++
++#include <linux/kernel.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <unistd.h>
++#include <stdio.h>
++#include "sysfs.h"
++#include "util.h"
++
++/*
++ * Returns maximum value allowed for
++ * perf_event_attr::precise_ip, and:
++ *  0 if sysfs attribute is not found (supported)
++ * -1 if we failed to read the sysfs attribute
++ */
++int perf_precise__get(void)
++{
++	static int precise = -1;
++	struct stat st;
++	char path[PATH_MAX];
++
++	if (precise != -1)
++		return precise;
++
++	scnprintf(path, PATH_MAX, "%s/devices/cpu/precise",
++		  sysfs_find_mountpoint());
++
++	if (!lstat(path, &st)) {
++		FILE *file;
++
++		file = fopen(path, "r");
++		if (!file)
++			return -1;
++
++		if (1 != fscanf(file, "%d", &precise))
++			pr_debug("failed to read precise info\n");
++
++		fclose(file);
++	} else
++		/* Return 0 if there's no sysfs precise support. */
++		precise = 0;
++
++
++	return precise;
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 09b4c26..6d846e9 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -275,4 +275,6 @@ extern unsigned int page_size;
+ struct winsize;
+ void get_term_dimensions(struct winsize *ws);
+ 
++int perf_precise__get(void);
++
+ #endif
+-- 
+1.7.11.7
 
-K. Y 
-> 
-> Olaf
-> 
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
