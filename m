@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab3AZUEj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 15:04:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59658 "EHLO mx1.redhat.com"
+	id S1754377Ab3AZUGG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 15:06:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13902 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753092Ab3AZUEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 15:04:35 -0500
+	id S1754174Ab3AZUEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 15:04:37 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,18 +14,23 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/8] perf tools: Change perf_pmu__new_alias function interface
-Date: Sat, 26 Jan 2013 21:04:04 +0100
-Message-Id: <1359230650-10415-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 3/8] perf tools: Add name term processing for alias
+Date: Sat, 26 Jan 2013 21:04:05 +0100
+Message-Id: <1359230650-10415-4-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1359230650-10415-1-git-send-email-jolsa@redhat.com>
 References: <1359230650-10415-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing perf_pmu__new_alias interface not to work directly with
-FILE object, so it can be reused by other code paths coming in
-shortly.
+Adding support for name term being specified within
+the alias definition and gives the name for the alias.
+
+Alias could be now defined like:
+  name=BR_MISP_EXEC.ALL_BRANCHES,event=0x89,umask=0xff
+
+It'll be handy for having single file with multiple
+alias definitions.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -38,66 +43,121 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/util/pmu.c | 23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
+ tools/perf/util/parse-events.c | 19 ++-----------------
+ tools/perf/util/pmu.c          | 35 +++++++++++++++++++++++++++++++++++
+ tools/perf/util/pmu.h          |  3 +++
+ 3 files changed, 40 insertions(+), 17 deletions(-)
 
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 83362f2..0143c90 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -616,22 +616,6 @@ int parse_events_add_numeric(struct list_head **list, int *idx,
+ 	return add_event(list, idx, &attr, NULL);
+ }
+ 
+-static int parse_events__is_name_term(struct parse_events_term *term)
+-{
+-	return term->type_term == PARSE_EVENTS__TERM_TYPE_NAME;
+-}
+-
+-static char *pmu_event_name(struct list_head *head_terms)
+-{
+-	struct parse_events_term *term;
+-
+-	list_for_each_entry(term, head_terms, list)
+-		if (parse_events__is_name_term(term))
+-			return term->val.str;
+-
+-	return NULL;
+-}
+-
+ int parse_events_add_pmu(struct list_head **list, int *idx,
+ 			 char *name, struct list_head *head_config)
+ {
+@@ -656,7 +640,8 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
+ 	if (perf_pmu__config(pmu, &attr, head_config))
+ 		return -EINVAL;
+ 
+-	return __add_event(list, idx, &attr, pmu_event_name(head_config),
++	return __add_event(list, idx, &attr,
++			   perf_pmu__event_name(head_config, false),
+ 			   pmu->cpus);
+ }
+ 
 diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 4c6f9c4..f7852e9 100644
+index f7852e9..0d45ccd 100644
 --- a/tools/perf/util/pmu.c
 +++ b/tools/perf/util/pmu.c
-@@ -95,23 +95,17 @@ static int pmu_format(char *name, struct list_head *format)
+@@ -95,6 +95,27 @@ static int pmu_format(char *name, struct list_head *format)
  	return 0;
  }
  
--static int perf_pmu__new_alias(struct list_head *list, char *name, FILE *file)
-+static int perf_pmu__new_alias(struct list_head *list, char *name, char *data)
- {
- 	struct perf_pmu_alias *alias;
--	char buf[256];
- 	int ret;
- 
--	ret = fread(buf, 1, sizeof(buf), file);
--	if (ret == 0)
--		return -EINVAL;
--	buf[ret] = 0;
--
- 	alias = malloc(sizeof(*alias));
- 	if (!alias)
- 		return -ENOMEM;
- 
- 	INIT_LIST_HEAD(&alias->terms);
--	ret = parse_events_terms(&alias->terms, buf);
-+	ret = parse_events_terms(&alias->terms, data);
- 	if (ret) {
- 		free(alias);
- 		return ret;
-@@ -137,7 +131,7 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
- 		return -EINVAL;
- 
- 	while (!ret && (evt_ent = readdir(event_dir))) {
--		char path[PATH_MAX];
-+		char path[PATH_MAX], buf[256];
- 		char *name = evt_ent->d_name;
- 		FILE *file;
- 
-@@ -150,7 +144,16 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
- 		file = fopen(path, "r");
- 		if (!file)
- 			break;
--		ret = perf_pmu__new_alias(head, name, file);
++static int parse_events__is_name_term(struct parse_events_term *term)
++{
++	return term->type_term == PARSE_EVENTS__TERM_TYPE_NAME;
++}
 +
-+		ret = fread(buf, 1, sizeof(buf), file);
-+		if (ret == 0) {
-+			ret = -EINVAL;
-+			break;
++char *perf_pmu__event_name(struct list_head *head_terms, bool remove)
++{
++	struct parse_events_term *term;
++
++	list_for_each_entry(term, head_terms, list)
++		if (parse_events__is_name_term(term)) {
++			if (remove) {
++				list_del(&term->list);
++				free(term);
++			}
++			return term->val.str;
 +		}
 +
-+		buf[ret] = 0;
++	return NULL;
++}
 +
-+		ret = perf_pmu__new_alias(head, name, buf);
- 		fclose(file);
+ static int perf_pmu__new_alias(struct list_head *list, char *name, char *data)
+ {
+ 	struct perf_pmu_alias *alias;
+@@ -111,6 +132,20 @@ static int perf_pmu__new_alias(struct list_head *list, char *name, char *data)
+ 		return ret;
  	}
  
++	/*
++	 * Use NAME term to get alias name. In case there's no name
++	 * at all, bail out. In case we find NAME term, remove it
++	 * not to mangle with event term name.
++	 */
++	if (!name) {
++		name = perf_pmu__event_name(&alias->terms, true);
++
++		if (!name) {
++			free(alias);
++			return -EINVAL;
++		}
++	}
++
+ 	alias->name = strdup(name);
+ 	list_add_tail(&alias->list, list);
+ 	return 0;
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 32fe55b..54cd809 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/bitops.h>
+ #include <linux/perf_event.h>
++#include <stdbool.h>
+ 
+ enum {
+ 	PERF_PMU_FORMAT_VALUE_CONFIG,
+@@ -40,5 +41,7 @@ int perf_pmu__format_parse(char *dir, struct list_head *head);
+ 
+ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
+ 
++char *perf_pmu__event_name(struct list_head *head_terms, bool remove);
++
+ int perf_pmu__test(void);
+ #endif /* __PMU_H */
 -- 
 1.7.11.7
 
