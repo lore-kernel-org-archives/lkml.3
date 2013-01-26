@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab3AZJ7e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 04:59:34 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55706 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab3AZJ7a (ORCPT
+	id S1753185Ab3AZKBb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 05:01:31 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35748 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753052Ab3AZKB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 04:59:30 -0500
-Date: Sat, 26 Jan 2013 09:59:16 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 11/19] regmap: avoid undefined return from
-	regmap_read_debugfs
-Message-ID: <20130126095916.GB23505@n2100.arm.linux.org.uk>
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359123276-15833-12-git-send-email-arnd@arndb.de> <20130126044219.GA10580@opensource.wolfsonmicro.com> <201301260917.28028.arnd@arndb.de> <20130126094855.GI30594@opensource.wolfsonmicro.com>
+	Sat, 26 Jan 2013 05:01:29 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <v-stehle@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regmap: debugfs: Work around GCC flow analysis false positives
+Date: Sat, 26 Jan 2013 18:01:18 +0800
+Message-Id: <1359194478-31666-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130126094855.GI30594@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 26, 2013 at 05:49:29PM +0800, Mark Brown wrote:
-> Oh, ffs.  This is a false positive from the compiler - there is no case
-> where it can actually do this as we will bail out before the walk if the
-> list is empty so we'll always take at least one trip through our
-> list_for_each_entry() and either return or set ret.  It should be smart
-> enough to work out that the list_empty() means list_for_each_entry()
-> will iterate over at least one entry or more conservative in what it
-> warns about.
+Reported-by: Vincent Stehlé <v-stehle@ti.com>
+Reported-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regmap-debugfs.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Why not code the function in a way that avoids the problem altogether?
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index d9a6c94..c6dc2e9 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -133,6 +133,13 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
+ 		return base;
+ 	}
+ 
++	/*
++	 * Work around GCC flow analysis - it can't figure out we have
++	 * at least one loop iteration.
++	 */
++	*pos = c->min;
++	ret = c->base_reg;
++
+ 	/* Find the relevant block */
+ 	list_for_each_entry(c, &map->debugfs_off_cache, list) {
+ 		if (from >= c->min && from <= c->max) {
+-- 
+1.7.10.4
 
-	/*
-	 * This should never happen; we return above if we fail to
-	 * allocate and we should never be in this code if there are
-	 * no registers at all.
-	 */
--	if (list_empty(&map->debugfs_off_cache)) {
--		WARN_ON(list_empty(&map->debugfs_off_cache));
--		return base;
--	}
-+	WARN_ON(list_empty(&map->debugfs_off_cache));
-+	ret = base;
-
-	/* Find the relevant block */
-	list_for_each_entry(c, &map->debugfs_off_cache, list) {
-		if (from >= c->min && from <= c->max) {
-			*pos = c->min;
-			return c->base_reg;
-		}
-
-		*pos = c->min;
-		ret = c->base_reg;
-	}
-
-	return ret;
