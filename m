@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab3AZR2l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 12:28:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10015 "EHLO mx1.redhat.com"
+	id S1753675Ab3AZR2k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 12:28:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27719 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753369Ab3AZR20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753368Ab3AZR20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jan 2013 12:28:26 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
@@ -14,30 +14,22 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 6/9] perf tools: Favor 'p' modifier before 'precise' term properly
-Date: Sat, 26 Jan 2013 18:27:52 +0100
-Message-Id: <1359221275-24254-7-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 5/9] perf tools: Read maximal precise value for 'precise' term
+Date: Sat, 26 Jan 2013 18:27:51 +0100
+Message-Id: <1359221275-24254-6-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1359221275-24254-1-git-send-email-jolsa@redhat.com>
 References: <1359221275-24254-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'p' event modifier is stronger than setting precise_ip
-using the 'precise' term, like:
+Currently if the term is specified without any value like
+-e 'cpu/...,precise,../', the number '1' is assigned as
+its default value.
 
-  'cpu/cycles,precise/'   - precise_ip = sysfs precise value
-  'cpu/cycles,precise/p'  - precise_ip = 1
-
-There's currently bug if the event modifier without 'p' is
-specified the precise_ip is set to zero, like:
-
-  'cpu/cycles,precise/u'  - precise_ip = 0
-
-This patch makes sure that the precise_ip value is overwritten
-only if any 'p' event modifier is specified, like:
-
-  'cpu/cycles,precise/u'  - precise_ip = sysfs precise value
+Adding special treatment for 'precise' term to use the
+maximum allowed precise value in such case using the
+perf_precise__get function.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -50,29 +42,84 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/util/parse-events.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ tools/perf/util/parse-events.c | 29 ++++++++++++++++++++++++++---
+ tools/perf/util/parse-events.h |  2 ++
+ tools/perf/util/parse-events.y |  2 +-
+ 3 files changed, 29 insertions(+), 4 deletions(-)
 
 diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index a92c403..83362f2 100644
+index 217ce56..a92c403 100644
 --- a/tools/perf/util/parse-events.c
 +++ b/tools/perf/util/parse-events.c
-@@ -818,7 +818,14 @@ int parse_events__modifier_event(struct list_head *list, char *str, bool add)
- 		evsel->attr.exclude_user   = mod.eu;
- 		evsel->attr.exclude_kernel = mod.ek;
- 		evsel->attr.exclude_hv     = mod.eh;
--		evsel->attr.precise_ip     = mod.precise;
+@@ -570,9 +570,14 @@ do {								\
+ 		break;
+ 	case PARSE_EVENTS__TERM_TYPE_PRECISE:
+ 		CHECK_TYPE_VAL(NUM);
+-		if ((unsigned)term->val.num > 2)
+-			return -EINVAL;
+-		attr->precise_ip = term->val.num;
++		/* No value specified, try to get it from sysfs. */
++		if (term->val.num == (u64) -1)
++			attr->precise_ip = perf_precise__get();
++		else {
++			if ((unsigned)term->val.num > 2)
++				return -EINVAL;
++			attr->precise_ip = term->val.num;
++		}
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -1210,6 +1215,24 @@ int parse_events_term__num(struct parse_events_term **term,
+ 			config, NULL, num);
+ }
+ 
++int parse_events_term__num_default(struct parse_events_term **term,
++				   int type_term, char *config)
++{
++	/*
++	 * If no value is specified for term, we use 1 as default.
++	 * The PRECISE term is an exception, because we force special
++	 * functionality when there's no value specified for it,
++	 * so we need to recognize it.
++	 */
++	u64 num = 1;
 +
-+		/*
-+		 * Change precise only if it's defined, so we don't
-+		 * overwrite 'precise' term if there's no 'p' modifier.
-+		 */
-+		if (mod.precise)
-+			evsel->attr.precise_ip = mod.precise;
++	if (type_term == PARSE_EVENTS__TERM_TYPE_PRECISE)
++		num = (u64) -1;
 +
- 		evsel->attr.exclude_host   = mod.eH;
- 		evsel->attr.exclude_guest  = mod.eG;
- 		evsel->exclude_GH          = mod.exclude_GH;
++	return new_term(term, PARSE_EVENTS__TERM_TYPE_NUM, type_term,
++			config, NULL, num);
++}
++
+ int parse_events_term__str(struct parse_events_term **term,
+ 			   int type_term, char *config, char *str)
+ {
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index 9d526cf..a5c6d65 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -74,6 +74,8 @@ struct parse_events_terms {
+ int parse_events__is_hardcoded_term(struct parse_events_term *term);
+ int parse_events_term__num(struct parse_events_term **_term,
+ 			   int type_term, char *config, u64 num);
++int parse_events_term__num_default(struct parse_events_term **term,
++				   int type_term, char *config);
+ int parse_events_term__str(struct parse_events_term **_term,
+ 			   int type_term, char *config, char *str);
+ int parse_events_term__sym_hw(struct parse_events_term **term,
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 9d43c86..376e9b4 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -399,7 +399,7 @@ PE_TERM
+ {
+ 	struct parse_events_term *term;
+ 
+-	ABORT_ON(parse_events_term__num(&term, (int)$1, NULL, 1));
++	ABORT_ON(parse_events_term__num_default(&term, (int)$1, NULL));
+ 	$$ = term;
+ }
+ 
 -- 
 1.7.11.7
 
