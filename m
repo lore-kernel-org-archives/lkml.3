@@ -1,34 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab3AYXti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 18:49:38 -0500
-Received: from talus.maths.usyd.edu.au ([129.78.68.1]:59754 "EHLO
-	talus.maths.usyd.edu.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab3AYXtg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 18:49:36 -0500
-X-smtpdoor-from: psz@maths.usyd.edu.au
-X-smtpdoor-want-Message-ID: <201301252349.r0PNnFYF024399@como.maths.usyd.edu.au>
-Date: Sat, 26 Jan 2013 10:49:15 +1100
-From: paul.szabo@sydney.edu.au
-Message-Id: <201301252349.r0PNnFYF024399@como.maths.usyd.edu.au>
-To: 695182@bugs.debian.org, ben@decadent.org.uk
-Subject: Re: Bug#695182: [PATCH] Subtract min_free_kbytes from dirtyable memory
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, minchan@kernel.org
-In-Reply-To: <1359118913.3146.3.camel@deadeye.wl.decadent.org.uk>
+	id S1754713Ab3AYXwA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 18:52:00 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42722
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753641Ab3AYXvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 18:51:55 -0500
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, jasowang@redhat.com,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/1] Drivers: hv: balloon: Make adjustments to the pressure report
+Date: Fri, 25 Jan 2013 16:18:47 -0800
+Message-Id: <1359159527-8148-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Ben,
+The host expects that the pressure report includes the pressure due to the
+pages that have been ballooned. Make necessary adjustments to reflect that.
+Also, include the free memory information in the pressure report.
 
-> If you can identify where it was fixed then ...
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/hv/hv_balloon.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-Sorry I cannot do that. I have no idea where kernel changelogs are kept.
+diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
+index ce6f984..32a96f1 100644
+--- a/drivers/hv/hv_balloon.c
++++ b/drivers/hv/hv_balloon.c
+@@ -529,15 +529,21 @@ static void process_info(struct hv_dynmem_device *dm, struct dm_info_msg *msg)
+ static void post_status(struct hv_dynmem_device *dm)
+ {
+ 	struct dm_status status;
++	struct sysinfo val;
+ 
+-
++	si_meminfo(&val);
+ 	memset(&status, 0, sizeof(struct dm_status));
+ 	status.hdr.type = DM_STATUS_REPORT;
+ 	status.hdr.size = sizeof(struct dm_status);
+ 	status.hdr.trans_id = atomic_inc_return(&trans_id);
+ 
+-
+-	status.num_committed = vm_memory_committed();
++	/*
++	 * The host expects the guest to report free memory.
++	 * Further, the host expects the pressure information to
++	 * include the ballooned out pages.
++	 */
++	status.num_avail = val.freeram;
++	status.num_committed = vm_memory_committed() + dm->num_pages_ballooned;
+ 
+ 	vmbus_sendpacket(dm->dev->channel, &status,
+ 				sizeof(struct dm_status),
+-- 
+1.7.4.1
 
-I am happy to do some work. Please do not call me lazy.
-
-Cheers, Paul
-
-Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
-School of Mathematics and Statistics   University of Sydney    Australia
