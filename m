@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab3AZDhT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 22:37:19 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59838 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754740Ab3AZDhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 22:37:18 -0500
-Date: Fri, 25 Jan 2013 19:38:54 -0800
-From: Greg KH <greg@kroah.com>
-To: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Cc: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
-        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
-        "Yili (Neil)" <neil.yi@huawei.com>,
-        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
-        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
-        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>
-Subject: Re: [PATCH 1/2]linux-usb:Define a new macro for USB storage match
- rules
-Message-ID: <20130126033854.GA5066@kroah.com>
-References: <fe6cef496609.6609fe6cef49@huawei.com>
- <5102781A.8070502@mvista.com>
- <20130125174442.GA32333@kroah.com>
- <910F9D9E13B84F4C8FA771DC9BDE99F32702A880@szxeml546-mbx.china.huawei.com>
- <20130126020535.GA4652@kroah.com>
- <CAA6KcBAuHHiGq05ahjF1TDvs0CaqeruBDhff4r8L=AfsKiCB4w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA6KcBAuHHiGq05ahjF1TDvs0CaqeruBDhff4r8L=AfsKiCB4w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755485Ab3AZD6o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 22:58:44 -0500
+Received: from talus.maths.usyd.edu.au ([129.78.68.1]:33229 "EHLO
+	talus.maths.usyd.edu.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749Ab3AZD6m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 22:58:42 -0500
+X-smtpdoor-from: psz@maths.usyd.edu.au
+X-smtpdoor-want-Message-ID: <201301260357.r0Q3vT1v005715@como.maths.usyd.edu.au>
+Date: Sat, 26 Jan 2013 14:57:29 +1100
+From: paul.szabo@sydney.edu.au
+Message-Id: <201301260357.r0Q3vT1v005715@como.maths.usyd.edu.au>
+To: fengguang.wu@intel.com
+Subject: Re: [PATCH] Negative (setpoint-dirty) in bdi_position_ratio()
+Cc: 695182@bugs.debian.org, akpm@linux-foundation.org, jack@suse.cz,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20130125005529.GA21668@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 07:10:29PM -0800, Matthew Dharm wrote:
-> I suggest one of two options:
-> 
-> 1) Setup an alternative mail client.  There are many to choose from
-> which will not damage your patches.  I personally like 'mutt' (which
-> you should be able to install on your linux machine).   Others may be
-> able to recommend ones that work for them; in general, I think you
-> will find that most e-mail clients that run on Linux will be suitable.
+Dear Fengguang (et al),
 
-The file, Documentation/email_clients.txt will help out here.
+> There are 260MB reclaimable slab pages in the normal zone, however we
+> somehow failed to reclaim them. ...
 
-> 2) If you plan on contributing to the linux kernel in the future, it
-> may be worth your time to setup a repo on github that Greg can then
-> directly pull from.  All you would need to do is send Greg a "pull
-> request" indicating the URL of the branch in your repo that he should
-> pull from.  Greg can then pull directly from your repo, bypassing this
-> issue entirely.
+Could the problem be that without CONFIG_NUMA, zone_reclaim_mode stays
+at zero and anyway zone_reclaim() does nothing in include/linux/swap.h ?
 
-No, sorry, I only pull trees from a _very_ few people, patches are what
-I prefer for almost all stuff.  Only subsystem maintainers who I have
-been working with for many years will I pull trees from.
+Though... there is no CONFIG_NUMA nor /proc/sys/vm/zone_reclaim_mode in
+the Ubuntu non-PAE "plain" HIGHMEM4G kernel, and still it handles the
+"sleep test" just fine.
 
-sorry,
+Where does reclaiming happen (or meant to happen)?
 
-greg k-h
+Thanks, Paul
+
+Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
+School of Mathematics and Statistics   University of Sydney    Australia
