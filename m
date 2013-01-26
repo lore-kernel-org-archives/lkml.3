@@ -1,68 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab3AZNKY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 08:10:24 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:49906 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab3AZNKV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 08:10:21 -0500
-Message-ID: <1359205815.22942.14.camel@marge.simpson.net>
-Subject: Re: [PATCH -v4 0/5] x86,smp: make ticket spinlock proportional
- backoff w/ auto tuning
-From: Mike Galbraith <bitbucket@online.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        aquini@redhat.com, walken@google.com, eric.dumazet@gmail.com,
-        lwoodman@redhat.com, knoel@redhat.com, chegu_vinod@hp.com,
-        raghavendra.kt@linux.vnet.ibm.com, mingo@redhat.com
-Date: Sat, 26 Jan 2013 14:10:15 +0100
-In-Reply-To: <20130126120509.GD13445@gmail.com>
-References: <20130125140553.060b8ced@annuminas.surriel.com>
-	 <1359184867.5835.85.camel@marge.simpson.net>
-	 <20130126120509.GD13445@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:GKNw3cssn9NTgTBlSljADjrgv9J+b+swKb56l7rovFH
- ie0E+eIL7suTogpJ1x+BKKloEtPtJmX/NR8lZqQ3guq+zQ4i+P
- 7NrImCSZ730SMJd0hZfHnbGWYozQT+bi2QyfdabEhK54v6/mWz
- 2+lYN6xPq6Qb8QxzFbGIgaXJ2//846Pf3T6JT3J5ZDl0LrKKWA
- 5L6n0F8Eas8Ats5yTS/Zgw2hpNPREAY9WBgOpzDk3/sss2uMyp
- zIlXJsGg6JmMoq9+fbUL79dEQioZgSgByLMYft4sp6oYzGiXOu
- +Fj2gqq1pQZxR/gJuDDXXyJPj/wnu2xU6m/dM0KzCtp71aTkRF
- OmZ3fFM+s5Uxfwb0Urrsx7L04Gwl1/3kEp9DzVQJe61CbSMP5t
- lImQqytYdxHnw==
+	id S1753994Ab3AZNRK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 08:17:10 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:56422 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232Ab3AZNRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 08:17:08 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Carlos R. Mafra" <crmafra2@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Azat Khuzhin <dohardgopro@gmail.com>,
+        linux-acpi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Feng Tang <feng.tang@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        Len Brown <lenb@kernel.org>, "Moore, Robert" <robert.moore@intel.com>
+Subject: Re: ACPI errors with 3.7-rc3
+Date: Sat, 26 Jan 2013 14:23:12 +0100
+Message-ID: <2216175.k6K6lbz85j@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130126122337.GA20930@linux-ahr8.site>
+References: <20121031014527.GA2984@kroah.com> <20121108044715.GA12652@kroah.com> <20130126122337.GA20930@linux-ahr8.site>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-01-26 at 13:05 +0100, Ingo Molnar wrote: 
-> * Mike Galbraith <bitbucket@online.de> wrote:
+On Saturday, January 26, 2013 12:23:37 PM Carlos R. Mafra wrote:
+> On Thu,  8 Nov 2012 at  5:47:15 +0100, Greg KH wrote:
+> > On Wed, Nov 07, 2012 at 10:49:40PM +0100, Rafael J. Wysocki wrote:
+> > > On Tuesday, November 06, 2012 01:48:26 PM Greg KH wrote:
+> > > > On Tue, Nov 06, 2012 at 04:42:24PM +0400, Azat Khuzhin wrote:
+> > > > > I'v also have such errors on my macbook pro.
+> > > > > 
+> > > > > $ dmesg | tail
+> > > > > [17056.008564] ACPI Error: Method parse/execution failed
+> > > > > [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88026547ea10), AE_TIME
+> > > > > (20120711/psparse-536)
+> > > > > [17056.011194] ACPI Error: Method parse/execution failed
+> > > > > [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
+> > > > > (20120711/psparse-536)
+> > > > > [17056.013793] ACPI Error: Method parse/execution failed
+> > > > > [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
+> > > > > (20120711/psparse-536)
+> > > > > [17056.016383] ACPI Exception: AE_TIME, Evaluating _BST (20120711/battery-464)
+> > > > > [17056.511373] ACPI: EC: input buffer is not empty, aborting transaction
+> > > > > [17056.512672] ACPI Exception: AE_TIME, Returned by Handler for
+> > > > > [EmbeddedControl] (20120711/evregion-501)
+> > > > > [17056.515256] ACPI Error: Method parse/execution failed
+> > > > > [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88026547ea10), AE_TIME
+> > > > > (20120711/psparse-536)
+> > > > > [17056.517886] ACPI Error: Method parse/execution failed
+> > > > > [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
+> > > > > (20120711/psparse-536)
+> > > > > [17056.520479] ACPI Error: Method parse/execution failed
+> > > > > [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
+> > > > > (20120711/psparse-536)
+> > > > > [17056.523070] ACPI Exception: AE_TIME, Evaluating _BST (20120711/battery-464)
+> > > > 
+> > > > I'm seeing this again right now.  I'm wondering if it's because I'm
+> > > > running on battery power at the moment:
+> > > > 
+> > > > [41694.309264] ACPI Exception: AE_TIME, Returned by Handler for [EmbeddedControl] (20120913/evregion-501)
+> > > > [41694.309282] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88045cc64618), AE_TIME (20120913/psparse-536)
+> > > > [41694.309300] ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node ffff88045cc64988), AE_TIME (20120913/psparse-536)
+> > > > [41694.309310] ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node ffff88045cc648c0), AE_TIME (20120913/psparse-536)
+> > > > [41694.309324] ACPI Exception: AE_TIME, Evaluating _BST (20120913/battery-464)
+> > > > [41694.809093] ACPI: EC: input buffer is not empty, aborting transaction
+> > > > 
+> > > > ec_storm_threshold is still set to 8 in /sys/module/acpi/parameters/ so that's
+> > > > not the issue here.
+> > > > 
+> > > > > And also loadavg is too high ~ 10
+> > > > > While there is no process that load CPU up to 100% or like that.
+> > > > > I think that this because of processes that is done in kernel space.
+> > > > > (basically that one who write such errors)
+> > > > > 
+> > > > > $ uname -a
+> > > > > Linux macbook-pro-sq 3.6.5macbook-pro-custom-v0.1 #4 SMP Sun Nov 4
+> > > > > 12:39:03 UTC 2012 x86_64 GNU/Linux
+> > > > 
+> > > > Ah, ok, that means it's not something new in 3.7-rc, so maybe it's just never
+> > > > worked properly for this hardware :)
+> > > > 
+> > > > So it's not a regression, just an ACPI issue, any ACPI developer have an idea
+> > > > about this?
+> > > 
+> > > Can you please send the output of acpidump from the affected machine(s)?
+> > 
+> > # ./acpidump
+> > ACPI tables were not found. If you know location of RSD PTR table (from dmesg, etc), supply it with either --addr or -a option
+> > 
+> > What am I doing wrong here?
+> > 
+> > Is there a newer version of pmtools than the one labled pmtools-20071116
+> > that I should be using?  A link to download it would be appreciated.
 > 
-> > On Fri, 2013-01-25 at 14:05 -0500, Rik van Riel wrote:
-> > 
-> > > The performance issue observed with AIM7 is still a mystery.
-> > 
-> > Hm.  AIM7 mystery _may_ be the same crud I see on a 4 node 40 
-> > core box. Stock scheduler knobs are too preempt happy, produce 
-> > unstable results. I twiddle them as below to stabilize 
-> > results.
-> > 
-> > I'm testing a load balancing series from Alex Shi with AIM7 
-> > and whatnot, added your series on top of it and retested.  
-> > What I see is improvement.
+> I'd like to ask what happened to this issue, because I'm seeing similar
+> messages on latest 3.8-rc4 as well, and I cannot read the battery
+> info anymore once this happens and the laptop does not suspend to RAM
+> anymore -- it suspends fine before these messages.
 > 
-> Since we want both series that's good news, agreed?
+> The laptop is a Macbook Pro with retina display and I'm using the
+> develpoment version of openSUSE 12.3 updated as of yesterday.
+> 
+> Here is the output from dmesg:
+> 
+> [49367.993080] ACPI: EC: input buffer is not empty, aborting transaction
+> [49367.993091] ACPI Exception: AE_TIME, Returned by Handler for [EmbeddedControl] (20121018/evregion-501)
+> [49367.993112] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff880264490920), AE_TIME (20121018/psparse-537)
+> [49367.993136] ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node ffff8802644905b0), AE_TIME (20121018/psparse-537)
+> [49367.993147] ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node ffff880264490678), AE_TIME (20121018/psparse-537)
+> [49367.993166] ACPI Exception: AE_TIME, Evaluating _BST (20121018/battery-492)
+> [49368.491802] ACPI: EC: input buffer is not empty, aborting transaction
+> [49368.491812] ACPI Exception: AE_TIME, Returned by Handler for [EmbeddedControl] (20121018/evregion-501)
+> [49368.491833] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff880264490920), AE_TIME (20121018/psparse-537)
+> [49368.491857] ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node ffff8802644905b0), AE_TIME (20121018/psparse-537)
+> [49368.491869] ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node ffff880264490678), AE_TIME (20121018/psparse-537)
+> [49368.491888] ACPI Exception: AE_TIME, Evaluating _BST (20121018/battery-492)
+> [49372.985311] ACPI: EC: input buffer is not empty, aborting transaction
+> [49372.985322] ACPI Exception: AE_TIME, Returned by Handler for [EmbeddedControl] (20121018/evregion-501)
+> [49372.985344] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff880264490920), AE_TIME (20121018/psparse-537)
+> [49372.985368] ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node ffff8802644905b0), AE_TIME (20121018/psparse-537)
+> [49372.985380] ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node ffff880264490678), AE_TIME (20121018/psparse-537)
+> [49372.985400] ACPI Exception: AE_TIME, Evaluating _BST (20121018/battery-492)
+> 
+> Anyone has more information about this?
 
-Yes, both look good.
+Is acpidump still not working?
 
-BTW, the balance and powersaving low end improvements in the Alex set
-are not due to any select_idle_sibling() misbehavior as one might
-suspect when looking at the set, it's innocent (this time), it's the
-balancing policies themselves.  I don't see where it comes from, gotta
-be some turbo thingy methinks, but who cares, better is better.
+What's under /sys/firmware/acpi/tables/ ?
 
--Mike
+Rafael
 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
