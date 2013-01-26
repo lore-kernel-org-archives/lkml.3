@@ -1,359 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab3AZV3h (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 16:29:37 -0500
-Received: from ngcobalt07.manitu.net ([217.11.48.107]:47441 "EHLO
-	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754257Ab3AZV3f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 16:29:35 -0500
-X-manitu-Original-Sender-IP: 127.0.0.1
-X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
-Date: Sat, 26 Jan 2013 22:28:44 +0100
-From: Roland Eggner <edvx1@systemanalysen.net>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Dmitry Voytik <dvv.kernel@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: [PATCH v3 3/3] kconfig: nconf:  add vi-style navigation keys
-Message-ID: <20130126212844.GC18142@mobil.systemanalysen.net>
-Reply-To: Roland Eggner <edvx1@systemanalysen.net>
-Mail-Followup-To: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-	Dmitry Voytik <dvv.kernel@gmail.com>, Michal Marek <mmarek@suse.cz>,
-	Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-	linux-kbuild@vger.kernel.org
-References: <20130126191919.GA18142@mobil.systemanalysen.net>
+	id S1754646Ab3AZVkd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 16:40:33 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:56667 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754320Ab3AZVkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 16:40:31 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] ACPI scan handlers
+Date: Sat, 26 Jan 2013 22:46:35 +0100
+Message-ID: <2707117.gaHTJBNB2O@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <5104239E.9050406@gmail.com>
+References: <1873429.MS5RQDxTye@vostro.rjw.lan> <5104239E.9050406@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0vzXIDBeUiKkjNJl"
-Content-Disposition: inline
-In-Reply-To: <20130126191919.GA18142@mobil.systemanalysen.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sunday, January 27, 2013 02:42:38 AM Jiang Liu wrote:
+> On 01/24/2013 08:26 AM, Rafael J. Wysocki wrote:
+> > Hi All,
+> > 
+> > There is a considerable amount of confusion in the ACPI subsystem about what
+> > ACPI drivers are used for.  Namely, some of them are used as "normal" device
+> > drivers that bind to devices and handle them using ACPI control methods (like
+> > the fan or battery drivers), but some of them are just used for handling
+> > namespace events, such as the creation or removal of device nodes (I guess it
+> > would be fair to call that an abuse of the driver core).  These two roles are
+> > quite distinct, which is particularly visible from the confusion about the role
+> > of the .remove() callback.
+> > 
+> > For the "normal" drivers this callback is simply used to handle situations in
+> > which the driver needs to be unbound from the device, because one of them
+> > (either the device or the driver) is going away.  That operation can't really
+> > fail, it just needs to do the necessary cleanup.
+> > 
+> > However, for the namespace events handling "drivers" .remove() means that not
+> > only the device node in question, but generally also the whole subtree below it
+> > needs to be prepared for removal, which may involve deleting multiple device
+> > objects belonging to different bus types and so on and which very well may fail
+> > (for example, those devices may be used for such things like swap or they may be
+> > memory banks used by the kernel and it may not be safe to remove them at the
+> > moment etc.).  Moreover, for these things the removal of the "driver" doesn't
+> > really make sense, because it has to be there to handle the namespace events it
+> > is designed to handle or else things will go remarkably awry in some places.
+> > 
+> > To resolve all that mess I'd like to do the following, which in part is inspired
+> > by the recent Toshi Kani's hotplug framework proposal and in part is based on
+> > some discussions I had with Bjorn and others (the code references made below are
+> > based on the current contens of linux-pm.git/linux-next).
+> Hi Rafael,
+> 	Great to know that you plan to clean up these messes. We are working on
+> the same topic too.
+> 
+> > 
+> > 1) Introduce a special data type for "ACPI namespace event handlers" like:
+> > 
+> > struct acpi_scan_handler {
+> > 	const struct acpi_device_id *ids;
+> > 	struct list_head list_node;
+> > 	int (*attach)(struct acpi_device *adev);
+> > 	int (*untie)(struct acpi_device *adev);
+> > 	int (*reclaim)(struct acpi_device *adev);
+> > 	void (*detach)(struct acpi_device *adev);
+> > };
+> > 
+> >   an additional ACPI device flag:
+> > 
+> > struct acpi_device_flags {
+> > ...
+> > 	u32 untied:1;
+> > ...
+> > };
+> > 
+> >   and an additioanl field in struc acpi_device:
+> > 
+> > struct acpi_device {
+> > ...
+> > 	struct acpi_scan_handler *scan_handler;
+> > ...
+> > };
+> > 
+> >   (the roles of these things are described below).
+> > 
+> > 2) Introduce a list of struct acpi_scan_handler objects within the ACPI
+> >    subsystem such that acpi_bus_device_attach() will search that list first and
+> >    if there's a matching object (one whose ids match the device node), it will
+> >    run that object's .attach() callback.
+> > 
+> >   If that returns 1, it will mean that the handler has claimed the device node
+> >   and is now responsible for it until its .detach() callback is run.  Thus no
+> >   driver can be bound to that device node and no other handler can claim it.
+> >   Then, the device node's scan_handler field will be set to point to the handler
+> >   that's claimed it and its untied flag will be cleared.
+> > 
+> >   If .attach() returns 0, it will mean that the handler has not recognized the
+> >   device node and some other scan handlers and/or drivers may be tried for it.
+> This doesn't seem perfect. The device enumeration logic still interferes with
+> device drivers. Should we totally separate device enumeration logic from device
+> drivers?
 
---0vzXIDBeUiKkjNJl
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, that's the ultimate plan, but we can't do that at the moment for practical
+reasons (there are many ACPI drivers already in existence and we don't want to
+introduce regressions gratuitously).
 
->From: Roland Eggner <edvx1@systemanalysen.net>
+Introducing scan handlers more-or-less as described would be a step in that
+direction, though.
 
-Add vi-style navigation keys, based on initial work by Dmitry Voytik.  User=
-s of=20
-netbooks, notebooks and other devices with keyboards lacking a dedicated nu=
-mber=20
-keypad will enjoy.  And advanced users of vim, less, mutt, =E2=80=A6 having=
- navigation=20
-by keys hjkl =E2=80=9Chardwired=E2=80=9D in their fingers will =E2=80=9Cfly=
-=E2=80=9D :)
-In global help window called by key <F1> provide a table with all current a=
-nd=20
-added keybindings:
+> > 
+> >   If an error code is returned, it will mean a hard error in which case the
+> >   scanning of the namespace will have to be aborted.
+> > 
+> >   This way ACPI drivers will only be bound to device nodes that haven't been
+> >   claimed by any scan handlers.
+> > 
+> > 3) Introduce an additional function following the format of acpi_bus_trim(),
+> >    say acpi_bus_untie(), that will walk the namespace starting at the given
+> >    device node and execute the .untie() callbacks from the scan handlers of
+> >    all devices as post-order callbacks.
+> > 
+> >    If the .untie() callback for the given device node returns 0, it will mean
+> >    that it is now safe to delete that node as long as its scan handler's
+> >    .detach() callback is executed before the deletion.  In that case, the device
+> >    node's untied flag will be set.
+> > 
+> >    Otherwise (i.e. if an error code is returned), it will mean that the scan
+> >    handler has vetoed the untying and the whole operation should be reversed.
+> >    Then, acpi_bus_untie() will walk the namespace again and execute the
+> >    .reclaim() callbacks from the scan handlers of the device nodes whose untied
+> >    flags are set as pre-order callbacks.
+> > 
+> >    If .reclaim() returns 0, the device node's untied flag will be cleared, and
+> >    if an error code is returned, it will remain set.
+> > 
+> >    This will allow us to prepare the subtree below the given device node for
+> >    removal in a reversible way, if needed.  Still, though, it will be possible
+> >    to carry out a forcible removal calling acpi_bus_trim() after
+> >    acpi_bus_untie() even if that has returned an error code (or even
+> >    acpi_bus_trim() without acpi_bus_untie()).
+> > 
+> > 4) Make acpi_bus_device_detach() execute the .detach() callback from the
+> >    scan handler of the device node (if the scan handler is present) and clear
+> >    its scan_handler field along with its untied flag.  However, the untied flags
+> >    will only be cleared after executing the .detach() callbacks, so that those
+> >    callbacks can see whether or not the scan handlers have been successfully
+> >    "untied" from the device nodes.
+> > 
+> > 5) Make acpi_bus_hot_remove_device() (and other pieces of code where that is
+> >    convenient) call acpi_bus_untie() before acpi_bus_trim() and bail out
+> >    cleanly if the untying fails (i.e. is vetoed by one of the scan handlers).
+> > 
+> > That should take care of the removal problem nicely and as far as I can say
+> > the majority of the ACPI drivers used only for handling namespace events can
+> > be readily converted to struct acpi_scan_handler objects.
+> > 
+> > I wonder if anyone is seeing any major problems with this at the high level.
+> This design has some conflicts with our ongoing work to provide a system device
+> hotplug framework. I will send out the draft framework for comments soon.
 
-| Menu navigation keys        plain style             vi-style           |
-| ---------------------------------------------------------------------- |
-| Linewise up                 <Up>                    <k>                |
-| Linewise down               <Down>                  <j>                |
-| Pagewise up                 <Page Up>               <Ctrl-b>  <Ctrl-p> |
-| Pagewise down               <Page Down>             <Ctrl-f>  <Ctrl-n> |
-| First entry                 <Home>                  <g>                |
-| Last entry                  <End>                   <G>                |
-| Enter a submenu             <Right>  <Enter>        <l>                |
-| Go back to parent menu      <Left>   <Esc>  <F5>    <h>                |
-| Close a help window         <Enter>  <Esc>  <F5>                       |
-| Close entry window, apply   <Enter>                                    |
-| Close entry window, forget  <Esc>  <F5>                                |
-| Start incremental, case-insensitive search for STRING in menu entries, |
-|     no regex support, STRING is displayed in upper left corner         |
-|                             </>STRING                                  |
-|     Remove last character   <Backspace>                                |
-|     Jump to next hit        <Down>                                     |
-|     Jump to previous hit    <Up>                                       |
-| Exit menu search mode       </>  <Esc>                                 |
-| Search for configuration variables with or without leading CONFIG_     |
-|                             <F8>RegExpr<Enter>                         |
-| Verbose search help         <F8><F1>                                   |
-| ---------------------------------------------------------------------- |
+Well, I'd prefer it if you were more specific.  That is, please tell me what
+conflicts and why exactly.
 
-Intention is an easy to memorize set of keybindings resembling user interfa=
-ces=20
-of other frequently used software, not a strict clone of the historic vi us=
-er=20
-interface.  In contrast to historic vi, <Ctrl-f> <Ctrl-b> is used for=20
-characterwise right and left movement by libreadline (bash, xfsprogs, bc, g=
-db,=20
-python, ruby, hunspell, mysql, sqlite, gnupg, xine-ui, parted =E2=80=A6).  =
-Thus pagewise=20
-movement by <Ctrl-f> <Ctrl-b> would be weird for my fingers, so I have adde=
-d=20
-<Ctrl-n> <Ctrl-p>, resembling e.g. thread-wise navigation in mutt message l=
-ists.
+It also would be good if you looked at the Toshi Kani's latest proposal and
+said what's wrong with it from your perspective.  You'll need to do that
+anyway if you want to convince anyone that your proposal is better, so why
+don't you do that now?  Moreover, sending yet another "system devices hotplug
+framework" proposal at this point won't increase the chance that any of them
+will be accepted.  Odds are to the contrary, I'm afraid.
 
-To call help related to the current menu entry, currently any of the keys <=
-?>=20
-<h> may be used.  To solve the conflict with new navigation key <h>, this i=
-s=20
-changed to keys <?> <H>.  Lesser experienced users will not note, they use =
-<?>. =20
-And advanced users will consider, how much faster they can work, when all=
-=20
-frequently used keys are in the middle of the keyboard.
+Besides, I'm starting to think that such frameworks covering "system devices"
+only are insufficient, because nowadays it is quite difficult to say what
+devices are "system devices" in the first place and there is no reason why
+those devices should require a special framework while the other devices
+don't.  Quite frankly, it seems to me that either we need some additional
+hotplug-related handling for all devices, or we don't need anything like that
+at all.
 
-Signed-off-by: Dmitry Voytik <dvv.kernel@gmail.com>
-Signed-off-by: Roland Eggner <edvx1@systemanalysen.net>
----
-scripts/kconfig/nconf.c |  81 ++++++++++++++++++++++++++++++---------------=
----
-1 files changed, 51 insertions(+), 30 deletions(-)
+I'm seeing reasons why it may be necessary, but that will need to be discussed
+at the concept level, not within the context of any specific proposal.
 
-To be applied on vanilla 3.8-rc3
-
-diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
---- a/scripts/kconfig/nconf.c
-+++ b/scripts/kconfig/nconf.c
-@@ -12,6 +12,8 @@
- #include "nconf.h"
- #include <ctype.h>
-=20
-+#define KEY_CONTROL(k) ((k) & 0x1f)
-+
- static const char nconf_global_help[] =3D N_(
- "Help windows\n"
- "------------\n"
-@@ -21,7 +23,7 @@ static const char nconf_global_help[] =3D=20
- "o  A short version of the global help is available by key <F3>.\n"
- "\n"
- "o  Local help:  To get help related to the current menu entry, use any\n"
--"   of <?> <h> keys, or if in a data entry window then use <F1> key.\n"
-+"   of <?> <H> keys, or if in a data entry window then use <F1> key.\n"
- "\n"
- "\n"
- "Menu entries\n"
-@@ -47,16 +49,16 @@ static const char nconf_global_help[] =3D=20
- "A trailing \"--->\" designates a submenu.\n"
- "\n"
- "\n"
--"Menu navigation keys\n"
-+"Menu navigation keys        plain style             vi-style\n"
- "----------------------------------------------------------------------\n"
--"Linewise up                 <Up>\n"
--"Linewise down               <Down>\n"
--"Pagewise up                 <Page Up>\n"
--"Pagewise down               <Page Down>\n"
--"First entry                 <Home>\n"
--"Last entry                  <End>\n"
--"Enter a submenu             <Right>  <Enter>\n"
--"Go back to parent menu      <Left>   <Esc>  <F5>\n"
-+"Linewise up                 <Up>                    <k>\n"
-+"Linewise down               <Down>                  <j>\n"
-+"Pagewise up                 <Page Up>               <Ctrl-b>  <Ctrl-p>\n"
-+"Pagewise down               <Page Down>             <Ctrl-f>  <Ctrl-n>\n"
-+"First entry                 <Home>                  <g>\n"
-+"Last entry                  <End>                   <G>\n"
-+"Enter a submenu             <Right>  <Enter>        <l>\n"
-+"Go back to parent menu      <Left>   <Esc>  <F5>    <h>\n"
- "Close a help window         <Enter>  <Esc>  <F5>\n"
- "Close entry window, apply   <Enter>\n"
- "Close entry window, forget  <Esc>  <F5>\n"
-@@ -90,8 +92,8 @@ static const char nconf_global_help[] =3D=20
- "\n"
- "Text Box (Help Window)\n"
- "----------------------\n"
--"Use movement keys <Down> <Up> <PageDown> <PageUp> <End> <Home> as listed =
-in\n"
--"table above.\n"
-+"Use movement keys <Down> <Up> <j> <k> <PageDown> <PageUp> <End> <Home>\n"
-+"as listed in table above.\n"
- "\n"
- "Press any of <Enter> <Esc> <q> <F5> <F9> to exit.\n"
- "\n"
-@@ -134,9 +136,9 @@ menu_no_f_instructions[] =3D N_(
- "Submenus are designated by a trailing \"--->\".\n"
- "\n"
- "Use the following keys to navigate the menus:\n"
--"Move up or down by any of <Up> <Down> keys.\n"
--"To enter a submenu use any of <Enter> <Right> keys.\n"
--"To go back to the parent menu use any of <Esc> <Left> keys.\n"
-+"Move up or down by any of <Up> <Down> <k> <j> keys.\n"
-+"To enter a submenu use any of <Enter> <Right> <l> keys.\n"
-+"To go back to the parent menu use any of <Esc> <Left> <h> keys.\n"
- "Pressing <y> includes, <n> excludes, <m> modularizes features.\n"
- "Pressing <Space> cycles through the available options.\n"
- "To search for menu entries use key </>.\n"
-@@ -145,15 +147,15 @@ menu_no_f_instructions[] =3D N_(
- "You do not have function keys support.\n"
- "Use key <1> instead of <F1>, <2> instead of <F2>, etc.\n"
- "For verbose global help use key <1>.\n"
--"For help related to the current menu entry use any of <?> <h> keys.\n"),
-+"For help related to the current menu entry use any of <?> <H> keys.\n"),
- menu_instructions[] =3D N_(
- "Legend:  [*] built-in  [ ] excluded  <M> module  < > module capable.\n"
- "Submenus are designated by a trailing \"--->\".\n"
- "\n"
- "Use the following keys to navigate the menus:\n"
--"Move up or down by any of <Up> <Down> keys.\n"
--"To enter a submenu use any of <Enter> <Right> keys.\n"
--"To go back to the parent menu use any of <Esc> <Left> keys.\n"
-+"Move up or down by any of <Up> <Down> <k> <j> keys.\n"
-+"To enter a submenu use any of <Enter> <Right> <l> keys.\n"
-+"To go back to the parent menu use any of <Esc> <Left> <h> keys.\n"
- "Pressing <y> includes, <n> excludes, <m> modularizes features.\n"
- "Pressing <Space> cycles through the available options.\n"
- "To search for menu entries use key </>.\n"
-@@ -161,11 +163,11 @@ menu_instructions[] =3D N_(
- "\n"
- "Key <1> may be used instead of <F1>, <2> instead of <F2>, etc.\n"
- "For verbose global help use key <F1>.\n"
--"For help related to the current menu entry use any of <?> <h> keys.\n"),
-+"For help related to the current menu entry use any of <?> <H> keys.\n"),
- radiolist_instructions[] =3D N_(
--"Use <Up> <Down> <Home> <End> keys to navigate this\n"
-+"Use <Up> <Down> <Home> <End> <k> <j> <g> <G> keys to navigate this\n"
- "radiolist followed by <Space>.\n"
--"For help related to the current entry use any of <?> <h> keys.\n"
-+"For help related to the current entry use any of <?> <H> keys.\n"
- "For global help use key <F1>.\n"),
- inputbox_instructions_int[] =3D N_(
- "Please enter a decimal value.\n"
-@@ -1101,24 +1103,32 @@ static void conf(struct menu *menu)
- 				break;
- 			switch (res) {
- 			case KEY_DOWN:
-+			case 'j':
- 				menu_driver(curses_menu, REQ_DOWN_ITEM);
- 				break;
- 			case KEY_UP:
-+			case 'k':
- 				menu_driver(curses_menu, REQ_UP_ITEM);
- 				break;
- 			case KEY_NPAGE:
-+			case KEY_CONTROL('f'):
-+			case KEY_CONTROL('n'):
- 				menu_driver(curses_menu, REQ_SCR_DPAGE);
- 				break;
- 			case KEY_PPAGE:
-+			case KEY_CONTROL('b'):
-+			case KEY_CONTROL('p'):
- 				menu_driver(curses_menu, REQ_SCR_UPAGE);
- 				break;
- 			case KEY_HOME:
-+			case 'g':
- 				menu_driver(curses_menu, REQ_FIRST_ITEM);
- 				break;
- 			case KEY_END:
-+			case 'G':
- 				menu_driver(curses_menu, REQ_LAST_ITEM);
- 				break;
--			case 'h':
-+			case 'H':
- 			case '?':
- 				show_help((struct menu *) item_data());
- 				break;
-@@ -1126,14 +1136,15 @@ static void conf(struct menu *menu)
- 			if (res =3D=3D 10 || res =3D=3D 27 ||
- 				res =3D=3D 32 || res =3D=3D 'n' || res =3D=3D 'y' ||
- 				res =3D=3D KEY_LEFT || res =3D=3D KEY_RIGHT ||
--				res =3D=3D 'm')
-+				res =3D=3D 'h' || res =3D=3D 'l' || res =3D=3D 'm')
- 				break;
- 			refresh_all_windows(main_window);
- 		}
-=20
- 		refresh_all_windows(main_window);
- 		/* if ESC or left*/
--		if (res =3D=3D 27 || (menu !=3D &rootmenu && res =3D=3D KEY_LEFT))
-+		if (res =3D=3D 27 || (menu !=3D &rootmenu
-+			&& (res =3D=3D 'h' || res =3D=3D KEY_LEFT)))
- 			break;
-=20
- 		/* remember location in the menu */
-@@ -1155,6 +1166,7 @@ static void conf(struct menu *menu)
- 			else if (item_is_tag('m'))
- 				conf(submenu);
- 			break;
-+		case 'l':
- 		case KEY_RIGHT:
- 		case 10: /* ENTER WAS PRESSED */
- 			switch (item_tag()) {
-@@ -1286,36 +1298,44 @@ static void conf_choice(struct menu *men
- 				break;
- 			switch (res) {
- 			case KEY_DOWN:
-+			case 'j':
- 				menu_driver(curses_menu, REQ_DOWN_ITEM);
- 				break;
- 			case KEY_UP:
-+			case 'k':
- 				menu_driver(curses_menu, REQ_UP_ITEM);
- 				break;
- 			case KEY_NPAGE:
-+			case KEY_CONTROL('f'):
-+			case KEY_CONTROL('n'):
- 				menu_driver(curses_menu, REQ_SCR_DPAGE);
- 				break;
- 			case KEY_PPAGE:
-+			case KEY_CONTROL('b'):
-+			case KEY_CONTROL('p'):
- 				menu_driver(curses_menu, REQ_SCR_UPAGE);
- 				break;
- 			case KEY_HOME:
-+			case 'g':
- 				menu_driver(curses_menu, REQ_FIRST_ITEM);
- 				break;
- 			case KEY_END:
-+			case 'G':
- 				menu_driver(curses_menu, REQ_LAST_ITEM);
- 				break;
--			case 'h':
-+			case 'H':
- 			case '?':
- 				show_help((struct menu *) item_data());
- 				break;
- 			}
--			if (res =3D=3D 10 || res =3D=3D 27 || res =3D=3D ' ' ||
--					res =3D=3D KEY_LEFT){
-+			if (res =3D=3D 10 || res =3D=3D 27 || res =3D=3D ' '
-+				|| res =3D=3D 'h' || res =3D=3D KEY_LEFT){
- 				break;
- 			}
- 			refresh_all_windows(main_window);
- 		}
- 		/* if ESC or left */
--		if (res =3D=3D 27 || res =3D=3D KEY_LEFT)
-+		if (res =3D=3D 27 || res =3D=3D 'h' || res =3D=3D KEY_LEFT)
- 			break;
-=20
- 		child =3D item_data();
-@@ -1324,10 +1344,11 @@ static void conf_choice(struct menu *men
- 		switch (res) {
- 		case ' ':
- 		case  10:
-+		case 'l':
- 		case KEY_RIGHT:
- 			sym_set_tristate_value(child->sym, yes);
- 			return;
--		case 'h':
-+		case 'H':
- 		case '?':
- 			show_help(child);
- 			active =3D child->sym;
+Thanks,
+Rafael
 
 
---=20
-Roland Eggner
-
---0vzXIDBeUiKkjNJl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlEESowACgkQdN/hKfT7G/KnigCfSXBIG4JrF9HtJiVqzlBfkvm5
-bTAAoMRZQfBBxQEhSR3r6RK1LdHcZT8I
-=Pwf5
------END PGP SIGNATURE-----
-
---0vzXIDBeUiKkjNJl--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
