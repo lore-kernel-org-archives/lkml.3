@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab3AZAO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 19:14:27 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:47286 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab3AZAOZ (ORCPT
+	id S1754833Ab3AZAPX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 19:15:23 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:33358 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752290Ab3AZAPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 19:14:25 -0500
-Date: Fri, 25 Jan 2013 16:14:19 -0800
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: paul.szabo@sydney.edu.au
-Cc: 695182@bugs.debian.org, ben@decadent.org.uk, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, minchan@kernel.org
-Subject: Re: [PATCH] Subtract min_free_kbytes from dirtyable memory
-Message-ID: <20130126001419.GG3341@elie.Belkin>
-References: <1359118913.3146.3.camel@deadeye.wl.decadent.org.uk>
- <201301252349.r0PNnFYF024399@como.maths.usyd.edu.au>
+	Fri, 25 Jan 2013 19:15:20 -0500
+From: Dmitry Torokhov <dtor@vmware.com>
+To: pv-drivers@vmware.com
+Cc: Neil Horman <nhorman@tuxdriver.com>, acking@vmware.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
+        davem@davemloft.net
+Subject: Re: [Pv-drivers] [PATCH 1/1] VSOCK: Introduce VM Sockets
+Date: Fri, 25 Jan 2013 16:15:19 -0800
+Message-ID: <2312112.Fz0qTjDOJB@dtor-d630.eng.vmware.com>
+Organization: VMware, Inc.
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130125235953.GA4833@hmsreliant.think-freely.org>
+References: <1359135470-30677-1-git-send-email-acking@vmware.com> <1359135470-30677-2-git-send-email-acking@vmware.com> <20130125235953.GA4833@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201301252349.r0PNnFYF024399@como.maths.usyd.edu.au>
-User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Hi Neil,
 
-paul.szabo@sydney.edu.au wrote:
-> Dear Ben,
+On Friday, January 25, 2013 06:59:53 PM Neil Horman wrote:
+> On Fri, Jan 25, 2013 at 09:37:50AM -0800, acking@vmware.com wrote:
+> > +
+> > +config VMWARE_VSOCK
+> > +	tristate "Virtual Socket protocol"
+> > +	depends on VMWARE_VMCI
+> 
+> What is CONFIG_VMWARE_VMCI?  I don't find that in any Kconfig in the tree?
+> 
+> I''m still looking over the rest, but I get build issues if I just remove
+> the dependency.
 
->> If you can identify where it was fixed then ...
->
-> Sorry I cannot do that. I have no idea where kernel changelogs are kept.
-
-Here are some tools.
-
-  # prerequisite:
-  apt-get install git; # as root
-
-  # to get the kernel history:
-  git clone \
-    https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux.git
-  cd linux
-
-  # to view the changelog:
-  git log v3.2..
-
-  # to grep change descriptions:
-  git log --grep=min_free_kbytes v3.2..
-
-  # to view the patches corresponding to changes:
-  git log --patch v3.2.. -- mm/
-
-  # graphical interface
-  apt-get install gitk; # as root
-  gitk v3.2.. -- mm
-
-  # web interface:
-  w3m http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git
-
-The "exploring git history" section of the git user manual has more
-details:
-
-  http://git-htmldocs.googlecode.com/git/user-manual.html#exploring-git-history
+VMCI is in linux-next at the moment.
 
 Thanks,
-Jonathan
+Dmitry
