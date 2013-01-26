@@ -1,42 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab3AZKFv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 05:05:51 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55713 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111Ab3AZKFt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 05:05:49 -0500
-Date: Sat, 26 Jan 2013 10:05:42 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 00/19] ARM: common warning fixes
-Message-ID: <20130126100542.GC23505@n2100.arm.linux.org.uk>
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359153858-31992-1-git-send-email-arnd@arndb.de>
+	id S1753328Ab3AZKHw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 05:07:52 -0500
+Received: from cbox.danhos.com.mx ([189.204.35.82]:52155 "HELO danhos.com.mx"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753146Ab3AZKHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 05:07:49 -0500
+To: ass@yahoo.ca
+Subject: =?UTF-8?Q?administrativn=C3=AD=20Zpr=C3=A1va?=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359153858-31992-1-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Date: Sat, 26 Jan 2013 04:00:50 -0600
+From: =?UTF-8?Q?Matematicko-fyzik=C3=A1ln=C3=AD_fakulta?= 
+	<service@karlin.mff.cuni.cz>
+Organization: =?UTF-8?Q?Matematicko-fyzik=C3=A1ln=C3=AD_fakulta?=
+Reply-To: dq2sdde@ml.lt
+X-Priority: 5 (Lowest)
+Message-ID: <0be9afefaa8a0696e7c025bf72ec5281@danhos.com.mx>
+User-Agent: cBoxONE SBS Webmail/1.0.1b
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 10:43:59PM +0000, Arnd Bergmann wrote:
-> I will get to those once this series is sorted out.
-> Since there are no interdepencies between the patches,
-> my preference is to have them applied by the individual
-> subsystem maintainers. Anything that has not at
-> least made it into linux-next by the next merge window
-> and has not received a 'NAK' or been obsoleted by
-> another patch, I plan to submit as part of an arm-soc
-> branch for 3.9.
 
-And, last night we have new warnings.  My allnoconfigs no longer build
-cleanly because of new vexpress section mismatches in the mfd code.
 
-It seems to me that you're on a loosing battle unless you test the tree
-and drop code _before_ propaging it out if it adds new warnings... force
-the pain of these warnings down on to others so that they learn to create
-better code in the first place.
+
+-- 
+
+Správní MessageDear Web-Mail Majitel účtu:
+
+ 
+
+To má přijít do našeho upozornění, že vaše e-mailová neprošla ověřovací / Update proces, který jsme v současné době pracuje na. V současné době modernizace naší databázi a e-mailový účet centrum, a tím odstranění všech starý web mail a e-mailový účet vytvořit více prostoru pro nové účty.
+
+
+
+Chcete-li zabránit tomu, aby účet od uzavření budete muset aktualizovat tak, že budeme vědět, že je to v současné době používá účet. Chcete-li dokončit svůj účet re-potvrzení, musíte odpovědět na tento e-mail okamžitě a zadejte svoje přihlašovací údaje, jak požaduje níže.
+
+
+
+***********************************************
+
+Email uživatelské jméno: ........ .....
+
+EMAIL Heslo: ...............
+
+Datum narození: ...............
+
+Země nebo území: ........
+
+************************************************
+
+
+
+**** DŮLEŽITÉ:
+
+ 
+
+Tato aktualizace je povinná v důsledku našich nedávných serveru změní. Pokud se vám nepodaří aktualizovat svou e-mailovou adresu, budete brzy moci přijímat / odesílat mails.Also Váš e-mail nebude vybavena nejnovější anti-virus systém na našich nových servers.This bude vaše e-mailová a PC náchylné k útokům virů zinternet.
+
+ 
+
+
+
+  Omlouváme se za vzniklé potíže.
+
+   Webmail účtu Upgrader "
+
+************************************************** ******************************************
+
+  To je administrativní Zpráva z Univerzita Karlova v Praze a obsah musí být považovány za důvěrné za všech okolností
+
+  ************************************************** ****************************************
+
