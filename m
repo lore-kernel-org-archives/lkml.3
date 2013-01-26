@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab3AZBMe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 20:12:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46866 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753629Ab3AZBMd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 20:12:33 -0500
-Date: Fri, 25 Jan 2013 17:12:30 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
-        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
-        glommer@parallels.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] acpi, memory-hotplug: Support getting hotplug info
- from SRAT.
-Message-Id: <20130125171230.34c5a273.akpm@linux-foundation.org>
-In-Reply-To: <1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com>
-References: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com>
-	<1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1754749Ab3AZBQt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 20:16:49 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:48326 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753629Ab3AZBQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 20:16:47 -0500
+Message-ID: <1359163006.2079.10.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Fix $Float creation of match variables
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Whitcroft <apw@canonical.com>
+Date: Fri, 25 Jan 2013 17:16:46 -0800
+In-Reply-To: <20130125164413.dd931cb8.akpm@linux-foundation.org>
+References: <20130125164413.dd931cb8.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jan 2013 17:42:09 +0800
-Tang Chen <tangchen@cn.fujitsu.com> wrote:
+commit 74349bccedb
+("checkpatch: add support for floating point constants")
+added an unnecessary match variable that caused
+tests that used a $Constant or $LvalOrFunc to have
+one too many matches.
 
-> NOTE: Using this way will cause NUMA performance down because the whole node
->       will be set as ZONE_MOVABLE, and kernel cannot use memory on it.
->       If users don't want to lose NUMA performance, just don't use it.
+This causes problems with usleep_range, min/max and
+other extended tests.
 
-I agree with this, but it means that nobody will test any of your new code.
+Avoid using match variables in $Float.
+Avoid using match variables in $Assignment too.
 
-To get improved testing coverage, can you think of any temporary
-testing-only patch which will cause testers to exercise the
-memory-hotplug changes?
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 9de3a69..3d0f577 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -230,12 +230,12 @@ our $Inline	= qr{inline|__always_inline|noinline};
+ our $Member	= qr{->$Ident|\.$Ident|\[[^]]*\]};
+ our $Lval	= qr{$Ident(?:$Member)*};
+ 
+-our $Float_hex	= qr{(?i:0x[0-9a-f]+p-?[0-9]+[fl]?)};
+-our $Float_dec	= qr{(?i:((?:[0-9]+\.[0-9]*|[0-9]*\.[0-9]+)(?:e-?[0-9]+)?[fl]?))};
+-our $Float_int	= qr{(?i:[0-9]+e-?[0-9]+[fl]?)};
++our $Float_hex	= qr{(?i)0x[0-9a-f]+p-?[0-9]+[fl]?};
++our $Float_dec	= qr{(?i)(?:[0-9]+\.[0-9]*|[0-9]*\.[0-9]+)(?:e-?[0-9]+)?[fl]?};
++our $Float_int	= qr{(?i)[0-9]+e-?[0-9]+[fl]?};
+ our $Float	= qr{$Float_hex|$Float_dec|$Float_int};
+-our $Constant	= qr{(?:$Float|(?i:(?:0x[0-9a-f]+|[0-9]+)[ul]*))};
+-our $Assignment	= qr{(?:\*\=|/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=|=)};
++our $Constant	= qr{$Float|(?i)(?:0x[0-9a-f]+|[0-9]+)[ul]*};
++our $Assignment	= qr{\*\=|/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=|=};
+ our $Compare    = qr{<=|>=|==|!=|<|>};
+ our $Operators	= qr{
+ 			<=|>=|==|!=|
+
 
