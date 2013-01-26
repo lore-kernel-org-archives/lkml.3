@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3AZR2f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 12:28:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38988 "EHLO mx1.redhat.com"
+	id S1754015Ab3AZR2q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 12:28:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18764 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753016Ab3AZR2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753165Ab3AZR2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jan 2013 12:28:21 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
@@ -14,26 +14,26 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 1/9] perf x86: Add precise sysfs cpu pmu attribute
-Date: Sat, 26 Jan 2013 18:27:47 +0100
-Message-Id: <1359221275-24254-2-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 4/9] perf tools: Add a precise event qualifier
+Date: Sat, 26 Jan 2013 18:27:50 +0100
+Message-Id: <1359221275-24254-5-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1359221275-24254-1-git-send-email-jolsa@redhat.com>
 References: <1359221275-24254-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding sysfs 'precise' attribute for cpu device
-(/sys/devices/cpu/precise) to show the maximum
-value for perf event precise attribute.
+From: Andi Kleen <ak@linux.intel.com>
 
-This will be initially used for automated precise
-event perf test and could be helpful otherwise.
+Add a precise qualifier, like cpu/event=0x3c,precise=1/
 
-TODO Arnaldo suggested to use this as a guide for
-default adding of precise attribute for HW events.
+This is needed so that the kernel can request enabling PEBS
+for TSX events. The parser bails out on any sysfs parse errors,
+so this is needed in any case to handle any event on the TSX
+perf kernel.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -43,75 +43,54 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
+[ nit: changed subject line a bit]
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- arch/x86/kernel/cpu/perf_event.c | 34 +++++++++++++++++++++++++---------
- 1 file changed, 25 insertions(+), 9 deletions(-)
+ tools/perf/util/parse-events.c | 6 ++++++
+ tools/perf/util/parse-events.h | 1 +
+ tools/perf/util/parse-events.l | 1 +
+ 3 files changed, 8 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 6774c17..190995e 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -377,19 +377,26 @@ static inline int precise_br_compat(struct perf_event *event)
- 	return m == b;
- }
- 
--int x86_pmu_hw_config(struct perf_event *event)
-+static int x86_get_precise(void)
- {
--	if (event->attr.precise_ip) {
--		int precise = 0;
-+	int precise = 0;
- 
--		/* Support for constant skid */
--		if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
-+	/* Support for constant skid */
-+	if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
-+		precise++;
-+
-+		/* Support for IP fixup */
-+		if (x86_pmu.lbr_nr)
- 			precise++;
-+	}
- 
--			/* Support for IP fixup */
--			if (x86_pmu.lbr_nr)
--				precise++;
--		}
-+	return precise;
-+}
-+
-+int x86_pmu_hw_config(struct perf_event *event)
-+{
-+	if (event->attr.precise_ip) {
-+		int precise = x86_get_precise();
- 
- 		if (event->attr.precise_ip > precise)
- 			return -EOPNOTSUPP;
-@@ -1700,6 +1707,13 @@ static int x86_pmu_event_init(struct perf_event *event)
- 	return err;
- }
- 
-+static ssize_t get_attr_precise(struct device *cdev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	return snprintf(buf, 10, "%d\n", x86_get_precise());
-+}
-+
- static int x86_pmu_event_idx(struct perf_event *event)
- {
- 	int idx = event->hw.idx;
-@@ -1752,9 +1766,11 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
- }
- 
- static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
-+static DEVICE_ATTR(precise, S_IRUGO, get_attr_precise, NULL);
- 
- static struct attribute *x86_pmu_attrs[] = {
- 	&dev_attr_rdpmc.attr,
-+	&dev_attr_precise.attr,
- 	NULL,
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 02f6421..217ce56 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -568,6 +568,12 @@ do {								\
+ 	case PARSE_EVENTS__TERM_TYPE_NAME:
+ 		CHECK_TYPE_VAL(STR);
+ 		break;
++	case PARSE_EVENTS__TERM_TYPE_PRECISE:
++		CHECK_TYPE_VAL(NUM);
++		if ((unsigned)term->val.num > 2)
++			return -EINVAL;
++		attr->precise_ip = term->val.num;
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index 2cd2c42..9d526cf 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -48,6 +48,7 @@ enum {
+ 	PARSE_EVENTS__TERM_TYPE_NAME,
+ 	PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD,
+ 	PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
++	PARSE_EVENTS__TERM_TYPE_PRECISE,
  };
+ 
+ struct parse_events_term {
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index e9d1134..32a9000 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -169,6 +169,7 @@ period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
+ branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
+ ,			{ return ','; }
+ "/"			{ BEGIN(INITIAL); return '/'; }
++precise			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_PRECISE); }
+ {name_minus}		{ return str(yyscanner, PE_NAME); }
+ }
  
 -- 
 1.7.11.7
