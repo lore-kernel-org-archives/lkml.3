@@ -1,284 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750917Ab3AZFFj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 00:05:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44719 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750710Ab3AZFFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 00:05:36 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Xishi Qiu <qiuxishi@huawei.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] mm: clean up soft_offline_page()
-Date: Sat, 26 Jan 2013 00:02:11 -0500
-Message-Id: <1359176531-12583-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1751066Ab3AZFG3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 00:06:29 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33619 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750751Ab3AZFG2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 00:06:28 -0500
+Date: Sat, 26 Jan 2013 13:06:21 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dongjin Kim <tobetter@gmail.com>
+Cc: yadi.brar01@gmail.com, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] ARM: dts: max77686: Add DTS file for max77686 PMIC
+Message-ID: <20130126050618.GD10580@opensource.wolfsonmicro.com>
+References: <1359053177-17725-1-git-send-email-tobetter@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LTeJQqWS0MN7I/qa"
+Content-Disposition: inline
+In-Reply-To: <1359053177-17725-1-git-send-email-tobetter@gmail.com>
+X-Cookie: Make a wish, it might come true.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently soft_offline_page() is hard to maintain because it has many
-return points and goto statements. All of this mess come from get_any_page().
-This function should only get page refcount as the name implies, but it does
-some page isolating actions like SetPageHWPoison() and dequeuing hugepage.
-This patch corrects it and introduces some internal subroutines to make
-soft offlining code more readable and maintainable.
 
-ChangeLog v2:
-  - receive returned value from __soft_offline_page and soft_offline_huge_page
-  - place __soft_offline_page after soft_offline_page to reduce the diff
-  - rebased onto mmotm-2013-01-23-17-04
-  - add comment on double checks of PageHWpoison
+--LTeJQqWS0MN7I/qa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- mm/memory-failure.c | 154 ++++++++++++++++++++++++++++------------------------
- 1 file changed, 83 insertions(+), 71 deletions(-)
+On Fri, Jan 25, 2013 at 03:46:08AM +0900, Dongjin Kim wrote:
 
-diff --git mmotm-2013-01-23-17-04.orig/mm/memory-failure.c mmotm-2013-01-23-17-04/mm/memory-failure.c
-index c95e19a..302625b 100644
---- mmotm-2013-01-23-17-04.orig/mm/memory-failure.c
-+++ mmotm-2013-01-23-17-04/mm/memory-failure.c
-@@ -1368,7 +1368,7 @@ static struct page *new_page(struct page *p, unsigned long private, int **x)
-  * that is not free, and 1 for any other page type.
-  * For 1 the page is returned with increased page count, otherwise not.
-  */
--static int get_any_page(struct page *p, unsigned long pfn, int flags)
-+static int __get_any_page(struct page *p, unsigned long pfn, int flags)
- {
- 	int ret;
- 
-@@ -1393,11 +1393,9 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
- 	if (!get_page_unless_zero(compound_head(p))) {
- 		if (PageHuge(p)) {
- 			pr_info("%s: %#lx free huge page\n", __func__, pfn);
--			ret = dequeue_hwpoisoned_huge_page(compound_head(p));
-+			ret = 0;
- 		} else if (is_free_buddy_page(p)) {
- 			pr_info("%s: %#lx free buddy page\n", __func__, pfn);
--			/* Set hwpoison bit while page is still isolated */
--			SetPageHWPoison(p);
- 			ret = 0;
- 		} else {
- 			pr_info("%s: %#lx: unknown zero refcount page type %lx\n",
-@@ -1413,42 +1411,62 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
- 	return ret;
- }
- 
-+static int get_any_page(struct page *page, unsigned long pfn, int flags)
-+{
-+	int ret = __get_any_page(page, pfn, flags);
-+
-+	if (ret == 1 && !PageHuge(page) && !PageLRU(page)) {
-+		/*
-+		 * Try to free it.
-+		 */
-+		put_page(page);
-+		shake_page(page, 1);
-+
-+		/*
-+		 * Did it turn free?
-+		 */
-+		ret = __get_any_page(page, pfn, 0);
-+		if (!PageLRU(page)) {
-+			pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
-+				pfn, page->flags);
-+			return -EIO;
-+		}
-+	}
-+	return ret;
-+}
-+
- static int soft_offline_huge_page(struct page *page, int flags)
- {
- 	int ret;
- 	unsigned long pfn = page_to_pfn(page);
- 	struct page *hpage = compound_head(page);
- 
-+	/*
-+	 * This double-check of PageHWPoison is to avoid the race with
-+	 * memory_failure(). See also comment in __soft_offline_page().
-+	 */
-+	lock_page(hpage);
- 	if (PageHWPoison(hpage)) {
-+		unlock_page(hpage);
-+		put_page(hpage);
- 		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
--		ret = -EBUSY;
--		goto out;
-+		return -EBUSY;
- 	}
--
--	ret = get_any_page(page, pfn, flags);
--	if (ret < 0)
--		goto out;
--	if (ret == 0)
--		goto done;
-+	unlock_page(hpage);
- 
- 	/* Keep page count to indicate a given hugepage is isolated. */
- 	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL, false,
- 				MIGRATE_SYNC);
- 	put_page(hpage);
--	if (ret) {
-+	if (ret)
- 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
- 			pfn, ret, page->flags);
--		goto out;
--	}
--done:
- 	/* keep elevated page count for bad page */
--	atomic_long_add(1 << compound_trans_order(hpage), &num_poisoned_pages);
--	set_page_hwpoison_huge_page(hpage);
--	dequeue_hwpoisoned_huge_page(hpage);
--out:
- 	return ret;
- }
- 
-+static int __soft_offline_page(struct page *page, int flags);
-+
- /**
-  * soft_offline_page - Soft offline a page.
-  * @page: page to offline
-@@ -1477,62 +1495,60 @@ int soft_offline_page(struct page *page, int flags)
- 	unsigned long pfn = page_to_pfn(page);
- 	struct page *hpage = compound_trans_head(page);
- 
--	if (PageHuge(page)) {
--		ret = soft_offline_huge_page(page, flags);
--		goto out;
-+	if (PageHWPoison(page)) {
-+		pr_info("soft offline: %#lx page already poisoned\n", pfn);
-+		return -EBUSY;
- 	}
--	if (PageTransHuge(hpage)) {
-+	if (!PageHuge(page) && PageTransHuge(hpage)) {
- 		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
- 			pr_info("soft offline: %#lx: failed to split THP\n",
- 				pfn);
--			ret = -EBUSY;
--			goto out;
-+			return -EBUSY;
- 		}
- 	}
- 
--	if (PageHWPoison(page)) {
--		pr_info("soft offline: %#lx page already poisoned\n", pfn);
--		ret = -EBUSY;
--		goto out;
--	}
--
- 	ret = get_any_page(page, pfn, flags);
- 	if (ret < 0)
--		goto out;
--	if (ret == 0)
--		goto done;
--
--	/*
--	 * Page cache page we can handle?
--	 */
--	if (!PageLRU(page)) {
--		/*
--		 * Try to free it.
--		 */
--		put_page(page);
--		shake_page(page, 1);
--
--		/*
--		 * Did it turn free?
--		 */
--		ret = get_any_page(page, pfn, 0);
--		if (ret < 0)
--			goto out;
--		if (ret == 0)
--			goto done;
--	}
--	if (!PageLRU(page)) {
--		pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
--			pfn, page->flags);
--		ret = -EIO;
--		goto out;
-+		return ret;
-+	if (ret) { /* for in-use pages */
-+		if (PageHuge(page))
-+			ret = soft_offline_huge_page(page, flags);
-+		else
-+			ret = __soft_offline_page(page, flags);
-+	} else { /* for free pages */
-+		if (PageHuge(page)) {
-+			set_page_hwpoison_huge_page(hpage);
-+			dequeue_hwpoisoned_huge_page(hpage);
-+			atomic_long_add(1 << compound_trans_order(hpage),
-+					&num_poisoned_pages);
-+		} else {
-+			SetPageHWPoison(page);
-+			atomic_long_inc(&num_poisoned_pages);
-+		}
- 	}
-+	/* keep elevated page count for bad page */
-+	return ret;
-+}
-+
-+static int __soft_offline_page(struct page *page, int flags)
-+{
-+	int ret;
-+	unsigned long pfn = page_to_pfn(page);
- 
- 	/*
--	 * Synchronized using the page lock with memory_failure()
-+	 * Check PageHWPoison again inside page lock because PageHWPoison
-+	 * is set by memory_failure() outside page lock. Note that
-+	 * memory_failure() also double-checks PageHWPoison inside page lock,
-+	 * so there's no race between soft_offline_page() and memory_failure().
- 	 */
- 	lock_page(page);
- 	wait_on_page_writeback(page);
-+	if (PageHWPoison(page)) {
-+		unlock_page(page);
-+		put_page(page);
-+		pr_info("soft offline: %#lx page already poisoned\n", pfn);
-+		return -EBUSY;
-+	}
- 	/*
- 	 * Try to invalidate first. This should work for
- 	 * non dirty unmapped page cache pages.
-@@ -1545,9 +1561,10 @@ int soft_offline_page(struct page *page, int flags)
- 	 */
- 	if (ret == 1) {
- 		put_page(page);
--		ret = 0;
- 		pr_info("soft_offline: %#lx: invalidated\n", pfn);
--		goto done;
-+		SetPageHWPoison(page);
-+		atomic_long_inc(&num_poisoned_pages);
-+		return 0;
- 	}
- 
- 	/*
-@@ -1575,18 +1592,13 @@ int soft_offline_page(struct page *page, int flags)
- 				pfn, ret, page->flags);
- 			if (ret > 0)
- 				ret = -EIO;
-+		} else {
-+			SetPageHWPoison(page);
-+			atomic_long_inc(&num_poisoned_pages);
- 		}
- 	} else {
- 		pr_info("soft offline: %#lx: isolation failed: %d, page count %d, type %lx\n",
- 			pfn, ret, page_count(page), page->flags);
- 	}
--	if (ret)
--		goto out;
--
--done:
--	/* keep elevated page count for bad page */
--	atomic_long_inc(&num_poisoned_pages);
--	SetPageHWPoison(page);
--out:
- 	return ret;
- }
--- 
-1.7.11.7
+> ---
+>  arch/arm/boot/dts/max77686.dtsi |  156 +++++++++++++++++++++++++++++++++++++++
 
+Why is this in arch/arm?  This isn't an ARM-specific chip.
+
+--LTeJQqWS0MN7I/qa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRA2Q6AAoJELSic+t+oim9rEEP/iI4l5e2VOpYAw4MvA5DcIUj
+Hb/Bsjr5misb7o4nqmFC0/60gJceuB59B9vw5yAO1dUrlpp9Y7VCUP06nGGA42pC
+zDxiawG6EDPF5ShEnRsMhHd158IMWpaBQ2q2JONxXAG3MdLeXTAfvG8RYOGvBqK7
+j282Uv3lTtGm/rzzfBCTDIBTF+SEh2UnYDeeqwRIBDa7IFT6zs7N6Z0fUiQcl/V0
+GXmavHqyYHVLxOVFmtW7+owmWJ66yBWb87T90lX+oKml7rrnsS6/juxrxmnL0Glw
+ZhOiyq5hRQxEtsyaIZKwUV3Fi0nBQwCAgBcuwaXYLitD0SW9lvEbEfGeWE82a65y
+eIcF2mzNPOF+yrG/oLf6MqESo7bfU/EgE+TRJLRwCK6jxE1z8nOHNs+4nvKszFI9
+XwFWM5Q7ToTHuDDRWJNB866yCGsC2CrijUTsUix3OiIxwp2eqXquGDpaKpz8gkDS
+56xDWnugKWwi1ZSaLEdlN8idjG3mc1ow2w2SwujF7pK6M7wrv8I0mH9Hne8ExM87
+YE99ho702rXUsYXzvIUr7umajmJw97GZdGeHrwcpqsb4z+eXelM/zJLEh0dJrl9K
+5kv09Us8e+9gvg2iAhslymTxjtqj9mI+FLRtRc3Fhf0O761P7npQ0sXTIBoAsHTT
+Q9OfWOKZPGS4Qu6ZF/q1
+=4/V1
+-----END PGP SIGNATURE-----
+
+--LTeJQqWS0MN7I/qa--
