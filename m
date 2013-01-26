@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab3AZAp1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 19:45:27 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:56431 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441Ab3AZApZ (ORCPT
+	id S1754730Ab3AZApl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 19:45:41 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:49807 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754529Ab3AZApj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 19:45:25 -0500
+	Fri, 25 Jan 2013 19:45:39 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 19/19] [INCOMPLETE] ARM: make return_address available for ARM_UNWIND
+Date: Sat, 26 Jan 2013 00:45:28 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-1-generic; KDE/4.3.2; x86_64; ; )
+Cc: Dave Martin <dave.martin@linaro.org>, Steven Rostedt <rostedt@goodmis.org>,
+        sahara <keun-o.park@windriver.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359132254.21576.230.camel@gandalf.local.home> <20130125165934.GE2069@linaro.org>
+In-Reply-To: <20130125165934.GE2069@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1353057890-24234-1-git-send-email-lig.fnst@cn.fujitsu.com>
-References: <1353057890-24234-1-git-send-email-lig.fnst@cn.fujitsu.com>
-Date: Sat, 26 Jan 2013 01:45:23 +0100
-Message-ID: <CAFTL4hzLu5RN-PSuP6NRwx2sMKXh5OZ7gNqLnUQQvKTK4n9i1Q@mail.gmail.com>
-Subject: Re: [PATCH]cputime: make bool type for steal ticks
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: liguang <lig.fnst@cn.fujitsu.com>
-Cc: mingo@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301260045.28804.arnd@arndb.de>
+X-Provags-ID: V02:K0:x6vXjyQU7YS8Y0SqsqudKv/oy1OXOPxP7CtbavsHWMm
+ Lpr/VmhTLKunDyIE4Hm2M/69/ntNdu0zb7SBszg/V86pWS6PdA
+ L0UFJtMv5SissDk+8pNL0cMyekLcxBv9owjrgCHvZxfVMdbeSD
+ bhrbZFiQSp2Gw0l98UK8I8sB9IziPots4xwk0ypwg0I8gI13Gi
+ D4ADsNGUuH1vRcj/bDfUAPPcUWltGL+phmj4IqHaGKCNbuSjPE
+ zfUdiMRFIIaJqr2S0MQ6Ux3sFdZChVZ3U9pfuGBoz3vxwtLZCB
+ j32q1PMAry73/EWiiqUDWsgQKz/WLRfricEWxPgW9EgQcLiX0t
+ V/ncd9gZWmSj+4OOT3/s=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/16 liguang <lig.fnst@cn.fujitsu.com>:
-> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> ---
->  kernel/sched/cputime.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On Friday 25 January 2013, Dave Martin wrote:
+> On Fri, Jan 25, 2013 at 11:44:14AM -0500, Steven Rostedt wrote:
+> > [ I got an error with linux-arm-kernel@list.infradead.org and had to
+> > remove from CC ]
+> 
+> Blame Arnd :)
 >
-> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-> index 81b763b..d2c24c1 100644
-> --- a/kernel/sched/cputime.c
-> +++ b/kernel/sched/cputime.c
-> @@ -282,7 +282,7 @@ static __always_inline bool steal_account_process_tick(void)
->                 this_rq()->prev_steal_time += st * TICK_NSEC;
->
->                 account_steal_time(st);
-> -               return st;
-> +               return !!st;
 
-I would expect gcc to perform the semantic "!!" cast implicitly. I
-just did some basic tests locally and it does.
-I prefer to be paranoid and not do any assumption though, unless I'm
-told gcc always guarantees this correct implicit cast. I'm queuing
-this patch and will send it to Ingo.
+Sorry about that, I now posted the entire series again with the right
+mailing list address.
 
-Thanks!
-
->         }
->  #endif
->         return false;
-> --
-> 1.7.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	ARnd
