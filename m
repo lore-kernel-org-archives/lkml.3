@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab3AZMtW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 07:49:22 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:58393 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753395Ab3AZMtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 07:49:20 -0500
-Date: Sat, 26 Jan 2013 13:52:08 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, arjan@linux.intel.com,
-        jbeulich@suse.com, ling.ml@alipay.com, rostedt@goodmis.org,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/asm] x86/defconfig: Turn on
- CONFIG_CC_OPTIMIZE_FOR_SIZE= y in the 64-bit defconfig
-Message-ID: <20130126125208.GC21395@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, mingo@kernel.org,
-	hpa@zytor.com, linux-kernel@vger.kernel.org,
-	torvalds@linux-foundation.org, arjan@linux.intel.com,
-	jbeulich@suse.com, ling.ml@alipay.com, rostedt@goodmis.org,
-	akpm@linux-foundation.org, tglx@linutronix.de,
-	linux-tip-commits@vger.kernel.org
-References: <1359123061-6139-1-git-send-email-ling.ma@alipay.com>
- <tip-d94ffd677469ef729e9d6e968191872577a6119e@git.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <tip-d94ffd677469ef729e9d6e968191872577a6119e@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753929Ab3AZNKY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 08:10:24 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:49906 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753630Ab3AZNKV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 08:10:21 -0500
+Message-ID: <1359205815.22942.14.camel@marge.simpson.net>
+Subject: Re: [PATCH -v4 0/5] x86,smp: make ticket spinlock proportional
+ backoff w/ auto tuning
+From: Mike Galbraith <bitbucket@online.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        aquini@redhat.com, walken@google.com, eric.dumazet@gmail.com,
+        lwoodman@redhat.com, knoel@redhat.com, chegu_vinod@hp.com,
+        raghavendra.kt@linux.vnet.ibm.com, mingo@redhat.com
+Date: Sat, 26 Jan 2013 14:10:15 +0100
+In-Reply-To: <20130126120509.GD13445@gmail.com>
+References: <20130125140553.060b8ced@annuminas.surriel.com>
+	 <1359184867.5835.85.camel@marge.simpson.net>
+	 <20130126120509.GD13445@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:GKNw3cssn9NTgTBlSljADjrgv9J+b+swKb56l7rovFH
+ ie0E+eIL7suTogpJ1x+BKKloEtPtJmX/NR8lZqQ3guq+zQ4i+P
+ 7NrImCSZ730SMJd0hZfHnbGWYozQT+bi2QyfdabEhK54v6/mWz
+ 2+lYN6xPq6Qb8QxzFbGIgaXJ2//846Pf3T6JT3J5ZDl0LrKKWA
+ 5L6n0F8Eas8Ats5yTS/Zgw2hpNPREAY9WBgOpzDk3/sss2uMyp
+ zIlXJsGg6JmMoq9+fbUL79dEQioZgSgByLMYft4sp6oYzGiXOu
+ +Fj2gqq1pQZxR/gJuDDXXyJPj/wnu2xU6m/dM0KzCtp71aTkRF
+ OmZ3fFM+s5Uxfwb0Urrsx7L04Gwl1/3kEp9DzVQJe61CbSMP5t
+ lImQqytYdxHnw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 26, 2013 at 04:25:57AM -0800, tip-bot for Ma Ling wrote:
-> During the same  time (269.410275674 seconds) IPC from Os is
-> 0.37, O2 is 0.36, Os improved performance 2.7%.
+On Sat, 2013-01-26 at 13:05 +0100, Ingo Molnar wrote: 
+> * Mike Galbraith <bitbucket@online.de> wrote:
 > 
-> Signed-off-by: Ma Ling <ling.ml@alipay.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Arjan van de Ven <arjan@linux.intel.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Jan Beulich <jbeulich@suse.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Link: http://lkml.kernel.org/r/1359123061-6139-1-git-send-email-ling.ma@alipay.com
-> [ So, this is a bit symbolic as most people don't use the defconfig,
->   but the measurements are useful nevertheless so let's commit this
->   if there are no objections. ]
+> > On Fri, 2013-01-25 at 14:05 -0500, Rik van Riel wrote:
+> > 
+> > > The performance issue observed with AIM7 is still a mystery.
+> > 
+> > Hm.  AIM7 mystery _may_ be the same crud I see on a 4 node 40 
+> > core box. Stock scheduler knobs are too preempt happy, produce 
+> > unstable results. I twiddle them as below to stabilize 
+> > results.
+> > 
+> > I'm testing a load balancing series from Alex Shi with AIM7 
+> > and whatnot, added your series on top of it and retested.  
+> > What I see is improvement.
+> 
+> Since we want both series that's good news, agreed?
 
-What about
+Yes, both look good.
 
-commit 3a55fb0d9fe8e2f4594329edd58c5fd6f35a99dd
-Author: Kirill Smelkov <kirr@mns.spb.ru>
-Date:   Fri Nov 2 15:41:01 2012 +0400
+BTW, the balance and powersaving low end improvements in the Alex set
+are not due to any select_idle_sibling() misbehavior as one might
+suspect when looking at the set, it's innocent (this time), it's the
+balancing policies themselves.  I don't see where it comes from, gotta
+be some turbo thingy methinks, but who cares, better is better.
 
-    Tell the world we gave up on pushing CC_OPTIMIZE_FOR_SIZE
+-Mike
 
-?
-
-Reportedly, -Os generates suboptimal code in certain cases and we advise
-against it with this patch.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
