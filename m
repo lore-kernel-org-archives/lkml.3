@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab3AZVxq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 16:53:46 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:54326 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320Ab3AZVxp (ORCPT
+	id S1754634Ab3AZWCQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 17:02:16 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:52288 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754411Ab3AZWCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 16:53:45 -0500
-Date: Sat, 26 Jan 2013 21:53:38 +0000
-From: James Hogan <james.hogan@imgtec.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH v3 00/44] Meta Linux Kernel Port
-Message-ID: <20130126215338.GA25964@balrog>
-References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
- <5102BB38.3050207@imgtec.com>
- <201301260025.10020.arnd@arndb.de>
+	Sat, 26 Jan 2013 17:02:12 -0500
+Message-ID: <51045261.5020709@free-electrons.com>
+Date: Sat, 26 Jan 2013 23:02:09 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201301260025.10020.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
+        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/3] gpio: pca953x: add support for pca9505
+References: <1358889025-8530-1-git-send-email-gregory.clement@free-electrons.com> <1358889025-8530-3-git-send-email-gregory.clement@free-electrons.com> <CACRpkda-N0GrKOeaz4Hji0ef9pSRNPCxW_jLGR28iX-sk0-=tg@mail.gmail.com> <51024422.2060503@free-electrons.com> <CACRpkdbe1fGVLNyJ+U+ozE32p+_fc-eQ4W1F8OeYC+fryu_dQQ@mail.gmail.com>
+In-Reply-To: <CACRpkdbe1fGVLNyJ+U+ozE32p+_fc-eQ4W1F8OeYC+fryu_dQQ@mail.gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-
-On Sat, Jan 26, 2013 at 12:25:09AM +0000, Arnd Bergmann wrote:
-> On Friday 25 January 2013, James Hogan wrote:
-> > Review seems to have gone quiet. I'm fairly happy with this core
-> > patchset in it's currently form (only trivial alterations required since
-> > the v3 patches, e.g. some review comments and rebasing on linus/master),
-> > and would like to get it into the v3.9 merge window. What's the best way
-> > forward? I presume I need to get acks on each individual patch?
+On 01/25/2013 09:51 AM, Linus Walleij wrote:
+> On Fri, Jan 25, 2013 at 9:36 AM, Gregory CLEMENT
+> <gregory.clement@free-electrons.com> wrote:
 > 
+>> Well, at the beginning I thought adding support for pca9505 was just a matter
+>> of a couple of lines to add. Then I realized that I need to handle the 40 bits
+>> case, and I ended up refactoring all access to the registers. So now I am on it,
+>> it seems I am volunteer to continue to improve this driver.
 > 
-> I've just looked through the entire series once more and could not find
-> any show-stoppers. I consider this ready for 3.9, and I'm also quite happy
-> with Vineet's ARC port, although I think he is still integrating some
-> feedback comments.
+> I like the sound of this ;-)
 
-Thanks for taking another look over it and for all the guidance.
+I was about to fix the issues you have pointed but I didn't find anything like
 
-> I'd suggest that you both ask Stephen to add the trees to linux-next
-> now (I thought you had done that already, but I don't see them there
-> at the moment).
+#ifdef CONFIG_ARCH_PXA
+        if (cpu_is_pxa25x()) {
+#ifdef CONFIG_CPU_PXA26x
+                count = 89;
+                gpio_type = PXA26X_GPIO;
+#elif defined(CONFIG_PXA25x)
 
-Okay. Yeh, I was holding off expecting to need more acks.
 
-> You don't need Acked-by statements on every single patch, but having
-> more of those is certainly benefitial. When it comes to the merge
-> window, please send a pull request to Linus, and keep me on Cc,
-> so I can weigh in with an additional Ack to the series.
+in the pca953x driver! I think you messed up with another patch set!
 
-Okay, I'll try and get some more acks on specific patches.
+I saw that Haojian Zhuang have sent a patch set for gpio-pxa and
+among this set the patch "[PATCH 06/10] gpio: pxa: define nr gpios
+in platform data" seemed to exactly what you've expected.
 
-> Until then, maybe you can have another look at each other's architecture
-> trees (ARC and Meta). Since you are in exactly the same situation with
-> upstream integration now, you are probably the best people to review
-> the code, and you providing ACKs and constructive feedback to the other
-> tree will helps others see that you are up to the job as an arch
-> maintainer. I have also given a few comments to one of you that
-> may actually apply to the other one just as well, but I can't remember
-> now what I discussed with whom ;-)
+> 
+> To get you started I just sent out two other patches you can consider
+> as RFC, they're regrettably not even compile-tested. I mainly wanted
+> to indicate what needs to be done so we can throw them away, just
+> wanted to give a hint.
+> 
+>> However I won't be able to test it, the only PXA based platform I have is a
+>> Zaurus SL-C3100 which embeds a PXA270 if I remember well, but I doubt it come
+>> with gpio expander on i2c.
+> 
+> Well I guess if there is nobody testing it, then nobody cares.
+> The world must be full of people with PXA platforms doing nothing
+> but regression testing...
+> 
+> Actually just days ago I asked Haoijan to help me testing a set of
+> patches for the PXA SPI controller, and he kindly helped out, so there
+> are some people booting these platforms, sometimes :-)
+> 
+> Yours,
+> Linus Walleij
+> 
 
-Good idea. I've been working on a few changes already based on ARC
-feedback which also applies to Meta :-)
 
-Cheers
-James
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
