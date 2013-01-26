@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab3AZAz4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 19:55:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42309 "EHLO mx1.redhat.com"
+	id S1754344Ab3AZBFn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 20:05:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48420 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754894Ab3AZAzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 19:55:51 -0500
-From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH 2/2] PCI: Use PCI Express Capability accessors
-To: bhelgaas@google.com
-Cc: linux-pci@vger.kernel.org, jiang.liu@huawei.com, mcgrof@qca.qualcomm.com,
-        mcgrof@do-not-panic.com, linux-kernel@vger.kernel.org
-Date: Fri, 25 Jan 2013 17:55:45 -0700
-Message-ID: <20130126005545.25808.91427.stgit@amt.stowe>
-In-Reply-To: <20130126005533.25808.23022.stgit@amt.stowe>
-References: <20130126005533.25808.23022.stgit@amt.stowe>
-User-Agent: StGIT/0.14.3
+	id S1753496Ab3AZBFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jan 2013 20:05:41 -0500
+Message-ID: <51032BCB.5070506@zytor.com>
+Date: Fri, 25 Jan 2013 17:05:15 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: mingo@kernel.org, linux-kernel@vger.kernel.org, konrad.wilk@oracle.com,
+        torvalds@linux-foundation.org, JBeulich@suse.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [tip:x86/asm] x86/xor: Make virtualization friendly
+References: <5093E4F302000078000A6162@nat28.tlf.novell.com> <tip-05fbf4d6fc6a3c0c3e63b77979c9311596716d10@git.kernel.org> <510302FD.3090009@zytor.com> <510303F8.1080105@zytor.com>
+In-Reply-To: <510303F8.1080105@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use PCI Express Capability access functions to simplify device
-Capabilities Register usages.
+On 01/25/2013 02:15 PM, H. Peter Anvin wrote:
+> On 01/25/2013 02:11 PM, H. Peter Anvin wrote:
+>> On 01/25/2013 02:43 AM, tip-bot for Jan Beulich wrote:
+>>> Commit-ID:  05fbf4d6fc6a3c0c3e63b77979c9311596716d10
+>>> Gitweb:     http://git.kernel.org/tip/05fbf4d6fc6a3c0c3e63b77979c9311596716d10
+>>> Author:     Jan Beulich <JBeulich@suse.com>
+>>> AuthorDate: Fri, 2 Nov 2012 14:21:23 +0000
+>>> Committer:  Ingo Molnar <mingo@kernel.org>
+>>> CommitDate: Fri, 25 Jan 2013 09:23:51 +0100
+>>>
+>>> x86/xor: Make virtualization friendly
+>>>
+>>> In virtualized environments, the CR0.TS management needed here
+>>> can be a lot slower than anticipated by the original authors of
+>>> this code, which particularly means that in such cases forcing
+>>> the use of SSE- (or MMX-) based implementations is not desirable
+>>> - actual measurements should always be done in that case.
+>>>
+>>> For consistency, pull into the shared (32- and 64-bit) header
+>>> not only the inclusion of the generic code, but also that of the
+>>> AVX variants.
+>>>
+>>
+>> This patch is wrong and should be dropped.  I verified it with the KVM
+>> people that they do NOT want this change.  It is a Xen-specific problem.
+>>
+>
+> FWIW: I have dropped this patch from tip:x86/asm.
+>
 
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
----
+The bottom line, I guess, is that we need something like 
+cpu_has_slow_kernel_fpu or something like that, and set it for 
+specifically affected hypervisors?
 
- drivers/pci/access.c            |    4 ++--
- drivers/pci/pcie/portdrv_core.c |    2 +-
- include/linux/pci.h             |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+Do we know if Hyper-V has performance issues with CR0.TS?
 
-diff --git a/drivers/pci/access.c b/drivers/pci/access.c
-index 3af0478..5278ac6 100644
---- a/drivers/pci/access.c
-+++ b/drivers/pci/access.c
-@@ -472,7 +472,7 @@ EXPORT_SYMBOL_GPL(pci_cfg_access_unlock);
- 
- static inline int pcie_cap_version(const struct pci_dev *dev)
- {
--	return dev->pcie_flags_reg & PCI_EXP_FLAGS_VERS;
-+	return pcie_caps_reg(dev) & PCI_EXP_FLAGS_VERS;
- }
- 
- static inline bool pcie_cap_has_devctl(const struct pci_dev *dev)
-@@ -497,7 +497,7 @@ static inline bool pcie_cap_has_sltctl(const struct pci_dev *dev)
- 	return pcie_cap_version(dev) > 1 ||
- 	       type == PCI_EXP_TYPE_ROOT_PORT ||
- 	       (type == PCI_EXP_TYPE_DOWNSTREAM &&
--		dev->pcie_flags_reg & PCI_EXP_FLAGS_SLOT);
-+		pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT);
- }
- 
- static inline bool pcie_cap_has_rtctl(const struct pci_dev *dev)
-diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
-index b42133a..31063ac 100644
---- a/drivers/pci/pcie/portdrv_core.c
-+++ b/drivers/pci/pcie/portdrv_core.c
-@@ -272,7 +272,7 @@ static int get_port_device_capability(struct pci_dev *dev)
- 
- 	/* Hot-Plug Capable */
- 	if ((cap_mask & PCIE_PORT_SERVICE_HP) &&
--	    dev->pcie_flags_reg & PCI_EXP_FLAGS_SLOT) {
-+	    pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT) {
- 		pcie_capability_read_dword(dev, PCI_EXP_SLTCAP, &reg32);
- 		if (reg32 & PCI_EXP_SLTCAP_HPC) {
- 			services |= PCIE_PORT_SERVICE_HP;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 78581e1..63b3628 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1707,7 +1707,7 @@ static inline u16 pcie_caps_reg(const struct pci_dev *dev)
-  */
- static inline int pci_pcie_type(const struct pci_dev *dev)
- {
--	return (dev->pcie_flags_reg & PCI_EXP_FLAGS_TYPE) >> 4;
-+	return (pcie_caps_reg(dev) & PCI_EXP_FLAGS_TYPE) >> 4;
- }
- 
- void pci_request_acs(void);
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
