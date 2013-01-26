@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab3AZAFV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jan 2013 19:05:21 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:59605 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab3AZAFR (ORCPT
+	id S1754740Ab3AZALN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jan 2013 19:11:13 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38847 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754319Ab3AZALL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jan 2013 19:05:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUS56KnvDCF7LUyCkNLcun+3zZ+xGiexca2ej30dRvrQg@mail.gmail.com>
-References: <1358803252-20639-1-git-send-email-yinghai@kernel.org>
- <2072996.JYmST9orI6@vostro.rjw.lan> <CAE9FiQUS56KnvDCF7LUyCkNLcun+3zZ+xGiexca2ej30dRvrQg@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 25 Jan 2013 17:04:56 -0700
-Message-ID: <CAErSpo7-XabKQh_Lia9zS9i4Mm=eBV6rRw0ArjXAZBiWYx4uYA@mail.gmail.com>
-Subject: Re: [PATCH v10 00/11] PCI, ACPI: pci root bus hotplug support / pci match_driver
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 25 Jan 2013 19:11:11 -0500
+Message-ID: <1359159055.3146.9.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: Bug#695182: [PATCH] Subtract min_free_kbytes from dirtyable
+ memory
+From: Ben Hutchings <ben@decadent.org.uk>
+To: paul.szabo@sydney.edu.au
+Cc: 695182@bugs.debian.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        minchan@kernel.org
+Date: Sat, 26 Jan 2013 00:10:55 +0000
+In-Reply-To: <201301252349.r0PNnFYF024399@como.maths.usyd.edu.au>
+References: <201301252349.r0PNnFYF024399@como.maths.usyd.edu.au>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-U4D6W87p2oSthp7A5dG6"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 78.32.9.209
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 3:19 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Tue, Jan 22, 2013 at 2:09 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> On Monday, January 21, 2013 01:20:41 PM Yinghai Lu wrote:
->>> It includes
->>> 1. preparing patches for pci root bus hotadd/hotremove support
->>> 2. move root bus hotadd from acpiphp to pci_root.c
->>> 3. add hot-remove support
->>> 4. add acpi_hp_work to be shared with acpiphp and root-bus hotplug
->>> 5. add match_driver to add pci device to device tree early but
->>>    not attach driver for hotplug path.
->>>
->>> based on pci/next + pm/acpi-scan
->>>
->>> could get from
->>>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-root-bus-hotplug
->>>
->>> -v9: merges several patches together for easy review, requested by Rafael.
->>> -v10: address comments from Rafael.
->>>
->>> Jiang Liu (2):
->>>   PCI: Fix a device reference count leakage issue in pci_dev_present()
->>>   PCI: make PCI device create/destroy logic symmetric
->>>
->>> Tang Chen (1):
->>>   PCI, ACPI: debug print for installation of acpi root bridge's
->>>     notifier
->>>
->>> Yinghai Lu (8):
->>>   PCI, acpiphp: Add is_hotplug_bridge detection
->>>   PCI: Add root bus children dev's res to fail list
->>>   PCI: Set dev_node early for pci_dev
->>>   PCI, ACPI, acpiphp: Rename alloc_acpiphp_hp_work() to alloc_acpi_hp_work
->>>   PCI, acpiphp: Move and enhance hotplug support of pci host bridge
->>>   PCI, acpiphp: Don't bailout even no slots found yet.
->>>   PCI: Skip attaching driver in device_add()
->>>   PCI: Put pci dev to device tree as early as possible
->>
->> OK
->>
->> Please feel free to add
->>
->> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>
->> to all of the patches in this series I haven't acked already.
 
-I first pulled in
-"git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
-acpi-scan" again (to pci/acpi-scan2), added your acks, Rafael, and put
-this series on a pci/yinghai-root-bus branch based on pci/acpi-scan2.
+--=-U4D6W87p2oSthp7A5dG6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I reworked some of the changelogs a bit, but I don't think I made any
-code changes except that in [10/11] I just inlined the
-pci_bus_attach_device() code rather than making a new function, since
-it's small, there's only one caller, and I didn't think we needed any
-more pci_* and pci_bus_* functions than we already have.
+On Sat, 2013-01-26 at 10:49 +1100, paul.szabo@sydney.edu.au wrote:
+> Dear Ben,
+>=20
+> > If you can identify where it was fixed then ...
+>=20
+> Sorry I cannot do that. I have no idea where kernel changelogs are kept.
+>=20
+> I am happy to do some work. Please do not call me lazy.
 
-Let me know if I messed anything up.
+The changelogs are in git repositories.  But the mm maintainers are
+probably much better placed to identify which was the upstream fix.
 
-Bjorn
+Ben.
+
+--=20
+Ben Hutchings
+Any smoothly functioning technology is indistinguishable from a rigged demo=
+.
+
+--=-U4D6W87p2oSthp7A5dG6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUQMfD+e/yOyVhhEJAQoCjRAApmuWAB1UAauxqmKbDWWRCvFIuDQldoAb
+UTfvrNAKBmxiJhZCrL5MuKQ2JcFfB3O0FRf+WlFECQPmLoDkMGsdurp16BJAiMeZ
+XE2NgIKi81Q8sH6CpM3zcAFiz9dMMSbTr33YGJJ5HCXXw1VvvwnAk4oozRDakXSb
+eyIYYZdyzpVzutdB3K3gtb42i5YnxGlu47e0hJcQWDrQOIskBi+kvKAOVLaTJSA4
+MqOV5X5wcofU6l4wqqaPItsFXYjwlkRARNndhIXyUJ4FizNyYv7MRWPv2jGfBIxv
+UKrpxEPHa1RWTMHuFZw//Ngem4qD50Toin7iAE1zrD4MYOybHMPXHRqBJ9WOAZRo
+MD6+9i6wE/q/CAun+zNWUMFnWc7Tj2djtBL4//BDm79mO7x3fUnvZxMGEwFynkLH
+bJzYAQpNbodwSMadPr5RWiJ+JhMgsfIUcDUYDxQ0Wdn3ttDslIoWfnoV8OlTamid
+LccOghlf8sf7Uc5Jeq/joBLwL++zGZBfg/HSw7ElgwaVJAW634zwme4bkN1W7WB7
+iSmF3QNHEev/71KWOh8ViHiehdY/APGZHj3+1aMlxZXCxAIyW/1Mxh7lHU5582zN
+wkdJ/TIdW6titgYP9CxAgeAY0yOmmdzGZniesG1XTLNKKwxFe8sC+SIIX4iyyvcu
+Qr+UP2MxDmY=
+=LTtq
+-----END PGP SIGNATURE-----
+
+--=-U4D6W87p2oSthp7A5dG6--
