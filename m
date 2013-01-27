@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab3A0K6V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 05:58:21 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:57781 "EHLO
+	id S1756593Ab3A0K6x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 05:58:53 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:54070 "EHLO
 	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754754Ab3A0K6S (ORCPT
+	with ESMTP id S1756433Ab3A0K6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 05:58:18 -0500
-X-Originating-IP: 217.70.178.147
+	Sun, 27 Jan 2013 05:58:52 -0500
+X-Originating-IP: 217.70.178.135
 X-Originating-IP: 150.203.246.47
-Date: Sun, 27 Jan 2013 21:58:06 +1100
+Date: Sun, 27 Jan 2013 21:58:40 +1100
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 2/2] rcu: Allow TREE_PREEMPT_RCU on UP
- systems
-Message-ID: <20130127105805.GE3119@leaf>
+Subject: Re: [PATCH tip/core/rcu 0/2] v2 Tiny RCU changes for 3.9
+Message-ID: <20130127105840.GF3119@leaf>
 References: <20130127002328.GA4847@linux.vnet.ibm.com>
- <1359246227-5770-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1359246227-5770-2-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1359246227-5770-2-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20130127002328.GA4847@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 26, 2013 at 04:23:47PM -0800, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Sat, Jan 26, 2013 at 04:23:28PM -0800, Paul E. McKenney wrote:
+> Hello!
 > 
-> The TINY_PREEMPT_RCU is complex, does not provide that much memory
-> savings, and therefore TREE_PREEMPT_RCU should be used instead.  The
-> systems where the difference between TINY_PREEMPT_RCU and TREE_PREEMPT_RCU
-> are quite small compared to the memory footprint of CONFIG_PREEMPT.
+> This series provides a couple of tiny-RCU changes:
 > 
-> This commit therefore takes a first step towards eliminating
-> TINY_PREEMPT_RCU by allowing TREE_PREEMPT_RCU to be configured on !SMP
-> systems.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 1.	Make Tiny RCU emit RCU CPU stall warnings when RCU_TRACE=y.
+> 2.	Allow TREE_PREEMPT_RCU to be used on UP systems.
 
+I replied to patch 1 with a suggestion; with that change,
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+for the whole series.
 
-> ---
->  init/Kconfig |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index a5e90e1..fb19b46 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -453,7 +453,7 @@ config TREE_RCU
->  
->  config TREE_PREEMPT_RCU
->  	bool "Preemptible tree-based hierarchical RCU"
-> -	depends on PREEMPT && SMP
-> +	depends on PREEMPT
->  	help
->  	  This option selects the RCU implementation that is
->  	  designed for very large SMP systems with hundreds or
-> @@ -461,6 +461,8 @@ config TREE_PREEMPT_RCU
->  	  is also required.  It also scales down nicely to
->  	  smaller systems.
->  
-> +	  Select this option if you are unsure.
-> +
->  config TINY_RCU
->  	bool "UP-only small-memory-footprint RCU"
->  	depends on !PREEMPT && !SMP
-> -- 
-> 1.7.8
-> 
+- Josh Triplett
