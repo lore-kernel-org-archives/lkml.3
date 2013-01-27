@@ -1,124 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab3A0GSL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 01:18:11 -0500
-Received: from mail.lemote.com ([222.92.8.141]:59505 "EHLO lemote.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755728Ab3A0GSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 01:18:08 -0500
-Message-ID: <30326.222.92.8.142.1359264529.squirrel@mail.lemote.com>
-Date: Sun, 27 Jan 2013 13:28:49 +0800 (CST)
-Subject: Re: [PATCH V8 00/13] MIPS: Add Loongson-3 based machines support
-From: =?gb2312?Q?=B3=C2=BB=AA=B2=C5?= <chenhc@lemote.com>
-To: "John Crispin" <john@phrozen.org>
-Cc: "Ralf Baechle" <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, "Fuxin Zhang" <zhangfx@lemote.com>,
-        "Zhangjin Wu" <wuzhangjin@gmail.com>,
-        "Hongliang Tao" <taohl@lemote.com>, "Hua Yan" <yanh@lemote.com>
-User-Agent: SquirrelMail/1.4.11
+	id S1756052Ab3A0GTL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 01:19:11 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:57509 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755825Ab3A0GTJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 01:19:09 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+References: <87ehh8it9s.fsf@xmission.com> <87txq4hedl.fsf@xmission.com>
+	<20130126211312.GD11274@mail.hallyn.com>
+Date: Sat, 26 Jan 2013 22:19:01 -0800
+In-Reply-To: <20130126211312.GD11274@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Sat, 26 Jan 2013 21:13:12 +0000")
+Message-ID: <87zjzv408a.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;charset=gb2312
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/btcsc/aolKmTixE9gxMkRqXad9Dnd9g0=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH review 3/6] userns: Recommend use of memory control groups.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, John,
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-Compiling fails because __dev* prefix should be removed
-due to upstream changes.
-
-You said that patch 3 need to be rework, but I don't know
-how to improve... Could you please tell me where is unsane?
-
-Maybe you means I should make cpu_has_coherent_cache a
-runtime value rather than a config option as follows?
-
-1, remove CONFIG_CPU_SUPPORTS_COHERENT_CACHE
-2, in arch/mips/include/asm/mach-loongson/cpu-feature-overrides.h
-#define cpu_has_coherent_cache   1
-3, in arch/mips/include/asm/cpu.h
-#define MIPS_CPU_COHERENT_CACHE       0x00080000
-4, in arch/mips/include/asm/cpu-features.h
-#ifndef cpu_has_coherent_cache
-#define cpu_has_coherent_cache   (cpu_data[0].options &
-MIPS_CPU_INCLUSIVE_CACHES)
-#endif
-
-Besides, the SMP code has a bug to fix (IPI sending) and
-patch 3, patch 6 need to update. So I think a V9 is needed :(
-
-
-
-> On 25/01/13 01:15, 陈华才 wrote:
->> ok, I'll prepare v9 of this seris in these days.
->>>
+> Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> 
+>> In the help text describing user namespaces recommend use of memory
+>> control groups.  In many cases memory control groups are the only
+>> mechanism there is to limit how much memory a user who can create
+>> user namespaces can use.
+>> 
+>> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 >
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+
 >
-> Please dont send v9
->
-> read my mail and compile / runtime test the tree please
->
-> only patch 3 needs to be reworked and an update for the "MIPS: Loongson
-> 3: Add HT-linked PCI support." needs to e made
->
-> 	John
->
->>>>
->>>> Huacai Chen(13):
->>>>    MIPS: Loongson: Add basic Loongson-3 definition.
->>>>    MIPS: Loongson: Add basic Loongson-3 CPU support.
->>>>    MIPS: Loongson: Introduce and use cpu_has_coherent_cache feature.
->>>>    MIPS: Loongson 3: Add Lemote-3A machtypes definition.
->>>>    MIPS: Loongson: Add UEFI-like firmware interface support.
->>>>    MIPS: Loongson 3: Add HT-linked PCI support.
->>>>    MIPS: Loongson 3: Add IRQ init and dispatch support.
->>>>    MIPS: Loongson 3: Add serial port support.
->>>>    MIPS: Loongson: Add swiotlb to support big memory (>4GB).
->>>>    MIPS: Loongson: Add Loongson-3 Kconfig options.
->>>>    MIPS: Loongson 3: Add Loongson-3 SMP support.
->>>>    MIPS: Loongson 3: Add CPU hotplug support.
->>>>    MIPS: Loongson: Add a Loongson-3 default config file.
->>>>
->>>> Signed-off-by: Huacai Chen<chenhc@lemote.com>
->>>> Signed-off-by: Hongliang Tao<taohl@lemote.com>
->>>> Signed-off-by: Hua Yan<yanh@lemote.com>
->>>> ---
->>>
->>> Hi,
->>>
->>> I have added all patches apart from 3/13 to my queue.
->>>
->>> I believe "MIPS: Loongson: Introduce and use cpu_has_coherent_cache
->>> feature." should e rewritten in a saner way.
->>>
->>> Please compile and runtime test the tree before I send it to Ralf
->>> -->
->>> http://git.linux-mips.org/?p=john/linux-john.git;a=shortlog;h=refs/heads/mips-next-3.9
->>>
->>> I cleaned up a few minor whitespace errors while merging.
->>>
->>> http://patchwork.linux-mips.org/patch/4547/ has a few comments. Please
->>> prepare a patch asap to address those so i can fold it into the series.
->>>
->>> 	John
->>>
->>
->>
->
+> nit:
 >
 
+I have fixed you nit and added the following text, so people know
+have a clue where to look to configure cgroups in userspace.
 
--- 
-江苏中科梦兰电子科技有限公司
-
-软件部 陈华才
-
-E-mail: chenhc@lemote.com
-
-Web: http://www.lemote.com/
-
-Add: 江苏省常熟市虞山镇梦兰工业园
+diff --git a/Documentation/namespaces/resource-control.txt b/Documentation/namespaces/resource-control.txt
+index 3d8178a..abc13c3 100644
+--- a/Documentation/namespaces/resource-control.txt
++++ b/Documentation/namespaces/resource-control.txt
+@@ -7,4 +7,8 @@ users programs to play nice this problems becomes more acute.
+ Therefore it is recommended that memory control groups be enabled in
+ kernels that enable user namespaces, and it is further recommended
+ that userspace configure memory control groups to limit how much
+-memory users they don't trust to play nice can use.
++memory user's they don't trust to play nice can use.
++
++Memory control groups can be configured by installing the libcgroup
++package present on most distros editing /etc/cgrules.conf,
++/etc/cgconfig.conf and setting up libpam-cgroup.
 
