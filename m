@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab3A0SVn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 13:21:43 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:47753 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754359Ab3A0SVj (ORCPT
+	id S1754717Ab3A0Smg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 13:42:36 -0500
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:46056 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754425Ab3A0Smf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 13:21:39 -0500
-Date: Sun, 27 Jan 2013 18:23:34 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH review 6/6] userns: Allow the userns root to mount
- tmpfs.
-Message-ID: <20130127182334.GC338@mail.hallyn.com>
-References: <87ehh8it9s.fsf@xmission.com>
- <87d2wshe6v.fsf@xmission.com>
+	Sun, 27 Jan 2013 13:42:35 -0500
+Date: Sun, 27 Jan 2013 19:42:29 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, zihan@huawei.com,
+        Lin.Lei@huawei.com, greg@kroah.com, neil.yi@huawei.com,
+        wangyuhua@huawei.com, huqiao36@huawei.com, balbi@ti.com,
+        mdharm-usb@one-eyed-alien.net
+Subject: Re: [PATCH 1/2]linux-usb:Define a new macro for USB storage match
+ rules
+Message-ID: <20130127184229.GA7163@breakpoint.cc>
+References: <fe6cef496609.6609fe6cef49@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87d2wshe6v.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <fe6cef496609.6609fe6cef49@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> 
-> There is no backing store to tmpfs and file creation rules are the
-> same as for any other filesystem so it is semantically safe to allow
-> unprivileged users to mount it.  ramfs is safe for the same reasons so
-> allow either flavor of tmpfs to be mounted by a user namespace root
-> user.
-> 
-> The memory control group successfully limits how much memory tmpfs can
-> consume on any system that cares about a user namespace root using
-> tmpfs to exhaust memory the memory control group can be deployed.
-> 
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-
-> ---
->  mm/shmem.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index 5c90d84..197ca5e 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -2766,6 +2766,7 @@ static struct file_system_type shmem_fs_type = {
->  	.name		= "tmpfs",
->  	.mount		= shmem_mount,
->  	.kill_sb	= kill_litter_super,
-> +	.fs_flags	= FS_USERNS_MOUNT,
->  };
+On Fri, Jan 25, 2013 at 10:44:50AM +0800, fangxiaozhi 00110321 wrote:
+> diff -uprN linux-3.8-rc4_orig/drivers/usb/storage/usual-tables.c linux-3.8-rc4/drivers/usb/storage/usual-tables.c
+> --- linux-3.8-rc4_orig/drivers/usb/storage/usual-tables.c 2013-01-22 14:12:42.594238726 +0800
+> +++ linux-3.8-rc4/drivers/usb/storage/usual-tables.c 2013-01-22 14:16:01.426250199 +0800
+> @@ -41,6 +41,19 @@
+>  #define USUAL_DEV(useProto, useTrans) \
+>  { USB_INTERFACE_INFO(USB_CLASS_MASS_STORAGE, useProto, useTrans) }
 >  
->  int __init shmem_init(void)
-> @@ -2823,6 +2824,7 @@ static struct file_system_type shmem_fs_type = {
->  	.name		= "tmpfs",
->  	.mount		= ramfs_mount,
->  	.kill_sb	= kill_litter_super,
-> +	.fs_flags	= FS_USERNS_MOUNT,
->  };
->  
->  int __init shmem_init(void)
-> -- 
-> 1.7.5.4
+> +/* Define the device is matched with Vendor ID and interface descriptors */
+> +#define UNUSUAL_VENDOR_INTF(id_vendor, cl, sc, pr, \
+> +                 vendorName, productName, useProtocol, useTransport, \
+> +                 initFunction, flags) \
+> +{ \
+> + .match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
+> +                         | USB_DEVICE_ID_MATCH_VENDOR, \
+> + .idVendor    = (id_vendor), \
+> + .bInterfaceClass = (cl), \
+> + .bInterfaceSubClass = (sc), \
+> + .bInterfaceProtocol = (pr), \
+> + .driver_info = (flags) }
+
+The braces aren't required and you did not need in UNUSUAL_VENDOR_INTF.
+
+Sebastian
