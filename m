@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529Ab3A0Kfc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 05:35:32 -0500
-Received: from gerard.telenet-ops.be ([195.130.132.48]:59701 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756416Ab3A0Kdd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 05:33:33 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-arch@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-m68k@vger.kernel.org
-Subject: [PATCH v2 6/9] m68k: Provide dma_mmap_coherent() and dma_get_sgtable()
-Date: Sun, 27 Jan 2013 11:33:25 +0100
-Message-Id: <1359282808-31398-7-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1359282808-31398-1-git-send-email-geert@linux-m68k.org>
-References: <1359282808-31398-1-git-send-email-geert@linux-m68k.org>
+	id S1756484Ab3A0Khz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 05:37:55 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:53718 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756426Ab3A0Khx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 05:37:53 -0500
+Date: Sun, 27 Jan 2013 11:40:39 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Alex Shi <alex.shi@intel.com>
+Cc: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
+ power awareness scheduling
+Message-ID: <20130127104039.GC8894@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Alex Shi <alex.shi@intel.com>, torvalds@linux-foundation.org,
+	mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+	akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+	namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
+	gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+	viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+ <20130124094439.GB13463@pd.tnic>
+ <51014E34.60309@intel.com>
+ <510493E4.8060602@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <510493E4.8060602@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-m68k/allmodconfig:
+On Sun, Jan 27, 2013 at 10:41:40AM +0800, Alex Shi wrote:
+> Just rerun some benchmarks: kbuild, specjbb2005, oltp, tbench, aim9,
+> hackbench, fileio-cfq of sysbench, dbench, aiostress, multhreads
+> loopback netperf. on my core2, nhm, wsm, snb, platforms. no clear
+> performance change found.
 
-drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_mmap’:
-drivers/media/v4l2-core/videobuf2-dma-contig.c:204: error: implicit declaration of function ‘dma_mmap_coherent’
-drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_get_base_sgt’:
-drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function ‘dma_get_sgtable’
+Ok, good, You could put that in one of the commit messages so that it is
+there and people know that this patchset doesn't cause perf regressions
+with the bunch of benchmarks.
 
-For architectures using dma_map_ops, dma_mmap_coherent() and
-dma_get_sgtable() are provided in <asm-generic/dma-mapping-common.h>.
+> I also tested balance policy/powersaving policy with above benchmark,
+> found, the specjbb2005 drop much 30~50% on both of policy whenever
+> with openjdk or jrockit. and hackbench drops a lots with powersaving
+> policy on snb 4 sockets platforms. others has no clear change.
 
-M68k does not use dma_map_ops, hence it should implement them as inline
-stubs using dma_common_mmap() and dma_common_get_sgtable().
+I guess this is expected because there has to be some performance hit
+when saving power...
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-m68k@lists.linux-m68k.org
----
-v2: No changes
----
- arch/m68k/include/asm/dma-mapping.h |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+Thanks.
 
-diff --git a/arch/m68k/include/asm/dma-mapping.h b/arch/m68k/include/asm/dma-mapping.h
-index c68cdb4..05aa535 100644
---- a/arch/m68k/include/asm/dma-mapping.h
-+++ b/arch/m68k/include/asm/dma-mapping.h
-@@ -110,4 +110,14 @@ static inline int dma_mapping_error(struct device *dev, dma_addr_t handle)
- 	return 0;
- }
- 
-+/* drivers/base/dma-mapping.c */
-+extern int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
-+			   void *cpu_addr, dma_addr_t dma_addr, size_t size);
-+extern int dma_common_get_sgtable(struct device *dev, struct sg_table *sgt,
-+				  void *cpu_addr, dma_addr_t dma_addr,
-+				  size_t size);
-+
-+#define dma_mmap_coherent(d, v, c, h, s) dma_common_mmap(d, v, c, h, s)
-+#define dma_get_sgtable(d, t, v, h, s) dma_common_get_sgtable(d, t, v, h, s)
-+
- #endif  /* _M68K_DMA_MAPPING_H */
 -- 
-1.7.0.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
