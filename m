@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309Ab3A0Iwz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 03:52:55 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:34581 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756248Ab3A0Iww (ORCPT
+	id S1756335Ab3A0I7P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 03:59:15 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17973 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756248Ab3A0I7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 03:52:52 -0500
-Message-ID: <1359276768.5165.2.camel@phoenix>
-Subject: [PATCH] backlight: 88pm860x_bl: Add missing of_node_put()
-From: Axel Lin <axel.lin@ingics.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org
-Date: Sun, 27 Jan 2013 16:52:48 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 27 Jan 2013 03:59:10 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 27 Jan 2013 00:57:02 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <sameo@linux.intel.com>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <broonie@opensource.wolfsonmicro.com>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH RESEND 0/4] mfd/regulator: tps65090: add DT support and suspend/resume cleanups
+Date: Sun, 27 Jan 2013 14:27:11 +0530
+Message-ID: <1359277035-16854-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_find_node_by_name() returns a node pointer with refcount incremented, use
-of_node_put() on it when done.
+The patch series add DT support on TPS65090 device.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/video/backlight/88pm860x_bl.c |    1 +
- 1 file changed, 1 insertion(+)
+Also remove the suspend/resume implementation as it duplicates with
+irq_suspend/irq_resume().
 
-diff --git a/drivers/video/backlight/88pm860x_bl.c b/drivers/video/backlight/88pm860x_bl.c
-index c072ed9..4d2782f 100644
---- a/drivers/video/backlight/88pm860x_bl.c
-+++ b/drivers/video/backlight/88pm860x_bl.c
-@@ -184,6 +184,7 @@ static int pm860x_backlight_dt_init(struct platform_device *pdev,
- 			break;
- 		}
- 	}
-+	of_node_put(nproot);
- 	return 0;
- }
- #else
--- 
-1.7.9.5
+Resending this patch series incase of it is missed.
 
+Laxman Dewangan (4):
+  mfd: tps65090: add DT support for tps65090
+  regulator: tps65090: add DT support
+  mfd: tps65090: Pass irq domain when adding mfd sub devices
+  mfd: tps65090: remove suspend/resume callbacks
 
+ .../devicetree/bindings/regulator/tps65090.txt     |  121 ++++++++++++++++++++
+ drivers/mfd/tps65090.c                             |   77 ++++++++----
+ drivers/regulator/tps65090-regulator.c             |   96 +++++++++++++++-
+ include/linux/mfd/tps65090.h                       |    1 +
+ 4 files changed, 266 insertions(+), 29 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/tps65090.txt
 
