@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab3A0I7f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 03:59:35 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4455 "EHLO
+	id S1756457Ab3A0I7g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 03:59:36 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4461 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756278Ab3A0I7L (ORCPT
+	with ESMTP id S1756316Ab3A0I7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 03:59:11 -0500
+	Sun, 27 Jan 2013 03:59:13 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sun, 27 Jan 2013 00:59:00 -0800
+	by hqnvupgp05.nvidia.com on Sun, 27 Jan 2013 00:59:08 -0800
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <sameo@linux.intel.com>
 CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
         <broonie@opensource.wolfsonmicro.com>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH RESEND 1/4] mfd: tps65090: add DT support for tps65090
-Date: Sun, 27 Jan 2013 14:27:12 +0530
-Message-ID: <1359277035-16854-2-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH RESEND 4/4] mfd: tps65090: remove suspend/resume callbacks
+Date: Sun, 27 Jan 2013 14:27:15 +0530
+Message-ID: <1359277035-16854-5-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1359277035-16854-1-git-send-email-ldewangan@nvidia.com>
 References: <1359277035-16854-1-git-send-email-ldewangan@nvidia.com>
@@ -27,250 +27,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree support for the TI PMIC TPS65090.
-The device can be registered through platform or DT.
+The tps65090 mfd driver implement the suspend/resume callbacks
+which just disable and enable irqs in suspend/resume respectively.
 
-Add device tree binding document for this device.
+This operation is already done in irq suspend and irq_resume and
+hence it is not require to implement the same in the driver.
+
+Remove this non-require code.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- .../devicetree/bindings/regulator/tps65090.txt     |  121 ++++++++++++++++++++
- drivers/mfd/tps65090.c                             |   52 ++++++++-
- include/linux/mfd/tps65090.h                       |    1 +
- 3 files changed, 172 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/regulator/tps65090.txt
+This change is based on Mark Brown's comment when reviewing tps80031 mfd driver
+as we do not need suspend/resume just for disabling/enabling interrupts.
 
-diff --git a/Documentation/devicetree/bindings/regulator/tps65090.txt b/Documentation/devicetree/bindings/regulator/tps65090.txt
-new file mode 100644
-index 0000000..e81f47d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/tps65090.txt
-@@ -0,0 +1,121 @@
-+TPS65090 regulators
-+
-+Required properties:
-+- compatible: "ti,tps65090"
-+- reg: I2C slave address
-+- interrupts: the interrupt outputs of the controller
-+- regulators: A node that houses a sub-node for each regulator within the
-+  device. Each sub-node is identified using the node's name (or the deprecated
-+  regulator-compatible property if present), with valid values listed below.
-+  The content of each sub-node is defined by the standard binding for
-+  regulators; see regulator.txt.
-+  dcdc[1-3], fet[1-7] and ldo[1-2] respectively.
-+- vsys[1-3]-supply: The input supply for DCDC[1-3] respectively.
-+- infet[1-7]-supply: The input supply for FET[1-7] respectively.
-+- vsys_l[1-2]-supply: The input supply for LDO[1-2] respectively.
-+
-+Optional properties:
-+- ti,enable-ext-control: This is applicable for DCDC1, DCDC2 and DCDC3.
-+  If DCDCs are externally controlled then this property should be there.
-+- gpio: This is applicable for DCDC1, DCDC2 and DCDC3. If DCDCs are
-+  extrenally controlled and if it is from GPIO then gpio number should
-+  be provided. If it is externally controlled and no gpio entry then
-+  driver will just configure this rails as external control and will not
-+  provide any enable/disable APIs.
-+
-+Each regulator is defined using the standard binding for regulators.
-+
-+Example:
-+
-+	tps65090@48 {
-+		compatible = "ti,tps65090";
-+		reg = <0x48>;
-+		interrupts = <0 88 0x4>;
-+
-+		vsys1-supply = <&some_reg>;
-+		vsys2-supply = <&some_reg>;
-+		vsys3-supply = <&some_reg>;
-+		infet1-supply = <&some_reg>;
-+		infet2-supply = <&some_reg>;
-+		infet3-supply = <&some_reg>;
-+		infet4-supply = <&some_reg>;
-+		infet5-supply = <&some_reg>;
-+		infet6-supply = <&some_reg>;
-+		infet7-supply = <&some_reg>;
-+		vsys_l1-supply = <&some_reg>;
-+		vsys_l2-supply = <&some_reg>;
-+
-+		regulators {
-+			dcdc1 {
-+				regulator-name = "dcdc1";
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			dcdc2 {
-+				regulator-name = "dcdc2";
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			dcdc3 {
-+				regulator-name = "dcdc3";
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			fet1 {
-+				regulator-name = "fet1";
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			fet2 {
-+				regulator-name = "fet2";
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			fet3 {
-+				regulator-name = "fet3";
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			fet4 {
-+				regulator-name = "fet4";
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			fet5 {
-+				regulator-name = "fet5";
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			fet6 {
-+				regulator-name = "fet6";
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			fet7 {
-+				regulator-name = "fet7";
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			ldo1 {
-+				regulator-name = "ldo1";
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			ldo2 {
-+				regulator-name = "ldo2";
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+		};
-+	};
+Resending the patch wth Mark Acks.
+
+ drivers/mfd/tps65090.c |   23 -----------------------
+ 1 files changed, 0 insertions(+), 23 deletions(-)
+
 diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
-index 8d12a8e..e4cf030 100644
+index 3e987be..995e7b3 100644
 --- a/drivers/mfd/tps65090.c
 +++ b/drivers/mfd/tps65090.c
-@@ -25,6 +25,8 @@
- #include <linux/i2c.h>
- #include <linux/mfd/core.h>
- #include <linux/mfd/tps65090.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- #include <linux/err.h>
+@@ -262,28 +262,6 @@ static int tps65090_i2c_remove(struct i2c_client *client)
+ 	return 0;
+ }
  
- #define NUM_INT_REG 2
-@@ -148,6 +150,37 @@ static const struct regmap_config tps65090_regmap_config = {
- 	.volatile_reg = is_volatile_reg,
- };
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id tps65090_of_match[] = {
-+	{ .compatible = "ti,tps65090",},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, tps65090_of_match);
-+
-+static struct tps65090_platform_data *
-+	of_get_tps65090_platform_data(struct device *dev)
-+{
-+	struct tps65090_platform_data *pdata;
-+
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		dev_err(dev, "Memory alloc failed for platform data\n");
-+		return ERR_PTR(-ENOMEM);
-+	}
-+	/*
-+	 * Nothing to set/parse here as DT parsing of regulators will be
-+	 * done in regulator driver.
-+	 */
-+	return pdata;
-+}
-+#else
-+static struct tps65090_platform_data *
-+	of_get_tps65090_platform_data(struct device *dev)
-+{
-+	return NULL;
-+}
-+#endif
-+
- static int tps65090_i2c_probe(struct i2c_client *client,
- 					const struct i2c_device_id *id)
- {
-@@ -155,9 +188,22 @@ static int tps65090_i2c_probe(struct i2c_client *client,
- 	struct tps65090 *tps65090;
- 	int ret;
- 
--	if (!pdata) {
-+	if (client->dev.of_node) {
-+		const struct of_device_id *match;
-+
-+		match = of_match_device(of_match_ptr(tps65090_of_match),
-+				&client->dev);
-+		if (!match) {
-+			dev_err(&client->dev, "No match device found\n");
-+			return -ENODEV;
-+		}
-+	}
-+
-+	if (!pdata && client->dev.of_node)
-+		pdata = of_get_tps65090_platform_data(&client->dev);
-+	if (IS_ERR_OR_NULL(pdata)) {
- 		dev_err(&client->dev, "tps65090 requires platform data\n");
--		return -EINVAL;
-+		return (pdata) ? PTR_ERR(pdata) : -EINVAL;
- 	}
- 
- 	tps65090 = devm_kzalloc(&client->dev, sizeof(*tps65090), GFP_KERNEL);
-@@ -167,6 +213,7 @@ static int tps65090_i2c_probe(struct i2c_client *client,
- 	}
- 
- 	tps65090->dev = &client->dev;
-+	tps65090->pdata = pdata;
- 	i2c_set_clientdata(client, tps65090);
- 
- 	tps65090->rmap = devm_regmap_init_i2c(client, &tps65090_regmap_config);
-@@ -247,6 +294,7 @@ static struct i2c_driver tps65090_driver = {
- 	.driver	= {
+-#ifdef CONFIG_PM_SLEEP
+-static int tps65090_suspend(struct device *dev)
+-{
+-	struct i2c_client *client = to_i2c_client(dev);
+-	if (client->irq)
+-		disable_irq(client->irq);
+-	return 0;
+-}
+-
+-static int tps65090_resume(struct device *dev)
+-{
+-	struct i2c_client *client = to_i2c_client(dev);
+-	if (client->irq)
+-		enable_irq(client->irq);
+-	return 0;
+-}
+-#endif
+-
+-static const struct dev_pm_ops tps65090_pm_ops = {
+-	SET_SYSTEM_SLEEP_PM_OPS(tps65090_suspend, tps65090_resume)
+-};
+-
+ static const struct i2c_device_id tps65090_id_table[] = {
+ 	{ "tps65090", 0 },
+ 	{ },
+@@ -295,7 +273,6 @@ static struct i2c_driver tps65090_driver = {
  		.name	= "tps65090",
  		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(tps65090_of_match),
- 		.pm	= &tps65090_pm_ops,
+ 		.of_match_table = of_match_ptr(tps65090_of_match),
+-		.pm	= &tps65090_pm_ops,
  	},
  	.probe		= tps65090_i2c_probe,
-diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
-index 6694cf4..4403c54 100644
---- a/include/linux/mfd/tps65090.h
-+++ b/include/linux/mfd/tps65090.h
-@@ -67,6 +67,7 @@ struct tps65090 {
- 	struct device		*dev;
- 	struct regmap		*rmap;
- 	struct regmap_irq_chip_data *irq_data;
-+	struct tps65090_platform_data *pdata;
- };
- 
- /*
+ 	.remove		= tps65090_i2c_remove,
 -- 
 1.7.1.1
 
