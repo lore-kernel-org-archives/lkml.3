@@ -1,145 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab3A0Ohj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 09:37:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60246 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754965Ab3A0Ohg (ORCPT
+	id S1756167Ab3A0O4n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 09:56:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59180 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755995Ab3A0O4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 09:37:36 -0500
-Date: Sun, 27 Jan 2013 06:37:00 -0800
-From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
-Message-ID: <tip-62188451f0d63add7ad0cd2a1ae269d600c1663d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, oleg@redhat.com, sgruszka@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, oleg@redhat.com, sgruszka@redhat.com
-In-Reply-To: <1359217182-25184-1-git-send-email-fweisbec@gmail.com>
-References: <1359217182-25184-1-git-send-email-fweisbec@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] cputime:
-  Avoid multiplication overflow on utime scaling
-Git-Commit-ID: 62188451f0d63add7ad0cd2a1ae269d600c1663d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 27 Jan 2013 09:56:40 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: =?UTF-8?q?=5B3=2E5=2Ey=2Ez=20extended=20stable=5D=20Linux=203=2E5=2E7=2E4?=
+Date: Sun, 27 Jan 2013 12:56:32 -0200
+Message-Id: <1359298593-4144-1-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Extended-Stable: 3.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 27 Jan 2013 06:37:06 -0800 (PST)
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  62188451f0d63add7ad0cd2a1ae269d600c1663d
-Gitweb:     http://git.kernel.org/tip/62188451f0d63add7ad0cd2a1ae269d600c1663d
-Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Sat, 26 Jan 2013 17:19:42 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 27 Jan 2013 14:04:44 +0100
+I am announcing the release of the 3.5.7.4 tree of stable patches.
 
-cputime: Avoid multiplication overflow on utime scaling
+This tree picks up the latest 3.5 stable release upstream, and add patches
+on top that were later marked for stable but can't be added to 3.5, as
+it is not anymore an stable series maintained upstream.
 
-We scale stime, utime values based on rtime (sum_exec_runtime
-converted to jiffies). During scaling we multiple rtime * utime,
-which seems to be fine, since both values are converted to u64,
-but it's not.
+The tree is maintained by the Ubuntu Kernel Team, with the intention
+to continue to provide support for the 3.5 series. Anyone is welcomed
+on using it or contributing to this effort.
 
-Let assume HZ is 1000 - 1ms tick. Process consist of 64 threads,
-run for 1 day, threads utilize 100% cpu on user space. Machine
-has 64 cpus.
+For more info, see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
 
-Process rtime = utime will be 64 * 24 * 60 * 60 * 1000 jiffies,
-which is 0x149970000. Multiplication rtime * utime result is
-0x1a855771100000000, which can not be covered in 64 bits.
+The updated 3.5.y tree can be found at: 
 
-Result of overflow is stall of utime values visible in user
-space (prev_utime in kernel), even if application still consume
-lot of CPU time.
+  git://kernel.ubuntu.com/ubuntu/linux.git linux-3.5.y
 
-A solution to solve this is to perform the multiplication on
-stime instead of utime. It's easy to grow the utime value fast
-with a CPU bound thread in userspace for example. Now we assume
-that doing so with stime is much harder. In most cases a task
-shouldn't ever spend much time in kernel space as it tends to
-sleep waiting for jobs completion when they take long to
-achieve. IO is the typical example of that.
+The diffstat and shortlog with changes since previous v3.5.7.3 release are
+shown below.
 
-Hence scaling the cputime by performing the multiplication on
-stime instead of utime should considerably reduce the chances of
-an overflow on most workloads.
+-Herton
 
-This is largely inspired by a patch from Stanislaw Gruszka:
-http://lkml.kernel.org/r/20130107113144.GA7544@redhat.com
+-- 
+ Makefile                                        |    2 +-
+ arch/arm/mach-pxa/include/mach/mfp-pxa27x.h     |    3 +
+ arch/arm/mach-pxa/pxa27x.c                      |    4 +-
+ arch/s390/include/asm/timex.h                   |   28 ++++
+ arch/s390/kernel/time.c                         |    2 +-
+ arch/s390/kvm/interrupt.c                       |    2 +-
+ arch/sh/include/asm/elf.h                       |    4 +-
+ arch/x86/kernel/setup.c                         |   78 +++++++++++
+ drivers/gpu/drm/i915/i915_gem.c                 |    7 +-
+ drivers/gpu/drm/nouveau/nv04_dfp.c              |    2 +-
+ drivers/gpu/drm/nouveau/nv10_fence.c            |    4 +
+ drivers/gpu/drm/radeon/r600_cs.c                |    6 +-
+ drivers/gpu/drm/radeon/radeon_cs.c              |    5 +-
+ drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    8 ++
+ drivers/gpu/drm/udl/udl_connector.c             |   17 ++-
+ drivers/iommu/intel-iommu.c                     |   31 +++++
+ drivers/net/ethernet/intel/igb/igb_main.c       |   22 ++-
+ drivers/net/wireless/b43/b43.h                  |    5 +
+ drivers/net/wireless/b43/main.c                 |   54 ++++++--
+ drivers/net/wireless/b43/main.h                 |    5 +-
+ drivers/net/wireless/mwifiex/sta_ioctl.c        |   21 ++-
+ drivers/net/wireless/rt2x00/rt2800usb.c         |    1 +
+ drivers/platform/x86/samsung-laptop.c           |   10 ++
+ drivers/platform/x86/sony-laptop.c              |   15 +-
+ drivers/regulator/max8997.c                     |   36 +++--
+ drivers/regulator/max8998.c                     |  167 +++++++----------------
+ drivers/scsi/sd.c                               |   13 +-
+ drivers/staging/comedi/comedi_fops.c            |    3 +
+ drivers/staging/comedi/drivers/comedi_test.c    |    2 +-
+ drivers/staging/comedi/drivers/ni_pcimio.c      |   16 +--
+ drivers/staging/rtl8712/usb_intf.c              |    2 +
+ drivers/staging/speakup/synth.c                 |    4 +-
+ drivers/target/target_core_transport.c          |    9 +-
+ drivers/target/tcm_fc/tfc_sess.c                |   12 +-
+ drivers/usb/chipidea/host.c                     |    3 +
+ drivers/usb/class/cdc-acm.c                     |    6 +
+ drivers/usb/core/hub.c                          |  120 ++++++++++++----
+ drivers/usb/core/quirks.c                       |    3 +
+ drivers/usb/gadget/dummy_hcd.c                  |    9 +-
+ drivers/usb/host/xhci-hub.c                     |   38 +++++-
+ drivers/usb/host/xhci-mem.c                     |    2 +
+ drivers/usb/host/xhci-ring.c                    |    9 ++
+ drivers/usb/host/xhci.c                         |   10 ++
+ drivers/usb/musb/musb_core.c                    |    5 +-
+ drivers/usb/serial/ftdi_sio.c                   |    2 +
+ drivers/usb/serial/ftdi_sio_ids.h               |    6 +
+ drivers/usb/serial/io_ti.c                      |    3 +
+ drivers/usb/serial/option.c                     |   18 ++-
+ include/linux/audit.h                           |    4 +-
+ kernel/auditsc.c                                |   14 +-
+ mm/bootmem.c                                    |   24 +++-
+ mm/compaction.c                                 |    6 +-
+ mm/page_alloc.c                                 |    2 +-
+ net/mac80211/ibss.c                             |    9 +-
+ net/mac80211/ieee80211_i.h                      |   11 +-
+ net/mac80211/mlme.c                             |   73 +++++++---
+ net/mac80211/scan.c                             |   47 +++----
+ net/mac80211/sta_info.c                         |    2 +-
+ net/sunrpc/sched.c                              |    3 +-
+ net/sunrpc/xprt.c                               |   12 +-
+ sound/arm/pxa2xx-ac97-lib.c                     |   26 +++-
+ sound/pci/hda/patch_conexant.c                  |   16 ---
+ sound/soc/codecs/wm2000.c                       |    4 +-
+ sound/soc/codecs/wm2200.c                       |    8 +-
+ sound/soc/codecs/wm5100.c                       |    6 -
+ sound/soc/soc-pcm.c                             |    1 +
+ sound/usb/quirks.c                              |    8 +-
+ 67 files changed, 749 insertions(+), 361 deletions(-)
 
-Inspired-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1359217182-25184-1-git-send-email-fweisbec@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/cputime.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+Andreas Fleig (1):
+      USB: Add device quirk for Microsoft VX700 webcam
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 293b202..825a956 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -509,11 +509,11 @@ EXPORT_SYMBOL_GPL(vtime_account);
- # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
- #endif
- 
--static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
-+static cputime_t scale_stime(cputime_t stime, cputime_t rtime, cputime_t total)
- {
- 	u64 temp = (__force u64) rtime;
- 
--	temp *= (__force u64) utime;
-+	temp *= (__force u64) stime;
- 
- 	if (sizeof(cputime_t) == 4)
- 		temp = div_u64(temp, (__force u32) total);
-@@ -531,10 +531,10 @@ static void cputime_adjust(struct task_cputime *curr,
- 			   struct cputime *prev,
- 			   cputime_t *ut, cputime_t *st)
- {
--	cputime_t rtime, utime, total;
-+	cputime_t rtime, stime, total;
- 
--	utime = curr->utime;
--	total = utime + curr->stime;
-+	stime = curr->stime;
-+	total = stime + curr->utime;
- 
- 	/*
- 	 * Tick based cputime accounting depend on random scheduling
-@@ -549,17 +549,17 @@ static void cputime_adjust(struct task_cputime *curr,
- 	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
- 
- 	if (total)
--		utime = scale_utime(utime, rtime, total);
-+		stime = scale_stime(stime, rtime, total);
- 	else
--		utime = rtime;
-+		stime = rtime;
- 
- 	/*
- 	 * If the tick based count grows faster than the scheduler one,
- 	 * the result of the scaling may go backward.
- 	 * Let's enforce monotonicity.
- 	 */
--	prev->utime = max(prev->utime, utime);
--	prev->stime = max(prev->stime, rtime - prev->utime);
-+	prev->stime = max(prev->stime, stime);
-+	prev->utime = max(prev->utime, rtime - prev->stime);
- 
- 	*ut = prev->utime;
- 	*st = prev->stime;
+Axel Lin (6):
+      ASoC: wm2200: Fix setting dai format in wm2200_set_fmt
+      regulator: max8997: Use uV in voltage_map_desc
+      regulator: max8998: Convert to regulator_list_voltage_linear()
+      regulator: max8998: Convert to set_voltage_sel and regulator_map_voltage_linear
+      regulator: max8998: Use uV in voltage_map_desc
+      regulator: max8998: Ensure enough delay time for max8998_set_voltage_buck_time_sel
+
+Bing Zhao (1):
+      mwifiex: check wait_event_interruptible return value
+
+Bjørn Mork (2):
+      USB: option: blacklist network interface on ZTE MF880
+      USB: option: add Telekom Speedstick LTE II
+
+Chris Wilson (1):
+      drm/i915; Only increment the user-pin-count after successfully pinning the bo
+
+David Henningsson (2):
+      Revert "ALSA: hda - Shut up pins at power-saving mode with Conexnat codecs"
+      ALSA: usb - fix race in creation of M-Audio Fast track pro driver
+
+Denis N Ladin (1):
+      USB: cdc-acm: Add support for "PSC Scanning, Magellan 800i"
+
+Dzianis Kahanovich (1):
+      USB: option: add Nexpring NP10T terminal id
+
+Fabio Estevam (1):
+      usb: chipidea: Allow disabling streaming not only in udc mode
+
+Hannes Reinecke (1):
+      target: use correct sense code for LUN communication failure
+
+Hans de Goede (3):
+      udldrmfb: Fix EDID not working with monitors with EDID extension blocks
+      udldrmfb: udl_get_edid: usb_control_msg buffer must not be on the stack
+      udldrmfb: udl_get_edid: drop unneeded i--
+
+Heiko Carstens (1):
+      s390/time: fix sched_clock() overflow
+
+Herton Ronaldo Krzesinski (1):
+      Linux 3.5.7.4
+
+Ian Abbott (2):
+      staging: comedi: prevent auto-unconfig of manually configured devices
+      staging: comedi: comedi_test: fix race when cancelling command
+
+Ilija Hadzic (2):
+      drm/radeon: fix NULL pointer dereference in UMS mode
+      drm/radeon: fix a bogus kfree
+
+Jason Liu (1):
+      mm: compaction: fix echo 1 > compact_memory return error issue
+
+Jean-Christian de Rivaz (1):
+      Add CDC-ACM support for the CX93010-2x UCMxx USB Modem
+
+Jerome Glisse (1):
+      radeon/kms: force rn50 chip to always report connected on analog output
+
+Jesse Barnes (1):
+      x86/Sandy Bridge: reserve pages when integrated graphics is present
+
+Joel D. Diaz (1):
+      [SCSI] sd: Reshuffle init_sd to avoid crash
+
+Johannes Berg (2):
+      mac80211: use del_timer_sync for final sta cleanup timer deletion
+      mac80211: fix dtim_period in hidden SSID AP association
+
+Kees Cook (1):
+      audit: create explicit AUDIT_SECCOMP event type
+
+Larry Finger (2):
+      staging: r8712u: Add new device ID
+      b43: Fix firmware loading when driver is built into the kernel
+
+Laura Abbott (1):
+      mm: use aligned zone start for pfn_to_bitidx calculation
+
+Maia Kozheva (1):
+      rt2800usb: Add support for 2001:3c1e (D-Link DWA-125 rev B1) USB Wi-Fi adapter
+
+Marcin Slusarz (2):
+      drm/nouveau: fix blank LVDS screen regression on pre-nv50 cards
+      drm/nv17-50: restore fence buffer on resume
+
+Mark Brown (3):
+      ASoC: wm2200: Remove DSP B and left justified AIF modes
+      ASoC: wm5100: Remove DSP B and left justified formats
+      ASoC: wm2000: Fix sense of speech clarity enable
+
+Mark Rustad (2):
+      tcm_fc: Do not indicate retry capability to initiators
+      tcm_fc: Do not report target role when target is not defined
+
+Mattia Dongili (1):
+      sony-laptop: fix SNC buffer calls when SN06 returns Integers
+
+Max Filippov (1):
+      mm: bootmem: fix free_all_bootmem_core() with odd bitmap alignment
+
+Mike Dunn (2):
+      ALSA: pxa27x: fix ac97 cold reset
+      ALSA: pxa27x: fix ac97 warm reset
+
+Nickolai Zeldovich (1):
+      staging: speakup: avoid out-of-range access in synth_init()
+
+Oliver Neukum (1):
+      USB: hub: handle claim of enabled remote wakeup after reset
+
+Patrick Lai (1):
+      ASoC: pcm: allow backend hardware to be freed in pause state
+
+Quentin.Li (1):
+      USB: option: Add new MEDIATEK PID support
+
+Roland Dreier (2):
+      target: Fix use-after-free in LUN RESET handling
+      target: Release se_cmd when LUN lookup fails for TMR
+
+Samuel Thibault (1):
+      staging: speakup: avoid out-of-range access in synth_add()
+
+Sarah Sharp (8):
+      xhci: Handle HS bulk/ctrl endpoints that don't NAK.
+      USB: Handle auto-transition from hot to warm reset.
+      USB: Ignore xHCI Reset Device status.
+      USB: Allow USB 3.0 ports to be disabled.
+      USB: Increase reset timeout.
+      USB: Ignore port state until reset completes.
+      USB: Handle warm reset failure on empty port.
+      xhci: Avoid "dead ports", add roothub port polling.
+
+Sebastian Andrzej Siewior (1):
+      usb: gadget: dummy: fix enumeration with g_multi
+
+Sergei Shtylyov (1):
+      usb: musb: core: print new line in the driver banner again
+
+Seth Forshee (1):
+      samsung-laptop: Add quirk for broken acpi_video backlight on N250P
+
+Stanislaw Gruszka (1):
+      mac80211: fix ibss scanning
+
+Stefan Assmann (1):
+      igb: release already assigned MSI-X interrupts if setup fails
+
+Thomas Schwinge (1):
+      sh: Fix FDPIC binary loader
+
+Tom Mingarelli (1):
+      intel-iommu: Prevent devices with RMRRs from being placed into SI Domain
+
+Tomasz Mloduchowski (1):
+      usb: ftdi_sio: Crucible Technologies COMET Caller ID - pid added
+
+Trond Myklebust (1):
+      SUNRPC: Ensure we release the socket write lock if the rpc_task exits early
+
+Wolfgang Frisch (1):
+      USB: io_ti: Fix NULL dereference in chase_port()
+
+Éric Piel (1):
+      staging: comedi: fix minimum AO period for NI 625x and NI 628x
+
