@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab3A0AW7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 19:22:59 -0500
-Received: from mga11.intel.com ([192.55.52.93]:16562 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754852Ab3A0AW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 19:22:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,545,1355126400"; 
-   d="scan'208";a="282617477"
-Date: Sun, 27 Jan 2013 01:22:51 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] mfd: wm8994: Use devm_regulator_bulk_get API
-Message-ID: <20130127002251.GE1174@sortiz-mobl>
-References: <1357633882-5191-1-git-send-email-sachin.kamat@linaro.org>
- <20130108103653.GH4544@opensource.wolfsonmicro.com>
- <CAK9yfHzgnH3z57=yjHPeURP7=SU5oYPoyM3meeV=h295T+ZW3Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK9yfHzgnH3z57=yjHPeURP7=SU5oYPoyM3meeV=h295T+ZW3Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755278Ab3A0AXO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 19:23:14 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:39071 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073Ab3A0AXN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 19:23:13 -0500
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 02/10] rcu: Make rcu_is_cpu_rrupt_from_idle helper functions static
+Date: Sat, 26 Jan 2013 16:15:04 -0800
+Message-Id: <1359245712-3843-2-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1359245712-3843-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130127001454.GA2682@linux.vnet.ibm.com>
+ <1359245712-3843-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012700-4834-0000-0000-00000303B3E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sachin,
+From: Josh Triplett <josh@joshtriplett.org>
 
-On Thu, Jan 24, 2013 at 09:13:20AM +0530, Sachin Kamat wrote:
-> Hi Samuel,
-> 
-> On 8 January 2013 16:06, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> > On Tue, Jan 08, 2013 at 02:01:22PM +0530, Sachin Kamat wrote:
-> >> devm_regulator_bulk_get is device managed and saves some cleanup
-> >> and exit code.
-> >
-> > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> 
-> Would you be picking this patch up?
-I will, yes.
+Both rcutiny and rcutree define a helper function named
+rcu_is_cpu_rrupt_from_idle(), each used exactly once, later in the
+same file.  This commit therefore declares these helper functions static.
 
-Cheers,
-Samuel.
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcutiny.c |    2 +-
+ kernel/rcutree.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index e7dce58..9f72a0f 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -193,7 +193,7 @@ EXPORT_SYMBOL(rcu_is_cpu_idle);
+  * interrupts don't count, we must be running at the first interrupt
+  * level.
+  */
+-int rcu_is_cpu_rrupt_from_idle(void)
++static int rcu_is_cpu_rrupt_from_idle(void)
+ {
+ 	return rcu_dynticks_nesting <= 1;
+ }
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index e441b77..cceda76 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -727,7 +727,7 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cpu_online);
+  * interrupt from idle, return true.  The caller must have at least
+  * disabled preemption.
+  */
+-int rcu_is_cpu_rrupt_from_idle(void)
++static int rcu_is_cpu_rrupt_from_idle(void)
+ {
+ 	return __get_cpu_var(rcu_dynticks).dynticks_nesting <= 1;
+ }
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.8
+
