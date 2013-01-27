@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab3A0ARN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 19:17:13 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:52004 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295Ab3A0ARL (ORCPT
+	id S1754965Ab3A0AT1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 19:19:27 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:58462 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754777Ab3A0ATX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 19:17:11 -0500
-X-Nat-Received: from [202.181.97.72]:49680 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1359245813.10089
-To: linus.walleij@linaro.org
-Cc: rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        rmk+kernel@arm.linux.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [3.8-rc4 arm] SCSI_SYM53C8XX_2 module cannot register IRQ
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201301221817.IDD95831.HVOOFMFJOLFSQt@I-love.SAKURA.ne.jp>
-	<CACRpkdYRM9MDt92juV+x9w9BUnHpCSd2KCkZ5F7zwPfhn939ZQ@mail.gmail.com>
-	<201301222123.CEJ65174.StJFMOQFVFHOLO@I-love.SAKURA.ne.jp>
-	<201301261717.JGJ04628.OOFVHFLOFJMtSQ@I-love.SAKURA.ne.jp>
-	<CACRpkdZrtBV-TJrywL4OeiuyD61qt0+txjQ51KFcmtWSc9OYXg@mail.gmail.com>
-In-Reply-To: <CACRpkdZrtBV-TJrywL4OeiuyD61qt0+txjQ51KFcmtWSc9OYXg@mail.gmail.com>
-Message-Id: <201301270916.GAE48437.JQSVFFOHFMtLOO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sun, 27 Jan 2013 09:16:51 +0900
-Mime-Version: 1.0
+	Sat, 26 Jan 2013 19:19:23 -0500
+Date: Sat, 26 Jan 2013 16:18:04 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: [PATCH tip/core/rcu 0/2] Callback tagging for 3.9
+Message-ID: <20130127001804.GA4122@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 26012013 #9453734, status: clean
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012700-7408-0000-0000-00000C4018CD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote:
-> I'm trying to reproduce this, but how do you reconfigure the kernel to
-> get PCI, SCSI and such stuff enabled?
-> 
-> The stock versatile_defconfig does not even have SCSI enabled...
+Hello!
 
-I'm using a customized config for qemu. I've just updated the config to
-http://I-love.SAKURA.ne.jp/tmp/config-3.8-rc1-arm .
+This series contains callback-tagging patches.  These were sent earlier
+in the idle/no-CBs series, but have been isolated as the more trustworthy
+part of that series.
 
-Regards.
+1.	Tag callback lists with the grace-period number that they are
+	waiting for.  This change enables a number of optimizations
+	for RCU_FAST_NO_HZ, and though it add a bit of code, it greatly
+	simplifies RCU's callback handling.
+2.	Trace callback acceleration (which is when RCU notices that a
+	group of callbacks doesn't actually need to wait as long as it
+	previously thought).
+
+							Thanx, Paul
+
+
+ b/include/trace/events/rcu.h |    6 -
+ b/kernel/rcutree.c           |  201 +++++++++++++++++++++++++++++++++++++------
+ b/kernel/rcutree.h           |    2 
+ 3 files changed, 179 insertions(+), 30 deletions(-)
+
