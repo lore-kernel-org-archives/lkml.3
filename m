@@ -1,207 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab3A0FTQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 00:19:16 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:57678 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566Ab3A0FQG (ORCPT
+	id S1755990Ab3A0FrU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 00:47:20 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:37999 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab3A0FrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 00:16:06 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 08/12] rcu: Repurpose no-CBs event tracing to future-GP events
-Date: Sat, 26 Jan 2013 16:29:59 -0800
-Message-Id: <1359246603-6863-8-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1359246603-6863-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130127002943.GA6067@linux.vnet.ibm.com>
- <1359246603-6863-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012705-7282-0000-0000-00001386F396
+	Sun, 27 Jan 2013 00:47:17 -0500
+Message-ID: <1359265635.6763.0.camel@kernel>
+Subject: Re: [PATCH 7/11] ksm: make KSM page migration possible
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Sat, 26 Jan 2013 23:47:15 -0600
+In-Reply-To: <alpine.LNX.2.00.1301251802050.29196@eggly.anvils>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
+	 <alpine.LNX.2.00.1301251802050.29196@eggly.anvils>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+On Fri, 2013-01-25 at 18:03 -0800, Hugh Dickins wrote:
+> KSM page migration is already supported in the case of memory hotremove,
+> which takes the ksm_thread_mutex across all its migrations to keep life
+> simple.
+> 
+> But the new KSM NUMA merge_across_nodes knob introduces a problem, when
+> it's set to non-default 0: if a KSM page is migrated to a different NUMA
+> node, how do we migrate its stable node to the right tree?  And what if
+> that collides with an existing stable node?
+> 
+> So far there's no provision for that, and this patch does not attempt
+> to deal with it either.  But how will I test a solution, when I don't
+> know how to hotremove memory?  The best answer is to enable KSM page
+> migration in all cases now, and test more common cases.  With THP and
+> compaction added since KSM came in, page migration is now mainstream,
+> and it's a shame that a KSM page can frustrate freeing a page block.
+> 
+> Without worrying about merge_across_nodes 0 for now, this patch gets
+> KSM page migration working reliably for default merge_across_nodes 1
+> (but leave the patch enabling it until near the end of the series).
+> 
+> It's much simpler than I'd originally imagined, and does not require
+> an additional tier of locking: page migration relies on the page lock,
+> KSM page reclaim relies on the page lock, the page lock is enough for
+> KSM page migration too.
+> 
+> Almost all the care has to be in get_ksm_page(): that's the function
+> which worries about when a stable node is stale and should be freed,
+> now it also has to worry about the KSM page being migrated.
+> 
+> The only new overhead is an additional put/get/lock/unlock_page when
+> stable_tree_search() arrives at a matching node: to make sure migration
+> respects the raised page count, and so does not migrate the page while
+> we're busy with it here.  That's probably avoidable, either by changing
+> internal interfaces from using kpage to stable_node, or by moving the
+> ksm_migrate_page() callsite into a page_freeze_refs() section (even if
+> not swapcache); but this works well, I've no urge to pull it apart now.
+> 
+> (Descents of the stable tree may pass through nodes whose KSM pages are
+> under migration: being unlocked, the raised page count does not prevent
+> that, nor need it: it's safe to memcmp against either old or new page.)
+> 
+> You might worry about mremap, and whether page migration's rmap_walk
+> to remove migration entries will find all the KSM locations where it
+> inserted earlier: that should already be handled, by the satisfyingly
+> heavy hammer of move_vma()'s call to ksm_madvise(,,,MADV_UNMERGEABLE,).
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
+>  mm/ksm.c     |   94 ++++++++++++++++++++++++++++++++++++++-----------
+>  mm/migrate.c |    5 ++
+>  2 files changed, 77 insertions(+), 22 deletions(-)
+> 
+> --- mmotm.orig/mm/ksm.c	2013-01-25 14:37:00.768206145 -0800
+> +++ mmotm/mm/ksm.c	2013-01-25 14:37:03.832206218 -0800
+> @@ -499,6 +499,7 @@ static void remove_node_from_stable_tree
+>   * In which case we can trust the content of the page, and it
+>   * returns the gotten page; but if the page has now been zapped,
+>   * remove the stale node from the stable tree and return NULL.
+> + * But beware, the stable node's page might be being migrated.
+>   *
+>   * You would expect the stable_node to hold a reference to the ksm page.
+>   * But if it increments the page's count, swapping out has to wait for
+> @@ -509,44 +510,77 @@ static void remove_node_from_stable_tree
+>   * pointing back to this stable node.  This relies on freeing a PageAnon
+>   * page to reset its page->mapping to NULL, and relies on no other use of
+>   * a page to put something that might look like our key in page->mapping.
+> - *
+> - * include/linux/pagemap.h page_cache_get_speculative() is a good reference,
+> - * but this is different - made simpler by ksm_thread_mutex being held, but
+> - * interesting for assuming that no other use of the struct page could ever
+> - * put our expected_mapping into page->mapping (or a field of the union which
+> - * coincides with page->mapping).
+> - *
+> - * Note: it is possible that get_ksm_page() will return NULL one moment,
+> - * then page the next, if the page is in between page_freeze_refs() and
+> - * page_unfreeze_refs(): this shouldn't be a problem anywhere, the page
+>   * is on its way to being freed; but it is an anomaly to bear in mind.
+>   */
+>  static struct page *get_ksm_page(struct stable_node *stable_node, bool locked)
+>  {
+>  	struct page *page;
+>  	void *expected_mapping;
+> +	unsigned long kpfn;
+>  
+> -	page = pfn_to_page(stable_node->kpfn);
+>  	expected_mapping = (void *)stable_node +
+>  				(PAGE_MAPPING_ANON | PAGE_MAPPING_KSM);
+> -	if (page->mapping != expected_mapping)
+> -		goto stale;
+> -	if (!get_page_unless_zero(page))
+> +again:
+> +	kpfn = ACCESS_ONCE(stable_node->kpfn);
+> +	page = pfn_to_page(kpfn);
+> +
+> +	/*
+> +	 * page is computed from kpfn, so on most architectures reading
+> +	 * page->mapping is naturally ordered after reading node->kpfn,
+> +	 * but on Alpha we need to be more careful.
+> +	 */
+> +	smp_read_barrier_depends();
+> +	if (ACCESS_ONCE(page->mapping) != expected_mapping)
+>  		goto stale;
+> -	if (page->mapping != expected_mapping) {
+> +
+> +	/*
+> +	 * We cannot do anything with the page while its refcount is 0.
+> +	 * Usually 0 means free, or tail of a higher-order page: in which
+> +	 * case this node is no longer referenced, and should be freed;
+> +	 * however, it might mean that the page is under page_freeze_refs().
+> +	 * The __remove_mapping() case is easy, again the node is now stale;
+> +	 * but if page is swapcache in migrate_page_move_mapping(), it might
+> +	 * still be our page, in which case it's essential to keep the node.
+> +	 */
+> +	while (!get_page_unless_zero(page)) {
+> +		/*
+> +		 * Another check for page->mapping != expected_mapping would
+> +		 * work here too.  We have chosen the !PageSwapCache test to
+> +		 * optimize the common case, when the page is or is about to
+> +		 * be freed: PageSwapCache is cleared (under spin_lock_irq)
+> +		 * in the freeze_refs section of __remove_mapping(); but Anon
+> +		 * page->mapping reset to NULL later, in free_pages_prepare().
+> +		 */
+> +		if (!PageSwapCache(page))
+> +			goto stale;
+> +		cpu_relax();
+> +	}
+> +
+> +	if (ACCESS_ONCE(page->mapping) != expected_mapping) {
+>  		put_page(page);
+>  		goto stale;
+>  	}
+> +
+>  	if (locked) {
+>  		lock_page(page);
+> -		if (page->mapping != expected_mapping) {
+> +		if (ACCESS_ONCE(page->mapping) != expected_mapping) {
+>  			unlock_page(page);
+>  			put_page(page);
+>  			goto stale;
+>  		}
+>  	}
 
-Dyntick-idle CPUs need to be able to pre-announce their need for grace
-periods.  This can be done using something similar to the mechanism used
-by no-CB CPUs to announce their need for grace periods.  This commit
-moves in this direction by renaming the no-CBs grace-period event tracing
-to suit the new future-grace-period needs.
+Could you explain why need check page->mapping twice after get page?
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- include/trace/events/rcu.h |   16 +++++-----
- kernel/rcutree_plugin.h    |   62 ++++++++++++++++++++++---------------------
- 2 files changed, 40 insertions(+), 38 deletions(-)
+>  	return page;
+> +
+>  stale:
+> +	/*
+> +	 * We come here from above when page->mapping or !PageSwapCache
+> +	 * suggests that the node is stale; but it might be under migration.
+> +	 * We need smp_rmb(), matching the smp_wmb() in ksm_migrate_page(),
+> +	 * before checking whether node->kpfn has been changed.
+> +	 */
+> +	smp_rmb();
+> +	if (ACCESS_ONCE(stable_node->kpfn) != kpfn)
+> +		goto again;
+>  	remove_node_from_stable_tree(stable_node);
+>  	return NULL;
+>  }
+> @@ -1103,15 +1137,25 @@ static struct page *stable_tree_search(s
+>  			return NULL;
+>  
+>  		ret = memcmp_pages(page, tree_page);
+> +		put_page(tree_page);
+>  
+> -		if (ret < 0) {
+> -			put_page(tree_page);
+> +		if (ret < 0)
+>  			node = node->rb_left;
+> -		} else if (ret > 0) {
+> -			put_page(tree_page);
+> +		else if (ret > 0)
+>  			node = node->rb_right;
+> -		} else
+> +		else {
+> +			/*
+> +			 * Lock and unlock the stable_node's page (which
+> +			 * might already have been migrated) so that page
+> +			 * migration is sure to notice its raised count.
+> +			 * It would be more elegant to return stable_node
+> +			 * than kpage, but that involves more changes.
+> +			 */
+> +			tree_page = get_ksm_page(stable_node, true);
+> +			if (tree_page)
+> +				unlock_page(tree_page);
+>  			return tree_page;
+> +		}
+>  	}
+>  
+>  	return NULL;
+> @@ -1903,6 +1947,14 @@ void ksm_migrate_page(struct page *newpa
+>  	if (stable_node) {
+>  		VM_BUG_ON(stable_node->kpfn != page_to_pfn(oldpage));
+>  		stable_node->kpfn = page_to_pfn(newpage);
+> +		/*
+> +		 * newpage->mapping was set in advance; now we need smp_wmb()
+> +		 * to make sure that the new stable_node->kpfn is visible
+> +		 * to get_ksm_page() before it can see that oldpage->mapping
+> +		 * has gone stale (or that PageSwapCache has been cleared).
+> +		 */
+> +		smp_wmb();
+> +		set_page_stable_node(oldpage, NULL);
+>  	}
+>  }
+>  #endif /* CONFIG_MIGRATION */
+> --- mmotm.orig/mm/migrate.c	2013-01-25 14:27:58.140193249 -0800
+> +++ mmotm/mm/migrate.c	2013-01-25 14:37:03.832206218 -0800
+> @@ -464,7 +464,10 @@ void migrate_page_copy(struct page *newp
+>  
+>  	mlock_migrate_page(newpage, page);
+>  	ksm_migrate_page(newpage, page);
+> -
+> +	/*
+> +	 * Please do not reorder this without considering how mm/ksm.c's
+> +	 * get_ksm_page() depends upon ksm_migrate_page() and PageSwapCache().
+> +	 */
+>  	ClearPageSwapCache(page);
+>  	ClearPagePrivate(page);
+>  	set_page_private(page, 0);
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
-index cdfed6d..59ebcc8 100644
---- a/include/trace/events/rcu.h
-+++ b/include/trace/events/rcu.h
-@@ -72,10 +72,10 @@ TRACE_EVENT(rcu_grace_period,
- );
- 
- /*
-- * Tracepoint for no-callbacks grace-period events.  The caller should
-- * pull the data from the rcu_node structure, other than rcuname, which
-- * comes from the rcu_state structure, and event, which is one of the
-- * following:
-+ * Tracepoint for future grace-period events, including those for no-callbacks
-+ * CPUs.  The caller should pull the data from the rcu_node structure,
-+ * other than rcuname, which comes from the rcu_state structure, and event,
-+ * which is one of the following:
-  *
-  * "Startleaf": Request a nocb grace period based on leaf-node data.
-  * "Startedleaf": Leaf-node start proved sufficient.
-@@ -87,7 +87,7 @@ TRACE_EVENT(rcu_grace_period,
-  * "Cleanup": Clean up rcu_node structure after previous GP.
-  * "CleanupMore": Clean up, and another no-CB GP is needed.
-  */
--TRACE_EVENT(rcu_nocb_grace_period,
-+TRACE_EVENT(rcu_future_grace_period,
- 
- 	TP_PROTO(char *rcuname, unsigned long gpnum, unsigned long completed,
- 		 unsigned long c, u8 level, int grplo, int grphi,
-@@ -653,9 +653,9 @@ TRACE_EVENT(rcu_barrier,
- #define trace_rcu_grace_period(rcuname, gpnum, gpevent) do { } while (0)
- #define trace_rcu_grace_period_init(rcuname, gpnum, level, grplo, grphi, \
- 				    qsmask) do { } while (0)
--#define trace_rcu_nocb_grace_period(rcuname, gpnum, completed, c, \
--				    level, grplo, grphi, event) \
--				    do { } while (0)
-+#define trace_rcu_future_grace_period(rcuname, gpnum, completed, c, \
-+				      level, grplo, grphi, event) \
-+				      do { } while (0)
- #define trace_rcu_preempt_task(rcuname, pid, gpnum) do { } while (0)
- #define trace_rcu_unlock_preempted_task(rcuname, gpnum, pid) do { } while (0)
- #define trace_rcu_quiescent_state_report(rcuname, gpnum, mask, qsmask, level, \
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index d55475b..bcd8268 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -2080,9 +2080,9 @@ static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
- 	wake_up_all(&rnp->nocb_gp_wq[c & 0x1]);
- 	rnp->n_nocb_gp_requests[c & 0x1] = 0;
- 	needmore = rnp->n_nocb_gp_requests[(c + 1) & 0x1];
--	trace_rcu_nocb_grace_period(rsp->name, rnp->gpnum, rnp->completed,
--				    c, rnp->level, rnp->grplo, rnp->grphi,
--				    needmore ? "CleanupMore" : "Cleanup");
-+	trace_rcu_future_grace_period(rsp->name, rnp->gpnum, rnp->completed,
-+				      c, rnp->level, rnp->grplo, rnp->grphi,
-+				      needmore ? "CleanupMore" : "Cleanup");
- 	return needmore;
- }
- 
-@@ -2229,9 +2229,9 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 
- 	/* Count our request for a grace period. */
- 	rnp->n_nocb_gp_requests[c & 0x1]++;
--	trace_rcu_nocb_grace_period(rdp->rsp->name, rnp->gpnum, rnp->completed,
--				    c, rnp->level, rnp->grplo, rnp->grphi,
--				    "Startleaf");
-+	trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
-+				      rnp->completed, c, rnp->level,
-+				      rnp->grplo, rnp->grphi, "Startleaf");
- 
- 	if (rnp->gpnum != rnp->completed) {
- 
-@@ -2240,10 +2240,10 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 		 * is in progress, so we are done.  When this grace
- 		 * period ends, our request will be acted upon.
- 		 */
--		trace_rcu_nocb_grace_period(rdp->rsp->name,
--					    rnp->gpnum, rnp->completed, c,
--					    rnp->level, rnp->grplo, rnp->grphi,
--					    "Startedleaf");
-+		trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
-+					      rnp->completed, c, rnp->level,
-+					      rnp->grplo, rnp->grphi,
-+					      "Startedleaf");
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 
- 	} else {
-@@ -2255,11 +2255,12 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 		if (rnp != rnp_root)
- 			raw_spin_lock(&rnp_root->lock); /* irqs disabled. */
- 		if (rnp_root->gpnum != rnp_root->completed) {
--			trace_rcu_nocb_grace_period(rdp->rsp->name,
--						    rnp->gpnum, rnp->completed,
--						    c, rnp->level,
--						    rnp->grplo, rnp->grphi,
--						    "Startedleafroot");
-+			trace_rcu_future_grace_period(rdp->rsp->name,
-+						      rnp->gpnum,
-+						      rnp->completed,
-+						      c, rnp->level,
-+						      rnp->grplo, rnp->grphi,
-+						      "Startedleafroot");
- 			raw_spin_unlock(&rnp_root->lock); /* irqs disabled. */
- 		} else {
- 
-@@ -2275,11 +2276,12 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 			c = rnp_root->completed + 1;
- 			rnp->n_nocb_gp_requests[c & 0x1]++;
- 			rnp_root->n_nocb_gp_requests[c & 0x1]++;
--			trace_rcu_nocb_grace_period(rdp->rsp->name,
--						    rnp->gpnum, rnp->completed,
--						    c, rnp->level,
--						    rnp->grplo, rnp->grphi,
--						    "Startedroot");
-+			trace_rcu_future_grace_period(rdp->rsp->name,
-+						      rnp->gpnum,
-+						      rnp->completed,
-+						      c, rnp->level,
-+						      rnp->grplo, rnp->grphi,
-+						      "Startedroot");
- 			local_save_flags(flags1);
- 			rcu_start_gp(rdp->rsp, flags1); /* Rlses ->lock. */
- 		}
-@@ -2295,9 +2297,9 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 	 * Wait for the grace period.  Do so interruptibly to avoid messing
- 	 * up the load average.
- 	 */
--	trace_rcu_nocb_grace_period(rdp->rsp->name, rnp->gpnum, rnp->completed,
--				    c, rnp->level, rnp->grplo, rnp->grphi,
--				    "StartWait");
-+	trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
-+				      rnp->completed, c, rnp->level,
-+				      rnp->grplo, rnp->grphi, "StartWait");
- 	for (;;) {
- 		wait_event_interruptible(
- 			rnp->nocb_gp_wq[c & 0x1],
-@@ -2305,14 +2307,14 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 		if (likely(d))
- 			break;
- 		flush_signals(current);
--		trace_rcu_nocb_grace_period(rdp->rsp->name,
--					    rnp->gpnum, rnp->completed, c,
--					    rnp->level, rnp->grplo, rnp->grphi,
--					    "ResumeWait");
-+		trace_rcu_future_grace_period(rdp->rsp->name,
-+					      rnp->gpnum, rnp->completed, c,
-+					      rnp->level, rnp->grplo,
-+					      rnp->grphi, "ResumeWait");
- 	}
--	trace_rcu_nocb_grace_period(rdp->rsp->name, rnp->gpnum, rnp->completed,
--				    c, rnp->level, rnp->grplo, rnp->grphi,
--				    "EndWait");
-+	trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
-+				      rnp->completed, c, rnp->level,
-+				      rnp->grplo, rnp->grphi, "EndWait");
- 	smp_mb(); /* Ensure that CB invocation happens after GP end. */
- }
- 
--- 
-1.7.8
 
