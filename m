@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308Ab3A0RLK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 12:11:10 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:49475 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753441Ab3A0RLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 12:11:09 -0500
-Message-ID: <1359306667.14406.7.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch.pl: Fix warnings on (networking specific)
- code comments
-From: Joe Perches <joe@perches.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: apw@canonical.com, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        netdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Date: Sun, 27 Jan 2013 09:11:07 -0800
-In-Reply-To: <1359286539-18395-1-git-send-email-jeffrey.t.kirsher@intel.com>
-References: <1359286539-18395-1-git-send-email-jeffrey.t.kirsher@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754171Ab3A0Rdk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 12:33:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22302 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753096Ab3A0Rdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 12:33:38 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: [RFC/PATCH] perf x86: Add off-core event constraints for Sandy/IvyBridge micro architecture
+Date: Sun, 27 Jan 2013 18:33:15 +0100
+Message-Id: <1359307995-30640-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-01-27 at 03:35 -0800, Jeff Kirsher wrote:
-> This patch reverts a portion of the commit to allow multi-line code
-> comments to use either style.
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> @@ -1878,13 +1878,6 @@ sub process {
->  		}
->  
->  		if ($realfile =~ m@^(drivers/net/|net/)@ &&
-> -		    $rawline =~ /^\+[ \t]*\/\*[ \t]*$/ &&
-> -		    $prevrawline =~ /^\+[ \t]*$/) {
-> -			WARN("NETWORKING_BLOCK_COMMENT_STYLE",
-> -			     "networking block comments don't use an empty /* line, use /* Comment...\n" . $hereprev);
-> -		}
-> -
-> -		if ($realfile =~ m@^(drivers/net/|net/)@ &&
->  		    $rawline !~ m@^\+[ \t]*\*/[ \t]*$@ &&	#trailing */
->  		    $rawline !~ m@^\+.*/\*.*\*/[ \t]*$@ &&	#inline /*...*/
->  		    $rawline !~ m@^\+.*\*{2,}/[ \t]*$@ &&	#trailing **/
+hi,
+I was looking at the offcore stuff and it looks like we might
+be missing some constraints for offcore response events on
+Sandy/IvyBridge.
 
-Shrug.
+The table 18.8.5 (Off-core Response Performance Monitoring)
+in Intel SDM states PMC0 for 0xb7 and PMC3 for 0xbb, but
+there's no other explanation or related description.
 
-Ignore things you don't agree with.
+I can't say/ack if the counters looks bad or right with or
+without the patch so far.. so just curious ;-)
 
-David has written many, many emails
-requesting changes for this specific
-comment style.
+thanks,
+jirka
 
-I think you and Intel should use
---ignore=NETWORKING_BLOCK_COMMENT_STYLE
-to avoid seeing this if you don't agree
-with it.
+---
+The Intel SDM (18.8.5 Off-core Response Performance Monitoring)
+states the off-core events MSR_OFFCORE_RSP_0/MSR_OFFCORE_RSP_03
+to be defined only for PMC0/PMC3 respectively.  
 
-I also think expectations that everyone
-will agree with every checkpatch bleat
-are unrealistic.
+Adding related constraints.
 
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 5dc54fc..d1f240f 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -105,6 +105,8 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
+ 	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
+ 	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
+ 	INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
++	INTEL_EVENT_CONSTRAINT(0xb7, 0x1), /* MSR_OFFCORE_RSP_0 - PMC0 only*/
++	INTEL_EVENT_CONSTRAINT(0xbb, 0x8), /* MSR_OFFCORE_RSP_1 - PMC3 only*/
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+-- 
+1.7.11.7
 
