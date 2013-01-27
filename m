@@ -1,156 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab3A0Cgb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 21:36:31 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40158 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229Ab3A0Cg3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 21:36:29 -0500
-Message-ID: <1359254187.4159.10.camel@kernel>
-Subject: Re: [PATCH 5/11] ksm: get_ksm_page locked
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Sat, 26 Jan 2013 20:36:27 -0600
-In-Reply-To: <alpine.LNX.2.00.1301251759470.29196@eggly.anvils>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
-	 <alpine.LNX.2.00.1301251759470.29196@eggly.anvils>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1755404Ab3A0Cls (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 21:41:48 -0500
+Received: from mga14.intel.com ([143.182.124.37]:46218 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755276Ab3A0Clq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 21:41:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,545,1355126400"; 
+   d="scan'208";a="195505857"
+Message-ID: <510493E4.8060602@intel.com>
+Date: Sun, 27 Jan 2013 10:41:40 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
+        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
+ power awareness scheduling
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com> <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com>
+In-Reply-To: <51014E34.60309@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh, 
-On Fri, 2013-01-25 at 18:00 -0800, Hugh Dickins wrote:
-> In some places where get_ksm_page() is used, we need the page to be locked.
+On 01/24/2013 11:07 PM, Alex Shi wrote:
+> On 01/24/2013 05:44 PM, Borislav Petkov wrote:
+>> On Thu, Jan 24, 2013 at 11:06:42AM +0800, Alex Shi wrote:
+>>> Since the runnable info needs 345ms to accumulate, balancing
+>>> doesn't do well for many tasks burst waking. After talking with Mike
+>>> Galbraith, we are agree to just use runnable avg in power friendly 
+>>> scheduling and keep current instant load in performance scheduling for 
+>>> low latency.
+>>>
+>>> So the biggest change in this version is removing runnable load avg in
+>>> balance and just using runnable data in power balance.
+>>>
+>>> The patchset bases on Linus' tree, includes 3 parts,
+>>> ** 1, bug fix and fork/wake balancing clean up. patch 1~5,
+>>> ----------------------
+>>> the first patch remove one domain level. patch 2~5 simplified fork/wake
+>>> balancing, it can increase 10+% hackbench performance on our 4 sockets
+>>> SNB EP machine.
+>>
+>> Ok, I see some benchmarking results here and there in the commit
+>> messages but since this is touching the scheduler, you probably would
+>> need to make sure it doesn't introduce performance regressions vs
+>> mainline with a comprehensive set of benchmarks.
+>>
+> 
+> Thanks a lot for your comments, Borislav! :)
+> 
+> For this patchset, the code will just check current policy, if it is
+> performance, the code patch will back to original performance code at
+> once. So there should no performance change on performance policy.
+> 
+> I once tested the balance policy performance with benchmark
+> kbuild/hackbench/aim9/dbench/tbench on version 2, only hackbench has a
+> bit drop ~3%. others have no clear change.
+> 
+>> And, AFAICR, mainline does by default the 'performance' scheme by
+>> spreading out tasks to idle cores, so have you tried comparing vanilla
+>> mainline to your patchset in the 'performance' setting so that you can
+>> make sure there are no problems there? And not only hackbench or a
+>> microbenchmark but aim9 (I saw that in a commit message somewhere) and
+>> whatever else multithreaded benchmark you can get your hands on.
+>>
+>> Also, you might want to run it on other machines too, not only SNB :-)
+> 
+> Anyway I will redo the performance testing on this version again on all
+> machine. but doesn't expect something change. :)
+
+Just rerun some benchmarks: kbuild, specjbb2005, oltp, tbench, aim9,
+hackbench, fileio-cfq of sysbench, dbench, aiostress, multhreads
+loopback netperf. on my core2, nhm, wsm, snb, platforms. no clear
+performance change found.
+
+I also tested balance policy/powersaving policy with above benchmark,
+found, the specjbb2005 drop much 30~50% on both of policy whenever with
+openjdk or jrockit. and hackbench drops a lots with powersaving policy
+on snb 4 sockets platforms. others has no clear change.
+
+> 
+>> And what about ARM, maybe someone there can run your patchset too?
+>>
+>> So, it would be cool to see comprehensive results from all those runs
+>> and see what the numbers say.
+>>
+>> Thanks.
+>>
+> 
 > 
 
-In function get_ksm_page, why check page->mapping =>
-get_page_unless_zero => check page->mapping instead of
-get_page_unless_zero => check page->mapping, because
-get_page_unless_zero is expensive?
 
-> When KSM migration is fully enabled, we shall want that to make sure that
-> the page just acquired cannot be migrated beneath us (raised page count is
-> only effective when there is serialization to make sure migration notices).
-> Whereas when navigating through the stable tree, we certainly do not want
-
-What's the meaning of "navigating through the stable tree"?
-
-> to lock each node (raised page count is enough to guarantee the memcmps,
-> even if page is migrated to another node).
-> 
-> Since we're about to add another use case, add the locked argument to
-> get_ksm_page() now.
-
-Why the parameter lock passed from stable_tree_search/insert is true,
-but remove_rmap_item_from_tree is false?
-
-> 
-> Hmm, what's that rcu_read_lock() about?  Complete misunderstanding, I
-> really got the wrong end of the stick on that!  There's a configuration
-> in which page_cache_get_speculative() can do something cheaper than
-> get_page_unless_zero(), relying on its caller's rcu_read_lock() to have
-> disabled preemption for it.  There's no need for rcu_read_lock() around
-> get_page_unless_zero() (and mapping checks) here.  Cut out that
-> silliness before making this any harder to understand.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
->  mm/ksm.c |   23 +++++++++++++----------
->  1 file changed, 13 insertions(+), 10 deletions(-)
-> 
-> --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:53.244205966 -0800
-> +++ mmotm/mm/ksm.c	2013-01-25 14:36:58.856206099 -0800
-> @@ -514,15 +514,14 @@ static void remove_node_from_stable_tree
->   * but this is different - made simpler by ksm_thread_mutex being held, but
->   * interesting for assuming that no other use of the struct page could ever
->   * put our expected_mapping into page->mapping (or a field of the union which
-> - * coincides with page->mapping).  The RCU calls are not for KSM at all, but
-> - * to keep the page_count protocol described with page_cache_get_speculative.
-> + * coincides with page->mapping).
->   *
->   * Note: it is possible that get_ksm_page() will return NULL one moment,
->   * then page the next, if the page is in between page_freeze_refs() and
->   * page_unfreeze_refs(): this shouldn't be a problem anywhere, the page
->   * is on its way to being freed; but it is an anomaly to bear in mind.
->   */
-> -static struct page *get_ksm_page(struct stable_node *stable_node)
-> +static struct page *get_ksm_page(struct stable_node *stable_node, bool locked)
->  {
->  	struct page *page;
->  	void *expected_mapping;
-> @@ -530,7 +529,6 @@ static struct page *get_ksm_page(struct
->  	page = pfn_to_page(stable_node->kpfn);
->  	expected_mapping = (void *)stable_node +
->  				(PAGE_MAPPING_ANON | PAGE_MAPPING_KSM);
-> -	rcu_read_lock();
->  	if (page->mapping != expected_mapping)
->  		goto stale;
->  	if (!get_page_unless_zero(page))
-> @@ -539,10 +537,16 @@ static struct page *get_ksm_page(struct
->  		put_page(page);
->  		goto stale;
->  	}
-> -	rcu_read_unlock();
-> +	if (locked) {
-> +		lock_page(page);
-> +		if (page->mapping != expected_mapping) {
-> +			unlock_page(page);
-> +			put_page(page);
-> +			goto stale;
-> +		}
-> +	}
->  	return page;
->  stale:
-> -	rcu_read_unlock();
->  	remove_node_from_stable_tree(stable_node);
->  	return NULL;
->  }
-> @@ -558,11 +562,10 @@ static void remove_rmap_item_from_tree(s
->  		struct page *page;
->  
->  		stable_node = rmap_item->head;
-> -		page = get_ksm_page(stable_node);
-> +		page = get_ksm_page(stable_node, true);
->  		if (!page)
->  			goto out;
->  
-> -		lock_page(page);
->  		hlist_del(&rmap_item->hlist);
->  		unlock_page(page);
->  		put_page(page);
-> @@ -1042,7 +1045,7 @@ static struct page *stable_tree_search(s
->  
->  		cond_resched();
->  		stable_node = rb_entry(node, struct stable_node, node);
-> -		tree_page = get_ksm_page(stable_node);
-> +		tree_page = get_ksm_page(stable_node, false);
->  		if (!tree_page)
->  			return NULL;
->  
-> @@ -1086,7 +1089,7 @@ static struct stable_node *stable_tree_i
->  
->  		cond_resched();
->  		stable_node = rb_entry(*new, struct stable_node, node);
-> -		tree_page = get_ksm_page(stable_node);
-> +		tree_page = get_ksm_page(stable_node, false);
->  		if (!tree_page)
->  			return NULL;
->  
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
-
+-- 
+Thanks
+    Alex
