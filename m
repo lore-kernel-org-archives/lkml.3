@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab3A0DTz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 22:19:55 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42146 "EHLO
+	id S1755618Ab3A0DWC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 22:22:02 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45512 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755502Ab3A0DTx (ORCPT
+	by vger.kernel.org with ESMTP id S1755508Ab3A0DWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 22:19:53 -0500
-Date: Sun, 27 Jan 2013 11:19:42 +0800
+	Sat, 26 Jan 2013 22:22:00 -0500
+Date: Sun, 27 Jan 2013 11:21:49 +0800
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        davinci-linux-open-source@linux.davincidsp.com, anilkumar@ti.com,
-        tony@atomide.com, hs@denx.de, lrg@ti.com, sameo@linux.intel.com,
-        khilman@ti.com, linux@arm.linux.org.uk, rob@landley.net,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca
-Subject: Re: [PATCH 4/6] davinci: regulator: tps6507x: add device tree
- support.
-Message-ID: <20130127031939.GE4650@opensource.wolfsonmicro.com>
-References: <1359024920-32190-1-git-send-email-manishv.b@ti.com>
- <1359024920-32190-5-git-send-email-manishv.b@ti.com>
+To: Matt Sealey <matt@genesi-usa.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] mc13892-regulator: correct/refine handling of the SWxHI
+ bit
+Message-ID: <20130127032146.GF4650@opensource.wolfsonmicro.com>
+References: <1358789920-1341-1-git-send-email-matt@genesi-usa.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kA1LkgxZ0NN7Mz3A"
+	protocol="application/pgp-signature"; boundary="nYySOmuH/HDX6pKp"
 Content-Disposition: inline
-In-Reply-To: <1359024920-32190-5-git-send-email-manishv.b@ti.com>
+In-Reply-To: <1358789920-1341-1-git-send-email-matt@genesi-usa.com>
 X-Cookie: You are standing on my toes.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,37 +29,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---kA1LkgxZ0NN7Mz3A
+--nYySOmuH/HDX6pKp
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Jan 24, 2013 at 04:25:18PM +0530, Vishwanathrao Badarkhe, Manish wrote:
-> Add device tree based initialization support for
-> TI's tps6507x regulators.
+On Mon, Jan 21, 2013 at 11:38:40AM -0600, Matt Sealey wrote:
+> MC13892 PMIC supports a "HI" bit for 3 of it's 4 buck switcher outputs,
+> which enables a higher set of voltage ranges.
 
-Applied, thanks.  Please always use subject lines appropriate for the
-subsystem you are submitting against - this is not a DaVinci change.
+Applied, thanks.
 
---kA1LkgxZ0NN7Mz3A
+--nYySOmuH/HDX6pKp
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRBJzFAAoJELSic+t+oim96WwQAJB8HnZ8Rv+Uf7+0fqlbErUR
-+fbTAmGjTWLIVzmy7VPsyonvcKb7KvsTEpZoqXJluiLQjD3gvSqB8U5ZJ8QrocRd
-QVk/DZG52fug+b8lC8TTf++kxBuk7y8KdFfNifLip29C2t9Raq2Vu2dprVEBZvXY
-GemGNyHRb7FgmogaDjDxGeJDQHeDe7xzpGWDjmlyIvrzhk36RrLNSgh/LuCXarS4
-HUB/NWHOM92OD/O32dSsJU+uW+SUJQxygGzYry5jMxhICizE1cZyjglhqtRpD30U
-bFGUSqXUYh/6SvJlOJ7Kjal0YONBdzipz/v8LIWO8A4exl0nm27nSLtmvp7MY9KR
-UQxfHcu3wAcRmPzFKW5bMvorz9xXhk9cLDqWtQ9xCDKUgkddSB82iynhuV2yerl2
-abDPy3HuhhVnIJKHXwfGRBHZnfphwlgO3RryC7UfFyYSrIJbqNUwDM6FtlV+XLjw
-gtIvlhi07O3aqjPVnsP3g56vLeBntrr5GcTwZ1qipFEBo3EtF+gcAcIQ455ThtfJ
-+PjN5vu0cP6QLaLk/lHQ7GJs0H1n8mbKJuCF73+32Jwf5/mN0RwkQbKfMx/ao3Hu
-2FGM5YqcY/qX56EIa4UrJouQHw/lL/DX9apsOMkSNPwkrKDD0mmlp7BDQyra2WY2
-pC0W+SgVoMAe+m7TvRXh
-=nVEc
+iQIcBAEBAgAGBQJRBJ0+AAoJELSic+t+oim9orwP/2V197wBrmMwbfoX7dfXEH8T
+dn5dh638hknJuy73ncku60I+Y+Zv/1idTupjfWHUxdx15+hxh3sZ5Szj1NBwxnJH
+3bT7Sz87xaCfFp9fkOyv9Cw/CVesITAnZzYkwvmfbkUGfcBctL73GfKAR2k7Pwwn
+z8RsY/fIybU1ejXQgDJZMpIgEA77IOBf3yMOTPSM/SsGnDr5eeYWITo2EVmIfz7U
+zyjU6mfQonIQbgaUh1bzNN72yJavGt/KHbeBkqOS/q4f1u589c4s/g9WGNsxl7VC
+bJ9Z9RUH6Zvo8gYeLu7CMlZSyFmS5awwKCgjlJ+ztaxIl0ysV7OpBTEDJETYYSFd
+qkPF4+teNTLuYFqSYiSfU0rhnECLIFETYhv86Lg2/OsUV7kOtzTAeZNDTUXcJGsJ
+4EeLLWperaV3T9tR11Rh6KZ7lu/C57cgbvQkMAZ2Hndpm88FGvWAa9J46j4bo/gg
+a4eaVnrMpkz39t0aGuWPHw8fcoR9Bi6qgF/xJymnT3yxEdaWSEVfjHj3z/YcWieB
+ky/3WESpB9FHxSkACXQnVGgmu1uDAPgJ397cC1v8OKlsXXg0/aHSHZS0LuvMw/s4
+xidTffjlnjblOZ+ssLo0h8/iLI1LdJuweAqlFn26DPRDLPL40TV0a6cvWyCrN41x
+nXCEDL4Zbx6lnJ4BruQl
+=Uhnw
 -----END PGP SIGNATURE-----
 
---kA1LkgxZ0NN7Mz3A--
+--nYySOmuH/HDX6pKp--
