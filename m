@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab3A0FQk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 00:16:40 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:42125 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab3A0FQG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 00:16:06 -0500
+	id S1755995Ab3A0FQu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 00:16:50 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:39497 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755923Ab3A0FQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 00:16:32 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,109 +14,65 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 04/12] rcu: Export RCU_FAST_NO_HZ parameters to sysfs
-Date: Sat, 26 Jan 2013 16:29:55 -0800
-Message-Id: <1359246603-6863-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 2/2] rcu: Trace callback acceleration
+Date: Sat, 26 Jan 2013 16:18:21 -0800
+Message-Id: <1359245901-4432-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1359246603-6863-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130127002943.GA6067@linux.vnet.ibm.com>
- <1359246603-6863-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1359245901-4432-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130127001804.GA4122@linux.vnet.ibm.com>
+ <1359245901-4432-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012705-4834-0000-0000-00000304A690
+x-cbid: 13012705-9360-0000-0000-00000FC0B97B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-RCU_FAST_NO_HZ operation is controlled by four compile-time C-preprocessor
-macros, but some use cases benefit greatly from runtime adjustment,
-particularly when tuning devices.  This commit therefore creates the
-corresponding sysfs entries.
+This commit adds event tracing for callback acceleration to allow better
+tracking of callbacks through the system.
 
-Reported-by: Robin Randhawa <robin.randhawa@arm.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree_plugin.h |   31 ++++++++++++++++++++-----------
- 1 files changed, 20 insertions(+), 11 deletions(-)
+ include/trace/events/rcu.h |    6 ++++--
+ kernel/rcutree.c           |    6 ++++++
+ 2 files changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index c016444..28185ad 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1617,6 +1617,15 @@ static void rcu_idle_count_callbacks_posted(void)
- #define RCU_IDLE_GP_DELAY 4		/* Roughly one grace period. */
- #define RCU_IDLE_LAZY_GP_DELAY (6 * HZ)	/* Roughly six seconds. */
+diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
+index d4f559b..5678114 100644
+--- a/include/trace/events/rcu.h
++++ b/include/trace/events/rcu.h
+@@ -44,8 +44,10 @@ TRACE_EVENT(rcu_utilization,
+  * of a new grace period or the end of an old grace period ("cpustart"
+  * and "cpuend", respectively), a CPU passing through a quiescent
+  * state ("cpuqs"), a CPU coming online or going offline ("cpuonl"
+- * and "cpuofl", respectively), and a CPU being kicked for being too
+- * long in dyntick-idle mode ("kick").
++ * and "cpuofl", respectively), a CPU being kicked for being too
++ * long in dyntick-idle mode ("kick"), a CPU accelerating its new
++ * callbacks to RCU_NEXT_READY_TAIL ("AccReadyCB"), and a CPU
++ * accelerating its new callbacks to RCU_WAIT_TAIL ("AccWaitCB").
+  */
+ TRACE_EVENT(rcu_grace_period,
  
-+static int rcu_idle_flushes = RCU_IDLE_FLUSHES;
-+module_param(rcu_idle_flushes, int, 0644);
-+static int rcu_idle_opt_flushes = RCU_IDLE_OPT_FLUSHES;
-+module_param(rcu_idle_opt_flushes, int, 0644);
-+static int rcu_idle_gp_delay = RCU_IDLE_GP_DELAY;
-+module_param(rcu_idle_gp_delay, int, 0644);
-+static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
-+module_param(rcu_idle_lazy_gp_delay, int, 0644);
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index ac6a75d..e9dce4f 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1168,6 +1168,12 @@ static void rcu_accelerate_cbs(struct rcu_state *rsp, struct rcu_node *rnp,
+ 		rdp->nxttail[i] = rdp->nxttail[RCU_NEXT_TAIL];
+ 		rdp->nxtcompleted[i] = c;
+ 	}
 +
- extern int tick_nohz_enabled;
++	/* Trace depending on how much we were able to accelerate. */
++	if (!*rdp->nxttail[RCU_WAIT_TAIL])
++		trace_rcu_grace_period(rsp->name, rdp->gpnum, "AccWaitCB");
++	else
++		trace_rcu_grace_period(rsp->name, rdp->gpnum, "AccReadyCB");
+ }
  
  /*
-@@ -1696,10 +1705,10 @@ int rcu_needs_cpu(int cpu, unsigned long *delta_jiffies)
- 	}
- 	/* Set up for the possibility that RCU will post a timer. */
- 	if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
--		*delta_jiffies = round_up(RCU_IDLE_GP_DELAY + jiffies,
--					  RCU_IDLE_GP_DELAY) - jiffies;
-+		*delta_jiffies = round_up(rcu_idle_gp_delay + jiffies,
-+					  rcu_idle_gp_delay) - jiffies;
- 	} else {
--		*delta_jiffies = jiffies + RCU_IDLE_LAZY_GP_DELAY;
-+		*delta_jiffies = jiffies + rcu_idle_lazy_gp_delay;
- 		*delta_jiffies = round_jiffies(*delta_jiffies) - jiffies;
- 	}
- 	return 0;
-@@ -1805,11 +1814,11 @@ static void rcu_prepare_for_idle(int cpu)
- 		if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
- 			trace_rcu_prep_idle("User dyntick with callbacks");
- 			rdtp->idle_gp_timer_expires =
--				round_up(jiffies + RCU_IDLE_GP_DELAY,
--					 RCU_IDLE_GP_DELAY);
-+				round_up(jiffies + rcu_idle_gp_delay,
-+					 rcu_idle_gp_delay);
- 		} else if (rcu_cpu_has_callbacks(cpu)) {
- 			rdtp->idle_gp_timer_expires =
--				round_jiffies(jiffies + RCU_IDLE_LAZY_GP_DELAY);
-+				round_jiffies(jiffies + rcu_idle_lazy_gp_delay);
- 			trace_rcu_prep_idle("User dyntick with lazy callbacks");
- 		} else {
- 			return;
-@@ -1861,8 +1870,8 @@ static void rcu_prepare_for_idle(int cpu)
- 	/* Check and update the ->dyntick_drain sequencing. */
- 	if (rdtp->dyntick_drain <= 0) {
- 		/* First time through, initialize the counter. */
--		rdtp->dyntick_drain = RCU_IDLE_FLUSHES;
--	} else if (rdtp->dyntick_drain <= RCU_IDLE_OPT_FLUSHES &&
-+		rdtp->dyntick_drain = rcu_idle_flushes;
-+	} else if (rdtp->dyntick_drain <= rcu_idle_opt_flushes &&
- 		   !rcu_pending(cpu) &&
- 		   !local_softirq_pending()) {
- 		/* Can we go dyntick-idle despite still having callbacks? */
-@@ -1871,11 +1880,11 @@ static void rcu_prepare_for_idle(int cpu)
- 		if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
- 			trace_rcu_prep_idle("Dyntick with callbacks");
- 			rdtp->idle_gp_timer_expires =
--				round_up(jiffies + RCU_IDLE_GP_DELAY,
--					 RCU_IDLE_GP_DELAY);
-+				round_up(jiffies + rcu_idle_gp_delay,
-+					 rcu_idle_gp_delay);
- 		} else {
- 			rdtp->idle_gp_timer_expires =
--				round_jiffies(jiffies + RCU_IDLE_LAZY_GP_DELAY);
-+				round_jiffies(jiffies + rcu_idle_lazy_gp_delay);
- 			trace_rcu_prep_idle("Dyntick with lazy callbacks");
- 		}
- 		tp = &rdtp->idle_gp_timer;
 -- 
 1.7.8
 
