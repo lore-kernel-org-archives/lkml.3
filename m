@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab3A0W5M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 17:57:12 -0500
-Received: from trent.utfs.org ([94.185.90.103]:39898 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756806Ab3A0W5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 17:57:10 -0500
-Date: Sun, 27 Jan 2013 14:56:49 -0800 (PST)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
-        paulus@samba.org, benh@kernel.crashing.org
-Subject: Re: 3.7-rc7: BUG: MAX_STACK_TRACE_ENTRIES too low!
-In-Reply-To: <1358233164.15371.2.camel@ThinkPad-T5421.cn.ibm.com>
-Message-ID: <alpine.DEB.2.01.1301271451390.7378@trent.utfs.org>
-References: <alpine.DEB.2.01.1211271824120.7378@trent.utfs.org>  <alpine.DEB.2.01.1211271916160.7378@trent.utfs.org>  <1354092082.3054.19.camel@ThinkPad-T5421.cn.ibm.com>  <alpine.DEB.2.01.1301121241340.7378@trent.utfs.org>
- <1358233164.15371.2.camel@ThinkPad-T5421.cn.ibm.com>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1756843Ab3A0XFx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 18:05:53 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:53300 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755920Ab3A0XFu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 18:05:50 -0500
+Date: Sun, 27 Jan 2013 15:05:46 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Simon Jeons <simon.jeons@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 6/11] ksm: remove old stable nodes more thoroughly
+In-Reply-To: <1359262556.4159.23.camel@kernel>
+Message-ID: <alpine.LNX.2.00.1301271451130.17495@eggly.anvils>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils> <alpine.LNX.2.00.1301251800550.29196@eggly.anvils> <1359262556.4159.23.camel@kernel>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jan 2013 at 14:59, Li Zhong wrote:
-> FYI, it is already in the next of ppc tree 
-> http://git.kernel.org/?p=linux/kernel/git/benh/powerpc.git;a=shortlog;h=refs/heads/next
+On Sat, 26 Jan 2013, Simon Jeons wrote:
+> On Fri, 2013-01-25 at 18:01 -0800, Hugh Dickins wrote:
+> > Switching merge_across_nodes after running KSM is liable to oops on stale
+> > nodes still left over from the previous stable tree.  It's not something
+> > that people will often want to do, but it would be lame to demand a reboot
+> > when they're trying to determine which merge_across_nodes setting is best.
+> > 
+> > How can this happen?  We only permit switching merge_across_nodes when
+> > pages_shared is 0, and usually set run 2 to force that beforehand, which
+> > ought to unmerge everything: yet oopses still occur when you then run 1.
+> > 
+> > Three causes:
+> > 
+> > 1. The old stable tree (built according to the inverse merge_across_nodes)
+> > has not been fully torn down.  A stable node lingers until get_ksm_page()
+> > notices that the page it references no longer references it: but the page
+> > is not necessarily freed as soon as expected, particularly when swapcache.
+> > 
 > 
-> I guess it would get into 3.9, at least. 
+> When can this happen?  
 
-Hm, is there no chance to get this into 3.8? I've been running with this 
-patch applied since 3.7-rc7 and it got rid of this 
-"MAX_STACK_TRACE_ENTRIES too low" message. I've just upgraded to 3.8-rc5 
-and it's still not in mainline :-\
+Whenever there's an additional reference to the page, beyond those for
+its ptes in userspace - swapcache for example, or pinned by get_user_pages.
+That delays its being freed (arriving at the "page->mapping = NULL;"
+in free_pages_prepare()).  Or it might simply be sitting in a pagevec,
+waiting for that to be filled up, to be freed as part of a batch.
 
-Christian.
+> 
+> > Fix this with a pass through the old stable tree, applying get_ksm_page()
+> > to each of the remaining nodes (most found stale and removed immediately),
+> > with forced removal of any left over.  Unless the page is still mapped:
+> > I've not seen that case, it shouldn't occur, but better to WARN_ON_ONCE
+> > and EBUSY than BUG.
+> > 
+> > 2. __ksm_enter() has a nice little optimization, to insert the new mm
+> > just behind ksmd's cursor, so there's a full pass for it to stabilize
+> > (or be removed) before ksmd addresses it.  Nice when ksmd is running,
+> > but not so nice when we're trying to unmerge all mms: we were missing
+> > those mms forked and inserted behind the unmerge cursor.  Easily fixed
+> > by inserting at the end when KSM_RUN_UNMERGE.
+> 
+> mms forked will be unmerged just after ksmd's cursor since they're
+> inserted behind it, why will be missing?
 
-[0] http://lkml.indiana.edu/hypermail/linux/kernel/1211.3/01836.html
-
-> > > ==============================================
-> > > diff --git a/arch/powerpc/kernel/entry_32.S b/arch/powerpc/kernel/entry_32.S
-> > > index 9499385..cadebfd 100644
-> > > --- a/arch/powerpc/kernel/entry_32.S
-> > > +++ b/arch/powerpc/kernel/entry_32.S
-> > > @@ -439,6 +439,8 @@ ret_from_fork:
-> > >  ret_from_kernel_thread:
-> > >  	REST_NVGPRS(r1)
-> > >  	bl	schedule_tail
-> > > +	li	r3,0
-> > > +	stw	r3,0(r1)
-> > >  	mtlr	r14
-> > >  	mr	r3,r15
-> > >  	PPC440EP_ERR42
-> > > ==============================================
-> > > 
-> > > > 
-> > > > Christian.
-> > > > 
-> > > > > [40007.339487] [sched_delayed] sched: RT throttling activated
-> > > > > [69731.388717] BUG: MAX_STACK_TRACE_ENTRIES too low!
-> > > > > [69731.390371] turning off the locking correctness validator.
-> > > > > [69731.391942] Call Trace:
-> > > > > [69731.393525] [c9a61c10] [c0009064] show_stack+0x70/0x1bc (unreliable)
-> > > > > [69731.395152] [c9a61c50] [c0077460] save_trace+0xfc/0x114
-> > > > > [69731.396735] [c9a61c60] [c007be20] __lock_acquire+0x1568/0x19b8
-> > > > > [69731.398296] [c9a61d00] [c007c2c0] lock_acquire+0x50/0x70
-> > > > > [69731.399857] [c9a61d20] [c0550e28] _raw_spin_lock_irq+0x5c/0x78
-> > > > > [69731.401419] [c9a61d40] [c054fb58] __schedule+0xd8/0x534
-> > > > > [69731.402972] [c9a61da0] [c0550094] _cond_resched+0x50/0x68
-> > > > > [69731.404527] [c9a61db0] [c0479908] dst_gc_task+0xbc/0x258
-> > > > > [69731.406070] [c9a61e40] [c004eeb8] process_one_work+0x1f4/0x49c
-> > > > > [69731.407585] [c9a61e80] [c004f644] worker_thread+0x14c/0x400
-> > > > > [69731.409075] [c9a61eb0] [c0057634] kthread+0xbc/0xc0
-> > > > > [69731.410521] [c9a61f40] [c0011ad4] ret_from_kernel_thread+0x5c/0x64
-> > > > > [...repeated 54 times...]
-> > > > > 
-> > > > > Anyone knows what this is about?
-> > > > > 
-> > > > > Thanks,
-> > > > > Christian.
-> > > > > 
-> > > > > [0] http://lkml.indiana.edu/hypermail/linux/kernel/1211.0/03025.html
-
--- 
-BOFH excuse #238:
-
-You did wha... oh _dear_....
+unmerge_and_remove_all_rmap_items() makes one pass through the list
+from start to finish: insert behind the cursor and it will be missed.
