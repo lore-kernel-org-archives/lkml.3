@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab3A0XfX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 18:35:23 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:50647 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080Ab3A0XfU (ORCPT
+	id S1756906Ab3A0Xq4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 18:46:56 -0500
+Received: from forward11.mail.yandex.net ([95.108.130.93]:53155 "EHLO
+	forward11.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756848Ab3A0Xqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 18:35:20 -0500
-Date: Sun, 27 Jan 2013 15:35:21 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Simon Jeons <simon.jeons@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 11/11] ksm: stop hotremove lockdep warning
-In-Reply-To: <1359267810.6763.1.camel@kernel>
-Message-ID: <alpine.LNX.2.00.1301271526040.17495@eggly.anvils>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils> <alpine.LNX.2.00.1301251808120.29196@eggly.anvils> <1359267810.6763.1.camel@kernel>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 27 Jan 2013 18:46:53 -0500
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: [PATCH] sched/rt: Decrease number of calls of push_rt_task() in push_rt_tasks()
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Message-Id: <2016751359330408@web20f.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Mon, 28 Jan 2013 03:46:48 +0400
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 27 Jan 2013, Simon Jeons wrote:
-> On Fri, 2013-01-25 at 18:10 -0800, Hugh Dickins wrote:
-> > @@ -2098,15 +2117,15 @@ static int ksm_memory_callback(struct no
-> >  	switch (action) {
-> >  	case MEM_GOING_OFFLINE:
-> >  		/*
-> > -		 * Keep it very simple for now: just lock out ksmd and
-> > -		 * MADV_UNMERGEABLE while any memory is going offline.
-> > -		 * mutex_lock_nested() is necessary because lockdep was alarmed
-> > -		 * that here we take ksm_thread_mutex inside notifier chain
-> > -		 * mutex, and later take notifier chain mutex inside
-> > -		 * ksm_thread_mutex to unlock it.   But that's safe because both
-> > -		 * are inside mem_hotplug_mutex.
-> > +		 * Prevent ksm_do_scan(), unmerge_and_remove_all_rmap_items()
-> > +		 * and remove_all_stable_nodes() while memory is going offline:
-> > +		 * it is unsafe for them to touch the stable tree at this time.
-> > +		 * But unmerge_ksm_pages(), rmap lookups and other entry points
-> 
-> Why unmerge_ksm_pages beneath us is safe for ksm memory hotremove?
-> 
-> > +		 * which do not need the ksm_thread_mutex are all safe.
+The patch aims to decrease the number of calls of push_rt_task()
+in push_rt_tasks().
 
-It's just like userspace doing a write-fault on every KSM page in the vma.
-If that were unsafe for memory hotremove, then it would not be KSM's
-problem, memory hotremove would already be unsafe.  (But memory hotremove
-is safe because it migrates away from all the pages to be removed before
-it can reach MEM_OFFLINE.)
+It's not necessary to push more than 'num_online_cpus() - 1' tasks.
+If just pushed task doesn't leave its new CPU during our local call
+of push_rt_tasks() than we won't push another task to the CPU.
+If it leave or change priority than it will pull new task by itself.
+
+Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: linux-rt-users <linux-rt-users@vger.kernel.org>
+---
+ kernel/sched/rt.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 4e8f0f4..edf046d 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1703,8 +1703,10 @@ out:
+ 
+ static void push_rt_tasks(struct rq *rq)
+ {
++	int num_cpus = num_online_cpus() - 1;
++
+ 	/* push_rt_task will return true if it moved an RT */
+-	while (push_rt_task(rq))
++	while (push_rt_task(rq) && --num_cpus > 0)
+ 		;
+ }
+ 
