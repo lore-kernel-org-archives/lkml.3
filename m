@@ -1,140 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab3A0Vkm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 16:40:42 -0500
-Received: from mail-da0-f53.google.com ([209.85.210.53]:57495 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756561Ab3A0Vkk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 16:40:40 -0500
-Date: Sun, 27 Jan 2013 13:40:40 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Shaohua Li <shli@kernel.org>
-cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shli@fusionio.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: boot warnings due to swap: make each swap partition have one
- address_space
-In-Reply-To: <20130127141253.GA27019@kernel.org>
-Message-ID: <alpine.LNX.2.00.1301271321500.16981@eggly.anvils>
-References: <5101FFF5.6030503@oracle.com> <20130125042512.GA32017@kernel.org> <alpine.LNX.2.00.1301261754530.7300@eggly.anvils> <20130127141253.GA27019@kernel.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756601Ab3A0VnN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 16:43:13 -0500
+Received: from nm31-vm3.bullet.mail.sg3.yahoo.com ([106.10.151.194]:36356 "EHLO
+	nm31-vm3.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756545Ab3A0VnK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 16:43:10 -0500
+X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Jan 2013 16:43:09 EST
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 430613.9815.bm@omp1025.mail.sg3.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.co.in;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=FUg0M5aLuqkUoP42ETB2GZ3uqHwib/JtsmKKgh3d8iBCBGa78E177F9liwjk+p/3w2T7xSQ9kA+r7B5dzt/4YQE0xqP6zbf//B9iHkWUTKi+zAmHGDp6gUAM3xiBjI8SmmeBEgdLY+PzI13q5414aRHxCYhPcgaCE+z/rYz5HJk=;
+X-YMail-OSG: 8zuLPwAVM1kCTPeTeOLOVJ10xK36uPp2Z1KYCvhlZt3noCE
+ _j7FpTp_jzBHlgYvlXXQW7rsJq0qFR83B1cugtMX98t2izaVbsPkEQTsGIER
+ sMnGq5HYQGEmRcD4kdqnNMYBXsNrCEdbdXmkSgMSNN5HPeT94AVG574vKh45
+ M4DEl1eXU5OZml8RAywegwG6Hq8M7qw9wOL2uBvzgjldr.q61UwrnOihBKnG
+ zdEBjIrktNCfHJlCnAD_Xyu.OUWccLgDMn1LzPVnLx7QGJDk_c7bSZALoGiu
+ Ojtq7O26kj6Ls0cbt2DMjpptOwDW8pQU_FqvkrEVRuXNEFsjmKKvbQaZETKV
+ EbYbcbQkdv0PD3GBEGDMPKR8HPWsG3OscYWOM5P2eCb58LUZO6hYxJjHWM8y
+ VYvHRXZWVzYa6_HAJcdHGsEnvpti047GbQDz7VNyM3Kx4lo7uaRKBkIsEDP5
+ IuIr7wfjgE3uBMSyHUk3YIQkxdlZSCpF7OrYu6nyRW5BGQ36lHMIQ3fGur_U
+ .4fDHvcTQYAY.HZuKMYSvmwsnjj9eBkX.E6pqY2zCXq8NNqrgxT.zYYSHb5Y
+ CBSRdKL0CmTSWIl4jJ6OgoF71cdj3C2WdLHR21JpckjBKNM7ZiBYuEUqBx0D
+ 5xjO9dduqjXXbQUAc
+X-Rocket-MIMEInfo: 001.001,CkRlYXIgRnJpZW5kLAogCsKgwqDCoMKgIEdyZWV0aW5ncyBmcm9tIE1yLiBGcmFuayBTYW5leS4gSG93IGFyZSB5b3UgdG9kYXkgd2l0aCB5b3VyIGZhbWlseS4gSG9wZSBhbGwgaXMgd2VsbD8uClBsZWFzZSwgSSB3YW50IHlvdSB0byBnaXZlIGFuIHVyZ2VudCBhdHRlbnRpb24gdG8gdGhpcyBtYWlsLiBUaG91Z2gsIEkga25vdyBpdCB3b3VsZCBjb21lIHRvIHlvdSBhdCB1dHRlcm1vc3Qgc3VycHJpc2UuIEkgYW0gYSBiYW5rZXIgYnkgcHJvZmVzc2lvbi4gSSB3b3JrIGluIG9uZSBvZiB0aGUgcmVwdXRhYmwBMAEBAQE-
+X-RocketYMMF: akhilesh9371
+X-Mailer: YahooMailClassic/15.1.2 YahooMailWebService/0.8.130.494
+Message-ID: <1359322605.87308.YahooMailClassic@web190406.mail.sg3.yahoo.com>
+Date: Mon, 28 Jan 2013 05:36:45 +0800 (SGT)
+From: Frank Saney <mrfranksaney@gmail.com>
+Reply-To: mrfranksaney@gmail.com
+Subject: VERY URGENT
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 27 Jan 2013, Shaohua Li wrote:
-> On Sat, Jan 26, 2013 at 06:16:05PM -0800, Hugh Dickins wrote:
-> > On Fri, 25 Jan 2013, Shaohua Li wrote:
-> > > On Thu, Jan 24, 2013 at 10:45:57PM -0500, Sasha Levin wrote:
-> > > 
-> > > Subject: give-each-swapper-space-separate-backing_dev_info
-> > > 
-> > > The backing_dev_info can't be shared by all swapper address space.
-> > 
-> > Whyever not?  It's perfectly normal for different inodes/address_spaces
-> > to share a single backing_dev!  Sasha's trace says that it's wrong to
-> > initialize it MAX_SWAPFILES times: fair enough.  But why should I now
-> > want to spend 32kB (not even counting their __percpu counters) on all
-> > these pseudo-backing_devs?
-> 
-> That's correct, silly me. Updated it.
 
-Looks much more to my taste, thank you!
-
-> > 
-> > p.s. a grand little change would be to move page_cluster and swap_setup()
-> > from mm/swap.c to mm/swap_state.c: they have nothing to do with the other
-> > contents of swap.c, and everything to do with the contents of swap_state.c.
-> > Why swap.c is called swap.c is rather a mystery.
-> 
-> Tried, but looks page_cluster is used in sysctl, moving to swap_state.c will
-> make it optional. don't want to add another #ifdef, so give up.
-
-Good point, thanks for trying, maybe I'll attack it next time it
-irritates me.
-
-I don't yet know whether I approve of your changes or not, but running
-with them to see (and I'll send another bugfix separately in a moment).
-
-I was the one who removed the swap_device_lock() which 2.4 used,
-because it almost always ended up having to take both swap_list_lock()
-and swap_device_lock(si).  You seem to have done a much better job of
-separating them usefully, but I need to convince myself that it does
-end up safely.
-
-My reservations so far would be: how many installations actually have
-more than one swap area, so is it a good tradeoff to add more overhead
-to help those at the (slight) expense of everyone else?  The increasingly
-ugly page_mapping() worries me, and the static array of swapper_spaces
-annoys me a little.
-
-I'm glad Minchan has now pointed you to Rik's posting of two years ago:
-I think there are more important changes to be made in that direction.
-
-Hugh
-
-> 
-> 
-> Subject: init-swap-space-backing-dev-info-once
-> 
-> 
-> Sasha reported:
-> Commit "swap: make each swap partition have one address_space" is triggering
-> a series of warnings on boot:
-> 
-> [    3.446071] ------------[ cut here ]------------
-> [    3.446664] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8e/0xb0()
-> [    3.447715] ODEBUG: init active (active state 0) object type: percpu_counter hint:           (null)
-> [    3.450360] Modules linked in:
-> [    3.451593] Pid: 1, comm: swapper/0 Tainted: G        W    3.8.0-rc4-next-20130124-sasha-00004-g838a1b4 #266
-> [    3.454508] Call Trace:
-> [    3.455248]  [<ffffffff8110d1bc>] warn_slowpath_common+0x8c/0xc0
-> [    3.455248]  [<ffffffff8110d291>] warn_slowpath_fmt+0x41/0x50
-> [    3.455248]  [<ffffffff81a2bb5e>] debug_print_object+0x8e/0xb0
-> [    3.455248]  [<ffffffff81a2c26b>] __debug_object_init+0x20b/0x290
-> [    3.455248]  [<ffffffff81a2c305>] debug_object_init+0x15/0x20
-> [    3.455248]  [<ffffffff81a3fbed>] __percpu_counter_init+0x6d/0xe0
-> [    3.455248]  [<ffffffff81231bdc>] bdi_init+0x1ac/0x270
-> [    3.455248]  [<ffffffff8618f20b>] swap_setup+0x3b/0x87
-> [    3.455248]  [<ffffffff8618f257>] ? swap_setup+0x87/0x87
-> [    3.455248]  [<ffffffff8618f268>] kswapd_init+0x11/0x7c
-> [    3.455248]  [<ffffffff810020ca>] do_one_initcall+0x8a/0x180
-> [    3.455248]  [<ffffffff86168cfd>] do_basic_setup+0x96/0xb4
-> [    3.455248]  [<ffffffff861685ae>] ? loglevel+0x31/0x31
-> [    3.455248]  [<ffffffff861885cd>] ? sched_init_smp+0x150/0x157
-> [    3.455248]  [<ffffffff86168ded>] kernel_init_freeable+0xd2/0x14c
-> [    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
-> [    3.455248]  [<ffffffff83cade19>] kernel_init+0x9/0xf0
-> [    3.455248]  [<ffffffff83d5727c>] ret_from_fork+0x7c/0xb0
-> [    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
-> [    3.455248] ---[ end trace 0b176d5c0f21bffb ]---
-> 
-> Initialize swap space backing_dev_info once to avoid the warning.
-> 
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Shaohua Li <shli@fusionio.com>
-> ---
->  mm/swap.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux/mm/swap.c
-> ===================================================================
-> --- linux.orig/mm/swap.c	2013-01-27 21:26:21.942696713 +0800
-> +++ linux/mm/swap.c	2013-01-27 21:27:29.233865394 +0800
-> @@ -858,8 +858,8 @@ void __init swap_setup(void)
->  #ifdef CONFIG_SWAP
->  	int i;
->  
-> +	bdi_init(swapper_spaces[0].backing_dev_info);
->  	for (i = 0; i < MAX_SWAPFILES; i++) {
-> -		bdi_init(swapper_spaces[i].backing_dev_info);
->  		spin_lock_init(&swapper_spaces[i].tree_lock);
->  		INIT_LIST_HEAD(&swapper_spaces[i].i_mmap_nonlinear);
->  	}
-> 
+Dear Friend,
+ 
+     Greetings from Mr. Frank Saney. How are you today with your family. Hope all is well?.
+Please, I want you to give an urgent attention to this mail. Though, I know it would come to you at uttermost surprise. I am a banker by profession. I work in one of the reputable bank here in Ouagadougou Burkina-Faso. Please, I am contacting you to transfer the sum of $10.5M to your bank account. The money belongs to one of our deceased costumer who died since 2006 during the Iraq war with his entire family leaving no body for the claim. And now the bank want to transfer the fund to the bank treasurer's account to share it within them selves. So, I discovered it and decided to contact you to apply to the bank as the Nextof Kin/beneficiary of this fund.
+ 
+This business is 100% risk free. Yourshare will be 40% while 60% for me. I will also be suplying you with all the vital information the bank may need from you for the success of this transaction.
+ 
+Please, I want you to indicate your urgent interest by sending me your full contact information as listed below to enable me send you the full details of this business.
+ 
+1. Your Full name:.............
+2. Your Home Address:.......
+3. Your Telephone N°:..........
+4. Your Occupation:.............
+5. Your Age:........................
+6. Your Receiving Country:..........
+ 
+Also this business should be a confidential between both of us and please do not let any other person to know about it untill the fund is transfer into your bank account for the security of the fund Ok.
+ 
+Thank you for your anticipated co-operation.
+Best regards.
+Mr. Frank Saney.
