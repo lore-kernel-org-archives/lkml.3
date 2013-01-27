@@ -1,69 +1,387 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab3A0NZi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 08:25:38 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58936 "EHLO mga09.intel.com"
+	id S1756798Ab3A0N2t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 08:28:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34814 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756740Ab3A0NZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 08:25:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,546,1355126400"; 
-   d="scan'208";a="277145722"
-Message-ID: <51052ACB.3070703@intel.com>
-Date: Sun, 27 Jan 2013 21:25:31 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1756726Ab3A0N2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 08:28:46 -0500
+Date: Sun, 27 Jan 2013 15:28:40 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi.kivity@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 10/12] KVM: MMU: unify the code of walking pte list
+Message-ID: <20130127132840.GB21650@redhat.com>
+References: <50FFB5A1.5090708@linux.vnet.ibm.com>
+ <50FFB6DE.8060709@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Mike Galbraith <efault@gmx.de>,
-        torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com> <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com> <510493E4.8060602@intel.com> <1359261385.5803.46.camel@marge.simpson.net> <20130127103508.GB8894@pd.tnic>
-In-Reply-To: <20130127103508.GB8894@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FFB6DE.8060709@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2013 06:35 PM, Borislav Petkov wrote:
-> On Sun, Jan 27, 2013 at 05:36:25AM +0100, Mike Galbraith wrote:
->> With aim7 compute on 4 node 40 core box, I see stable throughput
->> improvement at tasks = nr_cores and below w. balance and powersaving. 
->>
->>          3.8.0-performance                                  3.8.0-balance                                      3.8.0-powersaving
->> Tasks    jobs/min  jti  jobs/min/task      real       cpu   jobs/min  jti  jobs/min/task      real       cpu   jobs/min  jti  jobs/min/task      real       cpu
->>     1      432.86  100       432.8571     14.00      3.99     433.48  100       433.4764     13.98      3.97     433.17  100       433.1665     13.99      3.98
->>     1      437.23  100       437.2294     13.86      3.85     436.60  100       436.5994     13.88      3.86     435.66  100       435.6578     13.91      3.90
->>     1      434.10  100       434.0974     13.96      3.95     436.29  100       436.2851     13.89      3.89     436.29  100       436.2851     13.89      3.87
->>     5     2400.95   99       480.1902     12.62     12.49    2554.81   98       510.9612     11.86      7.55    2487.68   98       497.5369     12.18      8.22
->>     5     2341.58   99       468.3153     12.94     13.95    2578.72   99       515.7447     11.75      7.25    2527.11   99       505.4212     11.99      7.90
->>     5     2350.66   99       470.1319     12.89     13.66    2600.86   99       520.1717     11.65      7.09    2508.28   98       501.6556     12.08      8.24
->>    10     4291.78   99       429.1785     14.12     40.14    5334.51   99       533.4507     11.36     11.13    5183.92   98       518.3918     11.69     12.15
->>    10     4334.76   99       433.4764     13.98     38.70    5311.13   99       531.1131     11.41     11.23    5215.15   99       521.5146     11.62     12.53
->>    10     4273.62   99       427.3625     14.18     40.29    5287.96   99       528.7958     11.46     11.46    5144.31   98       514.4312     11.78     12.32
->>    20     8487.39   94       424.3697     14.28     63.14   10594.41   99       529.7203     11.44     23.72   10575.92   99       528.7958     11.46     22.08
->>    20     8387.54   97       419.3772     14.45     77.01   10575.92   98       528.7958     11.46     23.41   10520.83   99       526.0417     11.52     21.88
->>    20     8713.16   95       435.6578     13.91     55.10   10659.63   99       532.9815     11.37     24.17   10539.13   99       526.9565     11.50     22.13
->>    40    16786.70   99       419.6676     14.44    170.08   19469.88   98       486.7470     12.45     60.78   19967.05   98       499.1763     12.14     51.40
->>    40    16728.78   99       418.2195     14.49    172.96   19627.53   98       490.6883     12.35     65.26   20386.88   98       509.6720     11.89     46.91
->>    40    16763.49   99       419.0871     14.46    171.42   20033.06   98       500.8264     12.10     51.44   20682.59   98       517.0648     11.72     42.45
+On Wed, Jan 23, 2013 at 06:09:34PM +0800, Xiao Guangrong wrote:
+> Walking parent spte and walking ramp have same logic, this patch introduces
+> for_each_spte_in_pte_list to integrate their code
 > 
-> Ok, this is sick. How is balance and powersaving better than perf? Both
-> have much more jobs per minute than perf; is that because we do pack
-> much more tasks per cpu with balance and powersaving?
-
-Maybe it is due to the lazy balancing on balance/powersaving. You can
-check the CS times in /proc/pid/status.
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c       |  199 ++++++++++++++++++++++------------------------
+>  arch/x86/kvm/mmu_audit.c |    5 +-
+>  2 files changed, 97 insertions(+), 107 deletions(-)
 > 
-> Thanks.
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 55198a1..b7da3fb 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -968,26 +968,75 @@ static void pte_list_remove(u64 *spte, unsigned long *pte_list)
+>  	}
+>  }
 > 
+> -typedef void (*pte_list_walk_fn) (u64 *spte);
+> -static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
+> +/*
+> + * Used by the following functions to iterate through the sptes linked by a
+> + * pte_list.  All fields are private and not assumed to be used outside.
+> + */
+> +struct pte_list_iterator {
+> +	/* private fields */
+> +	struct pte_list_desc *desc;	/* holds the sptep if not NULL */
+> +	int pos;			/* index of the sptep */
+> +};
+> +
+> +/*
+> + * Iteration must be started by this function.  This should also be used after
+> + * removing/dropping sptes from the pte_list link because in such cases the
+> + * information in the itererator may not be valid.
+> + *
+> + * Returns sptep if found, NULL otherwise.
+> + */
+> +static u64 *pte_list_get_first(unsigned long pte_list,
+> +			       struct pte_list_iterator *iter)
+>  {
+> -	struct pte_list_desc *desc;
+> -	int i;
+> +	if (!pte_list)
+> +		return NULL;
+> 
+> -	if (!*pte_list)
+> -		return;
+> +	if (!(pte_list & 1)) {
+> +		iter->desc = NULL;
+> +		return (u64 *)pte_list;
+> +	}
+> 
+> -	if (!(*pte_list & 1))
+> -		return fn((u64 *)*pte_list);
+> +	iter->desc = (struct pte_list_desc *)(pte_list & ~1ul);
+> +	iter->pos = 0;
+> +	return iter->desc->sptes[iter->pos];
+> +}
+> 
+> -	desc = (struct pte_list_desc *)(*pte_list & ~1ul);
+> -	while (desc) {
+> -		for (i = 0; i < PTE_LIST_EXT && desc->sptes[i]; ++i)
+> -			fn(desc->sptes[i]);
+> -		desc = desc->more;
+> +/*
+> + * Must be used with a valid iterator: e.g. after pte_list_get_next().
+> + *
+> + * Returns sptep if found, NULL otherwise.
+> + */
+> +static u64 *pte_list_get_next(struct pte_list_iterator *iter)
+> +{
+> +	if (iter->desc) {
+> +		if (iter->pos < PTE_LIST_EXT - 1) {
+> +			u64 *sptep;
+> +
+> +			++iter->pos;
+> +			sptep = iter->desc->sptes[iter->pos];
+> +			if (sptep)
+> +				return sptep;
+> +		}
+> +
+> +		iter->desc = iter->desc->more;
+> +
+> +		if (iter->desc) {
+> +			iter->pos = 0;
+> +			/* desc->sptes[0] cannot be NULL */
+> +			return iter->desc->sptes[iter->pos];
+> +		}
+>  	}
+> +
+> +	return NULL;
+>  }
+> 
+> +#define for_each_spte_in_pte_list(pte_list, iter, spte)		\
+> +	   for (spte = pte_list_get_first(pte_list, &(iter));	\
+> +	      spte != NULL; spte = pte_list_get_next(&(iter)))
+> +
+> +#define for_each_spte_in_rmap(rmap, iter, spte)			\
+> +	   for_each_spte_in_pte_list(rmap, iter, spte)
+> +
+>  static unsigned long *__gfn_to_rmap(gfn_t gfn, int level,
+>  				    struct kvm_memory_slot *slot)
+>  {
+> @@ -1039,67 +1088,6 @@ static void rmap_remove(struct kvm *kvm, u64 *spte)
+>  	pte_list_remove(spte, rmapp);
+>  }
+> 
+> -/*
+> - * Used by the following functions to iterate through the sptes linked by a
+> - * rmap.  All fields are private and not assumed to be used outside.
+> - */
+> -struct rmap_iterator {
+> -	/* private fields */
+> -	struct pte_list_desc *desc;	/* holds the sptep if not NULL */
+> -	int pos;			/* index of the sptep */
+> -};
+> -
+> -/*
+> - * Iteration must be started by this function.  This should also be used after
+> - * removing/dropping sptes from the rmap link because in such cases the
+> - * information in the itererator may not be valid.
+> - *
+> - * Returns sptep if found, NULL otherwise.
+> - */
+> -static u64 *rmap_get_first(unsigned long rmap, struct rmap_iterator *iter)
+> -{
+> -	if (!rmap)
+> -		return NULL;
+> -
+> -	if (!(rmap & 1)) {
+> -		iter->desc = NULL;
+> -		return (u64 *)rmap;
+> -	}
+> -
+> -	iter->desc = (struct pte_list_desc *)(rmap & ~1ul);
+> -	iter->pos = 0;
+> -	return iter->desc->sptes[iter->pos];
+> -}
+> -
+> -/*
+> - * Must be used with a valid iterator: e.g. after rmap_get_first().
+> - *
+> - * Returns sptep if found, NULL otherwise.
+> - */
+> -static u64 *rmap_get_next(struct rmap_iterator *iter)
+> -{
+> -	if (iter->desc) {
+> -		if (iter->pos < PTE_LIST_EXT - 1) {
+> -			u64 *sptep;
+> -
+> -			++iter->pos;
+> -			sptep = iter->desc->sptes[iter->pos];
+> -			if (sptep)
+> -				return sptep;
+> -		}
+> -
+> -		iter->desc = iter->desc->more;
+> -
+> -		if (iter->desc) {
+> -			iter->pos = 0;
+> -			/* desc->sptes[0] cannot be NULL */
+> -			return iter->desc->sptes[iter->pos];
+> -		}
+> -	}
+> -
+> -	return NULL;
+> -}
+> -
+>  static void drop_spte(struct kvm *kvm, u64 *sptep)
+>  {
+>  	if (mmu_spte_clear_track_bits(sptep))
+> @@ -1160,14 +1148,13 @@ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
+>  				 bool pt_protect)
+>  {
+>  	u64 *sptep;
+> -	struct rmap_iterator iter;
+> +	struct pte_list_iterator iter;
+>  	bool flush = false;
+> 
+> -	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
+> +	for_each_spte_in_rmap(*rmapp, iter, sptep) {
+>  		BUG_ON(!(*sptep & PT_PRESENT_MASK));
+> 
+>  		spte_write_protect(kvm, sptep, &flush, pt_protect);
+> -		sptep = rmap_get_next(&iter);
+>  	}
+> 
+>  	return flush;
+> @@ -1221,15 +1208,14 @@ static int kvm_unmap_rmapp(struct kvm *kvm, unsigned long *rmapp,
+>  			   struct kvm_memory_slot *slot, unsigned long data)
+>  {
+>  	u64 *sptep;
+> -	struct rmap_iterator iter;
+> +	struct pte_list_iterator iter;
+>  	int need_tlb_flush = 0;
+> 
+> -	while ((sptep = rmap_get_first(*rmapp, &iter))) {
+> -		BUG_ON(!(*sptep & PT_PRESENT_MASK));
+> -		rmap_printk("kvm_rmap_unmap_hva: spte %p %llx\n", sptep, *sptep);
+> -
+> +restart:
+> +	for_each_spte_in_rmap(*rmapp, iter, sptep) {
+>  		drop_spte(kvm, sptep);
+>  		need_tlb_flush = 1;
+> +		goto restart;
+>  	}
+> 
+>  	return need_tlb_flush;
+> @@ -1239,7 +1225,7 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
+>  			     struct kvm_memory_slot *slot, unsigned long data)
+>  {
+>  	u64 *sptep;
+> -	struct rmap_iterator iter;
+> +	struct pte_list_iterator iter;
+>  	int need_flush = 0;
+>  	u64 new_spte;
+>  	pte_t *ptep = (pte_t *)data;
+> @@ -1248,7 +1234,8 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
+>  	WARN_ON(pte_huge(*ptep));
+>  	new_pfn = pte_pfn(*ptep);
+> 
+> -	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
+> +restart:
+> +	for_each_spte_in_rmap(*rmapp, iter, sptep) {
+>  		BUG_ON(!is_shadow_present_pte(*sptep));
+>  		rmap_printk("kvm_set_pte_rmapp: spte %p %llx\n", sptep, *sptep);
+> 
+> @@ -1256,19 +1243,18 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
+> 
+>  		if (pte_write(*ptep)) {
+>  			drop_spte(kvm, sptep);
+> -			sptep = rmap_get_first(*rmapp, &iter);
+> -		} else {
+> -			new_spte = *sptep & ~PT64_BASE_ADDR_MASK;
+> -			new_spte |= (u64)new_pfn << PAGE_SHIFT;
+> +			goto restart;
+I do not like this "goto restart" pattern throughout this patch. Follow up
+patch gets rid of most of them, so they are tolerable as a temporary solution
+here, but this one stays. What about moving pte_write(*ptep) outside
+for_each_spte_in_rmap() loop like that:
 
+if (pte_write(*ptep))
+	need_flush = kvm_unmap_rmapp();
+else
+	for_each_spte_in_rmap() {
+	}
 
--- 
-Thanks
-    Alex
+> +		}
+> 
+> -			new_spte &= ~PT_WRITABLE_MASK;
+> -			new_spte &= ~SPTE_HOST_WRITEABLE;
+> -			new_spte &= ~shadow_accessed_mask;
+> +		new_spte = *sptep & ~PT64_BASE_ADDR_MASK;
+> +		new_spte |= (u64)new_pfn << PAGE_SHIFT;
+> 
+> -			mmu_spte_clear_track_bits(sptep);
+> -			mmu_spte_set(sptep, new_spte);
+> -			sptep = rmap_get_next(&iter);
+> -		}
+> +		new_spte &= ~PT_WRITABLE_MASK;
+> +		new_spte &= ~SPTE_HOST_WRITEABLE;
+> +		new_spte &= ~shadow_accessed_mask;
+> +
+> +		mmu_spte_clear_track_bits(sptep);
+> +		mmu_spte_set(sptep, new_spte);
+>  	}
+> 
+>  	if (need_flush)
+> @@ -1359,7 +1345,7 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+>  			 struct kvm_memory_slot *slot, unsigned long data)
+>  {
+>  	u64 *sptep;
+> -	struct rmap_iterator uninitialized_var(iter);
+> +	struct pte_list_iterator uninitialized_var(iter);
+>  	int young = 0;
+> 
+>  	/*
+> @@ -1375,8 +1361,7 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+>  		goto out;
+>  	}
+> 
+> -	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
+> -	     sptep = rmap_get_next(&iter)) {
+> +	for_each_spte_in_rmap(*rmapp, iter, sptep) {
+>  		BUG_ON(!is_shadow_present_pte(*sptep));
+> 
+>  		if (*sptep & shadow_accessed_mask) {
+> @@ -1395,7 +1380,7 @@ static int kvm_test_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+>  			      struct kvm_memory_slot *slot, unsigned long data)
+>  {
+>  	u64 *sptep;
+> -	struct rmap_iterator iter;
+> +	struct pte_list_iterator iter;
+>  	int young = 0;
+> 
+>  	/*
+> @@ -1406,8 +1391,7 @@ static int kvm_test_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+>  	if (!shadow_accessed_mask)
+>  		goto out;
+> 
+> -	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
+> -	     sptep = rmap_get_next(&iter)) {
+> +	for_each_spte_in_rmap(*rmapp, iter, sptep) {
+>  		BUG_ON(!is_shadow_present_pte(*sptep));
+> 
+>  		if (*sptep & shadow_accessed_mask) {
+> @@ -1539,7 +1523,11 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
+>  static void mark_unsync(u64 *spte);
+>  static void kvm_mmu_mark_parents_unsync(struct kvm_mmu_page *sp)
+>  {
+> -	pte_list_walk(&sp->parent_ptes, mark_unsync);
+> +	struct pte_list_iterator iter;
+> +	u64 *spte;
+> +
+> +	for_each_spte_in_pte_list(sp->parent_ptes, iter, spte)
+> +		mark_unsync(spte);
+>  }
+> 
+>  static void mark_unsync(u64 *spte)
+> @@ -2059,10 +2047,13 @@ static void kvm_mmu_page_unlink_children(struct kvm *kvm,
+>  static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
+>  {
+>  	u64 *sptep;
+> -	struct rmap_iterator iter;
+> +	struct pte_list_iterator iter;
+> 
+> -	while ((sptep = rmap_get_first(sp->parent_ptes, &iter)))
+> +restart:
+> +	for_each_spte_in_rmap(sp->parent_ptes, iter, sptep) {
+>  		drop_parent_pte(sp, sptep);
+> +		goto restart;
+> +	}
+>  }
+> 
+>  static int mmu_zap_unsync_children(struct kvm *kvm,
+> diff --git a/arch/x86/kvm/mmu_audit.c b/arch/x86/kvm/mmu_audit.c
+> index daff69e..a08d384 100644
+> --- a/arch/x86/kvm/mmu_audit.c
+> +++ b/arch/x86/kvm/mmu_audit.c
+> @@ -190,15 +190,14 @@ static void audit_write_protection(struct kvm *kvm, struct kvm_mmu_page *sp)
+>  {
+>  	unsigned long *rmapp;
+>  	u64 *sptep;
+> -	struct rmap_iterator iter;
+> +	struct pte_list_iterator iter;
+> 
+>  	if (sp->role.direct || sp->unsync || sp->role.invalid)
+>  		return;
+> 
+>  	rmapp = gfn_to_rmap(kvm, sp->gfn, PT_PAGE_TABLE_LEVEL);
+> 
+> -	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
+> -	     sptep = rmap_get_next(&iter)) {
+> +	for_each_spte_in_rmap(*rmapp, iter, sptep) {
+>  		if (is_writable_pte(*sptep))
+>  			audit_printk(kvm, "shadow page has writable "
+>  				     "mappings: gfn %llx role %x\n",
+> -- 
+> 1.7.7.6
+
+--
+			Gleb.
