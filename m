@@ -1,656 +1,444 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab3A0A7V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 19:59:21 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:34085 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754984Ab3A0A7S (ORCPT
+	id S1755204Ab3A0BVe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 20:21:34 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:38382 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754942Ab3A0BVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 19:59:18 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: [PATCH tip/core/rcu 01/12] rcu: Remove restrictions on no-CBs CPUs
-Date: Sat, 26 Jan 2013 16:29:52 -0800
-Message-Id: <1359246603-6863-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <20130127002943.GA6067@linux.vnet.ibm.com>
-References: <20130127002943.GA6067@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012700-4834-0000-0000-0000030410D6
+	Sat, 26 Jan 2013 20:21:31 -0500
+Message-ID: <1359249282.4159.4.camel@kernel>
+Subject: Re: [PATCH 1/11] ksm: allow trees per NUMA node
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Sat, 26 Jan 2013 19:14:42 -0600
+In-Reply-To: <alpine.LNX.2.00.1301251753380.29196@eggly.anvils>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
+	 <alpine.LNX.2.00.1301251753380.29196@eggly.anvils>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Hi Hugh,
+On Fri, 2013-01-25 at 17:54 -0800, Hugh Dickins wrote:
+> From: Petr Holasek <pholasek@redhat.com>
+> 
+> Introduces new sysfs boolean knob /sys/kernel/mm/ksm/merge_across_nodes
+> which control merging pages across different numa nodes.
+> When it is set to zero only pages from the same node are merged,
+> otherwise pages from all nodes can be merged together (default behavior).
+> 
+> Typical use-case could be a lot of KVM guests on NUMA machine
+> and cpus from more distant nodes would have significant increase
+> of access latency to the merged ksm page. Sysfs knob was choosen
+> for higher variability when some users still prefers higher amount
+> of saved physical memory regardless of access latency.
+> 
+> Every numa node has its own stable & unstable trees because of faster
+> searching and inserting. Changing of merge_across_nodes value is possible
+> only when there are not any ksm shared pages in system.
+> 
+> I've tested this patch on numa machines with 2, 4 and 8 nodes and
+> measured speed of memory access inside of KVM guests with memory pinned
+> to one of nodes with this benchmark:
+> 
+> http://pholasek.fedorapeople.org/alloc_pg.c
+> 
+> Population standard deviations of access times in percentage of average
+> were following:
+> 
+> merge_across_nodes=1
+> 2 nodes 1.4%
+> 4 nodes 1.6%
+> 8 nodes	1.7%
+> 
+> merge_across_nodes=0
+> 2 nodes	1%
+> 4 nodes	0.32%
+> 8 nodes	0.018%
+> 
+> RFC: https://lkml.org/lkml/2011/11/30/91
+> v1: https://lkml.org/lkml/2012/1/23/46
+> v2: https://lkml.org/lkml/2012/6/29/105
+> v3: https://lkml.org/lkml/2012/9/14/550
+> v4: https://lkml.org/lkml/2012/9/23/137
+> v5: https://lkml.org/lkml/2012/12/10/540
+> v6: https://lkml.org/lkml/2012/12/23/154
+> v7: https://lkml.org/lkml/2012/12/27/225
+> 
+> Hugh notes that this patch brings two problems, whose solution needs
+> further support in mm/ksm.c, which follows in subsequent patches:
+> 1) switching merge_across_nodes after running KSM is liable to oops
+>    on stale nodes still left over from the previous stable tree;
+> 2) memory hotremove may migrate KSM pages, but there is no provision
+>    here for !merge_across_nodes to migrate nodes to the proper tree.
+> 
+> Signed-off-by: Petr Holasek <pholasek@redhat.com>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> ---
+>  Documentation/vm/ksm.txt |    7 +
+>  mm/ksm.c                 |  151 ++++++++++++++++++++++++++++++++-----
+>  2 files changed, 139 insertions(+), 19 deletions(-)
+> 
+> --- mmotm.orig/Documentation/vm/ksm.txt	2013-01-25 14:36:31.724205455 -0800
+> +++ mmotm/Documentation/vm/ksm.txt	2013-01-25 14:36:38.608205618 -0800
+> @@ -58,6 +58,13 @@ sleep_millisecs  - how many milliseconds
+>                     e.g. "echo 20 > /sys/kernel/mm/ksm/sleep_millisecs"
+>                     Default: 20 (chosen for demonstration purposes)
+>  
+> +merge_across_nodes - specifies if pages from different numa nodes can be merged.
+> +                   When set to 0, ksm merges only pages which physically
+> +                   reside in the memory area of same NUMA node. It brings
+> +                   lower latency to access to shared page. Value can be
+> +                   changed only when there is no ksm shared pages in system.
+> +                   Default: 1
+> +
+>  run              - set 0 to stop ksmd from running but keep merged pages,
+>                     set 1 to run ksmd e.g. "echo 1 > /sys/kernel/mm/ksm/run",
+>                     set 2 to stop ksmd and unmerge all pages currently merged,
+> --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:31.724205455 -0800
+> +++ mmotm/mm/ksm.c	2013-01-25 14:36:38.608205618 -0800
+> @@ -36,6 +36,7 @@
+>  #include <linux/hashtable.h>
+>  #include <linux/freezer.h>
+>  #include <linux/oom.h>
+> +#include <linux/numa.h>
+>  
+>  #include <asm/tlbflush.h>
+>  #include "internal.h"
+> @@ -139,6 +140,9 @@ struct rmap_item {
+>  	struct mm_struct *mm;
+>  	unsigned long address;		/* + low bits used for flags below */
+>  	unsigned int oldchecksum;	/* when unstable */
+> +#ifdef CONFIG_NUMA
+> +	unsigned int nid;
+> +#endif
+>  	union {
+>  		struct rb_node node;	/* when node of unstable tree */
+>  		struct {		/* when listed from stable tree */
+> @@ -153,8 +157,8 @@ struct rmap_item {
+>  #define STABLE_FLAG	0x200	/* is listed from the stable tree */
+>  
+>  /* The stable and unstable tree heads */
+> -static struct rb_root root_stable_tree = RB_ROOT;
+> -static struct rb_root root_unstable_tree = RB_ROOT;
+> +static struct rb_root root_unstable_tree[MAX_NUMNODES];
+> +static struct rb_root root_stable_tree[MAX_NUMNODES];
+>  
+>  #define MM_SLOTS_HASH_BITS 10
+>  static DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
+> @@ -188,6 +192,9 @@ static unsigned int ksm_thread_pages_to_
+>  /* Milliseconds ksmd should sleep between batches */
+>  static unsigned int ksm_thread_sleep_millisecs = 20;
+>  
+> +/* Zeroed when merging across nodes is not allowed */
+> +static unsigned int ksm_merge_across_nodes = 1;
+> +
+>  #define KSM_RUN_STOP	0
+>  #define KSM_RUN_MERGE	1
+>  #define KSM_RUN_UNMERGE	2
+> @@ -441,10 +448,25 @@ out:		page = NULL;
+>  	return page;
+>  }
+>  
+> +/*
+> + * This helper is used for getting right index into array of tree roots.
+> + * When merge_across_nodes knob is set to 1, there are only two rb-trees for
+> + * stable and unstable pages from all nodes with roots in index 0. Otherwise,
+> + * every node has its own stable and unstable tree.
+> + */
+> +static inline int get_kpfn_nid(unsigned long kpfn)
+> +{
+> +	if (ksm_merge_across_nodes)
+> +		return 0;
+> +	else
+> +		return pfn_to_nid(kpfn);
+> +}
+> +
+>  static void remove_node_from_stable_tree(struct stable_node *stable_node)
+>  {
+>  	struct rmap_item *rmap_item;
+>  	struct hlist_node *hlist;
+> +	int nid;
+>  
+>  	hlist_for_each_entry(rmap_item, hlist, &stable_node->hlist, hlist) {
+>  		if (rmap_item->hlist.next)
+> @@ -456,7 +478,9 @@ static void remove_node_from_stable_tree
+>  		cond_resched();
+>  	}
+>  
+> -	rb_erase(&stable_node->node, &root_stable_tree);
+> +	nid = get_kpfn_nid(stable_node->kpfn);
+> +
+> +	rb_erase(&stable_node->node, &root_stable_tree[nid]);
+>  	free_stable_node(stable_node);
+>  }
+>  
+> @@ -554,7 +578,12 @@ static void remove_rmap_item_from_tree(s
+>  		age = (unsigned char)(ksm_scan.seqnr - rmap_item->address);
+>  		BUG_ON(age > 1);
+>  		if (!age)
+> -			rb_erase(&rmap_item->node, &root_unstable_tree);
+> +#ifdef CONFIG_NUMA
+> +			rb_erase(&rmap_item->node,
+> +					&root_unstable_tree[rmap_item->nid]);
+> +#else
+> +			rb_erase(&rmap_item->node, &root_unstable_tree[0]);
+> +#endif
+>  
+>  		ksm_pages_unshared--;
+>  		rmap_item->address &= PAGE_MASK;
+> @@ -990,8 +1019,9 @@ static struct page *try_to_merge_two_pag
+>   */
+>  static struct page *stable_tree_search(struct page *page)
+>  {
+> -	struct rb_node *node = root_stable_tree.rb_node;
+> +	struct rb_node *node;
+>  	struct stable_node *stable_node;
+> +	int nid;
+>  
+>  	stable_node = page_stable_node(page);
+>  	if (stable_node) {			/* ksm page forked */
+> @@ -999,6 +1029,9 @@ static struct page *stable_tree_search(s
+>  		return page;
+>  	}
+>  
+> +	nid = get_kpfn_nid(page_to_pfn(page));
+> +	node = root_stable_tree[nid].rb_node;
+> +
+>  	while (node) {
+>  		struct page *tree_page;
+>  		int ret;
+> @@ -1033,10 +1066,16 @@ static struct page *stable_tree_search(s
+>   */
+>  static struct stable_node *stable_tree_insert(struct page *kpage)
+>  {
+> -	struct rb_node **new = &root_stable_tree.rb_node;
+> +	int nid;
+> +	unsigned long kpfn;
+> +	struct rb_node **new;
+>  	struct rb_node *parent = NULL;
+>  	struct stable_node *stable_node;
+>  
+> +	kpfn = page_to_pfn(kpage);
+> +	nid = get_kpfn_nid(kpfn);
+> +	new = &root_stable_tree[nid].rb_node;
+> +
+>  	while (*new) {
+>  		struct page *tree_page;
+>  		int ret;
+> @@ -1070,11 +1109,11 @@ static struct stable_node *stable_tree_i
+>  		return NULL;
+>  
+>  	rb_link_node(&stable_node->node, parent, new);
+> -	rb_insert_color(&stable_node->node, &root_stable_tree);
+> +	rb_insert_color(&stable_node->node, &root_stable_tree[nid]);
+>  
+>  	INIT_HLIST_HEAD(&stable_node->hlist);
+>  
+> -	stable_node->kpfn = page_to_pfn(kpage);
+> +	stable_node->kpfn = kpfn;
+>  	set_page_stable_node(kpage, stable_node);
+>  
+>  	return stable_node;
+> @@ -1098,10 +1137,15 @@ static
+>  struct rmap_item *unstable_tree_search_insert(struct rmap_item *rmap_item,
+>  					      struct page *page,
+>  					      struct page **tree_pagep)
+> -
+>  {
+> -	struct rb_node **new = &root_unstable_tree.rb_node;
+> +	struct rb_node **new;
+> +	struct rb_root *root;
+>  	struct rb_node *parent = NULL;
+> +	int nid;
+> +
+> +	nid = get_kpfn_nid(page_to_pfn(page));
+> +	root = &root_unstable_tree[nid];
+> +	new = &root->rb_node;
+>  
+>  	while (*new) {
+>  		struct rmap_item *tree_rmap_item;
+> @@ -1122,6 +1166,18 @@ struct rmap_item *unstable_tree_search_i
+>  			return NULL;
+>  		}
+>  
+> +		/*
+> +		 * If tree_page has been migrated to another NUMA node, it
+> +		 * will be flushed out and put into the right unstable tree
 
-Currently, CPU 0 is constrained to not be a no-CBs CPU, and furthermore
-at least one no-CBs CPU must remain online at any given time.  These
-restrictions are problematic in some situations, such as cases where
-all CPUs must run a real-time workload that needs to be insulated from
-OS jitter and latencies due to RCU callback invocation.  This commit
-therefore provides no-CBs CPUs a way to start and to wait for grace
-periods independently of the normal RCU callback mechanisms.  This
-approach allows any or all of the CPUs to be designated as no-CBs CPUs,
-and allows any proper subset of the CPUs (whether no-CBs CPUs or not)
-to be offlined.
+Then why not insert the new page to unstable tree during page migration
+against current upstream? Because default behavior is merge across
+nodes.
 
-This commit also provides event tracing, as well as a fix for a locking
-bug spotted by Xie ChanglongX <changlongx.xie@intel.com>.
+> +		 * next time: only merge with it if merge_across_nodes.
+> +		 * Just notice, we don't have similar problem for PageKsm
+> +		 * because their migration is disabled now. (62b61f611e)
+> +		 */
+> +		if (!ksm_merge_across_nodes && page_to_nid(tree_page) != nid) {
+> +			put_page(tree_page);
+> +			return NULL;
+> +		}
+> +
+>  		ret = memcmp_pages(page, tree_page);
+>  
+>  		parent = *new;
+> @@ -1139,8 +1195,11 @@ struct rmap_item *unstable_tree_search_i
+>  
+>  	rmap_item->address |= UNSTABLE_FLAG;
+>  	rmap_item->address |= (ksm_scan.seqnr & SEQNR_MASK);
+> +#ifdef CONFIG_NUMA
+> +	rmap_item->nid = nid;
+> +#endif
+>  	rb_link_node(&rmap_item->node, parent, new);
+> -	rb_insert_color(&rmap_item->node, &root_unstable_tree);
+> +	rb_insert_color(&rmap_item->node, root);
+>  
+>  	ksm_pages_unshared++;
+>  	return NULL;
+> @@ -1154,6 +1213,13 @@ struct rmap_item *unstable_tree_search_i
+>  static void stable_tree_append(struct rmap_item *rmap_item,
+>  			       struct stable_node *stable_node)
+>  {
+> +#ifdef CONFIG_NUMA
+> +	/*
+> +	 * Usually rmap_item->nid is already set correctly,
+> +	 * but it may be wrong after switching merge_across_nodes.
+> +	 */
+> +	rmap_item->nid = get_kpfn_nid(stable_node->kpfn);
+> +#endif
+>  	rmap_item->head = stable_node;
+>  	rmap_item->address |= STABLE_FLAG;
+>  	hlist_add_head(&rmap_item->hlist, &stable_node->hlist);
+> @@ -1283,6 +1349,7 @@ static struct rmap_item *scan_get_next_r
+>  	struct mm_slot *slot;
+>  	struct vm_area_struct *vma;
+>  	struct rmap_item *rmap_item;
+> +	int nid;
+>  
+>  	if (list_empty(&ksm_mm_head.mm_list))
+>  		return NULL;
+> @@ -1301,7 +1368,8 @@ static struct rmap_item *scan_get_next_r
+>  		 */
+>  		lru_add_drain_all();
+>  
+> -		root_unstable_tree = RB_ROOT;
+> +		for (nid = 0; nid < nr_node_ids; nid++)
+> +			root_unstable_tree[nid] = RB_ROOT;
+>  
+>  		spin_lock(&ksm_mmlist_lock);
+>  		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
+> @@ -1770,15 +1838,19 @@ static struct stable_node *ksm_check_sta
+>  						 unsigned long end_pfn)
+>  {
+>  	struct rb_node *node;
+> +	int nid;
+>  
+> -	for (node = rb_first(&root_stable_tree); node; node = rb_next(node)) {
+> -		struct stable_node *stable_node;
+> +	for (nid = 0; nid < nr_node_ids; nid++)
+> +		for (node = rb_first(&root_stable_tree[nid]); node;
+> +				node = rb_next(node)) {
+> +			struct stable_node *stable_node;
+> +
+> +			stable_node = rb_entry(node, struct stable_node, node);
+> +			if (stable_node->kpfn >= start_pfn &&
+> +			    stable_node->kpfn < end_pfn)
+> +				return stable_node;
+> +		}
+>  
+> -		stable_node = rb_entry(node, struct stable_node, node);
+> -		if (stable_node->kpfn >= start_pfn &&
+> -		    stable_node->kpfn < end_pfn)
+> -			return stable_node;
+> -	}
+>  	return NULL;
+>  }
+>  
+> @@ -1925,6 +1997,40 @@ static ssize_t run_store(struct kobject
+>  }
+>  KSM_ATTR(run);
+>  
+> +#ifdef CONFIG_NUMA
+> +static ssize_t merge_across_nodes_show(struct kobject *kobj,
+> +				struct kobj_attribute *attr, char *buf)
+> +{
+> +	return sprintf(buf, "%u\n", ksm_merge_across_nodes);
+> +}
+> +
+> +static ssize_t merge_across_nodes_store(struct kobject *kobj,
+> +				   struct kobj_attribute *attr,
+> +				   const char *buf, size_t count)
+> +{
+> +	int err;
+> +	unsigned long knob;
+> +
+> +	err = kstrtoul(buf, 10, &knob);
+> +	if (err)
+> +		return err;
+> +	if (knob > 1)
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&ksm_thread_mutex);
+> +	if (ksm_merge_across_nodes != knob) {
+> +		if (ksm_pages_shared)
+> +			err = -EBUSY;
+> +		else
+> +			ksm_merge_across_nodes = knob;
+> +	}
+> +	mutex_unlock(&ksm_thread_mutex);
+> +
+> +	return err ? err : count;
+> +}
+> +KSM_ATTR(merge_across_nodes);
+> +#endif
+> +
+>  static ssize_t pages_shared_show(struct kobject *kobj,
+>  				 struct kobj_attribute *attr, char *buf)
+>  {
+> @@ -1979,6 +2085,9 @@ static struct attribute *ksm_attrs[] = {
+>  	&pages_unshared_attr.attr,
+>  	&pages_volatile_attr.attr,
+>  	&full_scans_attr.attr,
+> +#ifdef CONFIG_NUMA
+> +	&merge_across_nodes_attr.attr,
+> +#endif
+>  	NULL,
+>  };
+>  
+> @@ -1992,11 +2101,15 @@ static int __init ksm_init(void)
+>  {
+>  	struct task_struct *ksm_thread;
+>  	int err;
+> +	int nid;
+>  
+>  	err = ksm_slab_init();
+>  	if (err)
+>  		goto out;
+>  
+> +	for (nid = 0; nid < nr_node_ids; nid++)
+> +		root_stable_tree[nid] = RB_ROOT;
+> +
+>  	ksm_thread = kthread_run(ksm_scan_thread, NULL, "ksmd");
+>  	if (IS_ERR(ksm_thread)) {
+>  		printk(KERN_ERR "ksm: creating kthread failed\n");
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- include/trace/events/rcu.h |   55 +++++++++
- init/Kconfig               |    4 +-
- kernel/rcutree.c           |   18 ++--
- kernel/rcutree.h           |   20 ++--
- kernel/rcutree_plugin.h    |  276 +++++++++++++++++++++++++++-----------------
- 5 files changed, 250 insertions(+), 123 deletions(-)
-
-diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
-index 1918e83..cdfed6d 100644
---- a/include/trace/events/rcu.h
-+++ b/include/trace/events/rcu.h
-@@ -72,6 +72,58 @@ TRACE_EVENT(rcu_grace_period,
- );
- 
- /*
-+ * Tracepoint for no-callbacks grace-period events.  The caller should
-+ * pull the data from the rcu_node structure, other than rcuname, which
-+ * comes from the rcu_state structure, and event, which is one of the
-+ * following:
-+ *
-+ * "Startleaf": Request a nocb grace period based on leaf-node data.
-+ * "Startedleaf": Leaf-node start proved sufficient.
-+ * "Startedleafroot": Leaf-node start proved sufficient after checking root.
-+ * "Startedroot": Requested a nocb grace period based on root-node data.
-+ * "StartWait": Start waiting for the requested grace period.
-+ * "ResumeWait": Resume waiting after signal.
-+ * "EndWait": Complete wait.
-+ * "Cleanup": Clean up rcu_node structure after previous GP.
-+ * "CleanupMore": Clean up, and another no-CB GP is needed.
-+ */
-+TRACE_EVENT(rcu_nocb_grace_period,
-+
-+	TP_PROTO(char *rcuname, unsigned long gpnum, unsigned long completed,
-+		 unsigned long c, u8 level, int grplo, int grphi,
-+		 char *gpevent),
-+
-+	TP_ARGS(rcuname, gpnum, completed, c, level, grplo, grphi, gpevent),
-+
-+	TP_STRUCT__entry(
-+		__field(char *, rcuname)
-+		__field(unsigned long, gpnum)
-+		__field(unsigned long, completed)
-+		__field(unsigned long, c)
-+		__field(u8, level)
-+		__field(int, grplo)
-+		__field(int, grphi)
-+		__field(char *, gpevent)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->rcuname = rcuname;
-+		__entry->gpnum = gpnum;
-+		__entry->completed = completed;
-+		__entry->c = c;
-+		__entry->level = level;
-+		__entry->grplo = grplo;
-+		__entry->grphi = grphi;
-+		__entry->gpevent = gpevent;
-+	),
-+
-+	TP_printk("%s %lu %lu %lu %u %d %d %s",
-+		  __entry->rcuname, __entry->gpnum, __entry->completed,
-+		  __entry->c, __entry->level, __entry->grplo, __entry->grphi,
-+		  __entry->gpevent)
-+);
-+
-+/*
-  * Tracepoint for grace-period-initialization events.  These are
-  * distinguished by the type of RCU, the new grace-period number, the
-  * rcu_node structure level, the starting and ending CPU covered by the
-@@ -601,6 +653,9 @@ TRACE_EVENT(rcu_barrier,
- #define trace_rcu_grace_period(rcuname, gpnum, gpevent) do { } while (0)
- #define trace_rcu_grace_period_init(rcuname, gpnum, level, grplo, grphi, \
- 				    qsmask) do { } while (0)
-+#define trace_rcu_nocb_grace_period(rcuname, gpnum, completed, c, \
-+				    level, grplo, grphi, event) \
-+				    do { } while (0)
- #define trace_rcu_preempt_task(rcuname, pid, gpnum) do { } while (0)
- #define trace_rcu_unlock_preempted_task(rcuname, gpnum, pid) do { } while (0)
- #define trace_rcu_quiescent_state_report(rcuname, gpnum, mask, qsmask, level, \
-diff --git a/init/Kconfig b/init/Kconfig
-index fb19b46..97fc178 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -665,7 +665,7 @@ config RCU_BOOST_DELAY
- 	  Accept the default if unsure.
- 
- config RCU_NOCB_CPU
--	bool "Offload RCU callback processing from boot-selected CPUs"
-+	bool "Offload RCU callback processing from boot-selected CPUs (EXPERIMENTAL"
- 	depends on TREE_RCU || TREE_PREEMPT_RCU
- 	default n
- 	help
-@@ -683,7 +683,7 @@ config RCU_NOCB_CPU
- 	  callback, and (2) affinity or cgroups can be used to force
- 	  the kthreads to run on whatever set of CPUs is desired.
- 
--	  Say Y here if you want reduced OS jitter on selected CPUs.
-+	  Say Y here if you want to help to debug reduced OS jitter.
- 	  Say N here if you are unsure.
- 
- endmenu # "RCU Subsystem"
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 5b8ad82..433f426 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -310,6 +310,8 @@ cpu_needs_another_gp(struct rcu_state *rsp, struct rcu_data *rdp)
- 
- 	if (rcu_gp_in_progress(rsp))
- 		return 0;  /* No, a grace period is already in progress. */
-+	if (rcu_nocb_needs_gp(rsp))
-+		return 1;  /* Yes, a no-CBs CPU needs one. */
- 	if (!rdp->nxttail[RCU_NEXT_TAIL])
- 		return 0;  /* No, this is a no-CBs (or offline) CPU. */
- 	if (*rdp->nxttail[RCU_NEXT_READY_TAIL])
-@@ -1035,10 +1037,11 @@ static void init_callback_list(struct rcu_data *rdp)
- {
- 	int i;
- 
-+	if (init_nocb_callback_list(rdp))
-+		return;
- 	rdp->nxtlist = NULL;
- 	for (i = 0; i < RCU_NEXT_SIZE; i++)
- 		rdp->nxttail[i] = &rdp->nxtlist;
--	init_nocb_callback_list(rdp);
- }
- 
- /*
-@@ -1361,6 +1364,7 @@ int rcu_gp_fqs(struct rcu_state *rsp, int fqs_state_in)
- static void rcu_gp_cleanup(struct rcu_state *rsp)
- {
- 	unsigned long gp_duration;
-+	int nocb = 0;
- 	struct rcu_data *rdp;
- 	struct rcu_node *rnp = rcu_get_root(rsp);
- 
-@@ -1391,11 +1395,13 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
- 	rcu_for_each_node_breadth_first(rsp, rnp) {
- 		raw_spin_lock_irq(&rnp->lock);
- 		rnp->completed = rsp->gpnum;
-+		nocb += rcu_nocb_gp_cleanup(rsp, rnp);
- 		raw_spin_unlock_irq(&rnp->lock);
- 		cond_resched();
- 	}
- 	rnp = rcu_get_root(rsp);
- 	raw_spin_lock_irq(&rnp->lock);
-+	rcu_nocb_gp_set(rnp, nocb);
- 
- 	rsp->completed = rsp->gpnum; /* Declare grace period done. */
- 	trace_rcu_grace_period(rsp->name, rsp->completed, "end");
-@@ -2909,7 +2915,6 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
- 	struct rcu_node *rnp = rdp->mynode;
- 	struct rcu_state *rsp;
--	int ret = NOTIFY_OK;
- 
- 	trace_rcu_utilization("Start CPU hotplug");
- 	switch (action) {
-@@ -2923,10 +2928,7 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 		rcu_boost_kthread_setaffinity(rnp, -1);
- 		break;
- 	case CPU_DOWN_PREPARE:
--		if (nocb_cpu_expendable(cpu))
--			rcu_boost_kthread_setaffinity(rnp, cpu);
--		else
--			ret = NOTIFY_BAD;
-+		rcu_boost_kthread_setaffinity(rnp, cpu);
- 		break;
- 	case CPU_DYING:
- 	case CPU_DYING_FROZEN:
-@@ -2950,7 +2952,7 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 		break;
- 	}
- 	trace_rcu_utilization("End CPU hotplug");
--	return ret;
-+	return NOTIFY_OK;
- }
- 
- /*
-@@ -3085,6 +3087,7 @@ static void __init rcu_init_one(struct rcu_state *rsp,
- 			}
- 			rnp->level = i;
- 			INIT_LIST_HEAD(&rnp->blkd_tasks);
-+			rcu_init_one_nocb(rnp);
- 		}
- 	}
- 
-@@ -3170,7 +3173,6 @@ void __init rcu_init(void)
- 	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
- 	rcu_init_one(&rcu_bh_state, &rcu_bh_data);
- 	__rcu_init_preempt();
--	rcu_init_nocb();
- 	 open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
- 
- 	/*
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index c896b50..e51373c 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -196,6 +196,12 @@ struct rcu_node {
- 				/* Refused to boost: not sure why, though. */
- 				/*  This can happen due to race conditions. */
- #endif /* #ifdef CONFIG_RCU_BOOST */
-+#ifdef CONFIG_RCU_NOCB_CPU
-+	wait_queue_head_t nocb_gp_wq[2];
-+				/* Place for rcu_nocb_kthread() to wait GP. */
-+	int n_nocb_gp_requests[2];
-+				/* Counts of upcoming no-CB GP requests. */
-+#endif /* #ifdef CONFIG_RCU_NOCB_CPU */
- 	raw_spinlock_t fqslock ____cacheline_internodealigned_in_smp;
- } ____cacheline_internodealigned_in_smp;
- 
-@@ -375,12 +381,6 @@ struct rcu_state {
- 	struct rcu_data __percpu *rda;		/* pointer of percu rcu_data. */
- 	void (*call)(struct rcu_head *head,	/* call_rcu() flavor. */
- 		     void (*func)(struct rcu_head *head));
--#ifdef CONFIG_RCU_NOCB_CPU
--	void (*call_remote)(struct rcu_head *head,
--		     void (*func)(struct rcu_head *head));
--						/* call_rcu() flavor, but for */
--						/*  placing on remote CPU. */
--#endif /* #ifdef CONFIG_RCU_NOCB_CPU */
- 
- 	/* The following fields are guarded by the root rcu_node's lock. */
- 
-@@ -529,16 +529,18 @@ static void print_cpu_stall_info(struct rcu_state *rsp, int cpu);
- static void print_cpu_stall_info_end(void);
- static void zero_cpu_stall_ticks(struct rcu_data *rdp);
- static void increment_cpu_stall_ticks(void);
-+static int rcu_nocb_needs_gp(struct rcu_state *rsp);
-+static void rcu_nocb_gp_set(struct rcu_node *rnp, int nrq);
-+static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp);
-+static void rcu_init_one_nocb(struct rcu_node *rnp);
- static bool is_nocb_cpu(int cpu);
- static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
- 			    bool lazy);
- static bool rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
- 				      struct rcu_data *rdp);
--static bool nocb_cpu_expendable(int cpu);
- static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
- static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
--static void init_nocb_callback_list(struct rcu_data *rdp);
--static void __init rcu_init_nocb(void);
-+static bool init_nocb_callback_list(struct rcu_data *rdp);
- 
- #endif /* #ifndef RCU_TREE_NONCORE */
- 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index c1cc7e1..2db3160 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -86,10 +86,6 @@ static void __init rcu_bootup_announce_oddness(void)
- 		printk(KERN_INFO "\tRCU restricting CPUs from NR_CPUS=%d to nr_cpu_ids=%d.\n", NR_CPUS, nr_cpu_ids);
- #ifdef CONFIG_RCU_NOCB_CPU
- 	if (have_rcu_nocb_mask) {
--		if (cpumask_test_cpu(0, rcu_nocb_mask)) {
--			cpumask_clear_cpu(0, rcu_nocb_mask);
--			pr_info("\tCPU 0: illegal no-CBs CPU (cleared).\n");
--		}
- 		cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
- 		pr_info("\tExperimental no-CBs CPUs: %s.\n", nocb_buf);
- 		if (rcu_nocb_poll)
-@@ -2165,6 +2161,57 @@ static int __init parse_rcu_nocb_poll(char *arg)
- }
- early_param("rcu_nocb_poll", parse_rcu_nocb_poll);
- 
-+/*
-+ * Do any no-CBs CPUs need another grace period?
-+ *
-+ * Interrupts must be disabled.  If the caller does not hold the root
-+ * rnp_node structure's ->lock, the results are advisory only.
-+ */
-+static int rcu_nocb_needs_gp(struct rcu_state *rsp)
-+{
-+	struct rcu_node *rnp = rcu_get_root(rsp);
-+
-+	return rnp->n_nocb_gp_requests[(ACCESS_ONCE(rnp->completed) + 1) & 0x1];
-+}
-+
-+/*
-+ * Clean up this rcu_node structure's no-CBs state at the end of
-+ * a grace period, and also return whether any no-CBs CPU associated
-+ * with this rcu_node structure needs another grace period.
-+ */
-+static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
-+{
-+	int c = rnp->completed;
-+	int needmore;
-+
-+	wake_up_all(&rnp->nocb_gp_wq[c & 0x1]);
-+	rnp->n_nocb_gp_requests[c & 0x1] = 0;
-+	needmore = rnp->n_nocb_gp_requests[(c + 1) & 0x1];
-+	trace_rcu_nocb_grace_period(rsp->name, rnp->gpnum, rnp->completed,
-+				    c, rnp->level, rnp->grplo, rnp->grphi,
-+				    needmore ? "CleanupMore" : "Cleanup");
-+	return needmore;
-+}
-+
-+/*
-+ * Set the root rcu_node structure's ->n_nocb_gp_requests field
-+ * based on the sum of those of all rcu_node structures.  This does
-+ * double-count the root rcu_node structure's requests, but this
-+ * is necessary to handle the possibility of a rcu_nocb_kthread()
-+ * having awakened during the time that the rcu_node structures
-+ * were being updated for the end of the previous grace period.
-+ */
-+static void rcu_nocb_gp_set(struct rcu_node *rnp, int nrq)
-+{
-+	rnp->n_nocb_gp_requests[(rnp->completed + 1) & 0x1] += nrq;
-+}
-+
-+static void rcu_init_one_nocb(struct rcu_node *rnp)
-+{
-+	init_waitqueue_head(&rnp->nocb_gp_wq[0]);
-+	init_waitqueue_head(&rnp->nocb_gp_wq[1]);
-+}
-+
- /* Is the specified CPU a no-CPUs CPU? */
- static bool is_nocb_cpu(int cpu)
- {
-@@ -2227,6 +2274,13 @@ static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
- 	if (!is_nocb_cpu(rdp->cpu))
- 		return 0;
- 	__call_rcu_nocb_enqueue(rdp, rhp, &rhp->next, 1, lazy);
-+	if (__is_kfree_rcu_offset((unsigned long)rhp->func))
-+		trace_rcu_kfree_callback(rdp->rsp->name, rhp,
-+					 (unsigned long)rhp->func,
-+					 rdp->qlen_lazy, rdp->qlen);
-+	else
-+		trace_rcu_callback(rdp->rsp->name, rhp,
-+				   rdp->qlen_lazy, rdp->qlen);
- 	return 1;
- }
- 
-@@ -2265,95 +2319,108 @@ static bool __maybe_unused rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
- }
- 
- /*
-- * There must be at least one non-no-CBs CPU in operation at any given
-- * time, because no-CBs CPUs are not capable of initiating grace periods
-- * independently.  This function therefore complains if the specified
-- * CPU is the last non-no-CBs CPU, allowing the CPU-hotplug system to
-- * avoid offlining the last such CPU.  (Recursion is a wonderful thing,
-- * but you have to have a base case!)
-+ * If necessary, kick off a new grace period, and either way wait
-+ * for a subsequent grace period to complete.
-  */
--static bool nocb_cpu_expendable(int cpu)
-+static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- {
--	cpumask_var_t non_nocb_cpus;
--	int ret;
-+	unsigned long c;
-+	bool d;
-+	unsigned long flags;
-+	unsigned long flags1;
-+	struct rcu_node *rnp = rdp->mynode;
-+	struct rcu_node *rnp_root = rcu_get_root(rdp->rsp);
- 
--	/*
--	 * If there are no no-CB CPUs or if this CPU is not a no-CB CPU,
--	 * then offlining this CPU is harmless.  Let it happen.
--	 */
--	if (!have_rcu_nocb_mask || is_nocb_cpu(cpu))
--		return 1;
-+	raw_spin_lock_irqsave(&rnp->lock, flags);
-+	c = rnp->completed + 2;
- 
--	/* If no memory, play it safe and keep the CPU around. */
--	if (!alloc_cpumask_var(&non_nocb_cpus, GFP_NOIO))
--		return 0;
--	cpumask_andnot(non_nocb_cpus, cpu_online_mask, rcu_nocb_mask);
--	cpumask_clear_cpu(cpu, non_nocb_cpus);
--	ret = !cpumask_empty(non_nocb_cpus);
--	free_cpumask_var(non_nocb_cpus);
--	return ret;
--}
-+	/* Count our request for a grace period. */
-+	rnp->n_nocb_gp_requests[c & 0x1]++;
-+	trace_rcu_nocb_grace_period(rdp->rsp->name, rnp->gpnum, rnp->completed,
-+				    c, rnp->level, rnp->grplo, rnp->grphi,
-+				    "Startleaf");
- 
--/*
-- * Helper structure for remote registry of RCU callbacks.
-- * This is needed for when a no-CBs CPU needs to start a grace period.
-- * If it just invokes call_rcu(), the resulting callback will be queued,
-- * which can result in deadlock.
-- */
--struct rcu_head_remote {
--	struct rcu_head *rhp;
--	call_rcu_func_t *crf;
--	void (*func)(struct rcu_head *rhp);
--};
-+	if (rnp->gpnum != rnp->completed) {
- 
--/*
-- * Register a callback as specified by the rcu_head_remote struct.
-- * This function is intended to be invoked via smp_call_function_single().
-- */
--static void call_rcu_local(void *arg)
--{
--	struct rcu_head_remote *rhrp =
--		container_of(arg, struct rcu_head_remote, rhp);
-+		/*
-+		 * This rcu_node structure believes that a grace period
-+		 * is in progress, so we are done.  When this grace
-+		 * period ends, our request will be acted upon.
-+		 */
-+		trace_rcu_nocb_grace_period(rdp->rsp->name,
-+					    rnp->gpnum, rnp->completed, c,
-+					    rnp->level, rnp->grplo, rnp->grphi,
-+					    "Startedleaf");
-+		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 
--	rhrp->crf(rhrp->rhp, rhrp->func);
--}
-+	} else {
- 
--/*
-- * Set up an rcu_head_remote structure and the invoke call_rcu_local()
-- * on CPU 0 (which is guaranteed to be a non-no-CBs CPU) via
-- * smp_call_function_single().
-- */
--static void invoke_crf_remote(struct rcu_head *rhp,
--			      void (*func)(struct rcu_head *rhp),
--			      call_rcu_func_t crf)
--{
--	struct rcu_head_remote rhr;
-+		/*
-+		 * Might not be a grace period, check root rcu_node
-+		 * structure to see if we must start one.
-+		 */
-+		if (rnp != rnp_root)
-+			raw_spin_lock(&rnp_root->lock); /* irqs disabled. */
-+		if (rnp_root->gpnum != rnp_root->completed) {
-+			trace_rcu_nocb_grace_period(rdp->rsp->name,
-+						    rnp->gpnum, rnp->completed,
-+						    c, rnp->level,
-+						    rnp->grplo, rnp->grphi,
-+						    "Startedleafroot");
-+			raw_spin_unlock(&rnp_root->lock); /* irqs disabled. */
-+		} else {
- 
--	rhr.rhp = rhp;
--	rhr.crf = crf;
--	rhr.func = func;
--	smp_call_function_single(0, call_rcu_local, &rhr, 1);
--}
-+			/*
-+			 * No grace period, so we need to start one.
-+			 * The good news is that we can wait for exactly
-+			 * one grace period instead of part of the current
-+			 * grace period and all of the next grace period.
-+			 * Adjust counters accordingly and start the
-+			 * needed grace period.
-+			 */
-+			rnp->n_nocb_gp_requests[c & 0x1]--;
-+			c = rnp_root->completed + 1;
-+			rnp->n_nocb_gp_requests[c & 0x1]++;
-+			rnp_root->n_nocb_gp_requests[c & 0x1]++;
-+			trace_rcu_nocb_grace_period(rdp->rsp->name,
-+						    rnp->gpnum, rnp->completed,
-+						    c, rnp->level,
-+						    rnp->grplo, rnp->grphi,
-+						    "Startedroot");
-+			local_save_flags(flags1);
-+			rcu_start_gp(rdp->rsp, flags1); /* Rlses ->lock. */
-+		}
- 
--/*
-- * Helper functions to be passed to wait_rcu_gp(), each of which
-- * invokes invoke_crf_remote() to register a callback appropriately.
-- */
--static void __maybe_unused
--call_rcu_preempt_remote(struct rcu_head *rhp,
--			void (*func)(struct rcu_head *rhp))
--{
--	invoke_crf_remote(rhp, func, call_rcu);
--}
--static void call_rcu_bh_remote(struct rcu_head *rhp,
--			       void (*func)(struct rcu_head *rhp))
--{
--	invoke_crf_remote(rhp, func, call_rcu_bh);
--}
--static void call_rcu_sched_remote(struct rcu_head *rhp,
--				  void (*func)(struct rcu_head *rhp))
--{
--	invoke_crf_remote(rhp, func, call_rcu_sched);
-+		/* Clean up locking and irq state. */
-+		if (rnp != rnp_root)
-+			raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+		else
-+			local_irq_restore(flags);
-+	}
-+
-+	/*
-+	 * Wait for the grace period.  Do so interruptibly to avoid messing
-+	 * up the load average.
-+	 */
-+	trace_rcu_nocb_grace_period(rdp->rsp->name, rnp->gpnum, rnp->completed,
-+				    c, rnp->level, rnp->grplo, rnp->grphi,
-+				    "StartWait");
-+	for (;;) {
-+		wait_event_interruptible(
-+			rnp->nocb_gp_wq[c & 0x1],
-+			(d = ULONG_CMP_GE(ACCESS_ONCE(rnp->completed), c)));
-+		if (likely(d))
-+			break;
-+		flush_signals(current);
-+		trace_rcu_nocb_grace_period(rdp->rsp->name,
-+					    rnp->gpnum, rnp->completed, c,
-+					    rnp->level, rnp->grplo, rnp->grphi,
-+					    "ResumeWait");
-+	}
-+	trace_rcu_nocb_grace_period(rdp->rsp->name, rnp->gpnum, rnp->completed,
-+				    c, rnp->level, rnp->grplo, rnp->grphi,
-+				    "EndWait");
-+	smp_mb(); /* Ensure that CB invocation happens after GP end. */
- }
- 
- /*
-@@ -2390,7 +2457,7 @@ static int rcu_nocb_kthread(void *arg)
- 		cl = atomic_long_xchg(&rdp->nocb_q_count_lazy, 0);
- 		ACCESS_ONCE(rdp->nocb_p_count) += c;
- 		ACCESS_ONCE(rdp->nocb_p_count_lazy) += cl;
--		wait_rcu_gp(rdp->rsp->call_remote);
-+		rcu_nocb_wait_gp(rdp);
- 
- 		/* Each pass through the following loop invokes a callback. */
- 		trace_rcu_batch_start(rdp->rsp->name, cl, c, -1);
-@@ -2443,25 +2510,34 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
- }
- 
- /* Prevent __call_rcu() from enqueuing callbacks on no-CBs CPUs */
--static void init_nocb_callback_list(struct rcu_data *rdp)
-+static bool init_nocb_callback_list(struct rcu_data *rdp)
- {
- 	if (rcu_nocb_mask == NULL ||
- 	    !cpumask_test_cpu(rdp->cpu, rcu_nocb_mask))
--		return;
-+		return false;
- 	rdp->nxttail[RCU_NEXT_TAIL] = NULL;
-+	return true;
- }
- 
--/* Initialize the ->call_remote fields in the rcu_state structures. */
--static void __init rcu_init_nocb(void)
-+#else /* #ifdef CONFIG_RCU_NOCB_CPU */
-+
-+static int rcu_nocb_needs_gp(struct rcu_state *rsp)
- {
--#ifdef CONFIG_PREEMPT_RCU
--	rcu_preempt_state.call_remote = call_rcu_preempt_remote;
--#endif /* #ifdef CONFIG_PREEMPT_RCU */
--	rcu_bh_state.call_remote = call_rcu_bh_remote;
--	rcu_sched_state.call_remote = call_rcu_sched_remote;
-+	return 0;
- }
- 
--#else /* #ifdef CONFIG_RCU_NOCB_CPU */
-+static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
-+{
-+	return 0;
-+}
-+
-+static void rcu_nocb_gp_set(struct rcu_node *rnp, int nrq)
-+{
-+}
-+
-+static void rcu_init_one_nocb(struct rcu_node *rnp)
-+{
-+}
- 
- static bool is_nocb_cpu(int cpu)
- {
-@@ -2480,11 +2556,6 @@ static bool __maybe_unused rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
- 	return 0;
- }
- 
--static bool nocb_cpu_expendable(int cpu)
--{
--	return 1;
--}
--
- static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
- {
- }
-@@ -2493,12 +2564,9 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
- {
- }
- 
--static void init_nocb_callback_list(struct rcu_data *rdp)
--{
--}
--
--static void __init rcu_init_nocb(void)
-+static bool init_nocb_callback_list(struct rcu_data *rdp)
- {
-+	return false;
- }
- 
- #endif /* #else #ifdef CONFIG_RCU_NOCB_CPU */
--- 
-1.7.8
 
