@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab3A0DXP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 22:23:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45523 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755492Ab3A0DXN (ORCPT
+	id S1755656Ab3A0Dea (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 22:34:30 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49849 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755549Ab3A0De3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 22:23:13 -0500
-Date: Sun, 27 Jan 2013 11:22:59 +0800
+	Sat, 26 Jan 2013 22:34:29 -0500
+Date: Sun, 27 Jan 2013 03:33:59 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] mc13892: sanity check num_regulators parsed vs.
- registered
-Message-ID: <20130127032249.GG4650@opensource.wolfsonmicro.com>
-References: <1358792745-1737-1-git-send-email-matt@genesi-usa.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org
+Subject: Re: [PATCH 1/3] spi: Add helper functions for setting up transfers
+Message-ID: <20130127033358.GA20672@sirena.org.uk>
+References: <1357752671-30222-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nhYGnrYv1PEJ5gA2"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1358792745-1737-1-git-send-email-matt@genesi-usa.com>
-X-Cookie: You are standing on my toes.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1357752671-30222-1-git-send-email-lars@metafoo.de>
+X-Cookie: Noone ever built a statue to a critic.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 09, 2013 at 06:31:09PM +0100, Lars-Peter Clausen wrote:
 
---nhYGnrYv1PEJ5gA2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> The second function spi_sync_transfer() takes a SPI device and an array of
+> spi_transfers. It will allocate a new spi_message (on the stack) and add all
+> transfers in the array to the message. Finally it will call spi_sync() on the
+> message.
 
-On Mon, Jan 21, 2013 at 12:25:45PM -0600, Matt Sealey wrote:
-> Imagine a situation where a device tree has a few regulators in an
-> appropriate node:
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Applied, thanks.  Always use subject lines appropriate for the
-subsystem.
-
---nhYGnrYv1PEJ5gA2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRBJ18AAoJELSic+t+oim9WZUP/ixFaDpqAsGPH6T2dUrfFU5d
-jhaYzBGSysW0i8HipgCV4Vi6lBvmWRJ8xzOxX/9bEF366z9xBUtcEwvROGrgd6yH
-rHsI94YBx6n1SDglMpnyHBKM1Lpg4t/FCoFqDSdwk7fJcCRMbZeEKqddUKtIv1z2
-dhQdUoGxqqZ3bAHMa7G0CEEEmNLGXCmaP5Z7WOvRCJdA8JyNiNKAxxXxblZgPIHq
-gTw6ByEncbXGwoLRYyqYNChDM234sUEGW+/fSKednBiInFQMmrsSIM/niLPvuUYB
-WjtHCTrG7XN6fUqwrm+NxAQX0MYvRKhSpLwP7h7bapmhX3GZheyfWKa/skVDr9Qw
-5reRap1dRROpL0464um+WU3TcqMHSHF7sWfGV5yEsYU6fE3oXwP1z9ogRiOZ4q/U
-xYOD7mQWDwYjhi4jtObIbsByXQeZ/1g4IUNOwJy1I8xdWxsJZ+eRhJYdy4GzP+zr
-Qg7dOzL5F+JcxAm2Fz4+OX0OD9v1DrYDryHLBd3wGO11MKusSeiiDwT6s/KJqNp2
-wEDJLZkNtw+4APl2k6YUDWhGb3MLIuunjHl5/Jvg1/uFzBiRd73TdfctnGZrmz3k
-Xkoekh/azgI4NlK2R7/Q8f4SAbL3jOlorcP4d24VI/ofWnz4pdSI+rJMEH0o4KLU
-LvgXmcNJBcOppvcE1zhg
-=Yyj4
------END PGP SIGNATURE-----
-
---nhYGnrYv1PEJ5gA2--
+for the helpers, we should try to get them merged separately to the
+coccinelle rules if there's issue with those.
