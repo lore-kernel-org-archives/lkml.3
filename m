@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab3A0Myx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 07:54:53 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:54027 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247Ab3A0Myv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 07:54:51 -0500
-Message-ID: <1359291280.11083.1.camel@phoenix>
-Subject: [PATCH] regulator: tps6507x: Fix using wrong dev argument for
- calling of_regulator_match
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>,
-        "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Sun, 27 Jan 2013 20:54:40 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756731Ab3A0M6P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 07:58:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22517 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751247Ab3A0M6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 07:58:11 -0500
+Date: Sun, 27 Jan 2013 13:57:51 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 0/9] perf: Adding better precise_ip field handling
+Message-ID: <20130127125751.GA2369@krava.brq.redhat.com>
+References: <1359221275-24254-1-git-send-email-jolsa@redhat.com>
+ <20130127124133.GA3933@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130127124133.GA3933@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dev parameter is the device requesting the data.
-In this case it should be &pdev->dev rather than pdev->dev.parent.
+On Sun, Jan 27, 2013 at 01:41:33PM +0100, Ingo Molnar wrote:
+> 
+> * Jiri Olsa <jolsa@redhat.com> wrote:
+> 
+> > hi,
+> > adding sysfs attribute to specify the maximum allowed value
+> > for perf_event_attr::precise_ip field.
+> > 
+> > Adding functionality for simple 'precise' term to get the
+> > maximum allowed value for perf_event_attr::precise_ip field.
+> > 
+> > And finally adding several precise automated tests.
+> 
+> Ok - could we please as a next step turn on cycles:pp as the 
+> default in all the profiling tools (perf record, perf top), 
+> transparently? I.e. if the CPU supports it then use it, if not 
+> then don't complain, just use the highest grade profiling method 
+> available.
 
-The dev parameter is used to call devm_kzalloc in of_get_regulator_init_data(),
-which means this fixes a memory leak because the memory is allocated every time
-probe() is called, thus it should be freed when this driver is unloaded.
+yep, we discussed with Arnaldo this would be good to have
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/tps6507x-regulator.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
-index afdeb65..54aa2da 100644
---- a/drivers/regulator/tps6507x-regulator.c
-+++ b/drivers/regulator/tps6507x-regulator.c
-@@ -394,7 +394,7 @@ static struct tps6507x_board *tps6507x_parse_dt_reg_data(
- 	count = ARRAY_SIZE(tps6507x_matches);
- 	matches = tps6507x_matches;
- 
--	ret = of_regulator_match(pdev->dev.parent, regulators, matches, count);
-+	ret = of_regulator_match(&pdev->dev, regulators, matches, count);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "Error parsing regulator init data: %d\n",
- 			ret);
--- 
-1.7.9.5
-
-
-
+jirka
