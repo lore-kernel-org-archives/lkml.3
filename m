@@ -1,105 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab3A0Ocz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 09:32:55 -0500
-Received: from antcom.de ([188.40.178.216]:36363 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754965Ab3A0Ocx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 09:32:53 -0500
-Message-ID: <510539C5.8000208@antcom.de>
-Date: Sun, 27 Jan 2013 15:29:25 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
+	id S1755854Ab3A0Od4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 09:33:56 -0500
+Received: from taos.firemountain.net ([207.114.3.54]:12714 "EHLO
+	taos.firemountain.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754965Ab3A0Ody (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 09:33:54 -0500
+X-Greylist: delayed 1025 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Jan 2013 09:33:54 EST
+Date: Sun, 27 Jan 2013 09:16:39 -0500
+From: Rich Kulawiec <rsk@gsp.org>
+To: linux-kernel@vger.kernel.org
+Cc: Eric Paris <eparis@redhat.com>
+Subject: Re: Friendlier EPERM - Request for input
+Message-ID: <20130127141639.GA3028@gsp.org>
+References: <1357747463.2593.28.camel@localhost>
+ <1357760637.2593.55.camel@localhost>
+ <201301110014.CDB90164.MFtFHVSQOFOJLO@I-love.SAKURA.ne.jp>
+ <1357835679.1342.45.camel@localhost>
 MIME-Version: 1.0
-To: Stijn Devriendt <highguy@gmail.com>
-CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, plagnioj@jcrosoft.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com, sr@denx.de, wg@grandegger.com, mark.rutland@arm.com,
-        nicolas.ferre@atmel.com
-Subject: Re: [PATCH 5/6 v14] gpio: Add device tree support to block GPIO API
-References: <1358856404-8975-1-git-send-email-stigge@antcom.de> <1358856404-8975-6-git-send-email-stigge@antcom.de> <CAOY=C6E-+uKQGbRDjNh5ZP9Wrmd+PNbt7djkBTzwe29=qA1_PA@mail.gmail.com>
-In-Reply-To: <CAOY=C6E-+uKQGbRDjNh5ZP9Wrmd+PNbt7djkBTzwe29=qA1_PA@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357835679.1342.45.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/01/13 14:07, Stijn Devriendt wrote:
->> +Example:
->> +
->> +        blockgpio {
->> +                compatible = "linux,gpio-block";
->> +
->> +                block0 {
->> +                        gpios = <&gpio 3 0 0>,
->> +                                <&gpio 3 1 0>;
->> +                };
->> +                block1 {
->> +                        gpios = <&gpio 4 1 0>,
->> +                                <&gpio 4 3 0>,
->> +                                <&gpio 4 2 0>,
->> +                                <&gpio 4 4 0>,
->> +                                <&gpio 4 5 0>,
->> +                                <&gpio 4 6 0>,
->> +                                <&gpio 4 7 0>,
->> +                                <&gpio 4 8 0>,
->> +                                <&gpio 4 9 0>,
->> +                                <&gpio 4 10 0>,
->> +                                <&gpio 4 19 0>;
->> +                };
->> +        };
+On Thu, Jan 10, 2013 at 11:34:39AM -0500, Eric Paris wrote:
+> This is not the point I am arguing.  This is not about LSMs, how hard
+> they are to configure, or how to 'fix' them.  It certainly isn't about
+> how one LSM is better, easier, or superior to another.  This is about
+> getting more information in userspace when operations fail.  I'll quote
+> an off list e-mail I received:
 > 
-> How do you see bindings for other kinds of drivers?
-> 
-> In my patchset, it's possible for other drivers to use gpio-blocks.
-> One example we have is a power sequencer with 2 pins attached
-> to GPIO pins. These 2 pins form a 2bit word to select power margining.
-> These 2 pins need to be set synchronously (as otherwise when going
-> from profile 0 to profile 3 you pass either profile 1 or profile 2 which
-> could be bad for hardware)
-> 
-> In the device-tree this is specified as:
-> 
-> powr@0x20 {
->    // other properties
-> 
->   gpios = <&gpio 4 0
->                &gpio 5 0>;
-> };
-> 
-> Is this kind of integration also possible?
+> Friendlier/more complete error messages would eliminate an awful lot of
+> digging around trying to figure *what* the problem is, preparatory to
+> discerning *where* the problem is and *how* to fix it.
 
-You can reference the gpio block via a phandle, e.g.:
+I know I'm a bit late to this, but Eric's quoting me, and I thought
+I should stand behind my words publicly.
 
-        blockgpio {
-                compatible = "linux,gpio-block";
+I often find myself confronted with systems that I didn't build, haven't
+maintained, have no documentation for, and are broken in odd/puzzling
+ways.  There's also sometimes a bit of duress due to externally imposed
+time constraints.  I of course don't expect anyone else to solve those
+problems, but it would be awfully handy if there was a breadcrumb trail
+to follow.
 
-                selector1 {
-                        gpios = <&gpio 4 0>,
-                                <&gpio 5 0>;
-                };
-        };
+So to borrow Eric's phrase, "getting more information in userspace when
+operations fail", would be an entirely good thing.  I'll defer entirely to
+others in the discussion thread about how that might be best accomplished,
+but I'd like to express my full support for the end goal.
 
-        powr@0x20 {
-                // ...
-
-                gpios = <&selector1>;
-        };
-
-
-In the driver, you can get the gpio block like this:
-
-block = gpio_block_find_by_name(of_parse_phandle(powr, "gpios", 0)->name);
-
-(Simplified by removed error/NULL handling!)
-
-If this turns out to be a common pattern, I can add a convenience "get"
-function for this.
-
-Roland
+---rsk
