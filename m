@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab3A0APq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 19:15:46 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:52091 "EHLO
+	id S1755290Ab3A0APr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 19:15:47 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:52092 "EHLO
 	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755104Ab3A0APj (ORCPT
+	with ESMTP id S1755099Ab3A0APj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jan 2013 19:15:39 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -14,46 +14,56 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, Li Zhong <zhong@linux.vnet.ibm.com>,
+        fweisbec@gmail.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 03/10] rcu: Use new nesting value for rcu_dyntick trace in rcu_eqs_enter_common
-Date: Sat, 26 Jan 2013 16:15:05 -0800
-Message-Id: <1359245712-3843-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 04/10] rcu: Silence compiler array out-of-bounds false positive
+Date: Sat, 26 Jan 2013 16:15:06 -0800
+Message-Id: <1359245712-3843-4-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1359245712-3843-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130127001454.GA2682@linux.vnet.ibm.com>
  <1359245712-3843-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012700-5518-0000-0000-00000B0B3820
+x-cbid: 13012700-5518-0000-0000-00000B0B3838
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zhong <zhong@linux.vnet.ibm.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This patch uses the real new value of dynticks_nesting instead of 0 in
-rcu_eqs_enter_common().
+It turns out that gcc 4.8 warns on array indexes being out of bounds
+unless it can prove otherwise.  It gives this warning on some RCU
+initialization code.  Because this is far from any fastpath, add
+an explicit check for array bounds and panic if so.  This gives the
+compiler enough information to figure out that the array index is never
+out of bounds.
 
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+However, if a similar false positive occurs on a fastpath, it will
+probably be necessary to tell the compiler to keep its array-index
+anxieties to itself.  ;-)
+
+Markus Trippelsdorf <markus@trippelsdorf.de>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/rcutree.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/rcutree.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index cceda76..d145796 100644
+index d145796..e0d9815 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -336,7 +336,7 @@ static struct rcu_node *rcu_get_root(struct rcu_state *rsp)
- static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
- 				bool user)
- {
--	trace_rcu_dyntick("Start", oldval, 0);
-+	trace_rcu_dyntick("Start", oldval, rdtp->dynticks_nesting);
- 	if (!user && !is_idle_task(current)) {
- 		struct task_struct *idle = idle_task(smp_processor_id());
+@@ -2938,6 +2938,10 @@ static void __init rcu_init_one(struct rcu_state *rsp,
  
+ 	BUILD_BUG_ON(MAX_RCU_LVLS > ARRAY_SIZE(buf));  /* Fix buf[] init! */
+ 
++	/* Silence gcc 4.8 warning about array index out of range. */
++	if (rcu_num_lvls > RCU_NUM_LVLS)
++		panic("rcu_init_one: rcu_num_lvls overflow");
++
+ 	/* Initialize the level-tracking arrays. */
+ 
+ 	for (i = 0; i < rcu_num_lvls; i++)
 -- 
 1.7.8
 
