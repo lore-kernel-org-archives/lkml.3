@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab3A0GYQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 01:24:16 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:55385 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755928Ab3A0GYN (ORCPT
+	id S1756102Ab3A0Ghk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 01:37:40 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60593 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755896Ab3A0Ghi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 01:24:13 -0500
-Date: Sun, 27 Jan 2013 01:24:11 -0500 (EST)
-Message-Id: <20130127.012411.1639876926107470174.davem@davemloft.net>
-To: gaowanlong@cn.fujitsu.com
-Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
-        jasowang@redhat.com, erdnetdev@gmail.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH V8 3/3] virtio-net: reset virtqueue affinity when doing
- cpu hotplug
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1359107491-6749-3-git-send-email-gaowanlong@cn.fujitsu.com>
-References: <1359107491-6749-1-git-send-email-gaowanlong@cn.fujitsu.com>
-	<1359107491-6749-3-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 27 Jan 2013 01:37:38 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] spi: Ensure memory used for spi_write_then_read() is DMA safe
+Date: Sun, 27 Jan 2013 14:35:04 +0800
+Message-Id: <1359268504-24937-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Date: Fri, 25 Jan 2013 17:51:31 +0800
+Use GFP_DMA in order to ensure that the memory we allocate for transfers
+in spi_write_then_read() can be DMAed. On most platforms this will have
+no effect.
 
-> Add a cpu notifier to virtio-net, so that we can reset the
-> virtqueue affinity if the cpu hotplug happens. It improve
-> the performance through enabling or disabling the virtqueue
-> affinity after doing cpu hotplug.
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> Cc: Jason Wang <jasowang@redhat.com>
-> Cc: Eric Dumazet <erdnetdev@gmail.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: virtualization@lists.linux-foundation.org
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/spi/spi.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Applied.
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 19ee901..14d0fba 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -1656,7 +1656,8 @@ int spi_write_then_read(struct spi_device *spi,
+ 	 * using the pre-allocated buffer or the transfer is too large.
+ 	 */
+ 	if ((n_tx + n_rx) > SPI_BUFSIZ || !mutex_trylock(&lock)) {
+-		local_buf = kmalloc(max((unsigned)SPI_BUFSIZ, n_tx + n_rx), GFP_KERNEL);
++		local_buf = kmalloc(max((unsigned)SPI_BUFSIZ, n_tx + n_rx),
++				    GFP_KERNEL | GFP_DMA);
+ 		if (!local_buf)
+ 			return -ENOMEM;
+ 	} else {
+-- 
+1.7.10.4
+
