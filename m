@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab3A0FQW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 00:16:22 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:54355 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906Ab3A0FQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 00:16:05 -0500
+	id S1755932Ab3A0FQk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 00:16:40 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:42125 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751645Ab3A0FQG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 00:16:06 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,354 +17,107 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, sbw@mit.edu,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 11/12] rcu: Abstract rcu_start_future_gp() from rcu_nocb_wait_gp()
-Date: Sat, 26 Jan 2013 16:30:02 -0800
-Message-Id: <1359246603-6863-11-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 04/12] rcu: Export RCU_FAST_NO_HZ parameters to sysfs
+Date: Sat, 26 Jan 2013 16:29:55 -0800
+Message-Id: <1359246603-6863-4-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1359246603-6863-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130127002943.GA6067@linux.vnet.ibm.com>
  <1359246603-6863-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012705-7182-0000-0000-000004BB3E37
+x-cbid: 13012705-4834-0000-0000-00000304A690
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-CPUs going idle will need to record the need for a future grace
-period, but won't actually need to block waiting on it.  This commit
-therefore splits rcu_start_future_gp(), which does the recording, from
-rcu_nocb_wait_gp(), which now invokes rcu_start_future_gp() to do the
-recording, after which rcu_nocb_wait_gp() does the waiting.
+RCU_FAST_NO_HZ operation is controlled by four compile-time C-preprocessor
+macros, but some use cases benefit greatly from runtime adjustment,
+particularly when tuning devices.  This commit therefore creates the
+corresponding sysfs entries.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Reported-by: Robin Randhawa <robin.randhawa@arm.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c        |  123 +++++++++++++++++++++++++++++++++++++++++++++--
- kernel/rcutree.h        |    2 +-
- kernel/rcutree_plugin.h |  104 ++++------------------------------------
- 3 files changed, 130 insertions(+), 99 deletions(-)
+ kernel/rcutree_plugin.h |   31 ++++++++++++++++++++-----------
+ 1 files changed, 20 insertions(+), 11 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 0d53295..f4b23f1 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -224,6 +224,7 @@ static ulong jiffies_till_next_fqs = RCU_JIFFIES_TILL_FORCE_QS;
- module_param(jiffies_till_first_fqs, ulong, 0644);
- module_param(jiffies_till_next_fqs, ulong, 0644);
- 
-+static void rcu_start_gp(struct rcu_state *rsp);
- static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *));
- static void force_quiescent_state(struct rcu_state *rsp);
- static int rcu_pending(int cpu);
-@@ -1075,6 +1076,120 @@ static unsigned long rcu_cbs_completed(struct rcu_state *rsp,
- }
- 
- /*
-+ * Trace-event helper function for rcu_start_future_gp() and
-+ * rcu_nocb_wait_gp().
-+ */
-+static void trace_rcu_future_gp(struct rcu_node *rnp, struct rcu_data *rdp,
-+				unsigned long c, char *s)
-+{
-+	trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
-+				      rnp->completed, c, rnp->level,
-+				      rnp->grplo, rnp->grphi, s);
-+}
-+
-+/*
-+ * Start some future grace period, as needed to handle newly arrived
-+ * callbacks.  The required future grace periods are recorded in each
-+ * rcu_node structure's ->need_future_gp field.
-+ *
-+ * The caller must hold the specified rcu_node structure's ->lock.
-+ */
-+static unsigned long __maybe_unused
-+rcu_start_future_gp(struct rcu_node *rnp, struct rcu_data *rdp)
-+{
-+	unsigned long c;
-+	int i;
-+	struct rcu_node *rnp_root = rcu_get_root(rdp->rsp);
-+
-+	/*
-+	 * Pick up grace-period number for new callbacks.  If this
-+	 * grace period is already marked as needed, return to the caller.
-+	 */
-+	c = rcu_cbs_completed(rdp->rsp, rnp);
-+	trace_rcu_future_gp(rnp, rdp, c, "Startleaf");
-+	if (rnp->need_future_gp[c & 0x1]) {
-+		trace_rcu_future_gp(rnp, rdp, c, "Prestartleaf");
-+		return c;
-+	}
-+
-+	/*
-+	 * If either this rcu_node structure or the root rcu_node structure
-+	 * believe that a grace period is in progress, then we must wait
-+	 * for the one following, which is in "c".  Because our request
-+	 * will be noticed at the end of the current grace period, we don't
-+	 * need to explicitly start one.
-+	 */
-+	if (rnp->gpnum != rnp->completed ||
-+	    ACCESS_ONCE(rnp->gpnum) != ACCESS_ONCE(rnp->completed)) {
-+		rnp->need_future_gp[c & 0x1]++;
-+		trace_rcu_future_gp(rnp, rdp, c, "Startedleaf");
-+		return c;
-+	}
-+
-+	/*
-+	 * There might be no grace period in progress.  If we don't already
-+	 * hold it, acquire the root rcu_node structure's lock in order to
-+	 * start one (if needed).
-+	 */
-+	if (rnp != rnp_root)
-+		raw_spin_lock(&rnp_root->lock);
-+
-+	/*
-+	 * Get a new grace-period number.  If there really is no grace
-+	 * period in progress, it will be smaller than the one we obtained
-+	 * earlier.  Adjust callbacks as needed.  Note that even no-CBs
-+	 * CPUs have a ->nxtcompleted[] array, so no no-CBs checks needed.
-+	 */
-+	c = rcu_cbs_completed(rdp->rsp, rnp_root);
-+	for (i = RCU_DONE_TAIL; i < RCU_NEXT_TAIL; i++)
-+		if (ULONG_CMP_LT(c, rdp->nxtcompleted[i]))
-+			rdp->nxtcompleted[i] = c;
-+
-+	/*
-+	 * If the needed for the required grace period is already
-+	 * recorded, trace and leave.
-+	 */
-+	if (rnp_root->need_future_gp[c & 0x1]) {
-+		trace_rcu_future_gp(rnp, rdp, c, "Prestartedroot");
-+		goto unlock_out;
-+	}
-+
-+	/* Record the need for the future grace period. */
-+	rnp_root->need_future_gp[c & 0x1]++;
-+
-+	/* If a grace period is not already in progress, start one. */
-+	if (rnp_root->gpnum != rnp_root->completed) {
-+		trace_rcu_future_gp(rnp, rdp, c, "Startedleafroot");
-+	} else {
-+		trace_rcu_future_gp(rnp, rdp, c, "Startedroot");
-+		rcu_start_gp(rdp->rsp);
-+	}
-+unlock_out:
-+	if (rnp != rnp_root)
-+		raw_spin_unlock(&rnp_root->lock);
-+	return c;
-+}
-+
-+/*
-+ * Clean up any old requests for the just-ended grace period.  Also return
-+ * whether any additional grace periods have been requested.  Also invoke
-+ * rcu_nocb_gp_cleanup() in order to wake up any no-callbacks kthreads
-+ * waiting for this grace period to complete.
-+ */
-+static int rcu_future_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
-+{
-+	int c = rnp->completed;
-+	int needmore;
-+	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
-+
-+	rcu_nocb_gp_cleanup(rsp, rnp);
-+	rnp->need_future_gp[c & 0x1] = 0;
-+	needmore = rnp->need_future_gp[(c + 1) & 0x1];
-+	trace_rcu_future_gp(rnp, rdp, c, needmore ? "CleanupMore" : "Cleanup");
-+	return needmore;
-+}
-+
-+/*
-  * If there is room, assign a ->completed number to any callbacks on
-  * this CPU that have not already been assigned.  Also accelerate any
-  * callbacks that were previously assigned a ->completed number that has
-@@ -1312,9 +1427,9 @@ static int rcu_gp_init(struct rcu_state *rsp)
- 		rdp = this_cpu_ptr(rsp->rda);
- 		rcu_preempt_check_blocked_tasks(rnp);
- 		rnp->qsmask = rnp->qsmaskinit;
--		rnp->gpnum = rsp->gpnum;
-+		ACCESS_ONCE(rnp->gpnum) = rsp->gpnum;
- 		WARN_ON_ONCE(rnp->completed != rsp->completed);
--		rnp->completed = rsp->completed;
-+		ACCESS_ONCE(rnp->completed) = rsp->completed;
- 		if (rnp == rdp->mynode)
- 			rcu_start_gp_per_cpu(rsp, rnp, rdp);
- 		rcu_preempt_boost_start_gp(rnp);
-@@ -1395,11 +1510,11 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
- 	 */
- 	rcu_for_each_node_breadth_first(rsp, rnp) {
- 		raw_spin_lock_irq(&rnp->lock);
--		rnp->completed = rsp->gpnum;
-+		ACCESS_ONCE(rnp->completed) = rsp->gpnum;
- 		rdp = this_cpu_ptr(rsp->rda);
- 		if (rnp == rdp->mynode)
- 			__rcu_process_gp_end(rsp, rnp, rdp);
--		nocb += rcu_nocb_gp_cleanup(rsp, rnp);
-+		nocb += rcu_future_gp_cleanup(rsp, rnp);
- 		raw_spin_unlock_irq(&rnp->lock);
- 		cond_resched();
- 	}
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 034b524..c11b46c33 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -526,7 +526,7 @@ static void zero_cpu_stall_ticks(struct rcu_data *rdp);
- static void increment_cpu_stall_ticks(void);
- static int rcu_nocb_needs_gp(struct rcu_state *rsp);
- static void rcu_nocb_gp_set(struct rcu_node *rnp, int nrq);
--static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp);
-+static void rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp);
- static void rcu_init_one_nocb(struct rcu_node *rnp);
- static bool is_nocb_cpu(int cpu);
- static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
 diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 9647a6b..a132573 100644
+index c016444..28185ad 100644
 --- a/kernel/rcutree_plugin.h
 +++ b/kernel/rcutree_plugin.h
-@@ -2068,22 +2068,12 @@ static int rcu_nocb_needs_gp(struct rcu_state *rsp)
- }
+@@ -1617,6 +1617,15 @@ static void rcu_idle_count_callbacks_posted(void)
+ #define RCU_IDLE_GP_DELAY 4		/* Roughly one grace period. */
+ #define RCU_IDLE_LAZY_GP_DELAY (6 * HZ)	/* Roughly six seconds. */
+ 
++static int rcu_idle_flushes = RCU_IDLE_FLUSHES;
++module_param(rcu_idle_flushes, int, 0644);
++static int rcu_idle_opt_flushes = RCU_IDLE_OPT_FLUSHES;
++module_param(rcu_idle_opt_flushes, int, 0644);
++static int rcu_idle_gp_delay = RCU_IDLE_GP_DELAY;
++module_param(rcu_idle_gp_delay, int, 0644);
++static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
++module_param(rcu_idle_lazy_gp_delay, int, 0644);
++
+ extern int tick_nohz_enabled;
  
  /*
-- * Clean up this rcu_node structure's no-CBs state at the end of
-- * a grace period, and also return whether any no-CBs CPU associated
-- * with this rcu_node structure needs another grace period.
-+ * Wake up any no-CBs CPUs' kthreads that were waiting on the just-ended
-+ * grace period.
-  */
--static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
-+static void rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
- {
--	int c = rnp->completed;
--	int needmore;
--
--	wake_up_all(&rnp->nocb_gp_wq[c & 0x1]);
--	rnp->need_future_gp[c & 0x1] = 0;
--	needmore = rnp->need_future_gp[(c + 1) & 0x1];
--	trace_rcu_future_grace_period(rsp->name, rnp->gpnum, rnp->completed,
--				      c, rnp->level, rnp->grplo, rnp->grphi,
--				      needmore ? "CleanupMore" : "Cleanup");
--	return needmore;
-+	wake_up_all(&rnp->nocb_gp_wq[rnp->completed & 0x1]);
- }
- 
- /*
-@@ -2221,84 +2211,16 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 	bool d;
- 	unsigned long flags;
- 	struct rcu_node *rnp = rdp->mynode;
--	struct rcu_node *rnp_root = rcu_get_root(rdp->rsp);
- 
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
--	c = rnp->completed + 2;
--
--	/* Count our request for a grace period. */
--	rnp->need_future_gp[c & 0x1]++;
--	trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
--				      rnp->completed, c, rnp->level,
--				      rnp->grplo, rnp->grphi, "Startleaf");
--
--	if (rnp->gpnum != rnp->completed) {
--
--		/*
--		 * This rcu_node structure believes that a grace period
--		 * is in progress, so we are done.  When this grace
--		 * period ends, our request will be acted upon.
--		 */
--		trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
--					      rnp->completed, c, rnp->level,
--					      rnp->grplo, rnp->grphi,
--					      "Startedleaf");
--		raw_spin_unlock_irqrestore(&rnp->lock, flags);
--
--	} else {
--
--		/*
--		 * Might not be a grace period, check root rcu_node
--		 * structure to see if we must start one.
--		 */
--		if (rnp != rnp_root)
--			raw_spin_lock(&rnp_root->lock); /* irqs disabled. */
--		if (rnp_root->gpnum != rnp_root->completed) {
--			trace_rcu_future_grace_period(rdp->rsp->name,
--						      rnp->gpnum,
--						      rnp->completed,
--						      c, rnp->level,
--						      rnp->grplo, rnp->grphi,
--						      "Startedleafroot");
--			raw_spin_unlock(&rnp_root->lock); /* irqs disabled. */
--		} else {
--
--			/*
--			 * No grace period, so we need to start one.
--			 * The good news is that we can wait for exactly
--			 * one grace period instead of part of the current
--			 * grace period and all of the next grace period.
--			 * Adjust counters accordingly and start the
--			 * needed grace period.
--			 */
--			rnp->need_future_gp[c & 0x1]--;
--			c = rnp_root->completed + 1;
--			rnp->need_future_gp[c & 0x1]++;
--			rnp_root->need_future_gp[c & 0x1]++;
--			trace_rcu_future_grace_period(rdp->rsp->name,
--						      rnp->gpnum,
--						      rnp->completed,
--						      c, rnp->level,
--						      rnp->grplo, rnp->grphi,
--						      "Startedroot");
--			rcu_start_gp(rdp->rsp);
--			raw_spin_unlock(&rnp->lock);
--		}
--
--		/* Clean up locking and irq state. */
--		if (rnp != rnp_root)
--			raw_spin_unlock_irqrestore(&rnp->lock, flags);
--		else
--			local_irq_restore(flags);
--	}
-+	c = rcu_start_future_gp(rnp, rdp);
-+	raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 
- 	/*
- 	 * Wait for the grace period.  Do so interruptibly to avoid messing
- 	 * up the load average.
- 	 */
--	trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
--				      rnp->completed, c, rnp->level,
--				      rnp->grplo, rnp->grphi, "StartWait");
-+	trace_rcu_future_gp(rnp, rdp, c, "StartWait");
- 	for (;;) {
- 		wait_event_interruptible(
- 			rnp->nocb_gp_wq[c & 0x1],
-@@ -2306,14 +2228,9 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 		if (likely(d))
- 			break;
- 		flush_signals(current);
--		trace_rcu_future_grace_period(rdp->rsp->name,
--					      rnp->gpnum, rnp->completed, c,
--					      rnp->level, rnp->grplo,
--					      rnp->grphi, "ResumeWait");
-+		trace_rcu_future_gp(rnp, rdp, c, "ResumeWait");
+@@ -1696,10 +1705,10 @@ int rcu_needs_cpu(int cpu, unsigned long *delta_jiffies)
  	}
--	trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
--				      rnp->completed, c, rnp->level,
--				      rnp->grplo, rnp->grphi, "EndWait");
-+	trace_rcu_future_gp(rnp, rdp, c, "EndWait");
- 	smp_mb(); /* Ensure that CB invocation happens after GP end. */
- }
- 
-@@ -2421,9 +2338,8 @@ static int rcu_nocb_needs_gp(struct rcu_state *rsp)
+ 	/* Set up for the possibility that RCU will post a timer. */
+ 	if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
+-		*delta_jiffies = round_up(RCU_IDLE_GP_DELAY + jiffies,
+-					  RCU_IDLE_GP_DELAY) - jiffies;
++		*delta_jiffies = round_up(rcu_idle_gp_delay + jiffies,
++					  rcu_idle_gp_delay) - jiffies;
+ 	} else {
+-		*delta_jiffies = jiffies + RCU_IDLE_LAZY_GP_DELAY;
++		*delta_jiffies = jiffies + rcu_idle_lazy_gp_delay;
+ 		*delta_jiffies = round_jiffies(*delta_jiffies) - jiffies;
+ 	}
  	return 0;
- }
- 
--static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
-+static void rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
- {
--	return 0;
- }
- 
- static void rcu_nocb_gp_set(struct rcu_node *rnp, int nrq)
+@@ -1805,11 +1814,11 @@ static void rcu_prepare_for_idle(int cpu)
+ 		if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
+ 			trace_rcu_prep_idle("User dyntick with callbacks");
+ 			rdtp->idle_gp_timer_expires =
+-				round_up(jiffies + RCU_IDLE_GP_DELAY,
+-					 RCU_IDLE_GP_DELAY);
++				round_up(jiffies + rcu_idle_gp_delay,
++					 rcu_idle_gp_delay);
+ 		} else if (rcu_cpu_has_callbacks(cpu)) {
+ 			rdtp->idle_gp_timer_expires =
+-				round_jiffies(jiffies + RCU_IDLE_LAZY_GP_DELAY);
++				round_jiffies(jiffies + rcu_idle_lazy_gp_delay);
+ 			trace_rcu_prep_idle("User dyntick with lazy callbacks");
+ 		} else {
+ 			return;
+@@ -1861,8 +1870,8 @@ static void rcu_prepare_for_idle(int cpu)
+ 	/* Check and update the ->dyntick_drain sequencing. */
+ 	if (rdtp->dyntick_drain <= 0) {
+ 		/* First time through, initialize the counter. */
+-		rdtp->dyntick_drain = RCU_IDLE_FLUSHES;
+-	} else if (rdtp->dyntick_drain <= RCU_IDLE_OPT_FLUSHES &&
++		rdtp->dyntick_drain = rcu_idle_flushes;
++	} else if (rdtp->dyntick_drain <= rcu_idle_opt_flushes &&
+ 		   !rcu_pending(cpu) &&
+ 		   !local_softirq_pending()) {
+ 		/* Can we go dyntick-idle despite still having callbacks? */
+@@ -1871,11 +1880,11 @@ static void rcu_prepare_for_idle(int cpu)
+ 		if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
+ 			trace_rcu_prep_idle("Dyntick with callbacks");
+ 			rdtp->idle_gp_timer_expires =
+-				round_up(jiffies + RCU_IDLE_GP_DELAY,
+-					 RCU_IDLE_GP_DELAY);
++				round_up(jiffies + rcu_idle_gp_delay,
++					 rcu_idle_gp_delay);
+ 		} else {
+ 			rdtp->idle_gp_timer_expires =
+-				round_jiffies(jiffies + RCU_IDLE_LAZY_GP_DELAY);
++				round_jiffies(jiffies + rcu_idle_lazy_gp_delay);
+ 			trace_rcu_prep_idle("Dyntick with lazy callbacks");
+ 		}
+ 		tp = &rdtp->idle_gp_timer;
 -- 
 1.7.8
 
