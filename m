@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab3A0Tjj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 14:39:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33781 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755311Ab3A0Tjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 14:39:37 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAE9FiQUFZwmiBgYwsoLZ4O+f_w-V01Eb8_6L4ZrHeA4DfLJd8A@mail.gmail.com>
-References: <510579C1.3000800@zytor.com> <1359313804.10797.74.camel@shinybook.infradead.org> <51057DA7.7040907@zytor.com> <CAE9FiQUFZwmiBgYwsoLZ4O+f_w-V01Eb8_6L4ZrHeA4DfLJd8A@mail.gmail.com>
+	id S1755511Ab3A0Tlh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 14:41:37 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:34173 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755311Ab3A0Tle (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 14:41:34 -0500
+Date: Sun, 27 Jan 2013 22:40:40 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Paul Fulghum <paulkf@microgate.com>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] TTY: synclink, small cleanup in dtr_rts()
+Message-ID: <20130127194039.GA18787@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: bzImage 2.12
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 27 Jan 2013 11:39:13 -0800
-To: Yinghai Lu <yinghai@kernel.org>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Gokul Caushik <caushik1@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>
-Message-ID: <0023b092-6149-418f-8adc-dd7f5631006c@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm planning to sort it out... I'll let you know if I run out of bandwidth.
+There is a kind of precedence problem here, but it doesn't affect how
+the code works because ->serial_signals is unsigned char.  We want to
+clear two flags here.
 
-Yinghai Lu <yinghai@kernel.org> wrote:
+#define SerialSignal_RTS            0x20     /* Request to Send */
+#define SerialSignal_DTR            0x80     /* Data Terminal Ready */
 
->On Sun, Jan 27, 2013 at 11:19 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> I think we can probably do that, since it doesn't affect anything
->non-broken
->> at this point.  I'm sorting out what can be done for 3.8 vs 3.9 at
->this
->> point.
->>
->> Anyway, as you can tell I'm spending this weekend working for a
->reason.
->>
->> It turns out the patch I sent out doesn't actually build.  Here is an
->> updated patch.  Can I get your ack for this so I can do the
->appropriate
->> hacks to your and Yinghai's patchsets?
->
->Acked-by: Yinghai Lu <yinghai@kernel.org>
->
->Do you want to me to update my patchset on top it and resend?
->
->or you are going to sort it out by you self?
->
->Thanks
->
->Yinghai
+Without the parenthesis then it does:
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+	info->serial_signals &= 0x5f;
+
+With the parenthesis it does:
+
+	info->serial_signals &= 0xffffff5f;
+
+info->serial_signals is an unsigned char so the two statements are
+equivalent, but it's cleaner to add the parenthesis.  In other dtr_rts()
+functions the parenthesis are there so this makes it more consistent.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+
+diff --git a/drivers/char/pcmcia/synclink_cs.c b/drivers/char/pcmcia/synclink_cs.c
+index 34e52ed..749fc05 100644
+--- a/drivers/char/pcmcia/synclink_cs.c
++++ b/drivers/char/pcmcia/synclink_cs.c
+@@ -2466,7 +2466,7 @@ static void dtr_rts(struct tty_port *port, int onoff)
+ 	if (onoff)
+ 		info->serial_signals |= SerialSignal_RTS + SerialSignal_DTR;
+ 	else
+-		info->serial_signals &= ~SerialSignal_RTS + SerialSignal_DTR;
++		info->serial_signals &= ~(SerialSignal_RTS + SerialSignal_DTR);
+ 	set_signals(info);
+ 	spin_unlock_irqrestore(&info->lock,flags);
+ }
