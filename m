@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab3A0FSc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 00:18:32 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59748 "EHLO
+	id S1755991Ab3A0FSj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 00:18:39 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:59744 "EHLO
 	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab3A0FQI (ORCPT
+	with ESMTP id S1750765Ab3A0FQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 00:16:08 -0500
+	Sun, 27 Jan 2013 00:16:07 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -17,149 +17,388 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, sbw@mit.edu,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 03/12] rcu: Distinguish "rcuo" kthreads by RCU flavor
-Date: Sat, 26 Jan 2013 16:29:54 -0800
-Message-Id: <1359246603-6863-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 1/2] rcu: Provide RCU CPU stall warnings for tiny RCU
+Date: Sat, 26 Jan 2013 16:23:46 -0800
+Message-Id: <1359246227-5770-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1359246603-6863-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130127002943.GA6067@linux.vnet.ibm.com>
- <1359246603-6863-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20130127002328.GA4847@linux.vnet.ibm.com>
+References: <20130127002328.GA4847@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012705-3620-0000-0000-000001011216
+x-cbid: 13012705-3620-0000-0000-000001011217
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-Currently, the per-no-CBs-CPU kthreads are named "rcuo" followed by
-the CPU number, for example, "rcuo".  This is problematic given that
-there are either two or three RCU flavors, each of which gets a per-CPU
-kthread with exactly the same name.  This commit therefore introduces
-a one-letter abbreviation for each RCU flavor, namely 'b' for RCU-bh,
-'p' for RCU-preempt, and 's' for RCU-sched.  This abbreviation use used
-to distinguish the "rcuo" kthreads, for example, for CPU 0 we would have
-"rcuo0b", "rcuo0p", and "rcuo0s".
+Tiny RCU has historically omitted RCU CPU stall warnings in order to
+reduce memory requirements, however, lack of these warnings caused
+Thomas Gleixner some debugging pain recently.  Therefore, this commit
+adds RCU CPU stall warnings to tiny RCU if RCU_TRACE=y.  This keeps
+the memory footprint small, while still enabling CPU stall warnings
+in kernels built to enable them.
 
+Updated to include Josh Triplett's suggested use of RCU_STALL_COMMON
+config variable to simplify #if expressions.
+
+Reported-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Tested-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
 ---
- Documentation/kernel-parameters.txt |    7 +++++--
- init/Kconfig                        |   13 +++++++------
- kernel/rcutree.c                    |    7 ++++---
- kernel/rcutree.h                    |    1 +
- kernel/rcutree_plugin.h             |    5 +++--
- 5 files changed, 20 insertions(+), 13 deletions(-)
+ init/Kconfig            |    8 ++++++
+ kernel/rcu.h            |    7 ++++++
+ kernel/rcupdate.c       |   51 ++++++++++++++++++++++++++++++++++++++++++
+ kernel/rcutiny.c        |    6 +++-
+ kernel/rcutiny_plugin.h |   56 +++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/rcutree.c        |   46 ++------------------------------------
+ kernel/rcutree.h        |    5 ----
+ lib/Kconfig.debug       |    2 +-
+ 8 files changed, 130 insertions(+), 51 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 6c72381..c2c3abf 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2432,9 +2432,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			In kernels built with CONFIG_RCU_NOCB_CPU=y, set
- 			the specified list of CPUs to be no-callback CPUs.
- 			Invocation of these CPUs' RCU callbacks will
--			be offloaded to "rcuoN" kthreads created for
--			that purpose.  This reduces OS jitter on the
-+			be offloaded to "rcuox/N" kthreads created for
-+			that purpose, where "x" is "b" for RCU-bh, "p"
-+			for RCU-preempt, and "s" for RCU-sched, and "N"
-+			is the CPU number.  This reduces OS jitter on the
- 			offloaded CPUs, which can be useful for HPC and
-+
- 			real-time workloads.  It can also improve energy
- 			efficiency for asymmetric multiprocessors.
- 
 diff --git a/init/Kconfig b/init/Kconfig
-index 9a04156..82f4e3c 100644
+index 7d30240..a5e90e1 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
-@@ -676,12 +676,13 @@ config RCU_NOCB_CPU
+@@ -486,6 +486,14 @@ config PREEMPT_RCU
+ 	  This option enables preemptible-RCU code that is common between
+ 	  the TREE_PREEMPT_RCU and TINY_PREEMPT_RCU implementations.
  
- 	  This option offloads callback invocation from the set of
- 	  CPUs specified at boot time by the rcu_nocbs parameter.
--	  For each such CPU, a kthread ("rcuoN") will be created to
--	  invoke callbacks, where the "N" is the CPU being offloaded.
--	  Nothing prevents this kthread from running on the specified
--	  CPUs, but (1) the kthreads may be preempted between each
--	  callback, and (2) affinity or cgroups can be used to force
--	  the kthreads to run on whatever set of CPUs is desired.
-+	  For each such CPU, a kthread ("rcuox/N") will be created to
-+	  invoke callbacks, where the "N" is the CPU being offloaded,
-+	  and where the "x" is "b" for RCU-bh, "p" for RCU-preempt, and
-+	  "s" for RCU-sched.  Nothing prevents this kthread from running
-+	  on the specified CPUs, but (1) the kthreads may be preempted
-+	  between each callback, and (2) affinity or cgroups can be used
-+	  to force the kthreads to run on whatever set of CPUs is desired.
++config RCU_STALL_COMMON
++	def_bool ( TREE_RCU || TREE_PREEMPT_RCU || RCU_TRACE )
++	help
++	  This option enables RCU CPU stall code that is common between
++	  the TINY and TREE variants of RCU.  The purpose is to allow
++	  the tiny variants to disable RCU CPU stall warnings, while
++	  making these warnings mandatory for the tree variants.
++
+ config CONTEXT_TRACKING
+        bool
  
- 	  Say Y here if you want to help to debug reduced OS jitter.
- 	  Say N here if you are unsure.
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 433f426..074cb2d 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -64,7 +64,7 @@
- static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
- static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+diff --git a/kernel/rcu.h b/kernel/rcu.h
+index 20dfba5..7f8e759 100644
+--- a/kernel/rcu.h
++++ b/kernel/rcu.h
+@@ -111,4 +111,11 @@ static inline bool __rcu_reclaim(char *rn, struct rcu_head *head)
  
--#define RCU_STATE_INITIALIZER(sname, cr) { \
-+#define RCU_STATE_INITIALIZER(sname, sabbr, cr) { \
- 	.level = { &sname##_state.node[0] }, \
- 	.call = cr, \
- 	.fqs_state = RCU_GP_IDLE, \
-@@ -76,13 +76,14 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
- 	.barrier_mutex = __MUTEX_INITIALIZER(sname##_state.barrier_mutex), \
- 	.onoff_mutex = __MUTEX_INITIALIZER(sname##_state.onoff_mutex), \
- 	.name = #sname, \
-+	.abbr = sabbr, \
- }
+ extern int rcu_expedited;
  
- struct rcu_state rcu_sched_state =
--	RCU_STATE_INITIALIZER(rcu_sched, call_rcu_sched);
-+	RCU_STATE_INITIALIZER(rcu_sched, 's', call_rcu_sched);
- DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
++#ifdef CONFIG_RCU_STALL_COMMON
++
++extern int rcu_cpu_stall_suppress;
++int rcu_jiffies_till_stall_check(void);
++
++#endif /* #ifdef CONFIG_RCU_STALL_COMMON */
++
+ #endif /* __LINUX_RCU_H */
+diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+index a2cf761..076730d 100644
+--- a/kernel/rcupdate.c
++++ b/kernel/rcupdate.c
+@@ -412,3 +412,54 @@ EXPORT_SYMBOL_GPL(do_trace_rcu_torture_read);
+ #else
+ #define do_trace_rcu_torture_read(rcutorturename, rhp) do { } while (0)
+ #endif
++
++#ifdef CONFIG_RCU_STALL_COMMON
++
++#ifdef CONFIG_PROVE_RCU
++#define RCU_STALL_DELAY_DELTA	       (5 * HZ)
++#else
++#define RCU_STALL_DELAY_DELTA	       0
++#endif
++
++int rcu_cpu_stall_suppress __read_mostly; /* 1 = suppress stall warnings. */
++int rcu_cpu_stall_timeout __read_mostly = CONFIG_RCU_CPU_STALL_TIMEOUT;
++
++module_param(rcu_cpu_stall_suppress, int, 0644);
++module_param(rcu_cpu_stall_timeout, int, 0644);
++
++int rcu_jiffies_till_stall_check(void)
++{
++	int till_stall_check = ACCESS_ONCE(rcu_cpu_stall_timeout);
++
++	/*
++	 * Limit check must be consistent with the Kconfig limits
++	 * for CONFIG_RCU_CPU_STALL_TIMEOUT.
++	 */
++	if (till_stall_check < 3) {
++		ACCESS_ONCE(rcu_cpu_stall_timeout) = 3;
++		till_stall_check = 3;
++	} else if (till_stall_check > 300) {
++		ACCESS_ONCE(rcu_cpu_stall_timeout) = 300;
++		till_stall_check = 300;
++	}
++	return till_stall_check * HZ + RCU_STALL_DELAY_DELTA;
++}
++
++static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
++{
++	rcu_cpu_stall_suppress = 1;
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block rcu_panic_block = {
++	.notifier_call = rcu_panic,
++};
++
++static int __init check_cpu_stall_init(void)
++{
++	atomic_notifier_chain_register(&panic_notifier_list, &rcu_panic_block);
++	return 0;
++}
++early_initcall(check_cpu_stall_init);
++
++#endif /* #ifdef CONFIG_RCU_STALL_COMMON */
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index e7dce58..b899df3 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -51,10 +51,10 @@ static void __call_rcu(struct rcu_head *head,
+ 		       void (*func)(struct rcu_head *rcu),
+ 		       struct rcu_ctrlblk *rcp);
  
--struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, call_rcu_bh);
-+struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, 'b', call_rcu_bh);
- DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
+-#include "rcutiny_plugin.h"
+-
+ static long long rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
  
- static struct rcu_state *rcu_state;
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index e51373c..b6c2335 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -443,6 +443,7 @@ struct rcu_state {
- 	unsigned long gp_max;			/* Maximum GP duration in */
- 						/*  jiffies. */
- 	char *name;				/* Name of structure. */
-+	char abbr;				/* Abbreviated name. */
- 	struct list_head flavors;		/* List of RCU flavors. */
++#include "rcutiny_plugin.h"
++
+ /* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcutree.c. */
+ static void rcu_idle_enter_common(long long newval)
+ {
+@@ -205,6 +205,7 @@ int rcu_is_cpu_rrupt_from_idle(void)
+  */
+ static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
+ {
++	reset_cpu_stall_ticks(rcp);
+ 	if (rcp->rcucblist != NULL &&
+ 	    rcp->donetail != rcp->curtail) {
+ 		rcp->donetail = rcp->curtail;
+@@ -251,6 +252,7 @@ void rcu_bh_qs(int cpu)
+  */
+ void rcu_check_callbacks(int cpu, int user)
+ {
++	check_cpu_stalls();
+ 	if (user || rcu_is_cpu_rrupt_from_idle())
+ 		rcu_sched_qs(cpu);
+ 	else if (!in_softirq())
+diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+index f85016a..8a23300 100644
+--- a/kernel/rcutiny_plugin.h
++++ b/kernel/rcutiny_plugin.h
+@@ -33,6 +33,9 @@ struct rcu_ctrlblk {
+ 	struct rcu_head **donetail;	/* ->next pointer of last "done" CB. */
+ 	struct rcu_head **curtail;	/* ->next pointer of last CB. */
+ 	RCU_TRACE(long qlen);		/* Number of pending CBs. */
++	RCU_TRACE(unsigned long gp_start); /* Start time for stalls. */
++	RCU_TRACE(unsigned long ticks_this_gp); /* Statistic for stalls. */
++	RCU_TRACE(unsigned long jiffies_stall); /* Jiffies at next stall. */
+ 	RCU_TRACE(char *name);		/* Name of RCU type. */
  };
  
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index e32236e..c016444 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -111,7 +111,7 @@ static void __init rcu_bootup_announce_oddness(void)
- #ifdef CONFIG_TREE_PREEMPT_RCU
+@@ -54,6 +57,51 @@ int rcu_scheduler_active __read_mostly;
+ EXPORT_SYMBOL_GPL(rcu_scheduler_active);
+ #endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
  
- struct rcu_state rcu_preempt_state =
--	RCU_STATE_INITIALIZER(rcu_preempt, call_rcu);
-+	RCU_STATE_INITIALIZER(rcu_preempt, 'p', call_rcu);
- DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
- static struct rcu_state *rcu_state = &rcu_preempt_state;
++#ifdef CONFIG_RCU_TRACE
++
++static void check_cpu_stall(struct rcu_ctrlblk *rcp)
++{
++	unsigned long j;
++	unsigned long js;
++
++	if (rcu_cpu_stall_suppress)
++		return;
++	rcp->ticks_this_gp++;
++	j = jiffies;
++	js = rcp->jiffies_stall;
++	if (*rcp->curtail && ULONG_CMP_GE(j, js)) {
++		pr_err("INFO: %s stall on CPU (%lu ticks this GP) idle=%llx (t=%lu jiffies q=%ld)\n",
++		       rcp->name, rcp->ticks_this_gp, rcu_dynticks_nesting,
++		       jiffies - rcp->gp_start, rcp->qlen);
++		dump_stack();
++	}
++	if (*rcp->curtail && ULONG_CMP_GE(j, js))
++		rcp->jiffies_stall = jiffies +
++			3 * rcu_jiffies_till_stall_check() + 3;
++	else if (ULONG_CMP_GE(j, js))
++		rcp->jiffies_stall = jiffies + rcu_jiffies_till_stall_check();
++}
++
++static void check_cpu_stall_preempt(void);
++
++#endif /* #ifdef CONFIG_RCU_TRACE */
++
++static void reset_cpu_stall_ticks(struct rcu_ctrlblk *rcp)
++{
++#ifdef CONFIG_RCU_TRACE
++	rcp->ticks_this_gp = 0;
++	rcp->gp_start = jiffies;
++	rcp->jiffies_stall = jiffies + rcu_jiffies_till_stall_check();
++#endif /* #ifdef CONFIG_RCU_TRACE */
++}
++
++static void check_cpu_stalls(void)
++{
++	RCU_TRACE(check_cpu_stall(&rcu_bh_ctrlblk));
++	RCU_TRACE(check_cpu_stall(&rcu_sched_ctrlblk));
++	RCU_TRACE(check_cpu_stall_preempt());
++}
++
+ #ifdef CONFIG_TINY_PREEMPT_RCU
  
-@@ -2517,7 +2517,8 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+ #include <linux/delay.h>
+@@ -448,6 +496,7 @@ static void rcu_preempt_start_gp(void)
+ 		/* Official start of GP. */
+ 		rcu_preempt_ctrlblk.gpnum++;
+ 		RCU_TRACE(rcu_preempt_ctrlblk.n_grace_periods++);
++		reset_cpu_stall_ticks(&rcu_preempt_ctrlblk.rcb);
+ 
+ 		/* Any blocked RCU readers block new GP. */
+ 		if (rcu_preempt_blocked_readers_any())
+@@ -1054,4 +1103,11 @@ MODULE_AUTHOR("Paul E. McKenney");
+ MODULE_DESCRIPTION("Read-Copy Update tracing for tiny implementation");
+ MODULE_LICENSE("GPL");
+ 
++static void check_cpu_stall_preempt(void)
++{
++#ifdef CONFIG_TINY_PREEMPT_RCU
++	check_cpu_stall(&rcu_preempt_ctrlblk.rcb);
++#endif /* #ifdef CONFIG_TINY_PREEMPT_RCU */
++}
++
+ #endif /* #ifdef CONFIG_RCU_TRACE */
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index e441b77..d069430 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -217,12 +217,6 @@ module_param(blimit, long, 0444);
+ module_param(qhimark, long, 0444);
+ module_param(qlowmark, long, 0444);
+ 
+-int rcu_cpu_stall_suppress __read_mostly; /* 1 = suppress stall warnings. */
+-int rcu_cpu_stall_timeout __read_mostly = CONFIG_RCU_CPU_STALL_TIMEOUT;
+-
+-module_param(rcu_cpu_stall_suppress, int, 0644);
+-module_param(rcu_cpu_stall_timeout, int, 0644);
+-
+ static ulong jiffies_till_first_fqs = RCU_JIFFIES_TILL_FORCE_QS;
+ static ulong jiffies_till_next_fqs = RCU_JIFFIES_TILL_FORCE_QS;
+ 
+@@ -793,28 +787,10 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
+ 	return 0;
+ }
+ 
+-static int jiffies_till_stall_check(void)
+-{
+-	int till_stall_check = ACCESS_ONCE(rcu_cpu_stall_timeout);
+-
+-	/*
+-	 * Limit check must be consistent with the Kconfig limits
+-	 * for CONFIG_RCU_CPU_STALL_TIMEOUT.
+-	 */
+-	if (till_stall_check < 3) {
+-		ACCESS_ONCE(rcu_cpu_stall_timeout) = 3;
+-		till_stall_check = 3;
+-	} else if (till_stall_check > 300) {
+-		ACCESS_ONCE(rcu_cpu_stall_timeout) = 300;
+-		till_stall_check = 300;
+-	}
+-	return till_stall_check * HZ + RCU_STALL_DELAY_DELTA;
+-}
+-
+ static void record_gp_stall_check_time(struct rcu_state *rsp)
+ {
+ 	rsp->gp_start = jiffies;
+-	rsp->jiffies_stall = jiffies + jiffies_till_stall_check();
++	rsp->jiffies_stall = jiffies + rcu_jiffies_till_stall_check();
+ }
+ 
+ /*
+@@ -857,7 +833,7 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
  		return;
- 	for_each_cpu(cpu, rcu_nocb_mask) {
- 		rdp = per_cpu_ptr(rsp->rda, cpu);
--		t = kthread_run(rcu_nocb_kthread, rdp, "rcuo%d", cpu);
-+		t = kthread_run(rcu_nocb_kthread, rdp,
-+				"rcuo%c/%d", rsp->abbr, cpu);
- 		BUG_ON(IS_ERR(t));
- 		ACCESS_ONCE(rdp->nocb_kthread) = t;
  	}
+-	rsp->jiffies_stall = jiffies + 3 * jiffies_till_stall_check() + 3;
++	rsp->jiffies_stall = jiffies + 3 * rcu_jiffies_till_stall_check() + 3;
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 
+ 	/*
+@@ -935,7 +911,7 @@ static void print_cpu_stall(struct rcu_state *rsp)
+ 	raw_spin_lock_irqsave(&rnp->lock, flags);
+ 	if (ULONG_CMP_GE(jiffies, rsp->jiffies_stall))
+ 		rsp->jiffies_stall = jiffies +
+-				     3 * jiffies_till_stall_check() + 3;
++				     3 * rcu_jiffies_till_stall_check() + 3;
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 
+ 	set_need_resched();  /* kick ourselves to get things going. */
+@@ -966,12 +942,6 @@ static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
+ 	}
+ }
+ 
+-static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
+-{
+-	rcu_cpu_stall_suppress = 1;
+-	return NOTIFY_DONE;
+-}
+-
+ /**
+  * rcu_cpu_stall_reset - prevent further stall warnings in current grace period
+  *
+@@ -989,15 +959,6 @@ void rcu_cpu_stall_reset(void)
+ 		rsp->jiffies_stall = jiffies + ULONG_MAX / 2;
+ }
+ 
+-static struct notifier_block rcu_panic_block = {
+-	.notifier_call = rcu_panic,
+-};
+-
+-static void __init check_cpu_stall_init(void)
+-{
+-	atomic_notifier_chain_register(&panic_notifier_list, &rcu_panic_block);
+-}
+-
+ /*
+  * Update CPU-local rcu_data state to record the newly noticed grace period.
+  * This is used both when we started the grace period and when we notice
+@@ -3074,7 +3035,6 @@ void __init rcu_init(void)
+ 	cpu_notifier(rcu_cpu_notify, 0);
+ 	for_each_online_cpu(cpu)
+ 		rcu_cpu_notify(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
+-	check_cpu_stall_init();
+ }
+ 
+ #include "rcutree_plugin.h"
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 4b69291..db9bec8 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -343,11 +343,6 @@ struct rcu_data {
+ 
+ #define RCU_JIFFIES_TILL_FORCE_QS	 3	/* for rsp->jiffies_force_qs */
+ 
+-#ifdef CONFIG_PROVE_RCU
+-#define RCU_STALL_DELAY_DELTA	       (5 * HZ)
+-#else
+-#define RCU_STALL_DELAY_DELTA	       0
+-#endif
+ #define RCU_STALL_RAT_DELAY		2	/* Allow other CPUs time */
+ 						/*  to take at least one */
+ 						/*  scheduling clock irq */
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 3a35309..a40a36b 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -970,7 +970,7 @@ config RCU_TORTURE_TEST_RUNNABLE
+ 
+ config RCU_CPU_STALL_TIMEOUT
+ 	int "RCU CPU stall timeout in seconds"
+-	depends on TREE_RCU || TREE_PREEMPT_RCU
++	depends on TREE_RCU || TREE_PREEMPT_RCU || RCU_TRACE
+ 	range 3 300
+ 	default 21
+ 	help
 -- 
 1.7.8
 
