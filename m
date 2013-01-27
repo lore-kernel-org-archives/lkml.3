@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab3A0Gjb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 01:39:31 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:55524 "EHLO
+	id S1756147Ab3A0Gni (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 01:43:38 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:55551 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755896Ab3A0Gj3 (ORCPT
+	with ESMTP id S1756078Ab3A0Gng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 01:39:29 -0500
-Date: Sun, 27 Jan 2013 01:39:28 -0500 (EST)
-Message-Id: <20130127.013928.1867901911175664439.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2013-01-23
+	Sun, 27 Jan 2013 01:43:36 -0500
+Date: Sun, 27 Jan 2013 01:43:32 -0500 (EST)
+Message-Id: <20130127.014332.1581803153001331935.davem@davemloft.net>
+To: tj@kernel.org
+Cc: akpm@linux-foundation.org, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, chas@cmf.nrl.navy.mil,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 02/14] atm/nicstar: don't use idr_remove_all()
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130123201605.GC5221@tuxdriver.com>
-References: <20130123201605.GC5221@tuxdriver.com>
+In-Reply-To: <1359163872-1949-3-git-send-email-tj@kernel.org>
+References: <1359163872-1949-1-git-send-email-tj@kernel.org>
+	<1359163872-1949-3-git-send-email-tj@kernel.org>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -24,36 +26,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Wed, 23 Jan 2013 15:16:06 -0500
+From: Tejun Heo <tj@kernel.org>
+Date: Fri, 25 Jan 2013 17:31:00 -0800
 
-> This is a batch of fixes intende for the 3.8 stream.
+> idr_destroy() can destroy idr by itself and idr_remove_all() is being
+> deprecated.  Drop its usage.
 > 
-> Regarding the iwlwifi bits, Johannes says this:
-> 
-> "Please pull to get a single fix from Emmanuel for a bug I introduced due
-> to misunderstanding the code."
-> 
-> Regarding the mac80211 bits, Johannes says this:
-> 
-> "I have a few small fixes for you:
->  * some mesh frames would cause encryption warnings -- fixes from Bob
->  * scanning would pretty much break an association if we transmitted
->    anything to the AP while scanning -- fix from Stanislaw
->  * mode injection was broken by channel contexts -- fix from Felix
->  * FT roaming was broken: hardware crypto would get disabled by it"
-> 
-> Along with that, a handful of other fixes confined to specific drivers.
-> 
-> Avinash Patil fixes a typo in a NULL check in mwifiex.
-> 
-> Larry Finger fixes a build warning in rtlwifi.  Seems safe...
-> 
-> Stanislaw Gruszka fixes iwlegacy to prevent microcode errors when
-> switching from IBSS mode to STA mode.
-> 
-> Felix Fietkau provides a trio of ath9k fixes related to proper tuning.
-> 
-> Please let me know if there are problems!
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Chas Williams <chas@cmf.nrl.navy.mil>
+> Cc: netdev@vger.kernel.org
+> ---
+> This patch depends on an earlier idr patch and given the trivial
+> nature of the patch, I think it would be best to route these together
+> through -mm.  Please holler if there's any objection.
 
-Pulled, thanks John.
+Please do:
+
+Acked-by: David S. Miller <davem@davemloft.net>
