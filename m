@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab3A0AXO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 19:23:14 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:39071 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073Ab3A0AXN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 19:23:13 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 02/10] rcu: Make rcu_is_cpu_rrupt_from_idle helper functions static
-Date: Sat, 26 Jan 2013 16:15:04 -0800
-Message-Id: <1359245712-3843-2-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1359245712-3843-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130127001454.GA2682@linux.vnet.ibm.com>
- <1359245712-3843-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012700-4834-0000-0000-00000303B3E1
+	id S1755226Ab3A0A20 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 19:28:26 -0500
+Received: from mga03.intel.com ([143.182.124.21]:22587 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754866Ab3A0A2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 19:28:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,545,1355126400"; 
+   d="scan'208";a="248801429"
+Date: Sun, 27 Jan 2013 01:28:21 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: linus.walleij@linaro.org, grant.likely@secretlab.ca,
+        akpm@linux-foundation.org, a.zummo@towertech.it,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH 0/4] mfd: palma: add RTC and GPIO support
+Message-ID: <20130127002821.GF1174@sortiz-mobl>
+References: <1357210020-19876-1-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357210020-19876-1-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josh Triplett <josh@joshtriplett.org>
+Hi Laxman,
 
-Both rcutiny and rcutree define a helper function named
-rcu_is_cpu_rrupt_from_idle(), each used exactly once, later in the
-same file.  This commit therefore declares these helper functions static.
+On Thu, Jan 03, 2013 at 04:16:56PM +0530, Laxman Dewangan wrote:
+> This series add the RTC and gpio driver for the TI Palma series PMIC.
+> The changes are splitted so that easy to apply in different sub systems.
+> 
+> Laxman Dewangan (4):
+>   mfd: palmas: add rtc irq number as irq resource for palmas-rtc
+>   mfd: palmas: add apis to access the Palmas' registers
+>   gpio: palmas: Add support for Palams GPIO
+>   rtc: palmas: add RTC driver Palmas series PMIC
+All 4 patches applied to my for-next branch, thanks.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutiny.c |    2 +-
- kernel/rcutree.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Cheers,
+Samuel.
 
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index e7dce58..9f72a0f 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -193,7 +193,7 @@ EXPORT_SYMBOL(rcu_is_cpu_idle);
-  * interrupts don't count, we must be running at the first interrupt
-  * level.
-  */
--int rcu_is_cpu_rrupt_from_idle(void)
-+static int rcu_is_cpu_rrupt_from_idle(void)
- {
- 	return rcu_dynticks_nesting <= 1;
- }
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e441b77..cceda76 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -727,7 +727,7 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cpu_online);
-  * interrupt from idle, return true.  The caller must have at least
-  * disabled preemption.
-  */
--int rcu_is_cpu_rrupt_from_idle(void)
-+static int rcu_is_cpu_rrupt_from_idle(void)
- {
- 	return __get_cpu_var(rcu_dynticks).dynticks_nesting <= 1;
- }
 -- 
-1.7.8
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
