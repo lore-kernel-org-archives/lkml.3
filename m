@@ -1,145 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab3A0Csv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 21:48:51 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:39840 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755245Ab3A0Cst (ORCPT
+	id S1755446Ab3A0CwC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 21:52:02 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49334 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755288Ab3A0CwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 21:48:49 -0500
-Message-ID: <1359254927.4159.11.camel@kernel>
-Subject: Re: [PATCH 5/11] ksm: get_ksm_page locked
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Sat, 26 Jan 2013 20:48:47 -0600
-In-Reply-To: <alpine.LNX.2.00.1301251759470.29196@eggly.anvils>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
-	 <alpine.LNX.2.00.1301251759470.29196@eggly.anvils>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 26 Jan 2013 21:52:01 -0500
+Date: Sun, 27 Jan 2013 10:51:46 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 11/19] regmap: regmap: avoid spurious warning in
+ regmap_read_debugfs
+Message-ID: <20130127025143.GA4650@opensource.wolfsonmicro.com>
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
+ <20130126100326.GK30594@opensource.wolfsonmicro.com>
+ <20130126100744.GD23505@n2100.arm.linux.org.uk>
+ <201301261145.36158.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
+Content-Disposition: inline
+In-Reply-To: <201301261145.36158.arnd@arndb.de>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-25 at 18:00 -0800, Hugh Dickins wrote:
-> In some places where get_ksm_page() is used, we need the page to be locked.
-> 
-> When KSM migration is fully enabled, we shall want that to make sure that
-> the page just acquired cannot be migrated beneath us (raised page count is
-> only effective when there is serialization to make sure migration notices).
-> Whereas when navigating through the stable tree, we certainly do not want
-> to lock each node (raised page count is enough to guarantee the memcmps,
-> even if page is migrated to another node).
-> 
-> Since we're about to add another use case, add the locked argument to
-> get_ksm_page() now.
-> 
-> Hmm, what's that rcu_read_lock() about?  Complete misunderstanding, I
-> really got the wrong end of the stick on that!  There's a configuration
-> in which page_cache_get_speculative() can do something cheaper than
-> get_page_unless_zero(), relying on its caller's rcu_read_lock() to have
-> disabled preemption for it.  There's no need for rcu_read_lock() around
-> get_page_unless_zero() (and mapping checks) here.  Cut out that
-> silliness before making this any harder to understand.
 
-BTW, what's the meaning of ksm page forked? 
+--IS0zKkzwUGydFO0o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
->  mm/ksm.c |   23 +++++++++++++----------
->  1 file changed, 13 insertions(+), 10 deletions(-)
-> 
-> --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:53.244205966 -0800
-> +++ mmotm/mm/ksm.c	2013-01-25 14:36:58.856206099 -0800
-> @@ -514,15 +514,14 @@ static void remove_node_from_stable_tree
->   * but this is different - made simpler by ksm_thread_mutex being held, but
->   * interesting for assuming that no other use of the struct page could ever
->   * put our expected_mapping into page->mapping (or a field of the union which
-> - * coincides with page->mapping).  The RCU calls are not for KSM at all, but
-> - * to keep the page_count protocol described with page_cache_get_speculative.
-> + * coincides with page->mapping).
->   *
->   * Note: it is possible that get_ksm_page() will return NULL one moment,
->   * then page the next, if the page is in between page_freeze_refs() and
->   * page_unfreeze_refs(): this shouldn't be a problem anywhere, the page
->   * is on its way to being freed; but it is an anomaly to bear in mind.
->   */
-> -static struct page *get_ksm_page(struct stable_node *stable_node)
-> +static struct page *get_ksm_page(struct stable_node *stable_node, bool locked)
->  {
->  	struct page *page;
->  	void *expected_mapping;
-> @@ -530,7 +529,6 @@ static struct page *get_ksm_page(struct
->  	page = pfn_to_page(stable_node->kpfn);
->  	expected_mapping = (void *)stable_node +
->  				(PAGE_MAPPING_ANON | PAGE_MAPPING_KSM);
-> -	rcu_read_lock();
->  	if (page->mapping != expected_mapping)
->  		goto stale;
->  	if (!get_page_unless_zero(page))
-> @@ -539,10 +537,16 @@ static struct page *get_ksm_page(struct
->  		put_page(page);
->  		goto stale;
->  	}
-> -	rcu_read_unlock();
-> +	if (locked) {
-> +		lock_page(page);
-> +		if (page->mapping != expected_mapping) {
-> +			unlock_page(page);
-> +			put_page(page);
-> +			goto stale;
-> +		}
-> +	}
->  	return page;
->  stale:
-> -	rcu_read_unlock();
->  	remove_node_from_stable_tree(stable_node);
->  	return NULL;
->  }
-> @@ -558,11 +562,10 @@ static void remove_rmap_item_from_tree(s
->  		struct page *page;
->  
->  		stable_node = rmap_item->head;
-> -		page = get_ksm_page(stable_node);
-> +		page = get_ksm_page(stable_node, true);
->  		if (!page)
->  			goto out;
->  
-> -		lock_page(page);
->  		hlist_del(&rmap_item->hlist);
->  		unlock_page(page);
->  		put_page(page);
-> @@ -1042,7 +1045,7 @@ static struct page *stable_tree_search(s
->  
->  		cond_resched();
->  		stable_node = rb_entry(node, struct stable_node, node);
-> -		tree_page = get_ksm_page(stable_node);
-> +		tree_page = get_ksm_page(stable_node, false);
->  		if (!tree_page)
->  			return NULL;
->  
-> @@ -1086,7 +1089,7 @@ static struct stable_node *stable_tree_i
->  
->  		cond_resched();
->  		stable_node = rb_entry(*new, struct stable_node, node);
-> -		tree_page = get_ksm_page(stable_node);
-> +		tree_page = get_ksm_page(stable_node, false);
->  		if (!tree_page)
->  			return NULL;
->  
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+On Sat, Jan 26, 2013 at 11:45:35AM +0000, Arnd Bergmann wrote:
 
+> Gcc warns about the case where regmap_read_debugfs tries to walk an
+> empty map->debugfs_off_cache list, which would results in uninitialized
+> variable getting returned, if we hadn't checked the same condition
+> just before that.
 
+Applied, thanks.
+
+--IS0zKkzwUGydFO0o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRBJYzAAoJELSic+t+oim9nGEP/RxUqp9OX8JqpwE9L3m9Aj9J
+vqrD3tWW4AsUrY5cqyf3J+zCMyhg1bxugG0i9+yDeeKGawcBP4h2P1EXYpktFhLd
+G7BWCfvN9oquqV9fq9ycJ4+ADXE1+BqvNT6Bo/9F3kN7QbBx7snVlvpDUXcecHxJ
+QPJEcAXb+K7r0uiz34gNHwDeIz4k+vOSq+LzuXxIM0YlfEmnidrkXorT+RgMv6DD
+q1cKtoYsl/fKmAaN35u2KDMpogcNZsE2qkG2xs9iwdTPMRlJ3KNHPAOGeZOlohnV
+Bcm5snO4yG5AaYL186gJl37LGditxpYgHG9CB4YrrE0myhNOYnYC7g4t0xJVD6cL
+Gs0kMfalM6R5ka0tn2jNae5jsMgCyhEBkmreqxya53MK2wdS1ZG9eX5tvjvEvnX5
+qOEFglo4087DjfStDZq5OY1eu7KouPN04aF8Tytnc3Il01G2tQHoGxvQN+bHy0jN
+OTmvlTXZgIpl03pWV1Z9V+lFSQB0d051FWXJMKOKmllIE2lcZSv3YYNmplgHnf33
+fZfonm/yPrZtHd1ikYG3HnSoRHO4P6OkUHbussU/ji52kXg+9nIQCqyQyzxx4ea5
+JrS4Ryz+1XRcXGv+exsXRbwzh9+M88rssQe9K9V9i6cHlpBa7LChBf36O4MIQ7s1
+Qb2SLvaCaPvlfeUwDUuI
+=g+yE
+-----END PGP SIGNATURE-----
+
+--IS0zKkzwUGydFO0o--
