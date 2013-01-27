@@ -1,85 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab3A0Cpx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 21:45:53 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:42227 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755276Ab3A0Cpv (ORCPT
+	id S1755435Ab3A0Csv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 21:48:51 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:39840 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755245Ab3A0Cst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 21:45:51 -0500
-Message-ID: <510494D6.1010000@gmail.com>
-Date: Sun, 27 Jan 2013 10:45:42 +0800
-From: Yijing Wang <wangyijing0307@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Chris Clayton <chris2553@googlemail.com>
-CC: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>, linux-media@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
-Subject: Re: 3.8.0-rc4+ - Oops on removing WinTV-HVR-1400 expresscard TV Tuner
-References: <51016937.1020202@googlemail.com> <510189B1.606@fold.natur.cuni.cz> <5104427D.2050002@googlemail.com>
-In-Reply-To: <5104427D.2050002@googlemail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sat, 26 Jan 2013 21:48:49 -0500
+Message-ID: <1359254927.4159.11.camel@kernel>
+Subject: Re: [PATCH 5/11] ksm: get_ksm_page locked
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Sat, 26 Jan 2013 20:48:47 -0600
+In-Reply-To: <alpine.LNX.2.00.1301251759470.29196@eggly.anvils>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
+	 <alpine.LNX.2.00.1301251759470.29196@eggly.anvils>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013-01-27 4:54, Chris Clayton 写道:
-> Hi Martin,
+On Fri, 2013-01-25 at 18:00 -0800, Hugh Dickins wrote:
+> In some places where get_ksm_page() is used, we need the page to be locked.
 > 
-> On 01/24/13 19:21, Martin Mokrejs wrote:
->> Hi Chris,
->>    try to include in kernel only acpiphp and omit pciehp. Don't use modules but include
->> them statically. And try, in addition, check whether "pcie_aspm=off" in grub.conf helped.
->>
+> When KSM migration is fully enabled, we shall want that to make sure that
+> the page just acquired cannot be migrated beneath us (raised page count is
+> only effective when there is serialization to make sure migration notices).
+> Whereas when navigating through the stable tree, we certainly do not want
+> to lock each node (raised page count is enough to guarantee the memcmps,
+> even if page is migrated to another node).
 > 
-> Thanks for the tip. I had the pciehp driver installed, but it was a module and not loaded. I didn't have acpiphp enabled at all. Building them both in statically, appears to have papered over the cracks of the oops :-)
+> Since we're about to add another use case, add the locked argument to
+> get_ksm_page() now.
+> 
+> Hmm, what's that rcu_read_lock() about?  Complete misunderstanding, I
+> really got the wrong end of the stick on that!  There's a configuration
+> in which page_cache_get_speculative() can do something cheaper than
+> get_page_unless_zero(), relying on its caller's rcu_read_lock() to have
+> disabled preemption for it.  There's no need for rcu_read_lock() around
+> get_page_unless_zero() (and mapping checks) here.  Cut out that
+> silliness before making this any harder to understand.
 
-Not loaded pciehp driver? Remove the device from this slot without poweroff ?
+BTW, what's the meaning of ksm page forked? 
 
 > 
->>    The best would if you subscribe to linux-pci, and read my recent threads
->> about similar issues I had with express cards with Dell Vostro 3550. Further, there is
->> a lot of changes to PCI hotplug done by Yingahi Liu and Rafael Wysockij, just browse the
->> archives of linux-pci and see the pacthes and the discussion.
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
+>  mm/ksm.c |   23 +++++++++++++----------
+>  1 file changed, 13 insertions(+), 10 deletions(-)
 > 
-> Those discussions are way above my level of knowledge. I guess all this work will be merged into mainline in due course, so I'll watch for them in 3.9 or later. Unless, of course, there is a tree I could clone and help test the changes with my laptop and expresscard.
+> --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:53.244205966 -0800
+> +++ mmotm/mm/ksm.c	2013-01-25 14:36:58.856206099 -0800
+> @@ -514,15 +514,14 @@ static void remove_node_from_stable_tree
+>   * but this is different - made simpler by ksm_thread_mutex being held, but
+>   * interesting for assuming that no other use of the struct page could ever
+>   * put our expected_mapping into page->mapping (or a field of the union which
+> - * coincides with page->mapping).  The RCU calls are not for KSM at all, but
+> - * to keep the page_count protocol described with page_cache_get_speculative.
+> + * coincides with page->mapping).
+>   *
+>   * Note: it is possible that get_ksm_page() will return NULL one moment,
+>   * then page the next, if the page is in between page_freeze_refs() and
+>   * page_unfreeze_refs(): this shouldn't be a problem anywhere, the page
+>   * is on its way to being freed; but it is an anomaly to bear in mind.
+>   */
+> -static struct page *get_ksm_page(struct stable_node *stable_node)
+> +static struct page *get_ksm_page(struct stable_node *stable_node, bool locked)
+>  {
+>  	struct page *page;
+>  	void *expected_mapping;
+> @@ -530,7 +529,6 @@ static struct page *get_ksm_page(struct
+>  	page = pfn_to_page(stable_node->kpfn);
+>  	expected_mapping = (void *)stable_node +
+>  				(PAGE_MAPPING_ANON | PAGE_MAPPING_KSM);
+> -	rcu_read_lock();
+>  	if (page->mapping != expected_mapping)
+>  		goto stale;
+>  	if (!get_page_unless_zero(page))
+> @@ -539,10 +537,16 @@ static struct page *get_ksm_page(struct
+>  		put_page(page);
+>  		goto stale;
+>  	}
+> -	rcu_read_unlock();
+> +	if (locked) {
+> +		lock_page(page);
+> +		if (page->mapping != expected_mapping) {
+> +			unlock_page(page);
+> +			put_page(page);
+> +			goto stale;
+> +		}
+> +	}
+>  	return page;
+>  stale:
+> -	rcu_read_unlock();
+>  	remove_node_from_stable_tree(stable_node);
+>  	return NULL;
+>  }
+> @@ -558,11 +562,10 @@ static void remove_rmap_item_from_tree(s
+>  		struct page *page;
+>  
+>  		stable_node = rmap_item->head;
+> -		page = get_ksm_page(stable_node);
+> +		page = get_ksm_page(stable_node, true);
+>  		if (!page)
+>  			goto out;
+>  
+> -		lock_page(page);
+>  		hlist_del(&rmap_item->hlist);
+>  		unlock_page(page);
+>  		put_page(page);
+> @@ -1042,7 +1045,7 @@ static struct page *stable_tree_search(s
+>  
+>  		cond_resched();
+>  		stable_node = rb_entry(node, struct stable_node, node);
+> -		tree_page = get_ksm_page(stable_node);
+> +		tree_page = get_ksm_page(stable_node, false);
+>  		if (!tree_page)
+>  			return NULL;
+>  
+> @@ -1086,7 +1089,7 @@ static struct stable_node *stable_tree_i
+>  
+>  		cond_resched();
+>  		stable_node = rb_entry(*new, struct stable_node, node);
+> -		tree_page = get_ksm_page(stable_node);
+> +		tree_page = get_ksm_page(stable_node, false);
+>  		if (!tree_page)
+>  			return NULL;
+>  
 > 
-> Hotplug isn't working at all on my Fujitsu laptop, so I can only get the card recognised by rebooting with the card inserted (or by writing 1 to/sys/bus/pci/rescan). There seem to be a few reports on this in the kernel bugzilla, so I'll look through them and see what's being done.
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Hi Chris,
-   What about use #modprobe pciehp pciehp_debug=1 pciehp_poll_mode=1 pciehp_poll_time=1 ?
-
-Can you resend the dmesg log and "lspci -vvv" info after hotplug device from your Fujitsu laptop with above module parameters?
-
-Thanks!
-Yijing.
-
-> Thanks again.
-> 
-> Chris
-> 
->> Martin
->>
->> Chris Clayton wrote:
->>> Hi,
->>>
->>> I've today taken delivery of a WinTV-HVR-1400 expresscard TV Tuner and got an Oops when I removed from the expresscard slot in my laptop. I will quite understand if the response to this report is "don't do that!", but in that case, how should one remove one of these cards?
->>>
->>> I have attached three files:
->>>
->>> 1. the dmesg output from when I rebooted the machine after the oops. I have turned debugging on in the dib700p and cx23885 modules via modules options in /etc/modprobe.d/hvr1400.conf;
->>>
->>> 2. the .config file for the kernel that oopsed.
->>>
->>> 3. the text of the oops message. I've typed this up from a photograph of the screen because the laptop was locked up and there was nothing in the log files. Apologies for any typos, but I have tried to be careful.
->>>
->>> Assuming the answer isn't don't do that, let me know if I can provide any additional diagnostics, test any patches, etc. Please, however, cc me as I'm not subscribed.
->>>
->>> Chris
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
 
