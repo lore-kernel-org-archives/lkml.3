@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab3A0N4s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 08:56:48 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:59004 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756781Ab3A0N4r (ORCPT
+	id S1755199Ab3A0N7c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 08:59:32 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:38270 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab3A0N73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 08:56:47 -0500
+	Sun, 27 Jan 2013 08:59:29 -0500
+Date: Sun, 27 Jan 2013 08:59:23 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH resend] sched: fix compilation warning
+Message-ID: <20130127135923.GA8437@gmail.com>
+References: <1354727440-20157-1-git-send-email-dinggnu@gmail.com>
+ <CAM3j68rOMRdrovAkWdwfB477W+efMC1uGkbHNjz+kRz4LMaXag@mail.gmail.com>
+ <50FAF36A.6000205@xenotime.net>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Sun, 27 Jan 2013 14:56:46 +0100
-Message-ID: <CA+icZUWhNQN0_H5sK7PuNuk6ObS6emyWPXg4Eun=f15t21ReMA@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.8-rc5
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50FAF36A.6000205@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+the following compilation warning is caused by Commit-ID:
+c566e8e9e44b72b53091da20e2dedefc730f2ee2
 
-what is the intention of this list [1] which you regularly sent to LKML?
+kernel/sched/debug.c: In function ‘print_cfs_rq’:
+kernel/sched/debug.c:225:2: warning: format ‘%ld’ expects argument of type
+‘long int’, but argument 4 has type ‘long long int’ [-Wformat]
+kernel/sched/debug.c:225:2: warning: format ‘%ld’ expects argument of type
+‘long int’, but argument 3 has type ‘long long int’ [-Wformat]
 
-Statistics?
+where function atomic64_read returns long long int, but %ld was used in the
+printf
 
-[ Compiler errors/warnings ]
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+resend because no reply for
+Message-Id: <1354727440-20157-1-git-send-email-dinggnu@gmail.com>
 
-Are you directly contacting the maintainers of the subtree and inform
-them (per email, website etc.?
-Do you sent or plan to send this list as a whole (single list) or
-broken-down for each subsystem?
-The latter would be have more success.
-Can you add such a per-subsystem list (compiler errors/warnings etc.)
-to kisskb service (or plan to)?
-What is your feedback from Linux kernel maintainers?
+ kernel/sched/debug.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-[ In General ]
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 2cd3c1b..83ec463 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -222,7 +222,7 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 			cfs_rq->runnable_load_avg);
+ 	SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
+ 			cfs_rq->blocked_load_avg);
+-	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_avg",
++	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_avg",
+ 			atomic64_read(&cfs_rq->tg->load_avg));
+ 	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
+ 			cfs_rq->tg_load_contrib);
+-- 
+1.7.10.4
 
-What is your infrastructure (Linux OS etc.)?
-What is toolchain (compiler version etc.) do you use?
-Are those produced kernels tested on real or virtual hardware?
-Or do you test compiled-only or not?
-
-I really wish you success with your service!
-
-Thanks.
-
-Regards,
-- Sedat -
-
-[1] http://marc.info/?l=linux-kernel&m=135929071204017&w=2
