@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab3A0IKg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 03:10:36 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:52999 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755934Ab3A0IKe (ORCPT
+	id S1756255Ab3A0Iru (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 03:47:50 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17731 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756236Ab3A0Irs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 03:10:34 -0500
-Date: Sun, 27 Jan 2013 09:10:27 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Joonyoung Shim <jy0922.shim@samsung.com>
-cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: fix to refer NULL pointer
-In-Reply-To: <1359177589-13868-1-git-send-email-jy0922.shim@samsung.com>
-Message-ID: <Pine.LNX.4.64.1301270906270.5137@axis700.grange>
-References: <1359177589-13868-1-git-send-email-jy0922.shim@samsung.com>
+	Sun, 27 Jan 2013 03:47:48 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 27 Jan 2013 00:46:58 -0800
+Message-ID: <5104E937.1090008@nvidia.com>
+Date: Sun, 27 Jan 2013 14:15:43 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:xoZnoSjvx0nM9xoZL56KU/VwPG0aHaUAaZAUZMts9LL
- QlRFsFdz5LMFG5v2JhOlblJUtZS5ydsx3ZmVOPoauYm1f3V7Ps
- bQYsG44vJjEpk8hxg3k1ZWR87Vm84w/pc6nHn/xFC9sf9e7MPX
- Zr60lO6/8NFfY+m64ypYo+HJEMwHxj7c3PcWxpkG1vXx2JSB1c
- Ckpb+gPEz9UeNEcpYMkx/yhyUJ5KVCYIdaOx3KwVXJO15aA2+l
- lO+DPoLPskqdbqTLvZkQ0hTXvLYAt16tQ6Ygn40q2271p7wX9L
- YI3gqlUUAOSqHbjXQPzaXIum2UG67drV4T+FN5ImsGBeUUGkKP
- zYGOgxvbSiBgXC6BItsb73WJV6ruGvY0fyHQi51wm6us898ePd
- 3em8YnanEZ5yA==
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
+Subject: Re: [PATCH 0/4] mfd: palma: add RTC and GPIO support
+References: <1357210020-19876-1-git-send-email-ldewangan@nvidia.com> <20130127002821.GF1174@sortiz-mobl>
+In-Reply-To: <20130127002821.GF1174@sortiz-mobl>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Jan 2013, Joonyoung Shim wrote:
+On Sunday 27 January 2013 05:58 AM, Samuel Ortiz wrote:
+> Hi Laxman,
+>
+> On Thu, Jan 03, 2013 at 04:16:56PM +0530, Laxman Dewangan wrote:
+>> This series add the RTC and gpio driver for the TI Palma series PMIC.
+>> The changes are splitted so that easy to apply in different sub systems.
+>>
+>> Laxman Dewangan (4):
+>>    mfd: palmas: add rtc irq number as irq resource for palmas-rtc
+>>    mfd: palmas: add apis to access the Palmas' registers
+>>    gpio: palmas: Add support for Palams GPIO
+>>    rtc: palmas: add RTC driver Palmas series PMIC
+> All 4 patches applied to my for-next branch, thanks.
+Hi Samuel,
 
-> Check whether host->sdio_irq_thread is NULL before wake_up_process() is
-> called about host->sdio_irq_thread.
+Thanks for taking care. But it seems 2/4 of this series is missed which 
+is very important for 3/4 and 4/4 to be compile.
 
-Actually, mmc_signal_sdio_irq() shouldn't be called if SDIO IRQ isn't 
-used...
+Can you please apply the 2/4 before 3/4 and 4/4?
 
-Thanks
-Guennadi
+Thanks,
+Laxman
 
-> 
-> Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
-> ---
-> Currently the kernel panic to refer NULL pointer about
-> host->sdio_irq_thread are occuring at the trats board using Samsung
-> SDHCI driver.
-> 
->  include/linux/mmc/host.h |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-> index 61a10c1..2950fea 100644
-> --- a/include/linux/mmc/host.h
-> +++ b/include/linux/mmc/host.h
-> @@ -372,7 +372,8 @@ static inline void mmc_signal_sdio_irq(struct mmc_host *host)
->  {
->  	host->ops->enable_sdio_irq(host, 0);
->  	host->sdio_irq_pending = true;
-> -	wake_up_process(host->sdio_irq_thread);
-> +	if (host->sdio_irq_thread)
-> +		wake_up_process(host->sdio_irq_thread);
->  }
->  
->  #ifdef CONFIG_REGULATOR
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
