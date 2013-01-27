@@ -1,64 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756659Ab3A0Lf7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 06:35:59 -0500
-Received: from mga03.intel.com ([143.182.124.21]:6612 "EHLO mga03.intel.com"
+	id S1756669Ab3A0MHF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 07:07:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59969 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756619Ab3A0Lf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 06:35:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,546,1355126400"; 
-   d="scan'208";a="195575834"
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: apw@canonical.com
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, netdev@vger.kernel.org
-Subject: [PATCH] checkpatch.pl: Fix warnings on code comments
-Date: Sun, 27 Jan 2013 03:35:39 -0800
-Message-Id: <1359286539-18395-1-git-send-email-jeffrey.t.kirsher@intel.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1756639Ab3A0MHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 07:07:03 -0500
+Date: Sun, 27 Jan 2013 14:06:57 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi.kivity@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 01/12] KVM: MMU: lazily drop large spte
+Message-ID: <20130127120657.GA21650@redhat.com>
+References: <50FFB5A1.5090708@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FFB5A1.5090708@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following commit:
-commit 058806007450489bb8f457b275e5cb5c946320c1
-Author: Joe Perches <joe@perches.com>
-Date:   Thu Oct 4 17:13:35 2012 -0700
+On Wed, Jan 23, 2013 at 06:04:17PM +0800, Xiao Guangrong wrote:
+> Do not drop large spte until it can be insteaded by small pages so that
+> the guest can happliy read memory through it
+> 
+> The idea is from Avi:
+> | As I mentioned before, write-protecting a large spte is a good idea,
+> | since it moves some work from protect-time to fault-time, so it reduces
+> | jitter.  This removes the need for the return value.
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c |   21 ++++++---------------
+>  1 files changed, 6 insertions(+), 15 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 9f628f7..0f90269 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -1105,7 +1105,7 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
+> 
+>  /*
+>   * Write-protect on the specified @sptep, @pt_protect indicates whether
+> - * spte writ-protection is caused by protecting shadow page table.
+> + * spte write-protection is caused by protecting shadow page table.
+>   * @flush indicates whether tlb need be flushed.
+>   *
+>   * Note: write protection is difference between drity logging and spte
+> @@ -1114,31 +1114,23 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
+>   *   its dirty bitmap is properly set.
+>   * - for spte protection, the spte can be writable only after unsync-ing
+>   *   shadow page.
+> - *
+> - * Return true if the spte is dropped.
+>   */
+> -static bool
+> +static void
+>  spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
+Since return value is not longer used make the function return true if flush is needed
+instead of returning it via pointer to a variable.
 
-checkpatch: check networking specific block comment style
+>  {
+>  	u64 spte = *sptep;
+> 
+>  	if (!is_writable_pte(spte) &&
+>  	      !(pt_protect && spte_is_locklessly_modifiable(spte)))
+> -		return false;
+> +		return;
+> 
+>  	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
+> 
+> -	if (__drop_large_spte(kvm, sptep)) {
+> -		*flush |= true;
+> -		return true;
+> -	}
+> -
+>  	if (pt_protect)
+>  		spte &= ~SPTE_MMU_WRITEABLE;
+>  	spte = spte & ~PT_WRITABLE_MASK;
+> 
+>  	*flush |= mmu_spte_update(sptep, spte);
+> -	return false;
+>  }
+> 
+>  static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
+> @@ -1150,11 +1142,8 @@ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
+> 
+>  	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
+>  		BUG_ON(!(*sptep & PT_PRESENT_MASK));
+> -		if (spte_write_protect(kvm, sptep, &flush, pt_protect)) {
+> -			sptep = rmap_get_first(*rmapp, &iter);
+> -			continue;
+> -		}
+> 
+> +		spte_write_protect(kvm, sptep, &flush, pt_protect);
+>  		sptep = rmap_get_next(&iter);
+>  	}
+> 
+> @@ -2611,6 +2600,8 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+>  			break;
+>  		}
+> 
+> +		drop_large_spte(vcpu, iterator.sptep);
+> +
+>  		if (!is_shadow_present_pte(*iterator.sptep)) {
+>  			u64 base_addr = iterator.addr;
+> 
+> -- 
+> 1.7.7.6
 
-Produces warnings on code comments which follow the Linux coding style
-guide.  While the desired code comment style for networking my differ
-from the rest of the kernel, both styles should be permitted.
-
-This patch reverts a portion of the commit to allow multi-line code
-comments to use either style.
-
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
----
- scripts/checkpatch.pl | 7 -------
- 1 file changed, 7 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 4d2c7df..d3ffec5 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1878,13 +1878,6 @@ sub process {
- 		}
- 
- 		if ($realfile =~ m@^(drivers/net/|net/)@ &&
--		    $rawline =~ /^\+[ \t]*\/\*[ \t]*$/ &&
--		    $prevrawline =~ /^\+[ \t]*$/) {
--			WARN("NETWORKING_BLOCK_COMMENT_STYLE",
--			     "networking block comments don't use an empty /* line, use /* Comment...\n" . $hereprev);
--		}
--
--		if ($realfile =~ m@^(drivers/net/|net/)@ &&
- 		    $rawline !~ m@^\+[ \t]*\*/[ \t]*$@ &&	#trailing */
- 		    $rawline !~ m@^\+.*/\*.*\*/[ \t]*$@ &&	#inline /*...*/
- 		    $rawline !~ m@^\+.*\*{2,}/[ \t]*$@ &&	#trailing **/
--- 
-1.7.11.7
-
+--
+			Gleb.
