@@ -1,450 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab3A0ONF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 09:13:05 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48875 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755287Ab3A0ONC (ORCPT
+	id S1756027Ab3A0ONR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 09:13:17 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:56624 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755807Ab3A0ONM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 09:13:02 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/2] regmap: Add asynchronous I/O support
-Date: Sun, 27 Jan 2013 22:12:33 +0800
-Message-Id: <1359295954-5209-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 27 Jan 2013 09:13:12 -0500
+Date: Sun, 27 Jan 2013 22:12:53 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shli@fusionio.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: boot warnings due to swap: make each swap partition have one
+ address_space
+Message-ID: <20130127141253.GA27019@kernel.org>
+References: <5101FFF5.6030503@oracle.com>
+ <20130125042512.GA32017@kernel.org>
+ <alpine.LNX.2.00.1301261754530.7300@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1301261754530.7300@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some use cases like firmware download can transfer a lot of data in quick
-succession. With high speed buses these use cases can benefit from having
-multiple transfers scheduled at once since this allows the bus to minimise
-the delay between transfers.
+On Sat, Jan 26, 2013 at 06:16:05PM -0800, Hugh Dickins wrote:
+> On Fri, 25 Jan 2013, Shaohua Li wrote:
+> > On Thu, Jan 24, 2013 at 10:45:57PM -0500, Sasha Levin wrote:
+> > > Hi folks,
+> > > 
+> > > Commit "swap: make each swap partition have one address_space" is triggering
+> > > a series of warnings on boot:
+> > > 
+> > > [    3.446071] ------------[ cut here ]------------
+> > > [    3.446664] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8e/0xb0()
+> > > [    3.447715] ODEBUG: init active (active state 0) object type: percpu_counter hint:           (null)
+> > > [    3.450360] Modules linked in:
+> > > [    3.451593] Pid: 1, comm: swapper/0 Tainted: G        W    3.8.0-rc4-next-20130124-sasha-00004-g838a1b4 #266
+> > > [    3.454508] Call Trace:
+> > > [    3.455248]  [<ffffffff8110d1bc>] warn_slowpath_common+0x8c/0xc0
+> > > [    3.455248]  [<ffffffff8110d291>] warn_slowpath_fmt+0x41/0x50
+> > > [    3.455248]  [<ffffffff81a2bb5e>] debug_print_object+0x8e/0xb0
+> > > [    3.455248]  [<ffffffff81a2c26b>] __debug_object_init+0x20b/0x290
+> > > [    3.455248]  [<ffffffff81a2c305>] debug_object_init+0x15/0x20
+> > > [    3.455248]  [<ffffffff81a3fbed>] __percpu_counter_init+0x6d/0xe0
+> > > [    3.455248]  [<ffffffff81231bdc>] bdi_init+0x1ac/0x270
+> > > [    3.455248]  [<ffffffff8618f20b>] swap_setup+0x3b/0x87
+> > > [    3.455248]  [<ffffffff8618f257>] ? swap_setup+0x87/0x87
+> > > [    3.455248]  [<ffffffff8618f268>] kswapd_init+0x11/0x7c
+> > > [    3.455248]  [<ffffffff810020ca>] do_one_initcall+0x8a/0x180
+> > > [    3.455248]  [<ffffffff86168cfd>] do_basic_setup+0x96/0xb4
+> > > [    3.455248]  [<ffffffff861685ae>] ? loglevel+0x31/0x31
+> > > [    3.455248]  [<ffffffff861885cd>] ? sched_init_smp+0x150/0x157
+> > > [    3.455248]  [<ffffffff86168ded>] kernel_init_freeable+0xd2/0x14c
+> > > [    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
+> > > [    3.455248]  [<ffffffff83cade19>] kernel_init+0x9/0xf0
+> > > [    3.455248]  [<ffffffff83d5727c>] ret_from_fork+0x7c/0xb0
+> > > [    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
+> > > [    3.455248] ---[ end trace 0b176d5c0f21bffb ]---
+> > > 
+> > > I haven't looked deeper into it yet, and will do so tomorrow, unless this
+> > > spew is obvious to anyone.
+> > 
+> > Does this one help?
+> > 
+> > Subject: give-each-swapper-space-separate-backing_dev_info
+> > 
+> > The backing_dev_info can't be shared by all swapper address space.
+> 
+> Whyever not?  It's perfectly normal for different inodes/address_spaces
+> to share a single backing_dev!  Sasha's trace says that it's wrong to
+> initialize it MAX_SWAPFILES times: fair enough.  But why should I now
+> want to spend 32kB (not even counting their __percpu counters) on all
+> these pseudo-backing_devs?
 
-Support this by adding regmap_raw_write_async(), allowing raw transfers to
-be scheduled, and regmap_async_complete() to wait for them to finish.
+That's correct, silly me. Updated it.
+> 
+> p.s. a grand little change would be to move page_cluster and swap_setup()
+> from mm/swap.c to mm/swap_state.c: they have nothing to do with the other
+> contents of swap.c, and everything to do with the contents of swap_state.c.
+> Why swap.c is called swap.c is rather a mystery.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Tried, but looks page_cluster is used in sysctl, moving to swap_state.c will
+make it optional. don't want to add another #ifdef, so give up.
+
+
+Subject: init-swap-space-backing-dev-info-once
+
+
+Sasha reported:
+Commit "swap: make each swap partition have one address_space" is triggering
+a series of warnings on boot:
+
+[    3.446071] ------------[ cut here ]------------
+[    3.446664] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8e/0xb0()
+[    3.447715] ODEBUG: init active (active state 0) object type: percpu_counter hint:           (null)
+[    3.450360] Modules linked in:
+[    3.451593] Pid: 1, comm: swapper/0 Tainted: G        W    3.8.0-rc4-next-20130124-sasha-00004-g838a1b4 #266
+[    3.454508] Call Trace:
+[    3.455248]  [<ffffffff8110d1bc>] warn_slowpath_common+0x8c/0xc0
+[    3.455248]  [<ffffffff8110d291>] warn_slowpath_fmt+0x41/0x50
+[    3.455248]  [<ffffffff81a2bb5e>] debug_print_object+0x8e/0xb0
+[    3.455248]  [<ffffffff81a2c26b>] __debug_object_init+0x20b/0x290
+[    3.455248]  [<ffffffff81a2c305>] debug_object_init+0x15/0x20
+[    3.455248]  [<ffffffff81a3fbed>] __percpu_counter_init+0x6d/0xe0
+[    3.455248]  [<ffffffff81231bdc>] bdi_init+0x1ac/0x270
+[    3.455248]  [<ffffffff8618f20b>] swap_setup+0x3b/0x87
+[    3.455248]  [<ffffffff8618f257>] ? swap_setup+0x87/0x87
+[    3.455248]  [<ffffffff8618f268>] kswapd_init+0x11/0x7c
+[    3.455248]  [<ffffffff810020ca>] do_one_initcall+0x8a/0x180
+[    3.455248]  [<ffffffff86168cfd>] do_basic_setup+0x96/0xb4
+[    3.455248]  [<ffffffff861685ae>] ? loglevel+0x31/0x31
+[    3.455248]  [<ffffffff861885cd>] ? sched_init_smp+0x150/0x157
+[    3.455248]  [<ffffffff86168ded>] kernel_init_freeable+0xd2/0x14c
+[    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
+[    3.455248]  [<ffffffff83cade19>] kernel_init+0x9/0xf0
+[    3.455248]  [<ffffffff83d5727c>] ret_from_fork+0x7c/0xb0
+[    3.455248]  [<ffffffff83cade10>] ? rest_init+0x140/0x140
+[    3.455248] ---[ end trace 0b176d5c0f21bffb ]---
+
+Initialize swap space backing_dev_info once to avoid the warning.
+
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Shaohua Li <shli@fusionio.com>
 ---
- drivers/base/regmap/internal.h |   15 ++++
- drivers/base/regmap/regmap.c   |  183 +++++++++++++++++++++++++++++++++++++---
- include/linux/regmap.h         |   26 ++++++
- 3 files changed, 214 insertions(+), 10 deletions(-)
+ mm/swap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
-index ba6532c..855eb4f 100644
---- a/drivers/base/regmap/internal.h
-+++ b/drivers/base/regmap/internal.h
-@@ -16,6 +16,7 @@
- #include <linux/regmap.h>
- #include <linux/fs.h>
- #include <linux/list.h>
-+#include <linux/wait.h>
+Index: linux/mm/swap.c
+===================================================================
+--- linux.orig/mm/swap.c	2013-01-27 21:26:21.942696713 +0800
++++ linux/mm/swap.c	2013-01-27 21:27:29.233865394 +0800
+@@ -858,8 +858,8 @@ void __init swap_setup(void)
+ #ifdef CONFIG_SWAP
+ 	int i;
  
- struct regmap;
- struct regcache_ops;
-@@ -39,6 +40,13 @@ struct regmap_format {
- 	unsigned int (*parse_val)(void *buf);
- };
- 
-+struct regmap_async {
-+	struct list_head list;
-+	struct work_struct cleanup;
-+	struct regmap *map;
-+	void *work_buf;
-+};
-+
- struct regmap {
- 	struct mutex mutex;
- 	spinlock_t spinlock;
-@@ -53,6 +61,11 @@ struct regmap {
- 	void *bus_context;
- 	const char *name;
- 
-+	spinlock_t async_lock;
-+	wait_queue_head_t async_waitq;
-+	struct list_head async_list;
-+	int async_ret;
-+
- #ifdef CONFIG_DEBUG_FS
- 	struct dentry *debugfs;
- 	const char *debugfs_name;
-@@ -178,6 +191,8 @@ bool regcache_set_val(void *base, unsigned int idx,
- 		      unsigned int val, unsigned int word_size);
- int regcache_lookup_reg(struct regmap *map, unsigned int reg);
- 
-+void regmap_async_complete_cb(struct regmap_async *async, int ret);
-+
- extern struct regcache_ops regcache_rbtree_ops;
- extern struct regcache_ops regcache_lzo_ops;
- extern struct regcache_ops regcache_flat_ops;
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index dc51e80..61818cc 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -41,6 +41,15 @@ static int _regmap_bus_formatted_write(void *context, unsigned int reg,
- static int _regmap_bus_raw_write(void *context, unsigned int reg,
- 				 unsigned int val);
- 
-+static void async_cleanup(struct work_struct *work)
-+{
-+	struct regmap_async *async = container_of(work, struct regmap_async,
-+						  cleanup);
-+
-+	kfree(async->work_buf);
-+	kfree(async);
-+}
-+
- bool regmap_reg_in_ranges(unsigned int reg,
- 			  const struct regmap_range *ranges,
- 			  unsigned int nranges)
-@@ -430,6 +439,10 @@ struct regmap *regmap_init(struct device *dev,
- 	map->cache_type = config->cache_type;
- 	map->name = config->name;
- 
-+	spin_lock_init(&map->async_lock);
-+	INIT_LIST_HEAD(&map->async_list);
-+	init_waitqueue_head(&map->async_waitq);
-+
- 	if (config->read_flag_mask || config->write_flag_mask) {
- 		map->read_flag_mask = config->read_flag_mask;
- 		map->write_flag_mask = config->write_flag_mask;
-@@ -890,10 +903,13 @@ static int _regmap_select_page(struct regmap *map, unsigned int *reg,
- }
- 
- static int _regmap_raw_write(struct regmap *map, unsigned int reg,
--			     const void *val, size_t val_len)
-+			     const void *val, size_t val_len, bool async)
- {
- 	struct regmap_range_node *range;
-+	unsigned long flags;
- 	u8 *u8 = map->work_buf;
-+	void *work_val = map->work_buf + map->format.reg_bytes +
-+		map->format.pad_bytes;
- 	void *buf;
- 	int ret = -ENOTSUPP;
- 	size_t len;
-@@ -938,7 +954,7 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
- 			dev_dbg(map->dev, "Writing window %d/%zu\n",
- 				win_residue, val_len / map->format.val_bytes);
- 			ret = _regmap_raw_write(map, reg, val, win_residue *
--						map->format.val_bytes);
-+						map->format.val_bytes, async);
- 			if (ret != 0)
- 				return ret;
- 
-@@ -961,6 +977,51 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
- 
- 	u8[0] |= map->write_flag_mask;
- 
-+	if (async && map->bus->async_write) {
-+		struct regmap_async *async = kzalloc(map->bus->async_size,
-+						     GFP_KERNEL);
-+		if (!async)
-+			return -ENOMEM;
-+
-+		async->work_buf = kzalloc(map->format.buf_size,
-+					  GFP_KERNEL | GFP_DMA);
-+		if (!async->work_buf) {
-+			kfree(async);
-+			return -ENOMEM;
-+		}
-+
-+		INIT_WORK(&async->cleanup, async_cleanup);
-+		async->map = map;
-+
-+		/* If the caller supplied the value we can use it safely. */
-+		memcpy(async->work_buf, map->work_buf, map->format.pad_bytes +
-+		       map->format.reg_bytes + map->format.val_bytes);
-+		if (val == work_val)
-+			val = async->work_buf + map->format.pad_bytes +
-+				map->format.reg_bytes;
-+
-+		spin_lock_irqsave(&map->async_lock, flags);
-+		list_add_tail(&async->list, &map->async_list);
-+		spin_unlock_irqrestore(&map->async_lock, flags);
-+
-+		ret = map->bus->async_write(map->bus_context, async->work_buf,
-+					    map->format.reg_bytes +
-+					    map->format.pad_bytes,
-+					    val, val_len, async);
-+
-+		if (ret != 0) {
-+			dev_err(map->dev, "Failed to schedule write: %d\n",
-+				ret);
-+
-+			spin_lock_irqsave(&map->async_lock, flags);
-+			list_del(&async->list);
-+			spin_unlock_irqrestore(&map->async_lock, flags);
-+
-+			kfree(async->work_buf);
-+			kfree(async);
-+		}
-+	}
-+
- 	trace_regmap_hw_write_start(map->dev, reg,
- 				    val_len / map->format.val_bytes);
- 
-@@ -968,8 +1029,7 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
- 	 * send the work_buf directly, otherwise try to do a gather
- 	 * write.
- 	 */
--	if (val == (map->work_buf + map->format.pad_bytes +
--		    map->format.reg_bytes))
-+	if (val == work_val)
- 		ret = map->bus->write(map->bus_context, map->work_buf,
- 				      map->format.reg_bytes +
- 				      map->format.pad_bytes +
-@@ -1042,7 +1102,7 @@ static int _regmap_bus_raw_write(void *context, unsigned int reg,
- 				 map->work_buf +
- 				 map->format.reg_bytes +
- 				 map->format.pad_bytes,
--				 map->format.val_bytes);
-+				 map->format.val_bytes, false);
- }
- 
- int _regmap_write(struct regmap *map, unsigned int reg,
-@@ -1125,7 +1185,7 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
- 
- 	map->lock(map->lock_arg);
- 
--	ret = _regmap_raw_write(map, reg, val, val_len);
-+	ret = _regmap_raw_write(map, reg, val, val_len, false);
- 
- 	map->unlock(map->lock_arg);
- 
-@@ -1181,14 +1241,15 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
- 	if (map->use_single_rw) {
- 		for (i = 0; i < val_count; i++) {
- 			ret = regmap_raw_write(map,
--						reg + (i * map->reg_stride),
--						val + (i * val_bytes),
--						val_bytes);
-+					       reg + (i * map->reg_stride),
-+					       val + (i * val_bytes),
-+					       val_bytes);
- 			if (ret != 0)
- 				return ret;
- 		}
- 	} else {
--		ret = _regmap_raw_write(map, reg, wval, val_bytes * val_count);
-+		ret = _regmap_raw_write(map, reg, wval, val_bytes * val_count,
-+					false);
++	bdi_init(swapper_spaces[0].backing_dev_info);
+ 	for (i = 0; i < MAX_SWAPFILES; i++) {
+-		bdi_init(swapper_spaces[i].backing_dev_info);
+ 		spin_lock_init(&swapper_spaces[i].tree_lock);
+ 		INIT_LIST_HEAD(&swapper_spaces[i].i_mmap_nonlinear);
  	}
- 
- 	if (val_bytes != 1)
-@@ -1200,6 +1261,48 @@ out:
- }
- EXPORT_SYMBOL_GPL(regmap_bulk_write);
- 
-+/**
-+ * regmap_raw_write_async(): Write raw values to one or more registers
-+ *                           asynchronously
-+ *
-+ * @map: Register map to write to
-+ * @reg: Initial register to write to
-+ * @val: Block of data to be written, laid out for direct transmission to the
-+ *       device.  Must be valid until regmap_async_complete() is called.
-+ * @val_len: Length of data pointed to by val.
-+ *
-+ * This function is intended to be used for things like firmware
-+ * download where a large block of data needs to be transferred to the
-+ * device.  No formatting will be done on the data provided.
-+ *
-+ * If supported by the underlying bus the write will be scheduled
-+ * asynchronously, helping maximise I/O speed on higher speed buses
-+ * like SPI.  regmap_async_complete() can be called to ensure that all
-+ * asynchrnous writes have been completed.
-+ *
-+ * A value of zero will be returned on success, a negative errno will
-+ * be returned in error cases.
-+ */
-+int regmap_raw_write_async(struct regmap *map, unsigned int reg,
-+			   const void *val, size_t val_len)
-+{
-+	int ret;
-+
-+	if (val_len % map->format.val_bytes)
-+		return -EINVAL;
-+	if (reg % map->reg_stride)
-+		return -EINVAL;
-+
-+	map->lock(map->lock_arg);
-+
-+	ret = _regmap_raw_write(map, reg, val, val_len, true);
-+
-+	map->unlock(map->lock_arg);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(regmap_raw_write_async);
-+
- static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
- 			    unsigned int val_len)
- {
-@@ -1498,6 +1601,66 @@ int regmap_update_bits_check(struct regmap *map, unsigned int reg,
- }
- EXPORT_SYMBOL_GPL(regmap_update_bits_check);
- 
-+void regmap_async_complete_cb(struct regmap_async *async, int ret)
-+{
-+	struct regmap *map = async->map;
-+	bool wake;
-+
-+	spin_lock(&map->async_lock);
-+
-+	list_del(&async->list);
-+	wake = list_empty(&map->async_list);
-+
-+	if (ret != 0)
-+		map->async_ret = ret;
-+
-+	spin_unlock(&map->async_lock);
-+
-+	schedule_work(&async->cleanup);
-+
-+	if (wake)
-+		wake_up(&map->async_waitq);
-+}
-+
-+static int regmap_async_is_done(struct regmap *map)
-+{
-+	unsigned long flags;
-+	int ret;
-+
-+	spin_lock_irqsave(&map->async_lock, flags);
-+	ret = list_empty(&map->async_list);
-+	spin_unlock_irqrestore(&map->async_lock, flags);
-+
-+	return ret;
-+}
-+
-+/**
-+ * regmap_async_complete: Ensure all asynchronous I/O has completed.
-+ *
-+ * @map: Map to operate on.
-+ *
-+ * Blocks until any pending asynchronous I/O has completed.  Returns
-+ * an error code for any failed I/O operations.
-+ */
-+int regmap_async_complete(struct regmap *map)
-+{
-+	unsigned long flags;
-+	int ret;
-+
-+	/* Nothing to do with no async support */
-+	if (!map->bus->async_write)
-+		return 0;
-+
-+	wait_event(map->async_waitq, regmap_async_is_done(map));
-+
-+	spin_lock_irqsave(&map->async_lock, flags);
-+	ret = map->async_ret;
-+	map->async_ret = 0;
-+	spin_unlock_irqrestore(&map->async_lock, flags);
-+
-+	return ret;
-+}
-+
- /**
-  * regmap_register_patch: Register and apply register updates to be applied
-  *                        on device initialistion
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index 5e81abf..c8e9024 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -236,11 +236,17 @@ struct regmap_range_cfg {
- 	unsigned int window_len;
- };
- 
-+struct regmap_async;
-+
- typedef int (*regmap_hw_write)(void *context, const void *data,
- 			       size_t count);
- typedef int (*regmap_hw_gather_write)(void *context,
- 				      const void *reg, size_t reg_len,
- 				      const void *val, size_t val_len);
-+typedef int (*regmap_hw_async_write)(void *context,
-+				     const void *reg, size_t reg_len,
-+				     const void *val, size_t val_len,
-+				     struct regmap_async *async);
- typedef int (*regmap_hw_read)(void *context,
- 			      const void *reg_buf, size_t reg_size,
- 			      void *val_buf, size_t val_size);
-@@ -256,6 +262,8 @@ typedef void (*regmap_hw_free_context)(void *context);
-  * @write: Write operation.
-  * @gather_write: Write operation with split register/value, return -ENOTSUPP
-  *                if not implemented  on a given device.
-+ * @async_write: Write operation which completes asynchronously, optional and
-+ *               must serialise with respect to non-async I/O.
-  * @read: Read operation.  Data is returned in the buffer used to transmit
-  *         data.
-  * @read_flag_mask: Mask to be set in the top byte of the register when doing
-@@ -266,16 +274,19 @@ typedef void (*regmap_hw_free_context)(void *context);
-  * @val_format_endian_default: Default endianness for formatted register
-  *     values. Used when the regmap_config specifies DEFAULT. If this is
-  *     DEFAULT, BIG is assumed.
-+ * @async_size: Size of struct used for async work.
-  */
- struct regmap_bus {
- 	bool fast_io;
- 	regmap_hw_write write;
- 	regmap_hw_gather_write gather_write;
-+	regmap_hw_async_write async_write;
- 	regmap_hw_read read;
- 	regmap_hw_free_context free_context;
- 	u8 read_flag_mask;
- 	enum regmap_endian reg_format_endian_default;
- 	enum regmap_endian val_format_endian_default;
-+	size_t async_size;
- };
- 
- struct regmap *regmap_init(struct device *dev,
-@@ -311,6 +322,8 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
- 		     const void *val, size_t val_len);
- int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
- 			size_t val_count);
-+int regmap_raw_write_async(struct regmap *map, unsigned int reg,
-+			   const void *val, size_t val_len);
- int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val);
- int regmap_raw_read(struct regmap *map, unsigned int reg,
- 		    void *val, size_t val_len);
-@@ -322,6 +335,7 @@ int regmap_update_bits_check(struct regmap *map, unsigned int reg,
- 			     unsigned int mask, unsigned int val,
- 			     bool *change);
- int regmap_get_val_bytes(struct regmap *map);
-+int regmap_async_complete(struct regmap *map);
- 
- int regcache_sync(struct regmap *map);
- int regcache_sync_region(struct regmap *map, unsigned int min,
-@@ -424,6 +438,13 @@ static inline int regmap_raw_write(struct regmap *map, unsigned int reg,
- 	return -EINVAL;
- }
- 
-+static inline int regmap_raw_write_async(struct regmap *map, unsigned int reg,
-+					 const void *val, size_t val_len)
-+{
-+	WARN_ONCE(1, "regmap API is disabled");
-+	return -EINVAL;
-+}
-+
- static inline int regmap_bulk_write(struct regmap *map, unsigned int reg,
- 				    const void *val, size_t val_count)
- {
-@@ -502,6 +523,11 @@ static inline void regcache_mark_dirty(struct regmap *map)
- 	WARN_ONCE(1, "regmap API is disabled");
- }
- 
-+static inline void regmap_async_complete(struct regmap *map)
-+{
-+	WARN_ONCE(1, "regmap API is disabled");
-+}
-+
- static inline int regmap_register_patch(struct regmap *map,
- 					const struct reg_default *regs,
- 					int num_regs)
--- 
-1.7.10.4
-
