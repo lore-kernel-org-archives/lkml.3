@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab3A0DBW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 22:01:22 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41051 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755288Ab3A0DBV (ORCPT
+	id S1755568Ab3A0DQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 22:16:26 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:45391 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755361Ab3A0DQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 22:01:21 -0500
-Date: Sun, 27 Jan 2013 11:00:49 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Daniel Jeong <gshark.jeong@gmail.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: lp8755: Use LP8755_BUCK_MAX instead of magic
- number
-Message-ID: <20130127030046.GD4650@opensource.wolfsonmicro.com>
-References: <1359177587.9041.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="11Y7aswkeuHtSBEs"
-Content-Disposition: inline
-In-Reply-To: <1359177587.9041.1.camel@phoenix>
-X-Cookie: You are standing on my toes.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 26 Jan 2013 22:16:24 -0500
+Message-ID: <1359256581.4159.16.camel@kernel>
+Subject: Re: [PATCH 1/11] ksm: allow trees per NUMA node
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Sat, 26 Jan 2013 21:16:21 -0600
+In-Reply-To: <alpine.LNX.2.00.1301261826000.7411@eggly.anvils>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
+	 <alpine.LNX.2.00.1301251753380.29196@eggly.anvils>
+	 <1359249282.4159.4.camel@kernel>
+	 <alpine.LNX.2.00.1301261826000.7411@eggly.anvils>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2013-01-26 at 18:54 -0800, Hugh Dickins wrote:
+> On Sat, 26 Jan 2013, Simon Jeons wrote:
+> > On Fri, 2013-01-25 at 17:54 -0800, Hugh Dickins wrote:
+> > > From: Petr Holasek <pholasek@redhat.com>
+> > > @@ -1122,6 +1166,18 @@ struct rmap_item *unstable_tree_search_i
+> > >  			return NULL;
+> > >  		}
+> > >  
+> > > +		/*
+> > > +		 * If tree_page has been migrated to another NUMA node, it
+> > > +		 * will be flushed out and put into the right unstable tree
+> > 
+> > Then why not insert the new page to unstable tree during page migration
+> > against current upstream? Because default behavior is merge across
+> > nodes.
+> 
+> I don't understand the words "against current upstream" in your question.
 
---11Y7aswkeuHtSBEs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I mean current upstream codes without numa awareness. :)
 
-On Sat, Jan 26, 2013 at 01:19:47PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> 
+> We cannot move a page (strictly, a node) from one tree to another during
+> page migration itself, because the necessary ksm_thread_mutex is not held.
+> Not would we even want to while "merge across nodes".
+> 
+> Ah, perhaps you are pointing out that in current upstream, the only user
+> of ksm page migration is memory hotremove, which in current upstream does
+> hold ksm_thread_mutex.
+> 
+> So you'd like us to add code for moving a node from one tree to another
+> in ksm_migrate_page() (and what would it do when it collides with an
 
-Applied, thanks.
+Without numa awareness, I still can't understand your explanation why
+can't insert the node to the tree just after page migration instead of
+inserting it at the next scan.
 
---11Y7aswkeuHtSBEs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> existing node?), code which will then be removed a few patches later
+> when ksm page migration is fully enabled?
+> 
+> No, I'm not going to put any more thought into that.  When Andrea pointed
+> out the problem with Petr's original change to ksm_migrate_page(), I did
+> indeed think that we could do something cleverer at that point; but once
+> I got down to trying it, found that a dead end.  I wasn't going to be
+> able to test the hotremove case properly anyway, so no good pursuing
+> solutions that couldn't be generalized.
+> 
+> Hugh
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRBJhUAAoJELSic+t+oim9sG0P/iW8FohATJ9pAFI9sjFOd9b8
-zWovMoPhcWPNVNhtwpo47mg22fvpwxu527VJfFz41B4pYxlyY+Fl3gSsdDALoiib
-QWScBRb1ggKg7FHCsyo7IDdF971wZDgGUt7eo6UPgF8VGp+iwofWVIY/B/JIRTDL
-KtXBIbeg+v7FxhRfouxZvSBzOtVc4a/S3d+i2WzDGZvbAc7IokaQxWK3x1UPFX2Z
-z5SK3T5mH4hsarIavSZtBfGb0XZIdvB8ClOgVezHGUUq2Z2kSskXdGZVgJGQ7ZUW
-JAbkNRJA60BPI7QIChj+Lk3698azCADLEcMviapCXjHgjbRaCN6cz2KIwcXti3BS
-oEM7YPnhigb+75R9NgcmWfz9WnG2VVW3aHc8E2buUTRp7025Wc2EkZFAM33lICaA
-cXPz7H9Jq0aqXfQXk5M+YtJ1+L6UKzwsLvKMNQZabmxb+VzTcQ38q588FimXWMTG
-nsyZT/NAJlDirBU3VMVAzxeofLw7gOkeBOuMdnvtAx9LgTA7vLn9PZaoeu8PzXFc
-CWHqvuDG+EF/E9oJ1uPLOgxkmjx14mZUJPIeCLs2FekUiHu63jFEg21pDPYPZX+2
-xo8NbEuWi163E6qPf83T6W6K4S4vU4hgkaTEjRCL89ITjU+245pYRdFsZSBW28AT
-7oid7bPCMxIxeI/2JZbZ
-=hcfx
------END PGP SIGNATURE-----
-
---11Y7aswkeuHtSBEs--
