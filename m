@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab3A0UIQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 15:08:16 -0500
-Received: from server19320154104.serverpool.info ([193.201.54.104]:36865 "EHLO
-	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755445Ab3A0UIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 15:08:13 -0500
-From: Hauke Mehrtens <hauke@hauke-m.de>
-To: gregkh@linuxfoundation.org
-Cc: zbr@ioremap.net, panto@antoniou-consulting.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Hauke Mehrtens <hauke@hauke-m.de>
-Subject: [PATCH] w1-gpio: fix section mismatch
-Date: Sun, 27 Jan 2013 21:07:57 +0100
-Message-Id: <1359317277-29161-1-git-send-email-hauke@hauke-m.de>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756106Ab3A0URJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 15:17:09 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:37904 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755932Ab3A0URH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 15:17:07 -0500
+Message-ID: <51058B3B.3010400@suse.cz>
+Date: Sun, 27 Jan 2013 21:16:59 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Fulghum <paulkf@microgate.com>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] TTY: synclink, small cleanup in dtr_rts()
+References: <20130127194039.GA18787@elgon.mountain> <1359317078.14406.12.camel@joe-AO722>
+In-Reply-To: <1359317078.14406.12.camel@joe-AO722>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following section mismatch:
+On 01/27/2013 09:04 PM, Joe Perches wrote:
+> On Sun, 2013-01-27 at 22:40 +0300, Dan Carpenter wrote:
+>> There is a kind of precedence problem here, but it doesn't affect how
+>> the code works because ->serial_signals is unsigned char.  We want to
+>> clear two flags here.
+>>
+>> #define SerialSignal_RTS            0x20     /* Request to Send */
+>> #define SerialSignal_DTR            0x80     /* Data Terminal Ready */
+>>
+>> Without the parenthesis then it does:
+>>
+>> 	info->serial_signals &= 0x5f;
+>>
+>> With the parenthesis it does:
+>>
+>> 	info->serial_signals &= 0xffffff5f;
+>>
+>> info->serial_signals is an unsigned char so the two statements are
+>> equivalent, but it's cleaner to add the parenthesis.  In other dtr_rts()
+>> functions the parenthesis are there so this makes it more consistent.
+> 
+> 
+> Wouldn't it be clearer still to use | instead of +
 
-WARNING: drivers/w1/masters/w1-gpio.o(.data+0x188): Section mismatch in
-reference from the variable w1_gpio_driver to the function
-.init.text:w1_gpio_probe()
-The variable w1_gpio_driver references
-the function __init w1_gpio_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+Ack, the plus is a mindfuck.
 
-Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
----
 
-This patch is based on 3.8-rc5.
-
- drivers/w1/masters/w1-gpio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
-index 85b363a..d39dfa4 100644
---- a/drivers/w1/masters/w1-gpio.c
-+++ b/drivers/w1/masters/w1-gpio.c
-@@ -72,7 +72,7 @@ static int w1_gpio_probe_dt(struct platform_device *pdev)
- 	return 0;
- }
- 
--static int __init w1_gpio_probe(struct platform_device *pdev)
-+static int w1_gpio_probe(struct platform_device *pdev)
- {
- 	struct w1_bus_master *master;
- 	struct w1_gpio_platform_data *pdata;
 -- 
-1.7.10.4
-
+js
+suse labs
