@@ -1,62 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab3A0NDG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 08:03:06 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42073 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756683Ab3A0NDE (ORCPT
+	id S1756774Ab3A0NEn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 08:04:43 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:50427 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756683Ab3A0NEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 08:03:04 -0500
-Date: Sun, 27 Jan 2013 14:02:59 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 0/9] perf: Adding better precise_ip field handling
-Message-ID: <20130127130259.GC3933@gmail.com>
-References: <1359221275-24254-1-git-send-email-jolsa@redhat.com>
- <20130127124133.GA3933@gmail.com>
- <20130127125751.GA2369@krava.brq.redhat.com>
+	Sun, 27 Jan 2013 08:04:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130127125751.GA2369@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130125141842.58010c25@annuminas.surriel.com>
+References: <20130125140553.060b8ced@annuminas.surriel.com>
+	<20130125141842.58010c25@annuminas.surriel.com>
+Date: Sun, 27 Jan 2013 05:04:40 -0800
+Message-ID: <CANN689EAykWXS4QTVDKaCb4in_2b_Bqyoh-xg=EbX7ivOPry4w@mail.gmail.com>
+Subject: Re: [PATCH -v4 4/5] x86,smp: keep spinlock delay values per hashed
+ spinlock address
+From: Michel Lespinasse <walken@google.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, aquini@redhat.com, eric.dumazet@gmail.com,
+        lwoodman@redhat.com, knoel@redhat.com, chegu_vinod@hp.com,
+        raghavendra.kt@linux.vnet.ibm.com, mingo@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 25, 2013 at 11:18 AM, Rik van Riel <riel@redhat.com> wrote:
+> +       u32 delay = (ent->hash == hash) ? ent->delay : MIN_SPINLOCK_DELAY;
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+I still don't like the reseting of delay to MIN_SPINLOCK_DELAY when
+there is a hash collision.
 
-> On Sun, Jan 27, 2013 at 01:41:33PM +0100, Ingo Molnar wrote:
-> > 
-> > * Jiri Olsa <jolsa@redhat.com> wrote:
-> > 
-> > > hi,
-> > > adding sysfs attribute to specify the maximum allowed value
-> > > for perf_event_attr::precise_ip field.
-> > > 
-> > > Adding functionality for simple 'precise' term to get the
-> > > maximum allowed value for perf_event_attr::precise_ip field.
-> > > 
-> > > And finally adding several precise automated tests.
-> > 
-> > Ok - could we please as a next step turn on cycles:pp as the 
-> > default in all the profiling tools (perf record, perf top), 
-> > transparently? I.e. if the CPU supports it then use it, if not 
-> > then don't complain, just use the highest grade profiling method 
-> > available.
-> 
-> yep, we discussed with Arnaldo this would be good to have
-
-This would be a high-profile, user visible improvement to 
-profiling quality.
-
-Thanks,
-
-	Ingo
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
