@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab3A0AT1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 19:19:27 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:58462 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754777Ab3A0ATX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 19:19:23 -0500
-Date: Sat, 26 Jan 2013 16:18:04 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu
-Subject: [PATCH tip/core/rcu 0/2] Callback tagging for 3.9
-Message-ID: <20130127001804.GA4122@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	id S1755041Ab3A0AV5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 19:21:57 -0500
+Received: from mga01.intel.com ([192.55.52.88]:26419 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754811Ab3A0AVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 19:21:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,545,1355126400"; 
+   d="scan'208";a="278824456"
+Date: Sun, 27 Jan 2013 01:21:51 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: wei_wang@realsil.com.cn
+Cc: cjb@laptop.org, devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, gregkh@linuxfoundation.org, arnd@arndb.de,
+        oakad@yahoo.com, bp@alien8.de
+Subject: Re: [PATCH 0/3] Fix two bugs in rtl8411
+Message-ID: <20130127002151.GD1174@sortiz-mobl>
+References: <cover.1358905022.git.wei_wang@realsil.com.cn>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <cover.1358905022.git.wei_wang@realsil.com.cn>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012700-7408-0000-0000-00000C4018CD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+Hi Wei,
 
-This series contains callback-tagging patches.  These were sent earlier
-in the idle/no-CBs series, but have been isolated as the more trustworthy
-part of that series.
+On Wed, Jan 23, 2013 at 09:51:03AM +0800, wei_wang@realsil.com.cn wrote:
+> From: Wei WANG <wei_wang@realsil.com.cn>
+> 
+> 1. The method to switch output voltage is different in rtl8411
+> 2. Fix the formula to calculate N from SD clock if clock divider is more than 1
+> 
+> Wei WANG (3):
+>   MFD:rtsx: Add callback function switch_output_voltage
+>   MMC:rtsx: Using callback function to switch output voltage
+>   MFD:rtsx: Add callback function conv_clk_and_div_n
+All 3 patches applied to my for-linus branch. I rephrased the changelog
+slightly, to make it clearer that this is a bug fix.
 
-1.	Tag callback lists with the grace-period number that they are
-	waiting for.  This change enables a number of optimizations
-	for RCU_FAST_NO_HZ, and though it add a bit of code, it greatly
-	simplifies RCU's callback handling.
-2.	Trace callback acceleration (which is when RCU notices that a
-	group of callbacks doesn't actually need to wait as long as it
-	previously thought).
+Cheers,
+Samuel.
 
-							Thanx, Paul
-
-
- b/include/trace/events/rcu.h |    6 -
- b/kernel/rcutree.c           |  201 +++++++++++++++++++++++++++++++++++++------
- b/kernel/rcutree.h           |    2 
- 3 files changed, 179 insertions(+), 30 deletions(-)
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
