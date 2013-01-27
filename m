@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab3A0APe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jan 2013 19:15:34 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49253 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754805Ab3A0APa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jan 2013 19:15:30 -0500
+	id S1755199Ab3A0APm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jan 2013 19:15:42 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:52090 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755098Ab3A0APj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jan 2013 19:15:39 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,189 +14,172 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH tip/core/rcu 10/10] context_tracking: Add comments on interface and internals
-Date: Sat, 26 Jan 2013 16:15:12 -0800
-Message-Id: <1359245712-3843-10-git-send-email-paulmck@linux.vnet.ibm.com>
+        fweisbec@gmail.com, sbw@mit.edu, Dave Hansen <dave@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 07/10] rcu: Consolidate debugging Kconfig options
+Date: Sat, 26 Jan 2013 16:15:09 -0800
+Message-Id: <1359245712-3843-7-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1359245712-3843-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130127001454.GA2682@linux.vnet.ibm.com>
  <1359245712-3843-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012700-7182-0000-0000-000004BAF1A7
+x-cbid: 13012700-5518-0000-0000-00000B0B382C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
 
-This subsystem lacks many explanations on its purpose and
-design. Add these missing comments.
+The RCU-related debugging Kconfig options are in two different places,
+and consume too much screen real estate.  This commit therefore
+consolidates them into their own menu.
 
-v4: Document function parameter to be more kernel-doc
-friendly, as per Namhyung suggestion.
-
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/context_tracking.c |   75 +++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 65 insertions(+), 10 deletions(-)
+ lib/Kconfig.debug |  114 +++++++++++++++++++++++++++-------------------------
+ 1 files changed, 59 insertions(+), 55 deletions(-)
 
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index e0e07fd..d566aba 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -1,3 +1,19 @@
-+/*
-+ * Context tracking: Probe on high level context boundaries such as kernel
-+ * and userspace. This includes syscalls and exceptions entry/exit.
-+ *
-+ * This is used by RCU to remove its dependency on the timer tick while a CPU
-+ * runs in userspace.
-+ *
-+ *  Started by Frederic Weisbecker:
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc., Frederic Weisbecker <fweisbec@redhat.com>
-+ *
-+ * Many thanks to Gilad Ben-Yossef, Paul McKenney, Ingo Molnar, Andrew Morton,
-+ * Steven Rostedt, Peter Zijlstra for suggestions and improvements.
-+ *
-+ */
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 3a35309..122db3d 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -605,61 +605,6 @@ config PROVE_LOCKING
+ 
+ 	 For more details, see Documentation/lockdep-design.txt.
+ 
+-config PROVE_RCU
+-	bool "RCU debugging: prove RCU correctness"
+-	depends on PROVE_LOCKING
+-	default n
+-	help
+-	 This feature enables lockdep extensions that check for correct
+-	 use of RCU APIs.  This is currently under development.  Say Y
+-	 if you want to debug RCU usage or help work on the PROVE_RCU
+-	 feature.
+-
+-	 Say N if you are unsure.
+-
+-config PROVE_RCU_REPEATEDLY
+-	bool "RCU debugging: don't disable PROVE_RCU on first splat"
+-	depends on PROVE_RCU
+-	default n
+-	help
+-	 By itself, PROVE_RCU will disable checking upon issuing the
+-	 first warning (or "splat").  This feature prevents such
+-	 disabling, allowing multiple RCU-lockdep warnings to be printed
+-	 on a single reboot.
+-
+-	 Say Y to allow multiple RCU-lockdep warnings per boot.
+-
+-	 Say N if you are unsure.
+-
+-config PROVE_RCU_DELAY
+-	bool "RCU debugging: preemptible RCU race provocation"
+-	depends on DEBUG_KERNEL && PREEMPT_RCU
+-	default n
+-	help
+-	 There is a class of races that involve an unlikely preemption
+-	 of __rcu_read_unlock() just after ->rcu_read_lock_nesting has
+-	 been set to INT_MIN.  This feature inserts a delay at that
+-	 point to increase the probability of these races.
+-
+-	 Say Y to increase probability of preemption of __rcu_read_unlock().
+-
+-	 Say N if you are unsure.
+-
+-config SPARSE_RCU_POINTER
+-	bool "RCU debugging: sparse-based checks for pointer usage"
+-	default n
+-	help
+-	 This feature enables the __rcu sparse annotation for
+-	 RCU-protected pointers.  This annotation will cause sparse
+-	 to flag any non-RCU used of annotated pointers.  This can be
+-	 helpful when debugging RCU usage.  Please note that this feature
+-	 is not intended to enforce code cleanliness; it is instead merely
+-	 a debugging aid.
+-
+-	 Say Y to make sparse flag questionable use of RCU-protected pointers
+-
+-	 Say N if you are unsure.
+-
+ config LOCKDEP
+ 	bool
+ 	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
+@@ -937,6 +882,63 @@ config BOOT_PRINTK_DELAY
+ 	  BOOT_PRINTK_DELAY also may cause LOCKUP_DETECTOR to detect
+ 	  what it believes to be lockup conditions.
+ 
++menu "RCU Debugging"
 +
- #include <linux/context_tracking.h>
- #include <linux/rcupdate.h>
- #include <linux/sched.h>
-@@ -6,8 +22,8 @@
- 
- struct context_tracking {
- 	/*
--	 * When active is false, hooks are not set to
--	 * minimize overhead: TIF flags are cleared
-+	 * When active is false, probes are unset in order
-+	 * to minimize overhead: TIF flags are cleared
- 	 * and calls to user_enter/exit are ignored. This
- 	 * may be further optimized using static keys.
- 	 */
-@@ -24,6 +40,15 @@ static DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
- #endif
- };
- 
-+/**
-+ * user_enter - Inform the context tracking that the CPU is going to
-+ *              enter userspace mode.
-+ *
-+ * This function must be called right before we switch from the kernel
-+ * to userspace, when it's guaranteed the remaining kernel instructions
-+ * to execute won't use any RCU read side critical section because this
-+ * function sets RCU in extended quiescent state.
-+ */
- void user_enter(void)
- {
- 	unsigned long flags;
-@@ -39,40 +64,70 @@ void user_enter(void)
- 	if (in_interrupt())
- 		return;
- 
-+	/* Kernel threads aren't supposed to go to userspace */
- 	WARN_ON_ONCE(!current->mm);
- 
- 	local_irq_save(flags);
- 	if (__this_cpu_read(context_tracking.active) &&
- 	    __this_cpu_read(context_tracking.state) != IN_USER) {
- 		__this_cpu_write(context_tracking.state, IN_USER);
-+		/*
-+		 * At this stage, only low level arch entry code remains and
-+		 * then we'll run in userspace. We can assume there won't be
-+		 * any RCU read-side critical section until the next call to
-+		 * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
-+		 * on the tick.
-+		 */
- 		rcu_user_enter();
- 	}
- 	local_irq_restore(flags);
- }
- 
++config PROVE_RCU
++	bool "RCU debugging: prove RCU correctness"
++	depends on PROVE_LOCKING
++	default n
++	help
++	 This feature enables lockdep extensions that check for correct
++	 use of RCU APIs.  This is currently under development.  Say Y
++	 if you want to debug RCU usage or help work on the PROVE_RCU
++	 feature.
 +
-+/**
-+ * user_exit - Inform the context tracking that the CPU is
-+ *             exiting userspace mode and entering the kernel.
-+ *
-+ * This function must be called after we entered the kernel from userspace
-+ * before any use of RCU read side critical section. This potentially include
-+ * any high level kernel code like syscalls, exceptions, signal handling, etc...
-+ *
-+ * This call supports re-entrancy. This way it can be called from any exception
-+ * handler without needing to know if we came from userspace or not.
-+ */
- void user_exit(void)
- {
- 	unsigned long flags;
- 
--	/*
--	 * Some contexts may involve an exception occuring in an irq,
--	 * leading to that nesting:
--	 * rcu_irq_enter() rcu_user_exit() rcu_user_exit() rcu_irq_exit()
--	 * This would mess up the dyntick_nesting count though. And rcu_irq_*()
--	 * helpers are enough to protect RCU uses inside the exception. So
--	 * just return immediately if we detect we are in an IRQ.
--	 */
- 	if (in_interrupt())
- 		return;
- 
- 	local_irq_save(flags);
- 	if (__this_cpu_read(context_tracking.state) == IN_USER) {
- 		__this_cpu_write(context_tracking.state, IN_KERNEL);
-+		/*
-+		 * We are going to run code that may use RCU. Inform
-+		 * RCU core about that (ie: we may need the tick again).
-+		 */
- 		rcu_user_exit();
- 	}
- 	local_irq_restore(flags);
- }
- 
++	 Say N if you are unsure.
 +
-+/**
-+ * context_tracking_task_switch - context switch the syscall callbacks
-+ * @prev: the task that is being switched out
-+ * @next: the task that is being switched in
-+ *
-+ * The context tracking uses the syscall slow path to implement its user-kernel
-+ * boundaries probes on syscalls. This way it doesn't impact the syscall fast
-+ * path on CPUs that don't do context tracking.
-+ *
-+ * But we need to clear the flag on the previous task because it may later
-+ * migrate to some CPU that doesn't do the context tracking. As such the TIF
-+ * flag may not be desired there.
-+ */
- void context_tracking_task_switch(struct task_struct *prev,
- 			     struct task_struct *next)
- {
++config PROVE_RCU_REPEATEDLY
++	bool "RCU debugging: don't disable PROVE_RCU on first splat"
++	depends on PROVE_RCU
++	default n
++	help
++	 By itself, PROVE_RCU will disable checking upon issuing the
++	 first warning (or "splat").  This feature prevents such
++	 disabling, allowing multiple RCU-lockdep warnings to be printed
++	 on a single reboot.
++
++	 Say Y to allow multiple RCU-lockdep warnings per boot.
++
++	 Say N if you are unsure.
++
++config PROVE_RCU_DELAY
++	bool "RCU debugging: preemptible RCU race provocation"
++	depends on DEBUG_KERNEL && PREEMPT_RCU
++	default n
++	help
++	 There is a class of races that involve an unlikely preemption
++	 of __rcu_read_unlock() just after ->rcu_read_lock_nesting has
++	 been set to INT_MIN.  This feature inserts a delay at that
++	 point to increase the probability of these races.
++
++	 Say Y to increase probability of preemption of __rcu_read_unlock().
++
++	 Say N if you are unsure.
++
++config SPARSE_RCU_POINTER
++	bool "RCU debugging: sparse-based checks for pointer usage"
++	default n
++	help
++	 This feature enables the __rcu sparse annotation for
++	 RCU-protected pointers.  This annotation will cause sparse
++	 to flag any non-RCU used of annotated pointers.  This can be
++	 helpful when debugging RCU usage.  Please note that this feature
++	 is not intended to enforce code cleanliness; it is instead merely
++	 a debugging aid.
++
++	 Say Y to make sparse flag questionable use of RCU-protected pointers
++
++	 Say N if you are unsure.
++
+ config RCU_TORTURE_TEST
+ 	tristate "torture tests for RCU"
+ 	depends on DEBUG_KERNEL
+@@ -1015,6 +1017,8 @@ config RCU_TRACE
+ 	  Say Y here if you want to enable RCU tracing
+ 	  Say N if you are unsure.
+ 
++endmenu # "RCU Debugging"
++
+ config KPROBES_SANITY_TEST
+ 	bool "Kprobes sanity tests"
+ 	depends on DEBUG_KERNEL
 -- 
 1.7.8
 
