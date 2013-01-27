@@ -1,276 +1,548 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772Ab3A0NRF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 08:17:05 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:34784 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756712Ab3A0NRC (ORCPT
+	id S1756780Ab3A0NT1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 08:19:27 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:53742 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756712Ab3A0NTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 08:17:02 -0500
-Message-ID: <1359292616.11083.7.camel@phoenix>
-Subject: [RFT][PATCH v2] regulator: Add missing of_node_put()
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        David Dajun Chen <dchen@diasemi.com>,
-        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
-        MyungJoo Ham <myungjoo.ham@smasung.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Sun, 27 Jan 2013 21:16:56 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 27 Jan 2013 08:19:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <1358856404-8975-2-git-send-email-stigge@antcom.de>
+References: <1358856404-8975-1-git-send-email-stigge@antcom.de>
+	<1358856404-8975-2-git-send-email-stigge@antcom.de>
+Date: Sun, 27 Jan 2013 14:19:23 +0100
+Message-ID: <CAOY=C6ERX=2HdvmtAW-__947_-P8r=Lvp88KzZDQdf4kAuRB5Q@mail.gmail.com>
+Subject: Re: [PATCH 1/6 v14] gpio: Add a block GPIO API to gpiolib
+From: Stijn Devriendt <highguy@gmail.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, sr@denx.de, wg@grandegger.com, mark.rutland@arm.com,
+        nicolas.ferre@atmel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_find_node_by_name() returns a node pointer with refcount incremented, use
-of_node_put() on it when done.
+On Tue, Jan 22, 2013 at 1:06 PM, Roland Stigge <stigge@antcom.de> wrote:
+> The recurring task of providing simultaneous access to GPIO lines (especially
+> for bit banging protocols) needs an appropriate API.
+>
+> This patch adds a kernel internal "Block GPIO" API that enables simultaneous
+> access to several GPIOs. This is done by abstracting GPIOs to an n-bit word:
+> Once requested, it provides access to a group of GPIOs which can range over
+> multiple GPIO chips.
+>
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> ---
+>
+>  Documentation/gpio.txt     |   58 +++++++++++
+>  drivers/gpio/gpiolib.c     |  227 +++++++++++++++++++++++++++++++++++++++++++++
+>  include/asm-generic/gpio.h |   17 +++
+>  include/linux/gpio.h       |   97 +++++++++++++++++++
+>  4 files changed, 399 insertions(+)
+>
+> --- linux-2.6.orig/Documentation/gpio.txt
+> +++ linux-2.6/Documentation/gpio.txt
+> @@ -481,6 +481,64 @@ exact name string of pinctrl device has
+>  argument to this routine.
+>
+>
+> +Block GPIO
+> +----------
+> +
+> +The above described interface concentrates on handling single GPIOs.  However,
+> +in applications where it is critical to set several GPIOs at once, this
+> +interface doesn't work well, e.g. bit-banging protocols via grouped GPIO lines.
+> +Consider a GPIO controller that is connected via a slow I2C line. When
+> +switching two or more GPIOs one after another, there can be considerable time
+> +between those events. This is solved by an interface called Block GPIO:
+> +
+> +struct gpio_block *gpio_block_create(unsigned int *gpios, size_t size,
+> +                                    const char *name);
+> +
+> +This creates a new block of GPIOs as a list of GPIO numbers with the specified
+> +size which are accessible via the returned struct gpio_block and the accessor
+> +functions described below. Please note that you need to request the GPIOs
+> +separately via gpio_request(). Similarly, the direction of the used GPIOs need
+> +to be set by the user before using the block.
 
-of_find_node_by_name() will call of_node_put() against from parameter,
-thus we also need to call of_node_get(from) before calling
-of_find_node_by_name().
+Is there anything holding you back from letting gpio_block_create() do
+the request
+for all the pins?
+Also, wouldn't it make sense to have a gpio_block_direction_input()
+and _output()
+variant? On the other hand, for things like I2C and SPI emulation,
+some pins will
+naturally be always output (like clock lines) while other could be
+switched between
+in and output (like the i2c data line).
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: David Dajun Chen <dchen@diasemi.com>
-Cc: Gyungoh Yoo <jack.yoo@maxim-ic.com>
-Cc: MyungJoo Ham <myungjoo.ham@smasung.com>
-Cc: Graeme Gregory <gg@slimlogic.co.uk>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>
----
-v2:
-need to call of_node_get() for the node to start searching from before calling
-of_find_node_by_name().
+Regards,
+Stijn
 
- drivers/regulator/88pm8607.c               |    3 ++-
- drivers/regulator/da9052-regulator.c       |    5 +++--
- drivers/regulator/max8907-regulator.c      |    7 ++++---
- drivers/regulator/max8925-regulator.c      |    3 ++-
- drivers/regulator/max8997.c                |    4 +++-
- drivers/regulator/mc13xxx-regulator-core.c |    7 ++++++-
- drivers/regulator/palmas-regulator.c       |    2 ++
- drivers/regulator/tps65910-regulator.c     |    6 ++++--
- 8 files changed, 26 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
-index a957e8c..c79ab84 100644
---- a/drivers/regulator/88pm8607.c
-+++ b/drivers/regulator/88pm8607.c
-@@ -347,7 +347,7 @@ static int pm8607_regulator_dt_init(struct platform_device *pdev,
- 				    struct regulator_config *config)
- {
- 	struct device_node *nproot, *np;
--	nproot = pdev->dev.parent->of_node;
-+	nproot = of_node_get(pdev->dev.parent->of_node);
- 	if (!nproot)
- 		return -ENODEV;
- 	nproot = of_find_node_by_name(nproot, "regulators");
-@@ -363,6 +363,7 @@ static int pm8607_regulator_dt_init(struct platform_device *pdev,
- 			break;
- 		}
- 	}
-+	of_node_put(nproot);
- 	return 0;
- }
- #else
-diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
-index c6d8651..96b569a 100644
---- a/drivers/regulator/da9052-regulator.c
-+++ b/drivers/regulator/da9052-regulator.c
-@@ -366,9 +366,9 @@ static int da9052_regulator_probe(struct platform_device *pdev)
- 		config.init_data = pdata->regulators[pdev->id];
- 	} else {
- #ifdef CONFIG_OF
--		struct device_node *nproot = da9052->dev->of_node;
--		struct device_node *np;
-+		struct device_node *nproot, *np;
- 
-+		nproot = of_node_get(da9052->dev->of_node);
- 		if (!nproot)
- 			return -ENODEV;
- 
-@@ -385,6 +385,7 @@ static int da9052_regulator_probe(struct platform_device *pdev)
- 				break;
- 			}
- 		}
-+		of_node_put(nproot);
- #endif
- 	}
- 
-diff --git a/drivers/regulator/max8907-regulator.c b/drivers/regulator/max8907-regulator.c
-index d40cf7f..4568c15 100644
---- a/drivers/regulator/max8907-regulator.c
-+++ b/drivers/regulator/max8907-regulator.c
-@@ -224,11 +224,11 @@ static struct of_regulator_match max8907_matches[] = {
- 
- static int max8907_regulator_parse_dt(struct platform_device *pdev)
- {
--	struct device_node *np = pdev->dev.parent->of_node;
--	struct device_node *regulators;
-+	struct device_node *np, *regulators;
- 	int ret;
- 
--	if (!pdev->dev.parent->of_node)
-+	np = of_node_get(pdev->dev.parent->of_node);
-+	if (!np)
- 		return 0;
- 
- 	regulators = of_find_node_by_name(np, "regulators");
-@@ -239,6 +239,7 @@ static int max8907_regulator_parse_dt(struct platform_device *pdev)
- 
- 	ret = of_regulator_match(&pdev->dev, regulators, max8907_matches,
- 				 ARRAY_SIZE(max8907_matches));
-+	of_node_put(regulators);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "Error parsing regulator init data: %d\n",
- 			ret);
-diff --git a/drivers/regulator/max8925-regulator.c b/drivers/regulator/max8925-regulator.c
-index 446a854..0d5f64a 100644
---- a/drivers/regulator/max8925-regulator.c
-+++ b/drivers/regulator/max8925-regulator.c
-@@ -252,7 +252,7 @@ static int max8925_regulator_dt_init(struct platform_device *pdev,
- {
- 	struct device_node *nproot, *np;
- 	int rcount;
--	nproot = pdev->dev.parent->of_node;
-+	nproot = of_node_get(pdev->dev.parent->of_node);
- 	if (!nproot)
- 		return -ENODEV;
- 	np = of_find_node_by_name(nproot, "regulators");
-@@ -263,6 +263,7 @@ static int max8925_regulator_dt_init(struct platform_device *pdev,
- 
- 	rcount = of_regulator_match(&pdev->dev, np,
- 				&max8925_regulator_matches[ridx], 1);
-+	of_node_put(np);
- 	if (rcount < 0)
- 		return -ENODEV;
- 	config->init_data =	max8925_regulator_matches[ridx].init_data;
-diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-index 5556a15..91f38d8 100644
---- a/drivers/regulator/max8997.c
-+++ b/drivers/regulator/max8997.c
-@@ -917,7 +917,7 @@ static int max8997_pmic_dt_parse_pdata(struct platform_device *pdev,
- 	struct max8997_regulator_data *rdata;
- 	unsigned int i, dvs_voltage_nr = 1, ret;
- 
--	pmic_np = iodev->dev->of_node;
-+	pmic_np = of_node_get(iodev->dev->of_node);
- 	if (!pmic_np) {
- 		dev_err(&pdev->dev, "could not find pmic sub-node\n");
- 		return -ENODEV;
-@@ -937,6 +937,7 @@ static int max8997_pmic_dt_parse_pdata(struct platform_device *pdev,
- 	rdata = devm_kzalloc(&pdev->dev, sizeof(*rdata) *
- 				pdata->num_regulators, GFP_KERNEL);
- 	if (!rdata) {
-+		of_node_put(regulators_np);
- 		dev_err(&pdev->dev, "could not allocate memory for regulator data\n");
- 		return -ENOMEM;
- 	}
-@@ -959,6 +960,7 @@ static int max8997_pmic_dt_parse_pdata(struct platform_device *pdev,
- 		rdata->reg_node = reg_np;
- 		rdata++;
- 	}
-+	of_node_put(regulators_np);
- 
- 	if (of_get_property(pmic_np, "max8997,pmic-buck1-uses-gpio-dvs", NULL))
- 		pdata->buck1_gpiodvs = true;
-diff --git a/drivers/regulator/mc13xxx-regulator-core.c b/drivers/regulator/mc13xxx-regulator-core.c
-index 2ecf1d8..5d2ab2e 100644
---- a/drivers/regulator/mc13xxx-regulator-core.c
-+++ b/drivers/regulator/mc13xxx-regulator-core.c
-@@ -175,6 +175,7 @@ int mc13xxx_get_num_regulators_dt(struct platform_device *pdev)
- 	for_each_child_of_node(parent, child)
- 		num++;
- 
-+	of_node_put(parent);
- 	return num;
- }
- EXPORT_SYMBOL_GPL(mc13xxx_get_num_regulators_dt);
-@@ -197,8 +198,11 @@ struct mc13xxx_regulator_init_data *mc13xxx_parse_regulators_dt(
- 
- 	data = devm_kzalloc(&pdev->dev, sizeof(*data) * priv->num_regulators,
- 			    GFP_KERNEL);
--	if (!data)
-+	if (!data) {
-+		of_node_put(parent);
- 		return NULL;
-+	}
-+
- 	p = data;
- 
- 	for_each_child_of_node(parent, child) {
-@@ -217,6 +221,7 @@ struct mc13xxx_regulator_init_data *mc13xxx_parse_regulators_dt(
- 			}
- 		}
- 	}
-+	of_node_put(parent);
- 
- 	*num_parsed = parsed;
- 	return data;
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index c9e912f..cbaf226 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -527,6 +527,7 @@ static void palmas_dt_to_pdata(struct device *dev,
- 	u32 prop;
- 	int idx, ret;
- 
-+	node = of_node_get(node);
- 	regulators = of_find_node_by_name(node, "regulators");
- 	if (!regulators) {
- 		dev_info(dev, "regulator node not found\n");
-@@ -535,6 +536,7 @@ static void palmas_dt_to_pdata(struct device *dev,
- 
- 	ret = of_regulator_match(dev, regulators, palmas_matches,
- 			PALMAS_NUM_REGS);
-+	of_node_put(regulators);
- 	if (ret < 0) {
- 		dev_err(dev, "Error parsing regulator init data: %d\n", ret);
- 		return;
-diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
-index b0e4c0b..6ba6931 100644
---- a/drivers/regulator/tps65910-regulator.c
-+++ b/drivers/regulator/tps65910-regulator.c
-@@ -964,8 +964,7 @@ static struct tps65910_board *tps65910_parse_dt_reg_data(
- {
- 	struct tps65910_board *pmic_plat_data;
- 	struct tps65910 *tps65910 = dev_get_drvdata(pdev->dev.parent);
--	struct device_node *np = pdev->dev.parent->of_node;
--	struct device_node *regulators;
-+	struct device_node *np, *regulators;
- 	struct of_regulator_match *matches;
- 	unsigned int prop;
- 	int idx = 0, ret, count;
-@@ -978,6 +977,7 @@ static struct tps65910_board *tps65910_parse_dt_reg_data(
- 		return NULL;
- 	}
- 
-+	np = of_node_get(pdev->dev.parent->of_node);
- 	regulators = of_find_node_by_name(np, "regulators");
- 	if (!regulators) {
- 		dev_err(&pdev->dev, "regulator node not found\n");
-@@ -994,11 +994,13 @@ static struct tps65910_board *tps65910_parse_dt_reg_data(
- 		matches = tps65911_matches;
- 		break;
- 	default:
-+		of_node_put(regulators);
- 		dev_err(&pdev->dev, "Invalid tps chip version\n");
- 		return NULL;
- 	}
- 
- 	ret = of_regulator_match(&pdev->dev, regulators, matches, count);
-+	of_node_put(regulators);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "Error parsing regulator init data: %d\n",
- 			ret);
--- 
-1.7.9.5
-
-
-
+> +An arbitrary list of globally
+> +valid GPIOs can be specified, even ranging over several gpio_chips. Actual
+> +handling of I/O operations will be done on a best effort base, i.e.
+> +simultaneous I/O only where possible by hardware and implemented in the
+> +respective GPIO driver. The number of GPIOs in one block is limited to the
+> +number of bits in an unsigned long, or BITS_PER_LONG, of the respective
+> +platform, i.e. typically at least 32 on a 32 bit system, and at least 64 on a
+> +64 bit system. However, several blocks can be defined at once.
+> +
+> +unsigned long gpio_block_get(struct gpio_block *block, unsigned long mask);
+> +void gpio_block_set(struct gpio_block *block, unsigned long mask,
+> +                   unsigned long values);
+> +
+> +With those accessor functions, setting and getting the GPIO values is possible,
+> +analogous to gpio_get_value() and gpio_set_value(). Each bit in the return
+> +value of gpio_block_get() and in the value argument of gpio_block_set()
+> +corresponds to a bit specified on gpio_block_create(). The mask parameters
+> +specify which bits in the block are acted upon. This is useful to let some bits
+> +untouched when doing a set operation on the block.
+> +
+> +Block operations in hardware are only possible where the respective GPIO driver
+> +implements it, falling back to using single GPIO operations where the driver
+> +only implements single GPIO access.
+> +
+> +If a GPIO block includes GPIOs from several chips, the chips are handled one
+> +after another in the order of first specification in the list of GPIOs defined
+> +in the GPIO block, starting with bit 0. Note that in this case, you typically
+> +can't assume simultaneous access.
+> +
+> +void gpio_block_free(struct gpio_block *block);
+> +
+> +After the GPIO block isn't used anymore, it should be free'd via
+> +gpio_block_free().
+> +
+> +int gpio_block_register(struct gpio_block *block);
+> +void gpio_block_unregister(struct gpio_block *block);
+> +
+> +These functions can be used to register a GPIO block. Blocks registered this
+> +way will be available via userspace API.
+> +
+> +
+>  What do these conventions omit?
+>  ===============================
+>  One of the biggest things these conventions omit is pin multiplexing, since
+> --- linux-2.6.orig/drivers/gpio/gpiolib.c
+> +++ linux-2.6/drivers/gpio/gpiolib.c
+> @@ -83,6 +83,8 @@ static inline void desc_set_label(struct
+>  #endif
+>  }
+>
+> +static LIST_HEAD(gpio_block_list);
+> +
+>  /* Warn when drivers omit gpio_request() calls -- legal but ill-advised
+>   * when setting direction, and otherwise illegal.  Until board setup code
+>   * and drivers use explicit requests everywhere (which won't happen when
+> @@ -217,6 +219,16 @@ static int gpio_get_direction(unsigned g
+>         return status;
+>  }
+>
+> +static bool gpio_block_is_output(struct gpio_block *block)
+> +{
+> +       int i;
+> +
+> +       for (i = 0; i < block->ngpio; i++)
+> +               if (!test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags))
+> +                       return false;
+> +       return true;
+> +}
+> +
+>  #ifdef CONFIG_GPIO_SYSFS
+>
+>  /* lock protects against unexport_gpio() being called while
+> @@ -1799,6 +1811,221 @@ void __gpio_set_value(unsigned gpio, int
+>  }
+>  EXPORT_SYMBOL_GPL(__gpio_set_value);
+>
+> +static struct gpio_block_chip *gpio_block_chip_get(struct gpio_block *block,
+> +                                                  struct gpio_chip *gc)
+> +{
+> +       struct gpio_block_chip *i;
+> +
+> +       list_for_each_entry(i, &block->gbc_list, list)
+> +               if (i->gc == gc)
+> +                       return i;
+> +       return NULL;
+> +}
+> +
+> +struct gpio_block *gpio_block_create(unsigned *gpios, size_t size,
+> +                                    const char *name)
+> +{
+> +       struct gpio_block *block;
+> +       struct gpio_block_chip *gbc;
+> +       struct gpio_remap *remap;
+> +       int i;
+> +
+> +       if (size < 1 || size > BITS_PER_LONG)
+> +               return ERR_PTR(-EINVAL);
+> +
+> +       for (i = 0; i < size; i++)
+> +               if (!gpio_is_valid(gpios[i]))
+> +                       return ERR_PTR(-EINVAL);
+> +
+> +       block = kzalloc(sizeof(struct gpio_block), GFP_KERNEL);
+> +       if (!block)
+> +               return ERR_PTR(-ENOMEM);
+> +
+> +       block->name = name;
+> +       block->ngpio = size;
+> +       INIT_LIST_HEAD(&block->gbc_list);
+> +       block->gpio = kzalloc(sizeof(*block->gpio) * size, GFP_KERNEL);
+> +       if (!block->gpio)
+> +               goto err;
+> +
+> +       memcpy(block->gpio, gpios, sizeof(*block->gpio) * size);
+> +
+> +       for (i = 0; i < size; i++) {
+> +               struct gpio_chip *gc = gpio_to_chip(gpios[i]);
+> +               int bit = gpios[i] - gc->base;
+> +               gbc = gpio_block_chip_get(block, gc);
+> +
+> +               if (!gbc) {
+> +                       gbc = kzalloc(sizeof(struct gpio_block_chip),
+> +                                     GFP_KERNEL);
+> +                       if (!gbc)
+> +                               goto err;
+> +                       list_add_tail(&gbc->list, &block->gbc_list);
+> +                       gbc->gc = gc;
+> +                       INIT_LIST_HEAD(&gbc->remap_list);
+> +               }
+> +
+> +               /*
+> +                * represents the mask necessary on calls to the driver's
+> +                * .get_block() and .set_block()
+> +                */
+> +               gbc->mask |= BIT(bit);
+> +
+> +               /*
+> +                * collect gpios that are specified together, represented by
+> +                * neighboring bits
+> +                *
+> +                * get last element and create new element if list empty or
+> +                * new element necessary
+> +                */
+> +               remap = list_entry(gbc->remap_list.prev, struct gpio_remap,
+> +                                  list);
+> +               if (list_empty(&gbc->remap_list) ||
+> +                   (bit - i != remap->offset)) {
+> +                       remap = kzalloc(sizeof(struct gpio_remap), GFP_KERNEL);
+> +                       if (!remap)
+> +                               goto err;
+> +                       list_add_tail(&remap->list, &gbc->remap_list);
+> +                       remap->offset = bit - i;
+> +               }
+> +
+> +               /*
+> +                * represents the mask necessary for bit reordering between
+> +                * gpio_block (i.e. as specified on gpio_block_get() and
+> +                * gpio_block_set()) and gpio_chip domain (i.e. as specified on
+> +                * the driver's .set_block() and .get_block())
+> +                */
+> +               remap->mask |= BIT(i);
+> +       }
+> +
+> +       return block;
+> +err:
+> +       gpio_block_free(block);
+> +       return ERR_PTR(-ENOMEM);
+> +}
+> +EXPORT_SYMBOL_GPL(gpio_block_create);
+> +
+> +void gpio_block_free(struct gpio_block *block)
+> +{
+> +       struct list_head *i, *itmp, *j, *jtmp;
+> +       struct gpio_block_chip *gbc;
+> +       struct gpio_remap *remap;
+> +
+> +       list_for_each_safe(i, itmp, &block->gbc_list) {
+> +               gbc = list_entry(i, struct gpio_block_chip, list);
+> +               list_del(i);
+> +               list_for_each_safe(j, jtmp, &gbc->remap_list) {
+> +                      remap = list_entry(j, struct gpio_remap, list);
+> +                      list_del(j);
+> +                      kfree(remap);
+> +               }
+> +               kfree(gbc);
+> +       }
+> +
+> +       kfree(block->gpio);
+> +       kfree(block);
+> +}
+> +EXPORT_SYMBOL_GPL(gpio_block_free);
+> +
+> +unsigned long gpio_block_get(const struct gpio_block *block, unsigned long mask)
+> +{
+> +       struct gpio_block_chip *gbc;
+> +       unsigned long values = 0;
+> +
+> +       list_for_each_entry(gbc, &block->gbc_list, list) {
+> +               struct gpio_remap *remap;
+> +               int i;
+> +               unsigned long remapped = 0;
+> +               unsigned long remapped_mask = 0;
+> +
+> +               list_for_each_entry(remap, &gbc->remap_list, list)
+> +                       remapped_mask |= (mask & remap->mask) << remap->offset;
+> +               remapped_mask &= gbc->mask;
+> +
+> +               if (!remapped_mask)
+> +                       continue;
+> +
+> +               if (gbc->gc->get_block)
+> +                       remapped = gbc->gc->get_block(gbc->gc, remapped_mask);
+> +               else
+> +                       /* emulate */
+> +                       for_each_set_bit(i, &remapped_mask, BITS_PER_LONG)
+> +                               remapped |= gbc->gc->get(gbc->gc,
+> +                                               gbc->gc->base + i) << i;
+> +
+> +               list_for_each_entry(remap, &gbc->remap_list, list)
+> +                       values |= (remapped >> remap->offset) & remap->mask;
+> +       }
+> +
+> +       return values;
+> +}
+> +EXPORT_SYMBOL_GPL(gpio_block_get);
+> +
+> +void gpio_block_set(struct gpio_block *block, unsigned long mask,
+> +                   unsigned long values)
+> +{
+> +       struct gpio_block_chip *gbc;
+> +
+> +       list_for_each_entry(gbc, &block->gbc_list, list) {
+> +               struct gpio_remap *remap;
+> +               int i;
+> +               unsigned long remapped = 0;
+> +               unsigned long remapped_mask = 0;
+> +
+> +               list_for_each_entry(remap, &gbc->remap_list, list) {
+> +                       remapped |= (values & remap->mask) << remap->offset;
+> +                       remapped_mask |= (mask & remap->mask) << remap->offset;
+> +               }
+> +               remapped_mask &= gbc->mask;
+> +
+> +               if (!remapped_mask)
+> +                       continue;
+> +
+> +               if (gbc->gc->set_block)
+> +                       gbc->gc->set_block(gbc->gc, remapped_mask, remapped);
+> +               else
+> +                       /* emulate */
+> +                       for_each_set_bit(i, &remapped_mask, BITS_PER_LONG)
+> +                               gbc->gc->set(gbc->gc, gbc->gc->base + i,
+> +                                            (remapped >> i) & 1);
+> +       }
+> +}
+> +EXPORT_SYMBOL_GPL(gpio_block_set);
+> +
+> +struct gpio_block *gpio_block_find_by_name(const char *name)
+> +{
+> +       struct gpio_block *i;
+> +
+> +       list_for_each_entry(i, &gpio_block_list, list)
+> +               if (!strcmp(i->name, name))
+> +                       return i;
+> +       return NULL;
+> +}
+> +EXPORT_SYMBOL_GPL(gpio_block_find_by_name);
+> +
+> +int gpio_block_register(struct gpio_block *block)
+> +{
+> +       if (gpio_block_find_by_name(block->name))
+> +               return -EBUSY;
+> +
+> +       list_add(&block->list, &gpio_block_list);
+> +
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(gpio_block_register);
+> +
+> +void gpio_block_unregister(struct gpio_block *block)
+> +{
+> +       struct gpio_block *i;
+> +
+> +       list_for_each_entry(i, &gpio_block_list, list)
+> +               if (i == block) {
+> +                       list_del(&i->list);
+> +                       break;
+> +               }
+> +}
+> +EXPORT_SYMBOL_GPL(gpio_block_unregister);
+> +
+>  /**
+>   * __gpio_cansleep() - report whether gpio value access will sleep
+>   * @gpio: gpio in question
+> --- linux-2.6.orig/include/asm-generic/gpio.h
+> +++ linux-2.6/include/asm-generic/gpio.h
+> @@ -44,6 +44,7 @@ static inline bool gpio_is_valid(int num
+>
+>  struct device;
+>  struct gpio;
+> +struct gpio_block;
+>  struct seq_file;
+>  struct module;
+>  struct device_node;
+> @@ -109,6 +110,8 @@ struct gpio_chip {
+>                                                 unsigned offset);
+>         int                     (*get)(struct gpio_chip *chip,
+>                                                 unsigned offset);
+> +       unsigned long           (*get_block)(struct gpio_chip *chip,
+> +                                            unsigned long mask);
+>         int                     (*direction_output)(struct gpio_chip *chip,
+>                                                 unsigned offset, int value);
+>         int                     (*set_debounce)(struct gpio_chip *chip,
+> @@ -116,6 +119,9 @@ struct gpio_chip {
+>
+>         void                    (*set)(struct gpio_chip *chip,
+>                                                 unsigned offset, int value);
+> +       void                    (*set_block)(struct gpio_chip *chip,
+> +                                            unsigned long mask,
+> +                                            unsigned long values);
+>
+>         int                     (*to_irq)(struct gpio_chip *chip,
+>                                                 unsigned offset);
+> @@ -184,6 +190,17 @@ extern void gpio_set_value_cansleep(unsi
+>  extern int __gpio_get_value(unsigned gpio);
+>  extern void __gpio_set_value(unsigned gpio, int value);
+>
+> +extern struct gpio_block *gpio_block_create(unsigned *gpio, size_t size,
+> +                                           const char *name);
+> +extern void gpio_block_free(struct gpio_block *block);
+> +extern unsigned long gpio_block_get(const struct gpio_block *block,
+> +                                   unsigned long mask);
+> +extern void gpio_block_set(struct gpio_block *block, unsigned long mask,
+> +                          unsigned long values);
+> +extern struct gpio_block *gpio_block_find_by_name(const char *name);
+> +extern int gpio_block_register(struct gpio_block *block);
+> +extern void gpio_block_unregister(struct gpio_block *block);
+> +
+>  extern int __gpio_cansleep(unsigned gpio);
+>
+>  extern int __gpio_to_irq(unsigned gpio);
+> --- linux-2.6.orig/include/linux/gpio.h
+> +++ linux-2.6/include/linux/gpio.h
+> @@ -2,6 +2,8 @@
+>  #define __LINUX_GPIO_H
+>
+>  #include <linux/errno.h>
+> +#include <linux/types.h>
+> +#include <linux/list.h>
+>
+>  /* see Documentation/gpio.txt */
+>
+> @@ -39,6 +41,64 @@ struct gpio {
+>         const char      *label;
+>  };
+>
+> +/**
+> + * struct gpio_remap - a structure for describing a bit mapping
+> + * @mask:      a bit mask, relevant for a (partial) mapping
+> + * @offset:    how many bits to shift to the left (negative: to the right)
+> + * @list:      several remappings are internally collected in a list
+> + *
+> + * When we are mapping bit values from one word to another (here: from GPIO
+> + * block domain to GPIO driver domain) we first mask them out with mask and
+> + * shift them as specified with offset. More complicated mappings are done by
+> + * grouping several of those structs and adding the results together.
+> + */
+> +struct gpio_remap {
+> +       unsigned long           mask;
+> +       int                     offset;
+> +
+> +       struct list_head        list;
+> +};
+> +
+> +/**
+> + * struct gpio_block_chip - a structure representing chip specific data in a
+> + *                          gpio block
+> + * @gc:          the chip
+> + * @remap_list:  list of remappings, there are several necessary if the bits
+> + *               are not consecutive
+> + * @mask:        chip specific mask, used for propagating to the driver's
+> + *               get_block() and set_block() functions
+> + * @list:        list collecting potentially multiple chips in one block
+> + *
+> + * This structure holds information about remapping and masking of gpios within
+> + * one chip. There can be several of those in one block.
+> + */
+> +struct gpio_block_chip {
+> +       struct gpio_chip        *gc;
+> +       struct list_head        remap_list;
+> +       unsigned long           mask;
+> +
+> +       struct list_head        list;
+> +};
+> +
+> +/**
+> + * struct gpio_block - a structure describing a list of GPIOs for simultaneous
+> + *                     operations
+> + * @gbc_list:   list of chips in this block, typically just one
+> + * @name:       the name of this block
+> + * @ngpio:      number of gpios in this block
+> + * @gpio:       list of gpios in this block
+> + * @list:       global list of blocks, maintained by gpiolib
+> + */
+> +struct gpio_block {
+> +       struct list_head        gbc_list;
+> +       const char              *name;
+> +
+> +       int                     ngpio;
+> +       unsigned                *gpio;
+> +
+> +       struct list_head        list;
+> +};
+> +
+>  #ifdef CONFIG_GENERIC_GPIO
+>
+>  #ifdef CONFIG_ARCH_HAVE_CUSTOM_GPIO_H
+> @@ -169,6 +229,43 @@ static inline void gpio_set_value(unsign
+>         WARN_ON(1);
+>  }
+>
+> +static inline
+> +struct gpio_block *gpio_block_create(unsigned *gpios, size_t size,
+> +                                    const char *name)
+> +{
+> +       WARN_ON(1);
+> +       return NULL;
+> +}
+> +
+> +static inline void gpio_block_free(struct gpio_block *block)
+> +{
+> +       WARN_ON(1);
+> +}
+> +
+> +static inline unsigned long gpio_block_get(const struct gpio_block *block,
+> +                                          unsigned long mask)
+> +{
+> +       WARN_ON(1);
+> +       return 0;
+> +}
+> +
+> +static inline void gpio_block_set(struct gpio_block *block, unsigned long mask,
+> +                                 unsigned long values)
+> +{
+> +       WARN_ON(1);
+> +}
+> +
+> +static inline int gpio_block_register(struct gpio_block *block)
+> +{
+> +       WARN_ON(1);
+> +       return 0;
+> +}
+> +
+> +static inline void gpio_block_unregister(struct gpio_block *block)
+> +{
+> +       WARN_ON(1);
+> +}
+> +
+>  static inline int gpio_cansleep(unsigned gpio)
+>  {
+>         /* GPIO can never have been requested or set as {in,out}put */
