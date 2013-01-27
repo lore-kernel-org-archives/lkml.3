@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756374Ab3A0JpJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 04:45:09 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39252 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752786Ab3A0JpI (ORCPT
+	id S1756402Ab3A0J56 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 04:57:58 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:47725 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756325Ab3A0J5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 04:45:08 -0500
-Date: Sun, 27 Jan 2013 17:44:34 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 06/10] mfd: arizona: Allow customisation of microphone
- detection levels
-Message-ID: <20130127094425.GB32135@opensource.wolfsonmicro.com>
-References: <1359259652-8565-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1359259652-8565-6-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Sun, 27 Jan 2013 04:57:55 -0500
+Message-ID: <5104FA1E.1010809@googlemail.com>
+Date: Sun, 27 Jan 2013 09:57:50 +0000
+From: Chris Clayton <chris2553@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130108 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IiVenqGWf+H9Y6IX"
-Content-Disposition: inline
-In-Reply-To: <1359259652-8565-6-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+CC: linux-media@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org, wangyijing0307@gmail.com
+Subject: Re: 3.8.0-rc4+ - Oops on removing WinTV-HVR-1400 expresscard TV Tuner
+References: <51016937.1020202@googlemail.com> <510189B1.606@fold.natur.cuni.cz> <5104427D.2050002@googlemail.com> <51044746.6030503@fold.natur.cuni.cz>
+In-Reply-To: <51044746.6030503@fold.natur.cuni.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Martin,
 
---IiVenqGWf+H9Y6IX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 01/26/13 21:14, Martin Mokrejs wrote:
+> Hi Chris,
+>
+> Chris Clayton wrote:
+>> Hi Martin,
+>>
+>> On 01/24/13 19:21, Martin Mokrejs wrote:
+>>> Hi Chris,
+>>>     try to include in kernel only acpiphp and omit pciehp. Don't use modules but include
+>>> them statically. And try, in addition, check whether "pcie_aspm=off" in grub.conf helped.
+>>>
+>>
+>> Thanks for the tip. I had the pciehp driver installed, but it was a module and not loaded. I didn't have acpiphp enabled at all. Building them both in statically, appears to have papered over the cracks of the oops :-)
+>>
+>>>     The best would if you subscribe to linux-pci, and read my recent threads
+>>> about similar issues I had with express cards with Dell Vostro 3550. Further, there is
+>>> a lot of changes to PCI hotplug done by Yingahi Liu and Rafael Wysockij, just browse the
+>>> archives of linux-pci and see the pacthes and the discussion.
+>>
+>> Those discussions are way above my level of knowledge. I guess all this work will be merged into mainline in due course, so I'll watch for them in 3.9 or later. Unless, of course, there is a tree I could clone and help test the changes with my laptop and expresscard.
+>>
+>> Hotplug isn't working at all on my Fujitsu laptop, so I can only get the card recognised by rebooting with the card inserted (or by writing 1 to/sys/bus/pci/rescan). There seem to be a few reports on this in the kernel bugzilla, so I'll look through them and see what's being done.
+>
+> That's what I suspected. Compile in statically acpiphp, no pciehp at all (not even as a module).
+> Then it might work for you -- at least it does for me, provided I use "pcie_aspm=off".
+>
+Thanks again for the suggestion. Unfortunately, that doesn't fix the 
+problem on my laptop.
 
-On Sun, Jan 27, 2013 at 12:07:28PM +0800, Mark Brown wrote:
-> The microphone detection levels for Arizona parts can be customised.
-> Allow this to be done via platform data, the values chosen will depend
-> on the system design and determined in discussion with Wolfson.
+You may have seen the suggestion I've had from Yijing. I'm just building 
+the kernel to test that out.
 
-Hrm, actually - since this isn't applied and I have a more flexible
-version to follow shortly (integrated into extcon rather than MFD) can
-you please not apply this?  I had forgotten it was still waiting for
-merge.
-
---IiVenqGWf+H9Y6IX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRBPbQAAoJELSic+t+oim9ocQP/j0Gu+3zmSOZbJTdWW2Gqo1N
-Q01S5vg4/b2lX76Akpr4WK1h96vqDHiDHj6DG583aaE1DoEAHQq+Fkk1Fk0KIdVn
-+iuVMJkchkg3Jo3oUMD1Lk5rVOhwy+yNZWlZfPUhIDkEwclhoEaqQA+ABb7Oi76S
-SACuBRC4cEwOEfffCvQLgXP6Z9z7i/vHWaqHirAj3QnKlWU+FtRPkvw2hjjr+Ilg
-iZtB9Rlg9VeWpxgndx+feuaplJQ9aXMZA4rqEH50zpMu6JS0P0lN/2qe4Cbs29Im
-fw5JQkUXPHb9a5qqiQvZ/XrNNR+mN2iVzibEv0wCUIsq48w0FOvGlKPZwAtOi1UD
-c/Ls9ziYzKpivoIuk2VfwSuo2W78bvWnsQSNlCDXSUIfGY8YJXyGQBbinpHqFs3c
-tcCBvjnUFj99Q6STJpvvwBi73PafL1zjDp2N9i39GoAvTSvrw2YdRMh7sMnkaeKt
-0yCX0BBzn3J1rxZVnSRU/CJx776WPHyCpoyrlgdOeoyp1w8wl8Ppsa/G5zfWLpBJ
-Hf+xl200cjvDzA7qQQyv+hdQ4Gg6TTB5gqnTlw1CgmqCBzLm/qwmZlL+BCuzr1SX
-B76Hs2a2abm8Zws+Rk4AidlpZggMX9yxYQa4Jbo0EhxOfHUFKUq3AWn5Dax5DU0Z
-3xgvf1ywXufiAt1ZHNsj
-=EMhM
------END PGP SIGNATURE-----
-
---IiVenqGWf+H9Y6IX--
+Chris
+> Martin
+>
+>>
+>> Thanks again.
+>>
+>> Chris
+>>
+>>> Martin
+>>>
+>>> Chris Clayton wrote:
+>>>> Hi,
+>>>>
+>>>> I've today taken delivery of a WinTV-HVR-1400 expresscard TV Tuner and got an Oops when I removed from the expresscard slot in my laptop. I will quite understand if the response to this report is "don't do that!", but in that case, how should one remove one of these cards?
+>>>>
+>>>> I have attached three files:
+>>>>
+>>>> 1. the dmesg output from when I rebooted the machine after the oops. I have turned debugging on in the dib700p and cx23885 modules via modules options in /etc/modprobe.d/hvr1400.conf;
+>>>>
+>>>> 2. the .config file for the kernel that oopsed.
+>>>>
+>>>> 3. the text of the oops message. I've typed this up from a photograph of the screen because the laptop was locked up and there was nothing in the log files. Apologies for any typos, but I have tried to be careful.
+>>>>
+>>>> Assuming the answer isn't don't do that, let me know if I can provide any additional diagnostics, test any patches, etc. Please, however, cc me as I'm not subscribed.
+>>>>
+>>>> Chris
+>>
+>>
