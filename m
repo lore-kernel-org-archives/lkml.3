@@ -1,101 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab3A0Pux (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 10:50:53 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:55224 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab3A0Pus (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 10:50:48 -0500
-Date: Sun, 27 Jan 2013 16:50:43 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Wang YanQing <udknight@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, mina86@mina86.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Jan Beulich <JBeulich@novell.com>, Milton Miller <miltonm@bga.com>
-Subject: Re: [PATCH]smp: Fix send func call IPI to empty cpu mask
-Message-ID: <20130127155043.GA6214@gmail.com>
-References: <20130126075357.GA3205@udknight>
- <CA+55aFyJ0tsvJeujyRwX=q5KPKjeejmvQOMTCJxDcaEmYprpvg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyJ0tsvJeujyRwX=q5KPKjeejmvQOMTCJxDcaEmYprpvg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753147Ab3A0Pv5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 10:51:57 -0500
+Received: from mout.gmx.net ([212.227.15.19]:50197 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751730Ab3A0Pvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 10:51:54 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18ZZfJU10kZedX67vcu+HBDzMH4Y2Oki65cpPZ66K
+	N5gz5dUU0Di14P
+Message-ID: <1359301903.5805.11.camel@marge.simpson.net>
+Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
+ power awareness scheduling
+From: Mike Galbraith <efault@gmx.de>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
+        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+        namhyung@kernel.org, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
+Date: Sun, 27 Jan 2013 16:51:43 +0100
+In-Reply-To: <51052ACB.3070703@intel.com>
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+	 <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com>
+	 <510493E4.8060602@intel.com> <1359261385.5803.46.camel@marge.simpson.net>
+	 <20130127103508.GB8894@pd.tnic> <51052ACB.3070703@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Fri, Jan 25, 2013 at 11:53 PM, Wang YanQing <udknight@gmail.com> wrote:
-> > I get below warning every day with 3.7,
-> > one or two times per day.
-> >
-> > [ 2235.186027] WARNING: at /mnt/sda7/kernel/linux/arch/x86/kernel/apic/ipi.c:109 default_send_IPI_mask_logical+0x2f/0xb8()
-> > [ 2235.186030] Hardware name: Aspire 4741
-> > [ 2235.186032] empty IPI mask
-> > [ 2235.186079]  [<c1015cbc>] native_send_call_func_ipi+0x4f/0x57
-> > [ 2235.186087]  [<c1053453>] smp_call_function_many+0x191/0x1a9
-> > [ 2235.186097]  [<c101e074>] native_flush_tlb_others+0x21/0x24
-> > [ 2235.186101]  [<c101e0da>] flush_tlb_page+0x63/0x89
-> > [ 2235.186105]  [<c101d360>] ptep_set_access_flags+0x20/0x26
-> > [ 2235.186111]  [<c108fadd>] do_wp_page+0x234/0x502
-> > [ 2235.186121]  [<c1090825>] handle_pte_fault+0x50d/0x54c
-> > [ 2235.186148]  [<c1090934>] handle_mm_fault+0xd0/0xe2
-> > [ 2235.186153]  [<c12dd143>] __do_page_fault+0x411/0x42d
-> > [ 2235.186166]  [<c12dd167>] do_page_fault+0x8/0xa
-> > [ 2235.186170]  [<c12db31a>] error_code+0x5a/0x60
-> >
-> > This patch fix it.
-> >
-> > This patch also fix some system hang problem:
-> > If the data->cpumask been cleared after pass
-> >
-> >         if (WARN_ONCE(!mask, "empty IPI mask"))
-> >                 return;
-> > then the problem 83d349f3 fix will happen again.
+On Sun, 2013-01-27 at 21:25 +0800, Alex Shi wrote: 
+> On 01/27/2013 06:35 PM, Borislav Petkov wrote:
+> > On Sun, Jan 27, 2013 at 05:36:25AM +0100, Mike Galbraith wrote:
+> >> With aim7 compute on 4 node 40 core box, I see stable throughput
+> >> improvement at tasks = nr_cores and below w. balance and powersaving. 
+... 
+> > Ok, this is sick. How is balance and powersaving better than perf? Both
+> > have much more jobs per minute than perf; is that because we do pack
+> > much more tasks per cpu with balance and powersaving?
 > 
-> Hmm. We have very consciously tried to avoid the extra copy, although
-> I'm not entirely sure why (it might possibly hurt on the MAXSMP
-> configuration).
-> 
-> See for example commit 723aae25d5cd ("smp_call_function_many: handle
-> concurrent clearing of mask") which fixed another version of this
-> problem.
-> 
-> But I do agree that it looks like the copy is required, simply because
-> - as you say - once we've done the "list_add_rcu()" to add it to the
-> queue, we can have (another) IPI to the target CPU that can now see it
-> and clear the mask.
-> 
-> So by the time we get to actually send the IPI, the mask might have
-> been cleared by another IPI. So I do agree that your patch seems
-> correct, but I really really want to run it by other people.
-> 
-> Guys? Original patch on lkml. The other possible fix might be 
-> to take the &call_function.lock earlier in 
-> generic_smp_call_function_interrupt(), so that we can never 
-> clear the bit while somebody is adding entries to the list... 
-> But I think it very much tries to avoid that on purpose right 
-> now, with only the last CPU responding to that IPI taking the 
-> lock.
-> 
-> So copying the IPI mask seems to be the reasonable approach. 
-> Comments?
+> Maybe it is due to the lazy balancing on balance/powersaving. You can
+> check the CS times in /proc/pid/status.
 
-Agreed, looks correct to me as well - I've queued the fix up in 
-tip:x86/urgent.
+Well, it's not wakeup path, limiting entry frequency per waker did zip
+squat nada to any policy throughput.
 
-( I've added your Acked-by to the patch, please holler if you 
-  disagree with how the final commit ended up looking like. )
+-Mike
 
-Thanks,
-
-	Ingo
