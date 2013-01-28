@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab3A1Jc5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 04:32:57 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:49323 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab3A1Jcz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 04:32:55 -0500
-Date: Mon, 28 Jan 2013 17:32:42 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Milton Miller <miltonm@bga.com>, Mike Galbraith <efault@gmx.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        mina86@mina86.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH]smp: Fix send func call IPI to empty cpu mask
-Message-ID: <20130128093242.GA5964@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Milton Miller <miltonm@bga.com>, Mike Galbraith <efault@gmx.de>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	mina86@mina86.org,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	stable <stable@vger.kernel.org>
-References: <20130126075357.GA3205@udknight>
- <CA+55aFyJ0tsvJeujyRwX=q5KPKjeejmvQOMTCJxDcaEmYprpvg@mail.gmail.com>
- <20130127155043.GA6214@gmail.com>
- <5106523302000078000B9F0B@nat28.tlf.novell.com>
+	id S1753058Ab3A1JgP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 04:36:15 -0500
+Received: from smtp0.epfl.ch ([128.178.224.218]:39323 "HELO smtp0.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750972Ab3A1JgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 04:36:13 -0500
+Message-ID: <51064687.5090605@epfl.ch>
+Date: Mon, 28 Jan 2013 10:36:07 +0100
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+Reply-To: florian.vaussard@epfl.ch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5106523302000078000B9F0B@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] pwm: Add pwm_cansleep() as exported API to users
+References: <1359121471-21457-1-git-send-email-florian.vaussard@epfl.ch> <1359121471-21457-2-git-send-email-florian.vaussard@epfl.ch> <20130126054024.GB29243@avionic-0098.adnet.avionic-design.de> <51063AB5.2060108@ti.com>
+In-Reply-To: <51063AB5.2060108@ti.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 09:25:55AM +0000, Jan Beulich wrote:
-> But the patch is obviously incomplete for the CPUMASK_OFFSTACK
-> case, as the newly added cpumask_ipi member never gets
-> its bit array allocated.
-> 
-> Jan
-Yes, I have found it, and the patch is in lkml some hours ago.
+Hello,
 
-Thanks.
+Le 28/01/2013 09:45, Peter Ujfalusi a écrit :
+> hi Thierry,
+>
+> On 01/26/2013 06:40 AM, Thierry Reding wrote:
+>>> +  * @pwm: PWM device
+>>> +  *
+>>> +  * It returns nonzero if accessing the PWM can sleep.
+>>> +  */
+>>> +int pwm_cansleep(struct pwm_device *pwm)
+>>
+>> I actually liked pwm_can_sleep() better. I find it to be more consistent
+>> with the naming of other function names. It would furthermore match the
+>> field name.
+>
+> I was looking at the GPIO API to suggest this name change, but you are right
+> we should be consistent with the PWM API here.
+> Sorry Florian.
+>
+
+No problem, I agree with the PWM API consistency.
+
+>>
+>>> +{
+>>> +	return pwm->chip->can_sleep;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(pwm_cansleep);
+>>
+>> Would it make sense to check for NULL pointers here? I guess that
+>> passing NULL into the function could be considered a programming error
+>> and an oops would be okay, but in that case there's no point in making
+>> the function return an int. Also see my next comment.
+>
+> While it is unlikely to happen it is better to be safe, something like this
+> will do:
+>
+> return pwm ? pwm->chip->can_sleep : 0;
+>
+
+Ok. And what about:
+
+BUG_ON(pwm == NULL);
+return pwm->chip->can_sleep;
+
+>>
+>>> +
+>>>   #ifdef CONFIG_DEBUG_FS
+>>>   static void pwm_dbg_show(struct pwm_chip *chip, struct seq_file *s)
+>>>   {
+>>> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+>>> index 70655a2..e2cb5c7 100644
+>>> --- a/include/linux/pwm.h
+>>> +++ b/include/linux/pwm.h
+>>> @@ -146,6 +146,8 @@ struct pwm_ops {
+>>>    * @base: number of first PWM controlled by this chip
+>>>    * @npwm: number of PWMs controlled by this chip
+>>>    * @pwms: array of PWM devices allocated by the framework
+>>> + * @can_sleep: flag must be set iff config()/enable()/disable() methods sleep,
+>>> + *      as they must while accessing PWM chips over I2C or SPI
+>>>    */
+>>>   struct pwm_chip {
+>>>   	struct device		*dev;
+>>> @@ -159,6 +161,7 @@ struct pwm_chip {
+>>>   	struct pwm_device *	(*of_xlate)(struct pwm_chip *pc,
+>>>   					    const struct of_phandle_args *args);
+>>>   	unsigned int		of_pwm_n_cells;
+>>> +	unsigned int		can_sleep:1;
+>>
+>> What's the reason for making this a bitfield? Couldn't we just use a
+>> bool instead?
+>
+> I have also overlooked this. In my version I had the can_sleep as bool also.
+>
+
+Ok for a bool.
+
+Thank you for your reviews. I will send a v3 sometimes today.
+
+Cheers,
+Florian
