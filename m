@@ -1,86 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab3A1S6W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:58:22 -0500
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:35445 "EHLO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751413Ab3A1S6S convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:58:18 -0500
-From: Bing Zhao <bzhao@marvell.com>
-To: Cyril Roelandt <tipecaml@gmail.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>
-CC: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Date: Mon, 28 Jan 2013 10:53:33 -0800
-Subject: RE: [PATCH] mwifiex: avoid out of bounds access in
- mwifiex_get_common_rates.
-Thread-Topic: [PATCH] mwifiex: avoid out of bounds access in
- mwifiex_get_common_rates.
-Thread-Index: Ac384ShcnHKTXwTwTOyUptWOOlY0WwAp3UFQ
-Message-ID: <477F20668A386D41ADCC57781B1F70430D142545EE@SC-VEXCH1.marvell.com>
-References: <1359326568-17022-1-git-send-email-tipecaml@gmail.com>
-In-Reply-To: <1359326568-17022-1-git-send-email-tipecaml@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	id S1753030Ab3A1TEP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 14:04:15 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:58156 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab3A1TEM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 14:04:12 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: [GIT PULL] cputime: Full dynticks task/cputime accounting v7
+Date: Mon, 28 Jan 2013 20:03:57 +0100
+Message-Id: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cyril,
+Ingo,
 
-Thanks for your patch.
+Please pull the new full dynticks cputime accounting code that
+can be found at:
 
-> Check that the array indexes are in-bounds before accessing the rate2 and tmp
-> arrays.
-> 
-> Found with the following semantic patch:
-> 
-> <smpl>
-> @@
-> identifier t;
-> identifier idx;
-> expression E;
-> statement S;
-> @@
-> * for (... ; <+... t[idx] ...+> && idx < E ; ...)
-> S
-> </smpl>
-> 
-> Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	tags/full-dynticks-cputime-for-mingo
 
-Acked-by: Bing Zhao <bzhao@marvell.com>
+My last concern is the dependency on CONFIG_64BIT. We rely on cputime_t
+being u64 for reasonable nanosec granularity implementation. And therefore
+we need a single instruction fetch to read kernel cpustat for atomicity
+requirement against concurrent incrementation, which only 64 bit archs
+can provide.
 
-Thanks,
-Bing
+It's probably no big deal to solve this issue. What we need is simply some
+atomic accessors.
 
-> ---
->  drivers/net/wireless/mwifiex/join.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/mwifiex/join.c b/drivers/net/wireless/mwifiex/join.c
-> index 893d809..f0a634d 100644
-> --- a/drivers/net/wireless/mwifiex/join.c
-> +++ b/drivers/net/wireless/mwifiex/join.c
-> @@ -157,8 +157,8 @@ static int mwifiex_get_common_rates(struct mwifiex_private *priv, u8 *rate1,
-> 
->  	memset(rate1, 0, rate1_size);
-> 
-> -	for (i = 0; rate2[i] && i < rate2_size; i++) {
-> -		for (j = 0; tmp[j] && j < rate1_size; j++) {
-> +	for (i = 0; i < rate2_size && rate2[i]; i++) {
-> +		for (j = 0; j < rate1_size && tmp[j]; j++) {
->  			/* Check common rate, excluding the bit for
->  			   basic rate */
->  			if ((rate2[i] & 0x7F) == (tmp[j] & 0x7F)) {
-> --
-> 1.7.10.4
+There is just no emergency though as this new option depends on the context
+tracking subsystem that only x86-64 (and soon ppc64) implements yet. And
+this set is complex enough already. I think we can deal with that later.
+
+Thanks.
+
+---
+This implements the cputime accounting on full dynticks CPUs.
+
+Typical cputime stats infrastructure relies on the timer tick and
+its periodic polling on the CPU to account the amount of time
+spent by the CPUs and the tasks per high level domains such as
+userspace, kernelspace, guest, ...
+
+Now we are preparing to implement full  dynticks capability on
+Linux for Real Time and HPC users who want full CPU isolation.
+This feature requires a cputime accounting that doesn't depend
+on the timer tick.
+
+To implement it, this new cputime infrastructure plugs into
+kernel/user/guest boundaries to take snapshots of cputime and
+flush these to the stats when needed. This performs pretty
+much like CONFIG_VIRT_CPU_ACCOUNTING except that context location
+and cputime snaphots are synchronized between write and read
+side such that the latter can safely retrieve the pending tickless
+cputime of a task and add it to its latest cputime snapshot to
+return the correct result to the user.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+
+Changes since v6:
+
+* Fix build error with kvm modules (Thanks Sedat Dilek and
+Wu Fenguang)
+
+* Fix mistyped header inclusion in ia64
+
+* Fix more missing symbols for kvm
+
+---
+Frederic Weisbecker (8):
+  context_tracking: Export context state for generic vtime
+  cputime: Librarize per nsecs resolution cputime definitions
+  cputime: Move default nsecs_to_cputime() to jiffies based cputime
+    file
+  cputime: Generic on-demand virtual cputime accounting
+  cputime: Allow dynamic switch between tick/virtual based cputime
+    accounting
+  cputime: Use accessors to read task cputime stats
+  kvm: Prepare to add generic guest entry/exit callbacks
+  cputime: Safely read cputime of full dynticks CPUs
+
+ arch/alpha/kernel/osf_sys.c                  |    6 +-
+ arch/ia64/include/asm/cputime.h              |   92 +--------
+ arch/ia64/include/asm/thread_info.h          |    4 +-
+ arch/ia64/include/asm/xen/minstate.h         |    2 +-
+ arch/ia64/kernel/asm-offsets.c               |    2 +-
+ arch/ia64/kernel/entry.S                     |   16 +-
+ arch/ia64/kernel/fsys.S                      |    4 +-
+ arch/ia64/kernel/head.S                      |    4 +-
+ arch/ia64/kernel/ivt.S                       |    8 +-
+ arch/ia64/kernel/minstate.h                  |    2 +-
+ arch/ia64/kernel/time.c                      |    5 +-
+ arch/powerpc/configs/chroma_defconfig        |    2 +-
+ arch/powerpc/configs/corenet64_smp_defconfig |    2 +-
+ arch/powerpc/configs/pasemi_defconfig        |    2 +-
+ arch/powerpc/include/asm/cputime.h           |    6 +-
+ arch/powerpc/include/asm/lppaca.h            |    2 +-
+ arch/powerpc/include/asm/ppc_asm.h           |    4 +-
+ arch/powerpc/kernel/entry_64.S               |    4 +-
+ arch/powerpc/kernel/time.c                   |    5 +-
+ arch/powerpc/platforms/pseries/dtl.c         |    6 +-
+ arch/powerpc/platforms/pseries/setup.c       |    6 +-
+ arch/s390/kernel/vtime.c                     |    6 +-
+ arch/x86/kernel/apm_32.c                     |   11 +-
+ drivers/isdn/mISDN/stack.c                   |    7 +-
+ fs/binfmt_elf.c                              |    8 +-
+ fs/binfmt_elf_fdpic.c                        |    7 +-
+ fs/proc/array.c                              |    4 +-
+ include/asm-generic/cputime.h                |   66 +-----
+ include/asm-generic/cputime_jiffies.h        |   72 ++++++
+ include/asm-generic/cputime_nsecs.h          |  104 +++++++++
+ include/linux/context_tracking.h             |   28 +++
+ include/linux/hardirq.h                      |    4 +-
+ include/linux/init_task.h                    |   11 +
+ include/linux/kernel_stat.h                  |    2 +-
+ include/linux/kvm_host.h                     |   55 ++++-
+ include/linux/sched.h                        |   40 ++++
+ include/linux/tsacct_kern.h                  |    3 +
+ include/linux/vtime.h                        |   59 ++++--
+ init/Kconfig                                 |   23 ++-
+ kernel/acct.c                                |    6 +-
+ kernel/context_tracking.c                    |   43 +++--
+ kernel/cpu.c                                 |    4 +-
+ kernel/delayacct.c                           |    7 +-
+ kernel/exit.c                                |   10 +-
+ kernel/fork.c                                |    6 +
+ kernel/posix-cpu-timers.c                    |   28 ++-
+ kernel/sched/core.c                          |    1 +
+ kernel/sched/cputime.c                       |  298 +++++++++++++++++++++++---
+ kernel/signal.c                              |   12 +-
+ kernel/softirq.c                             |    6 +-
+ kernel/time/tick-sched.c                     |    5 +-
+ kernel/tsacct.c                              |   44 +++-
+ 52 files changed, 842 insertions(+), 322 deletions(-)
+ create mode 100644 include/asm-generic/cputime_jiffies.h
+ create mode 100644 include/asm-generic/cputime_nsecs.h
+
+-- 
+1.7.5.4
 
