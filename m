@@ -1,97 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605Ab3A1Rt7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 12:49:59 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:39506 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756991Ab3A1Rt4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 12:49:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <1359307995-30640-1-git-send-email-jolsa@redhat.com>
-References: <1359307995-30640-1-git-send-email-jolsa@redhat.com>
-Date: Mon, 28 Jan 2013 18:49:55 +0100
-Message-ID: <CABPqkBSKGMUAdbqRGUWoaMH1McLDGgZUfHw3P4BAAOLSDYjH8Q@mail.gmail.com>
-Subject: Re: [RFC/PATCH] perf x86: Add off-core event constraints for
- Sandy/IvyBridge micro architecture
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=UTF-8
+	id S1757619Ab3A1Ruv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 12:50:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26330 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757441Ab3A1Rus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 12:50:48 -0500
+Message-ID: <1359395436.11144.240.camel@bling.home>
+Subject: Re: [PATCH v2 1/3] VFIO: Wrappers for getting/putting reference to
+ vfio_device
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Blue Swirl <blauwirbel@gmail.com>,
+        "Ortiz, Lance E" <lance.oritz@hp.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 28 Jan 2013 10:50:36 -0700
+In-Reply-To: <F9E001219150CB45BEDC82A650F360C9014A7BD5@G9W0717.americas.hpqcorp.net>
+References: <F9E001219150CB45BEDC82A650F360C9014A7BD5@G9W0717.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 27, 2013 at 6:33 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> hi,
-> I was looking at the offcore stuff and it looks like we might
-> be missing some constraints for offcore response events on
-> Sandy/IvyBridge.
->
-> The table 18.8.5 (Off-core Response Performance Monitoring)
-> in Intel SDM states PMC0 for 0xb7 and PMC3 for 0xbb, but
-> there's no other explanation or related description.
->
-> I can't say/ack if the counters looks bad or right with or
-> without the patch so far.. so just curious ;-)
->
-Those are artificial constraints which should not be there.
-Remember that offcore_rsp uses an extra MSR which has
-to be shared by all the counters on the PMU. So a way to
-handle the sharing of that extra MSR is to impose an
-artificial constraint on the event itself. If it can only run
-on one counter, then you get the management of the
-extra MSR for free, i.e., only one event gets it.
-
-In perf_events, we use a more sophisticated dynamic scheme
-which does not use this artificial constraint. We can measure
-the event multiple times and share the extra MSR if possible
-(same value). Why multiple times you might ask? For instance,
-with different priv levels.
-
-
-Hope this helps.
-
+On Mon, 2013-01-28 at 09:54 +0000, Pandarathil, Vijaymohan R wrote:
+> 	- Added vfio_device_get_from_vdev(), vfio_device_put_vdev()
+>           as wrappers to get/put reference to vfio_device from struct device.
+> 
+> 	- Added vfio_device_data() as a wrapper to get device_data from
+>           vfio_device.
+> 
+> Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
 > ---
-> The Intel SDM (18.8.5 Off-core Response Performance Monitoring)
-> states the off-core events MSR_OFFCORE_RSP_0/MSR_OFFCORE_RSP_03
-> to be defined only for PMC0/PMC3 respectively.
->
-> Adding related constraints.
->
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Stephane Eranian <eranian@google.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 5dc54fc..d1f240f 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -105,6 +105,8 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
->         INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
->         INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
->         INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
-> +       INTEL_EVENT_CONSTRAINT(0xb7, 0x1), /* MSR_OFFCORE_RSP_0 - PMC0 only*/
-> +       INTEL_EVENT_CONSTRAINT(0xbb, 0x8), /* MSR_OFFCORE_RSP_1 - PMC3 only*/
->         EVENT_CONSTRAINT_END
->  };
->
-> --
-> 1.7.11.7
->
+>  drivers/vfio/vfio.c  | 47 +++++++++++++++++++++++++++++++++++++++++------
+>  include/linux/vfio.h |  3 +++
+>  2 files changed, 44 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
+> index 12c264d..c2ff1b2 100644
+> --- a/drivers/vfio/vfio.c
+> +++ b/drivers/vfio/vfio.c
+> @@ -642,8 +642,13 @@ int vfio_add_group_dev(struct device *dev,
+>  }
+>  EXPORT_SYMBOL_GPL(vfio_add_group_dev);
+>  
+> -/* Test whether a struct device is present in our tracking */
+> -static bool vfio_dev_present(struct device *dev)
+> +/**
+> + * This does a get on the corresponding iommu_group,
+> + * vfio_group and the vfio_device. Callers of this
+> + * function will hae to call vfio_put_vdev() to
+
+s/hae/have/
+
+Note that your commit log and the patch don't agree on names.
+vfio_device_get_from_dev vs vfio_device_get_from_vdev.  vfio_put_vdev vs
+vfio_device_put_vdev.  Personally I think they should be:
+
+vfio_device_get_from_dev
+vfio_device_put
+
+> + * remove the reference to all objects.
+
+Why do we need to hold references to all the objects?  Holding a
+reference to a vfio_device should implicitly hold the vfio_group, which
+implicitly holds the iommu_group.  We have to get each to get to the
+vfio_device, but once we hold of that reference I believe we can let the
+others go.  Is this not the case?
+
+> + */
+> +void *vfio_device_get_from_dev(struct device *dev)
+
+Return should be struct vfio_device*.  It doesn't have to be void to be
+opaque.
+
+>  {
+>  	struct iommu_group *iommu_group;
+>  	struct vfio_group *group;
+> @@ -651,25 +656,55 @@ static bool vfio_dev_present(struct device *dev)
+>  
+>  	iommu_group = iommu_group_get(dev);
+>  	if (!iommu_group)
+> -		return false;
+> +		return NULL;
+>  
+>  	group = vfio_group_get_from_iommu(iommu_group);
+>  	if (!group) {
+>  		iommu_group_put(iommu_group);
+> -		return false;
+> +		return NULL;
+>  	}
+>  
+>  	device = vfio_group_get_device(group, dev);
+>  	if (!device) {
+>  		vfio_group_put(group);
+>  		iommu_group_put(iommu_group);
+> -		return false;
+> +		return NULL;
+>  	}
+> +	return device;
+> +}
+> +EXPORT_SYMBOL_GPL(vfio_device_get_from_dev);
+> +
+> +void *vfio_device_data(void *data)
+> +{
+
+Why wouldn't this take struct vfio_device*?  We're ignoring free type
+checking errors even though the user should be treating the device as
+opaque.
+
+> +	struct vfio_device *device = data;
+> +	return device->device_data;
+> +}
+> +EXPORT_SYMBOL_GPL(vfio_device_data);
+> +
+> +void vfio_device_put_vdev(void *data)
+> +{
+
+This also should take a struct vfio_device* and be called
+vfio_device_put().  If we fix the above extra reference holding then
+it's just the existingvfio_device_put, which just needs to be exported.
+
+> +	struct vfio_device *device = data;
+> +	struct vfio_group *group = device->group;
+> +	struct iommu_group *iommu_group = group->iommu_group;
+>  
+>  	vfio_device_put(device);
+>  	vfio_group_put(group);
+>  	iommu_group_put(iommu_group);
+> -	return true;
+> +	return;
+
+Unnecessary explicit return.  Thanks,
+
+Alex
+
+> +}
+> +EXPORT_SYMBOL_GPL(vfio_device_put_vdev);
+> +
+> +/* Test whether a struct device is present in our tracking */
+> +static bool vfio_dev_present(struct device *dev)
+> +{
+> +	struct vfio_device *device;
+> +
+> +	device = vfio_device_get_from_dev(dev);
+> +	if (device) {
+> +		vfio_device_put_vdev(device);
+> +		return true;
+> +	} else
+> +		return false;
+>  }
+>  
+>  /*
+> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
+> index ab9e862..e550c09 100644
+> --- a/include/linux/vfio.h
+> +++ b/include/linux/vfio.h
+> @@ -45,6 +45,9 @@ extern int vfio_add_group_dev(struct device *dev,
+>  			      void *device_data);
+>  
+>  extern void *vfio_del_group_dev(struct device *dev);
+> +extern void *vfio_device_get_from_dev(struct device *dev);
+> +extern void vfio_device_put_vdev(void *device);
+> +extern void *vfio_device_data(void *device);
+>  
+>  /**
+>   * struct vfio_iommu_driver_ops - VFIO IOMMU driver callbacks
+
+
+
