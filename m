@@ -1,186 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab3A1R0s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 12:26:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18871 "EHLO mx1.redhat.com"
+	id S1757556Ab3A1R1M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 12:27:12 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60073 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756247Ab3A1R0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 12:26:45 -0500
-Date: Mon, 28 Jan 2013 19:30:59 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V7 2/3] vhost_net: handle polling errors when setting
- backend
-Message-ID: <20130128173059.GA31009@redhat.com>
-References: <1359371119-10208-1-git-send-email-jasowang@redhat.com>
- <1359371119-10208-3-git-send-email-jasowang@redhat.com>
+	id S1756247Ab3A1R1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 12:27:09 -0500
+Message-ID: <5106B4D3.4000509@linux.vnet.ibm.com>
+Date: Mon, 28 Jan 2013 11:26:43 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359371119-10208-3-git-send-email-jasowang@redhat.com>
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv2 7/9] mm: break up swap_writepage() for frontswap backends
+References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com> <1357590280-31535-8-git-send-email-sjenning@linux.vnet.ibm.com> <20130128042202.GG3321@blaptop>
+In-Reply-To: <20130128042202.GG3321@blaptop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012817-9360-0000-0000-00000FCEF5FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 07:05:18PM +0800, Jason Wang wrote:
-> Currently, the polling errors were ignored, which can lead following issues:
+On 01/27/2013 10:22 PM, Minchan Kim wrote:
+> On Mon, Jan 07, 2013 at 02:24:38PM -0600, Seth Jennings wrote:
+>> swap_writepage() is currently where frontswap hooks into the swap
+>> write path to capture pages with the frontswap_store() function.
+>> However, if a frontswap backend wants to "resume" the writeback of
+>> a page to the swap device, it can't call swap_writepage() as
+>> the page will simply reenter the backend.
+>>
+>> This patch separates swap_writepage() into a top and bottom half, the
+>> bottom half named __swap_writepage() to allow a frontswap backend,
+>> like zswap, to resume writeback beyond the frontswap_store() hook and
+>> by notified when the writeback completes.
+>>
+>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 > 
-> - vhost remove itself unconditionally from waitqueue when stopping the poll,
->   this may crash the kernel since the previous attempt of starting may fail to
->   add itself to the waitqueue
-> - userspace may think the backend were successfully set even when the polling
->   failed.
-> 
-> Solve this by:
-> 
-> - check poll->wqh before trying to remove from waitqueue
-> - report polling errors in vhost_poll_start(), tx_poll_start(), the return value
->   will be checked and returned when userspace want to set the backend
-> 
-> After this fix, there still could be a polling failure after backend is set, it
-> will addressed by the next patch.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> Looks good to me except few nitpicks.
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+I broke these changes out from the main zswap patch (patch 8/9) in
+response to a request for Dan.  You are right in that there are
+changes here unrelated to the commit message.
 
-> ---
->  drivers/vhost/net.c   |   27 ++++++++++++++++++---------
->  drivers/vhost/vhost.c |   18 +++++++++++++++---
->  drivers/vhost/vhost.h |    2 +-
->  3 files changed, 34 insertions(+), 13 deletions(-)
+The other changes are related to allowing zswap to do accounting on
+the number of outstanding flushes to the swap device.
+
+If I'm going to break those out though the two resulting patches would be:
+1. breakup __swap_writepage() and un-static __add_to_swap_cache() to
+allow resuming of swap page writeback
+2. change __swap_writepage() signature to include end_write_func and
+un-static end_swap_bio_write() for accounting of outstanding flushes
+
+Is that what you'd like to see?
+
+Seth
+
 > 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index d10ad6f..959b1cd 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -165,12 +165,16 @@ static void tx_poll_stop(struct vhost_net *net)
->  }
->  
->  /* Caller must have TX VQ lock */
-> -static void tx_poll_start(struct vhost_net *net, struct socket *sock)
-> +static int tx_poll_start(struct vhost_net *net, struct socket *sock)
->  {
-> +	int ret;
-> +
->  	if (unlikely(net->tx_poll_state != VHOST_NET_POLL_STOPPED))
-> -		return;
-> -	vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
-> -	net->tx_poll_state = VHOST_NET_POLL_STARTED;
-> +		return 0;
-> +	ret = vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
-> +	if (!ret)
-> +		net->tx_poll_state = VHOST_NET_POLL_STARTED;
-> +	return ret;
->  }
->  
->  /* In case of DMA done not in order in lower device driver for some reason.
-> @@ -642,20 +646,23 @@ static void vhost_net_disable_vq(struct vhost_net *n,
->  		vhost_poll_stop(n->poll + VHOST_NET_VQ_RX);
->  }
->  
-> -static void vhost_net_enable_vq(struct vhost_net *n,
-> +static int vhost_net_enable_vq(struct vhost_net *n,
->  				struct vhost_virtqueue *vq)
->  {
->  	struct socket *sock;
-> +	int ret;
->  
->  	sock = rcu_dereference_protected(vq->private_data,
->  					 lockdep_is_held(&vq->mutex));
->  	if (!sock)
-> -		return;
-> +		return 0;
->  	if (vq == n->vqs + VHOST_NET_VQ_TX) {
->  		n->tx_poll_state = VHOST_NET_POLL_STOPPED;
-> -		tx_poll_start(n, sock);
-> +		ret = tx_poll_start(n, sock);
->  	} else
-> -		vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
-> +		ret = vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
-> +
-> +	return ret;
->  }
->  
->  static struct socket *vhost_net_stop_vq(struct vhost_net *n,
-> @@ -833,7 +840,9 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
->  		r = vhost_init_used(vq);
->  		if (r)
->  			goto err_used;
-> -		vhost_net_enable_vq(n, vq);
-> +		r = vhost_net_enable_vq(n, vq);
-> +		if (r)
-> +			goto err_used;
->  
->  		oldubufs = vq->ubufs;
->  		vq->ubufs = ubufs;
-> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-> index 34389f7..9759249 100644
-> --- a/drivers/vhost/vhost.c
-> +++ b/drivers/vhost/vhost.c
-> @@ -77,26 +77,38 @@ void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
->  	init_poll_funcptr(&poll->table, vhost_poll_func);
->  	poll->mask = mask;
->  	poll->dev = dev;
-> +	poll->wqh = NULL;
->  
->  	vhost_work_init(&poll->work, fn);
->  }
->  
->  /* Start polling a file. We add ourselves to file's wait queue. The caller must
->   * keep a reference to a file until after vhost_poll_stop is called. */
-> -void vhost_poll_start(struct vhost_poll *poll, struct file *file)
-> +int vhost_poll_start(struct vhost_poll *poll, struct file *file)
->  {
->  	unsigned long mask;
-> +	int ret = 0;
->  
->  	mask = file->f_op->poll(file, &poll->table);
->  	if (mask)
->  		vhost_poll_wakeup(&poll->wait, 0, 0, (void *)mask);
-> +	if (mask & POLLERR) {
-> +		if (poll->wqh)
-> +			remove_wait_queue(poll->wqh, &poll->wait);
-> +		ret = -EINVAL;
-> +	}
-> +
-> +	return ret;
->  }
->  
->  /* Stop polling a file. After this function returns, it becomes safe to drop the
->   * file reference. You must also flush afterwards. */
->  void vhost_poll_stop(struct vhost_poll *poll)
->  {
-> -	remove_wait_queue(poll->wqh, &poll->wait);
-> +	if (poll->wqh) {
-> +		remove_wait_queue(poll->wqh, &poll->wait);
-> +		poll->wqh = NULL;
-> +	}
->  }
->  
->  static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
-> @@ -792,7 +804,7 @@ long vhost_vring_ioctl(struct vhost_dev *d, int ioctl, void __user *argp)
->  		fput(filep);
->  
->  	if (pollstart && vq->handle_kick)
-> -		vhost_poll_start(&vq->poll, vq->kick);
-> +		r = vhost_poll_start(&vq->poll, vq->kick);
->  
->  	mutex_unlock(&vq->mutex);
->  
-> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-> index 2639c58..17261e2 100644
-> --- a/drivers/vhost/vhost.h
-> +++ b/drivers/vhost/vhost.h
-> @@ -42,7 +42,7 @@ void vhost_work_queue(struct vhost_dev *dev, struct vhost_work *work);
->  
->  void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
->  		     unsigned long mask, struct vhost_dev *dev);
-> -void vhost_poll_start(struct vhost_poll *poll, struct file *file);
-> +int vhost_poll_start(struct vhost_poll *poll, struct file *file);
->  void vhost_poll_stop(struct vhost_poll *poll);
->  void vhost_poll_flush(struct vhost_poll *poll);
->  void vhost_poll_queue(struct vhost_poll *poll);
-> -- 
-> 1.7.1
+> Acked-by: Minchan Kim <minchan@kernel.org>
+> 
+>> ---
+>>  include/linux/swap.h |    4 ++++
+>>  mm/page_io.c         |   22 +++++++++++++++++-----
+>>  mm/swap_state.c      |    2 +-
+>>  3 files changed, 22 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/include/linux/swap.h b/include/linux/swap.h
+>> index 8c66486..a3da829 100644
+>> --- a/include/linux/swap.h
+>> +++ b/include/linux/swap.h
+>> @@ -321,6 +321,9 @@ static inline void mem_cgroup_uncharge_swap(swp_entry_t ent)
+>>  /* linux/mm/page_io.c */
+>>  extern int swap_readpage(struct page *);
+>>  extern int swap_writepage(struct page *page, struct writeback_control *wbc);
+>> +extern void end_swap_bio_write(struct bio *bio, int err);
+>> +extern int __swap_writepage(struct page *page, struct writeback_control *wbc,
+>> +	void (*end_write_func)(struct bio *, int));
+>>  extern int swap_set_page_dirty(struct page *page);
+>>  extern void end_swap_bio_read(struct bio *bio, int err);
+>>  
+>> @@ -335,6 +338,7 @@ extern struct address_space swapper_space;
+>>  extern void show_swap_cache_info(void);
+>>  extern int add_to_swap(struct page *);
+>>  extern int add_to_swap_cache(struct page *, swp_entry_t, gfp_t);
+>> +extern int __add_to_swap_cache(struct page *page, swp_entry_t entry);
+> 
+> What's related __add_to_swap_cache with this patch?
+> 
+>>  extern void __delete_from_swap_cache(struct page *);
+>>  extern void delete_from_swap_cache(struct page *);
+>>  extern void free_page_and_swap_cache(struct page *);
+>> diff --git a/mm/page_io.c b/mm/page_io.c
+>> index c535d39..806085e 100644
+>> --- a/mm/page_io.c
+>> +++ b/mm/page_io.c
+>> @@ -43,7 +43,7 @@ static struct bio *get_swap_bio(gfp_t gfp_flags,
+>>  	return bio;
+>>  }
+>>  
+>> -static void end_swap_bio_write(struct bio *bio, int err)
+>> +void end_swap_bio_write(struct bio *bio, int err)
+> 
+> Why do you remove static in this patch? It's not related to the patch.
+> 
+>>  {
+>>  	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+>>  	struct page *page = bio->bi_io_vec[0].bv_page;
+>> @@ -180,15 +180,16 @@ bad_bmap:
+>>  	goto out;
+>>  }
+>>  
+>> +int __swap_writepage(struct page *page, struct writeback_control *wbc,
+>> +	void (*end_write_func)(struct bio *, int));
+>> +
+>>  /*
+>>   * We may have stale swap cache pages in memory: notice
+>>   * them here and get rid of the unnecessary final write.
+>>   */
+>>  int swap_writepage(struct page *page, struct writeback_control *wbc)
+>>  {
+>> -	struct bio *bio;
+>> -	int ret = 0, rw = WRITE;
+>> -	struct swap_info_struct *sis = page_swap_info(page);
+>> +	int ret = 0;
+>>  
+>>  	if (try_to_free_swap(page)) {
+>>  		unlock_page(page);
+>> @@ -200,6 +201,17 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+>>  		end_page_writeback(page);
+>>  		goto out;
+>>  	}
+>> +	ret = __swap_writepage(page, wbc, end_swap_bio_write);
+>> +out:
+>> +	return ret;
+>> +}
+>> +
+>> +int __swap_writepage(struct page *page, struct writeback_control *wbc,
+>> +	void (*end_write_func)(struct bio *, int))
+>> +{
+>> +	struct bio *bio;
+>> +	int ret = 0, rw = WRITE;
+>> +	struct swap_info_struct *sis = page_swap_info(page);
+>>  
+>>  	if (sis->flags & SWP_FILE) {
+>>  		struct kiocb kiocb;
+>> @@ -227,7 +239,7 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+>>  		return ret;
+>>  	}
+>>  
+>> -	bio = get_swap_bio(GFP_NOIO, page, end_swap_bio_write);
+>> +	bio = get_swap_bio(GFP_NOIO, page, end_write_func);
+>>  	if (bio == NULL) {
+>>  		set_page_dirty(page);
+>>  		unlock_page(page);
+>> diff --git a/mm/swap_state.c b/mm/swap_state.c
+>> index 0cb36fb..7eded9c 100644
+>> --- a/mm/swap_state.c
+>> +++ b/mm/swap_state.c
+>> @@ -67,7 +67,7 @@ void show_swap_cache_info(void)
+>>   * __add_to_swap_cache resembles add_to_page_cache_locked on swapper_space,
+>>   * but sets SwapCache flag and private instead of mapping and index.
+>>   */
+>> -static int __add_to_swap_cache(struct page *page, swp_entry_t entry)
+>> +int __add_to_swap_cache(struct page *page, swp_entry_t entry)
+> 
+> Ditto
+> 
+>>  {
+>>  	int error;
+>>  
+>> -- 
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
