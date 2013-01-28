@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856Ab3A1SZK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:25:10 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:34254 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab3A1SZG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:25:06 -0500
-Date: Mon, 28 Jan 2013 19:24:51 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Mugunthan V N <mugunthanvnm@ti.com>, Matt Porter <mporter@ti.com>,
-        Chase Maupin <chase.maupin@ti.com>, Jason Kridner <jdk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpsw: Fix interrupt storm among other things
-Message-ID: <20130128182451.GC2445@netboy.at.omicron.at>
-References: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com>
+	id S1751181Ab3A1S0P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:26:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47424 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750811Ab3A1S0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 13:26:11 -0500
+Date: Mon, 28 Jan 2013 19:24:50 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] uprobes: Ensure inode != NULL in create_trace_uprobe()
+Message-ID: <20130128182450.GA18300@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130128182423.GA18273@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 03:11:08PM +0200, Pantelis Antoniou wrote:
-> Fix interrupt storm on bone A4 cause by non-by-the-book interrupt handling.
-> While at it, added a non-NAPI mode (which is easier to debug), plus
-> some general fixes.
+probe_event_enable/disable() check tu->inode != NULL at the start.
+This is ugly, if igrab() can fail create_trace_uprobe() should not
+succeed and "postpone" the failure.
 
-I have a few issues with this patch:
+Note: alloc_uprobe() should probably check igrab() != NULL as well.
 
-1. This is a networking patch. It should be addressed to netdev, it it
-   needs to have davem on CC.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/trace/trace_uprobe.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-2. The description is poor. You need to tell us more about this
-   "storm". How can one trigger it? What is the effect? Does the
-   system lock up, or is the throughput poor? Tell us exactly what the
-   problem is. Tell us what is wrong in the interrupt handling, and
-   how the patch improves the situation.
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 0c05288..f49ccf9 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -349,6 +349,8 @@ static int create_trace_uprobe(int argc, char **argv)
+ 
+ 	inode = igrab(path.dentry->d_inode);
+ 	path_put(&path);
++	if (!inode)
++		goto fail_address_parse;
+ 
+ 	ret = kstrtoul(arg, 0, &offset);
+ 	if (ret)
+@@ -645,7 +647,7 @@ static int probe_event_enable(struct trace_uprobe *tu, int flag)
+ 	struct uprobe_trace_consumer *utc;
+ 	int ret = 0;
+ 
+-	if (!tu->inode || tu->consumer)
++	if (tu->consumer)
+ 		return -EINTR;
+ 
+ 	utc = kzalloc(sizeof(struct uprobe_trace_consumer), GFP_KERNEL);
+@@ -670,7 +672,7 @@ static int probe_event_enable(struct trace_uprobe *tu, int flag)
+ 
+ static void probe_event_disable(struct trace_uprobe *tu, int flag)
+ {
+-	if (!tu->inode || !tu->consumer)
++	if (!tu->consumer)
+ 		return;
+ 
+ 	uprobe_unregister(tu->inode, tu->offset, &tu->consumer->cons);
+-- 
+1.5.5.1
 
-3. Don't just say "general fixes", but do say exactly what you fixed.
-
-4. Adding non-NAPI code is going backwards. Don't do that (and see the
-   recent discussion on netdev on just this very topic: Frank Li and
-   the fec driver).
-
-> diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-> index 40aff68..b6ca4af 100644
-> --- a/drivers/net/ethernet/ti/cpsw.c
-> +++ b/drivers/net/ethernet/ti/cpsw.c
-> @@ -148,10 +148,37 @@ struct cpsw_wr_regs {
->  	u32	soft_reset;
->  	u32	control;
->  	u32	int_control;
-> -	u32	rx_thresh_en;
-> -	u32	rx_en;
-> -	u32	tx_en;
-> -	u32	misc_en;
-> +	u32	c0_rx_thresh_en;
-> +	u32	c0_rx_en;
-> +	u32	c0_tx_en;
-> +	u32	c0_misc_en;
-
-How does renaming these help?
-
-(If you really think that new names are needed, then put the cosmetic
-renaming changes into its a separate patch.)
-
-> +	u32	c1_rx_thresh_en;
-> +	u32	c1_rx_en;
-> +	u32	c1_tx_en;
-> +	u32	c1_misc_en;
-
-You added a bunch of new fields, but you don't use any of them.
-
-Thanks,
-Richard
