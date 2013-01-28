@@ -1,618 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab3A1NxA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 08:53:00 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:34116 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756242Ab3A1Nw4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 08:52:56 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Patrice Chotard <patrice.chotard@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3/5] pinctrl/abx500: add AB9540 sub-driver
-Date: Mon, 28 Jan 2013 14:52:15 +0100
-Message-ID: <1359381135-28056-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1757257Ab3A1OBM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 09:01:12 -0500
+Received: from smtp5.epfl.ch ([128.178.224.8]:54664 "HELO smtp5.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756931Ab3A1OBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 09:01:08 -0500
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-leds@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Florian Vaussard <florian.vaussard@epfl.ch>
+Subject: [PATCH v3 3/3] leds: leds-pwm: Defer led_pwm_set() if PWM can sleep
+Date: Mon, 28 Jan 2013 15:00:59 +0100
+Message-Id: <1359381659-24454-4-git-send-email-florian.vaussard@epfl.ch>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1359381659-24454-1-git-send-email-florian.vaussard@epfl.ch>
+References: <1359381659-24454-1-git-send-email-florian.vaussard@epfl.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrice Chotard <patrice.chotard@stericsson.com>
+Call to led_pwm_set() can happen inside atomic context, like triggers.
+If the PWM call can sleep, defer using a worker.
 
-Add AB9540 sub driver to the ABx500 family, pins, pin groups and
-gpio range.
-
-As the pin controller (also the ABx500 controllers) is an
-inherent part of the SoC and will prevent boot if not
-available, select this from the Ux500 SoC Kconfig.
-
-Signed-off-by: Patrice Chotard <patrice.chotard@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
 ---
-Request an ACK from the ARM SoC maintainers for this patch.
----
- arch/arm/mach-ux500/Kconfig      |   1 +
- drivers/pinctrl/Kconfig          |   4 +
- drivers/pinctrl/Makefile         |   1 +
- drivers/pinctrl/pinctrl-ab9540.c | 485 +++++++++++++++++++++++++++++++++++++++
- drivers/pinctrl/pinctrl-abx500.c |   3 +
- drivers/pinctrl/pinctrl-abx500.h |  13 ++
- 6 files changed, 507 insertions(+)
- create mode 100644 drivers/pinctrl/pinctrl-ab9540.c
+ drivers/leds/leds-pwm.c |   50 +++++++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 42 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
-index 5279459..9434063 100644
---- a/arch/arm/mach-ux500/Kconfig
-+++ b/arch/arm/mach-ux500/Kconfig
-@@ -21,6 +21,7 @@ config UX500_SOC_DB8500
- 	select PINCTRL_DB8500
- 	select PINCTRL_AB8500
- 	select PINCTRL_AB8505
-+	select PINCTRL_AB9540
- 	select REGULATOR
- 	select REGULATOR_DB8500_PRCMU
+diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+index a1ea5f6..faf52c0 100644
+--- a/drivers/leds/leds-pwm.c
++++ b/drivers/leds/leds-pwm.c
+@@ -23,12 +23,16 @@
+ #include <linux/pwm.h>
+ #include <linux/leds_pwm.h>
+ #include <linux/slab.h>
++#include <linux/workqueue.h>
  
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index e7db9fa..aea4ceb 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -37,6 +37,10 @@ config PINCTRL_AB8500
- 	bool "AB8500 pin controller driver"
- 	depends on PINCTRL_ABX500 && ARCH_U8500
+ struct led_pwm_data {
+ 	struct led_classdev	cdev;
+ 	struct pwm_device	*pwm;
++	struct work_struct	work;
+ 	unsigned int		active_low;
+ 	unsigned int		period;
++	int			duty;
++	bool			can_sleep;
+ };
  
-+config PINCTRL_AB9540
-+	bool "AB9540 pin controller driver"
-+	depends on PINCTRL_ABX500 && ARCH_U8500
+ struct led_pwm_priv {
+@@ -36,6 +40,26 @@ struct led_pwm_priv {
+ 	struct led_pwm_data leds[0];
+ };
+ 
++static void __led_pwm_set(struct led_pwm_data *led_dat)
++{
++	int new_duty = led_dat->duty;
 +
- config PINCTRL_AB8505
- 	bool "AB8505 pin controller driver"
- 	depends on PINCTRL_ABX500 && ARCH_U8500
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index 2cc0115..e866b79 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -11,6 +11,7 @@ endif
- obj-$(CONFIG_GENERIC_PINCONF)	+= pinconf-generic.o
- obj-$(CONFIG_PINCTRL_ABX500)	+= pinctrl-abx500.o
- obj-$(CONFIG_PINCTRL_AB8500)	+= pinctrl-ab8500.o
-+obj-$(CONFIG_PINCTRL_AB9540)	+= pinctrl-ab9540.o
- obj-$(CONFIG_PINCTRL_AB8505)	+= pinctrl-ab8505.o
- obj-$(CONFIG_PINCTRL_AT91)	+= pinctrl-at91.o
- obj-$(CONFIG_PINCTRL_BCM2835)	+= pinctrl-bcm2835.o
-diff --git a/drivers/pinctrl/pinctrl-ab9540.c b/drivers/pinctrl/pinctrl-ab9540.c
-new file mode 100644
-index 0000000..7b66f30
---- /dev/null
-+++ b/drivers/pinctrl/pinctrl-ab9540.c
-@@ -0,0 +1,485 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2012
-+ *
-+ * Author: Patrice Chotard <patrice.chotard@stericsson.com> for ST-Ericsson.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
++	pwm_config(led_dat->pwm, new_duty, led_dat->period);
 +
-+#include <linux/kernel.h>
-+#include <linux/gpio.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/mfd/abx500/ab8500.h>
-+#include "pinctrl-abx500.h"
++	if (new_duty == 0)
++		pwm_disable(led_dat->pwm);
++	else
++		pwm_enable(led_dat->pwm);
++}
 +
-+/* All the pins that can be used for GPIO and some other functions */
-+#define ABX500_GPIO(offset)		(offset)
++static void led_pwm_work(struct work_struct *work)
++{
++	struct led_pwm_data *led_dat =
++		container_of(work, struct led_pwm_data, work);
 +
-+#define AB9540_PIN_R4		ABX500_GPIO(1)
-+#define AB9540_PIN_V3		ABX500_GPIO(2)
-+#define AB9540_PIN_T4		ABX500_GPIO(3)
-+#define AB9540_PIN_T5		ABX500_GPIO(4)
-+/* hole */
-+#define AB9540_PIN_B18		ABX500_GPIO(10)
-+#define AB9540_PIN_C18		ABX500_GPIO(11)
-+/* hole */
-+#define AB9540_PIN_D18		ABX500_GPIO(13)
-+#define AB9540_PIN_B19		ABX500_GPIO(14)
-+#define AB9540_PIN_C19		ABX500_GPIO(15)
-+#define AB9540_PIN_D19		ABX500_GPIO(16)
-+#define AB9540_PIN_R3		ABX500_GPIO(17)
-+#define AB9540_PIN_T2		ABX500_GPIO(18)
-+#define AB9540_PIN_U2		ABX500_GPIO(19)
-+#define AB9540_PIN_V2		ABX500_GPIO(20)
-+#define AB9540_PIN_N17		ABX500_GPIO(21)
-+#define AB9540_PIN_N16		ABX500_GPIO(22)
-+#define AB9540_PIN_M19		ABX500_GPIO(23)
-+#define AB9540_PIN_T3		ABX500_GPIO(24)
-+#define AB9540_PIN_W2		ABX500_GPIO(25)
-+/* hole */
-+#define AB9540_PIN_H4		ABX500_GPIO(27)
-+#define AB9540_PIN_F1		ABX500_GPIO(28)
-+#define AB9540_PIN_F4		ABX500_GPIO(29)
-+#define AB9540_PIN_F2		ABX500_GPIO(30)
-+#define AB9540_PIN_E4		ABX500_GPIO(31)
-+#define AB9540_PIN_F3		ABX500_GPIO(32)
-+/* hole */
-+#define AB9540_PIN_J13		ABX500_GPIO(34)
-+/* hole */
-+#define AB9540_PIN_L17		ABX500_GPIO(40)
-+#define AB9540_PIN_L16		ABX500_GPIO(41)
-+#define AB9540_PIN_W3		ABX500_GPIO(42)
-+#define AB9540_PIN_N4		ABX500_GPIO(50)
-+#define AB9540_PIN_G12		ABX500_GPIO(51)
-+#define AB9540_PIN_E17		ABX500_GPIO(52)
-+#define AB9540_PIN_D11		ABX500_GPIO(53)
-+#define AB9540_PIN_M18		ABX500_GPIO(54)
++	__led_pwm_set(led_dat);
++}
 +
-+/* indicates the highest GPIO number */
-+#define AB9540_GPIO_MAX_NUMBER	54
+ static void led_pwm_set(struct led_classdev *led_cdev,
+ 	enum led_brightness brightness)
+ {
+@@ -44,13 +68,12 @@ static void led_pwm_set(struct led_classdev *led_cdev,
+ 	unsigned int max = led_dat->cdev.max_brightness;
+ 	unsigned int period =  led_dat->period;
+ 
+-	if (brightness == 0) {
+-		pwm_config(led_dat->pwm, 0, period);
+-		pwm_disable(led_dat->pwm);
+-	} else {
+-		pwm_config(led_dat->pwm, brightness * period / max, period);
+-		pwm_enable(led_dat->pwm);
+-	}
++	led_dat->duty = brightness * period / max;
 +
-+/*
-+ * The names of the pins are denoted by GPIO number and ball name, even
-+ * though they can be used for other things than GPIO, this is the first
-+ * column in the table of the data sheet and often used on schematics and
-+ * such.
-+ */
-+static const struct pinctrl_pin_desc ab9540_pins[] = {
-+	PINCTRL_PIN(AB9540_PIN_R4, "GPIO1_R4"),
-+	PINCTRL_PIN(AB9540_PIN_V3, "GPIO2_V3"),
-+	PINCTRL_PIN(AB9540_PIN_T4, "GPIO3_T4"),
-+	PINCTRL_PIN(AB9540_PIN_T5, "GPIO4_T5"),
-+	/* hole */
-+	PINCTRL_PIN(AB9540_PIN_B18, "GPIO10_B18"),
-+	PINCTRL_PIN(AB9540_PIN_C18, "GPIO11_C18"),
-+	/* hole */
-+	PINCTRL_PIN(AB9540_PIN_D18, "GPIO13_D18"),
-+	PINCTRL_PIN(AB9540_PIN_B19, "GPIO14_B19"),
-+	PINCTRL_PIN(AB9540_PIN_C19, "GPIO15_C19"),
-+	PINCTRL_PIN(AB9540_PIN_D19, "GPIO16_D19"),
-+	PINCTRL_PIN(AB9540_PIN_R3, "GPIO17_R3"),
-+	PINCTRL_PIN(AB9540_PIN_T2, "GPIO18_T2"),
-+	PINCTRL_PIN(AB9540_PIN_U2, "GPIO19_U2"),
-+	PINCTRL_PIN(AB9540_PIN_V2, "GPIO20_V2"),
-+	PINCTRL_PIN(AB9540_PIN_N17, "GPIO21_N17"),
-+	PINCTRL_PIN(AB9540_PIN_N16, "GPIO22_N16"),
-+	PINCTRL_PIN(AB9540_PIN_M19, "GPIO23_M19"),
-+	PINCTRL_PIN(AB9540_PIN_T3, "GPIO24_T3"),
-+	PINCTRL_PIN(AB9540_PIN_W2, "GPIO25_W2"),
-+	/* hole */
-+	PINCTRL_PIN(AB9540_PIN_H4, "GPIO27_H4"),
-+	PINCTRL_PIN(AB9540_PIN_F1, "GPIO28_F1"),
-+	PINCTRL_PIN(AB9540_PIN_F4, "GPIO29_F4"),
-+	PINCTRL_PIN(AB9540_PIN_F2, "GPIO30_F2"),
-+	PINCTRL_PIN(AB9540_PIN_E4, "GPIO31_E4"),
-+	PINCTRL_PIN(AB9540_PIN_F3, "GPIO32_F3"),
-+	/* hole */
-+	PINCTRL_PIN(AB9540_PIN_J13, "GPIO34_J13"),
-+	/* hole */
-+	PINCTRL_PIN(AB9540_PIN_L17, "GPIO40_L17"),
-+	PINCTRL_PIN(AB9540_PIN_L16, "GPIO41_L16"),
-+	PINCTRL_PIN(AB9540_PIN_W3, "GPIO42_W3"),
-+	PINCTRL_PIN(AB9540_PIN_N4, "GPIO50_N4"),
-+	PINCTRL_PIN(AB9540_PIN_G12, "GPIO51_G12"),
-+	PINCTRL_PIN(AB9540_PIN_E17, "GPIO52_E17"),
-+	PINCTRL_PIN(AB9540_PIN_D11, "GPIO53_D11"),
-+	PINCTRL_PIN(AB9540_PIN_M18, "GPIO60_M18"),
-+};
++	if (led_dat->can_sleep)
++		schedule_work(&led_dat->work);
++	else
++		__led_pwm_set(led_dat);
+ }
+ 
+ static inline size_t sizeof_pwm_leds_priv(int num_leds)
+@@ -100,6 +123,10 @@ static struct led_pwm_priv *led_pwm_create_of(struct platform_device *pdev)
+ 		led_dat->cdev.brightness = LED_OFF;
+ 		led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
+ 
++		led_dat->can_sleep = pwm_can_sleep(led_dat->pwm);
++		if (led_dat->can_sleep)
++			INIT_WORK(&led_dat->work, led_pwm_work);
 +
-+/*
-+ * Maps local GPIO offsets to local pin numbers
-+ */
-+static const struct abx500_pinrange ab9540_pinranges[] = {
-+	ABX500_PINRANGE(1, 4, ABX500_ALT_A),
-+	ABX500_PINRANGE(10, 2, ABX500_DEFAULT),
-+	ABX500_PINRANGE(13, 1, ABX500_DEFAULT),
-+	ABX500_PINRANGE(14, 12, ABX500_ALT_A),
-+	ABX500_PINRANGE(27, 6, ABX500_ALT_A),
-+	ABX500_PINRANGE(34, 1, ABX500_ALT_A),
-+	ABX500_PINRANGE(40, 3, ABX500_ALT_A),
-+	ABX500_PINRANGE(50, 1, ABX500_DEFAULT),
-+	ABX500_PINRANGE(51, 3, ABX500_ALT_A),
-+	ABX500_PINRANGE(54, 1, ABX500_DEFAULT),
-+};
+ 		ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
+ 		if (ret < 0) {
+ 			dev_err(&pdev->dev, "failed to register for %s\n",
+@@ -153,6 +180,10 @@ static int led_pwm_probe(struct platform_device *pdev)
+ 			led_dat->cdev.max_brightness = cur_led->max_brightness;
+ 			led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
+ 
++			led_dat->can_sleep = pwm_can_sleep(led_dat->pwm);
++			if (led_dat->can_sleep)
++				INIT_WORK(&led_dat->work, led_pwm_work);
 +
-+/*
-+ * Read the pin group names like this:
-+ * sysclkreq2_d_1 = first groups of pins for sysclkreq2 on default function
-+ *
-+ * The groups are arranged as sets per altfunction column, so we can
-+ * mux in one group at a time by selecting the same altfunction for them
-+ * all. When functions require pins on different altfunctions, you need
-+ * to combine several groups.
-+ */
-+
-+/* default column */
-+static const unsigned sysclkreq2_d_1_pins[] = { AB9540_PIN_R4 };
-+static const unsigned sysclkreq3_d_1_pins[] = { AB9540_PIN_V3 };
-+static const unsigned sysclkreq4_d_1_pins[] = { AB9540_PIN_T4 };
-+static const unsigned sysclkreq6_d_1_pins[] = { AB9540_PIN_T5 };
-+static const unsigned gpio10_d_1_pins[] = { AB9540_PIN_B18 };
-+static const unsigned gpio11_d_1_pins[] = { AB9540_PIN_C18 };
-+static const unsigned gpio13_d_1_pins[] = { AB9540_PIN_D18 };
-+static const unsigned pwmout1_d_1_pins[] = { AB9540_PIN_B19 };
-+static const unsigned pwmout2_d_1_pins[] = { AB9540_PIN_C19 };
-+static const unsigned pwmout3_d_1_pins[] = { AB9540_PIN_D19 };
-+/* audio data interface 1*/
-+static const unsigned adi1_d_1_pins[] = { AB9540_PIN_R3, AB9540_PIN_T2,
-+					AB9540_PIN_U2, AB9540_PIN_V2 };
-+/* USBUICC */
-+static const unsigned usbuicc_d_1_pins[] = { AB9540_PIN_N17, AB9540_PIN_N16,
-+					AB9540_PIN_M19 };
-+static const unsigned sysclkreq7_d_1_pins[] = { AB9540_PIN_T3 };
-+static const unsigned sysclkreq8_d_1_pins[] = { AB9540_PIN_W2 };
-+/* Digital microphone 1 and 2 */
-+static const unsigned dmic12_d_1_pins[] = { AB9540_PIN_H4, AB9540_PIN_F1 };
-+/* Digital microphone 3 and 4 */
-+static const unsigned dmic34_d_1_pins[] = { AB9540_PIN_F4, AB9540_PIN_F2 };
-+/* Digital microphone 5 and 6 */
-+static const unsigned dmic56_d_1_pins[] = { AB9540_PIN_E4, AB9540_PIN_F3 };
-+static const unsigned extcpena_d_1_pins[] = { AB9540_PIN_J13 };
-+/* modem SDA/SCL */
-+static const unsigned modsclsda_d_1_pins[] = { AB9540_PIN_L17, AB9540_PIN_L16 };
-+static const unsigned sysclkreq5_d_1_pins[] = { AB9540_PIN_W3 };
-+static const unsigned gpio50_d_1_pins[] = { AB9540_PIN_N4 };
-+static const unsigned batremn_d_1_pins[] = { AB9540_PIN_G12 };
-+static const unsigned resethw_d_1_pins[] = { AB9540_PIN_E17 };
-+static const unsigned service_d_1_pins[] = { AB9540_PIN_D11 };
-+static const unsigned gpio60_d_1_pins[] = { AB9540_PIN_M18 };
-+
-+/* Altfunction A column */
-+static const unsigned gpio1_a_1_pins[] = { AB9540_PIN_R4 };
-+static const unsigned gpio2_a_1_pins[] = { AB9540_PIN_V3 };
-+static const unsigned gpio3_a_1_pins[] = { AB9540_PIN_T4 };
-+static const unsigned gpio4_a_1_pins[] = { AB9540_PIN_T5 };
-+static const unsigned hiqclkena_a_1_pins[] = { AB9540_PIN_B18 };
-+static const unsigned pdmclk_a_1_pins[] = { AB9540_PIN_C18 };
-+static const unsigned uartdata_a_1_pins[] = { AB9540_PIN_D18, AB9540_PIN_N4 };
-+static const unsigned gpio14_a_1_pins[] = { AB9540_PIN_B19 };
-+static const unsigned gpio15_a_1_pins[] = { AB9540_PIN_C19 };
-+static const unsigned gpio16_a_1_pins[] = { AB9540_PIN_D19 };
-+static const unsigned gpio17_a_1_pins[] = { AB9540_PIN_R3 };
-+static const unsigned gpio18_a_1_pins[] = { AB9540_PIN_T2 };
-+static const unsigned gpio19_a_1_pins[] = { AB9540_PIN_U2 };
-+static const unsigned gpio20_a_1_pins[] = { AB9540_PIN_V2 };
-+static const unsigned gpio21_a_1_pins[] = { AB9540_PIN_N17 };
-+static const unsigned gpio22_a_1_pins[] = { AB9540_PIN_N16 };
-+static const unsigned gpio23_a_1_pins[] = { AB9540_PIN_M19 };
-+static const unsigned gpio24_a_1_pins[] = { AB9540_PIN_T3 };
-+static const unsigned gpio25_a_1_pins[] = { AB9540_PIN_W2 };
-+static const unsigned gpio27_a_1_pins[] = { AB9540_PIN_H4 };
-+static const unsigned gpio28_a_1_pins[] = { AB9540_PIN_F1 };
-+static const unsigned gpio29_a_1_pins[] = { AB9540_PIN_F4 };
-+static const unsigned gpio30_a_1_pins[] = { AB9540_PIN_F2 };
-+static const unsigned gpio31_a_1_pins[] = { AB9540_PIN_E4 };
-+static const unsigned gpio32_a_1_pins[] = { AB9540_PIN_F3 };
-+static const unsigned gpio34_a_1_pins[] = { AB9540_PIN_J13 };
-+static const unsigned gpio40_a_1_pins[] = { AB9540_PIN_L17 };
-+static const unsigned gpio41_a_1_pins[] = { AB9540_PIN_L16 };
-+static const unsigned gpio42_a_1_pins[] = { AB9540_PIN_W3 };
-+static const unsigned gpio51_a_1_pins[] = { AB9540_PIN_G12 };
-+static const unsigned gpio52_a_1_pins[] = { AB9540_PIN_E17 };
-+static const unsigned gpio53_a_1_pins[] = { AB9540_PIN_D11 };
-+static const unsigned usbuiccpd_a_1_pins[] = { AB9540_PIN_M18 };
-+
-+/* Altfunction B colum */
-+static const unsigned pdmdata_b_1_pins[] = { AB9540_PIN_B18 };
-+static const unsigned pwmextvibra1_b_1_pins[] = { AB9540_PIN_D18 };
-+static const unsigned pwmextvibra2_b_1_pins[] = { AB9540_PIN_N4 };
-+
-+/* Altfunction C column */
-+static const unsigned usbvdat_c_1_pins[] = { AB9540_PIN_D18 };
-+
-+#define AB9540_PIN_GROUP(a, b) { .name = #a, .pins = a##_pins,		\
-+			.npins = ARRAY_SIZE(a##_pins), .altsetting = b }
-+
-+static const struct abx500_pingroup ab9540_groups[] = {
-+	/* default column */
-+	AB9540_PIN_GROUP(sysclkreq2_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(sysclkreq3_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(sysclkreq4_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(sysclkreq6_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(gpio10_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(gpio11_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(gpio13_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(pwmout1_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(pwmout2_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(pwmout3_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(adi1_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(usbuicc_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(sysclkreq7_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(sysclkreq8_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(dmic12_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(dmic34_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(dmic56_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(extcpena_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(modsclsda_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(sysclkreq5_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(gpio50_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(batremn_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(resethw_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(service_d_1, ABX500_DEFAULT),
-+	AB9540_PIN_GROUP(gpio60_d_1, ABX500_DEFAULT),
-+
-+	/* Altfunction A column */
-+	AB9540_PIN_GROUP(gpio1_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio2_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio3_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio4_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(hiqclkena_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(pdmclk_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(uartdata_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio14_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio15_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio16_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio17_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio18_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio19_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio20_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio21_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio22_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio23_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio24_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio25_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio27_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio28_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio29_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio30_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio31_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio32_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio34_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio40_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio41_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio42_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio51_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio52_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(gpio53_a_1, ABX500_ALT_A),
-+	AB9540_PIN_GROUP(usbuiccpd_a_1, ABX500_ALT_A),
-+
-+	/* Altfunction B column */
-+	AB9540_PIN_GROUP(pdmdata_b_1, ABX500_ALT_B),
-+	AB9540_PIN_GROUP(pwmextvibra1_b_1, ABX500_ALT_B),
-+	AB9540_PIN_GROUP(pwmextvibra2_b_1, ABX500_ALT_B),
-+
-+	/* Altfunction C column */
-+	AB9540_PIN_GROUP(usbvdat_c_1, ABX500_ALT_C),
-+};
-+
-+/* We use this macro to define the groups applicable to a function */
-+#define AB9540_FUNC_GROUPS(a, b...)	   \
-+static const char * const a##_groups[] = { b };
-+
-+AB9540_FUNC_GROUPS(sysclkreq, "sysclkreq2_d_1", "sysclkreq3_d_1",
-+		"sysclkreq4_d_1", "sysclkreq5_d_1", "sysclkreq6_d_1",
-+		"sysclkreq7_d_1", "sysclkreq8_d_1");
-+AB9540_FUNC_GROUPS(gpio, "gpio1_a_1", "gpio2_a_1", "gpio3_a_1", "gpio4_a_1",
-+		"gpio10_d_1", "gpio11_d_1", "gpio13_d_1", "gpio14_a_1",
-+		"gpio15_a_1", "gpio16_a_1", "gpio17_a_1", "gpio18_a_1",
-+		"gpio19_a_1", "gpio20_a_1", "gpio21_a_1", "gpio22_a_1",
-+		"gpio23_a_1", "gpio24_a_1", "gpio25_a_1", "gpio27_a_1",
-+		"gpio28_a_1", "gpio29_a_1", "gpio30_a_1", "gpio31_a_1",
-+		"gpio32_a_1", "gpio34_a_1", "gpio40_a_1", "gpio41_a_1",
-+		"gpio42_a_1", "gpio50_d_1", "gpio51_a_1", "gpio52_a_1",
-+		"gpio53_a_1", "gpio60_d_1");
-+AB9540_FUNC_GROUPS(pwmout, "pwmout1_d_1", "pwmout2_d_1", "pwmout3_d_1");
-+AB9540_FUNC_GROUPS(adi1, "adi1_d_1");
-+AB9540_FUNC_GROUPS(usbuicc, "usbuicc_d_1", "usbuiccpd_a_1");
-+AB9540_FUNC_GROUPS(dmic, "dmic12_d_1", "dmic34_d_1", "dmic56_d_1");
-+AB9540_FUNC_GROUPS(extcpena, "extcpena_d_1");
-+AB9540_FUNC_GROUPS(modsclsda, "modsclsda_d_1");
-+AB9540_FUNC_GROUPS(batremn, "batremn_d_1");
-+AB9540_FUNC_GROUPS(resethw, "resethw_d_1");
-+AB9540_FUNC_GROUPS(service, "service_d_1");
-+AB9540_FUNC_GROUPS(hiqclkena, "hiqclkena_a_1");
-+AB9540_FUNC_GROUPS(pdm, "pdmdata_b_1", "pdmclk_a_1");
-+AB9540_FUNC_GROUPS(uartdata, "uartdata_a_1");
-+AB9540_FUNC_GROUPS(pwmextvibra, "pwmextvibra1_b_1", "pwmextvibra2_b_1");
-+AB9540_FUNC_GROUPS(usbvdat, "usbvdat_c_1");
-+
-+#define FUNCTION(fname)					\
-+	{						\
-+		.name = #fname,				\
-+		.groups = fname##_groups,		\
-+		.ngroups = ARRAY_SIZE(fname##_groups),	\
+ 			ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
+ 			if (ret < 0)
+ 				goto err;
+@@ -180,8 +211,11 @@ static int led_pwm_remove(struct platform_device *pdev)
+ 	struct led_pwm_priv *priv = platform_get_drvdata(pdev);
+ 	int i;
+ 
+-	for (i = 0; i < priv->num_leds; i++)
++	for (i = 0; i < priv->num_leds; i++) {
+ 		led_classdev_unregister(&priv->leds[i].cdev);
++		if (priv->leds[i].can_sleep)
++			cancel_work_sync(&priv->leds[i].work);
 +	}
-+
-+static const struct abx500_function ab9540_functions[] = {
-+	FUNCTION(sysclkreq),
-+	FUNCTION(gpio),
-+	FUNCTION(pwmout),
-+	FUNCTION(adi1),
-+	FUNCTION(usbuicc),
-+	FUNCTION(dmic),
-+	FUNCTION(extcpena),
-+	FUNCTION(modsclsda),
-+	FUNCTION(batremn),
-+	FUNCTION(resethw),
-+	FUNCTION(service),
-+	FUNCTION(hiqclkena),
-+	FUNCTION(pdm),
-+	FUNCTION(uartdata),
-+	FUNCTION(pwmextvibra),
-+	FUNCTION(usbvdat),
-+};
-+
-+/*
-+ * this table translates what's is in the AB9540 specification regarding the
-+ * balls alternate functions (as for DB, default, ALT_A, ALT_B and ALT_C).
-+ * ALTERNATE_FUNCTIONS(GPIO_NUMBER, GPIOSEL bit, ALTERNATFUNC bit1,
-+ * ALTERNATEFUNC bit2, ALTA val, ALTB val, ALTC val),
-+ *
-+ * example :
-+ *
-+ *	ALTERNATE_FUNCTIONS(13,     4,      3,      4, 1, 0, 2),
-+ *	means that pin AB9540_PIN_D18 (pin 13) supports 4 mux (default/ALT_A,
-+ *	ALT_B and ALT_C), so GPIOSEL and ALTERNATFUNC registers are used to
-+ *	select the mux. ALTA, ALTB and ALTC val indicates values to write in
-+ *	ALTERNATFUNC register. We need to specifies these values as SOC
-+ *	designers didn't apply the same logic on how to select mux in the
-+ *	ABx500 family.
-+ *
-+ *	As this pins supports at least ALT_B mux, default mux is
-+ *	selected by writing 1 in GPIOSEL bit :
-+ *
-+ *		| GPIOSEL bit=4 | alternatfunc bit2=4 | alternatfunc bit1=3
-+ *	default	|       1       |          0          |          0
-+ *	alt_A	|       0       |          0          |          1
-+ *	alt_B	|       0       |          0          |          0
-+ *	alt_C	|       0       |          1          |          0
-+ *
-+ *	ALTERNATE_FUNCTIONS(1,      0, UNUSED, UNUSED),
-+ *	means that pin AB9540_PIN_R4 (pin 1) supports 2 mux, so only GPIOSEL
-+ *	register is used to select the mux. As this pins doesn't support at
-+ *	least ALT_B mux, default mux is by writing 0 in GPIOSEL bit :
-+ *
-+ *		| GPIOSEL bit=0 | alternatfunc bit2=  | alternatfunc bit1=
-+ *	default	|       0       |          0          |          0
-+ *	alt_A	|       1       |          0          |          0
-+ */
-+
-+struct alternate_functions ab9540alternate_functions[AB9540_GPIO_MAX_NUMBER + 1] = {
-+	/* GPIOSEL1 - bits 4-7 are reserved */
-+	ALTERNATE_FUNCTIONS(0, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO0 */
-+	ALTERNATE_FUNCTIONS(1,	    0, UNUSED, UNUSED, 0, 0, 0), /* GPIO1, altA controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(2,      1, UNUSED, UNUSED, 0, 0, 0), /* GPIO2, altA controlled by bit 1 */
-+	ALTERNATE_FUNCTIONS(3,      2, UNUSED, UNUSED, 0, 0, 0), /* GPIO3, altA controlled by bit 2*/
-+	ALTERNATE_FUNCTIONS(4,      3, UNUSED, UNUSED, 0, 0, 0), /* GPIO4, altA controlled by bit 3*/
-+	ALTERNATE_FUNCTIONS(5, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO5 */
-+	ALTERNATE_FUNCTIONS(6, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO6 */
-+	ALTERNATE_FUNCTIONS(7, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO7 */
-+	ALTERNATE_FUNCTIONS(8, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO8 */
-+	/* GPIOSEL2 - bits 0 and 3 are reserved */
-+	ALTERNATE_FUNCTIONS(9, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO9 */
-+	ALTERNATE_FUNCTIONS(10,      1,      0, UNUSED, 1, 0, 0), /* GPIO10, altA and altB controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(11,      2, UNUSED, UNUSED, 0, 0, 0), /* GPIO11, altA controlled by bit 1 */
-+	ALTERNATE_FUNCTIONS(12, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO12 */
-+	ALTERNATE_FUNCTIONS(13,      4,      3,      4, 1, 0, 2), /* GPIO13, altA altB and altC controlled by bit 3 and 4 */
-+	ALTERNATE_FUNCTIONS(14,      5, UNUSED, UNUSED, 0, 0, 0), /* GPIO14, altA controlled by bit 5 */
-+	ALTERNATE_FUNCTIONS(15,      6, UNUSED, UNUSED, 0, 0, 0), /* GPIO15, altA controlled by bit 6 */
-+	ALTERNATE_FUNCTIONS(16,      7, UNUSED, UNUSED, 0, 0, 0), /* GPIO16, altA controlled by bit 7 */
-+	/* GPIOSEL3 - bit 1-3 reserved
-+	 * pins 17 to 20 are special case, only bit 0 is used to select
-+	 * alternate function for these 4 pins.
-+	 * bits 1 to 3 are reserved
-+	 */
-+	ALTERNATE_FUNCTIONS(17,      0, UNUSED, UNUSED, 0, 0, 0), /* GPIO17, altA controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(18,      0, UNUSED, UNUSED, 0, 0, 0), /* GPIO18, altA controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(19,      0, UNUSED, UNUSED, 0, 0, 0), /* GPIO19, altA controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(20,      0, UNUSED, UNUSED, 0, 0, 0), /* GPIO20, altA controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(21,      4, UNUSED, UNUSED, 0, 0, 0), /* GPIO21, altA controlled by bit 4 */
-+	ALTERNATE_FUNCTIONS(22,      5, UNUSED, UNUSED, 0, 0, 0), /* GPIO22, altA controlled by bit 5 */
-+	ALTERNATE_FUNCTIONS(23,      6, UNUSED, UNUSED, 0, 0, 0), /* GPIO23, altA controlled by bit 6 */
-+	ALTERNATE_FUNCTIONS(24,      7, UNUSED, UNUSED, 0, 0, 0), /* GPIO24, altA controlled by bit 7 */
-+	/* GPIOSEL4 - bit 1 reserved */
-+	ALTERNATE_FUNCTIONS(25,      0, UNUSED, UNUSED, 0, 0, 0), /* GPIO25, altA controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(26, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO26 */
-+	ALTERNATE_FUNCTIONS(27,      2, UNUSED, UNUSED, 0, 0, 0), /* GPIO27, altA controlled by bit 2 */
-+	ALTERNATE_FUNCTIONS(28,      3, UNUSED, UNUSED, 0, 0, 0), /* GPIO28, altA controlled by bit 3 */
-+	ALTERNATE_FUNCTIONS(29,      4, UNUSED, UNUSED, 0, 0, 0), /* GPIO29, altA controlled by bit 4 */
-+	ALTERNATE_FUNCTIONS(30,      5, UNUSED, UNUSED, 0, 0, 0), /* GPIO30, altA controlled by bit 5 */
-+	ALTERNATE_FUNCTIONS(31,      6, UNUSED, UNUSED, 0, 0, 0), /* GPIO31, altA controlled by bit 6 */
-+	ALTERNATE_FUNCTIONS(32,      7, UNUSED, UNUSED, 0, 0, 0), /* GPIO32, altA controlled by bit 7 */
-+	/* GPIOSEL5 - bit 0, 2-6 are reserved */
-+	ALTERNATE_FUNCTIONS(33, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO33 */
-+	ALTERNATE_FUNCTIONS(34,      1, UNUSED, UNUSED, 0, 0, 0), /* GPIO34, altA controlled by bit 1 */
-+	ALTERNATE_FUNCTIONS(35, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO35 */
-+	ALTERNATE_FUNCTIONS(36, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO36 */
-+	ALTERNATE_FUNCTIONS(37, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO37 */
-+	ALTERNATE_FUNCTIONS(38, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO38 */
-+	ALTERNATE_FUNCTIONS(39, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO39 */
-+	ALTERNATE_FUNCTIONS(40,      7, UNUSED, UNUSED, 0, 0, 0), /* GPIO40, altA controlled by bit 7 */
-+	/* GPIOSEL6 - bit 2-7 are reserved */
-+	ALTERNATE_FUNCTIONS(41,      0, UNUSED, UNUSED, 0, 0, 0), /* GPIO41, altA controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(42,      1, UNUSED, UNUSED, 0, 0, 0), /* GPIO42, altA controlled by bit 1 */
-+	ALTERNATE_FUNCTIONS(43, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO43 */
-+	ALTERNATE_FUNCTIONS(44, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO44 */
-+	ALTERNATE_FUNCTIONS(45, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO45 */
-+	ALTERNATE_FUNCTIONS(46, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO46 */
-+	ALTERNATE_FUNCTIONS(47, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO47 */
-+	ALTERNATE_FUNCTIONS(48, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO48 */
-+	/*
-+	 * GPIOSEL7 - bit 0 and 6-7 are reserved
-+	 * special case with GPIO60, wich is located at offset 5 of gpiosel7
-+	 * don't know why it has been called GPIO60 in AB9540 datasheet,
-+	 * GPIO54 would be logical..., so at SOC point of view we consider
-+	 * GPIO60 = GPIO54
-+	 */
-+	ALTERNATE_FUNCTIONS(49,      0, UNUSED, UNUSED, 0, 0, 0), /* no GPIO49 */
-+	ALTERNATE_FUNCTIONS(50,      1,	     2, UNUSED, 1, 0, 0), /* GPIO50, altA and altB controlled by bit 1 */
-+	ALTERNATE_FUNCTIONS(51,	     2, UNUSED, UNUSED, 0, 0, 0), /* GPIO51, altA controlled by bit 2 */
-+	ALTERNATE_FUNCTIONS(52,      3, UNUSED, UNUSED, 0, 0, 0), /* GPIO52, altA controlled by bit 3 */
-+	ALTERNATE_FUNCTIONS(53,	     4, UNUSED, UNUSED, 0, 0, 0), /* GPIO53, altA controlled by bit 4 */
-+	ALTERNATE_FUNCTIONS(54,	     5, UNUSED, UNUSED, 0, 0, 0), /* GPIO54 = GPIO60, altA controlled by bit 5 */
-+};
-+
-+struct abx500_gpio_irq_cluster ab9540_gpio_irq_cluster[] = {
-+	GPIO_IRQ_CLUSTER(9, 12, 0), /* GPIO numbers start from 1 */
-+	GPIO_IRQ_CLUSTER(23, 24, 0),
-+	GPIO_IRQ_CLUSTER(39, 40, 0),
-+	GPIO_IRQ_CLUSTER(49, 53, 0),
-+};
-+
-+static struct abx500_pinctrl_soc_data ab9540_soc = {
-+	.gpio_ranges = ab9540_pinranges,
-+	.gpio_num_ranges = ARRAY_SIZE(ab9540_pinranges),
-+	.pins = ab9540_pins,
-+	.npins = ARRAY_SIZE(ab9540_pins),
-+	.functions = ab9540_functions,
-+	.nfunctions = ARRAY_SIZE(ab9540_functions),
-+	.groups = ab9540_groups,
-+	.ngroups = ARRAY_SIZE(ab9540_groups),
-+	.alternate_functions = ab9540alternate_functions,
-+	.gpio_irq_cluster = ab9540_gpio_irq_cluster,
-+	.ngpio_irq_cluster = ARRAY_SIZE(ab9540_gpio_irq_cluster),
-+	.irq_gpio_rising_offset = AB8500_INT_GPIO6R,
-+	.irq_gpio_falling_offset = AB8500_INT_GPIO6F,
-+	.irq_gpio_factor = 1,
-+};
-+
-+void __devinit
-+abx500_pinctrl_ab9540_init(struct abx500_pinctrl_soc_data **soc)
-+{
-+	*soc = &ab9540_soc;
-+}
-diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
-index 94f9381..39020ac 100644
---- a/drivers/pinctrl/pinctrl-abx500.c
-+++ b/drivers/pinctrl/pinctrl-abx500.c
-@@ -1119,6 +1119,9 @@ static int abx500_gpio_probe(struct platform_device *pdev)
- 	case PINCTRL_AB8500:
- 		abx500_pinctrl_ab8500_init(&pct->soc);
- 		break;
-+	case PINCTRL_AB9540:
-+		abx500_pinctrl_ab9540_init(&pct->soc);
-+		break;
- 	case PINCTRL_AB8505:
- 		abx500_pinctrl_ab8505_init(&pct->soc);
- 		break;
-diff --git a/drivers/pinctrl/pinctrl-abx500.h b/drivers/pinctrl/pinctrl-abx500.h
-index 5c5ac75..fe1ccb7 100644
---- a/drivers/pinctrl/pinctrl-abx500.h
-+++ b/drivers/pinctrl/pinctrl-abx500.h
-@@ -190,6 +190,19 @@ abx500_pinctrl_ab8500_init(struct abx500_pinctrl_soc_data **soc)
  
- #endif
- 
-+#ifdef CONFIG_PINCTRL_AB9540
-+
-+void abx500_pinctrl_ab9540_init(struct abx500_pinctrl_soc_data **soc);
-+
-+#else
-+
-+static inline void
-+abx500_pinctrl_ab9540_init(struct abx500_pinctrl_soc_data **soc)
-+{
-+}
-+
-+#endif
-+
- #ifdef CONFIG_PINCTRL_AB8505
- 
- void abx500_pinctrl_ab8505_init(struct abx500_pinctrl_soc_data **soc);
+ 	return 0;
+ }
 -- 
-1.7.11.3
+1.7.5.4
 
