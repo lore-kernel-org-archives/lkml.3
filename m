@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757732Ab3A1SJe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:09:34 -0500
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:47076 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab3A1SJc (ORCPT
+	id S1757759Ab3A1SKH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:10:07 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:49039 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab3A1SKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:09:32 -0500
-X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Jan 2013 13:09:32 EST
-Date: Mon, 28 Jan 2013 13:04:24 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "js1304@gmail.com" <js1304@gmail.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/3] introduce static_vm for ARM-specific static mapped
- area
-In-Reply-To: <20130128175106.GI23470@mudshark.cambridge.arm.com>
-Message-ID: <alpine.LFD.2.02.1301281300250.6300@xanadu.home>
-References: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com> <20130128175106.GI23470@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 28 Jan 2013 13:10:04 -0500
+Date: Mon, 28 Jan 2013 10:10:01 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: tj@kernel.org, srivatsa.bhat@linux.vnet.ibm.com, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] generic dynamic per cpu refcounting
+Message-ID: <20130128181001.GZ26407@google.com>
+References: <20130124232024.GA584@google.com>
+ <20130125180941.GA16896@redhat.com>
+ <20130125182924.GA17514@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130125182924.GA17514@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jan 2013, Will Deacon wrote:
-
-> Hello,
+On Fri, Jan 25, 2013 at 07:29:24PM +0100, Oleg Nesterov wrote:
+> On 01/25, Oleg Nesterov wrote:
+> >
+> > > +void __percpu_ref_get(struct percpu_ref *ref, bool alloc)
+> > > +{
+> > > +	unsigned long pcpu_count;
+> > > +	uint64_t v;
+> > > +
+> > > +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+> > > +
+> > > +	if (REF_STATUS(pcpu_count) == PCPU_REF_PTR) {
+> > > +		/* for rcu - we're not using rcu_dereference() */
+> > > +		smp_read_barrier_depends();
+> > > +		__this_cpu_inc(*((unsigned __percpu *) pcpu_count));
+> >
+> > The comment looks confusing a bit... smp_read_barrier_depends() is not
+> > for rcu, we obviously need it to access (unsigned __percpu *) pcpu_count.
+> > But yes, since we didn't use rcu_dereference() we have to add it by hand.
 > 
-> On Thu, Jan 24, 2013 at 01:28:51AM +0000, Joonsoo Kim wrote:
-> > In current implementation, we used ARM-specific flag, that is,
-> > VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
-> > The purpose of static mapped area is to re-use static mapped area when
-> > entire physical address range of the ioremap request can be covered
-> > by this area.
-> > 
-> > This implementation causes needless overhead for some cases.
-> > For example, assume that there is only one static mapped area and
-> > vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
-> > deciding whether it is matched or not. Moreover, even if there is
-> > no static mapped area and vmlist has 300 areas, every time we call
-> > ioremap, we check 300 areas in now.
-> > 
-> > If we construct a extra list for static mapped area, we can eliminate
-> > above mentioned overhead.
-> > With a extra list, if there is one static mapped area,
-> > we just check only one area and proceed next operation quickly.
-> > 
-> > In fact, it is not a critical problem, because ioremap is not frequently
-> > used. But reducing overhead is better idea.
-> > 
-> > Another reason for doing this work is for removing vm_struct list management,
-> > entirely. For more information, look at the following link.
-> > http://lkml.org/lkml/2012/12/6/184
+> Hmm. Otoh, arch/alpha uses asm-generic/percpu.h so in theory we need
+> smp_read_barrier_depends() after __this_cpu_generic_to_op() calculates the
+> "real" pointer, __this_cpu_ptr() ?
 > 
-> First patch looks good (removing the unused vmregion stuff) but I'm not so
-> sure about the rest of it. If you really care about ioremap performance,
-> perhaps it would be better to have a container struct around the vm_struct
-> for static mappings and then stick them in an augmented rbtree so you can
-> efficiently find the mapping encompassing a particular physical address?
+> Just curious...
 
-How can ioremap performance be a problem is the question I had since the 
-beginning.
-
-Firstly, ioremap is _not_ meant to be used in performance critical 
-paths.
-
-Secondly, there shouldn't be _that_ many entries on the vmlist such as 
-300.  That sounds a bit excessive.
-
-So please, can we discuss the reasons that motivated those patches in 
-the first place?  Maybe that's where the actual problem is.
-
-
-Nicolas
+Don't think I follow, but I don't see how... that barriers just needs to
+be between the ACCESS_ONCE and touching the memory pointed to, the fact
+that there's a calculation in there to get the real pointer is
+irrelevant...
