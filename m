@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab3A1IPx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 03:15:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45863 "EHLO mx2.suse.de"
+	id S1754277Ab3A1IWh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 03:22:37 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:54269 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754160Ab3A1IPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 03:15:48 -0500
-Date: Mon, 28 Jan 2013 09:15:40 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Simon Jeons <simon.jeons@gmail.com>, akpm@linux-foundation.org,
-        rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        wujianguo@huawei.com, wency@cn.fujitsu.com, hpa@zytor.com,
-        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
-        yinghai@kernel.org, glommer@parallels.com, jiang.liu@huawei.com,
-        julian.calaby@gmail.com, sfr@canb.auug.org.au, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH Bug fix 0/5] Bug fix for physical memory hot-remove.
-Message-ID: <20130128081529.GA14241@dhcp22.suse.cz>
-References: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
- <1358944171.3351.1.camel@kernel>
- <20130125131740.GA1615@dhcp22.suse.cz>
- <5105D57D.3050900@cn.fujitsu.com>
+	id S1753671Ab3A1IWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 03:22:35 -0500
+Message-ID: <51063558.1010402@parallels.com>
+Date: Mon, 28 Jan 2013 12:22:48 +0400
+From: Lord Glauber Costa of Sealand <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5105D57D.3050900@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: <linux-fsdevel@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH review 3/6] userns: Recommend use of memory control groups.
+References: <87ehh8it9s.fsf@xmission.com> <87txq4hedl.fsf@xmission.com> <51062AB5.9060203@parallels.com> <51062DA8.1060804@parallels.com> <87k3qxu3kp.fsf@xmission.com>
+In-Reply-To: <87k3qxu3kp.fsf@xmission.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 28-01-13 09:33:49, Tang Chen wrote:
-> On 01/25/2013 09:17 PM, Michal Hocko wrote:
-> >On Wed 23-01-13 06:29:31, Simon Jeons wrote:
-> >>On Tue, 2013-01-22 at 19:42 +0800, Tang Chen wrote:
-> >>>Here are some bug fix patches for physical memory hot-remove. All these
-> >>>patches are based on the latest -mm tree.
-> >>>git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
-> >>>
-> >>>And patch1 and patch3 are very important.
-> >>>patch1: free compound pages when freeing memmap, otherwise the kernel
-> >>>         will panic the next time memory is hot-added.
-> >>>patch3: the old way of freeing pagetable pages was wrong. We should never
-> >>>         split larger pages into small ones.
-> >>>
-> >>>
-> >>
-> >>Hi Tang,
-> >>
-> >>I remember your big physical memory hot-remove patchset has already
-> >>merged by Andrew, but where I can find it? Could you give me git tree
-> >>address?
-> >
-> >Andrew tree is also mirrored into a git tree.
-> >http://git.kernel.org/?p=linux/kernel/git/mhocko/mm.git;a=summary
-> >
-> >It contains only Memory management patches on top of the last major
-> >release (since-.X.Y branch).
+On 01/28/2013 12:14 PM, Eric W. Biederman wrote:
+> Lord Glauber Costa of Sealand <glommer@parallels.com> writes:
 > 
-> Hi Michal,
+>> I just saw in a later patch of yours that your concern here seems not
+>> limited to backed ram by tmpfs, but with things like the internal
+>> structures for userns , to avoid patterns in the form: 'for (;;)
+>> unshare(...)'
+>>
+>> Humm, it does seem sensible. The kernel memory controller aims to
+>> prevent exactly things like that. But they all exist already before
+>> userns: there are destructive patterns like that with sockets, dentries,
+>> processes, and pretty much every other resource in the kernel. So
+>> Although the recommendation per-se makes sense, I am wondering if it is
+>> worth it to mention anything in the user_ns config?
 > 
-> I'm not sure I got your meaning. :)
+> The config might be overkill.  However I have already gotten bug reports
+> about there being no limits.
+> 
+> So someone needs to stop and connect the dots and say: 
+Absolutely, and I am all for it
 
-Well, the mirror tree gets updated when Andrew releases mmotm and quite
-often even when mmots is released.
-All patches in the mm section are applied.
+> "If you care this is what you can do." 
 
-> In http://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm,
-> I can find the following commit.
-> 
-> commit deed0460e01b3968f2cf46fb94851936535b7e0d
-> Author: Tang Chen <tangchen@cn.fujitsu.com>
-> Date:   Sat Jan 19 11:07:13 2013 +1100
-> 
->     memory-hotplug: do not allocate pgdat if it was not freed when
-> offline.
-> 
-> 
-> This is one of memory hot-remove patches. Please try to update the
-> mirror tree,
-> and try to find the above commit.
+How about we say it, then?
 
-That one is in my mirror tree as f48bf999 (memory-hotplug: do not
-allocate pdgat if it was not freed when offline.).
--- 
-Michal Hocko
-SUSE Labs
+The current text in quite cryptic in this aspect, in the sense that it
+doesn't give enough information for standard people about what are the
+problems involved.
+
+Of course, maybe the Kconfig text is not the best place for having all
+the info: but don't we have some place in Documentation/ where we could
+put this, and then refer people there from Kconfig ?
+
