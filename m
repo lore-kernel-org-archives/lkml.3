@@ -1,156 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab3A1MZb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 07:25:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1228 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751895Ab3A1MZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 07:25:29 -0500
-Message-ID: <51066E32.2000209@redhat.com>
-Date: Mon, 28 Jan 2013 13:25:22 +0100
-From: Gerd Hoffmann <kraxel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: acking@vmware.com
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
-        gregkh@linuxfoundation.org, davem@davemloft.net
-Subject: Re: [PATCH 1/1] VSOCK: Introduce VM Sockets
-References: <1359135470-30677-1-git-send-email-acking@vmware.com> <1359135470-30677-2-git-send-email-acking@vmware.com>
-In-Reply-To: <1359135470-30677-2-git-send-email-acking@vmware.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757386Ab3A1MZx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 07:25:53 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:65334 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab3A1MZu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 07:25:50 -0500
+Date: Mon, 28 Jan 2013 21:25:43 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] kvm: IOMMU read-only mapping support
+Message-Id: <20130128212543.274a94d8021cfdabc3efc0e1@gmail.com>
+In-Reply-To: <20130128105903.GA22871@redhat.com>
+References: <20130124220027.11061.76400.stgit@bling.home>
+	<20130125101704.b76b049d.yoshikawa_takuya_b1@lab.ntt.co.jp>
+	<5101FBE8.9000206@linux.vnet.ibm.com>
+	<20130128105903.GA22871@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+On Mon, 28 Jan 2013 12:59:03 +0200
+Gleb Natapov <gleb@redhat.com> wrote:
 
-> diff --git a/net/vmw_vsock/Kconfig b/net/vmw_vsock/Kconfig
-> new file mode 100644
-> index 0000000..95e2568
-> --- /dev/null
-> +++ b/net/vmw_vsock/Kconfig
-> @@ -0,0 +1,14 @@
-> +#
-> +# Vsock protocol
-> +#
-> +
-> +config VMWARE_VSOCK
-> +	tristate "Virtual Socket protocol"
-> +	depends on VMWARE_VMCI
+> > It sets spte based on the old value that means the readonly flag check
+> > is missed. We need to call kvm_arch_flush_shadow_all under this case.
+> Why not just disallow changing memory region KVM_MEM_READONLY flag
+> without deleting the region?
 
-I guess this is temporary?  Cover letter says *mostly* separated ...
+Sounds good.
 
-> +vmw_vsock-y += af_vsock.o vmci_transport.o vmci_transport_notify.o \
-> +	vmci_transport_notify_qstate.o vsock_addr.o
+If you prefer, I can fold the required change into my patch.
 
-Likewise, I expect with the final version vmci_transport is a separate
-module (or moves into the vmci driver), correct?
-
-> +static long vsock_dev_do_ioctl(struct file *filp,
-> +			       unsigned int cmd, void __user *ptr)
-> +{
-> +	static const u16 parts[4] = VSOCK_DRIVER_VERSION_PARTS;
-> +	u32 __user *p = ptr;
-> +	int retval = 0;
-> +	u32 version;
-> +
-> +	switch (cmd) {
-> +	case IOCTL_VMCI_SOCKETS_VERSION:
-> +		version = VMCI_SOCKETS_MAKE_VERSION(parts);
-> +		if (put_user(version, p) != 0)
-> +			retval = -EFAULT;
-> +		break;
-
-Still needed?
-
-> +	case IOCTL_VMCI_SOCKETS_GET_AF_VALUE:
-> +		if (put_user(AF_VSOCK, p) != 0)
-> +			retval = -EFAULT;
-> +
-> +		break;
-
-That can go away, with the upstream merge vsock will get a fixed AF_VSOCK.
-
-> +	case IOCTL_VMCI_SOCKETS_GET_LOCAL_CID:
-> +		if (put_user(vmci_get_context_id(), p) != 0)
-> +			retval = -EFAULT;
-
-What is this?
-
-> +static int __init vsock_init(void)
-> +{
-> +	int err;
-> +
-> +	vsock_init_tables();
-> +
-> +	err = misc_register(&vsock_device);
-> +	if (err) {
-> +		pr_err("Failed to register misc device\n");
-> +		return -ENOENT;
-> +	}
-> +
-> +	err = vmci_transport_register(&transport);
-> +	if (err) {
-> +		pr_err("Cannot register with VMCI device\n");
-> +		goto err_misc_deregister;
-> +	}
-
-Hmm?  There should be a vsock_(un)register_transport which the vmci
-transport code can call (and likewise virtio transport some day).
-
-> +struct vsock_sock {
-> +	/* sk must be the first member. */
-> +	struct sock sk;
-> +	struct sockaddr_vm local_addr;
-> +	struct sockaddr_vm remote_addr;
-
-> +	/* The rest is transport-specific: this is the stuff we need to pull
-> +	 * out to make it work with something other than VMCI.
-> +	 */
-> +	struct {
-> +		/* For DGRAMs. */
-> +		struct vmci_handle dg_handle;
-
-Yep, should be a pointer where transports can hook in their private data.
-
-> +/**** TRANSPORT ****/
-> +
-> +struct vsock_transport {
-> +	void (*init)(struct vsock_sock *, struct vsock_sock *);
-> +	void (*destruct)(struct vsock_sock *);
-> +	void (*release)(struct vsock_sock *);
-> +	int (*connect)(struct vsock_sock *);
-> +	int (*bind_dgram)(struct vsock_sock *, struct sockaddr_vm *);
-> +	int (*send_dgram)(struct vsock_sock *, struct sockaddr_vm *,
-> +			  struct iovec *, size_t len);
-> +	ssize_t (*recv_stream)(struct vsock_sock *, struct iovec *,
-> +			       size_t len, int flags);
-> +	ssize_t (*send_stream)(struct vsock_sock *, struct iovec *,
-> +			       size_t len);
-> +	s64 (*stream_has_data)(struct vsock_sock *);
-> +	s64 (*stream_has_space)(struct vsock_sock *);
-> +	int (*send_shutdown)(struct sock *sk, int mode);
-> +	void (*unregister)(void);
-> +};
-
-So that is the interface transports have to implement.  Looks reasonable
-to me.  Some documentation would be nice, although most of it is
-self-explaining.
-
-Where is recv_dgram?
-
-Also why bind_dgram?  I guess binding stream sockets doesn't make sense
-for the vsock family?
-
-I'd make the naming a bit more consistent, some stream callbacks are
-prefixed and some postfixed with "stream".
-
-I'd also name send_shutdown just shutdown (same name the system call has).
-
-What does unregister?
-
-cheers,
-  Gerd
+	Takuya
