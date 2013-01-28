@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab3A1WIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 17:08:30 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:37216 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754748Ab3A1WI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 17:08:27 -0500
-Message-ID: <5106F6CA.30705@linux.vnet.ibm.com>
-Date: Mon, 28 Jan 2013 16:08:10 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1755276Ab3A1WIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 17:08:52 -0500
+Received: from mail-qe0-f47.google.com ([209.85.128.47]:51181 "EHLO
+	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754679Ab3A1WIv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 17:08:51 -0500
+Date: Mon, 28 Jan 2013 14:08:44 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        James Hogan <james.hogan@imgtec.com>
+Subject: Re: linux-next: Tree for Jan 25 (BROKEN suspend)
+Message-ID: <20130128220844.GO22465@mtj.dyndns.org>
+References: <CA+icZUW6LBSjpqK-eQUAt7R=kXCPRjFoi=z1UijaajrVAj=fEg@mail.gmail.com>
+ <CA+icZUX=XdAJjWwx8P_y31JGW3GC+tdWuFhv2Ym-0OELGWGbDQ@mail.gmail.com>
+ <CA+icZUX31SB3+NU8uXA9LH5KOHxgeHKZLcqWNhzUVhx5onk6qA@mail.gmail.com>
+ <18624541.r6CtJttOWZ@vostro.rjw.lan>
+ <CA+icZUX+o6kB9wXwpuJ8U49j+qHdx=DRq7p+_U1g+1fwGb-S6w@mail.gmail.com>
+ <20130128192807.GF22465@mtj.dyndns.org>
+ <CA+icZUUHFFB6j-igX-Ec+6ZT2yvGakRd+HNVru1VUAxPXby_Lg@mail.gmail.com>
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv3 0/6] zswap: compressed swap caching
-References: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
-In-Reply-To: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012822-5806-0000-0000-00001EDD1D3F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUUHFFB6j-igX-Ec+6ZT2yvGakRd+HNVru1VUAxPXby_Lg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 03:49 PM, Seth Jennings wrote:
-> Changelog:
+Hello, Sedat.
+
+On Mon, Jan 28, 2013 at 11:06:11PM +0100, Sedat Dilek wrote:
+> 1. People should sent their patches concerning especially Linux-Next
+> fixes not only to LKML but also to <linux-next@vger.kernel.org> (if
+> this is not known, pointing to James).
 > 
-> v3:
-> * Dropped the zsmalloc patches from the set, except the promotion patch
->   which has be converted to a rename patch (vs full diff).  The dropped
->   patches have been Acked and are going into Greg's staging tree soon.
-> * Separated [PATCHv2 7/9] into two patches since it makes changes for two
->   different reasons (Minchan)
-> * Moved ZSWAP_MAX_OUTSTANDING_FLUSHES near the top in zswap.c (Rik)
-> * Rebase to v3.8-rc5. linux-next is a little volatile with the
->   swapper_space per type changes which will effect this patchset.
+> 2. These patches for Linux-Next should contain a "-next" in their
+> subject-line (use 'git format-patch --subject-prefix="PATCH -next"
+> ...').
+> 
+> Of course, I should have checked the MLs... but for me it was not
+> clear what was the root cause (which subsystem to blame)... I had only
+> some suspicions.
 
-This patchset will apply but not build on v3.8-rc5 without the
-zsmalloc patchset here:
+Yeah, there was no way for you guys to easily discover that the
+problem has already been identified and fix pending.  I'll definitely
+try to cc linux-next cc'd on patches which fix problems in -next.
 
-https://lkml.org/lkml/2013/1/25/486
+Thanks a lot!
 
-The zsmalloc patches don't apply cleanly without this patch:
-
-https://lkml.org/lkml/2013/1/4/298
-
-Nothing has changed functionally from v2, so it would probably be
-easier to do any testing from that version.  However, if you want to
-apply this latest version, those are the prerequisite patches.
-
-Or your can pull from here:
-
-git://github.com/spartacus06/linux.git zswap-v3
-
-Seth
-
-
-
-
-
+-- 
+tejun
