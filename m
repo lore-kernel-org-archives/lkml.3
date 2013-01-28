@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab3A1QL5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 11:11:57 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:56094 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841Ab3A1QLz (ORCPT
+	id S1757141Ab3A1QNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 11:13:14 -0500
+Received: from smtp121.dfw.emailsrvr.com ([67.192.241.121]:34410 "EHLO
+	smtp121.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755879Ab3A1QNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 11:11:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <51069A3A.8090404@ti.com>
-References: <1359112724-1217-1-git-send-email-prabhakar.lad@ti.com> <51069A3A.8090404@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Mon, 28 Jan 2013 21:41:33 +0530
-Message-ID: <CA+V-a8vNjbt4RGR99m9LTB7ZsE-RjqSyEHOUPWHAr-7TEv-yug@mail.gmail.com>
-Subject: Re: [PATCH] ARM: davinci: da850: add interrupt-parent property in soc node
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: LAK <linux-arm-kernel@lists.infradead.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        devicetree-discuss@lists.ozlabs.org, Heiko Schocher <hs@denx.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 28 Jan 2013 11:13:07 -0500
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 2/4 v12] clk, highbank: Prevent glitches in non-bypass reset mode
+Date: Mon, 28 Jan 2013 10:13:13 -0600
+Message-Id: <1359389595-26580-3-git-send-email-mark.langsdorf@calxeda.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359389595-26580-1-git-send-email-mark.langsdorf@calxeda.com>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1359389595-26580-1-git-send-email-mark.langsdorf@calxeda.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sekhar,
+The highbank clock will glitch with the current code if the
+clock rate is reset without relocking the PLL. Program the PLL
+correctly to prevent glitches.
 
-On Mon, Jan 28, 2013 at 9:03 PM, Sekhar Nori <nsekhar@ti.com> wrote:
-> On 1/25/2013 4:48 PM, Prabhakar Lad wrote:
->> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->>
->> This patch adds 'interrupt-parent' property in soc node, so that
->> the child inherits this property, this avoids adding 'interrupt-parent'
->> to each node.
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
->> Cc: linux-arm-kernel@lists.infradead.org
->> Cc: linux-kernel@vger.kernel.org
->> Cc: davinci-linux-open-source@linux.davincidsp.com
->> Cc: devicetree-discuss@lists.ozlabs.org
->> Cc: Sekhar Nori <nsekhar@ti.com>
->> Cc: Heiko Schocher <hs@denx.de>
->> ---
->
-> Looks good to me. Queuing for v3.9. BTW, we are moving the interrupt
-> parent property to soc node rather than adding it. So, I think a better
-> headline is "move interrupt-parent property to soc node". I change the
-> headline while committing.
->
-Thanks for fixing it.
+Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Acked-by: Mike Turquette <mturquette@linaro.org>
+---
+Changes from v6, v7, v8, v9, v10, v11
+        None.
+Changes from v5
+        Added Mike Turquette's ack.
+Changes from v4
+        None.
+Changes from v3
+        Changelog text and patch name now correspond to the actual patch.
+        was clk, highbank: remove non-bypass reset mode.
+Changes from v2
+        None.
+Changes from v1
+        Removed erroneous reformating.
 
-Regards,
---Prabhakar
+ drivers/clk/clk-highbank.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-> Thanks,
-> Sekhar
+diff --git a/drivers/clk/clk-highbank.c b/drivers/clk/clk-highbank.c
+index 52fecad..3a0b723 100644
+--- a/drivers/clk/clk-highbank.c
++++ b/drivers/clk/clk-highbank.c
+@@ -182,8 +182,10 @@ static int clk_pll_set_rate(struct clk_hw *hwclk, unsigned long rate,
+ 		reg |= HB_PLL_EXT_ENA;
+ 		reg &= ~HB_PLL_EXT_BYPASS;
+ 	} else {
++		writel(reg | HB_PLL_EXT_BYPASS, hbclk->reg);
+ 		reg &= ~HB_PLL_DIVQ_MASK;
+ 		reg |= divq << HB_PLL_DIVQ_SHIFT;
++		writel(reg | HB_PLL_EXT_BYPASS, hbclk->reg);
+ 	}
+ 	writel(reg, hbclk->reg);
+ 
+-- 
+1.7.11.7
+
