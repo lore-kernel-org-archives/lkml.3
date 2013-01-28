@@ -1,35 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409Ab3A1MgA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 07:36:00 -0500
-Received: from mga09.intel.com ([134.134.136.24]:27200 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751911Ab3A1Mf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 07:35:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,551,1355126400"; 
-   d="scan'208";a="277457235"
-Date: Mon, 28 Jan 2013 04:10:53 -0800
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
-Cc: Viresh Kumar <viresh.linux@gmail.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [PATCH] dw_dmac: print out DW_PARAMS and DWC_PARAMS when debug
-Message-ID: <20130128121052.GS26562@intel.com>
-References: <1358521859-28258-1-git-send-email-andriy.shevchenko@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358521859-28258-1-git-send-email-andriy.shevchenko@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756484Ab3A1MjH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 07:39:07 -0500
+Received: from mga05.intel.com ([192.55.52.89]:39136 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755489Ab3A1MjE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 07:39:04 -0500
+Message-ID: <1359376730.8282.20.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [RFC] efivars write(2) races
+From: Matt Fleming <matt.fleming@intel.com>
+To: Lingzhu Xiang <lxiang@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>
+Date: Mon, 28 Jan 2013 12:38:50 +0000
+In-Reply-To: <5105E4A3.9040102@redhat.com>
+References: <20130125002552.GC4503@ZenIV.linux.org.uk>
+	  <51020120.5000500@redhat.com>
+	 <1359119883.2496.156.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <5105E4A3.9040102@redhat.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 05:10:59PM +0200, Andy Shevchenko wrote:
-> It's usefull to have the values of the DW_PARAMS and DWC_PARAMS printed when
-> debug mode is enabled.
-Applied, thanks
+On Mon, 2013-01-28 at 10:38 +0800, Lingzhu Xiang wrote:
+> On 01/25/2013 09:18 PM, Matt Fleming wrote:
+> >> 4. EFI_VARIABLE_APPEND_WRITE with EFI_OUT_OF_RESOURCES truncates size but you
+> >>     can still read its content.
+> >
+> > I'm not sure what you mean by this. Could you please explain?
+> 
+> Oops, this one is incorrect. I was testing EFI_VARIABLE_APPEND_WRITE
+> using this:
+> 
+> printf "\x47\x00\x00\x00\x00" >test-1-$guid
+> 
+> So it truncates the file before writing, but efivarfs figures out the right
+> size afterwards. The size remains zero if the write fails.
+> 
+> I should be using this for appending:
+> 
+> printf "\x47\x00\x00\x00\x00" >>test-1-$guid
 
---
-~Vinod
+Does this mean that these two test cases work as expected?
+
