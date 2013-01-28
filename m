@@ -1,94 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328Ab3A1MV0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 07:21:26 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:58350 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895Ab3A1MVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 07:21:22 -0500
-Date: Mon, 28 Jan 2013 17:49:43 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Anton Arapov <anton@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Josh Stone <jistone@redhat.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Suzuki Poulose <suzuki@in.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [GIT PULL] uprobes: pre-filtering
-Message-ID: <20130128121943.GD29865@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20130113185916.GA25831@redhat.com>
- <20130124121720.GA3104@gmail.com>
- <20130124154018.GA8580@redhat.com>
- <20130124154159.GB32071@gmail.com>
- <20130124170612.GA14823@redhat.com>
- <20130125064629.GD23723@linux.vnet.ibm.com>
- <20130125075437.GB21036@gmail.com>
- <20130125161728.GA11630@redhat.com>
+	id S1757356Ab3A1MZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 07:25:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1228 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751895Ab3A1MZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 07:25:29 -0500
+Message-ID: <51066E32.2000209@redhat.com>
+Date: Mon, 28 Jan 2013 13:25:22 +0100
+From: Gerd Hoffmann <kraxel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20130125161728.GA11630@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012812-8256-0000-0000-00000600EA12
+To: acking@vmware.com
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
+        gregkh@linuxfoundation.org, davem@davemloft.net
+Subject: Re: [PATCH 1/1] VSOCK: Introduce VM Sockets
+References: <1359135470-30677-1-git-send-email-acking@vmware.com> <1359135470-30677-2-git-send-email-acking@vmware.com>
+In-Reply-To: <1359135470-30677-2-git-send-email-acking@vmware.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2013-01-25 17:17:28]:
+  Hi,
 
-> On 01/25, Ingo Molnar wrote:
-> >
-> > * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
-> >
-> > > The other alternative is to extend the current abi and pass
-> > > the prefilter option. Should we extend the abi for userspace
-> > > tracing is obviously debatable.
-> >
-> > That's the obvious path to go - why add something to the kernel
-> > if user-space cannot make use of it?
-> 
-> This is what I am going to (try to) do, but I am not sure if this makes
-> sense...
-> 
-> For the start, can't we teach 'uprobe_events' file to accept, say,
-> 
-> 	'p file:0x1234 pid=1 other-opts'
+> diff --git a/net/vmw_vsock/Kconfig b/net/vmw_vsock/Kconfig
+> new file mode 100644
+> index 0000000..95e2568
+> --- /dev/null
+> +++ b/net/vmw_vsock/Kconfig
+> @@ -0,0 +1,14 @@
+> +#
+> +# Vsock protocol
+> +#
+> +
+> +config VMWARE_VSOCK
+> +	tristate "Virtual Socket protocol"
+> +	depends on VMWARE_VMCI
 
+I guess this is temporary?  Cover letter says *mostly* separated ...
 
-I think this would be a very good start
+> +vmw_vsock-y += af_vsock.o vmci_transport.o vmci_transport_notify.o \
+> +	vmci_transport_notify_qstate.o vsock_addr.o
 
+Likewise, I expect with the final version vmci_transport is a separate
+module (or moves into the vmci driver), correct?
 
-The only downside, I see is we would have add and remove to change the
-filter. Something like perf record will not be able to dynamically
-change the filter parameter.
+> +static long vsock_dev_do_ioctl(struct file *filp,
+> +			       unsigned int cmd, void __user *ptr)
+> +{
+> +	static const u16 parts[4] = VSOCK_DRIVER_VERSION_PARTS;
+> +	u32 __user *p = ptr;
+> +	int retval = 0;
+> +	u32 version;
+> +
+> +	switch (cmd) {
+> +	case IOCTL_VMCI_SOCKETS_VERSION:
+> +		version = VMCI_SOCKETS_MAKE_VERSION(parts);
+> +		if (put_user(version, p) != 0)
+> +			retval = -EFAULT;
+> +		break;
 
+Still needed?
 
-> 
-> for the start? This looks simple enough, and I after looked into tools/perf
-> it seems that perf can be changed too.
-> 
-> What do you think?
-> 
-> Then we can extend 'pid=' option to accept the list of pids, perhaps.
-> 
-> In the long term we probably need uprobes/pid_filter or something like this,
-> it should allow to add/del pid dynamically. I really do not know.
+> +	case IOCTL_VMCI_SOCKETS_GET_AF_VALUE:
+> +		if (put_user(AF_VSOCK, p) != 0)
+> +			retval = -EFAULT;
+> +
+> +		break;
 
-Yes, I think having a file like uprobes/pid_filter would be able to
-dynamically change the filter.  Probably when we code this up should we
-make this something more generic otherwise, we might end up with
-uid_filter, sid_filter ..
+That can go away, with the upstream merge vsock will get a fixed AF_VSOCK.
 
-Steven, 
-Are you still pursuing multiple ftrace buffers that you proposed at LPC 2012?
+> +	case IOCTL_VMCI_SOCKETS_GET_LOCAL_CID:
+> +		if (put_user(vmci_get_context_id(), p) != 0)
+> +			retval = -EFAULT;
 
-In which case, this new filter should also be per buffer.
+What is this?
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+> +static int __init vsock_init(void)
+> +{
+> +	int err;
+> +
+> +	vsock_init_tables();
+> +
+> +	err = misc_register(&vsock_device);
+> +	if (err) {
+> +		pr_err("Failed to register misc device\n");
+> +		return -ENOENT;
+> +	}
+> +
+> +	err = vmci_transport_register(&transport);
+> +	if (err) {
+> +		pr_err("Cannot register with VMCI device\n");
+> +		goto err_misc_deregister;
+> +	}
 
+Hmm?  There should be a vsock_(un)register_transport which the vmci
+transport code can call (and likewise virtio transport some day).
+
+> +struct vsock_sock {
+> +	/* sk must be the first member. */
+> +	struct sock sk;
+> +	struct sockaddr_vm local_addr;
+> +	struct sockaddr_vm remote_addr;
+
+> +	/* The rest is transport-specific: this is the stuff we need to pull
+> +	 * out to make it work with something other than VMCI.
+> +	 */
+> +	struct {
+> +		/* For DGRAMs. */
+> +		struct vmci_handle dg_handle;
+
+Yep, should be a pointer where transports can hook in their private data.
+
+> +/**** TRANSPORT ****/
+> +
+> +struct vsock_transport {
+> +	void (*init)(struct vsock_sock *, struct vsock_sock *);
+> +	void (*destruct)(struct vsock_sock *);
+> +	void (*release)(struct vsock_sock *);
+> +	int (*connect)(struct vsock_sock *);
+> +	int (*bind_dgram)(struct vsock_sock *, struct sockaddr_vm *);
+> +	int (*send_dgram)(struct vsock_sock *, struct sockaddr_vm *,
+> +			  struct iovec *, size_t len);
+> +	ssize_t (*recv_stream)(struct vsock_sock *, struct iovec *,
+> +			       size_t len, int flags);
+> +	ssize_t (*send_stream)(struct vsock_sock *, struct iovec *,
+> +			       size_t len);
+> +	s64 (*stream_has_data)(struct vsock_sock *);
+> +	s64 (*stream_has_space)(struct vsock_sock *);
+> +	int (*send_shutdown)(struct sock *sk, int mode);
+> +	void (*unregister)(void);
+> +};
+
+So that is the interface transports have to implement.  Looks reasonable
+to me.  Some documentation would be nice, although most of it is
+self-explaining.
+
+Where is recv_dgram?
+
+Also why bind_dgram?  I guess binding stream sockets doesn't make sense
+for the vsock family?
+
+I'd make the naming a bit more consistent, some stream callbacks are
+prefixed and some postfixed with "stream".
+
+I'd also name send_shutdown just shutdown (same name the system call has).
+
+What does unregister?
+
+cheers,
+  Gerd
