@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab3A1QKq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 11:10:46 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:54508 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab3A1QKo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 11:10:44 -0500
-Date: Mon, 28 Jan 2013 17:10:38 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 01/12] perf, x86: Add PEBSv2 record support
-Message-ID: <20130128161038.GR30577@one.firstfloor.org>
-References: <1359151245-13179-1-git-send-email-andi@firstfloor.org> <1359151245-13179-2-git-send-email-andi@firstfloor.org> <CABPqkBQFPX5iBoBy5eTanaLXOatXfF8NzHWffuN4ovbW0LmH1Q@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQFPX5iBoBy5eTanaLXOatXfF8NzHWffuN4ovbW0LmH1Q@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1756875Ab3A1QLV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 11:11:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17123 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753147Ab3A1QLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 11:11:17 -0500
+From: Paul Moore <pmoore@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        libseccomp-discuss@lists.sourceforge.net
+Subject: ANN: libseccomp 2.0.0 released
+Date: Mon, 28 Jan 2013 11:11:04 -0500
+Message-ID: <1761584.CAfxVeTaQM@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.9.5 (Linux/3.7.3-gentoo; KDE/4.9.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I think you should call this: PEBS v3 and not v2.
+I would like to announce a new major release for the libseccomp library, 
+libseccomp version 2.0.0.  The libseccomp library provides an easy to use, 
+platform independent, interface to the Linux enhanced syscall filtering 
+mechanism that was first introduced in Linux 3.5.
 
-v2 is the version number in the enumeration register.
-It would be confusing to use a different numbering than Intel does.
-That's also the numbering that is printed in dmesg.
+ * http://sourceforge.net/projects/libseccomp
+ * http://sf.net/projects/libseccomp/files/libseccomp-2.0.0.tar.gz/download
 
-> We already have 2 existing formats: core and nhm.
-> You're adding the hsw format.
-> 
-> So either you add it as struct pebs_record_hsw or you
-> cleanup the naming of all the structs and call them:
+This new version of libseccomp is source compatible with version 1.0.0 and 
+later of the library.  Both the libseccomp v2.x and libseccomp v1.x libraries 
+should be able to coexist on the same system but all users are encouraged to 
+upgrade to the new version at their earliest convenience.
 
-core is v0.
+Changes in the 2.0.0 release include:
 
-> 
-> struct pebs_record_v1 /* core */
-> struct pebs_record_v2 /* nhm, snb, ivb */
-> struct pebs_record_v3 /* hsw */
-> 
-> That would seem more consistent to me.
+ * Fixes for the x86 multiplexed syscalls
+ * Additions to the API to better support non-native architectures
+ * Additions to the API to support multiple architectures in one filter
+ * Additions to the API to resolve syscall name/number mappings
+ * Assorted minor bug fixes
+ * Improved build messages regardless of build verbosity
+ * More automated tests added as well as a number of improvements to the test
+   harness
 
-I personally don't see a lot of need for a rename, but I can send 
-a followon patch to rename nhm to v1 and core to v0. I will do that
-separately because people are already complaining that the patchkit
-is too big, and it doesn't really affect the functionality.
+Finally, thank you to everyone who has submitted suggestions, provided testing 
+help, and contributed patches to the project.
 
--Andi
+-- 
+paul moore
+security and virtualization @ redhat
+
