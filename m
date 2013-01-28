@@ -1,117 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab3A1VDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 16:03:09 -0500
-Received: from mout.web.de ([212.227.17.12]:62084 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155Ab3A1VDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 16:03:06 -0500
-Message-ID: <5106E6A6.7010207@web.de>
-Date: Mon, 28 Jan 2013 21:59:18 +0100
-From: Soeren Moch <smoch@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1754192Ab3A1VJo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 16:09:44 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:63547 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab3A1VJn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 16:09:43 -0500
 MIME-Version: 1.0
-To: Andrew Lunn <andrew@lunn.ch>
-CC: Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all dma_alloc_coherent()
- calls
-References: <20121119144826.f59667b2.akpm@linux-foundation.org> <201301171049.30415.arnd@arndb.de> <50F800EB.6040104@web.de> <201301172026.45514.arnd@arndb.de> <50FABBED.1020905@web.de> <20130119185907.GA20719@lunn.ch> <5100022D.9050106@web.de> <20130123162515.GK13482@lunn.ch> <510018B4.9040903@web.de> <51001BEE.9020201@web.de> <20130123181029.GE20719@lunn.ch>
-In-Reply-To: <20130123181029.GE20719@lunn.ch>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:Z3lQvjEjISbO1LXOi4lHsR/XxAgsFj0dSELbt0+wm8j
- FBhRZZtsfst+dZIRUm2w3TRk2xZyDE5qG+oGklDOiYrqrUApuw
- Z9l3q6nZNBMLdlVQlhLIzdVOm/nV9sbp4U0mrcjye2/TqLoXpG
- EGFZGQ8IpuJT2G48YSOMwywohBIl1xmUVnrig5XxNlpMGxNL8S
- qJ+TXuls3TcCme5YBwU/A==
+In-Reply-To: <3500982.MUDp6kKU3R@vostro.rjw.lan>
+References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com>
+ <1358525267-14268-5-git-send-email-jiang.liu@huawei.com> <3500982.MUDp6kKU3R@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 28 Jan 2013 14:09:22 -0700
+Message-ID: <CAErSpo4fbNzFaBxH+eKD+BKVgghyCJEYLDMzc6_gdxABAPe3QQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v5 4/8] ACPI, PCI: avoid building pci_slot as module
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.01.2013 19:10, Andrew Lunn wrote:
->>>>
->>>
->>> Now (in the last hour) stable, occasionally lower numbers:
->>> 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
->>> 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
->>> 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
->>> 3396 3396 3396 3396 3396 3396 3396 3396 3396 3365 3396 3394 3396 3396
->>> 3396 3396 3373 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
->>> 3396 3353 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
->>> 3394 3396 3396 3396 3396 3396 3396 3396
->>>
->>> Before the last pool exhaustion going down:
->>> 3395 3395 3389 3379 3379 3374 3367 3360 3352 3343 3343 3343 3342 3336
->>> 3332 3324 3318 3314 3310 3307 3305 3299 3290 3283 3279 3272 3266 3265
->>> 3247 3247 3247 3242 3236 3236
->>>
->> Here I stopped vdr (and so closed all dvb_demux devices), the number
->> was remaining the same 3236, even after restart of vdr (and restart
->> of streaming).
+On Sun, Jan 20, 2013 at 5:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Saturday, January 19, 2013 12:07:42 AM Jiang Liu wrote:
+>> As discussed in thread at https://patchwork.kernel.org/patch/1946851/,
+>> there's no value in supporting CONFIG_ACPI_PCI_SLOT=m any more.
+>> So change Kconfig and code to only support building pci_slot as
+>> built-in driver.
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 >
-> So it does suggest a leak. Probably somewhere on an error path,
-> e.g. its lost video sync.
->
+> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Now I activated the debug messages in em28xx. From the messages I see no 
-correlation of the pool exhaustion and lost sync. Also I cannot see any 
-error messages from the em28xx driver.
-I see a lot of init_isoc/stop_urbs (maybe EPG scan?) without draining 
-the coherent pool (checked with 'cat /debug/dma-api/num_free_entries', 
-which gave stable numbers), but after half an hour there are only 
-init_isoc messages without corresponding stop_urbs messages and 
-num_free_entries decreased until coherent pool exhaustion.
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-Any idea where the memory leak is? What is allocating coherent buffers 
-for orion-ehci?
+I think we should eventually get rid of acpi_pci_register_driver() and
+do this initialization directly from acpi_pci_root_add().  But
+removing the module option here is a good first step.
 
-   Soeren
+Rafael, do you want to apply this (and [6/8]) via your tree?  If not,
+I can take it.
 
-
-Jan 28 20:46:03 guruvdr kernel: em28xx #0/2-dvb: Using 5 buffers each 
-with 64 x 940 bytes
-Jan 28 20:46:03 guruvdr kernel: em28xx #0 em28xx_init_isoc :em28xx: 
-called em28xx_init_isoc in mode 2
-Jan 28 20:46:03 guruvdr kernel: em28xx #1/2-dvb: Using 5 buffers each 
-with 64 x 940 bytes
-Jan 28 20:46:03 guruvdr kernel: em28xx #1 em28xx_init_isoc :em28xx: 
-called em28xx_init_isoc in mode 2
-Jan 28 20:46:23 guruvdr kernel: em28xx #0 em28xx_stop_urbs :em28xx: 
-called em28xx_stop_urbs
-Jan 28 20:46:23 guruvdr kernel: em28xx #1 em28xx_stop_urbs :em28xx: 
-called em28xx_stop_urbs
-Jan 28 20:46:24 guruvdr kernel: em28xx #0/2-dvb: Using 5 buffers each 
-with 64 x 940 bytes
-Jan 28 20:46:24 guruvdr kernel: em28xx #0 em28xx_init_isoc :em28xx: 
-called em28xx_init_isoc in mode 2
-Jan 28 20:46:24 guruvdr kernel: em28xx #1/2-dvb: Using 5 buffers each 
-with 64 x 940 bytes
-Jan 28 20:46:24 guruvdr kernel: em28xx #1 em28xx_init_isoc :em28xx: 
-called em28xx_init_isoc in mode 2
-Jan 28 20:46:44 guruvdr kernel: em28xx #1 em28xx_stop_urbs :em28xx: 
-called em28xx_stop_urbs
-Jan 28 20:46:44 guruvdr kernel: em28xx #0 em28xx_stop_urbs :em28xx: 
-called em28xx_stop_urbs
-Jan 28 20:46:45 guruvdr kernel: em28xx #1/2-dvb: Using 5 buffers each 
-with 64 x 940 bytes
-Jan 28 20:46:45 guruvdr kernel: em28xx #1 em28xx_init_isoc :em28xx: 
-called em28xx_init_isoc in mode 2
-Jan 28 20:46:45 guruvdr kernel: em28xx #0/2-dvb: Using 5 buffers each 
-with 64 x 940 bytes
-Jan 28 20:46:45 guruvdr kernel: em28xx #0 em28xx_init_isoc :em28xx: 
-called em28xx_init_isoc in mode 2
-Jan 28 20:54:33 guruvdr kernel: ERROR: 1024 KiB atomic DMA coherent pool 
-is too small!
-Jan 28 20:54:33 guruvdr kernel: Please increase it with coherent_pool= 
-kernel parameter!
-
+>> ---
+>>  drivers/acpi/Kconfig    |    5 +----
+>>  drivers/acpi/internal.h |    5 +++++
+>>  drivers/acpi/pci_slot.c |   13 +------------
+>>  drivers/acpi/scan.c     |    1 +
+>>  4 files changed, 8 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+>> index 0300bf6..7efd0d0 100644
+>> --- a/drivers/acpi/Kconfig
+>> +++ b/drivers/acpi/Kconfig
+>> @@ -299,7 +299,7 @@ config ACPI_DEBUG_FUNC_TRACE
+>>         is about half of the penalty and is rarely useful.
+>>
+>>  config ACPI_PCI_SLOT
+>> -     tristate "PCI slot detection driver"
+>> +     bool "PCI slot detection driver"
+>>       depends on SYSFS
+>>       default n
+>>       help
+>> @@ -308,9 +308,6 @@ config ACPI_PCI_SLOT
+>>         i.e., segment/bus/device/function tuples, with physical slots in
+>>         the system.  If you are unsure, say N.
+>>
+>> -       To compile this driver as a module, choose M here:
+>> -       the module will be called pci_slot.
+>> -
+>>  config X86_PM_TIMER
+>>       bool "Power Management Timer Support" if EXPERT
+>>       depends on X86
+>> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+>> index e050254..7374cfc 100644
+>> --- a/drivers/acpi/internal.h
+>> +++ b/drivers/acpi/internal.h
+>> @@ -67,6 +67,11 @@ struct acpi_ec {
+>>
+>>  extern struct acpi_ec *first_ec;
+>>
+>> +#ifdef       CONFIG_ACPI_PCI_SLOT
+>> +void acpi_pci_slot_init(void);
+>> +#else
+>> +static inline void acpi_pci_slot_init(void) { }
+>> +#endif
+>>  int acpi_pci_root_init(void);
+>>  int acpi_ec_init(void);
+>>  int acpi_ec_ecdt_probe(void);
+>> diff --git a/drivers/acpi/pci_slot.c b/drivers/acpi/pci_slot.c
+>> index d22585f..a7d7e77 100644
+>> --- a/drivers/acpi/pci_slot.c
+>> +++ b/drivers/acpi/pci_slot.c
+>> @@ -330,19 +330,8 @@ static struct dmi_system_id acpi_pci_slot_dmi_table[] __initdata = {
+>>       {}
+>>  };
+>>
+>> -static int __init
+>> -acpi_pci_slot_init(void)
+>> +void __init acpi_pci_slot_init(void)
+>>  {
+>>       dmi_check_system(acpi_pci_slot_dmi_table);
+>>       acpi_pci_register_driver(&acpi_pci_slot_driver);
+>> -     return 0;
+>>  }
+>> -
+>> -static void __exit
+>> -acpi_pci_slot_exit(void)
+>> -{
+>> -     acpi_pci_unregister_driver(&acpi_pci_slot_driver);
+>> -}
+>> -
+>> -module_init(acpi_pci_slot_init);
+>> -module_exit(acpi_pci_slot_exit);
+>> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+>> index f8a0d0f..cb964ac 100644
+>> --- a/drivers/acpi/scan.c
+>> +++ b/drivers/acpi/scan.c
+>> @@ -1732,6 +1732,7 @@ int __init acpi_scan_init(void)
+>>
+>>       acpi_power_init();
+>>       acpi_pci_root_init();
+>> +     acpi_pci_slot_init();
+>>
+>>       /*
+>>        * Enumerate devices in the ACPI namespace.
+>>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
