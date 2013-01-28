@@ -1,89 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab3A1Law (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 06:30:52 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:49588 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756662Ab3A1Lau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 06:30:50 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>
-CC: <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
-        <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>,
-        <eballetbo@gmail.com>, <javier@dowhile0.org>, <sshtylyov@mvista.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 02/30] usb: phy: nop: use devm_kzalloc()
-Date: Mon, 28 Jan 2013 13:30:03 +0200
-Message-ID: <1359372631-8180-3-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1359372631-8180-1-git-send-email-rogerq@ti.com>
-References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756882Ab3A1LpL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 06:45:11 -0500
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:55460 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754134Ab3A1LpI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 06:45:08 -0500
+Message-ID: <1359373506.1345.9.camel@x61.thuisdomein>
+Subject: Re: [PATCH v3] lpc_ich: fix gpio base and control offsets
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Aaron Sierra <asierra@xes-inc.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        =?ISO-8859-1?Q?Ag=F3cs_P=E1l?= <agocs.pal.86@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 28 Jan 2013 12:45:06 +0100
+In-Reply-To: <CACRpkdYV3KGz45Ko1n-QJ6VQ4Y8SAb3zd87AvfpP1TSUAh=FsQ@mail.gmail.com>
+References: <b9fec05c-d383-4282-b2af-c95855ff6abb@zimbra>
+	 <3ffa5032-0565-48f0-a4ae-473452f4c902@zimbra>
+	 <CACRpkdZHndQsDZpn7BCFNXAO3k5vREYxDJkcYQ3_3sTbKAQLLA@mail.gmail.com>
+	 <20130125164800.GB1174@sortiz-mobl>
+	 <CACRpkdYV3KGz45Ko1n-QJ6VQ4Y8SAb3zd87AvfpP1TSUAh=FsQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Jan 2013 11:45:07.0122 (UTC) FILETIME=[EB55C120:01CDFD4C]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use resource managed kzalloc.
+On Mon, 2013-01-28 at 11:11 +0100, Linus Walleij wrote:
+> OK cool, I think we can conclude that this patch is fine after the
+> boot tests and all:
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+ 
+In case this ACK requires my feedback: I just reported that booting
+v3.7.5 with an updated lpc_ich module didn't lead to any obvious issues.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- drivers/usb/otg/nop-usb-xceiv.c |   16 ++++------------
- 1 files changed, 4 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xceiv.c
-index a3ce24b..7ffb0c8 100644
---- a/drivers/usb/otg/nop-usb-xceiv.c
-+++ b/drivers/usb/otg/nop-usb-xceiv.c
-@@ -100,15 +100,13 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
- 	enum usb_phy_type	type = USB_PHY_TYPE_USB2;
- 	int err;
- 
--	nop = kzalloc(sizeof *nop, GFP_KERNEL);
-+	nop = devm_kzalloc(&pdev->dev, sizeof *nop, GFP_KERNEL);
- 	if (!nop)
- 		return -ENOMEM;
- 
--	nop->phy.otg = kzalloc(sizeof *nop->phy.otg, GFP_KERNEL);
--	if (!nop->phy.otg) {
--		kfree(nop);
-+	nop->phy.otg = devm_kzalloc(&pdev->dev, sizeof *nop->phy.otg, GFP_KERNEL);
-+	if (!nop->phy.otg)
- 		return -ENOMEM;
--	}
- 
- 	if (pdata)
- 		type = pdata->type;
-@@ -127,7 +125,7 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
- 	if (err) {
- 		dev_err(&pdev->dev, "can't register transceiver, err: %d\n",
- 			err);
--		goto exit;
-+		return err;
- 	}
- 
- 	platform_set_drvdata(pdev, nop);
-@@ -135,10 +133,6 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
- 	ATOMIC_INIT_NOTIFIER_HEAD(&nop->phy.notifier);
- 
- 	return 0;
--exit:
--	kfree(nop->phy.otg);
--	kfree(nop);
--	return err;
- }
- 
- static int nop_usb_xceiv_remove(struct platform_device *pdev)
-@@ -148,8 +142,6 @@ static int nop_usb_xceiv_remove(struct platform_device *pdev)
- 	usb_remove_phy(&nop->phy);
- 
- 	platform_set_drvdata(pdev, NULL);
--	kfree(nop->phy.otg);
--	kfree(nop);
- 
- 	return 0;
- }
--- 
-1.7.4.1
+Paul Bolle
 
