@@ -1,143 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757730Ab3A1SHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:07:41 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:43221 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757566Ab3A1SHi (ORCPT
+	id S1757732Ab3A1SJe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:09:34 -0500
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:47076 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab3A1SJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:07:38 -0500
-Date: Mon, 28 Jan 2013 10:07:35 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: tj@kernel.org, srivatsa.bhat@linux.vnet.ibm.com, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] generic dynamic per cpu refcounting
-Message-ID: <20130128180735.GY26407@google.com>
-References: <20130124232024.GA584@google.com>
- <20130125180941.GA16896@redhat.com>
+	Mon, 28 Jan 2013 13:09:32 -0500
+X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Jan 2013 13:09:32 EST
+Date: Mon, 28 Jan 2013 13:04:24 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "js1304@gmail.com" <js1304@gmail.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/3] introduce static_vm for ARM-specific static mapped
+ area
+In-Reply-To: <20130128175106.GI23470@mudshark.cambridge.arm.com>
+Message-ID: <alpine.LFD.2.02.1301281300250.6300@xanadu.home>
+References: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com> <20130128175106.GI23470@mudshark.cambridge.arm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130125180941.GA16896@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 07:09:41PM +0100, Oleg Nesterov wrote:
-> (add lkml)
+On Mon, 28 Jan 2013, Will Deacon wrote:
+
+> Hello,
 > 
-> On 01/24, Kent Overstreet wrote:
-> >
-> > This has already been on lkml and is in Andrew's tree, Tejun just asked
-> > me to send it out again:
+> On Thu, Jan 24, 2013 at 01:28:51AM +0000, Joonsoo Kim wrote:
+> > In current implementation, we used ARM-specific flag, that is,
+> > VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
+> > The purpose of static mapped area is to re-use static mapped area when
+> > entire physical address range of the ioremap request can be covered
+> > by this area.
+> > 
+> > This implementation causes needless overhead for some cases.
+> > For example, assume that there is only one static mapped area and
+> > vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
+> > deciding whether it is matched or not. Moreover, even if there is
+> > no static mapped area and vmlist has 300 areas, every time we call
+> > ioremap, we check 300 areas in now.
+> > 
+> > If we construct a extra list for static mapped area, we can eliminate
+> > above mentioned overhead.
+> > With a extra list, if there is one static mapped area,
+> > we just check only one area and proceed next operation quickly.
+> > 
+> > In fact, it is not a critical problem, because ioremap is not frequently
+> > used. But reducing overhead is better idea.
+> > 
+> > Another reason for doing this work is for removing vm_struct list management,
+> > entirely. For more information, look at the following link.
+> > http://lkml.org/lkml/2012/12/6/184
 > 
-> I'll try to read this code later, just a couple of questions after a quick
-> glance. Sorry this was already discussed...
+> First patch looks good (removing the unused vmregion stuff) but I'm not so
+> sure about the rest of it. If you really care about ioremap performance,
+> perhaps it would be better to have a container struct around the vm_struct
+> for static mappings and then stick them in an augmented rbtree so you can
+> efficiently find the mapping encompassing a particular physical address?
 
-No worries, it wasn't that widely circulated.
+How can ioremap performance be a problem is the question I had since the 
+beginning.
 
-> > +struct percpu_ref {
-> > +	atomic64_t		count;
-> > +	unsigned long		pcpu_count;
-> > +};
-> 
-> The code looks a bit tricky mostly because you pack state/pointer/jiffies
-> into ->pcpu_count. The same for ->count.
+Firstly, ioremap is _not_ meant to be used in performance critical 
+paths.
 
-Yes, it is.
+Secondly, there shouldn't be _that_ many entries on the vmlist such as 
+300.  That sounds a bit excessive.
 
-> I assume that you have a good reason to shrink the sizeof(percpu_ref), but
-> I am curious: who is the user of this thing?
+So please, can we discuss the reasons that motivated those patches in 
+the first place?  Maybe that's where the actual problem is.
 
-Right now - just the aio code, but the idea was to make it as close to a
-drop in replacement for atomic_t + atomic_get()/atomic_dec_and_test() as
-possible.
 
-> > + * percpu_ref_get - increment a dynamic percpu refcount
-> > + *
-> > + * Increments @ref and possibly converts it to percpu counters. Must be called
-> > + * with rcu_read_lock() held, and may potentially drop/reacquire rcu_read_lock()
-> > + * to allocate percpu counters - if sleeping/allocation isn't safe for some
-> > + * other reason (e.g. a spinlock), see percpu_ref_get_noalloc().
-> 
-> And this looks strange. It must be called under rcu_read_lock(), but
-> ->rcu_read_lock_nesting must be == 1. Otherwise rcu_read_unlock() in
-> percpu_ref_alloc() won't work.
-> 
-> Again, I think you have a reason, but could you explain? IOW, why we
-> can't make it might_sleep() instead? The fast path can do rcu_read_lock()
-> itself.
-
-It's stupid and contorted because I didn't have any better ideas when I
-first wrote it and haven't fixed it yet.
-
-> > +static inline void percpu_ref_get_noalloc(struct percpu_ref *ref)
-> > +{
-> > +	__percpu_ref_get(ref, false);
-> > +}
-> 
-> and this could be percpu_ref_get_atomic().
-> 
-> Once again, I am not arguing, just can't understand.
-
-Same deal, I'm going to get rid of the two different versions.
-
-> > +void __percpu_ref_get(struct percpu_ref *ref, bool alloc)
-> > +{
-> > +	unsigned long pcpu_count;
-> > +	uint64_t v;
-> > +
-> > +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-> > +
-> > +	if (REF_STATUS(pcpu_count) == PCPU_REF_PTR) {
-> > +		/* for rcu - we're not using rcu_dereference() */
-> > +		smp_read_barrier_depends();
-> > +		__this_cpu_inc(*((unsigned __percpu *) pcpu_count));
-> 
-> The comment looks confusing a bit... smp_read_barrier_depends() is not
-> for rcu, we obviously need it to access (unsigned __percpu *) pcpu_count.
-> But yes, since we didn't use rcu_dereference() we have to add it by hand.
-
-Yeah - originally I was using rcu_dereference(), but sparse hated
-combining __percpu and __rcu and I couldn't get it to stop complaining.
-
-> 
-> > +int percpu_ref_kill(struct percpu_ref *ref)
-> > +{
-> > ...
-> > +	if (status == PCPU_REF_PTR) {
-> > +		unsigned count = 0, cpu;
-> > +
-> > +		synchronize_rcu();
-> > +
-> > +		for_each_possible_cpu(cpu)
-> > +			count += *per_cpu_ptr((unsigned __percpu *) pcpu_count, cpu);
-> > +
-> > +		pr_debug("global %lli pcpu %i",
-> > +			 atomic64_read(&ref->count) & PCPU_COUNT_MASK,
-> > +			 (int) count);
-> > +
-> > +		atomic64_add((int) count, &ref->count);
-> > +		smp_wmb();
-> > +		/* Between setting global count and setting PCPU_REF_DEAD */
-> > +		ref->pcpu_count = PCPU_REF_DEAD;
-> 
-> The coment explains what the code does, but not why ;)
-
-That seems like a more straightforward barrier than most... we need the
-refcount to be consistent before setting the state to dead :P
-
-> I guess this is for percpu_ref_put(), and this wmb() pairs with implicit
-> mb() implied by atomic64_dec_return().
-
-Yeah. I expanded the comment there a bit...
-
-> 
-> > +		free_percpu((unsigned __percpu *) pcpu_count);
-> 
-> I guess it could be freed right after for_each_possible_cpu() above, but
-> this doesn't matter.
-
-I think that'd be better though, I'll switch it.
+Nicolas
