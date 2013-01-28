@@ -1,39 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab3A1IP3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 03:15:29 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:44043 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062Ab3A1IP0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 03:15:26 -0500
+	id S1754798Ab3A1IPx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 03:15:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45863 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754160Ab3A1IPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 03:15:48 -0500
+Date: Mon, 28 Jan 2013 09:15:40 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Simon Jeons <simon.jeons@gmail.com>, akpm@linux-foundation.org,
+        rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        wujianguo@huawei.com, wency@cn.fujitsu.com, hpa@zytor.com,
+        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
+        yinghai@kernel.org, glommer@parallels.com, jiang.liu@huawei.com,
+        julian.calaby@gmail.com, sfr@canb.auug.org.au, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH Bug fix 0/5] Bug fix for physical memory hot-remove.
+Message-ID: <20130128081529.GA14241@dhcp22.suse.cz>
+References: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1358944171.3351.1.camel@kernel>
+ <20130125131740.GA1615@dhcp22.suse.cz>
+ <5105D57D.3050900@cn.fujitsu.com>
 MIME-Version: 1.0
-Date: Mon, 28 Jan 2013 17:15:23 +0900
-X-Google-Sender-Auth: aZa1D2si_lxjqo__DfVnXggnxlc
-Message-ID: <CAOAMb1AsetjcNa_K6g=6K_s=0+tTH1aGLuX8emYrfgJOcx54cw@mail.gmail.com>
-Subject: RE: [PATCH v2] ARM: PL011: Add support for Rx DMA buffer polling
-From: Chanho Min <chanho.min@lge.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        linux-serial@vger.kernel.org, Chanho Min <chanho0207@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5105D57D.3050900@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Well, I thought I had explained that I'd prefer to see the poll rate
->adjusted with the baud rate, but maybe I wasn't explicit enough.
->Instead, what we seem to have ended up with are two new entries in
->platform data (which we're trying to get away from with DT):
->
->+       unsigned int dma_rx_poll_rate;
->+       unsigned int dma_rx_poll_timeout;
->
->If this were to be done, then receive DMA could be used on the Versatile
->PB platforms without having it suck CPU usage unnecessarily at slower
->baud rates.
-This patch is working well on our pl011+ pl080 platform.
-If no data is received during time-out, no tick timer works.
-Do you want to adjust the poll rate with the baud rate additionally?
+On Mon 28-01-13 09:33:49, Tang Chen wrote:
+> On 01/25/2013 09:17 PM, Michal Hocko wrote:
+> >On Wed 23-01-13 06:29:31, Simon Jeons wrote:
+> >>On Tue, 2013-01-22 at 19:42 +0800, Tang Chen wrote:
+> >>>Here are some bug fix patches for physical memory hot-remove. All these
+> >>>patches are based on the latest -mm tree.
+> >>>git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
+> >>>
+> >>>And patch1 and patch3 are very important.
+> >>>patch1: free compound pages when freeing memmap, otherwise the kernel
+> >>>         will panic the next time memory is hot-added.
+> >>>patch3: the old way of freeing pagetable pages was wrong. We should never
+> >>>         split larger pages into small ones.
+> >>>
+> >>>
+> >>
+> >>Hi Tang,
+> >>
+> >>I remember your big physical memory hot-remove patchset has already
+> >>merged by Andrew, but where I can find it? Could you give me git tree
+> >>address?
+> >
+> >Andrew tree is also mirrored into a git tree.
+> >http://git.kernel.org/?p=linux/kernel/git/mhocko/mm.git;a=summary
+> >
+> >It contains only Memory management patches on top of the last major
+> >release (since-.X.Y branch).
+> 
+> Hi Michal,
+> 
+> I'm not sure I got your meaning. :)
+
+Well, the mirror tree gets updated when Andrew releases mmotm and quite
+often even when mmots is released.
+All patches in the mm section are applied.
+
+> In http://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm,
+> I can find the following commit.
+> 
+> commit deed0460e01b3968f2cf46fb94851936535b7e0d
+> Author: Tang Chen <tangchen@cn.fujitsu.com>
+> Date:   Sat Jan 19 11:07:13 2013 +1100
+> 
+>     memory-hotplug: do not allocate pgdat if it was not freed when
+> offline.
+> 
+> 
+> This is one of memory hot-remove patches. Please try to update the
+> mirror tree,
+> and try to find the above commit.
+
+That one is in my mirror tree as f48bf999 (memory-hotplug: do not
+allocate pdgat if it was not freed when offline.).
+-- 
+Michal Hocko
+SUSE Labs
