@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab3A1Jwa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 04:52:30 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:53873 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752431Ab3A1JwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 04:52:15 -0500
-Date: Mon, 28 Jan 2013 10:55:01 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Alex Shi <alex.shi@intel.com>, torvalds@linux-foundation.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-Message-ID: <20130128095501.GB6109@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>,
-	torvalds@linux-foundation.org, mingo@redhat.com,
-	peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
-	arjan@linux.intel.com, pjt@google.com, namhyung@kernel.org,
-	vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-	preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-	linux-kernel@vger.kernel.org
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
- <20130124094439.GB13463@pd.tnic>
- <51014E34.60309@intel.com>
- <510493E4.8060602@intel.com>
- <1359261385.5803.46.camel@marge.simpson.net>
- <20130127103508.GB8894@pd.tnic>
- <51052ACB.3070703@intel.com>
- <1359301903.5805.11.camel@marge.simpson.net>
- <1359350266.5783.39.camel@marge.simpson.net>
+	id S1754166Ab3A1Jyv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 04:54:51 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:20308 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab3A1Jys convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 04:54:48 -0500
+From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+To: Alex Williamson <alex.williamson@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Blue Swirl <blauwirbel@gmail.com>,
+        "Ortiz, Lance E" <lance.oritz@hp.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/3] AER-KVM: Error containment of VFIO devices assigned
+ to KVM guests
+Thread-Topic: [PATCH v2 0/3] AER-KVM: Error containment of VFIO devices
+ assigned to KVM guests
+Thread-Index: AQHN/T100LTN3Am7UkaQkjv/4osO2g==
+Date: Mon, 28 Jan 2013 09:54:24 +0000
+Message-ID: <F9E001219150CB45BEDC82A650F360C9014A7BD0@G9W0717.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.23]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1359350266.5783.39.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 06:17:46AM +0100, Mike Galbraith wrote:
-> Zzzt.  Wish I could turn turbo thingy off.
+Add support for error containment when a VFIO device assigned to a KVM
+guest encounters an error. This is for PCIe devices/drivers that support AER
+functionality. When the host OS is notified of an error in a device either
+through the firmware first approach or through an interrupt handled by the AER
+root port driver, the error handler registered by the vfio-pci driver gets
+invoked. The qemu process is signaled through an eventfd registered per
+VFIO device by the qemu process. In the eventfd handler, qemu decides on
+what action to take. In this implementation, guest is brought down to
+contain the error.
 
-Try setting /sys/devices/system/cpu/cpufreq/boost to 0.
+v2:
+ - Rebased to latest upstream stable bits
+ - Changed the new ioctl to be part of VFIO_SET_IRQs ioctl
+ - Added a new patch to get/put reference to a vfio device from struct device
+ - Incorporated all other feedback.
 
--- 
-Regards/Gruss,
-    Boris.
+---
+Vijay Mohan Pandarathil(3):
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+[PATCH 1/3] VFIO: Wrappers for getting/putting reference to vfio_device
+[PATCH 2/3] VFIO-AER: Vfio-pci driver changes for supporting AER
+[PATCH 3/3] QEMU-AER: Qemu changes to support AER for VFIO-PCI devices
+
+Kernel files changed
+
+ drivers/vfio/vfio.c  | 47 +++++++++++++++++++++++++++++++++++++++++------
+ include/linux/vfio.h |  3 +++
+ 2 files changed, 44 insertions(+), 6 deletions(-)
+
+ drivers/vfio/pci/vfio_pci.c         | 44 ++++++++++++++++++++++++++++++++++++-
+ drivers/vfio/pci/vfio_pci_intrs.c   | 32 +++++++++++++++++++++++++++
+ drivers/vfio/pci/vfio_pci_private.h |  1 +
+ include/uapi/linux/vfio.h           |  3 +++
+ 4 files changed, 79 insertions(+), 1 deletion(-)
+
+
+Qemu files changed
+
+ hw/vfio_pci.c              | 106 +++++++++++++++++++++++++++++++++++++++++++++
+ linux-headers/linux/vfio.h |   3 ++
+ 2 files changed, 109 insertions(+)
