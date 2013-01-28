@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756756Ab3A1Nib (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 08:38:31 -0500
-Received: from asix.com.tw ([210.243.224.51]:51892 "EHLO asix.com.tw"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754287Ab3A1Ni3 convert rfc822-to-8bit (ORCPT
+	id S1756805Ab3A1NoE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 08:44:04 -0500
+Received: from smtp191.dfw.emailsrvr.com ([67.192.241.191]:40628 "EHLO
+	smtp191.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756268Ab3A1NoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 08:38:29 -0500
-From: "Freddy" <freddy@asix.com.tw>
-To: "=?utf-8?Q?'Bj=C3=B8rn_Mork'?=" <bjorn@mork.no>,
-        "'Michael Leun'" <lkml20130126@newton.leun.net>
-Cc: <netdev@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <louis@asix.com.tw>,
-        <davem@davemloft.net>, <Support@asix.com.tw>
-References: <1358908337-13841-1-git-send-email-freddy@asix.com.tw>	<20130127001347.584711b2@xenia> <87zjztptez.fsf@nemi.mork.no>
-In-Reply-To: <87zjztptez.fsf@nemi.mork.no>
-Subject: RE: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0 to gigabit ethernet adapter driver
-Date: Mon, 28 Jan 2013 21:36:20 +0800
-Message-ID: <010f01cdfd5c$768d4240$63a7c6c0$@asix.com.tw>
+	Mon, 28 Jan 2013 08:44:00 -0500
+Message-ID: <510680AD.2070908@calxeda.com>
+Date: Mon, 28 Jan 2013 07:44:13 -0600
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQGuKq1VNb33SwaGuGVDTqE7QWFmhAIUoUH/AUeehKCYg3QwwA==
-Content-Language: zh-tw
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Omar Ramirez Luna <omar.luna@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 3/4 v11] arm highbank: add support for pl320 IPC
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <1359143205-20279-1-git-send-email-mark.langsdorf@calxeda.com> <1359143205-20279-4-git-send-email-mark.langsdorf@calxeda.com> <1457500.uzVh9cxXhS@vostro.rjw.lan>
+In-Reply-To: <1457500.uzVh9cxXhS@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I would vote to not accept that driver for mainline as long as this 
-> issues are not fixed.
+On 01/28/2013 06:49 AM, Rafael J. Wysocki wrote:
 
+>> +int pl320_ipc_register_notifier(struct notifier_block *nb)
+>> +{
+>> +	return atomic_notifier_chain_register(&ipc_notifier, nb);
+>> +}
+>> +EXPORT_SYMBOL(pl320_ipc_register_notifier);
+>> +
+>> +int pl320_ipc_unregister_notifier(struct notifier_block *nb)
+>> +{
+>> +	return atomic_notifier_chain_unregister(&ipc_notifier, nb);
+>> +}
+>> +EXPORT_SYMBOL(pl320_ipc_unregister_notifier);
+> 
+> I need all of your symbols to be exported with EXPORT_SYMBOL_GPL().
+> 
+> Is it OK to make that change when applying the patch or do you want to send
+> a new one?
 
-Michael, could you give me more information about how do you test this driver? 
-I have tried to reproduce the issue by using "ifconfig ethX mtu 1500", but I didn't confront the same issue.
-Thank you in advance for your help.
+I probably should resend so I can include the drivers level Kconfig and
+Makefile.
 
+I'll get that out this morning.
 
-> The vendor should not be able to claim "hooray, hooray, great device, 
-> we even have an driver in linux main line" when it is actually such an 
-> useless crap.
-
-> Well, that is fortunately not how these things work. The main goal is getting the devices supported in the kernel. Bugs can be fixed.  If a vendor can get any positive gain out of having a driver in mainline, then that is good for everyone, isn't it?  Of course, we can all agree that the > > > effect of a *working* driver is more positive than a non-working driver...
-
-
-> For now, the main focus should be fixing the issues which has been noted during review.  Your testing feedback is of course very useful, but you probably need to back them up with actual code change proposals if they are going to be dealt with at this stage.
-
-> Of course I'm offering to help with any information or testing, but 
-> unfortunately I do not have the knowhow to fix anything myself.
-
-> I believe this is where you are totally wrong.  You obviuously have the ability to create a few simple test cases for yourself and see if the driver behaves as you expect.  That is very useful.
-
-> And you have a device.  That is also useful.
-
-> Now, the driver source code is available.  And there is another Asix driver in the kernel which already has been cleaned up and can be used as an example. And maybe even partly used for the new devices as well, if the code is duplicated?  I have not looked at this in detail, but I     > suspect that much of the problem with the ax88179_178a driver is that it has completely ignored all the work that has gone into the asix driver after it was mainlined.  I find it unlikely that there is no reusable code in the asix_devices.c, asix_common.c and ax88172a.c files.  Trying to > rewrite ax88179_178a to share as much code as possible seems like the best way to clean it up and fix bugs.
-
-Bjørn, I am trying to reproduce the issue mentioned by Michael and I have a question about submitting this driver.
-Should I merge this driver into asix_devices.c and asix_common.c even through the usb command, tx_fixup, and rx_fixup functions are totally different?
-Thank you in advance for your reply.
-
-Freddy
-
+--Mark Langsdorf
+Calxeda, Inc.
 
