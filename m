@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab3A1Ekr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 23:40:47 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43989 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751767Ab3A1Eko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 23:40:44 -0500
-Date: Sun, 27 Jan 2013 20:42:28 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Abdallah Chatila <abdallah.chatila@ericsson.com>
-Cc: Jerry Snitselaar <dev@snitselaar.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        Alan Cox <alan@linux.intel.com>, Jeff Garzik <jgarzik@redhat.com>
-Subject: Re: [ 11/15] ahci: Add identifiers for ASM106x devices
-Message-ID: <20130128044228.GA11294@kroah.com>
-References: <20130124211723.489089115@linuxfoundation.org>
- <20130124211727.847446491@linuxfoundation.org>
- <20130125204521.GA1637@cantor.Home>
- <20130125220048.GA7238@dolphin.nala.lmc.ericsson.se>
+	id S1754174Ab3A1EtV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 23:49:21 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:58183 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab3A1EtS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 23:49:18 -0500
+Date: Mon, 28 Jan 2013 12:49:56 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: mingo@kernel.org
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-tip-commits@vger.kernel.org, akpm@linux-foundation.org,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com, stable@kernel.org,
+        tglx@linutronix.de
+Subject: [PATCH Resend] smp:Fix use un-initialized cpumask_ipi
+Message-ID: <20130128044956.GA3726@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>, mingo@kernel.org,
+	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+	linux-tip-commits@vger.kernel.org, akpm@linux-foundation.org,
+	hpa@zytor.com, paulmck@linux.vnet.ibm.com, stable@kernel.org,
+	tglx@linutronix.de
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130125220048.GA7238@dolphin.nala.lmc.ericsson.se>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 05:00:48PM -0500, Abdallah Chatila wrote:
-> On Fri, Jan 25, 2013 at 01:45:21PM -0700, Jerry Snitselaar wrote:
-> > 
-> > There is a whitespace error in this patch:
-> > 
-> > Applying: ahci: Add identifiers for ASM106x devices
-> > /root/linux/linux/.git/rebase-apply/patch:12: space before tab in indent.
-> >         /* Asmedia */
-> > warning: 1 line adds whitespace errors.
-> 
-> Will send a new patch to remove the extra whitespace before the comment
-> shortly.
+c7b798525b50256c8084215a139fa40b0114bfcc
+[smp: Fix SMP function call empty cpu mask race]
+use the un-initialized variable cpumask_ipi when
+enable CONFIG_CPUMASK_OFFSTACK.
 
-I've edited it by hand and fixed it up.
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ I am sorry for miss it first.
 
-thanks,
+ kernel/smp.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-greg k-h
+diff --git a/kernel/smp.c b/kernel/smp.c
+index 7c56aba..af86f5e 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -57,6 +57,9 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
+ 				cpu_to_node(cpu)))
+ 			return notifier_from_errno(-ENOMEM);
++		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
++				cpu_to_node(cpu)))
++			return notifier_from_errno(-ENOMEM);
+ 		break;
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+@@ -66,6 +69,7 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+ 		free_cpumask_var(cfd->cpumask);
++		free_cpumask_var(cfd->cpumask_ini);
+ 		break;
+ #endif
+ 	};
+-- 
+1.7.11.1.116.g8228a23
