@@ -1,50 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363Ab3A1Ll3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 06:41:29 -0500
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:50000 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757274Ab3A1Ll0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 06:41:26 -0500
-Message-ID: <1359373280.1345.5.camel@x61.thuisdomein>
-Subject: Re: [PATCH v3] lpc_ich: fix gpio base and control offsets
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Aaron Sierra <asierra@xes-inc.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        =?ISO-8859-1?Q?Ag=F3cs_P=E1l?= <agocs.pal.86@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 28 Jan 2013 12:41:20 +0100
-In-Reply-To: <1359120339.883.4.camel@x61.thuisdomein>
-References: <b9fec05c-d383-4282-b2af-c95855ff6abb@zimbra>
-	 <3ffa5032-0565-48f0-a4ae-473452f4c902@zimbra>
-	 <CACRpkdZHndQsDZpn7BCFNXAO3k5vREYxDJkcYQ3_3sTbKAQLLA@mail.gmail.com>
-	 <1359108275.6647.4.camel@x61.thuisdomein>
-	 <CACRpkdb0V=yasmJv1ygL7cq6G3uGf6+QAZ7GR5a3bb1-XJgiiA@mail.gmail.com>
-	 <1359115232.6647.14.camel@x61.thuisdomein>
-	 <CACRpkdbUU=TOeaHNwAw-=iTxtkQDNuS4KeVBFX4yirZa+fQ2uw@mail.gmail.com>
-	 <1359120339.883.4.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Jan 2013 11:41:20.0766 (UTC) FILETIME=[646A91E0:01CDFD4C]
-X-RcptDomain: vger.kernel.org
+	id S1757370Ab3A1Llt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 06:41:49 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:35409 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756915Ab3A1Lay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 06:30:54 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
+        <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 01/30] USB: EHCI: split ehci-omap out to a separate driver
+Date: Mon, 28 Jan 2013 13:30:02 +0200
+Message-ID: <1359372631-8180-2-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-25 at 14:25 +0100, Paul Bolle wrote:
-> 1) Should I try booting with the updated module too?
+From: Alan Stern <stern@rowland.harvard.edu>
 
-Booting turned out to be a non-issue. I use lpc_ich as a module (Fedora
-17 default) and lpc_ich isn't included by default in Fedora 17's
-initramfs. So booting v3.7.5 with an updated module should hardly differ
-from insmod'ing manually. And indeed, booting that way didn't lead to
-any obvious issues.
+This patch (as1645) converts ehci-omap over to the new "ehci-hcd is a
+library" approach, so that it can coexist peacefully with other EHCI
+platform drivers and can make use of the private area allocated at
+the end of struct ehci_hcd.
 
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+---
+ drivers/usb/host/Kconfig     |    2 +-
+ drivers/usb/host/Makefile    |    1 +
+ drivers/usb/host/ehci-hcd.c  |    6 +---
+ drivers/usb/host/ehci-omap.c |   76 +++++++++++++++++++-----------------------
+ 4 files changed, 37 insertions(+), 48 deletions(-)
 
-Paul Bolle
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 3a21c5d..11e102e 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -155,7 +155,7 @@ config USB_EHCI_MXC
+ 	  Variation of ARC USB block used in some Freescale chips.
+ 
+ config USB_EHCI_HCD_OMAP
+-	bool "EHCI support for OMAP3 and later chips"
++	tristate "EHCI support for OMAP3 and later chips"
+ 	depends on USB_EHCI_HCD && ARCH_OMAP
+ 	default y
+ 	---help---
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index 001fbff..56de410 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -27,6 +27,7 @@ obj-$(CONFIG_USB_EHCI_HCD)	+= ehci-hcd.o
+ obj-$(CONFIG_USB_EHCI_PCI)	+= ehci-pci.o
+ obj-$(CONFIG_USB_EHCI_HCD_PLATFORM)	+= ehci-platform.o
+ obj-$(CONFIG_USB_EHCI_MXC)	+= ehci-mxc.o
++obj-$(CONFIG_USB_EHCI_HCD_OMAP)	+= ehci-omap.o
+ 
+ obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
+ obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 09537b2..5a35246 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1251,11 +1251,6 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		ehci_hcd_sh_driver
+ #endif
+ 
+-#ifdef CONFIG_USB_EHCI_HCD_OMAP
+-#include "ehci-omap.c"
+-#define        PLATFORM_DRIVER         ehci_hcd_omap_driver
+-#endif
+-
+ #ifdef CONFIG_PPC_PS3
+ #include "ehci-ps3.c"
+ #define	PS3_SYSTEM_BUS_DRIVER	ps3_ehci_driver
+@@ -1345,6 +1340,7 @@ MODULE_LICENSE ("GPL");
+ 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_PLATFORM) && \
+ 	!IS_ENABLED(CONFIG_USB_CHIPIDEA_HOST) && \
+ 	!IS_ENABLED(CONFIG_USB_EHCI_MXC) && \
++	!IS_ENABLED(CONFIG_USB_EHCI_HCD_OMAP) && \
+ 	!defined(PLATFORM_DRIVER) && \
+ 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
+ 	!defined(OF_PLATFORM_DRIVER) && \
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index b96a4bf..30fc482 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -36,6 +36,9 @@
+  *	- convert to use hwmod and runtime PM
+  */
+ 
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/io.h>
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
+ #include <linux/usb/ulpi.h>
+@@ -43,6 +46,10 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/gpio.h>
+ #include <linux/clk.h>
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
++
++#include "ehci.h"
+ 
+ #include <linux/platform_data/usb-omap.h>
+ 
+@@ -57,9 +64,11 @@
+ #define	EHCI_INSNREG05_ULPI_EXTREGADD_SHIFT		8
+ #define	EHCI_INSNREG05_ULPI_WRDATA_SHIFT		0
+ 
+-/*-------------------------------------------------------------------------*/
++#define DRIVER_DESC "OMAP-EHCI Host Controller driver"
+ 
+-static const struct hc_driver ehci_omap_hc_driver;
++static const char hcd_name[] = "ehci-omap";
++
++/*-------------------------------------------------------------------------*/
+ 
+ 
+ static inline void ehci_write(void __iomem *base, u32 reg, u32 val)
+@@ -166,6 +175,12 @@ static void disable_put_regulator(
+ /* configure so an HC device and id are always provided */
+ /* always called with process context; sleeping is OK */
+ 
++static struct hc_driver __read_mostly ehci_omap_hc_driver;
++
++static const struct ehci_driver_overrides ehci_omap_overrides __initdata = {
++	.reset =		omap_ehci_init,
++};
++
+ /**
+  * ehci_hcd_omap_probe - initialize TI-based HCDs
+  *
+@@ -315,56 +330,33 @@ static struct platform_driver ehci_hcd_omap_driver = {
+ 	/*.suspend		= ehci_hcd_omap_suspend, */
+ 	/*.resume		= ehci_hcd_omap_resume, */
+ 	.driver = {
+-		.name		= "ehci-omap",
++		.name		= hcd_name,
+ 	}
+ };
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+-static const struct hc_driver ehci_omap_hc_driver = {
+-	.description		= hcd_name,
+-	.product_desc		= "OMAP-EHCI Host Controller",
+-	.hcd_priv_size		= sizeof(struct ehci_hcd),
+-
+-	/*
+-	 * generic hardware linkage
+-	 */
+-	.irq			= ehci_irq,
+-	.flags			= HCD_MEMORY | HCD_USB2,
+-
+-	/*
+-	 * basic lifecycle operations
+-	 */
+-	.reset			= omap_ehci_init,
+-	.start			= ehci_run,
+-	.stop			= ehci_stop,
+-	.shutdown		= ehci_shutdown,
+-
+-	/*
+-	 * managing i/o requests and associated device resources
+-	 */
+-	.urb_enqueue		= ehci_urb_enqueue,
+-	.urb_dequeue		= ehci_urb_dequeue,
+-	.endpoint_disable	= ehci_endpoint_disable,
+-	.endpoint_reset		= ehci_endpoint_reset,
++static int __init ehci_omap_init(void)
++{
++	if (usb_disabled())
++		return -ENODEV;
+ 
+-	/*
+-	 * scheduling support
+-	 */
+-	.get_frame_number	= ehci_get_frame,
++	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
+ 
+-	/*
+-	 * root hub support
+-	 */
+-	.hub_status_data	= ehci_hub_status_data,
+-	.hub_control		= ehci_hub_control,
+-	.bus_suspend		= ehci_bus_suspend,
+-	.bus_resume		= ehci_bus_resume,
++	ehci_init_driver(&ehci_omap_hc_driver, &ehci_omap_overrides);
++	return platform_driver_register(&ehci_hcd_omap_driver);
++}
++module_init(ehci_omap_init);
+ 
+-	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
+-};
++static void __exit ehci_omap_cleanup(void)
++{
++	platform_driver_unregister(&ehci_hcd_omap_driver);
++}
++module_exit(ehci_omap_cleanup);
+ 
+ MODULE_ALIAS("platform:omap-ehci");
+ MODULE_AUTHOR("Texas Instruments, Inc.");
+ MODULE_AUTHOR("Felipe Balbi <felipe.balbi@nokia.com>");
+ 
++MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_LICENSE("GPL");
+-- 
+1.7.4.1
 
