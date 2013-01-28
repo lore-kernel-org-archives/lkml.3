@@ -1,92 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169Ab3A1VBt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 16:01:49 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:64046 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418Ab3A1VBo (ORCPT
+	id S1754185Ab3A1VCq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 16:02:46 -0500
+Received: from fold.natur.cuni.cz ([195.113.57.32]:46262 "HELO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753243Ab3A1VCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 16:01:44 -0500
-Date: Mon, 28 Jan 2013 22:01:23 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 1/4] pwm_backlight: Fix PWM levels support in non DT case
-Message-ID: <20130128210123.GA24673@avionic-0098.mockup.avionic-design.de>
-References: <1358861996-27194-1-git-send-email-peter.ujfalusi@ti.com>
- <1358861996-27194-2-git-send-email-peter.ujfalusi@ti.com>
+	Mon, 28 Jan 2013 16:02:44 -0500
+Message-ID: <5106E770.9070602@fold.natur.cuni.cz>
+Date: Mon, 28 Jan 2013 22:02:40 +0100
+From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20100101 Firefox/17.0 SeaMonkey/2.14.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tThc/1wpZn/ma/RB"
-Content-Disposition: inline
-In-Reply-To: <1358861996-27194-2-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:6NWzmX2ZMbypSmRZtXIBETTGDB79bDVKVc3xqesnJ8E
- J7zTLQod+DcOIV3K6cUlx/j0ODuql0gvJb1Ic7GP1ScYIlWqMr
- k2Vjk5XCE5W5xJGqkA3fZs7QKryb3eMrOFZo7AspO7aD0lMyne
- plB6IHrnRwlChWzMPlNd8W1oAHyt/8ZPV1MXEVlWzyWdQAYAIP
- nnUTziRFt5xdgSkxZTaGBdIKdiWOdJ9ahSre0JAOL5jIjXbTvV
- ioN3ahqkn8CpA/QqplyZ09VR7bhQ24PnTi3hgNgn4vCYPgnszq
- OmsY2Q2jaKGLNmQ/UKTlVHQg5hSusLMPIR2RJKB5gkYkUVKmdo
- IlPmO77sWYQXpaMxUuOUDbfRUP210vBIjK2QG5ROArjOCXz6sA
- HmUG0puugSjQJC8E/w1Tm0PMdDElY88HgUKzXzpAPSq/y7U3wP
- HdQ4H
+To: Chris Clayton <chris2553@googlemail.com>
+CC: Yijing Wang <wangyijing@huawei.com>,
+        Yijing Wang <wangyijing0307@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
+Subject: Re: 3.8.0-rc4+ - Oops on removing WinTV-HVR-1400 expresscard TV Tuner
+References: <51016937.1020202@googlemail.com> <510189B1.606@fold.natur.cuni.cz> <5104427D.2050002@googlemail.com> <510494D6.1010000@gmail.com> <51050D43.2050703@googlemail.com> <51051B1B.3080105@gmail.com> <51052DB2.4090702@googlemail.com> <51053917.6060400@fold.natur.cuni.cz> <5105491E.9050907@googlemail.com> <510558CE.9000600@fold.natur.cuni.cz> <5105AFDB.9000200@googlemail.com> <5105E51D.2020606@huawei.com> <51064F1A.1020909@googlemail.com> <51065FA6.4070208@googlemail.com> <51066B46.10409@fold.natur.cuni.cz> <5106CD6C.4070009@googlemail.com>
+In-Reply-To: <5106CD6C.4070009@googlemail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Chris,
 
---tThc/1wpZn/ma/RB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Chris Clayton wrote:
+> Hi Martin,
+> 
+> On 01/28/13 12:12, Martin Mokrejs wrote:
+>> Chris Clayton wrote:
+>>>
+>>> [snip]
+>>>
+>>>> [chris:~]$ cat /proc/cmdline
+>>>> root=/dev/sda5 pciehp_ports=native ro resume=/dev/sda6
+>>>                       ^^
+>>>                    **typo**
+>>> I've run the test again with pcie_ports=native and the directories now get populated. Even better though, is that when I plug in the card, hotplug **works** and the card's drivers are loaded.
+>>
+>> BTW, I have with acpiphp on 3.7.4:
+>>
+>> ls -la /sys/bus/pci_express/devices
+>> total 0
+>> drwxr-xr-x 2 root root 0 Jan 28 13:07 .
+>> drwxr-xr-x 4 root root 0 Jan 28 13:07 ..
+>> $ ls -la /sys/bus/pci/devices/slots
+>                        ^^^^^^^^
+>                         **typo**
+> It should be /sys/bus/pci/slots.
+> 
+>> ls: cannot access /sys/bus/pci/devices/slots: No such file or directory
+>> $
+>>
+> With acpiphp, I get /sys/bus/pci_express/devices populated but /sys/bus/pci/slots is empty.
 
-On Tue, Jan 22, 2013 at 02:39:53PM +0100, Peter Ujfalusi wrote:
-> It is expected that board files would have:
-> static unsigned int bl_levels[] =3D { 0, 50, 100, 150, 200, 250, };
->=20
-> static struct platform_pwm_backlight_data bl_data =3D {
-> 	.levels =3D bl_levels,
-> 	.max_brightness =3D ARRAY_SIZE(bl_levels),
-> 	.dft_brightness =3D 4,
-> 	.pwm_period_ns =3D 7812500,
-> };
->=20
-> In this case the max_brightness would be out of range in the levels array.
-> Decrement the received max_brightness in every case (DT or non DT) when t=
-he
-> levels has been provided.
+OK, I haven't realized the typo, but I have here with acpiphp:
 
-What's wrong with specifying .max_brightness =3D ARRAY_SIZE(bl_levels) - 1
-instead?
+# ls -laR /sys/bus/pci/slots
+/sys/bus/pci/slots:
+total 0
+drwxr-xr-x 3 root root 0 Jan 27 17:14 .
+drwxr-xr-x 5 root root 0 Jan 25 15:56 ..
+drwxr-xr-x 2 root root 0 Jan 27 17:14 1
 
-Thierry
+/sys/bus/pci/slots/1:
+total 0
+drwxr-xr-x 2 root root    0 Jan 27 17:14 .
+drwxr-xr-x 3 root root    0 Jan 27 17:14 ..
+-r--r--r-- 1 root root 4096 Jan 28 21:31 adapter
+-r--r--r-- 1 root root 4096 Jan 27 17:14 address
+-rw-r--r-- 1 root root 4096 Jan 28 21:31 attention
+-r--r--r-- 1 root root 4096 Jan 28 21:31 cur_bus_speed
+-r--r--r-- 1 root root 4096 Jan 28 21:31 latch
+-r--r--r-- 1 root root 4096 Jan 28 21:31 max_bus_speed
+lrwxrwxrwx 1 root root    0 Jan 28 21:31 module -> ../../../../module/acpiphp
+-rw-r--r-- 1 root root 4096 Jan 28 21:31 power
+#
 
---tThc/1wpZn/ma/RB
-Content-Type: application/pgp-signature
+> 
+>> And for me hotplug also works (as far as I can tell). ;-)
+>>
+>>>
+>>> Excellent! Thank you so much for your help (and patience) Martin and Yijing.
+>>>
+>>> Now to solving why running scandvb doesn't find any TV channels.
+>>
+>> Would be fine if you could re-do the PresDet checks and confirm whether it is also broken
+>> for you under pciehp.
+>
+> I've struggled with this a little. For some reason, the expresscard
+> doesn't always stay properly inserted in the slot when I insert it.
+> Now that hotplug is working, the modules are being loaded and when
+> the card pops out again, I get an oops because, of course, the driver
+> is running and the card disappears. Perhaps the driver can be made a
+> bit more robust to sudden disappearance of the card. I'll report the
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Yes, I had or maybe still have same issues here. I used to get an Oops
+for sata_sil24 card weird behavior for USB3.0 NEC-based card. It was
+fine always for a VIA-based firewire card and serial PL2303-based one.
+I found out it is better if a usb device is connected to the USB card
+because if that slips out then the libata layer quickly realizes that.
+If there was no device connected, the usb waits too long before it removes
+the usb hub from the system. And if you plugin the card meanwhile
+back into the slot, weird thing happen.
 
-iQIcBAEBAgAGBQJRBucjAAoJEN0jrNd/PrOhEuQP/2BwJc9TCZOAU1uXwodzIzR7
-hAfK8+XXT7oWiUIajw+XrRumNEVItqkT13LrxVGYRoWBpOJLvuVs7LmDOwg7hfu4
-cNLoXeVslmZWdZL8NjRPF2RcZL/M5Hv1nFf9vQiDzw67MhrpMwpICYY/52UrhJcE
-N4y9wmoF8btANoVEHpQFnkXVjBfUYPoQLUt9veMNs6VQlnMkCE4E0IMocoiokCfo
-oxpseZFtJz7srEgGLkBYWfcmw36wO8cWF03hW+YugPYq48y7B5HKp7o/VDuc2QHR
-bISVXAWN1qKLKNgPWPd393wBG8BE0/18lmennd632++ng3wYSRuh3N6sBhqug6yZ
-ERqjh8EnVQh1dipcA2zSl1Y3sDRrOZLnEQrNH50OhkpIWGbGAipmbEHCPhQkS/Qn
-ROCt0dEAKd1yY64AS0dQgWpuptWTghcQ9gxZuTyiubt6IviV8KT0abO/1aFmuGVK
-fiHMK7yyocLyWEXRad2WaPgR2jdXDDN817d/8mzp2WRkBFXs+8HIB7Bazh0G9buV
-ATspIkc0b81eEu18AwnGlAHpFNPiTbA2mjHZ8goGSTnstmnWaOGDfTrUcGbwlmcx
-Mowqt2SlkAli4Pl8FwmmXi5GELcnpNL9CdXimsrVMkdy8P89pOPmrXUtOKZrYNRB
-6fBuAxeQtvU66j1tuVjx
-=0Jdp
------END PGP SIGNATURE-----
 
---tThc/1wpZn/ma/RB--
+> oops later. Anyway, to run these tests I built a kernel without the
+> dvb card's drivers, effectively simulating the situation I had before
+> Yijing got hotplug working for me. The card popping out may also have
+> affected these diffs a bit because, for example, the first one has
+> the CorrErr flag changed, possibly because I had to have two or more
+> goes at getting the card to lock in the slot. Yesterday that diff
+> showed no changes. Anyway, here are the diffs:
+> 
+> diff lspci.after_insertion.txt lspci.after_1st_re-insertion.txt
+> 262c262
+> <               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
+> ---
+>>               DevSta: CorrErr+ UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
+> 295c295
+> < 40: 10 80 42 01 00 80 00 00 00 00 10 00 12 3c 12 04
+> ---
+>> 40: 10 80 42 01 00 80 00 00 00 00 11 00 12 3c 12 04
+> 
+> ============================================================
+> diff lspci.after_1st_removal.txt lspci.after_2nd_removal.txt
+> 
+> <no difference>
+
+BTW, with the NEC-based card only after every second removal of the card I got
+into PresDet- state. So, on every other diff attempt you won't see a difference!
+But we are talking about acpiphp here (unlike pciehp) and with that I also 
+have no problems.
+
+> 
+> =============================================================
+> diff lspci.before_insertion.txt lspci.after_1st_removal.txt
+> 112c112
+> < 60: 20 20 ff 07 00 00 00 00 01 00 00 00 00 00 08 c0
+> ---
+>> 60: 20 20 ff 07 00 00 00 00 01 00 00 00 00 00 00 c0
+> 262,263c262,263
+> <               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
+> <               LnkCap: Port #4, Speed 5GT/s, Width x1, ASPM L0s L1, Latency L0 <1us, L1 <16us
+> ---
+>>               DevSta: CorrErr+ UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
+>>               LnkCap: Port #4, Speed 5GT/s, Width x1, ASPM L0s L1, Latency L0 <512ns, L1 <16us
+> 265c265
+> <               LnkCtl: ASPM L0s L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk-
+> ---
+>>               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+> 267c267
+> <               LnkSta: Speed 2.5GT/s, Width x0, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+> ---
+>>               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt+ ABWMgmt-
+> 273c273
+> <                       Changed: MRL- PresDet- LinkState-
+> ---
+>>                       Changed: MRL- PresDet- LinkState+
+> 295,296c295,296
+> < 40: 10 80 42 01 00 80 00 00 00 00 10 00 12 4c 12 04
+> < 50: 03 00 01 10 60 b2 1c 00 28 00 00 00 00 00 00 00
+> ---
+>> 40: 10 80 42 01 00 80 00 00 00 00 11 00 12 3c 12 04
+>> 50: 40 00 11 50 60 b2 1c 00 28 00 00 01 00 00 00 00
+
+
+I think this is what I also reported earlier that on the "Changed:" line the LinkState is not updated
+always, contrary to the PresDet. That is present since kernel 3.4 times at least.
+
+
+> 
+> ===========================================================
+> diff lspci.after_1st_removal.txt lspci.after_2nd_removal.txt
+> 
+> <no difference>
+
+Yeah, try pciehp and see that the PresDet+ won't be flipped to PresDet-.
+;-) You will have to plugin the card once more in and then pull out
+to get to PresDet- state.
+
+
+I deleted the rest, I think acpiphp just works for you, if statically compiled into the
+kernel. ;-) Trying to proof that there are untested combinations and orders of module loadings
+leading sometime to a broken setup does not seem at the very moment to be useful. Seems pci devs
+know about that and rather decided to disable building of modules altogether.
+
+The pciehp behavior is still another story and I would be really curious if it works for you.
+For me, the PresDet did not work, I think ever, on this SandyBridge hardware.
+
+Martin
