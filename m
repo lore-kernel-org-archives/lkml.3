@@ -1,102 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab3A1O0x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 09:26:53 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:38737 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756514Ab3A1O0s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 09:26:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+mXCj-cy0Kww4DdeGKOW9qkrL1X92nVJ82Z5q2P8tGpw@mail.gmail.com>
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de>
-	<1358788568-11137-15-git-send-email-arnd@arndb.de>
-	<CAGXu5j+mXCj-cy0Kww4DdeGKOW9qkrL1X92nVJ82Z5q2P8tGpw@mail.gmail.com>
-Date: Mon, 28 Jan 2013 08:26:48 -0600
-Message-ID: <CABqD9hb5G_FmhmhDU2HEi9+_XXAvYtYfO+zY62mG_YkQtjX6RA@mail.gmail.com>
-Subject: Re: [PATCH 14/15] samples/seccomp: be less stupid about cross compiling
-From: Will Drewry <wad@chromium.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, arm@kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        James Morris <james.l.morris@oracle.com>,
+	id S1757369Ab3A1O2Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 09:28:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2690 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756514Ab3A1O2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 09:28:20 -0500
+Date: Mon, 28 Jan 2013 09:28:16 -0500
+From: Aristeu Rozanski <aris@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH review 2/6] userns: Allow any uid or gid mappings that
+ don't overlap.
+Message-ID: <20130128142816.GU17632@redhat.com>
+References: <87ehh8it9s.fsf@xmission.com>
+ <87zjzwhegj.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zjzwhegj.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 3:20 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Mon, Jan 21, 2013 at 9:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> The seccomp filters are currently built for the build
->> host, not for the machine that they are going to run
->> on, but they are also built for with the -m32 flag
->> if the kernel is built for a 32 bit machine, both
->> of which seems rather odd.
->>
->> It broke allyesconfig on my machine, which is x86-64, but
->> building for 32 bit ARM, with this error message:
->>
->> In file included from /usr/include/stdio.h:28:0,
->>                  from samples/seccomp/bpf-fancy.c:15:
->> /usr/include/features.h:324:26: fatal error: bits/predefs.h: No such file or directory
->>
->> because there are no 32 bit libc headers installed on
->> this machine. We should really be building all the
->> samples for the target machine rather than the build
->> host, but since the infrastructure for that appears
->> to be missing right now, let's be a little bit smarter
->> and not pass the '-m32' flag to the HOSTCC when cross-
->> compiling.
->>
->> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
->> Cc: Kees Cook <keescook@chromium.org>
->> Cc: James Morris <james.l.morris@oracle.com>
->
-> I'm fine with this. Thanks!
->
-> Acked-by: Kees Cook <keescook@chromium.org>
+On Fri, Jan 25, 2013 at 06:21:00PM -0800, Eric W. Biederman wrote:
+> When I initially wrote the code for /proc/<pid>/uid_map.  I was lazy
+> and avoided duplicate mappings by the simple expedient of ensuring the
+> first number in a new extent was greater than any number in the
+> previous extent.
+> 
+> Unfortunately that precludes a number of valid mappings, and someone
+> noticed and complained.  So use a simple check to ensure that ranges
+> in the mapping extents don't overlap.
 
-Thanks! This makes a lot of sense and maybe buys a bit more time to
-figure out the best way to build these (all?) samples for the target.
+Acked-by: Someone <aris@redhat.com>
 
-Acked-by: Will Drewry <wad@chromium.org>
+> 
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
+>  kernel/user_namespace.c |   45 +++++++++++++++++++++++++++++++++++++++------
+>  1 files changed, 39 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+> index 24f8ec3..8b65083 100644
+> --- a/kernel/user_namespace.c
+> +++ b/kernel/user_namespace.c
+> @@ -520,6 +520,42 @@ struct seq_operations proc_projid_seq_operations = {
+>  	.show = projid_m_show,
+>  };
+>  
+> +static bool mappings_overlap(struct uid_gid_map *new_map, struct uid_gid_extent *extent)
+> +{
+> +	u32 upper_first, lower_first, upper_last, lower_last;
+> +	unsigned idx;
+> +
+> +	upper_first = extent->first;
+> +	lower_first = extent->lower_first;
+> +	upper_last = upper_first + extent->count - 1;
+> +	lower_last = lower_first + extent->count - 1;
+> +
+> +	for (idx = 0; idx < new_map->nr_extents; idx++) {
+> +		u32 prev_upper_first, prev_lower_first;
+> +		u32 prev_upper_last, prev_lower_last;
+> +		struct uid_gid_extent *prev;
+> +
+> +		prev = &new_map->extent[idx];
+> +
+> +		prev_upper_first = prev->first;
+> +		prev_lower_first = prev->lower_first;
+> +		prev_upper_last = prev_upper_first + prev->count - 1;
+> +		prev_lower_last = prev_lower_first + prev->count - 1;
+> +
+> +		/* Does the upper range intersect a previous extent? */
+> +		if ((prev_upper_first <= upper_last) &&
+> +		    (prev_upper_last >= upper_first))
+> +			return true;
+> +
+> +		/* Does the lower range intersect a previous extent? */
+> +		if ((prev_lower_first <= lower_last) &&
+> +		    (prev_lower_last >= lower_first))
+> +			return true;
+> +	}
+> +	return false;
+> +}
+> +
+> +
+>  static DEFINE_MUTEX(id_map_mutex);
+>  
+>  static ssize_t map_write(struct file *file, const char __user *buf,
+> @@ -532,7 +568,7 @@ static ssize_t map_write(struct file *file, const char __user *buf,
+>  	struct user_namespace *ns = seq->private;
+>  	struct uid_gid_map new_map;
+>  	unsigned idx;
+> -	struct uid_gid_extent *extent, *last = NULL;
+> +	struct uid_gid_extent *extent = NULL;
+>  	unsigned long page = 0;
+>  	char *kbuf, *pos, *next_line;
+>  	ssize_t ret = -EINVAL;
+> @@ -635,14 +671,11 @@ static ssize_t map_write(struct file *file, const char __user *buf,
+>  		if ((extent->lower_first + extent->count) <= extent->lower_first)
+>  			goto out;
+>  
+> -		/* For now only accept extents that are strictly in order */
+> -		if (last &&
+> -		    (((last->first + last->count) > extent->first) ||
+> -		     ((last->lower_first + last->count) > extent->lower_first)))
+> +		/* Do the ranges in extent overlap any previous extents? */
+> +		if (mappings_overlap(&new_map, extent))
+>  			goto out;
+>  
+>  		new_map.nr_extents++;
+> -		last = extent;
+>  
+>  		/* Fail if the file contains too many extents */
+>  		if ((new_map.nr_extents == UID_GID_MAP_MAX_EXTENTS) &&
+> -- 
+> 1.7.5.4
+> 
 
->
->> ---
->>  samples/seccomp/Makefile |    2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/samples/seccomp/Makefile b/samples/seccomp/Makefile
->> index bbbd276..7203e66 100644
->> --- a/samples/seccomp/Makefile
->> +++ b/samples/seccomp/Makefile
->> @@ -19,6 +19,7 @@ bpf-direct-objs := bpf-direct.o
->>
->>  # Try to match the kernel target.
->>  ifndef CONFIG_64BIT
->> +ifndef CROSS_COMPILE
->>
->>  # s390 has -m31 flag to build 31 bit binaries
->>  ifndef CONFIG_S390
->> @@ -35,6 +36,7 @@ HOSTLOADLIBES_bpf-direct += $(MFLAG)
->>  HOSTLOADLIBES_bpf-fancy += $(MFLAG)
->>  HOSTLOADLIBES_dropper += $(MFLAG)
->>  endif
->> +endif
->>
->>  # Tell kbuild to always build the programs
->>  always := $(hostprogs-y)
->> --
->> 1.7.10.4
->>
->
->
->
-> --
-> Kees Cook
-> Chrome OS Security
+-- 
+Aristeu
+
