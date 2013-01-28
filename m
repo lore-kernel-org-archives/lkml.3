@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab3A1Dmc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 22:42:32 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:49609 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753436Ab3A1Dma (ORCPT
+	id S1754180Ab3A1Dmq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 22:42:46 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:45694 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458Ab3A1Dmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 22:42:30 -0500
+	Sun, 27 Jan 2013 22:42:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <1359135978-15119-4-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1359135978-15119-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	<1359135978-15119-4-git-send-email-sjenning@linux.vnet.ibm.com>
-Date: Mon, 28 Jan 2013 12:42:29 +0900
-X-Google-Sender-Auth: iOCMIC_5ITKyhKTubcUtYI2bhNA
-Message-ID: <CAEwNFnDHLgcBt81ZWZqrNSn2ctu86N6Y3JbgqoKVNuq85zU1nw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] staging: zsmalloc: add page alloc/free callbacks
-From: Minchan Kim <minchan@kernel.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130127002251.GE1174@sortiz-mobl>
+References: <1357633882-5191-1-git-send-email-sachin.kamat@linaro.org>
+	<20130108103653.GH4544@opensource.wolfsonmicro.com>
+	<CAK9yfHzgnH3z57=yjHPeURP7=SU5oYPoyM3meeV=h295T+ZW3Q@mail.gmail.com>
+	<20130127002251.GE1174@sortiz-mobl>
+Date: Mon, 28 Jan 2013 09:12:43 +0530
+Message-ID: <CAK9yfHyfKrPMgwPavQmObApS6T-BCxnFNTvVBjrH9dOgqjHe6Q@mail.gmail.com>
+Subject: Re: [PATCH 1/1] mfd: wm8994: Use devm_regulator_bulk_get API
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 26, 2013 at 2:46 AM, Seth Jennings
-<sjenning@linux.vnet.ibm.com> wrote:
-> This patch allows users of zsmalloc to register the
-> allocation and free routines used by zsmalloc to obtain
-> more pages for the memory pool.  This allows the user
-> more control over zsmalloc pool policy and behavior.
+On 27 January 2013 05:52, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> Hi Sachin,
 >
-> If the user does not wish to control this, alloc_page() and
-> __free_page() are used by default.
->
-> Acked-by: Nitin Gupta <ngupta@vflare.org>
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
+> On Thu, Jan 24, 2013 at 09:13:20AM +0530, Sachin Kamat wrote:
+>> Hi Samuel,
+>>
+>> On 8 January 2013 16:06, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+>> > On Tue, Jan 08, 2013 at 02:01:22PM +0530, Sachin Kamat wrote:
+>> >> devm_regulator_bulk_get is device managed and saves some cleanup
+>> >> and exit code.
+>> >
+>> > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>>
+>> Would you be picking this patch up?
+> I will, yes.
+
+Thanks Samuel.
+
+There is also another patch that needs your attention (pending for a while).
+https://lkml.org/lkml/2012/12/7/65
 
 -- 
-Kind regards,
-Minchan Kim
+With warm regards,
+Sachin
