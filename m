@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab3A1WZP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 17:25:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42838 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754532Ab3A1WZN (ORCPT
+	id S1755361Ab3A1Waw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 17:30:52 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:57088 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755095Ab3A1Wau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 17:25:13 -0500
-Date: Mon, 28 Jan 2013 14:25:10 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kyungsik Lee <kyungsik.lee@lge.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>, hyojun.im@lge.com,
-        chan.jeong@lge.com, gunho.lee@lge.com, minchan.kim@lge.com,
-        namhyung.kim@lge.com, raphael.andy.lee@gmail.com,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>
-Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
-Message-Id: <20130128142510.68092e10.akpm@linux-foundation.org>
-In-Reply-To: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>
-References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Jan 2013 17:30:50 -0500
+Date: Mon, 28 Jan 2013 22:30:45 +0000
+From: James Hogan <james.hogan@imgtec.com>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        James Hogan <james.hogan@imgtec.com>
+Subject: Re: linux-next: Tree for Jan 25 (BROKEN suspend)
+Message-ID: <20130128223045.GA16250@balrog>
+References: <CA+icZUW6LBSjpqK-eQUAt7R=kXCPRjFoi=z1UijaajrVAj=fEg@mail.gmail.com>
+ <CA+icZUX=XdAJjWwx8P_y31JGW3GC+tdWuFhv2Ym-0OELGWGbDQ@mail.gmail.com>
+ <CA+icZUX31SB3+NU8uXA9LH5KOHxgeHKZLcqWNhzUVhx5onk6qA@mail.gmail.com>
+ <18624541.r6CtJttOWZ@vostro.rjw.lan>
+ <CA+icZUX+o6kB9wXwpuJ8U49j+qHdx=DRq7p+_U1g+1fwGb-S6w@mail.gmail.com>
+ <20130128192807.GF22465@mtj.dyndns.org>
+ <CA+icZUUHFFB6j-igX-Ec+6ZT2yvGakRd+HNVru1VUAxPXby_Lg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUUHFFB6j-igX-Ec+6ZT2yvGakRd+HNVru1VUAxPXby_Lg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Jan 2013 14:50:43 +0900
-Kyungsik Lee <kyungsik.lee@lge.com> wrote:
+On Mon, Jan 28, 2013 at 11:06:11PM +0100, Sedat Dilek wrote:
+> I don't see that git-bisect session as a time of waste, but two hints:
+> 
+> 1. People should sent their patches concerning especially Linux-Next
+> fixes not only to LKML but also to <linux-next@vger.kernel.org> (if
+> this is not known, pointing to James).
+> 
+> 2. These patches for Linux-Next should contain a "-next" in their
+> subject-line (use 'git format-patch --subject-prefix="PATCH -next"
+> ...').
 
-> This patchset is for supporting LZ4 compressed kernel and initial ramdisk on
-> the x86 and ARM architectures.
-> 
-> According to http://code.google.com/p/lz4/, LZ4 is a very fast lossless
-> compression algorithm and also features an extremely fast decoder.
-> 
-> Kernel Decompression APIs are based on implementation by Yann Collet
-> (http://code.google.com/p/lz4/source/checkout).
-> De/compression Tools are also provided from the site above.
-> 
-> The initial test result on ARM(v7) based board shows that the size of kernel
-> with LZ4 compressed is 8% bigger than LZO compressed  but the decompressing
-> speed is faster(especially under the enabled unaligned memory access).
-> 
-> Test: 3.4 based kernel built with many modules
-> Uncompressed kernel size: 13MB
-> lzo: 6.3MB, 301ms
-> lz4: 6.8MB, 251ms(167ms, with enabled unaligned memory access)
-> 
-> It seems that it___s worth trying LZ4 compressed kernel image or ramdisk 
-> for making the kernel boot more faster.
->
-> ...
->
->  20 files changed, 663 insertions(+), 3 deletions(-)
->
-> ...
->
+Okay, thanks for the tips. I'll be sure to do this in future.
 
-What's this "with enabled unaligned memory access" thing?  You mean "if
-the arch supports CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS"?  If so,
-that's only x86, which isn't really in the target market for this
-patch, yes?
-
-It's a lot of code for a 50ms boot-time improvement.  Does anyone have
-any opinions on whether or not the benefits are worth the cost?
-
+Cheers
+James
