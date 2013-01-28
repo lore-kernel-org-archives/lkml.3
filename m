@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391Ab3A1KAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 05:00:55 -0500
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:59721 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751390Ab3A1KAy (ORCPT
+	id S1755448Ab3A1KBe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 05:01:34 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:63480 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752841Ab3A1KBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 05:00:54 -0500
-Message-ID: <1359367251.883.13.camel@x61.thuisdomein>
-Subject: [PATCH] PCI: pciehp: hide ENTRY messages behind ctrl_dbg()
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 28 Jan 2013 11:00:51 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Jan 2013 10:00:52.0017 (UTC) FILETIME=[5B007A10:01CDFD3E]
-X-RcptDomain: vger.kernel.org
+	Mon, 28 Jan 2013 05:01:31 -0500
+Date: Mon, 28 Jan 2013 11:01:26 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] perf: Make numa benchmark optional
+Message-ID: <20130128100126.GA7168@gmail.com>
+References: <1354913744-29902-2-git-send-email-mingo@kernel.org>
+ <1359337882-21821-1-git-send-email-peter@hurleysoftware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359337882-21821-1-git-send-email-peter@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In each suspend and resume cycle my laptop prints these messages at
-KERN_INFO level:
-    pciehp 0000:00:1c.1:pcie04: pciehp_suspend ENTRY
-    pciehp 0000:00:1c.0:pcie04: pciehp_suspend ENTRY
 
-and
-    pciehp 0000:00:1c.0:pcie04: pciehp_resume ENTRY
-    pciehp 0000:00:1c.1:pcie04: pciehp_resume ENTRY
+* Peter Hurley <peter@hurleysoftware.com> wrote:
 
-Messages like these are probably only useful while debugging pciehp, so
-let's hide them behind the ctrl_dbg() macro.
+> Commit "perf: Add 'perf bench numa mem'..." added a NUMA performance
+> benchmark to perf. Make this optional and test for required
+> dependencies.
+> 
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  tools/perf/Makefile                 | 16 ++++++++++++++--
+>  tools/perf/builtin-bench.c          |  4 ++++
+>  tools/perf/config/feature-tests.mak | 11 +++++++++++
+>  3 files changed, 29 insertions(+), 2 deletions(-)
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Compile tested only!
+Thanks!
 
-1) Perhaps a better solution is to drop these messages entirely.
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
- drivers/pci/hotplug/pciehp_core.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Arnaldo, can we merge tip:perf/bench into perf/core, or is there 
+anything else to be done with that commit?
 
-diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
-index 939bd1d..ed1702d 100644
---- a/drivers/pci/hotplug/pciehp_core.c
-+++ b/drivers/pci/hotplug/pciehp_core.c
-@@ -293,7 +293,8 @@ static void pciehp_remove(struct pcie_device *dev)
- #ifdef CONFIG_PM
- static int pciehp_suspend (struct pcie_device *dev)
- {
--	dev_info(&dev->device, "%s ENTRY\n", __func__);
-+	struct controller *ctrl = get_service_data(dev);
-+	ctrl_dbg(ctrl, "%s ENTRY\n", __func__);
- 	return 0;
- }
- 
-@@ -303,8 +304,8 @@ static int pciehp_resume (struct pcie_device *dev)
- 	struct slot *slot;
- 	u8 status;
- 
--	dev_info(&dev->device, "%s ENTRY\n", __func__);
- 	ctrl = get_service_data(dev);
-+	ctrl_dbg(ctrl, "%s ENTRY\n", __func__);
- 
- 	/* reinitialize the chipset's event detection logic */
- 	pcie_enable_notification(ctrl);
--- 
-1.7.11.7
+Thanks,
 
+	Ingo
