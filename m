@@ -1,54 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430Ab3A1SoY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:44:24 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:64335 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab3A1SoW (ORCPT
+	id S1751560Ab3A1Sta (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:49:30 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60841 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab3A1St3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:44:22 -0500
-Date: Mon, 28 Jan 2013 19:44:19 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH v3 02/71] ARC: Build system: Makefiles, Kconfig, Linker
-	script
-Message-ID: <20130128184419.GA24853@merkur.ravnborg.org>
-References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-3-git-send-email-vgupta@synopsys.com> <51061AD0.4020200@synopsys.com>
+	Mon, 28 Jan 2013 13:49:29 -0500
+Message-ID: <5106C836.2040301@wwwdotorg.org>
+Date: Mon, 28 Jan 2013 11:49:26 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51061AD0.4020200@synopsys.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH] arm: tegra: dt: Add reset GPIO information to PHY DT
+ node
+References: <1359022606-13359-1-git-send-email-vbyravarasu@nvidia.com>
+In-Reply-To: <1359022606-13359-1-git-send-email-vbyravarasu@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 11:59:36AM +0530, Vineet Gupta wrote:
-> Hi Sam,
-> 
-> On Thursday 24 January 2013 04:20 PM, Vineet Gupta wrote:
-> > Arnd in his review pointed out that arch Kconfig organisation has several
-> > deficiencies:
-> > 
-> > * Build time entries for things which can be runtime extracted from DT
-> >   (e.g. SDRAM size, core clk frequency..)
-> > * Not multi-platform-image-build friendly (choice .. endchoice constructs)
-> > * cpu variants support (750/770) is exclusive.
-> > 
-> > The first 2 have been fixed in subsequent patches.
-> > Due to the nature of the 750 and 770, it is not possible to build for
-> > both together, w/o special runtime glue code which would hurt
-> > performance.
-> > 
-> > Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Sam Ravnborg <sam@ravnborg.org>
+On 01/24/2013 03:16 AM, Venu Byravarasu wrote:
+> As reset GPIO information is PHY specific detail, adding
+> it to PHY DT node.
 
-Looks good - all former comments addressed, and nothing were jumping
-into my eyes now.
-Many existing architectures looks worse from the build stuff perspective...
+I have applied this to Tegra's for-3.9/soc-usb branch.
 
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
-
-	Sam
+A couple minor notes: Changes to DT binding definitions should really be
+sent to the devicetree-discuss mailing list. I didn't insist on that
+here since the change is fairly minor. Also, the Linux ARM kernel
+mailing list is possibly more useful than the main Linux kernel mailing
+list for ARM-/Tegra-specific patches like this.
