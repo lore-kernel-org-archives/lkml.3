@@ -1,105 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157Ab3A1Lhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 06:37:47 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:27063 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072Ab3A1Lhm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 06:37:42 -0500
-X-AuditID: cbfee61a-b7f7d6d000000f4e-32-51066305cdae
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
-        balbi@ti.com, sarah.a.sharp@linux.intel.com, kgene.kim@samsung.com,
-        dianders@chromium.org, sylvester.nawrocki@gmail.com,
-        tomasz.figa@gmail.com
-Subject: [PATCH 1/4] usb: xhci: Enable runtime pm in xhci-plat
-Date: Mon, 28 Jan 2013 17:12:25 +0530
-Message-id: <1359373348-18320-2-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.6.5
-In-reply-to: <1359373348-18320-1-git-send-email-gautam.vivek@samsung.com>
-References: <1359373348-18320-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkkeLIzCtJLcpLzFFi42JZI2JSrcuazBZoMGkSv8XlXXPYLGYv6Wex
-	mHF+H5PFomWtzA4sHp83yQUwRnHZpKTmZJalFunbJXBlPJxxkLlgHU/FoslPmRsYl3N1MXJy
-	SAiYSKx8/Y0NwhaTuHBvPZgtJLCUUeLNt3iYmllTW5i7GLmA4osYJbadeMEO4Uxmkug/cJoV
-	pIpNQFei6e0uRhBbREBW4vCV32AdzAITmSR6FjUwgSSEBewkdjdPArNZBFQl+i48YwGxeQU8
-	JN4u+M0OsU5B4s3tZ8wgNqeAp8TkB2fYIU7ykJi5aD4LRM1rNol925kh5ghIfJt8CCjOARSX
-	ldh0gBmiRFLi4IobLBMYhRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECAzQ0/+eSe1g
-	XNlgcYhRgINRiYf3RxpLoBBrYllxZe4hRgkOZiURXoEYtkAh3pTEyqrUovz4otKc1OJDjMlA
-	yycyS4km5wOjJ68k3tDYxNzU2NTSyMjM1JQ0YSVxXsZTTwKEBNITS1KzU1MLUotgtjBxcEo1
-	MCa6mjftfVEwa3mYYvWtllT3NebXFWU/7p45tWT5jaZorxOLLhTEKEXauvIx6FqIb3OWeLWC
-	le/NgfWXVmksWLHrU+iLoik7owQFpabn7brrIvTm2LEfbooNzO6XSqSumGcdfHLIZ+pPvhjW
-	v+arj8t53bEz+hQmfJjZjnXelnNzPQNvyE0RWa3EUpyRaKjFXFScCACkSul+lAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t9jAV3WZLZAg1+9rBaXd81hs5i9pJ/F
-	Ysb5fUwWi5a1MjuweHzeJBfAGNXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGu
-	pJCXmJtqq+TiE6DrlpkDtERJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjD
-	mPFwxkHmgnU8FYsmP2VuYFzO1cXIySEhYCIxa2oLM4QtJnHh3nq2LkYuDiGBRYwS2068YIdw
-	JjNJ9B84zQpSxSagK9H0dhcjiC0iICtx+MpvZpAiZoGJTBI9ixqYQBLCAnYSu5sngdksAqoS
-	fReesYDYvAIeEm8X/GaHWKcg8eb2M7DVnAKeEpMfnAGLCwHVzFw0n2UCI+8CRoZVjKKpBckF
-	xUnpuYZ6xYm5xaV56XrJ+bmbGMEx8ExqB+PKBotDjAIcjEo8vD/SWAKFWBPLiitzDzFKcDAr
-	ifAKxLAFCvGmJFZWpRblxxeV5qQWH2JMBrpqIrOUaHI+MD7zSuINjU3MTY1NLU0sTMwsSRNW
-	EudlPPUkQEggPbEkNTs1tSC1CGYLEwenVAPj4YefvWyrta880Fg/ievRD9OE20axHZ8/r2UR
-	uBzKIdTs7na28Xp6zqksjh0H/X0cGCWVGSYxeCQzCd+uNmv34HP3Tp17avqTVp5TRS2PuLoE
-	49d95zEV+bFGfVHGk7kLFf9O69xx9C+/98LbmqGdN19PLNu+96DO6rvWRf1HRA9a/YiKqb2m
-	xFKckWioxVxUnAgAU0KuccUCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1757289Ab3A1LiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 06:38:20 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:49621 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756957Ab3A1LbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 06:31:08 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
+        <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 09/30] USB: ehci-omap: Use devm_request_and_ioremap()
+Date: Mon, 28 Jan 2013 13:30:10 +0200
+Message-ID: <1359372631-8180-10-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By enabling runtime pm in this driver is allows users of xhci-plat to
-enter into runtime pm.  This is not full runtime pm support (AKA
-xhci-plat doesn't actually power anything off when in runtime suspend
-mode) but just basic enablement.
+Make use of devm_request_and_ioremap() and correct comment.
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/usb/host/xhci-plat.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+ drivers/usb/host/ehci-omap.c |   19 +++++--------------
+ 1 files changed, 5 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-index df90fe5..6ad7cfb 100644
---- a/drivers/usb/host/xhci-plat.c
-+++ b/drivers/usb/host/xhci-plat.c
-@@ -139,6 +139,10 @@ static int xhci_plat_probe(struct platform_device *pdev)
- 		goto dealloc_usb2_hcd;
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index 30fc482..fd2f5450 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -216,23 +216,17 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+ 
+ 	res =  platform_get_resource_byname(pdev,
+ 				IORESOURCE_MEM, "ehci");
+-	if (!res) {
+-		dev_err(dev, "UHH EHCI get resource failed\n");
+-		return -ENODEV;
+-	}
+-
+-	regs = ioremap(res->start, resource_size(res));
++	regs = devm_request_and_ioremap(dev, res);
+ 	if (!regs) {
+-		dev_err(dev, "UHH EHCI ioremap failed\n");
+-		return -ENOMEM;
++		dev_err(dev, "Resource request/ioremap failed\n");
++		return -EADDRNOTAVAIL;
  	}
  
-+	pm_runtime_set_active(&pdev->dev);
-+	pm_runtime_enable(&pdev->dev);
-+	pm_runtime_forbid(&pdev->dev);
-+
- 	/*
- 	 * Set the xHCI pointer before xhci_plat_setup() (aka hcd_driver.reset)
- 	 * is called by usb_add_hcd().
-@@ -149,10 +153,13 @@ static int xhci_plat_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto put_usb3_hcd;
+ 	hcd = usb_create_hcd(&ehci_omap_hc_driver, dev,
+ 			dev_name(dev));
+ 	if (!hcd) {
+-		dev_err(dev, "failed to create hcd with err %d\n", ret);
+-		ret = -ENOMEM;
+-		goto err_io;
++		dev_err(dev, "Failed to create HCD\n");
++		return -ENOMEM;
+ 	}
  
-+	pm_runtime_allow(&pdev->dev);
-+
- 	return 0;
+ 	hcd->rsrc_start = res->start;
+@@ -285,8 +279,6 @@ err_pm_runtime:
+ 	pm_runtime_put_sync(dev);
+ 	usb_put_hcd(hcd);
  
- put_usb3_hcd:
- 	usb_put_hcd(xhci->shared_hcd);
-+	pm_runtime_disable(&pdev->dev);
+-err_io:
+-	iounmap(regs);
+ 	return ret;
+ }
  
- dealloc_usb2_hcd:
+@@ -306,7 +298,6 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
+ 
  	usb_remove_hcd(hcd);
-@@ -174,6 +181,8 @@ static int xhci_plat_remove(struct platform_device *dev)
- 	struct usb_hcd	*hcd = platform_get_drvdata(dev);
- 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
+ 	disable_put_regulator(dev->platform_data);
+-	iounmap(hcd->regs);
+ 	usb_put_hcd(hcd);
  
-+	pm_runtime_disable(&dev->dev);
-+
- 	usb_remove_hcd(xhci->shared_hcd);
- 	usb_put_hcd(xhci->shared_hcd);
- 
+ 	pm_runtime_put_sync(dev);
 -- 
-1.7.6.5
+1.7.4.1
 
