@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab3A1QCk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 11:02:40 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:36618 "EHLO comal.ext.ti.com"
+	id S1756633Ab3A1QDO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 11:03:14 -0500
+Received: from mga01.intel.com ([192.55.52.88]:20516 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753221Ab3A1QCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 11:02:37 -0500
-Message-ID: <5106A105.6030004@ti.com>
-Date: Mon, 28 Jan 2013 21:32:13 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1754174Ab3A1QDL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 11:03:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,551,1355126400"; 
+   d="scan'208";a="279300283"
+From: "Lan, Tianyu" <tianyu.lan@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: linux-next: build failure after merge of the usb tree
+Thread-Topic: linux-next: build failure after merge of the usb tree
+Thread-Index: AQHN/UTaasownys6vUyJQSycl5ICdJheS3wAgACbnMA=
+Date: Mon, 28 Jan 2013 16:03:07 +0000
+Message-ID: <4CFBC02C07DA244CA19D6815A05BE6EE1BB7F5@SHSMSX101.ccr.corp.intel.com>
+References: <20130128214644.a3906eecaf9123b05216dcaf@canb.auug.org.au>
+ <20130128144508.GA2997@kroah.com>
+In-Reply-To: <20130128144508.GA2997@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Mrugesh Katepallewar <mrugesh.mk@ti.com>
-CC: <devicetree-discuss@lists.ozlabs.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <hs@denx.de>
-Subject: Re: [PATCH V2] ARM: davinci: da850: add RTC DT entries
-References: <1359359268-9781-1-git-send-email-mrugesh.mk@ti.com>
-In-Reply-To: <1359359268-9781-1-git-send-email-mrugesh.mk@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mrugesh,
+I just check the commit 88bb965ed711 can not git revert smoothly. I will do it
+and send a revert patch.
 
-On 1/28/2013 1:17 PM, Mrugesh Katepallewar wrote:
-> Add RTC DT entries in da850 dts file.
+Best Regards 
+Tianyu Lan 
+
+
+-----Original Message-----
+From: Greg KH [mailto:gregkh@linuxfoundation.org] 
+Sent: Monday, January 28, 2013 10:45 PM
+To: Stephen Rothwell
+Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Lan, Tianyu
+Subject: Re: linux-next: build failure after merge of the usb tree
+
+On Mon, Jan 28, 2013 at 09:46:44PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> Signed-off-by: Mrugesh Katepallewar <mrugesh.mk@ti.com>
-> ---
-> Applies on top of v3.8-rc4 of linus tree.
+> After merging the usb tree, today's linux-next build (x86_64 
+> allmodconfig) failed like this:
 > 
-> This patch is depending on 
-> "ARM: davinci: da850: add interrupt-parent property in soc node"
-> https://patchwork.kernel.org/patch/2044101/
-
-> Tested on da850-evm device.
+> drivers/usb/core/usb-acpi.c: In function 'usb_acpi_register_power_resources':
+> drivers/usb/core/usb-acpi.c:226:2: error: implicit declaration of 
+> function 'acpi_power_resource_register_device' 
+> [-Werror=implicit-function-declaration]
+> drivers/usb/core/usb-acpi.c: In function 'usb_acpi_unregister_power_resources':
+> drivers/usb/core/usb-acpi.c:234:3: error: implicit declaration of 
+> function 'acpi_power_resource_unregister_device' 
+> [-Werror=implicit-function-declaration]
 > 
-> Test Procedure:
-> date 2013.01.28-10:00:00 (usage: date[YYYY.]MM.DD-hh:mm[:ss])
-> hwclock -w
-> reset board and check system time.
+> Caused by commit 88bb965ed711 ("usb: Register usb port's acpi power 
+> resources").
+> 
+> I have used the usb tree from next-20130125 for today.
 
-Queuing this for v3.9. The testing information above is useful and
-should be part of the changelog. I moved it there while committing.
+Lan, please send me a patch to resolve this issue.
 
-It will be nice to check the alarm functionality as well. Can you check
-that and let me know that works as well?
+Stephen, sorry for the breakage.
 
-Thanks,
-Sekhar
+thanks,
+
+greg k-h
