@@ -1,144 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124Ab3A1Giq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 01:38:46 -0500
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:38671 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271Ab3A1Gio (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 01:38:44 -0500
-MIME-Version: 1.0
-Date: Mon, 28 Jan 2013 01:38:43 -0500
-Message-ID: <CAHFgRy_DfbyP47W95ikd8Jw4UxncV0KdaRD8M=4+ibp55M73vA@mail.gmail.com>
-Subject: Linus GIT 3.8.0-rc5: INFO: possible circular locking dependency
- detected -- ((fb_notifier_list).rwsem){.+.+.+}, at: [<ffffffff81052611>] __blocking_notifier_call_chain+0x49/0x80
-From: Miles Lane <miles.lane@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752349Ab3A1Gma (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 01:42:30 -0500
+Received: from mout.gmx.net ([212.227.15.19]:65449 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751639Ab3A1Gm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 01:42:27 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19JQWZVpLhJfVDcZSS28ZseLi7NAY3QNRPZakcMca
+	NZ/bP3WiMVbowj
+Message-ID: <1359355337.5783.56.camel@marge.simpson.net>
+Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
+ power awareness scheduling
+From: Mike Galbraith <efault@gmx.de>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
+        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+        namhyung@kernel.org, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
+Date: Mon, 28 Jan 2013 07:42:17 +0100
+In-Reply-To: <1359353720.5783.51.camel@marge.simpson.net>
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+	 <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com>
+	 <510493E4.8060602@intel.com> <1359261385.5803.46.camel@marge.simpson.net>
+	 <20130127103508.GB8894@pd.tnic> <51052ACB.3070703@intel.com>
+	 <1359301903.5805.11.camel@marge.simpson.net>
+	 <1359350266.5783.39.camel@marge.simpson.net> <510611D2.1020007@intel.com>
+	 <1359353720.5783.51.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-At the bottom of this message you will find dmesg output showing this
-problem from the current Linus GIT tree.
-Here is the test of the message you wrote about this
-(http://marc.info/?l=dri-devel&m=135905755124554&w=2):
---------------------------
-Patches for the know issues around console_lock vs fbdev_notifier are in -mm:
+On Mon, 2013-01-28 at 07:15 +0100, Mike Galbraith wrote: 
+> On Mon, 2013-01-28 at 13:51 +0800, Alex Shi wrote: 
+> > On 01/28/2013 01:17 PM, Mike Galbraith wrote:
+> > > On Sun, 2013-01-27 at 16:51 +0100, Mike Galbraith wrote: 
+> > >> On Sun, 2013-01-27 at 21:25 +0800, Alex Shi wrote: 
+> > >>> On 01/27/2013 06:35 PM, Borislav Petkov wrote:
+> > >>>> On Sun, Jan 27, 2013 at 05:36:25AM +0100, Mike Galbraith wrote:
+> > >>>>> With aim7 compute on 4 node 40 core box, I see stable throughput
+> > >>>>> improvement at tasks = nr_cores and below w. balance and powersaving. 
+> > >> ... 
+> > >>>> Ok, this is sick. How is balance and powersaving better than perf? Both
+> > >>>> have much more jobs per minute than perf; is that because we do pack
+> > >>>> much more tasks per cpu with balance and powersaving?
+> > >>>
+> > >>> Maybe it is due to the lazy balancing on balance/powersaving. You can
+> > >>> check the CS times in /proc/pid/status.
+> > >>
+> > >> Well, it's not wakeup path, limiting entry frequency per waker did zip
+> > >> squat nada to any policy throughput.
+> > > 
+> > > monteverdi:/abuild/mike/:[0]# echo powersaving > /sys/devices/system/cpu/sched_policy/current_sched_policy
+> > > monteverdi:/abuild/mike/:[0]# massive_intr 10 60
+> > > 043321  00058616
+> > > 043313  00058616
+> > > 043318  00058968
+> > > 043317  00058968
+> > > 043316  00059184
+> > > 043319  00059192
+> > > 043320  00059048
+> > > 043314  00059048
+> > > 043312  00058176
+> > > 043315  00058184
+> > > monteverdi:/abuild/mike/:[0]# echo balance > /sys/devices/system/cpu/sched_policy/current_sched_policy
+> > > monteverdi:/abuild/mike/:[0]# massive_intr 10 60
+> > > 043337  00053448
+> > > 043333  00053456
+> > > 043338  00052992
+> > > 043331  00053448
+> > > 043332  00053488
+> > > 043335  00053496
+> > > 043334  00053480
+> > > 043329  00053288
+> > > 043336  00053464
+> > > 043330  00053496
+> > > monteverdi:/abuild/mike/:[0]# echo performance > /sys/devices/system/cpu/sched_policy/current_sched_policy
+> > > monteverdi:/abuild/mike/:[0]# massive_intr 10 60
+> > > 043348  00052488
+> > > 043344  00052488
+> > > 043349  00052744
+> > > 043343  00052504
+> > > 043347  00052504
+> > > 043352  00052888
+> > > 043345  00052504
+> > > 043351  00052496
+> > > 043346  00052496
+> > > 043350  00052304
+> > > monteverdi:/abuild/mike/:[0]#
+> > 
+> > similar with aim7 results. Thanks, Mike!
+> > 
+> > Wold you like to collect vmstat info in background?
+> > > 
+> > > Zzzt.  Wish I could turn turbo thingy off.
+> > 
+> > Do you mean the turbo mode of cpu frequency? I remember some of machine
+> > can disable it in BIOS.
+> 
+> Yeah, I can do that in my local x3550 box.  I can't fiddle with BIOS
+> settings on the remote NUMA box.
+> 
+> This can't be anything but turbo gizmo mucking up the numbers I think,
+> not that the numbers are invalid or anything, better numbers are better
+> numbers no matter where/how they come about ;-)
+> 
+> The massive_intr load is dirt simple sleep/spin with bean counting.  It
+> sleeps 1ms spins 8ms.  Change that to sleep 8ms, grind away for 1ms...
+> 
+> monteverdi:/abuild/mike/:[0]# ./massive_intr 10 60
+> 045150  00006484
+> 045157  00006427
+> 045156  00006401
+> 045152  00006428
+> 045155  00006372
+> 045154  00006370
+> 045158  00006453
+> 045149  00006372
+> 045151  00006371
+> 045153  00006371
+> monteverdi:/abuild/mike/:[0]# echo balance > /sys/devices/system/cpu/sched_policy/current_sched_policy
+> monteverdi:/abuild/mike/:[0]# ./massive_intr 10 60
+> 045170  00006380
+> 045172  00006374
+> 045169  00006376
+> 045175  00006376
+> 045171  00006334
+> 045176  00006380
+> 045168  00006374
+> 045174  00006334
+> 045177  00006375
+> 045173  00006376
+> monteverdi:/abuild/mike/:[0]# echo performance > /sys/devices/system/cpu/sched_policy/current_sched_policy
+> monteverdi:/abuild/mike/:[0]# ./massive_intr 10 60
+> 045198  00006408
+> 045191  00006408
+> 045197  00006408
+> 045192  00006411
+> 045194  00006409
+> 045196  00006409
+> 045195  00006336
+> 045189  00006336
+> 045193  00006411
+> 045190  00006410
 
-http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover.patch
-http://ozlabs.org/~akpm/mmots/broken-out/fb-yet-another-band-aid-for-fixing-lockdep-mess.patch
+Back to original 1ms sleep, 8ms work, turning NUMA box into a single
+node 10 core box with numactl.
 
-Unfortunately the patches seem to be stuck there for now despite quite
-a few reports about this (including seemingly relevant background
-noise about hangs in distro bugzillas).
--Daniel
-----------------------------------
+monteverdi:/abuild/mike/:[0]# echo powersaving > /sys/devices/system/cpu/sched_policy/current_sched_policy
+monteverdi:/abuild/mike/:[0]# numactl --cpunodebind=0 massive_intr 10 60
+045286  00043872
+045289  00043464
+045284  00043488
+045287  00043440
+045283  00043416
+045281  00044456
+045285  00043456
+045288  00044312
+045280  00043048
+045282  00043240
+monteverdi:/abuild/mike/:[0]# echo balance > /sys/devices/system/cpu/sched_policy/current_sched_policy
+monteverdi:/abuild/mike/:[0]# numactl --cpunodebind=0 massive_intr 10 60
+045300  00052536
+045307  00052472
+045304  00052536
+045299  00052536
+045305  00052520
+045306  00052528
+045302  00052528
+045303  00052528
+045308  00052512
+045301  00052520
+monteverdi:/abuild/mike/:[0]# echo performance > /sys/devices/system/cpu/sched_policy/current_sched_policy
+monteverdi:/abuild/mike/:[0]# numactl --cpunodebind=0 massive_intr 10 60
+045339  00052600
+045340  00052608
+045338  00052600
+045337  00052608
+045343  00052600
+045341  00052600
+045336  00052608
+045335  00052616
+045334  00052576
+045342  00052600
 
-[  489.832113] [ INFO: possible circular locking dependency detected ]
-[  489.832115] 3.8.0-rc5 #99 Not tainted
-[  489.832116] -------------------------------------------------------
-[  489.832117] 99video/4306 is trying to acquire lock:
-[  489.832129]  ((fb_notifier_list).rwsem){.+.+.+}, at:
-[<ffffffff81052611>] __blocking_notifier_call_chain+0x49/0x80
-[  489.832130]
-[  489.832130] but task is already holding lock:
-[  489.832136]  (console_lock){+.+.+.}, at: [<ffffffff8125d25e>]
-store_fbstate+0x43/0x71
-[  489.832137]
-[  489.832137] which lock already depends on the new lock.
-[  489.832137]
-[  489.832138]
-[  489.832138] the existing dependency chain (in reverse order) is:
-[  489.832141]
-[  489.832141] -> #1 (console_lock){+.+.+.}:
-[  489.832146]        [<ffffffff81079aa8>] lock_acquire+0xfe/0x14d
-[  489.832150]        [<ffffffff8102f680>] console_lock+0x64/0x66
-[  489.832154]        [<ffffffff812b06ef>] register_con_driver+0x33/0x123
-[  489.832158]        [<ffffffff812b0f13>] take_over_console+0x21/0x266
-[  489.832161]        [<ffffffff812617e0>] fbcon_takeover+0x56/0x98
-[  489.832165]        [<ffffffff812652f4>] fbcon_event_notify+0x3b6/0x6e4
-[  489.832169]        [<ffffffff8147584a>] notifier_call_chain+0x8c/0xc0
-[  489.832173]        [<ffffffff81052627>]
-__blocking_notifier_call_chain+0x5f/0x80
-[  489.832176]        [<ffffffff81052657>] blocking_notifier_call_chain+0xf/0x11
-[  489.832181]        [<ffffffff812582f2>] fb_notifier_call_chain+0x16/0x18
-[  489.832184]        [<ffffffff812595de>] register_framebuffer+0x216/0x27a
-[  489.832189]        [<ffffffff81ac6e48>] vesafb_probe+0x6df/0x75f
-[  489.832193]        [<ffffffff81333d70>] platform_drv_probe+0x34/0x5e
-[  489.832196]        [<ffffffff8133254b>] driver_probe_device+0x90/0x19b
-[  489.832199]        [<ffffffff813326a4>] __driver_attach+0x4e/0x6f
-[  489.832202]        [<ffffffff81330d02>] bus_for_each_dev+0x52/0x85
-[  489.832205]        [<ffffffff8133208a>] driver_attach+0x19/0x1b
-[  489.832208]        [<ffffffff81331d49>] bus_add_driver+0xf7/0x21a
-[  489.832211]        [<ffffffff81332bf3>] driver_register+0x8c/0x110
-[  489.832214]        [<ffffffff81333805>] platform_driver_register+0x41/0x43
-[  489.832217]        [<ffffffff8133381f>] platform_driver_probe+0x18/0x8a
-[  489.832220]        [<ffffffff81ac6726>] vesafb_init+0x215/0x258
-[  489.832224]        [<ffffffff81000232>] do_one_initcall+0x7a/0x130
-[  489.832228]        [<ffffffff81aa4bfb>] kernel_init_freeable+0x109/0x191
-[  489.832233]        [<ffffffff8145d421>] kernel_init+0x9/0xd1
-[  489.832236]        [<ffffffff814786ec>] ret_from_fork+0x7c/0xb0
-[  489.832240]
-[  489.832240] -> #0 ((fb_notifier_list).rwsem){.+.+.+}:
-[  489.832242]        [<ffffffff8107925d>] __lock_acquire+0xacc/0xe0c
-[  489.832245]        [<ffffffff81079aa8>] lock_acquire+0xfe/0x14d
-[  489.832249]        [<ffffffff81470d7a>] down_read+0x3f/0x4b
-[  489.832253]        [<ffffffff81052611>]
-__blocking_notifier_call_chain+0x49/0x80
-[  489.832257]        [<ffffffff81052657>] blocking_notifier_call_chain+0xf/0x11
-[  489.832260]        [<ffffffff812582f2>] fb_notifier_call_chain+0x16/0x18
-[  489.832263]        [<ffffffff812586d9>] fb_set_suspend+0x22/0x4b
-[  489.832266]        [<ffffffff8125d269>] store_fbstate+0x4e/0x71
-[  489.832270]        [<ffffffff8132e98f>] dev_attr_store+0x13/0x1f
-[  489.832274]        [<ffffffff81163064>] sysfs_write_file+0xe9/0x121
-[  489.832278]        [<ffffffff81106546>] vfs_write+0x91/0xd0
-[  489.832281]        [<ffffffff81106738>] sys_write+0x5a/0x8b
-[  489.832284]        [<ffffffff81478792>] system_call_fastpath+0x16/0x1b
-[  489.832285]
-[  489.832285] other info that might help us debug this:
-[  489.832285]
-[  489.832286]  Possible unsafe locking scenario:
-[  489.832286]
-[  489.832287]        CPU0                    CPU1
-[  489.832288]        ----                    ----
-[  489.832290]   lock(console_lock);
-[  489.832292]                                lock((fb_notifier_list).rwsem);
-[  489.832294]                                lock(console_lock);
-[  489.832296]   lock((fb_notifier_list).rwsem);
-[  489.832297]
-[  489.832297]  *** DEADLOCK ***
-[  489.832297]
-[  489.832298] 4 locks held by 99video/4306:
-[  489.832304]  #0:  (&buffer->mutex){+.+.+.}, at:
-[<ffffffff81162fb2>] sysfs_write_file+0x37/0x121
-[  489.832310]  #1:  (s_active#204){.+.+.+}, at: [<ffffffff8116304c>]
-sysfs_write_file+0xd1/0x121
-[  489.832315]  #2:  (&fb_info->lock){+.+.+.}, at:
-[<ffffffff81258698>] lock_fb_info+0x18/0x37
-[  489.832321]  #3:  (console_lock){+.+.+.}, at: [<ffffffff8125d25e>]
-store_fbstate+0x43/0x71
-[  489.832321]
-[  489.832321] stack backtrace:
-[  489.832324] Pid: 4306, comm: 99video Not tainted 3.8.0-rc5 #99
-[  489.832325] Call Trace:
-[  489.832330]  [<ffffffff8146aca7>] print_circular_bug+0x1f6/0x204
-[  489.832333]  [<ffffffff8107925d>] __lock_acquire+0xacc/0xe0c
-[  489.832337]  [<ffffffff81079aa8>] lock_acquire+0xfe/0x14d
-[  489.832341]  [<ffffffff81052611>] ? __blocking_notifier_call_chain+0x49/0x80
-[  489.832345]  [<ffffffff81470d7a>] down_read+0x3f/0x4b
-[  489.832348]  [<ffffffff81052611>] ? __blocking_notifier_call_chain+0x49/0x80
-[  489.832352]  [<ffffffff81052611>] __blocking_notifier_call_chain+0x49/0x80
-[  489.832356]  [<ffffffff81052657>] blocking_notifier_call_chain+0xf/0x11
-[  489.832359]  [<ffffffff812582f2>] fb_notifier_call_chain+0x16/0x18
-[  489.832362]  [<ffffffff812586d9>] fb_set_suspend+0x22/0x4b
-[  489.832365]  [<ffffffff8102f680>] ? console_lock+0x64/0x66
-[  489.832368]  [<ffffffff8125d269>] store_fbstate+0x4e/0x71
-[  489.832372]  [<ffffffff8132e98f>] dev_attr_store+0x13/0x1f
-[  489.832375]  [<ffffffff81163064>] sysfs_write_file+0xe9/0x121
-[  489.832378]  [<ffffffff81106546>] vfs_write+0x91/0xd0
-[  489.832381]  [<ffffffff81106738>] sys_write+0x5a/0x8b
-[  489.832385]  [<ffffffff81478792>] system_call_fastpath+0x16/0x1b
-[  490.115770] PM: Syncing filesystems ... done.
