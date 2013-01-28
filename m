@@ -1,53 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab3A1Pdn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 10:33:43 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:34717 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751306Ab3A1Pdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 10:33:42 -0500
-Message-ID: <51069A3A.8090404@ti.com>
-Date: Mon, 28 Jan 2013 21:03:14 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1754205Ab3A1PeY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 10:34:24 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:44709 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab3A1PeW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 10:34:22 -0500
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: LAK <linux-arm-kernel@lists.infradead.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        <devicetree-discuss@lists.ozlabs.org>, Heiko Schocher <hs@denx.de>
-Subject: Re: [PATCH] ARM: davinci: da850: add interrupt-parent property in
- soc node
-References: <1359112724-1217-1-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1359112724-1217-1-git-send-email-prabhakar.lad@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1359151245-13179-3-git-send-email-andi@firstfloor.org>
+References: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
+	<1359151245-13179-3-git-send-email-andi@firstfloor.org>
+Date: Mon, 28 Jan 2013 16:34:21 +0100
+Message-ID: <CABPqkBTwqYOiKDreq394Nq=ds8b0qg2igTdBoJ8JpB0Dd2RbRg@mail.gmail.com>
+Subject: Re: [PATCH 02/12] perf, x86: Basic Haswell PMU support v2
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/25/2013 4:48 PM, Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
-> 
-> This patch adds 'interrupt-parent' property in soc node, so that
-> the child inherits this property, this avoids adding 'interrupt-parent'
-> to each node.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: davinci-linux-open-source@linux.davincidsp.com
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Cc: Heiko Schocher <hs@denx.de>
+On Fri, Jan 25, 2013 at 11:00 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> Add basic Haswell PMU support.
+>
+> Similar to SandyBridge, but has a few new events. Further
+> differences are handled in followon patches.
+>
+> There are some new counter flags that need to be prevented
+> from being set on fixed counters.
+>
+> Contains fixes from Stephane Eranian
+>
+> v2: Folded TSX bits into standard FIXED_EVENT_CONSTRAINTS
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 > ---
+>  arch/x86/include/asm/perf_event.h      |    3 +++
+>  arch/x86/kernel/cpu/perf_event.h       |    5 ++++-
+>  arch/x86/kernel/cpu/perf_event_intel.c |   29 +++++++++++++++++++++++++++++
+>  3 files changed, 36 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+> index 4fabcdf..4003bb6 100644
+> --- a/arch/x86/include/asm/perf_event.h
+> +++ b/arch/x86/include/asm/perf_event.h
+> @@ -29,6 +29,9 @@
+>  #define ARCH_PERFMON_EVENTSEL_INV                      (1ULL << 23)
+>  #define ARCH_PERFMON_EVENTSEL_CMASK                    0xFF000000ULL
+>
+> +#define HSW_INTX                                       (1ULL << 32)
+> +#define HSW_INTX_CHECKPOINTED                          (1ULL << 33)
+> +
+>  #define AMD_PERFMON_EVENTSEL_GUESTONLY                 (1ULL << 40)
+>  #define AMD_PERFMON_EVENTSEL_HOSTONLY                  (1ULL << 41)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index 115c1ea..8941899 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -219,11 +219,14 @@ struct cpu_hw_events {
+>   *  - inv
+>   *  - edge
+>   *  - cnt-mask
+> + *  - intx
+> + *  - intx_cp
+>   *  The other filters are supported by fixed counters.
+>   *  The any-thread option is supported starting with v3.
+>   */
+> +#define FIXED_EVENT_FLAGS (X86_RAW_EVENT_MASK|HSW_INTX|HSW_INTX_CHECKPOINTED)
+>  #define FIXED_EVENT_CONSTRAINT(c, n)   \
+> -       EVENT_CONSTRAINT(c, (1ULL << (32+n)), X86_RAW_EVENT_MASK)
+> +       EVENT_CONSTRAINT(c, (1ULL << (32+n)), FIXED_EVENT_FLAGS)
+>
+>  /*
+>   * Constraint on the Event code + UMask
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 93b9e11..3a08534 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -133,6 +133,17 @@ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
+>         EVENT_EXTRA_END
+>  };
+>
+> +static struct event_constraint intel_hsw_event_constraints[] =
+> +{
+> +       FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+> +       FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
+> +       FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
+> +       INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
 
-Looks good to me. Queuing for v3.9. BTW, we are moving the interrupt
-parent property to soc node rather than adding it. So, I think a better
-headline is "move interrupt-parent property to soc node". I change the
-headline while committing.
+You're covering the entire event here, so comment should be: L1D_PEND_MISS.*
 
-Thanks,
-Sekhar
+> +       INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
+> +       INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
+> +       EVENT_CONSTRAINT_END
+
+You are missing constraint on the following public events:
+- CYCLE_ACTIVITY (0xa3)
+
+> +};
+> +
+>  static u64 intel_pmu_event_map(int hw_event)
+>  {
+>         return intel_perfmon_event_map[hw_event];
+> @@ -2107,6 +2118,24 @@ __init int intel_pmu_init(void)
+>                 break;
+>
+>
+> +       case 60: /* Haswell Client */
+> +       case 70:
+> +       case 71:
+> +               memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
+> +                      sizeof(hw_cache_event_ids));
+> +
+> +               intel_pmu_lbr_init_nhm();
+> +
+I suspect this one should be intel_pmu_lbr_init_snb(), otherwise
+you inherit the broken filter workarounds.
+
+> +               x86_pmu.event_constraints = intel_hsw_event_constraints;
+> +
+> +               x86_pmu.extra_regs = intel_snb_extra_regs;
+> +               /* all extra regs are per-cpu when HT is on */
+> +               x86_pmu.er_flags |= ERF_HAS_RSP_1;
+> +               x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+> +
+> +               pr_cont("Haswell events, ");
+> +               break;
+> +
+>         default:
+>                 switch (x86_pmu.version) {
+>                 case 1:
+> --
+> 1.7.7.6
+>
