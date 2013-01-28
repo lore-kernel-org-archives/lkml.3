@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab3A1PCT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 10:02:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39979 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750751Ab3A1PCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 10:02:17 -0500
-Date: Mon, 28 Jan 2013 16:02:10 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Simon Wood <simon@mungewell.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rosegardener@freeode.co.uk
-Subject: Re: [PATCH 4/4] USB: HID: SRW-S1 Add support controlling all LEDs
- simultaneously
-In-Reply-To: <1359095687-13398-4-git-send-email-simon@mungewell.org>
-Message-ID: <alpine.LNX.2.00.1301281601370.23853@pobox.suse.cz>
-References: <1359095687-13398-1-git-send-email-simon@mungewell.org> <1359095687-13398-4-git-send-email-simon@mungewell.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751518Ab3A1PEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 10:04:40 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56739 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab3A1PEi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 10:04:38 -0500
+Date: Mon, 28 Jan 2013 15:04:10 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Roland Stigge <stigge@antcom.de>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 2/2] gpio: pca953x: use managed resources
+Message-ID: <20130128150410.GM23505@n2100.arm.linux.org.uk>
+References: <1359133168-14879-1-git-send-email-gregory.clement@free-electrons.com> <1359133168-14879-3-git-send-email-gregory.clement@free-electrons.com> <CACRpkdaEH+hqOo6i+4Lz+T4B+oAvCj+v0Ycr576yV2fWN2VNvg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdaEH+hqOo6i+4Lz+T4B+oAvCj+v0Ycr576yV2fWN2VNvg@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jan 2013, Simon Wood wrote:
-
-> From: simon <simon@simon-virtual-machine.(none)>
+On Mon, Jan 28, 2013 at 11:17:48AM +0100, Linus Walleij wrote:
+> On Fri, Jan 25, 2013 at 5:59 PM, Gregory CLEMENT
+> <gregory.clement@free-electrons.com> wrote:
 > 
-> This patch to the SRW-S1 driver adds the ability to control all
-> LEDs simultaneously as testing showed that it was slow (noticably!!)
-> when seting or clearing all the LEDs in turn.
+> > From: Linus Walleij <linus.walleij@linaro.org>
+> >
+> > Using the devm_* managed resources the pca driver can be simplified
+> > and cut down on boilerplate code.
+> >
+> > [gcl: fixed a inccorect reference to a removed label, "goto fail_out"
+> > became "return ret"]
 > 
-> It adds a 'RPMALL' LED, whose behavoir is asserted to all the LEDs in
-> the bar graph, individual LEDs can subsequently be turned on/off
-> individually.
-> 
-> Signed-off-by: Simon Wood <simon@mungewell.org>
-> tested-by: John Murphy <rosegardener@freeode.co.uk>
-[ ... snip ... ]
+> Oh now "gcl" means both Grant C. Likely and Gregory CLement :-)
 
-> @@ -219,13 +255,34 @@ static int srws1_probe(struct hid_device *hdev,
->  
->  	/* register led subsystem */
->  	drv_data->led_state = 0;
-> -	for (i = 0; i < SRWS1_NUMBER_LEDS; i++)
-> +	for (i = 0; i < SRWS1_NUMBER_LEDS + 1; i++)
->  		drv_data->led[i] = NULL;
->  
->  	srws1_set_leds(hdev, 0);
->  
-> -	name_sz = strlen(hdev->uniq) + 15;
-> +	name_sz = strlen(hdev->uniq) + 16;
-> +
-> +	/* 'ALL', for setting all LEDs simultaneously */
-> +	led = kzalloc(sizeof(struct led_classdev)+name_sz, GFP_KERNEL);
+I'd say gcl means Grant C. Likely.  gc would be Gregory Clement.
+Initials. :)  Using anything else results in yet more many namespace
+clashes.
 
-Is this memory ever freed?
-
--- 
-Jiri Kosina
-SUSE Labs
+Maybe we should switch to a numeric namespace instead? :)
