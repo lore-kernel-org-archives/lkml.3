@@ -1,159 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab3A1Ubu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 15:31:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23449 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753426Ab3A1Ubq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 15:31:46 -0500
-Date: Mon, 28 Jan 2013 14:31:36 -0600
-From: Clark Williams <williams@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] sched/rt:  add a tuning knob to allow changing RR
- timeslice
-Message-ID: <20130128143136.5736f4c0@redhat.com>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/V1grJ6cPA/SqcoNiMmnmH4="; protocol="application/pgp-signature"
+	id S1754052Ab3A1Udl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 15:33:41 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:58958 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753426Ab3A1Udi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 15:33:38 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Linus Walleij <linus.walleij@linaro.org>, Alejandro Mery <amery@geeks.cl>,
+        Stefan Roese <sr@denx.de>, linux-kernel@vger.kernel.org
+Subject: [PATCHv4] ARM: sunxi: gpio: Add Allwinner SoCs GPIO drivers
+Date: Mon, 28 Jan 2013 21:33:12 +0100
+Message-Id: <1359405192-1192-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/V1grJ6cPA/SqcoNiMmnmH4=
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+The IP responsible for the muxing on the Allwinner SoCs are also
+handling the GPIOs on the system. This patch adds the needed driver that
+relies on the pinctrl driver for most of its operations.
 
+The number of pins available for GPIOs operations are already declared
+in the pinctrl driver, we only need to probe a generic driver to handle
+the banks available for each SoC.
 
-Add a /proc/sys/kernel scheduler knob named sched_rr_timeslice_ms
-that allows global changing of the SCHED_RR timeslice value. User
-visable value is in milliseconds but is stored as jiffies.  Setting
-to 0 (zero) resets to the default (currently 100ms).
+This driver has been tested on a A13-Olinuxino.
 
-Signed-off-by: Clark Williams <williams@redhat.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- include/linux/sched_sysctl.h |  5 +++++
- kernel/sched/core.c          | 18 ++++++++++++++++++
- kernel/sched/rt.c            |  6 ++++--
- kernel/sysctl.c              |  8 ++++++++
- 4 files changed, 35 insertions(+), 2 deletions(-)
+ drivers/pinctrl/pinctrl-sunxi.c |  134 ++++++++++++++++++++++++++++++++++++++-
+ drivers/pinctrl/pinctrl-sunxi.h |   25 +++++++-
+ 2 files changed, 156 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/sched_sysctl.h b/include/linux/sched_sysctl.h
-index 912adab..fda131f 100644
---- a/include/linux/sched_sysctl.h
-+++ b/include/linux/sched_sysctl.h
-@@ -10,6 +10,11 @@
+diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
+index 6f02e34..fb000b0 100644
+--- a/drivers/pinctrl/pinctrl-sunxi.c
++++ b/drivers/pinctrl/pinctrl-sunxi.c
+@@ -11,6 +11,7 @@
   */
- #define RR_TIMESLICE		(100 * HZ / 1000)
-=20
-+extern int sched_rr_timeslice;
-+extern int sched_rr_handler(struct ctl_table *table, int write,
-+		void __user *buffer, size_t *lenp,
-+		loff_t *ppos);
-+
- /*
-  *  control realtime throttling:
-  *
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 26058d0..1710533 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7508,6 +7508,24 @@ static int sched_rt_global_constraints(void)
+ 
+ #include <linux/io.h>
++#include <linux/gpio.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+@@ -609,11 +610,53 @@ static int sunxi_pmx_enable(struct pinctrl_dev *pctldev,
+ 	return 0;
  }
- #endif /* CONFIG_RT_GROUP_SCHED */
-=20
-+int sched_rr_handler(struct ctl_table *table, int write,
-+		void __user *buffer, size_t *lenp,
-+		loff_t *ppos)
+ 
++static int
++sunxi_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
++			struct pinctrl_gpio_range *range,
++			unsigned offset,
++			bool input)
 +{
++	struct sunxi_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++	struct sunxi_desc_function *desc;
++	char pin_name[SUNXI_PIN_NAME_MAX_LEN];
++	const char *func;
++	u8 bank, pin;
 +	int ret;
-+	static DEFINE_MUTEX(mutex);
 +
-+	mutex_lock(&mutex);
-+	ret =3D proc_dointvec(table, write, buffer, lenp, ppos);
-+	/* make sure that internally we keep jiffies */
-+	/* also, writing zero resets timeslice to default */
-+	if (!ret && write)=20
-+		sched_rr_timeslice =3D sched_rr_timeslice <=3D 0 ?=20
-+			RR_TIMESLICE : msecs_to_jiffies(sched_rr_timeslice);
-+	mutex_unlock(&mutex);
++	bank = (offset) / PINS_PER_BANK;
++	pin = (offset) % PINS_PER_BANK;
++
++	ret = sprintf(pin_name, "P%c%d", 'A' + bank, pin);
++	if (!ret)
++		goto error;
++
++	if (input)
++		func = "gpio_in";
++	else
++		func = "gpio_out";
++
++	desc = sunxi_pinctrl_desc_find_function_by_name(pctl,
++							pin_name,
++							func);
++	if (!desc) {
++		ret = -EINVAL;
++		goto error;
++	}
++
++	sunxi_pmx_set(pctldev, offset, desc->muxval);
++
++	ret = 0;
++
++error:
 +	return ret;
 +}
 +
- int sched_rt_handler(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp,
- 		loff_t *ppos)
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 9d530e6..58d9391 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -7,6 +7,8 @@
-=20
- #include <linux/slab.h>
-=20
-+int sched_rr_timeslice =3D RR_TIMESLICE;
+ static struct pinmux_ops sunxi_pmx_ops = {
+ 	.get_functions_count	= sunxi_pmx_get_funcs_cnt,
+ 	.get_function_name	= sunxi_pmx_get_func_name,
+ 	.get_function_groups	= sunxi_pmx_get_func_groups,
+ 	.enable			= sunxi_pmx_enable,
++	.gpio_set_direction	= sunxi_pmx_gpio_set_direction,
+ };
+ 
+ static struct pinctrl_desc sunxi_pctrl_desc = {
+@@ -622,6 +665,60 @@ static struct pinctrl_desc sunxi_pctrl_desc = {
+ 	.pmxops		= &sunxi_pmx_ops,
+ };
+ 
++static int sunxi_pinctrl_gpio_request(struct gpio_chip *chip, unsigned offset)
++{
++	return pinctrl_request_gpio(chip->base + offset);
++}
 +
- static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun=
-);
-=20
- struct rt_bandwidth def_rt_bandwidth;
-@@ -2017,7 +2019,7 @@ static void task_tick_rt(struct rq *rq, struct task_s=
-truct *p, int queued)
- 	if (--p->rt.time_slice)
- 		return;
-=20
--	p->rt.time_slice =3D RR_TIMESLICE;
-+	p->rt.time_slice =3D sched_rr_timeslice;
-=20
- 	/*
- 	 * Requeue to the end of queue if we (and all of our ancestors) are the
-@@ -2048,7 +2050,7 @@ static unsigned int get_rr_interval_rt(struct rq *rq,=
- struct task_struct *task)
- 	 * Time slice is 0 for SCHED_FIFO tasks
- 	 */
- 	if (task->policy =3D=3D SCHED_RR)
--		return RR_TIMESLICE;
-+		return sched_rr_timeslice;
- 	else
- 		return 0;
++static void sunxi_pinctrl_gpio_free(struct gpio_chip *chip, unsigned offset)
++{
++	pinctrl_free_gpio(chip->base + offset);
++}
++
++static int sunxi_pinctrl_gpio_direction_input(struct gpio_chip *chip,
++					unsigned offset)
++{
++	return pinctrl_gpio_direction_input(chip->base + offset);
++}
++
++static int sunxi_pinctrl_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	struct sunxi_pinctrl *pctl = dev_get_drvdata(chip->dev);
++
++	u32 reg = sunxi_data_reg(offset);
++	u8 index = sunxi_data_offset(offset);
++	u32 val = (readl(pctl->membase + reg) >> index) & DATA_PINS_MASK;
++
++	return val;
++}
++
++static int sunxi_pinctrl_gpio_direction_output(struct gpio_chip *chip,
++					unsigned offset, int value)
++{
++	return pinctrl_gpio_direction_output(chip->base + offset);
++}
++
++static void sunxi_pinctrl_gpio_set(struct gpio_chip *chip,
++				unsigned offset, int value)
++{
++	struct sunxi_pinctrl *pctl = dev_get_drvdata(chip->dev);
++	u32 reg = sunxi_data_reg(offset);
++	u8 index = sunxi_data_offset(offset);
++
++	writel((value & DATA_PINS_MASK) << index, pctl->membase + reg);
++}
++
++static struct gpio_chip sunxi_pinctrl_gpio_chip = {
++	.owner			= THIS_MODULE,
++	.request		= sunxi_pinctrl_gpio_request,
++	.free			= sunxi_pinctrl_gpio_free,
++	.direction_input	= sunxi_pinctrl_gpio_direction_input,
++	.direction_output	= sunxi_pinctrl_gpio_direction_output,
++	.get			= sunxi_pinctrl_gpio_get,
++	.set			= sunxi_pinctrl_gpio_set,
++	.can_sleep		= 0,
++};
++
+ static struct of_device_id sunxi_pinctrl_match[] = {
+ 	{ .compatible = "allwinner,sun5i-a13-pinctrl", .data = (void *)&sun5i_a13_pinctrl_data },
+ 	{}
+@@ -737,7 +834,7 @@ static int sunxi_pinctrl_probe(struct platform_device *pdev)
+ 	const struct of_device_id *device;
+ 	struct pinctrl_pin_desc *pins;
+ 	struct sunxi_pinctrl *pctl;
+-	int i, ret;
++	int i, ret, last_pin;
+ 
+ 	pctl = devm_kzalloc(&pdev->dev, sizeof(*pctl), GFP_KERNEL);
+ 	if (!pctl)
+@@ -781,9 +878,42 @@ static int sunxi_pinctrl_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	dev_info(&pdev->dev, "initialized sunXi pin control driver\n");
++	pctl->chip = devm_kzalloc(&pdev->dev, sizeof(*pctl->chip), GFP_KERNEL);
++	if (!pctl->chip) {
++		ret = -ENOMEM;
++		goto pinctrl_error;
++	}
++
++	last_pin = pctl->desc->pins[pctl->desc->npins - 1].pin.number;
++	pctl->chip = &sunxi_pinctrl_gpio_chip;
++	pctl->chip->ngpio = round_up(last_pin, PINS_PER_BANK);
++	pctl->chip->label = dev_name(&pdev->dev);
++	pctl->chip->dev = &pdev->dev;
++	pctl->chip->base = 0;
++
++	ret = gpiochip_add(pctl->chip);
++	if (ret)
++		goto pinctrl_error;
++
++	for (i = 0; i < pctl->desc->npins; i++) {
++		const struct sunxi_desc_pin *pin = pctl->desc->pins + i;
++
++		ret = gpiochip_add_pin_range(pctl->chip, dev_name(&pdev->dev),
++					     pin->pin.number,
++					     pin->pin.number, 1);
++		if (ret)
++			goto gpiochip_error;
++	}
++
++	dev_info(&pdev->dev, "initialized sunXi PIO driver\n");
+ 
+ 	return 0;
++
++gpiochip_error:
++	ret = gpiochip_remove(pctl->chip);
++pinctrl_error:
++	pinctrl_unregister(pctl->pctl_dev);
++	return ret;
  }
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c88878d..1eabf86 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -403,6 +403,14 @@ static struct ctl_table kern_table[] =3D {
- 		.mode		=3D 0644,
- 		.proc_handler	=3D sched_rt_handler,
- 	},
-+	{
-+		.procname	=3D "sched_rr_timeslice_ms",
-+		.data		=3D &sched_rr_timeslice,
-+		.maxlen		=3D sizeof(int),
-+		.mode		=3D 0644,
-+		.proc_handler	=3D sched_rr_handler,
-+	},
+ 
+ static struct platform_driver sunxi_pinctrl_driver = {
+diff --git a/drivers/pinctrl/pinctrl-sunxi.h b/drivers/pinctrl/pinctrl-sunxi.h
+index 0dc3b9d..1ee35c0 100644
+--- a/drivers/pinctrl/pinctrl-sunxi.h
++++ b/drivers/pinctrl/pinctrl-sunxi.h
+@@ -254,8 +254,11 @@
+ #define SUNXI_PINCTRL_PIN_PG30	PINCTRL_PIN(PG_BASE + 30, "PG30")
+ #define SUNXI_PINCTRL_PIN_PG31	PINCTRL_PIN(PG_BASE + 31, "PG31")
+ 
++#define SUNXI_PIN_NAME_MAX_LEN	5
 +
- #ifdef CONFIG_SCHED_AUTOGROUP
- 	{
- 		.procname	=3D "sched_autogroup_enabled",
---=20
-1.7.11.7
+ #define BANK_MEM_SIZE		0x24
+ #define MUX_REGS_OFFSET		0x0
++#define DATA_REGS_OFFSET	0x10
+ #define DLEVEL_REGS_OFFSET	0x14
+ #define PULL_REGS_OFFSET	0x1c
+ 
+@@ -263,6 +266,9 @@
+ #define MUX_PINS_PER_REG	8
+ #define MUX_PINS_BITS		4
+ #define MUX_PINS_MASK		0x0f
++#define DATA_PINS_PER_REG	32
++#define DATA_PINS_BITS		1
++#define DATA_PINS_MASK		0x01
+ #define DLEVEL_PINS_PER_REG	16
+ #define DLEVEL_PINS_BITS	2
+ #define DLEVEL_PINS_MASK	0x03
+@@ -283,6 +289,8 @@ struct sunxi_desc_pin {
+ struct sunxi_pinctrl_desc {
+ 	const struct sunxi_desc_pin	*pins;
+ 	int				npins;
++	struct pinctrl_gpio_range	*ranges;
++	int				nranges;
+ };
+ 
+ struct sunxi_pinctrl_function {
+@@ -299,6 +307,7 @@ struct sunxi_pinctrl_group {
+ 
+ struct sunxi_pinctrl {
+ 	void __iomem			*membase;
++	struct gpio_chip		*chip;
+ 	struct sunxi_pinctrl_desc	*desc;
+ 	struct device			*dev;
+ 	struct sunxi_pinctrl_function	*functions;
+@@ -321,7 +330,6 @@ struct sunxi_pinctrl {
+ 		.muxval = _val,					\
+ 	}
+ 
+-
+ /*
+  * The sunXi PIO registers are organized as is:
+  * 0x00 - 0x0c	Muxing values.
+@@ -354,6 +362,21 @@ static inline u32 sunxi_mux_offset(u16 pin)
+ 	return pin_num * MUX_PINS_BITS;
+ }
+ 
++static inline u32 sunxi_data_reg(u16 pin)
++{
++	u8 bank = pin / PINS_PER_BANK;
++	u32 offset = bank * BANK_MEM_SIZE;
++	offset += DATA_REGS_OFFSET;
++	offset += pin % PINS_PER_BANK / DATA_PINS_PER_REG * 0x04;
++	return round_down(offset, 4);
++}
++
++static inline u32 sunxi_data_offset(u16 pin)
++{
++	u32 pin_num = pin % DATA_PINS_PER_REG;
++	return pin_num * DATA_PINS_BITS;
++}
++
+ static inline u32 sunxi_dlevel_reg(u16 pin)
+ {
+ 	u8 bank = pin / PINS_PER_BANK;
+-- 
+1.7.10.4
 
-
---Sig_/V1grJ6cPA/SqcoNiMmnmH4=
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlEG4CgACgkQHyuj/+TTEp1WaACgjyigwGyaW157aRs9+fF36O30
-lJIAoK/vDGxDCdGO2lEViRsoakTRHkhy
-=RMJK
------END PGP SIGNATURE-----
-
---Sig_/V1grJ6cPA/SqcoNiMmnmH4=--
