@@ -1,148 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333Ab3A1Lj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 06:39:57 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:58559 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754384Ab3A1Ljv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 06:39:51 -0500
-X-AuditID: cbfee61a-b7f7d6d000000f4e-41-51066386cb06
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
-        balbi@ti.com, sarah.a.sharp@linux.intel.com, kgene.kim@samsung.com,
-        dianders@chromium.org, sylvester.nawrocki@gmail.com,
-        tomasz.figa@gmail.com
-Subject: [PATCH 3/4] usb: dwc3: exynos: Enable runtime power management
-Date: Mon, 28 Jan 2013 17:12:27 +0530
-Message-id: <1359373348-18320-4-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.6.5
-In-reply-to: <1359373348-18320-1-git-send-email-gautam.vivek@samsung.com>
-References: <1359373348-18320-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42JZI2JSq9uWzBZosHyKhMXlXXPYLGYv6Wex
-	mHF+H5PFomWtzA4sHp83yQUwRnHZpKTmZJalFunbJXBltLZIFJwXrph68wlTA+MqgS5GTg4J
-	AROJJfuWskDYYhIX7q1n62Lk4hASWMoo8ah5GhtM0Z+fk1hBbCGBRYwSs7/WQBRNZpI4++4z
-	WDebgK5E09tdjCC2iICsxOErv5lBipgFJjJJ9CxqYAJJCAu4S8x7fgtsKouAqsSyj4eAmjk4
-	eAU8JC68lYZYpiDx5vYzZhCbU8BTYvKDM+wQiz0kZi6azwIyU0LgNZvEvDuLmCDmCEh8mwwx
-	RwJo8aYDzBBzJCUOrrjBMoFReAEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2MwPA8/e+Z
-	1A7GlQ0WhxgFOBiVeHh/pLEECrEmlhVX5h5ilOBgVhLhFYhhCxTiTUmsrEotyo8vKs1JLT7E
-	mAy0fCKzlGhyPjB28kriDY1NzE2NTS2NjMxMTUkTVhLnZTz1JEBIID2xJDU7NbUgtQhmCxMH
-	p1QDo/R+di+TTRMqGktWVGwomKlYd0b9f+SNJfPqpWbcYNN+v2xV/0Leho3Pvrql3QyZ8P2z
-	vdJ/s5uml2oXf5388WZD7ga9W/Fl3Z5LxQOjD2tEXtaZ+i+ie7YyH/vaN5xTW3bUvp2/77Rs
-	2MGNBW4mjrrzJBiOlclMyf5x5Olppf2/PzAv+1G8bbMSS3FGoqEWc1FxIgBvGtBskwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t9jAd22ZLZAg+Un2C0u75rDZjF7ST+L
-	xYzz+5gsFi1rZXZg8fi8SS6AMaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJc
-	SSEvMTfVVsnFJ0DXLTMHaImSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCG
-	MaO1RaLgvHDF1JtPmBoYVwl0MXJySAiYSPz5OYkVwhaTuHBvPRuILSSwiFFi9teaLkYuIHsy
-	k8TZd59ZQBJsAroSTW93MYLYIgKyEoev/GYGKWIWmMgk0bOogQkkISzgLjHv+S2wSSwCqhLL
-	Ph4Caubg4BXwkLjwVhpimYLEm9vPmEFsTgFPickPzrBDLPaQmLloPssERt4FjAyrGEVTC5IL
-	ipPScw31ihNzi0vz0vWS83M3MYKD/5nUDsaVDRaHGAU4GJV4eH+ksQQKsSaWFVfmHmKU4GBW
-	EuEViGELFOJNSaysSi3Kjy8qzUktPsSYDHTURGYp0eR8YGTmlcQbGpuYmxqbWppYmJhZkias
-	JM7LeOpJgJBAemJJanZqakFqEcwWJg5OqQbGczHrj9ka517zUfPSWtQ4pfqFxDLPy6c7+ZX0
-	PzorZxVuieAQbd+mfqSiZt8e+fbjPrOT5ugkOV3mr/ox359RQ8iSi8NT8JrgbfEY53rT1utK
-	UW9fhOc83OM2V0Dj7M41kx/s8azLVTVaeN065Z3OXMe0DfvC/GewVW6+z2/mJVTmWmXZ806J
-	pTgj0VCLuag4EQBh80NvwgIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1756999Ab3A1LbB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 06:31:01 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42738 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756950Ab3A1La4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 06:30:56 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
+        <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v2 03/30] usb: phy: nop: Manage PHY clock
+Date: Mon, 28 Jan 2013 13:30:04 +0200
+Message-ID: <1359372631-8180-4-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enabling runtime power management on dwc3-exynos to save
-power and allow its PHY's power to be managed at runtime.
+If the PHY has a clock associated to it then manage the clock.
+We just enable the clock in .init() and disable it in .shutdown().
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Add clk_rate parameter in platform data and configure the
+clock rate during probe if supplied.
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/usb/dwc3/dwc3-exynos.c |   47 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 47 insertions(+), 0 deletions(-)
+ drivers/usb/otg/nop-usb-xceiv.c   |   54 ++++++++++++++++++++++++++++++++++++-
+ include/linux/usb/nop-usb-xceiv.h |    1 +
+ 2 files changed, 54 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
-index aae5328..c51e8c1 100644
---- a/drivers/usb/dwc3/dwc3-exynos.c
-+++ b/drivers/usb/dwc3/dwc3-exynos.c
-@@ -157,11 +157,15 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
- 		goto err4;
- 	}
+diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xceiv.c
+index 7ffb0c8..849eb9d 100644
+--- a/drivers/usb/otg/nop-usb-xceiv.c
++++ b/drivers/usb/otg/nop-usb-xceiv.c
+@@ -32,10 +32,12 @@
+ #include <linux/usb/otg.h>
+ #include <linux/usb/nop-usb-xceiv.h>
+ #include <linux/slab.h>
++#include <linux/clk.h>
  
-+	pm_runtime_set_active(&pdev->dev);
-+	pm_runtime_enable(&pdev->dev);
-+
- 	return 0;
+ struct nop_usb_xceiv {
+ 	struct usb_phy		phy;
+ 	struct device		*dev;
++	struct clk		*clk;
+ };
  
- err4:
- 	clk_disable(clk);
- 	clk_put(clk);
-+	pm_runtime_disable(&pdev->dev);
- err3:
- 	platform_device_put(dwc3);
- err1:
-@@ -174,6 +178,8 @@ static int dwc3_exynos_remove(struct platform_device *pdev)
- {
- 	struct dwc3_exynos	*exynos = platform_get_drvdata(pdev);
- 
-+	pm_runtime_disable(&pdev->dev);
-+
- 	platform_device_unregister(exynos->dwc3);
- 	platform_device_unregister(exynos->usb2_phy);
- 	platform_device_unregister(exynos->usb3_phy);
-@@ -186,6 +192,46 @@ static int dwc3_exynos_remove(struct platform_device *pdev)
+ static struct platform_device *pd;
+@@ -64,6 +66,24 @@ static int nop_set_suspend(struct usb_phy *x, int suspend)
  	return 0;
  }
  
-+static int dwc3_exynos_runtime_suspend(struct device *dev)
++static int nop_init(struct usb_phy *phy)
 +{
-+	struct dwc3_exynos	*exynos = dev_get_drvdata(dev);
-+	struct platform_device	*pdev_dwc = exynos->dwc3;
-+	struct dwc3		*dwc = NULL;
++	struct nop_usb_xceiv *nop = dev_get_drvdata(phy->dev);
 +
-+	dwc = platform_get_drvdata(pdev_dwc);
-+
-+	if (!dwc)
-+		return 0;
-+
-+	pm_runtime_put_sync(dwc->usb3_phy->dev);
-+
-+	clk_disable(exynos->clk);
-+
-+	return 0;
-+}
-+static int dwc3_exynos_runtime_resume(struct device *dev)
-+{
-+	struct dwc3_exynos	*exynos = dev_get_drvdata(dev);
-+	struct platform_device	*pdev_dwc = exynos->dwc3;
-+	struct dwc3		*dwc = NULL;
-+
-+	dwc = platform_get_drvdata(pdev_dwc);
-+
-+	clk_enable(exynos->clk);
-+
-+	if (!dwc)
-+		return 0;
-+
-+	pm_runtime_get_sync(dwc->usb3_phy->dev);
++	if (!IS_ERR(nop->clk))
++		clk_enable(nop->clk);
 +
 +	return 0;
 +}
 +
-+static const struct dev_pm_ops dwc3_exynos_pm_ops = {
-+	SET_RUNTIME_PM_OPS(dwc3_exynos_runtime_suspend,
-+				dwc3_exynos_runtime_resume, NULL)
-+};
++static void nop_shutdown(struct usb_phy *phy)
++{
++	struct nop_usb_xceiv *nop = dev_get_drvdata(phy->dev);
 +
- #ifdef CONFIG_OF
- static const struct of_device_id exynos_dwc3_match[] = {
- 	{ .compatible = "samsung,exynos-dwc3" },
-@@ -200,6 +246,7 @@ static struct platform_driver dwc3_exynos_driver = {
- 	.driver		= {
- 		.name	= "exynos-dwc3",
- 		.of_match_table = of_match_ptr(exynos_dwc3_match),
-+		.pm	= &dwc3_exynos_pm_ops,
- 	},
++	if (!IS_ERR(nop->clk))
++		clk_disable(nop->clk);
++}
++
+ static int nop_set_peripheral(struct usb_otg *otg, struct usb_gadget *gadget)
+ {
+ 	if (!otg)
+@@ -111,10 +131,34 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
+ 	if (pdata)
+ 		type = pdata->type;
+ 
++	nop->clk = devm_clk_get(&pdev->dev, "main_clk");
++	if (IS_ERR(nop->clk)) {
++		dev_dbg(&pdev->dev, "Can't get phy clock: %ld\n",
++					PTR_ERR(nop->clk));
++	}
++
++	if (!IS_ERR(nop->clk) && pdata && pdata->clk_rate) {
++		err = clk_set_rate(nop->clk, pdata->clk_rate);
++		if (err) {
++			dev_err(&pdev->dev, "Error setting clock rate\n");
++			return err;
++		}
++	}
++
++	if (!IS_ERR(nop->clk)) {
++		err = clk_prepare(nop->clk);
++		if (err) {
++			dev_err(&pdev->dev, "Error preparing clock\n");
++			return err;
++		}
++	}
++
+ 	nop->dev		= &pdev->dev;
+ 	nop->phy.dev		= nop->dev;
+ 	nop->phy.label		= "nop-xceiv";
+ 	nop->phy.set_suspend	= nop_set_suspend;
++	nop->phy.init		= nop_init;
++	nop->phy.shutdown	= nop_shutdown;
+ 	nop->phy.state		= OTG_STATE_UNDEFINED;
+ 
+ 	nop->phy.otg->phy		= &nop->phy;
+@@ -125,7 +169,7 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
+ 	if (err) {
+ 		dev_err(&pdev->dev, "can't register transceiver, err: %d\n",
+ 			err);
+-		return err;
++		goto err_add;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, nop);
+@@ -133,12 +177,20 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
+ 	ATOMIC_INIT_NOTIFIER_HEAD(&nop->phy.notifier);
+ 
+ 	return 0;
++
++err_add:
++	if (!IS_ERR(nop->clk))
++		clk_unprepare(nop->clk);
++	return err;
+ }
+ 
+ static int nop_usb_xceiv_remove(struct platform_device *pdev)
+ {
+ 	struct nop_usb_xceiv *nop = platform_get_drvdata(pdev);
+ 
++	if (!IS_ERR(nop->clk))
++		clk_unprepare(nop->clk);
++
+ 	usb_remove_phy(&nop->phy);
+ 
+ 	platform_set_drvdata(pdev, NULL);
+diff --git a/include/linux/usb/nop-usb-xceiv.h b/include/linux/usb/nop-usb-xceiv.h
+index 28884c7..3265b61 100644
+--- a/include/linux/usb/nop-usb-xceiv.h
++++ b/include/linux/usb/nop-usb-xceiv.h
+@@ -5,6 +5,7 @@
+ 
+ struct nop_usb_xceiv_platform_data {
+ 	enum usb_phy_type type;
++	unsigned long clk_rate;
  };
  
+ #if defined(CONFIG_NOP_USB_XCEIV) || (defined(CONFIG_NOP_USB_XCEIV_MODULE) && defined(MODULE))
 -- 
-1.7.6.5
+1.7.4.1
 
