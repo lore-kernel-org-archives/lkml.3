@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab3A1S1n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:27:43 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:55055 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938Ab3A1S1l (ORCPT
+	id S1751796Ab3A1S26 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:28:58 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:55978 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab3A1S0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:27:41 -0500
-Date: Mon, 28 Jan 2013 10:27:37 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, srivatsa.bhat@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] generic dynamic per cpu refcounting
-Message-ID: <20130128182737.GC22465@mtj.dyndns.org>
-References: <20130124232024.GA584@google.com>
- <20130125180941.GA16896@redhat.com>
- <20130125191139.GA19247@redhat.com>
- <20130128181528.GA26407@google.com>
+	Mon, 28 Jan 2013 13:26:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130128181528.GA26407@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130128175938.GA15351@infradead.org>
+References: <1358860732-4435-1-git-send-email-eranian@google.com>
+	<1358860732-4435-3-git-send-email-eranian@google.com>
+	<20130125025247.GA16249@infradead.org>
+	<CABPqkBT-JuR=3q4X2o7Et9idd3T5Ut_GSnhpQKbqfr5SC4eDWA@mail.gmail.com>
+	<20130128175938.GA15351@infradead.org>
+Date: Mon, 28 Jan 2013 19:26:17 +0100
+Message-ID: <CABPqkBS9yPGb3DOZv9qTULZrP+-8Zrbri99ZGBt7KopTfPWEfQ@mail.gmail.com>
+Subject: Re: [PATCH v6 2/2] perf stat: add interval printing
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
-
-On Mon, Jan 28, 2013 at 10:15:28AM -0800, Kent Overstreet wrote:
-> > 	percpu_ref_kill();
-> > 	put_and_dsetroy();
-> > 
-> > And this can race with another holder which drops the last reference,
-> > its put_and_dsetroy() can see PCPU_REF_DYING and return false.
-> > 
-> > Or I misunderstood the code/interface?
-> 
-> Nope, nailed it :) That should _definitely_ be in the documentation.
-
-Can we just combine kill initiation and base ref put and make that the
-responsibility of the owner?  Extra features on basic constructs may
-seem good for certain use cases but tend to bring more confusion than
-good in the long run.  If a user needs to synchronize among multiple
-killers, let the user deal with the issue.
-
-> Actually - I think it'd be better to have the default percpu_ref_kill()
-> do the second synchronize_rcu(), and have an unsafe version that skips
-> it.
-
-Note that synchronize_rcu/sched() can be very slow and cause problems
-in paths which are frequently traveled and visible to userland.  It's
-fine for things like module destruction but can be a problem even
-during device destruction - blkcg had synchronize_rcu() in
-request_queue destruction which led to huge latencies during boot
-because SCSI wants to create and then destroy request_queues for all
-possible LUNs on certain configurations.  So, if you put
-synchronize_rcu/sched() in percpu_ref_kill(), that better not be used
-from e.g. close(2).
-
-Thanks.
-
--- 
-tejun
+On Mon, Jan 28, 2013 at 6:59 PM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+> Em Fri, Jan 25, 2013 at 04:21:11PM +0100, Stephane Eranian escreveu:
+>> On Fri, Jan 25, 2013 at 3:52 AM, Arnaldo Carvalho de Melo
+>> <acme@redhat.com> wrote:
+>> > Em Tue, Jan 22, 2013 at 02:18:52PM +0100, Stephane Eranian escreveu:
+>> >> This patch adds a new printing mode for perf stat.
+>> >> It allows internval printing. That means perf stat
+>> >> can now print event deltas at regular time interval.
+>> >> This is useful to detect phases in programs.
+>> >
+>> > This patch is not applying to my perf/core branch, does it depend on
+>> > some other outstanding patchset from you?
+>> >
+>> > Tomorrow probably all I had in this area will be in Ingo's tree, but
+>> > can you please take a look at my perf/core branch at:
+>> >
+>> > git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux
+>> >
+>> My patches are always relative to:
+>> git://git.kernel.org/pub/scm/linux/kernel/git/tip.tip.git
+>>
+>> Do you still need to rebase against your tree?
+>
+> Well, userspace code normally is developed on my tree and eventually
+> goes to the one you mentioned. If you make sure that now, that both are
+> synched after some weeks, then probably it'll work with my tree.
+>
+How's the kernel proper side of your tree sync'd with tip.git? I cannot have
+the kernel patches for one tree and the perf patches for another. That's a
+lot of overhead especially when it comes to testing.
