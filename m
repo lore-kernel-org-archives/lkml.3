@@ -1,65 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515Ab3A1P4L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 10:56:11 -0500
-Received: from mout.gmx.net ([212.227.15.18]:56206 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755739Ab3A1P4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 10:56:07 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18n6ZxOg6snua4yhU1IUFM48JcK8K6YhdwkNyPcpn
-	mri8Q6Cl+l/1de
-Message-ID: <1359388558.5783.171.camel@marge.simpson.net>
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-From: Mike Galbraith <efault@gmx.de>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Alex Shi <alex.shi@intel.com>, torvalds@linux-foundation.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-Date: Mon, 28 Jan 2013 16:55:58 +0100
-In-Reply-To: <20130128152241.GC6109@pd.tnic>
-References: <1359261385.5803.46.camel@marge.simpson.net>
-	 <20130127103508.GB8894@pd.tnic> <51052ACB.3070703@intel.com>
-	 <1359301903.5805.11.camel@marge.simpson.net>
-	 <1359350266.5783.39.camel@marge.simpson.net>
-	 <20130128095501.GB6109@pd.tnic>
-	 <1359369884.5783.117.camel@marge.simpson.net>
-	 <20130128112922.GA29384@pd.tnic>
-	 <1359372743.5783.136.camel@marge.simpson.net>
-	 <1359373246.5783.138.camel@marge.simpson.net>
-	 <20130128152241.GC6109@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1756131Ab3A1P4m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 10:56:42 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:48434 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085Ab3A1P4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 10:56:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <1359151245-13179-4-git-send-email-andi@firstfloor.org>
+References: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
+	<1359151245-13179-4-git-send-email-andi@firstfloor.org>
+Date: Mon, 28 Jan 2013 16:56:39 +0100
+Message-ID: <CABPqkBQheDtiT-aCBbz261fam-XQBAdH07FyG+Z=+bxzjEayFA@mail.gmail.com>
+Subject: Re: [PATCH 03/12] perf, x86: Basic Haswell PEBS support v3
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-28 at 16:22 +0100, Borislav Petkov wrote: 
-> On Mon, Jan 28, 2013 at 12:40:46PM +0100, Mike Galbraith wrote:
-> > > No no, that's not restricted to one node.  It's just overloaded because
-> > > I turned balancing off at the NODE domain level.
-> > 
-> > Which shows only that I was multitasking, and in a rush.  Boy was that
-> > dumb.  Hohum.
-> 
-> Ok, let's take a step back and slow it down a bit so that people like me
-> can understand it: you want to try it with disabled load balancing on
-> the node level, AFAICT. But with that many tasks, perf will suck anyway,
-> no? Unless you want to benchmark the numa-aware aspect and see whether
-> load balancing on the node level feels differently, perf-wise?
+On Fri, Jan 25, 2013 at 11:00 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> Add basic PEBS support for Haswell.
+> The constraints are similar to SandyBridge with a few new events.
+>
+> v2: Readd missing pebs_aliases
+> v3: Readd missing hunk. Fix some constraints.
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event.h          |    2 ++
+>  arch/x86/kernel/cpu/perf_event_intel.c    |    6 ++++--
+>  arch/x86/kernel/cpu/perf_event_intel_ds.c |   29 +++++++++++++++++++++++++++++
+>  3 files changed, 35 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index 8941899..1567b0d 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -596,6 +596,8 @@ extern struct event_constraint intel_snb_pebs_event_constraints[];
+>
+>  extern struct event_constraint intel_ivb_pebs_event_constraints[];
+>
+> +extern struct event_constraint intel_hsw_pebs_event_constraints[];
+> +
+>  struct event_constraint *intel_pebs_constraints(struct perf_event *event);
+>
+>  void intel_pmu_pebs_enable(struct perf_event *event);
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 3a08534..634f639 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -826,7 +826,8 @@ static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
+>                 return true;
+>
+>         /* implicit branch sampling to correct PEBS skid */
+> -       if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
+> +       if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
+> +           x86_pmu.intel_cap.pebs_format < 2)
+>                 return true;
+>
+>         return false;
+> @@ -2127,8 +2128,9 @@ __init int intel_pmu_init(void)
+>                 intel_pmu_lbr_init_nhm();
+>
+>                 x86_pmu.event_constraints = intel_hsw_event_constraints;
+> -
+> +               x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
+>                 x86_pmu.extra_regs = intel_snb_extra_regs;
+> +               x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
+>                 /* all extra regs are per-cpu when HT is on */
+>                 x86_pmu.er_flags |= ERF_HAS_RSP_1;
+>                 x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> index 9d0dae0..16d7c58 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -427,6 +427,35 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
+>          EVENT_CONSTRAINT_END
+>  };
+>
+> +struct event_constraint intel_hsw_pebs_event_constraints[] = {
+> +       INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+> +       INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
+> +       INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+> +       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+> +       INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
+> +       INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
+> +       INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
+> +       INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
+> +       INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
+> +       INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
+> +       INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
+> +       INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
+> +       INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
+> +       INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
+> +       INTEL_UEVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
+> +       INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
+> +       INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
+> +       INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
+> +       INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
+> +       INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
+> +       INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
+> +       INTEL_UEVENT_CONSTRAINT(0x02d3, 0xf), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
 
-The broken thought was, since it's not wakeup path, stop node balance..
-but killing all of it killed FORK/EXEC balance, oops.
+Should be 0x01d3 here.
 
-I think I'm done with this thing though.  See mail I just sent.   There
-are better things to do than letting box jerk my chain endlessly ;-)
-
--Mike
-
+> +       INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
+> +       INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
+> +
+> +       EVENT_CONSTRAINT_END
+> +};
+> +
+>  struct event_constraint *intel_pebs_constraints(struct perf_event *event)
+>  {
+>         struct event_constraint *c;
+> --
+> 1.7.7.6
+>
