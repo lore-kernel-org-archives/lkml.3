@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab3A1L2Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 06:28:25 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:65336 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab3A1L2V (ORCPT
+	id S1756575Ab3A1Lac (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 06:30:32 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:49112 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754357Ab3A1Laa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 06:28:21 -0500
-Message-ID: <1359372481.5783.132.camel@marge.simpson.net>
-Subject: Re: [patch] sched: minimalist select_idle_sibling() bouncing cow
- syndrome fix
-From: Mike Galbraith <bitbucket@online.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon, 28 Jan 2013 12:28:01 +0100
-In-Reply-To: <20130128112145.GA23495@gmail.com>
-References: <1359273021.5803.80.camel@marge.simpson.net>
-	 <20130128105304.GC20263@gmail.com>
-	 <1359371965.5783.127.camel@marge.simpson.net>
-	 <20130128112145.GA23495@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:a/VPJl5lfNZarCmjzhgTO4PB+J1k9O6PZop42ogKjjm
- 5mONry+7tag5GPC6PEbEHHUZRziDd2nf/qau1Ew1pnnCEBIGzt
- /5xRPRLABZ9f7dGRVb8ocg17c5vWcJ1bPLHgoDQVjmrJRJ/ER+
- lFMp1jnEfF42O4saKnENGFKiAChkrgHpdFaq1ZtqmGiWCnkWHw
- cfzn2iss5JPzDfEw2HWBQquWnNyZd1EXkjdZ7GbkEqnc43Vo9W
- 4cNTbKJur8GcuRPKGe2Cu0bTwZ59Gfs4Tp/Tdzex3CrvgJgt4I
- RsmTH/cvcOhjoklGEBjs92H4mLLI7jGIVY8ettbc8Nhw0VdNow
- Mg/UG2gKZIZsZMO1BJ1vHf4skMgBcKIpE6yKgttGyCW6cbmC0E
- X/W0PbCouMvrQ==
+	Mon, 28 Jan 2013 06:30:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <51053268.2000002@antcom.de>
+References: <1358856404-8975-1-git-send-email-stigge@antcom.de>
+	<1358856404-8975-2-git-send-email-stigge@antcom.de>
+	<CAOY=C6ERX=2HdvmtAW-__947_-P8r=Lvp88KzZDQdf4kAuRB5Q@mail.gmail.com>
+	<51053268.2000002@antcom.de>
+Date: Mon, 28 Jan 2013 12:30:29 +0100
+Message-ID: <CAOY=C6GReEpO7ukOS8WiQgdFFAreaYK1YrZ8HQrQ9dGMFObAdQ@mail.gmail.com>
+Subject: Re: [PATCH 1/6 v14] gpio: Add a block GPIO API to gpiolib
+From: Stijn Devriendt <highguy@gmail.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, sr@denx.de, wg@grandegger.com, mark.rutland@arm.com,
+        nicolas.ferre@atmel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-28 at 12:21 +0100, Ingo Molnar wrote: 
-> * Mike Galbraith <bitbucket@online.de> wrote:
-> 
-> > On Mon, 2013-01-28 at 11:53 +0100, Ingo Molnar wrote: 
-> > > * Mike Galbraith <bitbucket@online.de> wrote:
-> > > 
-> > > > If the previous CPU is cache affine and idle, select it.
-> > > 
-> > > No objections in principle - but would be nice to have a 
-> > > changelog with numbers, % of improvement included and so?
-> > 
-> > Well, that like was my changelog, guess it needs improvement.
-> > 
-> > Take 2.
-> > 
-> > sched: minimalist select_idle_sibling() bouncing cow syndrome fix
-> > 
-> > If the previous CPU is cache affine and idle, select it.
-> > 
-> > The current implementation simply traverses the sd_llc domain,
-> > taking the first idle CPU encountered, which walks buddy pairs
-> > hand in hand over the package, inflicting excruciating pain.
-> > 
-> > 1 tbench pair (worst case) in a 10 core + SMT package:
-> > 
-> > pre   15.22 MB/sec 1 procs
-> > post 252.01 MB/sec 1 procs
-> 
-> Drool ... :-)
+On Sun, Jan 27, 2013 at 2:58 PM, Roland Stigge <stigge@antcom.de> wrote:
+> On 27/01/13 14:19, Stijn Devriendt wrote:
+>>> +Block GPIO
+>>> +----------
+>>> +
+>>> +The above described interface concentrates on handling single GPIOs.  However,
+>>> +in applications where it is critical to set several GPIOs at once, this
+>>> +interface doesn't work well, e.g. bit-banging protocols via grouped GPIO lines.
+>>> +Consider a GPIO controller that is connected via a slow I2C line. When
+>>> +switching two or more GPIOs one after another, there can be considerable time
+>>> +between those events. This is solved by an interface called Block GPIO:
+>>> +
+>>> +struct gpio_block *gpio_block_create(unsigned int *gpios, size_t size,
+>>> +                                    const char *name);
+>>> +
+>>> +This creates a new block of GPIOs as a list of GPIO numbers with the specified
+>>> +size which are accessible via the returned struct gpio_block and the accessor
+>>> +functions described below. Please note that you need to request the GPIOs
+>>> +separately via gpio_request(). Similarly, the direction of the used GPIOs need
+>>> +to be set by the user before using the block.
+>>
+>> Is there anything holding you back from letting gpio_block_create() do
+>> the request
+>> for all the pins?
+>
+> It's analoguous to plain GPIOs: They exist, but are not requested (by
+> whom?) by default.
+>
 
-Yeah, it really is _that_ fugly as is.
+This is one of the warts of the GPIO API, if you ask me (and probably
+others too).
+Using a resource without allocating it first is just asking for
+trouble. It's one of those
+things pinctl was designed to solve... I've been thinking about
+spending spare time
+sending out patches converting all implicit requests and then removing
+the implicit
+request, but spare time is limited...
 
-> What would be a 'contrarian' test - i.e. a test where this could 
-> hurt most?
+Regards,
+Stijn
 
-There is none.  It cuts off no preemption escape routes for pgbench,
-still has both good and evil faces for all to see, and some to turn to
-stone ;-)  It only does one thing, don't do the unspeakable.
-
--Mike
-
+>> Also, wouldn't it make sense to have a gpio_block_direction_input()
+>> and _output()
+>> variant? On the other hand, for things like I2C and SPI emulation,
+>> some pins will
+>> naturally be always output (like clock lines) while other could be
+>> switched between
+>> in and output (like the i2c data line).
+>
+> Right. Current implementation emphasizes on switching, not direction or
+> other convenience functions, which could be added, nevertheless.
+>
+> Roland
