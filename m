@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab3A1WOg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 17:14:36 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:62913 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754894Ab3A1WOc (ORCPT
+	id S1754773Ab3A1WRr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 17:17:47 -0500
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:59512 "EHLO
+	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754331Ab3A1WRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 17:14:32 -0500
+	Mon, 28 Jan 2013 17:17:45 -0500
+Message-ID: <5106F8F6.80101@ilyx.ru>
+Date: Tue, 29 Jan 2013 02:17:26 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXkrYubkgbbOXmrEXvGZBZXMZ6sh8kGTpF1_=tD3OMPJw@mail.gmail.com>
-References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com>
- <1358525267-14268-5-git-send-email-jiang.liu@huawei.com> <3500982.MUDp6kKU3R@vostro.rjw.lan>
- <CAErSpo4fbNzFaBxH+eKD+BKVgghyCJEYLDMzc6_gdxABAPe3QQ@mail.gmail.com>
- <CAE9FiQVM4+Wirpb3_D0Zxi4r1p9SAMi4ZrNYr=-eas-C6pKJYA@mail.gmail.com>
- <CAErSpo7WbbzZ8cKfLvuE331ofWir2vswUnYaxVLBBYGFowedXQ@mail.gmail.com> <CAE9FiQXkrYubkgbbOXmrEXvGZBZXMZ6sh8kGTpF1_=tD3OMPJw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 28 Jan 2013 15:14:11 -0700
-Message-ID: <CAErSpo7vHXdh=ogvfZnxx9gqgiifWGa=XzS+ZKjXFFOPue4TTw@mail.gmail.com>
-Subject: Re: [RFC PATCH v5 4/8] ACPI, PCI: avoid building pci_slot as module
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jiang Liu <liuj97@gmail.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org,
+To: Karthik Manamcheri <Karthik.Manamcheri@ni.com>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+        Andrew McGregor <andrew.mcgregor@alliedtelesis.co.nz>
+Subject: Re: [PATCH] n_tty: Unthrottle tty when flushing read buffer
+References: <1358980578-8811-1-git-send-email-Karthik.Manamcheri@ni.com>
+In-Reply-To: <1358980578-8811-1-git-send-email-Karthik.Manamcheri@ni.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 3:00 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Jan 28, 2013 at 1:52 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Mon, Jan 28, 2013 at 2:29 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> ...
->>> If bios have messed up slot name or idx, we will get strange 1-1....
->>> other crazy name.
->>>
->>> if you really need to put it as built-in, may need to some command
->>> line that user could switch it off.
->>
->> It would save us all a lot of time if you gave an example and worked
->> through the scenario where this is a problem.
->>
->> We already have the choice of having pci_slot built-in, so if there's
->> a bug in that config, we already have the bug.  This patch merely
->> removes a config where the bug might be covered up.
->
->
-> for distribution, current it is with module, so user could blacklist
-> in module.conf
->
-> Now with built-in or not, distribution will have it built-in, and user
-> have no chance to
-> disable it.
+On 24.01.2013 2:36, Karthik Manamcheri wrote:
+> When the tty input buffer is full and thereby throttled,
+> flushing/resetting the read buffer should unthrottle to allow more
+> data to be received.
+> 
+> Signed-off-by: Karthik Manamcheri <Karthik.Manamcheri@ni.com>
+> ---
+>  drivers/tty/n_tty.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> index 19083efa2314660b25e0fb5bc793af6fb7e9af57..d5cea3bb01eaeec61b577de6c58a8000412c0c37 100644
+> --- a/drivers/tty/n_tty.c
+> +++ b/drivers/tty/n_tty.c
+> @@ -229,6 +229,8 @@ static void reset_buffer_flags(struct tty_struct *tty)
+>  	ldata->canon_head = ldata->canon_data = ldata->erasing = 0;
+>  	bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
+>  	n_tty_set_room(tty);
+> +
+> +	check_unthrottle(tty);
+>  }
+>  
+>  /**
+> 
 
-CONFIG_ACPI_PCI_SLOT=y in RHEL6, so evidently they have this problem.
+It's revert - tty: fix "IRQ45: nobody cared".
+commit 7b292b4bf9a9d6098440d85616d6ca4c608b8304
 
-Asking users to edit module.conf by hand is not a solution, just like
-asking users to boot with a command line option is not a solution.
-That sort of stuff is fine for a hobbyist OS intended only for techie
-geeks.  It's not fine for Linux.
+Please, read these for this subject:
+https://lkml.org/lkml/2012/11/27/440
+https://lkml.org/lkml/2012/11/21/568
 
-If you would give a concrete example of the ACPI namespace info and
-device config, hotplug sequence, etc., required to show the problem,
-we could have a useful discussion about ways to fix it.  But if all
-you have is FUD about "this might break and users won't have the
-ability to edit modules.conf," that doesn't help me see why this patch
-is a bad idea.
+https://lkml.org/lkml/2012/11/22/686
 
->> I don't know why "adding a command line switch" appeals to you as the
->> solution to every problem.  As far as I'm concerned that's not a
->> solution to ANY problem.  It might be a band-aid to enable users to
->> limp along while we figure out a correct solution, but it's certainly
->> not a resolution.
->
-> Looks like you want to remove command line support, right ?
->
-> Yinghai
+It's already fixed in the:
+commit a1bf9584429d61b7096f93ae09325e1ba538e9e8
+tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
+
