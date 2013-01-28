@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab3A1JZz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 04:25:55 -0500
-Received: from mga02.intel.com ([134.134.136.20]:16477 "EHLO mga02.intel.com"
+	id S1755729Ab3A1JZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 04:25:59 -0500
+Received: from mga01.intel.com ([192.55.52.88]:60169 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756342Ab3A1JXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756017Ab3A1JXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Jan 2013 04:23:39 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,550,1355126400"; 
-   d="scan'208";a="253481857"
+   d="scan'208";a="282975155"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -20,9 +20,9 @@ Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH, RFC 02/16] mm: implement zero_huge_user_segment and friends
-Date: Mon, 28 Jan 2013 11:24:14 +0200
-Message-Id: <1359365068-10147-3-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH, RFC 12/16] thp, libfs: initial support of thp in simple_read/write_begin/write_end
+Date: Mon, 28 Jan 2013 11:24:24 +0200
+Message-Id: <1359365068-10147-13-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -32,75 +32,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Let's add helpers to clear huge page segment(s). They provide the same
-functionallity as zero_user_segment{,s} and zero_user, but for huge
-pages.
+For now we try to grab a huge cache page if gfp_mask has __GFP_COMP.
+It's probably to weak condition and need to be reworked later.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/mm.h |   15 +++++++++++++++
- mm/memory.c        |   22 ++++++++++++++++++++++
- 2 files changed, 37 insertions(+)
+ fs/libfs.c |   54 ++++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 42 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e4533a1..c011771 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1728,6 +1728,21 @@ extern void dump_page(struct page *page);
- extern void clear_huge_page(struct page *page,
- 			    unsigned long addr,
- 			    unsigned int pages_per_huge_page);
-+extern void zero_huge_user_segment(struct page *page,
-+		unsigned start, unsigned end);
-+static inline void zero_huge_user_segments(struct page *page,
-+		unsigned start1, unsigned end1,
-+		unsigned start2, unsigned end2)
-+{
-+	zero_huge_user_segment(page, start1, end1);
-+	zero_huge_user_segment(page, start2, end2);
-+}
-+static inline void zero_huge_user(struct page *page,
-+		unsigned start, unsigned len)
-+{
-+	zero_huge_user_segment(page, start, start+len);
-+}
-+
- extern void copy_user_huge_page(struct page *dst, struct page *src,
- 				unsigned long addr, struct vm_area_struct *vma,
- 				unsigned int pages_per_huge_page);
-diff --git a/mm/memory.c b/mm/memory.c
-index c04078b..200a74d 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -4185,6 +4185,28 @@ void clear_huge_page(struct page *page,
- 	}
- }
+diff --git a/fs/libfs.c b/fs/libfs.c
+index 916da8c..a4530d5 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -383,7 +383,10 @@ EXPORT_SYMBOL(simple_setattr);
  
-+void zero_huge_user_segment(struct page *page, unsigned start, unsigned end)
-+{
-+	int i;
+ int simple_readpage(struct file *file, struct page *page)
+ {
+-	clear_highpage(page);
++	if (PageTransHuge(page))
++		zero_huge_user(page, 0, HPAGE_PMD_SIZE);
++	else
++		clear_highpage(page);
+ 	flush_dcache_page(page);
+ 	SetPageUptodate(page);
+ 	unlock_page(page);
+@@ -394,21 +397,43 @@ int simple_write_begin(struct file *file, struct address_space *mapping,
+ 			loff_t pos, unsigned len, unsigned flags,
+ 			struct page **pagep, void **fsdata)
+ {
+-	struct page *page;
++	struct page *page = NULL;
+ 	pgoff_t index;
++	gfp_t gfp_mask;
+ 
+ 	index = pos >> PAGE_CACHE_SHIFT;
+-
+-	page = grab_cache_page_write_begin(mapping, index, flags);
++	gfp_mask = mapping_gfp_mask(mapping);
 +
-+	BUG_ON(end < start);
-+
-+	might_sleep();
-+
-+	/* start and end are on the same small page */
-+	if ((start & PAGE_MASK) == (end & PAGE_MASK))
-+		return zero_user_segment(page + (start >> PAGE_SHIFT),
-+				start & ~PAGE_MASK, end & ~PAGE_MASK);
-+
-+	zero_user_segment(page + (start >> PAGE_SHIFT),
-+			start & ~PAGE_MASK, PAGE_SIZE);
-+	for (i = (start >> PAGE_SHIFT) + 1; i < (end >> PAGE_SHIFT) - 1; i++) {
-+		cond_resched();
-+		clear_highpage(page + i);
++	/* XXX: too weak condition. Good enough for initial testing */
++	if (gfp_mask & __GFP_COMP) {
++		page = grab_cache_huge_page_write_begin(mapping,
++				index & ~HPAGE_CACHE_INDEX_MASK, flags);
++		/* fallback to small page */
++		if (!page || !PageTransHuge(page)) {
++			unsigned long offset;
++			offset = pos & ~PAGE_CACHE_MASK;
++			len = min_t(unsigned long,
++					len, PAGE_CACHE_SIZE - offset);
++		}
 +	}
-+	zero_user_segment(page + i, 0, end & ~PAGE_MASK);
-+}
++	if (!page)
++		page = grab_cache_page_write_begin(mapping, index, flags);
+ 	if (!page)
+ 		return -ENOMEM;
+-
+ 	*pagep = page;
+ 
+-	if (!PageUptodate(page) && (len != PAGE_CACHE_SIZE)) {
+-		unsigned from = pos & (PAGE_CACHE_SIZE - 1);
+-
+-		zero_user_segments(page, 0, from, from + len, PAGE_CACHE_SIZE);
++	if (!PageUptodate(page)) {
++		unsigned from;
 +
- static void copy_user_gigantic_page(struct page *dst, struct page *src,
- 				    unsigned long addr,
- 				    struct vm_area_struct *vma,
++		if (PageTransHuge(page) && len != HPAGE_PMD_SIZE) {
++			from = pos & ~HPAGE_PMD_MASK;
++			zero_huge_user_segments(page, 0, from,
++					from + len, HPAGE_PMD_SIZE);
++		} else if (len != PAGE_CACHE_SIZE) {
++			from = pos & ~PAGE_CACHE_MASK;
++			zero_user_segments(page, 0, from,
++					from + len, PAGE_CACHE_SIZE);
++		}
+ 	}
+ 	return 0;
+ }
+@@ -443,9 +468,14 @@ int simple_write_end(struct file *file, struct address_space *mapping,
+ 
+ 	/* zero the stale part of the page if we did a short copy */
+ 	if (copied < len) {
+-		unsigned from = pos & (PAGE_CACHE_SIZE - 1);
+-
+-		zero_user(page, from + copied, len - copied);
++		unsigned from;
++		if (PageTransHuge(page)) {
++			from = pos & ~HPAGE_PMD_MASK;
++			zero_huge_user(page, from + copied, len - copied);
++		} else {
++			from = pos & ~PAGE_CACHE_MASK;
++			zero_user(page, from + copied, len - copied);
++		}
+ 	}
+ 
+ 	if (!PageUptodate(page))
 -- 
 1.7.10.4
 
