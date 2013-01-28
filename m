@@ -1,108 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab3A1J0J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 04:26:09 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:34769 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756843Ab3A1J0D convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
-	Mon, 28 Jan 2013 04:26:03 -0500
-Message-Id: <5106523302000078000B9F0B@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Mon, 28 Jan 2013 09:25:55 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ingo Molnar" <mingo@kernel.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "Milton Miller" <miltonm@bga.com>, "Wang YanQing" <udknight@gmail.com>,
-        "Mike Galbraith" <efault@gmx.de>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        <mina86@mina86.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "stable" <stable@vger.kernel.org>
-Subject: Re: [PATCH]smp: Fix send func call IPI to empty cpu mask
-References: <20130126075357.GA3205@udknight>
- <CA+55aFyJ0tsvJeujyRwX=q5KPKjeejmvQOMTCJxDcaEmYprpvg@mail.gmail.com>
- <20130127155043.GA6214@gmail.com>
-In-Reply-To: <20130127155043.GA6214@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756856Ab3A1J0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 04:26:35 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:48300 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755985Ab3A1JZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 04:25:54 -0500
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: Mike Turquette <mturquette@linaro.org>, Paul Walmsley <paul@pwsan.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: RE: RE: [PATCH v2 1/4] ARM: OMAP2+: dpll: round rate to closest
+ value
+Thread-Topic: RE: [PATCH v2 1/4] ARM: OMAP2+: dpll: round rate to closest
+ value
+Thread-Index: AQHN+V650qHIse4sHkK4E3rAfVNglZhZWhaAgACdMNCAAE4pAIAEKvHQ
+Date: Mon, 28 Jan 2013 09:25:41 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA9446B@DBDE01.ent.ti.com>
+References: <cover.1358937533.git.afzal@ti.com>
+ <871e6890897534b6c3669e252f23bef5ff1247b6.1358937533.git.afzal@ti.com>
+ <alpine.DEB.2.00.1301250816010.471@utopia.booyaka.com>
+ <C8443D0743D26F4388EA172BF4E2A7A93EA9388C@DBDE01.ent.ti.com>
+ <20130125222032.10623.47200@quantum>
+In-Reply-To: <20130125222032.10623.47200@quantum>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0S9QXMj000563
 
->>> On 27.01.13 at 16:50, Ingo Molnar <mingo@kernel.org> wrote:
+Hi Mike,
 
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 
->> On Fri, Jan 25, 2013 at 11:53 PM, Wang YanQing <udknight@gmail.com> wrote:
->> > I get below warning every day with 3.7,
->> > one or two times per day.
->> >
->> > [ 2235.186027] WARNING: at 
-> /mnt/sda7/kernel/linux/arch/x86/kernel/apic/ipi.c:109 
-> default_send_IPI_mask_logical+0x2f/0xb8()
->> > [ 2235.186030] Hardware name: Aspire 4741
->> > [ 2235.186032] empty IPI mask
->> > [ 2235.186079]  [<c1015cbc>] native_send_call_func_ipi+0x4f/0x57
->> > [ 2235.186087]  [<c1053453>] smp_call_function_many+0x191/0x1a9
->> > [ 2235.186097]  [<c101e074>] native_flush_tlb_others+0x21/0x24
->> > [ 2235.186101]  [<c101e0da>] flush_tlb_page+0x63/0x89
->> > [ 2235.186105]  [<c101d360>] ptep_set_access_flags+0x20/0x26
->> > [ 2235.186111]  [<c108fadd>] do_wp_page+0x234/0x502
->> > [ 2235.186121]  [<c1090825>] handle_pte_fault+0x50d/0x54c
->> > [ 2235.186148]  [<c1090934>] handle_mm_fault+0xd0/0xe2
->> > [ 2235.186153]  [<c12dd143>] __do_page_fault+0x411/0x42d
->> > [ 2235.186166]  [<c12dd167>] do_page_fault+0x8/0xa
->> > [ 2235.186170]  [<c12db31a>] error_code+0x5a/0x60
->> >
->> > This patch fix it.
->> >
->> > This patch also fix some system hang problem:
->> > If the data->cpumask been cleared after pass
->> >
->> >         if (WARN_ONCE(!mask, "empty IPI mask"))
->> >                 return;
->> > then the problem 83d349f3 fix will happen again.
->> 
->> Hmm. We have very consciously tried to avoid the extra copy, although
->> I'm not entirely sure why (it might possibly hurt on the MAXSMP
->> configuration).
->> 
->> See for example commit 723aae25d5cd ("smp_call_function_many: handle
->> concurrent clearing of mask") which fixed another version of this
->> problem.
->> 
->> But I do agree that it looks like the copy is required, simply because
->> - as you say - once we've done the "list_add_rcu()" to add it to the
->> queue, we can have (another) IPI to the target CPU that can now see it
->> and clear the mask.
->> 
->> So by the time we get to actually send the IPI, the mask might have
->> been cleared by another IPI. So I do agree that your patch seems
->> correct, but I really really want to run it by other people.
->> 
->> Guys? Original patch on lkml. The other possible fix might be 
->> to take the &call_function.lock earlier in 
->> generic_smp_call_function_interrupt(), so that we can never 
->> clear the bit while somebody is adding entries to the list... 
->> But I think it very much tries to avoid that on purpose right 
->> now, with only the last CPU responding to that IPI taking the 
->> lock.
->> 
->> So copying the IPI mask seems to be the reasonable approach. 
->> Comments?
-> 
-> Agreed, looks correct to me as well - I've queued the fix up in 
-> tip:x86/urgent.
+On Sat, Jan 26, 2013 at 03:50:32, Mike Turquette wrote:
 
-But the patch is obviously incomplete for the CPUMASK_OFFSTACK
-case, as the newly added cpumask_ipi member never gets
-its bit array allocated.
+> Is MULT_ROUND_UP doing the right thing for you in the clk_divider code?
+> What is the clock rate requested of the parent PLL?  I just want to make
+> sure that we're doing the right thing in the basic divider code.
 
-Jan
+Actually MULT_ROUND_UP made my life difficult earlier, and finally came up
+with this solution instead of removing it.
 
+It was something like 60000000 requested of PLL, for i = 1, but for other
+values, it was something like 60000001, 60000002 etc.
+
+Even if round rate rounds, I thought removing MULT_ROUND_UP would be ok,
+couldn't spend time to understand fully rational behind it, and as it was
+in generic code, kept away from doing it.
+
+Regards
+Afzal
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
