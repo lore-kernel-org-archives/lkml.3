@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757020Ab3A1AHf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 19:07:35 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:46211 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756978Ab3A1AHY (ORCPT
+	id S1756957Ab3A1AHU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 19:07:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35367 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754409Ab3A1AHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 19:07:24 -0500
-Date: Mon, 28 Jan 2013 08:07:05 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Shaohua Li <shli@fusionio.com>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH next/mmotm] swap: add per-partition lock for swapfile fix
-Message-ID: <20130128000705.GA1306@kernel.org>
-References: <5101FFF5.6030503@oracle.com>
- <20130125042512.GA32017@kernel.org>
- <alpine.LNX.2.00.1301261754530.7300@eggly.anvils>
- <20130127141253.GA27019@kernel.org>
- <alpine.LNX.2.00.1301271341030.16981@eggly.anvils>
+	Sun, 27 Jan 2013 19:07:17 -0500
+Date: Sun, 27 Jan 2013 16:06:04 -0800
+From: tip-bot for Cong Ding <dinggnu@gmail.com>
+Message-ID: <tip-65315d4889d403ea025081d8ca85ddf7b9c10f39@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        slash@ac.auone-net.jp, jkosina@suse.cz, jarkko.sakkinen@intel.com,
+        matt.fleming@intel.com, dinggnu@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        slash@ac.auone-net.jp, jarkko.sakkinen@intel.com, jkosina@suse.cz,
+        matt.fleming@intel.com, dinggnu@gmail.com, tglx@linutronix.de
+In-Reply-To: <1358183628-27784-1-git-send-email-dinggnu@gmail.com>
+References: <1358183628-27784-1-git-send-email-dinggnu@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/boot] x86/boot: Fix minor fd leakage in tools/relocs.c
+Git-Commit-ID: 65315d4889d403ea025081d8ca85ddf7b9c10f39
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1301271341030.16981@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 27 Jan 2013 16:06:10 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 27, 2013 at 01:47:01PM -0800, Hugh Dickins wrote:
-> I had all cpus spinning in swap_info_get(), for the lock on an area
-> being swapped off: probably because get_swap_page() forgot to unlock.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
+Commit-ID:  65315d4889d403ea025081d8ca85ddf7b9c10f39
+Gitweb:     http://git.kernel.org/tip/65315d4889d403ea025081d8ca85ddf7b9c10f39
+Author:     Cong Ding <dinggnu@gmail.com>
+AuthorDate: Mon, 14 Jan 2013 17:13:35 +0000
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sun, 27 Jan 2013 10:24:28 -0800
 
-Good catch. Thanks!
+x86/boot: Fix minor fd leakage in tools/relocs.c
 
-> ---
-> 
->  mm/swapfile.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> --- mmotm.orig/mm/swapfile.c	2013-01-23 17:55:39.132447115 -0800
-> +++ mmotm/mm/swapfile.c	2013-01-27 10:41:45.000000000 -0800
-> @@ -470,10 +470,9 @@ swp_entry_t get_swap_page(void)
->  		spin_unlock(&swap_lock);
->  		/* This is called for allocating swap entry for cache */
->  		offset = scan_swap_map(si, SWAP_HAS_CACHE);
-> -		if (offset) {
-> -			spin_unlock(&si->lock);
-> +		spin_unlock(&si->lock);
-> +		if (offset)
->  			return swp_entry(type, offset);
-> -		}
->  		spin_lock(&swap_lock);
->  		next = swap_list.next;
->  	}
+The opened file should be closed.
+
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+Cc: Kusanagi Kouichi <slash@ac.auone-net.jp>
+Cc: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Link: http://lkml.kernel.org/r/1358183628-27784-1-git-send-email-dinggnu@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/tools/relocs.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
+index 5a1847d..79d67bd 100644
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -814,12 +814,14 @@ int main(int argc, char **argv)
+ 	read_relocs(fp);
+ 	if (show_absolute_syms) {
+ 		print_absolute_symbols();
+-		return 0;
++		goto out;
+ 	}
+ 	if (show_absolute_relocs) {
+ 		print_absolute_relocs();
+-		return 0;
++		goto out;
+ 	}
+ 	emit_relocs(as_text, use_real_mode);
++out:
++	fclose(fp);
+ 	return 0;
+ }
