@@ -1,180 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab3A1Prt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 10:47:49 -0500
-Received: from mout.gmx.net ([212.227.15.19]:55491 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751911Ab3A1Prr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 10:47:47 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18QHOF1tNYQRDckplKzdogYNAOPLjk2YgZpJU686i
-	h3ABaF0Dkbp4QM
-Message-ID: <1359388055.5783.164.camel@marge.simpson.net>
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-From: Mike Galbraith <efault@gmx.de>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-Date: Mon, 28 Jan 2013 16:47:35 +0100
-In-Reply-To: <1359350266.5783.39.camel@marge.simpson.net>
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
-	 <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com>
-	 <510493E4.8060602@intel.com> <1359261385.5803.46.camel@marge.simpson.net>
-	 <20130127103508.GB8894@pd.tnic> <51052ACB.3070703@intel.com>
-	 <1359301903.5805.11.camel@marge.simpson.net>
-	 <1359350266.5783.39.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1755442Ab3A1PtI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 10:49:08 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:34247 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882Ab3A1PtG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 10:49:06 -0500
+From: Daniele Palmas <dnlplm@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniele Palmas <dnlplm@gmail.com>
+Subject: [PATCH 1/1] USB: qcserial: add Telit Gobi QDL device
+Date: Mon, 28 Jan 2013 16:48:54 +0100
+Message-Id: <1359388134-2853-1-git-send-email-dnlplm@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-28 at 06:17 +0100, Mike Galbraith wrote:
+Add VID and PID for Telit Gobi QDL device
 
-Ok damnit.
+Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
+---
+ drivers/usb/serial/qcserial.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> monteverdi:/abuild/mike/:[0]# echo powersaving > /sys/devices/system/cpu/sched_policy/current_sched_policy
-> monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-> 043321  00058616
-> 043313  00058616
-> 043318  00058968
-> 043317  00058968
-> 043316  00059184
-> 043319  00059192
-> 043320  00059048
-> 043314  00059048
-> 043312  00058176
-> 043315  00058184
-
-That was boost if you like, and free to roam 4 nodes.
-
-monteverdi:/abuild/mike/:[0]# echo powersaving > /sys/devices/system/cpu/sched_policy/current_sched_policy
-monteverdi:/abuild/mike/:[0]# echo 0 > /sys/devices/system/cpu/cpufreq/boost
-monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-014618  00039616
-014623  00039256
-014617  00039256
-014620  00039304
-014621  00039304  (wait a minute, you said..)
-014616  00039080
-014625  00039064
-014622  00039672
-014624  00039624
-014619  00039672
-monteverdi:/abuild/mike/:[0]# echo 1 > /sys/devices/system/cpu/cpufreq/boost
-monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-014635  00058160
-014633  00058592
-014638  00058592
-014636  00058160
-014632  00058200
-014634  00058704
-014639  00058704
-014641  00058200
-014640  00058560
-014637  00058560
-monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-014673  00059504
-014676  00059504
-014674  00059064
-014672  00059064
-014675  00058560
-014671  00058560
-014677  00059248
-014668  00058864
-014669  00059248
-014670  00058864
-monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-014686  00043472
-014689  00043472
-014685  00043760
-014690  00043760
-014687  00043528
-014688  00043528  (hmm)
-014683  00043216
-014692  00043208
-014684  00043336
-014691  00043336
-monteverdi:/abuild/mike/:[0]# echo 0 > /sys/devices/system/cpu/cpufreq/boost
-monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-014701  00039344
-014707  00039344
-014709  00038976
-014700  00038976
-014708  00039256  (hmm)
-014703  00039256
-014705  00039400
-014704  00039400
-014706  00039320
-014702  00039320
-monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-014713  00058552
-014716  00058664
-014719  00058600
-014715  00058600
-014718  00058520
-014722  00058400
-014721  00058768
-014717  00058768
-014714  00058552
-014720  00058560
-monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-014732  00058736
-014734  00058760
-014729  00040872
-014736  00059184
-014728  00059184
-014727  00058744
-014733  00058760
-014731  00059320
-014730  00059280
-014735  00041072
-monteverdi:/abuild/mike/:[0]# numactl --cpunodebind=0 massive_intr 10 60
-014749  00040608
-014748  00040616
-014745  00039360
-014750  00039360
-014751  00039416
-014747  00039416
-014752  00039336
-014746  00039336
-014744  00039480
-014753  00039480
-monteverdi:/abuild/mike/:[0]# numactl --cpunodebind=0 massive_intr 10 60
-014757  00039272
-014761  00039272
-014765  00039528
-014756  00039528
-014759  00039352
-014760  00039352
-014764  00039248
-014762  00039248
-014758  00039352
-014763  00039352
-monteverdi:/abuild/mike/:[0]# numactl --cpunodebind=0 massive_intr 10 60
-014773  00059680
-014769  00059680
-014768  00059144
-014777  00059144
-014775  00059688
-014774  00059688
-014770  00059264
-014771  00059264
-014772  00059528
-014776  00059528
-
-Ok box, whatever blows your skirt up.  I'm done.
-
-Non
-Uniform
-Mysterious
-Artifacts
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index aa148c2..2466254 100644
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -53,6 +53,7 @@ static const struct usb_device_id id_table[] = {
+ 	{DEVICE_G1K(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
+ 	{DEVICE_G1K(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
+ 	{DEVICE_G1K(0x1f45, 0x0001)},	/* Unknown Gobi QDL device */
++	{DEVICE_G1K(0x1bc7, 0x900e)},	/* Telit Gobi QDL device */
+ 
+ 	/* Gobi 2000 devices */
+ 	{USB_DEVICE(0x1410, 0xa010)},	/* Novatel Gobi 2000 QDL device */
+-- 
+1.7.4.1
 
