@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab3A1K5r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 05:57:47 -0500
-Received: from smtp4.epfl.ch ([128.178.224.219]:59634 "HELO smtp4.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751638Ab3A1K5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 05:57:44 -0500
-Message-ID: <510659A3.7070906@epfl.ch>
-Date: Mon, 28 Jan 2013 11:57:39 +0100
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-Reply-To: florian.vaussard@epfl.ch
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755204Ab3A1K7L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 05:59:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41610 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751638Ab3A1K7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 05:59:09 -0500
+Date: Mon, 28 Jan 2013 12:59:03 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] kvm: IOMMU read-only mapping support
+Message-ID: <20130128105903.GA22871@redhat.com>
+References: <20130124220027.11061.76400.stgit@bling.home>
+ <20130125101704.b76b049d.yoshikawa_takuya_b1@lab.ntt.co.jp>
+ <5101FBE8.9000206@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] pwm: Add pwm_cansleep() as exported API to users
-References: <1359121471-21457-1-git-send-email-florian.vaussard@epfl.ch> <1359121471-21457-2-git-send-email-florian.vaussard@epfl.ch> <20130126054024.GB29243@avionic-0098.adnet.avionic-design.de> <51063AB5.2060108@ti.com> <51064687.5090605@epfl.ch> <20130128095754.GA23134@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20130128095754.GA23134@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5101FBE8.9000206@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 28/01/2013 10:57, Thierry Reding a écrit :
-> On Mon, Jan 28, 2013 at 10:36:07AM +0100, Florian Vaussard wrote:
->> Hello,
->>
->> Le 28/01/2013 09:45, Peter Ujfalusi a écrit :
->>> hi Thierry,
->>>
->>> On 01/26/2013 06:40 AM, Thierry Reding wrote:
-> [...]
->>>>> +{
->>>>> +	return pwm->chip->can_sleep;
->>>>> +}
->>>>> +EXPORT_SYMBOL_GPL(pwm_cansleep);
->>>>
->>>> Would it make sense to check for NULL pointers here? I guess that
->>>> passing NULL into the function could be considered a programming error
->>>> and an oops would be okay, but in that case there's no point in making
->>>> the function return an int. Also see my next comment.
->>>
->>> While it is unlikely to happen it is better to be safe, something like this
->>> will do:
->>>
->>> return pwm ? pwm->chip->can_sleep : 0;
->>>
->>
->> Ok. And what about:
->>
->> BUG_ON(pwm == NULL);
->> return pwm->chip->can_sleep;
->
-> I don't think we need that. In case pwm == NULL, dereferencing it will
-> oops anyway. So either we make it safe and return an error code, or we
-> let it oops without explicit BUG_ON().
->
+On Fri, Jan 25, 2013 at 11:28:40AM +0800, Xiao Guangrong wrote:
+> On 01/25/2013 09:17 AM, Takuya Yoshikawa wrote:
+> > On Thu, 24 Jan 2013 15:03:57 -0700
+> > Alex Williamson <alex.williamson@redhat.com> wrote:
+> > 
+> >> A couple patches to make KVM IOMMU support honor read-only mappings.
+> >> This causes an un-map, re-map when the read-only flag changes and
+> >> makes use of it when setting IOMMU attributes.  Thanks,
+> > 
+> > Looks good to me.
+> > 
+> > I think I can naturally update my patch after this gets merged.
+> > 
+> 
+> Please wait.
+> 
+> The commit c972f3b1 changed the write-protect behaviour - it does
+> wirte-protection only when dirty flag is set.
+> [ I did not see this commit when we discussed the problem before. ]
+> 
+> Further more, i notice that write-protect is not enough, when do sync
+> shadow page:
+> 
+> FNAME(sync_page):
+> 
+> 		host_writable = sp->spt[i] & SPTE_HOST_WRITEABLE;
+> 
+> 		set_spte(vcpu, &sp->spt[i], pte_access,
+> 			 PT_PAGE_TABLE_LEVEL, gfn,
+> 			 spte_to_pfn(sp->spt[i]), true, false,
+> 			 host_writable);
+> 
+> It sets spte based on the old value that means the readonly flag check
+> is missed. We need to call kvm_arch_flush_shadow_all under this case.
+Why not just disallow changing memory region KVM_MEM_READONLY flag
+without deleting the region?
 
-Calling this function with a NULL pointer is a programming error, so there
-is no error codes for such errors. I propose to return bool, and let it
-oops if such case happens.
-
-Regards,
-
-Florian
+--
+			Gleb.
