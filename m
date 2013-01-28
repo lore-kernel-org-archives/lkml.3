@@ -1,240 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170Ab3A1AjQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 19:39:16 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46921 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756888Ab3A1Aie (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 19:38:34 -0500
-X-AuditID: 9c930179-b7d01ae000004006-f3-5105c886562c
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Minchan Kim <minchan@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>
-Subject: [RESEND PATCH v5 2/4] zram: force disksize setting before using zram
-Date: Mon, 28 Jan 2013 09:38:24 +0900
-Message-Id: <1359333506-13599-2-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359333506-13599-1-git-send-email-minchan@kernel.org>
-References: <1359333506-13599-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	id S1757157Ab3A1AjO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 19:39:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:51882 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757118Ab3A1AjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 19:39:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,548,1355126400"; 
+   d="scan'208";a="277260458"
+Date: Mon, 28 Jan 2013 01:39:09 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        AnilKumar Ch <anilkumar@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Subject: [GIT] [3.8] MFD fixes
+Message-ID: <20130128003909.GX1174@sortiz-mobl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now zram document syas "set disksize is optional"
-but partly it's wrong. When you try to use zram firstly after
-booting, you must set disksize, otherwise zram can't work because
-zram gendisk's size is 0. But once you do it, you can use zram freely
-after reset because reset doesn't reset to zero paradoxically.
-So in this time, disksize setting is optional.:(
-It's inconsitent for user behavior and not straightforward.
+Hi Linus,
 
-This patch forces always setting disksize firstly before using zram.
-Yes. It changes current behavior so someone could complain when
-he upgrades zram. Apparently it could be a problem if zram is mainline
-but it still lives in staging so behavior could be changed for right
-way to go. Let them excuse.
+This is the first pull request for MFD fixes for 3.8
 
-Cc: Jerome Marchand <jmarchan@redhat.com>
-Acked-by: Nitin Gupta <ngupta@vflare.org>
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- drivers/staging/zram/zram.txt     |   27 ++++++++++----------
- drivers/staging/zram/zram_drv.c   |   51 +++++++++++++------------------------
- drivers/staging/zram/zram_drv.h   |    5 +---
- drivers/staging/zram/zram_sysfs.c |    6 +----
- 4 files changed, 34 insertions(+), 55 deletions(-)
+We have some build failure fixes (twl4030, vexpress, abx500 and tps65910),
+some actual runtime oops and lockup fixes (rtsx, da9052), and some more
+hypothetical NULL pointers dereferences fixes for pcf50633 and max776xx.
 
-diff --git a/drivers/staging/zram/zram.txt b/drivers/staging/zram/zram.txt
-index 5f75d29..765d790 100644
---- a/drivers/staging/zram/zram.txt
-+++ b/drivers/staging/zram/zram.txt
-@@ -23,17 +23,17 @@ Following shows a typical sequence of steps for using zram.
- 	This creates 4 devices: /dev/zram{0,1,2,3}
- 	(num_devices parameter is optional. Default: 1)
- 
--2) Set Disksize (Optional):
--	Set disk size by writing the value to sysfs node 'disksize'
--	(in bytes). If disksize is not given, default value of 25%
--	of RAM is used.
--
--	# Initialize /dev/zram0 with 50MB disksize
--	echo $((50*1024*1024)) > /sys/block/zram0/disksize
--
--	NOTE: disksize cannot be changed if the disk contains any
--	data. So, for such a disk, you need to issue 'reset' (see below)
--	before you can change its disksize.
-+2) Set Disksize
-+        Set disk size by writing the value to sysfs node 'disksize'.
-+        The value can be either in bytes or you can use mem suffixes.
-+        Examples:
-+            # Initialize /dev/zram0 with 50MB disksize
-+            echo $((50*1024*1024)) > /sys/block/zram0/disksize
-+
-+            # Using mem suffixes
-+            echo 256K > /sys/block/zram0/disksize
-+            echo 512M > /sys/block/zram0/disksize
-+            echo 1G > /sys/block/zram0/disksize
- 
- 3) Activate:
- 	mkswap /dev/zram0
-@@ -65,8 +65,9 @@ Following shows a typical sequence of steps for using zram.
- 	echo 1 > /sys/block/zram0/reset
- 	echo 1 > /sys/block/zram1/reset
- 
--	(This frees all the memory allocated for the given device).
--
-+	This frees all the memory allocated for the given device and
-+	resets the disksize to zero. You must set the disksize again
-+	before reusing the device.
- 
- Please report any problems at:
-  - Mailing list: linux-mm-cc at laptop dot org
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index b285b3a..f8ae1bf 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -94,34 +94,6 @@ static int page_zero_filled(void *ptr)
- 	return 1;
- }
- 
--static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
--{
--	if (!zram->disksize) {
--		pr_info(
--		"disk size not provided. You can use disksize_kb module "
--		"param to specify size.\nUsing default: (%u%% of RAM).\n",
--		default_disksize_perc_ram
--		);
--		zram->disksize = default_disksize_perc_ram *
--					(totalram_bytes / 100);
--	}
--
--	if (zram->disksize > 2 * (totalram_bytes)) {
--		pr_info(
--		"There is little point creating a zram of greater than "
--		"twice the size of memory since we expect a 2:1 compression "
--		"ratio. Note that zram uses about 0.1%% of the size of "
--		"the disk when not in use so a huge zram is "
--		"wasteful.\n"
--		"\tMemory Size: %zu kB\n"
--		"\tSize you selected: %llu kB\n"
--		"Continuing anyway ...\n",
--		totalram_bytes >> 10, zram->disksize >> 10);
--	}
--
--	zram->disksize &= PAGE_MASK;
--}
--
- static void zram_free_page(struct zram *zram, size_t index)
- {
- 	unsigned long handle = zram->table[index].handle;
-@@ -495,6 +467,9 @@ void __zram_reset_device(struct zram *zram)
- {
- 	size_t index;
- 
-+	if (!zram->init_done)
-+		return;
-+
- 	zram->init_done = 0;
- 
- 	/* Free various per-device buffers */
-@@ -523,6 +498,7 @@ void __zram_reset_device(struct zram *zram)
- 	memset(&zram->stats, 0, sizeof(zram->stats));
- 
- 	zram->disksize = 0;
-+	set_capacity(zram->disk, 0);
- }
- 
- void zram_reset_device(struct zram *zram)
-@@ -544,7 +520,19 @@ int zram_init_device(struct zram *zram)
- 		return 0;
- 	}
- 
--	zram_set_disksize(zram, totalram_pages << PAGE_SHIFT);
-+	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
-+		pr_info(
-+		"There is little point creating a zram of greater than "
-+		"twice the size of memory since we expect a 2:1 compression "
-+		"ratio. Note that zram uses about 0.1%% of the size of "
-+		"the disk when not in use so a huge zram is "
-+		"wasteful.\n"
-+		"\tMemory Size: %zu kB\n"
-+		"\tSize you selected: %llu kB\n"
-+		"Continuing anyway ...\n",
-+		(totalram_pages << PAGE_SHIFT) >> 10, zram->disksize >> 10
-+		);
-+	}
- 
- 	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
- 	if (!zram->compress_workmem) {
-@@ -569,8 +557,6 @@ int zram_init_device(struct zram *zram)
- 		goto fail_no_table;
- 	}
- 
--	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
--
- 	/* zram devices sort of resembles non-rotational disks */
- 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
- 
-@@ -749,8 +735,7 @@ static void __exit zram_exit(void)
- 		zram = &zram_devices[i];
- 
- 		destroy_device(zram);
--		if (zram->init_done)
--			zram_reset_device(zram);
-+		zram_reset_device(zram);
- 	}
- 
- 	unregister_blkdev(zram_major, "zram");
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index df2eec4..5b671d1 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -28,9 +28,6 @@ static const unsigned max_num_devices = 32;
- 
- /*-- Configurable parameters */
- 
--/* Default zram disk size: 25% of total RAM */
--static const unsigned default_disksize_perc_ram = 25;
--
- /*
-  * Pages that compress to size greater than this are stored
-  * uncompressed in memory.
-@@ -115,6 +112,6 @@ extern struct attribute_group zram_disk_attr_group;
- #endif
- 
- extern int zram_init_device(struct zram *zram);
--extern void __zram_reset_device(struct zram *zram);
-+extern void zram_reset_device(struct zram *zram);
- 
- #endif
-diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-index de1eacf..4143af9 100644
---- a/drivers/staging/zram/zram_sysfs.c
-+++ b/drivers/staging/zram/zram_sysfs.c
-@@ -110,11 +110,7 @@ static ssize_t reset_store(struct device *dev,
- 	if (bdev)
- 		fsync_bdev(bdev);
- 
--	down_write(&zram->init_lock);
--	if (zram->init_done)
--		__zram_reset_device(zram);
--	up_write(&zram->init_lock);
--
-+	zram_reset_device(zram);
- 	return len;
- }
- 
+Then we also have additional rtsx fixes for a correct switch output voltage
+and clock divider correctness for rtl8411 (rtsx driver), and irqdomain fix for
+db8550-prcmu, and some more cosmetic fixes for arizona and wm5102.
+
+Thanks in advance for pulling them in.
+
+The following changes since commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619:
+
+  Linux 3.8-rc4 (2013-01-17 19:25:45 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6.git tags/mfd-for-linus-3.8-1
+
+for you to fetch changes up to 2d1484f5990c094e2c706672a8d286576dd096b4:
+
+  mfd: rtsx: Fix oops when rtsx_pci_sdmmc is not probed (2013-01-27 02:18:07 +0100)
+
+----------------------------------------------------------------
+AnilKumar Ch (1):
+      mfd: tps65910: Select REGMAP_IRQ in Kconfig to fix build error
+
+Arnd Bergmann (1):
+      mfd: twl4030: Don't warn about uninitialized return code
+
+Ashish Jangam (1):
+      mfd: da9052/53 lockup fix
+
+Axel Lin (3):
+      mfd: max77686: Init max77686->dev before using it
+      mfd: max77693: Init max77693->dev before using it
+      mfd: pcf50633: Init pcf->dev before using it
+
+Guenter Roeck (1):
+      mfd: vexpress: Export global functions to fix build error
+
+Lee Jones (1):
+      mfd: Fix compile errors and warnings when !CONFIG_AB8500_BM
+
+Linus Walleij (2):
+      mfd: db8500-prcmu: Fix irqdomain usage
+      mfd: tc3589x: Use simple irqdomain
+
+Mark Brown (3):
+      mfd: arizona: Disable control interface reporting for WM5102 and WM5110
+      mfd: arizona: Check errors from regcache_sync()
+      mfd: wm5102: Fix definition of WM5102_MAX_REGISTER
+
+Wei WANG (4):
+      mfd: rtsx: Add output voltage switch hook
+      mmc: rtsx: Call MFD hook to switch output voltage
+      mfd: rtsx: Add clock divider hook
+      mfd: rtsx: Fix oops when rtsx_pci_sdmmc is not probed
+
+ drivers/mfd/Kconfig                  |    1 +
+ drivers/mfd/ab8500-core.c            |    1 +
+ drivers/mfd/arizona-core.c           |    7 +++-
+ drivers/mfd/arizona-irq.c            |   18 ++--------
+ drivers/mfd/da9052-i2c.c             |   61 +++++++++++++++++++++++++++++++
+ drivers/mfd/db8500-prcmu.c           |   13 ++++---
+ drivers/mfd/max77686.c               |   18 +++++-----
+ drivers/mfd/max77693.c               |   34 +++++++++---------
+ drivers/mfd/pcf50633-core.c          |    5 ++-
+ drivers/mfd/rtl8411.c                |   29 +++++++++++++++
+ drivers/mfd/rts5209.c                |   21 +++++++++++
+ drivers/mfd/rts5229.c                |   21 +++++++++++
+ drivers/mfd/rtsx_pcr.c               |   27 +++++++++++---
+ drivers/mfd/tc3589x.c                |   17 +++------
+ drivers/mfd/twl4030-power.c          |    2 +-
+ drivers/mfd/vexpress-config.c        |    8 +++--
+ drivers/mfd/wm5102-tables.c          |    2 +-
+ drivers/mmc/host/rtsx_pci_sdmmc.c    |   30 +++-------------
+ include/linux/mfd/abx500.h           |    2 --
+ include/linux/mfd/abx500/ab8500-bm.h |   29 +++------------
+ include/linux/mfd/da9052/da9052.h    |   66 +++++++++++++++++++++++++++++++---
+ include/linux/mfd/da9052/reg.h       |    3 ++
+ include/linux/mfd/rtsx_common.h      |    3 ++
+ include/linux/mfd/rtsx_pci.h         |   25 ++++++++++---
+ 24 files changed, 314 insertions(+), 129 deletions(-)
 -- 
-1.7.9.5
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
