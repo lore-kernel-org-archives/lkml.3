@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab3A1MLF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 07:11:05 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:56370 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756576Ab3A1MLD (ORCPT
+	id S1757311Ab3A1MND (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 07:13:03 -0500
+Received: from fold.natur.cuni.cz ([195.113.57.32]:37829 "HELO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756961Ab3A1MM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 07:11:03 -0500
-Date: Mon, 28 Jan 2013 17:39:26 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] uprobes: Fully initialize uprobe_trace_consumer
- before uprobe_register()
-Message-ID: <20130128120926.GC29865@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20130127194814.GA25377@redhat.com>
- <20130127194837.GA25402@redhat.com>
+	Mon, 28 Jan 2013 07:12:57 -0500
+Message-ID: <51066B46.10409@fold.natur.cuni.cz>
+Date: Mon, 28 Jan 2013 13:12:54 +0100
+From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20100101 Firefox/17.0 SeaMonkey/2.14.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20130127194837.GA25402@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012812-7014-0000-0000-000002859430
+To: Chris Clayton <chris2553@googlemail.com>
+CC: Yijing Wang <wangyijing@huawei.com>,
+        Yijing Wang <wangyijing0307@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
+Subject: Re: 3.8.0-rc4+ - Oops on removing WinTV-HVR-1400 expresscard TV Tuner
+References: <51016937.1020202@googlemail.com> <510189B1.606@fold.natur.cuni.cz> <5104427D.2050002@googlemail.com> <510494D6.1010000@gmail.com> <51050D43.2050703@googlemail.com> <51051B1B.3080105@gmail.com> <51052DB2.4090702@googlemail.com> <51053917.6060400@fold.natur.cuni.cz> <5105491E.9050907@googlemail.com> <510558CE.9000600@fold.natur.cuni.cz> <5105AFDB.9000200@googlemail.com> <5105E51D.2020606@huawei.com> <51064F1A.1020909@googlemail.com> <51065FA6.4070208@googlemail.com>
+In-Reply-To: <51065FA6.4070208@googlemail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2013-01-27 20:48:37]:
+Chris Clayton wrote:
+> 
+> [snip]
+> 
+>> [chris:~]$ cat /proc/cmdline
+>> root=/dev/sda5 pciehp_ports=native ro resume=/dev/sda6
+>                      ^^
+>                   **typo**
+> I've run the test again with pcie_ports=native and the directories now get populated. Even better though, is that when I plug in the card, hotplug **works** and the card's drivers are loaded.
 
-> probe_event_enable() does uprobe_register() and only after that sets
-> utc->tu and tu->consumer/flags. This can race with uprobe_dispatcher()
-> which can miss these assignments or see them out of order. Nothing
-> really bad can happen, but this doesn't look clean/safe.
-> 
-> And this does not allow to use uprobe_consumer->filter() we are going
-> to add, it is called by uprobe_register() and it needs utc->tu.
-> 
-> Change this code to initialize everything before uprobe_register(), and
-> reset tu->consumer/flags if it fails. We can't race with event_disable(),
-> the caller holds event_mutex, and if we could the code would be wrong
-> anyway.
-> 
-> In fact I think uprobe_trace_consumer should die, it buys nothing but
-> complicate the code. We can simply add uprobe_consumer into trace_uprobe.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+BTW, I have with acpiphp on 3.7.4:
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+ls -la /sys/bus/pci_express/devices
+total 0
+drwxr-xr-x 2 root root 0 Jan 28 13:07 .
+drwxr-xr-x 4 root root 0 Jan 28 13:07 ..
+$ ls -la /sys/bus/pci/devices/slots
+ls: cannot access /sys/bus/pci/devices/slots: No such file or directory
+$
 
-> ---
->  kernel/trace/trace_uprobe.c |   13 +++++++------
->  1 files changed, 7 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index 53afabe..94d4ea2 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -552,17 +552,18 @@ static int probe_event_enable(struct trace_uprobe *tu, int flag)
->  		return -EINTR;
-> 
->  	utc->cons.handler = uprobe_dispatcher;
-> +	utc->tu = tu;
-> +	tu->consumer = utc;
-> +	tu->flags |= flag;
-> +
->  	ret = uprobe_register(tu->inode, tu->offset, &utc->cons);
->  	if (ret) {
-> +		tu->consumer = NULL;
-> +		tu->flags &= ~flag;
->  		kfree(utc);
-> -		return ret;
->  	}
-> 
-> -	tu->flags |= flag;
-> -	utc->tu = tu;
-> -	tu->consumer = utc;
-> -
-> -	return 0;
-> +	return ret;
->  }
-> 
->  static void probe_event_disable(struct trace_uprobe *tu, int flag)
-> -- 
-> 1.5.5.1
-> 
+And for me hotplug also works (as far as I can tell). ;-)
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+> 
+> Excellent! Thank you so much for your help (and patience) Martin and Yijing.
+> 
+> Now to solving why running scandvb doesn't find any TV channels.
 
+Would be fine if you could re-do the PresDet checks and confirm whether it is also broken
+for you under pciehp.
+
+Martin
