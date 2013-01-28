@@ -1,75 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730Ab3A1T6Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 14:58:25 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:58237 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491Ab3A1T6U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 14:58:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: Re: [PATCH v5 07/14] dmaengine: add dma_request_slave_channel_compat()
-Date: Mon, 28 Jan 2013 19:57:47 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-1-generic; KDE/4.3.2; x86_64; ; )
-Cc: Matt Porter <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Sekhar Nori <nsekhar@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Dan Williams <djbw@fb.com>, Rob Herring <rob.herring@calxeda.com>
-References: <1358281974-8411-1-git-send-email-mporter@ti.com> <1358281974-8411-8-git-send-email-mporter@ti.com> <CAHp75VeqikcTuOd14utb9E0P3b9t1mr=JsmkAbz5=3FJwU2kFA@mail.gmail.com>
-In-Reply-To: <CAHp75VeqikcTuOd14utb9E0P3b9t1mr=JsmkAbz5=3FJwU2kFA@mail.gmail.com>
+	id S1753380Ab3A1UN0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 15:13:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53449 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751477Ab3A1UNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 15:13:22 -0500
+Date: Mon, 28 Jan 2013 15:13:17 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>, dhowells@redhat.com,
+        jmorris@namei.org, linux-security-module@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/1] ima: digital signature verification using asymmetric
+ keys
+Message-ID: <20130128201316.GA14405@redhat.com>
+References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
+ <53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
+ <1358895228.2408.14.camel@falcor1>
+ <CALLzPKbNVV+iWzUcsxq0Lk-Hz2BVpCBsEbjHdnRAyjDsF5___g@mail.gmail.com>
+ <20130125210157.GA13152@redhat.com>
+ <CALLzPKY9E8VaFf1GUstTnCeYwLOTm6ozdjJFDwSKWk_JR6QF5w@mail.gmail.com>
+ <20130128151527.GA5868@redhat.com>
+ <CALLzPKbjmoLGMVgY-GygZ9ScV1GNHKaKHGYsHc4=CeoYPL4rmw@mail.gmail.com>
+ <20130128185242.GB5868@redhat.com>
+ <1359402694.3906.53.camel@falcor1>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301281957.47604.arnd@arndb.de>
-X-Provags-ID: V02:K0:s5Z8G+6ftbFv7demmF4vZ/7ysJuvtkans5ezT5wocdc
- iJ1Ar8ZVN/8iwkU2kd1CvFVFWlv0P4cNZNAq4EFKI21D0D6oUM
- iogTsT9L6lbtROxbd2T8fCuBNoieitxHNMzcUqH+UESnfVPZN/
- N7K+YsUiEjaQOpgTfWb+iUJi+RTYqmltZ/zrjNFlQB3ub6wZwh
- JJNlCLLH2cyDPhLX85jv46a+uyJ+XCW4Mk2AHr/1MMtbhvYfph
- 0YTh1+Dn/22mYS0I1BhlEjs/607GCCx23gAIVD0JIoqP2EDZga
- eJK7DnR9u/+IZN8DvCm7+BV5vDzpud2rmdNmnjmK7hvb0Rs2ZZ
- ZpTvm9WvuVfJN1MMqvBs=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359402694.3906.53.camel@falcor1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 28 January 2013, Andy Shevchenko wrote:
-> On Tue, Jan 15, 2013 at 10:32 PM, Matt Porter <mporter@ti.com> wrote:
-> > Adds a dma_request_slave_channel_compat() wrapper which accepts
-> > both the arguments from dma_request_channel() and
-> > dma_request_slave_channel(). Based on whether the driver is
-> > instantiated via DT, the appropriate channel request call will be
-> > made.
-> >
-> > This allows for a much cleaner migration of drivers to the
-> > dmaengine DT API as platforms continue to be mixed between those
-> > that boot using DT and those that do not.
+On Mon, Jan 28, 2013 at 02:51:34PM -0500, Mimi Zohar wrote:
+> On Mon, 2013-01-28 at 13:52 -0500, Vivek Goyal wrote:
+> > On Mon, Jan 28, 2013 at 05:20:20PM +0200, Kasatkin, Dmitry wrote:
+> > 
+> > [..]
+> > > > Ok. I am hoping that it will be more than the kernel command line we
+> > > > support. In the sense that for digital signatures one needs to parse
+> > > > the signature, look at what hash algorithm has been used  and then
+> > > > collect the hash accordingly. It is little different then IMA requirement
+> > > > of calculating one pre-determine hash for all files.
+> > > 
+> > > Yes... It is obvious. It's coming.
+> > > But in general, signer should be aware of requirements and limitation
+> > > of the platform.
+> > > It is not really a problem...
+> > 
+> > Ok, I have another question. I was looking at your slide deck here.
+> > 
+> > http://selinuxproject.org/~jmorris/lss2011_slides/IMA_EVM_Digital_Signature_Support.pdf
+> > 
+> > Slide 12 mentions that keys are loaded into the kernel from initramfs. If
+> > "root" can load any key, what are we protecting against.
+> > 
+> > IOW, what good ima_appraise_tcb policy, which tries to appraise any root
+> > owned file.  A root can sign all the files using its own key and load its
+> > public key in IMA keyring and then integrity check should pass on all
+> > root files.
 > 
-> Does it mean the introduced function is kinda temporary?
+> > So what's the idea behind digital signature appraisal? By allowing root to
+> > unconditionally load the keys in IMA keyring, it seems to circumvent the
+> > appraisal mechanism.
+> 
+> Vivek, you're asking obvious questions, without understanding that what
+> you want to do is only now possible because of the work that has gone
+> into upstreaming the different components of the linux-integrity
+> subsystem (eg. IMA, trusted/encrypted keys, EVM, (MPI library), and now
+> IMA-appraisal).  In case you weren't aware, Dmitry made the necessary
+> changes so that the MPI library could be upstreamed for
+> EVM/IMA-appraisal digital signature support.
 
-Some drivers can very likely get converted to use only
-dma_request_slave_channel() in the long run, when all
-the platforms using those drivers have been converted to
-provide the channels using device tree.
+Hi Mimi,
 
-However, for drivers that are used on legacy platforms
-without DT support, we may still need something like
-this function in the long run.
+Sure. I am just trying to understand that where are we and how can I 
+help improve things so that I can achieve my objectives.
 
-	Arnd
+The problem I am running into is that I can't find a single good 
+documentation here which explains how to use things. There is no
+single .txt file in Documentation/ directory which explains current
+state of affiars or which explains how to use any of the IMA/EVM
+functionality. 
+
+So I have no way left but to read code and ask obivious questions
+on mailing list to figure out what components are working, what
+components are work in progress or what's the intent of components
+and how they are supposed to be used.
+
+So are we saying that all the appraisal and digital signature stuff
+is not useful till we figure a way out to lock down IMA keyring. Or
+it is useful only when root can load the keyring but we are trying
+to appraise only non-root files.
+
+> 
+> I'm pretty sure that keyrings can be locked, preventing additional keys
+> from being added.  (If it isn't currently supported, it needs to be.)
+> The _evm and _ima keyrings should definitely be locked.  When/how this
+> is done, is yet to be defined.  I'm pretty sure there are a number of
+> people thinking about this, including David Howells, Dmitry Kataskin,
+> David Safford and myself.
+> 
+> As I previously said, the next steps are to integrate the
+> EVM/IMA-appraisal public keys in a safe and trusted manner, without
+> breaking the secure boot signature chain.
+
+In a private conversation David howells mentioned that IMA keyring
+should allow loading only if new key is trusted by an already loaded
+key. He has already posted some patches for marking a keyring trusted
+and loading keys only if it is signed by a trusted key.
+
+We were wondring that what use case is served by allowing the root
+to load keys unconditionally. By understanding the use case, atleast
+one can try not to break it.
+
+Thanks
+Vivek
