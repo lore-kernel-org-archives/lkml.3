@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757240Ab3A1CAN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 21:00:13 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:12334 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756103Ab3A1CAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 21:00:06 -0500
-X-IronPort-AV: E=Sophos;i="4.84,549,1355068800"; 
-   d="scan'208";a="6651314"
-Message-ID: <5105D57D.3050900@cn.fujitsu.com>
-Date: Mon, 28 Jan 2013 09:33:49 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1757245Ab3A1CEr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 21:04:47 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:52615
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757180Ab3A1CEp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 21:04:45 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(zzc89bh1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839h941hd25he5bhf0ah1269h1288h12a5h12a9h12bdh12e1h1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch35h1155h)
+Message-ID: <5105DCAE.8090907@freescale.com>
+Date: Mon, 28 Jan 2013 10:04:30 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Simon Jeons <simon.jeons@gmail.com>, akpm@linux-foundation.org,
-        rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        wujianguo@huawei.com, wency@cn.fujitsu.com, hpa@zytor.com,
-        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
-        yinghai@kernel.org, glommer@parallels.com, jiang.liu@huawei.com,
-        julian.calaby@gmail.com, sfr@canb.auug.org.au, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH Bug fix 0/5] Bug fix for physical memory hot-remove.
-References: <1358854984-6073-1-git-send-email-tangchen@cn.fujitsu.com> <1358944171.3351.1.camel@kernel> <20130125131740.GA1615@dhcp22.suse.cz>
-In-Reply-To: <20130125131740.GA1615@dhcp22.suse.cz>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/28 09:33:31,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/28 09:33:38,
-	Serialize complete at 2013/01/28 09:33:38
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Huang Shijie <b32955@freescale.com>
+CC: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
+        <computersforpeace@gmail.com>, <shmulik.ladkani@gmail.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] mtd: add a new table for the unparsable nand chips
+References: <1359007901-26464-1-git-send-email-b32955@freescale.com> <1359007901-26464-3-git-send-email-b32955@freescale.com>
+In-Reply-To: <1359007901-26464-3-git-send-email-b32955@freescale.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2013 09:17 PM, Michal Hocko wrote:
-> On Wed 23-01-13 06:29:31, Simon Jeons wrote:
->> On Tue, 2013-01-22 at 19:42 +0800, Tang Chen wrote:
->>> Here are some bug fix patches for physical memory hot-remove. All these
->>> patches are based on the latest -mm tree.
->>> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
->>>
->>> And patch1 and patch3 are very important.
->>> patch1: free compound pages when freeing memmap, otherwise the kernel
->>>          will panic the next time memory is hot-added.
->>> patch3: the old way of freeing pagetable pages was wrong. We should never
->>>          split larger pages into small ones.
->>>
->>>
->>
->> Hi Tang,
->>
->> I remember your big physical memory hot-remove patchset has already
->> merged by Andrew, but where I can find it? Could you give me git tree
->> address?
+于 2013年01月24日 14:11, Huang Shijie 写道:
+> We have 4 Toshiba nand chips which can not be parsed out by the
+> id data.  Add a new table for the unparsable nand chips.
 >
-> Andrew tree is also mirrored into a git tree.
-> http://git.kernel.org/?p=linux/kernel/git/mhocko/mm.git;a=summary
+> It makes mess if we add these entries to the nand_flash_ids table.
+> The entries in the nand_flash_ids stands for a class of nand chips.
+> But the unparsable nand chips are just some singular chips.
 >
-> It contains only Memory management patches on top of the last major
-> release (since-.X.Y branch).
+> Signed-off-by: Huang Shijie <b32955@freescale.com>
+> ---
+>  drivers/mtd/nand/nand_ids.c |   22 ++++++++++++++++++++++
+>  include/linux/mtd/nand.h    |    1 +
+>  2 files changed, 23 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/mtd/nand/nand_ids.c b/drivers/mtd/nand/nand_ids.c
+> index 9dc2e54..c1e32d2 100644
+> --- a/drivers/mtd/nand/nand_ids.c
+> +++ b/drivers/mtd/nand/nand_ids.c
+> @@ -11,6 +11,28 @@
+>  #include <linux/module.h>
+>  #include <linux/mtd/nand.h>
+>  #include <linux/sizes.h>
+> +#include <linux/sizes.h>
+sorry, i added the same header twice.
 
-Hi Michal,
+> +
+> +/* This table uses the full ID data as the keyword. */
+> +struct nand_flash_dev nand_flash_full_ids[] = {
+> +	/* TOSHIBA */
+> +	{"TC58NVG2S0F 4G 3.3V 8-bit ",
+> +		{0x98, 0xdc, 0x90, 0x26, 0x76, 0x15, 0x01, 0x08},
+> +			SZ_4K, SZ_512, SZ_256K, 0, 8, 224},
+> +	{"TC58NVG3S0F 8G 3.3V 8-bit ",
+> +		{0x98, 0xd3, 0x90, 0x26, 0x76, 0x15, 0x02, 0x08},
+> +			SZ_4K, SZ_1K, SZ_256K, 0, 8, 232},
+> +	{"TC58NVG5D2 32G 3.3V 8-bit ",
+> +		{0x98, 0xd7, 0x94, 0x32, 0x76, 0x56, 0x09, 0x00},
+> +			SZ_8K, SZ_4K, SZ_1M, 0, 8, 640},
+> +	{"TC58NVG6D2 64G 3.3V 8-bit ",
+> +		{0x98, 0xde, 0x94, 0x82, 0x76, 0x56, 0x04, 0x20},
+> +			SZ_8K, SZ_8K, SZ_2M, 0, 8, 640},
+> +
+> +	/* end here */
+> +	{NULL,}
+> +};
+> +
+>  
+>  /*
+>  *	Chip ID list
+> diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+> index 5293447..346a389 100644
+> --- a/include/linux/mtd/nand.h
+> +++ b/include/linux/mtd/nand.h
+> @@ -620,6 +620,7 @@ struct nand_manufacturers {
+>  };
+>  
+>  extern struct nand_flash_dev nand_flash_ids[];
+> +extern struct nand_flash_dev nand_flash_full_ids[];
+>  extern struct nand_manufacturers nand_manuf_ids[];
+>  
+>  extern int nand_scan_bbt(struct mtd_info *mtd, struct nand_bbt_descr *bd);
 
-I'm not sure I got your meaning. :)
-
-In http://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm,
-I can find the following commit.
-
-commit deed0460e01b3968f2cf46fb94851936535b7e0d
-Author: Tang Chen <tangchen@cn.fujitsu.com>
-Date:   Sat Jan 19 11:07:13 2013 +1100
-
-     memory-hotplug: do not allocate pgdat if it was not freed when 
-offline.
-
-
-This is one of memory hot-remove patches. Please try to update the 
-mirror tree,
-and try to find the above commit.
-
-Thanks. :)
 
