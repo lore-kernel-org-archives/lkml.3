@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab3A1Mzy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 07:55:54 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:57763 "EHLO hydra.sisk.pl"
+	id S1755766Ab3A1M4K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 07:56:10 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:57784 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773Ab3A1Mzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 07:55:47 -0500
+	id S1755302Ab3A1Mzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 07:55:49 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -14,12 +14,12 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Matthew Garrett <matthew.garrett@nebula.com>,
         Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
         Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/4] ACPI / PCI: Make PCI IRQ link driver use struct acpi_scan_handler
-Date: Mon, 28 Jan 2013 14:00:41 +0100
-Message-ID: <8349556.8rsLRecQbM@vostro.rjw.lan>
+Subject: [PATCH 0/4] ACPI scan handlers
+Date: Mon, 28 Jan 2013 13:58:35 +0100
+Message-ID: <4311642.nDd2RCVeDc@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <4311642.nDd2RCVeDc@vostro.rjw.lan>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan> <4311642.nDd2RCVeDc@vostro.rjw.lan>
+In-Reply-To: <1873429.MS5RQDxTye@vostro.rjw.lan>
+References: <1873429.MS5RQDxTye@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,154 +27,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Thursday, January 24, 2013 01:26:56 AM Rafael J. Wysocki wrote:
+> Hi All,
+> 
+> There is a considerable amount of confusion in the ACPI subsystem about what
+> ACPI drivers are used for.  Namely, some of them are used as "normal" device
+> drivers that bind to devices and handle them using ACPI control methods (like
+> the fan or battery drivers), but some of them are just used for handling
+> namespace events, such as the creation or removal of device nodes (I guess it
+> would be fair to call that an abuse of the driver core).  These two roles are
+> quite distinct, which is particularly visible from the confusion about the role
+> of the .remove() callback.
+> 
+> For the "normal" drivers this callback is simply used to handle situations in
+> which the driver needs to be unbound from the device, because one of them
+> (either the device or the driver) is going away.  That operation can't really
+> fail, it just needs to do the necessary cleanup.
+> 
+> However, for the namespace events handling "drivers" .remove() means that not
+> only the device node in question, but generally also the whole subtree below it
+> needs to be prepared for removal, which may involve deleting multiple device
+> objects belonging to different bus types and so on and which very well may fail
+> (for example, those devices may be used for such things like swap or they may be
+> memory banks used by the kernel and it may not be safe to remove them at the
+> moment etc.).  Moreover, for these things the removal of the "driver" doesn't
+> really make sense, because it has to be there to handle the namespace events it
+> is designed to handle or else things will go remarkably awry in some places.
+> 
+> To resolve all that mess I'd like to do the following, which in part is inspired
+> by the recent Toshi Kani's hotplug framework proposal and in part is based on
+> some discussions I had with Bjorn and others (the code references made below are
+> based on the current contens of linux-pm.git/linux-next).
+> 
+> 1) Introduce a special data type for "ACPI namespace event handlers" like:
+> 
+> struct acpi_scan_handler {
+> 	const struct acpi_device_id *ids;
+> 	struct list_head list_node;
+> 	int (*attach)(struct acpi_device *adev);
+> 	int (*untie)(struct acpi_device *adev);
+> 	int (*reclaim)(struct acpi_device *adev);
+> 	void (*detach)(struct acpi_device *adev);
+> };
 
-Make the ACPI PCI IRQ link driver use struct acpi_scan_handler
-for representing the object used to set up ACPI interrupt links and
-to remove data structures used for this purpose before unregistering
-the corresponding ACPI device nodes.
+After some reconsideration I think that the "untie" and "reclaim" things won't
+be really useful at this level.  This means that I only need ACPI scan handlers
+to do .attach() and .detach() and all of that becomes really simple, so I don't
+see reason to wait with that change.
 
-This simplifies the code slightly and reduces the kernel's memory
-footprint by avoiding the registration of a struct device_driver
-object with the driver core and creation of its sysfs directory
-which is unnecessary.
+The following patches introduce ACPI scan handlers and make some use of them.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/internal.h |    1 +
- drivers/acpi/pci_link.c |   47 ++++++++++++++---------------------------------
- drivers/acpi/scan.c     |    1 +
- 3 files changed, 16 insertions(+), 33 deletions(-)
+[1/4] Introduce struct acpi_scan_handler for configuration tasks depending on
+      device IDs.
 
-Index: test/drivers/acpi/pci_link.c
-===================================================================
---- test.orig/drivers/acpi/pci_link.c
-+++ test/drivers/acpi/pci_link.c
-@@ -53,23 +53,19 @@ ACPI_MODULE_NAME("pci_link");
- #define ACPI_PCI_LINK_FILE_STATUS	"state"
- #define ACPI_PCI_LINK_MAX_POSSIBLE	16
- 
--static int acpi_pci_link_add(struct acpi_device *device);
--static int acpi_pci_link_remove(struct acpi_device *device);
-+static int acpi_pci_link_add(struct acpi_device *device,
-+			     const struct acpi_device_id *not_used);
-+static void acpi_pci_link_remove(struct acpi_device *device);
- 
- static const struct acpi_device_id link_device_ids[] = {
- 	{"PNP0C0F", 0},
- 	{"", 0},
- };
--MODULE_DEVICE_TABLE(acpi, link_device_ids);
- 
--static struct acpi_driver acpi_pci_link_driver = {
--	.name = "pci_link",
--	.class = ACPI_PCI_LINK_CLASS,
-+static struct acpi_scan_handler pci_link_handler = {
- 	.ids = link_device_ids,
--	.ops = {
--		.add = acpi_pci_link_add,
--		.remove = acpi_pci_link_remove,
--	},
-+	.attach = acpi_pci_link_add,
-+	.detach = acpi_pci_link_remove,
- };
- 
- /*
-@@ -692,7 +688,8 @@ int acpi_pci_link_free_irq(acpi_handle h
-                                  Driver Interface
-    -------------------------------------------------------------------------- */
- 
--static int acpi_pci_link_add(struct acpi_device *device)
-+static int acpi_pci_link_add(struct acpi_device *device,
-+			     const struct acpi_device_id *not_used)
- {
- 	int result;
- 	struct acpi_pci_link *link;
-@@ -746,7 +743,7 @@ static int acpi_pci_link_add(struct acpi
- 	if (result)
- 		kfree(link);
- 
--	return result;
-+	return result < 0 ? result : 1;
- }
- 
- static int acpi_pci_link_resume(struct acpi_pci_link *link)
-@@ -766,7 +763,7 @@ static void irqrouter_resume(void)
- 	}
- }
- 
--static int acpi_pci_link_remove(struct acpi_device *device)
-+static void acpi_pci_link_remove(struct acpi_device *device)
- {
- 	struct acpi_pci_link *link;
- 
-@@ -777,7 +774,6 @@ static int acpi_pci_link_remove(struct a
- 	mutex_unlock(&acpi_link_lock);
- 
- 	kfree(link);
--	return 0;
- }
- 
- /*
-@@ -874,20 +870,10 @@ static struct syscore_ops irqrouter_sysc
- 	.resume = irqrouter_resume,
- };
- 
--static int __init irqrouter_init_ops(void)
--{
--	if (!acpi_disabled && !acpi_noirq)
--		register_syscore_ops(&irqrouter_syscore_ops);
--
--	return 0;
--}
--
--device_initcall(irqrouter_init_ops);
--
--static int __init acpi_pci_link_init(void)
-+void __init acpi_pci_link_init(void)
- {
- 	if (acpi_noirq)
--		return 0;
-+		return;
- 
- 	if (acpi_irq_balance == -1) {
- 		/* no command line switch: enable balancing in IOAPIC mode */
-@@ -896,11 +882,6 @@ static int __init acpi_pci_link_init(voi
- 		else
- 			acpi_irq_balance = 0;
- 	}
--
--	if (acpi_bus_register_driver(&acpi_pci_link_driver) < 0)
--		return -ENODEV;
--
--	return 0;
-+	register_syscore_ops(&irqrouter_syscore_ops);
-+	acpi_scan_add_handler(&pci_link_handler);
- }
--
--subsys_initcall(acpi_pci_link_init);
-Index: test/drivers/acpi/internal.h
-===================================================================
---- test.orig/drivers/acpi/internal.h
-+++ test/drivers/acpi/internal.h
-@@ -26,6 +26,7 @@
- int init_acpi_device_notify(void);
- int acpi_scan_init(void);
- void acpi_pci_root_init(void);
-+void acpi_pci_link_init(void);
- int acpi_sysfs_init(void);
- void acpi_csrt_init(void);
- 
-Index: test/drivers/acpi/scan.c
-===================================================================
---- test.orig/drivers/acpi/scan.c
-+++ test/drivers/acpi/scan.c
-@@ -1774,6 +1774,7 @@ int __init acpi_scan_init(void)
- 	}
- 
- 	acpi_pci_root_init();
-+	acpi_pci_link_init();
- 	acpi_csrt_init();
- 
- 	/*
+[2/4] Make ACPI PCI root driver use struct acpi_scan_handler.
 
+[3/4] Make ACPI PCI IRQ link driver use struct acpi_scan_handler.
+
+[4/4] Use struct acpi_scan_handler for creating platform devices enumerated via ACPI.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
