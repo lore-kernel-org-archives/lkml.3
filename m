@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab3A1Cyv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 21:54:51 -0500
-Received: from mail-ye0-f182.google.com ([209.85.213.182]:55910 "EHLO
-	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab3A1Cys (ORCPT
+	id S1753148Ab3A1C4U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 21:56:20 -0500
+Received: from mail-ye0-f177.google.com ([209.85.213.177]:43952 "EHLO
+	mail-ye0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab3A1C4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 21:54:48 -0500
-X-Greylist: delayed 329 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Jan 2013 21:54:48 EST
-Message-ID: <5105E6F2.2010805@gmail.com>
-Date: Sun, 27 Jan 2013 18:48:18 -0800
+	Sun, 27 Jan 2013 21:56:18 -0500
+Message-ID: <5105E72D.5090906@gmail.com>
+Date: Sun, 27 Jan 2013 18:49:17 -0800
 From: Nivedita Singhvi <niveditasinghvi@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Leandro Lucarella <leandro.lucarella@sociomantic.com>
-CC: Rick Jones <rick.jones2@hp.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+To: "niv@linux.vnet.ibm.com" <niv@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org
 Subject: Re: Doubts about listen backlog and tcp_max_syn_backlog
 References: <1358874800.3464.4002.camel@edumazet-glaptop> <50FED7CE.1030008@hp.com> <20130122184245.GJ4608@sociomantic.com> <50FF0C25.9000300@hp.com> <20130123104736.GK4608@sociomantic.com> <510039C8.7040401@hp.com> <20130124122223.GQ4608@sociomantic.com> <51018110.1070403@hp.com> <20130124192125.GD4608@sociomantic.com> <5102225E.2040506@gmail.com> <20130125100525.GE4608@sociomantic.com>
 In-Reply-To: <20130125100525.GE4608@sociomantic.com>
