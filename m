@@ -1,238 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751176Ab3A1CMN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 21:12:13 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:50231 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740Ab3A1CMJ (ORCPT
+	id S1751519Ab3A1CM3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 21:12:29 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:37817 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab3A1CM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 21:12:09 -0500
-Message-ID: <5105DE72.6000109@gmail.com>
-Date: Sun, 27 Jan 2013 20:12:02 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH] OF: Fixup resursive locking code paths
-References: <1359138107-14159-1-git-send-email-paul.gortmaker@windriver.com>
-In-Reply-To: <1359138107-14159-1-git-send-email-paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 27 Jan 2013 21:12:28 -0500
+Message-ID: <1359339147.6763.25.camel@kernel>
+Subject: Re: [PATCH 6/11] ksm: remove old stable nodes more thoroughly
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Sun, 27 Jan 2013 20:12:27 -0600
+In-Reply-To: <alpine.LNX.2.00.1301251800550.29196@eggly.anvils>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
+	 <alpine.LNX.2.00.1301251800550.29196@eggly.anvils>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2013 12:21 PM, Paul Gortmaker wrote:
-> From: Thomas Gleixner <tglx@linutronix.de>
+On Fri, 2013-01-25 at 18:01 -0800, Hugh Dickins wrote:
+> Switching merge_across_nodes after running KSM is liable to oops on stale
+> nodes still left over from the previous stable tree.  It's not something
+
+Since this patch solve the problem, so the description of
+merge_across_nodes(Value can be changed only when there is no ksm shared
+pages in system) should be changed in this patch.
+
+> that people will often want to do, but it would be lame to demand a reboot
+> when they're trying to determine which merge_across_nodes setting is best.
 > 
-> There is no real reason to use a rwlock for devtree_lock. It even
-> could be a mutex, but unfortunately it's locked from cpu hotplug
-> paths which can't schedule :(
+> How can this happen?  We only permit switching merge_across_nodes when
+> pages_shared is 0, and usually set run 2 to force that beforehand, which
+> ought to unmerge everything: yet oopses still occur when you then run 1.
 > 
-> So it needs to become a raw lock on rt as well.  The devtree_lock would
-> be the only user of a raw_rw_lock, so we are better off cleaning up the
-> recursive locking paths which allows us to convert devtree_lock to a
-> read_lock.
+> Three causes:
 > 
-> Here we do the standard thing of introducing __foo() as the "raw"
-> version of foo(), so that we can take better control of the locking.
-> The "raw" versions are not exported and are for internal use within
-> the file itself.
+> 1. The old stable tree (built according to the inverse merge_across_nodes)
+> has not been fully torn down.  A stable node lingers until get_ksm_page()
+> notices that the page it references no longer references it: but the page
+> is not necessarily freed as soon as expected, particularly when swapcache.
 > 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Fix this with a pass through the old stable tree, applying get_ksm_page()
+> to each of the remaining nodes (most found stale and removed immediately),
+> with forced removal of any left over.  Unless the page is still mapped:
+> I've not seen that case, it shouldn't occur, but better to WARN_ON_ONCE
+> and EBUSY than BUG.
+> 
+> 2. __ksm_enter() has a nice little optimization, to insert the new mm
+> just behind ksmd's cursor, so there's a full pass for it to stabilize
+> (or be removed) before ksmd addresses it.  Nice when ksmd is running,
+> but not so nice when we're trying to unmerge all mms: we were missing
+> those mms forked and inserted behind the unmerge cursor.  Easily fixed
+> by inserting at the end when KSM_RUN_UNMERGE.
+> 
+> 3. It is possible for a KSM page to be faulted back from swapcache into
+> an mm, just after unmerge_and_remove_all_rmap_items() scanned past it.
+> Fix this by copying on fault when KSM_RUN_UNMERGE: but that is private
+> to ksm.c, so dissolve the distinction between ksm_might_need_to_copy()
+> and ksm_does_need_to_copy(), doing it all in the one call into ksm.c.
+> 
+> A long outstanding, unrelated bugfix sneaks in with that third fix:
+> ksm_does_need_to_copy() would copy from a !PageUptodate page (implying
+> I/O error when read in from swap) to a page which it then marks Uptodate.
+> Fix this case by not copying, letting do_swap_page() discover the error.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 > ---
-
-Applied for 3.9.
-
-Rob
-
+>  include/linux/ksm.h |   18 ++-------
+>  mm/ksm.c            |   83 +++++++++++++++++++++++++++++++++++++++---
+>  mm/memory.c         |   19 ++++-----
+>  3 files changed, 92 insertions(+), 28 deletions(-)
 > 
-> [This has been living in the RT tree for several releases, and I've
->  put it on top of 3.8-rc4 mainline and tested it independently there
->  on a ppc sbc8548 board as well.  So it would be nice to get this in 3.9]
-> 
->  drivers/of/base.c | 91 ++++++++++++++++++++++++++++++++++++++++++-------------
->  1 file changed, 70 insertions(+), 21 deletions(-)
-> 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 2390ddb..21195a1 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -164,16 +164,14 @@ void of_node_put(struct device_node *node)
->  EXPORT_SYMBOL(of_node_put);
->  #endif /* CONFIG_OF_DYNAMIC */
+> --- mmotm.orig/include/linux/ksm.h	2013-01-25 14:27:58.220193250 -0800
+> +++ mmotm/include/linux/ksm.h	2013-01-25 14:37:00.764206145 -0800
+> @@ -16,9 +16,6 @@
+>  struct stable_node;
+>  struct mem_cgroup;
 >  
-> -struct property *of_find_property(const struct device_node *np,
-> -				  const char *name,
-> -				  int *lenp)
-> +static struct property *__of_find_property(const struct device_node *np,
-> +					   const char *name, int *lenp)
->  {
->  	struct property *pp;
->  
->  	if (!np)
->  		return NULL;
->  
-> -	read_lock(&devtree_lock);
->  	for (pp = np->properties; pp; pp = pp->next) {
->  		if (of_prop_cmp(pp->name, name) == 0) {
->  			if (lenp)
-> @@ -181,6 +179,18 @@ struct property *of_find_property(const struct device_node *np,
->  			break;
->  		}
->  	}
-> +
-> +	return pp;
-> +}
-> +
-> +struct property *of_find_property(const struct device_node *np,
-> +				  const char *name,
-> +				  int *lenp)
-> +{
-> +	struct property *pp;
-> +
-> +	read_lock(&devtree_lock);
-> +	pp = __of_find_property(np, name, lenp);
->  	read_unlock(&devtree_lock);
->  
->  	return pp;
-> @@ -214,8 +224,20 @@ EXPORT_SYMBOL(of_find_all_nodes);
->   * Find a property with a given name for a given node
->   * and return the value.
+> -struct page *ksm_does_need_to_copy(struct page *page,
+> -			struct vm_area_struct *vma, unsigned long address);
+> -
+>  #ifdef CONFIG_KSM
+>  int ksm_madvise(struct vm_area_struct *vma, unsigned long start,
+>  		unsigned long end, int advice, unsigned long *vm_flags);
+> @@ -73,15 +70,8 @@ static inline void set_page_stable_node(
+>   * We'd like to make this conditional on vma->vm_flags & VM_MERGEABLE,
+>   * but what if the vma was unmerged while the page was swapped out?
 >   */
-> +static const void *__of_get_property(const struct device_node *np,
-> +				     const char *name, int *lenp)
-> +{
-> +	struct property *pp = __of_find_property(np, name, lenp);
-> +
-> +	return pp ? pp->value : NULL;
-> +}
-> +
-> +/*
-> + * Find a property with a given name for a given node
-> + * and return the value.
-> + */
->  const void *of_get_property(const struct device_node *np, const char *name,
-> -			 int *lenp)
-> +			    int *lenp)
->  {
->  	struct property *pp = of_find_property(np, name, lenp);
+> -static inline int ksm_might_need_to_copy(struct page *page,
+> -			struct vm_area_struct *vma, unsigned long address)
+> -{
+> -	struct anon_vma *anon_vma = page_anon_vma(page);
+> -
+> -	return anon_vma &&
+> -		(anon_vma->root != vma->anon_vma->root ||
+> -		 page->index != linear_page_index(vma, address));
+> -}
+> +struct page *ksm_might_need_to_copy(struct page *page,
+> +			struct vm_area_struct *vma, unsigned long address);
 >  
-> @@ -226,13 +248,13 @@ EXPORT_SYMBOL(of_get_property);
->  /** Checks if the given "compat" string matches one of the strings in
->   * the device's "compatible" property
->   */
-> -int of_device_is_compatible(const struct device_node *device,
-> -		const char *compat)
-> +static int __of_device_is_compatible(const struct device_node *device,
-> +				     const char *compat)
->  {
->  	const char* cp;
->  	int cplen, l;
->  
-> -	cp = of_get_property(device, "compatible", &cplen);
-> +	cp = __of_get_property(device, "compatible", &cplen);
->  	if (cp == NULL)
->  		return 0;
->  	while (cplen > 0) {
-> @@ -245,6 +267,20 @@ int of_device_is_compatible(const struct device_node *device,
->  
+>  int page_referenced_ksm(struct page *page,
+>  			struct mem_cgroup *memcg, unsigned long *vm_flags);
+> @@ -113,10 +103,10 @@ static inline int ksm_madvise(struct vm_
 >  	return 0;
 >  }
-> +
-> +/** Checks if the given "compat" string matches one of the strings in
-> + * the device's "compatible" property
-> + */
-> +int of_device_is_compatible(const struct device_node *device,
-> +		const char *compat)
-> +{
-> +	int res;
-> +
-> +	read_lock(&devtree_lock);
-> +	res = __of_device_is_compatible(device, compat);
-> +	read_unlock(&devtree_lock);
-> +	return res;
-> +}
->  EXPORT_SYMBOL(of_device_is_compatible);
 >  
->  /**
-> @@ -518,7 +554,8 @@ struct device_node *of_find_compatible_node(struct device_node *from,
->  		if (type
->  		    && !(np->type && (of_node_cmp(np->type, type) == 0)))
->  			continue;
-> -		if (of_device_is_compatible(np, compatible) && of_node_get(np))
-> +		if (__of_device_is_compatible(np, compatible) &&
-> +		    of_node_get(np))
->  			break;
->  	}
->  	of_node_put(from);
-> @@ -562,15 +599,9 @@ out:
->  }
->  EXPORT_SYMBOL(of_find_node_with_property);
->  
-> -/**
-> - * of_match_node - Tell if an device_node has a matching of_match structure
-> - *	@matches:	array of of device match structures to search in
-> - *	@node:		the of device structure to match against
-> - *
-> - *	Low level utility function used by device matching.
-> - */
-> -const struct of_device_id *of_match_node(const struct of_device_id *matches,
-> -					 const struct device_node *node)
-> +static
-> +const struct of_device_id *__of_match_node(const struct of_device_id *matches,
-> +					   const struct device_node *node)
+> -static inline int ksm_might_need_to_copy(struct page *page,
+> +static inline struct page *ksm_might_need_to_copy(struct page *page,
+>  			struct vm_area_struct *vma, unsigned long address)
 >  {
->  	if (!matches)
->  		return NULL;
-> @@ -584,14 +615,32 @@ const struct of_device_id *of_match_node(const struct of_device_id *matches,
->  			match &= node->type
->  				&& !strcmp(matches->type, node->type);
->  		if (matches->compatible[0])
-> -			match &= of_device_is_compatible(node,
-> -						matches->compatible);
-> +			match &= __of_device_is_compatible(node,
-> +							   matches->compatible);
->  		if (match)
->  			return matches;
->  		matches++;
->  	}
->  	return NULL;
+> -	return 0;
+> +	return page;
 >  }
-> +
-> +/**
-> + * of_match_node - Tell if an device_node has a matching of_match structure
-> + *	@matches:	array of of device match structures to search in
-> + *	@node:		the of device structure to match against
-> + *
-> + *	Low level utility function used by device matching.
-> + */
-> +const struct of_device_id *of_match_node(const struct of_device_id *matches,
-> +					 const struct device_node *node)
-> +{
-> +	const struct of_device_id *match;
-> +
-> +	read_lock(&devtree_lock);
-> +	match = __of_match_node(matches, node);
-> +	read_unlock(&devtree_lock);
-> +	return match;
-> +}
->  EXPORT_SYMBOL(of_match_node);
 >  
->  /**
-> @@ -619,7 +668,7 @@ struct device_node *of_find_matching_node_and_match(struct device_node *from,
->  	read_lock(&devtree_lock);
->  	np = from ? from->allnext : of_allnodes;
->  	for (; np; np = np->allnext) {
-> -		if (of_match_node(matches, np) && of_node_get(np)) {
-> +		if (__of_match_node(matches, np) && of_node_get(np)) {
->  			if (match)
->  				*match = matches;
->  			break;
+>  static inline int page_referenced_ksm(struct page *page,
+> --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:58.856206099 -0800
+> +++ mmotm/mm/ksm.c	2013-01-25 14:37:00.768206145 -0800
+> @@ -644,6 +644,57 @@ static int unmerge_ksm_pages(struct vm_a
+>  /*
+>   * Only called through the sysfs control interface:
+>   */
+> +static int remove_stable_node(struct stable_node *stable_node)
+> +{
+> +	struct page *page;
+> +	int err;
+> +
+> +	page = get_ksm_page(stable_node, true);
+> +	if (!page) {
+> +		/*
+> +		 * get_ksm_page did remove_node_from_stable_tree itself.
+> +		 */
+> +		return 0;
+> +	}
+> +
+> +	if (WARN_ON_ONCE(page_mapped(page)))
+> +		err = -EBUSY;
+> +	else {
+> +		/*
+> +		 * This page might be in a pagevec waiting to be freed,
+> +		 * or it might be PageSwapCache (perhaps under writeback),
+> +		 * or it might have been removed from swapcache a moment ago.
+> +		 */
+> +		set_page_stable_node(page, NULL);
+> +		remove_node_from_stable_tree(stable_node);
+> +		err = 0;
+> +	}
+> +
+> +	unlock_page(page);
+> +	put_page(page);
+> +	return err;
+> +}
+> +
+> +static int remove_all_stable_nodes(void)
+> +{
+> +	struct stable_node *stable_node;
+> +	int nid;
+> +	int err = 0;
+> +
+> +	for (nid = 0; nid < nr_node_ids; nid++) {
+> +		while (root_stable_tree[nid].rb_node) {
+> +			stable_node = rb_entry(root_stable_tree[nid].rb_node,
+> +						struct stable_node, node);
+> +			if (remove_stable_node(stable_node)) {
+> +				err = -EBUSY;
+> +				break;	/* proceed to next nid */
+> +			}
+> +			cond_resched();
+> +		}
+> +	}
+> +	return err;
+> +}
+> +
+>  static int unmerge_and_remove_all_rmap_items(void)
+>  {
+>  	struct mm_slot *mm_slot;
+> @@ -691,6 +742,8 @@ static int unmerge_and_remove_all_rmap_i
+>  		}
+>  	}
+>  
+> +	/* Clean up stable nodes, but don't worry if some are still busy */
+> +	remove_all_stable_nodes();
+>  	ksm_scan.seqnr = 0;
+>  	return 0;
+>  
+> @@ -1586,11 +1639,19 @@ int __ksm_enter(struct mm_struct *mm)
+>  	spin_lock(&ksm_mmlist_lock);
+>  	insert_to_mm_slots_hash(mm, mm_slot);
+>  	/*
+> -	 * Insert just behind the scanning cursor, to let the area settle
+> +	 * When KSM_RUN_MERGE (or KSM_RUN_STOP),
+> +	 * insert just behind the scanning cursor, to let the area settle
+>  	 * down a little; when fork is followed by immediate exec, we don't
+>  	 * want ksmd to waste time setting up and tearing down an rmap_list.
+> +	 *
+> +	 * But when KSM_RUN_UNMERGE, it's important to insert ahead of its
+> +	 * scanning cursor, otherwise KSM pages in newly forked mms will be
+> +	 * missed: then we might as well insert at the end of the list.
+>  	 */
+> -	list_add_tail(&mm_slot->mm_list, &ksm_scan.mm_slot->mm_list);
+> +	if (ksm_run & KSM_RUN_UNMERGE)
+> +		list_add_tail(&mm_slot->mm_list, &ksm_mm_head.mm_list);
+> +	else
+> +		list_add_tail(&mm_slot->mm_list, &ksm_scan.mm_slot->mm_list);
+>  	spin_unlock(&ksm_mmlist_lock);
+>  
+>  	set_bit(MMF_VM_MERGEABLE, &mm->flags);
+> @@ -1640,11 +1701,25 @@ void __ksm_exit(struct mm_struct *mm)
+>  	}
+>  }
+>  
+> -struct page *ksm_does_need_to_copy(struct page *page,
+> +struct page *ksm_might_need_to_copy(struct page *page,
+>  			struct vm_area_struct *vma, unsigned long address)
+>  {
+> +	struct anon_vma *anon_vma = page_anon_vma(page);
+>  	struct page *new_page;
+>  
+> +	if (PageKsm(page)) {
+> +		if (page_stable_node(page) &&
+> +		    !(ksm_run & KSM_RUN_UNMERGE))
+> +			return page;	/* no need to copy it */
+> +	} else if (!anon_vma) {
+> +		return page;		/* no need to copy it */
+> +	} else if (anon_vma->root == vma->anon_vma->root &&
+> +		 page->index == linear_page_index(vma, address)) {
+> +		return page;		/* still no need to copy it */
+> +	}
+> +	if (!PageUptodate(page))
+> +		return page;		/* let do_swap_page report the error */
+> +
+>  	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
+>  	if (new_page) {
+>  		copy_user_highpage(new_page, page, address, vma);
+> @@ -2024,7 +2099,7 @@ static ssize_t merge_across_nodes_store(
+>  
+>  	mutex_lock(&ksm_thread_mutex);
+>  	if (ksm_merge_across_nodes != knob) {
+> -		if (ksm_pages_shared)
+> +		if (ksm_pages_shared || remove_all_stable_nodes())
+>  			err = -EBUSY;
+>  		else
+>  			ksm_merge_across_nodes = knob;
+> --- mmotm.orig/mm/memory.c	2013-01-25 14:27:58.220193250 -0800
+> +++ mmotm/mm/memory.c	2013-01-25 14:37:00.768206145 -0800
+> @@ -2994,17 +2994,16 @@ static int do_swap_page(struct mm_struct
+>  	if (unlikely(!PageSwapCache(page) || page_private(page) != entry.val))
+>  		goto out_page;
+>  
+> -	if (ksm_might_need_to_copy(page, vma, address)) {
+> -		swapcache = page;
+> -		page = ksm_does_need_to_copy(page, vma, address);
+> -
+> -		if (unlikely(!page)) {
+> -			ret = VM_FAULT_OOM;
+> -			page = swapcache;
+> -			swapcache = NULL;
+> -			goto out_page;
+> -		}
+> +	swapcache = page;
+> +	page = ksm_might_need_to_copy(page, vma, address);
+> +	if (unlikely(!page)) {
+> +		ret = VM_FAULT_OOM;
+> +		page = swapcache;
+> +		swapcache = NULL;
+> +		goto out_page;
+>  	}
+> +	if (page == swapcache)
+> +		swapcache = NULL;
+>  
+>  	if (mem_cgroup_try_charge_swapin(mm, page, GFP_KERNEL, &ptr)) {
+>  		ret = VM_FAULT_OOM;
 > 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 
