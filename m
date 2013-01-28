@@ -1,128 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab3A1P4m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 10:56:42 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:48434 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab3A1P4k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 10:56:40 -0500
+	id S1755737Ab3A1P5b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 10:57:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58071 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751882Ab3A1P53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 10:57:29 -0500
+Date: Mon, 28 Jan 2013 10:57:23 -0500
+From: David Teigland <teigland@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org,
+        Christine Caulfield <ccaulfie@redhat.com>, cluster-devel@redhat.com
+Subject: Re: [PATCH 10/14] dlm: don't use idr_remove_all()
+Message-ID: <20130128155723.GC16789@redhat.com>
+References: <1359163872-1949-1-git-send-email-tj@kernel.org>
+ <1359163872-1949-11-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <1359151245-13179-4-git-send-email-andi@firstfloor.org>
-References: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
-	<1359151245-13179-4-git-send-email-andi@firstfloor.org>
-Date: Mon, 28 Jan 2013 16:56:39 +0100
-Message-ID: <CABPqkBQheDtiT-aCBbz261fam-XQBAdH07FyG+Z=+bxzjEayFA@mail.gmail.com>
-Subject: Re: [PATCH 03/12] perf, x86: Basic Haswell PEBS support v3
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359163872-1949-11-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 11:00 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Add basic PEBS support for Haswell.
-> The constraints are similar to SandyBridge with a few new events.
->
-> v2: Readd missing pebs_aliases
-> v3: Readd missing hunk. Fix some constraints.
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+On Fri, Jan 25, 2013 at 05:31:08PM -0800, Tejun Heo wrote:
+> idr_destroy() can destroy idr by itself and idr_remove_all() is being
+> deprecated.
+> 
+> The conversion isn't completely trivial for recover_idr_clear() as
+> it's the only place in kernel which makes legitimate use of
+> idr_remove_all() w/o idr_destroy().  Replace it with idr_remove() call
+> inside idr_for_each_entry() loop.  It goes on top so that it matches
+> the operation order in recover_idr_del().
+> 
+> Only compile tested.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Christine Caulfield <ccaulfie@redhat.com>
+> Cc: David Teigland <teigland@redhat.com>
+> Cc: cluster-devel@redhat.com
 > ---
->  arch/x86/kernel/cpu/perf_event.h          |    2 ++
->  arch/x86/kernel/cpu/perf_event_intel.c    |    6 ++++--
->  arch/x86/kernel/cpu/perf_event_intel_ds.c |   29 +++++++++++++++++++++++++++++
->  3 files changed, 35 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-> index 8941899..1567b0d 100644
-> --- a/arch/x86/kernel/cpu/perf_event.h
-> +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -596,6 +596,8 @@ extern struct event_constraint intel_snb_pebs_event_constraints[];
->
->  extern struct event_constraint intel_ivb_pebs_event_constraints[];
->
-> +extern struct event_constraint intel_hsw_pebs_event_constraints[];
-> +
->  struct event_constraint *intel_pebs_constraints(struct perf_event *event);
->
->  void intel_pmu_pebs_enable(struct perf_event *event);
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 3a08534..634f639 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -826,7 +826,8 @@ static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
->                 return true;
->
->         /* implicit branch sampling to correct PEBS skid */
-> -       if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
-> +       if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
-> +           x86_pmu.intel_cap.pebs_format < 2)
->                 return true;
->
->         return false;
-> @@ -2127,8 +2128,9 @@ __init int intel_pmu_init(void)
->                 intel_pmu_lbr_init_nhm();
->
->                 x86_pmu.event_constraints = intel_hsw_event_constraints;
-> -
-> +               x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
->                 x86_pmu.extra_regs = intel_snb_extra_regs;
-> +               x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
->                 /* all extra regs are per-cpu when HT is on */
->                 x86_pmu.er_flags |= ERF_HAS_RSP_1;
->                 x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> index 9d0dae0..16d7c58 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -427,6 +427,35 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
->          EVENT_CONSTRAINT_END
->  };
->
-> +struct event_constraint intel_hsw_pebs_event_constraints[] = {
-> +       INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-> +       INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-> +       INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-> +       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-> +       INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
-> +       INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
-> +       INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
-> +       INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
-> +       INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
-> +       INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
-> +       INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
-> +       INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
-> +       INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
-> +       INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
-> +       INTEL_UEVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
-> +       INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
-> +       INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
-> +       INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
-> +       INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
-> +       INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
-> +       INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
-> +       INTEL_UEVENT_CONSTRAINT(0x02d3, 0xf), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
+> This patch depends on an earlier idr patch and given the trivial
+> nature of the patch, I think it would be best to route these together
+> through -mm.  Please holler if there's any objection.
 
-Should be 0x01d3 here.
+Yes, that's good for me.  I'll grab the set and test the dlm bits.
 
-> +       INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
-> +       INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
-> +
-> +       EVENT_CONSTRAINT_END
-> +};
-> +
->  struct event_constraint *intel_pebs_constraints(struct perf_event *event)
->  {
->         struct event_constraint *c;
-> --
-> 1.7.7.6
->
