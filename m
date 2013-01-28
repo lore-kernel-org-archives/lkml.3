@@ -1,115 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756984Ab3A1BAQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 20:00:16 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43601 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756852Ab3A1BAN (ORCPT
+	id S1757178Ab3A1BSo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 20:18:44 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:55799 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756930Ab3A1BSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 20:00:13 -0500
-X-AuditID: 9c930179-b7d01ae000004006-f6-5105cd9bc4ee
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Matt Sealey <matt@genesi-usa.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
-        stable@vger.kernel.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: [PATCH] zsmalloc: Fix TLB coherency and build problem
-Date: Mon, 28 Jan 2013 10:00:08 +0900
-Message-Id: <1359334808-19794-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 27 Jan 2013 20:18:41 -0500
+Date: Sun, 27 Jan 2013 19:18:27 -0600
+From: Shawn Bohrer <shawn.bohrer@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: 3.7 HDMI channel map regression
+Message-ID: <20130128011827.GA30485@lintop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently, Matt Sealey reported he fail to build zsmalloc caused by
-using of local_flush_tlb_kernel_range which are architecture dependent
-function so !CONFIG_SMP in ARM couldn't implement it so it ends up
-build error following as.
+Hi Takashi,
 
-  MODPOST 216 modules
-  LZMA    arch/arm/boot/compressed/piggy.lzma
-  AS      arch/arm/boot/compressed/lib1funcs.o
-ERROR: "v7wbi_flush_kern_tlb_range"
-[drivers/staging/zsmalloc/zsmalloc.ko] undefined!
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
-make: *** Waiting for unfinished jobs....
+I recently updated my HTPC from 3.6.11 to 3.7.2 and this caused my RL
+and FC channels to swap, and my RR and LFE channels to swap for PCM
+audio.  Doing a git bisect identified
+d45e6889ee69456a4d5b1bbb32252f460cd48fa9 "ALSA: hda - Provide the
+proper channel mapping for generic HDMI driver" as the commit that
+caused my channels to swap.  The commit doesn't revert cleanly on
+3.7.4, and I haven't really looked to see what the correct fix might
+be.
 
-The reason we used that function is copy method by [1]
-was really slow in ARM but at that time.
+Some info that may be relevant, the sound card is a:
 
-More severe problem is ARM can prefetch speculatively on other CPUs
-so under us, other TLBs can have an entry only if we do flush local
-CPU. Russell King pointed that. Thanks!
-We don't have many choices except using flush_tlb_kernel_range.
+00:1b.0 Audio device: Intel Corporation 7 Series/C210 Series Chipset
+Family High Definition Audio Controller (rev 04)
 
-My experiment in ARMv7 processor 4 core didn't make any difference with
-zsmapbench[2] between local_flush_tlb_kernel_range and flush_tlb_kernel_range
-but still page-table based is much better than copy-based.
+The machine is running Fedora 18 and audio goes over HDMI to a 5.1
+receiver.  I'm not really sure what other info you might need, but
+let me know if you need something else or have any patches you would
+like me to test.
 
-* bigger is better.
-
-1. local_flush_tlb_kernel_range: 3918795 mappings
-2. flush_tlb_kernel_range : 3989538 mappings
-3. copy-based: 635158 mappings
-
-This patch replace local_flush_tlb_kernel_range with
-flush_tlb_kernel_range which are avaialbe in all architectures
-because we already have used it in vmalloc allocator which are
-generic one so build problem should go away and performane loss
-shoud be void.
-
-[1] f553646, zsmalloc: add page table mapping method
-[2] https://github.com/spartacus06/zsmapbench
-
-Cc: stable@vger.kernel.org
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Reported-by: Matt Sealey <matt@genesi-usa.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
-
-Matt, Could you test this patch?
-
- drivers/staging/zsmalloc/zsmalloc-main.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index eb00772..82e627c 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -222,11 +222,9 @@ struct zs_pool {
- /*
-  * By default, zsmalloc uses a copy-based object mapping method to access
-  * allocations that span two pages. However, if a particular architecture
-- * 1) Implements local_flush_tlb_kernel_range() and 2) Performs VM mapping
-- * faster than copying, then it should be added here so that
-- * USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use page table
-- * mapping rather than copying
-- * for object mapping.
-+ * performs VM mapping faster than copying, then it should be added here
-+ * so that USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use
-+ * page table mapping rather than copying for object mapping.
- */
- #if defined(CONFIG_ARM)
- #define USE_PGTABLE_MAPPING
-@@ -663,7 +661,7 @@ static inline void __zs_unmap_object(struct mapping_area *area,
- 
- 	flush_cache_vunmap(addr, end);
- 	unmap_kernel_range_noflush(addr, PAGE_SIZE * 2);
--	local_flush_tlb_kernel_range(addr, end);
-+	flush_tlb_kernel_range(addr, end);
- }
- 
- #else /* USE_PGTABLE_MAPPING */
--- 
-1.7.9.5
-
+Thanks,
+Shawn
