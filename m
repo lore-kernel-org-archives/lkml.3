@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3A1Kqq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 05:46:46 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41300 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751035Ab3A1Kqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 05:46:43 -0500
-Date: Mon, 28 Jan 2013 12:46:15 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Greg KH <greg@kroah.com>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: Re: linux-next: manual merge of the usb tree with the driver-core
- tree
-Message-ID: <20130128104615.GA28698@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20130128213535.15bb937175de3ec3b4a09daa@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
-Content-Disposition: inline
-In-Reply-To: <20130128213535.15bb937175de3ec3b4a09daa@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755548Ab3A1Kq5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 05:46:57 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:42736 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755244Ab3A1Kqy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 05:46:54 -0500
+Date: Mon, 28 Jan 2013 21:46:44 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lan Tianyu <tianyu.lan@intel.com>
+Subject: linux-next: build failure after merge of the usb tree
+Message-Id: <20130128214644.a3906eecaf9123b05216dcaf@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__28_Jan_2013_21_46_44_+1100_t8=fYUS2Ub9MwPvf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Mon__28_Jan_2013_21_46_44_+1100_t8=fYUS2Ub9MwPvf
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jan 28, 2013 at 09:35:35PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
->=20
-> Today's linux-next merge of the usb tree got a conflict in
-> drivers/usb/phy/omap-usb2.c between commit 148e11349b0c ("usb: Convert to
-> devm_ioremap_resource()") from the  tree and commit ca784be36cc7 ("usb:
-> start using the control module driver") from the usb tree.
->=20
-> I fixed it up (I wasn't sure how, so I effectively dropped the former
-> change) and can carry the fix as necessary (no action is required).
+Hi Greg,
 
-thank you ;-)
+After merging the usb tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
+drivers/usb/core/usb-acpi.c: In function 'usb_acpi_register_power_resources=
+':
+drivers/usb/core/usb-acpi.c:226:2: error: implicit declaration of function =
+'acpi_power_resource_register_device' [-Werror=3Dimplicit-function-declarat=
+ion]
+drivers/usb/core/usb-acpi.c: In function 'usb_acpi_unregister_power_resourc=
+es':
+drivers/usb/core/usb-acpi.c:234:3: error: implicit declaration of function =
+'acpi_power_resource_unregister_device' [-Werror=3Dimplicit-function-declar=
+ation]
+
+Caused by commit 88bb965ed711 ("usb: Register usb port's acpi power
+resources").
+
+I have used the usb tree from next-20130125 for today.
 --=20
-balbi
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---FCuugMFkClbJLl1L
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--Signature=_Mon__28_Jan_2013_21_46_44_+1100_t8=fYUS2Ub9MwPvf
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRBlb3AAoJEIaOsuA1yqREDnEP/29Wcc/ajVzn7isKBGq0X3ej
-oxhUPUrrddp8vvKV/ExKnMOI2esBH/mLR76050kt4rgD2x3Q00k1/L6Kaq8MH/mA
-8WdefkO7CqOkWZbfO+gw4giULEs0yjKvAhBRQWmw7Ev75z5SJ4oHqfWzth5/Mwl9
-IwRlf89eUzsJbOJ0Rb95eRwKpaV0t00037oNPxapBqVN4WZUVNqon/dGaTLH3phY
-jF8jgcCC/v1lA41pl6sPaPE39BX3StkbaPqfARZLeMaIK1tNE9NwukcO0cv+03Pe
-A6JeVJf9usmJJ3xYpw2Nzo8FX2zarzh8BiCibugGOUHXcTjVM46CBiEsPgYCbn06
-QZdygRKKGifG28KlA4QWTK+hEhHAkwXER6iLv5VCr1KMbkq4iWj57UhJPTheJYEl
-i5pq3bshquk+Iw1o9mXyRgzvyadIrpzWZd9vUqqk2gBoEbId+dPfF+O6ZggGX81Z
-gLEsiYyuJ/+ApZcvlYAKTMtw6wFKTGDS4+8iUgIlSyrSQQNCl+D3QYxuyMRGOIpC
-KnyaHN1TotYyZOw5LLUqdzD3cZ6m5Lw73F2gNaFzZxVsvt8elVrrtPeHcICILmIG
-LdLya/U+YfSiIdIkf0WfO4ZAbjhFXL42ljUYAomlIWfEqohHEGzMEUj+/goVf3MB
-jnqqVrefsFeTYNXXwX9l
-=znbb
+iQIcBAEBCAAGBQJRBlcUAAoJEECxmPOUX5FEt7UP/2R7LLeoZ8uJLkLynwhnhMJC
+9DZCM3AfVjs/XB2+dsW2aGqNC7z2WhUCF3dld/LQnVWpaiCTj85nPdbYDTDDRXa7
+WIlUy/ZjgffcczDdaCxaboDdGew4ZDYzyNvfITKKB1t1lj+OhsyPZ73itTjIxdy8
+uUaI52jd35kEOKtK+5q38/PVSthUZLjPAyGe7A31Nw0D/bl/qCrSEEaZWo/IgpIm
+f/IISAxSjakxQFoKiCrumv6/y2it3S4mdN9mejJ2dLUc5dZkc2U9dj8gUww5sgiI
+aK5x9nRz+lcOhnzSKS4zNQ6CCHO9+AUm9EpNsFsk2O6EXqdHdLIid+lqOsCqvM+0
+g9ovf1hoojDnsG4dAHH+KX67DeNEVPvq6TIFHmPd2vV1i54d1QaWYz2xVTa4bMtc
+S182QPHM/DjrWuUE/zz5y6BVQ4vuXsy0Be/vG2N/jVNuOvB2eDJFAce3b3kntmvq
+5/PFIyYpuB62n/D7/qGGCnWQpWSADwrPPwlqiiy/Yu0L3NN2C8nibZ+oH1ZLGDys
+vhJd+/P6QCQd9RLP/7tN/be5x/ytPQV0N1pE5gcIxtkt9wCqRBBfa35k4zSjFuQF
+EcZgWcGowFOVXifB+omwpkTBdaXzfmlffXcQ/BlhonU/S8yrZ3C73YKlkNZ4U/Yd
+d3frR6Vvg8rBl+9A8LGp
+=XWUx
 -----END PGP SIGNATURE-----
 
---FCuugMFkClbJLl1L--
+--Signature=_Mon__28_Jan_2013_21_46_44_+1100_t8=fYUS2Ub9MwPvf--
