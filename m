@@ -1,97 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751407Ab3A1FR6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 00:17:58 -0500
-Received: from mout.gmx.net ([212.227.17.20]:52906 "EHLO mout.gmx.net"
+	id S1751580Ab3A1FSE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 00:18:04 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60353 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750728Ab3A1FR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 00:17:56 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+cfrpiSbOcQjLMQBUsr3G6Y3TPZd7+vXOCynDfCi
-	JMvAaqUo5TJPFl
-Message-ID: <1359350266.5783.39.camel@marge.simpson.net>
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-From: Mike Galbraith <efault@gmx.de>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-Date: Mon, 28 Jan 2013 06:17:46 +0100
-In-Reply-To: <1359301903.5805.11.camel@marge.simpson.net>
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
-	 <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com>
-	 <510493E4.8060602@intel.com> <1359261385.5803.46.camel@marge.simpson.net>
-	 <20130127103508.GB8894@pd.tnic> <51052ACB.3070703@intel.com>
-	 <1359301903.5805.11.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1750728Ab3A1FR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 00:17:59 -0500
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob@landley.net" <rob@landley.net>,
+        "AnilKumar, Chimata" <anilkumar@ti.com>, "hs@denx.de" <hs@denx.de>
+Subject: RE: [PATCH 2/6] ARM: davinci: da850: add DT node for I2C0
+Thread-Topic: [PATCH 2/6] ARM: davinci: da850: add DT node for I2C0
+Thread-Index: AQHN+ibBdwOkrc5fdUmgMhUirBj/bJhZgwCAgAS1ABA=
+Date: Mon, 28 Jan 2013 05:17:28 +0000
+Message-ID: <A4887BF146CD57468F700B415D2F4701581768@DBDE01.ent.ti.com>
+References: <1359027324-14534-1-git-send-email-manishv.b@ti.com>
+ <51026365.1020402@ti.com>
+In-Reply-To: <51026365.1020402@ti.com>
+Accept-Language: en-IN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0S5IDcd031975
 
-On Sun, 2013-01-27 at 16:51 +0100, Mike Galbraith wrote: 
-> On Sun, 2013-01-27 at 21:25 +0800, Alex Shi wrote: 
-> > On 01/27/2013 06:35 PM, Borislav Petkov wrote:
-> > > On Sun, Jan 27, 2013 at 05:36:25AM +0100, Mike Galbraith wrote:
-> > >> With aim7 compute on 4 node 40 core box, I see stable throughput
-> > >> improvement at tasks = nr_cores and below w. balance and powersaving. 
-> ... 
-> > > Ok, this is sick. How is balance and powersaving better than perf? Both
-> > > have much more jobs per minute than perf; is that because we do pack
-> > > much more tasks per cpu with balance and powersaving?
+On Fri, Jan 25, 2013 at 16:20:13, Nori, Sekhar wrote:
+> On 1/24/2013 5:05 PM, Vishwanathrao Badarkhe, Manish wrote:
+> > Add I2C0 device tree node information to da850-evm.
+> > Also, add I2C0 pin muxing information in da850-evm.
 > > 
-> > Maybe it is due to the lazy balancing on balance/powersaving. You can
-> > check the CS times in /proc/pid/status.
+> > Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+> > ---
+> > Depends on patch
+> > http://comments.gmane.org/gmane.linux.davinci/25993
+> > 
+> >  arch/arm/boot/dts/da850-evm.dts |   15 +++++++++++++++
+> >  arch/arm/boot/dts/da850.dtsi    |   10 ++++++++++
+> >  2 files changed, 25 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/arm/boot/dts/da850-evm.dts 
+> > b/arch/arm/boot/dts/da850-evm.dts index 8cac9d2..3d8290a 100755
+> > --- a/arch/arm/boot/dts/da850-evm.dts
+> > +++ b/arch/arm/boot/dts/da850-evm.dts
+> > @@ -27,5 +27,20 @@
+> >  		serial2: serial@1d0d000 {
+> >  			status = "okay";
+> >  		};
+> > +		i2c0@1c22000 {
 > 
-> Well, it's not wakeup path, limiting entry frequency per waker did zip
-> squat nada to any policy throughput.
+> This should be
+> 		i2c0: i2c@1c22000
+> 
+> to follow the convention elsewhere in file.
 
-monteverdi:/abuild/mike/:[0]# echo powersaving > /sys/devices/system/cpu/sched_policy/current_sched_policy
-monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-043321  00058616
-043313  00058616
-043318  00058968
-043317  00058968
-043316  00059184
-043319  00059192
-043320  00059048
-043314  00059048
-043312  00058176
-043315  00058184
-monteverdi:/abuild/mike/:[0]# echo balance > /sys/devices/system/cpu/sched_policy/current_sched_policy
-monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-043337  00053448
-043333  00053456
-043338  00052992
-043331  00053448
-043332  00053488
-043335  00053496
-043334  00053480
-043329  00053288
-043336  00053464
-043330  00053496
-monteverdi:/abuild/mike/:[0]# echo performance > /sys/devices/system/cpu/sched_policy/current_sched_policy
-monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-043348  00052488
-043344  00052488
-043349  00052744
-043343  00052504
-043347  00052504
-043352  00052888
-043345  00052504
-043351  00052496
-043346  00052496
-043350  00052304
-monteverdi:/abuild/mike/:[0]#
+Ok, I will change this in next version.
 
-Zzzt.  Wish I could turn turbo thingy off.
+> 
+> > +			status = "okay";
+> > +		};
+> > +	};
+> > +};
+> > +&pmx_core {
+> > +	pinctrl-names = "default";
+> > +	pinctrl-0 = <
+> > +		&i2c0_pins
+> > +	>;
+> > +
+> > +	i2c0_pins: pinmux_i2c0_pins{
+> > +		pinctrl-single,bits = <
+> > +			0x10 0x00002200 0x0000ff00	/* I2C0_SDA,I2C0_SCL */
+> > +		>;
+> 
+> This should go into the dtsi file. See the discussion on NAND DT support submitted by Anil Kumar.
 
--Mike
+I have seen Anil Kumar's discussion for pin-muxing which includes Linus patch of grab pin 
+control handles from device core at following location:
+http://lkml.indiana.edu/hypermail/linux/kernel/1301.2/00094.html
 
+I have done changes accordingly for I2C0 pin muxing and seen kernel crashes giving message 
+like "i2c_davinci i2c_davinci.1: could not find pctldev for node /soc/
+pinmux@1c14120/pinmux_i2c0_pins, deferring probe". This is happened because I2C0 driver 
+gets probed before pin mux driver.
+  
+To resolve this issue, I made changes in code to ensure pin control driver gets probed before 
+I2C0 driver by registering pin control driver during arch_init call.
+ 
+Hence, in order to move I2C0 pin muxing in dtsi file above fix is required.
+> 
+> Thanks,
+> Sekhar
+> 
+> PS: You are using an old address for Kevin Hilman. The MAINTAINERS file has been updated for a long time now. Liam's address is also wrong but I don't have his updated e-mail.
+> 
+
+
+Regards, 
+Manish
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
