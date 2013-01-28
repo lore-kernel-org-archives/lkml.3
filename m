@@ -1,178 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab3A1EWF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 23:22:05 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49080 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224Ab3A1EWD (ORCPT
+	id S1754308Ab3A1Eak (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 23:30:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36980 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767Ab3A1Eai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 23:22:03 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-ab-5105fce9e6ae
-Date: Mon, 28 Jan 2013 13:22:02 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv2 7/9] mm: break up swap_writepage() for frontswap
- backends
-Message-ID: <20130128042202.GG3321@blaptop>
-References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1357590280-31535-8-git-send-email-sjenning@linux.vnet.ibm.com>
+	Sun, 27 Jan 2013 23:30:38 -0500
+Date: Sun, 27 Jan 2013 20:29:56 -0800
+From: tip-bot for David Woodhouse <David.Woodhouse@intel.com>
+Message-ID: <tip-70a479cbe80296d3113e65cc2f713a5101061daf@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        matt.fleming@intel.com, stable@kernel.org, tglx@linutronix.de,
+        hpa@linux.intel.com, David.Woodhouse@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        matt.fleming@intel.com, David.Woodhouse@intel.com
+In-Reply-To: <1358513837.2397.247.camel@shinybook.infradead.org>
+References: <1358513837.2397.247.camel@shinybook.infradead.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/efi] x86, efi: Fix display detection in EFI boot stub
+Git-Commit-ID: 70a479cbe80296d3113e65cc2f713a5101061daf
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1357590280-31535-8-git-send-email-sjenning@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 27 Jan 2013 20:30:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 02:24:38PM -0600, Seth Jennings wrote:
-> swap_writepage() is currently where frontswap hooks into the swap
-> write path to capture pages with the frontswap_store() function.
-> However, if a frontswap backend wants to "resume" the writeback of
-> a page to the swap device, it can't call swap_writepage() as
-> the page will simply reenter the backend.
-> 
-> This patch separates swap_writepage() into a top and bottom half, the
-> bottom half named __swap_writepage() to allow a frontswap backend,
-> like zswap, to resume writeback beyond the frontswap_store() hook and
-> by notified when the writeback completes.
-> 
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Commit-ID:  70a479cbe80296d3113e65cc2f713a5101061daf
+Gitweb:     http://git.kernel.org/tip/70a479cbe80296d3113e65cc2f713a5101061daf
+Author:     David Woodhouse <David.Woodhouse@intel.com>
+AuthorDate: Mon, 7 Jan 2013 21:52:16 +0000
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sun, 27 Jan 2013 20:19:37 -0800
 
-Looks good to me except few nitpicks.
+x86, efi: Fix display detection in EFI boot stub
 
-Acked-by: Minchan Kim <minchan@kernel.org>
+When booting under OVMF we have precisely one GOP device, and it
+implements the ConOut protocol.
 
-> ---
->  include/linux/swap.h |    4 ++++
->  mm/page_io.c         |   22 +++++++++++++++++-----
->  mm/swap_state.c      |    2 +-
->  3 files changed, 22 insertions(+), 6 deletions(-)
-> 
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index 8c66486..a3da829 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -321,6 +321,9 @@ static inline void mem_cgroup_uncharge_swap(swp_entry_t ent)
->  /* linux/mm/page_io.c */
->  extern int swap_readpage(struct page *);
->  extern int swap_writepage(struct page *page, struct writeback_control *wbc);
-> +extern void end_swap_bio_write(struct bio *bio, int err);
-> +extern int __swap_writepage(struct page *page, struct writeback_control *wbc,
-> +	void (*end_write_func)(struct bio *, int));
->  extern int swap_set_page_dirty(struct page *page);
->  extern void end_swap_bio_read(struct bio *bio, int err);
->  
-> @@ -335,6 +338,7 @@ extern struct address_space swapper_space;
->  extern void show_swap_cache_info(void);
->  extern int add_to_swap(struct page *);
->  extern int add_to_swap_cache(struct page *, swp_entry_t, gfp_t);
-> +extern int __add_to_swap_cache(struct page *page, swp_entry_t entry);
+We break out of the loop when we look at it... and then promptly abort
+because 'first_gop' never gets set. We should set first_gop *before*
+breaking out of the loop. Yes, it doesn't really mean "first" any more,
+but that doesn't matter. It's only a flag to indicate that a suitable
+GOP was found.
 
-What's related __add_to_swap_cache with this patch?
+In fact, we'd do just as well to initialise 'width' to zero in this
+function, then just check *that* instead of first_gop. But I'll do the
+minimal fix for now (and for stable@).
 
->  extern void __delete_from_swap_cache(struct page *);
->  extern void delete_from_swap_cache(struct page *);
->  extern void free_page_and_swap_cache(struct page *);
-> diff --git a/mm/page_io.c b/mm/page_io.c
-> index c535d39..806085e 100644
-> --- a/mm/page_io.c
-> +++ b/mm/page_io.c
-> @@ -43,7 +43,7 @@ static struct bio *get_swap_bio(gfp_t gfp_flags,
->  	return bio;
->  }
->  
-> -static void end_swap_bio_write(struct bio *bio, int err)
-> +void end_swap_bio_write(struct bio *bio, int err)
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/1358513837.2397.247.camel@shinybook.infradead.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
+---
+ arch/x86/boot/compressed/eboot.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Why do you remove static in this patch? It's not related to the patch.
-
->  {
->  	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
->  	struct page *page = bio->bi_io_vec[0].bv_page;
-> @@ -180,15 +180,16 @@ bad_bmap:
->  	goto out;
->  }
->  
-> +int __swap_writepage(struct page *page, struct writeback_control *wbc,
-> +	void (*end_write_func)(struct bio *, int));
-> +
->  /*
->   * We may have stale swap cache pages in memory: notice
->   * them here and get rid of the unnecessary final write.
->   */
->  int swap_writepage(struct page *page, struct writeback_control *wbc)
->  {
-> -	struct bio *bio;
-> -	int ret = 0, rw = WRITE;
-> -	struct swap_info_struct *sis = page_swap_info(page);
-> +	int ret = 0;
->  
->  	if (try_to_free_swap(page)) {
->  		unlock_page(page);
-> @@ -200,6 +201,17 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
->  		end_page_writeback(page);
->  		goto out;
->  	}
-> +	ret = __swap_writepage(page, wbc, end_swap_bio_write);
-> +out:
-> +	return ret;
-> +}
-> +
-> +int __swap_writepage(struct page *page, struct writeback_control *wbc,
-> +	void (*end_write_func)(struct bio *, int))
-> +{
-> +	struct bio *bio;
-> +	int ret = 0, rw = WRITE;
-> +	struct swap_info_struct *sis = page_swap_info(page);
->  
->  	if (sis->flags & SWP_FILE) {
->  		struct kiocb kiocb;
-> @@ -227,7 +239,7 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
->  		return ret;
->  	}
->  
-> -	bio = get_swap_bio(GFP_NOIO, page, end_swap_bio_write);
-> +	bio = get_swap_bio(GFP_NOIO, page, end_write_func);
->  	if (bio == NULL) {
->  		set_page_dirty(page);
->  		unlock_page(page);
-> diff --git a/mm/swap_state.c b/mm/swap_state.c
-> index 0cb36fb..7eded9c 100644
-> --- a/mm/swap_state.c
-> +++ b/mm/swap_state.c
-> @@ -67,7 +67,7 @@ void show_swap_cache_info(void)
->   * __add_to_swap_cache resembles add_to_page_cache_locked on swapper_space,
->   * but sets SwapCache flag and private instead of mapping and index.
->   */
-> -static int __add_to_swap_cache(struct page *page, swp_entry_t entry)
-> +int __add_to_swap_cache(struct page *page, swp_entry_t entry)
-
-Ditto
-
->  {
->  	int error;
->  
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 18e329c..448a86e 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -432,10 +432,9 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
+ 			 * Once we've found a GOP supporting ConOut,
+ 			 * don't bother looking any further.
+ 			 */
++			first_gop = gop;
+ 			if (conout_found)
+ 				break;
+-
+-			first_gop = gop;
+ 		}
+ 	}
+ 
