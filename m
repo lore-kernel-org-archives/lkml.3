@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab3A1S03 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:26:29 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:45517 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751483Ab3A1S0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:26:19 -0500
+	id S1752434Ab3A1S01 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:26:27 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47480 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577Ab3A1S0V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 13:26:21 -0500
 From: Nishanth Menon <nm@ti.com>
 To: linux-pm <linux-pm@vger.kernel.org>
 CC: lkml <linux-kernel@vger.kernel.org>, Rafael <rjw@sisk.pl>,
         Mark Langsdorf <mark.langsdorf@calxeda.com>,
         Shawn Guo <shawn.guo@linaro.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH 1/2] PM / OPP: switch exported symbols to GPL variant
-Date: Mon, 28 Jan 2013 12:26:15 -0600
-Message-ID: <1359397576-26131-2-git-send-email-nm@ti.com>
+Subject: [PATCH 2/2] PM / OPP: Export more symbols for module usage
+Date: Mon, 28 Jan 2013 12:26:16 -0600
+Message-ID: <1359397576-26131-3-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359397576-26131-1-git-send-email-nm@ti.com>
 References: <1359397576-26131-1-git-send-email-nm@ti.com>
@@ -23,89 +24,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are GPLV2 library, so be clear in the symbols exported as well.
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
 
+Export cpufreq helpers in OPP to make the cpufreq-core0 and highbank-cpufreq
+drivers loadable as modules.
+
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- drivers/base/power/opp.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/base/power/opp.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-index 50b2831..0dbe270 100644
+index 0dbe270..32ee0fc 100644
 --- a/drivers/base/power/opp.c
 +++ b/drivers/base/power/opp.c
-@@ -162,7 +162,7 @@ unsigned long opp_get_voltage(struct opp *opp)
+@@ -661,6 +661,7 @@ int opp_init_cpufreq_table(struct device *dev,
  
- 	return v;
+ 	return 0;
  }
--EXPORT_SYMBOL(opp_get_voltage);
-+EXPORT_SYMBOL_GPL(opp_get_voltage);
++EXPORT_SYMBOL_GPL(opp_init_cpufreq_table);
  
  /**
-  * opp_get_freq() - Gets the frequency corresponding to an available opp
-@@ -192,7 +192,7 @@ unsigned long opp_get_freq(struct opp *opp)
- 
- 	return f;
+  * opp_free_cpufreq_table() - free the cpufreq table
+@@ -678,6 +679,7 @@ void opp_free_cpufreq_table(struct device *dev,
+ 	kfree(*table);
+ 	*table = NULL;
  }
--EXPORT_SYMBOL(opp_get_freq);
-+EXPORT_SYMBOL_GPL(opp_get_freq);
++EXPORT_SYMBOL_GPL(opp_free_cpufreq_table);
+ #endif		/* CONFIG_CPU_FREQ */
  
  /**
-  * opp_get_opp_count() - Get number of opps available in the opp list
-@@ -225,7 +225,7 @@ int opp_get_opp_count(struct device *dev)
+@@ -738,4 +740,5 @@ int of_init_opp_table(struct device *dev)
  
- 	return count;
+ 	return 0;
  }
--EXPORT_SYMBOL(opp_get_opp_count);
-+EXPORT_SYMBOL_GPL(opp_get_opp_count);
- 
- /**
-  * opp_find_freq_exact() - search for an exact frequency
-@@ -276,7 +276,7 @@ struct opp *opp_find_freq_exact(struct device *dev, unsigned long freq,
- 
- 	return opp;
- }
--EXPORT_SYMBOL(opp_find_freq_exact);
-+EXPORT_SYMBOL_GPL(opp_find_freq_exact);
- 
- /**
-  * opp_find_freq_ceil() - Search for an rounded ceil freq
-@@ -323,7 +323,7 @@ struct opp *opp_find_freq_ceil(struct device *dev, unsigned long *freq)
- 
- 	return opp;
- }
--EXPORT_SYMBOL(opp_find_freq_ceil);
-+EXPORT_SYMBOL_GPL(opp_find_freq_ceil);
- 
- /**
-  * opp_find_freq_floor() - Search for a rounded floor freq
-@@ -374,7 +374,7 @@ struct opp *opp_find_freq_floor(struct device *dev, unsigned long *freq)
- 
- 	return opp;
- }
--EXPORT_SYMBOL(opp_find_freq_floor);
-+EXPORT_SYMBOL_GPL(opp_find_freq_floor);
- 
- /**
-  * opp_add()  - Add an OPP table from a table definitions
-@@ -568,7 +568,7 @@ int opp_enable(struct device *dev, unsigned long freq)
- {
- 	return opp_set_availability(dev, freq, true);
- }
--EXPORT_SYMBOL(opp_enable);
-+EXPORT_SYMBOL_GPL(opp_enable);
- 
- /**
-  * opp_disable() - Disable a specific OPP
-@@ -590,7 +590,7 @@ int opp_disable(struct device *dev, unsigned long freq)
- {
- 	return opp_set_availability(dev, freq, false);
- }
--EXPORT_SYMBOL(opp_disable);
-+EXPORT_SYMBOL_GPL(opp_disable);
- 
- #ifdef CONFIG_CPU_FREQ
- /**
++EXPORT_SYMBOL_GPL(of_init_opp_table);
+ #endif
 -- 
 1.7.9.5
 
