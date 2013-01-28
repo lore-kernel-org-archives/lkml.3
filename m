@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757584Ab3A1Rpu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 12:45:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:18523 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756576Ab3A1Rps convert rfc822-to-8bit (ORCPT
+	id S1757594Ab3A1RtF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 12:49:05 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:60565 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757217Ab3A1RtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 12:45:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,553,1355126400"; 
-   d="scan'208";a="283154136"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>, "H. Peter Anvin" <hpa@zytor.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "wujianguo@huawei.com" <wujianguo@huawei.com>,
-        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
-        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
-        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "lliubbo@gmail.com" <lliubbo@gmail.com>,
-        "jaegeuk.hanse@gmail.com" <jaegeuk.hanse@gmail.com>,
-        "glommer@parallels.com" <glommer@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: RE: [PATCH 3/3] acpi, memory-hotplug: Support getting hotplug info
- from SRAT.
-Thread-Topic: [PATCH 3/3] acpi, memory-hotplug: Support getting hotplug info
- from SRAT.
-Thread-Index: AQHN+uB0hT0zOkmMI0W0/B8xsJDlF5hbVMcAgAAEzwCAAy8egIAAfmwA
-Date: Mon, 28 Jan 2013 17:45:37 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1C98F9CB@ORSMSX108.amr.corp.intel.com>
-References: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com>
- <1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com>
- <20130125171230.34c5a273.akpm@linux-foundation.org>
- <51033186.3000706@zytor.com> <5105DD4B.9020901@cn.fujitsu.com>
-In-Reply-To: <5105DD4B.9020901@cn.fujitsu.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 28 Jan 2013 12:49:02 -0500
+Date: Mon, 28 Jan 2013 09:48:58 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
+        tytso@mit.edu, Oleg Nesterov <oleg@redhat.com>,
+        srivatsa.bhat@linux.vnet.ibm.com, Christoph Lameter <cl@linux.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
+Message-ID: <20130128174858.GW26407@google.com>
+References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
+ <1356573611-18590-26-git-send-email-koverstreet@google.com>
+ <20130125005136.GE2373@mtj.dyndns.org>
+ <20130125011345.GT26407@google.com>
+ <20130125020340.GG2373@mtj.dyndns.org>
+ <20130125020943.GH2373@mtj.dyndns.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130125020943.GH2373@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I will post a patch to fix it. How about always keep node0 unhotpluggable ?
+On Thu, Jan 24, 2013 at 06:09:43PM -0800, Tejun Heo wrote:
+> Hello, again.
+> 
+> On Thu, Jan 24, 2013 at 06:03:40PM -0800, Tejun Heo wrote:
+> > Yeah, if we're aiming to replace refcnts in file and kobj, dynamic
+> > alloc may be justified.  Hopefully, the accounting necessary to decide
+> > whethre to use percpu isn't too burdensome.
+> 
+> Ooh, I forgot one thing.  We might not gain much by replacing file
+> refcnt w/ this.  You can't really get cheaper than fget_light().
 
-Node 0 (or more specifically the node that contains memory <4GB) will be
-full of BIOS reserved holes in the memory map. It probably isn't removable
-even if Linux thinks it is.  Someday we might have a smart BIOS that can
-relocate itself to another node - but for now making node0 unhotpluggable
-looks to be a plausible interim move.
+I've seen fget() show up when profiling the aio code - it's not high
+enough to be a big concern when not doing stupid stuff, but high enough
+that making it percpu would be worth it if it was easy. Which it's not,
+for plenty of reasons.
 
-Ultimately we'd like to be able to remove any node (just not all of them at
-the same time ... just like we can now offline any cpu - but not all of them
-together).
+> Also, while kobj destruction can still be considered an infrequent
+> operation, file destruction is not and people will get mighty unhappy
+> if you do synchronize_sched/rcu() from fput() synchronously.
+> 
+> So, I'm now back to "do we need dynamic allocation".  What else do we
+> have to convert?
 
--Tony
+I dunno. There's a lot of random refcounts scattered around, though.
+
+The way I see it, if it's always percpu when joe random dev needs a
+refcount, he's going to weigh whether the overhead of a percpu refcount
+is worth it.
+
+With dynamic allocation, it's 16 bytes if you don't need it to be
+percpu, vs. 4 for an atomic_t - so you never need to think about it, you
+can just always use this for your refcounts and never have to think
+about if it's going to be a fast path thing or not.
+
+But I really liked your idea for making dynamic allocation use a pool
+that's refilled from a workqueue, then I can keep dynamic allocation
+without contorting the api.
