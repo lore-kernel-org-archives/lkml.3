@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409Ab3A1Otu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 09:49:50 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56721 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755Ab3A1Ots (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 09:49:48 -0500
-Date: Mon, 28 Jan 2013 14:47:59 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@wwwdotorg.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [v3 2/2] ARM: tegra: Skip scu_enable(scu_base) if not Cortex A9
-Message-ID: <20130128144759.GK23505@n2100.arm.linux.org.uk>
-References: <1358833924-24535-1-git-send-email-hdoyu@nvidia.com> <1358833924-24535-2-git-send-email-hdoyu@nvidia.com> <50FE2CA8.20100@ti.com> <50FEC503.2080602@wwwdotorg.org> <CAOesGMgtaCkiv285TU_vbAokN5M2MrANQ9piDcyXu5YMmbQq3A@mail.gmail.com> <20130128091855.9e89d6da79bf5a264449ea5e@nvidia.com>
+	id S932088Ab3A1OuU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 09:50:20 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2172 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757403Ab3A1OuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 09:50:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,551,1355126400"; 
+   d="scan'208";a="253606458"
+Message-ID: <51069026.5070703@intel.com>
+Date: Mon, 28 Jan 2013 22:50:14 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130128091855.9e89d6da79bf5a264449ea5e@nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the usb tree
+References: <20130128214644.a3906eecaf9123b05216dcaf@canb.auug.org.au> <20130128144508.GA2997@kroah.com>
+In-Reply-To: <20130128144508.GA2997@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 09:18:55AM +0200, Hiroshi Doyu wrote:
-> Hi Russell,
-> 
-> On Tue, 22 Jan 2013 18:04:46 +0100
-> Olof Johansson <olof@lixom.net> wrote:
-> 
-> > Since Russell had comments on it earlier, I'd like him to give a nod
-> > that he's happy with it too.
-> 
-> Is this ok for you?
-> 
-> The original patch is:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-January/143552.html
+On 2013/1/28 22:45, Greg KH wrote:
+> On Mon, Jan 28, 2013 at 09:46:44PM +1100, Stephen Rothwell wrote:
+>> Hi Greg,
+>>
+>> After merging the usb tree, today's linux-next build (x86_64 allmodconfig)
+>> failed like this:
+>>
+>> drivers/usb/core/usb-acpi.c: In function 'usb_acpi_register_power_resources':
+>> drivers/usb/core/usb-acpi.c:226:2: error: implicit declaration of function 'acpi_power_resource_register_device' [-Werror=implicit-function-declaration]
+>> drivers/usb/core/usb-acpi.c: In function 'usb_acpi_unregister_power_resources':
+>> drivers/usb/core/usb-acpi.c:234:3: error: implicit declaration of function 'acpi_power_resource_unregister_device' [-Werror=implicit-function-declaration]
+>>
+>> Caused by commit 88bb965ed711 ("usb: Register usb port's acpi power
+>> resources").
+>>
+>> I have used the usb tree from next-20130125 for today.
+>
+> Lan, please send me a patch to resolve this issue.
+>
+> Stephen, sorry for the breakage.
+>
+	Sorry for this, I am working on this. Stephen, Thanks for reminder.
 
-Yes, this version is much better, thanks.
 
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> thanks,
+>
+> greg k-h
+>
+
+-- 
+Best Regards
+Tianyu Lan
+linux kernel enabling team
