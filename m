@@ -1,263 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab3A1DhB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 22:37:01 -0500
-Received: from mail-gh0-f180.google.com ([209.85.160.180]:48036 "EHLO
-	mail-gh0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766Ab3A1Dg5 (ORCPT
+	id S1753763Ab3A1Djr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 22:39:47 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50414 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab3A1Djp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 22:36:57 -0500
-X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Jan 2013 22:36:56 EST
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>
-Cc: jonghwa3.lee@samsung.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, durgadoss.r@intel.com
-Subject: [PATCH V2 1/2] thermal: sysfs: Add a new sysfs node emul_temp for thermal emulation
-Date: Sun, 27 Jan 2013 19:28:19 -0800
-Message-Id: <1359343700-30190-1-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sun, 27 Jan 2013 22:39:45 -0500
+X-AuditID: 9c930179-b7d01ae000004006-fc-5105f2ff18e1
+Date: Mon, 28 Jan 2013 12:39:44 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] staging: zsmalloc: add gfp flags to zs_create_pool
+Message-ID: <20130128033944.GB3321@blaptop>
+References: <1359135978-15119-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1359135978-15119-2-git-send-email-sjenning@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359135978-15119-2-git-send-email-sjenning@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support to set the emulated temperature method in
-thermal zone (sensor). After setting this feature thermal zone may
-report this temperature and not the actual temperature. The emulation
-implementation may be based on sensor capability through platform
-specific handler or pure software emulation if no platform handler defined.
+Hi Seth,
 
-This is useful in debugging different temperature threshold and its
-associated cooling action. Critical threshold's cannot be emulated.
-Writing 0 on this node should disable emulation.
+On Fri, Jan 25, 2013 at 11:46:15AM -0600, Seth Jennings wrote:
+> zs_create_pool() currently takes a gfp flags argument
+> that is used when growing the memory pool.  However
+> it is not used in allocating the metadata for the pool
+> itself.  That is currently hardcoded to GFP_KERNEL.
+> 
+> zswap calls zs_create_pool() at swapon time which is done
+> in atomic context, resulting in a "might sleep" warning.
+> 
+> This patch changes the meaning of the flags argument in
+> zs_create_pool() to mean the flags for the metadata allocation,
+> and adds a flags argument to zs_malloc that will be used for
+> memory pool growth if required.
 
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
----
+As I mentioned, I'm not strongly against with this patch but it
+should be last resort in case of not being able to address
+frontswap's init routine's dependency with swap_lock.
 
-Changes in V2:
-* Added config option for enabling emulation support.
-* Added s/w emulation if no platform handler registered.
-* skip the critical trip point emulation
+I sent a patch and am waiting reply of Konrand or Dan.
+If we can fix frontswap, it would be better rather than
+changing zsmalloc.
 
-This patchset is based on thermal maintainer next tree.
-git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next 
+> 
+> Acked-by: Nitin Gupta <ngupta@vflare.org>
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> ---
+>  drivers/staging/zram/zram_drv.c          |    4 ++--
+>  drivers/staging/zsmalloc/zsmalloc-main.c |    9 +++------
+>  drivers/staging/zsmalloc/zsmalloc.h      |    2 +-
+>  3 files changed, 6 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index 6762b99..836dccf 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -325,7 +325,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  		clen = PAGE_SIZE;
+>  	}
+>  
+> -	handle = zs_malloc(zram->mem_pool, clen);
+> +	handle = zs_malloc(zram->mem_pool, clen, GFP_NOIO | __GFP_HIGHMEM);
+>  	if (!handle) {
+>  		pr_info("Error allocating memory for compressed "
+>  			"page: %u, size=%zu\n", index, clen);
+> @@ -565,7 +565,7 @@ int zram_init_device(struct zram *zram)
+>  	/* zram devices sort of resembles non-rotational disks */
+>  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+>  
+> -	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
+> +	zram->mem_pool = zs_create_pool("zram", GFP_KERNEL);
+>  	if (!zram->mem_pool) {
+>  		pr_err("Error creating memory pool\n");
+>  		ret = -ENOMEM;
+> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+> index eb00772..f29f170 100644
+> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+> @@ -205,8 +205,6 @@ struct link_free {
+>  
+>  struct zs_pool {
+>  	struct size_class size_class[ZS_SIZE_CLASSES];
+> -
+> -	gfp_t flags;	/* allocation flags used when growing pool */
+>  	const char *name;
+>  };
+>  
+> @@ -818,7 +816,7 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
+>  		return NULL;
+>  
+>  	ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
+> -	pool = kzalloc(ovhd_size, GFP_KERNEL);
+> +	pool = kzalloc(ovhd_size, flags);
+>  	if (!pool)
+>  		return NULL;
+>  
+> @@ -838,7 +836,6 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
+>  
+>  	}
+>  
+> -	pool->flags = flags;
+>  	pool->name = name;
+>  
+>  	return pool;
+> @@ -874,7 +871,7 @@ EXPORT_SYMBOL_GPL(zs_destroy_pool);
+>   * otherwise 0.
+>   * Allocation requests with size > ZS_MAX_ALLOC_SIZE will fail.
+>   */
+> -unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+> +unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t flags)
+>  {
+>  	unsigned long obj;
+>  	struct link_free *link;
+> @@ -896,7 +893,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+>  
+>  	if (!first_page) {
+>  		spin_unlock(&class->lock);
+> -		first_page = alloc_zspage(class, pool->flags);
+> +		first_page = alloc_zspage(class, flags);
+>  		if (unlikely(!first_page))
+>  			return 0;
+>  
+> diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
+> index de2e8bf..907ff03 100644
+> --- a/drivers/staging/zsmalloc/zsmalloc.h
+> +++ b/drivers/staging/zsmalloc/zsmalloc.h
+> @@ -31,7 +31,7 @@ struct zs_pool;
+>  struct zs_pool *zs_create_pool(const char *name, gfp_t flags);
+>  void zs_destroy_pool(struct zs_pool *pool);
+>  
+> -unsigned long zs_malloc(struct zs_pool *pool, size_t size);
+> +unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t flags);
+>  void zs_free(struct zs_pool *pool, unsigned long obj);
+>  
+>  void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
- Documentation/thermal/sysfs-api.txt |   13 ++++++
- drivers/thermal/Kconfig             |    8 +++
- drivers/thermal/thermal_sys.c       |   82 ++++++++++++++++++++++++++++++-----
- include/linux/thermal.h             |    2 +
- 4 files changed, 94 insertions(+), 11 deletions(-)
-
-diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
-index 526d4b9..6859661 100644
---- a/Documentation/thermal/sysfs-api.txt
-+++ b/Documentation/thermal/sysfs-api.txt
-@@ -55,6 +55,8 @@ temperature) and throttle appropriate devices.
- 	.get_trip_type: get the type of certain trip point.
- 	.get_trip_temp: get the temperature above which the certain trip point
- 			will be fired.
-+	.set_emul_temp: set the emulation temperature which helps in debugging
-+			different threshold temperature points.
- 
- 1.1.2 void thermal_zone_device_unregister(struct thermal_zone_device *tz)
- 
-@@ -153,6 +155,7 @@ Thermal zone device sys I/F, created once it's registered:
-     |---trip_point_[0-*]_temp:	Trip point temperature
-     |---trip_point_[0-*]_type:	Trip point type
-     |---trip_point_[0-*]_hyst:	Hysteresis value for this trip point
-+    |---emul_temp:		Emulated temperature set node
- 
- Thermal cooling device sys I/F, created once it's registered:
- /sys/class/thermal/cooling_device[0-*]:
-@@ -252,6 +255,16 @@ passive
- 	Valid values: 0 (disabled) or greater than 1000
- 	RW, Optional
- 
-+emul_temp
-+	Interface to set the emulated temperature method in thermal zone
-+	(sensor). After setting this temperature, the thermal zone may pass
-+	this temperature to platform emulation function if registered or
-+	cache it locally. This is useful in debugging different temperature
-+	threshold and its associated cooling action. This is write only node
-+	and writing 0 on this node should disable emulation.
-+	Unit: millidegree Celsius
-+	WO, Optional
-+
- *****************************
- * Cooling device attributes *
- *****************************
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index faf38c5..e4cf7fb 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -78,6 +78,14 @@ config CPU_THERMAL
- 	  and not the ACPI interface.
- 	  If you want this support, you should say Y here.
- 
-+config THERMAL_EMULATION
-+	bool "Thermal emulation mode support"
-+	help
-+	  Enable this option to make a emul_temp sysfs node in thermal zone
-+	  directory to support temperature emulation. With emulation sysfs node,
-+	  user can manually input temperature and test the different trip
-+	  threshold behaviour for simulation purpose.
-+
- config SPEAR_THERMAL
- 	bool "SPEAr thermal sensor driver"
- 	depends on PLAT_SPEAR
-diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-index 0a1bf6b..59ba709 100644
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -378,24 +378,57 @@ static void handle_thermal_trip(struct thermal_zone_device *tz, int trip)
- 	monitor_thermal_zone(tz);
- }
- 
-+static int thermal_zone_get_temp(struct thermal_zone_device *tz,
-+				unsigned long *temp)
-+{
-+	int ret = 0, count;
-+	unsigned long crit_temp = -1UL;
-+	enum thermal_trip_type type;
-+
-+	mutex_lock(&tz->lock);
-+
-+	if (tz->ops->get_temp)
-+		ret = tz->ops->get_temp(tz, temp);
-+	else
-+		ret = -EPERM;
-+
-+	if (!tz->emul_temperature)
-+		goto skip_emul;
-+
-+	for (count = 0; count < tz->trips; count++) {
-+		ret = tz->ops->get_trip_type(tz, count, &type);
-+		if (!ret && type == THERMAL_TRIP_CRITICAL) {
-+			ret = tz->ops->get_trip_temp(tz, count, &crit_temp);
-+			break;
-+		}
-+	}
-+
-+	if (ret)
-+		goto skip_emul;
-+
-+	if (*temp < crit_temp)
-+		*temp = tz->emul_temperature;
-+
-+skip_emul:
-+	mutex_unlock(&tz->lock);
-+	return ret;
-+}
-+
- static void update_temperature(struct thermal_zone_device *tz)
- {
- 	long temp;
- 	int ret;
- 
--	mutex_lock(&tz->lock);
--
--	ret = tz->ops->get_temp(tz, &temp);
-+	ret = thermal_zone_get_temp(tz, &temp);
- 	if (ret) {
- 		dev_warn(&tz->device, "failed to read out thermal zone %d\n",
- 			 tz->id);
--		goto exit;
-+		return;
- 	}
- 
-+	mutex_lock(&tz->lock);
- 	tz->last_temperature = tz->temperature;
- 	tz->temperature = temp;
--
--exit:
- 	mutex_unlock(&tz->lock);
- }
- 
-@@ -438,10 +471,7 @@ temp_show(struct device *dev, struct device_attribute *attr, char *buf)
- 	long temperature;
- 	int ret;
- 
--	if (!tz->ops->get_temp)
--		return -EPERM;
--
--	ret = tz->ops->get_temp(tz, &temperature);
-+	ret = thermal_zone_get_temp(tz, &temperature);
- 
- 	if (ret)
- 		return ret;
-@@ -701,6 +731,31 @@ policy_show(struct device *dev, struct device_attribute *devattr, char *buf)
- 	return sprintf(buf, "%s\n", tz->governor->name);
- }
- 
-+#ifdef CONFIG_THERMAL_EMULATION
-+static ssize_t
-+emul_temp_store(struct device *dev, struct device_attribute *attr,
-+		     const char *buf, size_t count)
-+{
-+	struct thermal_zone_device *tz = to_thermal_zone(dev);
-+	int ret = 0;
-+	unsigned long temperature;
-+
-+	if (kstrtoul(buf, 10, &temperature))
-+		return -EINVAL;
-+
-+	if (!tz->ops->set_emul_temp) {
-+		mutex_lock(&tz->lock);
-+		tz->emul_temperature = temperature;
-+		mutex_unlock(&tz->lock);
-+	} else {
-+		ret = tz->ops->set_emul_temp(tz, temperature);
-+	}
-+
-+	return ret ? ret : count;
-+}
-+static DEVICE_ATTR(emul_temp, S_IWUSR, NULL, emul_temp_store);
-+#endif/*CONFIG_THERMAL_EMULATION*/
-+
- static DEVICE_ATTR(type, 0444, type_show, NULL);
- static DEVICE_ATTR(temp, 0444, temp_show, NULL);
- static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
-@@ -843,7 +898,7 @@ temp_input_show(struct device *dev, struct device_attribute *attr, char *buf)
- 				       temp_input);
- 	struct thermal_zone_device *tz = temp->tz;
- 
--	ret = tz->ops->get_temp(tz, &temperature);
-+	ret = thermal_zone_get_temp(tz, &temperature);
- 
- 	if (ret)
- 		return ret;
-@@ -1596,6 +1651,11 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
- 			goto unregister;
- 	}
- 
-+#ifdef CONFIG_THERMAL_EMULATION
-+	result = device_create_file(&tz->device, &dev_attr_emul_temp);
-+	if (result)
-+		goto unregister;
-+#endif
- 	/* Create policy attribute */
- 	result = device_create_file(&tz->device, &dev_attr_policy);
- 	if (result)
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index 9b78f8c..f0bd7f9 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -123,6 +123,7 @@ struct thermal_zone_device_ops {
- 	int (*set_trip_hyst) (struct thermal_zone_device *, int,
- 			      unsigned long);
- 	int (*get_crit_temp) (struct thermal_zone_device *, unsigned long *);
-+	int (*set_emul_temp) (struct thermal_zone_device *, unsigned long);
- 	int (*get_trend) (struct thermal_zone_device *, int,
- 			  enum thermal_trend *);
- 	int (*notify) (struct thermal_zone_device *, int,
-@@ -165,6 +166,7 @@ struct thermal_zone_device {
- 	int polling_delay;
- 	int temperature;
- 	int last_temperature;
-+	int emul_temperature;
- 	int passive;
- 	unsigned int forced_passive;
- 	const struct thermal_zone_device_ops *ops;
 -- 
-1.7.5.4
-
+Kind regards,
+Minchan Kim
