@@ -1,114 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab3A1HnO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 02:43:14 -0500
-Received: from us01smtp3.synopsys.com ([198.182.44.81]:58545 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418Ab3A1HnM (ORCPT
+	id S1753892Ab3A1HoC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 02:44:02 -0500
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:51837 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753263Ab3A1Hn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 02:43:12 -0500
-Message-ID: <51062C01.6010502@synopsys.com>
-Date: Mon, 28 Jan 2013 13:12:57 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 28 Jan 2013 02:43:57 -0500
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>
-Subject: Re: [PATCH v3 22/71] ARC: [Review] Prevent incorrect syscall restarts
-References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-11-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1359024639-21915-11-git-send-email-vgupta@synopsys.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.164]
+In-Reply-To: <8738xoshed.fsf@devron.myhome.or.jp>
+References: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
+	<878v9f5ugn.fsf@devron.myhome.or.jp>
+	<CAKYAXd-ydXkwDq6vkECEKPUQiNgg2+GKbL+ah9sn+uqr8BT1kQ@mail.gmail.com>
+	<87k3sy17vk.fsf@devron.myhome.or.jp>
+	<CAKYAXd8=7BG8NsVyvUP5xW48Y9FJpD7M95_MiJVGcwYOfYsrLA@mail.gmail.com>
+	<87txs0x45r.fsf@devron.myhome.or.jp>
+	<CAKYAXd8OP_FXxJWHESW_bCY1hGQuZPMJYOkLkmQ4fOkDhGO8xw@mail.gmail.com>
+	<CAKYAXd9NXVsBTMpTUWxN_10z1Ozt47f6Ghvsv9rbp_Y8tVMg2A@mail.gmail.com>
+	<87623ydnvq.fsf@devron.myhome.or.jp>
+	<CAKYAXd8GgrG+cMN_wQDFLiuXoBPbR7c6N9eZqGCrK-OH3HpuZA@mail.gmail.com>
+	<CAKYAXd9OhKDh5r6O=ACyDez1B2S=DB0Eo2-cSNuM1vaURmFNoQ@mail.gmail.com>
+	<877gobn7fy.fsf@devron.myhome.or.jp>
+	<CAKYAXd8SB7tz82Y57TKcngZC8vzvy1S=SAhzurA92jyobaVtNg@mail.gmail.com>
+	<87obhnlmkt.fsf@devron.myhome.or.jp>
+	<87k3sblmj2.fsf@devron.myhome.or.jp>
+	<CAKYAXd-7kq9EoBE7e5sGXBeA8u914moz15-ubFimczGyiznUCA@mail.gmail.com>
+	<87r4lgxgee.fsf@devron.myhome.or.jp>
+	<CAKYAXd_Lg8twC3XVX8S3Ncm0ghicvXD0Q75-8amuO2Lz40v8Rw@mail.gmail.com>
+	<8738xoshed.fsf@devron.myhome.or.jp>
+Date: Mon, 28 Jan 2013 16:43:56 +0900
+Message-ID: <CAKYAXd-pNnnDBeTw4s05vMdmeTcBwMMT7L7=NNUj2vLxwHYWWg@mail.gmail.com>
+Subject: Re: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if
+ fat_dget() fails
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+2013/1/26, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>> 2013/1/20, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+>>> Namjae Jeon <linkinjeon@gmail.com> writes:
+>>>
+>>>> We rewrite patch as your suggestion using dummy inode. Would please
+>>>> you review below patch code ?
+>>>
+>>> Looks like good as initial. Clean and shorter.
+>>>
+>>> Next is, we have to think about race. I.e. if real inode was made, what
+>>> happens? Is there no race?
+>> Hi OGAWA.
+>>
+>> Although checking several routines to check hang case you said, I
+>> didn't find anything.
+>> And There is no any race on test result also. Am I missing something ?
+>> Let me know your opinion.
+>
+> Hm, it's read-only. So, there may not be race for now, I'm sure there is
+> race on write path though.
+Yes, right. We checked/tested on read-only.
+Maybe have you found race with rename and unlink ?
+If yes, I think we can fix this issue with lock like this.
 
-On Thursday 24 January 2013 04:20 PM, Vineet Gupta wrote:
-> Per Al Viro's "signals for dummies" https://lkml.org/lkml/2012/12/6/366
-> there are 3 golden rules for (not) restarting syscalls:
-> 
-> "	What we need to guarantee is
-> * restarts do not happen on signals caught in interrupts or exceptions
-> * restarts do not happen on signals caught in sigreturn()
-> * restart should happen only once, even if we get through do_signal()
->   many times."
-> 
-> ARC Port already handled #1, this patch fixes #2 and #3.
-> 
-> We use the additional state in pt_regs->orig_r8 to ckh if restarting
-> has already been done once.
-> 
-> Thanks to Al Viro for spotting this.
-> 
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Al Viro <viro@ZenIV.linux.org.uk>
-> ---
->  arch/arc/include/asm/ptrace.h |    3 +++
->  arch/arc/kernel/signal.c      |   12 ++++++++----
->  2 files changed, 11 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arc/include/asm/ptrace.h b/arch/arc/include/asm/ptrace.h
-> index 1711d56..8bf7ff4 100644
-> --- a/arch/arc/include/asm/ptrace.h
-> +++ b/arch/arc/include/asm/ptrace.h
-> @@ -135,6 +135,9 @@ struct user_regs_struct {
->  #define in_syscall(regs)    (regs->event & orig_r8_IS_SCALL)
->  #define in_brkpt_trap(regs) (regs->event & orig_r8_IS_BRKPT)
->  
-> +#define syscall_wont_restart(regs) (regs->event |= orig_r8_IS_SCALL_RESTARTED)
-> +#define syscall_restartable(regs) !(regs->event &  orig_r8_IS_SCALL_RESTARTED)
-> +
->  #define current_pt_regs()					\
->  ({								\
->  	/* open-coded current_thread_info() */			\
-> diff --git a/arch/arc/kernel/signal.c b/arch/arc/kernel/signal.c
-> index 887a383..9a1ea2b 100644
-> --- a/arch/arc/kernel/signal.c
-> +++ b/arch/arc/kernel/signal.c
-> @@ -131,6 +131,9 @@ SYSCALL_DEFINE0(rt_sigreturn)
->  		if (restore_altstack(&sf->uc.uc_stack))
->  			goto badframe;
->  
-> +	/* Don't restart from sigreturn */
-> +	syscall_wont_restart(regs);
-> +
->  	return regs->r0;
->  
->  badframe:
-> @@ -321,13 +324,13 @@ void do_signal(struct pt_regs *regs)
->  
->  	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
->  
-> -	/* Are we from a system call? */
-> -	restart_scall = in_syscall(regs);
-> +	restart_scall = in_syscall(regs) && syscall_restartable(regs);
->  
->  	if (signr > 0) {
-> -		if (restart_scall)
-> +		if (restart_scall) {
->  			arc_restart_syscall(&ka, regs);
-> -
-> +			syscall_wont_restart(regs);	/* No more restarts */
-> +		}
->  		handle_signal(signr, &ka, &info, regs);
->  		return;
->  	}
-> @@ -342,6 +345,7 @@ void do_signal(struct pt_regs *regs)
->  			regs->r8 = __NR_restart_syscall;
->  			regs->ret -= 4;
->  		}
-> +		syscall_wont_restart(regs);	/* No more restarts */
->  	}
->  
->  	/* If there's no signal to deliver, restore the saved sigmask back */
-> 
++                       mutex_lock(&MSDOS_SB(sb)->s_lock);
+                         parent_inode = fat_rebuild_parent(sb, parent_logstart);
++                       mutex_unlock(&MSDOS_SB(sb)->s_lock);
 
-If this looks OK, can I get your ACK on this.
-
-Thx,
--Vineet
+Let me know your opinion.
+Thanks.
+>
+> Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
