@@ -1,205 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757462Ab3A1QwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 11:52:18 -0500
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:64463 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756371Ab3A1QwQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 11:52:16 -0500
+	id S1757396Ab3A1Q4h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 11:56:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45430 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754545Ab3A1Q4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 11:56:34 -0500
+Date: Mon, 28 Jan 2013 17:56:26 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Simon Wood <simon@mungewell.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rosegardener@freeode.co.uk
+Subject: Re: [PATCH 1/4] USB: HID: SRW-S1 Gaming Wheel Driver
+In-Reply-To: <1b4d173a8f4cbb94f6d99ae5c75c10d5.squirrel@mungewell.org>
+Message-ID: <alpine.LNX.2.00.1301281750100.23853@pobox.suse.cz>
+References: <1359095687-13398-1-git-send-email-simon@mungewell.org>    <alpine.LNX.2.00.1301281557040.23853@pobox.suse.cz> <1b4d173a8f4cbb94f6d99ae5c75c10d5.squirrel@mungewell.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1359151245-13179-5-git-send-email-andi@firstfloor.org>
-References: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
-	<1359151245-13179-5-git-send-email-andi@firstfloor.org>
-Date: Mon, 28 Jan 2013 17:52:15 +0100
-Message-ID: <CABPqkBQ5cn4SQ8MH3vrPHcyy=pGbsVbxYPjETCCo=oRsx_nEdg@mail.gmail.com>
-Subject: Re: [PATCH 04/12] perf, x86: Support the TSX intx/intx_cp qualifiers v2
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 11:00 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Implement the TSX transaction and checkpointed transaction qualifiers for
-> Haswell. This allows e.g. to profile the number of cycles in transactions.
->
-> The checkpointed qualifier requires forcing the event to
-> counter 2, implement this with a custom constraint for Haswell.
->
-> Also add sysfs format attributes for intx/intx_cp
->
-> [Updated from earlier version that used generic attributes, now does
-> raw + sysfs formats]
-> v2: Moved bad hunk. Forbid some bad combinations.
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel.c |   61 ++++++++++++++++++++++++++++++++
->  1 files changed, 61 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 634f639..44e18c02 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -13,6 +13,7 @@
->  #include <linux/slab.h>
->  #include <linux/export.h>
->
-> +#include <asm/cpufeature.h>
->  #include <asm/hardirq.h>
->  #include <asm/apic.h>
->
-> @@ -1597,6 +1598,44 @@ static void core_pmu_enable_all(int added)
->         }
->  }
->
-> +static int hsw_hw_config(struct perf_event *event)
-> +{
-> +       int ret = intel_pmu_hw_config(event);
-> +
-> +       if (ret)
-> +               return ret;
-> +       if (!boot_cpu_has(X86_FEATURE_RTM) && !boot_cpu_has(X86_FEATURE_HLE))
-> +               return 0;
-> +       event->hw.config |= event->attr.config & (HSW_INTX|HSW_INTX_CHECKPOINTED);
-> +
-> +       /*
-White space damage here
+On Mon, 28 Jan 2013, simon@mungewell.org wrote:
 
-> +        * INTX/INTX-CP do not play well with PEBS or ANY thread mode.
-> +        */
-> +       if ((event->hw.config & (HSW_INTX|HSW_INTX_CHECKPOINTED)) &&
-> +            ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
-> +             event->attr.precise_ip > 0))
-> +               return -EIO;
+> >> From: simon <simon@simon-virtual-machine.(none)>
+> >>
+> >> Add support the SRW-S1 by patching HID descriptor to read axis
+> >> as Generic Desktop X, Y and Z (rather than Usage page being
+> >> 'Simulation').
+> >>
+> >> Signed-off-by: Simon Wood <simon@mungewell.org>
+> >> tested-by: John Murphy <rosegardener@freeode.co.uk>
+> >
+> > Hi Simon,
+> >
+> > thanks for the patch.
+> >
+> >>
+> >> ---
+> >>  drivers/hid/Kconfig     |    6 +++++
+> >>  drivers/hid/Makefile    |    1 +
+> >>  drivers/hid/hid-core.c  |    1 +
+> >>  drivers/hid/hid-ids.h   |    3 +++
+> >>  drivers/hid/hid-srws1.c |   58
+> >> +++++++++++++++++++++++++++++++++++++++++++++++
+> >
+> > Is hid-srws1 really the best name? My understanding is that the vendor is
+> > called Steelseries, and we mostly stick to calling the drivers according
+> > to the device vendors (and grouping the quirks accordingly).
+> >
+> > So how about hid-steelseries?
+> 
+> I'm happy to change it; However Steelseries' other devices are all
+> keyboards/mice intended for/marketed at gamers. Since other Steelseries
+> devices are unlikely to have the same structure (OK I'm just guessing on
+> that) is it better to keep this driver somewhat 'seperated'?
+> 
+> I mean, not make life difficult trying to merge keyboard code in with this
+> wheel's code.... if that is required in future.
 
-Shouldn't this be -EOPNOTSUPP instead to be more consistent with how
-similar issues
-are handled elsewhere in the code?
+I don't think it's strictly required, but it seems to work quite nicely 
+for other drivers as well.
 
-> +       return 0;
-> +}
-> +
-> +static struct event_constraint counter2_constraint =
+Of course, if in the future it turns out that we will need a completely 
+different driver for some other device produced by this vendor, we can 
+operatively decide on a different naming for the future.
 
-White space damage here too.
-
-> +                       EVENT_CONSTRAINT(0, 0x4, 0);
-> +
-> +static struct event_constraint *
-> +hsw_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
-> +{
-> +       struct event_constraint *c = intel_get_event_constraints(cpuc, event);
-> +
-> +       /* Handle special quirk on intx_checkpointed only in counter 2 */
-> +       if (event->hw.config & HSW_INTX_CHECKPOINTED) {
-> +               if (c->idxmsk64 & (1U << 2))
-> +                       return &counter2_constraint;
-> +               return &emptyconstraint;
-> +       }
-> +
-> +       return c;
-> +}
-> +
->  PMU_FORMAT_ATTR(event, "config:0-7"    );
->  PMU_FORMAT_ATTR(umask, "config:8-15"   );
->  PMU_FORMAT_ATTR(edge,  "config:18"     );
-> @@ -1604,6 +1643,8 @@ PMU_FORMAT_ATTR(pc,       "config:19"     );
->  PMU_FORMAT_ATTR(any,   "config:21"     ); /* v3 + */
->  PMU_FORMAT_ATTR(inv,   "config:23"     );
->  PMU_FORMAT_ATTR(cmask, "config:24-31"  );
-> +PMU_FORMAT_ATTR(intx,  "config:32"     );
-> +PMU_FORMAT_ATTR(intx_cp,"config:33"    );
->
-I have a problem with this for fixed counter only events:
-
-$ perf stat -e cpu/event=0x00,umask=3,intx=1/,cycles noploop 1
-
-This silently drops intx=1 for unhalted_ref_cycles. This event
-only works on fixed counter. So I am wondering what I am measuring
-here. In general, I don't like when settings are silently dropped because
-the user will be misled into thinking the modifier was applied when in
-fact it was not.
-
-The way it's handled with the other modifiers, such as inv, cmask
-for this event, is that the event can never be scheduled, time_running=0.
-For instance, on my Nehalem:
-
-$ perf stat -v -e cpu/event=0x00,umask=3,inv/,cycles noploop 1
-noploop for 1 seconds
-cpu/event=0x00,umask=3,inv/: 0 1000362571 1000362571
-cycles: 3075425423 1000362571 1000362571
-
- Performance counter stats for 'noploop 1':
-
-                 0 cpu/event=0x00,umask=3,inv/
-        3075425423 cycles                    #    0.000 GHz
-
-       1.027822053 seconds time elapsed
-
-For some reasons, I noticed the results for this command are different
-on Core:
-$ perf stat -v -e cpu/event=0x00,umask=3,inv/,cycles noploop 1
-noploop for 1 seconds
-cpu/event=0x00,umask=3,inv/: 9561572340 1000036603 1000036603
-cycles: 2390392858 1000036603 1000036603
-
- Performance counter stats for 'noploop 1':
-
-        9561572340 cpu/event=0x00,umask=3,inv/
-        2390392858 cycles                    #    0.000 GHz
-
-       1.017143853 seconds time elapsed
-
-Should not have worked. So there is another discrepancy
-here that needs to be looked at. This is beyond the scope
-of your patch.
-
->  static struct attribute *intel_arch_formats_attr[] = {
->         &format_attr_event.attr,
-> @@ -1761,6 +1802,23 @@ static struct attribute *intel_arch3_formats_attr[] = {
->         NULL,
->  };
->
-> +/* Arch3 + TSX support */
-> +static struct attribute *intel_hsw_formats_attr[] __read_mostly = {
-> +       &format_attr_event.attr,
-> +       &format_attr_umask.attr,
-> +       &format_attr_edge.attr,
-> +       &format_attr_pc.attr,
-> +       &format_attr_any.attr,
-> +       &format_attr_inv.attr,
-> +       &format_attr_cmask.attr,
-> +       &format_attr_intx.attr,
-> +       &format_attr_intx_cp.attr,
-> +
-> +       &format_attr_offcore_rsp.attr, /* XXX do NHM/WSM + SNB breakout */
-> +       NULL,
-> +};
-> +
-> +
->  static __initconst const struct x86_pmu intel_pmu = {
->         .name                   = "Intel",
->         .handle_irq             = intel_pmu_handle_irq,
-> @@ -2135,6 +2193,9 @@ __init int intel_pmu_init(void)
->                 x86_pmu.er_flags |= ERF_HAS_RSP_1;
->                 x86_pmu.er_flags |= ERF_NO_HT_SHARING;
->
-> +               x86_pmu.hw_config = hsw_hw_config;
-> +               x86_pmu.get_event_constraints = hsw_get_event_constraints;
-> +               x86_pmu.format_attrs = intel_hsw_formats_attr;
->                 pr_cont("Haswell events, ");
->                 break;
->
+> If you still would prefer a name change I can do that. In which case is
+> the naming of the LED interfaces still OK?
+> 
+> ie.
 > --
-> 1.7.7.6
->
+> echo 1 > /sys/class/leds/SRWS1\:\:69005002125011007452\:\:RPM3/brightness
+> --
+
+Yes, that seems fine. Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
