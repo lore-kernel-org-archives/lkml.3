@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430Ab3A1JXj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 04:23:39 -0500
-Received: from mga01.intel.com ([192.55.52.88]:60169 "EHLO mga01.intel.com"
+	id S1754068Ab3A1JZt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 04:25:49 -0500
+Received: from mga03.intel.com ([143.182.124.21]:65438 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755931Ab3A1JXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 04:23:34 -0500
+	id S1756345Ab3A1JXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 04:23:39 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,550,1355126400"; 
-   d="scan'208";a="282975105"
+   d="scan'208";a="249123714"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -20,9 +20,9 @@ Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH, RFC 01/16] block: implement add_bdi_stat()
-Date: Mon, 28 Jan 2013 11:24:13 +0200
-Message-Id: <1359365068-10147-2-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH, RFC 11/16] thp, mm: naive support of thp in generic read/write routines
+Date: Mon, 28 Jan 2013 11:24:23 +0200
+Message-Id: <1359365068-10147-12-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -32,34 +32,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-It's required for batched stats update.
+For now we still write/read at most PAGE_CACHE_SIZE bytes a time.
+
+This implementation doesn't cover address spaces with backing store.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/backing-dev.h |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ mm/filemap.c |   35 ++++++++++++++++++++++++++++++-----
+ 1 file changed, 30 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index 3504599..b05d961 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -167,6 +167,16 @@ static inline void __dec_bdi_stat(struct backing_dev_info *bdi,
- 	__add_bdi_stat(bdi, item, -1);
- }
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 68e47e4..a7331fb 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1161,12 +1161,23 @@ find_page:
+ 			if (unlikely(page == NULL))
+ 				goto no_cached_page;
+ 		}
++		if (PageTransTail(page)) {
++			page_cache_release(page);
++			page = find_get_page(mapping,
++					index & ~HPAGE_CACHE_INDEX_MASK);
++			if (!PageTransHuge(page)) {
++				page_cache_release(page);
++				goto find_page;
++			}
++		}
+ 		if (PageReadahead(page)) {
++			BUG_ON(PageTransHuge(page));
+ 			page_cache_async_readahead(mapping,
+ 					ra, filp, page,
+ 					index, last_index - index);
+ 		}
+ 		if (!PageUptodate(page)) {
++			BUG_ON(PageTransHuge(page));
+ 			if (inode->i_blkbits == PAGE_CACHE_SHIFT ||
+ 					!mapping->a_ops->is_partially_uptodate)
+ 				goto page_not_up_to_date;
+@@ -1208,18 +1219,25 @@ page_ok:
+ 		}
+ 		nr = nr - offset;
  
-+static inline void add_bdi_stat(struct backing_dev_info *bdi,
-+		enum bdi_stat_item item, s64 amount)
-+{
-+	unsigned long flags;
++		/* Recalculate offset in page if we've got a huge page */
++		if (PageTransHuge(page)) {
++			offset = (((loff_t)index << PAGE_CACHE_SHIFT) + offset);
++			offset &= ~HPAGE_PMD_MASK;
++		}
 +
-+	local_irq_save(flags);
-+	__add_bdi_stat(bdi, item, amount);
-+	local_irq_restore(flags);
-+}
+ 		/* If users can be writing to this page using arbitrary
+ 		 * virtual addresses, take care about potential aliasing
+ 		 * before reading the page on the kernel side.
+ 		 */
+ 		if (mapping_writably_mapped(mapping))
+-			flush_dcache_page(page);
++			flush_dcache_page(page + (offset >> PAGE_CACHE_SHIFT));
+ 
+ 		/*
+ 		 * When a sequential read accesses a page several times,
+ 		 * only mark it as accessed the first time.
+ 		 */
+-		if (prev_index != index || offset != prev_offset)
++		if (prev_index != index ||
++				(offset & ~PAGE_CACHE_MASK) != prev_offset)
+ 			mark_page_accessed(page);
+ 		prev_index = index;
+ 
+@@ -1234,8 +1252,9 @@ page_ok:
+ 		 * "pos" here (the actor routine has to update the user buffer
+ 		 * pointers and the remaining count).
+ 		 */
+-		ret = file_read_actor(desc, page, offset, nr);
+-		offset += ret;
++		ret = file_read_actor(desc, page + (offset >> PAGE_CACHE_SHIFT),
++				offset & ~PAGE_CACHE_MASK, nr);
++		offset =  (offset & ~PAGE_CACHE_MASK) + ret;
+ 		index += offset >> PAGE_CACHE_SHIFT;
+ 		offset &= ~PAGE_CACHE_MASK;
+ 		prev_offset = offset;
+@@ -2433,8 +2452,13 @@ again:
+ 		if (mapping_writably_mapped(mapping))
+ 			flush_dcache_page(page);
+ 
++		if (PageTransHuge(page))
++			offset = pos & ~HPAGE_PMD_MASK;
 +
- static inline void dec_bdi_stat(struct backing_dev_info *bdi,
- 		enum bdi_stat_item item)
- {
+ 		pagefault_disable();
+-		copied = iov_iter_copy_from_user_atomic(page, i, offset, bytes);
++		copied = iov_iter_copy_from_user_atomic(
++				page + (offset >> PAGE_CACHE_SHIFT),
++				i, offset & ~PAGE_CACHE_MASK, bytes);
+ 		pagefault_enable();
+ 		flush_dcache_page(page);
+ 
+@@ -2457,6 +2481,7 @@ again:
+ 			 * because not all segments in the iov can be copied at
+ 			 * once without a pagefault.
+ 			 */
++			offset = pos & ~PAGE_CACHE_MASK;
+ 			bytes = min_t(unsigned long, PAGE_CACHE_SIZE - offset,
+ 						iov_iter_single_seg_count(i));
+ 			goto again;
 -- 
 1.7.10.4
 
