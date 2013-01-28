@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab3A1M42 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 07:56:28 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:57777 "EHLO hydra.sisk.pl"
+	id S1755728Ab3A1M4s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 07:56:48 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:57771 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754973Ab3A1Mzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754091Ab3A1Mzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Jan 2013 07:55:48 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Matthew Garrett <matthew.garrett@nebula.com>,
         Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
         Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/4] ACPI / scan: Introduce struct acpi_scan_handler
-Date: Mon, 28 Jan 2013 13:59:33 +0100
-Message-ID: <1408351.aVGQgvLeMo@vostro.rjw.lan>
+Subject: [PATCH 2/4] ACPI / PCI: Make PCI root driver use struct acpi_scan_handler
+Date: Mon, 28 Jan 2013 14:00:07 +0100
+Message-ID: <1997208.3XsulxNKty@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <4311642.nDd2RCVeDc@vostro.rjw.lan>
 References: <1873429.MS5RQDxTye@vostro.rjw.lan> <4311642.nDd2RCVeDc@vostro.rjw.lan>
@@ -29,259 +29,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Introduce struct acpi_scan_handler for representing objects that
-will do configuration tasks depending on ACPI device nodes'
-hardware IDs (HIDs).
+Make the ACPI PCI root bridge driver use struct acpi_scan_handler
+for representing the object used to enumerate the PCI busses under
+PCI host bridges found in the ACPI namespace (and to tear down data
+structures representing the bus and devices on it before
+unregistering the host bridges' ACPI device nodes).
 
-Currently, those tasks are done either directly by the ACPI namespace
-scanning code or by ACPI device drivers designed specifically for
-this purpose.  None of the above is desirable, however, because
-doing that directly in the namespace scanning code makes that code
-overly complicated and difficult to follow and doing that in
-"special" device drivers leads to a great deal of confusion about
-their role and to confusing interactions with the driver core (for
-example, sysfs directories are created for those drivers, but they
-are completely unnecessary and only increase the kernel's memory
-footprint in vain).
+This simplifies the code slightly and reduces the kernel's memory
+footprint by avoiding the registration of a struct device_driver
+object with the driver core and creation of its sysfs directory
+which is unnecessary.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- Documentation/acpi/scan_handlers.txt |   77 +++++++++++++++++++++++++++++++++++
- drivers/acpi/scan.c                  |   60 ++++++++++++++++++++++++---
- include/acpi/acpi_bus.h              |   14 ++++++
- 3 files changed, 144 insertions(+), 7 deletions(-)
+ drivers/acpi/internal.h |    2 +-
+ drivers/acpi/pci_root.c |   38 +++++++++++++++-----------------------
+ 2 files changed, 16 insertions(+), 24 deletions(-)
 
-Index: test/include/acpi/acpi_bus.h
+Index: test/drivers/acpi/pci_root.c
 ===================================================================
---- test.orig/include/acpi/acpi_bus.h
-+++ test/include/acpi/acpi_bus.h
-@@ -84,6 +84,18 @@ struct acpi_driver;
- struct acpi_device;
+--- test.orig/drivers/acpi/pci_root.c
++++ test/drivers/acpi/pci_root.c
+@@ -45,8 +45,9 @@
+ ACPI_MODULE_NAME("pci_root");
+ #define ACPI_PCI_ROOT_CLASS		"pci_bridge"
+ #define ACPI_PCI_ROOT_DEVICE_NAME	"PCI Root Bridge"
+-static int acpi_pci_root_add(struct acpi_device *device);
+-static int acpi_pci_root_remove(struct acpi_device *device);
++static int acpi_pci_root_add(struct acpi_device *device,
++			     const struct acpi_device_id *not_used);
++static void acpi_pci_root_remove(struct acpi_device *device);
  
- /*
-+ * ACPI Scan Handler
-+ * -----------------
-+ */
-+
-+struct acpi_scan_handler {
-+	const struct acpi_device_id *ids;
-+	struct list_head list_node;
-+	int (*attach)(struct acpi_device *dev, const struct acpi_device_id *id);
-+	void (*detach)(struct acpi_device *dev);
-+};
-+
-+/*
-  * ACPI Driver
-  * -----------
-  */
-@@ -269,6 +281,7 @@ struct acpi_device {
- 	struct acpi_device_wakeup wakeup;
- 	struct acpi_device_perf performance;
- 	struct acpi_device_dir dir;
-+	struct acpi_scan_handler *handler;
- 	struct acpi_driver *driver;
- 	void *driver_data;
- 	struct device dev;
-@@ -382,6 +395,7 @@ int acpi_bus_receive_event(struct acpi_b
- static inline int acpi_bus_generate_proc_event(struct acpi_device *device, u8 type, int data)
- 	{ return 0; }
- #endif
-+int acpi_scan_add_handler(struct acpi_scan_handler *handler);
- int acpi_bus_register_driver(struct acpi_driver *driver);
- void acpi_bus_unregister_driver(struct acpi_driver *driver);
- int acpi_bus_scan(acpi_handle handle);
-Index: test/drivers/acpi/scan.c
-===================================================================
---- test.orig/drivers/acpi/scan.c
-+++ test/drivers/acpi/scan.c
-@@ -53,6 +53,7 @@ static const struct acpi_device_id acpi_
- static LIST_HEAD(acpi_device_list);
- static LIST_HEAD(acpi_bus_id_list);
- static DEFINE_MUTEX(acpi_scan_lock);
-+static LIST_HEAD(acpi_scan_handlers_list);
- DEFINE_MUTEX(acpi_device_lock);
- LIST_HEAD(acpi_wakeup_device_list);
+ #define ACPI_PCIE_REQ_SUPPORT (OSC_EXT_PCI_CONFIG_SUPPORT \
+ 				| OSC_ACTIVE_STATE_PWR_SUPPORT \
+@@ -57,16 +58,11 @@ static const struct acpi_device_id root_
+ 	{"PNP0A03", 0},
+ 	{"", 0},
+ };
+-MODULE_DEVICE_TABLE(acpi, root_device_ids);
  
-@@ -62,6 +63,15 @@ struct acpi_device_bus_id{
- 	struct list_head node;
+-static struct acpi_driver acpi_pci_root_driver = {
+-	.name = "pci_root",
+-	.class = ACPI_PCI_ROOT_CLASS,
++static struct acpi_scan_handler pci_root_handler = {
+ 	.ids = root_device_ids,
+-	.ops = {
+-		.add = acpi_pci_root_add,
+-		.remove = acpi_pci_root_remove,
+-		},
++	.attach = acpi_pci_root_add,
++	.detach = acpi_pci_root_remove,
  };
  
-+int acpi_scan_add_handler(struct acpi_scan_handler *handler)
-+{
-+	if (!handler || !handler->attach)
-+		return -EINVAL;
-+
-+	list_add_tail(&handler->list_node, &acpi_scan_handlers_list);
-+	return 0;
-+}
-+
- /*
-  * Creates hid/cid(s) string needed for modalias and uevent
-  * e.g. on a device with hid:IBM0001 and cid:ACPI0001 you get:
-@@ -1570,20 +1580,42 @@ static acpi_status acpi_bus_check_add(ac
- 	return AE_OK;
+ /* Lock to protect both acpi_pci_roots and acpi_pci_drivers lists */
+@@ -428,7 +424,8 @@ out:
  }
+ EXPORT_SYMBOL(acpi_pci_osc_control_set);
  
-+static int acpi_scan_attach_handler(struct acpi_device *device)
-+{
-+	struct acpi_scan_handler *handler;
-+	int ret = 0;
-+
-+	list_for_each_entry(handler, &acpi_scan_handlers_list, list_node) {
-+		const struct acpi_device_id *id;
-+
-+		id = __acpi_match_device(device, handler->ids);
-+		if (!id)
-+			continue;
-+
-+		ret = handler->attach(device, id);
-+		if (ret > 0) {
-+			device->handler = handler;
-+			break;
-+		} else if (ret < 0) {
-+			break;
-+		}
-+	}
-+	return ret;
-+}
-+
- static acpi_status acpi_bus_device_attach(acpi_handle handle, u32 lvl_not_used,
- 					  void *not_used, void **ret_not_used)
+-static int acpi_pci_root_add(struct acpi_device *device)
++static int acpi_pci_root_add(struct acpi_device *device,
++			     const struct acpi_device_id *not_used)
  {
- 	const struct acpi_device_id *id;
--	acpi_status status = AE_OK;
- 	struct acpi_device *device;
- 	unsigned long long sta_not_used;
--	int type_not_used;
-+	int ret;
+ 	unsigned long long segment, bus;
+ 	acpi_status status;
+@@ -614,7 +611,7 @@ static int acpi_pci_root_add(struct acpi
+ 		pci_enable_bridges(root->bus);
  
- 	/*
- 	 * Ignore errors ignored by acpi_bus_check_add() to avoid terminating
- 	 * namespace walks prematurely.
- 	 */
--	if (acpi_bus_type_and_status(handle, &type_not_used, &sta_not_used))
-+	if (acpi_bus_type_and_status(handle, &ret, &sta_not_used))
- 		return AE_OK;
+ 	pci_bus_add_devices(root->bus);
+-	return 0;
++	return 1;
  
- 	if (acpi_bus_get_device(handle, &device))
-@@ -1593,10 +1625,15 @@ static acpi_status acpi_bus_device_attac
- 	if (id) {
- 		/* This is a known good platform device. */
- 		acpi_create_platform_device(device, id->driver_data);
--	} else if (device_attach(&device->dev) < 0) {
--		status = AE_CTRL_DEPTH;
-+		return AE_OK;
- 	}
--	return status;
-+
-+	ret = acpi_scan_attach_handler(device);
-+	if (ret)
-+		return ret > 0 ? AE_OK : AE_CTRL_DEPTH;
-+
-+	ret = device_attach(&device->dev);
-+	return ret >= 0 ? AE_OK : AE_CTRL_DEPTH;
+ out_del_root:
+ 	mutex_lock(&acpi_pci_root_lock);
+@@ -627,7 +624,7 @@ end:
+ 	return result;
  }
  
- /**
-@@ -1639,8 +1676,17 @@ static acpi_status acpi_bus_device_detac
- 	struct acpi_device *device = NULL;
- 
- 	if (!acpi_bus_get_device(handle, &device)) {
-+		struct acpi_scan_handler *dev_handler = device->handler;
-+
- 		device->removal_type = ACPI_BUS_REMOVAL_EJECT;
--		device_release_driver(&device->dev);
-+		if (dev_handler) {
-+			if (dev_handler->detach)
-+				dev_handler->detach(device);
-+
-+			device->handler = NULL;
-+		} else {
-+			device_release_driver(&device->dev);
-+		}
- 	}
- 	return AE_OK;
+-static int acpi_pci_root_remove(struct acpi_device *device)
++static void acpi_pci_root_remove(struct acpi_device *device)
+ {
+ 	acpi_status status;
+ 	acpi_handle handle;
+@@ -655,19 +652,14 @@ static int acpi_pci_root_remove(struct a
+ 	list_del(&root->node);
+ 	mutex_unlock(&acpi_pci_root_lock);
+ 	kfree(root);
+-	return 0;
  }
-Index: test/Documentation/acpi/scan_handlers.txt
+ 
+-int __init acpi_pci_root_init(void)
++void __init acpi_pci_root_init(void)
+ {
+ 	acpi_hest_init();
+ 
+-	if (acpi_pci_disabled)
+-		return 0;
+-
+-	pci_acpi_crs_quirks();
+-	if (acpi_bus_register_driver(&acpi_pci_root_driver) < 0)
+-		return -ENODEV;
+-
+-	return 0;
++	if (!acpi_pci_disabled) {
++		pci_acpi_crs_quirks();
++		acpi_scan_add_handler(&pci_root_handler);
++	}
+ }
+Index: test/drivers/acpi/internal.h
 ===================================================================
---- /dev/null
-+++ test/Documentation/acpi/scan_handlers.txt
-@@ -0,0 +1,77 @@
-+ACPI Scan Handlers
-+
-+Copyright (C) 2012, Intel Corporation
-+Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-+
-+During system initialization and ACPI-based device hot-add, the ACPI namespace
-+is scanned in search of device objects that generally represent various pieces
-+of hardware.  This causes a struct acpi_device object to be created and
-+registered with the driver core for every device object in the ACPI namespace
-+and the hierarchy of those struct acpi_device objects reflects the namespace
-+layout (i.e. parent device objects in the namespace are represented by parent
-+struct acpi_device objects and analogously for their children).  Those struct
-+acpi_device objects are referred to as "device nodes" in what follows, but they
-+should not be confused with struct device_node objects used by the Device Trees
-+parsing code (although their role is analogous to the role of those objects).
-+
-+During ACPI-based device hot-remove device nodes representing pieces of hardware
-+being removed are unregistered and deleted.
-+
-+The core ACPI namespace scanning code in drivers/acpi/scan.c carries out basic
-+initialization of device nodes, such as retrieving common configuration
-+information from the device objects represented by them and populating them with
-+appropriate data, but some of them require additional handling after they have
-+been registered.  For example, if the given device node represents a PCI host
-+bridge, its registration should cause the PCI bus under that bridge to be
-+enumerated and PCI devices on that bus to be registered with the driver core.
-+Similarly, if the device node represents a PCI interrupt link, it is necessary
-+to configure that link so that the kernel can use it.
-+
-+Those additional configuration tasks usually depend on the type of the hardware
-+component represented by the given device node which can be determined on the
-+basis of the device node's hardware ID (HID).  They are performed by objects
-+called ACPI scan handlers represented by the following structure:
-+
-+struct acpi_scan_handler {
-+	const struct acpi_device_id *ids;
-+	struct list_head list_node;
-+	int (*attach)(struct acpi_device *dev, const struct acpi_device_id *id);
-+	void (*detach)(struct acpi_device *dev);
-+};
-+
-+where ids is the list of IDs of device nodes the given handler is supposed to
-+take care of, list_node is the hook to the global list of ACPI scan handlers
-+maintained by the ACPI core and the .attach() and .detach() callbacks are
-+executed, respectively, after registration of new device nodes and before
-+unregistration of device nodes the handler attached to previously.
-+
-+The namespace scanning function, acpi_bus_scan(), first registers all of the
-+device nodes in the given namespace scope with the driver core.  Then, it tries
-+to match a scan handler against each of them using the ids arrays of the
-+available scan handlers.  If a matching scan handler is found, its .attach()
-+callback is executed for the given device node.  If that callback returns 1,
-+that means that the handler has claimed the device node and is now responsible
-+for carrying out any additional configuration tasks related to it.  It also will
-+be responsible for preparing the device node for unregistration in that case.
-+The device node's handler field is then populated with the address of the scan
-+handler that has claimed it.
-+
-+If the .attach() callback returns 0, it means that the device node is not
-+interesting to the given scan handler and may be matched against the next scan
-+handler in the list.  If it returns a (negative) error code, that means that
-+the namespace scan should be terminated due to a serious error.  The error code
-+returned should then reflect the type of the error.
-+
-+The namespace trimming function, acpi_bus_trim(), first executes .detach()
-+callbacks from the scan handlers of all device nodes in the given namespace
-+scope (if they have scan handlers).  Next, it unregisters all of the device
-+nodes in that scope.
-+
-+ACPI scan handlers can be added to the list maintained by the ACPI core with the
-+help of the acpi_scan_add_handler() function taking a pointer to the new scan
-+handler as an argument.  The order in which scan handlers are added to the list
-+is the order in which they are matched against device nodes during namespace
-+scans.
-+
-+All scan handles must be added to the list before acpi_bus_scan() is run for the
-+first time and they cannot be removed from it.
+--- test.orig/drivers/acpi/internal.h
++++ test/drivers/acpi/internal.h
+@@ -25,6 +25,7 @@
+ 
+ int init_acpi_device_notify(void);
+ int acpi_scan_init(void);
++void acpi_pci_root_init(void);
+ int acpi_sysfs_init(void);
+ void acpi_csrt_init(void);
+ 
+@@ -86,7 +87,6 @@ struct acpi_ec {
+ 
+ extern struct acpi_ec *first_ec;
+ 
+-int acpi_pci_root_init(void);
+ int acpi_ec_init(void);
+ int acpi_ec_ecdt_probe(void);
+ int acpi_boot_ec_enable(void);
 
