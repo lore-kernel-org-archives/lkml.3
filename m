@@ -1,127 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab3A1HAq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 02:00:46 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:42179 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab3A1HAn (ORCPT
+	id S1753221Ab3A1HKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 02:10:40 -0500
+Received: from alvesta.synopsys.com ([198.182.60.77]:36519 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751839Ab3A1HKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 02:00:43 -0500
-From: "Katepallewar, Mrugesh" <mrugesh.mk@ti.com>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>, "hs@denx.de" <hs@denx.de>
-Subject: RE: [PATCH] ARM: davinci: da850: add RTC driver DT entries
-Thread-Topic: [PATCH] ARM: davinci: da850: add RTC driver DT entries
-Thread-Index: AQHN+ueMhVlYjW+vU023okApW3sQOZhZ3ToQ//+tOwCABMlA0A==
-Date: Mon, 28 Jan 2013 07:00:19 +0000
-Message-ID: <4232EB8829679242B82E712C3DB3149D42346E@DBDE01.ent.ti.com>
-References: <1359094430-14724-1-git-send-email-mrugesh.mk@ti.com>
- <51025FAE.3060503@ti.com>
- <4232EB8829679242B82E712C3DB3149D4233E9@DBDE01.ent.ti.com>
- <51026AEA.5050503@ti.com>
-In-Reply-To: <51026AEA.5050503@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 28 Jan 2013 02:10:38 -0500
+Message-ID: <51062460.9060902@synopsys.com>
+Date: Mon, 28 Jan 2013 12:40:24 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
+To: Arnd Bergmann <arnd@arndb.de>, Stephen Rothwell <sfr@canb.auug.org.au>
+CC: James Hogan <james.hogan@imgtec.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH v3 00/44] Meta Linux Kernel Port
+References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com> <5102BB38.3050207@imgtec.com> <201301260025.10020.arnd@arndb.de>
+In-Reply-To: <201301260025.10020.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.164]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0S70jM3032235
 
-On Fri, Jan 25, 2013 at 16:52:18, Nori, Sekhar wrote:
-> On 1/25/2013 4:34 PM, Katepallewar, Mrugesh wrote:
-> > On Fri, Jan 25, 2013 at 16:04:22, Nori, Sekhar wrote:
-> >> On 1/25/2013 11:43 AM, Mrugesh Katepallewar wrote:
-> >>> Add RTC DT entries in da850 dts file.
-> >>>
-> >>> Signed-off-by: Mrugesh Katepallewar <mrugesh.mk@ti.com>
-> >>> ---
-> >>> Applies on top of v3.8-rc4 of linus tree.
-> >>>
-> >>> Tested on da850-evm device.
-> >>>
-> >>> Test Procedure:
-> >>> date [YYYY.]MM.DD-hh:mm[:ss]
-> >>> hwclock -w
-> >>> reset board and check system time.
-> >>>
-> >>> :100644 100644 37dc5a3... b16efd4... M	arch/arm/boot/dts/da850-evm.dts
-> >>> :100644 100644 640ab75... a8eb1b1... M	arch/arm/boot/dts/da850.dtsi
-> >>>  arch/arm/boot/dts/da850-evm.dts |    3 +++
-> >>>  arch/arm/boot/dts/da850.dtsi    |    8 ++++++++
-> >>>  2 files changed, 11 insertions(+)
-> >>>
-> >>> diff --git a/arch/arm/boot/dts/da850-evm.dts 
-> >>> b/arch/arm/boot/dts/da850-evm.dts index 37dc5a3..b16efd4 100644
-> >>> --- a/arch/arm/boot/dts/da850-evm.dts
-> >>> +++ b/arch/arm/boot/dts/da850-evm.dts
-> >>> @@ -24,5 +24,8 @@
-> >>>  		serial2: serial@1d0d000 {
-> >>>  			status = "okay";
-> >>>  		};
-> >>> +		rtc@1c23000 {
-> 
-> I did not mention this last time, but this should be:
-> 
-> 		rtc0: rtc@1c23000 {
-> 
-> to be consistent with rest of the file.
+Hi Arnd / Stephen,
 
-Okay. I will send this in next version.
+On Saturday 26 January 2013 05:55 AM, Arnd Bergmann wrote:
+> On Friday 25 January 2013, James Hogan wrote:
+>> Hi Arnd,
+>>
+>> On 10/01/13 15:30, James Hogan wrote:
+>>> This patchset adds core architecture support to Linux for Imagination's
+>>> Meta ATP (Meta 1) and HTP (Meta 2) processor cores. Most of the feedback
+>>> from the RFC and v2 patchsets has now been addressed. All further
+>>> feedback is most welcome.
+>>>
+>>> The patches are based on next-20130110, and can also be found in the
+>>> following git tree:
+>>>   git://github.com/jahogan/metag-linux.git metag-core
+>>
+>> Review seems to have gone quiet. I'm fairly happy with this core
+>> patchset in it's currently form (only trivial alterations required since
+>> the v3 patches, e.g. some review comments and rebasing on linus/master),
+>> and would like to get it into the v3.9 merge window. What's the best way
+>> forward? I presume I need to get acks on each individual patch?
 > 
-> >>> +			status = "okay";
-> >>> +		};
-> >>>  	};
-> >>>  };
-> >>> diff --git a/arch/arm/boot/dts/da850.dtsi 
-> >>> b/arch/arm/boot/dts/da850.dtsi index 640ab75..a8eb1b1 100644
-> >>> --- a/arch/arm/boot/dts/da850.dtsi
-> >>> +++ b/arch/arm/boot/dts/da850.dtsi
-> >>> @@ -56,5 +56,13 @@
-> >>>  			interrupt-parent = <&intc>;
-> >>>  			status = "disabled";
-> >>>  		};
-> >>> +		rtc@1c23000 {
 > 
-> Here too.
-> 
-Okay. I will send this in next version.
+> I've just looked through the entire series once more and could not find
+> any show-stoppers. I consider this ready for 3.9, and I'm also quite happy
+> with Vineet's ARC port, although I think he is still integrating some
+> feedback comments.
 
-> >>> +			compatible = "ti,da830-rtc";
-> >>> +			reg = <0x23000 0x1000>;
-> >>> +			interrupts = <19
-> >>> +				      19>;
-> >>
-> >> Why two interrupts of the same number? If there is only one interrupt line then only one should be specified, no?
-> > We are using common OMAP RTC driver for da850 and other ti SoC's 
-> > (e.g.am33xx). I have seen in am33xx.dtsi rtc timer and alarm interrupts are different. So, two interrupt numbers are expected from RTC DT node.
-> 
-> Okay. Looking at the OMAP-L138 TRM, I see that the IP on that SoC supports both alarm and timer events and both arrive on the same interrupt number (as opposed to am335x where they supposedly arrive on different interrupt lines). What you have looks fine to me considering this.
-> 
-> Also, the interrupt-parent setting needs to be removed. See the patch Prabhakar just submitted.
+AFAIKS, I've already addressed all the comments in v1 and v2 except moving the
+clocksources/clockevent code to drivers. If that is a must, I can do that,
+although personally I think it is too arch specific (tied to ARC specific RTSC
+insn and such) to be moved out of arch code. Can you please skim thru the latest
+v3 series, or just part #1 (changes since v2) if that's too big to reconfirm.
 
-Okay. I will send this in next version.
+> I'd suggest that you both ask Stephen to add the trees to linux-next
+> now (I thought you had done that already, but I don't see them there
+> at the moment).
 
-> 
-> Thanks,
-> Sekhar
-> 
+Stephen, can you please add the following branch (rebased off 3.8-rc5) to linux-next
 
-Regards, 
-Mrugesh
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+git://github.com/foss-for-synopsys-dwc-arc-processors/linux.git  arc-next
+
+With next-20130125, there's a trivial conflict in init/Kconfig - fixable by
+accepting both the hunks.
+
+> You don't need Acked-by statements on every single patch, but having
+> more of those is certainly benefitial. When it comes to the merge
+> window, please send a pull request to Linus, and keep me on Cc,
+> so I can weigh in with an additional Ack to the series.
+
+While the first pull request can go directly from github, I presume the logistics
+for setting up accounts on kernel.org will only kick start after the first batch
+of code has been accepted. I can't seem to find any discussions on lists to that
+effect.
+
+> Until then, maybe you can have another look at each other's architecture
+> trees (ARC and Meta). Since you are in exactly the same situation with
+> upstream integration now, you are probably the best people to review
+> the code, and you providing ACKs and constructive feedback to the other
+> tree will helps others see that you are up to the job as an arch
+> maintainer.
+
+I'm certain we've both been looking at each other's patches in last few months - I
+certainly have for say DeviceTree support so it makes sense to formalize it.
+Although "Reviewed-by" will probably be better off that "Ack" in this case.
+
+> I have also given a few comments to one of you that
+> may actually apply to the other one just as well, but I can't remember
+> now what I discussed with whom ;-)
+
+OK, will re-skim thru all such discussions, although ARC comments are likely to be
+superset of metag :-)
+
+BTW I went back to hexagon submission patches in 2011 and it seems every new arch
+makes the exact same mistakes:
+-idle sleep race
+-faltering in TIF_WORK_RESUME and in fixing that breaking the syscall restarting
+-redundant symbols in module.c
+...
+
+Will it make sense to have a checklist-for-new-arches with concrete examples of
+broken and fixed code so that you, Al and other reviewers don't have to repeat the
+same thing over and over again.
+
+Thx,
+-Vineet
+
