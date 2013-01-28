@@ -1,46 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab3A1QuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 11:50:00 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50526 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756896Ab3A1Qt6 (ORCPT
+	id S1757462Ab3A1QwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 11:52:18 -0500
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:64463 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756371Ab3A1QwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 11:49:58 -0500
-Message-ID: <5106AC31.1040207@wwwdotorg.org>
-Date: Mon, 28 Jan 2013 09:49:53 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 28 Jan 2013 11:52:16 -0500
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] clk: tegra: adapt tegra periph clk to mux table/mask
-References: <1359388467-32386-1-git-send-email-pdeschrijver@nvidia.com> <1359388467-32386-3-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1359388467-32386-3-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1359151245-13179-5-git-send-email-andi@firstfloor.org>
+References: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
+	<1359151245-13179-5-git-send-email-andi@firstfloor.org>
+Date: Mon, 28 Jan 2013 17:52:15 +0100
+Message-ID: <CABPqkBQ5cn4SQ8MH3vrPHcyy=pGbsVbxYPjETCCo=oRsx_nEdg@mail.gmail.com>
+Subject: Re: [PATCH 04/12] perf, x86: Support the TSX intx/intx_cp qualifiers v2
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 08:54 AM, Peter De Schrijver wrote:
-> The tegra peripheral clock type uses struct clk_mux directly, so it needs to
-> be updated to handle the new mask and table fields. Also the macros need
-> to be updated
+On Fri, Jan 25, 2013 at 11:00 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> Implement the TSX transaction and checkpointed transaction qualifiers for
+> Haswell. This allows e.g. to profile the number of cycles in transactions.
+>
+> The checkpointed qualifier requires forcing the event to
+> counter 2, implement this with a custom constraint for Haswell.
+>
+> Also add sysfs format attributes for intx/intx_cp
+>
+> [Updated from earlier version that used generic attributes, now does
+> raw + sysfs formats]
+> v2: Moved bad hunk. Forbid some bad combinations.
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel.c |   61 ++++++++++++++++++++++++++++++++
+>  1 files changed, 61 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 634f639..44e18c02 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -13,6 +13,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/export.h>
+>
+> +#include <asm/cpufeature.h>
+>  #include <asm/hardirq.h>
+>  #include <asm/apic.h>
+>
+> @@ -1597,6 +1598,44 @@ static void core_pmu_enable_all(int added)
+>         }
+>  }
+>
+> +static int hsw_hw_config(struct perf_event *event)
+> +{
+> +       int ret = intel_pmu_hw_config(event);
+> +
+> +       if (ret)
+> +               return ret;
+> +       if (!boot_cpu_has(X86_FEATURE_RTM) && !boot_cpu_has(X86_FEATURE_HLE))
+> +               return 0;
+> +       event->hw.config |= event->attr.config & (HSW_INTX|HSW_INTX_CHECKPOINTED);
+> +
+> +       /*
+White space damage here
 
-Just a quick note on patch dependencies here:
+> +        * INTX/INTX-CP do not play well with PEBS or ANY thread mode.
+> +        */
+> +       if ((event->hw.config & (HSW_INTX|HSW_INTX_CHECKPOINTED)) &&
+> +            ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
+> +             event->attr.precise_ip > 0))
+> +               return -EIO;
 
-Patch 1/2 can presumably be taken through the clk tree whenever Mike is
-OK with it.
+Shouldn't this be -EOPNOTSUPP instead to be more consistent with how
+similar issues
+are handled elsewhere in the code?
 
-Patch 2/2 depends on patches in the Tegra tree for 3.9. Since patch 2/2
-is useful mostly for the Tegra114 clock driver, and I don't imagine that
-will get posted/merged in time for 3.9, it's probably easiest to just
-take patch 2/2 for 3.10 along with the Tegra114 clock driver. Also, I
-imagine there won't be any more clk/Tegra tree dependencies in 3.10, so
-patch 2/2 and the Tegra114 clk driver patches can likely go through the
-clk tree itself for 3.10.
+> +       return 0;
+> +}
+> +
+> +static struct event_constraint counter2_constraint =
+
+White space damage here too.
+
+> +                       EVENT_CONSTRAINT(0, 0x4, 0);
+> +
+> +static struct event_constraint *
+> +hsw_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+> +{
+> +       struct event_constraint *c = intel_get_event_constraints(cpuc, event);
+> +
+> +       /* Handle special quirk on intx_checkpointed only in counter 2 */
+> +       if (event->hw.config & HSW_INTX_CHECKPOINTED) {
+> +               if (c->idxmsk64 & (1U << 2))
+> +                       return &counter2_constraint;
+> +               return &emptyconstraint;
+> +       }
+> +
+> +       return c;
+> +}
+> +
+>  PMU_FORMAT_ATTR(event, "config:0-7"    );
+>  PMU_FORMAT_ATTR(umask, "config:8-15"   );
+>  PMU_FORMAT_ATTR(edge,  "config:18"     );
+> @@ -1604,6 +1643,8 @@ PMU_FORMAT_ATTR(pc,       "config:19"     );
+>  PMU_FORMAT_ATTR(any,   "config:21"     ); /* v3 + */
+>  PMU_FORMAT_ATTR(inv,   "config:23"     );
+>  PMU_FORMAT_ATTR(cmask, "config:24-31"  );
+> +PMU_FORMAT_ATTR(intx,  "config:32"     );
+> +PMU_FORMAT_ATTR(intx_cp,"config:33"    );
+>
+I have a problem with this for fixed counter only events:
+
+$ perf stat -e cpu/event=0x00,umask=3,intx=1/,cycles noploop 1
+
+This silently drops intx=1 for unhalted_ref_cycles. This event
+only works on fixed counter. So I am wondering what I am measuring
+here. In general, I don't like when settings are silently dropped because
+the user will be misled into thinking the modifier was applied when in
+fact it was not.
+
+The way it's handled with the other modifiers, such as inv, cmask
+for this event, is that the event can never be scheduled, time_running=0.
+For instance, on my Nehalem:
+
+$ perf stat -v -e cpu/event=0x00,umask=3,inv/,cycles noploop 1
+noploop for 1 seconds
+cpu/event=0x00,umask=3,inv/: 0 1000362571 1000362571
+cycles: 3075425423 1000362571 1000362571
+
+ Performance counter stats for 'noploop 1':
+
+                 0 cpu/event=0x00,umask=3,inv/
+        3075425423 cycles                    #    0.000 GHz
+
+       1.027822053 seconds time elapsed
+
+For some reasons, I noticed the results for this command are different
+on Core:
+$ perf stat -v -e cpu/event=0x00,umask=3,inv/,cycles noploop 1
+noploop for 1 seconds
+cpu/event=0x00,umask=3,inv/: 9561572340 1000036603 1000036603
+cycles: 2390392858 1000036603 1000036603
+
+ Performance counter stats for 'noploop 1':
+
+        9561572340 cpu/event=0x00,umask=3,inv/
+        2390392858 cycles                    #    0.000 GHz
+
+       1.017143853 seconds time elapsed
+
+Should not have worked. So there is another discrepancy
+here that needs to be looked at. This is beyond the scope
+of your patch.
+
+>  static struct attribute *intel_arch_formats_attr[] = {
+>         &format_attr_event.attr,
+> @@ -1761,6 +1802,23 @@ static struct attribute *intel_arch3_formats_attr[] = {
+>         NULL,
+>  };
+>
+> +/* Arch3 + TSX support */
+> +static struct attribute *intel_hsw_formats_attr[] __read_mostly = {
+> +       &format_attr_event.attr,
+> +       &format_attr_umask.attr,
+> +       &format_attr_edge.attr,
+> +       &format_attr_pc.attr,
+> +       &format_attr_any.attr,
+> +       &format_attr_inv.attr,
+> +       &format_attr_cmask.attr,
+> +       &format_attr_intx.attr,
+> +       &format_attr_intx_cp.attr,
+> +
+> +       &format_attr_offcore_rsp.attr, /* XXX do NHM/WSM + SNB breakout */
+> +       NULL,
+> +};
+> +
+> +
+>  static __initconst const struct x86_pmu intel_pmu = {
+>         .name                   = "Intel",
+>         .handle_irq             = intel_pmu_handle_irq,
+> @@ -2135,6 +2193,9 @@ __init int intel_pmu_init(void)
+>                 x86_pmu.er_flags |= ERF_HAS_RSP_1;
+>                 x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+>
+> +               x86_pmu.hw_config = hsw_hw_config;
+> +               x86_pmu.get_event_constraints = hsw_get_event_constraints;
+> +               x86_pmu.format_attrs = intel_hsw_formats_attr;
+>                 pr_cont("Haswell events, ");
+>                 break;
+>
+> --
+> 1.7.7.6
+>
