@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab3A1WmF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 17:42:05 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:37479 "EHLO relay.sgi.com"
+	id S1755318Ab3A1Woa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 17:44:30 -0500
+Received: from smtp209.alice.it ([82.57.200.105]:50691 "EHLO smtp209.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754838Ab3A1WmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 17:42:04 -0500
-Date: Mon, 28 Jan 2013 16:42:02 -0600
-From: Ben Myers <bpm@sgi.com>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: Dave Chinner <david@fromorbit.com>, xfs@oss.sgi.com,
+	id S1754818Ab3A1Wo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 17:44:27 -0500
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: alsa-devel@alsa-project.org
+Cc: Antonio Ospite <ao2@amarulasolutions.com>, Takashi Iwai <tiwai@suse.de>,
+        Michael Trimarchi <michael@amarulasolutions.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]xfs: Fix xfs_swap_extents() after removal of
- xfs_flushinval_pages()
-Message-ID: <20130128224202.GE27055@sgi.com>
-References: <20130120102449.397b3f8b@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130120102449.397b3f8b@googlemail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Subject: [PATCH 1/6] Force a cast to silence a warning from "sparse"
+Date: Mon, 28 Jan 2013 23:42:27 +0100
+Message-Id: <1359412952-1680-2-git-send-email-ospite@studenti.unina.it>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1359412952-1680-1-git-send-email-ospite@studenti.unina.it>
+References: <1359412952-1680-1-git-send-email-ospite@studenti.unina.it>
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 20, 2013 at 10:24:49AM +0100, Torsten Kaiser wrote:
-> From: Torsten Kaiser <just.for.lkml@googlemail.com>
-> 
-> Commit fb59581404ab7ec5075299065c22cb211a9262a9 removed
-> xfs_flushinval_pages() and changed its callers to use
-> filemap_write_and_wait() and  truncate_pagecache_range() directly.
-> 
-> But in xfs_swap_extents() this change accidental switched the argument
-> for 'tip' to 'ip'. This patch switches it back to 'tip'
-> 
-> Signed-off-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+From: Antonio Ospite <ao2@amarulasolutions.com>
 
-Looks good.
-Reviewed-by: Ben Myers <bpm@sgi.com>
+  Some audio drivers are calling snd_dma_continuous_data(GFP_KERNEL)
+  which makes "sparse" give a warning:
 
-Thanks Torsten!
+    $ make C=2 M=sound/usb modules
+      ...
+    sound/usb/6fire/pcm.c:625:25: warning: cast from restricted gfp_t
+    sound/usb/caiaq/audio.c:845:41: warning: cast from restricted gfp_t
+    sound/usb/usx2y/usbusx2yaudio.c:997:54: warning: cast from restricted gfp_t
+    sound/usb/usx2y/usbusx2yaudio.c:1001:54: warning: cast from restricted gfp_t
+    sound/usb/usx2y/usx2yhwdeppcm.c:774:54: warning: cast from restricted gfp_t
+    sound/usb/usx2y/usx2yhwdeppcm.c:778:54: warning: cast from restricted gfp_t
+
+  Add __force to the cast to silence the warning.
+
+Signed-off-by: Antonio Ospite <ao2@amarulasolutions.com>
+---
+
+CCing linux-kernel on just this patch of the series as there may be
+comments about this practice of forcing casts.
+
+Regards,
+   Antonio
+
+ include/sound/memalloc.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/sound/memalloc.h b/include/sound/memalloc.h
+index 844af65..cf15b82 100644
+--- a/include/sound/memalloc.h
++++ b/include/sound/memalloc.h
+@@ -37,7 +37,7 @@ struct snd_dma_device {
+ #ifndef snd_dma_pci_data
+ #define snd_dma_pci_data(pci)	(&(pci)->dev)
+ #define snd_dma_isa_data()	NULL
+-#define snd_dma_continuous_data(x)	((struct device *)(unsigned long)(x))
++#define snd_dma_continuous_data(x)	((struct device *)(__force unsigned long)(x))
+ #endif
+ 
+ 
+-- 
+1.7.10.4
+
