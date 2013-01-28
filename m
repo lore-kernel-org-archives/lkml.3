@@ -1,79 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581Ab3A1Rhj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 12:37:39 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:63382 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756937Ab3A1Rhh (ORCPT
+	id S1757596Ab3A1Rho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 12:37:44 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:54617 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757180Ab3A1Rhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 12:37:37 -0500
-Date: Mon, 28 Jan 2013 09:37:33 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hillf Danton <dhillf@gmail.com>, Valdis.Kletnieks@vt.edu, bcrl@kvack.org,
-        zab@zabbo.net, linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 3/3] aio-use-cancellation-list-lazily-fix
-Message-ID: <20130128173733.GV26407@google.com>
-References: <20130124211850.GH26407@google.com>
- <1359063833-17174-1-git-send-email-koverstreet@google.com>
- <1359063833-17174-3-git-send-email-koverstreet@google.com>
- <CAJd=RBAhW7GXUYhem=j2OJtLA9Ru98rLvbU9bJ9iQJm2=CCwog@mail.gmail.com>
- <20130125151251.0c90bf4b.akpm@linux-foundation.org>
-MIME-Version: 1.0
+	Mon, 28 Jan 2013 12:37:40 -0500
+Date: Mon, 28 Jan 2013 18:37:36 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 04/12] perf, x86: Support the TSX intx/intx_cp qualifiers v2
+Message-ID: <20130128173736.GT30577@one.firstfloor.org>
+References: <1359151245-13179-1-git-send-email-andi@firstfloor.org> <1359151245-13179-5-git-send-email-andi@firstfloor.org> <CABPqkBQ5cn4SQ8MH3vrPHcyy=pGbsVbxYPjETCCo=oRsx_nEdg@mail.gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130125151251.0c90bf4b.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBQ5cn4SQ8MH3vrPHcyy=pGbsVbxYPjETCCo=oRsx_nEdg@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 03:12:51PM -0800, Andrew Morton wrote:
-> On Fri, 25 Jan 2013 21:30:32 +0800
-> Hillf Danton <dhillf@gmail.com> wrote:
-> 
-> > On Fri, Jan 25, 2013 at 5:43 AM, Kent Overstreet <koverstreet@google.com> wrote:
-> > > The cancellation changes were fubar - we can't cancel a kiocb if it
-> > > doesn't actually have a cancellation callback.
-> > >
-> > > The use of xchg() in aio_complete() was right - there we're marking the
-> > > kiocb as completed - but we need to use cmpxchg() in kiocb_cancel() - a
-> > > lock isn't sufficient since we're synchronizing with aio_complete()
-> > > which isn't taking any locks.
-> > >
-> > >  static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
-> > >                         struct io_event *res)
-> > >  {
-> > > -       kiocb_cancel_fn *cancel;
-> > > +       kiocb_cancel_fn *old, *cancel;
-> > >         int ret = -EINVAL;
-> > >
-> > > -       cancel = xchg(&kiocb->ki_cancel, KIOCB_CANCELLED);
-> > > -       if (!cancel || cancel == KIOCB_CANCELLED)
-> > > -               return ret;
-> > > +       /*
-> > > +        * Don't want to set kiocb->ki_cancel = KIOCB_CANCELLED unless it
-> > > +        * actually has a cancel function, hence the cmpxchg()
-> > > +        */
-> > > +
-> > > +       cancel = ACCESS_ONCE(kiocb->ki_cancel);
-> > > +       do {
-> > > +               if (!cancel || cancel == KIOCB_CANCELLED)
-> > > +                       return ret;
-> > > +
-> > > +               BUG();
-> > 
-> > Hmm, what is trapped?
-> > 
-> > > +               old = cancel;
-> > > +               cancel = cmpxchg(&kiocb->ki_cancel, old, KIOCB_CANCELLED);
-> > > +       } while (cancel != old);
-> 
-> erk, I missed that.  What earthly sense is there in putting a BUG() in
-> that place.
-> 
-> I think I'll delete it and pretend I never saw it :(
+> This silently drops intx=1 for unhalted_ref_cycles. This event
+> only works on fixed counter. So I am wondering what I am measuring
+> here. In general, I don't like when settings are silently dropped because
+> the user will be misled into thinking the modifier was applied when in
+> fact it was not.
 
-Argh. Yeah, sorry about that. Put that in there when I was trying to
-track down the other bugs :(
+Ok. I can look at it later, but I don't think it's a show stopper.
+
+Error handling in general was never a strength of perf.
+
+-Andi
