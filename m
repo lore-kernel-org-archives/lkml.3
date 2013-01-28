@@ -1,75 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab3A1KLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 05:11:42 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:60651 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754442Ab3A1KLk (ORCPT
+	id S1755766Ab3A1KLx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 05:11:53 -0500
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:44237 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754927Ab3A1KLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 05:11:40 -0500
-Date: Mon, 28 Jan 2013 11:11:35 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>,
-        "Pearson, Greg" <greg.pearson@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH] x86/apic: check FADT settings after enable x2apic
-Message-ID: <20130128101135.GD7168@gmail.com>
-References: <1358214636-4801-1-git-send-email-song-bo.wang@hp.com>
- <FE3E8B88161FFE48B03E3B93408433EC671016E2@G9W0754.americas.hpqcorp.net>
- <CAE9FiQW75eP_exufb1gd7jQuu98WnkyGX23EBXktUCSyZX9Jvg@mail.gmail.com>
+	Mon, 28 Jan 2013 05:11:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQW75eP_exufb1gd7jQuu98WnkyGX23EBXktUCSyZX9Jvg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130125164800.GB1174@sortiz-mobl>
+References: <b9fec05c-d383-4282-b2af-c95855ff6abb@zimbra>
+	<3ffa5032-0565-48f0-a4ae-473452f4c902@zimbra>
+	<CACRpkdZHndQsDZpn7BCFNXAO3k5vREYxDJkcYQ3_3sTbKAQLLA@mail.gmail.com>
+	<20130125164800.GB1174@sortiz-mobl>
+Date: Mon, 28 Jan 2013 11:11:49 +0100
+Message-ID: <CACRpkdYV3KGz45Ko1n-QJ6VQ4Y8SAb3zd87AvfpP1TSUAh=FsQ@mail.gmail.com>
+Subject: Re: [PATCH v3] lpc_ich: fix gpio base and control offsets
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Aaron Sierra <asierra@xes-inc.com>, Paul Bolle <pebolle@tiscali.nl>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        =?ISO-8859-1?B?QWfzY3MgUOFs?= <agocs.pal.86@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 25, 2013 at 5:48 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> On Fri, Jan 25, 2013 at 10:47:45AM +0100, Linus Walleij wrote:
 
-* Yinghai Lu <yinghai@kernel.org> wrote:
+>> So where is this id->driver_data which is just assigned to
+>> priv->chipset coming from again? ACPI something?
+>
+> It comes from the static PCI table the driver defines itself. It allows you to
+> pass meta data associated to a specific PCI ID.
 
-> On Sun, Jan 27, 2013 at 9:05 PM, Wang, Song-Bo (Stoney)
-> <song-bo.wang@hp.com> wrote:
-> > Hi Yinghai, hpa and others,
-> >
-> > Would you please review the patch on detecting x2apic FADT settings?
-> >
-> > We meet a BIOS system which works on x2apic physical mode by 
-> > setting the bit ACPI_FADT_APIC_PHYSICAL in FADT table. And 
-> > for those systems with all cpuid < 255, the spec requires 
-> > BIOS's default mode in xapic. The kernel detects the default 
-> > mode and do some initializations and will call 
-> > enable_IR_x2apic and change the mode to x2apic successfully.
-> 
-> Hi, Peter and Ingo,
-> 
-> I checked the patch, and looks right.
-> 
-> I updated the changelog and simplify the code a little bit.
-> 
-> Please check if you can put it into tip:x86/apic
+OK cool, I think we can conclude that this patch is fine after the
+boot tests and all:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-The code looks good to me, but the changelog is still lacking:
-
-> HP has systems that work with x2apic phys mode and BIOS set 
-> ACPI_FADT_APIC_PHYSICAL in FADT table, and all cpuid < 255, 
-> the spec requires BIOS only put system on xapic mode. Kernel 
-
-Which spec?
-
-> will set to x2apic logical mode instead of x2apic phys mode.
-
-Which has exactly what bad effect on users of these systems?
-
-You left out the most important information from the changelog: 
-why do users care, what good does the patch do?
-
-Thanks,
-
-	Ingo
+Yours,
+Linus Walleij
