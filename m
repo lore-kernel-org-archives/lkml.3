@@ -1,118 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab3A1KdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 05:33:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32022 "EHLO mx1.redhat.com"
+	id S1756263Ab3A1Kdy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 05:33:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50726 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754414Ab3A1KdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 05:33:13 -0500
-Subject: GFS2: Pull request (fixes)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-NMYBiOHLC7exMDWA+beB"
-Organization: Red Hat UK Ltd
-Date: Mon, 28 Jan 2013 10:31:55 +0000
-Message-ID: <1359369115.2697.4.camel@menhir>
-Mime-Version: 1.0
+	id S1754414Ab3A1Kdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 05:33:53 -0500
+Date: Mon, 28 Jan 2013 12:38:02 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        netdev@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+Subject: [PATCHv2] tun: fix carrier on/off status
+Message-ID: <20130128103801.GA6648@redhat.com>
+References: <5103B01D.5070303@gmx.de>
+ <3592886.xagLc7Uij9@jason-thinkpad-t430s>
+ <20130128101111.GB5337@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130128101111.GB5337@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit c8d68e6be1c3b242f1c598595830890b65cea64a removed carrier off call
+from tun_detach since it's now called on queue disable and not only on
+tun close.  This confuses userspace which used this flag to detect a
+free tun. To fix, put this back but under if (clean).
 
---=-NMYBiOHLC7exMDWA+beB
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-Hi,
-
-Please consider pulling the following fix. Since there is only one patch
-this time, I've attached it below rather than posting it separately,
-
-Steve.
-
----------------------------------------------------------------------------=
 ---
-The following changes since commit 949db153b6466c6f7cad5a427ecea94985927311=
-:
 
-  Linux 3.8-rc5 (2013-01-25 11:57:28 -0800)
+Changes from v1:
+	Don't set carrier off unless all queues are closed.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-fixes.git ma=
-ster
+Note: didn't test in MQ mode - Jason, care checking this does the
+right thing there?
 
-David Teigland (1):
-      GFS2: fix skip unlock condition
-
- fs/gfs2/lock_dlm.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
----------------------------------------------------------------------------=
----
-=46rom d4e0bfec9b6fbb9b58640b44e01bb74ae0d29b22 Mon Sep 17 00:00:00 2001
-From: David Teigland <teigland@redhat.com>
-Date: Thu, 3 Jan 2013 17:52:07 -0500
-Subject: [PATCH] GFS2: fix skip unlock condition
-
-The recent commit fb6791d100d1bba20b5cdbc4912e1f7086ec60f8
-included the wrong logic.  The lvbptr check was incorrectly
-added after the patch was tested.
-
-Signed-off-by: David Teigland <teigland@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-
-diff --git a/fs/gfs2/lock_dlm.c b/fs/gfs2/lock_dlm.c
-index b906ed1..9802de0 100644
---- a/fs/gfs2/lock_dlm.c
-+++ b/fs/gfs2/lock_dlm.c
-@@ -281,6 +281,7 @@ static void gdlm_put_lock(struct gfs2_glock *gl)
- {
- 	struct gfs2_sbd *sdp =3D gl->gl_sbd;
- 	struct lm_lockstruct *ls =3D &sdp->sd_lockstruct;
-+	int lvb_needs_unlock =3D 0;
- 	int error;
-=20
- 	if (gl->gl_lksb.sb_lkid =3D=3D 0) {
-@@ -294,8 +295,12 @@ static void gdlm_put_lock(struct gfs2_glock *gl)
- 	gfs2_update_request_times(gl);
-=20
- 	/* don't want to skip dlm_unlock writing the lvb when lock is ex */
-+
-+	if (gl->gl_lksb.sb_lvbptr && (gl->gl_state =3D=3D LM_ST_EXCLUSIVE))
-+		lvb_needs_unlock =3D 1;
-+
- 	if (test_bit(SDF_SKIP_DLM_UNLOCK, &sdp->sd_flags) &&
--	    gl->gl_lksb.sb_lvbptr && (gl->gl_state !=3D LM_ST_EXCLUSIVE)) {
-+	    !lvb_needs_unlock) {
- 		gfs2_glock_free(gl);
- 		return;
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index af372d0..06b2723 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -434,10 +434,13 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
  	}
---=20
-1.7.4
-
-
-
---=-NMYBiOHLC7exMDWA+beB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJRBlOWAAoJEMrg3m4a/8jSV74QAJOIhjKJDuy6MW8PolqC9Tn2
-kpKIlI2I4oelCyu/EkUK3T6BCwb+0L30FDDYSYruphZ7hoIwjqkL/4/ugqyiiSZB
-sjoQ0aHRdFSbfgJ2j05w6WBi9k/Bn119Hu+JAfhakWaPLlhvLc2vjQo2n0Qa3O8X
-duCqy7A6Fmu3bQJYZ592b0Wvq3n4Ll1bimhJ0OE7lV+DuUnLAMn/98HueKpsXRwp
-gEghli5LPrW8OwmBJAbdlGuP935lBMhgJxhNZoq783UtJ8DSd4TWIP+f5/SxlBfk
-kYMB23FL9rgpQJ0oEwfJrIN6LgHld+YYBzAeSyv8Yz/CfDGjHFngVDXR5Fi30TZn
-cu5uelxrFiyyuZcA7luXugKmq2XGcqWfo0NnSb5R4oviIj97RGlMbuqdzUMnP8FS
-w0bjO9zmJrMl2YLqPRCUHUvftjEjTjn/kvlLig5GkRQaw52Q8z+xs/+QOu8xcJ76
-NoLPdeUqeO7EO6BnctSEN6r4hFLzDoVbZ/VznVzwOQBTRX848ZsaRgPxMZCghYEZ
-sVzHgYzMs93eCq1O8SHRtmIQ7KYurRju4A16kjz8WSce43o7y1Ztl7YA87aSrnH/
-PhXrlT7fBg2hZ0B899vVQhWM4THtvOwGgBZwU5Ll0pQ0BclA+SZGreDPDhfZWpBO
-uAx54Qx++LDJoLXfNc/N
-=7GFp
------END PGP SIGNATURE-----
-
---=-NMYBiOHLC7exMDWA+beB--
-
+ 
+ 	if (clean) {
+-		if (tun && tun->numqueues == 0 && tun->numdisabled == 0 &&
+-		    !(tun->flags & TUN_PERSIST))
+-			if (tun->dev->reg_state == NETREG_REGISTERED)
++		if (tun && tun->numqueues == 0 && tun->numdisabled == 0) {
++			netif_carrier_off(tun->dev);
++
++			if (!(tun->flags & TUN_PERSIST) &&
++			    tun->dev->reg_state == NETREG_REGISTERED)
+ 				unregister_netdevice(tun->dev);
++		}
+ 
+ 		BUG_ON(!test_bit(SOCK_EXTERNALLY_ALLOCATED,
+ 				 &tfile->socket.flags));
+@@ -1644,10 +1647,10 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
+ 		    device_create_file(&tun->dev->dev, &dev_attr_group))
+ 			pr_err("Failed to create tun sysfs files\n");
+-
+-		netif_carrier_on(tun->dev);
+ 	}
+ 
++	netif_carrier_on(tun->dev);
++
+ 	tun_debug(KERN_INFO, tun, "tun_set_iff\n");
+ 
+ 	if (ifr->ifr_flags & IFF_NO_PI)
