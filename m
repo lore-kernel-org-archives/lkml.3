@@ -1,52 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab3A1Xqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 18:46:37 -0500
-Received: from mga01.intel.com ([192.55.52.88]:31972 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751927Ab3A1Xqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 18:46:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,555,1355126400"; 
-   d="scan'208";a="279482581"
-Date: Tue, 29 Jan 2013 07:46:20 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH tip] perf/x86: nhm_events_attrs and snb_events_attrs can be
- static
-Message-ID: <20130128234620.GA8524@localhost>
-References: <510441ca.jKKGS3DOYyOC3gnk%fengguang.wu@intel.com>
- <20130127010632.GF12329@localhost>
- <CABPqkBR4VCOpBH25yQOnhkOs6c52xEnNe=P4qifDXzr7WBERxw@mail.gmail.com>
+	id S1755764Ab3A1Xqt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 18:46:49 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42851 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755604Ab3A1Xqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 18:46:47 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-99-51070de6b5f3
+Date: Tue, 29 Jan 2013 08:46:46 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv2 7/9] mm: break up swap_writepage() for frontswap
+ backends
+Message-ID: <20130128234646.GD4752@blaptop>
+References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1357590280-31535-8-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130128042202.GG3321@blaptop>
+ <5106B4D3.4000509@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBR4VCOpBH25yQOnhkOs6c52xEnNe=P4qifDXzr7WBERxw@mail.gmail.com>
+In-Reply-To: <5106B4D3.4000509@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On Mon, Jan 28, 2013 at 11:26:43AM -0600, Seth Jennings wrote:
+> On 01/27/2013 10:22 PM, Minchan Kim wrote:
+> > On Mon, Jan 07, 2013 at 02:24:38PM -0600, Seth Jennings wrote:
+> >> swap_writepage() is currently where frontswap hooks into the swap
+> >> write path to capture pages with the frontswap_store() function.
+> >> However, if a frontswap backend wants to "resume" the writeback of
+> >> a page to the swap device, it can't call swap_writepage() as
+> >> the page will simply reenter the backend.
+> >>
+> >> This patch separates swap_writepage() into a top and bottom half, the
+> >> bottom half named __swap_writepage() to allow a frontswap backend,
+> >> like zswap, to resume writeback beyond the frontswap_store() hook and
+> >> by notified when the writeback completes.
+> >>
+> >> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> > 
+> > Looks good to me except few nitpicks.
+> 
+> I broke these changes out from the main zswap patch (patch 8/9) in
+> response to a request for Dan.  You are right in that there are
+> changes here unrelated to the commit message.
+> 
+> The other changes are related to allowing zswap to do accounting on
+> the number of outstanding flushes to the swap device.
+> 
+> If I'm going to break those out though the two resulting patches would be:
+> 1. breakup __swap_writepage() and un-static __add_to_swap_cache() to
+> allow resuming of swap page writeback
+> 2. change __swap_writepage() signature to include end_write_func and
+> un-static end_swap_bio_write() for accounting of outstanding flushes
+> 
 
---- linux-next.orig/arch/x86/kernel/cpu/perf_event_intel.c	2013-01-29 07:42:16.238595053 +0800
-+++ linux-next/arch/x86/kernel/cpu/perf_event_intel.c	2013-01-29 07:43:47.678597226 +0800
-@@ -139,12 +139,12 @@ static struct extra_reg intel_snb_extra_
- EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x0b,umask=0x10,ldlat=3");
- EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
- 
--struct attribute *nhm_events_attrs[] = {
-+static struct attribute *nhm_events_attrs[] = {
- 	EVENT_PTR(mem_ld_nhm),
- 	NULL,
- };
- 
--struct attribute *snb_events_attrs[] = {
-+static struct attribute *snb_events_attrs[] = {
- 	EVENT_PTR(mem_ld_snb),
- 	NULL,
- };
+Or please add comment why you want to export some functions.
+
+Thanks!
+
+> Is that what you'd like to see?
+> 
+> Seth
+> 
+> > 
+> > Acked-by: Minchan Kim <minchan@kernel.org>
+> > 
+> >> ---
+> >>  include/linux/swap.h |    4 ++++
+> >>  mm/page_io.c         |   22 +++++++++++++++++-----
+> >>  mm/swap_state.c      |    2 +-
+> >>  3 files changed, 22 insertions(+), 6 deletions(-)
+> >>
+> >> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> >> index 8c66486..a3da829 100644
+> >> --- a/include/linux/swap.h
+> >> +++ b/include/linux/swap.h
+> >> @@ -321,6 +321,9 @@ static inline void mem_cgroup_uncharge_swap(swp_entry_t ent)
+> >>  /* linux/mm/page_io.c */
+> >>  extern int swap_readpage(struct page *);
+> >>  extern int swap_writepage(struct page *page, struct writeback_control *wbc);
+> >> +extern void end_swap_bio_write(struct bio *bio, int err);
+> >> +extern int __swap_writepage(struct page *page, struct writeback_control *wbc,
+> >> +	void (*end_write_func)(struct bio *, int));
+> >>  extern int swap_set_page_dirty(struct page *page);
+> >>  extern void end_swap_bio_read(struct bio *bio, int err);
+> >>  
+> >> @@ -335,6 +338,7 @@ extern struct address_space swapper_space;
+> >>  extern void show_swap_cache_info(void);
+> >>  extern int add_to_swap(struct page *);
+> >>  extern int add_to_swap_cache(struct page *, swp_entry_t, gfp_t);
+> >> +extern int __add_to_swap_cache(struct page *page, swp_entry_t entry);
+> > 
+> > What's related __add_to_swap_cache with this patch?
+> > 
+> >>  extern void __delete_from_swap_cache(struct page *);
+> >>  extern void delete_from_swap_cache(struct page *);
+> >>  extern void free_page_and_swap_cache(struct page *);
+> >> diff --git a/mm/page_io.c b/mm/page_io.c
+> >> index c535d39..806085e 100644
+> >> --- a/mm/page_io.c
+> >> +++ b/mm/page_io.c
+> >> @@ -43,7 +43,7 @@ static struct bio *get_swap_bio(gfp_t gfp_flags,
+> >>  	return bio;
+> >>  }
+> >>  
+> >> -static void end_swap_bio_write(struct bio *bio, int err)
+> >> +void end_swap_bio_write(struct bio *bio, int err)
+> > 
+> > Why do you remove static in this patch? It's not related to the patch.
+> > 
+> >>  {
+> >>  	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+> >>  	struct page *page = bio->bi_io_vec[0].bv_page;
+> >> @@ -180,15 +180,16 @@ bad_bmap:
+> >>  	goto out;
+> >>  }
+> >>  
+> >> +int __swap_writepage(struct page *page, struct writeback_control *wbc,
+> >> +	void (*end_write_func)(struct bio *, int));
+> >> +
+> >>  /*
+> >>   * We may have stale swap cache pages in memory: notice
+> >>   * them here and get rid of the unnecessary final write.
+> >>   */
+> >>  int swap_writepage(struct page *page, struct writeback_control *wbc)
+> >>  {
+> >> -	struct bio *bio;
+> >> -	int ret = 0, rw = WRITE;
+> >> -	struct swap_info_struct *sis = page_swap_info(page);
+> >> +	int ret = 0;
+> >>  
+> >>  	if (try_to_free_swap(page)) {
+> >>  		unlock_page(page);
+> >> @@ -200,6 +201,17 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+> >>  		end_page_writeback(page);
+> >>  		goto out;
+> >>  	}
+> >> +	ret = __swap_writepage(page, wbc, end_swap_bio_write);
+> >> +out:
+> >> +	return ret;
+> >> +}
+> >> +
+> >> +int __swap_writepage(struct page *page, struct writeback_control *wbc,
+> >> +	void (*end_write_func)(struct bio *, int))
+> >> +{
+> >> +	struct bio *bio;
+> >> +	int ret = 0, rw = WRITE;
+> >> +	struct swap_info_struct *sis = page_swap_info(page);
+> >>  
+> >>  	if (sis->flags & SWP_FILE) {
+> >>  		struct kiocb kiocb;
+> >> @@ -227,7 +239,7 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+> >>  		return ret;
+> >>  	}
+> >>  
+> >> -	bio = get_swap_bio(GFP_NOIO, page, end_swap_bio_write);
+> >> +	bio = get_swap_bio(GFP_NOIO, page, end_write_func);
+> >>  	if (bio == NULL) {
+> >>  		set_page_dirty(page);
+> >>  		unlock_page(page);
+> >> diff --git a/mm/swap_state.c b/mm/swap_state.c
+> >> index 0cb36fb..7eded9c 100644
+> >> --- a/mm/swap_state.c
+> >> +++ b/mm/swap_state.c
+> >> @@ -67,7 +67,7 @@ void show_swap_cache_info(void)
+> >>   * __add_to_swap_cache resembles add_to_page_cache_locked on swapper_space,
+> >>   * but sets SwapCache flag and private instead of mapping and index.
+> >>   */
+> >> -static int __add_to_swap_cache(struct page *page, swp_entry_t entry)
+> >> +int __add_to_swap_cache(struct page *page, swp_entry_t entry)
+> > 
+> > Ditto
+> > 
+> >>  {
+> >>  	int error;
+> >>  
+> >> -- 
+> >> 1.7.9.5
+> >>
+> >> --
+> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >> the body to majordomo@kvack.org.  For more info on Linux MM,
+> >> see: http://www.linux-mm.org/ .
+> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
