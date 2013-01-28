@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab3A1JQs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 04:16:48 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:51394 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753148Ab3A1JQq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 04:16:46 -0500
-X-IronPort-AV: E=Sophos;i="4.84,551,1355068800"; 
-   d="scan'208";a="6654563"
-Message-ID: <510641CC.9040707@cn.fujitsu.com>
-Date: Mon, 28 Jan 2013 17:15:56 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754287Ab3A1JRl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 04:17:41 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:57877 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753068Ab3A1JRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 04:17:38 -0500
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "paul@pwsan.com" <paul@pwsan.com>, "Nayak, Rajendra" <rnayak@ti.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>
+Subject: RE: RE: RE: [PATCH v4 12/12] video: da8xx-fb: CCF clock divider
+ handling
+Thread-Topic: RE: RE: [PATCH v4 12/12] video: da8xx-fb: CCF clock divider
+ handling
+Thread-Index: AQHN+V/MaSDyqI8pmkmZ9mAn8r3xs5hW/6oAgAFRCtCAAAkKAIABj9VwgABiqICABBidkA==
+Date: Mon, 28 Jan 2013 09:17:19 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA943E9@DBDE01.ent.ti.com>
+References: <cover.1358937685.git.afzal@ti.com>
+ <fa8dab522507e087d5a94bac13dda71544911707.1358937685.git.afzal@ti.com>
+ <20130123202204.9205.66575@quantum>
+ <C8443D0743D26F4388EA172BF4E2A7A93EA92ADF@DBDE01.ent.ti.com>
+ <20130124170044.10623.45314@quantum>
+ <C8443D0743D26F4388EA172BF4E2A7A93EA9383E@DBDE01.ent.ti.com>
+ <20130125224453.10623.74434@quantum>
+In-Reply-To: <20130125224453.10623.74434@quantum>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
-        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
-        glommer@parallels.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] acpi, memory-hotplug: Support getting hotplug info
- from SRAT.
-References: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com> <1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com> <20130125171230.34c5a273.akpm@linux-foundation.org>
-In-Reply-To: <20130125171230.34c5a273.akpm@linux-foundation.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/28 17:15:38,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/28 17:15:40
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0S9Hhdd000403
 
-On 01/26/2013 09:12 AM, Andrew Morton wrote:
-> On Fri, 25 Jan 2013 17:42:09 +0800
-> Tang Chen<tangchen@cn.fujitsu.com>  wrote:
->
->> NOTE: Using this way will cause NUMA performance down because the whole node
->>        will be set as ZONE_MOVABLE, and kernel cannot use memory on it.
->>        If users don't want to lose NUMA performance, just don't use it.
->
-> I agree with this, but it means that nobody will test any of your new code.
->
-> To get improved testing coverage, can you think of any temporary
-> testing-only patch which will cause testers to exercise the
-> memory-hotplug changes?
+Hi Mike,
 
-Hi Andrew,
+On Sat, Jan 26, 2013 at 04:14:53, Mike Turquette wrote:
 
-OKï¼ŒIâ€˜ll think about it and post the testing patch. But I think a shell 
-script
-may be easier because the boot option is specified by user and the code 
-only runs
-when system is booting. So we need to reboot the system all the time.
+> I think Paul W. or someone on the TI side should weigh in on your clkdev
+> entries.  My main point is that the actual tree should be modeled and
+> clocks shouldn't be globbed together unnecessarily.  As mentioned in the
+> other mail thread you might be better off making a divider for your LCDC
+> IP block and modeling each node individually.
 
-Thanks. :)
+It seems complexity of driver would increase by creating a new inherited
+divider clock and having a total 3-4 clock nodes. The advantage going
+with it would be higher configurable resolution for pixel clock.
+Current use cases work without higher pixel clock resolution.
+
+And drm driver posted for the same IP is without CCF modeling.
+
+So I will presently not model clock nodes in LCDC IP, later if use cases
+badly require, this can be done (and if it happens, hopefully by that
+DaVinci would be CCF'ed and it would be more clean to implement it).
+
+Thanks for sharing your ideas.
+
+Regards
+Afzal
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
