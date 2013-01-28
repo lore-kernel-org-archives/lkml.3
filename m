@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab3A1S4x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:56:53 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:58184 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab3A1S4v (ORCPT
+	id S1753197Ab3A1S5L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:57:11 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:38667 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752523Ab3A1S5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:56:51 -0500
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, Maen Suleiman <maen@marvell.com>,
-        Lior Amsalem <alior@marvell.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Eran Ben-Avi <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 06/27] lib: devres: don't enclose pcim_*() functions in CONFIG_HAS_IOPORT
-Date: Mon, 28 Jan 2013 19:56:15 +0100
-Message-Id: <1359399397-29729-7-git-send-email-thomas.petazzoni@free-electrons.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359399397-29729-1-git-send-email-thomas.petazzoni@free-electrons.com>
-References: <1359399397-29729-1-git-send-email-thomas.petazzoni@free-electrons.com>
+	Mon, 28 Jan 2013 13:57:08 -0500
+Date: Mon, 28 Jan 2013 18:57:07 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Kent Overstreet <koverstreet@google.com>
+cc: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
+        tytso@mit.edu, Oleg Nesterov <oleg@redhat.com>,
+        srivatsa.bhat@linux.vnet.ibm.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
+In-Reply-To: <20130128183246.GB26407@google.com>
+Message-ID: <0000013c82851c07-a8caedf9-3b1d-4399-83c1-dde95b0b1961-000000@email.amazonses.com>
+References: <1356573611-18590-1-git-send-email-koverstreet@google.com> <1356573611-18590-26-git-send-email-koverstreet@google.com> <20130125005136.GE2373@mtj.dyndns.org> <87libhpz4h.fsf@rustcorp.com.au> <20130128175304.GX26407@google.com>
+ <20130128175951.GA22465@mtj.dyndns.org> <20130128183246.GB26407@google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pcim_*() functions are used by the libata-sff subsystem, and this
-subsystem is used for many SATA drivers on ARM platforms that do not
-necessarily have I/O ports.
+On Mon, 28 Jan 2013, Kent Overstreet wrote:
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org
----
- lib/devres.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> > It goes down to how we allocate page tables.  percpu depends on
+> > vmalloc space allocation which in turn depends on page table
+> > allocation which unfortunately assumes GFP_KERNEL and is spread all
+> > across different architectures.  Adding @gfp to it came up a couple
+> > times but the cases weren't strong enough to push it all the way
+> > through.  There are some aspects that I like about forcing GFP_KERNEL
+> > on all percpu allocations but if there are strong enough cases and
+> > someone is willing enough to push it through, maybe.
+>
+> Ahh, thanks for explaining, was curious about that.
 
-diff --git a/lib/devres.c b/lib/devres.c
-index 80b9c76..5639c3e 100644
---- a/lib/devres.c
-+++ b/lib/devres.c
-@@ -195,6 +195,7 @@ void devm_ioport_unmap(struct device *dev, void __iomem *addr)
- 			       devm_ioport_map_match, (void *)addr));
- }
- EXPORT_SYMBOL(devm_ioport_unmap);
-+#endif /* CONFIG_HAS_IOPORT */
- 
- #ifdef CONFIG_PCI
- /*
-@@ -400,4 +401,3 @@ void pcim_iounmap_regions(struct pci_dev *pdev, int mask)
- }
- EXPORT_SYMBOL(pcim_iounmap_regions);
- #endif /* CONFIG_PCI */
--#endif /* CONFIG_HAS_IOPORT */
--- 
-1.7.9.5
-
+I think its good not to allocate percpu memory in hot paths. Otherwise the
+percpu allocator would become much more complex due to locking constraints
+of all those hot paths (tried that in the slab allocators once which
+ended up in a multi year issue with locking). It is usually possible to
+allocate the percpu areas when the struct they belong to is allocated.
