@@ -1,100 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062Ab3A1Joj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 04:44:39 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:33998 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab3A1Jof (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 04:44:35 -0500
-Date: Mon, 28 Jan 2013 20:44:24 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Millenbach <jmillenbach@gmail.com>,
-        Brian Swetland <swetland@google.com>,
-        "Mike A. Chan" <mikechan@google.com>,
-        Sheng Yang <sheng@linux.intel.com>,
-        Yunhong Jiang <yunhong.jiang@intel.com>,
-        Xiaohui Xin <xiaohui.xin@intel.com>,
-        Jun Nakajima <jun.nakajima@intel.com>,
-        Bruce Beare <bruce.j.beare@intel.com>,
-        Tom Keel <thomas.keel@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: linux-next: manual merge of the tty tree with the input tree
-Message-Id: <20130128204424.a3eedfee954ba6cc7a620652@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__28_Jan_2013_20_44_24_+1100_oy2CEh2bUFU=nuwa"
+	id S1754567Ab3A1JrO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 04:47:14 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33886 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751755Ab3A1JrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 04:47:12 -0500
+Date: Mon, 28 Jan 2013 10:49:57 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        =?utf-8?B?QW5kcsOp?= Przywara <andre@andrep.de>,
+        Leonid Isaev <lisaev@umail.iu.edu>, Tom Gundersen <teg@jklm.no>,
+        cpufreq@vger.kernel.org, linux-acpi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 4/6] cpufreq: Add a get_current_driver helper
+Message-ID: <20130128094957.GA6109@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Viresh Kumar <viresh.kumar@linaro.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	=?utf-8?B?QW5kcsOp?= Przywara <andre@andrep.de>,
+	Leonid Isaev <lisaev@umail.iu.edu>, Tom Gundersen <teg@jklm.no>,
+	cpufreq@vger.kernel.org, linux-acpi@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+References: <1358677470-17394-1-git-send-email-bp@alien8.de>
+ <1358677470-17394-5-git-send-email-bp@alien8.de>
+ <CAOh2x==qf057z2vmADd6+thaXXVxEh1GZO-sKHRDyosqTfMdng@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAOh2x==qf057z2vmADd6+thaXXVxEh1GZO-sKHRDyosqTfMdng@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__28_Jan_2013_20_44_24_+1100_oy2CEh2bUFU=nuwa
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jan 28, 2013 at 10:07:10AM +0530, Viresh Kumar wrote:
+> Two minor things here:
+> - You placed the routine at bad place. This place is meant for
+> freq_table helpers.
 
-Hi Greg,
+Which one would you suggest: CPUFREQ DRIVER INTERFACE?
 
-Today's linux-next merge of the tty tree got a conflict in
-drivers/input/keyboard/Kconfig between commit 6f2ac009f29b ("Input:
-goldfish - virtual input event driver") from the input tree and commit
-4f73bc4dd3e8 ("tty: Added a CONFIG_TTY option to allow removal of TTY")
-from the tty tree.
+Btw, this function type splitting looks kinda silly to me. In that same
+section there are two which clearly don't belong there:
 
-I fixed it up (see below - I am not sure if GOLDFISH_EVENTS needs TTY or
-not) and can carry the fix as necessary (no action is required).
+struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu);
+void   cpufreq_cpu_put(struct cpufreq_policy *data);
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+since they don't have anything to do with freq_table. And since they
+return cpufreq_policy, they should be maybe called:
 
-diff --cc drivers/input/keyboard/Kconfig
-index 078305e,008f96a..0000000
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@@ -479,16 -482,8 +482,18 @@@ config KEYBOARD_SAMSUN
-  	  To compile this driver as a module, choose M here: the
-  	  module will be called samsung-keypad.
- =20
-+ if TTY
-+=20
- +config KEYBOARD_GOLDFISH_EVENTS
- +	depends on GOLDFISH
- +	tristate "Generic Input Event device for Goldfish"
- +	help
- +	  Say Y here to get an input event device for the Goldfish virtual
- +	  device emulator.
- +
- +	  To compile this driver as a module, choose M here: the
- +	  module will be called goldfish-events.
- +
-  config KEYBOARD_STOWAWAY
-  	tristate "Stowaway keyboard"
-  	select SERIO
+cpufreq_get_cpu_policy
+cpufreq_put_cpu_policy
 
---Signature=_Mon__28_Jan_2013_20_44_24_+1100_oy2CEh2bUFU=nuwa
-Content-Type: application/pgp-signature
+or something more expressive, pertaining to what they actually do. But
+they actually get/put the module (inc/dec the module's refcount) *and*
+return the cpufreq_policy... whatever, I don't care that much so see
+below.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> - And you really don't need extern for function prototypes.
 
-iQIcBAEBCAAGBQJRBkh4AAoJEECxmPOUX5FEuUgP/3uvpH02Oas5Up0yzaC39b5T
-8IQjkpoHap1sDm+JWdwm4gPEQuG4rgGloBb/AxQugKE0NueOFOzqrMkv1WoAamcP
-cLOVwsSpaHvCNvHdy2PS1Gs/iTIkdqUzeykrM4wGGKrsFvo5RazMc7Zeb4bd6vj+
-Q3EoEMFg4YRM+tzQYTRFHLak7b/yLnw23eTIljeY9/v87SJfIEkTISsH+VHTdclc
-dDUDAO5WtVTmLw0Z9mbxf/kbov5HOZbFWSc/93W7z5zXLIkWRaL6ehGRZ3uwbx+K
-HDNWygHLkKLkR3VKgNgRn634/pGSJn2Uu8FD17+JbRTdbE2zKaFDi8RnE/Z1bzh8
-pQZrTmXHH1WbPx+2fB98M1Ah6mVYCowEWQF6/LzG+Xwl7ktrCZ3WRoOdZsaGDy4v
-kM3ZEKJkPyEAInZl5fGLwMjF5PSJzblDMOzRrQ8788E6VPaUVpiaLfyEuHr1G0uj
-oi6bR0Z+C7tkIY7YxVk6alFE3BI/VuvCHyxQqOSfsbC5w1m6IyvLzNBsf8gVtjxF
-AterTEfzr6XQ0wvCItMh4zhXnGBEmFlpzcG9fyTASFnnmLFM/WcEcKxGud5YLQrV
-NbQD/hW4+8Li/O1/1cOeITw59VbL9WOvk4xouJitin/jySgwO1Rm1GzjPyYjJRQ6
-phj4L2PPOO5XA5Y4FqT2
-=3pft
------END PGP SIGNATURE-----
+Yeah, Rafael corrected that when committing:
 
---Signature=_Mon__28_Jan_2013_20_44_24_+1100_oy2CEh2bUFU=nuwa--
+http://git.kernel.org/?p=linux/kernel/git/rafael/linux-pm.git;a=commitdiff;h=fcbf43dcacb0daecffca0f5c862c9d8815108e58
+
+--
+>From 830eb9ebc715d329229772d11332c50dfd1d9330 Mon Sep 17 00:00:00 2001
+From: Borislav Petkov <bp@suse.de>
+Date: Mon, 28 Jan 2013 10:38:33 +0100
+Subject: [PATCH] cpufreq: Sort function prototypes properly
+
+Move function prototypes to a place where they logically fit better.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ include/linux/cpufreq.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index a018da2d2a7c..f33ace57adb6 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -308,6 +308,9 @@ __ATTR(_name, 0444, show_##_name, NULL)
+ static struct global_attr _name =		\
+ __ATTR(_name, 0644, show_##_name, store_##_name)
+ 
++struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu);
++void   cpufreq_cpu_put(struct cpufreq_policy *data);
++const char *cpufreq_get_current_driver(void);
+ 
+ /*********************************************************************
+  *                        CPUFREQ 2.6. INTERFACE                     *
+@@ -397,8 +400,6 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
+ 
+ /* the following 3 funtions are for cpufreq core use only */
+ struct cpufreq_frequency_table *cpufreq_frequency_get_table(unsigned int cpu);
+-struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu);
+-void   cpufreq_cpu_put(struct cpufreq_policy *data);
+ 
+ /* the following are really really optional */
+ extern struct freq_attr cpufreq_freq_attr_scaling_available_freqs;
+@@ -407,5 +408,4 @@ void cpufreq_frequency_table_get_attr(struct cpufreq_frequency_table *table,
+ 				      unsigned int cpu);
+ 
+ void cpufreq_frequency_table_put_attr(unsigned int cpu);
+-extern const char *cpufreq_get_current_driver(void);
+ #endif /* _LINUX_CPUFREQ_H */
+-- 
+1.8.1.rc3
+
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
