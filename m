@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab3A1QNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 11:13:48 -0500
-Received: from smtp121.dfw.emailsrvr.com ([67.192.241.121]:34410 "EHLO
+	id S1757406Ab3A1QOD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 11:14:03 -0500
+Received: from smtp121.dfw.emailsrvr.com ([67.192.241.121]:46659 "EHLO
 	smtp121.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756667Ab3A1QNI (ORCPT
+	with ESMTP id S1755563Ab3A1QNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 11:13:08 -0500
+	Mon, 28 Jan 2013 11:13:07 -0500
 From: Mark Langsdorf <mark.langsdorf@calxeda.com>
 To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
         linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Subject: [PATCH 4/4 v12] cpufreq, highbank: add support for highbank cpufreq
-Date: Mon, 28 Jan 2013 10:13:15 -0600
-Message-Id: <1359389595-26580-5-git-send-email-mark.langsdorf@calxeda.com>
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Omar Ramirez Luna <omar.luna@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 3/4 v12] arm highbank: add support for pl320 IPC
+Date: Mon, 28 Jan 2013 10:13:14 -0600
+Message-Id: <1359389595-26580-4-git-send-email-mark.langsdorf@calxeda.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359389595-26580-1-git-send-email-mark.langsdorf@calxeda.com>
 References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
@@ -22,271 +25,352 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Highbank processors depend on the external ECME to perform voltage
-management based on a requested frequency. Communication between the
-A9 cores and the ECME happens over the pl320 IPC channel.
+From: Rob Herring <rob.herring@calxeda.com>
+
+The pl320 IPC allows for interprocessor communication between the 
+highbank A9 and the EnergyCore Management Engine. The pl320 implements 
+a straightforward mailbox protocol.
 
 Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
-Reviewed-by: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Omar Ramirez Luna <omar.luna@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
 ---
 Changes from v11
-	Added a compatible check against calxeda,highbank.
+	EXPORT_SYMBOL_GPL used instead of EXPORT_SYMBOL.
+	Added driver/Kconfig and driver/Makefile changes.
 Changes from v10
-        Now finds a cpu node by searching under /cpus and looking for something
-        with an operating-points descriptor. This applies to both 
-        highbank-cpufreq and cpufreq-cpu0.
+        Removed deependency on Omar Ramirez Luna's mailbox code. Now the
+        patch creates the directory itself.
 Changes from v9
-        Added Mike Turquette's reviewed by.
-        Used to be the 6th patch in the series.
-Changes from v8
-        Added Shawn Guo's reviewed by.
-        Removed some magic numbers.
-        Changed failure returns in clk_notify from NOTIFY_STOP to NOTIFY_BAD.
-Changes from v7
-        Removed old attribution to cpufreq-cpu0.
-        Added some description in the documentation.
-        Made cpu_dev, cpu_clk into local variables.
-        Removed __devinit.
-        Removed some unneeded includes.
-        Added a brace to clarify some nested if logic.
-Changes from v6
-        Removed devicetree bindings documentation.
-        Restructured driver to use clk notifications.
-        Core driver logic is now cpufreq-clk0.
-Changes from v5
-        Changed ipc_transmit() to pl320_ipc_transmit().
-Changes from v4
-        Removed erroneous changes to arch/arm/Kconfig.
-        Removed unnecessary changes to drivers/cpufreq/Kconfig.arm
-        Alphabetized additions to arch/arm/mach-highbank/Kconfig
-        Changed ipc call and header to match new ipc location in 
-        drivers/mailbox.
-Changes from v3
+        Used to be the 4th patch in the series.
+Changes from v6, v7, v8
         None.
-Changes from v2
-        Changed transition latency binding in code to match documentation.
+Changes from v5
+        Renamed ipc_transmit() to pl320_ipc_transmit().
+        Properly exported pl320_ipc_{un}register_notifier().
+Changes from v4
+        Moved pl320-ipc.c from arch/arm/mach-highbank to drivers/mailbox.
+        Moved header information to include/linux/mailbox.h.
+        Added Kconfig options to reflect the new code location.
+        Change drivers/mailbox/Makefile to build the omap mailboxes only 
+        when they are configured.
+        Removed ipc_call_fast and renamed ipc_call_slow ipc_transmit.
+Changes from v3, v2
+        None.
 Changes from v1
-        Added highbank specific Kconfig changes.
+        Removed erroneous changes for cpufreq Kconfig.
 
- arch/arm/boot/dts/highbank.dts     |  10 ++++
- arch/arm/mach-highbank/Kconfig     |   2 +
- drivers/cpufreq/Kconfig.arm        |  15 +++++
- drivers/cpufreq/Makefile           |   3 +-
- drivers/cpufreq/cpufreq-cpu0.c     |   6 +-
- drivers/cpufreq/highbank-cpufreq.c | 115 +++++++++++++++++++++++++++++++++++++
- 6 files changed, 149 insertions(+), 2 deletions(-)
- create mode 100644 drivers/cpufreq/highbank-cpufreq.c
+ arch/arm/mach-highbank/Kconfig |   2 +
+ drivers/Kconfig                |   2 +
+ drivers/Makefile               |   1 +
+ drivers/mailbox/Kconfig        |  18 ++++
+ drivers/mailbox/Makefile       |   1 +
+ drivers/mailbox/pl320-ipc.c    | 199 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/mailbox.h        |  18 ++++
+ 7 files changed, 241 insertions(+)
+ create mode 100644 drivers/mailbox/Kconfig
+ create mode 100644 drivers/mailbox/Makefile
+ create mode 100644 drivers/mailbox/pl320-ipc.c
+ create mode 100644 include/linux/mailbox.h
 
-diff --git a/arch/arm/boot/dts/highbank.dts b/arch/arm/boot/dts/highbank.dts
-index 5927a8d..6aad34a 100644
---- a/arch/arm/boot/dts/highbank.dts
-+++ b/arch/arm/boot/dts/highbank.dts
-@@ -37,6 +37,16 @@
- 			next-level-cache = <&L2>;
- 			clocks = <&a9pll>;
- 			clock-names = "cpu";
-+			operating-points = <
-+				/* kHz    ignored */
-+				 1300000  1000000
-+				 1200000  1000000
-+				 1100000  1000000
-+				  800000  1000000
-+				  400000  1000000
-+				  200000  1000000
-+			>;
-+			clock-latency = <100000>;
- 		};
- 
- 		cpu@901 {
 diff --git a/arch/arm/mach-highbank/Kconfig b/arch/arm/mach-highbank/Kconfig
-index 2388085..44b12f9 100644
+index 551c97e..2388085 100644
 --- a/arch/arm/mach-highbank/Kconfig
 +++ b/arch/arm/mach-highbank/Kconfig
-@@ -1,5 +1,7 @@
- config ARCH_HIGHBANK
- 	bool "Calxeda ECX-1000/2000 (Highbank/Midway)" if ARCH_MULTI_V7
-+	select ARCH_HAS_CPUFREQ
-+	select ARCH_HAS_OPP
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARM_AMBA
- 	select ARM_GIC
-diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index a0b3661..ffe55b8 100644
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@ -83,3 +83,18 @@ config ARM_SPEAR_CPUFREQ
- 	default y
- 	help
- 	  This adds the CPUFreq driver support for SPEAr SOCs.
-+
-+config ARM_HIGHBANK_CPUFREQ
-+	tristate "Calxeda Highbank-based"
-+	depends on ARCH_HIGHBANK
-+	select CPU_FREQ_TABLE
-+	select GENERIC_CPUFREQ_CPU0
-+	select PM_OPP
-+	select REGULATOR
-+
-+	default m
-+	help
-+	  This adds the CPUFreq driver for Calxeda Highbank SoC
-+	  based boards.
-+
-+	  If in doubt, say N.
-diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index fadc4d4..31e6f19 100644
---- a/drivers/cpufreq/Makefile
-+++ b/drivers/cpufreq/Makefile
-@@ -50,8 +50,9 @@ obj-$(CONFIG_ARM_EXYNOS_CPUFREQ)	+= exynos-cpufreq.o
- obj-$(CONFIG_ARM_EXYNOS4210_CPUFREQ)	+= exynos4210-cpufreq.o
- obj-$(CONFIG_ARM_EXYNOS4X12_CPUFREQ)	+= exynos4x12-cpufreq.o
- obj-$(CONFIG_ARM_EXYNOS5250_CPUFREQ)	+= exynos5250-cpufreq.o
--obj-$(CONFIG_ARM_OMAP2PLUS_CPUFREQ)     += omap-cpufreq.o
-+obj-$(CONFIG_ARM_OMAP2PLUS_CPUFREQ)	+= omap-cpufreq.o
- obj-$(CONFIG_ARM_SPEAR_CPUFREQ)		+= spear-cpufreq.o
-+obj-$(CONFIG_ARM_HIGHBANK_CPUFREQ)	+= highbank-cpufreq.o
+@@ -11,5 +11,7 @@ config ARCH_HIGHBANK
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_ARM_SCU
+ 	select HAVE_SMP
++	select MAILBOX
++	select PL320_MBOX
+ 	select SPARSE_IRQ
+ 	select USE_OF
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index f5fb072..2b4e89b 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -134,6 +134,8 @@ source "drivers/hwspinlock/Kconfig"
  
- ##################################################################################
- # PowerPC platform drivers
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index 52bf36d..90e9d73 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -179,7 +179,11 @@ static int cpu0_cpufreq_driver_init(void)
- 	struct device_node *np;
- 	int ret;
+ source "drivers/clocksource/Kconfig"
  
--	np = of_find_node_by_path("/cpus/cpu@0");
-+	for_each_child_of_node(of_find_node_by_path("/cpus"), np) {
-+		if (of_get_property(np, "operating-points", NULL))
-+			break;
-+	}
++source "drivers/mailbox/Kconfig"
 +
- 	if (!np) {
- 		pr_err("failed to find cpu0 node\n");
- 		return -ENOENT;
-diff --git a/drivers/cpufreq/highbank-cpufreq.c b/drivers/cpufreq/highbank-cpufreq.c
+ source "drivers/iommu/Kconfig"
+ 
+ source "drivers/remoteproc/Kconfig"
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 7863b9f..a8d32f1 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -130,6 +130,7 @@ obj-y				+= platform/
+ #common clk code
+ obj-y				+= clk/
+ 
++obj-$(CONFIG_MAILBOX)		+= mailbox/
+ obj-$(CONFIG_HWSPINLOCK)	+= hwspinlock/
+ obj-$(CONFIG_NFC)		+= nfc/
+ obj-$(CONFIG_IOMMU_SUPPORT)	+= iommu/
+diff --git a/drivers/mailbox/Kconfig b/drivers/mailbox/Kconfig
 new file mode 100644
-index 0000000..2ea6276
+index 0000000..9489554
 --- /dev/null
-+++ b/drivers/cpufreq/highbank-cpufreq.c
-@@ -0,0 +1,115 @@
++++ b/drivers/mailbox/Kconfig
+@@ -0,0 +1,18 @@
++menuconfig MAILBOX
++	bool "Mailbox Hardware Support"
++	help
++	  Mailbox is a framework to control hardware communication between
++	  on-chip processors through queued messages and interrupt driven
++	  signals. Say Y if your platform supports hardware mailboxes.
++
++if MAILBOX
++config PL320_MBOX
++	bool "ARM PL320 Mailbox"
++	help
++	  An implementation of the ARM PL320 Interprocessor Communication
++	  Mailbox (IPCM), tailored for the Calxeda Highbank. It is used to
++	  send short messages between Highbank's A9 cores and the EnergyCore
++	  Management Engine, primarily for cpufreq. Say Y here if you want
++	  to use the PL320 IPCM support.
++
++endif
+diff --git a/drivers/mailbox/Makefile b/drivers/mailbox/Makefile
+new file mode 100644
+index 0000000..543ad6a
+--- /dev/null
++++ b/drivers/mailbox/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_PL320_MBOX)	+= pl320-ipc.o
+diff --git a/drivers/mailbox/pl320-ipc.c b/drivers/mailbox/pl320-ipc.c
+new file mode 100644
+index 0000000..ba8293f
+--- /dev/null
++++ b/drivers/mailbox/pl320-ipc.c
+@@ -0,0 +1,199 @@
 +/*
-+ * Copyright (C) 2012 Calxeda, Inc.
++ * Copyright 2012 Calxeda, Inc.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
 + *
-+ * This driver provides the clk notifier callbacks that are used when
-+ * the cpufreq-cpu0 driver changes to frequency to alert the highbank
-+ * EnergyCore Management Engine (ECME) about the need to change
-+ * voltage. The ECME interfaces with the actual voltage regulators.
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+
-+#define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/clk.h>
-+#include <linux/cpu.h>
++#include <linux/types.h>
 +#include <linux/err.h>
-+#include <linux/of.h>
++#include <linux/delay.h>
++#include <linux/export.h>
++#include <linux/io.h>
++#include <linux/interrupt.h>
++#include <linux/completion.h>
++#include <linux/mutex.h>
++#include <linux/notifier.h>
++#include <linux/spinlock.h>
++#include <linux/device.h>
++#include <linux/amba/bus.h>
++
 +#include <linux/mailbox.h>
 +
-+#define HB_CPUFREQ_CHANGE_NOTE	0x80000001
-+#define HB_CPUFREQ_IPC_LEN	7
-+#define HB_CPUFREQ_VOLT_RETRIES	15
++#define IPCMxSOURCE(m)		((m) * 0x40)
++#define IPCMxDSET(m)		(((m) * 0x40) + 0x004)
++#define IPCMxDCLEAR(m)		(((m) * 0x40) + 0x008)
++#define IPCMxDSTATUS(m)		(((m) * 0x40) + 0x00C)
++#define IPCMxMODE(m)		(((m) * 0x40) + 0x010)
++#define IPCMxMSET(m)		(((m) * 0x40) + 0x014)
++#define IPCMxMCLEAR(m)		(((m) * 0x40) + 0x018)
++#define IPCMxMSTATUS(m)		(((m) * 0x40) + 0x01C)
++#define IPCMxSEND(m)		(((m) * 0x40) + 0x020)
++#define IPCMxDR(m, dr)		(((m) * 0x40) + ((dr) * 4) + 0x024)
 +
-+static int hb_voltage_change(unsigned int freq)
++#define IPCMMIS(irq)		(((irq) * 8) + 0x800)
++#define IPCMRIS(irq)		(((irq) * 8) + 0x804)
++
++#define MBOX_MASK(n)		(1 << (n))
++#define IPC_TX_MBOX		1
++#define IPC_RX_MBOX		2
++
++#define CHAN_MASK(n)		(1 << (n))
++#define A9_SOURCE		1
++#define M3_SOURCE		0
++
++static void __iomem *ipc_base;
++static int ipc_irq;
++static DEFINE_MUTEX(ipc_m1_lock);
++static DECLARE_COMPLETION(ipc_completion);
++static ATOMIC_NOTIFIER_HEAD(ipc_notifier);
++
++static inline void set_destination(int source, int mbox)
++{
++	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDSET(mbox));
++	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMSET(mbox));
++}
++
++static inline void clear_destination(int source, int mbox)
++{
++	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDCLEAR(mbox));
++	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMCLEAR(mbox));
++}
++
++static void __ipc_send(int mbox, u32 *data)
 +{
 +	int i;
-+	u32 msg[HB_CPUFREQ_IPC_LEN];
-+
-+	msg[0] = HB_CPUFREQ_CHANGE_NOTE;
-+	msg[1] = freq / 1000000;
-+	for (i = 2; i < HB_CPUFREQ_IPC_LEN; i++)
-+		msg[i] = 0;
-+
-+	return pl320_ipc_transmit(msg);
++	for (i = 0; i < 7; i++)
++		__raw_writel(data[i], ipc_base + IPCMxDR(mbox, i));
++	__raw_writel(0x1, ipc_base + IPCMxSEND(mbox));
 +}
 +
-+static int hb_cpufreq_clk_notify(struct notifier_block *nb, 
-+				unsigned long action, void *hclk)
++static u32 __ipc_rcv(int mbox, u32 *data)
 +{
-+	struct clk_notifier_data *clk_data = hclk;
-+	int i = 0;
-+
-+	if (action == PRE_RATE_CHANGE) {
-+		if (clk_data->new_rate > clk_data->old_rate)
-+			while (hb_voltage_change(clk_data->new_rate))
-+				if (i++ > HB_CPUFREQ_VOLT_RETRIES)
-+					return NOTIFY_BAD;
-+	} else if (action == POST_RATE_CHANGE) {
-+		if (clk_data->new_rate < clk_data->old_rate)
-+			while (hb_voltage_change(clk_data->new_rate))
-+				if (i++ > HB_CPUFREQ_VOLT_RETRIES)
-+					return NOTIFY_BAD;
-+	}
-+
-+	return NOTIFY_DONE;
++	int i;
++	for (i = 0; i < 7; i++)
++		data[i] = __raw_readl(ipc_base + IPCMxDR(mbox, i));
++	return data[1];
 +}
 +
-+static struct notifier_block hb_cpufreq_clk_nb = {
-+	.notifier_call = hb_cpufreq_clk_notify,
-+};
-+
-+static int hb_cpufreq_driver_init(void)
++/* blocking implmentation from the A9 side, not usuable in interrupts! */
++int pl320_ipc_transmit(u32 *data)
 +{
-+	struct device *cpu_dev;
-+	struct clk *cpu_clk;
-+	struct device_node *np;
 +	int ret;
 +
-+	if (!of_machine_is_compatible("calxeda,highbank"))
-+		return -ENODEV;
++	mutex_lock(&ipc_m1_lock);
 +
-+	for_each_child_of_node(of_find_node_by_path("/cpus"), np)
-+		if (of_get_property(np, "operating-points", NULL))
-+			break;
-+
-+	if (!np) {
-+		pr_err("failed to find highbank cpufreq node\n");
-+		return -ENOENT;
++	init_completion(&ipc_completion);
++	__ipc_send(IPC_TX_MBOX, data);
++	ret = wait_for_completion_timeout(&ipc_completion,
++					  msecs_to_jiffies(1000));
++	if (ret == 0) {
++		ret = -ETIMEDOUT;
++		goto out;
 +	}
 +
-+	cpu_dev = get_cpu_device(0);
-+	if (!cpu_dev) {
-+		pr_err("failed to get highbank cpufreq device\n");
-+		ret = -ENODEV;
-+		goto out_put_node;
-+	}
-+
-+	cpu_dev->of_node = np;
-+
-+	cpu_clk = clk_get(cpu_dev, NULL);
-+	if (IS_ERR(cpu_clk)) {
-+		ret = PTR_ERR(cpu_clk);
-+		pr_err("failed to get cpu0 clock: %d\n", ret);
-+		goto out_put_node;
-+	}
-+
-+	ret = clk_notifier_register(cpu_clk, &hb_cpufreq_clk_nb);
-+	if (ret) {
-+		pr_err("failed to register clk notifier: %d\n", ret);
-+		goto out_put_node;
-+	}
-+
-+out_put_node:
-+	of_node_put(np);
++	ret = __ipc_rcv(IPC_TX_MBOX, data);
++out:
++	mutex_unlock(&ipc_m1_lock);
 +	return ret;
 +}
-+module_init(hb_cpufreq_driver_init);
++EXPORT_SYMBOL_GPL(pl320_ipc_transmit);
 +
-+MODULE_AUTHOR("Mark Langsdorf <mark.langsdorf@calxeda.com>");
-+MODULE_DESCRIPTION("Calxeda Highbank cpufreq driver");
-+MODULE_LICENSE("GPL");
++irqreturn_t ipc_handler(int irq, void *dev)
++{
++	u32 irq_stat;
++	u32 data[7];
++
++	irq_stat = __raw_readl(ipc_base + IPCMMIS(1));
++	if (irq_stat & MBOX_MASK(IPC_TX_MBOX)) {
++		__raw_writel(0, ipc_base + IPCMxSEND(IPC_TX_MBOX));
++		complete(&ipc_completion);
++	}
++	if (irq_stat & MBOX_MASK(IPC_RX_MBOX)) {
++		__ipc_rcv(IPC_RX_MBOX, data);
++		atomic_notifier_call_chain(&ipc_notifier, data[0], data + 1);
++		__raw_writel(2, ipc_base + IPCMxSEND(IPC_RX_MBOX));
++	}
++
++	return IRQ_HANDLED;
++}
++
++int pl320_ipc_register_notifier(struct notifier_block *nb)
++{
++	return atomic_notifier_chain_register(&ipc_notifier, nb);
++}
++EXPORT_SYMBOL_GPL(pl320_ipc_register_notifier);
++
++int pl320_ipc_unregister_notifier(struct notifier_block *nb)
++{
++	return atomic_notifier_chain_unregister(&ipc_notifier, nb);
++}
++EXPORT_SYMBOL_GPL(pl320_ipc_unregister_notifier);
++
++static int __init pl320_probe(struct amba_device *adev,
++				const struct amba_id *id)
++{
++	int ret;
++
++	ipc_base = ioremap(adev->res.start, resource_size(&adev->res));
++	if (ipc_base == NULL)
++		return -ENOMEM;
++
++	__raw_writel(0, ipc_base + IPCMxSEND(IPC_TX_MBOX));
++
++	ipc_irq = adev->irq[0];
++	ret = request_irq(ipc_irq, ipc_handler, 0, dev_name(&adev->dev), NULL);
++	if (ret < 0)
++		goto err;
++
++	/* Init slow mailbox */
++	__raw_writel(CHAN_MASK(A9_SOURCE),
++			ipc_base + IPCMxSOURCE(IPC_TX_MBOX));
++	__raw_writel(CHAN_MASK(M3_SOURCE),
++			ipc_base + IPCMxDSET(IPC_TX_MBOX));
++	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
++		     ipc_base + IPCMxMSET(IPC_TX_MBOX));
++
++	/* Init receive mailbox */
++	__raw_writel(CHAN_MASK(M3_SOURCE),
++			ipc_base + IPCMxSOURCE(IPC_RX_MBOX));
++	__raw_writel(CHAN_MASK(A9_SOURCE),
++			ipc_base + IPCMxDSET(IPC_RX_MBOX));
++	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
++		     ipc_base + IPCMxMSET(IPC_RX_MBOX));
++
++	return 0;
++err:
++	iounmap(ipc_base);
++	return ret;
++}
++
++static struct amba_id pl320_ids[] = {
++	{
++		.id	= 0x00041320,
++		.mask	= 0x000fffff,
++	},
++	{ 0, 0 },
++};
++
++static struct amba_driver pl320_driver = {
++	.drv = {
++		.name	= "pl320",
++	},
++	.id_table	= pl320_ids,
++	.probe		= pl320_probe,
++};
++
++static int __init ipc_init(void)
++{
++	return amba_driver_register(&pl320_driver);
++}
++module_init(ipc_init);
+diff --git a/include/linux/mailbox.h b/include/linux/mailbox.h
+new file mode 100644
+index 0000000..911cb28
+--- /dev/null
++++ b/include/linux/mailbox.h
+@@ -0,0 +1,18 @@
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++int pl320_ipc_transmit(u32 *data);
++int pl320_ipc_register_notifier(struct notifier_block *nb);
++int pl320_ipc_unregister_notifier(struct notifier_block *nb);
++
 -- 
 1.7.11.7
 
