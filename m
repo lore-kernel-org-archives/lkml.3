@@ -1,35 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302Ab3A1Stx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:49:53 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56565 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518Ab3A1Stv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:49:51 -0500
-Message-ID: <5106C84C.8010605@wwwdotorg.org>
-Date: Mon, 28 Jan 2013 11:49:48 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751652Ab3A1Svc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:51:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13685 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751068Ab3A1Sva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 13:51:30 -0500
+Date: Mon, 28 Jan 2013 19:50:39 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: tj@kernel.org, srivatsa.bhat@linux.vnet.ibm.com, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] generic dynamic per cpu refcounting
+Message-ID: <20130128185039.GA19235@redhat.com>
+References: <20130124232024.GA584@google.com> <20130125180941.GA16896@redhat.com> <20130125182924.GA17514@redhat.com> <20130128181001.GZ26407@google.com>
 MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: gregkh@linuxfoundation.org, stern@rowland.harvard.edu, balbi@ti.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] usb: host: tegra: make use of PHY pointer of HCD
-References: <1359023223-13751-1-git-send-email-vbyravarasu@nvidia.com>
-In-Reply-To: <1359023223-13751-1-git-send-email-vbyravarasu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130128181001.GZ26407@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 03:27 AM, Venu Byravarasu wrote:
-> As pointer to PHY structure can be stored in struct usb_hcd
-> making use of it, to call Tegra PHY APIs.
-> 
-> Call to usb_phy_shutdown() is moved up in tegra_ehci_remove(),
-> so that to avoid dereferencing of hcd after its freed up.
+On 01/28, Kent Overstreet wrote:
+>
+> On Fri, Jan 25, 2013 at 07:29:24PM +0100, Oleg Nesterov wrote:
+> > On 01/25, Oleg Nesterov wrote:
+> > >
+> > > > +void __percpu_ref_get(struct percpu_ref *ref, bool alloc)
+> > > > +{
+> > > > +	unsigned long pcpu_count;
+> > > > +	uint64_t v;
+> > > > +
+> > > > +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+> > > > +
+> > > > +	if (REF_STATUS(pcpu_count) == PCPU_REF_PTR) {
+> > > > +		/* for rcu - we're not using rcu_dereference() */
+> > > > +		smp_read_barrier_depends();
+> > > > +		__this_cpu_inc(*((unsigned __percpu *) pcpu_count));
+> > >
+> > > The comment looks confusing a bit... smp_read_barrier_depends() is not
+> > > for rcu, we obviously need it to access (unsigned __percpu *) pcpu_count.
+> > > But yes, since we didn't use rcu_dereference() we have to add it by hand.
+> >
+> > Hmm. Otoh, arch/alpha uses asm-generic/percpu.h so in theory we need
+> > smp_read_barrier_depends() after __this_cpu_generic_to_op() calculates the
+> > "real" pointer, __this_cpu_ptr() ?
+> >
+> > Just curious...
+>
+> Don't think I follow, but I don't see how... that barriers just needs to
+> be between the ACCESS_ONCE and touching the memory pointed to, the fact
+> that there's a calculation in there to get the real pointer is
+> irrelevant...
 
-I have applied this to Tegra's for-3.9/soc-usb branch.
+Yes, I was wrong. I forgot that pcp is already the pointer even in
+_generic_ case, we only add the offset.
+
+Thanks for correcting me.
+
+Oleg.
+
