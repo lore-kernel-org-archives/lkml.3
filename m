@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab3A1Gro (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 01:47:44 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:31396 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752281Ab3A1Grl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 01:47:41 -0500
-X-IronPort-AV: E=Sophos;i="4.84,550,1355068800"; 
-   d="scan'208";a="6653522"
-Message-ID: <51061F2F.6040104@cn.fujitsu.com>
-Date: Mon, 28 Jan 2013 14:48:15 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: serge.hallyn@canonical.com, akpm@linux-foundation.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] userns: Allow the unprivileged users to mount mqueue
- fs
-References: <1359342541-383-1-git-send-email-gaofeng@cn.fujitsu.com> <87bocayntu.fsf@xmission.com>
-In-Reply-To: <87bocayntu.fsf@xmission.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/28 14:46:34,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/28 14:46:34,
-	Serialize complete at 2013/01/28 14:46:34
+	id S1753089Ab3A1Gtx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 01:49:53 -0500
+Received: from mout.gmx.net ([212.227.17.20]:63092 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752281Ab3A1Gtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 01:49:50 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/fxgN420Xf1hj5W3Qh20Rb71Tf/rexUPw/4pPz2x
+	YU1X5PFVyRFF8s
+Message-ID: <1359355782.5783.59.camel@marge.simpson.net>
+Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
+ power awareness scheduling
+From: Mike Galbraith <efault@gmx.de>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
+        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+        namhyung@kernel.org, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
+Date: Mon, 28 Jan 2013 07:49:42 +0100
+In-Reply-To: <51060A6D.4090208@intel.com>
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+	 <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com>
+	 <510493E4.8060602@intel.com> <20130127104039.GC8894@pd.tnic>
+	 <51060A6D.4090208@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-15
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/01/28 11:43, Eric W. Biederman wrote:
-> Gao feng <gaofeng@cn.fujitsu.com> writes:
+On Mon, 2013-01-28 at 13:19 +0800, Alex Shi wrote: 
+> On 01/27/2013 06:40 PM, Borislav Petkov wrote:
+> > On Sun, Jan 27, 2013 at 10:41:40AM +0800, Alex Shi wrote:
+> >> Just rerun some benchmarks: kbuild, specjbb2005, oltp, tbench, aim9,
+> >> hackbench, fileio-cfq of sysbench, dbench, aiostress, multhreads
+> >> loopback netperf. on my core2, nhm, wsm, snb, platforms. no clear
+> >> performance change found.
+> > 
+> > Ok, good, You could put that in one of the commit messages so that it is
+> > there and people know that this patchset doesn't cause perf regressions
+> > with the bunch of benchmarks.
+> > 
+> >> I also tested balance policy/powersaving policy with above benchmark,
+> >> found, the specjbb2005 drop much 30~50% on both of policy whenever
+> >> with openjdk or jrockit. and hackbench drops a lots with powersaving
+> >> policy on snb 4 sockets platforms. others has no clear change.
+> > 
+> > I guess this is expected because there has to be some performance hit
+> > when saving power...
+> > 
 > 
->> This patch allow the unprivileged user to mount mqueuefs in
->> user ns.
->>
->> If two userns share the same ipcns,the files in mqueue fs
->> should be seen in both these two userns.
->>
->> If the userns has its own ipcns,it has its own mqueue fs too.
->> ipcns has already done this job well.
-> 
-> I am a little dense.  When does userspace actually mount a mqueuefs?
-> My impression was that user space never needed to mount and actually
-> never could mount a mqueuefs.  MS_NO_USER isn't set so mounting a
-> mqueuefs is possible but when does it happen and why?
-> 
+> BTW, I had tested the v3 version based on sched numa -- on tip/master.
+> The specjbb just has about 5~7% dropping on balance/powersaving policy.
+> The power scheduling done after the numa scheduling logical.
 
-Actually the files which representative messgae queue in mqueuefs contains
-some informations,such as QSIZE,NOTIFY,SIGNO,NOTIFY_PID.
+That makes sense.  How the numa scheduling numbers compare to mainline?
+Do you have all three available, mainline, and tip w. w/o powersaving
+policy?
 
-My workstation is Fedora 17,mqueuefs is mounted on /dev/mqueue by default.
-So I think at lest this patch is needed by some people.
+-Mike
 
-Thanks!
-Gao
-
-> I am trying to think through the logic here and I think this is safe
-> but since I don't understand why we would mount an mqueue fs I am
-> having trouble verifying that there are no silly reasons why this might
-> be a bad idea.
-> 
-> But from what I can tell so far this seems like a good patch.
-> 
-> Eric
-> 
-> 
->> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
->> ---
->>  ipc/mqueue.c | 1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
->> index 71a3ca1..023c986 100644
->> --- a/ipc/mqueue.c
->> +++ b/ipc/mqueue.c
->> @@ -1383,6 +1383,7 @@ static struct file_system_type mqueue_fs_type = {
->>  	.name = "mqueue",
->>  	.mount = mqueue_mount,
->>  	.kill_sb = kill_litter_super,
->> +	.fs_flags = FS_USERNS_MOUNT,
->>  };
->>  
->>  int mq_init_ns(struct ipc_namespace *ns)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
