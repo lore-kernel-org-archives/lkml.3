@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab3A1V4f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 16:56:35 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:50342 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754953Ab3A1V4b (ORCPT
+	id S1754912Ab3A1Vzx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 16:55:53 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:53473 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754743Ab3A1Vzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 16:56:31 -0500
+	Mon, 28 Jan 2013 16:55:45 -0500
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
@@ -21,111 +21,192 @@ Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCHv3 3/6] mm: break up swap_writepage() for frontswap backends
-Date: Mon, 28 Jan 2013 15:49:24 -0600
-Message-Id: <1359409767-30092-4-git-send-email-sjenning@linux.vnet.ibm.com>
+Subject: [PATCHv3 2/6] zsmalloc: promote to lib/
+Date: Mon, 28 Jan 2013 15:49:23 -0600
+Message-Id: <1359409767-30092-3-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
 References: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012821-7408-0000-0000-00000C4D045F
+x-cbid: 13012821-2876-0000-0000-000004A15127
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-swap_writepage() is currently where frontswap hooks into the swap
-write path to capture pages with the frontswap_store() function.
-However, if a frontswap backend wants to "resume" the writeback of
-a page to the swap device, it can't call swap_writepage() as
-the page will simply reenter the backend.
+This patch promotes the slab-based zsmalloc memory allocator
+from the staging tree to lib/
 
-This patch separates swap_writepage() into a top and bottom half, the
-bottom half named __swap_writepage() to allow a frontswap backend,
-like zswap, to resume writeback beyond the frontswap_store() hook.
+zswap depends on this allocator for storing compressed RAM pages
+in an efficient way under system wide memory pressure where
+high-order (greater than 0) page allocation are very likely to
+fail.
 
-__add_to_swap_cache() is also made non-static so that the page for
-which writeback is to be resumed can be added to the swap cache.
+For more information on zsmalloc and its internals, read the
+documentation at the top of the zsmalloc.c file.
 
 Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+--
+This patch is similar to a patch Minchan has on out on the list
+to promote for use in zram.
 ---
- include/linux/swap.h |    2 ++
- mm/page_io.c         |   16 +++++++++++++---
- mm/swap_state.c      |    2 +-
- 3 files changed, 16 insertions(+), 4 deletions(-)
+ drivers/staging/Kconfig                            |    2 --
+ drivers/staging/Makefile                           |    1 -
+ drivers/staging/zcache/zcache-main.c               |    3 +--
+ drivers/staging/zram/zram_drv.h                    |    3 +--
+ drivers/staging/zsmalloc/Kconfig                   |   10 ----------
+ drivers/staging/zsmalloc/Makefile                  |    3 ---
+ .../staging/zsmalloc => include/linux}/zsmalloc.h  |    0
+ lib/Kconfig                                        |   18 ++++++++++++++++++
+ lib/Makefile                                       |    1 +
+ .../zsmalloc/zsmalloc-main.c => lib/zsmalloc.c     |    3 +--
+ 10 files changed, 22 insertions(+), 22 deletions(-)
+ delete mode 100644 drivers/staging/zsmalloc/Kconfig
+ delete mode 100644 drivers/staging/zsmalloc/Makefile
+ rename {drivers/staging/zsmalloc => include/linux}/zsmalloc.h (100%)
+ rename drivers/staging/zsmalloc/zsmalloc-main.c => lib/zsmalloc.c (99%)
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 68df9c1..fc8920d 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -321,6 +321,7 @@ static inline void mem_cgroup_uncharge_swap(swp_entry_t ent)
- /* linux/mm/page_io.c */
- extern int swap_readpage(struct page *);
- extern int swap_writepage(struct page *page, struct writeback_control *wbc);
-+extern int __swap_writepage(struct page *page, struct writeback_control *wbc);
- extern int swap_set_page_dirty(struct page *page);
- extern void end_swap_bio_read(struct bio *bio, int err);
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index 329bdb4..c0a7918 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -76,8 +76,6 @@ source "drivers/staging/zram/Kconfig"
  
-@@ -335,6 +336,7 @@ extern struct address_space swapper_space;
- extern void show_swap_cache_info(void);
- extern int add_to_swap(struct page *);
- extern int add_to_swap_cache(struct page *, swp_entry_t, gfp_t);
-+extern int __add_to_swap_cache(struct page *page, swp_entry_t entry);
- extern void __delete_from_swap_cache(struct page *);
- extern void delete_from_swap_cache(struct page *);
- extern void free_page_and_swap_cache(struct page *);
-diff --git a/mm/page_io.c b/mm/page_io.c
-index 78eee32..1cb382d 100644
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -179,15 +179,15 @@ bad_bmap:
- 	goto out;
- }
+ source "drivers/staging/zcache/Kconfig"
  
-+int __swap_writepage(struct page *page, struct writeback_control *wbc);
-+
+-source "drivers/staging/zsmalloc/Kconfig"
+-
+ source "drivers/staging/wlags49_h2/Kconfig"
+ 
+ source "drivers/staging/wlags49_h25/Kconfig"
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index c7ec486..1572fe5 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -32,7 +32,6 @@ obj-$(CONFIG_DX_SEP)            += sep/
+ obj-$(CONFIG_IIO)		+= iio/
+ obj-$(CONFIG_ZRAM)		+= zram/
+ obj-$(CONFIG_ZCACHE)		+= zcache/
+-obj-$(CONFIG_ZSMALLOC)		+= zsmalloc/
+ obj-$(CONFIG_WLAGS49_H2)	+= wlags49_h2/
+ obj-$(CONFIG_WLAGS49_H25)	+= wlags49_h25/
+ obj-$(CONFIG_FB_SM7XX)		+= sm7xxfb/
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 52b43b7..75c08c5 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -32,10 +32,9 @@
+ #include <linux/crypto.h>
+ #include <linux/string.h>
+ #include <linux/idr.h>
++#include <linux/zsmalloc.h>
+ #include "tmem.h"
+ 
+-#include "../zsmalloc/zsmalloc.h"
+-
+ #ifdef CONFIG_CLEANCACHE
+ #include <linux/cleancache.h>
+ #endif
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index df2eec4..1e72965 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -17,8 +17,7 @@
+ 
+ #include <linux/spinlock.h>
+ #include <linux/mutex.h>
+-
+-#include "../zsmalloc/zsmalloc.h"
++#include <linux/zsmalloc.h>
+ 
  /*
-  * We may have stale swap cache pages in memory: notice
-  * them here and get rid of the unnecessary final write.
-  */
- int swap_writepage(struct page *page, struct writeback_control *wbc)
- {
--	struct bio *bio;
--	int ret = 0, rw = WRITE;
--	struct swap_info_struct *sis = page_swap_info(page);
-+	int ret = 0;
+  * Some arbitrary value. This is just to catch
+diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
+deleted file mode 100644
+index 9084565..0000000
+--- a/drivers/staging/zsmalloc/Kconfig
++++ /dev/null
+@@ -1,10 +0,0 @@
+-config ZSMALLOC
+-	tristate "Memory allocator for compressed pages"
+-	default n
+-	help
+-	  zsmalloc is a slab-based memory allocator designed to store
+-	  compressed RAM pages.  zsmalloc uses virtual memory mapping
+-	  in order to reduce fragmentation.  However, this results in a
+-	  non-standard allocator interface where a handle, not a pointer, is
+-	  returned by an alloc().  This handle must be mapped in order to
+-	  access the allocated space.
+diff --git a/drivers/staging/zsmalloc/Makefile b/drivers/staging/zsmalloc/Makefile
+deleted file mode 100644
+index b134848..0000000
+--- a/drivers/staging/zsmalloc/Makefile
++++ /dev/null
+@@ -1,3 +0,0 @@
+-zsmalloc-y 		:= zsmalloc-main.o
+-
+-obj-$(CONFIG_ZSMALLOC)	+= zsmalloc.o
+diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/include/linux/zsmalloc.h
+similarity index 100%
+rename from drivers/staging/zsmalloc/zsmalloc.h
+rename to include/linux/zsmalloc.h
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 75cdb77..fdab273 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -219,6 +219,24 @@ config DECOMPRESS_LZO
+ config GENERIC_ALLOCATOR
+ 	boolean
  
- 	if (try_to_free_swap(page)) {
- 		unlock_page(page);
-@@ -199,6 +199,16 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
- 		end_page_writeback(page);
- 		goto out;
- 	}
-+	ret = __swap_writepage(page, wbc);
-+out:
-+	return ret;
-+}
++config ZSMALLOC
++	tristate "Memory allocator for compressed pages"
++	default n
++	help
++	  zsmalloc is a slab-based memory allocator designed to store
++	  compressed RAM pages.  zsmalloc uses a memory pool that combines
++	  single pages into higher order pages by linking them together
++	  using the fields of the struct page. Allocations are then
++	  mapped through copy buffers or VM mapping, in order to reduce
++	  memory pool fragmentation and increase allocation success rate under
++	  memory pressure.
 +
-+int __swap_writepage(struct page *page, struct writeback_control *wbc)
-+{
-+	struct bio *bio;
-+	int ret = 0, rw = WRITE;
-+	struct swap_info_struct *sis = page_swap_info(page);
++	  This results in a non-standard allocator interface where
++	  a handle, not a pointer, is returned by the allocation function.
++	  This handle must be mapped in order to access the allocated space.
++
++	  If unsure, say N.
++
+ #
+ # reed solomon support is select'ed if needed
+ #
+diff --git a/lib/Makefile b/lib/Makefile
+index 02ed6c0..70b0892 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -65,6 +65,7 @@ obj-$(CONFIG_CRC7)	+= crc7.o
+ obj-$(CONFIG_LIBCRC32C)	+= libcrc32c.o
+ obj-$(CONFIG_CRC8)	+= crc8.o
+ obj-$(CONFIG_GENERIC_ALLOCATOR) += genalloc.o
++obj-$(CONFIG_ZSMALLOC) += zsmalloc.o
  
- 	if (sis->flags & SWP_FILE) {
- 		struct kiocb kiocb;
-diff --git a/mm/swap_state.c b/mm/swap_state.c
-index 0cb36fb..7eded9c 100644
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -67,7 +67,7 @@ void show_swap_cache_info(void)
-  * __add_to_swap_cache resembles add_to_page_cache_locked on swapper_space,
-  * but sets SwapCache flag and private instead of mapping and index.
-  */
--static int __add_to_swap_cache(struct page *page, swp_entry_t entry)
-+int __add_to_swap_cache(struct page *page, swp_entry_t entry)
- {
- 	int error;
+ obj-$(CONFIG_ZLIB_INFLATE) += zlib_inflate/
+ obj-$(CONFIG_ZLIB_DEFLATE) += zlib_deflate/
+diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/lib/zsmalloc.c
+similarity index 99%
+rename from drivers/staging/zsmalloc/zsmalloc-main.c
+rename to lib/zsmalloc.c
+index 13018b7..d5146c7 100644
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/lib/zsmalloc.c
+@@ -78,8 +78,7 @@
+ #include <linux/hardirq.h>
+ #include <linux/spinlock.h>
+ #include <linux/types.h>
+-
+-#include "zsmalloc.h"
++#include <linux/zsmalloc.h>
  
+ /*
+  * This must be power of 2 and greater than of equal to sizeof(link_free).
 -- 
 1.7.9.5
 
