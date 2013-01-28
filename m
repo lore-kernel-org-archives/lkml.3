@@ -1,140 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757775Ab3A1SP6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:15:58 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:65325 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757565Ab3A1SPz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:15:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 28 Jan 2013 11:15:34 -0700
-Message-ID: <CAErSpo7qk9mnY8x=WXeWAWf6NT-Ky=0eTprupAfZ48F7yjDBng@mail.gmail.com>
-Subject: Re: [PATCH 00/14] Rewrite Tegra PCIe driver
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757665Ab3A1SS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:18:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48643 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784Ab3A1SS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 13:18:27 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Xishi Qiu <qiuxishi@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3] mm: clean up soft_offline_page() (Re: [PATCH v2] mm: clean up soft_offline_page())
+Date: Mon, 28 Jan 2013 13:18:10 -0500
+Message-Id: <1359397090-9644-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130127014811.GL30577@one.firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 1:43 PM, Thierry Reding
-<thierry.reding@avionic-design.de> wrote:
-> This patch series contains an almost complete rewrite of the Tegra PCIe
-> driver. The code is moved to the drivers/pci/host directory and turned
-> into a proper platform driver, adding MSI and DT support while at it.
-> Other PCI host controller drivers can be added to that directory in an
-> attempt to make it easier to factor out common code.
->
-> Patches 1 to 4 add generic OF helpers to parse a PCI node's ranges
-> property as well as obtain the bus, device and function numbers from a
-> node's reg property.
->
-> Patch 5 provides an implementation of a cache for I/O mappings. This can
-> be used in situations where a large physical memory region needs to be
-> ioremap()'ed. On Tegra, the PCIe standard and extended configuration
-> spaces can be accessed through a 256 MiB window. Mapping that in one
-> chunk is wasteful and may not always work because the vmalloc area may
-> not be large enough. The implementation in this patch uses an LRU based
-> approach to map a limited amount of pages on an as-needed basis.
->
-> Patches 6 and 7 prepare the ARM PCI code to enable PCI host controller
-> drivers to load after the init stage, which can happen due to deferred
-> probing, and to allow private data to be passed for each controller.
->
-> Patches 8 and 9 move some of the Tegra specific code around to allow it
-> to be used from outside the arch/arm/mach-tegra directory.
->
-> Patch 10 moves the Tegra PCIe controller driver to the drivers/pci/host
-> directory and turns it into a proper platform driver. It also adds MSI
-> (based on patches by NVIDIA) and DT support.
->
-> Patches 11 to 14 add device tree based probing for the TEC, Harmony and
-> TrimSlice boards.
->
-> Thierry
->
-> Andrew Murray (1):
->   of/pci: Provide support for parsing PCI DT ranges property
->
-> Thierry Reding (13):
->   of/pci: Add of_pci_get_devfn() function
->   of/pci: Add of_pci_get_bus() function
->   of/pci: Add of_pci_parse_bus_range() function
->   lib: Add I/O map cache implementation
->   ARM: pci: Keep pci_common_init() around after init
->   ARM: pci: Allow passing per-controller private data
->   ARM: tegra: Move tegra_pcie_xclk_clamp() to PMC
->   ARM: tegra: Move pmc.h to include/mach
->   PCI: tegra: Move PCIe driver to drivers/pci/host
->   ARM: tegra: tamonten: Add PCIe support
->   ARM: tegra: tec: Add PCIe support
->   ARM: tegra: harmony: Initialize PCIe from DT
->   ARM: tegra: trimslice: Initialize PCIe from DT
->
->  .../bindings/pci/nvidia,tegra20-pcie.txt           |  115 ++
->  arch/arm/Kconfig                                   |    2 +
->  arch/arm/boot/dts/tegra20-harmony.dts              |   20 +-
->  arch/arm/boot/dts/tegra20-tamonten.dtsi            |    2 +-
->  arch/arm/boot/dts/tegra20-tec.dts                  |  198 +++
->  arch/arm/boot/dts/tegra20-trimslice.dts            |   12 +
->  arch/arm/boot/dts/tegra20.dtsi                     |   45 +
->  arch/arm/include/asm/mach/pci.h                    |    1 +
->  arch/arm/kernel/bios32.c                           |    9 +-
->  arch/arm/mach-tegra/Kconfig                        |    5 -
->  arch/arm/mach-tegra/Makefile                       |    3 -
->  arch/arm/mach-tegra/board-dt-tegra20.c             |   24 -
->  arch/arm/mach-tegra/board-harmony-pcie.c           |   84 --
->  arch/arm/mach-tegra/board.h                        |    4 +-
->  arch/arm/mach-tegra/common.c                       |    2 +-
->  arch/arm/mach-tegra/include/mach/pmc.h             |   24 +
->  arch/arm/mach-tegra/iomap.h                        |    3 -
->  arch/arm/mach-tegra/pcie.c                         |  887 -------------
->  arch/arm/mach-tegra/pmc.c                          |   16 +
->  arch/arm/mach-tegra/pmc.h                          |   23 -
->  drivers/of/address.c                               |   63 +
->  drivers/of/of_pci.c                                |   78 +-
->  drivers/pci/Kconfig                                |    2 +
->  drivers/pci/Makefile                               |    3 +
->  drivers/pci/host/Kconfig                           |    8 +
->  drivers/pci/host/Makefile                          |    1 +
->  drivers/pci/host/pci-tegra.c                       | 1322 ++++++++++++++++++++
->  include/linux/io.h                                 |   12 +
->  include/linux/of_address.h                         |    9 +
->  include/linux/of_pci.h                             |    3 +
->  lib/ioremap.c                                      |  266 ++++
->  31 files changed, 2203 insertions(+), 1043 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/pci/nvidia,tegra20-pcie.txt
->  delete mode 100644 arch/arm/mach-tegra/board-harmony-pcie.c
->  create mode 100644 arch/arm/mach-tegra/include/mach/pmc.h
->  delete mode 100644 arch/arm/mach-tegra/pcie.c
->  delete mode 100644 arch/arm/mach-tegra/pmc.h
->  create mode 100644 drivers/pci/host/Kconfig
->  create mode 100644 drivers/pci/host/Makefile
->  create mode 100644 drivers/pci/host/pci-tegra.c
+On Sun, Jan 27, 2013 at 02:48:11AM +0100, Andi Kleen wrote:
+> On Sat, Jan 26, 2013 at 12:02:11AM -0500, Naoya Horiguchi wrote:
+> > Currently soft_offline_page() is hard to maintain because it has many
+> > return points and goto statements. All of this mess come from get_any_page().
+> > This function should only get page refcount as the name implies, but it does
+> > some page isolating actions like SetPageHWPoison() and dequeuing hugepage.
+> > This patch corrects it and introduces some internal subroutines to make
+> > soft offlining code more readable and maintainable.
+> > 
+> > ChangeLog v2:
+> >   - receive returned value from __soft_offline_page and soft_offline_huge_page
+> >   - place __soft_offline_page after soft_offline_page to reduce the diff
+> >   - rebased onto mmotm-2013-01-23-17-04
+> >   - add comment on double checks of PageHWpoison
+> 
+> Ok for me if it passes mce-test
+> 
+> Reviewed-by: Andi Kleen <andi@firstfloor.org>
 
-Hi Thierry,
+As Xishi pointed out, the patch was broken. Mce-test did catch it, but the
+related testcase HWPOISON-SOFT showed PASS falsely, so I overlooked it.
+Now I confirm that tsoft.c and tsoftinj.c in mce-test surely passes (returns
+with success exitcode) with the fixed one (attached).
 
-Since the bulk of this series affects ARM, I'm assuming this will be
-merged via the ARM tree or at least some non-PCI route.  It looks like
-[10/14] is the only one that touches drivers/pci, and since it's only
-adding new stuff (the rewrite of the Tegra PCIe driver, if I
-understand correctly), that's fine with me.
+Thanks,
+Naoya
+---
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Mon, 28 Jan 2013 11:00:02 -0500
+Subject: [PATCH v3] mm: clean up soft_offline_page()
 
-There have been enough comments that I assume you'll be posting an
-updated series soon.  I'll watch for it and review and ack the
-drivers/pci parts.  Let me know if you want me to do anything else.
+Currently soft_offline_page() is hard to maintain because it has many
+return points and goto statements. All of this mess come from get_any_page().
+This function should only get page refcount as the name implies, but it does
+some page isolating actions like SetPageHWPoison() and dequeuing hugepage.
+This patch corrects it and introduces some internal subroutines to make
+soft offlining code more readable and maintainable.
 
-Bjorn
+ChangeLog v3:
+  - fixed soft_offline_huge_page for in-use hugepage case (thanks to Xishi Qiu)
+
+ChangeLog v2:
+  - receive returned value from __soft_offline_page and soft_offline_huge_page
+  - place __soft_offline_page after soft_offline_page to reduce the diff
+  - rebased onto mmotm-2013-01-23-17-04
+  - add comment on double checks of PageHWpoison
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Andi Kleen <andi@firstfloor.org>
+---
+ mm/memory-failure.c | 156 +++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 87 insertions(+), 69 deletions(-)
+
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index c95e19a..9cab165 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1368,7 +1368,7 @@ static struct page *new_page(struct page *p, unsigned long private, int **x)
+  * that is not free, and 1 for any other page type.
+  * For 1 the page is returned with increased page count, otherwise not.
+  */
+-static int get_any_page(struct page *p, unsigned long pfn, int flags)
++static int __get_any_page(struct page *p, unsigned long pfn, int flags)
+ {
+ 	int ret;
+ 
+@@ -1393,11 +1393,9 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
+ 	if (!get_page_unless_zero(compound_head(p))) {
+ 		if (PageHuge(p)) {
+ 			pr_info("%s: %#lx free huge page\n", __func__, pfn);
+-			ret = dequeue_hwpoisoned_huge_page(compound_head(p));
++			ret = 0;
+ 		} else if (is_free_buddy_page(p)) {
+ 			pr_info("%s: %#lx free buddy page\n", __func__, pfn);
+-			/* Set hwpoison bit while page is still isolated */
+-			SetPageHWPoison(p);
+ 			ret = 0;
+ 		} else {
+ 			pr_info("%s: %#lx: unknown zero refcount page type %lx\n",
+@@ -1413,23 +1411,48 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
+ 	return ret;
+ }
+ 
++static int get_any_page(struct page *page, unsigned long pfn, int flags)
++{
++	int ret = __get_any_page(page, pfn, flags);
++
++	if (ret == 1 && !PageHuge(page) && !PageLRU(page)) {
++		/*
++		 * Try to free it.
++		 */
++		put_page(page);
++		shake_page(page, 1);
++
++		/*
++		 * Did it turn free?
++		 */
++		ret = __get_any_page(page, pfn, 0);
++		if (!PageLRU(page)) {
++			pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
++				pfn, page->flags);
++			return -EIO;
++		}
++	}
++	return ret;
++}
++
+ static int soft_offline_huge_page(struct page *page, int flags)
+ {
+ 	int ret;
+ 	unsigned long pfn = page_to_pfn(page);
+ 	struct page *hpage = compound_head(page);
+ 
++	/*
++	 * This double-check of PageHWPoison is to avoid the race with
++	 * memory_failure(). See also comment in __soft_offline_page().
++	 */
++	lock_page(hpage);
+ 	if (PageHWPoison(hpage)) {
++		unlock_page(hpage);
++		put_page(hpage);
+ 		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
+-		ret = -EBUSY;
+-		goto out;
++		return -EBUSY;
+ 	}
+-
+-	ret = get_any_page(page, pfn, flags);
+-	if (ret < 0)
+-		goto out;
+-	if (ret == 0)
+-		goto done;
++	unlock_page(hpage);
+ 
+ 	/* Keep page count to indicate a given hugepage is isolated. */
+ 	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL, false,
+@@ -1438,17 +1461,18 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 	if (ret) {
+ 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+ 			pfn, ret, page->flags);
+-		goto out;
++	} else {
++		set_page_hwpoison_huge_page(hpage);
++		dequeue_hwpoisoned_huge_page(hpage);
++		atomic_long_add(1 << compound_trans_order(hpage),
++				&num_poisoned_pages);
+ 	}
+-done:
+ 	/* keep elevated page count for bad page */
+-	atomic_long_add(1 << compound_trans_order(hpage), &num_poisoned_pages);
+-	set_page_hwpoison_huge_page(hpage);
+-	dequeue_hwpoisoned_huge_page(hpage);
+-out:
+ 	return ret;
+ }
+ 
++static int __soft_offline_page(struct page *page, int flags);
++
+ /**
+  * soft_offline_page - Soft offline a page.
+  * @page: page to offline
+@@ -1477,62 +1501,60 @@ int soft_offline_page(struct page *page, int flags)
+ 	unsigned long pfn = page_to_pfn(page);
+ 	struct page *hpage = compound_trans_head(page);
+ 
+-	if (PageHuge(page)) {
+-		ret = soft_offline_huge_page(page, flags);
+-		goto out;
++	if (PageHWPoison(page)) {
++		pr_info("soft offline: %#lx page already poisoned\n", pfn);
++		return -EBUSY;
+ 	}
+-	if (PageTransHuge(hpage)) {
++	if (!PageHuge(page) && PageTransHuge(hpage)) {
+ 		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
+ 			pr_info("soft offline: %#lx: failed to split THP\n",
+ 				pfn);
+-			ret = -EBUSY;
+-			goto out;
++			return -EBUSY;
+ 		}
+ 	}
+ 
+-	if (PageHWPoison(page)) {
+-		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+-		ret = -EBUSY;
+-		goto out;
+-	}
+-
+ 	ret = get_any_page(page, pfn, flags);
+ 	if (ret < 0)
+-		goto out;
+-	if (ret == 0)
+-		goto done;
+-
+-	/*
+-	 * Page cache page we can handle?
+-	 */
+-	if (!PageLRU(page)) {
+-		/*
+-		 * Try to free it.
+-		 */
+-		put_page(page);
+-		shake_page(page, 1);
+-
+-		/*
+-		 * Did it turn free?
+-		 */
+-		ret = get_any_page(page, pfn, 0);
+-		if (ret < 0)
+-			goto out;
+-		if (ret == 0)
+-			goto done;
+-	}
+-	if (!PageLRU(page)) {
+-		pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
+-			pfn, page->flags);
+-		ret = -EIO;
+-		goto out;
++		return ret;
++	if (ret) { /* for in-use pages */
++		if (PageHuge(page))
++			ret = soft_offline_huge_page(page, flags);
++		else
++			ret = __soft_offline_page(page, flags);
++	} else { /* for free pages */
++		if (PageHuge(page)) {
++			set_page_hwpoison_huge_page(hpage);
++			dequeue_hwpoisoned_huge_page(hpage);
++			atomic_long_add(1 << compound_trans_order(hpage),
++					&num_poisoned_pages);
++		} else {
++			SetPageHWPoison(page);
++			atomic_long_inc(&num_poisoned_pages);
++		}
+ 	}
++	/* keep elevated page count for bad page */
++	return ret;
++}
++
++static int __soft_offline_page(struct page *page, int flags)
++{
++	int ret;
++	unsigned long pfn = page_to_pfn(page);
+ 
+ 	/*
+-	 * Synchronized using the page lock with memory_failure()
++	 * Check PageHWPoison again inside page lock because PageHWPoison
++	 * is set by memory_failure() outside page lock. Note that
++	 * memory_failure() also double-checks PageHWPoison inside page lock,
++	 * so there's no race between soft_offline_page() and memory_failure().
+ 	 */
+ 	lock_page(page);
+ 	wait_on_page_writeback(page);
++	if (PageHWPoison(page)) {
++		unlock_page(page);
++		put_page(page);
++		pr_info("soft offline: %#lx page already poisoned\n", pfn);
++		return -EBUSY;
++	}
+ 	/*
+ 	 * Try to invalidate first. This should work for
+ 	 * non dirty unmapped page cache pages.
+@@ -1545,9 +1567,10 @@ int soft_offline_page(struct page *page, int flags)
+ 	 */
+ 	if (ret == 1) {
+ 		put_page(page);
+-		ret = 0;
+ 		pr_info("soft_offline: %#lx: invalidated\n", pfn);
+-		goto done;
++		SetPageHWPoison(page);
++		atomic_long_inc(&num_poisoned_pages);
++		return 0;
+ 	}
+ 
+ 	/*
+@@ -1575,18 +1598,13 @@ int soft_offline_page(struct page *page, int flags)
+ 				pfn, ret, page->flags);
+ 			if (ret > 0)
+ 				ret = -EIO;
++		} else {
++			SetPageHWPoison(page);
++			atomic_long_inc(&num_poisoned_pages);
+ 		}
+ 	} else {
+ 		pr_info("soft offline: %#lx: isolation failed: %d, page count %d, type %lx\n",
+ 			pfn, ret, page_count(page), page->flags);
+ 	}
+-	if (ret)
+-		goto out;
+-
+-done:
+-	/* keep elevated page count for bad page */
+-	atomic_long_inc(&num_poisoned_pages);
+-	SetPageHWPoison(page);
+-out:
+ 	return ret;
+ }
+-- 
+1.7.11.7
+
