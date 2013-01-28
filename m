@@ -1,90 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527Ab3A1RAf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 12:00:35 -0500
-Received: from host171.canaca.com ([67.55.55.225]:37428 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756631Ab3A1RAd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 12:00:33 -0500
-Message-ID: <926ebbac6c9e2f8db795dd0ef1ba3647.squirrel@mungewell.org>
-In-Reply-To: <alpine.LNX.2.00.1301281750100.23853@pobox.suse.cz>
-References: <1359095687-13398-1-git-send-email-simon@mungewell.org>
-    <alpine.LNX.2.00.1301281557040.23853@pobox.suse.cz>
-    <1b4d173a8f4cbb94f6d99ae5c75c10d5.squirrel@mungewell.org>
-    <alpine.LNX.2.00.1301281750100.23853@pobox.suse.cz>
-Date: Mon, 28 Jan 2013 12:00:32 -0500
-Subject: Re: [PATCH 1/4] USB: HID: SRW-S1 Gaming Wheel Driver
-From: simon@mungewell.org
-To: "Jiri Kosina" <jkosina@suse.cz>
-Cc: "Simon Wood" <simon@mungewell.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rosegardener@freeode.co.uk
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1757541Ab3A1RB0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 12:01:26 -0500
+Received: from mga11.intel.com ([192.55.52.93]:20192 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755879Ab3A1RBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 12:01:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,553,1355126400"; 
+   d="scan'208";a="279324842"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: gregkh@linuxfoundation.org, sfr@canb.auug.org.au
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Revert "usb: Register usb port's acpi power resources"
+Date: Tue, 29 Jan 2013 00:59:06 +0800
+Message-Id: <1359392346-30321-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 28 Jan 2013, simon@mungewell.org wrote:
->
->> >> From: simon <simon@simon-virtual-machine.(none)>
->> >>
->> >> Add support the SRW-S1 by patching HID descriptor to read axis
->> >> as Generic Desktop X, Y and Z (rather than Usage page being
->> >> 'Simulation').
->> >>
->> >> Signed-off-by: Simon Wood <simon@mungewell.org>
->> >> tested-by: John Murphy <rosegardener@freeode.co.uk>
->> >
->> > Hi Simon,
->> >
->> > thanks for the patch.
->> >
->> >>
->> >> ---
->> >>  drivers/hid/Kconfig     |    6 +++++
->> >>  drivers/hid/Makefile    |    1 +
->> >>  drivers/hid/hid-core.c  |    1 +
->> >>  drivers/hid/hid-ids.h   |    3 +++
->> >>  drivers/hid/hid-srws1.c |   58
->> >> +++++++++++++++++++++++++++++++++++++++++++++++
->> >
->> > Is hid-srws1 really the best name? My understanding is that the vendor
->> is
->> > called Steelseries, and we mostly stick to calling the drivers
->> according
->> > to the device vendors (and grouping the quirks accordingly).
->> >
->> > So how about hid-steelseries?
->>
->> I'm happy to change it; However Steelseries' other devices are all
->> keyboards/mice intended for/marketed at gamers. Since other Steelseries
->> devices are unlikely to have the same structure (OK I'm just guessing on
->> that) is it better to keep this driver somewhat 'seperated'?
->>
->> I mean, not make life difficult trying to merge keyboard code in with
->> this
->> wheel's code.... if that is required in future.
->
-> I don't think it's strictly required, but it seems to work quite nicely
-> for other drivers as well.
+This reverts commit 88bb965ed711e8a5984e70208ebc901a6ff4141f.
 
-OK I'll wait a couple of days in-case any more comments come in and re-do
-the patch with the file name 'hid-steelseries.c' towards the end of the
-week.
+The linux-next branch of linux-pm tree has replaced
+acpi_power_resource_(un)register_device() with new routines.
+Commit 88bb965 will cause conflict in the linux-next tree.
+So revert it and this will not affect other functions. Will
+send a new patch with new routines after 3.9 merge window.
 
-Thanks,
-Simon
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ drivers/usb/core/port.c     |    6 ------
+ drivers/usb/core/usb-acpi.c |   18 ------------------
+ drivers/usb/core/usb.h      |    6 ------
+ 3 files changed, 30 deletions(-)
+
+diff --git a/drivers/usb/core/port.c b/drivers/usb/core/port.c
+index 5df143d..797f9d5 100644
+--- a/drivers/usb/core/port.c
++++ b/drivers/usb/core/port.c
+@@ -68,7 +68,6 @@ static void usb_port_device_release(struct device *dev)
+ 	struct usb_port *port_dev = to_usb_port(dev);
+ 
+ 	dev_pm_qos_hide_flags(dev);
+-	usb_acpi_unregister_power_resources(dev);
+ 	kfree(port_dev);
+ }
+ 
+@@ -187,11 +186,6 @@ int usb_hub_create_port_device(struct usb_hub *hub, int port1)
+ 		pm_runtime_enable(&port_dev->dev);
+ 
+ 	device_enable_async_suspend(&port_dev->dev);
+-
+-	retval = usb_acpi_register_power_resources(&port_dev->dev);
+-	if (retval && retval != -ENODEV)
+-		dev_warn(&port_dev->dev, "the port can't register its ACPI power resource.\n");
+-
+ 	return 0;
+ 
+ error_register:
+diff --git a/drivers/usb/core/usb-acpi.c b/drivers/usb/core/usb-acpi.c
+index 8d304b0..cef4252 100644
+--- a/drivers/usb/core/usb-acpi.c
++++ b/drivers/usb/core/usb-acpi.c
+@@ -216,24 +216,6 @@ static struct acpi_bus_type usb_acpi_bus = {
+ 	.find_device = usb_acpi_find_device,
+ };
+ 
+-int usb_acpi_register_power_resources(struct device *dev)
+-{
+-	acpi_handle port_handle = DEVICE_ACPI_HANDLE(dev);
+-
+-	if (!port_handle)
+-		return -ENODEV;
+-
+-	return acpi_power_resource_register_device(dev, port_handle);
+-}
+-
+-void usb_acpi_unregister_power_resources(struct device *dev)
+-{
+-	acpi_handle port_handle = DEVICE_ACPI_HANDLE(dev);
+-
+-	if (port_handle)
+-		acpi_power_resource_unregister_device(dev, port_handle);
+-}
+-
+ int usb_acpi_register(void)
+ {
+ 	return register_acpi_bus_type(&usb_acpi_bus);
+diff --git a/drivers/usb/core/usb.h b/drivers/usb/core/usb.h
+index 601b044..a7f20bd 100644
+--- a/drivers/usb/core/usb.h
++++ b/drivers/usb/core/usb.h
+@@ -191,13 +191,7 @@ extern int usb_acpi_register(void);
+ extern void usb_acpi_unregister(void);
+ extern acpi_handle usb_get_hub_port_acpi_handle(struct usb_device *hdev,
+ 	int port1);
+-extern int usb_acpi_register_power_resources(struct device *dev);
+-extern void usb_acpi_unregister_power_resources(struct device *dev);
+ #else
+ static inline int usb_acpi_register(void) { return 0; };
+ static inline void usb_acpi_unregister(void) { };
+-static inline int usb_acpi_register_power_resources(struct device *dev)
+-	{ return 0; };
+-static inline void usb_acpi_unregister_power_resources(struct device *dev)
+-	{ };
+ #endif
+-- 
+1.7.9.5
 
