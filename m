@@ -1,108 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932281Ab3A1Lci (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 06:32:38 -0500
-Received: from mout.gmx.net ([212.227.15.18]:65046 "EHLO mout.gmx.net"
+	id S932233Ab3A1LcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 06:32:04 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:49700 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932240Ab3A1Lcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 06:32:33 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/wsYpNhZbwYdaybO6mF4SgimKdLzdi+Fh9WhwCVS
-	wpIoaNsBvllRsQ
-Message-ID: <1359372743.5783.136.camel@marge.simpson.net>
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-From: Mike Galbraith <efault@gmx.de>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Alex Shi <alex.shi@intel.com>, torvalds@linux-foundation.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-Date: Mon, 28 Jan 2013 12:32:23 +0100
-In-Reply-To: <20130128112922.GA29384@pd.tnic>
-References: <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com>
-	 <510493E4.8060602@intel.com> <1359261385.5803.46.camel@marge.simpson.net>
-	 <20130127103508.GB8894@pd.tnic> <51052ACB.3070703@intel.com>
-	 <1359301903.5805.11.camel@marge.simpson.net>
-	 <1359350266.5783.39.camel@marge.simpson.net>
-	 <20130128095501.GB6109@pd.tnic>
-	 <1359369884.5783.117.camel@marge.simpson.net>
-	 <20130128112922.GA29384@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S932174Ab3A1Lb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 06:31:57 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
+        <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 25/30] ARM: OMAP3: omap3pandora: Adapt to ehci-omap changes
+Date: Mon, 28 Jan 2013 13:30:26 +0200
+Message-ID: <1359372631-8180-26-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-28 at 12:29 +0100, Borislav Petkov wrote: 
-> On Mon, Jan 28, 2013 at 11:44:44AM +0100, Mike Galbraith wrote:
-> > On Mon, 2013-01-28 at 10:55 +0100, Borislav Petkov wrote: 
-> > > On Mon, Jan 28, 2013 at 06:17:46AM +0100, Mike Galbraith wrote:
-> > > > Zzzt.  Wish I could turn turbo thingy off.
-> > > 
-> > > Try setting /sys/devices/system/cpu/cpufreq/boost to 0.
-> > 
-> > How convenient (test) works too.
-> > 
-> > So much for turbo boost theory.  Nothing changed until I turned load
-> > balancing off at NODE.  High end went to hell (gee), but low end... 
-> >   
-> > Benchmark       Version Machine Run Date
-> > AIM Multiuser Benchmark - Suite VII     "1.1"   performance-no-node-load_balance Jan 28 11:20:12 2013
-> > 
-> > Tasks   Jobs/Min        JTI     Real    CPU     Jobs/sec/task
-> > 1       436.3           100     13.9    3.9     7.2714
-> > 5       2637.1          99      11.5    7.3     8.7903
-> > 10      5415.5          99      11.2    11.3    9.0259
-> > 20      10603.7         99      11.4    24.8    8.8364
-> > 40      20066.2         99      12.1    40.5    8.3609
-> > 80      35079.6         99      13.8    75.5    7.3082
-> > 160     55884.7         98      17.3    145.6   5.8213
-> > 320     79345.3         98      24.4    287.4   4.1326
-> 
-> If you're talking about those results from earlier:
-> 
-> Benchmark       Version Machine Run Date
-> AIM Multiuser Benchmark - Suite VII     "1.1"   performance     Jan 28 08:09:20 2013
-> 
-> Tasks   Jobs/Min        JTI     Real    CPU     Jobs/sec/task
-> 1       438.8           100     13.8    3.8     7.3135
-> 5       2634.8          99      11.5    7.2     8.7826
-> 10      5396.3          99      11.2    11.4    8.9938
-> 20      10725.7         99      11.3    24.0    8.9381
-> 40      20183.2         99      12.0    38.5    8.4097
-> 80      35620.9         99      13.6    71.4    7.4210
-> 160     57203.5         98      16.9    137.8   5.9587
-> 320     81995.8         98      23.7    271.3   4.2706
-> 
-> then the above no_node-load_balance thing suffers a small-ish dip at 320
-> tasks, yeah.
+Add platform device for 'nop-usb-xceiv'. This will be used as a
+PHY for HS USB Port 2, so provide binding information for it.
 
-No no, that's not restricted to one node.  It's just overloaded because
-I turned balancing off at the NODE domain level.
+Model RESET for HS USB Port 2 as GPIO fixed regulator and link
+it to the 'nop-usb-xceiv' PHY.
 
-> And AFAICR, the effect of disabling boosting will be visible in the
-> small count tasks cases anyway because if you saturate the cores with
-> tasks, the boosting algorithms tend to get the box out of boosting for
-> the simple reason that the power/perf headroom simply disappears due to
-> the SOC being busy.
-> 
-> > 640     100294.8        98      38.7    570.9   2.6118
-> > 1280    115998.2        97      66.9    1132.8  1.5104
-> > 2560    125820.0        97      123.3   2256.6  0.8191
-> 
-> I dunno about those. maybe this is expected with so many tasks or do we
-> want to optimize that case further?
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ arch/arm/mach-omap2/board-omap3pandora.c |   54 +++++++++++++++++++++++++----
+ 1 files changed, 46 insertions(+), 8 deletions(-)
 
-When using all 4 nodes properly, that's still scaling.  Here, I
-intentionally screwed up balancing to watch the low end.  High end is
-expected wreckage.
-
--Mike
-
+diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
+index 145a6f8..c2cd1ea 100644
+--- a/arch/arm/mach-omap2/board-omap3pandora.c
++++ b/arch/arm/mach-omap2/board-omap3pandora.c
+@@ -23,6 +23,8 @@
+ 
+ #include <linux/spi/spi.h>
+ #include <linux/regulator/machine.h>
++#include <linux/regulator/fixed.h>
++#include <linux/usb/phy.h>
+ #include <linux/i2c/twl.h>
+ #include <linux/wl12xx.h>
+ #include <linux/mtd/partitions.h>
+@@ -560,23 +562,55 @@ fail:
+ 	printk(KERN_ERR "wl1251 board initialisation failed\n");
+ }
+ 
++/* PHY device on HS USB Port 2 i.e. nop_usb_xceiv.2 */
++static struct platform_device hsusb2_phy_device = {
++	.name = "nop_usb_xceiv",
++	.id = 2,
++};
++
++/* Regulator for HS USB Port 2 PHY reset */
++static struct regulator_consumer_supply hsusb2_reset_supplies[] = {
++	/* Link PHY device to reset supply so it gets used in the PHY driver */
++	REGULATOR_SUPPLY("reset", "nop_usb_xceiv.2"),
++};
++
++static struct regulator_init_data hsusb2_reset_data = {
++	.constraints = {
++		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++	},
++	.consumer_supplies = hsusb2_reset_supplies,
++	.num_consumer_supplies = ARRAY_SIZE(hsusb2_reset_supplies),
++};
++
++static struct fixed_voltage_config hsusb2_reset_config = {
++	.supply_name = "hsusb2_reset",
++	.microvolts = 3300000,
++	.gpio = 16,
++	.startup_delay = 70000, /* 70msec */
++	.enable_high = 1,
++	.enabled_at_boot = 0,   /* keep in RESET */
++	.init_data = &hsusb2_reset_data,
++};
++
++static struct platform_device hsusb2_reset_device = {
++	.name = "reg-fixed-voltage",
++	.id = PLATFORM_DEVID_AUTO,
++	.dev = {
++		.platform_data = &hsusb2_reset_config,
++	},
++};
++
+ static struct platform_device *omap3pandora_devices[] __initdata = {
+ 	&pandora_leds_gpio,
+ 	&pandora_keys_gpio,
+ 	&pandora_vwlan_device,
+ 	&pandora_backlight,
++	&hsusb2_phy_device,
++	&hsusb2_reset_device,
+ };
+ 
+ static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+-
+-	.port_mode[0] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+-	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+-
+-	.phy_reset  = true,
+-	.reset_gpio_port[0]  = -EINVAL,
+-	.reset_gpio_port[1]  = 16,
+-	.reset_gpio_port[2]  = -EINVAL
+ };
+ 
+ #ifdef CONFIG_OMAP_MUX
+@@ -601,6 +635,10 @@ static void __init omap3pandora_init(void)
+ 			ARRAY_SIZE(omap3pandora_spi_board_info));
+ 	omap_ads7846_init(1, OMAP3_PANDORA_TS_GPIO, 0, NULL);
+ 	usbhs_init(&usbhs_bdata);
++
++	/* PHY on HSUSB Port 2 i.e. index 1 */
++	usb_bind_phy("ehci-omap.0", 1, "nop_usb_xceiv.2");
++
+ 	usb_musb_init(NULL);
+ 	gpmc_nand_init(&pandora_nand_data, NULL);
+ 
+-- 
+1.7.4.1
 
