@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757668Ab3A1Rvc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 12:51:32 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:46998 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757602Ab3A1Rva (ORCPT
+	id S1757637Ab3A1RxK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 12:53:10 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:37499 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757603Ab3A1RxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 12:51:30 -0500
-Date: Mon, 28 Jan 2013 17:51:06 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "js1304@gmail.com" <js1304@gmail.com>, Nicolas Pitre <nico@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/3] introduce static_vm for ARM-specific static
- mapped area
-Message-ID: <20130128175106.GI23470@mudshark.cambridge.arm.com>
-References: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com>
+	Mon, 28 Jan 2013 12:53:08 -0500
+Date: Mon, 28 Jan 2013 09:53:04 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org, zab@redhat.com,
+        bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
+        viro@zeniv.linux.org.uk, tytso@mit.edu,
+        Oleg Nesterov <oleg@redhat.com>, srivatsa.bhat@linux.vnet.ibm.com,
+        Christoph Lameter <cl@linux.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
+Message-ID: <20130128175304.GX26407@google.com>
+References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
+ <1356573611-18590-26-git-send-email-koverstreet@google.com>
+ <20130125005136.GE2373@mtj.dyndns.org>
+ <87libhpz4h.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <87libhpz4h.fsf@rustcorp.com.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jan 25, 2013 at 04:45:10PM +1030, Rusty Russell wrote:
+> Tejun Heo <tj@kernel.org> writes:
+> >> It also implements two stage shutdown, as we need it to tear down the
+> >> percpu counts. Before dropping the initial refcount, you must call
+> >> percpu_ref_kill(); this puts the refcount in "shutting down mode" and
+> >> switches back to a single atomic refcount with the appropriate barriers
+> >> (synchronize_rcu()).
+> >
+> > Maybe if we have tryget() which only succeeds if the counter is alive,
+> > we can replace moulde refcnt with this?  Rusty?
+> 
+> Yes, it's similar (hence my previous interest), though module count is a
+> bit weird.
 
-On Thu, Jan 24, 2013 at 01:28:51AM +0000, Joonsoo Kim wrote:
-> In current implementation, we used ARM-specific flag, that is,
-> VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
-> The purpose of static mapped area is to re-use static mapped area when
-> entire physical address range of the ioremap request can be covered
-> by this area.
-> 
-> This implementation causes needless overhead for some cases.
-> For example, assume that there is only one static mapped area and
-> vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
-> deciding whether it is matched or not. Moreover, even if there is
-> no static mapped area and vmlist has 300 areas, every time we call
-> ioremap, we check 300 areas in now.
-> 
-> If we construct a extra list for static mapped area, we can eliminate
-> above mentioned overhead.
-> With a extra list, if there is one static mapped area,
-> we just check only one area and proceed next operation quickly.
-> 
-> In fact, it is not a critical problem, because ioremap is not frequently
-> used. But reducing overhead is better idea.
-> 
-> Another reason for doing this work is for removing vm_struct list management,
-> entirely. For more information, look at the following link.
-> http://lkml.org/lkml/2012/12/6/184
+I'll try and take a stab at converting it, if I can find time.
 
-First patch looks good (removing the unused vmregion stuff) but I'm not so
-sure about the rest of it. If you really care about ioremap performance,
-perhaps it would be better to have a container struct around the vm_struct
-for static mappings and then stick them in an augmented rbtree so you can
-efficiently find the mapping encompassing a particular physical address?
+> Like Tejun, I'd prefer to see it always alloc up-front, because it
+> avoids the _noalloc variant (which is backwards: please hand gfp_t, so
+> you don't hide the alloc) and heuristics.
 
-Will
+Problem with gfp_t is alloc_percpu() doesn't take it. I don't know why,
+but this all goes away with Tejun's idea for allocating from a pool
+refilled by workqueue.
