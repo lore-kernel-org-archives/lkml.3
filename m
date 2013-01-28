@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab3A1PBi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 10:01:38 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56729 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab3A1PBg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 10:01:36 -0500
-Date: Mon, 28 Jan 2013 15:01:14 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Florian Vaussard <florian.vaussard@epfl.ch>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Bryan Wu <cooloney@gmail.com>, linux-kernel@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/3] pwm: Add pwm_cansleep() as exported API to users
-Message-ID: <20130128150113.GL23505@n2100.arm.linux.org.uk>
-References: <1359121471-21457-1-git-send-email-florian.vaussard@epfl.ch> <1359121471-21457-2-git-send-email-florian.vaussard@epfl.ch> <20130126054024.GB29243@avionic-0098.adnet.avionic-design.de> <51063AB5.2060108@ti.com> <51064687.5090605@epfl.ch>
+	id S1752181Ab3A1PCT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 10:02:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39979 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750751Ab3A1PCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 10:02:17 -0500
+Date: Mon, 28 Jan 2013 16:02:10 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Simon Wood <simon@mungewell.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rosegardener@freeode.co.uk
+Subject: Re: [PATCH 4/4] USB: HID: SRW-S1 Add support controlling all LEDs
+ simultaneously
+In-Reply-To: <1359095687-13398-4-git-send-email-simon@mungewell.org>
+Message-ID: <alpine.LNX.2.00.1301281601370.23853@pobox.suse.cz>
+References: <1359095687-13398-1-git-send-email-simon@mungewell.org> <1359095687-13398-4-git-send-email-simon@mungewell.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51064687.5090605@epfl.ch>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 10:36:07AM +0100, Florian Vaussard wrote:
-> Hello,
->
-> Le 28/01/2013 09:45, Peter Ujfalusi a écrit :
->> hi Thierry,
->>
->> On 01/26/2013 06:40 AM, Thierry Reding wrote:
->>>> +{
->>>> +	return pwm->chip->can_sleep;
->>>> +}
->>>> +EXPORT_SYMBOL_GPL(pwm_cansleep);
->>>
->>> Would it make sense to check for NULL pointers here? I guess that
->>> passing NULL into the function could be considered a programming error
->>> and an oops would be okay, but in that case there's no point in making
->>> the function return an int. Also see my next comment.
->>
->> While it is unlikely to happen it is better to be safe, something like this
->> will do:
->>
->> return pwm ? pwm->chip->can_sleep : 0;
->>
->
-> Ok. And what about:
->
-> BUG_ON(pwm == NULL);
-> return pwm->chip->can_sleep;
+On Thu, 24 Jan 2013, Simon Wood wrote:
 
-Let's get something straight.
+> From: simon <simon@simon-virtual-machine.(none)>
+> 
+> This patch to the SRW-S1 driver adds the ability to control all
+> LEDs simultaneously as testing showed that it was slow (noticably!!)
+> when seting or clearing all the LEDs in turn.
+> 
+> It adds a 'RPMALL' LED, whose behavoir is asserted to all the LEDs in
+> the bar graph, individual LEDs can subsequently be turned on/off
+> individually.
+> 
+> Signed-off-by: Simon Wood <simon@mungewell.org>
+> tested-by: John Murphy <rosegardener@freeode.co.uk>
+[ ... snip ... ]
 
-1. Don't use BUG_ON() as some kind of willy nilly assert() replacement.
-   Linus refused to have assert() in the kernel because assert() gets not
-   only over-used, but also gets inappropriately used too.
+> @@ -219,13 +255,34 @@ static int srws1_probe(struct hid_device *hdev,
+>  
+>  	/* register led subsystem */
+>  	drv_data->led_state = 0;
+> -	for (i = 0; i < SRWS1_NUMBER_LEDS; i++)
+> +	for (i = 0; i < SRWS1_NUMBER_LEDS + 1; i++)
+>  		drv_data->led[i] = NULL;
+>  
+>  	srws1_set_leds(hdev, 0);
+>  
+> -	name_sz = strlen(hdev->uniq) + 15;
+> +	name_sz = strlen(hdev->uniq) + 16;
+> +
+> +	/* 'ALL', for setting all LEDs simultaneously */
+> +	led = kzalloc(sizeof(struct led_classdev)+name_sz, GFP_KERNEL);
 
-   _Only_ _ever_ use BUG_ON() if continuing is going to cause user
-   noticable data loss which is not reportable to userspace.  In other
-   words, block device queue corruption or the like - where bringing the
-   system down is going to _save_ the system from itself.
+Is this memory ever freed?
 
-   Otherwise, return an error and/or use WARN_ON().
-
-2. If you want a slow kernel, then by all means check your arguments to
-   your functions.  While you're at it, why not check that strings which
-   are passed contain only the characters you expect them to?  And, if
-   you're bothering to check against a NULL pointer, what about NULL+1
-   pointers which are also invalid?  Why not invent some function to
-   ensure that the pointer is a valid kernel pointer.  Maybe you'll have
-   to interate the vmalloc lists too - yay, more code to be executed!
-   That must be good!
-
-In your example, if you're going to check that pwm is non-NULL, what
-if pwm->chip is non-NULL?  How far do you take this?
-
-Or... just like most of the core kernel does, it does _not_ verify on
-function entry that the pointer is "correct" unless it is explicitly
-defined that the function may take a NULL pointer (like kfree()).
-Everything else just goes right on and does the dereference - and if
-the pointer was wrong, we hope that the MMU faults and we get a kernel
-oops.
-
-Have a read through the code in fs/ or kernel/ and see how many functions
-you can spot in there which validate their pointers which aren't dealing
-with data from userland.
-
-You'll find almost no function checking that an inode pointer is not NULL.
-Or a struct file pointer.  Or a struct path pointer... etc.
-
-Yet, you come to ARM code, and it seems "popular" that pointer arguments
-need to be verified on every single function call.  Why is this?
-
-I don't know if Andrew would like to inject something here (I've added
-him) on this subject...
+-- 
+Jiri Kosina
+SUSE Labs
