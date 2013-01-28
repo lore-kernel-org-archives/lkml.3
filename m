@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab3A1VYa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 16:24:30 -0500
-Received: from void.printf.net ([89.145.121.20]:35145 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754420Ab3A1VY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 16:24:28 -0500
-From: Chris Ball <cjb@laptop.org>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: vt8500: Remove erroneous __exitp in wmt_mci_driver
-References: <1358057960-24540-1-git-send-email-linux@prisktech.co.nz>
-Date: Mon, 28 Jan 2013 16:23:30 -0500
-In-Reply-To: <1358057960-24540-1-git-send-email-linux@prisktech.co.nz> (Tony
-	Prisk's message of "Sun, 13 Jan 2013 19:19:20 +1300")
-Message-ID: <87boc980j1.fsf@laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	id S1754368Ab3A1V2W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 16:28:22 -0500
+Received: from mail-qe0-f47.google.com ([209.85.128.47]:60482 "EHLO
+	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753953Ab3A1V2T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 16:28:19 -0500
+Date: Mon, 28 Jan 2013 13:28:14 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, srivatsa.bhat@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] generic dynamic per cpu refcounting
+Message-ID: <20130128212814.GL22465@mtj.dyndns.org>
+References: <20130125191139.GA19247@redhat.com>
+ <20130128181528.GA26407@google.com>
+ <20130128182737.GC22465@mtj.dyndns.org>
+ <20130128184933.GC26407@google.com>
+ <20130128185552.GD22465@mtj.dyndns.org>
+ <20130128202214.GD26407@google.com>
+ <CAOS58YOQNs9RcNAXHKfkwaxMeDeSzOczNC=-WS5uvsas168T+A@mail.gmail.com>
+ <20130128205540.GE26407@google.com>
+ <20130128211832.GK22465@mtj.dyndns.org>
+ <20130128212407.GF26407@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130128212407.GF26407@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+On Mon, Jan 28, 2013 at 01:24:07PM -0800, Kent Overstreet wrote:
+> > 	set dying;
+> > 	synchronize_sched();
+> > 	collect percpu refs into global atomic_t;
+> > 	put the base ref;
+> 
+> After you set state := dying, percpu_ref_put() decrements the atomic_t,
+> but it can't check if it's 0 yet because the thread that's collecting
+> the percpu refs might not be done yet.
+> 
+> So percpu_ref_put can't check for ref == 0 until after state == dead.
+> But the put in your example might have made ref 0. When did you set
+> state to dead?
 
-On Sun, Jan 13 2013, Tony Prisk wrote:
-> With the __devinit/__devexit attributes having been removed, this
-> __exitp attribute causes an unused function warning and should be
-> removed as well.
->
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> ---
->  drivers/mmc/host/wmt-sdmmc.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/wmt-sdmmc.c b/drivers/mmc/host/wmt-sdmmc.c
-> index 154f0e8..c6d0015 100644
-> --- a/drivers/mmc/host/wmt-sdmmc.c
-> +++ b/drivers/mmc/host/wmt-sdmmc.c
-> @@ -1012,7 +1012,7 @@ static const struct dev_pm_ops wmt_mci_pm = {
->  
->  static struct platform_driver wmt_mci_driver = {
->  	.probe = wmt_mci_probe,
-> -	.remove = __exit_p(wmt_mci_remove),
-> +	.remove = wmt_mci_remove,
->  	.driver = {
->  		.name = DRIVER_NAME,
->  		.owner = THIS_MODULE,
+But at that point, the operation is already global, so there gotta be
+a lighter way to synchronize stuff than going through full grace
+period.  ie. You can add a bias value before marking dead so that the
+counter never reaches zero before all percpu counters are collected
+and then unbias it right before putting the base ref, that way the
+only way you can hit zero ref is all refs are actually zero.
 
-Thanks, pushed to mmc-next for 3.9.
+Thanks.
 
-- Chris.
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+tejun
