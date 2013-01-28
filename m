@@ -1,88 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab3A1QO6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 11:14:58 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57338 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752841Ab3A1QO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 11:14:56 -0500
-Message-ID: <5106A39A.5010402@ti.com>
-Date: Mon, 28 Jan 2013 18:13:14 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1757152Ab3A1QPX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 11:15:23 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:62173 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882Ab3A1QPT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 11:15:19 -0500
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [RFC PATCH] Input: gpio_keys: Fix suspend/resume press event
- lost
-References: <1358774114-8281-1-git-send-email-ivan.khoronzhuk@ti.com> <20130121235718.GB16638@core.coreip.homeip.net> <20130122162434.5bcf3e14@notabene.brown>
-In-Reply-To: <20130122162434.5bcf3e14@notabene.brown>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.128]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+In-Reply-To: <20130128152324.GA3481@polaris.bitmath.org>
+References: <1359120190-18281-1-git-send-email-benjamin.tissoires@gmail.com>
+	<20130128152324.GA3481@polaris.bitmath.org>
+Date: Mon, 28 Jan 2013 17:15:17 +0100
+Message-ID: <CAN+gG=Gv8CUF2zf2=7LgnnhMqzCfgiinJ5=FdkS1CPZQ1PF4Og@mail.gmail.com>
+Subject: Re: [PATCH 00/25] Support of Nexio 42" and new default class for hid-multitouch
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2013 07:24 AM, NeilBrown wrote:
-> On Mon, 21 Jan 2013 15:57:18 -0800 Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
->
->> Hi Ivan,
->>
->> On Mon, Jan 21, 2013 at 03:15:14PM +0200, Ivan Khoronzhuk wrote:
->>> Rebased on linux_omap/master.
->>>
->>> During suspend/resume the key press can be lost if time of resume
->>> sequence is significant.
->>>
->>> If press event cannot be remembered then the driver can read the
->>> current button state only in time of interrupt handling. But in some
->>> cases when time between IRQ and IRQ handler is significant we can
->>> read incorrect state. As a particular case, when device is in suspend
->>> we press wakupable key and up it back in a jiffy, the interrupt
->>> handler read the state of up but the interrupt source is press indeed.
->>> As a result, in a OS like android, we resume then suspend right away
->>> because the key state is not changed.
->>>
->>> This patch add to gpio_keys framework opportunity to recover lost of
->>> press key event at resuming. The variable "key_pressed" from
->>> gpio_button_data structure is not used for gpio keys, it is only used
->>> for gpio irq keys, so it is logically used to remember press lost
->>> while resuming.
->> The same could happen if you delay processing of interrupt long enough
->> during normal operation. If key is released by the time you get around
->> to reading it you will not see a key press.
->>
->> To me this sounds like you need to speed up your resume process so that
->> you can start serving interrupts quicker.
->>
-> Agreed.  When I was looking at this I found that any genuine button press
-> would have at least 70msec between press and release, while the device could
-> wake up to the point of being able to handle interrupts in about 14msec.
-> That is enough of a gap to make it pointless to try to 'fix' the code.
->
-> With enough verbose debugging enabled that 14msec can easily grow to
-> hundreds, but then if  you have debugging enabled to can discipline yourself
-> to hold the button for longer.
->
-> Ivan: What sort of delay are you seeing between the button press and the
-> interrupt routine running?  And can you measure how long the button is
-> typically down for?
->
-> NeilBrown
+Hi Henrik,
 
-In my case I have the delay between the button press and the ISR
-about 145ms. If the button down for 120ms the IRQ press event is
-lost and if 160ms event is captured. I cannot speed up resume
-process enough to guarantee correct work, so I wrote this fix.
+On Mon, Jan 28, 2013 at 4:23 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Benjamin,
+>
+>> finally, I managed to send a new bunch of patches. Sorry for the delay from the
+>> previous version, but meanwhile, I implemented an automatic regressions tests
+>> for hid device [1].
+>> So this series seems pretty big, but it does not break any known devices (I ran
+>> 40 successful tests for this series)[2].
+>
+> Thanks for the patches.
 
--- 
-Regards,
-Ivan Khoronzhuk
+And thanks for reviewing.
 
+>
+>> To sum up:
+>> - Nexio devices were problematic in the sense they use out of range values for
+>> some of the fields, and consider that the driver won't treat the extra touches
+>> based on the reported contact count.
+>
+> Problematic device, but I think we should add a new event function
+> which gives all values at the same time, since those are already
+> present in the core. It seems this will solve the current problem as
+> well as many older workarounds.
+
+yeah, makes sense. I think it would also allows us to simplify the
+logic of hid-multitouch by removing some of the states we have in it.
+
+>
+>> - fortunately, this behavior (relying on contact count) is compatible with all
+>> the devices I know, which leads to think that this is how the Windows 7/8 driver
+>> manage to handle such a different bunch of devices.
+>
+> This is a nice observation. IIRC, we used to rely more on contact
+> count in the old drivers.
+>
+>> - thanks to the automatic testing, I was able to fix broken devices
+>> (Sharp LC-20FE1-W screen 04dd:9681, Sitronix 1403:5001 and Cando 2087:0a02)
+>> and optimize many others. In order to allow a bisection to be done, I split
+>> the patches in many different ones, one per device type.
+>
+> Great tool, thank you Benjamin.
+
+Once I will do the work on the suppression of usbhid direct use, we
+also could rely on that for every HID devices, not only
+hid-multitouch.
+
+>
+>> - finally, I changed the default class in order to handle the new devices in a
+>> better way.
+>
+> Old wisdom says differently. ;-)
+
+No: old wisdom says the exact same thing :) I did not break the
+current supported devices. I _kept_ the old default class for all the
+current supported devices, and I used the new default class only for
+the new devices, the  one that are not registered.
+
+Cheers,
+Benjamin
+
+>
+> Thanks,
+> Henrik
