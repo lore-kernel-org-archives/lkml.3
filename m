@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab3A1HKk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 02:10:40 -0500
-Received: from alvesta.synopsys.com ([198.182.60.77]:36519 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751839Ab3A1HKi (ORCPT
+	id S1753226Ab3A1HPB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 02:15:01 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:59723 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948Ab3A1HO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 02:10:38 -0500
-Message-ID: <51062460.9060902@synopsys.com>
-Date: Mon, 28 Jan 2013 12:40:24 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 28 Jan 2013 02:14:57 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: serge.hallyn@canonical.com, akpm@linux-foundation.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+References: <1359342541-383-1-git-send-email-gaofeng@cn.fujitsu.com>
+	<87bocayntu.fsf@xmission.com> <51061F2F.6040104@cn.fujitsu.com>
+Date: Sun, 27 Jan 2013 23:14:48 -0800
+In-Reply-To: <51061F2F.6040104@cn.fujitsu.com> (Gao feng's message of "Mon, 28
+	Jan 2013 14:48:15 +0800")
+Message-ID: <877gmxye1j.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
-To: Arnd Bergmann <arnd@arndb.de>, Stephen Rothwell <sfr@canb.auug.org.au>
-CC: James Hogan <james.hogan@imgtec.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v3 00/44] Meta Linux Kernel Port
-References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com> <5102BB38.3050207@imgtec.com> <201301260025.10020.arnd@arndb.de>
-In-Reply-To: <201301260025.10020.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.164]
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/Sc5LZpmJUn71Q6HSLWCslP/WNDP94FTI=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0002]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Gao feng <gaofeng@cn.fujitsu.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] userns: Allow the unprivileged users to mount mqueue fs
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd / Stephen,
+Gao feng <gaofeng@cn.fujitsu.com> writes:
 
-On Saturday 26 January 2013 05:55 AM, Arnd Bergmann wrote:
-> On Friday 25 January 2013, James Hogan wrote:
->> Hi Arnd,
->>
->> On 10/01/13 15:30, James Hogan wrote:
->>> This patchset adds core architecture support to Linux for Imagination's
->>> Meta ATP (Meta 1) and HTP (Meta 2) processor cores. Most of the feedback
->>> from the RFC and v2 patchsets has now been addressed. All further
->>> feedback is most welcome.
+> On 2013/01/28 11:43, Eric W. Biederman wrote:
+>> Gao feng <gaofeng@cn.fujitsu.com> writes:
+>> 
+>>> This patch allow the unprivileged user to mount mqueuefs in
+>>> user ns.
 >>>
->>> The patches are based on next-20130110, and can also be found in the
->>> following git tree:
->>>   git://github.com/jahogan/metag-linux.git metag-core
->>
->> Review seems to have gone quiet. I'm fairly happy with this core
->> patchset in it's currently form (only trivial alterations required since
->> the v3 patches, e.g. some review comments and rebasing on linus/master),
->> and would like to get it into the v3.9 merge window. What's the best way
->> forward? I presume I need to get acks on each individual patch?
-> 
-> 
-> I've just looked through the entire series once more and could not find
-> any show-stoppers. I consider this ready for 3.9, and I'm also quite happy
-> with Vineet's ARC port, although I think he is still integrating some
-> feedback comments.
+>>> If two userns share the same ipcns,the files in mqueue fs
+>>> should be seen in both these two userns.
+>>>
+>>> If the userns has its own ipcns,it has its own mqueue fs too.
+>>> ipcns has already done this job well.
+>> 
+>> I am a little dense.  When does userspace actually mount a mqueuefs?
+>> My impression was that user space never needed to mount and actually
+>> never could mount a mqueuefs.  MS_NO_USER isn't set so mounting a
+>> mqueuefs is possible but when does it happen and why?
+>> 
+>
+> Actually the files which representative messgae queue in mqueuefs contains
+> some informations,such as QSIZE,NOTIFY,SIGNO,NOTIFY_PID.
+>
+> My workstation is Fedora 17,mqueuefs is mounted on /dev/mqueue by default.
+> So I think at lest this patch is needed by some people.
 
-AFAIKS, I've already addressed all the comments in v1 and v2 except moving the
-clocksources/clockevent code to drivers. If that is a must, I can do that,
-although personally I think it is too arch specific (tied to ARC specific RTSC
-insn and such) to be moved out of arch code. Can you please skim thru the latest
-v3 series, or just part #1 (changes since v2) if that's too big to reconfirm.
+I have just confirmed that the most you can do in a mounted mqueue fs is
+to create files message queues.
 
-> I'd suggest that you both ask Stephen to add the trees to linux-next
-> now (I thought you had done that already, but I don't see them there
-> at the moment).
+Given that these filesystems exist anyway I don't see a problem.
 
-Stephen, can you please add the following branch (rebased off 3.8-rc5) to linux-next
+Applied thanks.
 
-git://github.com/foss-for-synopsys-dwc-arc-processors/linux.git  arc-next
-
-With next-20130125, there's a trivial conflict in init/Kconfig - fixable by
-accepting both the hunks.
-
-> You don't need Acked-by statements on every single patch, but having
-> more of those is certainly benefitial. When it comes to the merge
-> window, please send a pull request to Linus, and keep me on Cc,
-> so I can weigh in with an additional Ack to the series.
-
-While the first pull request can go directly from github, I presume the logistics
-for setting up accounts on kernel.org will only kick start after the first batch
-of code has been accepted. I can't seem to find any discussions on lists to that
-effect.
-
-> Until then, maybe you can have another look at each other's architecture
-> trees (ARC and Meta). Since you are in exactly the same situation with
-> upstream integration now, you are probably the best people to review
-> the code, and you providing ACKs and constructive feedback to the other
-> tree will helps others see that you are up to the job as an arch
-> maintainer.
-
-I'm certain we've both been looking at each other's patches in last few months - I
-certainly have for say DeviceTree support so it makes sense to formalize it.
-Although "Reviewed-by" will probably be better off that "Ack" in this case.
-
-> I have also given a few comments to one of you that
-> may actually apply to the other one just as well, but I can't remember
-> now what I discussed with whom ;-)
-
-OK, will re-skim thru all such discussions, although ARC comments are likely to be
-superset of metag :-)
-
-BTW I went back to hexagon submission patches in 2011 and it seems every new arch
-makes the exact same mistakes:
--idle sleep race
--faltering in TIF_WORK_RESUME and in fixing that breaking the syscall restarting
--redundant symbols in module.c
-...
-
-Will it make sense to have a checklist-for-new-arches with concrete examples of
-broken and fixed code so that you, Al and other reviewers don't have to repeat the
-same thing over and over again.
-
-Thx,
--Vineet
-
+Eric
