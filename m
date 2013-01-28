@@ -1,50 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab3A1B1s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 20:27:48 -0500
-Received: from mga14.intel.com ([143.182.124.37]:54316 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755670Ab3A1B1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 20:27:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,548,1355126400"; 
-   d="scan'208";a="195679911"
-Message-ID: <5105D442.9090401@intel.com>
-Date: Mon, 28 Jan 2013 09:28:34 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757215Ab3A1BmH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 20:42:07 -0500
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:45521 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756371Ab3A1BmE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 20:42:04 -0500
+Message-ID: <1359337321.6763.18.camel@kernel>
+Subject: Re: [PATCH 6/11] ksm: remove old stable nodes more thoroughly
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Sun, 27 Jan 2013 19:42:01 -0600
+In-Reply-To: <alpine.LNX.2.00.1301271451130.17495@eggly.anvils>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
+	 <alpine.LNX.2.00.1301251800550.29196@eggly.anvils>
+	 <1359262556.4159.23.camel@kernel>
+	 <alpine.LNX.2.00.1301271451130.17495@eggly.anvils>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 11:06 AM, Alex Shi wrote:
-> Since the runnable info needs 345ms to accumulate, balancing
-> doesn't do well for many tasks burst waking. After talking with Mike
-> Galbraith, we are agree to just use runnable avg in power friendly 
-> scheduling and keep current instant load in performance scheduling for 
-> low latency.
-> 
-> So the biggest change in this version is removing runnable load avg in
-> balance and just using runnable data in power balance.
-> 
-> The patchset bases on Linus' tree, includes 3 parts,
+On Sun, 2013-01-27 at 15:05 -0800, Hugh Dickins wrote:
+> On Sat, 26 Jan 2013, Simon Jeons wrote:
+> > On Fri, 2013-01-25 at 18:01 -0800, Hugh Dickins wrote:
+> > > Switching merge_across_nodes after running KSM is liable to oops on stale
+> > > nodes still left over from the previous stable tree.  It's not something
+> > > that people will often want to do, but it would be lame to demand a reboot
+> > > when they're trying to determine which merge_across_nodes setting is best.
+> > > 
+> > > How can this happen?  We only permit switching merge_across_nodes when
+> > > pages_shared is 0, and usually set run 2 to force that beforehand, which
+> > > ought to unmerge everything: yet oopses still occur when you then run 1.
+> > > 
+> > > Three causes:
+> > > 
+> > > 1. The old stable tree (built according to the inverse merge_across_nodes)
+                                                   ^^^^^^^^^^^^^^^^^^^^^
+How to understand inverse merge_across_nodes here?
 
-Would you like to give some comments, Ingo? :)
+> > > has not been fully torn down.  A stable node lingers until get_ksm_page()
+> > > notices that the page it references no longer references it: but the page
 
-Best regards!
+Do you mean page->mapping is NULL when call get_ksm_page()? Who clear it
+NULL?
+
+> > > is not necessarily freed as soon as expected, particularly when swapcache.
+
+Why is not necessarily freed as soon as expected?
+
+> > > 
+> > 
+> > When can this happen?  
+> 
+> Whenever there's an additional reference to the page, beyond those for
+> its ptes in userspace - swapcache for example, or pinned by get_user_pages.
+> That delays its being freed (arriving at the "page->mapping = NULL;"
+> in free_pages_prepare()).  Or it might simply be sitting in a pagevec,
+> waiting for that to be filled up, to be freed as part of a batch.
+> 
+> > 
+> > > Fix this with a pass through the old stable tree, applying get_ksm_page()
+> > > to each of the remaining nodes (most found stale and removed immediately),
+> > > with forced removal of any left over.  Unless the page is still mapped:
+> > > I've not seen that case, it shouldn't occur, but better to WARN_ON_ONCE
+> > > and EBUSY than BUG.
+> > > 
+> > > 2. __ksm_enter() has a nice little optimization, to insert the new mm
+> > > just behind ksmd's cursor, so there's a full pass for it to stabilize
+> > > (or be removed) before ksmd addresses it.  Nice when ksmd is running,
+> > > but not so nice when we're trying to unmerge all mms: we were missing
+> > > those mms forked and inserted behind the unmerge cursor.  Easily fixed
+> > > by inserting at the end when KSM_RUN_UNMERGE.
+> > 
+> > mms forked will be unmerged just after ksmd's cursor since they're
+> > inserted behind it, why will be missing?
+> 
+> unmerge_and_remove_all_rmap_items() makes one pass through the list
+> from start to finish: insert behind the cursor and it will be missed.
+
+Since mms forked will be insert just after ksmd's cursor, so it is the
+next which will be scan and unmerge, where I miss?
+
 
 
