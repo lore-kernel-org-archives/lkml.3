@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab3A1NrU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 08:47:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24435 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754469Ab3A1NrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 08:47:17 -0500
-Message-ID: <51068155.4020807@redhat.com>
-Date: Mon, 28 Jan 2013 14:47:01 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, stable@vger.kernel.org
-Subject: Re: [RESEND PATCH v5 1/4] zram: Fix deadlock bug in partial write
-References: <1359333506-13599-1-git-send-email-minchan@kernel.org> <CAOJsxLFg_5uhZsvPmVVC0nnsZLGpkJ0W6mHa=aavmguLGuTTnA@mail.gmail.com> <51065FD4.6090200@redhat.com> <CAOJsxLG=3sWdFkvb++f2ywhs288ozoMXZd_g2WOAgxTqxayY_Q@mail.gmail.com>
-In-Reply-To: <CAOJsxLG=3sWdFkvb++f2ywhs288ozoMXZd_g2WOAgxTqxayY_Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756915Ab3A1NsW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 08:48:22 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:62306 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756242Ab3A1NsT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 08:48:19 -0500
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: Sekhar Nori <nsekhar@ti.com>, linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, Heiko Schocher <hs@denx.de>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>
+Subject: [PATCH v2 0/6] ARM: davinci: da850: add ethernet driver DT support
+Date: Mon, 28 Jan 2013 19:17:53 +0530
+Message-Id: <1359380879-26306-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 02:26 PM, Pekka Enberg wrote:
-> On Mon, Jan 28, 2013 at 1:24 PM, Jerome Marchand <jmarchan@redhat.com> wrote:
->> On 01/28/2013 08:16 AM, Pekka Enberg wrote:
->>> On Mon, Jan 28, 2013 at 2:38 AM, Minchan Kim <minchan@kernel.org> wrote:
->>>> Now zram allocates new page with GFP_KERNEL in zram I/O path
->>>> if IO is partial. Unfortunately, It may cuase deadlock with
->>>
->>> s/cuase/cause/g
->>>
->>>> reclaim path so this patch solves the problem.
->>>
->>> It'd be nice to know about the problem in more detail. I'm also
->>> curious on why you decided on GFP_ATOMIC for the read path and
->>> GFP_NOIO in the write path.
->>
->> This is because we're holding a kmap_atomic page in the read path.
-> 
-> Okay, so that's about partial *reads* and not even mentioned in the
-> changelog, no?
-> 
-> AFAICT, you could rearrange the code in zram_bvec_read() as follows:
-> 
->         if (is_partial_io(bvec))
->                 /* Use  a temporary buffer to decompress the page */
->                 uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
->         else {
->                 uncmem = user_mem = kmap_atomic(page);
->         }
-> 
-> and avoid the GFP_ATOMIC allocation.
-> 
+From: Lad, Prabhakar <prabhakar.lad@ti.com>
 
-user_mem still has to be mapped in case of partial I/O too. But the
-temporary buffer allocation could happen before. The allocation still
-would need to be GFP_NOIO to avoid possible deadlocks.
+This patch set enables Ethernet support through device tree model.
+This patch set enables mii interface only and is being tested to boot via
+rootfs. The rmii phy is present on the i2c gpio expander chip (UI board)
+for which yet support needs to be added, once the DT support for the chip
+is enabled, enabling rmii will be subsequnet patch.
 
-Anyhow, the commit message could definitely be more explicit.
+Changes for v2:
+1: Enabled mdio device.
+2: Fixed clock lookup.
 
-Regards,
-Jerome
+Lad, Prabhakar (6):
+  ARM: davinci: da850: fix clock lookup for mdio device
+  ARM: davinci: da850: add DT node for mdio device
+  ARM: davinci: da850: add OF_DEV_AUXDATA entry for mdio.
+  ARM: davinci: da850: add DT node for eth0.
+  ARM: davinci: da850: add OF_DEV_AUXDATA entry for eth0.
+  ARM: davinci: da850: configure system configuration chip(CFGCHIP3)
+    for emac
+
+ arch/arm/boot/dts/da850-evm.dts       |    8 ++++++
+ arch/arm/boot/dts/da850.dtsi          |   42 +++++++++++++++++++++++++++++++++
+ arch/arm/mach-davinci/da850.c         |    1 +
+ arch/arm/mach-davinci/da8xx-dt.c      |   38 +++++++++++++++++++++++++++++-
+ arch/arm/mach-davinci/devices-da8xx.c |    8 +----
+ 5 files changed, 90 insertions(+), 7 deletions(-)
+
+-- 
+1.7.4.1
 
