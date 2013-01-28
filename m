@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab3A1QQS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 11:16:18 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:54523 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab3A1QQR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 11:16:17 -0500
-Date: Mon, 28 Jan 2013 17:16:16 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 02/12] perf, x86: Basic Haswell PMU support v2
-Message-ID: <20130128161616.GS30577@one.firstfloor.org>
-References: <1359151245-13179-1-git-send-email-andi@firstfloor.org> <1359151245-13179-3-git-send-email-andi@firstfloor.org> <CABPqkBTwqYOiKDreq394Nq=ds8b0qg2igTdBoJ8JpB0Dd2RbRg@mail.gmail.com>
+	id S1757097Ab3A1QTJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 11:19:09 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:51447 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755549Ab3A1QTG convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Mon, 28 Jan 2013 11:19:06 -0500
+Message-Id: <5106B30302000078000BA2A2@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Mon, 28 Jan 2013 16:18:59 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "Konrad Rzeszutek Wilk" <konrad@kernel.org>,
+        "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 3/3] xen/blkback: Check for insane
+ amounts of request on the ring.
+References: <1359135152-30688-1-git-send-email-konrad.wilk@oracle.com>
+ <1359135152-30688-4-git-send-email-konrad.wilk@oracle.com>
+ <20130125184323.GC1384@phenom.dumpdata.com>
+ <51066A1202000078000BA020@nat28.tlf.novell.com>
+ <20130128154231.GF4838@konrad-lan.dumpdata.com>
+In-Reply-To: <20130128154231.GF4838@konrad-lan.dumpdata.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <CABPqkBTwqYOiKDreq394Nq=ds8b0qg2igTdBoJ8JpB0Dd2RbRg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +static struct event_constraint intel_hsw_event_constraints[] =
-> > +{
-> > +       FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-> > +       FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
-> > +       FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
-> > +       INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
+>>> On 28.01.13 at 16:42, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Mon, Jan 28, 2013 at 11:07:46AM +0000, Jan Beulich wrote:
+>> >>> On 25.01.13 at 19:43, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> > @@ -764,6 +768,9 @@ __do_block_io_op(struct xen_blkif *blkif)
+>> >  	rp = blk_rings->common.sring->req_prod;
+>> >  	rmb(); /* Ensure we see queued requests up to 'rp'. */
+>> >  
+>> > +	if (RING_REQUEST_PROD_OVERFLOW(&blk_rings->common, rp, rc))
+>> > +		return -EACCES;
+>> 
+>> Actually I wonder whether we need the new macro at all: It seems
+>> to me that using RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rp)
+>> here would achieve the same effect.
 > 
-> You're covering the entire event here, so comment should be: L1D_PEND_MISS.*
+> But it would not. The RING_REQUEST_CONS_OVERFLOW only check that the
+> non-shared ring entries (rsp_prod and rsp_prod_pvt) are less than
+> the size of the ring (32). In other words - they check whether we want
+> to process more requests as we still have a back-log of responses to
+> deal with.
 
-Ok.
+So did you not notice that here 'rp' (i.e. req_prod) is being passed,
+not 'rc'?
 
-> 
-> > +       INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
-> > +       INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
-> > +       EVENT_CONSTRAINT_END
-> 
-> You are missing constraint on the following public events:
-> - CYCLE_ACTIVITY (0xa3)
+Jan
 
-AFAIK that's not a PEBS event.
-
-> 
-> > +};
-> > +
-> >  static u64 intel_pmu_event_map(int hw_event)
-> >  {
-> >         return intel_perfmon_event_map[hw_event];
-> > @@ -2107,6 +2118,24 @@ __init int intel_pmu_init(void)
-> >                 break;
-> >
-> >
-> > +       case 60: /* Haswell Client */
-> > +       case 70:
-> > +       case 71:
-> > +               memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
-> > +                      sizeof(hw_cache_event_ids));
-> > +
-> > +               intel_pmu_lbr_init_nhm();
-> > +
-> I suspect this one should be intel_pmu_lbr_init_snb(), otherwise
-> you inherit the broken filter workarounds.
-
-Good point.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
