@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab3A1QD6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 11:03:58 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:20947 "EHLO SMTP.CITRIX.COM"
+	id S1756475Ab3A1QFt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 11:05:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38416 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753221Ab3A1QDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 11:03:54 -0500
-X-IronPort-AV: E=Sophos;i="4.84,551,1355097600"; 
-   d="scan'208";a="5329566"
-Message-ID: <5106A165.4050900@citrix.com>
-Date: Mon, 28 Jan 2013 16:03:49 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	id S1753221Ab3A1QFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 11:05:46 -0500
+Date: Mon, 28 Jan 2013 17:04:25 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Anton Arapov <anton@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, Josh Stone <jistone@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Suzuki Poulose <suzuki@in.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [GIT PULL] uprobes: pre-filtering
+Message-ID: <20130128160425.GA16586@redhat.com>
+References: <20130113185916.GA25831@redhat.com> <20130124121720.GA3104@gmail.com> <20130124154018.GA8580@redhat.com> <20130124154159.GB32071@gmail.com> <20130124170612.GA14823@redhat.com> <20130125064629.GD23723@linux.vnet.ibm.com> <20130125075437.GB21036@gmail.com> <20130125161728.GA11630@redhat.com> <20130128121943.GD29865@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 3/3] xen/blkback: Check for insane amounts
- of request on the ring.
-References: <1359135152-30688-1-git-send-email-konrad.wilk@oracle.com>	<1359135152-30688-4-git-send-email-konrad.wilk@oracle.com>	<20130125184323.GC1384@phenom.dumpdata.com>	<5106634A.2000308@citrix.com> <20130128154450.GG4838@konrad-lan.dumpdata.com>
-In-Reply-To: <20130128154450.GG4838@konrad-lan.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130128121943.GD29865@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/01/13 15:44, Konrad Rzeszutek Wilk wrote:
-> On Mon, Jan 28, 2013 at 11:38:50AM +0000, David Vrabel wrote:
->> On 25/01/13 18:43, Konrad Rzeszutek Wilk wrote:
->>>
->>> Check that the ring does not have an insane amount of requests
->>> (more than there could fit on the ring).
->> [...]
->>> --- a/drivers/block/xen-blkback/blkback.c
->>> +++ b/drivers/block/xen-blkback/blkback.c
->> [...]
->>> @@ -415,8 +415,12 @@ int xen_blkif_schedule(void *arg)
->>>  		blkif->waiting_reqs = 0;
->>>  		smp_mb(); /* clear flag *before* checking for work */
->>>  
->>> -		if (do_block_io_op(blkif))
->>> +		rc = do_block_io_op(blkif);
->>> +		if (rc > 0)
->>>  			blkif->waiting_reqs = 1;
->>> +		if (rc == -EACCES)
->>> +			wait_event_interruptible(blkif->shutdown_wq,
->>> +						 kthread_should_stop());
->>
->> So if this happens then the backend silently stops processing any
->> further requests?  I think it should print an error and disconnect from
->> the front end.
-> 
-> I was not sure what it should print?
-> 
-> "Frontend provided bogus ring requests. Halting ring processing"?
+On 01/28, Srikar Dronamraju wrote:
+>
+> * Oleg Nesterov <oleg@redhat.com> [2013-01-25 17:17:28]:
+>
+> > This is what I am going to (try to) do, but I am not sure if this makes
+> > sense...
+> >
+> > For the start, can't we teach 'uprobe_events' file to accept, say,
+> >
+> > 	'p file:0x1234 pid=1 other-opts'
+>
+>
+> I think this would be a very good start
 
-That would be fine but you may want to print the bad values, in case
-they're useful for tracking down bugs in frontends.
+Good.
 
-> It does eventually disconnect from the front-end as the XenBus enters
-> the Disconnect phase. It seemed the strike the balance - so that if
-> the frontend negotiates again the ring can start again and penalize
-> the frontend for giving bogus data.
+So will you agree with 3/4 and 3/4 ?
 
-Ok.
+> The only downside, I see is we would have add and remove to change the
+> filter. Something like perf record will not be able to dynamically
+> change the filter parameter.
 
-David
+Yes, this is only the first step.
+
+Oleg.
+
