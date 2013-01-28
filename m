@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab3A1P65 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 10:58:57 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:13148 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756442Ab3A1P6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 10:58:54 -0500
-From: Lord Glauber Costa of Sealand <glommer@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        Glauber Costa <glommer@parallels.com>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH] cfq: fix lock imbalance with failed allocations
-Date: Mon, 28 Jan 2013 19:58:47 +0400
-Message-Id: <1359388727-28147-1-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.8.1
+	id S1755769Ab3A1QBu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 11:01:50 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:33329 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab3A1QBt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 11:01:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130128151010.GA3470@polaris.bitmath.org>
+References: <1359120190-18281-1-git-send-email-benjamin.tissoires@gmail.com>
+	<1359120190-18281-7-git-send-email-benjamin.tissoires@gmail.com>
+	<20130128151010.GA3470@polaris.bitmath.org>
+Date: Mon, 28 Jan 2013 17:01:47 +0100
+Message-ID: <CAN+gG=HBv6iLJGMg8cAAV4RJ+=4eHV-q0zrny71fCXDO6cBE4A@mail.gmail.com>
+Subject: Re: [PATCH 06/25] HID: multitouch: optimize FlatFrog panels
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@parallels.com>
+On Mon, Jan 28, 2013 at 4:10 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Benjamin,
+>
+>> Relying on ALWAYS_VALID enhance a little the processing time of
+>> the events.
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+>> ---
+>>  drivers/hid/hid-multitouch.c | 5 +++--
+>>  1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> Is there a measurement backing up this claim? I suspect
+> micro-optimizations of this kind drowns completely along the rather
+> long way from device, via malloc and loops, to the input core.
 
-While stress-running very-small container scenarios with the Kernel
-Memory Controller, I've run into a lockdep-detected lock imbalance in
-cfq-iosched.c.
+No, the measure I made for this are roughly the same. It's purely
+micro-optimization, and yes, mallocs must kill the processing time.
+However, the purpose of this patch and the others entitled 'optimize
+XXX' is to show that I did not invented the new default class. My true
+objective is to remove all the quirks related to the 'valid'
+information in order to have a driver as universal as possible and to
+be able to clean it up.
 
-I'll apologize beforehand for not posting a backlog: I didn't anticipate
-it would be so hard to reproduce, so I didn't save my serial output and
-went directly on debugging. Turns out that it did not happen again in
-more than 20 runs, making it a quite rare pattern.
+> Considering the must-be-tested-for-regression risk on top of that,
+> this patch falls far below what is worth doing, IMHO.
 
-But here is my analysis:
+It _has_ been tested. I got the HID traces from FlatFrog and either
+they use different firmwares with different processing in their
+devices, the kernel processing is good.
 
-When we are in very low-memory situations, we will arrive at
-cfq_find_alloc_queue and may not find a queue, having to resort to the
-oom queue, in an rcu-locked condition:
+Cheers,
+Benjamin
 
-  if (!cfqq || cfqq == &cfqd->oom_cfqq)
-      [ ... ]
-
-Next, we will release the rcu lock, and try to allocate a queue,
-retrying if we succeed:
-
-  rcu_read_unlock();
-  spin_unlock_irq(cfqd->queue->queue_lock);
-  new_cfqq = kmem_cache_alloc_node(cfq_pool,
-                  gfp_mask | __GFP_ZERO,
-                  cfqd->queue->node);
-   spin_lock_irq(cfqd->queue->queue_lock);
-   if (new_cfqq)
-       goto retry;
-
-We are unlocked at this point, but it should be fine, since we will
-reacquire the rcu_read_lock when we retry.
-
-Except of course, that we may not retry: the allocation may very well
-fail and we'll keep on going through the flow:
-
-The next branch is:
-
-    if (cfqq) {
-	[ ... ]
-    } else
-        cfqq = &cfqd->oom_cfqq;
-
-And right before exiting, we'll issue rcu_read_unlock().
-
-Being already unlocked, this is the likely source of our imbalance.
-Since cfqq is either already NULL or made NULL in the first statement of
-the outter branch, the only viable alternative here seems to be to
-return the oom queue right away in case of allocation failure.
-
-Please review the following patch and apply if you agree with my
-analysis.
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>
----
- block/cfq-iosched.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index fb52df9..d52437a 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -3205,6 +3205,8 @@ retry:
- 			spin_lock_irq(cfqd->queue->queue_lock);
- 			if (new_cfqq)
- 				goto retry;
-+			else
-+				return &cfqd->oom_cfqq;
- 		} else {
- 			cfqq = kmem_cache_alloc_node(cfq_pool,
- 					gfp_mask | __GFP_ZERO,
--- 
-1.8.1
-
+>
+>> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+>> index 5a886bd..7dfe891 100644
+>> --- a/drivers/hid/hid-multitouch.c
+>> +++ b/drivers/hid/hid-multitouch.c
+>> @@ -229,8 +229,9 @@ static struct mt_class mt_classes[] = {
+>>       },
+>>
+>>       { .name = MT_CLS_FLATFROG,
+>> -             .quirks = MT_QUIRK_NOT_SEEN_MEANS_UP |
+>> -                     MT_QUIRK_NO_AREA,
+>> +             .quirks = MT_QUIRK_ALWAYS_VALID |
+>> +                     MT_QUIRK_NO_AREA |
+>> +                     MT_QUIRK_CONTACT_CNT_ACCURATE,
+>>               .sn_move = 2048,
+>>               .maxcontacts = 40,
+>>       },
+>> --
+>> 1.8.1
+>>
+>
+> Thanks.
+> Henrik
