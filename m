@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518Ab3A1FTE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 00:19:04 -0500
-Received: from mga02.intel.com ([134.134.136.20]:34339 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750913Ab3A1FTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 00:19:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,548,1355126400"; 
-   d="scan'208";a="277312486"
-Message-ID: <51060A6D.4090208@intel.com>
-Date: Mon, 28 Jan 2013 13:19:41 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1751552Ab3A1F0x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 00:26:53 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:61950 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785Ab3A1F0v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 00:26:51 -0500
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com> <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com> <510493E4.8060602@intel.com> <20130127104039.GC8894@pd.tnic>
-In-Reply-To: <20130127104039.GC8894@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5105E6F2.2010805@gmail.com>
+References: <1358874800.3464.4002.camel@edumazet-glaptop>
+	<50FED7CE.1030008@hp.com>
+	<20130122184245.GJ4608@sociomantic.com>
+	<50FF0C25.9000300@hp.com>
+	<20130123104736.GK4608@sociomantic.com>
+	<510039C8.7040401@hp.com>
+	<20130124122223.GQ4608@sociomantic.com>
+	<51018110.1070403@hp.com>
+	<20130124192125.GD4608@sociomantic.com>
+	<5102225E.2040506@gmail.com>
+	<20130125100525.GE4608@sociomantic.com>
+	<5105E6F2.2010805@gmail.com>
+Date: Sun, 27 Jan 2013 21:21:32 -0800
+Message-ID: <CAGK4HS_2=b3gJmDeBTbSmFYk4PB2epMUQE6nkr1XMGfFgmfHvw@mail.gmail.com>
+Subject: Re: Doubts about listen backlog and tcp_max_syn_backlog
+From: Vijay Subramanian <subramanian.vijay@gmail.com>
+To: Nivedita Singhvi <niveditasinghvi@gmail.com>
+Cc: Leandro Lucarella <leandro.lucarella@sociomantic.com>,
+        Rick Jones <rick.jones2@hp.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2013 06:40 PM, Borislav Petkov wrote:
-> On Sun, Jan 27, 2013 at 10:41:40AM +0800, Alex Shi wrote:
->> Just rerun some benchmarks: kbuild, specjbb2005, oltp, tbench, aim9,
->> hackbench, fileio-cfq of sysbench, dbench, aiostress, multhreads
->> loopback netperf. on my core2, nhm, wsm, snb, platforms. no clear
->> performance change found.
-> 
-> Ok, good, You could put that in one of the commit messages so that it is
-> there and people know that this patchset doesn't cause perf regressions
-> with the bunch of benchmarks.
-> 
->> I also tested balance policy/powersaving policy with above benchmark,
->> found, the specjbb2005 drop much 30~50% on both of policy whenever
->> with openjdk or jrockit. and hackbench drops a lots with powersaving
->> policy on snb 4 sockets platforms. others has no clear change.
-> 
-> I guess this is expected because there has to be some performance hit
-> when saving power...
-> 
+> +    { "ListenDrops", N_("%u SYNs to LISTEN sockets dropped"), opt_number },
+>
+> (see the file debian/patches/CVS-20081003-statistics.c_sync.patch
+>  in the net-tools src)
+>
+> i.e., the netstat pkg is printing the value of the TCPEXT MIB counter
+> that's counting TCPExtListenDrops.
+>
+> Theoretically, that number should be the same as that printed by nstat,
+> as they are getting it from the same kernel stats counter. I have not
+> looked at nstat code (I actually almost always dump the counters from
+> /proc/net/{netstat + snmp} via a simple prettyprint script (will send
+> you that offline).
+>
 
-BTW, I had tested the v3 version based on sched numa -- on tip/master.
-The specjbb just has about 5~7% dropping on balance/powersaving policy.
-The power scheduling done after the numa scheduling logical.
+nstat pretty much does what you describe which is to parse the
+/proc/net files(s) and
+print the contents. This is one advantage of nstat over netstat. When
+you add a new MIB, you
+do not need to update nstat.
 
-
-
+> If the nstat and netstat counters don't match, something is fishy.
+> That nstat output is broken.
+>
