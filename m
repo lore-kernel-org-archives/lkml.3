@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab3A1WJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 17:09:58 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:55875 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755176Ab3A1WJ4 (ORCPT
+	id S1755246Ab3A1WOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 17:14:36 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:62913 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894Ab3A1WOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 17:09:56 -0500
-From: Mark Einon <mark.einon@gmail.com>
-To: stefanr@s5r6.in-berlin.de
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH] firewire: Fix ohci free_irq() warning
-Date: Mon, 28 Jan 2013 22:09:48 +0000
-Message-Id: <1359410988-3740-1-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 28 Jan 2013 17:14:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQXkrYubkgbbOXmrEXvGZBZXMZ6sh8kGTpF1_=tD3OMPJw@mail.gmail.com>
+References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com>
+ <1358525267-14268-5-git-send-email-jiang.liu@huawei.com> <3500982.MUDp6kKU3R@vostro.rjw.lan>
+ <CAErSpo4fbNzFaBxH+eKD+BKVgghyCJEYLDMzc6_gdxABAPe3QQ@mail.gmail.com>
+ <CAE9FiQVM4+Wirpb3_D0Zxi4r1p9SAMi4ZrNYr=-eas-C6pKJYA@mail.gmail.com>
+ <CAErSpo7WbbzZ8cKfLvuE331ofWir2vswUnYaxVLBBYGFowedXQ@mail.gmail.com> <CAE9FiQXkrYubkgbbOXmrEXvGZBZXMZ6sh8kGTpF1_=tD3OMPJw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 28 Jan 2013 15:14:11 -0700
+Message-ID: <CAErSpo7vHXdh=ogvfZnxx9gqgiifWGa=XzS+ZKjXFFOPue4TTw@mail.gmail.com>
+Subject: Re: [RFC PATCH v5 4/8] ACPI, PCI: avoid building pci_slot as module
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jiang Liu <liuj97@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the kernel warning generated when putting an MSI MS-1727
-GT740 laptop into suspend mode. The call sequence in this case calls
-free_irq() twice, once in pci_remove() and once then in pci_suspend().
+On Mon, Jan 28, 2013 at 3:00 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Jan 28, 2013 at 1:52 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Mon, Jan 28, 2013 at 2:29 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> ...
+>>> If bios have messed up slot name or idx, we will get strange 1-1....
+>>> other crazy name.
+>>>
+>>> if you really need to put it as built-in, may need to some command
+>>> line that user could switch it off.
+>>
+>> It would save us all a lot of time if you gave an example and worked
+>> through the scenario where this is a problem.
+>>
+>> We already have the choice of having pci_slot built-in, so if there's
+>> a bug in that config, we already have the bug.  This patch merely
+>> removes a config where the bug might be covered up.
+>
+>
+> for distribution, current it is with module, so user could blacklist
+> in module.conf
+>
+> Now with built-in or not, distribution will have it built-in, and user
+> have no chance to
+> disable it.
 
-[  262.299486] WARNING: at /build/buildd/linux-3.5.0/kernel/irq/manage.c:1198 __free_irq+0xa3/0x1e0()
-[  262.299487] Hardware name: MS-1727
-[  262.299488] Trying to free already-free IRQ 16
-[  262.299488] Modules linked in: ip6table_filter ip6_tables ebtable_nat ebtables xt_state ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp iptable_filter snd_hda_codec_hdmi ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 ip_tables x_tables bridge stp llc joydev arc4 parport_pc ppdev coretemp kvm_intel snd_hda_codec_realtek kvm microcode snd_seq_midi snd_rawmidi psmouse snd_seq_midi_event serio_raw nvidia(PO) i7core_edac snd_seq edac_core snd_hda_intel iwlwifi snd_hda_codec jmb38x_ms snd_hwdep mac80211 snd_pcm lpc_ich memstick snd_seq_device cfg80211 snd_timer snd soundcore snd_page_alloc ir_lirc_codec lirc_dev ir_mce_kbd_decoder ir_sanyo_decoder ir_sony_decoder ir_jvc_decoder ir_rc6_decoder ir_rc5_decoder ir_nec_decoder rfcomm bnep rc_rc6_mce mxm_wmi ene_ir rc_core bluetooth wmi video acpiphp mac_hid lp parport binfmt_misc hid_generic usbhid hid firewire_ohci sdhci_pci r8169 firewire_core sdhci crc_itu_t
-[  262.299537] Pid: 4, comm: kworker/0:0 Tainted: P           O 3.5.0-22-generic #34-Ubuntu
-[  262.299538] Call Trace:
-[  262.299540]  [<ffffffff81051c1f>] warn_slowpath_common+0x7f/0xc0
-[  262.299545]  [<ffffffff81051d16>] warn_slowpath_fmt+0x46/0x50
-[  262.299548]  [<ffffffff8103fa39>] ? default_spin_lock_flags+0x9/0x10
-[  262.299551]  [<ffffffff810df6b3>] __free_irq+0xa3/0x1e0
-[  262.299554]  [<ffffffff810df844>] free_irq+0x54/0xc0
-[  262.299558]  [<ffffffffa005a27e>] pci_remove+0x6e/0x210 [firewire_ohci]
-[  262.299564]  [<ffffffff8135ae7f>] pci_device_remove+0x3f/0x110
-[  262.299569]  [<ffffffff8141fdbc>] __device_release_driver+0x7c/0xe0
-[  262.299573]  [<ffffffff8141fe4c>] device_release_driver+0x2c/0x40
-[  262.299576]  [<ffffffff8141f5f1>] bus_remove_device+0xe1/0x120
-[  262.299578]  [<ffffffff8141cd1a>] device_del+0x12a/0x1c0
-[  262.299581]  [<ffffffff8141cdc6>] device_unregister+0x16/0x30
-[  262.299583]  [<ffffffff81354784>] pci_stop_bus_device+0x94/0xa0
-[  262.299588]  [<ffffffffa0091c67>] acpiphp_disable_slot+0xb7/0x1a0 [acpiphp]
-[  262.299594]  [<ffffffffa0090716>] ? get_slot_status+0x46/0xc0 [acpiphp]
-[  262.299599]  [<ffffffffa0091d7d>] acpiphp_check_bridge.isra.15+0x2d/0xf0 [acpiphp]
-[  262.299604]  [<ffffffffa0092442>] _handle_hotplug_event_bridge+0x372/0x4d0 [acpiphp]
-[  262.299608]  [<ffffffff81390f8c>] ? acpi_os_execute_deferred+0x2f/0x34
-[  262.299612]  [<ffffffff8116e22d>] ? kfree+0xed/0x110
-[  262.299617]  [<ffffffff8107086a>] process_one_work+0x12a/0x420
-[  262.299620]  [<ffffffffa00920d0>] ? _handle_hotplug_event_func+0x1d0/0x1d0 [acpiphp]
-[  262.299625]  [<ffffffff8107141e>] worker_thread+0x12e/0x2f0
-[  262.299627]  [<ffffffff810712f0>] ? manage_workers.isra.26+0x200/0x200
-[  262.299629]  [<ffffffff81075f13>] kthread+0x93/0xa0
-[  262.299632]  [<ffffffff8168d024>] kernel_thread_helper+0x4/0x10
-[  262.299636]  [<ffffffff81075e80>] ? kthread_freezable_should_stop+0x70/0x70
-[  262.299639]  [<ffffffff8168d020>] ? gs_change+0x13/0x13
-[  262.299641] ---[ end trace 3f830890e076911f ]---
+CONFIG_ACPI_PCI_SLOT=y in RHEL6, so evidently they have this problem.
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/firewire/ohci.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Asking users to edit module.conf by hand is not a solution, just like
+asking users to boot with a command line option is not a solution.
+That sort of stuff is fine for a hobbyist OS intended only for techie
+geeks.  It's not fine for Linux.
 
-diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
-index 45912e6..029c407 100644
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -3766,7 +3766,7 @@ static int pci_suspend(struct pci_dev *dev, pm_message_t state)
- 	int err;
- 
- 	software_reset(ohci);
--	free_irq(dev->irq, ohci);
-+	disable_irq(dev->irq);
- 	pci_disable_msi(dev);
- 	err = pci_save_state(dev);
- 	if (err) {
-@@ -3807,6 +3807,7 @@ static int pci_resume(struct pci_dev *dev)
- 		return err;
- 
- 	ohci_resume_iso_dma(ohci);
-+	enable_irq(dev->irq);
- 
- 	return 0;
- }
--- 
-1.7.10.4
+If you would give a concrete example of the ACPI namespace info and
+device config, hotplug sequence, etc., required to show the problem,
+we could have a useful discussion about ways to fix it.  But if all
+you have is FUD about "this might break and users won't have the
+ability to edit modules.conf," that doesn't help me see why this patch
+is a bad idea.
 
+>> I don't know why "adding a command line switch" appeals to you as the
+>> solution to every problem.  As far as I'm concerned that's not a
+>> solution to ANY problem.  It might be a band-aid to enable users to
+>> limp along while we figure out a correct solution, but it's certainly
+>> not a resolution.
+>
+> Looks like you want to remove command line support, right ?
+>
+> Yinghai
