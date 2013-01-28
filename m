@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab3A1Mzu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 07:55:50 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:57752 "EHLO hydra.sisk.pl"
+	id S1755563Ab3A1Mzy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 07:55:54 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:57763 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753058Ab3A1Mzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 07:55:46 -0500
+	id S1751773Ab3A1Mzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 07:55:47 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Matthew Garrett <matthew.garrett@nebula.com>,
         Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
         Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] ACPI / platform: Use struct acpi_scan_handler for creating devices
-Date: Mon, 28 Jan 2013 14:01:14 +0100
-Message-ID: <1540645.4oLGJ3spZ3@vostro.rjw.lan>
+Subject: [PATCH 3/4] ACPI / PCI: Make PCI IRQ link driver use struct acpi_scan_handler
+Date: Mon, 28 Jan 2013 14:00:41 +0100
+Message-ID: <8349556.8rsLRecQbM@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <4311642.nDd2RCVeDc@vostro.rjw.lan>
 References: <1873429.MS5RQDxTye@vostro.rjw.lan> <4311642.nDd2RCVeDc@vostro.rjw.lan>
@@ -29,215 +29,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Currently, the ACPI namespace scanning code creates platform device
-objects for ACPI device nodes whose IDs match the contents of the
-acpi_platform_device_ids[] table.  However, this adds a superfluous
-special case into acpi_bus_device_attach() and makes it more
-difficult to follow than it has to be.  It also will make it more
-difficult to implement removal code for those platform device objects
-in the future.
+Make the ACPI PCI IRQ link driver use struct acpi_scan_handler
+for representing the object used to set up ACPI interrupt links and
+to remove data structures used for this purpose before unregistering
+the corresponding ACPI device nodes.
 
-For the above reasons, introduce a struct acpi_scan_handler object
-for creating platform devices and move the code related to that from
-acpi_bus_device_attach() to the .attach() callback of that object.
-Also move the acpi_platform_device_ids[] table to acpi_platform.c.
+This simplifies the code slightly and reduces the kernel's memory
+footprint by avoiding the registration of a struct device_driver
+object with the driver core and creation of its sysfs directory
+which is unnecessary.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/acpi_platform.c |   55 +++++++++++++++++++++++++++++++++++--------
- drivers/acpi/internal.h      |    7 -----
- drivers/acpi/scan.c          |   30 -----------------------
- 3 files changed, 47 insertions(+), 45 deletions(-)
+ drivers/acpi/internal.h |    1 +
+ drivers/acpi/pci_link.c |   47 ++++++++++++++---------------------------------
+ drivers/acpi/scan.c     |    1 +
+ 3 files changed, 16 insertions(+), 33 deletions(-)
 
-Index: test/drivers/acpi/acpi_platform.c
+Index: test/drivers/acpi/pci_link.c
 ===================================================================
---- test.orig/drivers/acpi/acpi_platform.c
-+++ test/drivers/acpi/acpi_platform.c
-@@ -22,6 +22,30 @@
+--- test.orig/drivers/acpi/pci_link.c
++++ test/drivers/acpi/pci_link.c
+@@ -53,23 +53,19 @@ ACPI_MODULE_NAME("pci_link");
+ #define ACPI_PCI_LINK_FILE_STATUS	"state"
+ #define ACPI_PCI_LINK_MAX_POSSIBLE	16
  
- ACPI_MODULE_NAME("platform");
+-static int acpi_pci_link_add(struct acpi_device *device);
+-static int acpi_pci_link_remove(struct acpi_device *device);
++static int acpi_pci_link_add(struct acpi_device *device,
++			     const struct acpi_device_id *not_used);
++static void acpi_pci_link_remove(struct acpi_device *device);
  
-+/* Flags for acpi_create_platform_device */
-+#define ACPI_PLATFORM_CLK	BIT(0)
-+
-+/*
-+ * The following ACPI IDs are known to be suitable for representing as
-+ * platform devices.
-+ */
-+static const struct acpi_device_id acpi_platform_device_ids[] = {
-+
-+	{ "PNP0D40" },
-+
-+	/* Haswell LPSS devices */
-+	{ "INT33C0", ACPI_PLATFORM_CLK },
-+	{ "INT33C1", ACPI_PLATFORM_CLK },
-+	{ "INT33C2", ACPI_PLATFORM_CLK },
-+	{ "INT33C3", ACPI_PLATFORM_CLK },
-+	{ "INT33C4", ACPI_PLATFORM_CLK },
-+	{ "INT33C5", ACPI_PLATFORM_CLK },
-+	{ "INT33C6", ACPI_PLATFORM_CLK },
-+	{ "INT33C7", ACPI_PLATFORM_CLK },
-+
-+	{ }
-+};
-+
- static int acpi_create_platform_clks(struct acpi_device *adev)
+ static const struct acpi_device_id link_device_ids[] = {
+ 	{"PNP0C0F", 0},
+ 	{"", 0},
+ };
+-MODULE_DEVICE_TABLE(acpi, link_device_ids);
+ 
+-static struct acpi_driver acpi_pci_link_driver = {
+-	.name = "pci_link",
+-	.class = ACPI_PCI_LINK_CLASS,
++static struct acpi_scan_handler pci_link_handler = {
+ 	.ids = link_device_ids,
+-	.ops = {
+-		.add = acpi_pci_link_add,
+-		.remove = acpi_pci_link_remove,
+-	},
++	.attach = acpi_pci_link_add,
++	.detach = acpi_pci_link_remove,
+ };
+ 
+ /*
+@@ -692,7 +688,8 @@ int acpi_pci_link_free_irq(acpi_handle h
+                                  Driver Interface
+    -------------------------------------------------------------------------- */
+ 
+-static int acpi_pci_link_add(struct acpi_device *device)
++static int acpi_pci_link_add(struct acpi_device *device,
++			     const struct acpi_device_id *not_used)
  {
- 	static struct platform_device *pdev;
-@@ -39,8 +63,7 @@ static int acpi_create_platform_clks(str
- /**
-  * acpi_create_platform_device - Create platform device for ACPI device node
-  * @adev: ACPI device node to create a platform device for.
-- * @flags: ACPI_PLATFORM_* flags that affect the creation of the platform
-- *	   devices.
-+ * @id: ACPI device ID used to match @adev.
-  *
-  * Check if the given @adev can be represented as a platform device and, if
-  * that's the case, create and register a platform device, populate its common
-@@ -48,9 +71,10 @@ static int acpi_create_platform_clks(str
-  *
-  * Name of the platform device will be the same as @adev's.
-  */
--struct platform_device *acpi_create_platform_device(struct acpi_device *adev,
--						    unsigned long flags)
-+static int acpi_create_platform_device(struct acpi_device *adev,
-+				       const struct acpi_device_id *id)
- {
-+	unsigned long flags = id->driver_data;
- 	struct platform_device *pdev = NULL;
- 	struct acpi_device *acpi_parent;
- 	struct platform_device_info pdevinfo;
-@@ -59,25 +83,26 @@ struct platform_device *acpi_create_plat
- 	struct resource *resources;
- 	int count;
+ 	int result;
+ 	struct acpi_pci_link *link;
+@@ -746,7 +743,7 @@ static int acpi_pci_link_add(struct acpi
+ 	if (result)
+ 		kfree(link);
  
--	if ((flags & ACPI_PLATFORM_CLK) && acpi_create_platform_clks(adev)) {
-+	if (flags & ACPI_PLATFORM_CLK) {
-+		int ret = acpi_create_platform_clks(adev);
- 		dev_err(&adev->dev, "failed to create clocks\n");
--		return NULL;
-+		return ret;
- 	}
- 
- 	/* If the ACPI node already has a physical device attached, skip it. */
- 	if (adev->physical_node_count)
--		return NULL;
-+		return 0;
- 
- 	INIT_LIST_HEAD(&resource_list);
- 	count = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
- 	if (count <= 0)
--		return NULL;
-+		return 0;
- 
- 	resources = kmalloc(count * sizeof(struct resource), GFP_KERNEL);
- 	if (!resources) {
- 		dev_err(&adev->dev, "No memory for resources\n");
- 		acpi_dev_free_resource_list(&resource_list);
--		return NULL;
-+		return -ENOMEM;
- 	}
- 	count = 0;
- 	list_for_each_entry(rentry, &resource_list, node)
-@@ -123,5 +148,15 @@ struct platform_device *acpi_create_plat
- 	}
- 
- 	kfree(resources);
--	return pdev;
-+	return 1;
-+}
-+
-+static struct acpi_scan_handler platform_handler = {
-+	.ids = acpi_platform_device_ids,
-+	.attach = acpi_create_platform_device,
-+};
-+
-+void __init acpi_platform_init(void)
-+{
-+	acpi_scan_add_handler(&platform_handler);
+-	return result;
++	return result < 0 ? result : 1;
  }
+ 
+ static int acpi_pci_link_resume(struct acpi_pci_link *link)
+@@ -766,7 +763,7 @@ static void irqrouter_resume(void)
+ 	}
+ }
+ 
+-static int acpi_pci_link_remove(struct acpi_device *device)
++static void acpi_pci_link_remove(struct acpi_device *device)
+ {
+ 	struct acpi_pci_link *link;
+ 
+@@ -777,7 +774,6 @@ static int acpi_pci_link_remove(struct a
+ 	mutex_unlock(&acpi_link_lock);
+ 
+ 	kfree(link);
+-	return 0;
+ }
+ 
+ /*
+@@ -874,20 +870,10 @@ static struct syscore_ops irqrouter_sysc
+ 	.resume = irqrouter_resume,
+ };
+ 
+-static int __init irqrouter_init_ops(void)
+-{
+-	if (!acpi_disabled && !acpi_noirq)
+-		register_syscore_ops(&irqrouter_syscore_ops);
+-
+-	return 0;
+-}
+-
+-device_initcall(irqrouter_init_ops);
+-
+-static int __init acpi_pci_link_init(void)
++void __init acpi_pci_link_init(void)
+ {
+ 	if (acpi_noirq)
+-		return 0;
++		return;
+ 
+ 	if (acpi_irq_balance == -1) {
+ 		/* no command line switch: enable balancing in IOAPIC mode */
+@@ -896,11 +882,6 @@ static int __init acpi_pci_link_init(voi
+ 		else
+ 			acpi_irq_balance = 0;
+ 	}
+-
+-	if (acpi_bus_register_driver(&acpi_pci_link_driver) < 0)
+-		return -ENODEV;
+-
+-	return 0;
++	register_syscore_ops(&irqrouter_syscore_ops);
++	acpi_scan_add_handler(&pci_link_handler);
+ }
+-
+-subsys_initcall(acpi_pci_link_init);
 Index: test/drivers/acpi/internal.h
 ===================================================================
 --- test.orig/drivers/acpi/internal.h
 +++ test/drivers/acpi/internal.h
-@@ -27,6 +27,7 @@ int init_acpi_device_notify(void);
+@@ -26,6 +26,7 @@
+ int init_acpi_device_notify(void);
  int acpi_scan_init(void);
  void acpi_pci_root_init(void);
- void acpi_pci_link_init(void);
-+void acpi_platform_init(void);
++void acpi_pci_link_init(void);
  int acpi_sysfs_init(void);
  void acpi_csrt_init(void);
  
-@@ -119,10 +120,4 @@ static inline void suspend_nvs_restore(v
-   -------------------------------------------------------------------------- */
- struct platform_device;
- 
--/* Flags for acpi_create_platform_device */
--#define ACPI_PLATFORM_CLK	BIT(0)
--
--struct platform_device *acpi_create_platform_device(struct acpi_device *adev,
--						    unsigned long flags);
--
- #endif /* _ACPI_INTERNAL_H_ */
 Index: test/drivers/acpi/scan.c
 ===================================================================
 --- test.orig/drivers/acpi/scan.c
 +++ test/drivers/acpi/scan.c
-@@ -29,27 +29,6 @@ extern struct acpi_device *acpi_root;
- 
- static const char *dummy_hid = "device";
- 
--/*
-- * The following ACPI IDs are known to be suitable for representing as
-- * platform devices.
-- */
--static const struct acpi_device_id acpi_platform_device_ids[] = {
--
--	{ "PNP0D40" },
--
--	/* Haswell LPSS devices */
--	{ "INT33C0", ACPI_PLATFORM_CLK },
--	{ "INT33C1", ACPI_PLATFORM_CLK },
--	{ "INT33C2", ACPI_PLATFORM_CLK },
--	{ "INT33C3", ACPI_PLATFORM_CLK },
--	{ "INT33C4", ACPI_PLATFORM_CLK },
--	{ "INT33C5", ACPI_PLATFORM_CLK },
--	{ "INT33C6", ACPI_PLATFORM_CLK },
--	{ "INT33C7", ACPI_PLATFORM_CLK },
--
--	{ }
--};
--
- static LIST_HEAD(acpi_device_list);
- static LIST_HEAD(acpi_bus_id_list);
- static DEFINE_MUTEX(acpi_scan_lock);
-@@ -1606,7 +1585,6 @@ static int acpi_scan_attach_handler(stru
- static acpi_status acpi_bus_device_attach(acpi_handle handle, u32 lvl_not_used,
- 					  void *not_used, void **ret_not_used)
- {
--	const struct acpi_device_id *id;
- 	struct acpi_device *device;
- 	unsigned long long sta_not_used;
- 	int ret;
-@@ -1621,13 +1599,6 @@ static acpi_status acpi_bus_device_attac
- 	if (acpi_bus_get_device(handle, &device))
- 		return AE_CTRL_DEPTH;
- 
--	id = __acpi_match_device(device, acpi_platform_device_ids);
--	if (id) {
--		/* This is a known good platform device. */
--		acpi_create_platform_device(device, id->driver_data);
--		return AE_OK;
--	}
--
- 	ret = acpi_scan_attach_handler(device);
- 	if (ret)
- 		return ret > 0 ? AE_OK : AE_CTRL_DEPTH;
-@@ -1775,6 +1746,7 @@ int __init acpi_scan_init(void)
+@@ -1774,6 +1774,7 @@ int __init acpi_scan_init(void)
+ 	}
  
  	acpi_pci_root_init();
- 	acpi_pci_link_init();
-+	acpi_platform_init();
++	acpi_pci_link_init();
  	acpi_csrt_init();
  
  	/*
