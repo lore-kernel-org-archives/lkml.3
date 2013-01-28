@@ -1,132 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757417Ab3A1M3b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 07:29:31 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44788 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757330Ab3A1M31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 07:29:27 -0500
-Date: Mon, 28 Jan 2013 14:29:02 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-CC: <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <sarah.a.sharp@linux.intel.com>,
-        <kgene.kim@samsung.com>, <dianders@chromium.org>,
-        <sylvester.nawrocki@gmail.com>, <tomasz.figa@gmail.com>
-Subject: Re: [PATCH 3/4] usb: dwc3: exynos: Enable runtime power management
-Message-ID: <20130128122902.GK28698@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1359373348-18320-1-git-send-email-gautam.vivek@samsung.com>
- <1359373348-18320-4-git-send-email-gautam.vivek@samsung.com>
- <20130128114755.GF28698@arwen.pp.htv.fi>
- <CAFp+6iEb4R3NQkvtrY8X4h8oMwPf7E+LDYfb_cS5z2WfdGHNWA@mail.gmail.com>
- <20130128121231.GH28698@arwen.pp.htv.fi>
- <CAFp+6iHvH8ZXRGEb=5AsVX+Ks+mAaPqwWW9DhH9O7RNdKo+cgw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bX/mw5riLlTkt+Gv"
-Content-Disposition: inline
-In-Reply-To: <CAFp+6iHvH8ZXRGEb=5AsVX+Ks+mAaPqwWW9DhH9O7RNdKo+cgw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757431Ab3A1M3s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 07:29:48 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:51445 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757391Ab3A1M33 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 07:29:29 -0500
+Date: Mon, 28 Jan 2013 23:29:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shaohua Li <shli@kernel.org>, Wang YanQing <udknight@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: manual merge of the akpm tree with the tip tree
+Message-Id: <20130128232917.f8e35b592e7f8282227980f0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__28_Jan_2013_23_29_17_+1100_8raVfKai4jd=FlxU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bX/mw5riLlTkt+Gv
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Mon__28_Jan_2013_23_29_17_+1100_8raVfKai4jd=FlxU
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jan 28, 2013 at 05:57:04PM +0530, Vivek Gautam wrote:
-> On Mon, Jan 28, 2013 at 5:42 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > Hi,
-> >
-> > On Mon, Jan 28, 2013 at 05:28:30PM +0530, Vivek Gautam wrote:
-> >> >> +static int dwc3_exynos_runtime_resume(struct device *dev)
-> >> >> +{
-> >> >> +     struct dwc3_exynos      *exynos =3D dev_get_drvdata(dev);
-> >> >> +     struct platform_device  *pdev_dwc =3D exynos->dwc3;
-> >> >> +     struct dwc3             *dwc =3D NULL;
-> >> >> +
-> >> >> +     dwc =3D platform_get_drvdata(pdev_dwc);
-> >> >> +
-> >> >> +     clk_enable(exynos->clk);
-> >> >> +
-> >> >> +     if (!dwc)
-> >> >> +             return 0;
-> >> >> +
-> >> >> +     pm_runtime_get_sync(dwc->usb3_phy->dev);
-> >> >
-> >> > dude, this is wrong :-)
-> >> >
-> >> > look at this:
-> >> >
-> >> > pm_runtime_get() -> dwc3_exynos_runtime_resume() ->
-> >> > pm_runtime_get_sync() -> dwc3_exynos_runtime_resume() -> ...
-> >> >
-> >> > only your clock enalbe should do
-> >> >
-> >>
-> >> We want to wake up "dwc->usb3_phy" so tried to call pm_runtime_get_syn=
-c()
-> >> with "dwc->usb3_phy->dev".
-> >> Missing something ? :-(
-> >
-> > oh, my bad. That's the PHY... But we can't really do that for samsung
-> > only. It needs to be done generically for the entire dwc3 core driver,
-> > and for that we need to introduce usb_phy_autopm_get(),
-> > usb_phy_autopm_get_sync() and friends.
-> >
->=20
-> aah!! Ok. I definitely missed that part. :-(
->=20
-> > Then, from dwc_probe() we call:
-> >
-> > phy =3D usb_get_phy();
-> > usb_phy_autopm_enable(phy);
-> > usb_phy_autopm_get_sync(phy);
-> >
-> > or something similar ;-) Bottom line, you shouldn't fiddle with phy->dev
-> > directly.
-> >
->=20
-> Ok, the core should actually be handling the 'phy' not the glue layers.
-> Right ?
+Hi Andrew,
 
-that's right, thanks for doing this ;-)
+Today's linux-next merge of the akpm tree got a conflict in kernel/smp.c be=
+tween commit c7b798525b50 ("smp: Fix SMP function call empty cpu mask race"=
+) from the tip tree and commit "smp: make smp_call_function_many() use logi=
+c similar to smp_call_function_single()" from the akpm tree.
 
-> Will try putting these helper functions in place and come up with a
-> solution. :-)
-
-awesome ;-)
-
-cheers
+I fixed it up (maybe - see below) and can carry the fix as necessary (no
+action is required).
 
 --=20
-balbi
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---bX/mw5riLlTkt+Gv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --cc kernel/smp.c
+index 93e576e,51a81b0..0000000
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@@ -30,10 -21,8 +21,9 @@@ enum=20
+  };
+ =20
+  struct call_function_data {
+- 	struct call_single_data	csd;
+- 	atomic_t		refs;
++ 	struct call_single_data	__percpu *csd;
+  	cpumask_var_t		cpumask;
+ +	cpumask_var_t		cpumask_ipi;
+  };
+ =20
+  static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
+@@@ -482,85 -397,39 +398,45 @@@ void smp_call_function_many(const struc
+  	}
+ =20
+  	data =3D &__get_cpu_var(cfd_data);
+- 	csd_lock(&data->csd);
+-=20
+- 	/* This BUG_ON verifies our reuse assertions and can be removed */
+- 	BUG_ON(atomic_read(&data->refs) || !cpumask_empty(data->cpumask));
+-=20
+- 	/*
+- 	 * The global call function queue list add and delete are protected
+- 	 * by a lock, but the list is traversed without any lock, relying
+- 	 * on the rcu list add and delete to allow safe concurrent traversal.
+- 	 * We reuse the call function data without waiting for any grace
+- 	 * period after some other cpu removes it from the global queue.
+- 	 * This means a cpu might find our data block as it is being
+- 	 * filled out.
+- 	 *
+- 	 * We hold off the interrupt handler on the other cpu by
+- 	 * ordering our writes to the cpu mask vs our setting of the
+- 	 * refs counter.  We assert only the cpu owning the data block
+- 	 * will set a bit in cpumask, and each bit will only be cleared
+- 	 * by the subject cpu.  Each cpu must first find its bit is
+- 	 * set and then check that refs is set indicating the element is
+- 	 * ready to be processed, otherwise it must skip the entry.
+- 	 *
+- 	 * On the previous iteration refs was set to 0 by another cpu.
+- 	 * To avoid the use of transitivity, set the counter to 0 here
+- 	 * so the wmb will pair with the rmb in the interrupt handler.
+- 	 */
+- 	atomic_set(&data->refs, 0);	/* convert 3rd to 1st party write */
+ =20
+- 	data->csd.func =3D func;
+- 	data->csd.info =3D info;
+-=20
+- 	/* Ensure 0 refs is visible before mask.  Also orders func and info */
+- 	smp_wmb();
+-=20
+- 	/* We rely on the "and" being processed before the store */
+  	cpumask_and(data->cpumask, mask, cpu_online_mask);
+  	cpumask_clear_cpu(this_cpu, data->cpumask);
+- 	refs =3D cpumask_weight(data->cpumask);
+ =20
+  	/* Some callers race with other cpus changing the passed mask */
+- 	if (unlikely(!refs)) {
+- 		csd_unlock(&data->csd);
++ 	if (unlikely(!cpumask_weight(data->cpumask)))
+  		return;
+- 	}
+ =20
+ +	/*
+ +	 * After we put an entry into the list, data->cpumask
+ +	 * may be cleared again when another CPU sends another IPI for
+ +	 * a SMP function call, so data->cpumask will be zero.
+ +	 */
+ +	cpumask_copy(data->cpumask_ipi, data->cpumask);
+- 	raw_spin_lock_irqsave(&call_function.lock, flags);
+- 	/*
+- 	 * Place entry at the _HEAD_ of the list, so that any cpu still
+- 	 * observing the entry in generic_smp_call_function_interrupt()
+- 	 * will not miss any other list entries:
+- 	 */
+- 	list_add_rcu(&data->csd.list, &call_function.queue);
+- 	/*
+- 	 * We rely on the wmb() in list_add_rcu to complete our writes
+- 	 * to the cpumask before this write to refs, which indicates
+- 	 * data is on the list and is ready to be processed.
+- 	 */
+- 	atomic_set(&data->refs, refs);
+- 	raw_spin_unlock_irqrestore(&call_function.lock, flags);
+-=20
+- 	/*
+- 	 * Make the list addition visible before sending the ipi.
+- 	 * (IPIs must obey or appear to obey normal Linux cache
+- 	 * coherency rules -- see comment in generic_exec_single).
+- 	 */
+- 	smp_mb();
++ 	for_each_cpu(cpu, data->cpumask) {
++ 		struct call_single_data *csd =3D per_cpu_ptr(data->csd, cpu);
++ 		struct call_single_queue *dst =3D
++ 					&per_cpu(call_single_queue, cpu);
++ 		unsigned long flags;
++=20
++ 		csd_lock(csd);
++ 		csd->func =3D func;
++ 		csd->info =3D info;
++=20
++ 		raw_spin_lock_irqsave(&dst->lock, flags);
++ 		list_add_tail(&csd->list, &dst->list);
++ 		raw_spin_unlock_irqrestore(&dst->lock, flags);
++ 	}
+ =20
+  	/* Send a message to all CPUs in the map */
+ -	arch_send_call_function_ipi_mask(data->cpumask);
+ +	arch_send_call_function_ipi_mask(data->cpumask_ipi);
+ =20
+- 	/* Optionally wait for the CPUs to complete */
+- 	if (wait)
+- 		csd_lock_wait(&data->csd);
++ 	if (wait) {
++ 		for_each_cpu(cpu, data->cpumask) {
++ 			struct call_single_data *csd =3D
++ 					per_cpu_ptr(data->csd, cpu);
++ 			csd_lock_wait(csd);
++ 		}
++ 	}
+  }
+  EXPORT_SYMBOL(smp_call_function_many);
+ =20
+
+--Signature=_Mon__28_Jan_2013_23_29_17_+1100_8raVfKai4jd=FlxU
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRBm8OAAoJEIaOsuA1yqREKCgP/2bAZHHZ8rmyhE93lUj/U/E2
-jhuawf0rWh0Y9NPSx3KrAzsTN4vKHvxOTO8p9MOm+AJloCWk0yE/R5bzfQ83poxc
-ZSg0MZGo22VtRKbaXhh8T7ihELVjBo0LF66tXboDp0ozNPCYd0O2OA392U4X1tbs
-+V7RWOLVf6s5T7Kl4L6QPGz8qugs3A/ZA4Gb987XphxY+REH+LImpCSakk7fowUl
-0eNR/z6Rc091oIHEp2jV+6L7yLAVkaWQNZQ/6DBFXBBsv49414vAqsFFo9mXx8/e
-yngPaP7g7B1h+9jpTU5Ep9/F/l6dHS5eL0eTjEaWK06oQIGAtaN6rNoudILK6TDz
-c/7R7hL0MJ3TmNjthh6QNHGtaLYfHLcucEIn6yEbiJmCsUZQiwvj+dAMVV7BFMEK
-cYimykPtIT+2p6MarYsUJO6BxYUXIsVgfA1AZ040m4JukBwI+aljZSJjZzYyEUZh
-q6Zxq2dH1B3oUm+XFsHmnQ5Lfxs/xisMm8iH2hjnO2f4/ba0iOXBRQDXTFDUh9wD
-GKoQeiGzAr5paed6h43jFFc5eqB2fp+0swi/1IZfPu1FxGo51F5OhgDRDQm42FLq
-79HKw6Y8ehsOv+1I7D1KXe9pjdghk3l8VzPIF1eNfm+1ZCBT+j16bQk63w2j95jt
-GXjFwQzbEIG26y/KXV5W
-=D5gd
+iQIcBAEBCAAGBQJRBm8dAAoJEECxmPOUX5FExCIQAKAl66R7GvprtFWE2fLEzd8b
+YJH+dymDQykyBaoBee8IkcXnA24i4S5vdSwhnkNJ7ishtONJKs04Bfl4Jq/n5PAm
+scnI1PN7hJmpTEDijCBmCTWO35FO6XrdUQu+NwfX1uFPyNn4DuiUn2CwvI8tctS7
+lDl4sQyIz+rm/E8URJYYAQu8wKJiSYtylxmqnU/2fHlBpN/lbM7PkQytSFR4XsPi
+G5jY3l/gAU2fahpuwbRyaJNj8D4dDyO6i/Wy2Cgd3qpYgP6P+0Bv++YVxhVLMu5K
+qc2E+alDis+ineqk2vwq8a9aIa0DT5966l3muf/9Bt1Sozz6qWNHpyJXKy1bu275
+9jeAzRXw8ZIajPYupbCynuNyX/FgRY23ZmbAOgqzlYkkB7ACYsIYNZEwbf8GJFht
+FTebr6UcT2bwCqfNo6oEWPpgzQs6Uco8XvJgiuxCxAb+65nwqbnTTVD+TDHLAdmD
+tMHzGDssfdifRy5Gepo5IYaimZLSLOgwCgFqbjlUF4nfqc2NcNih5RrgdmfE6JDA
+xE/HcbtuGDacB3jI8r+1xh4YzO+iUqA3VvR0KBv7mxyqumxChbAWT3uyVJKZdiCM
+lR1PzTP1VBCUxsbfbtSGj+nyK/N5d3OOWSwwx3LW5B75G+WoeqrbhLNc2PaeLqab
++xFtaJWp5uGfKmknUqg9
+=p0Nr
 -----END PGP SIGNATURE-----
 
---bX/mw5riLlTkt+Gv--
+--Signature=_Mon__28_Jan_2013_23_29_17_+1100_8raVfKai4jd=FlxU--
