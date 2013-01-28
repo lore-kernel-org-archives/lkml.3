@@ -1,60 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab3A1X6I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 18:58:08 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44252 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab3A1X6G (ORCPT
+	id S1755848Ab3A2AAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 19:00:14 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:34611 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755566Ab3A2AAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 18:58:06 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-05-5107108c6442
-Date: Tue, 29 Jan 2013 08:58:04 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv3 3/6] mm: break up swap_writepage() for frontswap
- backends
-Message-ID: <20130128235804.GF4752@blaptop>
-References: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1359409767-30092-4-git-send-email-sjenning@linux.vnet.ibm.com>
+	Mon, 28 Jan 2013 19:00:10 -0500
+X-Originating-IP: 217.70.178.136
+X-Originating-IP: 182.255.120.217
+Date: Tue, 29 Jan 2013 10:59:17 +1100
+From: Josh Triplett <josh@joshtriplett.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Joe Millenbach <jmillenbach@gmail.com>, Greg KH <greg@kroah.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Brian Swetland <swetland@google.com>,
+        "Mike A. Chan" <mikechan@google.com>,
+        Sheng Yang <sheng@linux.intel.com>,
+        Yunhong Jiang <yunhong.jiang@intel.com>,
+        Xiaohui Xin <xiaohui.xin@intel.com>,
+        Jun Nakajima <jun.nakajima@intel.com>,
+        Bruce Beare <bruce.j.beare@intel.com>,
+        Tom Keel <thomas.keel@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jamey Sharp <jamey@minilop.net>
+Subject: Re: linux-next: manual merge of the tty tree with the input tree
+Message-ID: <20130128235916.GA3124@leaf>
+References: <20130128204424.a3eedfee954ba6cc7a620652@canb.auug.org.au>
+ <20130128144615.GC2997@kroah.com>
+ <20130128173330.GA11769@core.coreip.homeip.net>
+ <CADwDc1AVOaA0N9evbR7A14udx+TRRQo6t_X_Nn15BdEEByupkg@mail.gmail.com>
+ <20130128224443.GA1083@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1359409767-30092-4-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <20130128224443.GA1083@core.coreip.homeip.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 03:49:24PM -0600, Seth Jennings wrote:
-> swap_writepage() is currently where frontswap hooks into the swap
-> write path to capture pages with the frontswap_store() function.
-> However, if a frontswap backend wants to "resume" the writeback of
-> a page to the swap device, it can't call swap_writepage() as
-> the page will simply reenter the backend.
+On Mon, Jan 28, 2013 at 02:44:43PM -0800, Dmitry Torokhov wrote:
+> On Mon, Jan 28, 2013 at 02:09:31PM -0800, Joe Millenbach wrote:
+> > On Mon, Jan 28, 2013 at 9:33 AM, Dmitry Torokhov
+> > <dmitry.torokhov@gmail.com> wrote:
+> > > On Mon, Jan 28, 2013 at 06:46:15AM -0800, Greg KH wrote:
+> > >> On Mon, Jan 28, 2013 at 08:44:24PM +1100, Stephen Rothwell wrote:
+> > >> > Hi Greg,
+> > >> >
+> > >> > Today's linux-next merge of the tty tree got a conflict in
+> > >> > drivers/input/keyboard/Kconfig between commit 6f2ac009f29b ("Input:
+> > >> > goldfish - virtual input event driver") from the input tree and commit
+> > >> > 4f73bc4dd3e8 ("tty: Added a CONFIG_TTY option to allow removal of TTY")
+> > >> > from the tty tree.
+> > >> >
+> > >> > I fixed it up (see below - I am not sure if GOLDFISH_EVENTS needs TTY or
+> > >> > not) and can carry the fix as necessary (no action is required).
+> > >> >
+> > >> > --
+> > >> > Cheers,
+> > >> > Stephen Rothwell                    sfr@canb.auug.org.au
+> > >> >
+> > >> > diff --cc drivers/input/keyboard/Kconfig
+> > >> > index 078305e,008f96a..0000000
+> > >> > --- a/drivers/input/keyboard/Kconfig
+> > >> > +++ b/drivers/input/keyboard/Kconfig
+> > >> > @@@ -479,16 -482,8 +482,18 @@@ config KEYBOARD_SAMSUN
+> > >> >       To compile this driver as a module, choose M here: the
+> > >> >       module will be called samsung-keypad.
+> > >> >
+> > >> > + if TTY
+> > >> > +
+> > >> >  +config KEYBOARD_GOLDFISH_EVENTS
+> > >> >  +  depends on GOLDFISH
+> > >> >  +  tristate "Generic Input Event device for Goldfish"
+> > >> >  +  help
+> > >> >  +    Say Y here to get an input event device for the Goldfish virtual
+> > >>
+> > >> Looks good, thanks.
+> > >
+> > > Greg,
+> > >
+> > > Please drop 4f73bc4dd3e8563ef4109f293a092820dff66d92, at least the parts
+> > > related to input. As far as I know nothing except serport driver
+> > > depends on tty and we do not need to introduce this kind of
+> > > dependencie. Anyone needing slim config can simply try disabling
+> > > input (or parts of it) without needing an artificial dependencies.
+> > >
+> > > Thanks.
+> > >
+> > > --
+> > > Dmitry
+> > 
+> > Dmitry and Greg,
+> > 
+> > SERIO needs TTY, 
 > 
-> This patch separates swap_writepage() into a top and bottom half, the
-> bottom half named __swap_writepage() to allow a frontswap backend,
-> like zswap, to resume writeback beyond the frontswap_store() hook.
+> No it does not. There is only one (1) serio driver that needs the tty
+> layer and that is serport.
 > 
-> __add_to_swap_cache() is also made non-static so that the page for
-> which writeback is to be resumed can be added to the swap cache.
+> > and the majority of the input changes are adding "depends on TTY" to
+> > things that "select SERIO" as they break the dependency chain.  In
+> > other words, enabling a component that selects SERIO will turn SERIO
+> > on even when SERIO depends on TTY and TTY is disabled.
 > 
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
+> Except that it does not. Are you confusing SERIO with SERIAL by any
+> chance?
 
--- 
-Kind regards,
-Minchan Kim
+A few serial drivers don't actually need the TTY layer.  However, most
+do, including many that don't obviously appear to at first glance.  For
+instance, MOUSE_PS2 doesn't *appear* to need TTY, but without the
+dependency, having MOUSE_PS2 enabled and TTY disabled produces a kernel
+that doesn't build.  (Also keep in mind that many other headers include
+<linux/tty.h>.)  Many of the drivers that don't actually need TTY
+nonetheless won't typically appear on systems small enough to want to
+compile out TTY.
+
+In any case, it seems simple enough to whittle down dependencies on TTY
+later on, but for a first pass, the conserative approach seems
+preferable.
+
+> In the future it would be nice if you CCed people involved in the
+> subsystem you are changing.
+
+Such as the maintainers of the TTY and serial layers?  Alan Cox OKed
+this conservative addition of dependencies in the original version of
+this change, and Greg had no complaints at the time.
+
+- Josh Triplett
