@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015Ab3A1IdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 03:33:16 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:28815 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754144Ab3A1IdP (ORCPT
+	id S1754864Ab3A1IiK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 03:38:10 -0500
+Received: from [216.32.181.182] ([216.32.181.182]:25963 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753671Ab3A1IiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 03:33:15 -0500
-Message-ID: <510637CA.7010305@atmel.com>
-Date: Mon, 28 Jan 2013 09:33:14 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 28 Jan 2013 03:38:06 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI1102I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 28 Jan 2013 16:37:18 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 4/4] cpufreq, highbank: add support for highbank cpufreq
+Message-ID: <20130128083716.GE31689@S2101-09.ap.freescale.net>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1359143205-20279-5-git-send-email-mark.langsdorf@calxeda.com>
+ <20130126143950.GA7079@S2101-09.ap.freescale.net>
+ <1523559.2KevGvelzH@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        <spi-devel-general@lists.sourceforge.net>
-Subject: Re: [PATCH 14/19] spi/atmel: remove incorrect __exit_p()
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359153858-31992-1-git-send-email-arnd@arndb.de> <1359153858-31992-15-git-send-email-arnd@arndb.de>
-In-Reply-To: <1359153858-31992-15-git-send-email-arnd@arndb.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1523559.2KevGvelzH@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2013 11:44 PM, Arnd Bergmann :
-> Since we no longer allow building without hotplug, the
-> atmel_spi_remove function is always present and we should
-> not use __exit_p() to refer to it.
-> 
-> Without this patch, building at91_dt_defconfig results in:
-> 
-> drivers/spi/spi-atmel.c:1006:12: warning: 'atmel_spi_remove' defined but not used [-Wunused-function]
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Rafael,
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: spi-devel-general@lists.sourceforge.net
-> ---
->  drivers/spi/spi-atmel.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Sat, Jan 26, 2013 at 11:24:12PM +0100, Rafael J. Wysocki wrote:
+> > As we are moving to multiplatform build, this init function will run
+> > on all other platforms built together with highbank.  We should
+> > probably eliminate that effect.
 > 
-> diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-> index ab34497..656d137 100644
-> --- a/drivers/spi/spi-atmel.c
-> +++ b/drivers/spi/spi-atmel.c
-> @@ -1088,7 +1088,7 @@ static struct platform_driver atmel_spi_driver = {
->  	.suspend	= atmel_spi_suspend,
->  	.resume		= atmel_spi_resume,
->  	.probe		= atmel_spi_probe,
-> -	.remove		= __exit_p(atmel_spi_remove),
-> +	.remove		= atmel_spi_remove,
->  };
->  module_platform_driver(atmel_spi_driver);
->  
+> That change can be made on top of the Mark's patches I think, right?
 > 
+Yes.
 
+> If so, I'd prefer it that way.  The Mark's patches have been in a limbo for
+> too long already and that issue doesn't seem to be serious enough to block
+> them any longer.
+> 
+Ok, I will take care of the changes needed on highbank.  Do you have
+a branch with Mark's series and the EXPORT_SYMBOL() one applied,
+so that I can start my patch from there.
 
--- 
-Nicolas Ferre
+Shawn
+
