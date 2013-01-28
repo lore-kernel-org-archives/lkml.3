@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289Ab3A1LiU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 06:38:20 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:49621 "EHLO comal.ext.ti.com"
+	id S932068Ab3A1LbH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 06:31:07 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42740 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756957Ab3A1LbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 06:31:08 -0500
+	id S1756952Ab3A1La5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 06:30:57 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>
 CC: <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
@@ -13,9 +13,9 @@ CC: <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
         <eballetbo@gmail.com>, <javier@dowhile0.org>, <sshtylyov@mvista.com>,
         <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 09/30] USB: ehci-omap: Use devm_request_and_ioremap()
-Date: Mon, 28 Jan 2013 13:30:10 +0200
-Message-ID: <1359372631-8180-10-git-send-email-rogerq@ti.com>
+Subject: [PATCH v2 05/30] usb: phy: nop: Handle RESET for the PHY
+Date: Mon, 28 Jan 2013 13:30:06 +0200
+Message-ID: <1359372631-8180-6-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359372631-8180-1-git-send-email-rogerq@ti.com>
 References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
@@ -25,63 +25,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of devm_request_and_ioremap() and correct comment.
+We expect the RESET line to be modeled as a regulator with supply
+name "reset". The regulator should be modeled such that enabling
+the regulator brings the PHY device out of RESET and disabling the
+regulator holds the device in RESET.
+
+They PHY will be held in RESET in .shutdown() and brought out of
+RESET in .init().
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/usb/host/ehci-omap.c |   19 +++++--------------
- 1 files changed, 5 insertions(+), 14 deletions(-)
+ drivers/usb/otg/nop-usb-xceiv.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-index 30fc482..fd2f5450 100644
---- a/drivers/usb/host/ehci-omap.c
-+++ b/drivers/usb/host/ehci-omap.c
-@@ -216,23 +216,17 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xceiv.c
+index 0a9628c..3060ed0 100644
+--- a/drivers/usb/otg/nop-usb-xceiv.c
++++ b/drivers/usb/otg/nop-usb-xceiv.c
+@@ -40,6 +40,7 @@ struct nop_usb_xceiv {
+ 	struct device		*dev;
+ 	struct clk		*clk;
+ 	struct regulator	*vcc;
++	struct regulator	*reset;
+ };
  
- 	res =  platform_get_resource_byname(pdev,
- 				IORESOURCE_MEM, "ehci");
--	if (!res) {
--		dev_err(dev, "UHH EHCI get resource failed\n");
--		return -ENODEV;
--	}
--
--	regs = ioremap(res->start, resource_size(res));
-+	regs = devm_request_and_ioremap(dev, res);
- 	if (!regs) {
--		dev_err(dev, "UHH EHCI ioremap failed\n");
--		return -ENOMEM;
-+		dev_err(dev, "Resource request/ioremap failed\n");
-+		return -EADDRNOTAVAIL;
- 	}
+ static struct platform_device *pd;
+@@ -80,6 +81,12 @@ static int nop_init(struct usb_phy *phy)
+ 	if (!IS_ERR(nop->clk))
+ 		clk_enable(nop->clk);
  
- 	hcd = usb_create_hcd(&ehci_omap_hc_driver, dev,
- 			dev_name(dev));
- 	if (!hcd) {
--		dev_err(dev, "failed to create hcd with err %d\n", ret);
--		ret = -ENOMEM;
--		goto err_io;
-+		dev_err(dev, "Failed to create HCD\n");
-+		return -ENOMEM;
- 	}
- 
- 	hcd->rsrc_start = res->start;
-@@ -285,8 +279,6 @@ err_pm_runtime:
- 	pm_runtime_put_sync(dev);
- 	usb_put_hcd(hcd);
- 
--err_io:
--	iounmap(regs);
- 	return ret;
++	if (!IS_ERR(nop->reset)) {
++		/* De-assert RESET */
++		if (regulator_enable(nop->reset))
++			dev_err(phy->dev, "Failed to de-assert reset\n");
++	}
++
+ 	return 0;
  }
  
-@@ -306,7 +298,6 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
+@@ -87,6 +94,12 @@ static void nop_shutdown(struct usb_phy *phy)
+ {
+ 	struct nop_usb_xceiv *nop = dev_get_drvdata(phy->dev);
  
- 	usb_remove_hcd(hcd);
- 	disable_put_regulator(dev->platform_data);
--	iounmap(hcd->regs);
- 	usb_put_hcd(hcd);
++	if (!IS_ERR(nop->reset)) {
++		/* Assert RESET */
++		if (regulator_disable(nop->reset))
++			dev_err(phy->dev, "Failed to assert reset\n");
++	}
++
+ 	if (!IS_ERR(nop->clk))
+ 		clk_disable(nop->clk);
  
- 	pm_runtime_put_sync(dev);
+@@ -171,6 +184,12 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
+ 					PTR_ERR(nop->vcc));
+ 	}
+ 
++	nop->reset = devm_regulator_get(&pdev->dev, "reset");
++	if (IS_ERR(nop->reset)) {
++		dev_dbg(&pdev->dev, "Error getting reset regulator: %ld\n",
++					PTR_ERR(nop->reset));
++	}
++
+ 	nop->dev		= &pdev->dev;
+ 	nop->phy.dev		= nop->dev;
+ 	nop->phy.label		= "nop-xceiv";
 -- 
 1.7.4.1
 
