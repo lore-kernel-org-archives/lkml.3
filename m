@@ -1,95 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab3A1BmH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 20:42:07 -0500
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:45521 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756371Ab3A1BmE (ORCPT
+	id S1757225Ab3A1Bws (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 20:52:48 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:36154 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756371Ab3A1Bwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 20:42:04 -0500
-Message-ID: <1359337321.6763.18.camel@kernel>
-Subject: Re: [PATCH 6/11] ksm: remove old stable nodes more thoroughly
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Sun, 27 Jan 2013 19:42:01 -0600
-In-Reply-To: <alpine.LNX.2.00.1301271451130.17495@eggly.anvils>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
-	 <alpine.LNX.2.00.1301251800550.29196@eggly.anvils>
-	 <1359262556.4159.23.camel@kernel>
-	 <alpine.LNX.2.00.1301271451130.17495@eggly.anvils>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 27 Jan 2013 20:52:46 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH] perf: Make numa benchmark optional
+Date: Sun, 27 Jan 2013 20:51:22 -0500
+Message-Id: <1359337882-21821-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1354913744-29902-2-git-send-email-mingo@kernel.org>
+References: <1354913744-29902-2-git-send-email-mingo@kernel.org>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-01-27 at 15:05 -0800, Hugh Dickins wrote:
-> On Sat, 26 Jan 2013, Simon Jeons wrote:
-> > On Fri, 2013-01-25 at 18:01 -0800, Hugh Dickins wrote:
-> > > Switching merge_across_nodes after running KSM is liable to oops on stale
-> > > nodes still left over from the previous stable tree.  It's not something
-> > > that people will often want to do, but it would be lame to demand a reboot
-> > > when they're trying to determine which merge_across_nodes setting is best.
-> > > 
-> > > How can this happen?  We only permit switching merge_across_nodes when
-> > > pages_shared is 0, and usually set run 2 to force that beforehand, which
-> > > ought to unmerge everything: yet oopses still occur when you then run 1.
-> > > 
-> > > Three causes:
-> > > 
-> > > 1. The old stable tree (built according to the inverse merge_across_nodes)
-                                                   ^^^^^^^^^^^^^^^^^^^^^
-How to understand inverse merge_across_nodes here?
+Commit "perf: Add 'perf bench numa mem'..." added a NUMA performance
+benchmark to perf. Make this optional and test for required
+dependencies.
 
-> > > has not been fully torn down.  A stable node lingers until get_ksm_page()
-> > > notices that the page it references no longer references it: but the page
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ tools/perf/Makefile                 | 16 ++++++++++++++--
+ tools/perf/builtin-bench.c          |  4 ++++
+ tools/perf/config/feature-tests.mak | 11 +++++++++++
+ 3 files changed, 29 insertions(+), 2 deletions(-)
 
-Do you mean page->mapping is NULL when call get_ksm_page()? Who clear it
-NULL?
-
-> > > is not necessarily freed as soon as expected, particularly when swapcache.
-
-Why is not necessarily freed as soon as expected?
-
-> > > 
-> > 
-> > When can this happen?  
-> 
-> Whenever there's an additional reference to the page, beyond those for
-> its ptes in userspace - swapcache for example, or pinned by get_user_pages.
-> That delays its being freed (arriving at the "page->mapping = NULL;"
-> in free_pages_prepare()).  Or it might simply be sitting in a pagevec,
-> waiting for that to be filled up, to be freed as part of a batch.
-> 
-> > 
-> > > Fix this with a pass through the old stable tree, applying get_ksm_page()
-> > > to each of the remaining nodes (most found stale and removed immediately),
-> > > with forced removal of any left over.  Unless the page is still mapped:
-> > > I've not seen that case, it shouldn't occur, but better to WARN_ON_ONCE
-> > > and EBUSY than BUG.
-> > > 
-> > > 2. __ksm_enter() has a nice little optimization, to insert the new mm
-> > > just behind ksmd's cursor, so there's a full pass for it to stabilize
-> > > (or be removed) before ksmd addresses it.  Nice when ksmd is running,
-> > > but not so nice when we're trying to unmerge all mms: we were missing
-> > > those mms forked and inserted behind the unmerge cursor.  Easily fixed
-> > > by inserting at the end when KSM_RUN_UNMERGE.
-> > 
-> > mms forked will be unmerged just after ksmd's cursor since they're
-> > inserted behind it, why will be missing?
-> 
-> unmerge_and_remove_all_rmap_items() makes one pass through the list
-> from start to finish: insert behind the cursor and it will be missed.
-
-Since mms forked will be insert just after ksmd's cursor, so it is the
-next which will be scan and unmerge, where I miss?
-
-
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index bd9f088..b91dcb0 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -47,6 +47,8 @@ include config/utilities.mak
+ # backtrace post unwind.
+ #
+ # Define NO_BACKTRACE if you do not want stack backtrace debug feature
++#
++# Define NO_LIBNUMA if you do not want numa perf benchmark
+ 
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+@@ -104,7 +106,7 @@ ifdef PARSER_DEBUG
+ endif
+ 
+ CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
+-EXTLIBS = -lpthread -lrt -lelf -lm -lnuma
++EXTLIBS = -lpthread -lrt -lelf -lm
+ ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ ALL_LDFLAGS = $(LDFLAGS)
+ STRIP ?= strip
+@@ -491,7 +493,6 @@ LIB_OBJS += $(OUTPUT)tests/pmu.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+ # Benchmark modules
+-BUILTIN_OBJS += $(OUTPUT)bench/numa.o
+ BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
+ BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
+ ifeq ($(RAW_ARCH),x86_64)
+@@ -840,6 +841,17 @@ ifndef NO_BACKTRACE
+        endif
+ endif
+ 
++ifndef NO_LIBNUMA
++	FLAGS_LIBNUMA = $(ALL_CFLAGS) $(ALL_LDFLAGS) -lnuma
++	ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
++		msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
++	else
++		BASIC_CFLAGS += -DLIBNUMA_SUPPORT
++		BUILTIN_OBJS += $(OUTPUT)bench/numa.o
++		EXTLIBS += -lnuma
++	endif
++endif
++
+ ifdef ASCIIDOC8
+ 	export ASCIIDOC8
+ endif
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index 441cdb4..3a5c616 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -35,6 +35,7 @@ struct bench_suite {
+ /* sentinel: easy for help */
+ #define suite_all { "all", "Test all benchmark suites", NULL }
+ 
++#ifdef LIBNUMA_SUPPORT
+ static struct bench_suite numa_suites[] = {
+ 	{ "mem",
+ 	  "Benchmark for NUMA workloads",
+@@ -44,6 +45,7 @@ static struct bench_suite numa_suites[] = {
+ 	  NULL,
+ 	  NULL                  }
+ };
++#endif
+ 
+ static struct bench_suite sched_suites[] = {
+ 	{ "messaging",
+@@ -78,9 +80,11 @@ struct bench_subsys {
+ };
+ 
+ static struct bench_subsys subsystems[] = {
++#ifdef LIBNUMA_SUPPORT
+ 	{ "numa",
+ 	  "NUMA scheduling and MM behavior",
+ 	  numa_suites },
++#endif
+ 	{ "sched",
+ 	  "scheduler and IPC mechanism",
+ 	  sched_suites },
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index f5ac774..b4eabb4 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -225,3 +225,14 @@ int main(void)
+ 	return on_exit(NULL, NULL);
+ }
+ endef
++
++define SOURCE_LIBNUMA
++#include <numa.h>
++#include <numaif.h>
++
++int main(void)
++{
++	numa_available();
++	return 0;
++}
++endef
+\ No newline at end of file
+-- 
+1.8.1.1
 
